@@ -17,8 +17,10 @@
 package com.hedera.services.bdd.spec.transactions.token;
 
 import static com.hedera.node.app.hapi.fees.usage.token.TokenOpsUsageUtils.TOKEN_OPS_USAGE_UTILS;
+import static com.hedera.node.app.hapi.utils.CommonUtils.extractTransactionBodyUnchecked;
 import static com.hedera.services.bdd.spec.HapiPropertySource.idAsHeadlongAddress;
-import static com.hedera.services.bdd.spec.transactions.TxnFactory.bannerWith;
+import static com.hedera.services.bdd.spec.transactions.TxnFactory.defaultExpiryNowFor;
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.bannerWith;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.suFrom;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.SubType.TOKEN_FUNGIBLE_COMMON;
@@ -30,7 +32,6 @@ import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 import com.esaulpaugh.headlong.abi.Address;
 import com.google.common.base.MoreObjects;
 import com.google.protobuf.ByteString;
-import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.node.app.hapi.fees.usage.BaseTransactionMeta;
 import com.hedera.node.app.hapi.fees.usage.state.UsageAccumulator;
 import com.hedera.node.app.hapi.fees.usage.token.TokenOpsUsage;
@@ -38,7 +39,9 @@ import com.hedera.node.app.hapi.utils.CommonUtils;
 import com.hedera.node.app.hapi.utils.fee.SigValueObj;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.HapiSpec;
+import com.hedera.services.bdd.spec.dsl.utils.KeyMetadata;
 import com.hedera.services.bdd.spec.fees.AdapterUtils;
+import com.hedera.services.bdd.spec.infrastructure.HapiSpecRegistry;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.suites.utils.contracts.precompile.TokenKeyType;
@@ -56,7 +59,7 @@ import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import com.hederahashgraph.api.proto.java.TokenType;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.api.proto.java.TransactionResponse;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.ArrayList;
 import java.util.List;
@@ -326,7 +329,16 @@ public class HapiTokenCreate extends HapiTxnOp<HapiTokenCreate> {
                             supplyType.ifPresent(b::setSupplyType);
                             symbol.ifPresent(b::setSymbol);
                             name.ifPresent(b::setName);
-                            entityMemo.ifPresent(s -> b.setMemo(s));
+                            // If the token doesn't have an explicit memo (which
+                            // should help us correlate any related failures to the
+                            // originating spec), then we set the spec name as the
+                            // memo for this purpose
+                            entityMemo.ifPresentOrElse(
+                                    b::setMemo,
+                                    () -> b.setMemo(spec.getName()
+                                            .substring(
+                                                    0,
+                                                    Math.min(100, spec.getName().length()))));
                             metadata.ifPresent(s -> b.setMetadata(ByteString.copyFromUtf8(s)));
                             initialSupply.ifPresent(b::setInitialSupply);
                             maxSupply.ifPresent(b::setMaxSupply);
@@ -355,8 +367,14 @@ public class HapiTokenCreate extends HapiTxnOp<HapiTokenCreate> {
                                         Duration.newBuilder().setSeconds(secs).build());
                             }
                             if (autoRenewPeriod.isEmpty()) {
-                                expiry.ifPresent(t -> b.setExpiry(
-                                        Timestamp.newBuilder().setSeconds(t).build()));
+                                expiry.ifPresentOrElse(
+                                        t -> b.setExpiry(Timestamp.newBuilder()
+                                                .setSeconds(t)
+                                                .build()),
+                                        () -> b.setExpiry(defaultExpiryNowFor(spec)));
+                            }
+                            if (treasury.isEmpty()) {
+                                treasury = Optional.of(spec.setup().defaultPayerName());
                             }
                             treasury.ifPresent(a -> {
                                 final var treasuryId = TxnUtils.asId(a, spec);
@@ -407,70 +425,36 @@ public class HapiTokenCreate extends HapiTxnOp<HapiTokenCreate> {
     }
 
     @Override
-    protected Function<Transaction, TransactionResponse> callToUse(final HapiSpec spec) {
-        return spec.clients().getTokenSvcStub(targetNodeFor(spec), useTls)::createToken;
-    }
-
-    @Override
     protected void updateStateOf(final HapiSpec spec) {
         if (actualStatus != SUCCESS) {
             return;
         }
-        final var registry = spec.registry();
-        symbol.ifPresent(s -> registry.saveSymbol(token, s));
-        name.ifPresent(s -> registry.saveName(token, s));
-        registry.saveMemo(token, memo.orElse(""));
-        registry.saveMetadata(token, metadata.orElse(""));
         final TokenID tokenID = lastReceipt.getTokenID();
-        registry.saveTokenId(token, tokenID);
-        registry.saveTreasury(token, treasury.orElse(spec.setup().defaultPayerName()));
         createdIdObs.ifPresent(obs -> obs.accept(HapiPropertySource.asTokenString(tokenID)));
         Optional.ofNullable(createdAddressObs).ifPresent(obs -> obs.accept(idAsHeadlongAddress(tokenID)));
-
-        try {
-            final var submittedBody = CommonUtils.extractTransactionBody(txnSubmitted);
-            final var op = submittedBody.getTokenCreation();
-            if (op.hasKycKey()) {
-                registry.saveKycKey(token, op.getKycKey());
-            }
-            if (op.hasWipeKey()) {
-                registry.saveWipeKey(token, op.getWipeKey());
-            }
-            if (op.hasAdminKey()) {
-                registry.saveAdminKey(token, op.getAdminKey());
-            }
-            if (op.hasSupplyKey()) {
-                registry.saveSupplyKey(token, op.getSupplyKey());
-            }
-            if (op.hasFreezeKey()) {
-                registry.saveFreezeKey(token, op.getFreezeKey());
-            }
-            if (op.hasFeeScheduleKey()) {
-                registry.saveFeeScheduleKey(token, op.getFeeScheduleKey());
-            }
-            if (op.hasPauseKey()) {
-                registry.savePauseKey(token, op.getPauseKey());
-            }
-            if (op.hasMetadataKey()) {
-                registry.saveMetadataKey(token, op.getMetadataKey());
-            }
-        } catch (final InvalidProtocolBufferException impossible) {
-        }
-
+        registerKeys(spec);
+        registerAttributes(spec);
         if (advertiseCreation) {
             final String banner = "\n\n"
                     + bannerWith(String.format("Created token '%s' with id '0.0.%d'.", token, tokenID.getTokenNum()));
             log.info(banner);
         }
         if (asCallableContract) {
-            registry.saveContractId(
-                    token,
-                    ContractID.newBuilder()
-                            .setShardNum(tokenID.getShardNum())
-                            .setRealmNum(tokenID.getRealmNum())
-                            .setContractNum(tokenID.getTokenNum())
-                            .build());
+            spec.registry()
+                    .saveContractId(
+                            token,
+                            ContractID.newBuilder()
+                                    .setShardNum(tokenID.getShardNum())
+                                    .setRealmNum(tokenID.getRealmNum())
+                                    .setContractNum(tokenID.getTokenNum())
+                                    .build());
         }
+    }
+
+    public long numOfCreatedTokenOrThrow() {
+        return Optional.ofNullable(lastReceipt)
+                .map(receipt -> receipt.getTokenID().getTokenNum())
+                .orElseThrow();
     }
 
     @Override
@@ -482,5 +466,83 @@ public class HapiTokenCreate extends HapiTxnOp<HapiTokenCreate> {
             }
         });
         return helper;
+    }
+
+    private void registerKeys(@NonNull final HapiSpec spec) {
+        if (lastReceipt == null) {
+            throw new IllegalStateException("Token has not been created");
+        }
+        final var registry = spec.registry();
+        final var submittedBody = extractTransactionBodyUnchecked(txnSubmitted);
+        final var op = submittedBody.getTokenCreation();
+        if (op.hasKycKey()) {
+            registry.saveKycKey(token, op.getKycKey());
+        }
+        if (op.hasWipeKey()) {
+            registry.saveWipeKey(token, op.getWipeKey());
+        }
+        if (op.hasAdminKey()) {
+            registry.saveAdminKey(token, op.getAdminKey());
+        }
+        if (op.hasSupplyKey()) {
+            registry.saveSupplyKey(token, op.getSupplyKey());
+        }
+        if (op.hasFreezeKey()) {
+            registry.saveFreezeKey(token, op.getFreezeKey());
+        }
+        if (op.hasFeeScheduleKey()) {
+            registry.saveFeeScheduleKey(token, op.getFeeScheduleKey());
+        }
+        if (op.hasPauseKey()) {
+            registry.savePauseKey(token, op.getPauseKey());
+        }
+        if (op.hasMetadataKey()) {
+            registry.saveMetadataKey(token, op.getMetadataKey());
+        }
+    }
+
+    public void registerAttributes(@NonNull final HapiSpec spec) {
+        if (lastReceipt == null || treasury.isEmpty()) {
+            throw new IllegalStateException("Token has not been created");
+        }
+        final var registry = spec.registry();
+        symbol.ifPresent(s -> registry.saveSymbol(token, s));
+        name.ifPresent(s -> registry.saveName(token, s));
+        registry.saveMemo(token, memo.orElse(""));
+        registry.saveMetadata(token, metadata.orElse(""));
+        final TokenID tokenID = lastReceipt.getTokenID();
+        registry.saveTokenId(token, tokenID);
+        registry.saveTreasury(token, treasury.get());
+    }
+
+    public List<KeyMetadata> allCreatedKeyMetadata(@NonNull final HapiSpec spec) {
+        final List<KeyMetadata> metadata = new ArrayList<>();
+        final var submittedBody = extractTransactionBodyUnchecked(txnSubmitted);
+        final var op = submittedBody.getTokenCreation();
+        if (op.hasKycKey()) {
+            metadata.add(KeyMetadata.from(op.getKycKey(), spec, HapiSpecRegistry::saveKycKey));
+        }
+        if (op.hasWipeKey()) {
+            metadata.add(KeyMetadata.from(op.getWipeKey(), spec, HapiSpecRegistry::saveWipeKey));
+        }
+        if (op.hasAdminKey()) {
+            metadata.add(KeyMetadata.from(op.getAdminKey(), spec, HapiSpecRegistry::saveAdminKey));
+        }
+        if (op.hasSupplyKey()) {
+            metadata.add(KeyMetadata.from(op.getSupplyKey(), spec, HapiSpecRegistry::saveSupplyKey));
+        }
+        if (op.hasFreezeKey()) {
+            metadata.add(KeyMetadata.from(op.getFreezeKey(), spec, HapiSpecRegistry::saveFreezeKey));
+        }
+        if (op.hasFeeScheduleKey()) {
+            metadata.add(KeyMetadata.from(op.getFeeScheduleKey(), spec, HapiSpecRegistry::saveFeeScheduleKey));
+        }
+        if (op.hasPauseKey()) {
+            metadata.add(KeyMetadata.from(op.getPauseKey(), spec, HapiSpecRegistry::savePauseKey));
+        }
+        if (op.hasMetadataKey()) {
+            metadata.add(KeyMetadata.from(op.getMetadataKey(), spec, HapiSpecRegistry::saveMetadataKey));
+        }
+        return metadata;
     }
 }

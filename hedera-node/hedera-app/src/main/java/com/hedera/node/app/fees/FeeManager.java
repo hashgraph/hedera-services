@@ -16,6 +16,12 @@
 
 package com.hedera.node.app.fees;
 
+import static com.hedera.hapi.node.base.HederaFunctionality.FREEZE;
+import static com.hedera.hapi.node.base.HederaFunctionality.GET_ACCOUNT_DETAILS;
+import static com.hedera.hapi.node.base.HederaFunctionality.NETWORK_GET_EXECUTION_TIME;
+import static com.hedera.hapi.node.base.HederaFunctionality.TOKEN_GET_ACCOUNT_NFT_INFOS;
+import static com.hedera.hapi.node.base.HederaFunctionality.TOKEN_GET_NFT_INFOS;
+import static com.hedera.hapi.node.base.HederaFunctionality.TRANSACTION_GET_FAST_RECORD;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static java.util.Objects.requireNonNull;
 
@@ -31,7 +37,7 @@ import com.hedera.hapi.node.base.TransactionFeeSchedule;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.fees.congestion.CongestionMultipliers;
 import com.hedera.node.app.spi.fees.FeeCalculator;
-import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
+import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.pbj.runtime.ParseException;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -39,9 +45,11 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.nio.BufferUnderflowException;
 import java.time.Instant;
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;
@@ -60,6 +68,18 @@ public final class FeeManager {
     private record Entry(HederaFunctionality function, SubType subType) {}
 
     private static final long DEFAULT_FEE = 100_000L;
+    /**
+     * A set of operations that we do not expect to find the fee schedule. These include
+     * privileged operations (which are either rejected at ingest or not charged fees at
+     * consensus); and unsupported queries that are never answered.
+     */
+    private static final Set<HederaFunctionality> INAPPLICABLE_OPERATIONS = EnumSet.of(
+            FREEZE,
+            GET_ACCOUNT_DETAILS,
+            NETWORK_GET_EXECUTION_TIME,
+            TRANSACTION_GET_FAST_RECORD,
+            TOKEN_GET_NFT_INFOS,
+            TOKEN_GET_ACCOUNT_NFT_INFOS);
 
     private static final FeeComponents DEFAULT_FEE_COMPONENTS =
             FeeComponents.newBuilder().min(DEFAULT_FEE).max(DEFAULT_FEE).build();
@@ -89,7 +109,9 @@ public final class FeeManager {
     }
 
     /**
-     * Updates the fee schedule based on the given file content. THIS MUST BE CALLED ON THE HANDLE THREAD!!
+     * Updates the fee schedule based on the given file content.
+     *
+     * <p>IMPORTANT:</p> This can only be called when initializing a state or handling a transaction.
      *
      * @param bytes The new fee schedule file content.
      */
@@ -220,7 +242,9 @@ public final class FeeManager {
         // Now, lookup the fee data for the transaction type.
         final var result = feeDataMap.get(new Entry(functionality, subType));
         if (result == null) {
-            logger.warn("Using default usage prices to calculate fees for {}!", functionality);
+            if (!INAPPLICABLE_OPERATIONS.contains(functionality)) {
+                logger.warn("Using default usage prices to calculate fees for {}!", functionality);
+            }
             return DEFAULT_FEE_DATA;
         }
         return result;

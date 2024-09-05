@@ -27,6 +27,7 @@ import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.TokenID;
+import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.transaction.AssessedCustomFee;
 import com.hedera.hapi.node.transaction.CustomFee;
 import com.hedera.node.app.spi.workflows.HandleException;
@@ -47,6 +48,10 @@ public class CustomRoyaltyFeeAssessor {
 
     private final CustomFixedFeeAssessor fixedFeeAssessor;
 
+    /**
+     * Constructs a {@link CustomRoyaltyFeeAssessor} instance.
+     * @param fixedFeeAssessor the fixed fee assessor
+     */
     @Inject
     public CustomRoyaltyFeeAssessor(final CustomFixedFeeAssessor fixedFeeAssessor) {
         this.fixedFeeAssessor = fixedFeeAssessor;
@@ -54,19 +59,20 @@ public class CustomRoyaltyFeeAssessor {
 
     /**
      * Assesses royalty fees for given token transfer.
-     * @param feeMeta
-     * @param sender
-     * @param receiver
-     * @param result
+     *
+     * @param token the token
+     * @param sender the sender
+     * @param receiver the receiver
+     * @param result the assessment result
      */
     // Suppressing the warning about using two "continue" statements and having unused variable
     @SuppressWarnings({"java:S1854", "java:S135"})
     public void assessRoyaltyFees(
-            @NonNull final CustomFeeMeta feeMeta,
+            @NonNull final Token token,
             @NonNull final AccountID sender,
             @NonNull final AccountID receiver,
             @NonNull final AssessmentResult result) {
-        final var tokenId = feeMeta.tokenId();
+        final var tokenId = token.tokenId();
         // In a given CryptoTransfer, we only charge royalties to an account once per token type; so
         // even if 0.0.A is sending multiple NFTs of type 0.0.T in a single transfer, we only deduct
         // royalty fees once from the value it receives in return.
@@ -76,7 +82,7 @@ public class CustomRoyaltyFeeAssessor {
 
         // get all hbar and fungible token changes from given input to the current level
         final var exchangedValue = getFungibleCredits(result, sender);
-        for (final var fee : feeMeta.customFees()) {
+        for (final var fee : token.customFees()) {
             final var collector = fee.feeCollectorAccountId();
             if (!fee.fee().kind().equals(CustomFee.FeeOneOfType.ROYALTY_FEE)) {
                 continue;
@@ -95,20 +101,26 @@ public class CustomRoyaltyFeeAssessor {
                 final var fallback = royaltyFee.fallbackFeeOrThrow();
                 final var fallbackFee = asFixedFee(
                         fallback.amount(), fallback.denominatingTokenId(), collector, fee.allCollectorsAreExempt());
-                fixedFeeAssessor.assessFixedFee(feeMeta, receiver, fallbackFee, result);
+                fixedFeeAssessor.assessFixedFee(token, receiver, fallbackFee, result);
             } else {
-                if (!isPayerExempt(feeMeta, fee, sender)) {
+                if (!isPayerExempt(token, fee, sender)) {
                     chargeRoyalty(exchangedValue, fee, result);
                 }
             }
         }
+        // We check this outside the for loop above because a sender should only be marked as paid royalty, after
+        // assessing
+        // all the fees for the given token. If a sender is sending multiple NFTs of the same token, royalty fee
+        // should be paid only once.
         // We don't want to charge the fallback fee for each nft transfer, if the receiver has already
-        // paid it for this token
+        // paid it for this token.
+
         if (exchangedValue.isEmpty()) {
             // Receiver pays fallback fees
             result.addToRoyaltiesPaid(Pair.of(receiver, tokenId));
         } else {
-            // Sender effectively pays percent royalties
+            // Sender effectively pays percent royalties. Here we don't check isPayerExempt because
+            // the sender could be exempt for one fee on token, but not other fees(if any) on the same token.
             result.addToRoyaltiesPaid(Pair.of(sender, tokenId));
         }
     }

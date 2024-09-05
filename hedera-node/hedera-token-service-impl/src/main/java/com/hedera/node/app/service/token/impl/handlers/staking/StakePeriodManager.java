@@ -25,7 +25,9 @@ import com.hedera.node.config.data.StakingConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
+import java.time.InstantSource;
 import java.time.ZoneId;
+import java.util.Objects;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -34,21 +36,33 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class StakePeriodManager {
-    // Sentinel value for a field that wasn't applicable to this transaction
-    public static final long NA = Long.MIN_VALUE;
+    /**
+     * The UTC time zone.
+     */
     public static final ZoneId ZONE_UTC = ZoneId.of("UTC");
+    /**
+     * The default staking period in minutes.
+     */
     public static final long DEFAULT_STAKING_PERIOD_MINS = 1440L;
 
     private final int numStoredPeriods;
     private final long stakingPeriodMins;
+    private final InstantSource instantSource;
+
     private long currentStakePeriod;
     private long prevConsensusSecs;
 
+    /**
+     * Default constructor for injection.
+     * @param configProvider the configuration provider
+     */
     @Inject
-    public StakePeriodManager(@NonNull final ConfigProvider configProvider) {
+    public StakePeriodManager(
+            @NonNull final ConfigProvider configProvider, @NonNull final InstantSource instantSource) {
         final var config = configProvider.getConfiguration().getConfigData(StakingConfig.class);
         numStoredPeriods = config.rewardHistoryNumStoredPeriods();
         stakingPeriodMins = config.periodMins();
+        this.instantSource = Objects.requireNonNull(instantSource);
     }
 
     /**
@@ -135,7 +149,7 @@ public class StakePeriodManager {
      * @return the estimated current stake period
      */
     public long estimatedCurrentStakePeriod() {
-        return StakingRewardsApi.estimatedCurrentStakePeriod(stakingPeriodMins);
+        return StakingRewardsApi.estimatedCurrentStakePeriod(stakingPeriodMins, instantSource.instant());
     }
 
     /**
@@ -157,7 +171,10 @@ public class StakePeriodManager {
     public boolean isEstimatedRewardable(
             final long stakePeriodStart, @NonNull final ReadableNetworkStakingRewardsStore networkRewards) {
         return StakingRewardsApi.isEstimatedRewardable(
-                stakingPeriodMins, stakePeriodStart, networkRewards.isStakingRewardsActivated());
+                stakingPeriodMins,
+                stakePeriodStart,
+                networkRewards.isStakingRewardsActivated(),
+                instantSource.instant());
     }
 
     /**
@@ -165,9 +182,9 @@ public class StakePeriodManager {
      * this transaction, returns the new {@code stakePeriodStart} for this account:
      *
      * <ol>
-     *   <li>{@link com.hedera.node.app.service.mono.ledger.accounts.staking.StakingUtils#NA} if the {@code stakePeriodStart} doesn't need to change; or,
+     *   <li>{@code -1} if the {@code stakePeriodStart} doesn't need to change; or,
      *   <li>The value to which the {@code stakePeriodStart} should be changed.
-     * </ol>
+     * </ol>.
      *
      * @param originalAccount the original account before the transaction
      * @param modifiedAccount the modified account after the transaction
@@ -195,6 +212,10 @@ public class StakePeriodManager {
         return -1;
     }
 
+    /**
+     * Returns the consensus time of previous transaction, that is used to change the current stake period.
+     * @return the consensus time of previous transaction
+     */
     @VisibleForTesting
     public long getPrevConsensusSecs() {
         return prevConsensusSecs;

@@ -44,17 +44,23 @@ import java.util.List;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
+/**
+ * Validator for {@link CryptoDeleteAllowanceTransactionBody}.
+ */
 @Singleton
 public class DeleteAllowanceValidator extends AllowanceValidator {
-
+    /**
+     * Constructs a {@link DeleteAllowanceValidator} instance.
+     */
     @Inject
     public DeleteAllowanceValidator() {
-        // Dagger
+        // Dagger Injection
     }
 
     /**
-     * Validates all allowances provided in {@link CryptoDeleteAllowanceTransactionBody}
+     * Validates all allowances provided in {@link CryptoDeleteAllowanceTransactionBody}.
      *
+     * @param handleContext handle context
      * @param nftAllowances given nft serials allowances to remove
      * @param payerAccount payer for the transaction
      * @param accountStore account store
@@ -64,9 +70,10 @@ public class DeleteAllowanceValidator extends AllowanceValidator {
             final List<NftRemoveAllowance> nftAllowances,
             final Account payerAccount,
             final ReadableAccountStore accountStore) {
-        final var tokenStore = handleContext.readableStore(ReadableTokenStore.class);
-        final var tokenRelStore = handleContext.readableStore(ReadableTokenRelationStore.class);
-        final var nftStore = handleContext.readableStore(ReadableNftStore.class);
+        final var storeFactory = handleContext.storeFactory();
+        final var tokenStore = storeFactory.readableStore(ReadableTokenStore.class);
+        final var tokenRelStore = storeFactory.readableStore(ReadableTokenRelationStore.class);
+        final var nftStore = storeFactory.readableStore(ReadableNftStore.class);
         final var hederaConfig = handleContext.configuration().getConfigData(HederaConfig.class);
 
         // feature flag for allowances. Will probably be moved to some other place in app in the future.
@@ -86,7 +93,7 @@ public class DeleteAllowanceValidator extends AllowanceValidator {
 
     /**
      * Validates all the {@link NftRemoveAllowance}s in the {@link
-     * com.hederahashgraph.api.proto.java.CryptoDeleteAllowance} transaction
+     * com.hederahashgraph.api.proto.java.CryptoDeleteAllowance} transaction.
      *
      * @param nftAllowances nft remove allowances
      * @param payerAccount payer for the txn
@@ -106,7 +113,8 @@ public class DeleteAllowanceValidator extends AllowanceValidator {
         }
         for (final var allowance : nftAllowances) {
             final var ownerId = allowance.ownerOrElse(AccountID.DEFAULT);
-            final var tokenId = allowance.tokenIdOrElse(TokenID.DEFAULT);
+            // pureChecks() ensures that tokenId is not null
+            final var tokenId = allowance.tokenIdOrThrow();
             final var serialNums = allowance.serialNumbers();
 
             // Paused tokens are OK here, so we only check for existence and deletion

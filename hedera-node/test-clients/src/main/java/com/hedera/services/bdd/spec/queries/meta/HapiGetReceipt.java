@@ -27,9 +27,11 @@ import com.hedera.services.bdd.spec.transactions.schedule.HapiScheduleCreate;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.ResponseType;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Arrays;
 import java.util.EnumSet;
@@ -131,12 +133,7 @@ public class HapiGetReceipt extends HapiQueryOp<HapiGetReceipt> {
     }
 
     @Override
-    protected void submitWith(HapiSpec spec, Transaction payment) {
-        TransactionID txnId = explicitTxnId.orElseGet(
-                () -> useDefaultTxnId ? defaultTxnId : spec.registry().getTxnId(txn));
-        Query query =
-                forgetOp ? Query.newBuilder().build() : txnReceiptQueryFor(txnId, requestDuplicates, getChildReceipts);
-        response = spec.clients().getCryptoSvcStub(targetNodeFor(spec), useTls).getTransactionReceipts(query);
+    protected void processAnswerOnlyResponse(@NonNull final HapiSpec spec) {
         childReceipts = response.getTransactionGetReceipt().getChildTransactionReceiptsList();
         final var duplicateReceipts = response.getTransactionGetReceipt().getDuplicateTransactionReceiptsList();
         if (verboseLoggingOn) {
@@ -158,6 +155,24 @@ public class HapiGetReceipt extends HapiQueryOp<HapiGetReceipt> {
 
             log.info(message3);
         }
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    protected Query queryFor(
+            @NonNull final HapiSpec spec,
+            @NonNull final Transaction payment,
+            @NonNull final ResponseType responseType) {
+        if (forgetOp) {
+            return Query.getDefaultInstance();
+        }
+        return txnReceiptQueryFor(
+                explicitTxnId.orElseGet(
+                        () -> useDefaultTxnId ? defaultTxnId : spec.registry().getTxnId(txn)),
+                requestDuplicates,
+                getChildReceipts);
     }
 
     @Override
@@ -203,11 +218,6 @@ public class HapiGetReceipt extends HapiQueryOp<HapiGetReceipt> {
 
     @Override
     protected long costOnlyNodePayment(HapiSpec spec) {
-        return 0L;
-    }
-
-    @Override
-    protected long lookupCostWith(HapiSpec spec, Transaction payment) {
         return 0L;
     }
 

@@ -16,8 +16,6 @@
 
 package com.swirlds.platform.util;
 
-import static com.swirlds.common.io.utility.FileUtils.getAbsolutePath;
-import static com.swirlds.common.io.utility.FileUtils.rethrowIO;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 import static com.swirlds.platform.system.SystemExitCode.NODE_ADDRESS_MISMATCH;
@@ -36,10 +34,8 @@ import com.swirlds.config.extensions.sources.LegacyFileConfigSource;
 import com.swirlds.logging.legacy.payload.NodeAddressMismatchPayload;
 import com.swirlds.platform.ApplicationDefinition;
 import com.swirlds.platform.JVMPauseDetectorThread;
-import com.swirlds.platform.ThreadDumpGenerator;
 import com.swirlds.platform.config.BasicConfig;
 import com.swirlds.platform.config.PathsConfig;
-import com.swirlds.platform.config.ThreadConfig;
 import com.swirlds.platform.config.internal.ConfigMappings;
 import com.swirlds.platform.config.internal.PlatformConfigUtils;
 import com.swirlds.platform.gui.WindowConfig;
@@ -66,7 +62,6 @@ import java.io.OutputStream;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -215,31 +210,9 @@ public final class BootstrapUtils {
                     appVersion);
         } else {
             softwareUpgrade = false;
-            logger.info(
-                    STARTUP.getMarker(),
-                    "Not upgrading software, current software is version {}.",
-                    loadedSoftwareVersion);
+            logger.info(STARTUP.getMarker(), "Not upgrading software, current software is version {}.", appVersion);
         }
         return softwareUpgrade;
-    }
-
-    /**
-     * Instantiate and start the thread dump generator.
-     *
-     * @param configuration the configuration object
-     */
-    public static void startThreadDumpGenerator(@NonNull final Configuration configuration) {
-        Objects.requireNonNull(configuration);
-        final ThreadConfig threadConfig = configuration.getConfigData(ThreadConfig.class);
-
-        if (threadConfig.threadDumpPeriodMs() > 0) {
-            final Path dir = getAbsolutePath(threadConfig.threadDumpLogDir());
-            if (!Files.exists(dir)) {
-                rethrowIO(() -> Files.createDirectories(dir));
-            }
-            logger.info(STARTUP.getMarker(), "Starting thread dump generator and save to directory {}", dir);
-            ThreadDumpGenerator.generateThreadDumpAtIntervals(dir, threadConfig.threadDumpPeriodMs());
-        }
     }
 
     /**

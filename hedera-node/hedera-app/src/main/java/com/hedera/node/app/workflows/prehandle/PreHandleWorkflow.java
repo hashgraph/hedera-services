@@ -18,15 +18,20 @@ package com.hedera.node.app.workflows.prehandle;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.node.app.service.token.ReadableAccountStore;
-import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
+import com.hedera.node.app.store.ReadableStoreFactory;
 import com.swirlds.platform.system.events.Event;
+import com.swirlds.platform.system.transaction.ConsensusTransaction;
 import com.swirlds.platform.system.transaction.Transaction;
+import com.swirlds.state.spi.info.NodeInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.stream.Stream;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /** A workflow to pre-handle transactions. */
 public interface PreHandleWorkflow {
+    Logger log = LogManager.getLogger(PreHandleWorkflow.class);
 
     /**
      * Starts the pre-handle transaction workflow of the {@link Event}
@@ -79,4 +84,44 @@ public interface PreHandleWorkflow {
             @NonNull ReadableAccountStore accountStore,
             @NonNull Transaction platformTx,
             @Nullable PreHandleResult maybeReusableResult);
+
+    /**
+     * This method gets all the verification data for the current transaction. If pre-handle was previously ran
+     * successfully, we only add the missing keys. If it did not run or an error occurred, we run it again.
+     * If there is a due diligence error, this method will return a CryptoTransfer to charge the node along with
+     * its verification data.
+     *
+     * @param creator the node that created the transaction
+     * @param platformTxn the transaction to be verified
+     * @param storeFactory the store factory
+     * @return the verification data for the transaction
+     */
+    @NonNull
+    default PreHandleResult getCurrentPreHandleResult(
+            @NonNull final NodeInfo creator,
+            @NonNull final ConsensusTransaction platformTxn,
+            final ReadableStoreFactory storeFactory) {
+        final var metadata = platformTxn.getMetadata();
+        final PreHandleResult previousResult;
+        if (metadata instanceof PreHandleResult result) {
+            previousResult = result;
+        } else {
+            // This should be impossible since the Platform contract guarantees that SwirldState.preHandle()
+            // is always called before SwirldState.handleTransaction(); and our preHandle() implementation
+            // always sets the metadata to a PreHandleResult
+            log.error(
+                    "Received transaction without PreHandleResult metadata from node {} (was {})",
+                    creator.nodeId(),
+                    metadata);
+            previousResult = null;
+        }
+        // We do not know how long transactions are kept in memory. Clearing metadata to avoid keeping it for too long.
+        platformTxn.setMetadata(null);
+        return preHandleTransaction(
+                creator.accountId(),
+                storeFactory,
+                storeFactory.getStore(ReadableAccountStore.class),
+                platformTxn,
+                previousResult);
+    }
 }

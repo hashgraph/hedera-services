@@ -24,11 +24,14 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PAYER_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.LIVE_HASH_NOT_FOUND;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PAYER_ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PLATFORM_TRANSACTION_NOT_CREATED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_EXPIRED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNKNOWN;
 
 import com.hedera.services.bdd.spec.HapiSpecOperation;
+import com.hedera.services.bdd.spec.SpecOperation;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.util.Collections;
 import java.util.List;
@@ -38,24 +41,31 @@ import java.util.stream.Stream;
 
 public interface OpProvider {
     ResponseCodeEnum[] STANDARD_PERMISSIBLE_QUERY_PRECHECKS = {
-        OK, BUSY, INSUFFICIENT_TX_FEE, PLATFORM_TRANSACTION_NOT_CREATED
+        OK, BUSY, INSUFFICIENT_TX_FEE, PLATFORM_TRANSACTION_NOT_CREATED, TRANSACTION_EXPIRED
     };
 
     ResponseCodeEnum[] STANDARD_PERMISSIBLE_PRECHECKS = {
         OK,
         BUSY,
-        INVALID_SIGNATURE,
         DUPLICATE_TRANSACTION,
         INVALID_PAYER_SIGNATURE,
+        INVALID_SIGNATURE,
         INSUFFICIENT_PAYER_BALANCE,
+        PAYER_ACCOUNT_DELETED,
         PLATFORM_TRANSACTION_NOT_CREATED
     };
 
     ResponseCodeEnum[] STANDARD_PERMISSIBLE_OUTCOMES = {
-        SUCCESS, LIVE_HASH_NOT_FOUND, INVALID_SIGNATURE, INSUFFICIENT_PAYER_BALANCE, UNKNOWN
+        SUCCESS,
+        LIVE_HASH_NOT_FOUND,
+        INSUFFICIENT_PAYER_BALANCE,
+        UNKNOWN,
+        INSUFFICIENT_TX_FEE,
+        INVALID_SIGNATURE,
+        PAYER_ACCOUNT_DELETED
     };
 
-    default List<HapiSpecOperation> suggestedInitializers() {
+    default List<SpecOperation> suggestedInitializers() {
         return Collections.emptyList();
     }
 

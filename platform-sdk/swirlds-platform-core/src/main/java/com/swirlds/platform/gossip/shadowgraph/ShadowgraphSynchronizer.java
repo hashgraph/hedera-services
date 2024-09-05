@@ -34,13 +34,12 @@ import com.swirlds.common.threading.pool.ParallelExecutionException;
 import com.swirlds.common.threading.pool.ParallelExecutor;
 import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.event.AncientMode;
-import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.eventhandling.EventConfig;
 import com.swirlds.platform.gossip.FallenBehindManager;
 import com.swirlds.platform.gossip.IntakeEventCounter;
 import com.swirlds.platform.gossip.SyncException;
 import com.swirlds.platform.gossip.sync.config.SyncConfig;
-import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.metrics.SyncMetrics;
 import com.swirlds.platform.network.Connection;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -91,7 +90,7 @@ public class ShadowgraphSynchronizer {
     /**
      * consumes events received by the peer
      */
-    private final Consumer<GossipEvent> eventHandler;
+    private final Consumer<PlatformEvent> eventHandler;
 
     /**
      * manages sync related decisions
@@ -151,7 +150,7 @@ public class ShadowgraphSynchronizer {
             @NonNull final Shadowgraph shadowGraph,
             final int numberOfNodes,
             @NonNull final SyncMetrics syncMetrics,
-            @NonNull final Consumer<GossipEvent> receivedEventHandler,
+            @NonNull final Consumer<PlatformEvent> receivedEventHandler,
             @NonNull final FallenBehindManager fallenBehindManager,
             @NonNull final IntakeEventCounter intakeEventCounter,
             @NonNull final ParallelExecutor executor) {
@@ -210,7 +209,7 @@ public class ShadowgraphSynchronizer {
         // accumulates time points for each step in the execution of a single gossip session, used for stats
         // reporting and performance analysis
         final SyncTiming timing = new SyncTiming();
-        final List<EventImpl> sendList;
+        final List<PlatformEvent> sendList;
         try (final ReservedEventWindow reservation = shadowGraph.reserve()) {
             connection.initForSync();
 
@@ -317,7 +316,7 @@ public class ShadowgraphSynchronizer {
      * @return a list of events to send to the peer
      */
     @NonNull
-    private List<EventImpl> createSendList(
+    private List<PlatformEvent> createSendList(
             @NonNull final NodeId selfId,
             @NonNull final Set<ShadowEvent> knownSet,
             @NonNull final EventWindow myEventWindow,
@@ -352,12 +351,12 @@ public class ShadowgraphSynchronizer {
         // add the tips themselves
         sendSet.addAll(unknownTips);
 
-        final List<EventImpl> eventsTheyMayNeed =
+        final List<PlatformEvent> eventsTheyMayNeed =
                 sendSet.stream().map(ShadowEvent::getEvent).collect(Collectors.toCollection(ArrayList::new));
 
         SyncUtils.sort(eventsTheyMayNeed);
 
-        List<EventImpl> sendList;
+        List<PlatformEvent> sendList;
         if (filterLikelyDuplicates) {
             final long startFilterTime = time.nanoTime();
             sendList = filterLikelyDuplicates(selfId, nonAncestorFilterThreshold, time.now(), eventsTheyMayNeed);
@@ -390,7 +389,7 @@ public class ShadowgraphSynchronizer {
     private boolean sendAndReceiveEvents(
             @NonNull final Connection connection,
             @NonNull final SyncTiming timing,
-            @NonNull final List<EventImpl> sendList,
+            @NonNull final List<PlatformEvent> sendList,
             @NonNull final Duration syncKeepAlivePeriod,
             @NonNull final Duration maxSyncTime)
             throws ParallelExecutionException {

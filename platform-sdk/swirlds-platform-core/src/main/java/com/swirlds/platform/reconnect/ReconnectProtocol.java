@@ -34,7 +34,6 @@ import com.swirlds.platform.network.protocol.Protocol;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedStateValidator;
 import com.swirlds.platform.system.status.PlatformStatus;
-import com.swirlds.platform.system.status.PlatformStatusGetter;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.time.Duration;
@@ -43,7 +42,9 @@ import java.util.function.Supplier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-/** Implements the reconnect protocol over a bidirectional network */
+/**
+ * Implements the reconnect protocol over a bidirectional network
+ */
 public class ReconnectProtocol implements Protocol {
 
     private static final Logger logger = LogManager.getLogger(ReconnectProtocol.class);
@@ -62,17 +63,25 @@ public class ReconnectProtocol implements Protocol {
     /**
      * Provides the platform status.
      */
-    private final PlatformStatusGetter platformStatusGetter;
+    private final Supplier<PlatformStatus> platformStatusSupplier;
 
     private final Configuration configuration;
     private ReservedSignedState teacherState;
-    /** A rate limited logger for when rejecting teacher role due to state being null. */
+    /**
+     * A rate limited logger for when rejecting teacher role due to state being null.
+     */
     private final RateLimitedLogger stateNullLogger;
-    /** A rate limited logger for when rejecting teacher role due to state being incomplete. */
+    /**
+     * A rate limited logger for when rejecting teacher role due to state being incomplete.
+     */
     private final RateLimitedLogger stateIncompleteLogger;
-    /** A rate limited logger for when rejecting teacher role due to falling behind. */
+    /**
+     * A rate limited logger for when rejecting teacher role due to falling behind.
+     */
     private final RateLimitedLogger fallenBehindLogger;
-    /** A rate limited logger for when rejecting teacher role due to not having a status of ACTIVE */
+    /**
+     * A rate limited logger for when rejecting teacher role due to not having a status of ACTIVE
+     */
     private final RateLimitedLogger notActiveLogger;
 
     private final Time time;
@@ -87,7 +96,7 @@ public class ReconnectProtocol implements Protocol {
      * @param reconnectMetrics        tracks reconnect metrics
      * @param reconnectController     controls reconnecting as a learner
      * @param fallenBehindManager     maintains this node's behind status
-     * @param platformStatusGetter    provides the platform status
+     * @param platformStatusSupplier  provides the platform status
      * @param configuration           platform configuration
      * @param time                    the time object to use
      */
@@ -102,7 +111,7 @@ public class ReconnectProtocol implements Protocol {
             @NonNull final ReconnectController reconnectController,
             @NonNull final SignedStateValidator validator,
             @NonNull final FallenBehindManager fallenBehindManager,
-            @NonNull final PlatformStatusGetter platformStatusGetter,
+            @NonNull final Supplier<PlatformStatus> platformStatusSupplier,
             @NonNull final Configuration configuration,
             @NonNull final Time time) {
 
@@ -116,7 +125,7 @@ public class ReconnectProtocol implements Protocol {
         this.reconnectController = Objects.requireNonNull(reconnectController);
         this.validator = Objects.requireNonNull(validator);
         this.fallenBehindManager = Objects.requireNonNull(fallenBehindManager);
-        this.platformStatusGetter = Objects.requireNonNull(platformStatusGetter);
+        this.platformStatusSupplier = Objects.requireNonNull(platformStatusSupplier);
         this.configuration = Objects.requireNonNull(configuration);
         Objects.requireNonNull(time);
 
@@ -130,7 +139,9 @@ public class ReconnectProtocol implements Protocol {
         this.time = Objects.requireNonNull(time);
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public boolean shouldInitiate() {
         // if this neighbor has not told me I have fallen behind, I will not reconnect with him
@@ -146,14 +157,18 @@ public class ReconnectProtocol implements Protocol {
         return acquiredPermit;
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void initiateFailed() {
         reconnectController.cancelLearnerPermit();
         initiatedBy = InitiatedBy.NO_ONE;
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public boolean shouldAccept() {
         // we should not be the teacher if we have fallen behind
@@ -167,7 +182,7 @@ public class ReconnectProtocol implements Protocol {
         }
 
         // only teach if the platform is active
-        if (platformStatusGetter.getCurrentStatus() != PlatformStatus.ACTIVE) {
+        if (platformStatusSupplier.get() != PlatformStatus.ACTIVE) {
             notActiveLogger.info(
                     RECONNECT.getMarker(),
                     "Rejecting reconnect request from node {} because this node isn't ACTIVE",
@@ -232,7 +247,9 @@ public class ReconnectProtocol implements Protocol {
         reconnectMetrics.recordReconnectRejection(peerId);
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void acceptFailed() {
         teacherState.close();
@@ -242,7 +259,9 @@ public class ReconnectProtocol implements Protocol {
         reconnectController.cancelLearnerPermit();
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public boolean acceptOnSimultaneousInitiate() {
         // if both nodes fall behind, it makes no sense to reconnect with each other
@@ -250,7 +269,9 @@ public class ReconnectProtocol implements Protocol {
         return false;
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void runProtocol(final Connection connection)
             throws NetworkProtocolException, IOException, InterruptedException {

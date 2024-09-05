@@ -24,8 +24,6 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  * reconnect or a restart).
  *
  * @param legacyRunningEventHash the legacy running event hash of the loaded state, used by the consensus event stream
- * @param runningEventHash       the running event hash of the loaded state
  * @param isReconnect            whether or not this is a reconnect state
  */
-public record RunningEventHashOverride(
-        @NonNull Hash legacyRunningEventHash, @NonNull Hash runningEventHash, boolean isReconnect) {}
+public record RunningEventHashOverride(@NonNull Hash legacyRunningEventHash, boolean isReconnect) {}

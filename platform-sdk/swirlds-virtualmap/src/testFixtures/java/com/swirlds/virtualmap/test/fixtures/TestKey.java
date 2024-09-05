@@ -18,22 +18,17 @@ package com.swirlds.virtualmap.test.fixtures;
 
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
-import com.swirlds.virtualmap.VirtualLongKey;
+import com.swirlds.virtualmap.VirtualKey;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
-public final class TestKey implements VirtualLongKey {
-    public static final int BYTES = Long.BYTES;
+public final class TestKey implements VirtualKey {
+
     private long k;
 
     private static final long CLASS_ID = 0x5491740ab996d4b1L;
 
     public TestKey() {}
-
-    @Override
-    public long getKeyAsLong() {
-        return k;
-    }
 
     public TestKey(long path) {
         this.k = path;
@@ -50,6 +45,10 @@ public final class TestKey implements VirtualLongKey {
     @Override
     public int getVersion() {
         return 1;
+    }
+
+    long getKey() {
+        return k;
     }
 
     void serialize(final ByteBuffer buffer) {

@@ -17,6 +17,7 @@
 package com.hedera.services.bdd.suites.schedule;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getScheduleInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createTopic;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
@@ -25,13 +26,17 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.submitMessageTo;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sendModified;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.submitModified;
+import static com.hedera.services.bdd.spec.utilops.mod.ModificationUtils.withSuccessivelyVariedBodyIds;
+import static com.hedera.services.bdd.spec.utilops.mod.ModificationUtils.withSuccessivelyVariedQueryIds;
+import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PAYER;
+import static com.hedera.services.bdd.suites.HapiSuite.FUNDING;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
 import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.ADMIN;
 import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.RECEIVER;
-import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.SCHEDULING_WHITELIST;
 import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.SENDER;
 import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.VALID_SCHEDULED_TXN;
-import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.withAndWithoutLongTermEnabled;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_ALREADY_DELETED;
@@ -39,41 +44,14 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_ALREA
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_IS_IMMUTABLE;
 
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.spec.HapiSpec;
-import com.hedera.services.bdd.suites.HapiSuite;
-import java.util.List;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import java.util.stream.Stream;
+import org.junit.jupiter.api.DynamicTest;
 
-@HapiTestSuite
-public class ScheduleDeleteSpecs extends HapiSuite {
-    private static final Logger log = LogManager.getLogger(ScheduleDeleteSpecs.class);
-
-    public static void main(String... args) {
-        new ScheduleDeleteSpecs().runSuiteAsync();
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return log;
-    }
-
-    @Override
-    public List<HapiSpec> getSpecsInSuite() {
-        return withAndWithoutLongTermEnabled(() -> List.of(
-                deleteWithNoAdminKeyFails(),
-                unauthorizedDeletionFails(),
-                deletingAlreadyDeletedIsObvious(),
-                deletingNonExistingFails(),
-                deletingExecutedIsPointless()));
-    }
-
+public class ScheduleDeleteSpecs {
     @HapiTest
-    final HapiSpec deleteWithNoAdminKeyFails() {
+    final Stream<DynamicTest> deleteWithNoAdminKeyFails() {
         return defaultHapiSpec("DeleteWithNoAdminKeyFails")
                 .given(
-                        overriding(SCHEDULING_WHITELIST, "CryptoTransfer,CryptoCreate"),
                         cryptoCreate(SENDER),
                         cryptoCreate(RECEIVER),
                         scheduleCreate(VALID_SCHEDULED_TXN, cryptoTransfer(tinyBarsFromTo(SENDER, RECEIVER, 1))))
@@ -82,10 +60,9 @@ public class ScheduleDeleteSpecs extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec unauthorizedDeletionFails() {
+    final Stream<DynamicTest> unauthorizedDeletionFails() {
         return defaultHapiSpec("UnauthorizedDeletionFails")
                 .given(
-                        overriding(SCHEDULING_WHITELIST, "CryptoTransfer,CryptoCreate"),
                         newKeyNamed(ADMIN),
                         newKeyNamed("non-admin-key"),
                         cryptoCreate(SENDER),
@@ -99,10 +76,9 @@ public class ScheduleDeleteSpecs extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec deletingAlreadyDeletedIsObvious() {
+    final Stream<DynamicTest> deletingAlreadyDeletedIsObvious() {
         return defaultHapiSpec("DeletingAlreadyDeletedIsObvious")
                 .given(
-                        overriding(SCHEDULING_WHITELIST, "CryptoTransfer,CryptoCreate"),
                         cryptoCreate(SENDER),
                         cryptoCreate(RECEIVER),
                         newKeyNamed(ADMIN),
@@ -117,7 +93,32 @@ public class ScheduleDeleteSpecs extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec deletingNonExistingFails() {
+    final Stream<DynamicTest> idVariantsTreatedAsExpected() {
+        return defaultHapiSpec("idVariantsTreatedAsExpected")
+                .given(
+                        newKeyNamed(ADMIN),
+                        cryptoCreate(SENDER),
+                        scheduleCreate(VALID_SCHEDULED_TXN, cryptoTransfer(tinyBarsFromTo(SENDER, FUNDING, 1)))
+                                .adminKey(ADMIN))
+                .when()
+                .then(submitModified(withSuccessivelyVariedBodyIds(), () -> scheduleDelete(VALID_SCHEDULED_TXN)
+                        .signedBy(DEFAULT_PAYER, ADMIN)));
+    }
+
+    @HapiTest
+    final Stream<DynamicTest> getScheduleInfoIdVariantsTreatedAsExpected() {
+        return defaultHapiSpec("getScheduleInfoIdVariantsTreatedAsExpected")
+                .given(
+                        newKeyNamed(ADMIN),
+                        cryptoCreate(SENDER),
+                        scheduleCreate(VALID_SCHEDULED_TXN, cryptoTransfer(tinyBarsFromTo(SENDER, FUNDING, 1)))
+                                .adminKey(ADMIN))
+                .when()
+                .then(sendModified(withSuccessivelyVariedQueryIds(), () -> getScheduleInfo(VALID_SCHEDULED_TXN)));
+    }
+
+    @HapiTest
+    final Stream<DynamicTest> deletingNonExistingFails() {
         return defaultHapiSpec("DeletingNonExistingFails")
                 .given()
                 .when()
@@ -127,10 +128,9 @@ public class ScheduleDeleteSpecs extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec deletingExecutedIsPointless() {
+    final Stream<DynamicTest> deletingExecutedIsPointless() {
         return defaultHapiSpec("DeletingExecutedIsPointless")
                 .given(
-                        overriding(SCHEDULING_WHITELIST, "CryptoTransfer,CryptoCreate,ConsensusSubmitMessage"),
                         createTopic("ofGreatInterest"),
                         newKeyNamed(ADMIN),
                         scheduleCreate(VALID_SCHEDULED_TXN, submitMessageTo("ofGreatInterest"))

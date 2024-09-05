@@ -22,9 +22,10 @@ import com.hedera.hapi.node.state.primitives.ProtoLong;
 import com.hedera.hapi.node.state.schedule.Schedule;
 import com.hedera.hapi.node.state.schedule.ScheduleList;
 import com.hedera.node.app.service.schedule.ReadableScheduleStore;
-import com.hedera.node.app.spi.state.ReadableKVState;
-import com.hedera.node.app.spi.state.ReadableStates;
+import com.hedera.node.app.service.schedule.impl.schemas.V0490ScheduleSchema;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.state.spi.ReadableKVState;
+import com.swirlds.state.spi.ReadableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
@@ -50,9 +51,9 @@ public class ReadableScheduleStoreImpl implements ReadableScheduleStore {
      */
     public ReadableScheduleStoreImpl(@NonNull final ReadableStates states) {
         Objects.requireNonNull(states, NULL_STATE_IN_CONSTRUCTOR_MESSAGE);
-        schedulesById = states.get(ScheduleServiceImpl.SCHEDULES_BY_ID_KEY);
-        schedulesByExpirationSecond = states.get(ScheduleServiceImpl.SCHEDULES_BY_EXPIRY_SEC_KEY);
-        schedulesByStringHash = states.get(ScheduleServiceImpl.SCHEDULES_BY_EQUALITY_KEY);
+        schedulesById = states.get(V0490ScheduleSchema.SCHEDULES_BY_ID_KEY);
+        schedulesByExpirationSecond = states.get(V0490ScheduleSchema.SCHEDULES_BY_EXPIRY_SEC_KEY);
+        schedulesByStringHash = states.get(V0490ScheduleSchema.SCHEDULES_BY_EQUALITY_KEY);
     }
 
     /**
@@ -61,7 +62,7 @@ public class ReadableScheduleStoreImpl implements ReadableScheduleStore {
      *
      * @param id given id for the schedule
      *
-     * @return The Schedule corresponding to the id provided, or null if there is no such schedule.
+     * @return The Schedule corresponding to the id provided, or null if there is no such schedule
      */
     @Override
     @Nullable

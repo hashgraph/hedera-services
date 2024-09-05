@@ -16,6 +16,8 @@
 
 package com.swirlds.platform.components.consensus;
 
+import static com.swirlds.platform.system.status.PlatformStatus.REPLAYING_EVENTS;
+
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.Consensus;
@@ -24,7 +26,7 @@ import com.swirlds.platform.consensus.ConsensusConfig;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.event.AncientMode;
-import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.event.linking.ConsensusLinker;
 import com.swirlds.platform.event.linking.InOrderLinker;
 import com.swirlds.platform.eventhandling.EventConfig;
@@ -34,7 +36,7 @@ import com.swirlds.platform.metrics.AddedEventMetrics;
 import com.swirlds.platform.metrics.ConsensusMetrics;
 import com.swirlds.platform.metrics.ConsensusMetricsImpl;
 import com.swirlds.platform.system.address.AddressBook;
-import com.swirlds.platform.wiring.NoInput;
+import com.swirlds.platform.system.status.PlatformStatus;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 import java.util.Objects;
@@ -91,8 +93,16 @@ public class DefaultConsensusEngine implements ConsensusEngine {
      * {@inheritDoc}
      */
     @Override
+    public void updatePlatformStatus(@NonNull final PlatformStatus platformStatus) {
+        consensus.setPcesMode(platformStatus == REPLAYING_EVENTS);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     @NonNull
-    public List<ConsensusRound> addEvent(@NonNull final GossipEvent event) {
+    public List<ConsensusRound> addEvent(@NonNull final PlatformEvent event) {
         Objects.requireNonNull(event);
 
         final EventImpl linkedEvent = linker.linkEvent(event);
@@ -122,7 +132,7 @@ public class DefaultConsensusEngine implements ConsensusEngine {
         final EventWindow eventWindow =
                 new EventWindow(snapshot.round(), ancientThreshold, ancientThreshold, ancientMode);
 
-        linker.clear(NoInput.getInstance());
+        linker.clear();
         linker.setEventWindow(eventWindow);
         consensus.loadSnapshot(snapshot);
     }

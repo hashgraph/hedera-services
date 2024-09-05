@@ -17,7 +17,6 @@
 package com.swirlds.platform.test;
 
 import static com.swirlds.common.test.fixtures.merkle.util.MerkleTestUtils.areTreesEqual;
-import static com.swirlds.platform.test.PlatformStateUtils.randomPlatformState;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -27,8 +26,9 @@ import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.common.test.fixtures.io.InputOutputStream;
 import com.swirlds.common.test.fixtures.junit.tags.TestComponentTags;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
+import com.swirlds.platform.state.MerkleRoot;
 import com.swirlds.platform.state.State;
-import com.swirlds.platform.test.fixtures.state.DummySwirldState;
+import com.swirlds.platform.test.fixtures.state.BlockingSwirldState;
 import java.io.IOException;
 import java.nio.file.Path;
 import org.junit.jupiter.api.BeforeAll;
@@ -54,8 +54,7 @@ class StateTests {
         ConstructableRegistry.getInstance().registerConstructables("com.swirlds");
 
         state = new State();
-        state.setPlatformState(randomPlatformState());
-        state.setSwirldState(new DummySwirldState());
+        state.setSwirldState(new BlockingSwirldState());
 
         state.invalidateHash();
         MerkleCryptoFactory.getInstance().digestTreeSync(state);
@@ -72,7 +71,7 @@ class StateTests {
 
         io.startReading();
 
-        final State decodedState = io.getInput().readMerkleTree(testDirectory, Integer.MAX_VALUE);
+        final MerkleRoot decodedState = io.getInput().readMerkleTree(testDirectory, Integer.MAX_VALUE);
         MerkleCryptoFactory.getInstance().digestTreeSync(decodedState);
 
         assertEquals(state.getHash(), decodedState.getHash(), "expected trees to be equal");
@@ -83,7 +82,7 @@ class StateTests {
     @Tag(TestComponentTags.PLATFORM)
     @DisplayName("State Copy Test")
     void stateCopyTest() {
-        final State copiedState = state.copy();
+        final MerkleRoot copiedState = state.copy();
         MerkleCryptoFactory.getInstance().digestTreeSync(copiedState);
 
         assertEquals(state.getHash(), copiedState.getHash(), "expected trees to be equal");

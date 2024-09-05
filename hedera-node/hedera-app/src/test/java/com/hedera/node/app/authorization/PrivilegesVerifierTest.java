@@ -16,10 +16,9 @@
 
 package com.hedera.node.app.authorization;
 
-import static com.hedera.node.app.service.mono.txns.auth.SystemOpAuthorization.AUTHORIZED;
-import static com.hedera.node.app.service.mono.txns.auth.SystemOpAuthorization.IMPERMISSIBLE;
-import static com.hedera.node.app.service.mono.txns.auth.SystemOpAuthorization.UNAUTHORIZED;
-import static com.hedera.node.app.service.mono.txns.auth.SystemOpAuthorization.UNNECESSARY;
+import static com.hedera.node.app.hapi.utils.ByteStringUtils.unwrapUnsafelyIfPossible;
+import static com.hedera.node.app.hapi.utils.CommonPbjConverters.toPbj;
+import static com.hedera.node.app.hapi.utils.CommonUtils.functionOf;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -28,9 +27,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.hapi.node.base.HederaFunctionality;
-import com.hedera.node.app.service.mono.pbj.PbjConverter;
-import com.hedera.node.app.service.mono.txns.auth.SystemOpAuthorization;
-import com.hedera.node.app.service.mono.utils.accessors.SignedTxnAccessor;
 import com.hedera.node.app.spi.authorization.SystemPrivilege;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.VersionedConfigImpl;
@@ -48,6 +44,9 @@ import com.hederahashgraph.api.proto.java.FileDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.FileUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.FreezeTransactionBody;
+import com.hederahashgraph.api.proto.java.NodeCreateTransactionBody;
+import com.hederahashgraph.api.proto.java.NodeDeleteTransactionBody;
+import com.hederahashgraph.api.proto.java.SignedTransaction;
 import com.hederahashgraph.api.proto.java.SystemDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.SystemUndeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.Transaction;
@@ -64,6 +63,15 @@ class PrivilegesVerifierTest {
 
     private Wrapper subject;
 
+    private record TestCase(
+            com.hedera.hapi.node.base.AccountID payerId,
+            com.hedera.hapi.node.base.HederaFunctionality function,
+            com.hedera.hapi.node.transaction.TransactionBody txn) {
+        public TestCase withPayerId(com.hedera.hapi.node.base.AccountID newPayerId) {
+            return new TestCase(newPayerId, function, txn);
+        }
+    }
+
     private static class Wrapper {
         private final PrivilegesVerifier delegate;
 
@@ -71,11 +79,8 @@ class PrivilegesVerifierTest {
             delegate = new PrivilegesVerifier(configProvider);
         }
 
-        SystemOpAuthorization checkAccessor(final SignedTxnAccessor accessor) {
-            com.hedera.hapi.node.base.AccountID accountID = PbjConverter.toPbj(accessor.getPayer());
-            com.hedera.hapi.node.base.HederaFunctionality functionality = PbjConverter.toPbj(accessor.getFunction());
-            com.hedera.hapi.node.transaction.TransactionBody txBody = PbjConverter.toPbj(accessor.getTxn());
-            final var pbjResult = delegate.hasPrivileges(accountID, functionality, txBody);
+        SystemOpAuthorization authForTestCase(final TestCase testCase) {
+            final var pbjResult = delegate.hasPrivileges(testCase.payerId, testCase.function, testCase.txn);
             return SystemOpAuthorization.valueOf(pbjResult.name());
         }
 
@@ -230,7 +235,7 @@ class PrivilegesVerifierTest {
                 .setUncheckedSubmit(UncheckedSubmitBody.newBuilder()
                         .setTransactionBytes(ByteString.copyFrom("DOESN'T MATTER".getBytes())));
         // expect:
-        assertEquals(UNAUTHORIZED, subject.checkAccessor(accessor(txn)));
+        assertEquals(SystemOpAuthorization.UNAUTHORIZED, subject.authForTestCase(accessor(txn)));
     }
 
     @Test
@@ -240,7 +245,7 @@ class PrivilegesVerifierTest {
                 .setUncheckedSubmit(UncheckedSubmitBody.newBuilder()
                         .setTransactionBytes(ByteString.copyFrom("DOESN'T MATTER".getBytes())));
         // expect:
-        assertEquals(AUTHORIZED, subject.checkAccessor(accessor(txn)));
+        assertEquals(SystemOpAuthorization.AUTHORIZED, subject.authForTestCase(accessor(txn)));
     }
 
     @Test
@@ -250,7 +255,7 @@ class PrivilegesVerifierTest {
                 .setUncheckedSubmit(UncheckedSubmitBody.newBuilder()
                         .setTransactionBytes(ByteString.copyFrom("DOESN'T MATTER".getBytes())));
         // expect:
-        assertEquals(AUTHORIZED, subject.checkAccessor(accessor(txn)));
+        assertEquals(SystemOpAuthorization.AUTHORIZED, subject.authForTestCase(accessor(txn)));
     }
 
     @Test
@@ -259,7 +264,7 @@ class PrivilegesVerifierTest {
         var txn = treasuryTxn()
                 .setCryptoUpdateAccount(CryptoUpdateTransactionBody.newBuilder().setAccountIDToUpdate(account(75)));
         // expect:
-        assertEquals(AUTHORIZED, subject.checkAccessor(accessor(txn)));
+        assertEquals(SystemOpAuthorization.AUTHORIZED, subject.authForTestCase(accessor(txn)));
     }
 
     @Test
@@ -268,7 +273,7 @@ class PrivilegesVerifierTest {
         var txn = civilianTxn()
                 .setCryptoUpdateAccount(CryptoUpdateTransactionBody.newBuilder().setAccountIDToUpdate(account(75)));
         // expect:
-        assertEquals(UNNECESSARY, subject.checkAccessor(accessor(txn)));
+        assertEquals(SystemOpAuthorization.UNNECESSARY, subject.authForTestCase(accessor(txn)));
     }
 
     @Test
@@ -277,7 +282,7 @@ class PrivilegesVerifierTest {
         var txn = civilianTxn()
                 .setCryptoUpdateAccount(CryptoUpdateTransactionBody.newBuilder().setAccountIDToUpdate(account(1001)));
         // expect:
-        assertEquals(UNNECESSARY, subject.checkAccessor(accessor(txn)));
+        assertEquals(SystemOpAuthorization.UNNECESSARY, subject.authForTestCase(accessor(txn)));
     }
 
     @Test
@@ -288,8 +293,8 @@ class PrivilegesVerifierTest {
         var otherUpdateTxn = treasuryTxn()
                 .setCryptoUpdateAccount(CryptoUpdateTransactionBody.newBuilder().setAccountIDToUpdate(account(50)));
         // expect:
-        assertEquals(AUTHORIZED, subject.checkAccessor(accessor(selfUpdateTxn)));
-        assertEquals(AUTHORIZED, subject.checkAccessor(accessor(otherUpdateTxn)));
+        assertEquals(SystemOpAuthorization.AUTHORIZED, subject.authForTestCase(accessor(selfUpdateTxn)));
+        assertEquals(SystemOpAuthorization.AUTHORIZED, subject.authForTestCase(accessor(otherUpdateTxn)));
     }
 
     @Test
@@ -300,8 +305,8 @@ class PrivilegesVerifierTest {
         var sysAdminTxn = sysAdminTxn()
                 .setCryptoUpdateAccount(CryptoUpdateTransactionBody.newBuilder().setAccountIDToUpdate(account(2)));
         // expect:
-        assertEquals(UNAUTHORIZED, subject.checkAccessor(accessor(civilianTxn)));
-        assertEquals(UNAUTHORIZED, subject.checkAccessor(accessor(sysAdminTxn)));
+        assertEquals(SystemOpAuthorization.UNAUTHORIZED, subject.authForTestCase(accessor(civilianTxn)));
+        assertEquals(SystemOpAuthorization.UNAUTHORIZED, subject.authForTestCase(accessor(sysAdminTxn)));
     }
 
     @Test
@@ -310,7 +315,7 @@ class PrivilegesVerifierTest {
         var txn = exchangeRatesAdminTxn()
                 .setFileUpdate(FileUpdateTransactionBody.newBuilder().setFileID(file(111)));
         // expect:
-        assertEquals(UNAUTHORIZED, subject.checkAccessor(accessor(txn)));
+        assertEquals(SystemOpAuthorization.UNAUTHORIZED, subject.authForTestCase(accessor(txn)));
     }
 
     @Test
@@ -319,7 +324,7 @@ class PrivilegesVerifierTest {
         var txn = exchangeRatesAdminTxn()
                 .setFileAppend(FileAppendTransactionBody.newBuilder().setFileID(file(111)));
         // expect:
-        assertEquals(UNAUTHORIZED, subject.checkAccessor(accessor(txn)));
+        assertEquals(SystemOpAuthorization.UNAUTHORIZED, subject.authForTestCase(accessor(txn)));
     }
 
     @Test
@@ -328,7 +333,7 @@ class PrivilegesVerifierTest {
         var txn = exchangeRatesAdminTxn()
                 .setFileAppend(FileAppendTransactionBody.newBuilder().setFileID(file(112)));
         // expect:
-        assertEquals(AUTHORIZED, subject.checkAccessor(accessor(txn)));
+        assertEquals(SystemOpAuthorization.AUTHORIZED, subject.authForTestCase(accessor(txn)));
     }
 
     @Test
@@ -336,7 +341,7 @@ class PrivilegesVerifierTest {
         // given:
         var txn = treasuryTxn().setFreeze(FreezeTransactionBody.getDefaultInstance());
         // expect:
-        assertEquals(AUTHORIZED, subject.checkAccessor(accessor(txn)));
+        assertEquals(SystemOpAuthorization.AUTHORIZED, subject.authForTestCase(accessor(txn)));
     }
 
     @Test
@@ -344,7 +349,7 @@ class PrivilegesVerifierTest {
         // given:
         var txn = sysAdminTxn().setFreeze(FreezeTransactionBody.getDefaultInstance());
         // expect:
-        assertEquals(AUTHORIZED, subject.checkAccessor(accessor(txn)));
+        assertEquals(SystemOpAuthorization.AUTHORIZED, subject.authForTestCase(accessor(txn)));
     }
 
     @Test
@@ -352,7 +357,23 @@ class PrivilegesVerifierTest {
         // given:
         var txn = freezeAdminTxn().setFreeze(FreezeTransactionBody.getDefaultInstance());
         // expect:
-        assertEquals(AUTHORIZED, subject.checkAccessor(accessor(txn)));
+        assertEquals(SystemOpAuthorization.AUTHORIZED, subject.authForTestCase(accessor(txn)));
+    }
+
+    @Test
+    void nodeAdminCanCreate() throws InvalidProtocolBufferException {
+        // given:
+        var txn = nodeAdminTxn().setNodeCreate(NodeCreateTransactionBody.getDefaultInstance());
+        // expect:
+        assertEquals(SystemOpAuthorization.AUTHORIZED, subject.authForTestCase(accessor(txn)));
+    }
+
+    @Test
+    void nodeAdminCanDelete() throws InvalidProtocolBufferException {
+        // given:
+        var txn = nodeAdminTxn().setNodeDelete(NodeDeleteTransactionBody.getDefaultInstance());
+        // expect:
+        assertEquals(SystemOpAuthorization.AUTHORIZED, subject.authForTestCase(accessor(txn)));
     }
 
     @Test
@@ -360,7 +381,7 @@ class PrivilegesVerifierTest {
         // given:
         var txn = exchangeRatesAdminTxn().setFreeze(FreezeTransactionBody.getDefaultInstance());
         // expect:
-        assertEquals(UNAUTHORIZED, subject.checkAccessor(accessor(txn)));
+        assertEquals(SystemOpAuthorization.UNAUTHORIZED, subject.authForTestCase(accessor(txn)));
     }
 
     @Test
@@ -369,7 +390,7 @@ class PrivilegesVerifierTest {
         var txn = treasuryTxn()
                 .setSystemDelete(SystemDeleteTransactionBody.newBuilder().setContractID(contract(123)));
         // expect:
-        assertEquals(IMPERMISSIBLE, subject.checkAccessor(accessor(txn)));
+        assertEquals(SystemOpAuthorization.IMPERMISSIBLE, subject.authForTestCase(accessor(txn)));
     }
 
     @Test
@@ -378,7 +399,7 @@ class PrivilegesVerifierTest {
         var txn = treasuryTxn()
                 .setSystemUndelete(SystemUndeleteTransactionBody.newBuilder().setContractID(contract(123)));
         // expect:
-        assertEquals(IMPERMISSIBLE, subject.checkAccessor(accessor(txn)));
+        assertEquals(SystemOpAuthorization.IMPERMISSIBLE, subject.authForTestCase(accessor(txn)));
     }
 
     @Test
@@ -387,7 +408,7 @@ class PrivilegesVerifierTest {
         var txn = exchangeRatesAdminTxn()
                 .setSystemUndelete(SystemUndeleteTransactionBody.newBuilder().setContractID(contract(1234)));
         // expect:
-        assertEquals(UNAUTHORIZED, subject.checkAccessor(accessor(txn)));
+        assertEquals(SystemOpAuthorization.UNAUTHORIZED, subject.authForTestCase(accessor(txn)));
     }
 
     @Test
@@ -396,7 +417,7 @@ class PrivilegesVerifierTest {
         var txn = sysUndeleteTxn()
                 .setSystemUndelete(SystemUndeleteTransactionBody.newBuilder().setContractID(contract(1234)));
         // expect:
-        assertEquals(AUTHORIZED, subject.checkAccessor(accessor(txn)));
+        assertEquals(SystemOpAuthorization.AUTHORIZED, subject.authForTestCase(accessor(txn)));
     }
 
     @Test
@@ -405,7 +426,7 @@ class PrivilegesVerifierTest {
         var txn = sysUndeleteTxn()
                 .setSystemUndelete(SystemUndeleteTransactionBody.newBuilder().setFileID(file(1234)));
         // expect:
-        assertEquals(AUTHORIZED, subject.checkAccessor(accessor(txn)));
+        assertEquals(SystemOpAuthorization.AUTHORIZED, subject.authForTestCase(accessor(txn)));
     }
 
     @Test
@@ -414,7 +435,7 @@ class PrivilegesVerifierTest {
         var txn = exchangeRatesAdminTxn()
                 .setSystemUndelete(SystemUndeleteTransactionBody.newBuilder().setFileID(file(1234)));
         // expect:
-        assertEquals(UNAUTHORIZED, subject.checkAccessor(accessor(txn)));
+        assertEquals(SystemOpAuthorization.UNAUTHORIZED, subject.authForTestCase(accessor(txn)));
     }
 
     @Test
@@ -423,7 +444,7 @@ class PrivilegesVerifierTest {
         var txn = exchangeRatesAdminTxn()
                 .setSystemUndelete(SystemUndeleteTransactionBody.newBuilder().setFileID(file(123)));
         // expect:
-        assertEquals(IMPERMISSIBLE, subject.checkAccessor(accessor(txn)));
+        assertEquals(SystemOpAuthorization.IMPERMISSIBLE, subject.authForTestCase(accessor(txn)));
     }
 
     @Test
@@ -432,7 +453,7 @@ class PrivilegesVerifierTest {
         var txn = treasuryTxn()
                 .setSystemDelete(SystemDeleteTransactionBody.newBuilder().setFileID(file(123)));
         // expect:
-        assertEquals(IMPERMISSIBLE, subject.checkAccessor(accessor(txn)));
+        assertEquals(SystemOpAuthorization.IMPERMISSIBLE, subject.authForTestCase(accessor(txn)));
     }
 
     @Test
@@ -441,7 +462,7 @@ class PrivilegesVerifierTest {
         var txn = exchangeRatesAdminTxn()
                 .setSystemDelete(SystemDeleteTransactionBody.newBuilder().setFileID(file(1234)));
         // expect:
-        assertEquals(UNAUTHORIZED, subject.checkAccessor(accessor(txn)));
+        assertEquals(SystemOpAuthorization.UNAUTHORIZED, subject.authForTestCase(accessor(txn)));
     }
 
     @Test
@@ -450,7 +471,7 @@ class PrivilegesVerifierTest {
         var txn = sysDeleteTxn()
                 .setSystemDelete(SystemDeleteTransactionBody.newBuilder().setFileID(file(1234)));
         // expect:
-        assertEquals(AUTHORIZED, subject.checkAccessor(accessor(txn)));
+        assertEquals(SystemOpAuthorization.AUTHORIZED, subject.authForTestCase(accessor(txn)));
     }
 
     @Test
@@ -459,7 +480,7 @@ class PrivilegesVerifierTest {
         var txn = civilianTxn()
                 .setSystemDelete(SystemDeleteTransactionBody.newBuilder().setContractID(contract(1234)));
         // expect:
-        assertEquals(UNAUTHORIZED, subject.checkAccessor(accessor(txn)));
+        assertEquals(SystemOpAuthorization.UNAUTHORIZED, subject.authForTestCase(accessor(txn)));
     }
 
     @Test
@@ -468,7 +489,7 @@ class PrivilegesVerifierTest {
         var txn = sysDeleteTxn()
                 .setSystemDelete(SystemDeleteTransactionBody.newBuilder().setContractID(contract(1234)));
         // expect:
-        assertEquals(AUTHORIZED, subject.checkAccessor(accessor(txn)));
+        assertEquals(SystemOpAuthorization.AUTHORIZED, subject.authForTestCase(accessor(txn)));
     }
 
     @Test
@@ -477,17 +498,7 @@ class PrivilegesVerifierTest {
         var txn = exchangeRatesAdminTxn()
                 .setFileAppend(FileAppendTransactionBody.newBuilder().setFileID(file(1122)));
         // expect:
-        assertEquals(UNNECESSARY, subject.checkAccessor(accessor(txn)));
-    }
-
-    @Test
-    void contractUpdateRecognizesAuthorized() throws InvalidProtocolBufferException {
-        // given:
-        var txn = treasuryTxn()
-                .setContractUpdateInstance(
-                        ContractUpdateTransactionBody.newBuilder().setContractID(contract(123)));
-        // expect:
-        assertEquals(AUTHORIZED, subject.checkAccessor(accessor(txn)));
+        assertEquals(SystemOpAuthorization.UNNECESSARY, subject.authForTestCase(accessor(txn)));
     }
 
     @Test
@@ -497,7 +508,7 @@ class PrivilegesVerifierTest {
                 .setContractUpdateInstance(
                         ContractUpdateTransactionBody.newBuilder().setContractID(contract(1233)));
         // expect:
-        assertEquals(UNNECESSARY, subject.checkAccessor(accessor(txn)));
+        assertEquals(SystemOpAuthorization.UNNECESSARY, subject.authForTestCase(accessor(txn)));
     }
 
     @Test
@@ -506,7 +517,7 @@ class PrivilegesVerifierTest {
         var txn = exchangeRatesAdminTxn()
                 .setFileUpdate(FileUpdateTransactionBody.newBuilder().setFileID(file(112)));
         // expect:
-        assertEquals(AUTHORIZED, subject.checkAccessor(accessor(txn)));
+        assertEquals(SystemOpAuthorization.AUTHORIZED, subject.authForTestCase(accessor(txn)));
     }
 
     @Test
@@ -515,7 +526,7 @@ class PrivilegesVerifierTest {
         var txn = softwareUpdateAdminTxn()
                 .setFileUpdate(FileUpdateTransactionBody.newBuilder().setFileID(file(150)));
         // expect:
-        assertEquals(AUTHORIZED, subject.checkAccessor(accessor(txn)));
+        assertEquals(SystemOpAuthorization.AUTHORIZED, subject.authForTestCase(accessor(txn)));
     }
 
     @Test
@@ -524,7 +535,7 @@ class PrivilegesVerifierTest {
         var txn = exchangeRatesAdminTxn()
                 .setFileUpdate(FileUpdateTransactionBody.newBuilder().setFileID(file(1122)));
         // expect:
-        assertEquals(UNNECESSARY, subject.checkAccessor(accessor(txn)));
+        assertEquals(SystemOpAuthorization.UNNECESSARY, subject.authForTestCase(accessor(txn)));
     }
 
     @Test
@@ -534,7 +545,7 @@ class PrivilegesVerifierTest {
                 .setFileDelete(FileDeleteTransactionBody.newBuilder().setFileID(file(100)));
 
         // expect:
-        assertEquals(IMPERMISSIBLE, subject.checkAccessor(accessor(txn)));
+        assertEquals(SystemOpAuthorization.IMPERMISSIBLE, subject.authForTestCase(accessor(txn)));
     }
 
     @Test
@@ -544,18 +555,7 @@ class PrivilegesVerifierTest {
                 .setFileDelete(FileDeleteTransactionBody.newBuilder().setFileID(file(1001)));
 
         // expect:
-        assertEquals(UNNECESSARY, subject.checkAccessor(accessor(txn)));
-    }
-
-    @Test
-    void systemContractsCannotBeDeleted() throws InvalidProtocolBufferException {
-        // given:
-        var txn = treasuryTxn()
-                .setContractDeleteInstance(
-                        ContractDeleteTransactionBody.newBuilder().setContractID(contract(100)));
-
-        // expect:
-        assertEquals(IMPERMISSIBLE, subject.checkAccessor(accessor(txn)));
+        assertEquals(SystemOpAuthorization.UNNECESSARY, subject.authForTestCase(accessor(txn)));
     }
 
     @Test
@@ -566,7 +566,7 @@ class PrivilegesVerifierTest {
                         ContractDeleteTransactionBody.newBuilder().setContractID(contract(1001)));
 
         // expect:
-        assertEquals(UNNECESSARY, subject.checkAccessor(accessor(txn)));
+        assertEquals(SystemOpAuthorization.UNNECESSARY, subject.authForTestCase(accessor(txn)));
     }
 
     @Test
@@ -576,7 +576,7 @@ class PrivilegesVerifierTest {
                 .setCryptoDelete(CryptoDeleteTransactionBody.newBuilder().setDeleteAccountID(account(100)));
 
         // expect:
-        assertEquals(IMPERMISSIBLE, subject.checkAccessor(accessor(txn)));
+        assertEquals(SystemOpAuthorization.IMPERMISSIBLE, subject.authForTestCase(accessor(txn)));
     }
 
     @Test
@@ -586,7 +586,7 @@ class PrivilegesVerifierTest {
                 .setCryptoDelete(CryptoDeleteTransactionBody.newBuilder().setDeleteAccountID(account(1001)));
 
         // expect:
-        assertEquals(UNNECESSARY, subject.checkAccessor(accessor(txn)));
+        assertEquals(SystemOpAuthorization.UNNECESSARY, subject.authForTestCase(accessor(txn)));
     }
 
     @Test
@@ -595,7 +595,7 @@ class PrivilegesVerifierTest {
         var txn = civilianTxn().setCryptoCreateAccount(CryptoCreateTransactionBody.getDefaultInstance());
 
         // expect:
-        assertEquals(UNNECESSARY, subject.checkAccessor(accessor(txn)));
+        assertEquals(SystemOpAuthorization.UNNECESSARY, subject.authForTestCase(accessor(txn)));
     }
 
     @Test
@@ -604,7 +604,7 @@ class PrivilegesVerifierTest {
         var txn = ethereumTxn().setEthereumTransaction(EthereumTransactionBody.getDefaultInstance());
 
         // expect:
-        assertEquals(UNNECESSARY, subject.checkAccessor(accessor(txn)));
+        assertEquals(SystemOpAuthorization.UNNECESSARY, subject.authForTestCase(accessor(txn)));
     }
 
     @Test
@@ -615,31 +615,25 @@ class PrivilegesVerifierTest {
         var otherUpdateTxn = civilianTxn()
                 .setCryptoUpdateAccount(CryptoUpdateTransactionBody.newBuilder().setAccountIDToUpdate(account(50)));
         // expect:
-        assertEquals(AUTHORIZED, subject.checkAccessor(accessorWithPayer(selfUpdateTxn, account(2))));
-        assertEquals(AUTHORIZED, subject.checkAccessor(accessorWithPayer(otherUpdateTxn, account(2))));
+        assertEquals(
+                SystemOpAuthorization.AUTHORIZED,
+                subject.authForTestCase(accessorWithPayer(selfUpdateTxn, account(2))));
+        assertEquals(
+                SystemOpAuthorization.AUTHORIZED,
+                subject.authForTestCase(accessorWithPayer(otherUpdateTxn, account(2))));
     }
 
-    private SignedTxnAccessor accessor(TransactionBody.Builder transaction) throws InvalidProtocolBufferException {
-        var txn = TransactionBody.newBuilder()
-                .mergeFrom(transaction.build())
-                .clearTransactionID()
-                .build();
-        var accessor = SignedTxnAccessor.from(Transaction.newBuilder()
+    private TestCase accessor(TransactionBody.Builder transaction) throws InvalidProtocolBufferException {
+        var txn = TransactionBody.newBuilder().mergeFrom(transaction.build()).build();
+        return testCaseFrom(Transaction.newBuilder()
                 .setBodyBytes(txn.toByteString())
                 .build()
                 .toByteArray());
-        accessor.setPayer(transaction.getTransactionID().getAccountID());
-        return accessor;
     }
 
-    private SignedTxnAccessor accessorWithPayer(TransactionBody.Builder txn, AccountID payer)
+    private TestCase accessorWithPayer(TransactionBody.Builder txn, AccountID payer)
             throws InvalidProtocolBufferException {
-        var accessor = SignedTxnAccessor.from(Transaction.newBuilder()
-                .setBodyBytes(txn.build().toByteString())
-                .build()
-                .toByteArray());
-        accessor.setPayer(payer);
-        return accessor;
+        return accessor(txn).withPayerId(toPbj(payer));
     }
 
     private TransactionBody.Builder ethereumTxn() {
@@ -678,6 +672,10 @@ class PrivilegesVerifierTest {
         return txnWithPayer(57);
     }
 
+    private TransactionBody.Builder nodeAdminTxn() {
+        return txnWithPayer(55);
+    }
+
     private TransactionBody.Builder txnWithPayer(long num) {
         return TransactionBody.newBuilder()
                 .setTransactionID(TransactionID.newBuilder().setAccountID(account(num)));
@@ -693,5 +691,41 @@ class PrivilegesVerifierTest {
 
     private AccountID account(long num) {
         return AccountID.newBuilder().setAccountNum(num).build();
+    }
+
+    /**
+     * The relationship of an operation to its required system privileges, if any.
+     */
+    private enum SystemOpAuthorization {
+        /** The operation does not require any system privileges. */
+        UNNECESSARY,
+        /** The operation requires system privileges that its payer does not have. */
+        UNAUTHORIZED,
+        /** The operation cannot be performed, no matter the privileges of its payer. */
+        IMPERMISSIBLE,
+        /** The operation requires system privileges, and its payer has those privileges. */
+        AUTHORIZED;
+    }
+
+    private TestCase testCaseFrom(final byte[] signedTxnWrapperBytes) throws InvalidProtocolBufferException {
+        final Transaction signedTxnWrapper = Transaction.parseFrom(signedTxnWrapperBytes);
+
+        final var signedTxnBytes = signedTxnWrapper.getSignedTransactionBytes();
+        final byte[] txnBytes;
+        if (signedTxnBytes.isEmpty()) {
+            txnBytes = unwrapUnsafelyIfPossible(signedTxnWrapper.getBodyBytes());
+        } else {
+            final var signedTxn = SignedTransaction.parseFrom(signedTxnBytes);
+            txnBytes = unwrapUnsafelyIfPossible(signedTxn.getBodyBytes());
+        }
+        final var protoTxnBody = TransactionBody.parseFrom(txnBytes);
+        final var txn = toPbj(protoTxnBody);
+        final var payerId = txn.transactionIDOrThrow().accountIDOrThrow();
+        try {
+            final var function = functionOf(protoTxnBody);
+            return new TestCase(payerId, toPbj(function), txn);
+        } catch (com.hedera.hapi.util.UnknownHederaFunctionality e) {
+            throw new IllegalStateException(e);
+        }
     }
 }

@@ -17,12 +17,12 @@
 package com.hedera.services.bdd.spec.utilops.checks;
 
 import static com.hedera.services.bdd.spec.HapiPropertySource.asAccount;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenGetAccountNftInfos;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.utilops.UtilOp;
 import com.hederahashgraph.api.proto.java.Query;
-import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.TokenGetAccountNftInfosQuery;
 import org.junit.jupiter.api.Assertions;
 
@@ -32,8 +32,7 @@ public class VerifyGetAccountNftInfosNotSupported extends UtilOp {
         TokenGetAccountNftInfosQuery.Builder op =
                 TokenGetAccountNftInfosQuery.newBuilder().setAccountID(asAccount("0.0.2"));
         Query query = Query.newBuilder().setTokenGetAccountNftInfos(op).build();
-        Response response =
-                spec.clients().getTokenSvcStub(targetNodeFor(spec), useTls).getAccountNftInfos(query);
+        final var response = spec.targetNetworkOrThrow().send(query, TokenGetAccountNftInfos, targetNodeFor(spec));
         Assertions.assertEquals(
                 NOT_SUPPORTED, response.getTokenGetAccountNftInfos().getHeader().getNodeTransactionPrecheckCode());
         return false;

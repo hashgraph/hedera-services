@@ -21,21 +21,20 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.gas.DispatchType;
 import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AbstractHtsCallTranslator;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.AbstractCallTranslator;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.Call;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.DispatchForResponseCodeHtsCall;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.Arrays;
 import javax.inject.Inject;
 
 /**
  * Translates setApprovalForAll (including ERC) call to the HTS system contract. There are no special cases for these
- * calls, so the returned {@link HtsCall} is simply an instance of {@link DispatchForResponseCodeHtsCall}.
+ * calls, so the returned {@link Call} is simply an instance of {@link DispatchForResponseCodeHtsCall}.
  */
-public class SetApprovalForAllTranslator extends AbstractHtsCallTranslator {
+public class SetApprovalForAllTranslator extends AbstractCallTranslator<HtsCallAttempt> {
 
     public static final Function SET_APPROVAL_FOR_ALL =
             new Function("setApprovalForAll(address,address,bool)", ReturnTypes.INT);
@@ -54,22 +53,22 @@ public class SetApprovalForAllTranslator extends AbstractHtsCallTranslator {
      */
     @Override
     public boolean matches(@NonNull final HtsCallAttempt attempt) {
-        return selectorMatches(attempt, SET_APPROVAL_FOR_ALL)
-                || (attempt.isTokenRedirect() && selectorMatches(attempt, ERC721_SET_APPROVAL_FOR_ALL));
+        return attempt.isTokenRedirect()
+                ? attempt.isSelector(ERC721_SET_APPROVAL_FOR_ALL)
+                : attempt.isSelector(SET_APPROVAL_FOR_ALL);
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public HtsCall callFrom(@NonNull final HtsCallAttempt attempt) {
+    public Call callFrom(@NonNull final HtsCallAttempt attempt) {
         final var result = bodyForClassic(attempt);
-        // @Future remove to revert #9214 after modularization is completed
         return new SetApprovalForAllCall(
                 attempt,
                 result,
                 SetApprovalForAllTranslator::gasRequirement,
-                selectorMatches(attempt, ERC721_SET_APPROVAL_FOR_ALL));
+                attempt.isSelector(ERC721_SET_APPROVAL_FOR_ALL));
     }
 
     public static long gasRequirement(
@@ -81,13 +80,9 @@ public class SetApprovalForAllTranslator extends AbstractHtsCallTranslator {
     }
 
     private TransactionBody bodyForClassic(@NonNull final HtsCallAttempt attempt) {
-        if (selectorMatches(attempt, SET_APPROVAL_FOR_ALL)) {
+        if (attempt.isSelector(SET_APPROVAL_FOR_ALL)) {
             return decoder.decodeSetApprovalForAll(attempt);
         }
         return decoder.decodeSetApprovalForAllERC(attempt);
-    }
-
-    private boolean selectorMatches(final HtsCallAttempt attempt, final Function function) {
-        return Arrays.equals(attempt.selector(), function.selector());
     }
 }

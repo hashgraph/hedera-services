@@ -25,10 +25,10 @@ import com.google.common.base.MoreObjects;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.math.BigInteger;
 import java.util.Arrays;
+import java.util.HexFormat;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Objects;
-import org.apache.commons.codec.DecoderException;
 import org.apache.commons.codec.binary.Hex;
 import org.bouncycastle.jcajce.provider.digest.Keccak;
 
@@ -42,15 +42,20 @@ public record EthTxData(
         byte[] maxGas,
         long gasLimit,
         byte[] to,
-        BigInteger value,
+        BigInteger value, // weibar, always positive - note that high-bit might be ON in RLP encoding: still positive
         byte[] callData,
         byte[] accessList,
-        int recId,
-        byte[] v,
+        int recId, // "recovery id" part of a v,r,s ECDSA signature - range 0..1
+        byte[] v, // actual `v` value, incoming, recovery id (`recId` above) (possibly) encoded with chain id
         byte[] r,
         byte[] s) {
 
-    public static final BigInteger WEIBARS_TO_TINYBARS = BigInteger.valueOf(10_000_000_000L);
+    /**
+     * A "wiebar" is 10⁻¹⁸ of an hbar.  The relationship is weibar : hbar as wei : ether.  Ethereum
+     * transactions come in with transfer amounts in units of weibar.  Elsewhere in Hedera we use
+     * units of tinybar (10⁻⁸ of an hbar), and here is the conversion factor:
+     */
+    public static final BigInteger WEIBARS_IN_A_TINYBAR = BigInteger.valueOf(10_000_000_000L);
 
     // Copy of constants from besu-native, remove when next besu-native publishes
     static final int SECP256K1_FLAGS_TYPE_COMPRESSION = 1 << 1;
@@ -61,18 +66,11 @@ public record EthTxData(
     static final BigInteger LEGACY_V_BYTE_SIGNATURE_0 = BigInteger.valueOf(27);
     static final BigInteger LEGACY_V_BYTE_SIGNATURE_1 = BigInteger.valueOf(28);
 
-    static final int FOUNDRY_DETERMINISTIC_DEPLOYER_GAS_PRICE_MULTIPLIER = 100;
-    // The specific transaction bytes that are used to deploy the Foundry Deterministic Deployer contract
-    public static final byte[] FOUNDRY_DETERMINISTIC_DEPLOYER_TRANSACTION;
-
-    static {
-        try {
-            FOUNDRY_DETERMINISTIC_DEPLOYER_TRANSACTION = Hex.decodeHex(
+    // The specific transaction bytes that are used to deploy the Deterministic Deployer contract
+    // see -  https://github.com/Arachnid/deterministic-deployment-proxy?tab=readme-ov-file#deployment-transaction
+    public static final byte[] DETERMINISTIC_DEPLOYER_TRANSACTION = HexFormat.of()
+            .parseHex(
                     "f8a58085174876e800830186a08080b853604580600e600039806000f350fe7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe03601600081602082378035828234f58015156039578182fd5b8082525050506014600cf31ba02222222222222222222222222222222222222222222222222222222222222222a02222222222222222222222222222222222222222222222222222222222222222");
-        } catch (DecoderException e) {
-            throw new IllegalStateException("FOUNDRY_DETERMINISTIC_DEPLOYER_TRANSACTION could not be decoded", e);
-        }
-    }
 
     public static EthTxData populateEthTxData(byte[] data) {
         try {
@@ -85,6 +83,7 @@ public record EthTxData(
             return switch (rlpItem.asByte()) {
                 case 1 -> populateEip2390EthTxData(decoder.next(), data);
                 case 2 -> populateEip1559EthTxData(decoder.next(), data);
+                case 3 -> null; // We don't currently support Cancun "blob" transactions
                 default -> null;
             };
 
@@ -155,6 +154,11 @@ public record EthTxData(
                 s);
     }
 
+    // For more information on "recovery id" see
+    // https://coinsbench.com/understanding-digital-signatures-the-role-of-v-r-s-in-cryptographic-security-and-signature-b9d2b89bbc0c
+
+    // For more information on encoding `v` see EIP-155 - https://eips.ethereum.org/EIPS/eip-155
+
     public byte[] encodeTx() {
         if (accessList != null && accessList.length > 0) {
             throw new IllegalStateException("Re-encoding access list is unsupported");
@@ -203,14 +207,13 @@ public record EthTxData(
     }
 
     public long getAmount() {
-        return value.divide(WEIBARS_TO_TINYBARS).longValueExact();
+        return value.divide(WEIBARS_IN_A_TINYBAR).longValueExact();
     }
 
-    public BigInteger getMaxGasAsBigInteger() {
+    public BigInteger getMaxGasAsBigInteger(final long tinybarGasPrice) {
         long multiple = 1L;
-        if (type == EthTransactionType.LEGACY_ETHEREUM
-                && Arrays.equals(rawTx, FOUNDRY_DETERMINISTIC_DEPLOYER_TRANSACTION)) {
-            multiple = FOUNDRY_DETERMINISTIC_DEPLOYER_GAS_PRICE_MULTIPLIER;
+        if (type == EthTransactionType.LEGACY_ETHEREUM && Arrays.equals(rawTx, DETERMINISTIC_DEPLOYER_TRANSACTION)) {
+            multiple = tinybarGasPrice;
         }
         return switch (type) {
             case LEGACY_ETHEREUM -> new BigInteger(1, gasPrice).multiply(BigInteger.valueOf(multiple));
@@ -226,11 +229,12 @@ public record EthTxData(
      * <p>Clearly the latter value would always be un-payable, since the transaction would cost more
      * than the entire hbar supply. We just do this to avoid integral overflow.
      *
-     * @return the effective offered gas price
+     * @param weibarGasPrice the current gas price in weibars
+     * @return the effective offered gas price in tinybars
      */
-    public long effectiveOfferedGasPriceInTinybars() {
+    public long effectiveOfferedGasPriceInTinybars(final long weibarGasPrice) {
         return BigInteger.valueOf(Long.MAX_VALUE)
-                .min(getMaxGasAsBigInteger().divide(WEIBARS_TO_TINYBARS))
+                .min(getMaxGasAsBigInteger(weibarGasPrice).divide(WEIBARS_IN_A_TINYBAR))
                 .longValueExact();
     }
 
@@ -245,7 +249,7 @@ public record EthTxData(
      */
     public long effectiveTinybarValue() {
         return BigInteger.valueOf(Long.MAX_VALUE)
-                .min(value.divide(WEIBARS_TO_TINYBARS))
+                .min(value.divide(WEIBARS_IN_A_TINYBAR))
                 .longValueExact();
     }
 

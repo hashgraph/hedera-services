@@ -16,6 +16,7 @@
 
 package com.hedera.services.bdd.suites.consensus;
 
+import static com.hedera.services.bdd.junit.TestTags.ADHOC;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.keys.ControlForKey.forKey;
 import static com.hedera.services.bdd.spec.keys.KeyShape.SIMPLE;
@@ -30,12 +31,17 @@ import static com.hedera.services.bdd.spec.transactions.TxnUtils.asTopicId;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createTopic;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.submitMessageTo;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.chunkAFile;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.submitModified;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsd;
+import static com.hedera.services.bdd.spec.utilops.mod.ModificationUtils.withSuccessivelyVariedBodyIds;
+import static com.hedera.services.bdd.suites.HapiSuite.asOpArray;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CHUNK_NUMBER;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CHUNK_TRANSACTION_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOPIC_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOPIC_MESSAGE;
@@ -45,46 +51,39 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_OVERSIZE;
 
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.keys.SigControl;
-import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.Arrays;
-import java.util.List;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import java.util.stream.Stream;
+import org.junit.jupiter.api.DynamicTest;
+import org.junit.jupiter.api.Tag;
 
-@HapiTestSuite
-public class SubmitMessageSuite extends HapiSuite {
+@Tag(ADHOC)
+public class SubmitMessageSuite {
+    private static final int CHUNK_SIZE = 1024;
 
-    private static final Logger log = LogManager.getLogger(SubmitMessageSuite.class);
-
-    public static void main(String... args) {
-        new SubmitMessageSuite().runSuiteAsync();
-    }
-
-    @Override
-    public boolean canRunConcurrent() {
-        return true;
-    }
-
-    @Override
-    public List<HapiSpec> getSpecsInSuite() {
-        return List.of(
-                topicIdIsValidated(),
-                messageIsValidated(),
-                messageSubmissionSimple(),
-                messageSubmissionIncreasesSeqNo(),
-                messageSubmissionWithSubmitKey(),
-                messageSubmissionMultiple(),
-                messageSubmissionOverSize(),
-                messageSubmissionCorrectlyUpdatesRunningHash(),
-                feeAsExpected());
+    @HapiTest
+    final Stream<DynamicTest> pureCheckFails() {
+        return defaultHapiSpec("testTopic")
+                .given(cryptoCreate("nonTopicId"))
+                .when()
+                .then(
+                        submitMessageTo(spec -> asTopicId(spec.registry().getAccountID("nonTopicId")))
+                                .hasPrecheck(INVALID_TOPIC_ID),
+                        submitMessageTo((String) null).hasPrecheck(INVALID_TOPIC_ID));
     }
 
     @HapiTest
-    final HapiSpec topicIdIsValidated() {
+    final Stream<DynamicTest> idVariantsTreatedAsExpected() {
+        return defaultHapiSpec("idVariantsTreatedAsExpected")
+                .given(createTopic("testTopic"))
+                .when()
+                .then(submitModified(withSuccessivelyVariedBodyIds(), () -> submitMessageTo("testTopic")
+                        .message("HI")));
+    }
+
+    @HapiTest
+    final Stream<DynamicTest> topicIdIsValidated() {
         return defaultHapiSpec("topicIdIsValidated")
                 .given(cryptoCreate("nonTopicId"))
                 .when()
@@ -99,7 +98,7 @@ public class SubmitMessageSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec messageIsValidated() {
+    final Stream<DynamicTest> messageIsValidated() {
         return defaultHapiSpec("messageIsValidated")
                 .given(createTopic("testTopic"))
                 .when()
@@ -107,15 +106,15 @@ public class SubmitMessageSuite extends HapiSuite {
                         submitMessageTo("testTopic")
                                 .clearMessage()
                                 .hasRetryPrecheckFrom(BUSY)
-                                .hasKnownStatus(INVALID_TOPIC_MESSAGE),
+                                .hasPrecheck(INVALID_TOPIC_MESSAGE),
                         submitMessageTo("testTopic")
                                 .message("")
                                 .hasRetryPrecheckFrom(BUSY)
-                                .hasKnownStatus(INVALID_TOPIC_MESSAGE));
+                                .hasPrecheck(INVALID_TOPIC_MESSAGE));
     }
 
     @HapiTest
-    final HapiSpec messageSubmissionSimple() {
+    final Stream<DynamicTest> messageSubmissionSimple() {
         return defaultHapiSpec("messageSubmissionSimple")
                 .given(
                         newKeyNamed("submitKey"),
@@ -129,7 +128,7 @@ public class SubmitMessageSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec messageSubmissionIncreasesSeqNo() {
+    final Stream<DynamicTest> messageSubmissionIncreasesSeqNo() {
         KeyShape submitKeyShape = threshOf(2, SIMPLE, SIMPLE, listOf(2));
 
         return defaultHapiSpec("messageSubmissionIncreasesSeqNo")
@@ -141,7 +140,7 @@ public class SubmitMessageSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec messageSubmissionWithSubmitKey() {
+    final Stream<DynamicTest> messageSubmissionWithSubmitKey() {
         KeyShape submitKeyShape = threshOf(2, SIMPLE, SIMPLE, listOf(2));
 
         SigControl validSig = submitKeyShape.signedWith(sigs(ON, OFF, sigs(ON, ON)));
@@ -164,7 +163,7 @@ public class SubmitMessageSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec messageSubmissionMultiple() {
+    final Stream<DynamicTest> messageSubmissionMultiple() {
         final int numMessages = 10;
 
         return defaultHapiSpec("messageSubmissionMultiple")
@@ -176,7 +175,7 @@ public class SubmitMessageSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec messageSubmissionOverSize() {
+    final Stream<DynamicTest> messageSubmissionOverSize() {
         final byte[] messageBytes = new byte[4096]; // 4k
         Arrays.fill(messageBytes, (byte) 0b1);
 
@@ -193,7 +192,7 @@ public class SubmitMessageSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec feeAsExpected() {
+    final Stream<DynamicTest> feeAsExpected() {
         final byte[] messageBytes = new byte[100]; // 4k
         Arrays.fill(messageBytes, (byte) 0b1);
         return defaultHapiSpec("feeAsExpected")
@@ -210,7 +209,7 @@ public class SubmitMessageSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec messageSubmissionCorrectlyUpdatesRunningHash() {
+    final Stream<DynamicTest> messageSubmissionCorrectlyUpdatesRunningHash() {
         String topic = "testTopic";
         String message1 = "Hello world!";
         String message2 = "Hello world again!";
@@ -251,8 +250,76 @@ public class SubmitMessageSuite extends HapiSuite {
                         getTxnRecord("submitMessage3").hasCorrectRunningHash(topic, message3));
     }
 
-    @Override
-    protected Logger getResultsLogger() {
-        return log;
+    @HapiTest
+    final Stream<DynamicTest> chunkNumberIsValidated() {
+        return defaultHapiSpec("chunkNumberIsValidated")
+                .given(createTopic("testTopic"))
+                .when()
+                .then(
+                        submitMessageTo("testTopic")
+                                .message("failsForChunkNumberGreaterThanTotalChunks")
+                                .chunkInfo(2, 3)
+                                .hasRetryPrecheckFrom(BUSY)
+                                .hasKnownStatus(INVALID_CHUNK_NUMBER),
+                        submitMessageTo("testTopic")
+                                .message("acceptsChunkNumberLessThanTotalChunks")
+                                .chunkInfo(3, 2)
+                                .hasRetryPrecheckFrom(BUSY)
+                                .hasKnownStatus(SUCCESS),
+                        submitMessageTo("testTopic")
+                                .message("acceptsChunkNumberEqualTotalChunks")
+                                .chunkInfo(5, 5)
+                                .hasRetryPrecheckFrom(BUSY)
+                                .hasKnownStatus(SUCCESS));
+    }
+
+    @HapiTest
+    final Stream<DynamicTest> chunkTransactionIDIsValidated() {
+        return defaultHapiSpec("chunkTransactionIDIsValidated")
+                .given(cryptoCreate("initialTransactionPayer"), createTopic("testTopic"))
+                .when()
+                .then(
+                        submitMessageTo("testTopic")
+                                .message("failsForDifferentPayers")
+                                .chunkInfo(3, 2, "initialTransactionPayer")
+                                .hasRetryPrecheckFrom(BUSY)
+                                .hasKnownStatus(INVALID_CHUNK_TRANSACTION_ID),
+                        // Add delay to make sure the valid start of the transaction will
+                        // not match
+                        // that of the initialTransactionID
+                        sleepFor(1000),
+                        /* AcceptsChunkNumberDifferentThan1HavingTheSamePayerEvenWhenNotMatchingValidStart */
+                        submitMessageTo("testTopic")
+                                .message("A")
+                                .chunkInfo(3, 3, "initialTransactionPayer")
+                                .payingWith("initialTransactionPayer")
+                                .hasRetryPrecheckFrom(BUSY)
+                                .hasKnownStatus(SUCCESS),
+                        /* FailsForTransactionIDOfChunkNumber1NotMatchingTheEntireInitialTransactionID */
+                        sleepFor(1000),
+                        submitMessageTo("testTopic")
+                                .message("B")
+                                .chunkInfo(2, 1)
+                                // Also add delay here
+                                .hasRetryPrecheckFrom(BUSY)
+                                .hasKnownStatus(INVALID_CHUNK_TRANSACTION_ID),
+                        /* AcceptsChunkNumber1WhenItsTransactionIDMatchesTheEntireInitialTransactionID */
+                        submitMessageTo("testTopic")
+                                .message("C")
+                                .chunkInfo(4, 1)
+                                .via("firstChunk")
+                                .payingWith("initialTransactionPayer")
+                                .usePresetTimestamp()
+                                .hasRetryPrecheckFrom(BUSY)
+                                .hasKnownStatus(SUCCESS));
+    }
+
+    @HapiTest
+    final Stream<DynamicTest> longMessageIsFragmentedIntoChunks() {
+        String fileForLongMessage = "src/main/resources/RandomLargeBinary.bin";
+        return defaultHapiSpec("longMessageIsFragmentedIntoChunks")
+                .given(cryptoCreate("payer"), createTopic("testTopic"))
+                .when()
+                .then(chunkAFile(fileForLongMessage, CHUNK_SIZE, "payer", "testTopic"));
     }
 }

@@ -1,5 +1,0 @@
-contract:
-  memo: Teeming with purposes
-  adminKey:
-    wordsLoc: admin.words
-  bytecodeFile: bytecode

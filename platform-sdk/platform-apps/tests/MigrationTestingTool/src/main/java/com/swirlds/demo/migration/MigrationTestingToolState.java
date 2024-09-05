@@ -20,7 +20,6 @@ import static com.swirlds.demo.migration.MigrationTestingToolMain.PREVIOUS_SOFTW
 import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 
 import com.swirlds.common.crypto.DigestType;
-import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.merkle.MerkleInternal;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.impl.PartialNaryMerkleInternal;
@@ -33,7 +32,7 @@ import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.merkledb.MerkleDb;
 import com.swirlds.merkledb.MerkleDbDataSourceBuilder;
 import com.swirlds.merkledb.MerkleDbTableConfig;
-import com.swirlds.platform.state.PlatformState;
+import com.swirlds.platform.state.PlatformStateAccessor;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.Round;
@@ -42,12 +41,10 @@ import com.swirlds.platform.system.SwirldState;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.events.ConsensusEvent;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
-import com.swirlds.platform.system.transaction.Transaction;
 import com.swirlds.virtualmap.VirtualMap;
 import com.swirlds.virtualmap.datasource.VirtualDataSourceBuilder;
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.io.UncheckedIOException;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Iterator;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
@@ -202,19 +199,13 @@ public class MigrationTestingToolState extends PartialNaryMerkleInternal impleme
      */
     private void genesisInit(final Platform platform) {
         setMerkleMap(new MerkleMap<>());
-        final MerkleDbTableConfig<AccountVirtualMapKey, AccountVirtualMapValue> tableConfig = new MerkleDbTableConfig<>(
-                (short) 1,
-                DigestType.SHA_384,
-                (short) 1,
-                new AccountVirtualMapKeySerializer(),
-                (short) 1,
-                new AccountVirtualMapValueSerializer());
+        final MerkleDbTableConfig tableConfig = new MerkleDbTableConfig((short) 1, DigestType.SHA_384);
         // to make it work for the multiple node in one JVM case, we need reset the default instance path every time
         // we create another instance of MerkleDB.
         MerkleDb.resetDefaultInstancePath();
-        final VirtualDataSourceBuilder<AccountVirtualMapKey, AccountVirtualMapValue> dsBuilder =
-                new MerkleDbDataSourceBuilder<>(tableConfig);
-        setVirtualMap(new VirtualMap<>("virtualMap", dsBuilder));
+        final VirtualDataSourceBuilder dsBuilder = new MerkleDbDataSourceBuilder(tableConfig);
+        setVirtualMap(new VirtualMap<>(
+                "virtualMap", new AccountVirtualMapKeySerializer(), new AccountVirtualMapValueSerializer(), dsBuilder));
         selfId = platform.getSelfId();
     }
 
@@ -223,11 +214,9 @@ public class MigrationTestingToolState extends PartialNaryMerkleInternal impleme
      */
     @Override
     public void init(
-            final Platform platform,
-            final PlatformState platformState,
-            final InitTrigger trigger,
-            final SoftwareVersion previousSoftwareVersion) {
-
+            @NonNull final Platform platform,
+            @NonNull final InitTrigger trigger,
+            @Nullable final SoftwareVersion previousSoftwareVersion) {
         final MerkleMap<AccountID, MapValue> merkleMap = getMerkleMap();
         if (merkleMap != null) {
             logger.info(STARTUP.getMarker(), "MerkleMap initialized with {} values", merkleMap.size());
@@ -257,31 +246,21 @@ public class MigrationTestingToolState extends PartialNaryMerkleInternal impleme
     }
 
     /**
-     * Parse a {@link MigrationTestingToolTransaction} from a {@link Transaction}.
-     */
-    private static MigrationTestingToolTransaction parseTransaction(final Transaction transaction) {
-        final SerializableDataInputStream in =
-                new SerializableDataInputStream(new ByteArrayInputStream(transaction.getContents()));
-
-        try {
-            return in.readSerializable(false, MigrationTestingToolTransaction::new);
-        } catch (final IOException e) {
-            throw new UncheckedIOException(e);
-        }
-    }
-
-    /**
      * {@inheritDoc}
      */
     @Override
-    public void handleConsensusRound(final Round round, final PlatformState platformState) {
+    public void handleConsensusRound(final Round round, final PlatformStateAccessor platformState) {
         throwIfImmutable();
         for (final Iterator<ConsensusEvent> eventIt = round.iterator(); eventIt.hasNext(); ) {
             final ConsensusEvent event = eventIt.next();
             for (final Iterator<ConsensusTransaction> transIt = event.consensusTransactionIterator();
                     transIt.hasNext(); ) {
                 final ConsensusTransaction trans = transIt.next();
-                final MigrationTestingToolTransaction mTrans = parseTransaction(trans);
+                if (trans.isSystem()) {
+                    continue;
+                }
+                final MigrationTestingToolTransaction mTrans =
+                        TransactionUtils.parseTransaction(trans.getApplicationTransaction());
                 mTrans.applyTo(this);
             }
         }

@@ -1,2 +1,0 @@
-## Using solc version 0.5.9, run
- solc --bin --abi -o ../testfiles/ Minters.sol  --overwrite

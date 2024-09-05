@@ -24,16 +24,15 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.gas.DispatchType;
 import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AbstractHtsCallTranslator;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.AbstractCallTranslator;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.Call;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.DispatchForResponseCodeHtsCall;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.Arrays;
 import javax.inject.Inject;
 
-public class BurnTranslator extends AbstractHtsCallTranslator {
+public class BurnTranslator extends AbstractCallTranslator<HtsCallAttempt> {
     public static final Function BURN_TOKEN_V1 = new Function("burnToken(address,uint64,int64[])", INT64_INT64);
     public static final Function BURN_TOKEN_V2 = new Function("burnToken(address,int64,int64[])", INT64_INT64);
 
@@ -46,12 +45,11 @@ public class BurnTranslator extends AbstractHtsCallTranslator {
 
     @Override
     public boolean matches(@NonNull HtsCallAttempt attempt) {
-        return Arrays.equals(attempt.selector(), BurnTranslator.BURN_TOKEN_V1.selector())
-                || Arrays.equals(attempt.selector(), BurnTranslator.BURN_TOKEN_V2.selector());
+        return attempt.isSelector(BURN_TOKEN_V1, BURN_TOKEN_V2);
     }
 
     @Override
-    public HtsCall callFrom(@NonNull HtsCallAttempt attempt) {
+    public Call callFrom(@NonNull HtsCallAttempt attempt) {
         final var body = bodyForClassic(attempt);
         final var isFungibleMint = body.tokenBurnOrThrow().serialNumbers().isEmpty();
         return new DispatchForResponseCodeHtsCall(
@@ -62,7 +60,7 @@ public class BurnTranslator extends AbstractHtsCallTranslator {
     }
 
     private TransactionBody bodyForClassic(@NonNull final HtsCallAttempt attempt) {
-        if (Arrays.equals(attempt.selector(), BurnTranslator.BURN_TOKEN_V1.selector())) {
+        if (attempt.isSelector(BURN_TOKEN_V1)) {
             return decoder.decodeBurn(attempt);
         } else {
             return decoder.decodeBurnV2(attempt);

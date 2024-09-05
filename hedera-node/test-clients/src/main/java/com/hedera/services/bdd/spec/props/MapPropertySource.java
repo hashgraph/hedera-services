@@ -19,6 +19,7 @@ package com.hedera.services.bdd.spec.props;
 import static java.util.stream.Collectors.toMap;
 
 import com.hedera.services.bdd.spec.HapiPropertySource;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -33,29 +34,41 @@ public class MapPropertySource implements HapiPropertySource {
     public static MapPropertySource parsedFromCommaDelimited(String literal) {
         return new MapPropertySource(Stream.of(literal.split(","))
                 .map(s -> List.of(s.split("=")))
-                .filter(l -> l.size() > 1)
-                .collect(toMap(l -> l.get(0), l -> l.get(1))));
+                .filter(l -> l.size() == 2)
+                .collect(toMap(List::getFirst, List::getLast)));
     }
 
-    private final Map props;
+    private final Map<String, String> props;
 
-    public MapPropertySource(Map props) {
-        Map<String, Object> typedProps = (Map<String, Object>) props;
-        var filteredProps = typedProps.entrySet().stream()
+    /**
+     * Whether to log the properties being initialized in a property source.
+     */
+    public enum Quiet {
+        YES,
+        NO
+    }
+
+    public MapPropertySource(@NonNull final Map<String, String> props) {
+        this(props, Quiet.NO);
+    }
+
+    public MapPropertySource(@NonNull final Map<String, String> props, @NonNull final Quiet quiet) {
+        final var filteredProps = props.entrySet().stream()
                 .filter(entry -> !KEYS_TO_CENSOR.contains(entry.getKey()))
                 .collect(toMap(Map.Entry::getKey, Map.Entry::getValue));
-        String message = String.format("Initializing a MapPropertySource from %s", filteredProps);
-        log.info(message);
+        if (quiet == Quiet.NO) {
+            log.info(String.format("Initializing a MapPropertySource from %s", filteredProps));
+        }
         this.props = props;
     }
 
-    public Map getProps() {
+    public Map<String, String> getProps() {
         return props;
     }
 
     @Override
     public String get(String property) {
-        return (String) props.get(property);
+        return props.get(property);
     }
 
     @Override

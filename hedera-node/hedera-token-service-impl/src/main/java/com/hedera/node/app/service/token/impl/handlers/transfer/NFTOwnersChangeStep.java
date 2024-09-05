@@ -27,6 +27,7 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.NftID;
 import com.hedera.hapi.node.base.TokenID;
+import com.hedera.hapi.node.base.TokenTransferList;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.AccountApprovalForAllAllowance;
 import com.hedera.hapi.node.state.token.Nft;
@@ -38,29 +39,37 @@ import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
 import com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import java.util.List;
 
+/**
+ * Handles the ownership change of NFTs in a token transfer.
+ */
 public class NFTOwnersChangeStep extends BaseTokenHandler implements TransferStep {
-    private static final Logger logger = LogManager.getLogger(NFTOwnersChangeStep.class);
-    private final CryptoTransferTransactionBody op;
+    private final List<TokenTransferList> tokenTransferLists;
     private final AccountID topLevelPayer;
 
-    public NFTOwnersChangeStep(final CryptoTransferTransactionBody op, final AccountID topLevelPayer) {
-        this.op = op;
+    /**
+     * Constructs the {@link NFTOwnersChangeStep} with the given {@link CryptoTransferTransactionBody} and payer
+     * {@link AccountID}.
+     * @param tokenTransferLists the {@link List} of {@link TokenTransferList}
+     * @param topLevelPayer the payer {@link AccountID}
+     */
+    public NFTOwnersChangeStep(final List<TokenTransferList> tokenTransferLists, final AccountID topLevelPayer) {
+        this.tokenTransferLists = tokenTransferLists;
         this.topLevelPayer = topLevelPayer;
     }
 
     @Override
     public void doIn(final TransferContext transferContext) {
         final var handleContext = transferContext.getHandleContext();
-        final var nftStore = handleContext.writableStore(WritableNftStore.class);
-        final var accountStore = handleContext.writableStore(WritableAccountStore.class);
-        final var tokenStore = handleContext.writableStore(WritableTokenStore.class);
-        final var tokenRelStore = handleContext.writableStore(WritableTokenRelationStore.class);
+        final var storeFactory = handleContext.storeFactory();
+        final var nftStore = storeFactory.writableStore(WritableNftStore.class);
+        final var accountStore = storeFactory.writableStore(WritableAccountStore.class);
+        final var tokenStore = storeFactory.writableStore(WritableTokenStore.class);
+        final var tokenRelStore = storeFactory.writableStore(WritableTokenRelationStore.class);
         final var expiryValidator = handleContext.expiryValidator();
 
-        for (var xfers : op.tokenTransfers()) {
+        for (var xfers : tokenTransferLists) {
             final var tokenId = xfers.token();
             final var token = getIfUsable(tokenId, tokenStore);
             // Expected decimals are already validated in AdjustFungibleTokenChangesStep.
@@ -75,7 +84,6 @@ public class NFTOwnersChangeStep extends BaseTokenHandler implements TransferSte
                 final var receiverAccount = getIfUsable(receiverId, accountStore, expiryValidator, INVALID_ACCOUNT_ID);
                 final var senderRel = getIfUsable(senderId, tokenId, tokenRelStore);
                 final var receiverRel = getIfUsable(receiverId, tokenId, tokenRelStore);
-
                 validateNotFrozenAndKycOnRelation(senderRel);
                 validateNotFrozenAndKycOnRelation(receiverRel);
 

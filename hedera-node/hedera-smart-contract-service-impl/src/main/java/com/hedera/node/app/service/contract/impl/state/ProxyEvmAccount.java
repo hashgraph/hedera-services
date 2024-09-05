@@ -16,164 +16,64 @@
 
 package com.hedera.node.app.service.contract.impl.state;
 
-import static com.hedera.node.app.service.contract.impl.state.DispatchingEvmFrameState.HOLLOW_ACCOUNT_KEY;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.AbstractNativeSystemContract.FUNCTION_SELECTOR_LENGTH;
 
 import com.hedera.hapi.node.base.AccountID;
-import com.hedera.hapi.node.base.ContractID;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
+import java.util.Set;
 import org.apache.tuweni.bytes.Bytes;
-import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Hash;
-import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.Code;
-import org.hyperledger.besu.evm.account.Account;
-import org.hyperledger.besu.evm.account.MutableAccount;
 import org.hyperledger.besu.evm.code.CodeFactory;
-import org.hyperledger.besu.evm.worldstate.WorldUpdater;
 
 /**
- * An {@link Account} implementation that reads and writes data for the given entity number
- * by proxying calls to the given {@link EvmFrameState}.
+ * A concrete subclass of {@link AbstractProxyEvmAccount} that represents a contract account.
  *
- * <p>The {@link EvmFrameState} reflects all changes to the state of the world that have been
- * made up to and including the current {@link org.hyperledger.besu.evm.frame.MessageFrame}.
+ * Responsible for retrieving the redirectForAccount proxy contract byte code from {@link EvmFrameState}
+ * if the function selector is eligible for proxy redirection.
+ * Otherwise, it returns the 0x bytecode.
  *
- * <p>There is no implementation difference between mutable and immutable proxy accounts,
- * since all changes are made to the {@link EvmFrameState} and not to the proxy account.
- * So we just need one implementation, which the EVM will request from {@link WorldUpdater}s
- * as an immutable {@link Account} in read-only contexts; and as a mutable {@link MutableAccount}
- * in a context where writes are allowed.
  */
-public class ProxyEvmAccount extends AbstractMutableEvmAccount {
-    protected final AccountID accountID;
-    protected final EvmFrameState state;
+public class ProxyEvmAccount extends AbstractProxyEvmAccount {
+
+    /*
+     * Four byte function selectors for the two functions that are eligible for proxy redirection
+     * in the Hedera Account Service system contract
+     */
+    private static final Set<Integer> ACCOUNT_PROXY_FUNCTION_SELECTOR = Set.of(
+            // hbarAllowance(address spender)
+            0xbbee989e,
+            // hbarApprove(address spender, int256 amount)
+            0x86aff07c);
+
+    // Only pass in a non-null account address if the function selector is eligible for proxy redirection.
+    // A null address will return the 0x bytecode.
+    @Nullable
+    private Address address;
 
     public ProxyEvmAccount(final AccountID accountID, @NonNull final EvmFrameState state) {
-        this.state = state;
-        this.accountID = accountID;
+        super(accountID, state);
     }
 
     @Override
-    public Address getAddress() {
-        return state.getAddress(accountID);
-    }
-
-    @Override
-    public com.hedera.hapi.node.state.token.Account toNativeAccount() {
-        return state.getNativeAccount(accountID);
-    }
-
-    @Override
-    public long getNonce() {
-        return state.getNonce(accountID);
-    }
-
-    @Override
-    public Wei getBalance() {
-        return state.getBalance(accountID);
-    }
-
-    @Override
-    public @NonNull Code getEvmCode() {
+    public @NonNull Code getEvmCode(@NonNull final Bytes functionSelector) {
+        // Check to see if the account needs to return the proxy redirect for account bytecode
+        final int selector = functionSelector.size() >= FUNCTION_SELECTOR_LENGTH ? functionSelector.getInt(0) : 0;
+        if (ACCOUNT_PROXY_FUNCTION_SELECTOR.contains(selector)) {
+            address = state.getAddress(accountID);
+        }
         return CodeFactory.createCode(getCode(), 0, false);
     }
 
     @Override
     public @NonNull Bytes getCode() {
-        return state.getCode(hederaContractId());
+        return state.getAccountRedirectCode(address);
     }
 
     @Override
     public @NonNull Hash getCodeHash() {
-        return state.getCodeHash(hederaContractId());
-    }
-
-    @Override
-    public @NonNull UInt256 getStorageValue(@NonNull final UInt256 key) {
-        return state.getStorageValue(hederaContractId(), key);
-    }
-
-    @Override
-    public @NonNull UInt256 getOriginalStorageValue(@NonNull final UInt256 key) {
-        return state.getOriginalStorageValue(hederaContractId(), key);
-    }
-
-    @Override
-    public void setNonce(final long value) {
-        state.setNonce(accountID.accountNumOrThrow(), value);
-    }
-
-    @Override
-    public void setCode(@NonNull final Bytes code) {
-        state.setCode(hederaContractId(), code);
-    }
-
-    @Override
-    public void setStorageValue(@NonNull final UInt256 key, @NonNull final UInt256 value) {
-        state.setStorageValue(hederaContractId(), key, value);
-    }
-
-    // --- Hedera-specific methods ---
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public boolean isTokenFacade() {
-        return false;
-    }
-
-    @Override
-    public @NonNull AccountID hederaId() {
-        return accountID;
-    }
-
-    @Override
-    public @NonNull ContractID hederaContractId() {
-        return ContractID.newBuilder()
-                .contractNum(accountID.accountNumOrThrow())
-                .build();
-    }
-
-    @Override
-    public void becomeImmutable() {
-        throw new UnsupportedOperationException("Not Implemented Yet");
-    }
-
-    /**
-     * Returns the number of treasury titles held by this account.
-     *
-     * @return the number of treasury titles held by this account
-     */
-    public int numTreasuryTitles() {
-        return state.getNumTreasuryTitles(accountID);
-    }
-
-    /**
-     * Returns the number of positive token balances held by this account.
-     *
-     * @return the number of positive token balances held by this account
-     */
-    public int numPositiveTokenBalances() {
-        return state.getNumPositiveTokenBalances(accountID);
-    }
-
-    /**
-     * Returns whether the account is a contract.
-     *
-     * @return if the account is a contract
-     */
-    public boolean isContract() {
-        return state.isContract(accountID);
-    }
-
-    /**
-     * Returns whether this account is a "hollow" account; i.e. an account created by sending
-     * value to an EVM address that did not already have a corresponding Hedera account.
-     *
-     * @return whether this account is hollow
-     */
-    public boolean isHollow() {
-        return HOLLOW_ACCOUNT_KEY.equals(toNativeAccount().key());
+        return state.getAccountRedirectCodeHash(address);
     }
 }

@@ -17,14 +17,8 @@
 package com.hedera.node.app.service.token.impl.validators;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_IS_IMMUTABLE;
-import static com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler.isExpiryOnlyUpdateOp;
-import static com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler.isMetadataOnlyUpdateOp;
 import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.getIfUsable;
-import static com.hedera.node.app.spi.key.KeyUtils.isEmpty;
 import static com.hedera.node.app.spi.validation.ExpiryMeta.NA;
-import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
-import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.state.token.Token;
@@ -38,60 +32,54 @@ import com.hedera.node.config.data.TokensConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
 
+/**
+ * Validator for token update transactions.
+ */
 public class TokenUpdateValidator {
     private final TokenAttributesValidator validator;
 
+    /**
+     * Create a new {@link TokenUpdateValidator} instance.
+     * @param validator The {@link TokenAttributesValidator} to use.
+     */
     @Inject
     public TokenUpdateValidator(@NonNull final TokenAttributesValidator validator) {
         this.validator = validator;
     }
 
+    /**
+     * Validate the semantics of a token update transaction.
+     * @param token The token to update.
+     * @param resolvedExpiryMeta The resolved expiry metadata.
+     */
     public record ValidationResult(@NonNull Token token, @NonNull ExpiryMeta resolvedExpiryMeta) {}
 
+    /**
+     * Validate the semantics of a token update transaction.
+     * @param context The context to use.
+     * @param op The token update transaction body.
+     * @return The result of the validation
+     */
     @NonNull
     public ValidationResult validateSemantics(
             @NonNull final HandleContext context, @NonNull final TokenUpdateTransactionBody op) {
-        final var readableAccountStore = context.readableStore(ReadableAccountStore.class);
-        final var tokenStore = context.readableStore(ReadableTokenStore.class);
-        final var tokenId = op.tokenOrThrow();
-        final var token = getIfUsable(tokenId, tokenStore);
+        final var storeFactory = context.storeFactory();
+        final var readableAccountStore = storeFactory.readableStore(ReadableAccountStore.class);
+        final var tokenStore = storeFactory.readableStore(ReadableTokenStore.class);
+        final var token = getIfUsable(op.tokenOrThrow(), tokenStore);
         final var tokensConfig = context.configuration().getConfigData(TokensConfig.class);
-        // If the token has an empty admin key it can't be updated for any other fields other than metadata
-        // For updating only metadata the transaction should have admin key or metadata key
-        if (isMetadataOnlyUpdateOp(op)) {
-            validateTrue(token.hasAdminKey() || token.hasMetadataKey(), TOKEN_IS_IMMUTABLE);
-        } else if (!isExpiryOnlyUpdateOp(op)) {
-            validateFalse(isEmpty(token.adminKey()), TOKEN_IS_IMMUTABLE);
-        }
-        // validate memo
         if (op.hasMemo()) {
             context.attributeValidator().validateMemo(op.memo());
         }
-        // validate metadata
         if (op.hasMetadata()) {
             validator.validateTokenMetadata(op.metadataOrThrow(), tokensConfig);
         }
-        // validate token symbol, if being changed
-        if (op.symbol() != null && !op.symbol().isEmpty()) {
+        if (!op.symbol().isEmpty()) {
             validator.validateTokenSymbol(op.symbol(), tokensConfig);
         }
-        // validate token name, if being changed
-        if (op.name() != null && !op.name().isEmpty()) {
+        if (!op.name().isEmpty()) {
             validator.validateTokenName(op.name(), tokensConfig);
         }
-        // validate token keys, if any being changed
-        validator.validateTokenKeys(
-                op.hasAdminKey(), op.adminKey(),
-                op.hasKycKey(), op.kycKey(),
-                op.hasWipeKey(), op.wipeKey(),
-                op.hasSupplyKey(), op.supplyKey(),
-                op.hasFreezeKey(), op.freezeKey(),
-                op.hasFeeScheduleKey(), op.feeScheduleKey(),
-                op.hasPauseKey(), op.pauseKey(),
-                op.hasMetadataKey(), op.metadataKey());
-
-        // Check whether there is change on the following properties in the transaction body
-        // If no change occurred, no need to change them or validate them
         if (!(op.hasExpiry() || op.hasAutoRenewPeriod() || op.hasAutoRenewAccount())) {
             return new ValidationResult(
                     token,

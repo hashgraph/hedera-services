@@ -14,21 +14,37 @@
  * limitations under the License.
  */
 
-plugins { id("com.hedera.hashgraph.conventions") }
+plugins {
+    id("com.hedera.gradle.services")
+    id("com.hedera.gradle.services-publish")
+}
 
 description = "Default Hedera Network Admin Service Implementation"
+
+val writeSemanticVersionProperties =
+    tasks.register<WriteProperties>("writeSemanticVersionProperties") {
+        property("hapi.proto.version", libs.versions.hapi.proto.get())
+        property("hedera.services.version", project.version)
+
+        destinationFile.set(
+            layout.buildDirectory.file("generated/version/semantic-version.properties")
+        )
+    }
+
+tasks.processResources { from(writeSemanticVersionProperties) }
 
 mainModuleInfo { annotationProcessor("dagger.compiler") }
 
 testModuleInfo {
     requires("com.hedera.node.app")
+    requires("com.hedera.node.app.service.addressbook.impl")
     requires("com.hedera.node.app.service.file.impl")
     requires("com.hedera.node.app.service.network.admin.impl")
     requires("com.hedera.node.app.service.token.impl")
     requires("com.hedera.node.app.spi.test.fixtures")
+    requires("com.swirlds.state.api.test.fixtures")
     requires("com.hedera.node.app.test.fixtures")
     requires("com.hedera.node.config.test.fixtures")
-    requires("com.swirlds.fcqueue")
     requires("org.assertj.core")
     requires("org.junit.jupiter.api")
     requires("org.mockito")

@@ -17,7 +17,7 @@
 package com.swirlds.platform.event.preconsensus;
 
 import com.swirlds.common.wiring.component.InputWireLabel;
-import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.event.PlatformEvent;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
@@ -33,5 +33,5 @@ public interface PcesSequencer {
      */
     @InputWireLabel("unsequenced event")
     @NonNull
-    GossipEvent assignStreamSequenceNumber(@NonNull GossipEvent event);
+    PlatformEvent assignStreamSequenceNumber(@NonNull PlatformEvent event);
 }

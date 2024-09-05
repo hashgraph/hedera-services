@@ -20,18 +20,17 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_ID_DOES_NOT_EXI
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSFER_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TRANSFER_ACCOUNT_SAME_AS_DELETE_ACCOUNT;
-import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.hapi.utils.CommonPbjConverters;
 import com.hedera.node.app.hapi.utils.fee.CryptoFeeBuilder;
-import com.hedera.node.app.service.mono.fees.calculation.crypto.txns.CryptoDeleteResourceUsage;
 import com.hedera.node.app.service.token.api.TokenServiceApi;
 import com.hedera.node.app.service.token.api.TokenServiceApi.FreeAliasOnDeletion;
-import com.hedera.node.app.service.token.records.CryptoDeleteRecordBuilder;
+import com.hedera.node.app.service.token.records.CryptoDeleteStreamBuilder;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -49,6 +48,11 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class CryptoDeleteHandler implements TransactionHandler {
+    private final CryptoFeeBuilder usageEstimator = new CryptoFeeBuilder();
+
+    /**
+     * Default constructor for injection.
+     */
     @Inject
     public CryptoDeleteHandler() {
         // Exists for injection
@@ -83,12 +87,13 @@ public class CryptoDeleteHandler implements TransactionHandler {
         requireNonNull(context);
         final var accountsConfig = context.configuration().getConfigData(AccountsConfig.class);
         final var op = context.body().cryptoDeleteOrThrow();
-        context.serviceApi(TokenServiceApi.class)
+        context.storeFactory()
+                .serviceApi(TokenServiceApi.class)
                 .deleteAndTransfer(
                         op.deleteAccountIDOrThrow(),
                         op.transferAccountIDOrThrow(),
                         context.expiryValidator(),
-                        context.recordBuilder(CryptoDeleteRecordBuilder.class),
+                        context.savepointStack().getBaseBuilder(CryptoDeleteStreamBuilder.class),
                         accountsConfig.releaseAliasAfterDeletion() ? FreeAliasOnDeletion.YES : FreeAliasOnDeletion.NO);
     }
 
@@ -97,8 +102,10 @@ public class CryptoDeleteHandler implements TransactionHandler {
     public Fees calculateFees(@NonNull final FeeContext feeContext) {
         requireNonNull(feeContext);
         final var body = feeContext.body();
-        return feeContext.feeCalculator(SubType.DEFAULT).legacyCalculate(sigValueObj -> new CryptoDeleteResourceUsage(
-                        new CryptoFeeBuilder())
-                .usageGiven(fromPbj(body), sigValueObj, null));
+        return feeContext
+                .feeCalculatorFactory()
+                .feeCalculator(SubType.DEFAULT)
+                .legacyCalculate(sigValueObj ->
+                        usageEstimator.getCryptoDeleteTxFeeMatrices(CommonPbjConverters.fromPbj(body), sigValueObj));
     }
 }

@@ -19,7 +19,7 @@ package com.hedera.node.app.fees.congestion;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.hapi.utils.throttles.CongestibleThrottle;
-import com.hedera.node.app.service.mono.fees.calculation.CongestionMultipliers;
+import com.hedera.node.config.types.CongestionMultipliers;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
 import java.time.Instant;

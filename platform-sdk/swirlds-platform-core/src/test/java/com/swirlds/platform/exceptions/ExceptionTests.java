@@ -25,7 +25,6 @@ import static com.swirlds.platform.exceptions.ExceptionAssertions.assertExceptio
 import com.swirlds.platform.crypto.KeyCertPurpose;
 import com.swirlds.platform.crypto.KeyGeneratingException;
 import com.swirlds.platform.crypto.KeyLoadingException;
-import com.swirlds.platform.gossip.chatter.protocol.PeerMessageException;
 import com.swirlds.platform.gossip.shadowgraph.SyncTimeoutException;
 import com.swirlds.platform.network.NetworkProtocolException;
 import com.swirlds.platform.system.PlatformConstructionException;
@@ -68,10 +67,5 @@ class ExceptionTests {
     void testNetworkProtocolException() {
         assertExceptionSame(new NetworkProtocolException(MESSAGE), MESSAGE, null);
         assertExceptionContains(new NetworkProtocolException(CAUSE), List.of(CAUSE_MESSAGE), CAUSE);
-    }
-
-    @Test
-    void testPeerMessageException() {
-        assertExceptionSame(new PeerMessageException(MESSAGE), MESSAGE, null);
     }
 }

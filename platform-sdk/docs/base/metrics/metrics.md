@@ -1,3 +1,5 @@
+[⇧ Platform Base](../base.md)
+
 # Metrics Design
 
 This document describes the general design of the main metrics functionality.

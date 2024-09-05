@@ -33,6 +33,7 @@ public class KeyUtils {
 
     public static final Key IMMUTABILITY_SENTINEL_KEY =
             Key.newBuilder().keyList(KeyList.DEFAULT).build();
+
     public static final int EVM_ADDRESS_BYTE_LENGTH = 20;
     public static final int ED25519_BYTE_LENGTH = 32;
     private static final byte ODD_PARITY = (byte) 0x03;
@@ -41,10 +42,6 @@ public class KeyUtils {
 
     private KeyUtils() {
         throw new UnsupportedOperationException("Utility Class");
-    }
-
-    public static boolean isEmptyAndNotImmutable(@Nullable final Key pbjKey) {
-        return isEmptyInternal(pbjKey, true);
     }
 
     /**

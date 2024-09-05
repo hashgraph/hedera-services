@@ -16,7 +16,7 @@
 
 package com.hedera.node.app.signature;
 
-import static com.hedera.node.app.service.mono.sigs.utils.MiscCryptoUtils.extractEvmAddressFromDecompressedECDSAKey;
+import static com.hedera.node.app.hapi.utils.MiscCryptoUtils.extractEvmAddressFromDecompressedECDSAKey;
 import static com.hedera.node.app.signature.impl.SignatureExpanderImpl.decompressKey;
 
 import com.hedera.hapi.node.base.Key;

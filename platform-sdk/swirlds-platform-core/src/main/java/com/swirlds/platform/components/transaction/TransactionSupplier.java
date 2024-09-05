@@ -16,8 +16,9 @@
 
 package com.swirlds.platform.components.transaction;
 
-import com.swirlds.platform.system.transaction.ConsensusTransactionImpl;
+import com.hedera.hapi.platform.event.EventTransaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.List;
 
 /**
  * A source of transactions.
@@ -28,8 +29,8 @@ public interface TransactionSupplier {
     /**
      * Returns an array of transactions. May return an empty array.
      *
-     * @return an array with 0 or more transactions
+     * @return an list with 0 or more transactions
      */
     @NonNull
-    ConsensusTransactionImpl[] getTransactions();
+    List<EventTransaction> getTransactions();
 }

@@ -61,6 +61,11 @@ public interface LogHandler {
     default void stopAndFinalize() {}
 
     /**
+     * All content for this handler that has been buffered will be written to destination.
+     */
+    default void flush() {}
+
+    /**
      * Updates the log handler with the new configuration.
      *
      * @param configuration the new configuration

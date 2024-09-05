@@ -44,7 +44,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 final class TransactionMethodTest {
-    private static final String SERVICE_NAME = "testService";
+    private static final String SERVICE_NAME = "proto.testService";
     private static final String METHOD_NAME = "testMethod";
 
     private final IngestWorkflow ingestWorkflow = (requestBuffer, responseBuffer) -> {};
@@ -156,7 +156,8 @@ final class TransactionMethodTest {
     }
 
     private Counter counter(String suffix) {
-        return (Counter) metrics.getMetric("app", SERVICE_NAME + ":" + METHOD_NAME + suffix);
+        return (Counter)
+                metrics.getMetric("app", SERVICE_NAME.substring("proto.".length()) + ":" + METHOD_NAME + suffix);
     }
 
     @Test

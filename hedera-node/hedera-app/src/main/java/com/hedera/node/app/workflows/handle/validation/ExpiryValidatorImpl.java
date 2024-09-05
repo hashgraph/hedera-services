@@ -16,6 +16,8 @@
 
 package com.hedera.node.app.workflows.handle.validation;
 
+import static com.hedera.hapi.node.base.HederaFunctionality.CONSENSUS_CREATE_TOPIC;
+import static com.hedera.hapi.node.base.HederaFunctionality.TOKEN_CREATE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.CONTRACT_EXPIRED_AND_PENDING_REMOVAL;
@@ -24,7 +26,6 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_AUTORENEW_ACCOU
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_RENEWAL_PERIOD;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
-import static com.hedera.node.app.service.mono.fees.calculation.FeeCalcUtils.clampedAdd;
 import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static java.util.Objects.requireNonNull;
@@ -32,8 +33,8 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
-import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
-import com.hedera.node.app.service.mono.pbj.PbjConverter;
+import com.hedera.node.app.hapi.utils.CommonPbjConverters;
+import com.hedera.node.app.hapi.utils.InvalidTransactionException;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.validation.EntityType;
 import com.hedera.node.app.spi.validation.ExpiryMeta;
@@ -68,7 +69,7 @@ public class ExpiryValidatorImpl implements ExpiryValidator {
             @NonNull final ExpiryMeta creationMeta,
             @NonNull final HederaFunctionality functionality) {
         if (creationMeta.hasAutoRenewAccountId()) {
-            validateAutoRenewAccount(creationMeta.autoRenewAccountId());
+            validateAutoRenewAccount(requireNonNull(creationMeta.autoRenewAccountId()));
         }
 
         long effectiveExpiry = creationMeta.expiry();
@@ -80,12 +81,12 @@ public class ExpiryValidatorImpl implements ExpiryValidator {
         }
         // To maintain same behaviour for differential testing this condition is needed.
         // FUTURE: This condition should be removed after differential testing is done
-        if (functionality == HederaFunctionality.CONSENSUS_CREATE_TOPIC) {
+        if (functionality == CONSENSUS_CREATE_TOPIC) {
             // In mono-service this check is done first for topic creation.
             context.attributeValidator().validateExpiry(effectiveExpiry);
             // Even if the effective expiry is valid, we still also require any explicit auto-renew period to be valid
             validateAutoRenew(creationMeta);
-        } else if (functionality == HederaFunctionality.TOKEN_CREATE) {
+        } else if (functionality == TOKEN_CREATE) {
             // In mono-service, INVALID_RENEWAL_PERIOD is thrown for token creation and update
             // if the autoRenewPeriod is not in range.
             // It would be more correct to throw AUTO_RENEW_DURATION_NOT_IN_RANGE like the other services do,
@@ -224,18 +225,26 @@ public class ExpiryValidatorImpl implements ExpiryValidator {
             // 0L is a sentinel number that says to remove the current auto-renew account
             return;
         }
-        final var accountStore = context.readableStore(ReadableAccountStore.class);
+        final var accountStore = context.storeFactory().readableStore(ReadableAccountStore.class);
         try {
             final var account = accountStore.getAccountById(accountID);
             if (account == null || account.deleted()) {
                 throw new HandleException(INVALID_AUTORENEW_ACCOUNT);
             }
         } catch (final InvalidTransactionException e) {
-            throw new HandleException(PbjConverter.toPbj(e.getResponseCode()));
+            throw new HandleException(CommonPbjConverters.toPbj(e.getResponseCode()));
         }
     }
 
     private boolean isExpiryDisabled(boolean smartContract, boolean expireAccounts, boolean expireContracts) {
         return (smartContract && !expireContracts) || (!smartContract && !expireAccounts);
+    }
+
+    private static long clampedAdd(final long a, final long b) {
+        try {
+            return Math.addExact(a, b);
+        } catch (final ArithmeticException ae) {
+            return a > 0 ? Long.MAX_VALUE : Long.MIN_VALUE;
+        }
     }
 }

@@ -21,23 +21,22 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.gas.DispatchType;
 import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AbstractHtsCallTranslator;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.AbstractCallTranslator;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.Call;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.DispatchForResponseCodeHtsCall;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.Arrays;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
 /**
  * Translates pause and unpause calls to the HTS system contract. There are no special cases for
- * these calls, so the returned {@link HtsCall} is simply an instance of {@link DispatchForResponseCodeHtsCall}.
+ * these calls, so the returned {@link Call} is simply an instance of {@link DispatchForResponseCodeHtsCall}.
  */
 @Singleton
-public class PausesTranslator extends AbstractHtsCallTranslator {
+public class PausesTranslator extends AbstractCallTranslator<HtsCallAttempt> {
     public static final Function PAUSE = new Function("pauseToken(address)", ReturnTypes.INT_64);
     public static final Function UNPAUSE = new Function("unpauseToken(address)", ReturnTypes.INT_64);
 
@@ -53,18 +52,18 @@ public class PausesTranslator extends AbstractHtsCallTranslator {
      */
     @Override
     public boolean matches(@NonNull final HtsCallAttempt attempt) {
-        return matchesClassicSelector(attempt.selector());
+        return attempt.isSelector(PAUSE, UNPAUSE);
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public HtsCall callFrom(@NonNull final HtsCallAttempt attempt) {
+    public Call callFrom(@NonNull final HtsCallAttempt attempt) {
         return new DispatchForResponseCodeHtsCall(
                 attempt,
                 bodyForClassic(attempt),
-                Arrays.equals(attempt.selector(), PAUSE.selector())
+                attempt.isSelector(PAUSE)
                         ? PausesTranslator::pauseGasRequirement
                         : PausesTranslator::unpauseGasRequirement);
     }
@@ -86,14 +85,10 @@ public class PausesTranslator extends AbstractHtsCallTranslator {
     }
 
     private TransactionBody bodyForClassic(@NonNull final HtsCallAttempt attempt) {
-        if (Arrays.equals(attempt.selector(), PAUSE.selector())) {
+        if (attempt.isSelector(PAUSE)) {
             return decoder.decodePause(attempt);
         } else {
             return decoder.decodeUnpause(attempt);
         }
-    }
-
-    private static boolean matchesClassicSelector(@NonNull final byte[] selector) {
-        return Arrays.equals(selector, PAUSE.selector()) || Arrays.equals(selector, UNPAUSE.selector());
     }
 }

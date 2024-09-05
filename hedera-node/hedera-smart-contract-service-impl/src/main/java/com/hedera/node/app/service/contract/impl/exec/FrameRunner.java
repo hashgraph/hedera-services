@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.contract.impl.exec;
 
 import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.INSUFFICIENT_CHILD_RECORDS;
+import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.INVALID_CONTRACT_ID;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.contractsConfigOf;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.getAndClearPropagatedCallFailure;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.maybeNext;
@@ -24,8 +25,6 @@ import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.pr
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.setPropagatedCallFailure;
 import static com.hedera.node.app.service.contract.impl.hevm.HederaEvmTransactionResult.failureFrom;
 import static com.hedera.node.app.service.contract.impl.hevm.HederaEvmTransactionResult.successFrom;
-import static com.hedera.node.app.service.contract.impl.hevm.HevmPropagatedCallFailure.NONE;
-import static com.hedera.node.app.service.contract.impl.hevm.HevmPropagatedCallFailure.RESULT_CANNOT_BE_EXTERNALIZED;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asEvmContractId;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asNumberedContractId;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.isLongZero;
@@ -37,8 +36,8 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.node.app.service.contract.impl.exec.gas.CustomGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.processors.CustomMessageCallProcessor;
-import com.hedera.node.app.service.contract.impl.hevm.ActionSidecarContentTracer;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmTransactionResult;
+import com.hedera.node.app.service.contract.impl.hevm.HevmPropagatedCallFailure;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import javax.inject.Inject;
@@ -46,6 +45,7 @@ import javax.inject.Singleton;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 import org.hyperledger.besu.evm.frame.MessageFrame;
+import org.hyperledger.besu.evm.operation.Operation;
 import org.hyperledger.besu.evm.processor.ContractCreationProcessor;
 
 /**
@@ -144,12 +144,17 @@ public class FrameRunner {
         frame.getExceptionalHaltReason().ifPresent(haltReason -> propagateHaltException(frame, haltReason));
         // For mono-service compatibility, we need to also halt the frame on the stack that
         // executed the CALL operation whose dispatched frame failed due to a missing receiver
-        // signature; since mono-service did that check as part of the CALL operation itself
+        // signature; since mono-service did that check as part of the CALL operation itself.
         final var maybeFailureToPropagate = getAndClearPropagatedCallFailure(frame);
-        if (maybeFailureToPropagate != NONE) {
+        if (maybeFailureToPropagate != HevmPropagatedCallFailure.NONE) {
             maybeNext(frame).ifPresent(f -> {
                 f.setState(EXCEPTIONAL_HALT);
                 f.setExceptionalHaltReason(maybeFailureToPropagate.exceptionalHaltReason());
+                // Finalize the CONTRACT_ACTION for the propagated halt frame as well
+                maybeFailureToPropagate
+                        .exceptionalHaltReason()
+                        .ifPresent(reason -> tracer.tracePostExecution(
+                                f, new Operation.OperationResult(frame.getRemainingGas(), reason)));
             });
         }
     }
@@ -166,7 +171,9 @@ public class FrameRunner {
     // potentially other cases could be handled here if necessary
     private void propagateHaltException(MessageFrame frame, ExceptionalHaltReason haltReason) {
         if (haltReason.equals(INSUFFICIENT_CHILD_RECORDS)) {
-            setPropagatedCallFailure(frame, RESULT_CANNOT_BE_EXTERNALIZED);
+            setPropagatedCallFailure(frame, HevmPropagatedCallFailure.RESULT_CANNOT_BE_EXTERNALIZED);
+        } else if (haltReason.equals(INVALID_CONTRACT_ID)) {
+            setPropagatedCallFailure(frame, HevmPropagatedCallFailure.INVALID_CONTRACT_ID);
         }
     }
 }

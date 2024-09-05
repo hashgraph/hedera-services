@@ -15,6 +15,9 @@
 	"TOKEN_FUNGIBLE_COMMON_WITH_CUSTOM_FEES": 0.002,
 	"TOKEN_NON_FUNGIBLE_UNIQUE_WITH_CUSTOM_FEES": 0.002
   },
+  "TokenAirdrop": {
+    "DEFAULT": 0.1
+  },
   "CryptoDelete": {
 	"DEFAULT": 0.005
   },
@@ -75,6 +78,10 @@
   "TokenUpdateNfts": {
     "DEFAULT": 0.001
   },
+  "TokenReject": {
+    "TOKEN_FUNGIBLE_COMMON": 0.001,
+    "TOKEN_NON_FUNGIBLE_UNIQUE": 0.001
+  },
   "TokenFeeScheduleUpdate": {
 	"DEFAULT": 0.001
   },
@@ -116,6 +123,12 @@
   "TokenAccountWipe": {
 	"TOKEN_FUNGIBLE_COMMON": 0.001,
 	"TOKEN_NON_FUNGIBLE_UNIQUE": 0.001
+  },
+  "TokenClaimAirdrop": {
+    "DEFAULT": 0.001
+  },
+  "TokenCancelAirdrop": {
+    "DEFAULT": 0.001
   },
   "ContractCreate": {
 	"DEFAULT": 1.0
@@ -201,5 +214,14 @@
   },
   "UtilPrng": {
 	"DEFAULT": 0.001
+  },
+  "NodeCreate": {
+    "DEFAULT": 0.001
+  },
+  "NodeUpdate": {
+    "DEFAULT": 0.001
+  },
+  "NodeDelete": {
+    "DEFAULT": 0.001
   }
 }

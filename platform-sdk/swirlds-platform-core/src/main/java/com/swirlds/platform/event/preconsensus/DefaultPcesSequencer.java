@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.event.preconsensus;
 
-import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.event.PlatformEvent;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
@@ -31,7 +31,7 @@ public class DefaultPcesSequencer implements PcesSequencer {
      */
     @Override
     @NonNull
-    public GossipEvent assignStreamSequenceNumber(@NonNull final GossipEvent event) {
+    public PlatformEvent assignStreamSequenceNumber(@NonNull final PlatformEvent event) {
         event.setStreamSequenceNumber(nextStreamSequenceNumber++);
 
         return event;

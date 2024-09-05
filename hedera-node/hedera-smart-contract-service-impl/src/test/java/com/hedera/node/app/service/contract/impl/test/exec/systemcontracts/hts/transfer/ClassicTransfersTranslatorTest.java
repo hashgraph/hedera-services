@@ -28,13 +28,13 @@ import static org.mockito.BDDMockito.given;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategies;
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.HtsCallTranslator;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.CallTranslator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AddressIdConverter;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.ClassicTransfersCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.ClassicTransfersDecoder;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.ClassicTransfersTranslator;
-import com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.hts.HtsCallTestBase;
+import com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.common.CallTestBase;
 import com.swirlds.common.utility.CommonUtils;
 import java.lang.reflect.Field;
 import java.util.List;
@@ -46,7 +46,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class ClassicTransfersTranslatorTest extends HtsCallTestBase {
+class ClassicTransfersTranslatorTest extends CallTestBase {
 
     private static final String ABI_ID_TRANSFER_TOKEN = "eca36917";
     private static final String ABI_ID_CRYPTO_TRANSFER_V2 = "0e71804f";
@@ -65,7 +65,7 @@ class ClassicTransfersTranslatorTest extends HtsCallTestBase {
 
     private ClassicTransfersTranslator subject;
 
-    private List<HtsCallTranslator> callTranslators;
+    private List<CallTranslator<HtsCallAttempt>> callTranslators;
 
     @BeforeEach
     void setUp() {

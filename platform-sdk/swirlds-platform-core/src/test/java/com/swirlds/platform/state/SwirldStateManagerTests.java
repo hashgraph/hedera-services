@@ -16,21 +16,25 @@
 
 package com.swirlds.platform.state;
 
+import static com.swirlds.common.test.fixtures.RandomUtils.nextInt;
+import static com.swirlds.platform.test.fixtures.state.FakeMerkleStateLifecycles.FAKE_MERKLE_STATE_LIFECYCLES;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.platform.SwirldsPlatform;
-import com.swirlds.platform.metrics.SwirldStateMetrics;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.system.BasicSoftwareVersion;
+import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.status.StatusActionSubmitter;
-import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookGenerator;
-import com.swirlds.platform.test.fixtures.state.DummySwirldState;
+import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
+import com.swirlds.platform.test.fixtures.state.RandomSignedStateGenerator;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -38,12 +42,13 @@ import org.junit.jupiter.api.Test;
 class SwirldStateManagerTests {
 
     private SwirldStateManager swirldStateManager;
-    private State initialState;
+    private MerkleRoot initialState;
 
     @BeforeEach
     void setup() {
         final SwirldsPlatform platform = mock(SwirldsPlatform.class);
-        final AddressBook addressBook = new RandomAddressBookGenerator().build();
+        final AddressBook addressBook =
+                RandomAddressBookBuilder.create(Randotron.create()).build();
         when(platform.getAddressBook()).thenReturn(addressBook);
         initialState = newState();
         final PlatformContext platformContext =
@@ -53,10 +58,9 @@ class SwirldStateManagerTests {
                 platformContext,
                 addressBook,
                 new NodeId(0L),
-                mock(SwirldStateMetrics.class),
                 mock(StatusActionSubmitter.class),
-                initialState,
                 new BasicSoftwareVersion(1));
+        swirldStateManager.setInitialState(initialState);
     }
 
     @Test
@@ -70,6 +74,14 @@ class SwirldStateManagerTests {
                 1,
                 swirldStateManager.getConsensusState().getReservationCount(),
                 "The consensus state should have one reference.");
+    }
+
+    @Test
+    @DisplayName("Seal consensus round")
+    void sealConsensusRound() {
+        final var round = mock(Round.class);
+        swirldStateManager.sealConsensusRound(round);
+        verify(round).getRoundNum();
     }
 
     @Test
@@ -107,15 +119,14 @@ class SwirldStateManagerTests {
                         + "decremented.");
     }
 
-    private static State newState() {
-        final State state = new State();
-        state.setSwirldState(new DummySwirldState());
+    private static MerkleRoot newState() {
+        final MerkleStateRoot state =
+                new MerkleStateRoot(FAKE_MERKLE_STATE_LIFECYCLES, version -> new BasicSoftwareVersion(version.major()));
 
-        final PlatformState platformState = mock(PlatformState.class);
-        when(platformState.getClassId()).thenReturn(PlatformState.CLASS_ID);
-        when(platformState.copy()).thenReturn(platformState);
+        final PlatformStateAccessor platformState = mock(PlatformStateAccessor.class);
+        when(platformState.getCreationSoftwareVersion()).thenReturn(new BasicSoftwareVersion(nextInt(1, 100)));
 
-        state.setPlatformState(platformState);
+        state.updatePlatformState(platformState);
 
         assertEquals(0, state.getReservationCount(), "A brand new state should have no references.");
         return state;

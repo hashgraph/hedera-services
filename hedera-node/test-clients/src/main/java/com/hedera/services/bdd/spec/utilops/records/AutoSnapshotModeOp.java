@@ -17,7 +17,8 @@
 package com.hedera.services.bdd.spec.utilops.records;
 
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.snapshotMode;
-import static com.hedera.services.bdd.spec.utilops.records.AutoSnapshotRecordSource.MONO_SERVICE;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMode.FUZZY_MATCH_AGAINST_HAPI_TEST_STREAMS;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMode.TAKE_FROM_HAPI_TEST_STREAMS;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.services.bdd.spec.HapiSpec;
@@ -29,35 +30,24 @@ import edu.umd.cs.findbugs.annotations.Nullable;
  * An operation that delegates to a {@link SnapshotModeOp} depending on whether the currently executing
  * {@link HapiSpec} has a record snapshot already saved.
  * <ul>
- *     <Li>If the snapshot already exists, inserts either a {@code snapshotMode(FUZZY_MATCH_AGAINST_HAPI_TEST_STREAMS)}
- *     or {@code snapshotMode(FUZZY_MATCH_AGAINST_MONO_STREAMS)} depending on the given {@link AutoSnapshotRecordSource}.</Li>
- *     <Li>If the snapshot does not exist, inserts either a {@code snapshotMode(TAKE_FROM_HAPI_TEST_STREAMS)}
- *     or {@code snapshotMode(TAKE_FROM_MONO_STREAMS)} depending on the given {@link AutoSnapshotRecordSource}.</Li>
+ *     <Li>If the snapshot already exists, inserts a {@code snapshotMode(FUZZY_MATCH_AGAINST_HAPI_TEST_STREAMS)}.
+ *     <Li>If the snapshot does not exist, inserts a {@code snapshotMode(TAKE_FROM_HAPI_TEST_STREAMS)}.
  * </ul>
  */
 public class AutoSnapshotModeOp extends UtilOp implements SnapshotOp {
-    private final AutoSnapshotRecordSource autoTakeSource;
-    private final AutoSnapshotRecordSource autoMatchSource;
-
     private SnapshotModeOp delegate;
     private final SnapshotMatchMode[] snapshotMatchModes;
 
     public static @Nullable SnapshotOp from(@NonNull final HapiSpec spec) {
         final var setup = spec.setup();
         if (setup.autoSnapshotManagement()) {
-            return new AutoSnapshotModeOp(
-                    setup.autoSnapshotTarget(), setup.autoMatchTarget(), spec.getSnapshotMatchModes());
+            return new AutoSnapshotModeOp(spec.getSnapshotMatchModes());
         } else {
             return null;
         }
     }
 
-    public AutoSnapshotModeOp(
-            @NonNull final AutoSnapshotRecordSource autoTakeSource,
-            @NonNull final AutoSnapshotRecordSource autoMatchSource,
-            @NonNull final SnapshotMatchMode[] snapshotMatchModes) {
-        this.autoTakeSource = autoTakeSource;
-        this.autoMatchSource = autoMatchSource;
+    public AutoSnapshotModeOp(@NonNull final SnapshotMatchMode[] snapshotMatchModes) {
         this.snapshotMatchModes = snapshotMatchModes;
     }
 
@@ -65,15 +55,9 @@ public class AutoSnapshotModeOp extends UtilOp implements SnapshotOp {
     protected boolean submitOp(@NonNull final HapiSpec spec) throws Throwable {
         final var maybeSnapshot = SnapshotModeOp.maybeLoadSnapshotFor(spec);
         if (maybeSnapshot.isPresent() && !spec.setup().overrideExistingSnapshot()) {
-            final var snapshotMode = (autoMatchSource == MONO_SERVICE)
-                    ? SnapshotMode.FUZZY_MATCH_AGAINST_MONO_STREAMS
-                    : SnapshotMode.FUZZY_MATCH_AGAINST_HAPI_TEST_STREAMS;
-            delegate = snapshotMode(snapshotMode, snapshotMatchModes);
+            delegate = snapshotMode(FUZZY_MATCH_AGAINST_HAPI_TEST_STREAMS, snapshotMatchModes);
         } else {
-            final var snapshotMode = (autoTakeSource == MONO_SERVICE)
-                    ? SnapshotMode.TAKE_FROM_MONO_STREAMS
-                    : SnapshotMode.TAKE_FROM_HAPI_TEST_STREAMS;
-            delegate = snapshotMode(snapshotMode, snapshotMatchModes);
+            delegate = snapshotMode(TAKE_FROM_HAPI_TEST_STREAMS, snapshotMatchModes);
         }
         return delegate.submitOp(spec);
     }

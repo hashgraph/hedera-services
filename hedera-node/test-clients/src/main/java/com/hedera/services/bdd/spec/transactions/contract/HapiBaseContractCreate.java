@@ -16,7 +16,7 @@
 
 package com.hedera.services.bdd.spec.transactions.contract;
 
-import static com.hedera.services.bdd.spec.transactions.TxnFactory.bannerWith;
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.bannerWith;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.equivAccount;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.solidityIdFrom;
 import static com.hedera.services.bdd.spec.transactions.contract.HapiContractCall.doGasLookup;
@@ -26,7 +26,6 @@ import com.google.common.base.MoreObjects;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.infrastructure.HapiSpecRegistry;
 import com.hedera.services.bdd.spec.keys.KeyFactory;
-import com.hedera.services.bdd.spec.keys.KeyGenerator;
 import com.hedera.services.bdd.spec.keys.SigControl;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hedera.services.bdd.spec.transactions.TxnVerbs;
@@ -57,7 +56,7 @@ public abstract class HapiBaseContractCreate<T extends HapiTxnOp<T>> extends Hap
     protected boolean advertiseCreation = false;
     protected boolean shouldAlsoRegisterAsAccount = true;
     protected boolean useDeprecatedAdminKey = false;
-    protected final String contract;
+    protected String contract;
     protected OptionalLong gas = OptionalLong.empty();
     Optional<String> key = Optional.empty();
     Optional<Long> autoRenewPeriodSecs = Optional.empty();
@@ -139,11 +138,10 @@ public abstract class HapiBaseContractCreate<T extends HapiTxnOp<T>> extends Hap
         if (key.isPresent()) {
             adminKey = spec.registry().getKey(key.get());
         } else {
-            KeyGenerator generator = effectiveKeyGen();
             if (adminKeyControl.isEmpty()) {
-                adminKey = spec.keys().generate(spec, adminKeyType.orElse(KeyFactory.KeyType.SIMPLE), generator);
+                adminKey = spec.keys().generate(spec, adminKeyType.orElse(KeyFactory.KeyType.SIMPLE));
             } else {
-                adminKey = spec.keys().generateSubjectTo(spec, adminKeyControl.get(), generator);
+                adminKey = spec.keys().generateSubjectTo(spec, adminKeyControl.get());
             }
         }
     }
@@ -176,5 +174,9 @@ public abstract class HapiBaseContractCreate<T extends HapiTxnOp<T>> extends Hap
         return Optional.ofNullable(lastReceipt)
                 .map(receipt -> receipt.getContractID().getContractNum())
                 .orElse(-1L);
+    }
+
+    public Optional<Key> getAdminKey() {
+        return (!omitAdminKey && !useDeprecatedAdminKey) ? Optional.of(adminKey) : Optional.empty();
     }
 }

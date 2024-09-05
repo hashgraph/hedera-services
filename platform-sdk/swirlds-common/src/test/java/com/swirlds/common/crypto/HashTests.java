@@ -16,7 +16,6 @@
 
 package com.swirlds.common.crypto;
 
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -51,7 +50,6 @@ public class HashTests {
         Arrays.fill(nonZeroHashValue, Byte.MAX_VALUE);
 
         final Hash hash = new Hash(DigestType.SHA_384);
-        final ImmutableHash immutableHash = new ImmutableHash(hash);
 
         assertDoesNotThrow((ThrowingSupplier<Hash>) Hash::new);
         assertDoesNotThrow(() -> new Hash(nonZeroHashValue));
@@ -59,17 +57,13 @@ public class HashTests {
         assertDoesNotThrow(() -> new Hash(DigestType.SHA_512));
 
         assertThrows(NullPointerException.class, () -> new Hash((DigestType) null));
-        assertThrows(IllegalArgumentException.class, () -> new Hash((byte[]) null));
+        assertThrows(NullPointerException.class, () -> new Hash((byte[]) null));
         assertThrows(IllegalArgumentException.class, () -> new Hash((Hash) null));
-        assertThrows(EmptyHashValueException.class, () -> new Hash(new byte[48]));
 
-        assertThrows(IllegalArgumentException.class, () -> new Hash(nonZeroHashValue, null));
+        assertThrows(NullPointerException.class, () -> new Hash(nonZeroHashValue, null));
         assertThrows(IllegalArgumentException.class, () -> new Hash(new byte[0], DigestType.SHA_384));
         assertThrows(IllegalArgumentException.class, () -> new Hash(new byte[47], DigestType.SHA_384));
         assertThrows(IllegalArgumentException.class, () -> new Hash(new byte[71], DigestType.SHA_512));
-        assertThrows(
-                EmptyHashValueException.class,
-                () -> new Hash(new byte[DigestType.SHA_384.digestLength()], DigestType.SHA_384));
     }
 
     @Test
@@ -110,11 +104,9 @@ public class HashTests {
         assertNotEquals(0, original.compareTo(new Hash(DigestType.SHA_512)));
 
         ////////
-        assertArrayEquals(original.getValue(), copy.getValue());
-        assertArrayEquals(original.getValue(), recalculated.getValue());
-        assertArrayEquals(copy.getValue(), recalculated.getValue());
-        assertFalse(Arrays.equals(original.getValue(), different.getValue()));
-        assertFalse(Arrays.equals(copy.getValue(), different.getValue()));
+        assertEquals(original.getBytes(), copy.getBytes());
+        assertEquals(original.getBytes(), recalculated.getBytes());
+        assertEquals(copy.getBytes(), recalculated.getBytes());
 
         assertEquals(original, copy);
         assertEquals(original, recalculated);

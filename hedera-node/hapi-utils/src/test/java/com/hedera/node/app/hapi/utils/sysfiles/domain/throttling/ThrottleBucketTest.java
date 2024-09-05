@@ -23,6 +23,7 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTrans
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import com.hedera.hapi.node.state.throttles.ThrottleUsageSnapshot;
 import com.hedera.node.app.hapi.utils.TestUtils;
 import com.hedera.node.app.hapi.utils.throttles.BucketThrottle;
 import com.hedera.node.app.hapi.utils.throttles.ConcurrentThrottleTestHelper;
@@ -106,7 +107,7 @@ class ThrottleBucketTest {
 
     @Test
     void failsWhenConstructingThrottlesWithZeroGroups() {
-        final var subject = new ThrottleBucket();
+        final var subject = new ThrottleBucket<>();
 
         assertThrows(IllegalStateException.class, () -> subject.asThrottleMapping(1));
     }
@@ -138,11 +139,12 @@ class ThrottleBucketTest {
     void constructedThrottleWorksAsExpected() throws InterruptedException, IOException {
         final var subject = bucketFrom("bootstrap/throttles.json");
         final var n = 14;
-        final var expectedXferTps = (1.0 * subject.getThrottleGroups().get(0).getOpsPerSec()) / n;
+        final var expectedXferTps =
+                (1.0 * subject.getThrottleGroups().getFirst().getOpsPerSec()) / n;
         final var mapping = subject.asThrottleMapping(n);
         final var throttle = mapping.getLeft();
         final var opsForXfer = opsForFunction(mapping.getRight(), CryptoTransfer);
-        throttle.resetUsageTo(new DeterministicThrottle.UsageSnapshot(
+        throttle.resetUsageTo(new ThrottleUsageSnapshot(
                 throttle.capacity() - DeterministicThrottle.capacityRequiredFor(opsForXfer), null));
 
         final var helper = new ConcurrentThrottleTestHelper(3, 10, opsForXfer);

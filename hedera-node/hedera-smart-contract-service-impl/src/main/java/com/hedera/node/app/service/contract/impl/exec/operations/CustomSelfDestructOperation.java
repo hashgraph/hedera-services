@@ -31,31 +31,45 @@ import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.EVM;
 import org.hyperledger.besu.evm.account.Account;
+import org.hyperledger.besu.evm.account.MutableAccount;
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 import org.hyperledger.besu.evm.frame.MessageFrame;
+import org.hyperledger.besu.evm.frame.MessageFrame.State;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.internal.UnderflowException;
 import org.hyperledger.besu.evm.internal.Words;
 import org.hyperledger.besu.evm.operation.AbstractOperation;
-import org.hyperledger.besu.evm.operation.Operation;
 import org.hyperledger.besu.evm.operation.SelfDestructOperation;
 
 /**
  * Hedera {@link SelfDestructOperation} that checks whether there is a Hedera-specific reason to halt
  * execution before proceeding with a self-destruct that uses
  * {@link ProxyWorldUpdater#tryTransfer(Address, Address, long, boolean)}.
- * instead of direct {@link org.hyperledger.besu.evm.account.MutableAccount#setBalance(Wei)} calls to
+ * instead of direct {@link MutableAccount#setBalance(Wei)} calls to
  * ensure Hedera signing requirements are enforced.
  */
 public class CustomSelfDestructOperation extends AbstractOperation {
-    private static final Operation.OperationResult UNDERFLOW_RESPONSE =
-            new Operation.OperationResult(0, ExceptionalHaltReason.INSUFFICIENT_STACK_ITEMS);
+    private static final OperationResult UNDERFLOW_RESPONSE =
+            new OperationResult(0, ExceptionalHaltReason.INSUFFICIENT_STACK_ITEMS);
+
+    /** EIP-6780 changed SELFDESTRUCT semantics so that it always sweeps, but only deletes the
+     * contract if the contract was created in the same transaction.
+     */
+    public enum UseEIP6780Semantics {
+        NO,
+        YES
+    };
+
+    private final UseEIP6780Semantics eip6780Semantics;
 
     private final AddressChecks addressChecks;
 
     public CustomSelfDestructOperation(
-            @NonNull final GasCalculator gasCalculator, @NonNull final AddressChecks addressChecks) {
+            @NonNull final GasCalculator gasCalculator,
+            @NonNull final AddressChecks addressChecks,
+            final UseEIP6780Semantics eip6780Semantics) {
         super(SELFDESTRUCT.opcode(), "SELFDESTRUCT", 1, 0, gasCalculator);
+        this.eip6780Semantics = eip6780Semantics;
         this.addressChecks = addressChecks;
     }
 
@@ -63,22 +77,8 @@ public class CustomSelfDestructOperation extends AbstractOperation {
     public OperationResult execute(@NonNull final MessageFrame frame, @NonNull final EVM evm) {
         try {
             final var beneficiaryAddress = Words.toAddress(frame.popStackItem());
-            // Enforce Hedera-specific checks on the beneficiary address
-            if (addressChecks.isSystemAccount(beneficiaryAddress)
-                    || !addressChecks.isPresent(beneficiaryAddress, frame)) {
-                return haltFor(null, 0, INVALID_SOLIDITY_ADDRESS);
-            }
-
             final var tbdAddress = frame.getRecipientAddress();
             final var proxyWorldUpdater = (ProxyWorldUpdater) frame.getWorldUpdater();
-            // Enforce Hedera-specific restrictions on account deletion for non-static frames
-            if (!frame.isStatic()) {
-                final var maybeHaltReason =
-                        proxyWorldUpdater.tryTrackingSelfDestructBeneficiary(tbdAddress, beneficiaryAddress, frame);
-                if (maybeHaltReason.isPresent()) {
-                    return haltFor(null, 0, maybeHaltReason.get());
-                }
-            }
 
             // Now proceed with the self-destruct
             final var inheritance =
@@ -94,6 +94,19 @@ public class CustomSelfDestructOperation extends AbstractOperation {
                 return new OperationResult(cost, INSUFFICIENT_GAS);
             }
 
+            // Enforce Hedera-specific checks on the beneficiary address
+            if (addressChecks.isSystemAccount(beneficiaryAddress)
+                    || !addressChecks.isPresent(beneficiaryAddress, frame)) {
+                return haltFor(null, 0, INVALID_SOLIDITY_ADDRESS);
+            }
+
+            // Enforce Hedera-specific restrictions on account deletion
+            final var maybeHaltReason =
+                    proxyWorldUpdater.tryTrackingSelfDestructBeneficiary(tbdAddress, beneficiaryAddress, frame);
+            if (maybeHaltReason.isPresent()) {
+                return haltFor(null, 0, maybeHaltReason.get());
+            }
+
             // This will enforce the Hedera signing requirements (while treating any Key{contractID=tbdAddress}
             // or Key{delegatable_contract_id=tbdAddress} keys on the beneficiary account as active); it could
             // also fail if the beneficiary is a token address
@@ -102,9 +115,21 @@ public class CustomSelfDestructOperation extends AbstractOperation {
             if (maybeReasonToHalt.isPresent()) {
                 return new OperationResult(cost, maybeReasonToHalt.get());
             }
-            frame.addSelfDestruct(tbdAddress);
+
+            // Tell the EVM to delete this contract if pre-Cancun, or, if post-Cancun, only in the
+            // same transaction it was created in
+            final boolean tellEVMToDoContractDestruct =
+                    switch (eip6780Semantics) {
+                        case NO -> true;
+                        case YES -> frame.wasCreatedInTransaction(tbdAddress);
+                    };
+
+            if (tellEVMToDoContractDestruct) {
+                frame.addSelfDestruct(tbdAddress);
+            }
+
             frame.addRefund(beneficiaryAddress, inheritance);
-            frame.setState(MessageFrame.State.CODE_SUCCESS);
+            frame.setState(State.CODE_SUCCESS);
             return new OperationResult(cost, null);
         } catch (UnderflowException ignore) {
             return UNDERFLOW_RESPONSE;

@@ -26,11 +26,13 @@ import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.common.utility.CompareTo;
+import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.gossip.shadowgraph.SyncUtils;
 import com.swirlds.platform.gossip.sync.config.SyncConfig;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.system.address.AddressBook;
-import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookGenerator;
+import com.swirlds.platform.system.events.EventDescriptorWrapper;
+import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
 import com.swirlds.platform.test.fixtures.event.generator.StandardGraphGenerator;
 import com.swirlds.platform.test.fixtures.event.source.EventSource;
 import com.swirlds.platform.test.fixtures.event.source.StandardEventSource;
@@ -41,8 +43,11 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 import java.util.Set;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import org.junit.jupiter.api.Test;
 
 class SyncFilteringTest {
@@ -89,32 +94,36 @@ class SyncFilteringTest {
      * Find all ancestors of expected events, and add them to the list of expected events.
      *
      * @param expectedEvents the list of expected events
+     * @param eventMap       a map of event hashes to events
      */
-    private static void findAncestorsOfExpectedEvents(@NonNull final List<EventImpl> expectedEvents) {
+    private static void findAncestorsOfExpectedEvents(
+            @NonNull final List<PlatformEvent> expectedEvents, @NonNull final Map<Hash, PlatformEvent> eventMap) {
 
         final Set<Hash> expectedEventHashes = new HashSet<>();
-        for (final EventImpl event : expectedEvents) {
-            expectedEventHashes.add(event.getBaseHash());
+        for (final PlatformEvent event : expectedEvents) {
+            expectedEventHashes.add(event.getHash());
         }
 
         for (int index = 0; index < expectedEvents.size(); index++) {
 
-            final EventImpl event = expectedEvents.get(index);
+            final PlatformEvent event = expectedEvents.get(index);
 
-            final EventImpl selfParent = event.getSelfParent();
+            final EventDescriptorWrapper selfParent = event.getSelfParent();
             if (selfParent != null) {
-                final Hash selfParentHash = selfParent.getBaseHash();
+                final Hash selfParentHash = selfParent.hash();
                 if (!expectedEventHashes.contains(selfParentHash)) {
-                    expectedEvents.add(selfParent);
+                    expectedEvents.add(eventMap.get(selfParentHash));
                     expectedEventHashes.add(selfParentHash);
                 }
             }
-            final EventImpl otherParent = event.getOtherParent();
-            if (otherParent != null) {
-                final Hash otherParentHash = otherParent.getBaseHash();
-                if (!expectedEventHashes.contains(otherParentHash)) {
-                    expectedEvents.add(otherParent);
-                    expectedEventHashes.add(otherParentHash);
+            final List<EventDescriptorWrapper> otherParents = event.getOtherParents();
+            if (!otherParents.isEmpty()) {
+                for (final EventDescriptorWrapper otherParent : otherParents) {
+                    final Hash otherParentHash = otherParent.hash();
+                    if (!expectedEventHashes.contains(otherParentHash)) {
+                        expectedEvents.add(eventMap.get(otherParentHash));
+                        expectedEventHashes.add(otherParentHash);
+                    }
                 }
             }
         }
@@ -125,7 +134,7 @@ class SyncFilteringTest {
         final Random random = getRandomPrintSeed();
 
         final AddressBook addressBook =
-                new RandomAddressBookGenerator(random).setSize(32).build();
+                RandomAddressBookBuilder.create(random).withSize(32).build();
         final NodeId selfId = addressBook.getNodeId(0);
 
         final Instant startingTime = Instant.ofEpochMilli(random.nextInt());
@@ -136,9 +145,14 @@ class SyncFilteringTest {
                 TestPlatformContextBuilder.create().build();
 
         final int eventCount = 1000;
-        final List<EventImpl> events = generateEvents(platformContext, random, addressBook, time, timeStep, eventCount);
+        final List<PlatformEvent> events =
+                generateEvents(platformContext, random, addressBook, time, timeStep, eventCount).stream()
+                        .map(EventImpl::getBaseEvent)
+                        .sorted(Comparator.comparingLong(PlatformEvent::getGeneration))
+                        .toList();
 
-        events.sort(Comparator.comparingLong(EventImpl::getGeneration));
+        final Map<Hash, PlatformEvent> eventMap =
+                events.stream().collect(Collectors.toMap(PlatformEvent::getHash, Function.identity()));
 
         final Duration nonAncestorSendThreshold = platformContext
                 .getConfiguration()
@@ -151,18 +165,17 @@ class SyncFilteringTest {
         // Test filtering multiple times. Each iteration, move time forward. We should see more and more events
         // returned as they age.
         while (time.now().isBefore(endTime)) {
-            final List<EventImpl> filteredEvents =
+            final List<PlatformEvent> filteredEvents =
                     SyncUtils.filterLikelyDuplicates(selfId, nonAncestorSendThreshold, time.now(), events);
 
             // Gather a list of events we expect to see.
-            final List<EventImpl> expectedEvents = new ArrayList<>();
+            final List<PlatformEvent> expectedEvents = new ArrayList<>();
             for (int index = events.size() - 1; index >= 0; index--) {
-                final EventImpl event = events.get(index);
+                final PlatformEvent event = events.get(index);
                 if (event.getCreatorId().equals(selfId)) {
                     expectedEvents.add(event);
                 } else {
-                    final Duration eventAge =
-                            Duration.between(event.getBaseEvent().getTimeReceived(), time.now());
+                    final Duration eventAge = Duration.between(event.getTimeReceived(), time.now());
                     if (CompareTo.isGreaterThan(eventAge, nonAncestorSendThreshold)) {
                         expectedEvents.add(event);
                     }
@@ -170,24 +183,24 @@ class SyncFilteringTest {
             }
 
             // The ancestors of events that meet the above criteria are also expected to be seen.
-            findAncestorsOfExpectedEvents(expectedEvents);
+            findAncestorsOfExpectedEvents(expectedEvents, eventMap);
 
             // Gather a list of hashes that were allowed through by the filter.
             final Set<Hash> filteredHashes = new HashSet<>();
-            for (final EventImpl event : filteredEvents) {
-                filteredHashes.add(event.getBaseHash());
+            for (final PlatformEvent event : filteredEvents) {
+                filteredHashes.add(event.getHash());
             }
 
             // Make sure we see exactly the events we are expecting.
             assertEquals(expectedEvents.size(), filteredEvents.size());
-            for (final EventImpl expectedEvent : expectedEvents) {
-                assertTrue(filteredHashes.contains(expectedEvent.getBaseHash()));
+            for (final PlatformEvent expectedEvent : expectedEvents) {
+                assertTrue(filteredHashes.contains(expectedEvent.getHash()));
             }
 
             // Verify topological ordering.
             long maxGeneration = -1;
-            for (final EventImpl event : filteredEvents) {
-                final long generation = event.getBaseEvent().getGeneration();
+            for (final PlatformEvent event : filteredEvents) {
+                final long generation = event.getGeneration();
                 assertTrue(generation >= maxGeneration);
                 maxGeneration = generation;
             }

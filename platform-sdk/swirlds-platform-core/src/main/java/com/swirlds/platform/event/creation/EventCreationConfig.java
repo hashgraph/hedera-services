@@ -18,35 +18,34 @@ package com.swirlds.platform.event.creation;
 
 import com.swirlds.config.api.ConfigData;
 import com.swirlds.config.api.ConfigProperty;
-import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
 
 /**
  * Configuration for event creation.
  *
- * @param maxCreationRate                the maximum rate (in hz) that a node can create new events. The maximum rate
- *                                       for the entire network is equal to this value times the number of nodes. A
- *                                       value of 0 means that there is no limit to the number of events that can be
- *                                       created (as long as those events are legal to create).
- * @param creationAttemptRate            the rate (in hz) at which a node will attempt to create new events. If this
- *                                       value is higher than the max creation rate, it will still be constrained by the
- *                                       max creation rate. This being said, it is recommended to attempt event creation
- *                                       faster than the max creation rate in situations where creation rate is also
- *                                       throttled by the tipset algorithm (i.e. we are waiting for new events to use as
- *                                       parents).
- * @param antiSelfishnessFactor          the lower this number, the more likely it is that a new event will be created
- *                                       that reduces this node's selfishness score. Setting this too low may result in
- *                                       a suboptimal hashgraph topology. Setting this number too high may lead to some
- *                                       nodes being ignored by selfish nodes and unable to cause their events to reach
- *                                       consensus.
- * @param tipsetSnapshotHistorySize      the number of tipsets to keep in the snapshot history. These tipsets are used
- *                                       to compute selfishness scores.
- * @param eventIntakeThrottle            when the size of the event intake queue equals or exceeds this value, do not
- *                                       permit the creation of new self events.
- * @param creationQueueSize              the size of the intake queue for the event creator
- * @param creationQueueBufferSize        the size of the buffer for the event creator
- * @param creationQueueWaitForWorkPeriod the amount of time the event creator spends waiting for work in its intake
- *                                       queue
+ * @param maxCreationRate                     the maximum rate (in hz) that a node can create new events. The maximum
+ *                                            rate for the entire network is equal to this value times the number of
+ *                                            nodes. A value of 0 means that there is no limit to the number of events
+ *                                            that can be created (as long as those events are legal to create).
+ * @param creationAttemptRate                 the rate (in hz) at which a node will attempt to create new events. If
+ *                                            this value is higher than the max creation rate, it will still be
+ *                                            constrained by the max creation rate. This being said, it is recommended
+ *                                            to attempt event creation faster than the max creation rate in situations
+ *                                            where creation rate is also throttled by the tipset algorithm (i.e. we are
+ *                                            waiting for new events to use as parents).
+ * @param antiSelfishnessFactor               the lower this number, the more likely it is that a new event will be
+ *                                            created that reduces this node's selfishness score. Setting this too low
+ *                                            may result in a suboptimal hashgraph topology. Setting this number too
+ *                                            high may lead to some nodes being ignored by selfish nodes and unable to
+ *                                            cause their events to reach consensus.
+ * @param tipsetSnapshotHistorySize           the number of tipsets to keep in the snapshot history. These tipsets are
+ *                                            used to compute selfishness scores.
+ * @param eventIntakeThrottle                 when the size of the event intake queue equals or exceeds this value, do
+ *                                            not permit the creation of new self events.
+ * @param useLegacyBackpressure               whether to use the legacy backpressure (i.e. where we look at the size of
+ *                                            the first queue in intake)
+ * @param maximumPermissibleUnhealthyDuration the maximum amount of time that the system can be unhealthy before event
+ *                                            creation stops
  */
 @ConfigData("event.creation")
 public record EventCreationConfig(
@@ -55,6 +54,5 @@ public record EventCreationConfig(
         @ConfigProperty(defaultValue = "10") double antiSelfishnessFactor,
         @ConfigProperty(defaultValue = "10") int tipsetSnapshotHistorySize,
         @ConfigProperty(defaultValue = "1024") int eventIntakeThrottle,
-        @ConfigProperty(defaultValue = "1024") int creationQueueSize,
-        @ConfigProperty(defaultValue = "1024") int creationQueueBufferSize,
-        @ConfigProperty(defaultValue = "1 ms") @NonNull Duration creationQueueWaitForWorkPeriod) {}
+        @ConfigProperty(defaultValue = "false") boolean useLegacyBackpressure,
+        @ConfigProperty(defaultValue = "1s") Duration maximumPermissibleUnhealthyDuration) {}

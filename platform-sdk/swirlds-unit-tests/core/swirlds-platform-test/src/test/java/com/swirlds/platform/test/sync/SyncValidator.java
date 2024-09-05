@@ -25,14 +25,10 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
-import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.platform.event.AncientMode;
-import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.network.Connection;
-import com.swirlds.platform.system.events.BaseEventHashedData;
-import com.swirlds.platform.system.events.BaseEventUnhashedData;
-import com.swirlds.platform.test.fixtures.event.IndexedEvent;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -132,10 +128,10 @@ public class SyncValidator {
             @NonNull final AncientMode ancientMode) {
         // Determine the unique events for the caller and listener, since they could have added some of the
         // same events from step 2.
-        final Collection<IndexedEvent> expectedCallerSendList = new ArrayList<>(caller.getGeneratedEvents());
+        final Collection<EventImpl> expectedCallerSendList = new ArrayList<>(caller.getGeneratedEvents());
         expectedCallerSendList.removeAll(listener.getGeneratedEvents());
 
-        final Collection<IndexedEvent> expectedListenerSendList = new ArrayList<>(listener.getGeneratedEvents());
+        final Collection<EventImpl> expectedListenerSendList = new ArrayList<>(listener.getGeneratedEvents());
         expectedListenerSendList.removeAll(caller.getGeneratedEvents());
 
         // Remove expired events
@@ -151,8 +147,8 @@ public class SyncValidator {
                 e -> e.getBaseEvent().getAncientIndicator(ancientMode) < caller.getCurrentAncientThreshold());
 
         // Get the events each received from the other in the sync
-        final List<GossipEvent> callerReceivedEvents = caller.getReceivedEvents();
-        final List<GossipEvent> listenerReceivedEvents = listener.getReceivedEvents();
+        final List<PlatformEvent> callerReceivedEvents = caller.getReceivedEvents();
+        final List<PlatformEvent> listenerReceivedEvents = listener.getReceivedEvents();
 
         if (enableLogging) {
             printEvents("Caller's last added events", caller.getGeneratedEvents());
@@ -173,12 +169,12 @@ public class SyncValidator {
 
     private static void compareEventLists(
             final String node,
-            final Collection<IndexedEvent> expectedList,
+            final Collection<EventImpl> expectedList,
             final SyncNode receiver,
             final boolean strictCompare,
             @NonNull final AncientMode ancientMode) {
 
-        Collection<GossipEvent> actualList = receiver.getReceivedEvents();
+        Collection<PlatformEvent> actualList = receiver.getReceivedEvents();
 
         if (expectedList == null && actualList == null) {
             return;
@@ -189,7 +185,7 @@ public class SyncValidator {
                     "Expected and actual mismatch for %s. Expected = %s, Actual = %s", node, expectedList, actualList));
         }
 
-        LinkedList<IndexedEvent> expectedAndNotFound = new LinkedList<>();
+        LinkedList<EventImpl> expectedAndNotFound = new LinkedList<>();
 
         if (enableLogging) {
             printEvents(format("%s's expected received list", node), expectedList);
@@ -197,15 +193,11 @@ public class SyncValidator {
         }
 
         // Compare the two lists to see if there is a matching event in the actual list for each expected event
-        for (final IndexedEvent expected : expectedList) {
+        for (final EventImpl expected : expectedList) {
             boolean foundMatch = false;
 
-            for (final GossipEvent actual : actualList) {
-                final BaseEventHashedData actualHashedData = actual.getHashedData();
-                final BaseEventUnhashedData actualUnhashedData = actual.getUnhashedData();
-
-                if (expected.getBaseEventHashedData().equals(actualHashedData)
-                        && expected.getBaseEventUnhashedData().equals(actualUnhashedData)) {
+            for (final PlatformEvent actual : actualList) {
+                if (expected.getBaseEvent().equalsGossipedData(actual)) {
                     foundMatch = true;
                     break;
                 }
@@ -223,7 +215,7 @@ public class SyncValidator {
         if (!expectedAndNotFound.isEmpty()) {
             List<String> missingHashes = expectedAndNotFound.stream()
                     .map(EventImpl::getBaseHash)
-                    .map(h -> CommonUtils.hex(h.getValue(), 4))
+                    .map(h -> h.toHex(4))
                     .collect(Collectors.toList());
             fail(format(
                     "Actual list is missing %s expected event(s) with hash(es) %s",

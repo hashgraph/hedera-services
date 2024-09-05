@@ -23,6 +23,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_AMOUNTS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_RECEIVING_NODE_ACCOUNT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
+import static com.hedera.node.app.workflows.handle.dispatch.DispatchValidator.WorkflowCheck.NOT_INGEST;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -38,10 +39,11 @@ import com.hedera.node.app.spi.authorization.Authorizer;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.workflows.InsufficientBalanceException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
+import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.app.validation.ExpiryValidation;
 import com.hedera.node.app.workflows.SolvencyPreCheck;
 import com.hedera.node.app.workflows.TransactionInfo;
-import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
+import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
@@ -58,16 +60,18 @@ public class QueryChecker {
     private final SolvencyPreCheck solvencyPreCheck;
     private final ExpiryValidation expiryValidation;
     private final FeeManager feeManager;
+    private final TransactionDispatcher dispatcher;
 
     /**
      * Constructor of {@code QueryChecker}
      *
-     * @param authorizer the {@link Authorizer} that checks, if the caller is authorized
+     * @param authorizer            the {@link Authorizer} that checks, if the caller is authorized
      * @param cryptoTransferHandler the {@link CryptoTransferHandler} that validates a contained
-     * {@link HederaFunctionality#CRYPTO_TRANSFER}.
-     * @param solvencyPreCheck the {@link SolvencyPreCheck} that checks if the payer has enough
-     * @param expiryValidation the {@link ExpiryValidation} that checks if an account is expired
-     * @param feeManager the {@link FeeManager} that calculates the fees
+     *                              {@link HederaFunctionality#CRYPTO_TRANSFER}.
+     * @param solvencyPreCheck      the {@link SolvencyPreCheck} that checks if the payer has enough
+     * @param expiryValidation      the {@link ExpiryValidation} that checks if an account is expired
+     * @param feeManager            the {@link FeeManager} that calculates the fees
+     * @param dispatcher
      * @throws NullPointerException if one of the arguments is {@code null}
      */
     @Inject
@@ -76,12 +80,14 @@ public class QueryChecker {
             @NonNull final CryptoTransferHandler cryptoTransferHandler,
             @NonNull final SolvencyPreCheck solvencyPreCheck,
             @NonNull final ExpiryValidation expiryValidation,
-            @NonNull final FeeManager feeManager) {
+            @NonNull final FeeManager feeManager,
+            final TransactionDispatcher dispatcher) {
         this.authorizer = requireNonNull(authorizer);
         this.cryptoTransferHandler = requireNonNull(cryptoTransferHandler);
         this.solvencyPreCheck = requireNonNull(solvencyPreCheck);
         this.expiryValidation = requireNonNull(expiryValidation);
         this.feeManager = requireNonNull(feeManager);
+        this.dispatcher = requireNonNull(dispatcher);
     }
 
     /**
@@ -128,7 +134,7 @@ public class QueryChecker {
 
         // FUTURE: Currently we check the solvency twice: once with and once without service fees (in IngestChecker)
         // https://github.com/hashgraph/hedera-services/issues/8356
-        solvencyPreCheck.checkSolvency(txInfo, payer, new Fees(transferTxnFee, 0, 0), false);
+        solvencyPreCheck.checkSolvency(txInfo, payer, new Fees(transferTxnFee, 0, 0), NOT_INGEST);
 
         if (transfers.isEmpty()) {
             throw new PreCheckException(INVALID_ACCOUNT_AMOUNTS);
@@ -220,7 +226,8 @@ public class QueryChecker {
                 configuration,
                 authorizer,
                 // Signatures aren't applicable to queries
-                -1);
+                -1,
+                dispatcher);
         return cryptoTransferHandler.calculateFees(feeContext).totalFee();
     }
 }

@@ -19,15 +19,18 @@ package com.hedera.node.app.service.contract.impl.utils;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.node.app.service.contract.impl.exec.scope.HederaNativeOperations.MISSING_ENTITY_NUMBER;
 import static com.hedera.node.app.service.contract.impl.exec.scope.HederaNativeOperations.NON_CANONICAL_REFERENCE_NUMBER;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes.ZERO_CONTRACT_ID;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.proxyUpdaterFor;
 import static com.hedera.node.app.service.contract.impl.utils.SynthTxnUtils.hasNonDegenerateAutoRenewAccountId;
 import static com.hedera.node.app.service.token.AliasUtils.extractEvmAddress;
 import static com.swirlds.common.utility.CommonUtils.unhex;
 import static java.util.Objects.requireNonNull;
 
+import com.esaulpaugh.headlong.abi.Tuple;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.Duration;
+import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.contract.ContractCreateTransactionBody;
@@ -570,16 +573,22 @@ public class ConversionUtils {
      * @return its 20-byte EVM address
      */
     public static byte[] asEvmAddress(final long num) {
-        final byte[] evmAddress = new byte[20];
-        copyToLeftPaddedByteArray(num, evmAddress);
-        return evmAddress;
+        return copyToLeftPaddedByteArray(num, new byte[20]);
     }
 
-    private static void copyToLeftPaddedByteArray(long value, final byte[] dest) {
+    /**
+     * Given a value and a destination byte array, copies the value to the destination array, left-padded.
+     *
+     * @param value the value
+     * @param dest the destination byte array
+     * @return the destination byte array
+     */
+    public static byte[] copyToLeftPaddedByteArray(long value, final byte[] dest) {
         for (int i = 7, j = dest.length - 1; i >= 0; i--, j--) {
             dest[j] = (byte) (value & 0xffL);
             value >>= 8;
         }
+        return dest;
     }
 
     /**
@@ -678,7 +687,13 @@ public class ConversionUtils {
         }
     }
 
-    private static byte[] explicitAddressOf(@NonNull final Account account) {
+    /**
+     * Given an account, returns its explicit 20-byte address.
+     *
+     * @param account the account
+     * @return the explicit 20-byte address
+     */
+    public static byte[] explicitAddressOf(@NonNull final Account account) {
         requireNonNull(account);
         final var evmAddress = extractEvmAddress(account.alias());
         return evmAddress != null
@@ -726,14 +741,15 @@ public class ConversionUtils {
      * Given a {@link ContractID} return the corresponding Besu {@link Address}
      * Importantly, this method does NOT check for the existence of the contract in the ledger
      *
-     * @param contractId
+     * @param contractId the contract id
      * @return the equivalent Besu address
      */
     public static @NonNull Address contractIDToBesuAddress(final ContractID contractId) {
         if (contractId.hasEvmAddress()) {
-            return pbjToBesuAddress(contractId.evmAddress());
+            return pbjToBesuAddress(contractId.evmAddressOrThrow());
         } else {
-            return asLongZeroAddress(contractId.contractNumOrThrow());
+            // OrElse(0) is needed, as an UNSET contract OneOf has null number
+            return asLongZeroAddress(contractId.contractNumOrElse(0L));
         }
     }
 
@@ -766,5 +782,29 @@ public class ConversionUtils {
         return builder.maxAutomaticTokenAssociations(sponsor.maxAutoAssociations())
                 .declineReward(sponsor.declineReward())
                 .build();
+    }
+
+    /**
+     * Returns a tuple of the {@code KeyValue} struct
+     * <br><a href="https://github.com/hashgraph/hedera-smart-contracts/blob/main/contracts/hts-precompile/IHederaTokenService.sol#L92">Link</a>
+     * @param key the key to get the tuple for
+     * @return Tuple encoding of the KeyValue
+     */
+    @NonNull
+    public static Tuple keyTupleFor(@NonNull final Key key) {
+        return Tuple.of(
+                false,
+                headlongAddressOf(key.contractIDOrElse(ZERO_CONTRACT_ID)),
+                key.ed25519OrElse(com.hedera.pbj.runtime.io.buffer.Bytes.EMPTY).toByteArray(),
+                key.ecdsaSecp256k1OrElse(com.hedera.pbj.runtime.io.buffer.Bytes.EMPTY)
+                        .toByteArray(),
+                headlongAddressOf(key.delegatableContractIdOrElse(ZERO_CONTRACT_ID)));
+    }
+
+    public static byte[] removeIfAnyLeading0x(com.hedera.pbj.runtime.io.buffer.Bytes contents) {
+        final var hexPrefix = new byte[] {(byte) '0', (byte) 'x'};
+        final var offset = contents.matchesPrefix(hexPrefix) ? hexPrefix.length : 0L;
+        final var len = contents.length() - offset;
+        return contents.getBytes(offset, len).toByteArray();
     }
 }

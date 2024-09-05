@@ -17,10 +17,20 @@
 package com.swirlds.common.context;
 
 import com.swirlds.base.time.Time;
+import com.swirlds.common.concurrent.ExecutorFactory;
+import com.swirlds.common.context.internal.PlatformUncaughtExceptionHandler;
 import com.swirlds.common.crypto.Cryptography;
+import com.swirlds.common.crypto.CryptographyHolder;
+import com.swirlds.common.io.filesystem.FileSystemManager;
+import com.swirlds.common.io.utility.NoOpRecycleBin;
+import com.swirlds.common.io.utility.RecycleBin;
+import com.swirlds.common.merkle.crypto.MerkleCryptography;
+import com.swirlds.common.merkle.crypto.MerkleCryptographyFactory;
+import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.metrics.api.Metrics;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.lang.Thread.UncaughtExceptionHandler;
 
 /**
  * Public interface of the platform context that provides access to all basic services and resources. By using the
@@ -31,6 +41,71 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  * access all basic services.
  */
 public interface PlatformContext {
+
+    /**
+     * Creates a new instance of the platform context. The instance uses a {@link NoOpMetrics} implementation for
+     * metrics and a {@link com.swirlds.common.io.utility.NoOpRecycleBin}.
+     * The instance uses the static {@link CryptographyHolder#get()} call to get the cryptography. The instance
+     * uses the static {@link Time#getCurrent()} call to get the time.
+     *
+     * @apiNote This method is meant for utilities and testing and not for a node's production operation
+     * @param configuration the configuration
+     * @return the platform context
+     * @deprecated since we need to remove the static {@link CryptographyHolder#get()} call in future.
+     */
+    @Deprecated(forRemoval = true)
+    @NonNull
+    static PlatformContext create(@NonNull final Configuration configuration) {
+        final Metrics metrics = new NoOpMetrics();
+        final Cryptography cryptography = CryptographyHolder.get();
+        final FileSystemManager fileSystemManager = FileSystemManager.create(configuration);
+        final Time time = Time.getCurrent();
+        final MerkleCryptography merkleCryptography = MerkleCryptographyFactory.create(configuration, cryptography);
+        return create(
+                configuration,
+                time,
+                metrics,
+                cryptography,
+                fileSystemManager,
+                new NoOpRecycleBin(),
+                merkleCryptography);
+    }
+
+    /**
+     * Creates a new instance of the platform context.
+     * <p>
+     * The instance uses the static {@link Time#getCurrent()} call to get the time.
+     *
+     * @param configuration     the configuration
+     * @param time              the time
+     * @param metrics           the metrics
+     * @param cryptography      the cryptography
+     * @param fileSystemManager the fileSystemManager
+     * @param recycleBin        the recycleBin
+     * @return the platform context
+     */
+    @NonNull
+    static PlatformContext create(
+            @NonNull final Configuration configuration,
+            @NonNull final Time time,
+            @NonNull final Metrics metrics,
+            @NonNull final Cryptography cryptography,
+            @NonNull final FileSystemManager fileSystemManager,
+            @NonNull final RecycleBin recycleBin,
+            @NonNull final MerkleCryptography merkleCryptography) {
+
+        final UncaughtExceptionHandler handler = new PlatformUncaughtExceptionHandler();
+        final ExecutorFactory executorFactory = ExecutorFactory.create("platform", null, handler);
+        return new DefaultPlatformContext(
+                configuration,
+                metrics,
+                cryptography,
+                time,
+                executorFactory,
+                fileSystemManager,
+                recycleBin,
+                merkleCryptography);
+    }
 
     /**
      * Returns the {@link Configuration} instance for the platform
@@ -63,4 +138,36 @@ public interface PlatformContext {
      */
     @NonNull
     Time getTime();
+
+    /**
+     * Returns the {@link FileSystemManager} for this node
+     *
+     * @return the {@link FileSystemManager} for this node
+     */
+    @NonNull
+    FileSystemManager getFileSystemManager();
+
+    /**
+     * Returns the {@link ExecutorFactory} for this node
+     *
+     * @return the {@link ExecutorFactory} for this node
+     */
+    @NonNull
+    ExecutorFactory getExecutorFactory();
+
+    /**
+     * Returns the {@link RecycleBin} for this node
+     *
+     * @return the {@link RecycleBin} for this node
+     */
+    @NonNull
+    RecycleBin getRecycleBin();
+
+    /**
+     * Returns the {@link MerkleCryptography} for this node
+     *
+     * @return the {@link MerkleCryptography} for this node
+     */
+    @NonNull
+    MerkleCryptography getMerkleCryptography();
 }

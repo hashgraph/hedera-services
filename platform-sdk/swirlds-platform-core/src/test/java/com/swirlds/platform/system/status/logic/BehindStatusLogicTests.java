@@ -27,7 +27,6 @@ import com.swirlds.platform.system.status.PlatformStatus;
 import com.swirlds.platform.system.status.PlatformStatusConfig;
 import com.swirlds.platform.system.status.actions.CatastrophicFailureAction;
 import com.swirlds.platform.system.status.actions.DoneReplayingEventsAction;
-import com.swirlds.platform.system.status.actions.EmergencyReconnectStartedAction;
 import com.swirlds.platform.system.status.actions.FallenBehindAction;
 import com.swirlds.platform.system.status.actions.FreezePeriodEnteredAction;
 import com.swirlds.platform.system.status.actions.ReconnectCompleteAction;
@@ -97,10 +96,6 @@ class BehindStatusLogicTests {
         triggerActionAndAssertNoTransition(
                 logic::processSelfEventReachedConsensusAction,
                 new SelfEventReachedConsensusAction(time.now()),
-                logic.getStatus());
-        triggerActionAndAssertNoTransition(
-                logic::processEmergencyReconnectStartedAction,
-                new EmergencyReconnectStartedAction(),
                 logic.getStatus());
         triggerActionAndAssertNoTransition(
                 logic::processFreezePeriodEnteredAction, new FreezePeriodEnteredAction(0), logic.getStatus());

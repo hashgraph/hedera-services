@@ -16,9 +16,9 @@
 
 package com.hedera.node.app.workflows.prehandle;
 
+import static com.hedera.hapi.util.HapiUtils.EMPTY_KEY_LIST;
+import static com.hedera.hapi.util.HapiUtils.isHollow;
 import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.verifyNotEmptyKey;
-import static com.hedera.node.app.spi.HapiUtils.EMPTY_KEY_LIST;
-import static com.hedera.node.app.spi.HapiUtils.isHollow;
 import static com.hedera.node.app.spi.key.KeyUtils.isValid;
 import static com.hedera.node.app.spi.validation.Validations.mustExist;
 import static java.util.Objects.requireNonNull;
@@ -35,7 +35,7 @@ import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionKeys;
-import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
+import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.config.data.AccountsConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -282,6 +282,26 @@ public class PreHandleContextImpl implements PreHandleContext {
             throws PreCheckException {
         requireNonNull(responseCode);
 
+        return requireKey(accountID, responseCode, false);
+    }
+
+    @Override
+    @NonNull
+    @SuppressWarnings(
+            "java:S2637") // requireKey accepts "@NonNull" but warning states that null could be passed, seems like
+    // false positive because of the !isValid(key) check
+    public PreHandleContext requireAliasedKeyOrThrow(
+            @Nullable final AccountID accountID, @NonNull final ResponseCodeEnum responseCode)
+            throws PreCheckException {
+        requireNonNull(responseCode);
+        return requireKey(accountID, responseCode, true);
+    }
+
+    private @NonNull PreHandleContext requireKey(
+            final @Nullable AccountID accountID,
+            final @NonNull ResponseCodeEnum responseCode,
+            final boolean allowAliasedIds)
+            throws PreCheckException {
         if (accountID == null) {
             throw new PreCheckException(responseCode);
         }
@@ -293,8 +313,12 @@ public class PreHandleContextImpl implements PreHandleContext {
         if (accountID.equals(payer)) {
             return this;
         }
-
-        final var account = accountStore.getAccountById(accountID);
+        final Account account;
+        if (allowAliasedIds) {
+            account = accountStore.getAliasedAccountById(accountID);
+        } else {
+            account = accountStore.getAccountById(accountID);
+        }
         if (account == null) {
             throw new PreCheckException(responseCode);
         }

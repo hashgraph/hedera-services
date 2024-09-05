@@ -66,7 +66,12 @@ public class NetworkTransactionGetReceiptHandler extends FreeQueryHandler {
         final var op = context.query().transactionGetReceiptOrThrow();
 
         // The transaction ID must be specified
-        if (!op.hasTransactionID() || !op.transactionID().hasAccountID()) {
+        if (!op.hasTransactionID()) {
+            throw new PreCheckException(INVALID_TRANSACTION_ID);
+        }
+        // And must contain both a valid start time and an account ID
+        final var transactionId = op.transactionIDOrThrow();
+        if (!transactionId.hasTransactionValidStart() || !transactionId.hasAccountID()) {
             throw new PreCheckException(INVALID_TRANSACTION_ID);
         }
     }

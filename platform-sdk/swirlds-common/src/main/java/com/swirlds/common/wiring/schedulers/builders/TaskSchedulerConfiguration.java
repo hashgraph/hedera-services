@@ -52,6 +52,20 @@ public record TaskSchedulerConfiguration(
             new TaskSchedulerConfiguration(TaskSchedulerType.NO_OP, 0L, false, false, false, false);
 
     /**
+     * This configuration is for a simple direct task scheduler. It is not necessary to use this constant for a direct
+     * task scheduler, but it is provided for convenience.
+     */
+    public static final TaskSchedulerConfiguration DIRECT_CONFIGURATION =
+            new TaskSchedulerConfiguration(TaskSchedulerType.DIRECT, 0L, false, false, false, false);
+
+    /**
+     * This configuration is for a thread-safe direct task scheduler. It is not necessary to use this constant for a
+     * thread-safe direct task scheduler, but it is provided for convenience.
+     */
+    public static final TaskSchedulerConfiguration DIRECT_THREADSAFE_CONFIGURATION =
+            new TaskSchedulerConfiguration(TaskSchedulerType.DIRECT_THREADSAFE, 0L, false, false, false, false);
+
+    /**
      * Parse a string representation of a task scheduler configuration.
      * <p>
      * Syntax is as follows:

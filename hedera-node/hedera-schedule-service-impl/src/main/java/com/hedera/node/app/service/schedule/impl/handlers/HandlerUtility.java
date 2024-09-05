@@ -43,6 +43,12 @@ import java.util.Set;
 public final class HandlerUtility {
     private HandlerUtility() {}
 
+    /**
+     * Return child as ordinary transaction body.
+     *
+     * @param scheduleInState the schedule in state to convert to transaction body
+     * @return the transaction body
+     */
     @NonNull
     public static TransactionBody childAsOrdinary(@NonNull final Schedule scheduleInState) {
         final TransactionID scheduledTransactionId = transactionIdForScheduled(scheduleInState);
@@ -103,12 +109,21 @@ public final class HandlerUtility {
                 case TOKEN_FEE_SCHEDULE_UPDATE -> ordinary.tokenFeeScheduleUpdate(
                         scheduledTransaction.tokenFeeScheduleUpdateOrThrow());
                 case UTIL_PRNG -> ordinary.utilPrng(scheduledTransaction.utilPrngOrThrow());
+                case TOKEN_REJECT -> ordinary.tokenReject(scheduledTransaction.tokenRejectOrThrow());
+                case NODE_CREATE -> ordinary.nodeCreate(scheduledTransaction.nodeCreateOrThrow());
+                case NODE_UPDATE -> ordinary.nodeUpdate(scheduledTransaction.nodeUpdateOrThrow());
+                case NODE_DELETE -> ordinary.nodeDelete(scheduledTransaction.nodeDeleteOrThrow());
                 case UNSET -> throw new HandleException(ResponseCodeEnum.INVALID_TRANSACTION);
             }
         }
         return ordinary.build();
     }
 
+    /**
+     * Given a Transaction of one type, return the corresponding HederaFunctionality.
+     * @param transactionType the transaction type
+     * @return the hedera functionality
+     */
     static HederaFunctionality functionalityForType(final DataOneOfType transactionType) {
         return switch (transactionType) {
             case CONSENSUS_CREATE_TOPIC -> HederaFunctionality.CONSENSUS_CREATE_TOPIC;
@@ -150,6 +165,13 @@ public final class HandlerUtility {
             case TOKEN_FEE_SCHEDULE_UPDATE -> HederaFunctionality.TOKEN_FEE_SCHEDULE_UPDATE;
             case UTIL_PRNG -> HederaFunctionality.UTIL_PRNG;
             case TOKEN_UPDATE_NFTS -> HederaFunctionality.TOKEN_UPDATE_NFTS;
+            case TOKEN_REJECT -> HederaFunctionality.TOKEN_REJECT;
+            case NODE_CREATE -> HederaFunctionality.NODE_CREATE;
+            case NODE_UPDATE -> HederaFunctionality.NODE_UPDATE;
+            case NODE_DELETE -> HederaFunctionality.NODE_DELETE;
+            case TOKEN_CANCEL_AIRDROP -> HederaFunctionality.TOKEN_CANCEL_AIRDROP;
+            case TOKEN_CLAIM_AIRDROP -> HederaFunctionality.TOKEN_CLAIM_AIRDROP;
+            case TOKEN_AIRDROP -> HederaFunctionality.TOKEN_AIRDROP;
             case UNSET -> HederaFunctionality.NONE;
         };
     }
@@ -170,11 +192,27 @@ public final class HandlerUtility {
                 .build();
     }
 
+    /**
+     * Replace the signatories of a schedule with a new set of signatories.
+     * The schedule is not modified in place.
+     *
+     * @param schedule       the schedule
+     * @param newSignatories the new signatories
+     * @return the schedule
+     */
     @NonNull
     static Schedule replaceSignatories(@NonNull final Schedule schedule, @NonNull final Set<Key> newSignatories) {
         return schedule.copyBuilder().signatories(List.copyOf(newSignatories)).build();
     }
 
+    /**
+     * Replace signatories and mark executed schedule.
+     *
+     * @param schedule       the schedule
+     * @param newSignatories the new signatories
+     * @param consensusTime  the consensus time
+     * @return the schedule
+     */
     @NonNull
     static Schedule replaceSignatoriesAndMarkExecuted(
             @NonNull final Schedule schedule,
@@ -197,7 +235,7 @@ public final class HandlerUtility {
      * @param currentConsensusTime The current consensus time for the network.
      * @param maxLifeSeconds The maximum number of seconds a schedule is permitted to exist on the ledger
      *     before it expires.
-     * @return a newly created Schedule with a null schedule ID.
+     * @return a newly created Schedule with a null schedule ID
      * @throws HandleException if the
      */
     @NonNull
@@ -230,6 +268,16 @@ public final class HandlerUtility {
         return builder.build();
     }
 
+    /**
+     * Complete the processing of a provisional schedule, which was created during a ScheduleCreate transaction.
+     * The schedule is completed by adding a schedule ID  and signatories.
+     *
+     * @param provisionalSchedule the provisional schedule
+     * @param newEntityNumber     the new entity number
+     * @param finalSignatories    the final signatories for the schedule
+     * @return the schedule
+     * @throws HandleException if the transaction is not handled successfully.
+     */
     @NonNull
     static Schedule completeProvisionalSchedule(
             @NonNull final Schedule provisionalSchedule,
@@ -247,6 +295,15 @@ public final class HandlerUtility {
         return build.build();
     }
 
+    /**
+     * Gets next schedule id for a given parent transaction id and new schedule number.
+     * The schedule ID is created using the shard and realm numbers from the parent transaction ID,
+     * and the new schedule number.
+     *
+     * @param parentTransactionId the parent transaction id
+     * @param newScheduleNumber   the new schedule number
+     * @return the next schedule id
+     */
     @NonNull
     static ScheduleID getNextScheduleID(
             @NonNull final TransactionID parentTransactionId, final long newScheduleNumber) {
@@ -257,6 +314,12 @@ public final class HandlerUtility {
         return builder.scheduleNum(newScheduleNumber).build();
     }
 
+    /**
+     * Transaction id for scheduled transaction id.
+     *
+     * @param valueInState the value in state
+     * @return the transaction id
+     */
     @NonNull
     static TransactionID transactionIdForScheduled(@NonNull Schedule valueInState) {
         // original create transaction and its transaction ID will never be null, but Sonar...
@@ -287,6 +350,13 @@ public final class HandlerUtility {
         }
     }
 
+    /**
+     * Filters the signatories to only those that are required.
+     * The required signatories are those that are present in the incoming signatories set.
+     *
+     * @param signatories the signatories
+     * @param required    the required
+     */
     static void filterSignatoriesToRequired(Set<Key> signatories, Set<Key> required) {
         final Set<Key> incomingSignatories = Set.copyOf(signatories);
         signatories.clear();
@@ -295,7 +365,7 @@ public final class HandlerUtility {
 
     private static void filterSignatoriesToRequired(
             final Set<Key> signatories, final Collection<Key> required, final Set<Key> incomingSignatories) {
-        for (final Key next : required)
+        for (final Key next : required) {
             switch (next.key().kind()) {
                 case ED25519, ECDSA_SECP256K1, CONTRACT_ID, DELEGATABLE_CONTRACT_ID:
                     // Handle "primitive" keys, which are what the signatories set stores.
@@ -316,5 +386,6 @@ public final class HandlerUtility {
                     // These types are unsupported
                     break;
             }
+        }
     }
 }

@@ -21,7 +21,7 @@ import com.swirlds.common.io.extendable.ExtendableInputStream;
 import com.swirlds.common.io.extendable.extensions.CountingStreamExtension;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.platform.event.AncientMode;
-import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.event.PlatformEvent;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.BufferedInputStream;
 import java.io.EOFException;
@@ -33,14 +33,14 @@ import java.util.Objects;
 /**
  * Iterates over the events in a single preconsensus event file.
  */
-public class PcesFileIterator implements IOIterator<GossipEvent> {
+public class PcesFileIterator implements IOIterator<PlatformEvent> {
 
     private final long lowerBound;
     private final AncientMode fileType;
     private final SerializableDataInputStream stream;
     private boolean hasPartialEvent = false;
     private final CountingStreamExtension counter;
-    private GossipEvent next;
+    private PlatformEvent next;
     private boolean streamClosed = false;
 
     /**
@@ -84,7 +84,7 @@ public class PcesFileIterator implements IOIterator<GossipEvent> {
             final long initialCount = counter.getCount();
 
             try {
-                final GossipEvent candidate = stream.readSerializable(false, GossipEvent::new);
+                final PlatformEvent candidate = stream.readSerializable(false, PlatformEvent::new);
                 if (candidate.getAncientIndicator(fileType) >= lowerBound) {
                     next = candidate;
                 }
@@ -122,7 +122,7 @@ public class PcesFileIterator implements IOIterator<GossipEvent> {
      */
     @Override
     @NonNull
-    public GossipEvent next() throws IOException {
+    public PlatformEvent next() throws IOException {
         if (!hasNext()) {
             throw new NoSuchElementException("no files remain in this iterator");
         }

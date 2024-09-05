@@ -29,61 +29,48 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.HIGHLY_NON_DETERMINISTIC_FEES;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_FUNCTION_PARAMETERS;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
+import static com.hedera.services.bdd.suites.HapiSuite.flattened;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
 
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
+import com.hedera.services.bdd.spec.SpecOperation;
 import com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts;
 import com.hedera.services.bdd.spec.utilops.CustomSpecAssert;
-import com.hedera.services.bdd.suites.HapiSuite;
 import com.hedera.services.bdd.suites.contract.Utils;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes;
+import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
-@HapiTestSuite(fuzzyMatch = true)
 @Tag(SMART_CONTRACT)
 /** - CONCURRENCY STATUS - . Can run concurrent without temporarySStoreRefundTest() */
-public class SStoreSuite extends HapiSuite {
+public class SStoreSuite {
 
     private static final Logger log = LogManager.getLogger(SStoreSuite.class);
     public static final int MAX_CONTRACT_STORAGE_KB = 1024;
     public static final int MAX_CONTRACT_GAS = 15_000_000;
     private static final String GET_CHILD_VALUE = "getChildValue";
 
-    public static void main(String... args) {
-        new SStoreSuite().runSuiteAsync();
-    }
-
-    @Override
-    public boolean canRunConcurrent() {
-        return true;
-    }
-
-    @Override
-    public List<HapiSpec> getSpecsInSuite() {
-        return List.of(multipleSStoreOpsSucceed(), benchmarkSingleSetter(), childStorage());
-    }
-
     // This test is failing with CONSENSUS_GAS_EXHAUSTED prior the refactor.
     @HapiTest
-    HapiSpec multipleSStoreOpsSucceed() {
+    final Stream<DynamicTest> multipleSStoreOpsSucceed() {
         final var contract = "GrowArray";
         final var GAS_TO_OFFER = 6_000_000L;
-        return HapiSpec.defaultHapiSpec(
+        return defaultHapiSpec(
                         "multipleSStoreOpsSucceed", NONDETERMINISTIC_FUNCTION_PARAMETERS, HIGHLY_NON_DETERMINISTIC_FEES)
                 .given(uploadInitCode(contract), contractCreate(contract))
                 .when(withOpContext((spec, opLog) -> {
                     final var step = 16;
-                    List<HapiSpecOperation> subOps = new ArrayList<>();
+                    final List<SpecOperation> subOps = new ArrayList<>();
 
                     for (int sizeNow = step; sizeNow < MAX_CONTRACT_STORAGE_KB; sizeNow += step) {
                         final var subOp1 = contractCall(contract, "growTo", BigInteger.valueOf(sizeNow))
@@ -95,7 +82,7 @@ public class SStoreSuite extends HapiSuite {
                 }))
                 .then(withOpContext((spec, opLog) -> {
                     final var numberOfIterations = 10;
-                    List<HapiSpecOperation> subOps = new ArrayList<>();
+                    final List<SpecOperation> subOps = new ArrayList<>();
 
                     for (int i = 0; i < numberOfIterations; i++) {
                         final var subOp1 = contractCall(
@@ -111,7 +98,7 @@ public class SStoreSuite extends HapiSuite {
     }
 
     @HapiTest
-    HapiSpec childStorage() {
+    final Stream<DynamicTest> childStorage() {
         // Successfully exceeds deprecated max contract storage of 1 KB
         final var contract = "ChildStorage";
         return defaultHapiSpec("ChildStorage", HIGHLY_NON_DETERMINISTIC_FEES)
@@ -175,7 +162,7 @@ public class SStoreSuite extends HapiSuite {
 
     @SuppressWarnings("java:S5669")
     @HapiTest
-    final HapiSpec benchmarkSingleSetter() {
+    final Stream<DynamicTest> benchmarkSingleSetter() {
         final var contract = "Benchmark";
         final var GAS_LIMIT = 1_000_000;
         var value = Bytes.fromHexString("0x0000000000000000000000000000000000000000000000000000000000000005")
@@ -199,10 +186,5 @@ public class SStoreSuite extends HapiSuite {
                                                 Utils.getABIFor(FUNCTION, "counter", contract),
                                                 ContractFnResultAsserts.isLiteralResult(
                                                         new Object[] {BigInteger.valueOf(1L)}))));
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return log;
     }
 }

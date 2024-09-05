@@ -26,20 +26,20 @@ import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.fees.congestion.CongestionMultipliers;
-import com.hedera.node.app.hapi.utils.throttles.DeterministicThrottle;
-import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.throttle.annotations.BackendThrottle;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.state.State;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
-import java.util.List;
 import javax.inject.Inject;
+import javax.inject.Singleton;
 
 /**
  * Implementation of {@link NetworkUtilizationManager}  that delegates to injected
  * {@link ThrottleAccumulator} and {@link CongestionMultipliers}.
  */
+@Singleton
 public class NetworkUtilizationManagerImpl implements NetworkUtilizationManager {
     private final ThrottleAccumulator backendThrottle;
     private final CongestionMultipliers congestionMultipliers;
@@ -53,16 +53,15 @@ public class NetworkUtilizationManagerImpl implements NetworkUtilizationManager 
     }
 
     @Override
-    public void trackTxn(
-            @NonNull final TransactionInfo txnInfo,
-            @NonNull final Instant consensusTime,
-            @NonNull final HederaState state) {
-        backendThrottle.shouldThrottle(txnInfo, consensusTime, state);
+    public boolean trackTxn(
+            @NonNull final TransactionInfo txnInfo, @NonNull final Instant consensusTime, @NonNull final State state) {
+        final var shouldThrottle = backendThrottle.checkAndEnforceThrottle(txnInfo, consensusTime, state);
         congestionMultipliers.updateMultiplier(consensusTime);
+        return shouldThrottle;
     }
 
     @Override
-    public void trackFeePayments(@NonNull final Instant consensusNow, @NonNull final HederaState state) {
+    public void trackFeePayments(@NonNull final Instant consensusNow, @NonNull final State state) {
         // Used to update network utilization after charging fees for an invalid transaction
         final var chargingFeesCryptoTransfer = new TransactionInfo(
                 Transaction.DEFAULT,
@@ -71,7 +70,8 @@ public class NetworkUtilizationManagerImpl implements NetworkUtilizationManager 
                 AccountID.DEFAULT,
                 SignatureMap.DEFAULT,
                 Bytes.EMPTY,
-                CRYPTO_TRANSFER);
+                CRYPTO_TRANSFER,
+                null);
         trackTxn(chargingFeesCryptoTransfer, consensusNow, state);
     }
 
@@ -87,27 +87,13 @@ public class NetworkUtilizationManagerImpl implements NetworkUtilizationManager 
 
     @Override
     public boolean shouldThrottle(
-            @NonNull final TransactionInfo txnInfo,
-            @NonNull final HederaState state,
-            @NonNull final Instant consensusTime) {
-        return backendThrottle.shouldThrottle(txnInfo, consensusTime, state);
+            @NonNull final TransactionInfo txnInfo, @NonNull final State state, @NonNull final Instant consensusTime) {
+        return backendThrottle.checkAndEnforceThrottle(txnInfo, consensusTime, state);
     }
 
     @Override
     public boolean shouldThrottleNOfUnscaled(
             final int n, @NonNull final HederaFunctionality function, @NonNull final Instant consensusTime) {
         return backendThrottle.shouldThrottleNOfUnscaled(n, function, consensusTime);
-    }
-
-    @Override
-    public List<DeterministicThrottle.UsageSnapshot> getUsageSnapshots() {
-        return backendThrottle.allActiveThrottles().stream()
-                .map(DeterministicThrottle::usageSnapshot)
-                .toList();
-    }
-
-    @Override
-    public void resetUsageThrottlesTo(List<DeterministicThrottle.UsageSnapshot> snapshots) {
-        backendThrottle.resetUsageThrottlesTo(snapshots);
     }
 }

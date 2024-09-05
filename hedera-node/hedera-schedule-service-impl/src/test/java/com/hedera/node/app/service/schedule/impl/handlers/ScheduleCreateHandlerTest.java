@@ -36,12 +36,14 @@ import com.hedera.node.app.service.schedule.WritableScheduleStore;
 import com.hedera.node.app.service.schedule.impl.ScheduledTransactionFactory;
 import com.hedera.node.app.signature.impl.SignatureVerificationImpl;
 import com.hedera.node.app.spi.fixtures.Assertions;
+import com.hedera.node.app.spi.ids.EntityNumGenerator;
 import com.hedera.node.app.spi.signatures.VerificationAssistant;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.workflows.prehandle.PreHandleContextImpl;
 import java.security.InvalidKeyException;
+import java.time.InstantSource;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -54,7 +56,7 @@ class ScheduleCreateHandlerTest extends ScheduleHandlerTestBase {
 
     @BeforeEach
     void setUp() throws PreCheckException, InvalidKeyException {
-        subject = new ScheduleCreateHandler();
+        subject = new ScheduleCreateHandler(InstantSource.system());
         setUpBase();
     }
 
@@ -206,7 +208,8 @@ class ScheduleCreateHandlerTest extends ScheduleHandlerTestBase {
 
         final WritableScheduleStore fullStore = mock(WritableScheduleStore.class);
         given(fullStore.numSchedulesInState()).willReturn(scheduleConfig.maxNumber() + 1);
-        given(mockContext.writableStore(WritableScheduleStore.class)).willReturn(fullStore);
+        given(mockContext.storeFactory()).willReturn(storeFactory);
+        given(storeFactory.writableStore(WritableScheduleStore.class)).willReturn(fullStore);
 
         for (final Schedule next : listOfScheduledOptions) {
             final TransactionBody createTransaction = next.originalCreateTransaction();
@@ -215,7 +218,7 @@ class ScheduleCreateHandlerTest extends ScheduleHandlerTestBase {
             final HederaFunctionality functionType = HandlerUtility.functionalityForType(transactionType);
             prepareContext(createTransaction, next.scheduleId().scheduleNum());
             // all keys are "valid" with this mock setup
-            given(mockContext.verificationFor(BDDMockito.any(Key.class), BDDMockito.any(VerificationAssistant.class)))
+            given(keyVerifier.verificationFor(BDDMockito.any(Key.class), BDDMockito.any(VerificationAssistant.class)))
                     .willReturn(new SignatureVerificationImpl(nullKey, null, true));
             if (configuredWhitelist.contains(functionType)) {
                 throwsHandleException(
@@ -239,7 +242,7 @@ class ScheduleCreateHandlerTest extends ScheduleHandlerTestBase {
             final HederaFunctionality functionType = HandlerUtility.functionalityForType(transactionType);
             prepareContext(createTransaction, next.scheduleId().scheduleNum());
             // all keys are "valid" with this mock setup
-            given(mockContext.verificationFor(BDDMockito.any(Key.class), BDDMockito.any(VerificationAssistant.class)))
+            given(keyVerifier.verificationFor(BDDMockito.any(Key.class), BDDMockito.any(VerificationAssistant.class)))
                     .willReturn(new SignatureVerificationImpl(nullKey, null, true));
             final int startCount = scheduleMapById.size();
             if (configuredWhitelist.contains(functionType)) {
@@ -278,11 +281,13 @@ class ScheduleCreateHandlerTest extends ScheduleHandlerTestBase {
 
     private void prepareContext(final TransactionBody createTransaction, final long nextEntityId)
             throws PreCheckException {
+        final EntityNumGenerator entityNumGenerator = mock(EntityNumGenerator.class);
         given(mockContext.body()).willReturn(createTransaction);
-        given(mockContext.newEntityNum()).willReturn(nextEntityId);
+        given(mockContext.entityNumGenerator()).willReturn(entityNumGenerator);
+        given(entityNumGenerator.newEntityNum()).willReturn(nextEntityId);
         given(mockContext.allKeysForTransaction(Mockito.any(), Mockito.any())).willReturn(testChildKeys);
         // This is how you get side-effects replicated, by having the "Answer" called in place of the real method.
-        given(mockContext.verificationFor(BDDMockito.any(Key.class), BDDMockito.any(VerificationAssistant.class)))
+        given(keyVerifier.verificationFor(BDDMockito.any(Key.class), BDDMockito.any(VerificationAssistant.class)))
                 .will(new VerificationForAnswer(testChildKeys));
     }
 }

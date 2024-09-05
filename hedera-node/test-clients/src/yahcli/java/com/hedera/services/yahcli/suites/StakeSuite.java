@@ -28,8 +28,10 @@ import com.hedera.services.yahcli.config.ConfigUtils;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 
 public class StakeSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(StakeSuite.class);
@@ -64,7 +66,7 @@ public class StakeSuite extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return List.of(doStake());
     }
 
@@ -85,7 +87,7 @@ public class StakeSuite extends HapiSuite {
         return Long.parseLong(id.substring(id.lastIndexOf(".") + 1));
     }
 
-    private HapiSpec doStake() {
+    final Stream<DynamicTest> doStake() {
         final var toUpdate = stakingAccount == null ? HapiSuite.DEFAULT_PAYER : stakingAccount;
         return HapiSpec.customHapiSpec("DoStake")
                 .withProperties(specConfig)

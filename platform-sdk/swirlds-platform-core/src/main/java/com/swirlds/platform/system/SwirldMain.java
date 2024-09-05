@@ -17,6 +17,7 @@
 package com.swirlds.platform.system;
 
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.platform.state.MerkleRoot;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 
@@ -45,7 +46,7 @@ public interface SwirldMain extends Runnable {
      *
      * <p>
      * Any changes necessary to initialize {@link SwirldState} should be made in
-     * {@link SwirldState#init(Platform, SwirldDualState, InitTrigger, SoftwareVersion)}
+     * {@link SwirldState#init(Platform, InitTrigger, SoftwareVersion)}
      * </p>
      *
      * @param platform the Platform that instantiated this SwirldMain
@@ -61,13 +62,12 @@ public interface SwirldMain extends Runnable {
     void run();
 
     /**
-     * Instantiate and return a SwirldState object that corresponds to this SwirldMain object. Typically, if class
-     * ExampleMain implements SwirldMain, then newState will return an object of class ExampleMain.
+     * Instantiate and return a root node of the merkle state tree for this SwirldMain object.
      *
-     * @return the newly instantiated SwirldState object
+     * @return merkle state tree root node
      */
     @NonNull
-    SwirldState newState();
+    MerkleRoot newMerkleStateRoot();
 
     /**
      * <p>

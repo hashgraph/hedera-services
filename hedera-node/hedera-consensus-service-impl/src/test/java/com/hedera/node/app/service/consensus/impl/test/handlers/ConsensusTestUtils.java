@@ -16,10 +16,6 @@
 
 package com.hedera.node.app.service.consensus.impl.test.handlers;
 
-import static com.hedera.test.factories.scenarios.TxnHandlingScenario.CUSTOM_PAYER_ACCOUNT_KT;
-import static com.hedera.test.factories.scenarios.TxnHandlingScenario.EXISTING_TOPIC;
-import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_PAYER_KT;
-import static org.assertj.core.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.notNull;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
@@ -33,7 +29,6 @@ import com.hedera.hapi.node.state.consensus.Topic;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.service.consensus.ReadableTopicStore;
 import com.hedera.node.app.service.token.ReadableAccountStore;
-import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 
 public final class ConsensusTestUtils {
@@ -64,18 +59,6 @@ public final class ConsensusTestUtils {
         return key;
     }
 
-    static void assertDefaultPayer(PreHandleContext context) {
-        assertPayer(DEFAULT_PAYER_KT.asPbjKey(), context);
-    }
-
-    static void assertCustomPayer(PreHandleContext context) {
-        assertPayer(CUSTOM_PAYER_ACCOUNT_KT.asPbjKey(), context);
-    }
-
-    static void assertPayer(Key expected, PreHandleContext context) {
-        assertThat(context.payerKey()).isEqualTo(expected);
-    }
-
     static void mockTopicLookup(Key adminKey, Key submitKey, ReadableTopicStore topicStore) {
         given(topicStore.getTopic(notNull()))
                 .willReturn(newTopic(adminKey != null ? adminKey : null, submitKey != null ? submitKey : null));
@@ -83,7 +66,7 @@ public final class ConsensusTestUtils {
 
     static Topic newTopic(Key admin, Key submit) {
         return new Topic(
-                TopicID.newBuilder().topicNum(EXISTING_TOPIC.getTopicNum()).build(),
+                TopicID.newBuilder().topicNum(123L).build(),
                 -1L,
                 0L,
                 -1L,

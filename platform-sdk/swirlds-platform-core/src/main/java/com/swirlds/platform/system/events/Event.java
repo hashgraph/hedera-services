@@ -16,11 +16,12 @@
 
 package com.swirlds.platform.system.events;
 
+import com.hedera.hapi.node.base.SemanticVersion;
+import com.hedera.hapi.platform.event.EventCore;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.platform.NodeId;
-import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.transaction.Transaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
 import java.util.Iterator;
 import java.util.function.Consumer;
@@ -73,6 +74,22 @@ public interface Event {
      *
      * @return the software version
      */
-    @Nullable
-    SoftwareVersion getSoftwareVersion();
+    @NonNull
+    SemanticVersion getSoftwareVersion();
+
+    /**
+     * Returns the core data of the event.
+     *
+     * @return the core data
+     */
+    @NonNull
+    EventCore getEventCore();
+
+    /**
+     * Returns the signature of the event.
+     *
+     * @return the signature
+     */
+    @NonNull
+    Bytes getSignature();
 }

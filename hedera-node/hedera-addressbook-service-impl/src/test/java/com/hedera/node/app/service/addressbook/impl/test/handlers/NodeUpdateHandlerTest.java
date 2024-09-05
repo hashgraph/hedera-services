@@ -1,0 +1,621 @@
+/*
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.hedera.node.app.service.addressbook.impl.test.handlers;
+
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ADMIN_KEY;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_GOSSIP_CA_CERTIFICATE;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NODE_ACCOUNT_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NODE_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.UPDATE_NODE_ACCOUNT_NOT_ALLOWED;
+import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.asAccount;
+import static com.hedera.node.app.spi.fixtures.Assertions.assertThrowsPreCheck;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mock.Strictness.LENIENT;
+import static org.mockito.Mockito.mock;
+
+import com.hedera.hapi.node.addressbook.NodeUpdateTransactionBody;
+import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.Key;
+import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.base.ServiceEndpoint;
+import com.hedera.hapi.node.base.TransactionID;
+import com.hedera.hapi.node.state.token.Account;
+import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.service.addressbook.ReadableNodeStore;
+import com.hedera.node.app.service.addressbook.impl.WritableNodeStore;
+import com.hedera.node.app.service.addressbook.impl.handlers.NodeUpdateHandler;
+import com.hedera.node.app.service.addressbook.impl.validators.AddressBookValidator;
+import com.hedera.node.app.service.token.ReadableAccountStore;
+import com.hedera.node.app.spi.fees.FeeCalculator;
+import com.hedera.node.app.spi.fees.FeeCalculatorFactory;
+import com.hedera.node.app.spi.fees.FeeContext;
+import com.hedera.node.app.spi.fees.Fees;
+import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
+import com.hedera.node.app.spi.store.StoreFactory;
+import com.hedera.node.app.spi.validation.AttributeValidator;
+import com.hedera.node.app.spi.workflows.HandleContext;
+import com.hedera.node.app.spi.workflows.HandleException;
+import com.hedera.node.app.spi.workflows.PreCheckException;
+import com.hedera.node.app.spi.workflows.PreHandleContext;
+import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
+import java.security.cert.CertificateEncodingException;
+import java.security.cert.X509Certificate;
+import java.util.List;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+
+@ExtendWith(MockitoExtension.class)
+class NodeUpdateHandlerTest extends AddressBookTestBase {
+
+    @Mock(strictness = LENIENT)
+    private HandleContext handleContext;
+
+    @Mock
+    private StoreFactory storeFactory;
+
+    @Mock
+    private ReadableAccountStore accountStore;
+
+    @Mock
+    private AttributeValidator validator;
+
+    private TransactionBody txn;
+    private NodeUpdateHandler subject;
+    private List<X509Certificate> certList;
+
+    @BeforeEach
+    void setUp() {
+        final var addressBookValidator = new AddressBookValidator();
+        subject = new NodeUpdateHandler(addressBookValidator);
+        certList = generateX509Certificates(3);
+    }
+
+    @Test
+    @DisplayName("pureChecks fail when nodeId is negagive")
+    void nodeIdCannotNegative() {
+        txn = new NodeUpdateBuilder().build();
+        final var msg = assertThrows(PreCheckException.class, () -> subject.pureChecks(txn));
+        assertThat(msg.responseCode()).isEqualTo(INVALID_NODE_ID);
+    }
+
+    @Test
+    @DisplayName("pureChecks fail when gossipCaCertificate empty")
+    void gossipCaCertificateCannotEmpty() {
+        txn = new NodeUpdateBuilder()
+                .withNodeId(1)
+                .withAccountId(accountId)
+                .withGossipCaCertificate(Bytes.EMPTY)
+                .build();
+        final var msg = assertThrows(PreCheckException.class, () -> subject.pureChecks(txn));
+        assertThat(msg.responseCode()).isEqualTo(INVALID_GOSSIP_CA_CERTIFICATE);
+    }
+
+    @Test
+    @DisplayName("invalid adminKey fail")
+    void adminKeyInvalid() {
+        txn = new NodeUpdateBuilder()
+                .withNodeId(1)
+                .withAccountId(accountId)
+                .withAdminKey(invalidKey)
+                .build();
+        final var msg = assertThrows(PreCheckException.class, () -> subject.pureChecks(txn));
+        assertThat(msg.responseCode()).isEqualTo(INVALID_ADMIN_KEY);
+    }
+
+    @Test
+    @DisplayName("pureChecks succeeds when expected attributes are specified")
+    void pureCheckPass() throws CertificateEncodingException {
+        txn = new NodeUpdateBuilder()
+                .withNodeId(1)
+                .withAccountId(accountId)
+                .withGossipCaCertificate(Bytes.wrap(certList.get(1).getEncoded()))
+                .withAdminKey(key)
+                .build();
+        assertDoesNotThrow(() -> subject.pureChecks(txn));
+    }
+
+    @Test
+    void nodetIdMustInState() {
+        txn = new NodeUpdateBuilder().withNodeId(2L).build();
+        given(handleContext.body()).willReturn(txn);
+        refreshStoresWithCurrentNodeInWritable();
+        final var config = HederaTestConfigBuilder.create()
+                .withValue("nodes.nodeMaxDescriptionUtf8Bytes", 10)
+                .getOrCreateConfig();
+        given(handleContext.configuration()).willReturn(config);
+        given(handleContext.storeFactory()).willReturn(storeFactory);
+        given(storeFactory.writableStore(WritableNodeStore.class)).willReturn(writableStore);
+        given(storeFactory.readableStore(ReadableAccountStore.class)).willReturn(accountStore);
+
+        final var msg = assertThrows(HandleException.class, () -> subject.handle(handleContext));
+        assertEquals(ResponseCodeEnum.INVALID_NODE_ID, msg.getStatus());
+    }
+
+    @Test
+    void accountIdMustInState() {
+        txn = new NodeUpdateBuilder().withNodeId(1L).withAccountId(accountId).build();
+        given(accountStore.contains(accountId)).willReturn(false);
+        given(handleContext.body()).willReturn(txn);
+        refreshStoresWithCurrentNodeInWritable();
+        final var config = HederaTestConfigBuilder.create()
+                .withValue("nodes.nodeMaxDescriptionUtf8Bytes", 10)
+                .getOrCreateConfig();
+        given(handleContext.configuration()).willReturn(config);
+        given(handleContext.storeFactory()).willReturn(storeFactory);
+        given(storeFactory.writableStore(WritableNodeStore.class)).willReturn(writableStore);
+        given(storeFactory.readableStore(ReadableAccountStore.class)).willReturn(accountStore);
+
+        final var msg = assertThrows(HandleException.class, () -> subject.handle(handleContext));
+        assertEquals(ResponseCodeEnum.INVALID_NODE_ACCOUNT_ID, msg.getStatus());
+    }
+
+    @Test
+    void failsWhenDescriptionTooLarge() {
+        txn = new NodeUpdateBuilder()
+                .withNodeId(1L)
+                .withAccountId(accountId)
+                .withDescription("Description")
+                .build();
+        setupHandle();
+
+        refreshStoresWithCurrentNodeInWritable();
+        final var config = HederaTestConfigBuilder.create()
+                .withValue("nodes.nodeMaxDescriptionUtf8Bytes", 10)
+                .getOrCreateConfig();
+        given(handleContext.configuration()).willReturn(config);
+
+        final var msg = assertThrows(HandleException.class, () -> subject.handle(handleContext));
+        assertEquals(ResponseCodeEnum.INVALID_NODE_DESCRIPTION, msg.getStatus());
+    }
+
+    @Test
+    void failsWhenDescriptionContainZeroByte() {
+        txn = new NodeUpdateBuilder()
+                .withNodeId(1L)
+                .withAccountId(accountId)
+                .withDescription("Des\0cription")
+                .build();
+        setupHandle();
+        final var config = HederaTestConfigBuilder.create()
+                .withValue("nodes.nodeMaxDescriptionUtf8Bytes", 12)
+                .getOrCreateConfig();
+        given(handleContext.configuration()).willReturn(config);
+
+        final var msg = assertThrows(HandleException.class, () -> subject.handle(handleContext));
+        assertEquals(ResponseCodeEnum.INVALID_NODE_DESCRIPTION, msg.getStatus());
+    }
+
+    @Test
+    void failsWhenGossipEndpointTooLarge() {
+        txn = new NodeUpdateBuilder()
+                .withNodeId(1L)
+                .withAccountId(accountId)
+                .withGossipEndpoint(List.of(endpoint1, endpoint2, endpoint3))
+                .build();
+        setupHandle();
+
+        final var msg = assertThrows(HandleException.class, () -> subject.handle(handleContext));
+        assertEquals(ResponseCodeEnum.GOSSIP_ENDPOINTS_EXCEEDED_LIMIT, msg.getStatus());
+    }
+
+    @Test
+    void failsWhenGossipEndpointTooSmall() {
+        txn = new NodeUpdateBuilder()
+                .withNodeId(1L)
+                .withAccountId(accountId)
+                .withGossipEndpoint(List.of(endpoint1))
+                .build();
+        setupHandle();
+
+        final var msg = assertThrows(HandleException.class, () -> subject.handle(handleContext));
+        assertEquals(ResponseCodeEnum.INVALID_GOSSIP_ENDPOINT, msg.getStatus());
+    }
+
+    @Test
+    void failsWhenGossipEndpointHaveIPAndFQDN() {
+        txn = new NodeUpdateBuilder()
+                .withNodeId(1L)
+                .withAccountId(accountId)
+                .withGossipEndpoint(List.of(endpoint1, endpoint4))
+                .build();
+        setupHandle();
+
+        final var msg = assertThrows(HandleException.class, () -> subject.handle(handleContext));
+        assertEquals(ResponseCodeEnum.GOSSIP_ENDPOINT_CANNOT_HAVE_FQDN, msg.getStatus());
+    }
+
+    @Test
+    void failsWhenEndpointHaveEmptyIPAndFQDN() {
+        txn = new NodeUpdateBuilder()
+                .withNodeId(1L)
+                .withAccountId(accountId)
+                .withGossipEndpoint(List.of(endpoint1, endpoint5))
+                .build();
+        setupHandle();
+
+        final var msg = assertThrows(HandleException.class, () -> subject.handle(handleContext));
+        assertEquals(ResponseCodeEnum.INVALID_ENDPOINT, msg.getStatus());
+    }
+
+    @Test
+    void failsWhenEndpointHaveZeroIp() {
+        txn = new NodeUpdateBuilder()
+                .withNodeId(1L)
+                .withAccountId(accountId)
+                .withGossipEndpoint(List.of(endpoint1, endpoint6))
+                .build();
+        setupHandle();
+
+        final var msg = assertThrows(HandleException.class, () -> subject.handle(handleContext));
+        assertEquals(ResponseCodeEnum.INVALID_ENDPOINT, msg.getStatus());
+    }
+
+    @Test
+    void failsWhenServiceEndpointTooLarge() {
+        txn = new NodeUpdateBuilder()
+                .withNodeId(1L)
+                .withAccountId(accountId)
+                .withGossipEndpoint(List.of(endpoint1, endpoint2))
+                .withServiceEndpoint(List.of(endpoint1, endpoint2, endpoint3))
+                .build();
+        setupHandle();
+        final var config = HederaTestConfigBuilder.create()
+                .withValue("nodes.maxGossipEndpoint", 2)
+                .withValue("nodes.maxServiceEndpoint", 2)
+                .getOrCreateConfig();
+        given(handleContext.configuration()).willReturn(config);
+
+        final var msg = assertThrows(HandleException.class, () -> subject.handle(handleContext));
+        assertEquals(ResponseCodeEnum.SERVICE_ENDPOINTS_EXCEEDED_LIMIT, msg.getStatus());
+    }
+
+    @Test
+    void failsWhenEndpointHaveIPAndFQDN() {
+        txn = new NodeUpdateBuilder()
+                .withNodeId(1L)
+                .withAccountId(accountId)
+                .withGossipEndpoint(List.of(endpoint1, endpoint2))
+                .withServiceEndpoint(List.of(endpoint1, endpoint4))
+                .build();
+        setupHandle();
+
+        final var config = HederaTestConfigBuilder.create()
+                .withValue("nodes.maxGossipEndpoint", 2)
+                .withValue("nodes.maxServiceEndpoint", 2)
+                .getOrCreateConfig();
+        given(handleContext.configuration()).willReturn(config);
+
+        final var msg = assertThrows(HandleException.class, () -> subject.handle(handleContext));
+        assertEquals(ResponseCodeEnum.IP_FQDN_CANNOT_BE_SET_FOR_SAME_ENDPOINT, msg.getStatus());
+    }
+
+    @Test
+    void failsWhenEndpointFQDNTooLarge() {
+        txn = new NodeUpdateBuilder()
+                .withNodeId(1L)
+                .withAccountId(accountId)
+                .withGossipEndpoint(List.of(endpoint1, endpoint2))
+                .withServiceEndpoint(List.of(endpoint1, endpoint3))
+                .build();
+        setupHandle();
+
+        final var config = HederaTestConfigBuilder.create()
+                .withValue("nodes.maxGossipEndpoint", 2)
+                .withValue("nodes.maxServiceEndpoint", 2)
+                .withValue("nodes.maxFqdnSize", 4)
+                .getOrCreateConfig();
+        given(handleContext.configuration()).willReturn(config);
+
+        final var msg = assertThrows(HandleException.class, () -> subject.handle(handleContext));
+        assertEquals(ResponseCodeEnum.FQDN_SIZE_TOO_LARGE, msg.getStatus());
+    }
+
+    @Test
+    void hanldeWorkAsExpected() throws CertificateEncodingException {
+        txn = new NodeUpdateBuilder()
+                .withNodeId(1L)
+                .withAccountId(accountId)
+                .withDescription("Description")
+                .withGossipEndpoint(List.of(endpoint1, endpoint2))
+                .withServiceEndpoint(List.of(endpoint1, endpoint3))
+                .withGossipCaCertificate(Bytes.wrap(certList.get(2).getEncoded()))
+                .withGrpcCertificateHash(Bytes.wrap("hash"))
+                .withAdminKey(key)
+                .build();
+        given(handleContext.body()).willReturn(txn);
+        refreshStoresWithMoreNodeInWritable();
+        final var config = HederaTestConfigBuilder.create()
+                .withValue("nodes.nodeMaxDescriptionUtf8Bytes", 12)
+                .withValue("nodes.maxGossipEndpoint", 4)
+                .withValue("nodes.maxServiceEndpoint", 3)
+                .getOrCreateConfig();
+        given(handleContext.configuration()).willReturn(config);
+        given(handleContext.storeFactory()).willReturn(storeFactory);
+        given(storeFactory.writableStore(WritableNodeStore.class)).willReturn(writableStore);
+        given(accountStore.contains(accountId)).willReturn(true);
+        given(storeFactory.readableStore(ReadableAccountStore.class)).willReturn(accountStore);
+        given(handleContext.attributeValidator()).willReturn(validator);
+
+        assertDoesNotThrow(() -> subject.handle(handleContext));
+        final var updatedNode = writableStore.get(1L);
+        assertNotNull(updatedNode);
+        assertEquals(1, updatedNode.nodeId());
+        assertEquals(accountId, updatedNode.accountId());
+        assertEquals("Description", updatedNode.description());
+        assertArrayEquals(
+                (List.of(endpoint1, endpoint2)).toArray(),
+                updatedNode.gossipEndpoint().toArray());
+        assertArrayEquals(
+                (List.of(endpoint1, endpoint3)).toArray(),
+                updatedNode.serviceEndpoint().toArray());
+        assertArrayEquals(
+                certList.get(2).getEncoded(), updatedNode.gossipCaCertificate().toByteArray());
+        assertArrayEquals("hash".getBytes(), updatedNode.grpcCertificateHash().toByteArray());
+        assertEquals(key, updatedNode.adminKey());
+    }
+
+    @Test
+    void nothingHappensIfUpdateHasNoop() {
+        txn = new NodeUpdateBuilder().withNodeId(1L).build();
+        given(handleContext.body()).willReturn(txn);
+        refreshStoresWithCurrentNodeInWritable();
+        final var config = HederaTestConfigBuilder.create()
+                .withValue("nodes.maxGossipEndpoint", 2)
+                .getOrCreateConfig();
+        given(handleContext.configuration()).willReturn(config);
+        given(handleContext.storeFactory()).willReturn(storeFactory);
+        given(storeFactory.writableStore(WritableNodeStore.class)).willReturn(writableStore);
+
+        assertDoesNotThrow(() -> subject.handle(handleContext));
+        final var updatedNode = writableStore.get(1L);
+        assertEquals(node, updatedNode);
+    }
+
+    @Test
+    void preHandleWorksWhenAdminKeyValid() throws PreCheckException {
+        txn = new NodeUpdateBuilder()
+                .withNodeId(nodeId.number())
+                .withAccountId(asAccount(53))
+                .withAdminKey(key)
+                .build();
+        final var context = setupPreHandle(true, txn);
+
+        subject.preHandle(context);
+        assertThat(txn).isEqualTo(context.body());
+        assertThat(context.payerKey()).isEqualTo(anotherKey);
+        assertThat(context.requiredNonPayerKeys()).contains(key);
+    }
+
+    @Test
+    void preHandleFailedWhenAdminKeyInValid() throws PreCheckException {
+        txn = new NodeUpdateBuilder()
+                .withNodeId(nodeId.number())
+                .withAdminKey(invalidKey)
+                .build();
+        final var context = setupPreHandle(true, txn);
+        assertThrowsPreCheck(() -> subject.preHandle(context), INVALID_ADMIN_KEY);
+    }
+
+    @Test
+    void preHandleFailedWhenNodeNotExist() throws PreCheckException {
+        txn = new NodeUpdateBuilder().withNodeId(2).build();
+        final var context = setupPreHandle(true, txn);
+        assertThrowsPreCheck(() -> subject.preHandle(context), INVALID_NODE_ID);
+    }
+
+    @Test
+    void preHandleFailedWhenNodeDeleted() throws PreCheckException {
+        givenValidNode(true);
+        refreshStoresWithCurrentNodeInReadable();
+        txn = new NodeUpdateBuilder().withNodeId(nodeId.number()).build();
+        final var context = setupPreHandle(true, txn);
+        assertThrowsPreCheck(() -> subject.preHandle(context), INVALID_NODE_ID);
+    }
+
+    @Test
+    void preHandleFailedWhenOldAdminKeyInValid() throws PreCheckException {
+        givenValidNodeWithAdminKey(invalidKey);
+        refreshStoresWithCurrentNodeInReadable();
+        txn = new NodeUpdateBuilder().withNodeId(nodeId.number()).build();
+        final var context = setupPreHandle(true, txn);
+        assertThrowsPreCheck(() -> subject.preHandle(context), INVALID_ADMIN_KEY);
+    }
+
+    @Test
+    void preHandleWorksFailWhenAccountIdNotGood() throws PreCheckException {
+        txn = new NodeUpdateBuilder()
+                .withNodeId(nodeId.number())
+                .withAdminKey(key)
+                .withAccountId(AccountID.DEFAULT)
+                .build();
+        final var context = setupPreHandle(true, txn);
+        assertThrowsPreCheck(() -> subject.preHandle(context), INVALID_NODE_ACCOUNT_ID);
+    }
+
+    @Test
+    void preHandleWorksFailWhenAccountIdIsAlias() throws PreCheckException {
+        txn = new NodeUpdateBuilder()
+                .withNodeId(nodeId.number())
+                .withAdminKey(key)
+                .withAccountId(alias)
+                .build();
+        final var context = setupPreHandle(true, txn);
+        assertThrowsPreCheck(() -> subject.preHandle(context), INVALID_NODE_ACCOUNT_ID);
+    }
+
+    @Test
+    void preHandleWorksFailWhenUpdateAccountIdNotAllowed() throws PreCheckException {
+        txn = new NodeUpdateBuilder()
+                .withNodeId(nodeId.number())
+                .withAdminKey(key)
+                .withAccountId(asAccount(53))
+                .build();
+        final var context = setupPreHandle(false, txn);
+        assertThrowsPreCheck(() -> subject.preHandle(context), UPDATE_NODE_ACCOUNT_NOT_ALLOWED);
+    }
+
+    @Test
+    @DisplayName("check that fees are 1 for delete node trx")
+    void testCalculateFeesInvocations() {
+        final var feeCtx = mock(FeeContext.class);
+        final var feeCalcFact = mock(FeeCalculatorFactory.class);
+        final var feeCalc = mock(FeeCalculator.class);
+        given(feeCtx.feeCalculatorFactory()).willReturn(feeCalcFact);
+        given(feeCalcFact.feeCalculator(any())).willReturn(feeCalc);
+        final var config = HederaTestConfigBuilder.create()
+                .withValue("nodes.enableDAB", true)
+                .getOrCreateConfig();
+        given(feeCtx.configuration()).willReturn(config);
+
+        given(feeCalc.addVerificationsPerTransaction(anyLong())).willReturn(feeCalc);
+        given(feeCalc.calculate()).willReturn(new Fees(1, 0, 0));
+
+        assertThat(subject.calculateFees(feeCtx)).isEqualTo(new Fees(1, 0, 0));
+    }
+
+    private void setupHandle() {
+        given(handleContext.body()).willReturn(txn);
+        refreshStoresWithCurrentNodeInWritable();
+        final var config = HederaTestConfigBuilder.create()
+                .withValue("nodes.maxGossipEndpoint", 2)
+                .getOrCreateConfig();
+        given(handleContext.configuration()).willReturn(config);
+        given(handleContext.storeFactory()).willReturn(storeFactory);
+        given(storeFactory.writableStore(WritableNodeStore.class)).willReturn(writableStore);
+        given(accountStore.contains(accountId)).willReturn(true);
+        given(storeFactory.readableStore(ReadableAccountStore.class)).willReturn(accountStore);
+    }
+
+    private PreHandleContext setupPreHandle(boolean updateAccountIdAllowed, TransactionBody txn)
+            throws PreCheckException {
+        final var config = HederaTestConfigBuilder.create()
+                .withValue("nodes.updateAccountIdAllowed", updateAccountIdAllowed)
+                .getOrCreateConfig();
+        mockPayerLookup(anotherKey);
+        final var context = new FakePreHandleContext(accountStore, txn, config);
+        context.registerStore(ReadableNodeStore.class, readableStore);
+        return context;
+    }
+
+    private Key mockPayerLookup(Key key) {
+        final var account = mock(Account.class);
+        given(account.key()).willReturn(key);
+        given(accountStore.getAccountById(payerId)).willReturn(account);
+        return key;
+    }
+
+    private class NodeUpdateBuilder {
+        private long nodeId = -1L;
+        private AccountID accountId = null;
+        private String description = null;
+        private List<ServiceEndpoint> gossipEndpoint = null;
+
+        private List<ServiceEndpoint> serviceEndpoint = null;
+
+        private Bytes gossipCaCertificate = null;
+
+        private Bytes grpcCertificateHash = null;
+        private Key adminKey = null;
+
+        private NodeUpdateBuilder() {}
+
+        public TransactionBody build() {
+            final var txnId = TransactionID.newBuilder().accountID(payerId).transactionValidStart(consensusTimestamp);
+            final var txnBody = NodeUpdateTransactionBody.newBuilder();
+            txnBody.nodeId(nodeId);
+            if (accountId != null) {
+                txnBody.accountId(accountId);
+            }
+            if (description != null) {
+                txnBody.description(description);
+            }
+            if (gossipEndpoint != null) {
+                txnBody.gossipEndpoint(gossipEndpoint);
+            }
+            if (serviceEndpoint != null) {
+                txnBody.serviceEndpoint(serviceEndpoint);
+            }
+            if (gossipCaCertificate != null) {
+                txnBody.gossipCaCertificate(gossipCaCertificate);
+            }
+            if (grpcCertificateHash != null) {
+                txnBody.grpcCertificateHash(grpcCertificateHash);
+            }
+            if (adminKey != null) {
+                txnBody.adminKey(adminKey);
+            }
+
+            return TransactionBody.newBuilder()
+                    .transactionID(txnId)
+                    .nodeUpdate(txnBody.build())
+                    .build();
+        }
+
+        public NodeUpdateBuilder withNodeId(final long nodeId) {
+            this.nodeId = nodeId;
+            return this;
+        }
+
+        public NodeUpdateBuilder withAccountId(final AccountID accountId) {
+            this.accountId = accountId;
+            return this;
+        }
+
+        public NodeUpdateBuilder withDescription(final String description) {
+            this.description = description;
+            return this;
+        }
+
+        public NodeUpdateBuilder withGossipEndpoint(final List<ServiceEndpoint> gossipEndpoint) {
+            this.gossipEndpoint = gossipEndpoint;
+            return this;
+        }
+
+        public NodeUpdateBuilder withServiceEndpoint(final List<ServiceEndpoint> serviceEndpoint) {
+            this.serviceEndpoint = serviceEndpoint;
+            return this;
+        }
+
+        public NodeUpdateBuilder withGossipCaCertificate(final Bytes gossipCaCertificate) {
+            this.gossipCaCertificate = gossipCaCertificate;
+            return this;
+        }
+
+        public NodeUpdateBuilder withGrpcCertificateHash(final Bytes grpcCertificateHash) {
+            this.grpcCertificateHash = grpcCertificateHash;
+            return this;
+        }
+
+        public NodeUpdateBuilder withAdminKey(final Key adminKey) {
+            this.adminKey = adminKey;
+            return this;
+        }
+    }
+}

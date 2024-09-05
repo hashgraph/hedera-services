@@ -17,6 +17,7 @@
 package com.swirlds.common.wiring.model.internal.deterministic;
 
 import static com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType.DIRECT_THREADSAFE;
+import static com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType.NO_OP;
 
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.metrics.extensions.FractionalTimer;
@@ -79,6 +80,7 @@ public class DeterministicTaskSchedulerBuilder<OUT> extends AbstractTaskSchedule
                             type,
                             counters.onRamp(),
                             counters.offRamp(),
+                            unhandledTaskCapacity,
                             flushingEnabled,
                             squelchingEnabled,
                             insertionIsBlocking,
@@ -95,7 +97,9 @@ public class DeterministicTaskSchedulerBuilder<OUT> extends AbstractTaskSchedule
                     case NO_OP -> new NoOpTaskScheduler<>(model, name, type, flushingEnabled, squelchingEnabled);
                 };
 
-        model.registerScheduler(scheduler, hyperlink);
+        if (type != NO_OP) {
+            model.registerScheduler(scheduler, hyperlink);
+        }
 
         return scheduler;
     }

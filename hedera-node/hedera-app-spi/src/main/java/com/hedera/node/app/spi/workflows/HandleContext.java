@@ -17,34 +17,30 @@
 package com.hedera.node.app.spi.workflows;
 
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.SCHEDULED;
-import static com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer.NOOP_EXTERNALIZED_RECORD_CUSTOMIZER;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.Key;
-import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.hapi.utils.throttles.DeterministicThrottle;
 import com.hedera.node.app.spi.authorization.SystemPrivilege;
 import com.hedera.node.app.spi.fees.ExchangeRateInfo;
-import com.hedera.node.app.spi.fees.FeeAccumulator;
-import com.hedera.node.app.spi.fees.FeeCalculator;
 import com.hedera.node.app.spi.fees.Fees;
-import com.hedera.node.app.spi.info.NetworkInfo;
+import com.hedera.node.app.spi.fees.ResourcePriceCalculator;
+import com.hedera.node.app.spi.ids.EntityNumGenerator;
+import com.hedera.node.app.spi.key.KeyVerifier;
 import com.hedera.node.app.spi.records.BlockRecordInfo;
-import com.hedera.node.app.spi.records.RecordCache;
-import com.hedera.node.app.spi.signatures.SignatureVerification;
-import com.hedera.node.app.spi.signatures.VerificationAssistant;
+import com.hedera.node.app.spi.store.StoreFactory;
+import com.hedera.node.app.spi.throttle.ThrottleAdviser;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer;
-import com.hedera.node.app.spi.workflows.record.RecordListCheckPoint;
-import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.hedera.node.app.spi.workflows.record.StreamBuilder;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.state.spi.info.NetworkInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
-import java.util.List;
+import java.util.Map;
 import java.util.function.Predicate;
 
 /**
@@ -80,6 +76,24 @@ public interface HandleContext {
     }
 
     /**
+     * Enumerates the possible kinds of limits on preceding transaction records.
+     */
+    enum PrecedingTransactionCategory {
+        /**
+         * No limit on preceding transactions, true at genesis since there are no previous consensus
+         * times to collide with.
+         */
+        UNLIMITED_CHILD_RECORDS,
+        /**
+         * The number of preceding transactions is limited by the number of nanoseconds between the
+         * last-assigned consensus time and the current platform-assigned consensus time. (Or,
+         * before block streams, even further artificially limited to three records for
+         * backward compatibility.)
+         */
+        LIMITED_CHILD_RECORDS
+    }
+
+    /**
      * Returns the current consensus time.
      *
      * @return the current consensus time
@@ -104,6 +118,13 @@ public interface HandleContext {
     AccountID payer();
 
     /**
+     * Attempts to charge the payer in this context the given amount of tinybar.
+     * @param amount the amount to charge
+     * @return true if the entire amount was successfully charged, false otherwise
+     */
+    boolean tryToChargePayer(long amount);
+
+    /**
      * Returns the current {@link Configuration} for the node.
      *
      * @return the {@code Configuration}
@@ -120,44 +141,12 @@ public interface HandleContext {
     BlockRecordInfo blockRecordInfo();
 
     /**
-     * Getter for the payer key
+     * Returns a {@link ResourcePriceCalculator} that provides functionality to calculate fees for transactions.
      *
-     * @return the payer key
-     */
-    @Nullable
-    Key payerKey();
-
-    /**
-     * Returns the Hedera resource prices (in thousandths of a tinycent) for the given {@link SubType} of
-     * the given {@link HederaFunctionality}. The contract service needs this information to determine both the
-     * gas price and the cost of storing logs (a function of the {@code rbh} price, which may itself vary by
-     * contract operation type).
-     *
-     * @param functionality the {@link HederaFunctionality} of interest
-     * @param subType the {@link SubType} of interest
-     * @return the corresponding Hedera resource prices
+     * @return the {@link ResourcePriceCalculator}
      */
     @NonNull
-    FunctionalityResourcePrices resourcePricesFor(
-            @NonNull final HederaFunctionality functionality, @NonNull final SubType subType);
-
-    /**
-     * Get a calculator for calculating fees for the current transaction, and its {@link SubType}. Most transactions
-     * just use {@link SubType#DEFAULT}, but some (such as crypto transfer) need to be more specific.
-     *
-     * @param subType The {@link SubType} of the transaction.
-     * @return The {@link FeeCalculator} to use.
-     */
-    @NonNull
-    FeeCalculator feeCalculator(@NonNull final SubType subType);
-
-    /**
-     * Gets a {@link FeeAccumulator} used for collecting fees for the current transaction.
-     *
-     * @return The {@link FeeAccumulator} to use.
-     */
-    @NonNull
-    FeeAccumulator feeAccumulator();
+    ResourcePriceCalculator resourcePriceCalculator();
 
     /**
      * Gets a {@link ExchangeRateInfo} which provides information about the current exchange rate.
@@ -168,26 +157,11 @@ public interface HandleContext {
     ExchangeRateInfo exchangeRateInfo();
 
     /**
-     * Consumes and returns the next entity number, for use by handlers that create entities.
+     * Returns an {@link EntityNumGenerator} that can be used to generate entity numbers.
      *
-     * <p>If this method is called after a child transaction was dispatched, which is subsequently rolled back,
-     * the counter will be rolled back, too. Consequently, the provided number must not be used anymore in this case,
-     * because it will be reused.
-     *
-     * @return the next entity number
+     * @return the entity number generator
      */
-    long newEntityNum();
-
-    /**
-     * Peeks at the next entity number, for use by handlers that create entities.
-     *
-     * <p>If this method is called after a child transaction was dispatched, which is subsequently rolled back,
-     * the counter will be rolled back, too. Consequently, the provided number must not be used anymore in this case,
-     * because it will be reused.
-     *
-     * @return the next entity number
-     */
-    long peekAtNewEntityNum();
+    EntityNumGenerator entityNumGenerator();
 
     /**
      * Returns the validator for attributes of entities created or updated by handlers.
@@ -219,60 +193,12 @@ public interface HandleContext {
             throws PreCheckException;
 
     /**
-     * Gets the {@link SignatureVerification} for the given key. If this key was not provided during pre-handle, then
-     * there will be no corresponding {@link SignatureVerification}. If the key was provided during pre-handle, then the
-     * corresponding {@link SignatureVerification} will be returned with the result of that verification operation.
+     * Returns the {@link KeyVerifier} which can be used to verify signatures.
      *
-     * <p>The signatures of required keys are guaranteed to be verified. Optional signatures may still be in the
-     * process of being verified (and therefore may time out). The timeout can be configured via the configuration
-     * {@code hedera.workflow.verificationTimeoutMS}
-     *
-     * @param key the key to get the verification for
-     * @return the verification for the given key
-     * @throws NullPointerException if {@code key} is {@code null}
+     * @return the {@link KeyVerifier}
      */
     @NonNull
-    SignatureVerification verificationFor(@NonNull Key key);
-
-    /**
-     * Gets the {@link SignatureVerification} for the given key. If this key was not provided during pre-handle, then
-     * there will be no corresponding {@link SignatureVerification}. If the key was provided during pre-handle, then the
-     * corresponding {@link SignatureVerification} will be returned with the result of that verification operation.
-     * Additionally, the VerificationAssistant provided may modify the result for "primitive", "Contract ID", or
-     * "Delegatable Contract ID" keys, and will be called to observe and reply for each such key as it is processed.
-     *
-     * <p>The signatures of required keys are guaranteed to be verified. Optional signatures may still be in the
-     * process of being verified (and therefore may time out). The timeout can be configured via the configuration
-     * {@code hedera.workflow.verificationTimeoutMS}
-     *
-     * @param key the key to get the verification for
-     * @param callback a VerificationAssistant callback function that will observe each "primitive", "Contract ID", or
-     * "Delegatable Contract ID" key and return a boolean indicating if the given key should be considered valid.
-     * @return the verification for the given key
-     */
-    @NonNull
-    SignatureVerification verificationFor(@NonNull Key key, @NonNull VerificationAssistant callback);
-
-    /**
-     * Gets the {@link SignatureVerification} for the given hollow account.
-     *
-     * <p>The signatures of required accounts are guaranteed to be verified. Optional accounts may still be in the
-     * process of being verified (and therefore may time out). The timeout can be configured via the configuration
-     * {@code hedera.workflow.verificationTimeoutMS}
-     *
-     * @param evmAlias The evm alias to lookup verification for.
-     * @return the verification for the given hollow account.
-     * @throws NullPointerException if {@code evmAlias} is {@code null}
-     */
-    @NonNull
-    SignatureVerification verificationFor(@NonNull final Bytes evmAlias);
-
-    /**
-     * Checks whether the payer of the current transaction refers to a superuser.
-     *
-     * @return {@code true} if the payer is a superuser, otherwise {@code false
-     */
-    boolean isSuperUser();
+    KeyVerifier keyVerifier();
 
     /**
      * Checks whether the current transaction is a privileged transaction and the payer has sufficient rights.
@@ -281,48 +207,13 @@ public interface HandleContext {
      */
     SystemPrivilege hasPrivilegedAuthorization();
 
-    /** Gets the {@link RecordCache}. */
-    @NonNull
-    RecordCache recordCache();
-
     /**
-     * Get a readable store given the store's interface. This gives read-only access to the store.
+     * Returns a {@link StoreFactory} that can create readable and writable stores as well as service APIs.
      *
-     * @param storeInterface The store interface to find and create a store for
-     * @param <T> Interface class for a Store
-     * @return An implementation of the provided store interface
-     * @throws IllegalArgumentException if the storeInterface class provided is unknown to the app
-     * @throws NullPointerException if {@code storeInterface} is {@code null}
+     * @return the {@link StoreFactory}
      */
     @NonNull
-    <T> T readableStore(@NonNull Class<T> storeInterface);
-
-    /**
-     * Return a writable store given the store's interface. This gives write access to the store.
-     *
-     * <p>This method is limited to stores that are part of the transaction's service.
-     *
-     * @param storeInterface The store interface to find and create a store for
-     * @param <T> Interface class for a Store
-     * @return An implementation of the provided store interface
-     * @throws IllegalArgumentException if the storeInterface class provided is unknown to the app
-     * @throws NullPointerException if {@code storeInterface} is {@code null}
-     */
-    @NonNull
-    <T> T writableStore(@NonNull Class<T> storeInterface);
-
-    /**
-     * Return a service API given the API's interface. This permits use of another service
-     * that doesn't have a corresponding HAPI {@link TransactionBody}.
-     *
-     * @param apiInterface The API interface to find and create an implementation of
-     * @param <T> Interface class for an API
-     * @return An implementation of the provided API interface
-     * @throws IllegalArgumentException if the apiInterface class provided is unknown to the app
-     * @throws NullPointerException if {@code apiInterface} is {@code null}
-     */
-    @NonNull
-    <T> T serviceApi(@NonNull Class<T> apiInterface);
+    StoreFactory storeFactory();
 
     /**
      * Returns the information about the network this transaction is being handled in.
@@ -331,18 +222,6 @@ public interface HandleContext {
      */
     @NonNull
     NetworkInfo networkInfo();
-
-    /**
-     * Returns a record builder for the given record builder subtype.
-     *
-     * @param recordBuilderClass the record type
-     * @param <T> the record type
-     * @return a builder for the given record type
-     * @throws NullPointerException if {@code recordBuilderClass} is {@code null}
-     * @throws IllegalArgumentException if the record builder type is unknown to the app
-     */
-    @NonNull
-    <T> T recordBuilder(@NonNull Class<T> recordBuilderClass);
 
     /**
      * Dispatches the fee calculation for a child transaction (that might then be dispatched).
@@ -384,13 +263,14 @@ public interface HandleContext {
      * @throws IllegalArgumentException if the transaction is not a {@link TransactionCategory#USER}-transaction or if
      *                                  the record builder type is unknown to the app
      * @throws IllegalStateException    if the current transaction has already introduced state changes
+     * @throws HandleException if the base builder for the dispatch cannot be created
      */
     @NonNull
     <T> T dispatchPrecedingTransaction(
             @NonNull TransactionBody txBody,
             @NonNull Class<T> recordBuilderClass,
             @Nullable Predicate<Key> verifier,
-            AccountID syntheticPayer);
+            @NonNull AccountID syntheticPayer);
 
     /**
      * Dispatches a preceding transaction that already has an ID.
@@ -402,6 +282,7 @@ public interface HandleContext {
      * @param <T> the record type
      * @throws IllegalArgumentException if the transaction body did not have an id
      */
+    // Only used in tests
     default <T> T dispatchPrecedingTransaction(
             @NonNull final TransactionBody txBody,
             @NonNull final Class<T> recordBuilderClass,
@@ -413,37 +294,6 @@ public interface HandleContext {
                 verifier,
                 txBody.transactionIDOrThrow().accountIDOrThrow());
     }
-
-    /**
-     * Dispatches preceding transaction that can be reverted.
-     *
-     * <p>A reversible preceding transaction depends on the current transaction. That means if the user transaction
-     * fails, a reversible preceding transaction is automatically rolled back. The state changes introduced by a
-     * reversible preceding transaction are automatically committed together with the parent transaction.
-     *
-     * <p>This method can only be called by a {@link TransactionCategory#USER}-transaction and only as long as no state
-     * changes have been introduced by the user transaction (either by storing state or by calling a child
-     * transaction).
-     *
-     * <p>The provided {@link Predicate} callback will be called to verify simple keys when the child transaction calls
-     * any of the {@code verificationFor} methods.
-     *
-     * @param txBody             the {@link TransactionBody} of the transaction to dispatch
-     * @param recordBuilderClass the record builder class of the transaction
-     * @param verifier           a {@link Predicate} that will be used to validate primitive keys
-     * @param syntheticPayer    the payer of the transaction
-     * @return the record builder of the transaction
-     * @throws NullPointerException     if {@code txBody} is {@code null}
-     * @throws IllegalArgumentException if the transaction is not a {@link TransactionCategory#USER}-transaction or if
-     *                                  the record builder type is unknown to the app
-     * @throws IllegalStateException    if the current transaction has already introduced state changes
-     */
-    @NonNull
-    <T> T dispatchReversiblePrecedingTransaction(
-            @NonNull TransactionBody txBody,
-            @NonNull Class<T> recordBuilderClass,
-            @NonNull Predicate<Key> verifier,
-            AccountID syntheticPayer);
 
     /**
      * Dispatches preceding transaction that can be removed.
@@ -462,41 +312,22 @@ public interface HandleContext {
      * @param txBody             the {@link TransactionBody} of the transaction to dispatch
      * @param recordBuilderClass the record builder class of the transaction
      * @param verifier           if non-null, a {@link Predicate} that will be used to validate primitive keys
-     * @param syntheticPayer    the payer of the transaction
+     * @param syntheticPayer     the payer of the transaction
+     * @param consensusThrottling whether to throttle the child transaction at consensus
      * @return the record builder of the transaction
      * @throws NullPointerException     if {@code txBody} is {@code null}
      * @throws IllegalArgumentException if the transaction is not a {@link TransactionCategory#USER}-transaction or if
      *                                  the record builder type is unknown to the app
      * @throws IllegalStateException    if the current transaction has already introduced state changes
+     * @throws HandleException          if the base builder for the dispatch cannot be created
      */
     @NonNull
     <T> T dispatchRemovablePrecedingTransaction(
             @NonNull TransactionBody txBody,
             @NonNull Class<T> recordBuilderClass,
             @Nullable Predicate<Key> verifier,
-            AccountID syntheticPayer);
-
-    /**
-     * Dispatches a reversible preceding transaction that already has an ID.
-     *
-     * @param txBody            the {@link TransactionBody} of the transaction to dispatch
-     * @param recordBuilderClass the record builder class of the transaction
-     * @param verifier         a {@link Predicate} that will be used to validate primitive keys
-     * @return the record builder of the transaction
-     * @param <T> the record type
-     * @throws IllegalArgumentException if the transaction body did not have an id
-     */
-    default <T> T dispatchReversiblePrecedingTransaction(
-            @NonNull final TransactionBody txBody,
-            @NonNull final Class<T> recordBuilderClass,
-            @NonNull final Predicate<Key> verifier) {
-        throwIfMissingPayerId(txBody);
-        return dispatchReversiblePrecedingTransaction(
-                txBody,
-                recordBuilderClass,
-                verifier,
-                txBody.transactionIDOrThrow().accountIDOrThrow());
-    }
+            AccountID syntheticPayer,
+            @NonNull ConsensusThrottling consensusThrottling);
 
     /**
      * Dispatches a child transaction.
@@ -516,15 +347,17 @@ public interface HandleContext {
      *
      * <p>A {@link TransactionCategory#PRECEDING}-transaction must not dispatch a child transaction.
      *
-     * @param txBody the {@link TransactionBody} of the child transaction to dispatch
+     * @param txBody             the {@link TransactionBody} of the child transaction to dispatch
      * @param recordBuilderClass the record builder class of the child transaction
-     * @param callback a {@link Predicate} callback function that will observe each primitive key
-     * @param syntheticPayerId the payer of the child transaction
-     * @param childCategory the category of the child transaction
+     * @param callback           a {@link Predicate} callback function that will observe each primitive key
+     * @param syntheticPayerId   the payer of the child transaction
+     * @param childCategory      the category of the child transaction
+     * @param consensusThrottling whether to throttle the child transaction at consensus
      * @return the record builder of the child transaction
-     * @throws NullPointerException if any of the arguments is {@code null}
+     * @throws NullPointerException     if any of the arguments is {@code null}
      * @throws IllegalArgumentException if the current transaction is a
-     * {@link TransactionCategory#PRECEDING}-transaction or if the record builder type is unknown to the app
+     * @throws HandleException          if the base builder for the dispatch cannot be created
+     *                                  {@link TransactionCategory#PRECEDING}-transaction or if the record builder type is unknown to the app
      */
     @NonNull
     <T> T dispatchChildTransaction(
@@ -532,7 +365,8 @@ public interface HandleContext {
             @NonNull Class<T> recordBuilderClass,
             @Nullable Predicate<Key> callback,
             @NonNull AccountID syntheticPayerId,
-            @NonNull TransactionCategory childCategory);
+            @NonNull TransactionCategory childCategory,
+            @NonNull ConsensusThrottling consensusThrottling);
 
     /**
      * Dispatches a child transaction that already has a transaction ID due to
@@ -544,6 +378,7 @@ public interface HandleContext {
      * @return the record builder of the child transaction
      * @param <T> the record type
      * @throws IllegalArgumentException if the transaction body did not have an id
+     * @throws HandleException if the base builder for the dispatch cannot be created
      */
     @NonNull
     default <T> T dispatchScheduledChildTransaction(
@@ -556,14 +391,15 @@ public interface HandleContext {
                 recordBuilderClass,
                 callback,
                 txBody.transactionIDOrThrow().accountIDOrThrow(),
-                SCHEDULED);
+                SCHEDULED,
+                ConsensusThrottling.ON);
     }
 
     /**
      * Dispatches a removable child transaction.
      *
      * <p>A removable child transaction depends on the current transaction. It behaves in almost all aspects like a
-     * regular child transaction (see {@link #dispatchChildTransaction(TransactionBody, Class, Predicate, AccountID, TransactionCategory)}.
+     * regular child transaction (see {@link #dispatchChildTransaction(TransactionBody, Class, Predicate, AccountID, TransactionCategory, ConsensusThrottling)}.
      * But unlike regular child transactions, the records of removable child transactions are removed and not reverted.
      *
      * <p>The provided {@link Predicate} callback will be called to verify simple keys when the child transaction calls
@@ -571,15 +407,17 @@ public interface HandleContext {
      *
      * <p>A {@link TransactionCategory#PRECEDING}-transaction must not dispatch a child transaction.
      *
-     * @param txBody the {@link TransactionBody} of the child transaction to dispatch
+     * @param txBody             the {@link TransactionBody} of the child transaction to dispatch
      * @param recordBuilderClass the record builder class of the child transaction
-     * @param callback a {@link Predicate} callback function that will observe each primitive key
-     * @param syntheticPayerId the payer of the child transaction
-     * @param customizer a final transformation to apply before externalizing if the returned value is non-null
+     * @param callback           a {@link Predicate} callback function that will observe each primitive key
+     * @param syntheticPayerId   the payer of the child transaction
+     * @param customizer         a final transformation to apply before externalizing if the returned value is non-null
+     * @param consensusThrottling whether to throttle the child transaction at consensus
      * @return the record builder of the child transaction
-     * @throws NullPointerException if any of the arguments is {@code null}
+     * @throws NullPointerException     if any of the arguments is {@code null}
      * @throws IllegalArgumentException if the current transaction is a
-     * {@link TransactionCategory#PRECEDING}-transaction or if the record builder type is unknown to the app
+     * @throws HandleException          if the base builder for the dispatch cannot be created
+     *                                  {@link TransactionCategory#PRECEDING}-transaction or if the record builder type is unknown to the app
      */
     @NonNull
     <T> T dispatchRemovableChildTransaction(
@@ -587,71 +425,8 @@ public interface HandleContext {
             @NonNull Class<T> recordBuilderClass,
             @Nullable Predicate<Key> callback,
             @NonNull AccountID syntheticPayerId,
-            @NonNull ExternalizedRecordCustomizer customizer);
-
-    /**
-     * Dispatches a removable child transaction that already has a transaction ID.
-     *
-     * @param txBody          the {@link TransactionBody} of the child transaction to dispatch
-     * @param recordBuilderClass the record builder class of the child transaction
-     * @param callback      a {@link Predicate} callback function that will observe each primitive key
-     * @return the record builder of the child transaction
-     * @param <T> the record type
-     * @throws IllegalArgumentException if the transaction body did not have an id
-     */
-    @NonNull
-    default <T> T dispatchRemovableChildTransaction(
-            @NonNull final TransactionBody txBody,
-            @NonNull final Class<T> recordBuilderClass,
-            @NonNull final Predicate<Key> callback) {
-        throwIfMissingPayerId(txBody);
-        return dispatchRemovableChildTransaction(
-                txBody,
-                recordBuilderClass,
-                callback,
-                txBody.transactionIDOrThrow().accountIDOrThrow(),
-                NOOP_EXTERNALIZED_RECORD_CUSTOMIZER);
-    }
-
-    /**
-     * Adds a child record builder to the list of record builders. If the current {@link HandleContext} (or any parent
-     * context) is rolled back, all child record builders will be reverted.
-     *
-     * @param recordBuilderClass the record type
-     * @return the new child record builder
-     * @param <T> the record type
-     * @throws NullPointerException if {@code recordBuilderClass} is {@code null}
-     * @throws IllegalArgumentException if the record builder type is unknown to the app
-     */
-    @NonNull
-    <T> T addChildRecordBuilder(@NonNull Class<T> recordBuilderClass);
-
-    /**
-     * Adds a preceding child record builder to the list of record builders. If the current {@link HandleContext} (or any parent
-     * context) is rolled back, all child record builders will be reverted.
-     *
-     * @param recordBuilderClass the record type
-     * @return the new child record builder
-     * @param <T> the record type
-     * @throws NullPointerException if {@code recordBuilderClass} is {@code null}
-     * @throws IllegalArgumentException if the record builder type is unknown to the app
-     */
-    @NonNull
-    <T> T addPrecedingChildRecordBuilder(@NonNull Class<T> recordBuilderClass);
-
-    /**
-     * Adds a removable child record builder to the list of record builders. Unlike a regular child record builder,
-     * a removable child record builder is removed, if the current {@link HandleContext} (or any parent context) is
-     * rolled back.
-     *
-     * @param recordBuilderClass the record type
-     * @return the new child record builder
-     * @param <T> the record type
-     * @throws NullPointerException if {@code recordBuilderClass} is {@code null}
-     * @throws IllegalArgumentException if the record builder type is unknown to the app
-     */
-    @NonNull
-    <T> T addRemovableChildRecordBuilder(@NonNull Class<T> recordBuilderClass);
+            @NonNull ExternalizedRecordCustomizer customizer,
+            @NonNull ConsensusThrottling consensusThrottling);
 
     /**
      * Returns the current {@link SavepointStack}.
@@ -662,58 +437,12 @@ public interface HandleContext {
     SavepointStack savepointStack();
 
     /**
-     * Revert the childRecords from the checkpoint.
-     */
-    void revertRecordsFrom(@NonNull RecordListCheckPoint recordListCheckPoint);
-
-    /**
-     * Verifies if the throttle in this operation context has enough capacity to handle the given number of the
-     * given function at the given time. (The time matters because we want to consider how much
-     * will have leaked between now and that time.)
+     * Returns the {@link ThrottleAdviser} for this transaction, which provides information about throttles.
      *
-     * @param n the number of the given function
-     * @param function the function
-     * @return true if the system should throttle the given number of the given function
-     * at the instant for which throttling should be calculated
-     */
-    boolean shouldThrottleNOfUnscaled(int n, HederaFunctionality function);
-
-    /**
-     * For each following child transaction consumes the capacity
-     * required for that child transaction in the consensus throttle buckets.
-     *
-     * @return true if all the child transactions were allowed through the throttle consideration, false otherwise.
-     */
-    boolean hasThrottleCapacityForChildTransactions();
-
-    /**
-     * Create a checkpoint for the current childRecords.
-     *
-     * @return the checkpoint for the current childRecords, containing the first preceding record and the last following
-     * record.
+     * @return the {@link ThrottleAdviser} for this transaction
      */
     @NonNull
-    RecordListCheckPoint createRecordListCheckPoint();
-
-    /**
-     * Returns a list of snapshots of the current usage of all active throttles.
-     * @return the active snapshots
-     */
-    List<DeterministicThrottle.UsageSnapshot> getUsageSnapshots();
-
-    /**
-     * Resets the current usage of all active throttles to the given snapshots.
-     *
-     * @param snapshots the snapshots to reset to
-     */
-    void resetUsageThrottlesTo(List<DeterministicThrottle.UsageSnapshot> snapshots);
-
-    /**
-     * Returns whether the current transaction being processed was submitted by this node.
-     *
-     * @return true if the current transaction was submitted by this node
-     */
-    boolean isSelfSubmitted();
+    ThrottleAdviser throttleAdviser();
 
     /**
      * A stack of savepoints.
@@ -752,6 +481,45 @@ public interface HandleContext {
          * @return the depth of the savepoint stack
          */
         int depth();
+
+        /**
+         * Returns a record builder for the given record builder subtype.
+         *
+         * @param recordBuilderClass the record type
+         * @param <T> the record type
+         * @return a builder for the given record type
+         * @throws NullPointerException if {@code recordBuilderClass} is {@code null}
+         * @throws IllegalArgumentException if the record builder type is unknown to the app
+         */
+        @NonNull
+        <T extends StreamBuilder> T getBaseBuilder(@NonNull Class<T> recordBuilderClass);
+
+        /**
+         * Adds a child record builder to the list of record builders. If the current {@link HandleContext} (or any parent
+         * context) is rolled back, all child record builders will be reverted.
+         *
+         * @param recordBuilderClass the record type
+         * @return the new child record builder
+         * @param <T> the record type
+         * @throws NullPointerException if {@code recordBuilderClass} is {@code null}
+         * @throws IllegalArgumentException if the record builder type is unknown to the app
+         */
+        @NonNull
+        <T> T addChildRecordBuilder(@NonNull Class<T> recordBuilderClass);
+
+        /**
+         * Adds a removable child record builder to the list of record builders. Unlike a regular child record builder,
+         * a removable child record builder is removed, if the current {@link HandleContext} (or any parent context) is
+         * rolled back.
+         *
+         * @param recordBuilderClass the record type
+         * @return the new child record builder
+         * @param <T> the record type
+         * @throws NullPointerException if {@code recordBuilderClass} is {@code null}
+         * @throws IllegalArgumentException if the record builder type is unknown to the app
+         */
+        @NonNull
+        <T> T addRemovableChildRecordBuilder(@NonNull Class<T> recordBuilderClass);
     }
 
     static void throwIfMissingPayerId(@NonNull final TransactionBody body) {
@@ -761,9 +529,20 @@ public interface HandleContext {
     }
 
     /**
-     * Returns the freeze time from state, if it is set.
-     * @return the freeze time, if it is set
+     * Gets the pre-paid rewards for the current transaction. This can be non-empty for scheduled transactions.
+     * Since we use the parent record finalizer to finalize schedule transactions, we need to deduct any paid staking rewards
+     * already happened in the parent transaction.
+     * @return the paid rewards
      */
-    @Nullable
-    Instant freezeTime();
+    @NonNull
+    Map<AccountID, Long> dispatchPaidRewards();
+
+    /**
+     * Whether a dispatch should be throttled at consensus. True for everything except certain dispatches
+     * internal to the EVM which are only constrained by gas.
+     */
+    enum ConsensusThrottling {
+        ON,
+        OFF
+    }
 }

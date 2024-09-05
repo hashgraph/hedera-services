@@ -16,23 +16,18 @@
 
 package com.hedera.node.app.service.token.impl.test.handlers.util;
 
-import static com.hedera.node.app.service.mono.Utils.asHederaKey;
-import static com.hedera.node.app.service.mono.pbj.PbjConverter.protoToPbj;
 import static com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler.asToken;
+import static com.hedera.node.app.service.token.impl.test.handlers.util.CryptoHandlerTestBase.A_COMPLEX_KEY;
+import static com.hedera.node.app.service.token.impl.test.handlers.util.CryptoHandlerTestBase.B_COMPLEX_KEY;
+import static com.hedera.node.app.service.token.impl.test.handlers.util.CryptoHandlerTestBase.C_COMPLEX_KEY;
 import static com.hedera.node.app.service.token.impl.test.util.SigReqAdapterUtils.UNSET_STAKED_ID;
-import static com.hedera.test.utils.IdUtils.asAccount;
-import static com.hedera.test.utils.KeyUtils.A_COMPLEX_KEY;
-import static com.hedera.test.utils.KeyUtils.B_COMPLEX_KEY;
-import static com.hedera.test.utils.KeyUtils.C_COMPLEX_KEY;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 
 import com.hedera.hapi.node.base.AccountID;
-import com.hedera.hapi.node.base.Duration;
 import com.hedera.hapi.node.base.Fraction;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.NftID;
-import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenSupplyType;
 import com.hedera.hapi.node.base.TokenType;
@@ -46,14 +41,13 @@ import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.ReadableTokenStoreImpl;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
 import com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler;
-import com.hedera.node.app.spi.fixtures.state.MapReadableKVState;
-import com.hedera.node.app.spi.fixtures.state.MapWritableKVState;
-import com.hedera.node.app.spi.key.HederaKey;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
-import com.hedera.node.app.spi.state.ReadableStates;
-import com.hedera.node.app.spi.state.WritableStates;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.state.spi.ReadableStates;
+import com.swirlds.state.spi.WritableStates;
+import com.swirlds.state.test.fixtures.MapReadableKVState;
+import com.swirlds.state.test.fixtures.MapWritableKVState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.Collections;
@@ -64,11 +58,13 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 // FUTURE : Remove this and use CryptoTokenHandlerTestBase instead for all classes extending this class
 
+/**
+ * Base class for token handler tests.
+ */
 @ExtendWith(MockitoExtension.class)
 public class TokenHandlerTestBase {
     protected static final String TOKENS = "TOKENS";
     protected static final Key payerKey = A_COMPLEX_KEY;
-    protected static final HederaKey payerHederaKey = asHederaKey(payerKey).get();
     protected final Key adminKey = A_COMPLEX_KEY;
     protected final Key pauseKey = B_COMPLEX_KEY;
     protected final Key wipeKey = C_COMPLEX_KEY;
@@ -76,29 +72,16 @@ public class TokenHandlerTestBase {
     protected final Key feeScheduleKey = A_COMPLEX_KEY;
     protected final Key supplyKey = A_COMPLEX_KEY;
     protected final Key freezeKey = A_COMPLEX_KEY;
-    protected final AccountID payerId = protoToPbj(asAccount("0.0.3"), AccountID.class);
-    protected final AccountID treasury = protoToPbj(asAccount("0.0.100"), AccountID.class);
+    protected final AccountID payerId = AccountID.newBuilder().accountNum(3).build();
+    protected final AccountID treasury = AccountID.newBuilder().accountNum(100).build();
     protected final AccountID autoRenewId = AccountID.newBuilder().accountNum(4).build();
-    protected final HederaKey adminHederaKey = asHederaKey(adminKey).get();
-    protected final HederaKey wipeHederaKey = asHederaKey(wipeKey).get();
-    protected final HederaKey supplyHederaKey = asHederaKey(supplyKey).get();
-    protected final HederaKey kycHederaKey = asHederaKey(kycKey).get();
-    protected final HederaKey freezeHederaKey = asHederaKey(freezeKey).get();
-    protected final HederaKey feeScheduleHederaKey = asHederaKey(feeScheduleKey).get();
-    protected final HederaKey pauseHederaKey = asHederaKey(A_COMPLEX_KEY).get();
     protected final Bytes metadata = Bytes.wrap(new byte[] {1, 2, 3, 4});
     protected final Key metadataKey = Key.DEFAULT;
     protected final TokenID tokenId = asToken(1L);
     protected final String tokenName = "test token";
     protected final String tokenSymbol = "TT";
-    protected final Duration WELL_KNOWN_AUTO_RENEW_PERIOD =
-            Duration.newBuilder().seconds(100).build();
-    protected final Timestamp WELL_KNOWN_EXPIRY =
-            Timestamp.newBuilder().seconds(1_234_567L).build();
-    protected final TokenID WELL_KNOWN_TOKEN_ID = tokenId;
     protected final String memo = "test memo";
     protected final long expirationTime = 1_234_567L;
-    protected final long sequenceNumber = 1L;
     protected final long autoRenewSecs = 100L;
     protected final Instant consensusTimestamp = Instant.ofEpochSecond(1_234_567L);
     protected final AccountID TEST_DEFAULT_PAYER =
@@ -139,6 +122,9 @@ public class TokenHandlerTestBase {
     protected ReadableTokenStore readableTokenStore;
     protected WritableTokenStore writableTokenStore;
 
+    /**
+     * Sets up the common test environment.
+     */
     @BeforeEach
     public void commonSetUp() {
         givenValidToken();
@@ -293,6 +279,8 @@ public class TokenHandlerTestBase {
                 Collections.emptyList(),
                 2,
                 false,
-                null);
+                null,
+                null,
+                0);
     }
 }

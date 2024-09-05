@@ -16,44 +16,36 @@
 
 package com.hedera.node.app.service.file.impl.test;
 
-import static com.hedera.node.app.service.mono.pbj.PbjConverter.protoToPbj;
-import static com.hedera.test.utils.IdUtils.asAccount;
-import static com.hedera.test.utils.KeyUtils.A_COMPLEX_KEY;
-import static com.hedera.test.utils.KeyUtils.A_KEY_LIST;
-import static com.hedera.test.utils.KeyUtils.B_COMPLEX_KEY;
-import static com.hedera.test.utils.KeyUtils.B_KEY_LIST;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mock.Strictness.LENIENT;
 
 import com.hedera.hapi.node.base.AccountID;
-import com.hedera.hapi.node.base.Duration;
 import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.KeyList;
-import com.hedera.hapi.node.base.Timestamp;
+import com.hedera.hapi.node.base.ThresholdKey;
 import com.hedera.hapi.node.state.file.File;
 import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.node.app.service.file.impl.ReadableFileStoreImpl;
 import com.hedera.node.app.service.file.impl.ReadableUpgradeFileStoreImpl;
 import com.hedera.node.app.service.file.impl.WritableFileStore;
 import com.hedera.node.app.service.file.impl.WritableUpgradeFileStore;
-import com.hedera.node.app.service.mono.legacy.core.jproto.JEd25519Key;
-import com.hedera.node.app.service.mono.legacy.core.jproto.JKeyList;
-import com.hedera.node.app.spi.fixtures.state.ListReadableQueueState;
-import com.hedera.node.app.spi.fixtures.state.ListWritableQueueState;
-import com.hedera.node.app.spi.fixtures.state.MapReadableKVState;
-import com.hedera.node.app.spi.fixtures.state.MapWritableKVState;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
-import com.hedera.node.app.spi.signatures.SignatureVerification;
 import com.hedera.node.app.spi.state.FilteredReadableStates;
 import com.hedera.node.app.spi.state.FilteredWritableStates;
-import com.hedera.node.app.spi.state.ReadableStates;
-import com.hedera.node.app.spi.state.WritableStates;
+import com.hedera.node.app.spi.store.StoreFactory;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.config.api.Configuration;
+import com.swirlds.state.spi.ReadableStates;
+import com.swirlds.state.spi.WritableStates;
+import com.swirlds.state.test.fixtures.ListReadableQueueState;
+import com.swirlds.state.test.fixtures.ListWritableQueueState;
+import com.swirlds.state.test.fixtures.MapReadableKVState;
+import com.swirlds.state.test.fixtures.MapWritableKVState;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.List;
+import java.util.function.Function;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -61,22 +53,55 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 public class FileTestBase {
+    private static final String A_NAME = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+    private static final String B_NAME = "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
+    private static final String C_NAME = "cccccccccccccccccccccccccccccccc";
+    private static final Function<String, Key.Builder> KEY_BUILDER =
+            value -> Key.newBuilder().ed25519(Bytes.wrap(value.getBytes()));
+    public static final Configuration DEFAULT_CONFIG = HederaTestConfigBuilder.createConfig();
+    public static final Key A_KEY_LIST = Key.newBuilder()
+            .keyList(KeyList.newBuilder()
+                    .keys(
+                            KEY_BUILDER.apply(A_NAME).build(),
+                            KEY_BUILDER.apply(B_NAME).build(),
+                            KEY_BUILDER.apply(C_NAME).build()))
+            .build();
+    public static final Key B_KEY_LIST = Key.newBuilder()
+            .keyList(KeyList.newBuilder()
+                    .keys(
+                            KEY_BUILDER.apply(A_NAME).build(),
+                            KEY_BUILDER.apply(B_NAME).build(),
+                            KEY_BUILDER.apply(C_NAME).build()))
+            .build();
+    public static final Key A_THRESHOLD_KEY = Key.newBuilder()
+            .thresholdKey(ThresholdKey.newBuilder()
+                    .threshold(2)
+                    .keys(KeyList.newBuilder()
+                            .keys(
+                                    KEY_BUILDER.apply(A_NAME).build(),
+                                    KEY_BUILDER.apply(B_NAME).build(),
+                                    KEY_BUILDER.apply(C_NAME).build())
+                            .build()))
+            .build();
+    public static final Key A_COMPLEX_KEY = Key.newBuilder()
+            .thresholdKey(ThresholdKey.newBuilder()
+                    .threshold(2)
+                    .keys(KeyList.newBuilder()
+                            .keys(
+                                    KEY_BUILDER.apply(A_NAME).build(),
+                                    KEY_BUILDER.apply(B_NAME).build(),
+                                    A_THRESHOLD_KEY)))
+            .build();
+
     protected static final String FILES = "FILES";
     protected static final String UPGRADE_FILE_KEY = "UPGRADE_FILE";
     protected static final String UPGRADE_DATA_KEY = "UPGRADE_DATA[%s]";
     protected final Key key = A_COMPLEX_KEY;
-    protected final Key anotherKey = B_COMPLEX_KEY;
-    protected final String payerIdLiteral = "0.0.3";
-    protected final AccountID payerId = protoToPbj(asAccount(payerIdLiteral), AccountID.class);
-    protected final AccountID autoRenewId = AccountID.newBuilder().accountNum(4).build();
+    protected final AccountID payerId = AccountID.newBuilder().accountNum(3).build();
     protected final byte[] contents = "contents".getBytes();
     protected final Bytes contentsBytes = Bytes.wrap(contents);
 
     protected final KeyList keys = A_KEY_LIST.keyList();
-    protected final JKeyList jKeyList = new JKeyList(List.of(
-            new JEd25519Key("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".getBytes()),
-            new JEd25519Key("bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb".getBytes()),
-            new JEd25519Key("cccccccccccccccccccccccccccccccc".getBytes())));
 
     protected final KeyList anotherKeys = B_KEY_LIST.keyList();
     protected final FileID WELL_KNOWN_FILE_ID =
@@ -93,20 +118,9 @@ public class FileTestBase {
             com.hederahashgraph.api.proto.java.FileID.newBuilder()
                     .setFileNum(1_234L)
                     .build();
-    protected final Duration WELL_KNOWN_AUTO_RENEW_PERIOD =
-            Duration.newBuilder().seconds(100).build();
-    protected final Timestamp WELL_KNOWN_EXPIRY =
-            Timestamp.newBuilder().seconds(1_234_567L).build();
-
-    protected final String beneficiaryIdStr = "0.0.3";
-    protected final long paymentAmount = 1_234L;
     protected final Bytes ledgerId = Bytes.wrap(new byte[] {0});
     protected final String memo = "test memo";
     protected final long expirationTime = 1_234_567L;
-    protected final long sequenceNumber = 1L;
-    protected final long autoRenewSecs = 100L;
-    protected final AccountID TEST_DEFAULT_PAYER =
-            AccountID.newBuilder().accountNum(13257).build();
 
     protected File file;
 
@@ -134,7 +148,7 @@ public class FileTestBase {
     protected HandleContext handleContext;
 
     @Mock(strictness = LENIENT)
-    protected SignatureVerification signatureVerification;
+    protected StoreFactory storeFactory;
 
     @Mock
     private StoreMetricsService storeMetricsService;
@@ -182,8 +196,9 @@ public class FileTestBase {
         readableUpgradeFileStore = new ReadableUpgradeFileStoreImpl(filteredReadableStates);
         writableUpgradeFileStore = new WritableUpgradeFileStore(filteredWritableStates);
 
-        given(handleContext.writableStore(WritableFileStore.class)).willReturn(writableStore);
-        given(handleContext.writableStore(WritableUpgradeFileStore.class)).willReturn(writableUpgradeFileStore);
+        given(handleContext.storeFactory()).willReturn(storeFactory);
+        given(storeFactory.writableStore(WritableFileStore.class)).willReturn(writableStore);
+        given(storeFactory.writableStore(WritableUpgradeFileStore.class)).willReturn(writableUpgradeFileStore);
     }
 
     protected void refreshStoresWithCurrentFileInBothReadableAndWritable() {
@@ -207,8 +222,8 @@ public class FileTestBase {
         readableUpgradeFileStore = new ReadableUpgradeFileStoreImpl(filteredReadableStates);
         writableUpgradeFileStore = new WritableUpgradeFileStore(filteredWritableStates);
 
-        given(handleContext.writableStore(WritableFileStore.class)).willReturn(writableStore);
-        given(handleContext.writableStore(WritableUpgradeFileStore.class)).willReturn(writableUpgradeFileStore);
+        given(storeFactory.writableStore(WritableFileStore.class)).willReturn(writableStore);
+        given(storeFactory.writableStore(WritableUpgradeFileStore.class)).willReturn(writableUpgradeFileStore);
     }
 
     @NonNull
@@ -231,13 +246,6 @@ public class FileTestBase {
         return MapWritableKVState.<FileID, File>builder(FILES)
                 .value(fileId, file)
                 .value(fileSystemFileId, fileSystem)
-                .build();
-    }
-
-    @NonNull
-    protected MapWritableKVState<FileID, File> writableFileStateWithoutKey(File fileWithouthKey) {
-        return MapWritableKVState.<FileID, File>builder(FILES)
-                .value(fileId, fileWithouthKey)
                 .build();
     }
 
@@ -274,11 +282,6 @@ public class FileTestBase {
         return MapWritableKVState.<FileID, File>builder(FILES)
                 .value(fileUpgradeFileId, upgradeFile)
                 .build();
-    }
-
-    @NonNull
-    protected MapReadableKVState<FileID, File> emptyReadableFileState() {
-        return MapReadableKVState.<FileID, File>builder(FILES).build();
     }
 
     protected void givenValidFile() {

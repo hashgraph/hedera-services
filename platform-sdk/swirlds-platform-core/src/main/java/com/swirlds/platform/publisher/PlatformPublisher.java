@@ -18,7 +18,7 @@ package com.swirlds.platform.publisher;
 
 import com.swirlds.common.wiring.component.InputWireLabel;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
-import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.event.PlatformEvent;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
@@ -32,8 +32,8 @@ public interface PlatformPublisher {
      *
      * @param event the event to publish
      */
-    @InputWireLabel("GossipEvent")
-    void publishPreconsensusEvent(@NonNull final GossipEvent event);
+    @InputWireLabel("PlatformEvent")
+    void publishPreconsensusEvent(@NonNull final PlatformEvent event);
 
     /**
      * Publish a consensus snapshot override (i.e. what happens when we start from a node state at restart/reconnect
@@ -43,4 +43,11 @@ public interface PlatformPublisher {
      */
     @InputWireLabel("ConsensusSnapshot")
     void publishSnapshotOverride(@NonNull final ConsensusSnapshot snapshot);
+
+    /**
+     * Publish a stale event.
+     *
+     * @param event the event to publish
+     */
+    void publishStaleEvent(@NonNull final PlatformEvent event);
 }

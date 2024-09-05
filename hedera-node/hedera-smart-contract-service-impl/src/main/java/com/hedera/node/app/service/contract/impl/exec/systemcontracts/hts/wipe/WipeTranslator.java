@@ -23,19 +23,18 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.gas.DispatchType;
 import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AbstractHtsCallTranslator;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.AbstractCallTranslator;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.Call;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.DispatchForResponseCodeHtsCall;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.Arrays;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
 @Singleton
-public class WipeTranslator extends AbstractHtsCallTranslator {
+public class WipeTranslator extends AbstractCallTranslator<HtsCallAttempt> {
 
     public static final Function WIPE_FUNGIBLE_V1 =
             new Function("wipeTokenAccount(address,address,uint32)", ReturnTypes.INT);
@@ -56,16 +55,14 @@ public class WipeTranslator extends AbstractHtsCallTranslator {
      */
     @Override
     public boolean matches(@NonNull final HtsCallAttempt attempt) {
-        return selectorMatches(attempt, WIPE_FUNGIBLE_V1)
-                || selectorMatches(attempt, WIPE_FUNGIBLE_V2)
-                || selectorMatches(attempt, WIPE_NFT);
+        return attempt.isSelector(WIPE_FUNGIBLE_V1, WIPE_FUNGIBLE_V2, WIPE_NFT);
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public HtsCall callFrom(@NonNull final HtsCallAttempt attempt) {
+    public Call callFrom(@NonNull final HtsCallAttempt attempt) {
         final var body = bodyForClassic(attempt);
         final var isFungibleWipe = body.tokenWipeOrThrow().serialNumbers().isEmpty();
         return new DispatchForResponseCodeHtsCall(
@@ -92,16 +89,12 @@ public class WipeTranslator extends AbstractHtsCallTranslator {
     }
 
     private TransactionBody bodyForClassic(@NonNull final HtsCallAttempt attempt) {
-        if (selectorMatches(attempt, WIPE_FUNGIBLE_V1)) {
+        if (attempt.isSelector(WIPE_FUNGIBLE_V1)) {
             return decoder.decodeWipeFungibleV1(attempt);
-        } else if (selectorMatches(attempt, WIPE_FUNGIBLE_V2)) {
+        } else if (attempt.isSelector(WIPE_FUNGIBLE_V2)) {
             return decoder.decodeWipeFungibleV2(attempt);
         } else {
             return decoder.decodeWipeNonFungible(attempt);
         }
-    }
-
-    private boolean selectorMatches(final HtsCallAttempt attempt, final Function function) {
-        return Arrays.equals(attempt.selector(), function.selector());
     }
 }

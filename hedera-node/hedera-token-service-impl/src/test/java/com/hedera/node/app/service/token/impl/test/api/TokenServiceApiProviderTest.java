@@ -25,13 +25,13 @@ import static org.mockito.BDDMockito.given;
 
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.node.app.service.token.TokenService;
-import com.hedera.node.app.service.token.impl.TokenServiceImpl;
 import com.hedera.node.app.service.token.impl.api.TokenServiceApiImpl;
-import com.hedera.node.app.spi.fixtures.state.MapWritableKVState;
+import com.hedera.node.app.service.token.impl.schemas.V0490TokenSchema;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
-import com.hedera.node.app.spi.state.WritableStates;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.state.spi.WritableStates;
+import com.swirlds.state.test.fixtures.MapWritableKVState;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -71,7 +71,7 @@ class TokenServiceApiProviderTest {
     void returnsFalseOnAnyStepCreationFailure() {
         given(writableStates.get(any())).willReturn(null);
         given(writableStates.get("ACCOUNTS")).willReturn(new MapWritableKVState<>("ACCOUNTS"));
-        given(writableStates.get(TokenServiceImpl.TOKEN_RELS_KEY)).willThrow(IllegalStateException.class);
+        given(writableStates.get(V0490TokenSchema.TOKEN_RELS_KEY)).willThrow(IllegalStateException.class);
         final var api = TOKEN_SERVICE_API_PROVIDER.newInstance(DEFAULT_CONFIG, storeMetricsService, writableStates);
         assertFalse(api.checkForCustomFees(CryptoTransferTransactionBody.DEFAULT));
     }

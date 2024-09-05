@@ -37,8 +37,9 @@ import static org.mockito.Mock.Strictness.LENIENT;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.state.token.Account;
-import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
+import com.hedera.node.app.hapi.utils.InvalidTransactionException;
 import com.hedera.node.app.service.token.ReadableAccountStore;
+import com.hedera.node.app.spi.store.StoreFactory;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.EntityType;
 import com.hedera.node.app.spi.validation.ExpiryMeta;
@@ -71,6 +72,9 @@ class ExpiryValidatorImplTest {
     @Mock(strictness = LENIENT)
     private HandleContext context;
 
+    @Mock(strictness = LENIENT)
+    private StoreFactory storeFactory;
+
     private ExpiryValidatorImpl subject;
 
     @BeforeEach
@@ -80,7 +84,8 @@ class ExpiryValidatorImplTest {
         given(context.configuration()).willReturn(config);
         given(context.attributeValidator()).willReturn(attributeValidator);
         given(accountStore.getAccountById(any())).willReturn(Account.DEFAULT);
-        given(context.readableStore(ReadableAccountStore.class)).willReturn(accountStore);
+        given(context.storeFactory()).willReturn(storeFactory);
+        given(storeFactory.readableStore(ReadableAccountStore.class)).willReturn(accountStore);
 
         subject = new ExpiryValidatorImpl(context);
     }

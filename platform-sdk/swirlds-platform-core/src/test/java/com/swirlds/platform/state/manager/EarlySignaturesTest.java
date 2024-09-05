@@ -16,21 +16,22 @@
 
 package com.swirlds.platform.state.manager;
 
-import static com.swirlds.platform.state.manager.SignatureVerificationTestUtils.buildFakeSignatureBytes;
+import static com.swirlds.platform.test.fixtures.state.manager.SignatureVerificationTestUtils.buildFakeSignatureBytes;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.jupiter.api.Assertions.assertSame;
 
-import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.hedera.hapi.platform.event.StateSignatureTransaction;
+import com.swirlds.common.context.PlatformContext;
+import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.platform.components.state.output.StateHasEnoughSignaturesConsumer;
 import com.swirlds.platform.components.state.output.StateLacksSignaturesConsumer;
 import com.swirlds.platform.config.StateConfig;
-import com.swirlds.platform.state.RandomSignedStateGenerator;
 import com.swirlds.platform.state.StateSignatureCollectorTester;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.system.address.AddressBook;
-import com.swirlds.platform.system.transaction.StateSignatureTransaction;
-import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookGenerator;
+import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
+import com.swirlds.platform.test.fixtures.state.RandomSignedStateGenerator;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -47,9 +48,9 @@ public class EarlySignaturesTest extends AbstractStateSignatureCollectorTest {
 
     private final int roundAgeToSign = 3;
 
-    private final AddressBook addressBook = new RandomAddressBookGenerator(random)
-            .setSize(4)
-            .setWeightDistributionStrategy(RandomAddressBookGenerator.WeightDistributionStrategy.BALANCED)
+    private final AddressBook addressBook = RandomAddressBookBuilder.create(random)
+            .withSize(4)
+            .withWeightDistributionStrategy(RandomAddressBookBuilder.WeightDistributionStrategy.BALANCED)
             .build();
 
     /**
@@ -78,9 +79,14 @@ public class EarlySignaturesTest extends AbstractStateSignatureCollectorTest {
     @DisplayName("Early Signatures Test")
     void earlySignaturesTest() throws InterruptedException {
         final int count = 100;
-        final StateConfig stateConfig = buildStateConfig();
-        final int futureSignatures = stateConfig.maxAgeOfFutureStateSignatures();
-        final StateSignatureCollectorTester manager = new StateSignatureCollectorBuilder(stateConfig)
+        final PlatformContext platformContext = TestPlatformContextBuilder.create()
+                .withConfiguration(buildStateConfig())
+                .build();
+        final int futureSignatures = platformContext
+                .getConfiguration()
+                .getConfigData(StateConfig.class)
+                .maxAgeOfFutureStateSignatures();
+        final StateSignatureCollectorTester manager = new StateSignatureCollectorBuilder(platformContext)
                 .stateLacksSignaturesConsumer(stateLacksSignaturesConsumer())
                 .stateHasEnoughSignaturesConsumer(stateHasEnoughSignaturesConsumer())
                 .build();
@@ -101,40 +107,40 @@ public class EarlySignaturesTest extends AbstractStateSignatureCollectorTest {
             // All node 0 and 2 signatures are sent very early.
             manager.handlePreconsensusSignatureTransaction(
                     addressBook.getNodeId(0),
-                    new StateSignatureTransaction(
-                            round,
-                            buildFakeSignatureBytes(
+                    StateSignatureTransaction.newBuilder()
+                            .round(round)
+                            .signature(buildFakeSignatureBytes(
                                     addressBook
                                             .getAddress(addressBook.getNodeId(0))
                                             .getSigPublicKey(),
-                                    states.get(round).getState().getHash()),
-                            states.get(round).getState().getHash().getBytes(),
-                            Bytes.EMPTY));
+                                    states.get(round).getState().getHash()))
+                            .hash(states.get(round).getState().getHash().getBytes())
+                            .build());
             manager.handlePreconsensusSignatureTransaction(
                     addressBook.getNodeId(2),
-                    new StateSignatureTransaction(
-                            round,
-                            buildFakeSignatureBytes(
+                    StateSignatureTransaction.newBuilder()
+                            .round(round)
+                            .signature(buildFakeSignatureBytes(
                                     addressBook
                                             .getAddress(addressBook.getNodeId(2))
                                             .getSigPublicKey(),
-                                    states.get(round).getState().getHash()),
-                            states.get(round).getState().getHash().getBytes(),
-                            Bytes.EMPTY));
+                                    states.get(round).getState().getHash()))
+                            .hash(states.get(round).getState().getHash().getBytes())
+                            .build());
 
             // Even numbered rounds have 3 sent very early.
             if (round % 2 == 0) {
                 manager.handlePreconsensusSignatureTransaction(
                         addressBook.getNodeId(3),
-                        new StateSignatureTransaction(
-                                round,
-                                buildFakeSignatureBytes(
+                        StateSignatureTransaction.newBuilder()
+                                .round(round)
+                                .signature(buildFakeSignatureBytes(
                                         addressBook
                                                 .getAddress(addressBook.getNodeId(3))
                                                 .getSigPublicKey(),
-                                        states.get(round).getState().getHash()),
-                                states.get(round).getState().getHash().getBytes(),
-                                Bytes.EMPTY));
+                                        states.get(round).getState().getHash()))
+                                .hash(states.get(round).getState().getHash().getBytes())
+                                .build());
             }
         }
 

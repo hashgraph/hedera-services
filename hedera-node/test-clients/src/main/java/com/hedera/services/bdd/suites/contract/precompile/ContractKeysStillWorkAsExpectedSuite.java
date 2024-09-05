@@ -19,7 +19,7 @@ package com.hedera.services.bdd.suites.contract.precompile;
 import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
 import static com.hedera.services.bdd.spec.HapiPropertySource.idAsHeadlongAddress;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
-import static com.hedera.services.bdd.spec.HapiSpec.propertyPreservingHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.assertions.ContractInfoAsserts.contractWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.keys.KeyShape.CONTRACT;
@@ -42,19 +42,15 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.blockingOrder;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.ifNotCi;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.noOp;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingThree;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.recordedChildBodyWithId;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.streamMustInclude;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_FUNCTION_PARAMETERS;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_NONCE;
-import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
 import static com.hedera.services.bdd.suites.contract.hapi.ContractCallSuite.PAY_RECEIVABLE_CONTRACT;
-import static com.hedera.services.bdd.suites.contract.precompile.V1SecurityModelOverrides.CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS;
 import static com.hedera.services.bdd.suites.token.TokenAssociationSpecs.MULTI_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE;
@@ -66,50 +62,21 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.esaulpaugh.headlong.abi.Address;
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
-import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenType;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import java.util.stream.Stream;
+import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
-@HapiTestSuite(fuzzyMatch = true)
 @Tag(SMART_CONTRACT)
-public class ContractKeysStillWorkAsExpectedSuite extends HapiSuite {
-
-    private static final Logger log = LogManager.getLogger(ContractKeysStillWorkAsExpectedSuite.class);
-
-    public static void main(String... args) {
-        new ContractKeysStillWorkAsExpectedSuite().runSuiteSync();
-    }
-
-    @Override
-    public boolean canRunConcurrent() {
-        return false;
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return log;
-    }
-
-    @Override
-    public List<HapiSpec> getSpecsInSuite() {
-        return List.of(
-                contractKeysStillHaveSpecificityNoMatterTopLevelSignatures(),
-                canStillTransferByVirtueOfContractIdInEOAThreshold(),
-                approvalFallbacksRequiredWithoutTopLevelSigAccess());
-    }
-
+public class ContractKeysStillWorkAsExpectedSuite {
     @HapiTest
-    final HapiSpec approvalFallbacksRequiredWithoutTopLevelSigAccess() {
+    final Stream<DynamicTest> approvalFallbacksRequiredWithoutTopLevelSigAccess() {
         final AtomicReference<Address> fungibleTokenMirrorAddr = new AtomicReference<>();
         final AtomicReference<Address> nonFungibleTokenMirrorAddr = new AtomicReference<>();
         final AtomicReference<Address> aSenderAddr = new AtomicReference<>();
@@ -117,86 +84,78 @@ public class ContractKeysStillWorkAsExpectedSuite extends HapiSuite {
         final AtomicReference<Address> bSenderAddr = new AtomicReference<>();
         final AtomicReference<Address> bReceiverAddr = new AtomicReference<>();
 
-        return propertyPreservingHapiSpec(
-                        "ApprovalFallbacksRequiredWithoutTopLevelSigAccess",
-                        NONDETERMINISTIC_TRANSACTION_FEES,
-                        NONDETERMINISTIC_FUNCTION_PARAMETERS)
-                .preserving(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS)
-                .given(
-                        // CI record streams aren't consistently available for still-to-be-determined reasons
-                        ifNotCi(streamMustInclude(
-                                recordedChildBodyWithId(TOKEN_UNIT_FROM_TO_OTHERS_TXN, 1, (spec, txn) -> {
-                                    final var tokenTransfers =
-                                            txn.getCryptoTransfer().getTokenTransfersList();
-                                    assertEquals(1, tokenTransfers.size());
-                                    final var tokenTransfer = tokenTransfers.get(0);
-                                    for (final var adjust : tokenTransfer.getTransfersList()) {
-                                        if (adjust.getAmount() < 0) {
-                                            // The debit should have been automatically converted to an approval
-                                            assertTrue(adjust.getIsApproval());
-                                        }
-                                    }
-                                }))),
-                        // No top-level signatures are available to any contract
-                        overriding(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS, "0"),
-                        someWellKnownTokensAndAccounts(
-                                fungibleTokenMirrorAddr,
-                                nonFungibleTokenMirrorAddr,
-                                aSenderAddr,
-                                aReceiverAddr,
-                                bSenderAddr,
-                                bReceiverAddr,
-                                true))
-                .when(
-                        // Nothing works without approvals now
-                        someWellKnownOperationsWithAllNeededSigsInSigMap(
-                                fungibleTokenMirrorAddr,
-                                nonFungibleTokenMirrorAddr,
-                                aSenderAddr,
-                                aReceiverAddr,
-                                bSenderAddr,
-                                bReceiverAddr,
-                                CONTRACT_REVERT_EXECUTED),
-                        // So grant all the approvals we need
-                        cryptoApproveAllowance()
-                                .payingWith(A_WELL_KNOWN_SENDER)
-                                .addNftAllowance(
-                                        A_WELL_KNOWN_SENDER,
-                                        WELL_KNOWN_NON_FUNGIBLE_TOKEN,
-                                        WELL_KNOWN_TREASURY_CONTRACT,
-                                        false,
-                                        List.of(1L, 2L))
-                                .addTokenAllowance(
-                                        A_WELL_KNOWN_SENDER,
-                                        WELL_KNOWN_FUNGIBLE_TOKEN,
-                                        WELL_KNOWN_TREASURY_CONTRACT,
-                                        Long.MAX_VALUE)
-                                .fee(ONE_HBAR),
-                        cryptoApproveAllowance()
-                                .payingWith(B_WELL_KNOWN_SENDER)
-                                .addNftAllowance(
-                                        B_WELL_KNOWN_SENDER,
-                                        WELL_KNOWN_NON_FUNGIBLE_TOKEN,
-                                        WELL_KNOWN_TREASURY_CONTRACT,
-                                        false,
-                                        List.of(3L))
-                                .addTokenAllowance(
-                                        B_WELL_KNOWN_SENDER,
-                                        WELL_KNOWN_FUNGIBLE_TOKEN,
-                                        WELL_KNOWN_TREASURY_CONTRACT,
-                                        Long.MAX_VALUE)
-                                .fee(ONE_HBAR))
-                .then(
-                        // Everything should have the needed approvals
-                        someWellKnownOperationsWithAllNeededSigsInSigMap(
-                                fungibleTokenMirrorAddr,
-                                nonFungibleTokenMirrorAddr,
-                                aSenderAddr,
-                                aReceiverAddr,
-                                bSenderAddr,
-                                bReceiverAddr,
-                                SUCCESS),
-                        someWellKnownAssertions());
+        return hapiTest(
+                streamMustInclude(recordedChildBodyWithId(TOKEN_UNIT_FROM_TO_OTHERS_TXN, 1, (spec, txn) -> {
+                    if (txn.hasNodeStakeUpdate()) {
+                        // Avoid asserting something about an end-of-staking-period NodeStakeUpdate in CI
+                        return;
+                    }
+                    final var tokenTransfers = txn.getCryptoTransfer().getTokenTransfersList();
+                    assertEquals(1, tokenTransfers.size());
+                    final var tokenTransfer = tokenTransfers.getFirst();
+                    for (final var adjust : tokenTransfer.getTransfersList()) {
+                        if (adjust.getAmount() < 0) {
+                            // The debit should have been automatically converted to an approval
+                            assertTrue(adjust.getIsApproval());
+                        }
+                    }
+                })),
+                someWellKnownTokensAndAccounts(
+                        fungibleTokenMirrorAddr,
+                        nonFungibleTokenMirrorAddr,
+                        aSenderAddr,
+                        aReceiverAddr,
+                        bSenderAddr,
+                        bReceiverAddr,
+                        true),
+                // Nothing works without approvals now
+                someWellKnownOperationsWithAllNeededSigsInSigMap(
+                        fungibleTokenMirrorAddr,
+                        nonFungibleTokenMirrorAddr,
+                        aSenderAddr,
+                        aReceiverAddr,
+                        bSenderAddr,
+                        bReceiverAddr,
+                        CONTRACT_REVERT_EXECUTED),
+                // So grant all the approvals we need
+                cryptoApproveAllowance()
+                        .payingWith(A_WELL_KNOWN_SENDER)
+                        .addNftAllowance(
+                                A_WELL_KNOWN_SENDER,
+                                WELL_KNOWN_NON_FUNGIBLE_TOKEN,
+                                WELL_KNOWN_TREASURY_CONTRACT,
+                                false,
+                                List.of(1L, 2L))
+                        .addTokenAllowance(
+                                A_WELL_KNOWN_SENDER,
+                                WELL_KNOWN_FUNGIBLE_TOKEN,
+                                WELL_KNOWN_TREASURY_CONTRACT,
+                                Long.MAX_VALUE)
+                        .fee(ONE_HBAR),
+                cryptoApproveAllowance()
+                        .payingWith(B_WELL_KNOWN_SENDER)
+                        .addNftAllowance(
+                                B_WELL_KNOWN_SENDER,
+                                WELL_KNOWN_NON_FUNGIBLE_TOKEN,
+                                WELL_KNOWN_TREASURY_CONTRACT,
+                                false,
+                                List.of(3L))
+                        .addTokenAllowance(
+                                B_WELL_KNOWN_SENDER,
+                                WELL_KNOWN_FUNGIBLE_TOKEN,
+                                WELL_KNOWN_TREASURY_CONTRACT,
+                                Long.MAX_VALUE)
+                        .fee(ONE_HBAR),
+                // Everything should have the needed approvals
+                someWellKnownOperationsWithAllNeededSigsInSigMap(
+                        fungibleTokenMirrorAddr,
+                        nonFungibleTokenMirrorAddr,
+                        aSenderAddr,
+                        aReceiverAddr,
+                        bSenderAddr,
+                        bReceiverAddr,
+                        SUCCESS),
+                someWellKnownAssertions());
     }
 
     private static final String A_WELL_KNOWN_SENDER = "A_SENDER";
@@ -341,7 +300,7 @@ public class ContractKeysStillWorkAsExpectedSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec canStillTransferByVirtueOfContractIdInEOAThreshold() {
+    final Stream<DynamicTest> canStillTransferByVirtueOfContractIdInEOAThreshold() {
         final var fungibleToken = "token";
         final var managementContract = "DoTokenManagement";
         final AtomicReference<Address> tokenMirrorAddr = new AtomicReference<>();
@@ -352,60 +311,44 @@ public class ContractKeysStillWorkAsExpectedSuite extends HapiSuite {
         final var receiver = "receiver";
         final var controlledSpenderKey = "controlledSpenderKey";
 
-        return propertyPreservingHapiSpec(
-                        "CanStillTransferByVirtueOfContractIdInEOAThreshold", NONDETERMINISTIC_FUNCTION_PARAMETERS)
-                .preserving(
-                        CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS,
-                        "contracts.withSpecialHapiSigsAccess",
-                        "contracts.allowSystemUseOfHapiSigs")
-                .given(
-                        overridingThree(
-                                CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS,
-                                "0",
-                                "contracts.withSpecialHapiSigsAccess",
-                                "",
-                                "contracts.allowSystemUseOfHapiSigs",
-                                ""),
-                        uploadInitCode(managementContract),
-                        // Create an immutable contract with a method
-                        // transferViaThresholdContractKey()
-                        // that tries to transfer token units from a spender to a receiver
-                        contractCreate(managementContract).gas(500_000L).omitAdminKey(),
-                        // Setup a 1/2 threshold key with this contract's ID as the first key
-                        newKeyNamed(controlledSpenderKey)
-                                .shape(threshKeyShape.signedWith(sigs(managementContract, ON))),
-                        // Assign this key to an account
-                        cryptoCreate(controlledSpender)
-                                .key(controlledSpenderKey)
-                                .exposingCreatedIdTo(id -> controlledSpenderAddr.set(idAsHeadlongAddress(id))),
-                        // Make this account the treasury of a fungible token
-                        tokenCreate(fungibleToken)
-                                .exposingAddressTo(tokenMirrorAddr::set)
-                                .tokenType(TokenType.FUNGIBLE_COMMON)
-                                .initialSupply(1_000_000)
-                                .treasury(controlledSpender),
-                        // Create a receiver
-                        cryptoCreate(receiver)
-                                .maxAutomaticTokenAssociations(1)
-                                .exposingCreatedIdTo(id -> receiverAddr.set(idAsHeadlongAddress(id))))
-                .when(
-                        // And now transfer from the controlled spender (treasury with 1M balance)
-                        // without its signature, by virtue of being in the threshold key
-                        sourcing(() -> contractCall(
-                                        managementContract,
-                                        "transferViaThresholdContractKey",
-                                        tokenMirrorAddr.get(),
-                                        controlledSpenderAddr.get(),
-                                        receiverAddr.get())
-                                .gas(2_000_000)
-                                .via("txn")))
-                .then(
-                        // Validate the receiver really did get a unit
-                        getAccountBalance(receiver).logged().hasTokenBalance(fungibleToken, 1));
+        return hapiTest(
+                uploadInitCode(managementContract),
+                // Create an immutable contract with a method
+                // transferViaThresholdContractKey()
+                // that tries to transfer token units from a spender to a receiver
+                contractCreate(managementContract).gas(500_000L).omitAdminKey(),
+                // Setup a 1/2 threshold key with this contract's ID as the first key
+                newKeyNamed(controlledSpenderKey).shape(threshKeyShape.signedWith(sigs(managementContract, ON))),
+                // Assign this key to an account
+                cryptoCreate(controlledSpender)
+                        .key(controlledSpenderKey)
+                        .exposingCreatedIdTo(id -> controlledSpenderAddr.set(idAsHeadlongAddress(id))),
+                // Make this account the treasury of a fungible token
+                tokenCreate(fungibleToken)
+                        .exposingAddressTo(tokenMirrorAddr::set)
+                        .tokenType(TokenType.FUNGIBLE_COMMON)
+                        .initialSupply(1_000_000)
+                        .treasury(controlledSpender),
+                // Create a receiver
+                cryptoCreate(receiver)
+                        .maxAutomaticTokenAssociations(1)
+                        .exposingCreatedIdTo(id -> receiverAddr.set(idAsHeadlongAddress(id))),
+                // And now transfer from the controlled spender (treasury with 1M balance)
+                // without its signature, by virtue of being in the threshold key
+                sourcing(() -> contractCall(
+                                managementContract,
+                                "transferViaThresholdContractKey",
+                                tokenMirrorAddr.get(),
+                                controlledSpenderAddr.get(),
+                                receiverAddr.get())
+                        .gas(2_000_000)
+                        .via("txn")),
+                // Validate the receiver really did get a unit
+                getAccountBalance(receiver).logged().hasTokenBalance(fungibleToken, 1));
     }
 
     @HapiTest
-    final HapiSpec contractKeysStillHaveSpecificityNoMatterTopLevelSignatures() {
+    final Stream<DynamicTest> contractKeysStillHaveSpecificityNoMatterTopLevelSignatures() {
         final var fungibleToken = "token";
         final var managementContract = "DoTokenManagement";
         final var otherContractAsKey = "otherContractAsKey";

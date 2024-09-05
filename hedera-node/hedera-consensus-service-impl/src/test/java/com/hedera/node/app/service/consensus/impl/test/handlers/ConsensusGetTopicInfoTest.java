@@ -18,8 +18,6 @@ package com.hedera.node.app.service.consensus.impl.test.handlers;
 
 import static com.hedera.node.app.service.consensus.impl.ConsensusServiceImpl.TOPICS_KEY;
 import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
-import static com.hedera.test.factories.scenarios.TxnHandlingScenario.COMPLEX_KEY_ACCOUNT_KT;
-import static com.hedera.test.utils.TxnUtils.payerSponsoredPbjTransfer;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -35,6 +33,7 @@ import com.hedera.hapi.node.base.ResponseHeader;
 import com.hedera.hapi.node.base.ResponseType;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.TopicID;
+import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.consensus.ConsensusGetTopicInfoQuery;
 import com.hedera.hapi.node.consensus.ConsensusGetTopicInfoResponse;
 import com.hedera.hapi.node.consensus.ConsensusTopicInfo;
@@ -44,12 +43,12 @@ import com.hedera.hapi.node.transaction.Response;
 import com.hedera.node.app.service.consensus.ReadableTopicStore;
 import com.hedera.node.app.service.consensus.impl.ReadableTopicStoreImpl;
 import com.hedera.node.app.service.consensus.impl.handlers.ConsensusGetTopicInfoHandler;
-import com.hedera.node.app.spi.fixtures.state.MapReadableKVState;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.QueryContext;
 import com.hedera.node.config.converter.BytesConverter;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.state.test.fixtures.MapReadableKVState;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -73,7 +72,7 @@ class ConsensusGetTopicInfoTest extends ConsensusTestBase {
     @Test
     @DisplayName("Query header is extracted correctly")
     void extractsHeader() {
-        final var query = createGetTopicInfoQuery(topicEntityNum.intValue());
+        final var query = createGetTopicInfoQuery(topicEntityNum);
         final var header = subject.extractHeader(query);
         final var op = query.consensusGetTopicInfoOrThrow();
         assertEquals(op.header(), header);
@@ -116,7 +115,7 @@ class ConsensusGetTopicInfoTest extends ConsensusTestBase {
     void validatesQueryWhenValidTopic() {
         givenValidTopic();
 
-        final var query = createGetTopicInfoQuery(topicEntityNum.intValue());
+        final var query = createGetTopicInfoQuery(topicEntityNum);
         given(context.query()).willReturn(query);
         given(context.createStore(ReadableTopicStore.class)).willReturn(readableStore);
 
@@ -125,13 +124,13 @@ class ConsensusGetTopicInfoTest extends ConsensusTestBase {
 
     @Test
     @DisplayName("Topic Id is needed during validate")
-    void validatesQueryIfInvalidTopic() throws Throwable {
+    void validatesQueryIfInvalidTopic() {
         readableTopicState.reset();
         final var state = MapReadableKVState.<Long, Topic>builder(TOPICS_KEY).build();
         given(readableStates.<Long, Topic>get(TOPICS_KEY)).willReturn(state);
         final var store = new ReadableTopicStoreImpl(readableStates);
 
-        final var query = createGetTopicInfoQuery(topicEntityNum.intValue());
+        final var query = createGetTopicInfoQuery(topicEntityNum);
         when(context.query()).thenReturn(query);
         when(context.createStore(ReadableTopicStore.class)).thenReturn(store);
 
@@ -165,7 +164,7 @@ class ConsensusGetTopicInfoTest extends ConsensusTestBase {
         given(readableStates.<TopicID, Topic>get(TOPICS_KEY)).willReturn(readableTopicState);
         readableStore = new ReadableTopicStoreImpl(readableStates);
 
-        final var query = createGetTopicInfoQuery(topicEntityNum.intValue());
+        final var query = createGetTopicInfoQuery(topicEntityNum);
         when(context.query()).thenReturn(query);
         when(context.createStore(ReadableTopicStore.class)).thenReturn(readableStore);
 
@@ -181,7 +180,7 @@ class ConsensusGetTopicInfoTest extends ConsensusTestBase {
                 .nodeTransactionPrecheckCode(ResponseCodeEnum.FAIL_FEE)
                 .build();
 
-        final var query = createGetTopicInfoQuery(topicEntityNum.intValue());
+        final var query = createGetTopicInfoQuery(topicEntityNum);
         when(context.query()).thenReturn(query);
         when(context.createStore(ReadableTopicStore.class)).thenReturn(readableStore);
 
@@ -204,7 +203,7 @@ class ConsensusGetTopicInfoTest extends ConsensusTestBase {
                 .build();
         final var expectedInfo = getExpectedInfo();
 
-        final var query = createGetTopicInfoQuery(topicEntityNum.intValue());
+        final var query = createGetTopicInfoQuery(topicEntityNum);
         when(context.query()).thenReturn(query);
         when(context.createStore(ReadableTopicStore.class)).thenReturn(readableStore);
 
@@ -232,22 +231,18 @@ class ConsensusGetTopicInfoTest extends ConsensusTestBase {
                 .build();
     }
 
-    private Query createGetTopicInfoQuery(final int topicId) {
-        final var payment =
-                payerSponsoredPbjTransfer(payerIdLiteral, COMPLEX_KEY_ACCOUNT_KT, beneficiaryIdStr, paymentAmount);
+    private Query createGetTopicInfoQuery(final long topicId) {
         final var data = ConsensusGetTopicInfoQuery.newBuilder()
                 .topicID(TopicID.newBuilder().topicNum(topicId).build())
-                .header(QueryHeader.newBuilder().payment(payment).build())
+                .header(QueryHeader.newBuilder().payment(Transaction.DEFAULT).build())
                 .build();
 
         return Query.newBuilder().consensusGetTopicInfo(data).build();
     }
 
     private Query createEmptyGetTopicInfoQuery() {
-        final var payment =
-                payerSponsoredPbjTransfer(payerIdLiteral, COMPLEX_KEY_ACCOUNT_KT, beneficiaryIdStr, paymentAmount);
         final var data = ConsensusGetTopicInfoQuery.newBuilder()
-                .header(QueryHeader.newBuilder().payment(payment).build())
+                .header(QueryHeader.newBuilder().payment(Transaction.DEFAULT).build())
                 .build();
 
         return Query.newBuilder().consensusGetTopicInfo(data).build();

@@ -21,7 +21,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.hedera.node.app.hapi.utils.throttles.CongestibleThrottle;
-import com.hedera.node.app.service.mono.fees.calculation.CongestionMultipliers;
+import com.hedera.node.config.types.CongestionMultipliers;
 import java.time.Instant;
 import java.util.List;
 import java.util.function.LongSupplier;

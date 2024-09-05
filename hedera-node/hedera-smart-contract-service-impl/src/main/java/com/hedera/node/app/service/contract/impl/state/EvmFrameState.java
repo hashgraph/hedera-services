@@ -214,6 +214,25 @@ public interface EvmFrameState {
     Hash getTokenRedirectCodeHash(@NonNull Address address);
 
     /**
+     * Returns the redirect bytecode for the account with the given address.  This should only be called for regular accounts
+     * that are not contracts.
+     *
+     * @param address the account address
+     * @return the redirect code for the account
+     */
+    @NonNull
+    Bytes getAccountRedirectCode(@Nullable Address address);
+
+    /**
+     * Returns the hash of the redirect bytecode for the account with the given address.
+     *
+     * @param address the account address
+     * @return the redirect code for the token
+     */
+    @NonNull
+    Hash getAccountRedirectCodeHash(@Nullable Address address);
+
+    /**
      * Returns the native account with the given account id.
      *
      * @param accountID the account id

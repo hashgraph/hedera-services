@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -eo pipefail
 
-TAG=${1:-'0.4.1'}
+TAG=${1:-'0.4.9'}
 SCRIPT_SOURCE="${BASH_SOURCE[0]}"
 
 READLINK_OPTS=""
@@ -19,11 +19,11 @@ SCRIPT_PATH="$(cd "$(dirname "${SCRIPT_SOURCE}")" && pwd)"
 OLD_CWD="$(pwd)"
 
 cd "${SCRIPT_PATH}/../../../../"
-./gradlew assemble
+./gradlew copyYahCli
 cd "${SCRIPT_PATH}/.."
 
 rm -f assets/yahcli.jar >/dev/null 2>&1 || true
 cp -f yahcli.jar assets/
 
-docker build -t yahcli:$TAG .
+docker build -t gcr.io/hedera-registry/yahcli:$TAG .
 cd "${OLD_CWD}"

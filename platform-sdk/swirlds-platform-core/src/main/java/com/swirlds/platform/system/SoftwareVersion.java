@@ -16,7 +16,9 @@
 
 package com.swirlds.platform.system;
 
+import com.hedera.hapi.node.base.SemanticVersion;
 import com.swirlds.common.io.SelfSerializable;
+import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
  * <p>
@@ -62,4 +64,14 @@ public interface SoftwareVersion extends SelfSerializable, Comparable<SoftwareVe
     @SuppressWarnings("NullableProblems")
     @Override
     int compareTo(SoftwareVersion that);
+
+    /**
+     * Returns the semantic version of the software in the form of a PBJ record that can be serialized to protobuf.
+     * Since events are in the process of being converted to PBJ, this will be the only version that is used once the
+     * conversion is done. Until the migration is complete, {@link SoftwareVersion} will remain in use as well.
+     *
+     * @return the semantic version of the software
+     */
+    @NonNull
+    SemanticVersion getPbjSemanticVersion();
 }

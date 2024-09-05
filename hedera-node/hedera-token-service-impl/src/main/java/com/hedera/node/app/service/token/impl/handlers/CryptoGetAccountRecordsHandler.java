@@ -21,6 +21,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.hapi.node.base.ResponseType.COST_ANSWER;
+import static com.hedera.node.app.spi.fees.Fees.CONSTANT_FEE_DATA;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateFalsePreCheck;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateTruePreCheck;
 import static java.util.Objects.requireNonNull;
@@ -29,18 +30,22 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.QueryHeader;
 import com.hedera.hapi.node.base.ResponseHeader;
+import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.token.CryptoGetAccountRecordsResponse;
 import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.Response;
+import com.hedera.hapi.node.transaction.TransactionRecord;
+import com.hedera.node.app.hapi.utils.CommonPbjConverters;
 import com.hedera.node.app.hapi.utils.fee.CryptoFeeBuilder;
-import com.hedera.node.app.service.mono.fees.calculation.crypto.queries.GetAccountRecordsResourceUsage;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.records.RecordCache;
 import com.hedera.node.app.spi.workflows.PaidQueryHandler;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.QueryContext;
+import com.hederahashgraph.api.proto.java.FeeData;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.List;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -51,7 +56,12 @@ import javax.inject.Singleton;
 @Singleton
 public class CryptoGetAccountRecordsHandler extends PaidQueryHandler {
     private final RecordCache recordCache;
+    private final CryptoFeeBuilder usageEstimator = new CryptoFeeBuilder();
 
+    /**
+     * Default constructor for injection.
+     * @param recordCache the record cache to use to get the records
+     */
     @Inject
     public CryptoGetAccountRecordsHandler(@NonNull final RecordCache recordCache) {
         // Exists for injection
@@ -117,12 +127,18 @@ public class CryptoGetAccountRecordsHandler extends PaidQueryHandler {
         final var query = queryContext.query();
         final var accountStore = queryContext.createStore(ReadableAccountStore.class);
         final var op = query.cryptoGetAccountRecordsOrThrow();
-        final var accountId = op.accountIDOrThrow();
+        final var accountId = op.accountIDOrElse(AccountID.DEFAULT);
         final var account = accountStore.getAccountById(accountId);
-
         final var records = recordCache.getRecords(accountId);
-        return queryContext.feeCalculator().legacyCalculate(sigValueObj -> new GetAccountRecordsResourceUsage(
-                        null, new CryptoFeeBuilder())
-                .usageGivenFor(account, records));
+        return queryContext.feeCalculator().legacyCalculate(sigValueObj -> usageGivenFor(account, records));
+    }
+
+    private FeeData usageGivenFor(final Account account, List<TransactionRecord> pbjRecords) {
+        if (account == null) {
+            return CONSTANT_FEE_DATA;
+        }
+        final var records =
+                pbjRecords.stream().map(CommonPbjConverters::fromPbj).toList();
+        return usageEstimator.getCryptoAccountRecordsQueryFeeMatrices(records, null);
     }
 }

@@ -40,9 +40,9 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
- * Base implementation of {@link KeyVerifier}
+ * Base implementation of {@link AppKeyVerifier}
  */
-public class DefaultKeyVerifier implements KeyVerifier {
+public class DefaultKeyVerifier implements AppKeyVerifier {
 
     private static final Logger logger = LogManager.getLogger(DefaultKeyVerifier.class);
 
@@ -54,6 +54,7 @@ public class DefaultKeyVerifier implements KeyVerifier {
      * Creates a {@link DefaultKeyVerifier}
      *
      * @param legacyFeeCalcNetworkVpt the number of verifications to report for temporary mono-service parity
+     * @param config configuration for the node
      * @param keyVerifications A {@link Map} with all data to verify signatures
      */
     public DefaultKeyVerifier(

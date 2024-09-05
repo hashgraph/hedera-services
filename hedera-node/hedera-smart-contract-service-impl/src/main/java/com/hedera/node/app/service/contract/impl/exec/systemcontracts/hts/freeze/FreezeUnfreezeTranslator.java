@@ -23,9 +23,9 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.gas.DispatchType;
 import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AbstractHtsCallTranslator;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.AbstractCallTranslator;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.Call;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.DispatchForResponseCodeHtsCall;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
@@ -38,7 +38,7 @@ import javax.inject.Singleton;
  * Translates {@code freeze()}, {@code unfreeze()} calls to the HTS system contract.
  */
 @Singleton
-public class FreezeUnfreezeTranslator extends AbstractHtsCallTranslator {
+public class FreezeUnfreezeTranslator extends AbstractCallTranslator<HtsCallAttempt> {
     public static final Function FREEZE = new Function("freezeToken(address,address)", ReturnTypes.INT_64);
     public static final Function UNFREEZE = new Function("unfreezeToken(address,address)", ReturnTypes.INT_64);
     private final FreezeUnfreezeDecoder decoder;
@@ -53,18 +53,18 @@ public class FreezeUnfreezeTranslator extends AbstractHtsCallTranslator {
      */
     @Override
     public boolean matches(@NonNull final HtsCallAttempt attempt) {
-        return matchesClassicSelector(attempt.selector());
+        return attempt.isSelector(FREEZE, UNFREEZE);
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public HtsCall callFrom(@NonNull final HtsCallAttempt attempt) {
+    public Call callFrom(@NonNull final HtsCallAttempt attempt) {
         return new DispatchForResponseCodeHtsCall(
                 attempt,
                 bodyForClassic(attempt),
-                Arrays.equals(attempt.selector(), FREEZE.selector())
+                attempt.isSelector(FREEZE)
                         ? FreezeUnfreezeTranslator::freezeGasRequirement
                         : FreezeUnfreezeTranslator::unfreezeGasRequirement,
                 NOOP_CUSTOMIZER);
@@ -92,9 +92,5 @@ public class FreezeUnfreezeTranslator extends AbstractHtsCallTranslator {
         } else {
             return decoder.decodeUnfreeze(attempt);
         }
-    }
-
-    private static boolean matchesClassicSelector(@NonNull final byte[] selector) {
-        return Arrays.equals(selector, FREEZE.selector()) || Arrays.equals(selector, UNFREEZE.selector());
     }
 }

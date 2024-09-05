@@ -22,13 +22,15 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.EXPIRATION_REDUCTION_NO
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ADMIN_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_CONTRACT_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_MAX_AUTO_ASSOCIATIONS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MODIFYING_IMMUTABLE_CONTRACT;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT;
-import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
+import static com.hedera.hapi.util.HapiUtils.EMPTY_KEY_LIST;
+import static com.hedera.node.app.hapi.utils.CommonPbjConverters.fromPbj;
 import static com.hedera.node.app.service.token.api.AccountSummariesApi.SENTINEL_ACCOUNT_ID;
-import static com.hedera.node.app.spi.HapiUtils.EMPTY_KEY_LIST;
+import static com.hedera.node.app.spi.fees.Fees.CONSTANT_FEE_DATA;
 import static com.hedera.node.app.spi.validation.ExpiryMeta.NA;
+import static com.hedera.node.app.spi.validation.Validations.mustExist;
 import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static java.util.Objects.requireNonNull;
@@ -40,9 +42,10 @@ import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.contract.ContractUpdateTransactionBody;
 import com.hedera.hapi.node.state.token.Account;
+import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.hapi.utils.fee.SigValueObj;
 import com.hedera.node.app.hapi.utils.fee.SmartContractFeeBuilder;
-import com.hedera.node.app.service.contract.impl.records.ContractUpdateRecordBuilder;
-import com.hedera.node.app.service.mono.fees.calculation.contract.txns.ContractUpdateResourceUsage;
+import com.hedera.node.app.service.contract.impl.records.ContractUpdateStreamBuilder;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.api.TokenServiceApi;
 import com.hedera.node.app.spi.fees.FeeContext;
@@ -54,11 +57,11 @@ import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
-import com.hedera.node.config.data.ContractsConfig;
 import com.hedera.node.config.data.EntitiesConfig;
 import com.hedera.node.config.data.LedgerConfig;
 import com.hedera.node.config.data.StakingConfig;
 import com.hedera.node.config.data.TokensConfig;
+import com.hederahashgraph.api.proto.java.FeeData;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Optional;
@@ -70,6 +73,12 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class ContractUpdateHandler implements TransactionHandler {
+    private final SmartContractFeeBuilder usageEstimator = new SmartContractFeeBuilder();
+
+    /**
+     * The value for unlimited automatic associations
+     */
+    public static final int UNLIMITED_AUTOMATIC_ASSOCIATIONS = -1;
 
     @Inject
     public ContractUpdateHandler() {
@@ -83,7 +92,7 @@ public class ContractUpdateHandler implements TransactionHandler {
 
         if (isAdminSigRequired(op)) {
             final var accountStore = context.createStore(ReadableAccountStore.class);
-            final var targetId = op.contractIDOrElse(ContractID.DEFAULT);
+            final var targetId = op.contractIDOrThrow();
             final var maybeContract = accountStore.getContractById(targetId);
             if (maybeContract != null && maybeContract.keyOrThrow().key().kind() == Key.KeyOneOfType.CONTRACT_ID) {
                 throw new PreCheckException(MODIFYING_IMMUTABLE_CONTRACT);
@@ -98,13 +107,24 @@ public class ContractUpdateHandler implements TransactionHandler {
         }
     }
 
+    @Override
+    public void pureChecks(@NonNull TransactionBody txn) throws PreCheckException {
+        final var op = txn.contractUpdateInstanceOrThrow();
+        mustExist(op.contractID(), INVALID_CONTRACT_ID);
+
+        if (op.hasAdminKey() && processAdminKey(op)) {
+            throw new PreCheckException(INVALID_ADMIN_KEY);
+        }
+    }
+
     private boolean isAdminSigRequired(final ContractUpdateTransactionBody op) {
-        return !op.hasExpirationTime()
-                || hasCryptoAdminKey(op)
-                || op.hasProxyAccountID()
-                || op.hasAutoRenewPeriod()
-                || op.hasFileID()
-                || !op.memoOrElse("").isEmpty();
+        // Consider the update attempt with both expiration time and id reset to default fields
+        final var withDefaultExpirationTimeAndTarget = op.copyBuilder()
+                .contractID(ContractUpdateTransactionBody.DEFAULT.contractID())
+                .expirationTime(ContractUpdateTransactionBody.DEFAULT.expirationTime())
+                .build();
+        // If anything else was touched, then admin sig is required
+        return !withDefaultExpirationTimeAndTarget.equals(ContractUpdateTransactionBody.DEFAULT);
     }
 
     private boolean hasCryptoAdminKey(final ContractUpdateTransactionBody op) {
@@ -117,12 +137,13 @@ public class ContractUpdateHandler implements TransactionHandler {
         final var op = txn.contractUpdateInstanceOrThrow();
         final var target = op.contractIDOrThrow();
 
-        final var accountStore = context.readableStore(ReadableAccountStore.class);
+        final var accountStore = context.storeFactory().readableStore(ReadableAccountStore.class);
         final var toBeUpdated = accountStore.getContractById(target);
         validateSemantics(toBeUpdated, context, op, accountStore);
         final var changed = update(requireNonNull(toBeUpdated), context, op);
-        context.serviceApi(TokenServiceApi.class).updateContract(changed);
-        context.recordBuilder(ContractUpdateRecordBuilder.class)
+        context.storeFactory().serviceApi(TokenServiceApi.class).updateContract(changed);
+        context.savepointStack()
+                .getBaseBuilder(ContractUpdateStreamBuilder.class)
                 .contractID(ContractID.newBuilder()
                         .contractNum(toBeUpdated.accountIdOrThrow().accountNumOrThrow())
                         .build());
@@ -136,51 +157,53 @@ public class ContractUpdateHandler implements TransactionHandler {
         validateTrue(contract != null, INVALID_CONTRACT_ID);
         validateTrue(!contract.deleted(), INVALID_CONTRACT_ID);
 
-        if (op.hasAdminKey() && processAdminKey(op)) {
-            throw new HandleException(INVALID_ADMIN_KEY);
-        }
-
         if (op.hasExpirationTime()) {
             try {
-                context.attributeValidator().validateExpiry(op.expirationTime().seconds());
+                context.attributeValidator()
+                        .validateExpiry(op.expirationTimeOrThrow().seconds());
             } catch (HandleException e) {
                 validateFalse(contract.expiredAndPendingRemoval(), CONTRACT_EXPIRED_AND_PENDING_REMOVAL);
                 throw e;
             }
         }
 
-        validateFalse(!onlyAffectsExpiry(op) && !isMutable(contract), MODIFYING_IMMUTABLE_CONTRACT);
+        validateFalse(nonExpiryFieldUpdated(op) && !isMutable(contract), MODIFYING_IMMUTABLE_CONTRACT);
         validateFalse(reducesExpiry(op, contract.expirationSecond()), EXPIRATION_REDUCTION_NOT_ALLOWED);
 
         if (op.hasMaxAutomaticTokenAssociations()) {
             final var ledgerConfig = context.configuration().getConfigData(LedgerConfig.class);
             final var entitiesConfig = context.configuration().getConfigData(EntitiesConfig.class);
             final var tokensConfig = context.configuration().getConfigData(TokensConfig.class);
-            final var contractsConfig = context.configuration().getConfigData(ContractsConfig.class);
 
-            final long newMax = op.maxAutomaticTokenAssociationsOrThrow();
+            final long newMaxAssociations = op.maxAutomaticTokenAssociationsOrThrow();
 
-            validateFalse(
-                    newMax > ledgerConfig.maxAutoAssociations(),
-                    REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT);
-            validateFalse(newMax < contract.maxAutoAssociations(), EXISTING_AUTOMATIC_ASSOCIATIONS_EXCEED_GIVEN_LIMIT);
-            validateFalse(
-                    entitiesConfig.limitTokenAssociations() && newMax > tokensConfig.maxPerAccount(),
-                    REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT);
-
-            validateTrue(contractsConfig.allowAutoAssociations(), NOT_SUPPORTED);
+            if (entitiesConfig.unlimitedAutoAssociationsEnabled() && newMaxAssociations < 0) {
+                validateTrue(newMaxAssociations == UNLIMITED_AUTOMATIC_ASSOCIATIONS, INVALID_MAX_AUTO_ASSOCIATIONS);
+            } else {
+                validateFalse(newMaxAssociations < 0, INVALID_MAX_AUTO_ASSOCIATIONS);
+                validateFalse(
+                        newMaxAssociations > ledgerConfig.maxAutoAssociations(),
+                        REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT);
+                validateFalse(
+                        newMaxAssociations < contract.maxAutoAssociations(),
+                        EXISTING_AUTOMATIC_ASSOCIATIONS_EXCEED_GIVEN_LIMIT);
+                validateFalse(
+                        entitiesConfig.limitTokenAssociations() && newMaxAssociations > tokensConfig.maxPerAccount(),
+                        REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT);
+            }
         }
 
         // validate expiry metadata
         final var currentMetadata =
                 new ExpiryMeta(contract.expirationSecond(), contract.autoRenewSeconds(), contract.autoRenewAccountId());
         final var updateMeta = new ExpiryMeta(
-                op.hasExpirationTime() ? op.expirationTime().seconds() : NA,
-                op.hasAutoRenewPeriod() ? op.autoRenewPeriod().seconds() : NA,
+                op.hasExpirationTime() ? op.expirationTimeOrThrow().seconds() : NA,
+                op.hasAutoRenewPeriod() ? op.autoRenewPeriodOrThrow().seconds() : NA,
                 null);
         context.expiryValidator().resolveUpdateAttempt(currentMetadata, updateMeta, false);
 
-        context.serviceApi(TokenServiceApi.class)
+        context.storeFactory()
+                .serviceApi(TokenServiceApi.class)
                 .assertValidStakingElectionForUpdate(
                         context.configuration()
                                 .getConfigData(StakingConfig.class)
@@ -205,17 +228,12 @@ public class ContractUpdateHandler implements TransactionHandler {
         return keyIsNotValid || candidate.contractID() != null;
     }
 
-    private boolean onlyAffectsExpiry(ContractUpdateTransactionBody op) {
-        return !(op.hasProxyAccountID()
-                        || op.hasFileID()
-                        || affectsMemo(op)
-                        || op.hasAutoRenewPeriod()
-                        || op.hasAdminKey())
-                || op.hasMaxAutomaticTokenAssociations();
+    private boolean nonExpiryFieldUpdated(ContractUpdateTransactionBody op) {
+        return isAdminSigRequired(op);
     }
 
-    private boolean affectsMemo(ContractUpdateTransactionBody op) {
-        return op.hasMemoWrapper() || (op.memo() != null && op.memo().length() > 0);
+    private boolean affectsMemo(@NonNull final ContractUpdateTransactionBody op) {
+        return op.hasMemoWrapper() || (!op.memoOrElse("").isEmpty());
     }
 
     private boolean isMutable(final Account contract) {
@@ -225,7 +243,7 @@ public class ContractUpdateHandler implements TransactionHandler {
     }
 
     private boolean reducesExpiry(ContractUpdateTransactionBody op, long curExpiry) {
-        return op.hasExpirationTime() && op.expirationTime().seconds() < curExpiry;
+        return op.hasExpirationTime() && op.expirationTimeOrThrow().seconds() < curExpiry;
     }
 
     public Account update(
@@ -254,13 +272,14 @@ public class ContractUpdateHandler implements TransactionHandler {
             if (contract.expiredAndPendingRemoval()) {
                 builder.expiredAndPendingRemoval(false);
             }
-            builder.expirationSecond(op.expirationTime().seconds());
+            builder.expirationSecond(op.expirationTimeOrThrow().seconds());
         }
         if (op.hasAutoRenewPeriod()) {
-            builder.autoRenewSeconds(op.autoRenewPeriod().seconds());
+            builder.autoRenewSeconds(op.autoRenewPeriodOrThrow().seconds());
         }
         if (affectsMemo(op)) {
-            final var newMemo = op.hasMemoWrapper() ? op.memoWrapper() : op.memo();
+            final var newMemo = op.hasMemoWrapper() ? op.memoWrapperOrThrow() : op.memo();
+            requireNonNull(newMemo);
             context.attributeValidator().validateMemo(newMemo);
             builder.memo(newMemo);
         }
@@ -271,16 +290,16 @@ public class ContractUpdateHandler implements TransactionHandler {
                 builder.stakedAccountId(op.stakedAccountId());
             }
         } else if (op.hasStakedNodeId()) {
-            builder.stakedNodeId(op.stakedNodeId());
+            builder.stakedNodeId(op.stakedNodeIdOrThrow());
         }
         if (op.hasDeclineReward()) {
-            builder.declineReward(op.declineReward());
+            builder.declineReward(op.declineRewardOrThrow());
         }
         if (op.hasAutoRenewAccountId()) {
             builder.autoRenewAccountId(op.autoRenewAccountId());
         }
         if (op.hasMaxAutomaticTokenAssociations()) {
-            builder.maxAutoAssociations(op.maxAutomaticTokenAssociations());
+            builder.maxAutoAssociations(op.maxAutomaticTokenAssociationsOrThrow());
         }
         return builder.build();
     }
@@ -290,8 +309,23 @@ public class ContractUpdateHandler implements TransactionHandler {
     public Fees calculateFees(@NonNull final FeeContext feeContext) {
         requireNonNull(feeContext);
         final var op = feeContext.body();
-        return feeContext.feeCalculator(SubType.DEFAULT).legacyCalculate(sigValueObj -> new ContractUpdateResourceUsage(
-                        new SmartContractFeeBuilder())
-                .usageGiven(fromPbj(op), sigValueObj, null));
+        final var contractId = op.contractUpdateInstanceOrThrow().contractIDOrElse(ContractID.DEFAULT);
+        final var accountStore = feeContext.readableStore(ReadableAccountStore.class);
+        final var contract = accountStore.getContractById(contractId);
+        return feeContext
+                .feeCalculatorFactory()
+                .feeCalculator(SubType.DEFAULT)
+                .legacyCalculate(sigValueObj -> usageGiven(fromPbj(op), sigValueObj, contract));
+    }
+
+    private FeeData usageGiven(
+            @NonNull com.hederahashgraph.api.proto.java.TransactionBody txn,
+            @NonNull SigValueObj sigUsage,
+            @Nullable Account contract) {
+        if (contract == null) {
+            return CONSTANT_FEE_DATA;
+        }
+        return usageEstimator.getContractUpdateTxFeeMatrices(
+                txn, fromPbj(new com.hedera.hapi.node.base.Timestamp(contract.expirationSecond(), 0)), sigUsage);
     }
 }

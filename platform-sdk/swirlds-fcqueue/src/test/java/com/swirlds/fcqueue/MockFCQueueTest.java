@@ -17,7 +17,6 @@
 package com.swirlds.fcqueue;
 
 import static com.swirlds.common.test.fixtures.junit.tags.TestComponentTags.FCQUEUE;
-import static com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags.TIME_CONSUMING;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -167,7 +166,7 @@ class MockFCQueueTest {
         q3.add(new FCInt(rnd.nextInt(NEXT_INT_BOUNDS)));
         q3.remove();
         q3.remove();
-        final byte[] hh = q3.getHash().getValue();
+        final byte[] hh = q3.getHash().copyToByteArray();
         // the hash of {} should be all zeros
         for (byte b : hh) {
             assertEquals(0, b, "hash for an empty queue should be 0");
@@ -251,8 +250,8 @@ class MockFCQueueTest {
         h++;
 
         // the hash of {} should be all zeros
-        for (int i = 0; i < hash[0].getValue().length; i++) {
-            assertEquals(0, hash[0].getValue()[i], "hash for an empty queue should be 0");
+        for (int i = 0; i < hash[0].getBytes().length(); i++) {
+            assertEquals(0, hash[0].getBytes().getByte(i), "hash for an empty queue should be 0");
         }
 
         // 1={a} 2={a,b} 3={a,b,c}
@@ -368,8 +367,8 @@ class MockFCQueueTest {
             mfcq.add(elem);
         }
 
-        final byte[] fcqh = fcq.getHash().getValue();
-        final byte[] mfcqh = mfcq.getHash().getValue();
+        final byte[] fcqh = fcq.getHash().copyToByteArray();
+        final byte[] mfcqh = mfcq.getHash().copyToByteArray();
 
         assert (fcqh.length == mfcqh.length);
         assert (fcqh.length == 48);
@@ -389,7 +388,6 @@ class MockFCQueueTest {
     @MethodSource("buildArguments")
     @Tag(FCQUEUE)
     @DisplayName("Mock Hash Test 7")
-    @Tag(TIME_CONSUMING)
     void hashTest7(final int queueSize, final Supplier<FCQueue<FCInt>> supplier) {
         final FCQueue<FCInt> fcq = new FCQueue<>();
         final FCQueue<FCInt> mfcq = supplier.get();
@@ -439,8 +437,8 @@ class MockFCQueueTest {
                 mfcq.add(elem);
             }
             // verify hashes
-            final byte[] fcqh1 = fcq.getHash().getValue();
-            final byte[] mfcqh1 = mfcq.getHash().getValue();
+            final byte[] fcqh1 = fcq.getHash().copyToByteArray();
+            final byte[] mfcqh1 = mfcq.getHash().copyToByteArray();
             // hashes should stay identical
             for (int i1 = 0; i1 < fcqh1.length; i1++) {
                 assertEquals(fcqh1[i1], mfcqh1[i1], "FCQ and Mock FCQ hashes are different");
@@ -453,8 +451,8 @@ class MockFCQueueTest {
             }
 
             // verify hashes
-            final byte[] fcqh2 = fcq.getHash().getValue();
-            final byte[] mfcqh2 = mfcq.getHash().getValue();
+            final byte[] fcqh2 = fcq.getHash().copyToByteArray();
+            final byte[] mfcqh2 = mfcq.getHash().copyToByteArray();
             // hashes should stay identical
             for (int i2 = 0; i2 < fcqh2.length; i2++) {
                 assertEquals(fcqh2[i2], mfcqh2[i2], "FCQ and Mock FCQ hashes are different");
@@ -565,7 +563,6 @@ class MockFCQueueTest {
     @MethodSource("buildArguments")
     @Tag(FCQUEUE)
     @DisplayName("Mock multithread Hash Test 1")
-    @Tag(TIME_CONSUMING)
     void multithreadHashTest(int writeThreadsNum, final Supplier<FCQueue<FCInt>> supplier) {
         final int QUEUE_SIZE = 10_000;
 
@@ -620,10 +617,10 @@ class MockFCQueueTest {
         }
 
         // verify hashes between FCQueue and Mock
-        final byte[] fcqh = fcq.getHash().getValue();
-        final byte[] mfcqh = mfcq.getHash().getValue();
-        final byte[] fcqh_single = fcq_single.getHash().getValue();
-        final byte[] mfcqh_single = mfcq_single.getHash().getValue();
+        final byte[] fcqh = fcq.getHash().copyToByteArray();
+        final byte[] mfcqh = mfcq.getHash().copyToByteArray();
+        final byte[] fcqh_single = fcq_single.getHash().copyToByteArray();
+        final byte[] mfcqh_single = mfcq_single.getHash().copyToByteArray();
         // compare FCQ to MFCQ, FCQ_single to MFCQ_single, cross versions
         for (int i = 0; i < fcqh.length; i++) {
             assertEquals(fcqh[i], fcqh_single[i], "single and multithreaded hashes are different");
@@ -713,10 +710,10 @@ class MockFCQueueTest {
         }
 
         // verify hashes between FCQueue and Mock
-        final byte[] fcqh = fcq.getHash().getValue();
-        final byte[] mfcqh = mfcq.getHash().getValue();
-        final byte[] fcqh_single = fcq_single.getHash().getValue();
-        final byte[] mfcqh_single = mfcq_single.getHash().getValue();
+        final byte[] fcqh = fcq.getHash().copyToByteArray();
+        final byte[] mfcqh = mfcq.getHash().copyToByteArray();
+        final byte[] fcqh_single = fcq_single.getHash().copyToByteArray();
+        final byte[] mfcqh_single = mfcq_single.getHash().copyToByteArray();
         // compare FCQ to MFCQ, FCQ_single to MFCQ_single, cross versions
         for (int i = 0; i < fcqh.length; i++) {
             assertEquals(fcqh[i], fcqh_single[i], "single and multithreaded hashes are different");
@@ -784,7 +781,6 @@ class MockFCQueueTest {
     @ParameterizedTest
     @MethodSource("buildArguments")
     @Tag(FCQUEUE)
-    @Tag(TIME_CONSUMING)
     @DisplayName("toArray Test")
     void toArrayTest(final int targetSize, final Supplier<FCQueue<FCInt>> supplier) {
         final FCQueue<FCInt> fcq = supplier.get();
@@ -1148,7 +1144,7 @@ class MockFCQueueTest {
             mutableQueue.remove();
         }
 
-        for (byte h : mutableQueue.getHash().getValue()) {
+        for (byte h : mutableQueue.getHash().copyToByteArray()) {
             assertEquals(0, h);
         }
     }

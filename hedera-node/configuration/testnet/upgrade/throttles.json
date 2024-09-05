@@ -12,6 +12,7 @@
             "ScheduleCreate",
             "CryptoCreate",
             "CryptoTransfer",
+            "TokenAirdrop",
             "CryptoUpdate",
             "CryptoDelete",
             "CryptoGetInfo",
@@ -61,7 +62,7 @@
         },
         {
           "opsPerSec": 0,
-          "milliOpsPerSec": 1250000,
+          "milliOpsPerSec": 125000,
           "operations": [
             "TokenMint"
           ]
@@ -93,7 +94,10 @@
             "TokenRevokeKycFromAccount",
             "TokenPause",
             "TokenUnpause",
-            "TokenUpdateNfts"
+            "TokenUpdateNfts",
+            "TokenClaimAirdrop",
+            "TokenReject",
+            "TokenCancelAirdrop"
           ]
         }
       ]
@@ -140,14 +144,14 @@
       "throttleGroups": [
         {
           "opsPerSec": 0,
-          "milliOpsPerSec": 200000,
+          "milliOpsPerSec": 2000,
           "operations": [
             "CryptoCreate"
           ]
         },
         {
           "opsPerSec": 0,
-          "milliOpsPerSec": 50000,
+          "milliOpsPerSec": 5000,
           "operations": [
             "ConsensusCreateTopic"
           ]
@@ -158,7 +162,8 @@
           "operations": [
             "TokenCreate",
             "TokenAssociateToAccount",
-            "ScheduleCreate"
+            "ScheduleCreate",
+            "TokenAirdrop"
           ]
         }
       ]

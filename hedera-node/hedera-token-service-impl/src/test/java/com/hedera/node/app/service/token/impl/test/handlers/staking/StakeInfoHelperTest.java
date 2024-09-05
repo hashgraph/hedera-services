@@ -20,11 +20,11 @@ import static com.hedera.node.app.service.token.impl.test.WritableStakingInfoSto
 
 import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.token.StakingNodeInfo;
-import com.hedera.node.app.service.token.impl.TokenServiceImpl;
 import com.hedera.node.app.service.token.impl.WritableStakingInfoStore;
 import com.hedera.node.app.service.token.impl.handlers.staking.StakeInfoHelper;
-import com.hedera.node.app.spi.fixtures.state.MapWritableKVState;
+import com.hedera.node.app.service.token.impl.schemas.V0490TokenSchema;
 import com.hedera.node.app.spi.fixtures.state.MapWritableStates;
+import com.swirlds.state.test.fixtures.MapWritableKVState;
 import java.util.Map;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -37,7 +37,7 @@ class StakeInfoHelperTest {
 
     @BeforeEach
     void setUp() {
-        final var state = MapWritableKVState.<EntityNumber, StakingNodeInfo>builder(TokenServiceImpl.STAKING_INFO_KEY)
+        final var state = MapWritableKVState.<EntityNumber, StakingNodeInfo>builder(V0490TokenSchema.STAKING_INFO_KEY)
                 .value(
                         NODE_ID_1,
                         StakingNodeInfo.newBuilder()
@@ -47,7 +47,7 @@ class StakeInfoHelperTest {
                                 .unclaimedStakeRewardStart(5)
                                 .build())
                 .build();
-        store = new WritableStakingInfoStore(new MapWritableStates(Map.of(TokenServiceImpl.STAKING_INFO_KEY, state)));
+        store = new WritableStakingInfoStore(new MapWritableStates(Map.of(V0490TokenSchema.STAKING_INFO_KEY, state)));
         subject = new StakeInfoHelper();
     }
 

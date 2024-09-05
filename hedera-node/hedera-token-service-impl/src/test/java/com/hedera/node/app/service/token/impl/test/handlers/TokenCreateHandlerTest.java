@@ -34,22 +34,29 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_ST
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MISSING_TOKEN_NAME;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MISSING_TOKEN_SYMBOL;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_HAS_NO_FREEZE_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_HAS_NO_SUPPLY_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_NAME_TOO_LONG;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_SYMBOL_TOO_LONG;
+import static com.hedera.node.app.service.token.impl.TokenServiceImpl.THREE_MONTHS_IN_SECONDS;
+import static com.hedera.node.app.service.token.impl.test.handlers.util.CryptoHandlerTestBase.A_COMPLEX_KEY;
 import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
 import static com.hedera.node.app.spi.key.KeyUtils.IMMUTABILITY_SENTINEL_KEY;
-import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
-import static com.hedera.test.utils.KeyUtils.A_COMPLEX_KEY;
+import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.USER;
+import static com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer.NOOP_RECORD_CUSTOMIZER;
+import static com.hedera.node.app.spi.workflows.record.StreamBuilder.ReversingBehavior.REVERSIBLE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mock.Strictness.LENIENT;
+import static org.mockito.Mockito.doThrow;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Duration;
@@ -63,24 +70,21 @@ import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.hapi.node.token.TokenCreateTransactionBody;
 import com.hedera.hapi.node.transaction.CustomFee;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.service.mono.config.HederaNumbers;
-import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
-import com.hedera.node.app.service.mono.context.properties.PropertySource;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.handlers.TokenCreateHandler;
 import com.hedera.node.app.service.token.impl.test.handlers.util.CryptoTokenHandlerTestBase;
 import com.hedera.node.app.service.token.impl.validators.CustomFeesValidator;
 import com.hedera.node.app.service.token.impl.validators.TokenAttributesValidator;
 import com.hedera.node.app.service.token.impl.validators.TokenCreateValidator;
-import com.hedera.node.app.service.token.records.TokenCreateRecordBuilder;
+import com.hedera.node.app.service.token.records.TokenCreateStreamBuilder;
+import com.hedera.node.app.spi.ids.EntityNumGenerator;
 import com.hedera.node.app.spi.validation.AttributeValidator;
+import com.hedera.node.app.spi.validation.ExpiryMeta;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
-import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
-import com.hedera.node.app.workflows.handle.validation.StandardizedAttributeValidator;
-import com.hedera.node.app.workflows.handle.validation.StandardizedExpiryValidator;
+import com.hedera.node.app.workflows.handle.record.RecordStreamBuilder;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.VersionedConfigImpl;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
@@ -101,34 +105,33 @@ class TokenCreateHandlerTest extends CryptoTokenHandlerTestBase {
     private ConfigProvider configProvider;
 
     @Mock(strictness = LENIENT)
-    private PropertySource compositeProps;
+    private EntityNumGenerator entityNumGenerator;
 
     @Mock(strictness = LENIENT)
-    private HederaNumbers hederaNumbers;
+    private HandleContext.SavepointStack stack;
 
-    @Mock(strictness = LENIENT)
-    private GlobalDynamicProperties dynamicProperties;
-
-    private TokenCreateRecordBuilder recordBuilder;
+    private TokenCreateStreamBuilder recordBuilder;
     private TokenCreateHandler subject;
     private TransactionBody txn;
     private CustomFeesValidator customFeesValidator;
     private TokenAttributesValidator tokenFieldsValidator;
     private TokenCreateValidator tokenCreateValidator;
+
+    @Mock
     private ExpiryValidator expiryValidator;
+
+    @Mock
     private AttributeValidator attributeValidator;
 
     private static final TokenID newTokenId =
             TokenID.newBuilder().tokenNum(3000L).build();
-    private static final Timestamp expiry =
-            Timestamp.newBuilder().seconds(1234600L).build();
     private final AccountID autoRenewAccountId = ownerId;
 
     @BeforeEach
     public void setUp() {
         super.setUp();
         refreshWritableStores();
-        recordBuilder = new SingleTransactionRecordBuilderImpl(consensusInstant);
+        recordBuilder = new RecordStreamBuilder(REVERSIBLE, NOOP_RECORD_CUSTOMIZER, USER);
         tokenFieldsValidator = new TokenAttributesValidator();
         customFeesValidator = new CustomFeesValidator();
         tokenCreateValidator = new TokenCreateValidator(tokenFieldsValidator);
@@ -141,6 +144,12 @@ class TokenCreateHandlerTest extends CryptoTokenHandlerTestBase {
     @SuppressWarnings("java:S5961")
     void handleWorksForFungibleCreate() {
         setUpTxnContext();
+        given(expiryValidator.expirationStatus(any(), anyBoolean(), anyLong())).willReturn(OK);
+        given(expiryValidator.resolveCreationAttempt(anyBoolean(), any(), any()))
+                .willReturn(new ExpiryMeta(
+                        consensusInstant.plusSeconds(autoRenewSecs).getEpochSecond(),
+                        autoRenewSecs,
+                        autoRenewAccountId));
 
         assertThat(writableTokenStore.get(newTokenId)).isNull();
         assertThat(writableTokenRelStore.get(treasuryId, newTokenId)).isNull();
@@ -194,6 +203,12 @@ class TokenCreateHandlerTest extends CryptoTokenHandlerTestBase {
                 .build()));
         txn = new TokenCreateBuilder().withCustomFees(customFees).build();
         given(handleContext.body()).willReturn(txn);
+        given(expiryValidator.expirationStatus(any(), anyBoolean(), anyLong())).willReturn(OK);
+        given(expiryValidator.resolveCreationAttempt(anyBoolean(), any(), any()))
+                .willReturn(new ExpiryMeta(
+                        consensusInstant.plusSeconds(autoRenewSecs).getEpochSecond(),
+                        autoRenewSecs,
+                        autoRenewAccountId));
 
         assertThat(writableTokenStore.get(newTokenId)).isNull();
         assertThat(writableTokenRelStore.get(treasuryId, newTokenId)).isNull();
@@ -259,6 +274,9 @@ class TokenCreateHandlerTest extends CryptoTokenHandlerTestBase {
                 .withValue("tokens.maxPerAccount", "0")
                 .getOrCreateConfig();
         given(handleContext.configuration()).willReturn(configuration);
+        given(expiryValidator.expirationStatus(any(), anyBoolean(), anyLong())).willReturn(OK);
+        given(expiryValidator.resolveCreationAttempt(anyBoolean(), any(), any()))
+                .willReturn(new ExpiryMeta(1L, THREE_MONTHS_IN_SECONDS, null));
 
         assertThat(writableTokenStore.get(newTokenId)).isNull();
         assertThat(writableTokenRelStore.get(treasuryId, newTokenId)).isNull();
@@ -278,6 +296,9 @@ class TokenCreateHandlerTest extends CryptoTokenHandlerTestBase {
         given(handleContext.configuration()).willReturn(configuration);
         assertThat(writableTokenStore.get(newTokenId)).isNull();
         assertThat(writableTokenRelStore.get(treasuryId, newTokenId)).isNull();
+        given(expiryValidator.expirationStatus(any(), anyBoolean(), anyLong())).willReturn(OK);
+        given(expiryValidator.resolveCreationAttempt(anyBoolean(), any(), any()))
+                .willReturn(new ExpiryMeta(1L, THREE_MONTHS_IN_SECONDS, null));
 
         // Just to simulate existing token association , add to store. Only for testing
         writableTokenRelStore.put(TokenRelation.newBuilder()
@@ -313,6 +334,9 @@ class TokenCreateHandlerTest extends CryptoTokenHandlerTestBase {
         assertThat(writableTokenStore.get(newTokenId)).isNull();
         assertThat(writableTokenRelStore.get(treasuryId, newTokenId)).isNull();
         assertThat(writableTokenRelStore.get(payerId, newTokenId)).isNull();
+        given(expiryValidator.expirationStatus(any(), anyBoolean(), anyLong())).willReturn(OK);
+        given(expiryValidator.resolveCreationAttempt(anyBoolean(), any(), any()))
+                .willReturn(new ExpiryMeta(1L, THREE_MONTHS_IN_SECONDS, null));
 
         assertThatThrownBy(() -> subject.handle(handleContext))
                 .isInstanceOf(HandleException.class)
@@ -336,6 +360,9 @@ class TokenCreateHandlerTest extends CryptoTokenHandlerTestBase {
                 .withValue("tokens.maxPerAccount", "10")
                 .getOrCreateConfig();
         given(handleContext.configuration()).willReturn(configuration);
+        given(expiryValidator.expirationStatus(any(), anyBoolean(), anyLong())).willReturn(OK);
+        given(expiryValidator.resolveCreationAttempt(anyBoolean(), any(), any()))
+                .willReturn(new ExpiryMeta(1L, THREE_MONTHS_IN_SECONDS, null));
 
         assertThat(writableTokenStore.get(newTokenId)).isNull();
         assertThat(writableTokenRelStore.get(treasuryId, newTokenId)).isNull();
@@ -362,6 +389,7 @@ class TokenCreateHandlerTest extends CryptoTokenHandlerTestBase {
     @Test
     void uniqueNotSupportedIfNftsNotEnabled() {
         setUpTxnContext();
+        given(expiryValidator.expirationStatus(any(), anyBoolean(), anyLong())).willReturn(OK);
         configuration = HederaTestConfigBuilder.create()
                 .withValue("tokens.nfts.areEnabled", "false")
                 .getOrCreateConfig();
@@ -388,6 +416,10 @@ class TokenCreateHandlerTest extends CryptoTokenHandlerTestBase {
                 .build();
         given(handleContext.configuration()).willReturn(configuration);
         given(handleContext.body()).willReturn(txn);
+        given(expiryValidator.expirationStatus(any(), anyBoolean(), anyLong())).willReturn(OK);
+        given(expiryValidator.resolveCreationAttempt(anyBoolean(), any(), any()))
+                .willReturn(new ExpiryMeta(
+                        consensusInstant.plusSeconds(autoRenewSecs).getEpochSecond(), 100L, autoRenewAccountId));
 
         assertThat(writableTokenStore.get(newTokenId)).isNull();
         assertThat(writableTokenRelStore.get(treasuryId, newTokenId)).isNull();
@@ -448,9 +480,12 @@ class TokenCreateHandlerTest extends CryptoTokenHandlerTestBase {
     @Test
     void failsOnMissingAutoRenewAcountInHandle() {
         setUpTxnContext();
-        txn = new TokenCreateBuilder()
-                .withAutoRenewAccount(AccountID.newBuilder().accountNum(200000L).build())
-                .build();
+        given(expiryValidator.expirationStatus(any(), anyBoolean(), anyLong())).willReturn(OK);
+        final var invalidAutoRenewId =
+                AccountID.newBuilder().accountNum(200000L).build();
+        given(expiryValidator.resolveCreationAttempt(anyBoolean(), any(), any()))
+                .willReturn(new ExpiryMeta(1L, THREE_MONTHS_IN_SECONDS, invalidAutoRenewId));
+        txn = new TokenCreateBuilder().withAutoRenewAccount(invalidAutoRenewId).build();
         given(handleContext.body()).willReturn(txn);
         assertThatThrownBy(() -> subject.handle(handleContext))
                 .isInstanceOf(HandleException.class)
@@ -460,6 +495,7 @@ class TokenCreateHandlerTest extends CryptoTokenHandlerTestBase {
     @Test
     void failsForZeroLengthSymbol() {
         setUpTxnContext();
+        given(expiryValidator.expirationStatus(any(), anyBoolean(), anyLong())).willReturn(OK);
         txn = new TokenCreateBuilder().withSymbol("").build();
         given(handleContext.body()).willReturn(txn);
         assertThatNoException().isThrownBy(() -> subject.pureChecks(txn));
@@ -473,6 +509,7 @@ class TokenCreateHandlerTest extends CryptoTokenHandlerTestBase {
         setUpTxnContext();
         txn = new TokenCreateBuilder().withSymbol(null).build();
         given(handleContext.body()).willReturn(txn);
+        given(expiryValidator.expirationStatus(any(), anyBoolean(), anyLong())).willReturn(OK);
         assertThatNoException().isThrownBy(() -> subject.pureChecks(txn));
         assertThatThrownBy(() -> subject.handle(handleContext))
                 .isInstanceOf(HandleException.class)
@@ -482,6 +519,7 @@ class TokenCreateHandlerTest extends CryptoTokenHandlerTestBase {
     @Test
     void failsForVeryLongSymbol() {
         setUpTxnContext();
+        given(expiryValidator.expirationStatus(any(), anyBoolean(), anyLong())).willReturn(OK);
         txn = new TokenCreateBuilder()
                 .withSymbol("1234567890123456789012345678901234567890123456789012345678901234567890")
                 .build();
@@ -503,6 +541,7 @@ class TokenCreateHandlerTest extends CryptoTokenHandlerTestBase {
         setUpTxnContext();
         txn = new TokenCreateBuilder().withName("").build();
         given(handleContext.body()).willReturn(txn);
+        given(expiryValidator.expirationStatus(any(), anyBoolean(), anyLong())).willReturn(OK);
         assertThatNoException().isThrownBy(() -> subject.pureChecks(txn));
         assertThatThrownBy(() -> subject.handle(handleContext))
                 .isInstanceOf(HandleException.class)
@@ -512,6 +551,7 @@ class TokenCreateHandlerTest extends CryptoTokenHandlerTestBase {
     @Test
     void failsForNullName() {
         setUpTxnContext();
+        given(expiryValidator.expirationStatus(any(), anyBoolean(), anyLong())).willReturn(OK);
         txn = new TokenCreateBuilder().withName(null).build();
         given(handleContext.body()).willReturn(txn);
         assertThatNoException().isThrownBy(() -> subject.pureChecks(txn));
@@ -523,6 +563,7 @@ class TokenCreateHandlerTest extends CryptoTokenHandlerTestBase {
     @Test
     void failsForVeryLongName() {
         setUpTxnContext();
+        given(expiryValidator.expirationStatus(any(), anyBoolean(), anyLong())).willReturn(OK);
         txn = new TokenCreateBuilder()
                 .withName("1234567890123456789012345678901234567890123456789012345678901234567890")
                 .build();
@@ -601,6 +642,7 @@ class TokenCreateHandlerTest extends CryptoTokenHandlerTestBase {
     @Test
     void failsForInvalidFeeScheduleKey() {
         setUpTxnContext();
+        given(expiryValidator.expirationStatus(any(), anyBoolean(), anyLong())).willReturn(OK);
         txn = new TokenCreateBuilder().withFeeScheduleKey(Key.DEFAULT).build();
         given(handleContext.body()).willReturn(txn);
         assertThatThrownBy(() -> subject.handle(handleContext))
@@ -611,6 +653,7 @@ class TokenCreateHandlerTest extends CryptoTokenHandlerTestBase {
     @Test
     void failsForInvalidAdminKey() {
         setUpTxnContext();
+        given(expiryValidator.expirationStatus(any(), anyBoolean(), anyLong())).willReturn(OK);
         txn = new TokenCreateBuilder().withAdminKey(Key.DEFAULT).build();
         given(handleContext.body()).willReturn(txn);
         assertThatThrownBy(() -> subject.handle(handleContext))
@@ -621,6 +664,9 @@ class TokenCreateHandlerTest extends CryptoTokenHandlerTestBase {
     @Test
     void acceptsSentinelAdminKeyForImmutableObjects() {
         setUpTxnContext();
+        given(expiryValidator.expirationStatus(any(), anyBoolean(), anyLong())).willReturn(OK);
+        given(expiryValidator.resolveCreationAttempt(anyBoolean(), any(), any()))
+                .willReturn(new ExpiryMeta(1L, THREE_MONTHS_IN_SECONDS, null));
         txn = new TokenCreateBuilder().withAdminKey(IMMUTABILITY_SENTINEL_KEY).build();
         given(handleContext.body()).willReturn(txn);
         assertThatNoException().isThrownBy(() -> subject.handle(handleContext));
@@ -629,6 +675,7 @@ class TokenCreateHandlerTest extends CryptoTokenHandlerTestBase {
     @Test
     void failsForInvalidSupplyKey() {
         setUpTxnContext();
+        given(expiryValidator.expirationStatus(any(), anyBoolean(), anyLong())).willReturn(OK);
         txn = new TokenCreateBuilder().withSupplyKey(Key.DEFAULT).build();
         given(handleContext.body()).willReturn(txn);
         assertThatThrownBy(() -> subject.handle(handleContext))
@@ -639,6 +686,7 @@ class TokenCreateHandlerTest extends CryptoTokenHandlerTestBase {
     @Test
     void failsForInvalidKycKey() {
         setUpTxnContext();
+        given(expiryValidator.expirationStatus(any(), anyBoolean(), anyLong())).willReturn(OK);
         txn = new TokenCreateBuilder().withKycKey(Key.DEFAULT).build();
         given(handleContext.body()).willReturn(txn);
         assertThatThrownBy(() -> subject.handle(handleContext))
@@ -649,6 +697,7 @@ class TokenCreateHandlerTest extends CryptoTokenHandlerTestBase {
     @Test
     void failsForInvalidWipeKey() {
         setUpTxnContext();
+        given(expiryValidator.expirationStatus(any(), anyBoolean(), anyLong())).willReturn(OK);
         txn = new TokenCreateBuilder().withWipeKey(Key.DEFAULT).build();
         given(handleContext.body()).willReturn(txn);
         assertThatThrownBy(() -> subject.handle(handleContext))
@@ -659,6 +708,7 @@ class TokenCreateHandlerTest extends CryptoTokenHandlerTestBase {
     @Test
     void failsForInvalidFreezeKey() {
         setUpTxnContext();
+        given(expiryValidator.expirationStatus(any(), anyBoolean(), anyLong())).willReturn(OK);
         txn = new TokenCreateBuilder().withFreezeKey(Key.DEFAULT).build();
         given(handleContext.body()).willReturn(txn);
         assertThatThrownBy(() -> subject.handle(handleContext))
@@ -687,6 +737,10 @@ class TokenCreateHandlerTest extends CryptoTokenHandlerTestBase {
     @Test
     void failsOnInvalidMemo() {
         setUpTxnContext();
+        given(expiryValidator.expirationStatus(any(), anyBoolean(), anyLong())).willReturn(OK);
+        doThrow(new HandleException(INVALID_ZERO_BYTE_IN_STRING))
+                .when(attributeValidator)
+                .validateMemo(any());
         txn = new TokenCreateBuilder().withMemo("\0").build();
         given(handleContext.body()).willReturn(txn);
         assertThatThrownBy(() -> subject.handle(handleContext))
@@ -697,8 +751,9 @@ class TokenCreateHandlerTest extends CryptoTokenHandlerTestBase {
     @Test
     void failsOnInvalidAutoRenewPeriod() {
         setUpTxnContext();
-        given(dynamicProperties.maxAutoRenewDuration()).willReturn(30000L);
-        given(dynamicProperties.minAutoRenewDuration()).willReturn(1000L);
+        given(expiryValidator.expirationStatus(any(), anyBoolean(), anyLong())).willReturn(OK);
+        given(expiryValidator.resolveCreationAttempt(anyBoolean(), any(), any()))
+                .willThrow(new HandleException(INVALID_RENEWAL_PERIOD));
 
         txn = new TokenCreateBuilder().withAutoRenewPeriod(30001L).build();
         given(handleContext.body()).willReturn(txn);
@@ -716,6 +771,9 @@ class TokenCreateHandlerTest extends CryptoTokenHandlerTestBase {
     @Test
     void failsOnExpiryPastConsensusTime() {
         setUpTxnContext();
+        given(expiryValidator.expirationStatus(any(), anyBoolean(), anyLong())).willReturn(OK);
+        given(expiryValidator.resolveCreationAttempt(anyBoolean(), any(), any()))
+                .willThrow(new HandleException(INVALID_EXPIRATION_TIME));
         txn = new TokenCreateBuilder()
                 .withAutoRenewPeriod(0)
                 .withExpiry(consensusInstant.getEpochSecond() - 1)
@@ -790,6 +848,7 @@ class TokenCreateHandlerTest extends CryptoTokenHandlerTestBase {
     @Test
     void failsForInvalidMetaDataKey() {
         setUpTxnContext();
+        given(expiryValidator.expirationStatus(any(), anyBoolean(), anyLong())).willReturn(OK);
         txn = new TokenCreateBuilder().withMetadataKey(Key.DEFAULT).build();
         given(handleContext.body()).willReturn(txn);
         assertThatThrownBy(() -> subject.handle(handleContext))
@@ -991,31 +1050,15 @@ class TokenCreateHandlerTest extends CryptoTokenHandlerTestBase {
     private void setUpTxnContext() {
         txn = new TokenCreateBuilder().build();
         given(handleContext.body()).willReturn(txn);
-        given(handleContext.recordBuilder(any())).willReturn(recordBuilder);
-        given(handleContext.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
+        given(handleContext.savepointStack()).willReturn(stack);
+        given(stack.getBaseBuilder(any())).willReturn(recordBuilder);
+        given(storeFactory.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
         given(configProvider.getConfiguration()).willReturn(versionedConfig);
         given(handleContext.configuration()).willReturn(configuration);
         given(handleContext.consensusNow()).willReturn(consensusInstant);
-        given(compositeProps.getLongProperty("entities.maxLifetime")).willReturn(7200000L);
-
-        attributeValidator =
-                new StandardizedAttributeValidator(consensusInstant::getEpochSecond, compositeProps, dynamicProperties);
-        expiryValidator = new StandardizedExpiryValidator(
-                id -> {
-                    final var account = writableAccountStore.get(
-                            AccountID.newBuilder().accountNum(id.num()).build());
-                    validateTrue(account != null, INVALID_AUTORENEW_ACCOUNT);
-                },
-                attributeValidator,
-                consensusInstant::getEpochSecond,
-                hederaNumbers,
-                configProvider);
-
         given(handleContext.expiryValidator()).willReturn(expiryValidator);
         given(handleContext.attributeValidator()).willReturn(attributeValidator);
-        given(dynamicProperties.maxAutoRenewDuration()).willReturn(3000000L);
-        given(dynamicProperties.minAutoRenewDuration()).willReturn(10L);
-        given(dynamicProperties.maxMemoUtf8Bytes()).willReturn(100);
-        given(handleContext.newEntityNum()).willReturn(newTokenId.tokenNum());
+        given(handleContext.entityNumGenerator()).willReturn(entityNumGenerator);
+        given(entityNumGenerator.newEntityNum()).willReturn(newTokenId.tokenNum());
     }
 }

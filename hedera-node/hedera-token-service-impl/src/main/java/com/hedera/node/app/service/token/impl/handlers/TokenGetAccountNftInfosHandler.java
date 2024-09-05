@@ -41,6 +41,9 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class TokenGetAccountNftInfosHandler extends FreeQueryHandler {
+    /**
+     * Default constructor for injection.
+     */
     @Inject
     public TokenGetAccountNftInfosHandler() {
         // Exists for injection

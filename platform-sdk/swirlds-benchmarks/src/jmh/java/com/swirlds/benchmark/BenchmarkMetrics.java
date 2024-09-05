@@ -25,15 +25,16 @@ import static java.nio.file.StandardOpenOption.WRITE;
 import com.swirlds.benchmark.config.BenchmarkConfig;
 import com.swirlds.common.metrics.FunctionGauge;
 import com.swirlds.common.metrics.config.MetricsConfig;
-import com.swirlds.common.metrics.platform.DefaultMetrics;
-import com.swirlds.common.metrics.platform.DefaultMetricsFactory;
+import com.swirlds.common.metrics.platform.DefaultPlatformMetrics;
 import com.swirlds.common.metrics.platform.MetricKeyRegistry;
+import com.swirlds.common.metrics.platform.PlatformMetricsFactoryImpl;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.metrics.api.LongGauge;
 import com.swirlds.metrics.api.Metric;
 import com.swirlds.metrics.api.Metric.ValueType;
 import com.swirlds.metrics.api.Metrics;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.lang.management.BufferPoolMXBean;
 import java.lang.management.ManagementFactory;
@@ -355,8 +356,8 @@ public final class BenchmarkMetrics {
         final MetricKeyRegistry registry = new MetricKeyRegistry();
         metricService = Executors.newSingleThreadScheduledExecutor(
                 getStaticThreadManager().createThreadFactory("benchmark", "MetricsWriter"));
-        metrics = new DefaultMetrics(
-                null, registry, metricService, new DefaultMetricsFactory(metricsConfig), metricsConfig);
+        metrics = new DefaultPlatformMetrics(
+                null, registry, metricService, new PlatformMetricsFactoryImpl(metricsConfig), metricsConfig);
 
         metrics.getOrCreate(TIMESTAMP_CONFIG);
         metrics.getOrCreate(MEM_TOT_CONFIG);
@@ -393,6 +394,15 @@ public final class BenchmarkMetrics {
 
     public static void register(final Consumer<Metrics> consumer) {
         consumer.accept(INSTANCE.metrics);
+    }
+
+    /**
+     * Returns a Metrics instance.
+     * @return a Metrics instance.
+     */
+    @NonNull
+    public static Metrics getMetrics() {
+        return INSTANCE.metrics;
     }
 
     public static LongGauge registerTPS() {

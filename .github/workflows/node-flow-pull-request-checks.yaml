@@ -63,8 +63,6 @@ jobs:
     with:
       custom-job-label: "Check"
       enable-unit-tests: false
-      enable-e2e-tests: false
-      enable-integration-tests: false
       enable-spotless-check: true
     secrets:
       access-token: ${{ secrets.GITHUB_TOKEN }}
@@ -80,49 +78,12 @@ jobs:
     with:
       custom-job-label: Standard
       enable-unit-tests: true
-      enable-e2e-tests: false
-      enable-integration-tests: false
     secrets:
       access-token: ${{ secrets.GITHUB_TOKEN }}
       gradle-cache-username: ${{ secrets.GRADLE_CACHE_USERNAME }}
       gradle-cache-password: ${{ secrets.GRADLE_CACHE_PASSWORD }}
       codacy-project-token: ${{ secrets.CODACY_PROJECT_TOKEN }}
-
-  eet-tests:
-    name: E2E Tests
-    if: ${{ false }}
-    uses: ./.github/workflows/node-zxc-compile-application-code.yaml
-    needs:
-      - dependency-check
-      - spotless
-    with:
-      custom-job-label: Standard
-      enable-unit-tests: false
-      enable-e2e-tests: true
-      enable-integration-tests: false
-      enable-network-log-capture: true
-    secrets:
-      access-token: ${{ secrets.GITHUB_TOKEN }}
-      gradle-cache-username: ${{ secrets.GRADLE_CACHE_USERNAME }}
-      gradle-cache-password: ${{ secrets.GRADLE_CACHE_PASSWORD }}
-
-  integration-tests:
-    name: Integration Tests
-    if: ${{ false }}
-    uses: ./.github/workflows/node-zxc-compile-application-code.yaml
-    needs:
-      - dependency-check
-      - spotless
-    with:
-      custom-job-label: Standard
-      enable-unit-tests: false
-      enable-e2e-tests: false
-      enable-integration-tests: true
-      enable-network-log-capture: true
-    secrets:
-      access-token: ${{ secrets.GITHUB_TOKEN }}
-      gradle-cache-username: ${{ secrets.GRADLE_CACHE_USERNAME }}
-      gradle-cache-password: ${{ secrets.GRADLE_CACHE_PASSWORD }}
+      codecov-token: ${{ secrets.CODECOV_TOKEN }}
 
   hapi-tests-misc:
     name: HAPI Tests (Misc)
@@ -133,8 +94,6 @@ jobs:
     with:
       custom-job-label: Standard
       enable-unit-tests: false
-      enable-e2e-tests: false
-      enable-integration-tests: false
       enable-hapi-tests-misc: true
       enable-network-log-capture: true
     secrets:
@@ -151,8 +110,6 @@ jobs:
     with:
       custom-job-label: Standard
       enable-unit-tests: false
-      enable-e2e-tests: false
-      enable-integration-tests: false
       enable-hapi-tests-crypto: true
       enable-network-log-capture: true
     secrets:
@@ -169,8 +126,6 @@ jobs:
     with:
       custom-job-label: Standard
       enable-unit-tests: false
-      enable-e2e-tests: false
-      enable-integration-tests: false
       enable-hapi-tests-token: true
       enable-network-log-capture: true
     secrets:
@@ -187,8 +142,6 @@ jobs:
     with:
       custom-job-label: Standard
       enable-unit-tests: false
-      enable-e2e-tests: false
-      enable-integration-tests: false
       enable-hapi-tests-smart-contract: true
       enable-network-log-capture: true
     secrets:
@@ -205,8 +158,6 @@ jobs:
     with:
       custom-job-label: Standard
       enable-unit-tests: false
-      enable-e2e-tests: false
-      enable-integration-tests: false
       enable-hapi-tests-time-consuming: true
       enable-network-log-capture: true
     secrets:
@@ -223,8 +174,6 @@ jobs:
     with:
       custom-job-label: Standard
       enable-unit-tests: false
-      enable-e2e-tests: false
-      enable-integration-tests: false
       enable-hapi-tests-restart: true
       enable-network-log-capture: true
     secrets:
@@ -241,8 +190,6 @@ jobs:
     with:
       custom-job-label: Standard
       enable-unit-tests: false
-      enable-e2e-tests: false
-      enable-integration-tests: false
       enable-hapi-tests-nd-reconnect: true
       enable-network-log-capture: true
     secrets:
@@ -285,11 +232,11 @@ jobs:
       - spotless
     if: ${{ github.event_name != 'pull_request' || (github.actor != 'dependabot[bot]' && github.event.pull_request.head.repo.full_name == github.repository) }}
     with:
-      custom-job-name: "Network Error Tests"
+      custom-job-name: "Abbrev Update Test"
       branch-name: ${{ github.head_ref || github.ref_name }}
       hedera-tests-enabled: true
       use-branch-for-slack-channel: false
-      panel-config: "configs/services/suites/daily/GCP-Daily-Services-Comp-NetError-4N-1C.json"
+      panel-config: "configs/services/suites/daily/GCP-Daily-Services-Abbrev-Update-4N-2C.json"
     secrets:
       access-token: ${{ secrets.PLATFORM_GH_ACCESS_TOKEN }}
       jrs-ssh-user-name: ${{ secrets.PLATFORM_JRS_SSH_USER_NAME }}
@@ -312,8 +259,6 @@ jobs:
     with:
       custom-job-label: Standard
       enable-unit-tests: false
-      enable-e2e-tests: false
-      enable-integration-tests: false
       enable-snyk-scan: true
     secrets:
       access-token: ${{ secrets.GITHUB_TOKEN }}
@@ -331,7 +276,7 @@ jobs:
     with:
       ref: ${{ github.event.inputs.ref || '' }}
       java-distribution: temurin
-      java-version: 21.0.1
+      java-version: 21
     secrets:
       gradle-cache-username: ${{ secrets.GRADLE_CACHE_USERNAME }}
       gradle-cache-password: ${{ secrets.GRADLE_CACHE_PASSWORD }}
@@ -346,7 +291,7 @@ jobs:
     with:
       ref: ${{ github.event.inputs.ref || '' }}
       java-distribution: temurin
-      java-version: 21.0.1
+      java-version: 21
     secrets:
       gradle-cache-username: ${{ secrets.GRADLE_CACHE_USERNAME }}
       gradle-cache-password: ${{ secrets.GRADLE_CACHE_PASSWORD }}

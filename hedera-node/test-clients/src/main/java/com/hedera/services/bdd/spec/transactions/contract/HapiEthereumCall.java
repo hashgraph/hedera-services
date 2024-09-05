@@ -16,12 +16,12 @@
 
 package com.hedera.services.bdd.spec.transactions.contract;
 
-import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
+import static com.hedera.node.app.hapi.utils.EthSigsUtils.recoverAddressFromPubKey;
 import static com.hedera.services.bdd.spec.keys.TrieSigMapGenerator.uniqueWithFullPrefixesFor;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.extractTxnId;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.getPrivateKeyFromSpec;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.getEcdsaPrivateKeyFromSpec;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.updateLargeFile;
 import static com.hedera.services.bdd.suites.HapiSuite.CHAIN_ID;
 import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_CONTRACT_SENDER;
@@ -30,19 +30,19 @@ import static com.hedera.services.bdd.suites.HapiSuite.FIVE_HBARS;
 import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
 import static com.hedera.services.bdd.suites.HapiSuite.MAX_CALL_DATA_SIZE;
 import static com.hedera.services.bdd.suites.HapiSuite.RELAYER;
-import static com.hedera.services.bdd.suites.HapiSuite.WEIBARS_TO_TINYBARS;
+import static com.hedera.services.bdd.suites.HapiSuite.WEIBARS_IN_A_TINYBAR;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 import com.esaulpaugh.headlong.util.Integers;
 import com.google.common.base.MoreObjects;
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
-import com.hedera.node.app.hapi.utils.ethereum.EthTxSigs;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.infrastructure.meta.ActionableContractCall;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.spec.transactions.file.HapiFileCreate;
 import com.hedera.services.bdd.suites.contract.Utils;
+import com.hedera.services.bdd.utils.Signing;
 import com.hederahashgraph.api.proto.java.EthereumTransactionBody;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
@@ -51,7 +51,6 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
-import com.hederahashgraph.api.proto.java.TransactionResponse;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.math.BigInteger;
@@ -78,11 +77,11 @@ public class HapiEthereumCall extends HapiBaseCall<HapiEthereumCall> {
     private EthTxData.EthTransactionType type = EthTxData.EthTransactionType.EIP1559;
     private long nonce = 0L;
     private boolean useSpecNonce = true;
-    private BigInteger gasPrice = WEIBARS_TO_TINYBARS.multiply(BigInteger.valueOf(DEFAULT_GAS_PRICE_TINYBARS));
-    private BigInteger maxFeePerGas = WEIBARS_TO_TINYBARS.multiply(BigInteger.valueOf(DEFAULT_GAS_PRICE_TINYBARS));
+    private BigInteger gasPrice = WEIBARS_IN_A_TINYBAR.multiply(BigInteger.valueOf(DEFAULT_GAS_PRICE_TINYBARS));
+    private BigInteger maxFeePerGas = WEIBARS_IN_A_TINYBAR.multiply(BigInteger.valueOf(DEFAULT_GAS_PRICE_TINYBARS));
     private long maxPriorityGas = 1_000L;
     private Optional<Long> maxGasAllowance = Optional.of(FIVE_HBARS);
-    private Optional<BigInteger> valueSent = Optional.of(BigInteger.ZERO);
+    private Optional<BigInteger> valueSent = Optional.of(BigInteger.ZERO); // weibar
     private Consumer<Object[]> resultObserver = null;
     private Consumer<ByteString> eventDataObserver = null;
     private Optional<FileID> ethFileID = Optional.empty();
@@ -107,52 +106,50 @@ public class HapiEthereumCall extends HapiBaseCall<HapiEthereumCall> {
     private HapiEthereumCall() {}
 
     public HapiEthereumCall(String contract) {
-        this.abi = FALLBACK_ABI;
-        this.params = new Object[0];
+        this.abi = Optional.of(FALLBACK_ABI);
+        this.params = Optional.of(new Object[0]);
         this.contract = contract;
         this.payer = Optional.of(RELAYER);
     }
 
     public HapiEthereumCall(String account, long amount) {
         this.account = account;
-        this.valueSent = Optional.of(WEIBARS_TO_TINYBARS.multiply(BigInteger.valueOf(amount)));
-        this.abi = FALLBACK_ABI;
-        this.params = new Object[0];
+        this.valueSent = Optional.of(WEIBARS_IN_A_TINYBAR.multiply(BigInteger.valueOf(amount)));
+        this.abi = Optional.of(FALLBACK_ABI);
+        this.params = Optional.of(new Object[0]);
         this.payer = Optional.of(RELAYER);
     }
 
     public HapiEthereumCall(ByteString account, long amount) {
         this.alias = account;
-        this.valueSent = Optional.of(WEIBARS_TO_TINYBARS.multiply(BigInteger.valueOf(amount)));
-        this.abi = FALLBACK_ABI;
-        this.params = new Object[0];
+        this.valueSent = Optional.of(WEIBARS_IN_A_TINYBAR.multiply(BigInteger.valueOf(amount)));
+        this.abi = Optional.of(FALLBACK_ABI);
+        this.params = Optional.of(new Object[0]);
         this.payer = Optional.of(RELAYER);
     }
 
     public static HapiEthereumCall explicitlyTo(@NonNull final byte[] to, long amount) {
         final var call = new HapiEthereumCall();
         call.explicitTo = to;
-        call.valueSent = Optional.of(WEIBARS_TO_TINYBARS.multiply(BigInteger.valueOf(amount)));
-        call.abi = FALLBACK_ABI;
-        call.params = new Object[0];
+        call.valueSent = Optional.of(WEIBARS_IN_A_TINYBAR.multiply(BigInteger.valueOf(amount)));
+        call.abi = Optional.of(FALLBACK_ABI);
+        call.params = Optional.of(new Object[0]);
         call.payer = Optional.of(RELAYER);
         return call;
     }
 
     public HapiEthereumCall(final HapiContractCall contractCall) {
-        this.abi = contractCall.getAbi();
-        this.params = contractCall.getParams();
+        this.abi = Optional.of(contractCall.getAbi());
+        this.params = Optional.of(contractCall.getParams());
         this.contract = contractCall.getContract();
         this.txnName = contractCall.getTxnName();
         this.gas = contractCall.getGas();
         this.expectedStatus = Optional.of(contractCall.getExpectedStatus());
-        this.permissibleStatuses = contractCall.getPermissibleStatuses();
         this.payer = contractCall.getPayer();
         this.expectedPrecheck = Optional.of(contractCall.getExpectedPrecheck());
         this.fiddler = contractCall.getFiddler();
         this.memo = contractCall.getMemo();
         this.fee = contractCall.getFee();
-        this.submitDelay = contractCall.getSubmitDelay();
         this.validDurationSecs = contractCall.getValidDurationSeconds();
         this.customTxnId = contractCall.getCustomTxnId();
         this.node = contractCall.getNode();
@@ -163,7 +160,7 @@ public class HapiEthereumCall extends HapiBaseCall<HapiEthereumCall> {
         this.privateKeyRef = contractCall.getPrivateKeyRef();
         this.deferStatusResolution = contractCall.getDeferStatusResolution();
         if (contractCall.getValueSent().isPresent()) {
-            this.valueSent = Optional.of(WEIBARS_TO_TINYBARS.multiply(
+            this.valueSent = Optional.of(WEIBARS_IN_A_TINYBAR.multiply(
                     BigInteger.valueOf(contractCall.getValueSent().orElseThrow())));
         }
         if (!contractCall.otherSigs.isEmpty()) {
@@ -180,14 +177,14 @@ public class HapiEthereumCall extends HapiBaseCall<HapiEthereumCall> {
     }
 
     public HapiEthereumCall(String abi, String contract, Object... params) {
-        this.abi = abi;
-        this.params = params;
+        this.abi = Optional.of(abi);
+        this.params = Optional.of(params);
         this.contract = contract;
     }
 
     public HapiEthereumCall(boolean isTokenFlow, String abi, String contract, Object... params) {
-        this.abi = abi;
-        this.params = params;
+        this.abi = Optional.of(abi);
+        this.params = Optional.of(params);
         this.contract = contract;
         this.isTokenFlow = isTokenFlow;
     }
@@ -217,8 +214,13 @@ public class HapiEthereumCall extends HapiBaseCall<HapiEthereumCall> {
         return sigMapPrefixes(uniqueWithFullPrefixesFor(keys));
     }
 
-    public HapiEthereumCall sending(long amount) {
-        valueSent = Optional.of(WEIBARS_TO_TINYBARS.multiply(BigInteger.valueOf(amount)));
+    public HapiEthereumCall sending(long amountInTinybars) {
+        valueSent = Optional.of(WEIBARS_IN_A_TINYBAR.multiply(BigInteger.valueOf(amountInTinybars)));
+        return this;
+    }
+
+    public HapiEthereumCall sendingWeibars(final BigInteger amountInWeibars) {
+        valueSent = Optional.of(amountInWeibars);
         return this;
     }
 
@@ -249,12 +251,12 @@ public class HapiEthereumCall extends HapiBaseCall<HapiEthereumCall> {
     }
 
     public HapiEthereumCall gasPrice(long gasPrice) {
-        this.gasPrice = WEIBARS_TO_TINYBARS.multiply(BigInteger.valueOf(gasPrice));
+        this.gasPrice = WEIBARS_IN_A_TINYBAR.multiply(BigInteger.valueOf(gasPrice));
         return this;
     }
 
     public HapiEthereumCall maxFeePerGas(long maxFeePerGas) {
-        this.maxFeePerGas = WEIBARS_TO_TINYBARS.multiply(BigInteger.valueOf(maxFeePerGas));
+        this.maxFeePerGas = WEIBARS_IN_A_TINYBAR.multiply(BigInteger.valueOf(maxFeePerGas));
         return this;
     }
 
@@ -279,11 +281,6 @@ public class HapiEthereumCall extends HapiBaseCall<HapiEthereumCall> {
     }
 
     @Override
-    protected Function<Transaction, TransactionResponse> callToUse(HapiSpec spec) {
-        return spec.clients().getScSvcStub(targetNodeFor(spec), useTls)::callEthereum;
-    }
-
-    @Override
     public HederaFunctionality type() {
         return HederaFunctionality.EthereumTransaction;
     }
@@ -303,9 +300,11 @@ public class HapiEthereumCall extends HapiBaseCall<HapiEthereumCall> {
         if (details.isPresent()) {
             ActionableContractCall actionable = spec.registry().getActionableCall(details.get());
             contract = actionable.getContract();
-            abi = actionable.getDetails().getAbi();
-            params = actionable.getDetails().getExampleArgs();
-        } else paramsFn.ifPresent(hapiApiSpecFunction -> params = hapiApiSpecFunction.apply(spec));
+            abi = Optional.of(actionable.getDetails().getAbi());
+            params = Optional.of(actionable.getDetails().getExampleArgs());
+        } else {
+            paramsFn.ifPresent(hapiApiSpecFunction -> params = Optional.of(hapiApiSpecFunction.apply(spec)));
+        }
 
         byte[] callData = initializeCallData();
 
@@ -352,8 +351,8 @@ public class HapiEthereumCall extends HapiBaseCall<HapiEthereumCall> {
                 null,
                 null);
 
-        byte[] privateKeyByteArray = getPrivateKeyFromSpec(spec, privateKeyRef);
-        var signedEthTxData = EthTxSigs.signMessage(ethTxData, privateKeyByteArray);
+        byte[] privateKeyByteArray = getEcdsaPrivateKeyFromSpec(spec, privateKeyRef);
+        var signedEthTxData = Signing.signMessage(ethTxData, privateKeyByteArray);
         spec.registry().saveBytes(ETH_HASH_KEY, ByteString.copyFrom((signedEthTxData.getEthereumHash())));
 
         if (createCallDataFile || callData.length > MAX_CALL_DATA_SIZE) {
@@ -388,7 +387,7 @@ public class HapiEthereumCall extends HapiBaseCall<HapiEthereumCall> {
         }
         if (resultObserver != null) {
             doObservedLookup(spec, txnSubmitted, rcd -> {
-                final var function = com.esaulpaugh.headlong.abi.Function.fromJson(abi);
+                final var function = com.esaulpaugh.headlong.abi.Function.fromJson(abi.orElse(null));
                 final var result = function.decodeReturn(
                         rcd.getContractCallResult().getContractCallResult().toByteArray());
                 resultObserver.accept(result.toList().toArray());
@@ -438,6 +437,9 @@ public class HapiEthereumCall extends HapiBaseCall<HapiEthereumCall> {
 
     @Override
     protected MoreObjects.ToStringHelper toStringHelper() {
-        return super.toStringHelper().add("contract", contract).add("abi", abi).add("params", Arrays.toString(params));
+        return super.toStringHelper()
+                .add("contract", contract)
+                .add("abi", abi)
+                .add("params", Arrays.toString(params.orElse(null)));
     }
 }

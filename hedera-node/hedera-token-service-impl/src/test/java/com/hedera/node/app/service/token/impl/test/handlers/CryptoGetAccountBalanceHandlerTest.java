@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.token.impl.test.handlers;
 
 import static com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler.asToken;
+import static com.hedera.node.app.service.token.impl.test.handlers.util.StateBuilderUtil.ACCOUNTS;
 import static com.hedera.node.app.service.token.impl.test.handlers.util.StateBuilderUtil.TOKENS;
 import static com.hedera.node.app.service.token.impl.test.handlers.util.StateBuilderUtil.TOKEN_RELS;
 import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
@@ -26,9 +27,13 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertIterableEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyDouble;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mock.Strictness.LENIENT;
 import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -54,11 +59,13 @@ import com.hedera.node.app.service.token.impl.ReadableTokenRelationStoreImpl;
 import com.hedera.node.app.service.token.impl.ReadableTokenStoreImpl;
 import com.hedera.node.app.service.token.impl.handlers.CryptoGetAccountBalanceHandler;
 import com.hedera.node.app.service.token.impl.test.handlers.util.CryptoHandlerTestBase;
-import com.hedera.node.app.spi.fixtures.state.MapReadableKVState;
-import com.hedera.node.app.spi.state.ReadableStates;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.QueryContext;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
+import com.swirlds.common.metrics.SpeedometerMetric;
+import com.swirlds.metrics.api.Metrics;
+import com.swirlds.state.spi.ReadableStates;
+import com.swirlds.state.test.fixtures.MapReadableKVState;
 import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -76,6 +83,12 @@ class CryptoGetAccountBalanceHandlerTest extends CryptoHandlerTestBase {
     @Mock(strictness = LENIENT)
     private QueryContext context;
 
+    @Mock(strictness = LENIENT)
+    private Metrics metrics;
+
+    @Mock
+    private SpeedometerMetric balanceSpeedometer;
+
     @Mock
     private Token token1, token2, token3;
     @Mock
@@ -86,7 +99,8 @@ class CryptoGetAccountBalanceHandlerTest extends CryptoHandlerTestBase {
     @BeforeEach
     public void setUp() {
         super.setUp();
-        subject = new CryptoGetAccountBalanceHandler();
+        given(metrics.getOrCreate(any())).willReturn(balanceSpeedometer);
+        subject = new CryptoGetAccountBalanceHandler(metrics);
     }
 
     @Test
@@ -169,6 +183,25 @@ class CryptoGetAccountBalanceHandlerTest extends CryptoHandlerTestBase {
         final var store = new ReadableAccountStoreImpl(readableStates);
 
         final var query = createGetAccountBalanceQuery(accountNum);
+        when(context.query()).thenReturn(query);
+        when(context.createStore(ReadableAccountStore.class)).thenReturn(store);
+
+        assertThatThrownBy(() -> subject.validate(context))
+                .isInstanceOf(PreCheckException.class)
+                .has(responseCode(ResponseCodeEnum.INVALID_ACCOUNT_ID));
+    }
+
+    @Test
+    @DisplayName("Account Id with valid header is needed during validate")
+    void validatesQueryIfInvalidAccountHeader() throws Throwable {
+        final var state =
+                MapReadableKVState.<AccountID, Account>builder(ACCOUNTS).build();
+        given(readableStates.<AccountID, Account>get(ACCOUNTS)).willReturn(state);
+        final var store = new ReadableAccountStoreImpl(readableStates);
+        final AccountID invalidRealmAccountId =
+                AccountID.newBuilder().accountNum(5).realmNum(-1L).build();
+
+        final var query = createGetAccountBalanceQueryWithInvalidHeader(invalidRealmAccountId.accountNumOrThrow());
         when(context.query()).thenReturn(query);
         when(context.createStore(ReadableAccountStore.class)).thenReturn(store);
 
@@ -317,8 +350,10 @@ class CryptoGetAccountBalanceHandlerTest extends CryptoHandlerTestBase {
         assertEquals(expectedInfo.tinybarBalance(), accountBalanceResponse.balance());
         if (balancesInQueriesEnabled) {
             assertIterableEquals(getExpectedTokenBalance(3L), accountBalanceResponse.tokenBalances());
+            verify(balanceSpeedometer).update(1);
         } else {
             assertThat(accountBalanceResponse.tokenBalances()).isEmpty();
+            verify(balanceSpeedometer, never()).update(anyDouble());
         }
     }
 
@@ -420,8 +455,10 @@ class CryptoGetAccountBalanceHandlerTest extends CryptoHandlerTestBase {
         if (balancesInQueriesEnabled) {
             assertIterableEquals(getExpectedTokenBalances(), accountBalanceResponse.tokenBalances());
             assertEquals(2, accountBalanceResponse.tokenBalances().size());
+            verify(balanceSpeedometer).update(2);
         } else {
             assertThat(accountBalanceResponse.tokenBalances()).isEmpty();
+            verify(balanceSpeedometer, never()).update(anyDouble());
         }
     }
 
@@ -461,6 +498,15 @@ class CryptoGetAccountBalanceHandlerTest extends CryptoHandlerTestBase {
         final var data = CryptoGetAccountBalanceQuery.newBuilder()
                 .accountID(AccountID.newBuilder().accountNum(accountId).build())
                 .header(QueryHeader.newBuilder().build())
+                .build();
+
+        return Query.newBuilder().cryptogetAccountBalance(data).build();
+    }
+
+    private Query createGetAccountBalanceQueryWithInvalidHeader(final long accountId) {
+        final var data = CryptoGetAccountBalanceQuery.newBuilder()
+                .accountID(AccountID.newBuilder().accountNum(accountId).build())
+                .header((QueryHeader) null)
                 .build();
 
         return Query.newBuilder().cryptogetAccountBalance(data).build();

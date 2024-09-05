@@ -1,21 +1,22 @@
+/**
+ * Module that provides the implementation of the Hedera Token Service.
+ */
 module com.hedera.node.app.service.token.impl {
     requires transitive com.hedera.node.app.hapi.fees;
-    requires transitive com.hedera.node.app.service.mono;
+    requires transitive com.hedera.node.app.hapi.utils;
     requires transitive com.hedera.node.app.service.token;
     requires transitive com.hedera.node.app.spi;
     requires transitive com.hedera.node.config;
     requires transitive com.hedera.node.hapi;
-    requires transitive com.hedera.pbj.runtime;
     requires transitive com.swirlds.config.api;
-    requires transitive com.swirlds.merkle;
-    requires transitive com.swirlds.virtualmap;
+    requires transitive com.swirlds.metrics.api;
+    requires transitive com.swirlds.state.api;
+    requires transitive com.hedera.pbj.runtime;
     requires transitive dagger;
     requires transitive javax.inject;
-    requires com.hedera.node.app.hapi.utils;
-    requires com.hedera.node.app.service.evm;
-    requires com.google.common;
     requires com.swirlds.base;
     requires com.swirlds.common;
+    requires com.google.common;
     requires org.apache.commons.lang3;
     requires org.apache.logging.log4j;
     requires org.bouncycastle.provider;
@@ -28,7 +29,6 @@ module com.hedera.node.app.service.token.impl {
     exports com.hedera.node.app.service.token.impl.handlers to
             com.hedera.node.app,
             com.hedera.node.app.service.token.impl.test;
-    exports com.hedera.node.app.service.token.impl.serdes;
     exports com.hedera.node.app.service.token.impl;
     exports com.hedera.node.app.service.token.impl.api to
             com.hedera.node.app,
@@ -44,5 +44,6 @@ module com.hedera.node.app.service.token.impl {
             com.hedera.node.app;
     exports com.hedera.node.app.service.token.impl.schemas to
             com.hedera.node.app,
-            com.hedera.node.app.service.token.impl.api.test;
+            com.hedera.node.app.service.token.impl.api.test,
+            com.hedera.node.test.clients;
 }

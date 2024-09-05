@@ -37,10 +37,25 @@ import org.apache.logging.log4j.Logger;
  * Methods for computing an account's pending staking rewards.
  */
 public interface StakingRewardsApi {
+    /**
+     * Logger for this interface.
+     */
     Logger log = LogManager.getLogger(StakingRewardsApi.class);
+    /**
+     * Constant for time conversion from minutes to seconds.
+     */
     int MINUTES_TO_SECONDS = 60;
+    /**
+     * Constant for time conversion from minutes to milliseconds.
+     */
     long MINUTES_TO_MILLISECONDS = 60_000L;
+    /**
+     * Constant for daily staking period in minutes.
+     */
     long DAILY_STAKING_PERIOD_MINS = 1440L;
+    /**
+     * Constant for UTC time zone.
+     */
     ZoneId ZONE_UTC = ZoneId.of("UTC");
 
     /**
@@ -74,6 +89,7 @@ public interface StakingRewardsApi {
      * @param areRewardsActive whether or not rewards are active
      * @param account the account for which the pending rewards are to be calculated
      * @param readableStakingInfoStore the store from which the staking info of the node is to be retrieved
+     * @param estimatedConsensusNow the estimated consensus time
      * @return the pending rewards for the account
      */
     static long estimatePendingReward(
@@ -81,12 +97,14 @@ public interface StakingRewardsApi {
             final long stakePeriodMins,
             final boolean areRewardsActive,
             @NonNull final Account account,
-            @NonNull final ReadableStakingInfoStore readableStakingInfoStore) {
+            @NonNull final ReadableStakingInfoStore readableStakingInfoStore,
+            @NonNull final Instant estimatedConsensusNow) {
         if (account.hasStakedNodeId() && !account.declineReward()) {
-            final var currentStakePeriod = estimatedCurrentStakePeriod(stakePeriodMins);
+            final var currentStakePeriod = estimatedCurrentStakePeriod(stakePeriodMins, estimatedConsensusNow);
             final var clampedStakePeriodStart =
                     clampedStakePeriodStart(account.stakePeriodStart(), currentStakePeriod, numStoredPeriods);
-            if (isEstimatedRewardable(stakePeriodMins, clampedStakePeriodStart, areRewardsActive)) {
+            if (isEstimatedRewardable(
+                    stakePeriodMins, clampedStakePeriodStart, areRewardsActive, estimatedConsensusNow)) {
                 return computeRewardFromDetails(
                         account,
                         readableStakingInfoStore.get(account.stakedNodeIdOrThrow()),
@@ -103,22 +121,31 @@ public interface StakingRewardsApi {
      * @param stakePeriodMins the length of a stake period in minutes
      * @param stakePeriodStart the stake period start
      * @param areRewardsActive whether or not rewards are active
+     * @param estimatedConsensusNow the estimated consensus time
      * @return true if the given stake period start is rewardable, false otherwise
      */
     static boolean isEstimatedRewardable(
-            final long stakePeriodMins, final long stakePeriodStart, final boolean areRewardsActive) {
+            final long stakePeriodMins,
+            final long stakePeriodStart,
+            final boolean areRewardsActive,
+            @NonNull final Instant estimatedConsensusNow) {
         return stakePeriodStart > -1
-                && stakePeriodStart < estimatedFirstNonRewardableStakePeriod(stakePeriodMins, areRewardsActive);
+                && stakePeriodStart
+                        < estimatedFirstNonRewardableStakePeriod(
+                                stakePeriodMins, areRewardsActive, estimatedConsensusNow);
     }
 
     /**
      * Gives the estimated current stake period.
      *
      * @param stakingPeriodMins the length of a stake period in minutes
+     * @param estimatedConsensusNow the estimated consensus time
      * @return the estimated current stake period
      */
-    static long estimatedCurrentStakePeriod(final long stakingPeriodMins) {
-        return stakePeriodAt(Instant.now(), stakingPeriodMins);
+    static long estimatedCurrentStakePeriod(
+            final long stakingPeriodMins, @NonNull final Instant estimatedConsensusNow) {
+        requireNonNull(estimatedConsensusNow);
+        return stakePeriodAt(estimatedConsensusNow, stakingPeriodMins);
     }
 
     /**
@@ -200,7 +227,11 @@ public interface StakingRewardsApi {
     }
 
     private static long estimatedFirstNonRewardableStakePeriod(
-            final long stakingPeriodMins, final boolean stakingRewardsActive) {
-        return stakingRewardsActive ? estimatedCurrentStakePeriod(stakingPeriodMins) - 1 : Long.MIN_VALUE;
+            final long stakingPeriodMins,
+            final boolean stakingRewardsActive,
+            @NonNull final Instant estimatedConsensusNow) {
+        return stakingRewardsActive
+                ? estimatedCurrentStakePeriod(stakingPeriodMins, estimatedConsensusNow) - 1
+                : Long.MIN_VALUE;
     }
 }

@@ -26,7 +26,7 @@ import com.swirlds.common.formatting.HorizontalAlignment;
 import com.swirlds.common.formatting.TextHistogram;
 import com.swirlds.common.formatting.TextTable;
 import com.swirlds.common.formatting.UnitFormatter;
-import com.swirlds.platform.system.events.DetailedConsensusEvent;
+import com.swirlds.platform.system.events.CesEvent;
 import java.time.Duration;
 import java.util.List;
 
@@ -96,8 +96,8 @@ public record EventStreamReport(List<EventStreamInfo> granularInfo, EventStreamI
                 .render(sb);
         sb.append("\n");
 
-        final DetailedConsensusEvent firstEvent = summary.firstEvent();
-        final DetailedConsensusEvent lastEvent = summary.lastEvent();
+        final CesEvent firstEvent = summary.firstEvent();
+        final CesEvent lastEvent = summary.lastEvent();
         new TextTable()
                 .setTitle("First/Last Event Info")
                 .addTitleEffects(BRIGHT_CYAN)
@@ -107,40 +107,40 @@ public record EventStreamReport(List<EventStreamInfo> granularInfo, EventStreamI
                 .addRow("", "first event", "last event")
                 .addRow(
                         "round",
-                        commaSeparatedNumber(firstEvent.getConsensusData().getRoundReceived()),
-                        commaSeparatedNumber(lastEvent.getConsensusData().getRoundReceived()))
+                        commaSeparatedNumber(firstEvent.getRoundReceived()),
+                        commaSeparatedNumber(lastEvent.getRoundReceived()))
                 .addRow(
                         "timestamp",
-                        firstEvent.getConsensusData().getConsensusTimestamp(),
-                        lastEvent.getConsensusData().getConsensusTimestamp())
+                        firstEvent.getPlatformEvent().getConsensusTimestamp(),
+                        lastEvent.getPlatformEvent().getConsensusTimestamp())
                 .addRow(
                         "hash",
-                        firstEvent.getHash().toShortString(HASH_STRING_LENGTH),
-                        lastEvent.getHash().toShortString(HASH_STRING_LENGTH))
+                        firstEvent.getHash().toHex(HASH_STRING_LENGTH),
+                        lastEvent.getHash().toHex(HASH_STRING_LENGTH))
                 .addRow(
                         "running hash",
-                        firstEvent.getRunningHash().getHash().toShortString(HASH_STRING_LENGTH),
-                        lastEvent.getRunningHash().getHash().toShortString(HASH_STRING_LENGTH))
+                        firstEvent.getRunningHash().getHash().toHex(HASH_STRING_LENGTH),
+                        lastEvent.getRunningHash().getHash().toHex(HASH_STRING_LENGTH))
                 .addRow(
                         "consensus order",
-                        commaSeparatedNumber(firstEvent.getConsensusData().getConsensusOrder()),
-                        commaSeparatedNumber(lastEvent.getConsensusData().getConsensusOrder()))
+                        commaSeparatedNumber(firstEvent.getPlatformEvent().getConsensusOrder()),
+                        commaSeparatedNumber(lastEvent.getPlatformEvent().getConsensusOrder()))
                 .addRow(
                         "generation",
-                        commaSeparatedNumber(firstEvent.getBaseEventHashedData().getGeneration()),
-                        commaSeparatedNumber(lastEvent.getBaseEventHashedData().getGeneration()))
+                        commaSeparatedNumber(firstEvent.getPlatformEvent().getGeneration()),
+                        commaSeparatedNumber(lastEvent.getPlatformEvent().getGeneration()))
                 .addRow(
                         "creator ID",
-                        firstEvent.getBaseEventHashedData().getCreatorId(),
-                        lastEvent.getBaseEventHashedData().getCreatorId())
+                        firstEvent.getPlatformEvent().getCreatorId(),
+                        lastEvent.getPlatformEvent().getCreatorId())
                 .addRow(
                         "last in round",
-                        firstEvent.getConsensusData().isLastInRoundReceived() ? "yes" : "no",
-                        lastEvent.getConsensusData().isLastInRoundReceived() ? "yes" : "no")
+                        firstEvent.isLastInRoundReceived() ? "yes" : "no",
+                        lastEvent.isLastInRoundReceived() ? "yes" : "no")
                 .addRow(
                         "transaction count",
-                        commaSeparatedNumber(firstEvent.getBaseEventHashedData().getTransactions().length),
-                        commaSeparatedNumber(lastEvent.getBaseEventHashedData().getTransactions().length))
+                        commaSeparatedNumber(firstEvent.getPlatformEvent().getTransactionCount()),
+                        commaSeparatedNumber(lastEvent.getPlatformEvent().getTransactionCount()))
                 .render(sb);
 
         sb.append("\n\n");

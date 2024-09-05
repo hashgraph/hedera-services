@@ -45,7 +45,7 @@ import org.hyperledger.besu.evm.code.CodeFactory;
  * on this class do throw {@code UnsupportedOperationException} .
  */
 public class TokenEvmAccount extends AbstractMutableEvmAccount {
-    private static final long TOKEN_PROXY_ACCOUNT_NONCE = -1;
+    public static final long TOKEN_PROXY_ACCOUNT_NONCE = -1;
 
     private final Address address;
     private final EvmFrameState state;
@@ -76,7 +76,7 @@ public class TokenEvmAccount extends AbstractMutableEvmAccount {
     }
 
     @Override
-    public @NonNull Code getEvmCode() {
+    public @NonNull Code getEvmCode(@NonNull final Bytes functionSelector) {
         return CodeFactory.createCode(getCode(), 0, false);
     }
 
@@ -134,6 +134,14 @@ public class TokenEvmAccount extends AbstractMutableEvmAccount {
     @Override
     public boolean isTokenFacade() {
         return true;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public boolean isRegularAccount() {
+        return false;
     }
 
     @Override

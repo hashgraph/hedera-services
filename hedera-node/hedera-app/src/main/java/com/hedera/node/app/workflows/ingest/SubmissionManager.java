@@ -21,7 +21,6 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.PLATFORM_TRANSACTION_NO
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.state.DeduplicationCache;
 import com.hedera.node.config.ConfigProvider;
@@ -164,7 +163,7 @@ public class SubmissionManager {
             // This call to submit to the platform should almost always work. Maybe under extreme load it will fail,
             // or while the system is being shut down. In any event, the user will receive an error code indicating
             // that the transaction was not submitted and they can retry.
-            final var success = platform.createTransaction(PbjConverter.asBytes(payload));
+            final var success = platform.createTransaction(payload.toByteArray());
             if (success) {
                 submittedTxns.add(txId);
             } else {

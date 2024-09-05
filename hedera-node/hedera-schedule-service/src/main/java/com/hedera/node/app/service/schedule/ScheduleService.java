@@ -16,8 +16,8 @@
 
 package com.hedera.node.app.service.schedule;
 
-import com.hedera.node.app.spi.Service;
-import com.hedera.node.app.spi.ServiceFactory;
+import com.hedera.node.app.spi.RpcService;
+import com.hedera.node.app.spi.RpcServiceFactory;
 import com.hedera.pbj.runtime.RpcServiceDefinition;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ServiceLoader;
@@ -28,7 +28,7 @@ import java.util.Set;
  * href="https://github.com/hashgraph/hedera-protobufs/blob/main/services/schedule_service.proto">Schedule
  * Service</a>.
  */
-public interface ScheduleService extends Service {
+public interface ScheduleService extends RpcService {
 
     String NAME = "ScheduleService";
 
@@ -38,6 +38,11 @@ public interface ScheduleService extends Service {
         return NAME;
     }
 
+    /**
+     * Returns the RPC definitions for the service.
+     *
+     * @return the RPC definitions
+     */
     @NonNull
     @Override
     default Set<RpcServiceDefinition> rpcDefinitions() {
@@ -45,12 +50,12 @@ public interface ScheduleService extends Service {
     }
 
     /**
-     * Returns the concrete implementation instance of the service
+     * Returns the concrete implementation instance of the service.
      *
      * @return the implementation instance
      */
     @NonNull
     static ScheduleService getInstance() {
-        return ServiceFactory.loadService(ScheduleService.class, ServiceLoader.load(ScheduleService.class));
+        return RpcServiceFactory.loadService(ScheduleService.class, ServiceLoader.load(ScheduleService.class));
     }
 }

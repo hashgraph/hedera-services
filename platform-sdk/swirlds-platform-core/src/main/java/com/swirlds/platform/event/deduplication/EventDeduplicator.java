@@ -18,7 +18,7 @@ package com.swirlds.platform.event.deduplication;
 
 import com.swirlds.common.wiring.component.InputWireLabel;
 import com.swirlds.platform.consensus.EventWindow;
-import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.wiring.NoInput;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -49,7 +49,7 @@ public interface EventDeduplicator {
      */
     @Nullable
     @InputWireLabel("non-deduplicated events")
-    GossipEvent handleEvent(@NonNull GossipEvent event);
+    PlatformEvent handleEvent(@NonNull PlatformEvent event);
 
     /**
      * Set the EventWindow, defines the minimum threshold for an event to be non-ancient.

@@ -33,8 +33,9 @@ import com.hederahashgraph.api.proto.java.GetAccountDetailsQuery;
 import com.hederahashgraph.api.proto.java.GetAccountDetailsResponse.AccountDetails;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Query;
-import com.hederahashgraph.api.proto.java.Response;
+import com.hederahashgraph.api.proto.java.ResponseType;
 import com.hederahashgraph.api.proto.java.Transaction;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -207,9 +208,7 @@ public class HapiGetAccountDetails extends HapiQueryOp<HapiGetAccountDetails> {
     }
 
     @Override
-    protected void submitWith(HapiSpec spec, Transaction payment) throws Throwable {
-        Query query = getAccountDetailsQuery(spec, payment, false);
-        response = spec.clients().getNetworkSvcStub(targetNodeFor(spec), useTls).getAccountDetails(query);
+    protected void processAnswerOnlyResponse(@NonNull final HapiSpec spec) {
         final var details = response.getAccountDetails();
         if (details.getHeader().getNodeTransactionPrecheckCode() == OK) {
             exposingExpiryTo.ifPresent(cb ->
@@ -233,12 +232,15 @@ public class HapiGetAccountDetails extends HapiQueryOp<HapiGetAccountDetails> {
         }
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    protected long lookupCostWith(HapiSpec spec, Transaction payment) throws Throwable {
-        Query query = getAccountDetailsQuery(spec, payment, true);
-        Response response =
-                spec.clients().getNetworkSvcStub(targetNodeFor(spec), useTls).getAccountDetails(query);
-        return costFrom(response);
+    protected Query queryFor(
+            @NonNull final HapiSpec spec,
+            @NonNull final Transaction payment,
+            @NonNull final ResponseType responseType) {
+        return getAccountDetailsQuery(spec, payment, responseType == ResponseType.COST_ANSWER);
     }
 
     private Query getAccountDetailsQuery(HapiSpec spec, Transaction payment, boolean costOnly) {

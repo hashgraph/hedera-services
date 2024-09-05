@@ -22,15 +22,14 @@ import static com.hedera.hapi.streams.ContractActionType.CALL;
 import static com.hedera.hapi.streams.ContractActionType.CREATE;
 import static com.hedera.hapi.streams.codec.ContractActionProtoCodec.RECIPIENT_UNSET;
 import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS;
+import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.proxyUpdaterFor;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asNumberedContractId;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.hederaIdNumOfContractIn;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.hederaIdNumOfOriginatorIn;
-import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.hederaIdNumberIn;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.pbjToBesuAddress;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.tuweniToPbjBytes;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Objects.requireNonNull;
-import static org.hyperledger.besu.evm.frame.MessageFrame.State.EXCEPTIONAL_HALT;
 import static org.hyperledger.besu.evm.frame.MessageFrame.Type.CONTRACT_CREATION;
 import static org.hyperledger.besu.evm.frame.MessageFrame.Type.MESSAGE_CALL;
 
@@ -192,12 +191,13 @@ public class ActionStack {
                 } else {
                     builder.output(tuweniToPbjBytes(frame.getOutputData()));
                     if (action.targetedAddress() != null) {
-                        final var lazyCreatedAddress = pbjToBesuAddress(action.targetedAddressOrThrow());
-                        try {
-                            builder.recipientAccount(accountIdWith(hederaIdNumberIn(frame, lazyCreatedAddress)));
-                        } catch (final IllegalArgumentException | NullPointerException | ArithmeticException e) {
-                            // handle non-existing to/receiver address
-                            builder.recipientAccount((AccountID) null);
+                        final var maybeCreatedAddress = pbjToBesuAddress(action.targetedAddressOrThrow());
+                        final var maybeCreatedAccount = proxyUpdaterFor(frame).getHederaAccount(maybeCreatedAddress);
+                        // Fill in the account of id of a successful lazy creation; but just leave
+                        // the targeted address in case of a failed lazy-creation or a call to a
+                        // non-existent address
+                        if (maybeCreatedAccount != null) {
+                            builder.recipientAccount(maybeCreatedAccount.hederaId());
                         }
                     }
                 }
@@ -282,7 +282,7 @@ public class ActionStack {
         } else {
             try {
                 builder.recipientContract(contractIdWith(hederaIdNumOfContractIn(frame)));
-            } catch (NullPointerException e) {
+            } catch (NullPointerException ignore) {
                 builder.targetedAddress(tuweniToPbjBytes(frame.getContractAddress()));
             }
         }

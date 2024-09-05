@@ -20,8 +20,9 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.token.StakingNodeInfo;
-import com.hedera.node.app.spi.state.WritableKVState;
-import com.hedera.node.app.spi.state.WritableStates;
+import com.hedera.node.app.service.token.impl.schemas.V0490TokenSchema;
+import com.swirlds.state.spi.WritableKVState;
+import com.swirlds.state.spi.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 
@@ -37,7 +38,7 @@ public class WritableStakingInfoStore extends ReadableStakingInfoStoreImpl {
     private final WritableKVState<EntityNumber, StakingNodeInfo> stakingInfoState;
 
     /**
-     * Create a new {@link WritableStakingInfoStore} instance
+     * Create a new {@link WritableStakingInfoStore} instance.
      *
      * @param states The state to use
      */
@@ -45,13 +46,14 @@ public class WritableStakingInfoStore extends ReadableStakingInfoStoreImpl {
         super(states);
         requireNonNull(states);
 
-        this.stakingInfoState = states.get(TokenServiceImpl.STAKING_INFO_KEY);
+        this.stakingInfoState = states.get(V0490TokenSchema.STAKING_INFO_KEY);
     }
 
     /**
-     * Returns the {@link StakingNodeInfo} for the given node's numeric ID (NOT the account ID)
+     * Returns the {@link StakingNodeInfo} for the given node's numeric ID (NOT the account ID).
      *
      * @param nodeId - the node ID of the node to retrieve the staking info for
+     * @return the staking info for the given node ID, or null if no such node exists
      */
     @Nullable
     public StakingNodeInfo getForModify(final long nodeId) {
@@ -60,7 +62,7 @@ public class WritableStakingInfoStore extends ReadableStakingInfoStoreImpl {
     }
 
     /**
-     * Persists a new {@link StakingNodeInfo} into state
+     * Persists a new {@link StakingNodeInfo} into state.
      *
      * @param nodeId the node's ID
      * @param stakingNodeInfo the staking info to persist

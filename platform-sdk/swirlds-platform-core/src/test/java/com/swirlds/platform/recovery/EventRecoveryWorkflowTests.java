@@ -37,11 +37,13 @@ import com.swirlds.common.crypto.RunningHash;
 import com.swirlds.common.test.fixtures.RandomUtils;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.platform.config.StateConfig;
-import com.swirlds.platform.internal.EventImpl;
+import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.recovery.emergencyfile.EmergencyRecoveryFile;
-import com.swirlds.platform.state.PlatformState;
+import com.swirlds.platform.recovery.internal.StreamedRound;
+import com.swirlds.platform.state.PlatformStateAccessor;
 import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.SwirldState;
+import com.swirlds.platform.system.events.CesEvent;
 import com.swirlds.platform.system.events.ConsensusEvent;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -105,17 +107,17 @@ class EventRecoveryWorkflowTests {
     @Test
     @DisplayName("applyTransactions() Test")
     void applyTransactionsTest() {
-        final PlatformState platformState = mock(PlatformState.class);
+        final PlatformStateAccessor platformState = mock(PlatformStateAccessor.class);
 
         final List<ConsensusEvent> events = new ArrayList<>();
         for (int i = 0; i < 100; i++) {
-            events.add(mock(EventImpl.class));
+            events.add(mock(PlatformEvent.class));
         }
 
         final Round round = mock(Round.class);
         when(round.iterator()).thenReturn(events.iterator());
 
-        final List<EventImpl> preHandleList = new ArrayList<>();
+        final List<PlatformEvent> preHandleList = new ArrayList<>();
         final AtomicBoolean roundHandled = new AtomicBoolean(false);
 
         final SwirldState immutableState = mock(SwirldState.class);
@@ -166,7 +168,7 @@ class EventRecoveryWorkflowTests {
 
         final List<ConsensusEvent> events = new ArrayList<>();
         for (int eventIndex = 0; eventIndex < eventCount; eventIndex++) {
-            final EventImpl event = mock(EventImpl.class);
+            final PlatformEvent event = mock(PlatformEvent.class);
             when(event.getConsensusTimestamp()).thenReturn(Instant.ofEpochSecond(eventIndex));
             events.add(event);
         }
@@ -179,8 +181,8 @@ class EventRecoveryWorkflowTests {
         assertEquals(Instant.ofEpochSecond(eventCount - 1), roundTimestamp, "unexpected timestamp");
     }
 
-    private EventImpl buildEventWithRunningHash(final Hash eventHash) {
-        final EventImpl event = mock(EventImpl.class);
+    private CesEvent buildEventWithRunningHash(final Hash eventHash) {
+        final CesEvent event = mock(CesEvent.class);
         when(event.getHash()).thenReturn(eventHash);
         final RunningHash runningHash = new RunningHash();
         when(event.getRunningHash()).thenReturn(runningHash);
@@ -194,12 +196,12 @@ class EventRecoveryWorkflowTests {
      */
     private List<ConsensusEvent> copyRunningHashEvents(final List<ConsensusEvent> original) {
         final List<ConsensusEvent> copy = new ArrayList<>();
-        original.forEach(event -> copy.add(buildEventWithRunningHash((((EventImpl) event).getHash()))));
+        original.forEach(event -> copy.add(buildEventWithRunningHash((((CesEvent) event).getHash()))));
         return copy;
     }
 
-    private Round buildMockRound(final List<ConsensusEvent> events) {
-        final Round round = mock(Round.class);
+    private StreamedRound buildMockRound(final List<ConsensusEvent> events) {
+        final StreamedRound round = mock(StreamedRound.class);
         when(round.iterator()).thenReturn(events.iterator());
         return round;
     }
@@ -214,7 +216,7 @@ class EventRecoveryWorkflowTests {
 
         final List<ConsensusEvent> events1 = new ArrayList<>();
         for (int eventIndex = 0; eventIndex < eventCount; eventIndex++) {
-            final EventImpl event = buildEventWithRunningHash(randomHash(random));
+            final CesEvent event = buildEventWithRunningHash(randomHash(random));
             events1.add(event);
         }
         final Hash hash1 = EventRecoveryWorkflow.getHashEventsCons(initialHash1, buildMockRound(events1));
@@ -234,7 +236,7 @@ class EventRecoveryWorkflowTests {
 
         // add another event
         final List<ConsensusEvent> events2 = copyRunningHashEvents(events1);
-        final EventImpl newEvent = buildEventWithRunningHash(randomHash(random));
+        final CesEvent newEvent = buildEventWithRunningHash(randomHash(random));
         events2.add(newEvent);
         assertNotEquals(
                 hash1,
@@ -251,7 +253,7 @@ class EventRecoveryWorkflowTests {
 
         // replace an event
         final List<ConsensusEvent> events4 = copyRunningHashEvents(events1);
-        final EventImpl replacementEvent = buildEventWithRunningHash(randomHash(random));
+        final CesEvent replacementEvent = buildEventWithRunningHash(randomHash(random));
         events4.set(0, replacementEvent);
         assertNotEquals(
                 hash1,

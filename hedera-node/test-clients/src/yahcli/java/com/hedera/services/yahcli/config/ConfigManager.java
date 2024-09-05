@@ -16,10 +16,11 @@
 
 package com.hedera.services.yahcli.config;
 
-import static com.hedera.services.yahcli.config.ConfigUtils.*;
+import static com.hedera.node.app.hapi.utils.keys.Ed25519Utils.readKeyPairFrom;
+import static com.hedera.services.yahcli.config.ConfigUtils.asId;
+import static com.hedera.services.yahcli.config.ConfigUtils.isLiteral;
 
 import com.hedera.services.bdd.spec.HapiPropertySource;
-import com.hedera.services.bdd.spec.persistence.SpecKey;
 import com.hedera.services.bdd.spec.utilops.inventory.AccessoryUtils;
 import com.hedera.services.bdd.suites.utils.sysfiles.serdes.StandardSerdes;
 import com.hedera.services.bdd.suites.utils.sysfiles.serdes.ThrottlesJsonToGrpcBytes;
@@ -33,7 +34,11 @@ import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.*;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 import org.yaml.snakeyaml.LoaderOptions;
 import org.yaml.snakeyaml.Yaml;
@@ -147,7 +152,7 @@ public class ConfigManager {
 
     static boolean unlocks(File keyFile, String passphrase) {
         try {
-            SpecKey.readFirstKpFromPem(keyFile, passphrase);
+            readKeyPairFrom(keyFile, passphrase);
             return true;
         } catch (Exception ignore) {
             return false;

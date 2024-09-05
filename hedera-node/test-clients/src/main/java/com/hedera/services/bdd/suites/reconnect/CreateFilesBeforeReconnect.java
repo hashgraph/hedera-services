@@ -27,21 +27,22 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.DUPLICATE_TRANSACTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PLATFORM_TRANSACTION_NOT_CREATED;
 
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hedera.services.bdd.suites.perf.PerfTestLoadSettings;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
+import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 
 public class CreateFilesBeforeReconnect extends HapiSuite {
     private static final Logger log = LogManager.getLogger(CreateFilesBeforeReconnect.class);
 
     private static final int FILE_CREATION_LIMIT = 1000;
-    private static final int FILE_CREATION_RECONNECT_TPS = 6;
+    private static final int FILE_CREATION_RECONNECT_TPS = 5;
 
     public static void main(String... args) {
         new CreateFilesBeforeReconnect().runSuiteSync();
@@ -50,7 +51,7 @@ public class CreateFilesBeforeReconnect extends HapiSuite {
     private static final AtomicInteger fileNumber = new AtomicInteger(0);
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return List.of(runCreateFiles());
     }
 
@@ -67,7 +68,7 @@ public class CreateFilesBeforeReconnect extends HapiSuite {
                 .deferStatusResolution();
     }
 
-    final HapiSpec runCreateFiles() {
+    final Stream<DynamicTest> runCreateFiles() {
         PerfTestLoadSettings settings = new PerfTestLoadSettings(
                 FILE_CREATION_RECONNECT_TPS, DEFAULT_MINS_FOR_RECONNECT_TESTS, DEFAULT_THREADS_FOR_RECONNECT_TESTS);
 

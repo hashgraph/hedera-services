@@ -68,7 +68,7 @@ class HandleContextHevmBlocksTest {
     void blockValuesHasExpectedValues() {
         final var now = new Timestamp(1_234_567L, 890);
         given(blockRecordInfo.blockNo()).willReturn(123L);
-        given(blockRecordInfo.currentBlockTimestamp()).willReturn(now);
+        given(blockRecordInfo.blockTimestamp()).willReturn(now);
         given(context.blockRecordInfo()).willReturn(blockRecordInfo);
 
         final var blockValues = subject.blockValuesOf(456L);

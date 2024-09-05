@@ -18,6 +18,7 @@ package com.swirlds.platform;
 
 import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
@@ -32,10 +33,12 @@ import com.swirlds.config.api.Configuration;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.platform.eventhandling.EventConfig;
 import com.swirlds.platform.eventhandling.EventConfig_;
-import com.swirlds.platform.eventhandling.TransactionPool;
 import com.swirlds.platform.gossip.FallenBehindManagerImpl;
 import com.swirlds.platform.gossip.sync.SyncManagerImpl;
-import com.swirlds.platform.network.RandomGraph;
+import com.swirlds.platform.network.PeerInfo;
+import com.swirlds.platform.network.topology.NetworkTopology;
+import com.swirlds.platform.network.topology.StaticTopology;
+import com.swirlds.platform.pool.TransactionPoolNexus;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.status.StatusActionSubmitter;
 import java.util.List;
@@ -56,8 +59,7 @@ class SyncManagerTest {
         public DummyHashgraph hashgraph;
         public AddressBook addressBook;
         public NodeId selfId;
-        public TransactionPool transactionPool;
-        public RandomGraph connectionGraph;
+        public TransactionPoolNexus transactionPoolNexus;
         public SyncManagerImpl syncManager;
         public Configuration configuration;
 
@@ -67,20 +69,20 @@ class SyncManagerTest {
             final PlatformContext platformContext =
                     TestPlatformContextBuilder.create().build();
 
-            transactionPool = spy(new TransactionPool(platformContext));
+            transactionPoolNexus = spy(new TransactionPoolNexus(platformContext));
 
             this.addressBook = hashgraph.getAddressBook();
             this.selfId = addressBook.getNodeId(0);
-            final int size = addressBook.getSize();
 
-            connectionGraph = new RandomGraph(random, size, 40, 0);
             configuration = new TestConfigBuilder()
                     .withValue(ReconnectConfig_.FALLEN_BEHIND_THRESHOLD, "0.25")
                     .withValue(EventConfig_.EVENT_INTAKE_QUEUE_THROTTLE_SIZE, "100")
-                    .withValue(EventConfig_.STALE_EVENT_PREVENTION_THRESHOLD, "10")
                     .getOrCreateConfig();
             final ReconnectConfig reconnectConfig = configuration.getConfigData(ReconnectConfig.class);
             final EventConfig eventConfig = configuration.getConfigData(EventConfig.class);
+
+            final List<PeerInfo> peers = Utilities.createPeerInfoList(addressBook, selfId);
+            final NetworkTopology topology = new StaticTopology(peers, selfId);
 
             syncManager = new SyncManagerImpl(
                     platformContext,
@@ -88,7 +90,7 @@ class SyncManagerTest {
                     new FallenBehindManagerImpl(
                             addressBook,
                             selfId,
-                            connectionGraph,
+                            topology,
                             mock(StatusActionSubmitter.class),
                             () -> {},
                             reconnectConfig),
@@ -104,7 +106,7 @@ class SyncManagerTest {
     void basicTest() {
         final SyncManagerTestData test = new SyncManagerTestData();
 
-        final int[] neighbors = test.connectionGraph.getNeighbors(0);
+        final List<PeerInfo> peers = Utilities.createPeerInfoList(test.addressBook, test.selfId);
 
         // we should not think we have fallen behind initially
         assertFalse(test.syncManager.hasFallenBehind());
@@ -112,8 +114,8 @@ class SyncManagerTest {
         assertNull(test.syncManager.getNeededForFallenBehind());
 
         // neighbors 0 and 1 report fallen behind
-        test.syncManager.reportFallenBehind(test.addressBook.getNodeId(neighbors[0]));
-        test.syncManager.reportFallenBehind(test.addressBook.getNodeId(neighbors[1]));
+        test.syncManager.reportFallenBehind(peers.get(0).nodeId());
+        test.syncManager.reportFallenBehind(peers.get(1).nodeId());
 
         // we still dont have enough reports that we have fallen behind, we need more than [fallenBehindThreshold] of
         // the neighbors
@@ -121,7 +123,7 @@ class SyncManagerTest {
 
         // add more reports
         for (int i = 2; i < 10; i++) {
-            test.syncManager.reportFallenBehind(test.addressBook.getNodeId(neighbors[i]));
+            test.syncManager.reportFallenBehind(peers.get(i).nodeId());
         }
 
         // we are still missing 1 report
@@ -132,12 +134,12 @@ class SyncManagerTest {
         for (final NodeId nodeId : list) {
             // none of the nodes we need to call should be those who already reported we have fallen behind
             for (int i = 0; i < 10; i++) {
-                assertTrue(test.addressBook.getIndexOfNodeId(nodeId) != neighbors[i]);
+                assertNotEquals(nodeId.id(), peers.get(i).nodeId().id());
             }
         }
 
         // add the report that will go over the [fallenBehindThreshold]
-        test.syncManager.reportFallenBehind(test.addressBook.getNodeId(neighbors[10]));
+        test.syncManager.reportFallenBehind(peers.get(10).nodeId());
 
         // we should now say we have fallen behind
         assertTrue(test.syncManager.hasFallenBehind());

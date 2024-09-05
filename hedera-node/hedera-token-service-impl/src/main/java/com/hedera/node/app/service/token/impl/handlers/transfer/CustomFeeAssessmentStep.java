@@ -21,8 +21,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.CUSTOM_FEE_CHARGING_EXC
 import static com.hedera.hapi.node.base.ResponseCodeEnum.CUSTOM_FEE_CHARGING_EXCEEDED_MAX_RECURSION_DEPTH;
 import static com.hedera.hapi.node.base.TokenType.FUNGIBLE_COMMON;
 import static com.hedera.node.app.service.token.impl.handlers.transfer.customfees.AssessmentResult.HBAR_TOKEN_ID;
-import static com.hedera.node.app.service.token.impl.handlers.transfer.customfees.CustomFeeMeta.customFeeMetaFrom;
-import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.TokenValidations.*;
+import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.TokenValidations.PERMIT_PAUSED;
 import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.getIfUsable;
 import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
@@ -68,18 +67,21 @@ import org.apache.logging.log4j.Logger;
  * We do this in 2 steps:
  * 1. Assess custom fees for the transaction body given as input (Level-0 Body)
  * 2. If there are any fractional fees, adjust the assessed changes in the Level-0 Body
- * 3. Any non-self denominated fixed (HBAR or HTS) fees, assess them and create Level-1 Body.
- * But any self denominated fees will be adjusted in Level- 0 Body (since they can't trigger further custom fee charging.)
+ * 3. Any non-self denominated fixed (HBAR or HTS) fees, assess them and create Level-1 Body. But any
+ * self denominated fees will be adjusted in Level- 0 Body (since they can't trigger further custom fee charging.)
  * 4.Any royalty fees which are not self denominated will be added to level-1 body.
  */
 public class CustomFeeAssessmentStep {
     private final CryptoTransferTransactionBody op;
     private final CustomFeeAssessor customFeeAssessor;
     private int levelNum = 0;
-    private int totalBalanceChanges = 0;
     private static final int MAX_PLAUSIBLE_LEVEL_NUM = 10;
     private static final Logger log = LogManager.getLogger(CustomFeeAssessmentStep.class);
 
+    /**
+     * Constructs a {@link CustomFeeAssessmentStep} for the given transaction body.
+     * @param op the transaction body
+     */
     public CustomFeeAssessmentStep(@NonNull final CryptoTransferTransactionBody op) {
         this.op = op;
         final var fixedFeeAssessor = new CustomFixedFeeAssessor();
@@ -121,9 +123,10 @@ public class CustomFeeAssessmentStep {
         requireNonNull(transferContext);
 
         final var handleContext = transferContext.getHandleContext();
-        final var tokenStore = handleContext.readableStore(ReadableTokenStore.class);
-        final var tokenRelStore = handleContext.readableStore(ReadableTokenRelationStore.class);
-        final var accountStore = handleContext.readableStore(ReadableAccountStore.class);
+        final var storeFactory = handleContext.storeFactory();
+        final var tokenStore = storeFactory.readableStore(ReadableTokenStore.class);
+        final var tokenRelStore = storeFactory.readableStore(ReadableTokenRelationStore.class);
+        final var accountStore = storeFactory.readableStore(ReadableAccountStore.class);
         final var config = handleContext.configuration();
         final Predicate<AccountID> autoCreationTest;
         if (transferContext.isEnforceMonoServiceRestrictionsOnAutoCreationCustomFeePayments()) {
@@ -358,8 +361,7 @@ public class CustomFeeAssessmentStep {
             final var nftTransfers = xfer.nftTransfers();
 
             final var token = getIfUsable(tokenId, tokenStore, PERMIT_PAUSED);
-            final var feeMeta = customFeeMetaFrom(token);
-            if (feeMeta.customFees().isEmpty()) {
+            if (token.customFees().isEmpty()) {
                 continue;
             }
 
@@ -374,21 +376,21 @@ public class CustomFeeAssessmentStep {
                     final var sender = aa.accountID();
                     // If sender for this adjustment is same as treasury for token
                     // then don't charge any custom fee. Since token treasuries are exempt from custom fees
-                    if (feeMeta.treasuryId().equals(sender)) {
+                    if (token.treasuryAccountIdOrThrow().equals(sender)) {
                         continue;
                     }
                     customFeeAssessor.assess(
-                            sender, feeMeta, null, result, tokenRelStore, accountStore, autoCreationTest);
+                            sender, token, null, result, tokenRelStore, accountStore, autoCreationTest);
                 }
             }
 
             for (final var nftTransfer : nftTransfers) {
-                if (feeMeta.treasuryId().equals(nftTransfer.senderAccountID())) {
+                if (token.treasuryAccountIdOrThrow().equals(nftTransfer.senderAccountID())) {
                     continue;
                 }
                 customFeeAssessor.assess(
                         nftTransfer.senderAccountID(),
-                        feeMeta,
+                        token,
                         nftTransfer.receiverAccountID(),
                         result,
                         tokenRelStore,

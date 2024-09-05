@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.spi.metrics;
 
+import com.swirlds.state.spi.metrics.StoreMetrics;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 public interface StoreMetricsService {
@@ -23,13 +24,15 @@ public interface StoreMetricsService {
     enum StoreType {
         TOPIC,
         ACCOUNT,
+        AIRDROP,
         NFT,
         TOKEN,
         TOKEN_RELATION,
         FILE,
         SLOT_STORAGE,
         CONTRACT,
-        SCHEDULE
+        SCHEDULE,
+        NODE
     }
 
     StoreMetrics get(@NonNull StoreType storeType, long capacity);

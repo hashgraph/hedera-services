@@ -58,6 +58,12 @@ import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.HIG
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_CONTRACT_CALL_RESULTS;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_FUNCTION_PARAMETERS;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
+import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PAYER;
+import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_MILLION_HBARS;
+import static com.hedera.services.bdd.suites.HapiSuite.TOKEN_TREASURY;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hedera.services.bdd.suites.contract.Utils.asHexedAddress;
 import static com.hedera.services.bdd.suites.contract.Utils.asToken;
@@ -83,12 +89,9 @@ import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.hapi.utils.contracts.ParsingConstants.FunctionType;
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiPropertySource;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
 import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
-import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
@@ -97,13 +100,14 @@ import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
-@HapiTestSuite(fuzzyMatch = true)
 @Tag(SMART_CONTRACT)
-public class ERCPrecompileSuite extends HapiSuite {
+public class ERCPrecompileSuite {
 
     private static final Logger log = LogManager.getLogger(ERCPrecompileSuite.class);
     private static final long GAS_TO_OFFER = 1_000_000L;
@@ -164,66 +168,8 @@ public class ERCPrecompileSuite extends HapiSuite {
     public static final String TRANSFER_SIGNATURE = "Transfer(address,address,uint256)";
     private static final String NESTED_ERC_20_CONTRACT = "NestedERC20Contract";
 
-    public static void main(String... args) {
-        new ERCPrecompileSuite().runSuiteAsync();
-    }
-
-    @Override
-    public boolean canRunConcurrent() {
-        return true;
-    }
-
-    @Override
-    public List<HapiSpec> getSpecsInSuite() {
-        return allOf(erc20(), erc721());
-    }
-
-    List<HapiSpec> erc20() {
-        return List.of(
-                getErc20TokenName(),
-                getErc20TokenSymbol(),
-                getErc20TokenDecimals(),
-                getErc20TotalSupply(),
-                getErc20BalanceOfAccount(),
-                transferErc20Token(),
-                transferErc20TokenFailWithAccount(),
-                erc20Allowance(),
-                erc20Approve(),
-                someErc20ApproveAllowanceScenariosPass(),
-                someErc20NegativeTransferFromScenariosPass(),
-                someErc20ApproveAllowanceScenarioInOneCall(),
-                getErc20TokenDecimalsFromErc721TokenFails(),
-                transferErc20TokenReceiverContract(),
-                directCallsWorkForErc20(),
-                erc20TransferFromAllowance(),
-                erc20TransferFromSelf(),
-                transferErc20TokenFromContractWithNoApproval());
-    }
-
-    List<HapiSpec> erc721() {
-        return List.of(
-                getErc721TokenName(),
-                getErc721Symbol(),
-                getErc721TokenURI(),
-                getErc721OwnerOf(),
-                getErc721BalanceOf(),
-                getErc721TotalSupply(),
-                erc721TokenApprove(),
-                erc721GetApproved(),
-                getErc721TokenURIFromErc20TokenFails(),
-                getErc721OwnerOfFromErc20TokenFails(),
-                directCallsWorkForErc721(),
-                someErc721ApproveAndRemoveScenariosPass(),
-                someErc721NegativeTransferFromScenariosPass(),
-                erc721TransferFromWithApproval(),
-                erc721TransferFromWithApproveForAll(),
-                someErc721IsApprovedForAllScenariosPass(),
-                getErc721IsApprovedForAll(),
-                someErc721SetApprovedForAllScenariosPass());
-    }
-
     @HapiTest
-    final HapiSpec getErc20TokenName() {
+    final Stream<DynamicTest> getErc20TokenName() {
         return defaultHapiSpec(
                         "getErc20TokenName", NONDETERMINISTIC_TRANSACTION_FEES, NONDETERMINISTIC_FUNCTION_PARAMETERS)
                 .given(
@@ -263,7 +209,7 @@ public class ERCPrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec getErc20TokenSymbol() {
+    final Stream<DynamicTest> getErc20TokenSymbol() {
         final var tokenSymbol = "F";
         final AtomicReference<String> tokenAddr = new AtomicReference<>();
 
@@ -310,7 +256,7 @@ public class ERCPrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec getErc20TokenDecimals() {
+    final Stream<DynamicTest> getErc20TokenDecimals() {
         final var decimals = 10;
         final var decimalsTxn = "decimalsTxn";
         final AtomicReference<String> tokenAddr = new AtomicReference<>();
@@ -362,7 +308,7 @@ public class ERCPrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec getErc20TotalSupply() {
+    final Stream<DynamicTest> getErc20TotalSupply() {
         final var totalSupply = 50;
         final var supplyTxn = "supplyTxn";
         final AtomicReference<String> tokenAddr = new AtomicReference<>();
@@ -409,7 +355,7 @@ public class ERCPrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec getErc20BalanceOfAccount() {
+    final Stream<DynamicTest> getErc20BalanceOfAccount() {
         final var balanceTxn = "balanceTxn";
         final var zeroBalanceTxn = "zBalanceTxn";
         final AtomicReference<String> tokenAddr = new AtomicReference<>();
@@ -487,7 +433,7 @@ public class ERCPrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec transferErc20Token() {
+    final Stream<DynamicTest> transferErc20Token() {
         final AtomicReference<String> tokenAddr = new AtomicReference<>();
         final AtomicReference<String> accountAddr = new AtomicReference<>();
 
@@ -511,7 +457,9 @@ public class ERCPrecompileSuite extends HapiSuite {
                                 .exposingCreatedIdTo(id -> tokenAddr.set(
                                         HapiPropertySource.asHexedSolidityAddress(HapiPropertySource.asToken(id)))),
                         uploadInitCode(ERC_20_CONTRACT),
-                        contractCreate(ERC_20_CONTRACT),
+                        // Refusing ethereum create conversion, because we get INVALID_SIGNATURE upon tokenAssociate,
+                        // since we have CONTRACT_ID key
+                        contractCreate(ERC_20_CONTRACT).refusingEthConversion(),
                         tokenAssociate(ACCOUNT, List.of(FUNGIBLE_TOKEN)),
                         tokenAssociate(RECIPIENT, List.of(FUNGIBLE_TOKEN)),
                         tokenAssociate(ERC_20_CONTRACT, List.of(FUNGIBLE_TOKEN)),
@@ -577,7 +525,7 @@ public class ERCPrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec transferErc20TokenFailWithAccount() {
+    final Stream<DynamicTest> transferErc20TokenFailWithAccount() {
         final AtomicReference<String> tokenAddr = new AtomicReference<>();
         final AtomicReference<String> accountAddr = new AtomicReference<>();
 
@@ -601,7 +549,9 @@ public class ERCPrecompileSuite extends HapiSuite {
                                 .exposingCreatedIdTo(id -> tokenAddr.set(
                                         HapiPropertySource.asHexedSolidityAddress(HapiPropertySource.asToken(id)))),
                         uploadInitCode(ERC_20_CONTRACT),
-                        contractCreate(ERC_20_CONTRACT),
+                        // Refusing ethereum create conversion, because we get INVALID_SIGNATURE upon tokenAssociate,
+                        // since we have CONTRACT_ID key
+                        contractCreate(ERC_20_CONTRACT).refusingEthConversion(),
                         tokenAssociate(ACCOUNT, List.of(FUNGIBLE_TOKEN)),
                         tokenAssociate(RECIPIENT, List.of(FUNGIBLE_TOKEN)),
                         tokenAssociate(ERC_20_CONTRACT, List.of(FUNGIBLE_TOKEN)),
@@ -625,7 +575,7 @@ public class ERCPrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec transferErc20TokenReceiverContract() {
+    final Stream<DynamicTest> transferErc20TokenReceiverContract() {
         final var nestedContract = NESTED_ERC_20_CONTRACT;
 
         return defaultHapiSpec(
@@ -645,8 +595,10 @@ public class ERCPrecompileSuite extends HapiSuite {
                                 .adminKey(MULTI_KEY)
                                 .supplyKey(MULTI_KEY),
                         uploadInitCode(ERC_20_CONTRACT, nestedContract),
-                        contractCreate(ERC_20_CONTRACT),
-                        contractCreate(nestedContract),
+                        // Refusing ethereum create conversion, because we get INVALID_SIGNATURE upon tokenAssociate,
+                        // since we have CONTRACT_ID key
+                        contractCreate(ERC_20_CONTRACT).refusingEthConversion(),
+                        contractCreate(nestedContract).refusingEthConversion(),
                         tokenAssociate(ACCOUNT, List.of(FUNGIBLE_TOKEN)),
                         tokenAssociate(RECIPIENT, List.of(FUNGIBLE_TOKEN)),
                         tokenAssociate(ERC_20_CONTRACT, List.of(FUNGIBLE_TOKEN)),
@@ -703,7 +655,7 @@ public class ERCPrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec transferErc20TokenFromContractWithNoApproval() {
+    final Stream<DynamicTest> transferErc20TokenFromContractWithNoApproval() {
         final var transferFromOtherContractWithSignaturesTxn = "transferFromOtherContractWithSignaturesTxn";
         final var nestedContract = NESTED_ERC_20_CONTRACT;
 
@@ -724,8 +676,14 @@ public class ERCPrecompileSuite extends HapiSuite {
                                 .supplyKey(MULTI_KEY),
                         uploadInitCode(ERC_20_CONTRACT, nestedContract),
                         newKeyNamed(TRANSFER_SIG_NAME).shape(SIMPLE.signedWith(ON)),
-                        contractCreate(ERC_20_CONTRACT).adminKey(TRANSFER_SIG_NAME),
-                        contractCreate(nestedContract).adminKey(TRANSFER_SIG_NAME))
+                        // Refusing ethereum create conversion, because we get INVALID_SIGNATURE upon tokenAssociate,
+                        // since we have CONTRACT_ID key
+                        contractCreate(ERC_20_CONTRACT)
+                                .adminKey(TRANSFER_SIG_NAME)
+                                .refusingEthConversion(),
+                        contractCreate(nestedContract)
+                                .adminKey(TRANSFER_SIG_NAME)
+                                .refusingEthConversion())
                 .when(withOpContext((spec, opLog) -> allRunFor(
                         spec,
                         tokenAssociate(ACCOUNT, List.of(FUNGIBLE_TOKEN)),
@@ -775,7 +733,7 @@ public class ERCPrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec erc20Allowance() {
+    final Stream<DynamicTest> erc20Allowance() {
         return defaultHapiSpec(
                         "erc20Allowance", NONDETERMINISTIC_TRANSACTION_FEES, NONDETERMINISTIC_FUNCTION_PARAMETERS)
                 .given(
@@ -830,7 +788,7 @@ public class ERCPrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec erc20Approve() {
+    final Stream<DynamicTest> erc20Approve() {
         final var approveTxn = "approveTxn";
 
         return defaultHapiSpec(
@@ -852,7 +810,9 @@ public class ERCPrecompileSuite extends HapiSuite {
                                 .adminKey(MULTI_KEY)
                                 .supplyKey(MULTI_KEY),
                         uploadInitCode(ERC_20_CONTRACT),
-                        contractCreate(ERC_20_CONTRACT),
+                        // Refusing ethereum create conversion, because we get INVALID_SIGNATURE upon tokenAssociate,
+                        // since we have CONTRACT_ID key
+                        contractCreate(ERC_20_CONTRACT).refusingEthConversion(),
                         tokenAssociate(OWNER, FUNGIBLE_TOKEN),
                         tokenAssociate(ERC_20_CONTRACT, FUNGIBLE_TOKEN))
                 .when(withOpContext((spec, opLog) -> allRunFor(
@@ -875,7 +835,7 @@ public class ERCPrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec getErc20TokenDecimalsFromErc721TokenFails() {
+    final Stream<DynamicTest> getErc20TokenDecimalsFromErc721TokenFails() {
         final var invalidDecimalsTxn = "decimalsFromErc721Txn";
 
         return defaultHapiSpec(
@@ -911,7 +871,7 @@ public class ERCPrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec getErc721TokenName() {
+    final Stream<DynamicTest> getErc721TokenName() {
         return defaultHapiSpec(
                         "getErc721TokenName", HIGHLY_NON_DETERMINISTIC_FEES, NONDETERMINISTIC_FUNCTION_PARAMETERS)
                 .given(
@@ -951,7 +911,7 @@ public class ERCPrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec getErc721Symbol() {
+    final Stream<DynamicTest> getErc721Symbol() {
         final var tokenSymbol = "N";
 
         return defaultHapiSpec(
@@ -993,7 +953,7 @@ public class ERCPrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec getErc721TokenURI() {
+    final Stream<DynamicTest> getErc721TokenURI() {
         final var tokenURITxn = "tokenURITxn";
         final var nonExistingTokenURITxn = "nonExistingTokenURITxn";
         final var ERC721MetadataNonExistingToken = "ERC721Metadata: URI query for nonexistent token";
@@ -1057,7 +1017,7 @@ public class ERCPrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec getErc721TotalSupply() {
+    final Stream<DynamicTest> getErc721TotalSupply() {
         return defaultHapiSpec(
                         "getErc721TotalSupply", NONDETERMINISTIC_TRANSACTION_FEES, NONDETERMINISTIC_FUNCTION_PARAMETERS)
                 .given(
@@ -1096,7 +1056,7 @@ public class ERCPrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec getErc721BalanceOf() {
+    final Stream<DynamicTest> getErc721BalanceOf() {
         final var zeroBalanceOfTxn = "zbalanceOfTxn";
 
         return defaultHapiSpec(
@@ -1163,7 +1123,7 @@ public class ERCPrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec getErc721OwnerOf() {
+    final Stream<DynamicTest> getErc721OwnerOf() {
         final var ownerOfTxn = "ownerOfTxn";
         final AtomicReference<byte[]> ownerAddr = new AtomicReference<>();
         final AtomicReference<String> tokenAddr = new AtomicReference<>();
@@ -1225,7 +1185,7 @@ public class ERCPrecompileSuite extends HapiSuite {
 
     // Expects revert
     @HapiTest
-    final HapiSpec getErc721TokenURIFromErc20TokenFails() {
+    final Stream<DynamicTest> getErc721TokenURIFromErc20TokenFails() {
         final var invalidTokenURITxn = "tokenURITxnFromErc20";
 
         return defaultHapiSpec(
@@ -1260,7 +1220,7 @@ public class ERCPrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec getErc721OwnerOfFromErc20TokenFails() {
+    final Stream<DynamicTest> getErc721OwnerOfFromErc20TokenFails() {
         final var invalidOwnerOfTxn = "ownerOfTxnFromErc20Token";
 
         return defaultHapiSpec(
@@ -1297,7 +1257,7 @@ public class ERCPrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec directCallsWorkForErc20() {
+    final Stream<DynamicTest> directCallsWorkForErc20() {
         final AtomicReference<String> tokenNum = new AtomicReference<>();
 
         final var tokenSymbol = "FDFGF";
@@ -1448,7 +1408,7 @@ public class ERCPrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec someErc721NegativeTransferFromScenariosPass() {
+    final Stream<DynamicTest> someErc721NegativeTransferFromScenariosPass() {
         final AtomicReference<String> tokenMirrorAddr = new AtomicReference<>();
         final AtomicReference<String> contractMirrorAddr = new AtomicReference<>();
         final AtomicReference<String> aCivilianMirrorAddr = new AtomicReference<>();
@@ -1467,7 +1427,12 @@ public class ERCPrecompileSuite extends HapiSuite {
                         cryptoCreate(B_CIVILIAN)
                                 .exposingCreatedIdTo(id -> bCivilianMirrorAddr.set(asHexedSolidityAddress(id))),
                         uploadInitCode(SOME_ERC_721_SCENARIOS),
-                        contractCreate(SOME_ERC_721_SCENARIOS).adminKey(MULTI_KEY_NAME),
+                        contractCreate(SOME_ERC_721_SCENARIOS)
+                                .adminKey(MULTI_KEY_NAME)
+                                // Refusing ethereum create conversion, because we get INVALID_SIGNATURE upon
+                                // tokenAssociate,
+                                // since we have CONTRACT_ID key
+                                .refusingEthConversion(),
                         tokenCreate(NF_TOKEN)
                                 .supplyKey(MULTI_KEY_NAME)
                                 .tokenType(NON_FUNGIBLE_UNIQUE)
@@ -1562,7 +1527,7 @@ public class ERCPrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec someErc721ApproveAndRemoveScenariosPass() {
+    final Stream<DynamicTest> someErc721ApproveAndRemoveScenariosPass() {
         final AtomicReference<String> tokenMirrorAddr = new AtomicReference<>();
         final AtomicReference<String> aCivilianMirrorAddr = new AtomicReference<>();
         final AtomicReference<String> bCivilianMirrorAddr = new AtomicReference<>();
@@ -1581,7 +1546,12 @@ public class ERCPrecompileSuite extends HapiSuite {
                         cryptoCreate(B_CIVILIAN)
                                 .exposingCreatedIdTo(id -> bCivilianMirrorAddr.set(asHexedSolidityAddress(id))),
                         uploadInitCode(SOME_ERC_721_SCENARIOS),
-                        contractCreate(SOME_ERC_721_SCENARIOS).adminKey(MULTI_KEY_NAME),
+                        contractCreate(SOME_ERC_721_SCENARIOS)
+                                .adminKey(MULTI_KEY_NAME)
+                                // Refusing ethereum create conversion, because we get INVALID_SIGNATURE upon
+                                // tokenAssociate,
+                                // since we have CONTRACT_ID key
+                                .refusingEthConversion(),
                         tokenCreate(NF_TOKEN)
                                 .supplyKey(MULTI_KEY_NAME)
                                 .tokenType(NON_FUNGIBLE_UNIQUE)
@@ -1763,7 +1733,7 @@ public class ERCPrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec someErc20ApproveAllowanceScenariosPass() {
+    final Stream<DynamicTest> someErc20ApproveAllowanceScenariosPass() {
         final AtomicReference<String> tokenMirrorAddr = new AtomicReference<>();
         final AtomicReference<String> contractMirrorAddr = new AtomicReference<>();
         final AtomicReference<String> aCivilianMirrorAddr = new AtomicReference<>();
@@ -1782,7 +1752,12 @@ public class ERCPrecompileSuite extends HapiSuite {
                         cryptoCreate(B_CIVILIAN)
                                 .exposingCreatedIdTo(id -> bCivilianMirrorAddr.set(asHexedSolidityAddress(id))),
                         uploadInitCode(SOME_ERC_20_SCENARIOS),
-                        contractCreate(SOME_ERC_20_SCENARIOS).adminKey(MULTI_KEY_NAME),
+                        contractCreate(SOME_ERC_20_SCENARIOS)
+                                .adminKey(MULTI_KEY_NAME)
+                                // Refusing ethereum create conversion, because we get INVALID_SIGNATURE upon
+                                // tokenAssociate,
+                                // since we have CONTRACT_ID key
+                                .refusingEthConversion(),
                         tokenCreate(TOKEN)
                                 .supplyKey(MULTI_KEY_NAME)
                                 .tokenType(FUNGIBLE_COMMON)
@@ -1919,7 +1894,7 @@ public class ERCPrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec someErc20NegativeTransferFromScenariosPass() {
+    final Stream<DynamicTest> someErc20NegativeTransferFromScenariosPass() {
         final AtomicReference<String> tokenMirrorAddr = new AtomicReference<>();
         final AtomicReference<String> contractMirrorAddr = new AtomicReference<>();
         final AtomicReference<String> aCivilianMirrorAddr = new AtomicReference<>();
@@ -1934,7 +1909,12 @@ public class ERCPrecompileSuite extends HapiSuite {
                         cryptoCreate(B_CIVILIAN)
                                 .exposingCreatedIdTo(id -> bCivilianMirrorAddr.set(asHexedSolidityAddress(id))),
                         uploadInitCode(SOME_ERC_20_SCENARIOS),
-                        contractCreate(SOME_ERC_20_SCENARIOS).adminKey(MULTI_KEY_NAME),
+                        contractCreate(SOME_ERC_20_SCENARIOS)
+                                .adminKey(MULTI_KEY_NAME)
+                                // Refusing ethereum create conversion, because we get INVALID_SIGNATURE upon
+                                // tokenAssociate,
+                                // since we have CONTRACT_ID key
+                                .refusingEthConversion(),
                         tokenCreate(TOKEN)
                                 .supplyKey(MULTI_KEY_NAME)
                                 .tokenType(FUNGIBLE_COMMON)
@@ -2051,7 +2031,7 @@ public class ERCPrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec someErc20ApproveAllowanceScenarioInOneCall() {
+    final Stream<DynamicTest> someErc20ApproveAllowanceScenarioInOneCall() {
         final AtomicReference<String> tokenMirrorAddr = new AtomicReference<>();
         final AtomicReference<String> contractMirrorAddr = new AtomicReference<>();
         final AtomicReference<String> aCivilianMirrorAddr = new AtomicReference<>();
@@ -2070,7 +2050,12 @@ public class ERCPrecompileSuite extends HapiSuite {
                         cryptoCreate(B_CIVILIAN)
                                 .exposingCreatedIdTo(id -> bCivilianMirrorAddr.set(asHexedSolidityAddress(id))),
                         uploadInitCode(SOME_ERC_20_SCENARIOS),
-                        contractCreate(SOME_ERC_20_SCENARIOS).adminKey(MULTI_KEY_NAME),
+                        contractCreate(SOME_ERC_20_SCENARIOS)
+                                .adminKey(MULTI_KEY_NAME)
+                                // Refusing ethereum create conversion, because we get INVALID_SIGNATURE upon
+                                // tokenAssociate,
+                                // since we have CONTRACT_ID key
+                                .refusingEthConversion(),
                         tokenCreate(TOKEN)
                                 .supplyKey(MULTI_KEY_NAME)
                                 .tokenType(FUNGIBLE_COMMON)
@@ -2110,7 +2095,7 @@ public class ERCPrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec directCallsWorkForErc721() {
+    final Stream<DynamicTest> directCallsWorkForErc721() {
 
         final AtomicReference<String> tokenNum = new AtomicReference<>();
 
@@ -2253,7 +2238,7 @@ public class ERCPrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec someErc721IsApprovedForAllScenariosPass() {
+    final Stream<DynamicTest> someErc721IsApprovedForAllScenariosPass() {
         final AtomicReference<String> tokenMirrorAddr = new AtomicReference<>();
         final AtomicReference<String> contractMirrorAddr = new AtomicReference<>();
         final AtomicReference<String> aCivilianMirrorAddr = new AtomicReference<>();
@@ -2269,7 +2254,12 @@ public class ERCPrecompileSuite extends HapiSuite {
                         cryptoCreate(A_CIVILIAN)
                                 .exposingCreatedIdTo(id -> aCivilianMirrorAddr.set(asHexedSolidityAddress(id))),
                         uploadInitCode(SOME_ERC_721_SCENARIOS),
-                        contractCreate(SOME_ERC_721_SCENARIOS).adminKey(MULTI_KEY_NAME),
+                        contractCreate(SOME_ERC_721_SCENARIOS)
+                                .adminKey(MULTI_KEY_NAME)
+                                // Refusing ethereum create conversion, because we get INVALID_SIGNATURE upon
+                                // tokenAssociate,
+                                // since we have CONTRACT_ID key
+                                .refusingEthConversion(),
                         tokenCreate(NF_TOKEN)
                                 .supplyKey(MULTI_KEY_NAME)
                                 .tokenType(NON_FUNGIBLE_UNIQUE)
@@ -2383,7 +2373,7 @@ public class ERCPrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec someErc721SetApprovedForAllScenariosPass() {
+    final Stream<DynamicTest> someErc721SetApprovedForAllScenariosPass() {
         final AtomicReference<String> tokenMirrorAddr = new AtomicReference<>();
         final AtomicReference<String> contractMirrorAddr = new AtomicReference<>();
         final AtomicReference<String> aCivilianMirrorAddr = new AtomicReference<>();
@@ -2400,7 +2390,12 @@ public class ERCPrecompileSuite extends HapiSuite {
                         cryptoCreate(A_CIVILIAN)
                                 .exposingCreatedIdTo(id -> aCivilianMirrorAddr.set(asHexedSolidityAddress(id))),
                         uploadInitCode(SOME_ERC_721_SCENARIOS),
-                        contractCreate(SOME_ERC_721_SCENARIOS).adminKey(MULTI_KEY_NAME),
+                        contractCreate(SOME_ERC_721_SCENARIOS)
+                                .adminKey(MULTI_KEY_NAME)
+                                // Refusing ethereum create conversion, because we get INVALID_SIGNATURE upon
+                                // tokenAssociate,
+                                // since we have CONTRACT_ID key
+                                .refusingEthConversion(),
                         tokenCreate(NF_TOKEN)
                                 .supplyKey(MULTI_KEY_NAME)
                                 .tokenType(NON_FUNGIBLE_UNIQUE)
@@ -2516,7 +2511,7 @@ public class ERCPrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec getErc721IsApprovedForAll() {
+    final Stream<DynamicTest> getErc721IsApprovedForAll() {
         final var notApprovedTxn = "notApprovedTxn";
         final var approvedForAllTxn = "approvedForAllTxn";
 
@@ -2607,7 +2602,7 @@ public class ERCPrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec erc721TokenApprove() {
+    final Stream<DynamicTest> erc721TokenApprove() {
         return defaultHapiSpec(
                         "erc721TokenApprove",
                         NONDETERMINISTIC_FUNCTION_PARAMETERS,
@@ -2625,7 +2620,9 @@ public class ERCPrecompileSuite extends HapiSuite {
                                 .adminKey(MULTI_KEY)
                                 .supplyKey(MULTI_KEY),
                         uploadInitCode(ERC_721_CONTRACT),
-                        contractCreate(ERC_721_CONTRACT),
+                        // Refusing ethereum create conversion, because we get INVALID_SIGNATURE upon tokenAssociate,
+                        // since we have CONTRACT_ID key
+                        contractCreate(ERC_721_CONTRACT).refusingEthConversion(),
                         mintToken(NON_FUNGIBLE_TOKEN, List.of(FIRST_META)),
                         tokenAssociate(ACCOUNT, List.of(NON_FUNGIBLE_TOKEN)),
                         tokenAssociate(RECIPIENT, List.of(NON_FUNGIBLE_TOKEN)),
@@ -2649,7 +2646,7 @@ public class ERCPrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec erc721GetApproved() {
+    final Stream<DynamicTest> erc721GetApproved() {
         final var theSpender2 = "spender2";
 
         return defaultHapiSpec(
@@ -2711,7 +2708,7 @@ public class ERCPrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec erc20TransferFromAllowance() {
+    final Stream<DynamicTest> erc20TransferFromAllowance() {
         final var allowanceTxn2 = "allowanceTxn2";
 
         return defaultHapiSpec(
@@ -2732,7 +2729,9 @@ public class ERCPrecompileSuite extends HapiSuite {
                                 .adminKey(MULTI_KEY)
                                 .supplyKey(MULTI_KEY),
                         uploadInitCode(ERC_20_CONTRACT),
-                        contractCreate(ERC_20_CONTRACT),
+                        // Refusing ethereum create conversion, because we get INVALID_SIGNATURE upon tokenAssociate,
+                        // since we have CONTRACT_ID key
+                        contractCreate(ERC_20_CONTRACT).refusingEthConversion(),
                         tokenAssociate(OWNER, FUNGIBLE_TOKEN),
                         tokenAssociate(RECIPIENT, FUNGIBLE_TOKEN),
                         tokenAssociate(ERC_20_CONTRACT, FUNGIBLE_TOKEN),
@@ -2811,7 +2810,7 @@ public class ERCPrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec erc20TransferFromSelf() {
+    final Stream<DynamicTest> erc20TransferFromSelf() {
         return defaultHapiSpec("erc20TransferFromSelf", NONDETERMINISTIC_FUNCTION_PARAMETERS)
                 .given(
                         newKeyNamed(MULTI_KEY),
@@ -2826,7 +2825,9 @@ public class ERCPrecompileSuite extends HapiSuite {
                                 .adminKey(MULTI_KEY)
                                 .supplyKey(MULTI_KEY),
                         uploadInitCode(ERC_20_CONTRACT),
-                        contractCreate(ERC_20_CONTRACT),
+                        // Refusing ethereum create conversion, because we get INVALID_SIGNATURE upon tokenAssociate,
+                        // since we have CONTRACT_ID key
+                        contractCreate(ERC_20_CONTRACT).refusingEthConversion(),
                         tokenAssociate(RECIPIENT, FUNGIBLE_TOKEN),
                         tokenAssociate(ERC_20_CONTRACT, FUNGIBLE_TOKEN),
                         cryptoTransfer(moving(10, FUNGIBLE_TOKEN).between(TOKEN_TREASURY, ERC_20_CONTRACT)))
@@ -2857,7 +2858,7 @@ public class ERCPrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec erc721TransferFromWithApproval() {
+    final Stream<DynamicTest> erc721TransferFromWithApproval() {
         return defaultHapiSpec(
                         "erc721TransferFromWithApproval",
                         NONDETERMINISTIC_FUNCTION_PARAMETERS,
@@ -2876,7 +2877,9 @@ public class ERCPrecompileSuite extends HapiSuite {
                                 .adminKey(MULTI_KEY)
                                 .supplyKey(MULTI_KEY),
                         uploadInitCode(ERC_721_CONTRACT),
-                        contractCreate(ERC_721_CONTRACT),
+                        // Refusing ethereum create conversion, because we get INVALID_SIGNATURE upon tokenAssociate,
+                        // since we have CONTRACT_ID key
+                        contractCreate(ERC_721_CONTRACT).refusingEthConversion(),
                         tokenAssociate(OWNER, NON_FUNGIBLE_TOKEN),
                         tokenAssociate(SPENDER, NON_FUNGIBLE_TOKEN),
                         tokenAssociate(RECIPIENT, NON_FUNGIBLE_TOKEN),
@@ -2940,7 +2943,7 @@ public class ERCPrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec erc721TransferFromWithApproveForAll() {
+    final Stream<DynamicTest> erc721TransferFromWithApproveForAll() {
         return defaultHapiSpec(
                         "erc721TransferFromWithApproveForAll",
                         NONDETERMINISTIC_TRANSACTION_FEES,
@@ -2959,7 +2962,9 @@ public class ERCPrecompileSuite extends HapiSuite {
                                 .adminKey(MULTI_KEY)
                                 .supplyKey(MULTI_KEY),
                         uploadInitCode(ERC_721_CONTRACT),
-                        contractCreate(ERC_721_CONTRACT),
+                        // Refusing ethereum create conversion, because we get INVALID_SIGNATURE upon tokenAssociate,
+                        // since we have CONTRACT_ID key
+                        contractCreate(ERC_721_CONTRACT).refusingEthConversion(),
                         tokenAssociate(OWNER, NON_FUNGIBLE_TOKEN),
                         tokenAssociate(SPENDER, NON_FUNGIBLE_TOKEN),
                         tokenAssociate(RECIPIENT, NON_FUNGIBLE_TOKEN),
@@ -2996,10 +3001,5 @@ public class ERCPrecompileSuite extends HapiSuite {
                         getAccountDetails(RECIPIENT).logged(),
                         getAccountDetails(OWNER).logged())))
                 .then();
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return log;
     }
 }

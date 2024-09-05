@@ -37,6 +37,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.wipeTokenAccoun
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.suites.HapiSuite.TOKEN_TREASURY;
 import static com.hedera.services.bdd.suites.utils.MiscEETUtils.batchOfSize;
 import static com.hedera.services.bdd.suites.utils.MiscEETUtils.metadata;
 import static com.hedera.services.bdd.suites.utils.MiscEETUtils.metadataOfLength;
@@ -58,12 +59,9 @@ import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
-import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
@@ -71,14 +69,15 @@ import com.hederahashgraph.api.proto.java.TokenType;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.LongStream;
+import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
-@HapiTestSuite
 @Tag(TOKEN)
-public class UniqueTokenManagementSpecs extends HapiSuite {
+public class UniqueTokenManagementSpecs {
 
     private static final org.apache.logging.log4j.Logger log = LogManager.getLogger(UniqueTokenManagementSpecs.class);
     private static final String A_TOKEN = "TokenA";
@@ -99,46 +98,8 @@ public class UniqueTokenManagementSpecs extends HapiSuite {
     private static final String CUSTOM_PAYER = "customPayer";
     private static final String WIPE_KEY = "wipeKey";
 
-    public static void main(String... args) {
-        new UniqueTokenManagementSpecs().runSuiteSync();
-    }
-
-    @Override
-    public List<HapiSpec> getSpecsInSuite() {
-        return List.of(
-                mintFailsWithLargeBatchSize(),
-                mintFailsWithTooLongMetadata(),
-                mintFailsWithInvalidMetadataFromBatch(),
-                mintUniqueTokenHappyPath(),
-                mintTokenWorksWhenAccountsAreFrozenByDefault(),
-                mintFailsWithDeletedToken(),
-                mintUniqueTokenWorksWithRepeatedMetadata(),
-                mintDistinguishesFeeSubTypes(),
-                mintUniqueTokenReceiptCheck(),
-                populatingMetadataForFungibleDoesNotWork(),
-                populatingAmountForNonFungibleDoesNotWork(),
-                finiteNftReachesMaxSupplyProperly(),
-                burnHappyPath(),
-                canOnlyBurnFromTreasury(),
-                burnFailsOnInvalidSerialNumber(),
-                burnRespectsBurnBatchConstraints(),
-                treasuryBalanceCorrectAfterBurn(),
-                burnWorksWhenAccountsAreFrozenByDefault(),
-                serialNumbersOnlyOnFungibleBurnFails(),
-                amountOnlyOnNonFungibleBurnFails(),
-                wipeHappyPath(),
-                wipeRespectsConstraints(),
-                commonWipeFailsWhenInvokedOnUniqueToken(),
-                uniqueWipeFailsWhenInvokedOnFungibleToken(),
-                wipeFailsWithInvalidSerialNumber(),
-                getTokenNftInfoWorks(),
-                getTokenNftInfoFailsWithNoNft(),
-                tokenDissociateHappyPath(),
-                tokenDissociateFailsIfAccountOwnsUniqueTokens());
-    }
-
     @HapiTest // here
-    final HapiSpec populatingMetadataForFungibleDoesNotWork() {
+    final Stream<DynamicTest> populatingMetadataForFungibleDoesNotWork() {
         return defaultHapiSpec("PopulatingMetadataForFungibleDoesNotWork")
                 .given(
                         newKeyNamed(SUPPLY_KEY),
@@ -169,7 +130,7 @@ public class UniqueTokenManagementSpecs extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec populatingAmountForNonFungibleDoesNotWork() {
+    final Stream<DynamicTest> populatingAmountForNonFungibleDoesNotWork() {
         return defaultHapiSpec("PopulatingAmountForNonFungibleDoesNotWork")
                 .given(
                         newKeyNamed(SUPPLY_KEY),
@@ -196,7 +157,7 @@ public class UniqueTokenManagementSpecs extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec finiteNftReachesMaxSupplyProperly() {
+    final Stream<DynamicTest> finiteNftReachesMaxSupplyProperly() {
         return defaultHapiSpec("FiniteNftReachesMaxSupplyProperly")
                 .given(
                         newKeyNamed(SUPPLY_KEY),
@@ -230,7 +191,7 @@ public class UniqueTokenManagementSpecs extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec serialNumbersOnlyOnFungibleBurnFails() {
+    final Stream<DynamicTest> serialNumbersOnlyOnFungibleBurnFails() {
         return defaultHapiSpec("SerialNumbersOnlyOnFungibleBurnFails")
                 .given(
                         newKeyNamed(SUPPLY_KEY),
@@ -258,7 +219,7 @@ public class UniqueTokenManagementSpecs extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec amountOnlyOnNonFungibleBurnFails() {
+    final Stream<DynamicTest> amountOnlyOnNonFungibleBurnFails() {
         return defaultHapiSpec("AmountOnlyOnNonFungibleBurnFails")
                 .given(
                         newKeyNamed(SUPPLY_KEY),
@@ -285,7 +246,7 @@ public class UniqueTokenManagementSpecs extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec burnWorksWhenAccountsAreFrozenByDefault() {
+    final Stream<DynamicTest> burnWorksWhenAccountsAreFrozenByDefault() {
         return defaultHapiSpec("BurnWorksWhenAccountsAreFrozenByDefault")
                 .given(
                         newKeyNamed(SUPPLY_KEY),
@@ -305,7 +266,7 @@ public class UniqueTokenManagementSpecs extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec burnFailsOnInvalidSerialNumber() {
+    final Stream<DynamicTest> burnFailsOnInvalidSerialNumber() {
         return defaultHapiSpec("BurnFailsOnInvalidSerialNumber")
                 .given(
                         newKeyNamed(SUPPLY_KEY),
@@ -324,7 +285,7 @@ public class UniqueTokenManagementSpecs extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec burnRespectsBurnBatchConstraints() {
+    final Stream<DynamicTest> burnRespectsBurnBatchConstraints() {
         return defaultHapiSpec("BurnRespectsBurnBatchConstraints")
                 .given(
                         newKeyNamed(SUPPLY_KEY),
@@ -344,7 +305,7 @@ public class UniqueTokenManagementSpecs extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec burnHappyPath() {
+    final Stream<DynamicTest> burnHappyPath() {
         return defaultHapiSpec("BurnHappyPath")
                 .given(
                         newKeyNamed(SUPPLY_KEY),
@@ -367,7 +328,7 @@ public class UniqueTokenManagementSpecs extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec canOnlyBurnFromTreasury() {
+    final Stream<DynamicTest> canOnlyBurnFromTreasury() {
         final var nonTreasury = "anybodyElse";
 
         return defaultHapiSpec("CanOnlyBurnFromTreasury")
@@ -396,7 +357,7 @@ public class UniqueTokenManagementSpecs extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec treasuryBalanceCorrectAfterBurn() {
+    final Stream<DynamicTest> treasuryBalanceCorrectAfterBurn() {
         return defaultHapiSpec("TreasuryBalanceCorrectAfterBurn")
                 .given(
                         newKeyNamed(SUPPLY_KEY),
@@ -410,7 +371,9 @@ public class UniqueTokenManagementSpecs extends HapiSuite {
                         mintToken(
                                 NFT,
                                 List.of(metadata("1"), metadata("2"), metadata("3"), metadata("4"), metadata("5"))))
-                .when(burnToken(NFT, List.of(3L, 4L, 5L)).via(BURN_TXN))
+                .when(burnToken(NFT, List.of(3L, 4L, 5L))
+                        .payingWith(TOKEN_TREASURY)
+                        .via(BURN_TXN))
                 .then(
                         getTokenNftInfo(NFT, 1).hasSerialNum(1).hasCostAnswerPrecheck(OK),
                         getTokenNftInfo(NFT, 2).hasSerialNum(2).hasCostAnswerPrecheck(OK),
@@ -423,7 +386,7 @@ public class UniqueTokenManagementSpecs extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec mintDistinguishesFeeSubTypes() {
+    final Stream<DynamicTest> mintDistinguishesFeeSubTypes() {
         return defaultHapiSpec("MintDistinguishesFeeSubTypes")
                 .given(
                         newKeyNamed(SUPPLY_KEY),
@@ -462,7 +425,7 @@ public class UniqueTokenManagementSpecs extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec mintFailsWithTooLongMetadata() {
+    final Stream<DynamicTest> mintFailsWithTooLongMetadata() {
         return defaultHapiSpec("MintFailsWithTooLongMetadata")
                 .given(
                         newKeyNamed(SUPPLY_KEY),
@@ -478,7 +441,7 @@ public class UniqueTokenManagementSpecs extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec mintFailsWithInvalidMetadataFromBatch() {
+    final Stream<DynamicTest> mintFailsWithInvalidMetadataFromBatch() {
         return defaultHapiSpec("MintFailsWithInvalidMetadataFromBatch")
                 .given(
                         newKeyNamed(SUPPLY_KEY),
@@ -495,7 +458,7 @@ public class UniqueTokenManagementSpecs extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec mintFailsWithLargeBatchSize() {
+    final Stream<DynamicTest> mintFailsWithLargeBatchSize() {
         return defaultHapiSpec("MintFailsWithLargeBatchSize")
                 .given(
                         newKeyNamed(SUPPLY_KEY),
@@ -511,7 +474,7 @@ public class UniqueTokenManagementSpecs extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec mintUniqueTokenHappyPath() {
+    final Stream<DynamicTest> mintUniqueTokenHappyPath() {
         return defaultHapiSpec("MintUniqueTokenHappyPath")
                 .given(
                         newKeyNamed(SUPPLY_KEY),
@@ -548,7 +511,7 @@ public class UniqueTokenManagementSpecs extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec mintTokenWorksWhenAccountsAreFrozenByDefault() {
+    final Stream<DynamicTest> mintTokenWorksWhenAccountsAreFrozenByDefault() {
         return defaultHapiSpec("MintTokenWorksWhenAccountsAreFrozenByDefault")
                 .given(
                         newKeyNamed(SUPPLY_KEY),
@@ -572,7 +535,7 @@ public class UniqueTokenManagementSpecs extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec mintFailsWithDeletedToken() {
+    final Stream<DynamicTest> mintFailsWithDeletedToken() {
         return defaultHapiSpec("MintFailsWithDeletedToken")
                 .given(
                         newKeyNamed(SUPPLY_KEY),
@@ -590,7 +553,7 @@ public class UniqueTokenManagementSpecs extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec getTokenNftInfoFailsWithNoNft() {
+    final Stream<DynamicTest> getTokenNftInfoFailsWithNoNft() {
         return defaultHapiSpec("GetTokenNftInfoFailsWithNoNft")
                 .given(newKeyNamed(SUPPLY_KEY), cryptoCreate(TOKEN_TREASURY))
                 .when(
@@ -608,7 +571,7 @@ public class UniqueTokenManagementSpecs extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec getTokenNftInfoWorks() {
+    final Stream<DynamicTest> getTokenNftInfoWorks() {
         return defaultHapiSpec("GetTokenNftInfoWorks")
                 .given(newKeyNamed(SUPPLY_KEY), cryptoCreate(TOKEN_TREASURY))
                 .when(
@@ -632,7 +595,7 @@ public class UniqueTokenManagementSpecs extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec mintUniqueTokenWorksWithRepeatedMetadata() {
+    final Stream<DynamicTest> mintUniqueTokenWorksWithRepeatedMetadata() {
         return defaultHapiSpec("MintUniqueTokenWorksWithRepeatedMetadata")
                 .given(
                         newKeyNamed(SUPPLY_KEY),
@@ -662,7 +625,7 @@ public class UniqueTokenManagementSpecs extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec wipeHappyPath() {
+    final Stream<DynamicTest> wipeHappyPath() {
         return defaultHapiSpec("WipeHappyPath")
                 .given(
                         newKeyNamed(SUPPLY_KEY),
@@ -694,7 +657,7 @@ public class UniqueTokenManagementSpecs extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec wipeRespectsConstraints() {
+    final Stream<DynamicTest> wipeRespectsConstraints() {
         return defaultHapiSpec("WipeRespectsConstraints")
                 .given(
                         newKeyNamed(SUPPLY_KEY),
@@ -720,7 +683,7 @@ public class UniqueTokenManagementSpecs extends HapiSuite {
     }
 
     @HapiTest // here
-    final HapiSpec commonWipeFailsWhenInvokedOnUniqueToken() {
+    final Stream<DynamicTest> commonWipeFailsWhenInvokedOnUniqueToken() {
         return defaultHapiSpec("CommonWipeFailsWhenInvokedOnUniqueToken")
                 .given(
                         newKeyNamed(SUPPLY_KEY),
@@ -752,7 +715,7 @@ public class UniqueTokenManagementSpecs extends HapiSuite {
     }
 
     @HapiTest // here
-    final HapiSpec uniqueWipeFailsWhenInvokedOnFungibleToken() { // invokes unique wipe on fungible tokens
+    final Stream<DynamicTest> uniqueWipeFailsWhenInvokedOnFungibleToken() { // invokes unique wipe on fungible tokens
         return defaultHapiSpec("UniqueWipeFailsWhenInvokedOnFungibleToken")
                 .given(
                         newKeyNamed(WIPE_KEY),
@@ -777,7 +740,7 @@ public class UniqueTokenManagementSpecs extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec wipeFailsWithInvalidSerialNumber() {
+    final Stream<DynamicTest> wipeFailsWithInvalidSerialNumber() {
         return defaultHapiSpec("WipeFailsWithInvalidSerialNumber")
                 .given(
                         newKeyNamed(SUPPLY_KEY),
@@ -799,7 +762,7 @@ public class UniqueTokenManagementSpecs extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec mintUniqueTokenReceiptCheck() {
+    final Stream<DynamicTest> mintUniqueTokenReceiptCheck() {
         final var mintTransferTxn = "mintTransferTxn";
         return defaultHapiSpec("mintUniqueTokenReceiptCheck")
                 .given(
@@ -839,7 +802,7 @@ public class UniqueTokenManagementSpecs extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec tokenDissociateHappyPath() {
+    final Stream<DynamicTest> tokenDissociateHappyPath() {
         return defaultHapiSpec("tokenDissociateHappyPath")
                 .given(
                         newKeyNamed(SUPPLY_KEY),
@@ -858,7 +821,7 @@ public class UniqueTokenManagementSpecs extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec tokenDissociateFailsIfAccountOwnsUniqueTokens() {
+    final Stream<DynamicTest> tokenDissociateFailsIfAccountOwnsUniqueTokens() {
         return defaultHapiSpec("tokenDissociateFailsIfAccountOwnsUniqueTokens")
                 .given(
                         newKeyNamed(SUPPLY_KEY),

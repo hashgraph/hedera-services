@@ -56,6 +56,7 @@ document which major hardfork corresponds to each internal version.
 |        `v0.38` | [Shanghai](https://github.com/ethereum/execution-specs/blob/master/network-upgrades/mainnet-upgrades/shanghai.md)   | Adds `PUSH0` opcode needed for solidity compatibility                                                                                                                     |
 |        `v0.46` | Shanghai          | Change to non-existing call behavior for EVM Equivalence                                                                                                                  |
 |        `v0.50` | [Cancun](https://github.com/ethereum/execution-specs/blob/master/network-upgrades/mainnet-upgrades/cancun.md)     | Adds opcodes `TSTORE`, `TLOAD`, and `MCOPY` opcodes, non-implementation of blobs, KZG precompile; new `SELFDESTRUCT` semantics  (HIPS-865 through -868)                   |
+|        `v0.51` | Cancun            | Adds Hedera Account Service System Contract at address `0x16a`.                                                                                                           |
 
 ## Open Questions
 

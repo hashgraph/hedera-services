@@ -22,12 +22,13 @@ import static com.hedera.services.bdd.suites.freeze.CommonUpgradeResources.initi
 import static com.hedera.services.bdd.suites.freeze.CommonUpgradeResources.upgradeFileHash;
 import static com.hedera.services.bdd.suites.freeze.CommonUpgradeResources.upgradeFileId;
 
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.List;
+import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 
 public final class PrepareUpgrade extends HapiSuite {
     private static final Logger log = LogManager.getLogger(PrepareUpgrade.class);
@@ -42,11 +43,11 @@ public final class PrepareUpgrade extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
-        return List.of(new HapiSpec[] {prepareUpgrade()});
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
+        return List.of(prepareUpgrade());
     }
 
-    final HapiSpec prepareUpgrade() {
+    final Stream<DynamicTest> prepareUpgrade() {
         return defaultHapiSpec("PrepareUpgrade")
                 .given(initializeSettings())
                 .when(sourcing(() -> UtilVerbs.prepareUpgrade()

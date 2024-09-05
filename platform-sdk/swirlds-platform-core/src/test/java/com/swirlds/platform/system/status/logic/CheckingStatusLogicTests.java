@@ -27,7 +27,6 @@ import com.swirlds.platform.system.status.PlatformStatus;
 import com.swirlds.platform.system.status.PlatformStatusConfig;
 import com.swirlds.platform.system.status.actions.CatastrophicFailureAction;
 import com.swirlds.platform.system.status.actions.DoneReplayingEventsAction;
-import com.swirlds.platform.system.status.actions.EmergencyReconnectStartedAction;
 import com.swirlds.platform.system.status.actions.FallenBehindAction;
 import com.swirlds.platform.system.status.actions.FreezePeriodEnteredAction;
 import com.swirlds.platform.system.status.actions.ReconnectCompleteAction;
@@ -65,15 +64,6 @@ class CheckingStatusLogicTests {
     void toBehind() {
         triggerActionAndAssertTransition(
                 logic::processFallenBehindAction, new FallenBehindAction(), PlatformStatus.BEHIND);
-    }
-
-    @Test
-    @DisplayName("Go to BEHIND (due to emergency reconnect)")
-    void toBehindEmergency() {
-        triggerActionAndAssertTransition(
-                logic::processEmergencyReconnectStartedAction,
-                new EmergencyReconnectStartedAction(),
-                PlatformStatus.BEHIND);
     }
 
     @Test

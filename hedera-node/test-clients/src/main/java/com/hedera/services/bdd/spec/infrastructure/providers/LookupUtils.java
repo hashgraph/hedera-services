@@ -23,7 +23,7 @@ import java.util.Optional;
 import java.util.Set;
 
 public class LookupUtils {
-    public static Optional<Map.Entry<String, String>> twoDistinct(EntityNameProvider<?> provider) {
+    public static Optional<Map.Entry<String, String>> twoDistinct(EntityNameProvider provider) {
         Optional<String> first = provider.getQualifying();
         if (first.isEmpty()) {
             return Optional.empty();

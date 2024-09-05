@@ -63,6 +63,8 @@ public class ReturnTypes {
     public static final String RESPONSE_CODE_BOOL = "(int32,bool)";
     public static final String RESPONSE_CODE_INT32 = "(int32,int32)";
     public static final String RESPONSE_CODE_UINT256 = "(int64,uint256)";
+    public static final String RESPONSE_CODE_INT256 = "(int64,int256)";
+
     public static final String UINT256 = "(uint256)";
     public static final String RESPONSE_CODE_EXPIRY = "(int32,"
             // Expiry

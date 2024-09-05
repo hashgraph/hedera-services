@@ -20,8 +20,8 @@ import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 
 import com.swirlds.common.formatting.TextTable;
 import com.swirlds.common.io.SelfSerializable;
-import com.swirlds.common.scratchpad.Scratchpad;
-import com.swirlds.common.scratchpad.ScratchpadType;
+import com.swirlds.platform.scratchpad.Scratchpad;
+import com.swirlds.platform.scratchpad.ScratchpadType;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.HashMap;

@@ -16,48 +16,49 @@
 
 package com.hedera.node.app.service.contract.impl;
 
-import com.hedera.hapi.node.base.SemanticVersion;
+import static java.util.Objects.requireNonNull;
+
 import com.hedera.node.app.service.contract.ContractService;
 import com.hedera.node.app.service.contract.impl.handlers.ContractHandlers;
-import com.hedera.node.app.service.contract.impl.state.InitialModServiceContractSchema;
-import com.hedera.node.app.service.mono.state.adapters.VirtualMapLike;
-import com.hedera.node.app.service.mono.state.virtual.ContractKey;
-import com.hedera.node.app.service.mono.state.virtual.IterableContractValue;
-import com.hedera.node.app.service.mono.state.virtual.VirtualBlobKey;
-import com.hedera.node.app.service.mono.state.virtual.VirtualBlobValue;
-import com.hedera.node.app.spi.state.SchemaRegistry;
+import com.hedera.node.app.service.contract.impl.schemas.V0490ContractSchema;
+import com.hedera.node.app.service.contract.impl.schemas.V0500ContractSchema;
+import com.hedera.node.app.spi.AppContext;
+import com.swirlds.state.spi.SchemaRegistry;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.util.List;
 import java.util.function.Supplier;
+import org.hyperledger.besu.evm.tracing.OperationTracer;
 
 /**
  * Implementation of the {@link ContractService}.
  */
-public enum ContractServiceImpl implements ContractService {
-    CONTRACT_SERVICE;
+public class ContractServiceImpl implements ContractService {
     public static final long INTRINSIC_GAS_LOWER_BOUND = 21_000L;
+    public static final String LAZY_MEMO = "lazy-created account";
+
     private final ContractServiceComponent component;
 
-    private InitialModServiceContractSchema initialContractSchema;
-
-    ContractServiceImpl() {
-        this.component = DaggerContractServiceComponent.create();
+    public ContractServiceImpl(@NonNull final AppContext appContext) {
+        this(appContext, null);
     }
 
-    public void setStorageFromState(
-            @Nullable final VirtualMapLike<ContractKey, IterableContractValue> storageFromState) {
-        initialContractSchema.setStorageFromState(storageFromState);
-    }
-
-    public void setBytecodeFromState(
-            @Nullable final Supplier<VirtualMapLike<VirtualBlobKey, VirtualBlobValue>> bytecodeFromState) {
-        initialContractSchema.setBytecodeFromState(bytecodeFromState);
+    public ContractServiceImpl(
+            @NonNull final AppContext appContext, @Nullable final Supplier<List<OperationTracer>> addOnTracers) {
+        requireNonNull(appContext);
+        this.component = DaggerContractServiceComponent.factory()
+                .create(
+                        appContext.instantSource(),
+                        // (FUTURE) Inject the signature verifier instance into the IsAuthorizedSystemContract
+                        // C.f. https://github.com/hashgraph/hedera-services/issues/14248
+                        appContext.signatureVerifier(),
+                        addOnTracers);
     }
 
     @Override
-    public void registerSchemas(@NonNull final SchemaRegistry registry, @NonNull final SemanticVersion version) {
-        initialContractSchema = new InitialModServiceContractSchema(version);
-        registry.register(initialContractSchema);
+    public void registerSchemas(@NonNull final SchemaRegistry registry) {
+        registry.register(new V0490ContractSchema());
+        registry.register(new V0500ContractSchema());
     }
 
     public ContractHandlers handlers() {

@@ -21,12 +21,11 @@ import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts
 import static java.util.Objects.requireNonNull;
 
 import com.esaulpaugh.headlong.abi.Function;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AbstractHtsCallTranslator;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCall;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.AbstractCallTranslator;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.Call;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.math.BigInteger;
-import java.util.Arrays;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -34,7 +33,7 @@ import javax.inject.Singleton;
  * Translates ERC-721 {@code transferFrom()} calls to the HTS system contract.
  */
 @Singleton
-public class Erc721TransferFromTranslator extends AbstractHtsCallTranslator {
+public class Erc721TransferFromTranslator extends AbstractCallTranslator<HtsCallAttempt> {
 
     public static final Function ERC_721_TRANSFER_FROM = new Function("transferFrom(address,address,uint256)");
 
@@ -47,12 +46,12 @@ public class Erc721TransferFromTranslator extends AbstractHtsCallTranslator {
     public boolean matches(@NonNull final HtsCallAttempt attempt) {
         // We only match calls to existing tokens (i.e., with known token type)
         return attempt.isTokenRedirect()
-                && Arrays.equals(attempt.selector(), Erc721TransferFromTranslator.ERC_721_TRANSFER_FROM.selector())
+                && attempt.isSelector(ERC_721_TRANSFER_FROM)
                 && attempt.redirectTokenType() == NON_FUNGIBLE_UNIQUE;
     }
 
     @Override
-    public HtsCall callFrom(@NonNull final HtsCallAttempt attempt) {
+    public Call callFrom(@NonNull final HtsCallAttempt attempt) {
         final var call = Erc721TransferFromTranslator.ERC_721_TRANSFER_FROM.decodeCall(
                 attempt.input().toArrayUnsafe());
         return new Erc721TransferFromCall(

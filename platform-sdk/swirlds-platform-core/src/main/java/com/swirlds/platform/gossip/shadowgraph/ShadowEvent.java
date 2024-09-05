@@ -17,8 +17,7 @@
 package com.swirlds.platform.gossip.shadowgraph;
 
 import com.swirlds.common.crypto.Hash;
-import com.swirlds.platform.EventStrings;
-import com.swirlds.platform.internal.EventImpl;
+import com.swirlds.platform.event.PlatformEvent;
 
 /**
  * A shadow event wraps a hashgraph event, and provides parent pointers to shadow events.
@@ -40,7 +39,7 @@ public class ShadowEvent {
     /**
      * the real event
      */
-    private final EventImpl event;
+    private final PlatformEvent event;
 
     /**
      * self-parent
@@ -62,7 +61,7 @@ public class ShadowEvent {
      * @param otherParent
      * 		the other-parent event's shadow
      */
-    public ShadowEvent(final EventImpl event, final ShadowEvent selfParent, final ShadowEvent otherParent) {
+    public ShadowEvent(final PlatformEvent event, final ShadowEvent selfParent, final ShadowEvent otherParent) {
         this.event = event;
         this.selfParent = selfParent;
         this.otherParent = otherParent;
@@ -74,7 +73,7 @@ public class ShadowEvent {
      * @param event
      * 		the event
      */
-    public ShadowEvent(final EventImpl event) {
+    public ShadowEvent(final PlatformEvent event) {
         this(event, null, null);
     }
 
@@ -101,7 +100,7 @@ public class ShadowEvent {
      *
      * @return the hashgraph event references by this shadow event
      */
-    public EventImpl getEvent() {
+    public PlatformEvent getEvent() {
         return event;
     }
 
@@ -111,7 +110,7 @@ public class ShadowEvent {
      * @return The cryptographic base hash of an event.
      */
     public Hash getEventBaseHash() {
-        return event.getBaseHash();
+        return event.getHash();
     }
 
     /**
@@ -158,6 +157,6 @@ public class ShadowEvent {
      */
     @Override
     public String toString() {
-        return EventStrings.toMediumString(getEvent());
+        return getEvent().toString();
     }
 }

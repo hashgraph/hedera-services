@@ -19,8 +19,8 @@ package com.hedera.node.app.service.token.impl.handlers;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_HAS_NO_KYC_KEY;
+import static com.hedera.node.app.hapi.fees.usage.SingletonEstimatorUtils.ESTIMATOR_UTILS;
 import static com.hedera.node.app.hapi.fees.usage.crypto.CryptoOpsUsage.txnEstimateFactory;
-import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -30,7 +30,10 @@ import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.service.mono.fees.calculation.token.txns.TokenRevokeKycResourceUsage;
+import com.hedera.node.app.hapi.fees.usage.SigUsage;
+import com.hedera.node.app.hapi.fees.usage.token.TokenRevokeKycUsage;
+import com.hedera.node.app.hapi.utils.CommonPbjConverters;
+import com.hedera.node.app.hapi.utils.fee.SigValueObj;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
@@ -43,6 +46,7 @@ import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
+import com.hederahashgraph.api.proto.java.FeeData;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -53,9 +57,13 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class TokenRevokeKycFromAccountHandler implements TransactionHandler {
-
+    /**
+     * Default constructor for injection.
+     */
     @Inject
-    public TokenRevokeKycFromAccountHandler() {}
+    public TokenRevokeKycFromAccountHandler() {
+        // No-op
+    }
 
     /**
      * This method is called during the pre-handle workflow.
@@ -92,10 +100,11 @@ public class TokenRevokeKycFromAccountHandler implements TransactionHandler {
         final var op = handleContext.body().tokenRevokeKycOrThrow();
         final var tokenId = op.tokenOrThrow();
         final var accountId = op.accountOrElse(AccountID.DEFAULT);
-        final var tokenRelStore = handleContext.writableStore(WritableTokenRelationStore.class);
-        final var accountStore = handleContext.readableStore(ReadableAccountStore.class);
+        final var storeFactory = handleContext.storeFactory();
+        final var tokenRelStore = storeFactory.writableStore(WritableTokenRelationStore.class);
+        final var accountStore = storeFactory.readableStore(ReadableAccountStore.class);
         final var expiryValidator = handleContext.expiryValidator();
-        final var tokenStore = handleContext.readableStore(ReadableTokenStore.class);
+        final var tokenStore = storeFactory.readableStore(ReadableTokenStore.class);
         final var tokenRel =
                 validateSemantics(accountId, tokenId, tokenRelStore, accountStore, expiryValidator, tokenStore);
 
@@ -105,7 +114,7 @@ public class TokenRevokeKycFromAccountHandler implements TransactionHandler {
     }
 
     /**
-     * Performs checks independent of state or context
+     * Performs checks independent of state or context.
      */
     @Override
     public void pureChecks(@NonNull final TransactionBody txn) throws PreCheckException {
@@ -120,7 +129,7 @@ public class TokenRevokeKycFromAccountHandler implements TransactionHandler {
     }
 
     /**
-     * Performs checks that the entities related to this transaction exist and are valid
+     * Performs checks that the entities related to this transaction exist and are valid.
      *
      * @return the token relation for the given token and account
      */
@@ -133,15 +142,11 @@ public class TokenRevokeKycFromAccountHandler implements TransactionHandler {
             @NonNull final ExpiryValidator expiryValidator,
             @NonNull final ReadableTokenStore tokenStore)
             throws HandleException {
-        final var account =
-                TokenHandlerHelper.getIfUsable(accountId, accountStore, expiryValidator, INVALID_ACCOUNT_ID);
-        final var token = TokenHandlerHelper.getIfUsable(tokenId, tokenStore);
-        final var tokenRel = TokenHandlerHelper.getIfUsable(accountId, tokenId, tokenRelStore);
-
-        // Validate token is not paused or deleted
+        // Throws if account is unusable
+        TokenHandlerHelper.getIfUsable(accountId, accountStore, expiryValidator, INVALID_ACCOUNT_ID);
+        // Throws if token is unusable
         TokenHandlerHelper.getIfUsable(tokenId, tokenStore);
-
-        return tokenRel;
+        return TokenHandlerHelper.getIfUsable(accountId, tokenId, tokenRelStore);
     }
 
     @NonNull
@@ -150,8 +155,16 @@ public class TokenRevokeKycFromAccountHandler implements TransactionHandler {
         requireNonNull(feeContext);
         final var op = feeContext.body();
 
-        return feeContext.feeCalculator(SubType.DEFAULT).legacyCalculate(sigValueObj -> new TokenRevokeKycResourceUsage(
-                        txnEstimateFactory)
-                .usageGiven(fromPbj(op), sigValueObj, null));
+        return feeContext
+                .feeCalculatorFactory()
+                .feeCalculator(SubType.DEFAULT)
+                .legacyCalculate(sigValueObj -> usageGiven(CommonPbjConverters.fromPbj(op), sigValueObj));
+    }
+
+    public FeeData usageGiven(final com.hederahashgraph.api.proto.java.TransactionBody txn, final SigValueObj svo) {
+        final var sigUsage = new SigUsage(svo.getTotalSigCount(), svo.getSignatureSize(), svo.getPayerAcctSigCount());
+        final var estimate =
+                TokenRevokeKycUsage.newEstimate(txn, txnEstimateFactory.get(sigUsage, txn, ESTIMATOR_UTILS));
+        return estimate.get();
     }
 }

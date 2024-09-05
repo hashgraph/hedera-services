@@ -17,213 +17,46 @@
 package com.hedera.services.bdd.suites.contract.evm;
 
 import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
-import static com.hedera.services.bdd.spec.HapiSpec.propertyPreservingHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
-import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_EXECUTION_EXCEPTION;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.spec.HapiSpec;
-import com.hedera.services.bdd.suites.HapiSuite;
-import java.util.List;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import com.hedera.services.bdd.junit.LeakyHapiTest;
+import java.util.stream.Stream;
+import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
-@HapiTestSuite
 @Tag(SMART_CONTRACT)
-public class Evm50ValidationSuite extends HapiSuite {
-
-    private static final Logger LOG = LogManager.getLogger(Evm50ValidationSuite.class);
-    private static final String EVM_VERSION_PROPERTY = "contracts.evm.version";
-    private static final String DYNAMIC_EVM_PROPERTY = "contracts.evm.version.dynamic";
-    private static final String EVM_VERSION_046 = "v0.46";
-    private static final String EVM_VERSION_050 = "v0.50";
-    private static final String ACCOUNT = "account";
+public class Evm50ValidationSuite {
     private static final String Module05OpcodesExist_CONTRACT = "Module050OpcodesExist";
     private static final long A_BUNCH_OF_GAS = 500_000L;
 
-    public static void main(String... args) {
-        new Evm50ValidationSuite().runSuiteSync();
-    }
-
-    @Override
-    public boolean canRunConcurrent() {
-        return false;
-    }
-
-    public List<HapiSpec> getSpecsInSuite() {
-        return List.of(
-                verifiesNonExistenceForTransientStorageOpcodesV46(),
-                verifiesNonExistenceForMCOPYOpcodeV46(),
-                verifiesNonExistenceForKZGPrecompileV46(),
-                verifiesExistenceForTransientStorageOpcodesV050(),
-                verifiesExistenceForMCOPYOpcodeV050(),
-                verifiesExistenceForKZGPrecompileV050(),
-                successTestForKZGPrecompileV050());
+    @LeakyHapiTest(overrides = {"contracts.evm.version"})
+    final Stream<DynamicTest> verifiesNonExistenceForV50OpcodesInV46() {
+        final var contract = Module05OpcodesExist_CONTRACT;
+        return hapiTest(
+                overriding("contracts.evm.version", "v0.46"),
+                uploadInitCode(contract),
+                contractCreate(contract),
+                contractCall(contract, "try_transient_storage")
+                        .gas(A_BUNCH_OF_GAS)
+                        .hasKnownStatus(CONTRACT_EXECUTION_EXCEPTION),
+                contractCall(contract, "try_mcopy").gas(A_BUNCH_OF_GAS).hasKnownStatus(CONTRACT_EXECUTION_EXCEPTION),
+                contractCall(contract, "try_kzg_precompile").hasKnownStatus(CONTRACT_EXECUTION_EXCEPTION));
     }
 
     @HapiTest
-    HapiSpec verifiesNonExistenceForTransientStorageOpcodesV46() {
+    final Stream<DynamicTest> verifiesExistenceOfV050Opcodes() {
         final var contract = Module05OpcodesExist_CONTRACT;
-
-        return propertyPreservingHapiSpec(
-                        "verifiesNonExistenceForTransientStorageOpcodesV46", NONDETERMINISTIC_TRANSACTION_FEES)
-                .preserving(EVM_VERSION_PROPERTY, DYNAMIC_EVM_PROPERTY)
-                .given(
-                        overriding(DYNAMIC_EVM_PROPERTY, "true"),
-                        overriding(EVM_VERSION_PROPERTY, EVM_VERSION_046),
-                        cryptoCreate(ACCOUNT),
-                        uploadInitCode(contract),
-                        contractCreate(contract))
-                .when()
-                .then(sourcing(() -> contractCall(contract, "try_transient_storage")
-                        .gas(A_BUNCH_OF_GAS)
-                        .payingWith(ACCOUNT)
-                        .via(txnName("non_transient"))
-                        .hasKnownStatus(CONTRACT_EXECUTION_EXCEPTION)
-                        .logged()));
-    }
-
-    @HapiTest
-    HapiSpec verifiesNonExistenceForMCOPYOpcodeV46() {
-        final var contract = Module05OpcodesExist_CONTRACT;
-
-        return propertyPreservingHapiSpec("verifiesNonExistenceForMCOPYOpcodeV46", NONDETERMINISTIC_TRANSACTION_FEES)
-                .preserving(EVM_VERSION_PROPERTY, DYNAMIC_EVM_PROPERTY)
-                .given(
-                        overriding(DYNAMIC_EVM_PROPERTY, "true"),
-                        overriding(EVM_VERSION_PROPERTY, EVM_VERSION_046),
-                        cryptoCreate(ACCOUNT),
-                        uploadInitCode(contract),
-                        contractCreate(contract))
-                .when()
-                .then(sourcing(() -> contractCall(contract, "try_mcopy")
-                        .gas(A_BUNCH_OF_GAS)
-                        .payingWith(ACCOUNT)
-                        .via(txnName("non_mcopy"))
-                        .hasKnownStatus(CONTRACT_EXECUTION_EXCEPTION)
-                        .logged()));
-    }
-
-    @HapiTest
-    HapiSpec verifiesNonExistenceForKZGPrecompileV46() {
-        final var contract = Module05OpcodesExist_CONTRACT;
-
-        return propertyPreservingHapiSpec("verifiesNonExistenceForKZGPrecompileV46")
-                .preserving(EVM_VERSION_PROPERTY, DYNAMIC_EVM_PROPERTY)
-                .given(
-                        overriding(DYNAMIC_EVM_PROPERTY, "true"),
-                        overriding(EVM_VERSION_PROPERTY, EVM_VERSION_046),
-                        cryptoCreate(ACCOUNT),
-                        uploadInitCode(contract),
-                        contractCreate(contract))
-                .when()
-                .then(sourcing(() -> contractCall(contract, "try_kzg_precompile")
-                        .gas(A_BUNCH_OF_GAS)
-                        .payingWith(ACCOUNT)
-                        .via(txnName("non-kzg"))
-                        .hasKnownStatus(CONTRACT_EXECUTION_EXCEPTION)
-                        .logged()));
-    }
-
-    @HapiTest
-    HapiSpec verifiesExistenceForTransientStorageOpcodesV050() {
-        final var contract = Module05OpcodesExist_CONTRACT;
-
-        return propertyPreservingHapiSpec("verifiesExistenceForTransientStorageOpcodesV050")
-                .preserving(EVM_VERSION_PROPERTY, DYNAMIC_EVM_PROPERTY)
-                .given(
-                        overriding(DYNAMIC_EVM_PROPERTY, "true"),
-                        overriding(EVM_VERSION_PROPERTY, EVM_VERSION_050),
-                        cryptoCreate(ACCOUNT),
-                        uploadInitCode(contract),
-                        contractCreate(contract))
-                .when()
-                .then(sourcing(() -> contractCall(contract, "try_transient_storage")
-                        .gas(A_BUNCH_OF_GAS)
-                        .payingWith(ACCOUNT)
-                        .via(txnName("transient"))
-                        .hasKnownStatus(SUCCESS)
-                        .logged()));
-    }
-
-    @HapiTest
-    HapiSpec verifiesExistenceForMCOPYOpcodeV050() {
-        final var contract = Module05OpcodesExist_CONTRACT;
-
-        return propertyPreservingHapiSpec("verifiesExistenceForMCOPYOpcodeV050")
-                .preserving(EVM_VERSION_PROPERTY, DYNAMIC_EVM_PROPERTY)
-                .given(
-                        overriding(DYNAMIC_EVM_PROPERTY, "true"),
-                        overriding(EVM_VERSION_PROPERTY, EVM_VERSION_050),
-                        cryptoCreate(ACCOUNT),
-                        uploadInitCode(contract),
-                        contractCreate(contract))
-                .when()
-                .then(sourcing(() -> contractCall(contract, "try_mcopy")
-                        .gas(A_BUNCH_OF_GAS)
-                        .payingWith(ACCOUNT)
-                        .via("mcopy")
-                        .hasKnownStatus(SUCCESS)
-                        .logged()));
-    }
-
-    @HapiTest
-    HapiSpec verifiesExistenceForKZGPrecompileV050() {
-        final var contract = Module05OpcodesExist_CONTRACT;
-
-        return propertyPreservingHapiSpec("verifiesExistenceForKZGPrecompileV050")
-                .preserving(EVM_VERSION_PROPERTY, DYNAMIC_EVM_PROPERTY)
-                .given(
-                        overriding(DYNAMIC_EVM_PROPERTY, "true"),
-                        overriding(EVM_VERSION_PROPERTY, EVM_VERSION_050),
-                        cryptoCreate(ACCOUNT),
-                        uploadInitCode(contract),
-                        contractCreate(contract))
-                .when()
-                .then(sourcing(() -> contractCall(contract, "try_kzg_precompile")
-                        .gas(A_BUNCH_OF_GAS)
-                        .payingWith(ACCOUNT)
-                        .via(txnName("kzg"))
-                        .hasKnownStatus(SUCCESS)
-                        .logged()));
-    }
-
-    @HapiTest
-    HapiSpec successTestForKZGPrecompileV050() {
-        final var contract = Module05OpcodesExist_CONTRACT;
-
-        return propertyPreservingHapiSpec("successTestForKZGPrecompileV050")
-                .preserving(EVM_VERSION_PROPERTY, DYNAMIC_EVM_PROPERTY)
-                .given(
-                        overriding(DYNAMIC_EVM_PROPERTY, "true"),
-                        overriding(EVM_VERSION_PROPERTY, EVM_VERSION_050),
-                        cryptoCreate(ACCOUNT),
-                        uploadInitCode(contract),
-                        contractCreate(contract))
-                .when()
-                .then(sourcing(() -> contractCall(contract, "kzg_precompile_success_case")
-                        .gas(A_BUNCH_OF_GAS)
-                        .payingWith(ACCOUNT)
-                        .via(txnName("kzg_success"))
-                        .hasKnownStatus(SUCCESS)
-                        .logged()));
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return LOG;
-    }
-
-    private String txnName(final String suffix) {
-        return "Module0050_" + suffix;
+        return hapiTest(
+                uploadInitCode(contract),
+                contractCreate(contract),
+                contractCall(contract, "try_transient_storage").gas(A_BUNCH_OF_GAS),
+                contractCall(contract, "try_mcopy").gas(A_BUNCH_OF_GAS),
+                contractCall(contract, "try_kzg_precompile").gas(A_BUNCH_OF_GAS));
     }
 }

@@ -31,47 +31,28 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_CONTRACT_CALL_RESULTS;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_FUNCTION_PARAMETERS;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
+import static com.hedera.services.bdd.suites.HapiSuite.SECP_256K1_SHAPE;
 
 import com.google.protobuf.ByteString;
-import com.hedera.node.app.service.evm.utils.EthSigsUtils;
+import com.hedera.node.app.hapi.utils.EthSigsUtils;
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.spec.HapiSpec;
-import com.hedera.services.bdd.spec.HapiSpecOperation;
-import com.hedera.services.bdd.suites.HapiSuite;
+import com.hedera.services.bdd.spec.SpecOperation;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.math.BigInteger;
 import java.util.ArrayList;
-import java.util.List;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import java.util.stream.Stream;
+import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
-@HapiTestSuite(fuzzyMatch = true)
 @Tag(SMART_CONTRACT)
-public class ERC1155ContractInteractions extends HapiSuite {
-
-    private static final Logger log = LogManager.getLogger(ERC1155ContractInteractions.class);
+public class ERC1155ContractInteractions {
     private static final String ACCOUNT1 = "acc1";
     private static final String ACCOUNT2 = "acc2";
     private static final String CONTRACT = "GameItems";
 
-    public static void main(String... args) {
-        new ERC1155ContractInteractions().runSuiteSync();
-    }
-
-    @Override
-    public List<HapiSpec> getSpecsInSuite() {
-        return List.of(erc1155());
-    }
-
-    @Override
-    public boolean canRunConcurrent() {
-        return true;
-    }
-
     @HapiTest
-    final HapiSpec erc1155() {
+    final Stream<DynamicTest> erc1155() {
         // Adding NONDETERMINISTIC_CONTRACT_CALL_RESULTS because one of the
         // contractCallResult->logInfo->topics is always different(both in mono and mod)
         return defaultHapiSpec("erc1155", NONDETERMINISTIC_FUNCTION_PARAMETERS, NONDETERMINISTIC_CONTRACT_CALL_RESULTS)
@@ -108,7 +89,7 @@ public class ERC1155ContractInteractions extends HapiSuite {
                                     .getAccountInfo(ACCOUNT2 + "Info")
                                     .getContractAccountID();
 
-                            final var ops = new ArrayList<HapiSpecOperation>();
+                            final var ops = new ArrayList<SpecOperation>();
 
                             /* approve for other accounts */
                             final var approveCall = contractCall(
@@ -151,10 +132,5 @@ public class ERC1155ContractInteractions extends HapiSuite {
                         getTxnRecord("contractMintCall").logged(),
                         getTxnRecord("acc1ApproveCall").logged(),
                         getTxnRecord("contractTransferFromCall").logged());
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return log;
     }
 }

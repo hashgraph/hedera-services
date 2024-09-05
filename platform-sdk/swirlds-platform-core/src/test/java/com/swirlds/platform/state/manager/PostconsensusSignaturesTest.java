@@ -16,23 +16,23 @@
 
 package com.swirlds.platform.state.manager;
 
-import static com.swirlds.platform.state.manager.SignatureVerificationTestUtils.buildFakeSignatureBytes;
+import static com.swirlds.platform.test.fixtures.state.manager.SignatureVerificationTestUtils.buildFakeSignatureBytes;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 
-import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.hedera.hapi.platform.event.StateSignatureTransaction;
+import com.swirlds.common.context.PlatformContext;
+import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.platform.components.state.output.StateHasEnoughSignaturesConsumer;
 import com.swirlds.platform.components.state.output.StateLacksSignaturesConsumer;
-import com.swirlds.platform.config.StateConfig;
-import com.swirlds.platform.state.RandomSignedStateGenerator;
 import com.swirlds.platform.state.StateSignatureCollectorTester;
+import com.swirlds.platform.state.signed.DefaultStateSignatureCollector;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
-import com.swirlds.platform.state.signed.StateSignatureCollector;
 import com.swirlds.platform.system.address.AddressBook;
-import com.swirlds.platform.system.transaction.StateSignatureTransaction;
-import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookGenerator;
+import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
+import com.swirlds.platform.test.fixtures.state.RandomSignedStateGenerator;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -40,13 +40,13 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 /**
- * Tests for {@link StateSignatureCollector#handlePostconsensusSignatures(List)}
+ * Tests for {@link DefaultStateSignatureCollector#handlePostconsensusSignatures(List)}
  */
 class PostconsensusSignaturesTest extends AbstractStateSignatureCollectorTest {
 
-    private final AddressBook addressBook = new RandomAddressBookGenerator(random)
-            .setSize(4)
-            .setWeightDistributionStrategy(RandomAddressBookGenerator.WeightDistributionStrategy.BALANCED)
+    private final AddressBook addressBook = RandomAddressBookBuilder.create(random)
+            .withSize(4)
+            .withWeightDistributionStrategy(RandomAddressBookBuilder.WeightDistributionStrategy.BALANCED)
             .build();
 
     /**
@@ -73,9 +73,11 @@ class PostconsensusSignaturesTest extends AbstractStateSignatureCollectorTest {
     @DisplayName("Postconsensus signatures")
     void postconsensusSignatureTests() throws InterruptedException {
         final int count = 100;
-        final StateConfig stateConfig = buildStateConfig();
+        final PlatformContext platformContext = TestPlatformContextBuilder.create()
+                .withConfiguration(buildStateConfig())
+                .build();
 
-        final StateSignatureCollectorTester manager = new StateSignatureCollectorBuilder(stateConfig)
+        final StateSignatureCollectorTester manager = new StateSignatureCollectorBuilder(platformContext)
                 .stateLacksSignaturesConsumer(stateLacksSignaturesConsumer())
                 .stateHasEnoughSignaturesConsumer(stateHasEnoughSignaturesConsumer())
                 .build();
@@ -102,15 +104,15 @@ class PostconsensusSignaturesTest extends AbstractStateSignatureCollectorTest {
             for (int node = 0; node < addressBook.getSize(); node++) {
                 manager.handlePostconsensusSignatureTransaction(
                         addressBook.getNodeId(node),
-                        new StateSignatureTransaction(
-                                round,
-                                buildFakeSignatureBytes(
+                        StateSignatureTransaction.newBuilder()
+                                .round(round)
+                                .signature(buildFakeSignatureBytes(
                                         addressBook
                                                 .getAddress(addressBook.getNodeId(node))
                                                 .getSigPublicKey(),
-                                        states.get(round).getState().getHash()),
-                                states.get(round).getState().getHash().getBytes(),
-                                Bytes.EMPTY));
+                                        states.get(round).getState().getHash()))
+                                .hash(states.get(round).getState().getHash().getBytes())
+                                .build());
             }
 
             try (final ReservedSignedState lastCompletedState = manager.getLatestSignedState("test")) {

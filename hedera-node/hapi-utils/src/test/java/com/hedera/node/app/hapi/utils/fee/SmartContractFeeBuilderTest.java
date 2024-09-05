@@ -16,6 +16,8 @@
 
 package com.hedera.node.app.hapi.utils.fee;
 
+import static com.hedera.node.app.hapi.utils.CommonPbjConverters.fromPbj;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.hederahashgraph.api.proto.java.EthereumTransactionBody;
@@ -49,5 +51,18 @@ class SmartContractFeeBuilderTest {
         assertEquals(3481, result.getServicedata().getRbh());
         assertEquals(0, result.getServicedata().getSbh());
         assertEquals(0, result.getServicedata().getTv());
+    }
+
+    @Test
+    void assertMethodsDoNotThrowExceptionsWithPlainBodies() {
+        // Validate that methods called with plain bodies don't throw unexpected exceptions.
+        // This also ensures reliability of the calculateFees() implementations
+        final var txnBody = TransactionBody.newBuilder().build();
+        assertDoesNotThrow(() -> smartContractFeeBuilder.getContractDeleteTxFeeMatrices(txnBody, signValueObj));
+        assertDoesNotThrow(() -> smartContractFeeBuilder.getEthereumTransactionFeeMatrices(txnBody, signValueObj));
+        assertDoesNotThrow(() -> smartContractFeeBuilder.getContractCallTxFeeMatrices(txnBody, signValueObj));
+        assertDoesNotThrow(() -> smartContractFeeBuilder.getContractCreateTxFeeMatrices(txnBody, signValueObj));
+        assertDoesNotThrow(() -> smartContractFeeBuilder.getContractUpdateTxFeeMatrices(
+                txnBody, fromPbj(new com.hedera.hapi.node.base.Timestamp(0, 0)), signValueObj));
     }
 }

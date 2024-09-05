@@ -17,70 +17,40 @@
 package com.swirlds.platform.network.topology;
 
 import com.swirlds.common.platform.NodeId;
-import com.swirlds.platform.network.RandomGraph;
-import com.swirlds.platform.system.address.AddressBook;
+import com.swirlds.platform.network.PeerInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
-import java.util.Random;
-import java.util.function.Predicate;
+import java.util.Set;
 
 /**
- * A bidirectional topology that never changes.
+ * A fully connected topology that never changes.
  */
 public class StaticTopology implements NetworkTopology {
-    private static final long SEED = 0;
+
+    private final Set<NodeId> nodeIds = new HashSet<>();
 
     private final NodeId selfId;
-    /**
-     * Two nodes are neighbors if their indexes in the address book are neighbors in the connection graph.
-     */
-    private final AddressBook addressBook;
-
-    private final RandomGraph connectionGraph;
 
     /**
      * Constructor.
-     *
-     * @param random            a source of randomness, used to chose random neighbors, does not need to be
-     *                          cryptographically secure
-     * @param addressBook       the current address book
+     * @param peers             the set of peers in the network
      * @param selfId            the ID of this node
-     * @param numberOfNeighbors the number of neighbors each node should have
      */
-    public StaticTopology(
-            @NonNull final Random random,
-            @NonNull final AddressBook addressBook,
-            @NonNull final NodeId selfId,
-            final int numberOfNeighbors) {
-        this.addressBook = Objects.requireNonNull(addressBook, "addressBook must not be null");
-        this.selfId = Objects.requireNonNull(selfId, "selfId must not be null");
-        this.connectionGraph = new RandomGraph(random, addressBook.getSize(), numberOfNeighbors, SEED);
-
-        if (!addressBook.contains(selfId)) {
-            throw new IllegalArgumentException("Address book does not contain selfId");
-        }
+    public StaticTopology(@NonNull final List<PeerInfo> peers, @NonNull final NodeId selfId) {
+        Objects.requireNonNull(peers);
+        Objects.requireNonNull(selfId);
+        peers.forEach(peer -> nodeIds.add(peer.nodeId()));
+        this.selfId = selfId;
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public List<NodeId> getNeighbors() {
-        return getNeighbors((nodeId -> true));
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public List<NodeId> getNeighbors(final Predicate<NodeId> filter) {
-        final int selfIndex = addressBook.getIndexOfNodeId(selfId);
-        return Arrays.stream(connectionGraph.getNeighbors(selfIndex))
-                .mapToObj(addressBook::getNodeId)
-                .filter(filter)
-                .toList();
+    public Set<NodeId> getNeighbors() {
+        return nodeIds;
     }
 
     /**
@@ -88,22 +58,7 @@ public class StaticTopology implements NetworkTopology {
      */
     @Override
     public boolean shouldConnectToMe(final NodeId nodeId) {
-        return isNeighbor(nodeId) && addressBook.getIndexOfNodeId(nodeId) < addressBook.getIndexOfNodeId(selfId);
-    }
-
-    /**
-     * Queries the topology on whether this node is my neighbor
-     *
-     * @param nodeId the ID of the node being queried
-     * @return true if this node is my neighbor, false if not
-     */
-    private boolean isNeighbor(final NodeId nodeId) {
-        if (!addressBook.contains(nodeId)) {
-            return false;
-        }
-        final int selfIndex = addressBook.getIndexOfNodeId(selfId);
-        final int nodeIndex = addressBook.getIndexOfNodeId(nodeId);
-        return connectionGraph.isAdjacent(selfIndex, nodeIndex);
+        return nodeIds.contains(nodeId) && nodeId.id() < selfId.id();
     }
 
     /**
@@ -111,14 +66,6 @@ public class StaticTopology implements NetworkTopology {
      */
     @Override
     public boolean shouldConnectTo(final NodeId nodeId) {
-        return isNeighbor(nodeId) && addressBook.getIndexOfNodeId(nodeId) > addressBook.getIndexOfNodeId(selfId);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public RandomGraph getConnectionGraph() {
-        return connectionGraph;
+        return nodeIds.contains(nodeId) && nodeId.id() > selfId.id();
     }
 }

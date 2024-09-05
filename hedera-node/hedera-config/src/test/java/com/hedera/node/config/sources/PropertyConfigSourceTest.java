@@ -63,7 +63,7 @@ class PropertyConfigSourceTest {
     @Test
     void testLoadProperties() throws Exception {
         // given
-        String existingFile = "bootstrap.properties";
+        String existingFile = "alphabet.properties";
 
         // when
         Method method = PropertyConfigSource.class.getDeclaredMethod("loadProperties", String.class);

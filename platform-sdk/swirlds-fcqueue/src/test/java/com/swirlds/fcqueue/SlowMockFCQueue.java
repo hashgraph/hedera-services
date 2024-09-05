@@ -464,7 +464,7 @@ public class SlowMockFCQueue<E extends FastCopyable & SerializableHashable> exte
         Cryptography crypto = CryptographyHolder.get();
         // return a hash of a hash, in order to make state proofs smaller in the future
         crypto.digestSync(element);
-        return crypto.digestSync(element.getHash()).getValue();
+        return crypto.digestSync(element.getHash()).copyToByteArray();
     }
 
     protected static byte[] getNullHash() {

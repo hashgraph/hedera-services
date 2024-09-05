@@ -18,17 +18,17 @@ package com.hedera.node.app.services;
 
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.hapi.node.base.SemanticVersion;
-import com.hedera.node.app.spi.Service;
-import com.hedera.node.app.spi.workflows.record.GenesisRecordsBuilder;
 import com.hedera.node.app.state.merkle.MerkleSchemaRegistry;
-import com.hedera.node.app.version.HederaSoftwareVersion;
+import com.hedera.node.app.state.merkle.SchemaApplications;
 import com.swirlds.common.constructable.ConstructableRegistry;
+import com.swirlds.config.api.Configuration;
+import com.swirlds.state.spi.Service;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Collections;
-import java.util.Comparator;
+import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
+import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -39,42 +39,58 @@ import org.apache.logging.log4j.Logger;
 @Singleton
 public final class ServicesRegistryImpl implements ServicesRegistry {
     private static final Logger logger = LogManager.getLogger(ServicesRegistryImpl.class);
-    /**
-     * Use a constant version to be passed to the schema registration.
-     * If the version changes the class id will be different and the upgrade will have issues.
-     */
-    private final SemanticVersion VERSION =
-            SemanticVersion.newBuilder().major(0).minor(48).patch(0).build();
+
     /** We have to register with the {@link ConstructableRegistry} based on the schemas of the services */
     private final ConstructableRegistry constructableRegistry;
     /** The set of registered services */
     private final SortedSet<Registration> entries;
-
-    private final GenesisRecordsBuilder genesisRecords;
+    /**
+     * The current bootstrap configuration of the network; note this ideally would be a
+     * provider of {@link com.hedera.node.config.VersionedConfiguration}s per version,
+     * in case a service's states evolved with changing config. But this is a very edge
+     * affordance that we have no example of needing.
+     */
+    private final Configuration bootstrapConfig;
 
     /**
      * Creates a new registry.
      */
+    @Inject
     public ServicesRegistryImpl(
-            @NonNull final ConstructableRegistry constructableRegistry,
-            @NonNull final GenesisRecordsBuilder genesisRecords) {
+            @NonNull final ConstructableRegistry constructableRegistry, @NonNull final Configuration bootstrapConfig) {
         this.constructableRegistry = requireNonNull(constructableRegistry);
-        this.genesisRecords = requireNonNull(genesisRecords);
-        this.entries = new TreeSet<>(Comparator.comparing(r -> r.service().getServiceName()));
+        this.bootstrapConfig = requireNonNull(bootstrapConfig);
+        this.entries = new TreeSet<>();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @NonNull
+    @Override
+    public ServicesRegistry subRegistryFor(@NonNull final String... serviceNames) {
+        requireNonNull(serviceNames);
+        final var selections = Set.of(serviceNames);
+        final var subRegistry = new ServicesRegistryImpl(constructableRegistry, bootstrapConfig);
+        subRegistry.entries.addAll(entries.stream()
+                .filter(registration -> selections.contains(registration.serviceName()))
+                .toList());
+        return subRegistry;
     }
 
     /**
      * Register the given service.
      *
      * @param service The service to register
-     * @param version
      */
-    public void register(@NonNull final Service service, final HederaSoftwareVersion version) {
+    @Override
+    public void register(@NonNull final Service service) {
         final var serviceName = service.getServiceName();
 
         logger.debug("Registering schemas for service {}", serviceName);
-        final var registry = new MerkleSchemaRegistry(constructableRegistry, serviceName, genesisRecords);
-        service.registerSchemas(registry, VERSION);
+        final var registry =
+                new MerkleSchemaRegistry(constructableRegistry, serviceName, bootstrapConfig, new SchemaApplications());
+        service.registerSchemas(registry);
 
         entries.add(new Registration(service, registry));
         logger.info("Registered service {} with implementation {}", service.getServiceName(), service.getClass());

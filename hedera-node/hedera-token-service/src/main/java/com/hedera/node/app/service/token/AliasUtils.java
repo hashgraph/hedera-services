@@ -23,7 +23,7 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.state.token.Account;
-import com.hedera.node.app.service.evm.utils.EthSigsUtils;
+import com.hedera.node.app.hapi.utils.EthSigsUtils;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -47,12 +47,12 @@ public final class AliasUtils {
     private static final byte[] ENTITY_NUM_ALIAS_PREFIX = new byte[12];
     /** All EVM addresses are 20 bytes long, and key-encoded keys are not. */
     private static final int EVM_ADDRESS_SIZE = 20;
-    /** All valid ECDSA protobuf encoded keys have this prefix */
+    /** All valid ECDSA protobuf encoded keys have this prefix. */
     private static final Bytes ECDSA_KEY_ALIAS_PREFIX =
             Bytes.wrap(HexFormat.of().parseHex("3a21"));
-    /** All valid ECDSA protobuf encoded keys are 33 bytes long */
+    /** All valid ECDSA protobuf encoded keys are 33 bytes long. */
     private static final int ECDSA_SECP256K1_ALIAS_SIZE = 33;
-    /** All valid ED25519 protobuf encoded keys are 32 bytes long */
+    /** All valid ED25519 protobuf encoded keys are 32 bytes long. */
     private static final int ED25519_ALIAS_SIZE = 32;
 
     private AliasUtils() {
@@ -63,7 +63,7 @@ public final class AliasUtils {
      * Gets whether the given alias is the right length to be an EVM address. Today, this number is 20 bytes.
      *
      * @param alias The alias to check
-     * @return {@code true} if the alias is the right length to be an EVM address.
+     * @return {@code true} if the alias is the right length to be an EVM address
      */
     public static boolean isOfEvmAddressSize(@NonNull final Bytes alias) {
         return alias.length() == EVM_ADDRESS_SIZE;
@@ -75,16 +75,24 @@ public final class AliasUtils {
      * public key. Otherwise, return null.
      *
      * @param alias The alias to extract an EVM address from.
-     * @return The EVM address, or null if the alias is not an EVM address or an ECDSA_SECP256K1 key alias.
+     * @return The EVM address, or null if the alias is not an EVM address or an ECDSA_SECP256K1 key alias
      */
     @Nullable
     public static Bytes extractEvmAddress(@NonNull final Bytes alias) {
         requireNonNull(alias);
-        if (isOfEvmAddressSize(alias)) return alias;
+        if (isOfEvmAddressSize(alias)) {
+            return alias;
+        }
         final var key = asKeyFromAliasOrElse(alias, null);
         return (key != null && key.hasEcdsaSecp256k1()) ? recoverAddressFromPubKey(key.ecdsaSecp256k1OrThrow()) : null;
     }
 
+    /**
+     * Given a key, attempts to extract from it an EVM address. If the key is an ECDSA_SECP256K1 key, return the EVM
+     * address derived from the public key. Otherwise, return null.
+     * @param key The key to extract an EVM address from.
+     * @return The EVM address, or null if the key is not an ECDSA_SECP256K1 key
+     */
     @Nullable
     public static Bytes extractEvmAddress(@Nullable final Key key) {
         return key != null && key.hasEcdsaSecp256k1() ? recoverAddressFromPubKey(key.ecdsaSecp256k1OrThrow()) : null;
@@ -107,6 +115,13 @@ public final class AliasUtils {
         return isOfEvmAddressSize(alias) && alias.matchesPrefix(ENTITY_NUM_ALIAS_PREFIX);
     }
 
+    /**
+     * Given some alias, determine whether it is a key alias. If the alias is a valid protobuf-encoded key, then it is a
+     * key alias. This method does not check whether the key is valid, only whether the alias is a valid
+     * protobuf-encoded key.
+     * @param alias The alias to check
+     * @return True if the alias is a key alias
+     */
     public static boolean isKeyAlias(@NonNull final Bytes alias) {
         final var key = asKeyFromAliasOrElse(alias, null);
         if (key == null) return false;
@@ -120,6 +135,12 @@ public final class AliasUtils {
         return false;
     }
 
+    /**
+     * Given a public key, recover the address from it. This method is used to extract an EVM address from an ECDSA
+     * public key.
+     * @param alias The public key to recover the address from
+     * @return The address recovered from the public key
+     */
     @NonNull
     public static Bytes recoverAddressFromPubKey(@NonNull final Bytes alias) {
         return EthSigsUtils.recoverAddressFromPubKey(alias);
@@ -159,20 +180,20 @@ public final class AliasUtils {
      * A utility method that, given an address alias, extracts the account or contract ID number (skipping shard
      * and realm).
      * @param addressAlias The address alias, where the 0.0.1234 style address has been encoded into 20 bytes
-     * @return
+     * @return The ID number of the account or contract
      */
     public static Long extractIdFromAddressAlias(final Bytes addressAlias) {
         return addressAlias.getLong(12);
     }
 
+    /**
+     * A utility method that checks if account is in aliased form.
+     * @param idOrAlias account id or alias
+     * @return true if account is in aliased form
+     */
     public static boolean isAlias(@NonNull final AccountID idOrAlias) {
         requireNonNull(idOrAlias);
         return !idOrAlias.hasAccountNum() && idOrAlias.hasAlias();
-    }
-
-    public static boolean isNotAlias(@NonNull final AccountID idOrAlias) {
-        requireNonNull(idOrAlias);
-        return idOrAlias.hasAccountNum() && !idOrAlias.hasAlias();
     }
 
     /**
@@ -194,6 +215,7 @@ public final class AliasUtils {
      * {@code HandleException} with {@code INVALID_ALIAS_KEY} response code.
      * @param alias given alias bytes
      * @return the parsed key
+     * @throws PreCheckException if the alias is not a valid key
      */
     @NonNull
     public static Key asKeyFromAliasPreCheck(@NonNull final Bytes alias) throws PreCheckException {
@@ -203,6 +225,13 @@ public final class AliasUtils {
         return key;
     }
 
+    /**
+     * Parse a {@code Key} from given alias {@code Bytes}. If there is a parse error, returns the given default key.
+     * @param alias given alias bytes. If the alias is an evmAddress we don't need to parse with Key.PROTOBUF.
+     *              This will cause BufferUnderflowException. So, we return the default key.
+     * @param def default key
+     * @return the parsed key or the default key if there is a parse error
+     */
     @Nullable
     public static Key asKeyFromAliasOrElse(@NonNull final Bytes alias, @Nullable final Key def) {
         requireNonNull(alias);
@@ -219,6 +248,11 @@ public final class AliasUtils {
         }
     }
 
+    /**
+     * Check if the given alias is greater than the size of an EVM address.
+     * @param alias The alias to check
+     * @return True if the alias is greater than the size of an EVM address
+     */
     public static boolean isAliasSizeGreaterThanEvmAddress(@NonNull final Bytes alias) {
         requireNonNull(alias);
         return alias.length() > EVM_ADDRESS_SIZE;

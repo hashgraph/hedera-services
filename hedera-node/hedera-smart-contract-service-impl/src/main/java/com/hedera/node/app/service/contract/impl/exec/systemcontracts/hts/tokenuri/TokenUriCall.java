@@ -21,13 +21,13 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.hapi.node.base.TokenType.FUNGIBLE_COMMON;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult.haltResult;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult.successResult;
-import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCall.PricedResult.gasOnly;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.Call.PricedResult.gasOnly;
 
 import com.hedera.hapi.node.state.token.Token;
+import com.hedera.node.app.hapi.utils.HederaExceptionalHaltReason;
 import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AbstractHtsCall;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.AbstractCall;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
-import com.hedera.node.app.service.evm.contracts.operations.HederaExceptionalHaltReason;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import org.hyperledger.besu.evm.frame.MessageFrame;
@@ -35,7 +35,7 @@ import org.hyperledger.besu.evm.frame.MessageFrame;
 /**
  * Implements the token redirect {@code tokenURI()} call of the HTS system contract.
  */
-public class TokenUriCall extends AbstractHtsCall {
+public class TokenUriCall extends AbstractCall {
     public static final String URI_QUERY_NON_EXISTING_TOKEN_ERROR = "ERC721Metadata: URI query for nonexistent token";
 
     private final long serialNo;
@@ -63,8 +63,7 @@ public class TokenUriCall extends AbstractHtsCall {
         var metadata = URI_QUERY_NON_EXISTING_TOKEN_ERROR;
         if (token != null) {
             if (token.tokenType() == FUNGIBLE_COMMON) {
-                // (FUTURE) consider removing this pattern, but for now match
-                // mono-service by halting on an invalid token type
+                // For backwards compatibility, we need to halt here per issue #8746.
                 return gasOnly(
                         haltResult(
                                 HederaExceptionalHaltReason.ERROR_DECODING_PRECOMPILE_INPUT,

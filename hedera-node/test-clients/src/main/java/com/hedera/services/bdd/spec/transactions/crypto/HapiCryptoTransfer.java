@@ -20,8 +20,8 @@ import static com.hedera.services.bdd.spec.infrastructure.meta.InitialAccountIde
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.asId;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.asIdForKeyLookUp;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.asIdWithAlias;
-import static com.hedera.services.bdd.spec.transactions.TxnUtils.suFrom;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.HBAR_SENTINEL_TOKEN_ID;
+import static com.swirlds.common.utility.CommonUtils.unhex;
 import static java.util.stream.Collectors.collectingAndThen;
 import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.mapping;
@@ -29,45 +29,31 @@ import static java.util.stream.Collectors.reducing;
 import static java.util.stream.Collectors.summingLong;
 import static java.util.stream.Collectors.toList;
 
+import com.esaulpaugh.headlong.abi.Address;
 import com.google.common.base.MoreObjects;
 import com.google.protobuf.ByteString;
-import com.google.protobuf.UInt32Value;
-import com.hedera.node.app.hapi.fees.usage.BaseTransactionMeta;
-import com.hedera.node.app.hapi.fees.usage.crypto.CryptoTransferMeta;
-import com.hedera.node.app.hapi.fees.usage.state.UsageAccumulator;
 import com.hedera.node.app.hapi.utils.CommonUtils;
+import com.hedera.node.app.hapi.utils.EthSigsUtils;
 import com.hedera.node.app.hapi.utils.fee.FeeObject;
-import com.hedera.node.app.hapi.utils.fee.SigValueObj;
-import com.hedera.node.app.service.evm.utils.EthSigsUtils;
 import com.hedera.services.bdd.spec.HapiSpec;
-import com.hedera.services.bdd.spec.fees.AdapterUtils;
-import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
+import com.hedera.services.bdd.spec.transactions.HapiBaseTransfer;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
-import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
-import com.hederahashgraph.api.proto.java.NftTransfer;
-import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.api.proto.java.TransactionResponse;
 import com.hederahashgraph.api.proto.java.TransferList;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
@@ -75,53 +61,26 @@ import java.util.function.BiConsumer;
 import java.util.function.BinaryOperator;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.function.Predicate;
 import java.util.function.ToLongFunction;
 import java.util.stream.Collector;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class HapiCryptoTransfer extends HapiTxnOp<HapiCryptoTransfer> {
+public class HapiCryptoTransfer extends HapiBaseTransfer<HapiCryptoTransfer> {
     static final Logger log = LogManager.getLogger(HapiCryptoTransfer.class);
 
     private static final List<TokenMovement> MISSING_TOKEN_AWARE_PROVIDERS = Collections.emptyList();
     private static final Function<HapiSpec, TransferList> MISSING_HBAR_ONLY_PROVIDER = null;
 
-    private static final Comparator<AccountID> ACCOUNT_NUM_COMPARATOR = Comparator.comparingLong(
-                    AccountID::getAccountNum)
-            .thenComparingLong(AccountID::getShardNum)
-            .thenComparingLong(AccountID::getRealmNum);
-    private static final Comparator<AccountID> ACCOUNT_NUM_OR_ALIAS_COMPARATOR = (a, b) -> {
-        if (!a.getAlias().isEmpty() || !b.getAlias().isEmpty()) {
-            return ByteString.unsignedLexicographicalComparator().compare(a.getAlias(), b.getAlias());
-        } else {
-            return ACCOUNT_NUM_COMPARATOR.compare(a, b);
-        }
-    };
-    private static final Comparator<AccountAmount> ACCOUNT_AMOUNT_COMPARATOR = Comparator.comparingLong(
-                    AccountAmount::getAmount)
-            .thenComparing(AccountAmount::getAccountID, ACCOUNT_NUM_OR_ALIAS_COMPARATOR);
-    private static final Comparator<NftTransfer> NFT_TRANSFER_COMPARATOR = Comparator.comparing(
-                    NftTransfer::getSenderAccountID, ACCOUNT_NUM_OR_ALIAS_COMPARATOR)
-            .thenComparing(NftTransfer::getReceiverAccountID, ACCOUNT_NUM_OR_ALIAS_COMPARATOR)
-            .thenComparingLong(NftTransfer::getSerialNumber);
-    private static final Comparator<TokenID> TOKEN_ID_COMPARATOR = Comparator.comparingLong(TokenID::getTokenNum);
-    private static final Comparator<TokenTransferList> TOKEN_TRANSFER_LIST_COMPARATOR =
-            (o1, o2) -> Objects.compare(o1.getToken(), o2.getToken(), TOKEN_ID_COMPARATOR);
-
     private boolean logResolvedStatus = false;
     private boolean breakNetZeroTokenChangeInvariant = false;
-
-    private List<TokenMovement> tokenAwareProviders = MISSING_TOKEN_AWARE_PROVIDERS;
     private Function<HapiSpec, TransferList> hbarOnlyProvider = MISSING_HBAR_ONLY_PROVIDER;
     private Optional<String> tokenWithEmptyTransferAmounts = Optional.empty();
     private Optional<Pair<String[], Long>> appendedFromTo = Optional.empty();
     private Optional<AtomicReference<FeeObject>> feesObserver = Optional.empty();
     private Optional<BiConsumer<HapiSpec, CryptoTransferTransactionBody.Builder>> explicitDef = Optional.empty();
-    private boolean fullyAggregateTokenTransfers = true;
     private static boolean transferToKey = false;
 
     @Override
@@ -198,6 +157,7 @@ public class HapiCryptoTransfer extends HapiTxnOp<HapiCryptoTransfer> {
     }
 
     @SafeVarargs
+    @SuppressWarnings("varargs")
     public HapiCryptoTransfer(final boolean sortTransferList, final Function<HapiSpec, TransferList>... providers) {
         if (providers.length == 0) {
             hbarOnlyProvider = ignore -> TransferList.getDefaultInstance();
@@ -280,6 +240,11 @@ public class HapiCryptoTransfer extends HapiTxnOp<HapiCryptoTransfer> {
     }
 
     public static Function<HapiSpec, TransferList> tinyBarsFromTo(
+            final String from, final Address to, final long amount) {
+        return tinyBarsFromTo(from, ByteString.copyFrom(unhex(to.toString().substring(2))), ignore -> amount);
+    }
+
+    public static Function<HapiSpec, TransferList> tinyBarsFromTo(
             final String from, final ByteString to, final ToLongFunction<HapiSpec> amountFn) {
         return spec -> {
             final long amount = amountFn.applyAsLong(spec);
@@ -349,7 +314,7 @@ public class HapiCryptoTransfer extends HapiTxnOp<HapiCryptoTransfer> {
             final String from, final String to, final long amount) {
         return spec -> {
             final var fromId = asId(from, spec);
-            final var toId = spec.registry().aliasIdFor(to);
+            final var toId = spec.registry().keyAliasIdFor(to);
             return xFromTo(fromId, toId, amount);
         };
     }
@@ -368,7 +333,7 @@ public class HapiCryptoTransfer extends HapiTxnOp<HapiCryptoTransfer> {
                         .build();
                 return xFromTo(fromId, toAccId, amount);
             }
-            final var toId = spec.registry().aliasIdFor(to);
+            final var toId = spec.registry().keyAliasIdFor(to);
             return xFromTo(fromId, toId, amount);
         };
     }
@@ -464,6 +429,7 @@ public class HapiCryptoTransfer extends HapiTxnOp<HapiCryptoTransfer> {
                                 misconfigureIfRequested(b, spec);
                             }
                         });
+
         return builder -> builder.setCryptoTransfer(opBody);
     }
 
@@ -520,33 +486,6 @@ public class HapiCryptoTransfer extends HapiTxnOp<HapiCryptoTransfer> {
                         (_txn, _svo) -> usageEstimate(_txn, _svo, spec.fees().tokenTransferUsageMultiplier()),
                         txn,
                         numPayerKeys);
-    }
-
-    public static FeeData usageEstimate(final TransactionBody txn, final SigValueObj svo, final int multiplier) {
-        final var op = txn.getCryptoTransfer();
-
-        final var baseMeta = new BaseTransactionMeta(
-                txn.getMemoBytes().size(), op.getTransfers().getAccountAmountsCount());
-
-        int numTokensInvolved = 0, numTokenTransfers = 0, numNftOwnershipChanges = 0;
-        for (final var tokenTransfers : op.getTokenTransfersList()) {
-            numTokensInvolved++;
-            numTokenTransfers += tokenTransfers.getTransfersCount();
-            numNftOwnershipChanges += tokenTransfers.getNftTransfersCount();
-        }
-        final var xferUsageMeta =
-                new CryptoTransferMeta(multiplier, numTokensInvolved, numTokenTransfers, numNftOwnershipChanges);
-
-        final var accumulator = new UsageAccumulator();
-        cryptoOpsUsage.cryptoTransferUsage(suFrom(svo), xferUsageMeta, baseMeta, accumulator);
-
-        final var feeData = AdapterUtils.feeDataFrom(accumulator);
-        return feeData.toBuilder().setSubType(xferUsageMeta.getSubType()).build();
-    }
-
-    @Override
-    protected Function<Transaction, TransactionResponse> callToUse(final HapiSpec spec) {
-        return spec.clients().getCryptoSvcStub(targetNodeFor(spec), useTls)::cryptoTransfer;
     }
 
     @Override
@@ -609,141 +548,6 @@ public class HapiCryptoTransfer extends HapiTxnOp<HapiCryptoTransfer> {
             });
             return partyKeys;
         };
-    }
-
-    private List<TokenTransferList> transfersAllFor(final HapiSpec spec) {
-        return Stream.concat(transfersFor(spec).stream(), transfersForNft(spec).stream())
-                .sorted(TOKEN_TRANSFER_LIST_COMPARATOR)
-                .toList();
-    }
-
-    private List<TokenTransferList> transfersFor(final HapiSpec spec) {
-        final Map<TokenID, Pair<Integer, List<AccountAmount>>> aggregated;
-        if (fullyAggregateTokenTransfers) {
-            aggregated = fullyAggregateTokenTransfersList(spec);
-        } else {
-            aggregated = aggregateOnTokenIds(spec);
-        }
-
-        return aggregated.entrySet().stream()
-                .map(entry -> {
-                    final var builder = TokenTransferList.newBuilder()
-                            .setToken(entry.getKey())
-                            .addAllTransfers(entry.getValue().getRight());
-                    if (entry.getValue().getLeft() > 0) {
-                        builder.setExpectedDecimals(
-                                UInt32Value.of(entry.getValue().getLeft().intValue()));
-                    }
-                    return builder.build();
-                })
-                .sorted(TOKEN_TRANSFER_LIST_COMPARATOR)
-                .toList();
-    }
-
-    private Map<TokenID, Pair<Integer, List<AccountAmount>>> aggregateOnTokenIds(final HapiSpec spec) {
-        final Map<TokenID, Pair<Integer, List<AccountAmount>>> map = new HashMap<>();
-        for (final TokenMovement tm : tokenAwareProviders) {
-            if (tm.isFungibleToken()) {
-                final var list = tm.specializedFor(spec);
-
-                if (map.containsKey(list.getToken())) {
-                    final var existingVal = map.get(list.getToken());
-                    final List<AccountAmount> newList = Stream.of(existingVal.getRight(), list.getTransfersList())
-                            .flatMap(Collection::stream)
-                            .sorted(ACCOUNT_AMOUNT_COMPARATOR)
-                            .toList();
-
-                    map.put(list.getToken(), Pair.of(existingVal.getLeft(), newList));
-                } else {
-                    map.put(list.getToken(), Pair.of(list.getExpectedDecimals().getValue(), list.getTransfersList()));
-                }
-            }
-        }
-        return map;
-    }
-
-    private Map<TokenID, Pair<Integer, List<AccountAmount>>> fullyAggregateTokenTransfersList(final HapiSpec spec) {
-        final Map<TokenID, Pair<Integer, List<AccountAmount>>> map = new HashMap<>();
-        for (final TokenMovement xfer : tokenAwareProviders) {
-            if (xfer.isFungibleToken()) {
-                final var list = xfer.specializedFor(spec);
-
-                if (map.containsKey(list.getToken())) {
-                    final var existingVal = map.get(list.getToken());
-                    final List<AccountAmount> newList = Stream.of(existingVal.getRight(), list.getTransfersList())
-                            .flatMap(Collection::stream)
-                            .sorted(ACCOUNT_AMOUNT_COMPARATOR)
-                            .toList();
-
-                    map.put(list.getToken(), Pair.of(existingVal.getLeft(), aggregateTransfers(newList)));
-                } else {
-                    map.put(
-                            list.getToken(),
-                            Pair.of(
-                                    list.getExpectedDecimals().getValue(),
-                                    aggregateTransfers(list.getTransfersList())));
-                }
-            }
-        }
-        return map;
-    }
-
-    private List<AccountAmount> aggregateTransfers(final List<AccountAmount> list) {
-        return list.stream()
-                .collect(groupingBy(
-                        AccountAmount::getAccountID,
-                        groupingBy(AccountAmount::getIsApproval, mapping(AccountAmount::getAmount, toList()))))
-                .entrySet()
-                .stream()
-                .flatMap(entry -> {
-                    final List<AccountAmount> accountAmounts = new ArrayList<>();
-                    for (final var entrySet : entry.getValue().entrySet()) {
-                        final var aa = AccountAmount.newBuilder()
-                                .setAccountID(entry.getKey())
-                                .setIsApproval(entrySet.getKey())
-                                .setAmount(entrySet.getValue().stream()
-                                        .mapToLong(l -> l)
-                                        .sum())
-                                .build();
-                        accountAmounts.add(aa);
-                    }
-                    return accountAmounts.stream();
-                })
-                .sorted(ACCOUNT_AMOUNT_COMPARATOR)
-                .toList();
-    }
-
-    private List<TokenTransferList> transfersForNft(final HapiSpec spec) {
-        final var uniqueCount = tokenAwareProviders.stream()
-                .filter(Predicate.not(TokenMovement::isFungibleToken))
-                .map(TokenMovement::getToken)
-                .distinct()
-                .count();
-        final Map<TokenID, List<NftTransfer>> aggregated = tokenAwareProviders.stream()
-                .filter(Predicate.not(TokenMovement::isFungibleToken))
-                .map(p -> p.specializedForNft(spec))
-                .collect(Collectors.toMap(
-                        TokenTransferList::getToken,
-                        TokenTransferList::getNftTransfersList,
-                        (left, right) -> Stream.of(left, right)
-                                .flatMap(Collection::stream)
-                                .sorted(NFT_TRANSFER_COMPARATOR)
-                                .toList(),
-                        LinkedHashMap::new));
-        if (aggregated.size() != 0 && uniqueCount != aggregated.size()) {
-            throw new RuntimeException("Aggregation seems to have failed (expected "
-                    + uniqueCount
-                    + " distinct unique token types, got "
-                    + aggregated.size()
-                    + ")");
-        }
-        return aggregated.entrySet().stream()
-                .map(entry -> TokenTransferList.newBuilder()
-                        .setToken(entry.getKey())
-                        .addAllNftTransfers(entry.getValue())
-                        .build())
-                .sorted(TOKEN_TRANSFER_LIST_COMPARATOR)
-                .toList();
     }
 
     @Override

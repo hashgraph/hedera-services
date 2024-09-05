@@ -21,6 +21,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ALLOWANCE_OWNER
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ALLOWANCE_SPENDER_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_DELEGATING_SPENDER;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_PAYER_ACCOUNT_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NEGATIVE_ALLOWANCE_AMOUNT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SENDER_DOES_NOT_OWN_NFT_SERIAL_NO;
 import static com.hedera.node.app.hapi.fees.usage.SingletonEstimatorUtils.ESTIMATOR_UTILS;
@@ -30,6 +31,7 @@ import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.NFT_ALLOWANCE_SIZE;
 import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.TOKEN_ALLOWANCE_SIZE;
 import static com.hedera.node.app.service.token.impl.validators.AllowanceValidator.isValidOwner;
 import static com.hedera.node.app.service.token.impl.validators.AllowanceValidator.validateAllowanceLimit;
+import static com.hedera.node.app.spi.validation.Validations.mustExist;
 import static com.hedera.node.app.spi.validation.Validations.validateAccountID;
 import static com.hedera.node.app.spi.validation.Validations.validateNullableAccountID;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
@@ -81,12 +83,17 @@ import javax.inject.Singleton;
 public class CryptoApproveAllowanceHandler implements TransactionHandler {
     private final ApproveAllowanceValidator allowanceValidator;
 
+    /**
+     * Constructs a {@link CryptoApproveAllowanceHandler} with the given {@link ApproveAllowanceValidator}.
+     * @param allowanceValidator the validator to use for validating the transaction
+     */
     @Inject
     public CryptoApproveAllowanceHandler(@NonNull final ApproveAllowanceValidator allowanceValidator) {
         this.allowanceValidator = allowanceValidator;
     }
 
     /**
+     * Validates the transaction body for {@link HederaFunctionality#CRYPTO_APPROVE_ALLOWANCE}.
      * @param txn the transaction body
      * @throws PreCheckException if the transaction is invalid for any reason
      */
@@ -116,11 +123,13 @@ public class CryptoApproveAllowanceHandler implements TransactionHandler {
             validateNullableAccountID(allowance.owner());
             validateTruePreCheck(allowance.amount() >= 0, NEGATIVE_ALLOWANCE_AMOUNT);
             validateAccountID(allowance.spender(), INVALID_ALLOWANCE_SPENDER_ID);
+            mustExist(allowance.tokenId(), INVALID_TOKEN_ID);
         }
 
         for (final var allowance : nftAllowances) {
             validateNullableAccountID(allowance.owner());
             validateAccountID(allowance.spender(), INVALID_ALLOWANCE_SPENDER_ID);
+            mustExist(allowance.tokenId(), INVALID_TOKEN_ID);
         }
     }
 
@@ -174,7 +183,7 @@ public class CryptoApproveAllowanceHandler implements TransactionHandler {
     @Override
     public void handle(@NonNull final HandleContext context) throws HandleException {
         final var payer = context.payer();
-        final var accountStore = context.writableStore(WritableAccountStore.class);
+        final var accountStore = context.storeFactory().writableStore(WritableAccountStore.class);
 
         // Validate payer account exists
         final var payerAccount = accountStore.getAccountById(payer);
@@ -188,7 +197,7 @@ public class CryptoApproveAllowanceHandler implements TransactionHandler {
         approveAllowance(context, payer, accountStore);
     }
     /**
-     * Validate the transaction body fields that include state or configuration
+     * Validate the transaction body fields that include state or configuration.
      * @param context the handle context
      * @param payerAccount the payer account
      * @param accountStore the account store
@@ -205,7 +214,7 @@ public class CryptoApproveAllowanceHandler implements TransactionHandler {
     }
 
     /**
-     * Apply all changes to the state modifications for crypto, token, and nft allowances
+     * Apply all changes to the state modifications for crypto, token, and nft allowances.
      * @param context the handle context
      * @param payerId the payer account id
      * @param accountStore the account store
@@ -226,8 +235,9 @@ public class CryptoApproveAllowanceHandler implements TransactionHandler {
         final var nftAllowances = op.nftAllowances();
 
         final var hederaConfig = context.configuration().getConfigData(HederaConfig.class);
-        final var tokenStore = context.writableStore(WritableTokenStore.class);
-        final var uniqueTokenStore = context.writableStore(WritableNftStore.class);
+        final var storeFactory = context.storeFactory();
+        final var tokenStore = storeFactory.writableStore(WritableTokenStore.class);
+        final var uniqueTokenStore = storeFactory.writableStore(WritableNftStore.class);
 
         /* --- Apply changes to state --- */
         final var allowanceMaxAccountLimit = hederaConfig.allowancesMaxAccountLimit();
@@ -278,14 +288,14 @@ public class CryptoApproveAllowanceHandler implements TransactionHandler {
     }
 
     /**
-     * Updates the crypto allowance amount if the allowance exists, otherwise adds a new allowance
-     * If the amount is zero removes the allowance if it exists in the list
+     * Updates the crypto allowance amount if the allowance exists, otherwise adds a new allowance.
+     * If the amount is zero removes the allowance if it exists in the list.
      * @param mutableAllowances the list of mutable allowances of owner
      * @param amount the amount
      * @param spenderId the spender id
      */
     private void updateCryptoAllowance(
-            final ArrayList<AccountCryptoAllowance> mutableAllowances, final long amount, final AccountID spenderId) {
+            final List<AccountCryptoAllowance> mutableAllowances, final long amount, final AccountID spenderId) {
         final var newAllowanceBuilder = AccountCryptoAllowance.newBuilder().spenderId(spenderId);
         // get the index of the allowance with same spender in existing list
         final var index = lookupSpender(mutableAllowances, spenderId);
@@ -305,9 +315,9 @@ public class CryptoApproveAllowanceHandler implements TransactionHandler {
     }
 
     /**
-     * Applies all changes needed for fungible token allowances from the transaction.If the key
+     * Applies all changes needed for fungible token allowances from the transaction. If the key
      * {token, spender} already has an allowance, the allowance value will be replaced with values
-     * from transaction
+     * from transaction.
      * @param tokenAllowances the list of token allowances
      * @param payerId the payer account id
      * @param accountStore the account store
@@ -351,7 +361,7 @@ public class CryptoApproveAllowanceHandler implements TransactionHandler {
      * @param tokenId the token number
      */
     private void updateTokenAllowance(
-            final ArrayList<AccountFungibleTokenAllowance> mutableAllowances,
+            final List<AccountFungibleTokenAllowance> mutableAllowances,
             final long amount,
             final AccountID spenderId,
             final TokenID tokenId) {
@@ -425,7 +435,7 @@ public class CryptoApproveAllowanceHandler implements TransactionHandler {
     }
 
     /**
-     * Updates the spender of the given NFTs to the new spender
+     * Updates the spender of the given NFTs to the new spender.
      * @param tokenStore the token store
      * @param uniqueTokenStore the unique token store
      * @param owner the owner account
@@ -458,7 +468,7 @@ public class CryptoApproveAllowanceHandler implements TransactionHandler {
 
     /**
      * Returns the index of the allowance with the given spender in the list if it exists,
-     * otherwise returns -1
+     * otherwise returns -1.
      * @param ownerAllowances list of allowances
      * @param spenderNum spender account number
      * @return index of the allowance if it exists, otherwise -1
@@ -475,7 +485,7 @@ public class CryptoApproveAllowanceHandler implements TransactionHandler {
 
     /**
      * Returns the index of the allowance  with the given spender and token in the list if it exists,
-     * otherwise returns -1
+     * otherwise returns -1.
      * @param ownerAllowances list of allowances
      * @param spenderId spender account number
      * @param tokenId token number
@@ -537,6 +547,7 @@ public class CryptoApproveAllowanceHandler implements TransactionHandler {
         // slightly less than the base price
         final var adjustedBytes = getNewBytes(body.cryptoApproveAllowanceOrThrow(), account);
         return feeContext
+                .feeCalculatorFactory()
                 .feeCalculator(SubType.DEFAULT)
                 .addBytesPerTransaction(bytesUsedInTxn(op))
                 .addRamByteSeconds(adjustedBytes > 0 ? (adjustedBytes * lifeTime) : 0)
@@ -544,7 +555,7 @@ public class CryptoApproveAllowanceHandler implements TransactionHandler {
     }
 
     /**
-     * Gets total bytes used in transaction
+     * Gets total bytes used in transaction.
      * @param op the crypto approve allowance transaction body
      * @return the total bytes used in transaction
      */
@@ -557,7 +568,7 @@ public class CryptoApproveAllowanceHandler implements TransactionHandler {
 
     /**
      * Gets the new bytes that will be added to state from the transaction, if it is successful compared to
-     * what is already present in state
+     * what is already present in state.
      * @param op the crypto approve allowance transaction body
      * @param account the account existing in state
      * @return the new bytes that will be added to state

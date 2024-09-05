@@ -16,31 +16,18 @@
 
 package com.hedera.node.app.service.schedule.impl;
 
-import com.hedera.hapi.node.base.SemanticVersion;
-import com.hedera.node.app.service.mono.state.merkle.MerkleScheduledTransactions;
 import com.hedera.node.app.service.schedule.ScheduleService;
-import com.hedera.node.app.service.schedule.impl.schemas.InitialModServiceScheduleSchema;
-import com.hedera.node.app.spi.state.SchemaRegistry;
+import com.hedera.node.app.service.schedule.impl.schemas.V0490ScheduleSchema;
+import com.hedera.node.app.spi.RpcService;
+import com.swirlds.state.spi.SchemaRegistry;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 
 /**
- * Standard implementation of the {@link ScheduleService} {@link com.hedera.node.app.spi.Service}.
+ * Standard implementation of the {@link ScheduleService} {@link RpcService}.
  */
 public final class ScheduleServiceImpl implements ScheduleService {
-    public static final String SCHEDULES_BY_ID_KEY = "SCHEDULES_BY_ID";
-    public static final String SCHEDULES_BY_EXPIRY_SEC_KEY = "SCHEDULES_BY_EXPIRY_SEC";
-    public static final String SCHEDULES_BY_EQUALITY_KEY = "SCHEDULES_BY_EQUALITY";
-
-    private InitialModServiceScheduleSchema scheduleSchema;
-
-    public void setFs(@Nullable final MerkleScheduledTransactions fs) {
-        scheduleSchema.setFs(fs);
-    }
-
     @Override
-    public void registerSchemas(@NonNull final SchemaRegistry registry, @NonNull final SemanticVersion version) {
-        scheduleSchema = new InitialModServiceScheduleSchema(version);
-        registry.register(scheduleSchema);
+    public void registerSchemas(@NonNull final SchemaRegistry registry) {
+        registry.register(new V0490ScheduleSchema());
     }
 }

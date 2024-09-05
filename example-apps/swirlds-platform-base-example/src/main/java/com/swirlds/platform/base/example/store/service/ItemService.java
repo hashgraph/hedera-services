@@ -32,8 +32,8 @@ import java.util.Objects;
  */
 public class ItemService extends CrudService<Item> {
 
-    private final @NonNull ItemDao dao;
-    private final @NonNull InventoryDao inventoryDao;
+    private final ItemDao dao;
+    private final InventoryDao inventoryDao;
 
     public ItemService() {
         super(Item.class);

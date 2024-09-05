@@ -20,7 +20,7 @@ import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.platform.metrics.ReconnectMetrics;
 import com.swirlds.platform.network.Connection;
-import com.swirlds.platform.state.State;
+import com.swirlds.platform.state.MerkleRoot;
 import com.swirlds.platform.system.address.AddressBook;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
@@ -63,7 +63,7 @@ public class ReconnectLearnerFactory {
      * @param workingState the state to use to perform a delta based reconnect
      * @return a new instance
      */
-    public ReconnectLearner create(final Connection conn, final State workingState) {
+    public ReconnectLearner create(final Connection conn, final MerkleRoot workingState) {
         return new ReconnectLearner(
                 platformContext, threadManager, conn, addressBook, workingState, reconnectSocketTimeout, statistics);
     }

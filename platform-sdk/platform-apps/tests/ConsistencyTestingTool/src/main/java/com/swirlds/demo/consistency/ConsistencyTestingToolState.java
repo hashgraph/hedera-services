@@ -26,7 +26,7 @@ import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.MerkleLeaf;
 import com.swirlds.common.merkle.impl.PartialMerkleLeaf;
 import com.swirlds.common.utility.NonCryptographicHashing;
-import com.swirlds.platform.state.PlatformState;
+import com.swirlds.platform.state.PlatformStateAccessor;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.Round;
@@ -75,8 +75,8 @@ public class ConsistencyTestingToolState extends PartialMerkleLeaf implements Sw
 
     /**
      * The number of rounds handled by this app. Is incremented each time
-     * {@link #handleConsensusRound(Round, PlatformState)} is called. Note that this may not actually equal the round
-     * number, since we don't call {@link #handleConsensusRound(Round, PlatformState)} for rounds with no events.
+     * {@link #handleConsensusRound(Round, PlatformStateAccessor)} is called. Note that this may not actually equal the round
+     * number, since we don't call {@link #handleConsensusRound(Round, PlatformStateAccessor)} for rounds with no events.
      *
      * <p>
      * Affects the hash of this node.
@@ -130,12 +130,10 @@ public class ConsistencyTestingToolState extends PartialMerkleLeaf implements Sw
     @Override
     public void init(
             @NonNull final Platform platform,
-            @NonNull final PlatformState platformState,
             @NonNull final InitTrigger trigger,
             @Nullable final SoftwareVersion previousSoftwareVersion) {
 
         Objects.requireNonNull(platform);
-        Objects.requireNonNull(platformState);
         Objects.requireNonNull(trigger);
 
         final StateCommonConfig stateConfig =
@@ -212,8 +210,12 @@ public class ConsistencyTestingToolState extends PartialMerkleLeaf implements Sw
      */
     private void applyTransactionToState(final @NonNull ConsensusTransaction transaction) {
         Objects.requireNonNull(transaction);
+        if (transaction.isSystem()) {
+            return;
+        }
 
-        final long transactionContents = byteArrayToLong(transaction.getContents(), 0);
+        final long transactionContents =
+                byteArrayToLong(transaction.getApplicationTransaction().toByteArray(), 0);
 
         if (!transactionsAwaitingPostHandle.remove(transactionContents)) {
             logger.error(EXCEPTION.getMarker(), "Transaction {} was not prehandled.", transactionContents);
@@ -228,7 +230,11 @@ public class ConsistencyTestingToolState extends PartialMerkleLeaf implements Sw
     @Override
     public void preHandle(@NonNull final Event event) {
         event.forEachTransaction(transaction -> {
-            final long transactionContents = byteArrayToLong(transaction.getContents(), 0);
+            if (transaction.isSystem()) {
+                return;
+            }
+            final long transactionContents =
+                    byteArrayToLong(transaction.getApplicationTransaction().toByteArray(), 0);
 
             if (!transactionsAwaitingPostHandle.add(transactionContents)) {
                 logger.error(
@@ -243,7 +249,7 @@ public class ConsistencyTestingToolState extends PartialMerkleLeaf implements Sw
      * Writes the round and its contents to a log on disk
      */
     @Override
-    public void handleConsensusRound(final @NonNull Round round, final @NonNull PlatformState platformState) {
+    public void handleConsensusRound(final @NonNull Round round, final @NonNull PlatformStateAccessor platformState) {
         Objects.requireNonNull(round);
         Objects.requireNonNull(platformState);
 

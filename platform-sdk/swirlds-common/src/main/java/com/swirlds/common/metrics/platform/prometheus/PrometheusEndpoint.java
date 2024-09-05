@@ -16,8 +16,8 @@
 
 package com.swirlds.common.metrics.platform.prometheus;
 
-import static com.swirlds.common.metrics.platform.DefaultMetrics.EXCEPTION_RATE_THRESHOLD;
-import static com.swirlds.common.metrics.platform.DefaultMetrics.calculateMetricKey;
+import static com.swirlds.common.metrics.platform.DefaultPlatformMetrics.EXCEPTION_RATE_THRESHOLD;
+import static com.swirlds.common.metrics.platform.DefaultPlatformMetrics.calculateMetricKey;
 import static com.swirlds.common.metrics.platform.prometheus.PrometheusEndpoint.AdapterType.GLOBAL;
 import static com.swirlds.common.metrics.platform.prometheus.PrometheusEndpoint.AdapterType.PLATFORM;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
@@ -30,15 +30,15 @@ import com.swirlds.common.metrics.IntegerPairAccumulator;
 import com.swirlds.common.metrics.RunningAverageMetric;
 import com.swirlds.common.metrics.SpeedometerMetric;
 import com.swirlds.common.metrics.StatEntry;
-import com.swirlds.common.metrics.platform.DefaultMetrics;
+import com.swirlds.common.metrics.platform.DefaultPlatformMetrics;
 import com.swirlds.common.metrics.platform.MetricsEvent;
-import com.swirlds.common.metrics.platform.Snapshot;
 import com.swirlds.common.metrics.platform.SnapshotEvent;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.utility.ThresholdLimitingHandler;
 import com.swirlds.metrics.api.Counter;
 import com.swirlds.metrics.api.Metric;
 import com.swirlds.metrics.api.Metrics;
+import com.swirlds.metrics.api.snapshot.Snapshot;
 import io.prometheus.client.CollectorRegistry;
 import io.prometheus.client.exporter.HTTPServer;
 import java.io.IOException;
@@ -60,7 +60,8 @@ public class PrometheusEndpoint implements AutoCloseableNonThrowing {
     /** Prometheus-label to differentiate between value-types (mean, min, max, stddev) */
     public static final String TYPE_LABEL = "type";
 
-    private static final String TIME_METRIC_KEY = DefaultMetrics.calculateMetricKey(Metrics.INFO_CATEGORY, "time");
+    private static final String TIME_METRIC_KEY =
+            DefaultPlatformMetrics.calculateMetricKey(Metrics.INFO_CATEGORY, "time");
 
     /** Scope of a metric */
     public enum AdapterType {

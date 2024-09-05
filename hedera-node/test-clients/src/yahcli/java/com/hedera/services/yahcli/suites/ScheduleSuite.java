@@ -21,8 +21,10 @@ import com.hedera.services.bdd.spec.transactions.schedule.HapiScheduleSign;
 import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 
 public class ScheduleSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(ScheduleSuite.class);
@@ -36,11 +38,11 @@ public class ScheduleSuite extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return List.of(doSchedule());
     }
 
-    private HapiSpec doSchedule() {
+    final Stream<DynamicTest> doSchedule() {
         var schedule = new HapiScheduleSign(HapiSuite.DEFAULT_SHARD_REALM + scheduleId);
         return HapiSpec.customHapiSpec("DoSchedule")
                 .withProperties(specConfig)

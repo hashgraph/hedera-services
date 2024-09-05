@@ -83,6 +83,7 @@ public final class InitJudges {
         judge.setWitness(true);
         judge.setFamous(true);
         judge.setFameDecided(true);
+        judge.setJudgeTrue();
     }
 
     /**

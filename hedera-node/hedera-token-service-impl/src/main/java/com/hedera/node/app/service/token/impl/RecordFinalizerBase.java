@@ -30,10 +30,8 @@ import com.hedera.hapi.node.base.NftID;
 import com.hedera.hapi.node.base.NftTransfer;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenTransferList;
-import com.hedera.hapi.node.base.TokenType;
 import com.hedera.hapi.node.state.common.EntityIDPair;
 import com.hedera.hapi.node.state.token.Token;
-import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.spi.workflows.HandleException;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -43,11 +41,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
-/**
- * Base class for both {@link com.hedera.node.app.service.token.records.ParentRecordFinalizer} and {@link
- * com.hedera.node.app.service.token.records.ChildRecordFinalizer}. This contains methods that are common to both
- * classes.
- */
 public class RecordFinalizerBase {
     protected static final AccountID ZERO_ACCOUNT_ID =
             AccountID.newBuilder().accountNum(0).build();
@@ -95,26 +88,16 @@ public class RecordFinalizerBase {
      * Gets all token tokenRelation balances for all modified token relations from the given {@link WritableTokenRelationStore} depending on the given token type.
      *
      * @param writableTokenRelStore the {@link WritableTokenRelationStore} to get the token relation balances from
-     * @param tokenStore the {@link ReadableTokenStore} to get the token from
-     * @param tokenType the type of token to get token changes from
      * @return a {@link Map} of {@link EntityIDPair} to {@link Long} representing the token relation balances for all
      * modified token relations
      */
     @NonNull
     protected Map<EntityIDPair, Long> tokenRelChangesFrom(
-            @NonNull final WritableTokenRelationStore writableTokenRelStore,
-            @NonNull final ReadableTokenStore tokenStore,
-            @NonNull TokenType tokenType,
-            final boolean filterZeroAmounts) {
+            @NonNull final WritableTokenRelationStore writableTokenRelStore, final boolean filterZeroAmounts) {
         final var tokenRelChanges = new HashMap<EntityIDPair, Long>();
         for (final EntityIDPair modifiedRel : writableTokenRelStore.modifiedTokens()) {
             final var relAcctId = modifiedRel.accountIdOrThrow();
             final var relTokenId = modifiedRel.tokenIdOrThrow();
-            final var token = requireNonNull(tokenStore.get(relTokenId));
-            // Add this to fungible token transfer list only if this token is a fungible token
-            if (!token.tokenType().equals(tokenType)) {
-                continue;
-            }
             final var modifiedTokenRel = writableTokenRelStore.get(relAcctId, relTokenId);
             final var persistedTokenRel = writableTokenRelStore.getOriginalValue(relAcctId, relTokenId);
 
@@ -193,12 +176,21 @@ public class RecordFinalizerBase {
 
     /**
      * Gets all nft ownership changes for all modified nfts from the given {@link WritableNftStore}.
+     * While building the nft changes, we also update the token relation changes. If there are any token relation
+     * changes for the sender and receiver of the NFTs, we reduce the balance change for that relation by 1 for the
+     * receiver and increment the balance change for sender by 1. This is to ensure that the NFT transfer is not double
+     * counted in the token relation changes and the NFT changes.
+     * We also update the token relation changes for the treasury account when the treasury account changes.
+     *
      * @param writableNftStore the {@link WritableNftStore} to get the nft ownership changes from
+     * @param tokenRelChanges the {@link Map} of {@link EntityIDPair} to {@link Long} representing the token relation
      * @return a {@link Map} of {@link TokenID} to {@link List} of {@link NftTransfer} representing the nft ownership
      */
     @NonNull
     protected Map<TokenID, List<NftTransfer>> nftChangesFrom(
-            @NonNull final WritableNftStore writableNftStore, @NonNull final WritableTokenStore writableTokenStore) {
+            @NonNull final WritableNftStore writableNftStore,
+            @NonNull final WritableTokenStore writableTokenStore,
+            final Map<EntityIDPair, Long> tokenRelChanges) {
         final var nftChanges = new HashMap<TokenID, List<NftTransfer>>();
         for (final NftID nftId : writableNftStore.modifiedNfts()) {
             final var modifiedNft = writableNftStore.get(nftId);
@@ -206,13 +198,17 @@ public class RecordFinalizerBase {
 
             // The NFT may not have existed before, in which case we'll use a null sender account ID
             AccountID senderAccountId;
-            final var tokenId = nftId.tokenId();
-            requireNonNull(tokenId);
-            final var token = writableTokenStore.get(tokenId);
-            requireNonNull(token);
             if (persistedNft != null) {
                 // If the NFT did not have an owner before set it to the treasury account
-                senderAccountId = persistedNft.hasOwnerId() ? persistedNft.ownerId() : token.treasuryAccountIdOrThrow();
+                if (persistedNft.hasOwnerId()) {
+                    senderAccountId = persistedNft.ownerId();
+                } else {
+                    final var tokenId = nftId.tokenId();
+                    requireNonNull(tokenId);
+                    final var token = writableTokenStore.get(tokenId);
+                    requireNonNull(token);
+                    senderAccountId = token.treasuryAccountIdOrThrow();
+                }
             } else {
                 senderAccountId = ZERO_ACCOUNT_ID;
             }
@@ -224,6 +220,10 @@ public class RecordFinalizerBase {
                 if (modifiedNft.hasOwnerId()) {
                     receiverAccountId = modifiedNft.ownerId();
                 } else {
+                    final var tokenId = nftId.tokenId();
+                    requireNonNull(tokenId);
+                    final var token = writableTokenStore.get(tokenId);
+                    requireNonNull(token);
                     receiverAccountId = token.treasuryAccountIdOrThrow();
                 }
             } else {
@@ -233,7 +233,7 @@ public class RecordFinalizerBase {
             if (receiverAccountId.equals(senderAccountId)) {
                 continue;
             }
-            updateNftChanges(nftId, senderAccountId, receiverAccountId, nftChanges);
+            updateNftChanges(nftId, senderAccountId, receiverAccountId, nftChanges, tokenRelChanges);
         }
 
         for (final var tokenId : writableTokenStore.modifiedTokens()) {
@@ -249,7 +249,8 @@ public class RecordFinalizerBase {
                         NftID.newBuilder().tokenId(tokenId).serialNumber(-1).build(),
                         originalToken.treasuryAccountId(),
                         modifiedToken.treasuryAccountId(),
-                        nftChanges);
+                        nftChanges,
+                        tokenRelChanges);
             }
         }
         return nftChanges;
@@ -270,16 +271,27 @@ public class RecordFinalizerBase {
     /**
      * Updates the given {@link Map} of {@link TokenID} to {@link List} of {@link NftTransfer} representing the nft
      * ownership changes.
-     * @param nftId the {@link NftID} representing the nft
-     * @param senderAccountId the {@link AccountID} representing the sender account ID
+     * While building the nft changes, we also update the token relation changes. If there are any token relation
+     * changes for the sender and receiver of the NFTs, we reduce the balance change for that relation by 1 for the
+     * receiver and increment the balance change for sender by 1. This is to ensure that the NFT transfer is not double
+     * counted in the token relation changes and the NFT changes.
+     * We also update the token relation changes for the treasury account when the treasury account changes.
+     *
+     * @param nftId             the {@link NftID} representing the nft
+     * @param senderAccountId   the {@link AccountID} representing the sender account ID
      * @param receiverAccountId the {@link AccountID} representing the receiver account ID
-     * @param nftChanges the {@link Map} of {@link TokenID} to {@link List} of {@link NftTransfer} representing the nft
+     * @param nftChanges        the {@link Map} of {@link TokenID} to {@link List} of {@link NftTransfer} representing the nft
+     * @param tokenRelChanges  the {@link Map} of {@link EntityIDPair} to {@link Long} representing the token relation
      */
     private static void updateNftChanges(
             final NftID nftId,
             final AccountID senderAccountId,
             final AccountID receiverAccountId,
-            final HashMap<TokenID, List<NftTransfer>> nftChanges) {
+            final Map<TokenID, List<NftTransfer>> nftChanges,
+            @Nullable final Map<EntityIDPair, Long> tokenRelChanges) {
+        final var isMint = senderAccountId.accountNum() == 0;
+        final var isWipeOrBurn = receiverAccountId.accountNum() == 0;
+        final var isTreasuryChange = nftId.serialNumber() == -1;
         final var nftTransfer = NftTransfer.newBuilder()
                 .serialNumber(nftId.serialNumber())
                 .senderAccountID(senderAccountId)
@@ -293,6 +305,35 @@ public class RecordFinalizerBase {
         final var currentNftChanges = nftChanges.get(nftId.tokenId());
         currentNftChanges.add(nftTransfer);
         nftChanges.put(nftId.tokenId(), currentNftChanges);
+
+        if (!tokenRelChanges.isEmpty()) {
+            final var receiverEntityIdPair = EntityIDPair.newBuilder()
+                    .accountId(receiverAccountId)
+                    .tokenId(nftId.tokenId())
+                    .build();
+            final var senderEntityIdPair = EntityIDPair.newBuilder()
+                    .accountId(senderAccountId)
+                    .tokenId(nftId.tokenId())
+                    .build();
+            if (isMint || isWipeOrBurn || isTreasuryChange) {
+                // The mint amount is not shown in the token transfer list. So for a mint transaction we need not show
+                // the token transfer changes to treasury. If it is a treasury change, we need not show the transfer
+                // changes to treasury
+                tokenRelChanges.remove(receiverEntityIdPair);
+                tokenRelChanges.remove(senderEntityIdPair);
+            } else {
+                // Because the NFT transfer list already contains all information about how the
+                // sender/receiver # of owned NFT counts are changing, we don't repeat this in
+                // the tokenTransferLists; these merge() calls remove the duplicate information
+                if (tokenRelChanges.merge(receiverEntityIdPair, -1L, Long::sum) == 0) {
+                    tokenRelChanges.remove(receiverEntityIdPair);
+                }
+                // We don't need to show the mint amounts in token transfer List
+                if (tokenRelChanges.merge(senderEntityIdPair, 1L, Long::sum) == 0) {
+                    tokenRelChanges.remove(senderEntityIdPair);
+                }
+            }
+        }
     }
 
     /**

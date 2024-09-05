@@ -19,27 +19,31 @@ package com.hedera.services.bdd.suites.crypto;
 import static com.hedera.services.bdd.junit.TestTags.CRYPTO;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountDetailsAsserts.accountDetailsWith;
+import static com.hedera.services.bdd.spec.keys.TrieSigMapGenerator.uniqueWithFullPrefixesFor;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountDetails;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.*;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.*;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.*;
+import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_MILLION_HBARS;
+import static com.hedera.services.bdd.suites.HapiSuite.SECP_256K1_SHAPE;
+import static com.hedera.services.bdd.suites.HapiSuite.SECP_256K1_SOURCE_KEY;
+import static com.hedera.services.bdd.suites.crypto.AutoAccountUpdateSuite.TRANSFER_TXN_2;
+import static com.hedera.services.bdd.suites.crypto.AutoCreateUtils.createHollowAccountFrom;
 
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.spec.HapiSpec;
-import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import java.util.List;
 import java.util.OptionalLong;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import java.util.stream.Stream;
+import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
-@HapiTestSuite
 @Tag(CRYPTO)
-public class TransferWithCustomFractionalFees extends HapiSuite {
-    private static final Logger log = LogManager.getLogger(TransferWithCustomFractionalFees.class);
+public class TransferWithCustomFractionalFees {
     private static final long tokenTotal = 1_000L;
     private static final long numerator = 1L;
     private static final long denominator = 10L;
@@ -59,53 +63,8 @@ public class TransferWithCustomFractionalFees extends HapiSuite {
     private static final String carol = "carol";
     private static final String ivan = "ivan";
 
-    public static void main(String... args) {
-        new TransferWithCustomFractionalFees().runSuiteAsync();
-    }
-
-    @Override
-    public List<HapiSpec> getSpecsInSuite() {
-        return allOf(positiveTests(), negativeTests());
-    }
-
-    private List<HapiSpec> positiveTests() {
-        return List.of(
-                transferWithFractionalCustomFee(),
-                transferWithFractionalCustomFeeNumeratorBiggerThanDenominator(),
-                transferWithFractionalCustomFeeBellowMinimumAmount(),
-                transferWithFractionalCustomFeeAboveMaximumAmount(),
-                transferWithFractionalCustomFeeNetOfTransfers(),
-                transferWithFractionalCustomFeeNetOfTransfersBellowMinimumAmount(),
-                transferWithFractionalCustomFeeNetOfTransfersAboveMaximumAmount(),
-                transferWithFractionalCustomFeeAllowance(),
-                transferWithFractionalCustomFeeAllowanceTokenOwnerIsCollector(),
-                transferWithFractionalCustomFeesThreeCollectors(),
-                transferWithFractionalCustomFeesAllCollectorsExempt(),
-                transferWithFractionalCustomFeesDenominatorMin(),
-                transferWithFractionalCustomFeesDenominatorMax(),
-                transferWithFractionalCustomFeeEqToAmount(),
-                transferWithFractionalCustomFeeGreaterThanAmount(),
-                transferWithFractionalCustomFeeGreaterThanAmountNetOfTransfers(),
-                transferWithFractionalCustomFeeMultipleRecipientsShouldRoundFee(),
-                transferWithFractionalCustomFeeMultipleRecipientsShouldRoundFeeNetOfTransfers(),
-                transferMultipleTimesWithFractionalFeeTakenFromSender(),
-                transferMultipleTimesWithFractionalFeeTakenFromReceiver());
-    }
-
-    private List<HapiSpec> negativeTests() {
-        return List.of(new HapiSpec[] {
-            transferWithFractionalCustomFeeNegativeMoreThanTen(),
-            transferWithFractionalCustomFeeZeroDenominator(),
-            transferWithFractionalCustomFeeNegativeNotEnoughAllowance(),
-            transferWithFractionalCustomFeeGreaterThanAmountNegative(),
-            transferWithFractionalCustomFeeNotEnoughBalance(),
-            transferWithFractionalCustomFeeMultipleRecipientsHasNotEnoughBalance(),
-            transferWithFractionalCustomFeeMultipleRecipientsNotEnoughBalance()
-        });
-    }
-
     @HapiTest
-    public HapiSpec transferWithFractionalCustomFeeNegativeMoreThanTen() {
+    final Stream<DynamicTest> transferWithFractionalCustomFeeNegativeMoreThanTen() {
         return defaultHapiSpec("transferWithFractionalCustomFeeNegativeMoreThanTen")
                 .given(
                         cryptoCreate(htsCollector).balance(ONE_HUNDRED_HBARS),
@@ -144,7 +103,7 @@ public class TransferWithCustomFractionalFees extends HapiSuite {
     }
 
     @HapiTest
-    public HapiSpec transferWithFractionalCustomFee() {
+    final Stream<DynamicTest> transferWithFractionalCustomFee() {
         return defaultHapiSpec("transferWithFractionalCustomFee")
                 .given(
                         cryptoCreate(htsCollector).balance(ONE_HUNDRED_HBARS),
@@ -171,7 +130,7 @@ public class TransferWithCustomFractionalFees extends HapiSuite {
     }
 
     @HapiTest
-    public HapiSpec transferWithFractionalCustomFeeZeroDenominator() {
+    final Stream<DynamicTest> transferWithFractionalCustomFeeZeroDenominator() {
         return defaultHapiSpec("transferWithFractionalCustomFeeZeroDenominator")
                 .given(
                         cryptoCreate(htsCollector).balance(ONE_HUNDRED_HBARS),
@@ -191,7 +150,7 @@ public class TransferWithCustomFractionalFees extends HapiSuite {
     }
 
     @HapiTest
-    public HapiSpec transferWithFractionalCustomFeeNumeratorBiggerThanDenominator() {
+    final Stream<DynamicTest> transferWithFractionalCustomFeeNumeratorBiggerThanDenominator() {
         return defaultHapiSpec("transferWithFractionalCustomFeeNumeratorBiggerThanDenominator")
                 .given(
                         cryptoCreate(htsCollector).balance(ONE_HUNDRED_HBARS),
@@ -218,7 +177,7 @@ public class TransferWithCustomFractionalFees extends HapiSuite {
     }
 
     @HapiTest
-    public HapiSpec transferWithFractionalCustomFeeNetOfTransfers() {
+    final Stream<DynamicTest> transferWithFractionalCustomFeeNetOfTransfers() {
         return defaultHapiSpec("transferWithFractionalCustomFeeNetOfTransfers")
                 .given(
                         cryptoCreate(htsCollector).balance(ONE_HUNDRED_HBARS),
@@ -245,7 +204,7 @@ public class TransferWithCustomFractionalFees extends HapiSuite {
     }
 
     @HapiTest
-    public HapiSpec transferWithFractionalCustomFeeBellowMinimumAmount() {
+    final Stream<DynamicTest> transferWithFractionalCustomFeeBellowMinimumAmount() {
         return defaultHapiSpec("transferWithFractionalCustomFeeBellowMinimumAmount")
                 .given(
                         cryptoCreate(htsCollector).balance(ONE_HUNDRED_HBARS),
@@ -272,7 +231,7 @@ public class TransferWithCustomFractionalFees extends HapiSuite {
     }
 
     @HapiTest
-    public HapiSpec transferWithFractionalCustomFeeAboveMaximumAmount() {
+    final Stream<DynamicTest> transferWithFractionalCustomFeeAboveMaximumAmount() {
         return defaultHapiSpec("transferWithFractionalCustomFeeAboveMaximumAmount")
                 .given(
                         cryptoCreate(htsCollector).balance(ONE_HUNDRED_HBARS),
@@ -299,7 +258,7 @@ public class TransferWithCustomFractionalFees extends HapiSuite {
     }
 
     @HapiTest
-    public HapiSpec transferWithFractionalCustomFeeNetOfTransfersBellowMinimumAmount() {
+    final Stream<DynamicTest> transferWithFractionalCustomFeeNetOfTransfersBellowMinimumAmount() {
         return defaultHapiSpec("transferWithFractionalCustomFeeNetOfTransfersBellowMinimumAmount")
                 .given(
                         cryptoCreate(htsCollector).balance(ONE_HUNDRED_HBARS),
@@ -326,7 +285,7 @@ public class TransferWithCustomFractionalFees extends HapiSuite {
     }
 
     @HapiTest
-    public HapiSpec transferWithFractionalCustomFeeNetOfTransfersAboveMaximumAmount() {
+    final Stream<DynamicTest> transferWithFractionalCustomFeeNetOfTransfersAboveMaximumAmount() {
         return defaultHapiSpec("transferWithFractionalCustomFeeNetOfTransfersAboveMaximumAmount")
                 .given(
                         cryptoCreate(htsCollector).balance(ONE_HUNDRED_HBARS),
@@ -353,7 +312,7 @@ public class TransferWithCustomFractionalFees extends HapiSuite {
     }
 
     @HapiTest
-    public HapiSpec transferWithFractionalCustomFeeAllowance() {
+    final Stream<DynamicTest> transferWithFractionalCustomFeeAllowance() {
         return defaultHapiSpec("transferWithFractionalCustomFeeAllowance")
                 .given(
                         cryptoCreate(htsCollector).balance(ONE_HUNDRED_HBARS),
@@ -392,7 +351,7 @@ public class TransferWithCustomFractionalFees extends HapiSuite {
     }
 
     @HapiTest
-    public HapiSpec transferWithFractionalCustomFeeAllowanceNetOfTransfers() {
+    final Stream<DynamicTest> transferWithFractionalCustomFeeAllowanceNetOfTransfers() {
         return defaultHapiSpec("transferWithFractionalCustomFeeAllowanceNetOfTransfers")
                 .given(
                         cryptoCreate(htsCollector).balance(ONE_HUNDRED_HBARS),
@@ -431,7 +390,7 @@ public class TransferWithCustomFractionalFees extends HapiSuite {
     }
 
     @HapiTest
-    public HapiSpec transferWithFractionalCustomFeeAllowanceTokenOwnerIsCollector() {
+    final Stream<DynamicTest> transferWithFractionalCustomFeeAllowanceTokenOwnerIsCollector() {
         return defaultHapiSpec("transferWithFractionalCustomFeeAllowanceTokenOwnerIsCollector")
                 .given(
                         cryptoCreate(htsCollector).balance(ONE_HUNDRED_HBARS),
@@ -469,7 +428,7 @@ public class TransferWithCustomFractionalFees extends HapiSuite {
     }
 
     @HapiTest
-    public HapiSpec transferWithFractionalCustomFeeNegativeNotEnoughAllowance() {
+    final Stream<DynamicTest> transferWithFractionalCustomFeeNegativeNotEnoughAllowance() {
         return defaultHapiSpec("transferWithFractionalCustomFeeNegativeNotEnoughAllowance")
                 .given(
                         cryptoCreate(htsCollector).balance(ONE_HUNDRED_HBARS),
@@ -504,7 +463,7 @@ public class TransferWithCustomFractionalFees extends HapiSuite {
     }
 
     @HapiTest
-    public HapiSpec transferWithFractionalCustomFeesThreeCollectors() {
+    final Stream<DynamicTest> transferWithFractionalCustomFeesThreeCollectors() {
         return defaultHapiSpec("transferWithFractionalCustomFeesThreeCollectors")
                 .given(
                         cryptoCreate(alice),
@@ -530,7 +489,7 @@ public class TransferWithCustomFractionalFees extends HapiSuite {
     }
 
     @HapiTest
-    public HapiSpec transferWithFractionalCustomFeesAllCollectorsExempt() {
+    final Stream<DynamicTest> transferWithFractionalCustomFeesAllCollectorsExempt() {
         return defaultHapiSpec("transferWithFractionalCustomFeesAllCollectorsExempt")
                 .given(
                         cryptoCreate(alice),
@@ -557,7 +516,7 @@ public class TransferWithCustomFractionalFees extends HapiSuite {
     }
 
     @HapiTest
-    public HapiSpec transferWithFractionalCustomFeesDenominatorMin() {
+    final Stream<DynamicTest> transferWithFractionalCustomFeesDenominatorMin() {
         return defaultHapiSpec("transferWithFractionalCustomFeesDenominatorMin")
                 .given(
                         cryptoCreate(alice),
@@ -594,7 +553,7 @@ public class TransferWithCustomFractionalFees extends HapiSuite {
     }
 
     @HapiTest
-    public HapiSpec transferWithFractionalCustomFeesDenominatorMax() {
+    final Stream<DynamicTest> transferWithFractionalCustomFeesDenominatorMax() {
         return defaultHapiSpec("transferWithFractionalCustomFeesDenominatorMax")
                 .given(
                         cryptoCreate(alice),
@@ -627,7 +586,7 @@ public class TransferWithCustomFractionalFees extends HapiSuite {
     }
 
     @HapiTest
-    public HapiSpec transferWithFractionalCustomFeesMultipleReceivers() {
+    final Stream<DynamicTest> transferWithFractionalCustomFeesMultipleReceivers() {
         return defaultHapiSpec("transferWithFractionalCustomFeesMultipleReceivers")
                 .given(
                         cryptoCreate(htsCollector).balance(ONE_HUNDRED_HBARS),
@@ -674,7 +633,7 @@ public class TransferWithCustomFractionalFees extends HapiSuite {
     }
 
     @HapiTest
-    public HapiSpec transferWithFractionalCustomFeeEqToAmount() {
+    final Stream<DynamicTest> transferWithFractionalCustomFeeEqToAmount() {
         return defaultHapiSpec("transferWithFractionalCustomFeeEqToAmount")
                 .given(
                         cryptoCreate(htsCollector).balance(ONE_HUNDRED_HBARS),
@@ -701,7 +660,7 @@ public class TransferWithCustomFractionalFees extends HapiSuite {
     }
 
     @HapiTest
-    public HapiSpec transferWithFractionalCustomFeeGreaterThanAmountNegative() {
+    final Stream<DynamicTest> transferWithFractionalCustomFeeGreaterThanAmountNegative() {
         return defaultHapiSpec("transferWithFractionalCustomFeeGreaterThanAmountNegative")
                 .given(
                         cryptoCreate(htsCollector).balance(ONE_HUNDRED_HBARS),
@@ -728,7 +687,7 @@ public class TransferWithCustomFractionalFees extends HapiSuite {
     }
 
     @HapiTest
-    public HapiSpec transferWithFractionalCustomFeeGreaterThanAmount() {
+    final Stream<DynamicTest> transferWithFractionalCustomFeeGreaterThanAmount() {
         return defaultHapiSpec("transferWithFractionalCustomFeeGreaterThanAmount")
                 .given(
                         cryptoCreate(htsCollector).balance(ONE_HUNDRED_HBARS),
@@ -758,7 +717,7 @@ public class TransferWithCustomFractionalFees extends HapiSuite {
     }
 
     @HapiTest
-    public HapiSpec transferWithFractionalCustomFeeGreaterThanAmountNetOfTransfers() {
+    final Stream<DynamicTest> transferWithFractionalCustomFeeGreaterThanAmountNetOfTransfers() {
         return defaultHapiSpec("transferWithFractionalCustomFeeGreaterThanAmountNetOfTransfers")
                 .given(
                         cryptoCreate(htsCollector).balance(ONE_HUNDRED_HBARS),
@@ -788,7 +747,7 @@ public class TransferWithCustomFractionalFees extends HapiSuite {
     }
 
     @HapiTest
-    public HapiSpec transferWithFractionalCustomFeeMultipleRecipientsShouldRoundFee() {
+    final Stream<DynamicTest> transferWithFractionalCustomFeeMultipleRecipientsShouldRoundFee() {
         return defaultHapiSpec("transferWithFractionalCustomFeeMultipleRecipientsShouldRoundFee")
                 .given(
                         cryptoCreate(htsCollector).balance(ONE_HUNDRED_HBARS),
@@ -821,7 +780,7 @@ public class TransferWithCustomFractionalFees extends HapiSuite {
     }
 
     @HapiTest
-    public HapiSpec transferWithFractionalCustomFeeMultipleRecipientsHasNotEnoughBalance() {
+    final Stream<DynamicTest> transferWithFractionalCustomFeeMultipleRecipientsHasNotEnoughBalance() {
         return defaultHapiSpec("transferWithFractionalCustomFeeMultipleRecipientsHasNotEnoughBalance")
                 .given(
                         cryptoCreate(htsCollector).balance(ONE_HUNDRED_HBARS),
@@ -854,7 +813,7 @@ public class TransferWithCustomFractionalFees extends HapiSuite {
     }
 
     @HapiTest
-    public HapiSpec transferWithFractionalCustomFeeMultipleRecipientsShouldRoundFeeNetOfTransfers() {
+    final Stream<DynamicTest> transferWithFractionalCustomFeeMultipleRecipientsShouldRoundFeeNetOfTransfers() {
         return defaultHapiSpec("transferWithFractionalCustomFeeMultipleRecipientsShouldRoundFeeNetOfTransfers")
                 .given(
                         cryptoCreate(htsCollector).balance(ONE_HUNDRED_HBARS),
@@ -887,7 +846,7 @@ public class TransferWithCustomFractionalFees extends HapiSuite {
     }
 
     @HapiTest
-    public HapiSpec transferWithFractionalCustomFeeNotEnoughBalance() {
+    final Stream<DynamicTest> transferWithFractionalCustomFeeNotEnoughBalance() {
         return defaultHapiSpec("transferWithFractionalCustomFeeNotEnoughBalance")
                 .given(
                         cryptoCreate(htsCollector).balance(ONE_HUNDRED_HBARS),
@@ -915,7 +874,7 @@ public class TransferWithCustomFractionalFees extends HapiSuite {
     }
 
     @HapiTest
-    public HapiSpec transferWithFractionalCustomFeeMultipleRecipientsNotEnoughBalance() {
+    final Stream<DynamicTest> transferWithFractionalCustomFeeMultipleRecipientsNotEnoughBalance() {
         return defaultHapiSpec("transferWithFractionalCustomFeeMultipleRecipientsNotEnoughBalance")
                 .given(
                         cryptoCreate(htsCollector).balance(ONE_HUNDRED_HBARS),
@@ -945,7 +904,7 @@ public class TransferWithCustomFractionalFees extends HapiSuite {
     }
 
     @HapiTest
-    public HapiSpec transferMultipleTimesWithFractionalFeeTakenFromSender() {
+    final Stream<DynamicTest> transferMultipleTimesWithFractionalFeeTakenFromSender() {
         return defaultHapiSpec("transferMultipleTimesWithFractionalFeeTakenFromSender")
                 .given(
                         cryptoCreate(htsCollector).balance(ONE_HUNDRED_HBARS),
@@ -989,7 +948,7 @@ public class TransferWithCustomFractionalFees extends HapiSuite {
     }
 
     @HapiTest
-    public HapiSpec transferMultipleTimesWithFractionalFeeTakenFromReceiver() {
+    final Stream<DynamicTest> transferMultipleTimesWithFractionalFeeTakenFromReceiver() {
         return defaultHapiSpec("transferMultipleTimesWithFractionalFeeTakenFromReceiver")
                 .given(
                         cryptoCreate(htsCollector).balance(ONE_HUNDRED_HBARS),
@@ -1032,8 +991,41 @@ public class TransferWithCustomFractionalFees extends HapiSuite {
                         getAccountBalance(carol).hasTokenBalance(token, 17L));
     }
 
-    @Override
-    protected Logger getResultsLogger() {
-        return log;
+    @HapiTest
+    final Stream<DynamicTest> transferWithFractionalCustomFeeAndHollowAccountCollector() {
+        return defaultHapiSpec("transferWithFractionalCustomFeeAndHollowAccountCollector")
+                .given(
+                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
+                        cryptoCreate(tokenReceiver),
+                        cryptoCreate(tokenTreasury).balance(ONE_MILLION_HBARS),
+                        cryptoCreate(tokenOwner).balance(ONE_MILLION_HBARS))
+                .when(createHollowAccountFrom(SECP_256K1_SOURCE_KEY))
+                .then(withOpContext((spec, opLog) -> {
+                    final var hollowAccountCollector =
+                            spec.registry().getAccountIdName(spec.registry().getAccountAlias(SECP_256K1_SOURCE_KEY));
+                    allRunFor(
+                            spec,
+                            tokenCreate(token)
+                                    .treasury(tokenTreasury)
+                                    .initialSupply(tokenTotal)
+                                    .payingWith(SECP_256K1_SOURCE_KEY)
+                                    .sigMapPrefixes(uniqueWithFullPrefixesFor(SECP_256K1_SOURCE_KEY))
+                                    .via(TRANSFER_TXN_2)
+                                    .withCustom(fractionalFee(
+                                            numerator,
+                                            denominator,
+                                            minHtsFee,
+                                            OptionalLong.of(maxHtsFee),
+                                            hollowAccountCollector)),
+                            tokenAssociate(tokenReceiver, token),
+                            tokenAssociate(tokenOwner, token),
+                            cryptoTransfer(moving(tokenTotal, token).between(tokenTreasury, tokenOwner)),
+                            cryptoTransfer(moving(100L, token).between(tokenOwner, tokenReceiver))
+                                    .fee(ONE_HUNDRED_HBARS)
+                                    .payingWith(tokenOwner),
+                            getAccountBalance(tokenOwner).hasTokenBalance(token, 900L),
+                            getAccountBalance(tokenReceiver).hasTokenBalance(token, 90L),
+                            getAccountBalance(hollowAccountCollector).hasTokenBalance(token, 10L));
+                }));
     }
 }

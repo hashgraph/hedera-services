@@ -17,10 +17,18 @@
 import me.champeau.jmh.JMHTask
 
 plugins {
-    id("com.hedera.hashgraph.sdk.conventions")
-    id("com.hedera.hashgraph.platform-maven-publish")
-    id("com.hedera.hashgraph.benchmark-conventions")
-    id("com.hedera.hashgraph.java-test-fixtures")
+    id("com.hedera.gradle.platform")
+    id("com.hedera.gradle.platform-publish")
+    id("com.hedera.gradle.feature.benchmark")
+    id("com.hedera.gradle.feature.test-fixtures")
+    id("com.hedera.gradle.feature.test-hammer")
+    id("com.hedera.gradle.feature.test-timing-sensitive")
+}
+
+// Remove the following line to enable all 'javac' lint checks that we have turned on by default
+// and then fix the reported issues.
+tasks.withType<JavaCompile>().configureEach {
+    options.compilerArgs.add("-Xlint:-exports,-lossy-conversions,-synchronization")
 }
 
 mainModuleInfo { annotationProcessor("com.swirlds.config.processor") }
@@ -37,7 +45,20 @@ jmhModuleInfo {
 
 testModuleInfo {
     requires("com.swirlds.common.test.fixtures")
+    requires("com.swirlds.virtualmap.test.fixtures")
+    requires("org.junit.jupiter.api")
+    requires("org.junit.jupiter.params")
+    requires("org.mockito")
+}
+
+timingSensitiveModuleInfo {
+    requires("com.swirlds.base")
+    requires("com.swirlds.common")
+    requires("com.swirlds.common.test.fixtures")
+    requires("com.swirlds.config.api")
+    requires("com.swirlds.config.extensions")
     requires("com.swirlds.config.extensions.test.fixtures")
+    requires("com.swirlds.metrics.api")
     requires("com.swirlds.virtualmap.test.fixtures")
     requires("org.junit.jupiter.api")
     requires("org.junit.jupiter.params")

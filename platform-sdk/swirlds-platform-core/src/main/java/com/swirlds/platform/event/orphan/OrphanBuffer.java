@@ -18,13 +18,13 @@ package com.swirlds.platform.event.orphan;
 
 import com.swirlds.common.wiring.component.InputWireLabel;
 import com.swirlds.platform.consensus.EventWindow;
-import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.event.PlatformEvent;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 
 /**
- * Takes as input an unordered stream of {@link com.swirlds.platform.event.GossipEvent GossipEvent}s and emits a stream
- * of {@link com.swirlds.platform.event.GossipEvent GossipEvent}s in topological order.
+ * Takes as input an unordered stream of {@link PlatformEvent}s and emits a stream
+ * of {@link PlatformEvent}s in topological order.
  */
 public interface OrphanBuffer {
 
@@ -39,7 +39,7 @@ public interface OrphanBuffer {
      */
     @InputWireLabel("unordered events")
     @NonNull
-    List<GossipEvent> handleEvent(@NonNull GossipEvent event);
+    List<PlatformEvent> handleEvent(@NonNull PlatformEvent event);
 
     /**
      * Sets the event window that defines when an event is considered ancient.
@@ -49,7 +49,7 @@ public interface OrphanBuffer {
      */
     @InputWireLabel("event window")
     @NonNull
-    List<GossipEvent> setEventWindow(@NonNull final EventWindow eventWindow);
+    List<PlatformEvent> setEventWindow(@NonNull final EventWindow eventWindow);
 
     /**
      * Clears the orphan buffer.

@@ -20,9 +20,13 @@ import static com.hedera.node.app.service.contract.impl.exec.processors.Processo
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountAmount;
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.NftTransfer;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
+import java.math.BigInteger;
 
 /**
  * Small helper to screen whether a {@link com.hedera.hapi.node.token.CryptoTransferTransactionBody} tries
@@ -61,11 +65,23 @@ public class SystemAccountCreditScreen {
     }
 
     private static boolean creditsSystemAccount(@NonNull final AccountAmount adjust) {
+        var accountNumber = adjust.accountIDOrThrow().accountNumOrElse(0L);
         return adjust.amount() > 0
-                && isSystemAccountNumber(adjust.accountIDOrThrow().accountNumOrElse(0L));
+                && (isSystemAccountNumber(accountNumber) || isSystemAccountAlias(adjust.accountID()));
     }
 
     private static boolean isSystemAccountNumber(final long number) {
         return number > 0 && number <= NUM_SYSTEM_ACCOUNTS;
+    }
+
+    private static boolean isSystemAccountAlias(final @Nullable AccountID accountID) {
+        var alias = accountID.aliasOrElse(Bytes.EMPTY).toByteArray();
+        if (alias.length > 0) {
+            var aliasToNumber = new BigInteger(alias).intValue();
+
+            return aliasToNumber > 0 && aliasToNumber <= NUM_SYSTEM_ACCOUNTS;
+        }
+
+        return false;
     }
 }

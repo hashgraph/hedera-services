@@ -37,14 +37,15 @@ import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.platform.metrics.ReconnectMetrics;
 import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.network.SocketConnection;
-import com.swirlds.platform.state.RandomSignedStateGenerator;
-import com.swirlds.platform.state.State;
+import com.swirlds.platform.state.MerkleRoot;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateValidator;
 import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
-import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookGenerator;
+import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
+import com.swirlds.platform.test.fixtures.state.FakeMerkleStateLifecycles;
+import com.swirlds.platform.test.fixtures.state.RandomSignedStateGenerator;
 import java.io.IOException;
 import java.security.PublicKey;
 import java.time.Duration;
@@ -83,6 +84,8 @@ final class ReconnectTest {
         registry.registerConstructables("com.swirlds.common");
         registry.registerConstructables("com.swirlds.platform.state");
         registry.registerConstructables("com.swirlds.platform.state.signed");
+        registry.registerConstructables("com.swirlds.platform.system");
+        FakeMerkleStateLifecycles.registerMerkleStateRootClassIds();
     }
 
     @Test
@@ -109,11 +112,10 @@ final class ReconnectTest {
                 IntStream.range(0, numNodes).mapToObj(NodeId::new).toList();
         final Random random = RandomUtils.getRandomPrintSeed();
 
-        final AddressBook addressBook = new RandomAddressBookGenerator(random)
-                .setSize(numNodes)
-                .setAverageWeight(weightPerNode)
-                .setWeightDistributionStrategy(RandomAddressBookGenerator.WeightDistributionStrategy.BALANCED)
-                .setHashStrategy(RandomAddressBookGenerator.HashStrategy.REAL_HASH)
+        final AddressBook addressBook = RandomAddressBookBuilder.create(random)
+                .withSize(numNodes)
+                .withAverageWeight(weightPerNode)
+                .withWeightDistributionStrategy(RandomAddressBookBuilder.WeightDistributionStrategy.BALANCED)
                 .build();
 
         try (final PairedStreams pairedStreams = new PairedStreams()) {
@@ -188,7 +190,7 @@ final class ReconnectTest {
     }
 
     private ReconnectLearner buildReceiver(
-            final State state, final Connection connection, final ReconnectMetrics reconnectMetrics) {
+            final MerkleRoot state, final Connection connection, final ReconnectMetrics reconnectMetrics) {
         final AddressBook addressBook = buildAddressBook(5);
 
         return new ReconnectLearner(

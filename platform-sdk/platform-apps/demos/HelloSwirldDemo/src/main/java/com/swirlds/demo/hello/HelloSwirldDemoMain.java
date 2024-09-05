@@ -35,11 +35,13 @@ import com.swirlds.platform.Browser;
 import com.swirlds.platform.SwirldsPlatform;
 import com.swirlds.platform.listeners.PlatformStatusChangeListener;
 import com.swirlds.platform.listeners.PlatformStatusChangeNotification;
+import com.swirlds.platform.state.MerkleRoot;
+import com.swirlds.platform.state.State;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.SwirldMain;
-import com.swirlds.platform.system.SwirldState;
 import com.swirlds.platform.system.status.PlatformStatus;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.nio.charset.StandardCharsets;
 
 /**
@@ -105,15 +107,19 @@ public class HelloSwirldDemoMain implements SwirldMain {
         }
     }
 
+    @NonNull
     @Override
-    public SwirldState newState() {
-        return new HelloSwirldDemoState();
+    public MerkleRoot newMerkleStateRoot() {
+        final State state = new State();
+        state.setSwirldState(new HelloSwirldDemoState());
+        return state;
     }
 
     private void platformStatusChange(final PlatformStatusChangeNotification notification) {
         final PlatformStatus newStatus = notification.getNewStatus();
         if (PlatformStatus.ACTIVE.equals(newStatus)) {
-            final String myName = platform.getSelfAddress().getSelfName();
+            final String myName =
+                    platform.getAddressBook().getAddress(platform.getSelfId()).getSelfName();
 
             console.out.println("Hello Swirld from " + myName);
 

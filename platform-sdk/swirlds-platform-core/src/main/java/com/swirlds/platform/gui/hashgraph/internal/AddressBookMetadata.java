@@ -16,8 +16,8 @@
 
 package com.swirlds.platform.gui.hashgraph.internal;
 
+import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.system.address.AddressBook;
-import com.swirlds.platform.system.events.PlatformEvent;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Objects;
@@ -30,8 +30,8 @@ public class AddressBookMetadata {
     private final AddressBook addressBook;
     /** the number of members in the addressBook */
     private final int numMembers;
-    /** the nicknames of all the members */
-    private final String[] names;
+    /** the labels of all the members */
+    private final String[] memberLabels;
 
     // the following allow each member to have multiple columns so lines don't cross
     /** number of columns (more than number of members if preventCrossings) */
@@ -50,9 +50,12 @@ public class AddressBookMetadata {
         this.addressBook = Objects.requireNonNull(addressBook, "addressBook must not be null");
         final int m = addressBook.getSize();
         numMembers = m;
-        names = new String[m];
+        memberLabels = new String[m];
         for (int i = 0; i < m; i++) {
-            names[i] = addressBook.getAddress(addressBook.getNodeId(i)).getNickname();
+            memberLabels[i] = "ID:%d W:%d"
+                    .formatted(
+                            addressBook.getNodeId(i).id(),
+                            addressBook.getAddress(addressBook.getNodeId(i)).getWeight());
         }
 
         // fix corner cases missed by the formulas here
@@ -121,7 +124,7 @@ public class AddressBookMetadata {
     /**
      * find the column for e2 next to the column for e1
      */
-    public int mems2col(@Nullable final PlatformEvent e1, @NonNull final PlatformEvent e2) {
+    public int mems2col(@Nullable final EventImpl e1, @NonNull final EventImpl e2) {
         Objects.requireNonNull(e2, "e2 must not be null");
         // To support Noncontiguous NodeId in the address book,
         // the mems2col array is now based on indexes of NodeIds in the address book.
@@ -138,13 +141,13 @@ public class AddressBookMetadata {
     /**
      * @param i
      * 		member index
-     * @return the name of the member with the provided index
+     * @return the label of the member with the provided index
      */
-    public String getName(final int i) {
+    public String getLabel(final int i) {
         if (col2mems[i][1] == -1) {
-            return "" + names[col2mems[i][0]];
+            return "" + memberLabels[col2mems[i][0]];
         } else {
-            return "" + names[col2mems[i][0]] + "|" + names[col2mems[i][1]];
+            return "" + memberLabels[col2mems[i][0]] + "|" + memberLabels[col2mems[i][1]];
         }
     }
 }

@@ -28,7 +28,7 @@ import static com.hedera.hapi.node.base.TokenKycStatus.REVOKED;
 import static com.hedera.hapi.node.base.TokenPauseStatus.PAUSED;
 import static com.hedera.hapi.node.base.TokenPauseStatus.PAUSE_NOT_APPLICABLE;
 import static com.hedera.hapi.node.base.TokenPauseStatus.UNPAUSED;
-import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
+import static com.hedera.node.app.spi.fees.Fees.CONSTANT_FEE_DATA;
 import static com.hedera.node.app.spi.key.KeyUtils.isEmpty;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateFalsePreCheck;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateTruePreCheck;
@@ -40,17 +40,20 @@ import com.hedera.hapi.node.base.QueryHeader;
 import com.hedera.hapi.node.base.ResponseHeader;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.TokenID;
+import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.token.TokenGetInfoResponse;
 import com.hedera.hapi.node.token.TokenInfo;
 import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.Response;
-import com.hedera.node.app.service.mono.fees.calculation.token.queries.GetTokenInfoResourceUsage;
+import com.hedera.node.app.hapi.fees.usage.token.TokenGetInfoUsage;
+import com.hedera.node.app.hapi.utils.CommonPbjConverters;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.workflows.PaidQueryHandler;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.QueryContext;
 import com.hedera.node.config.data.LedgerConfig;
+import com.hederahashgraph.api.proto.java.FeeData;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Optional;
 import javax.inject.Inject;
@@ -62,6 +65,9 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class TokenGetInfoHandler extends PaidQueryHandler {
+    /**
+     * Default constructor for injection.
+     */
     @Inject
     public TokenGetInfoHandler() {
         // Exists for injection
@@ -123,11 +129,11 @@ public class TokenGetInfoHandler extends PaidQueryHandler {
      * Returns the {@link TokenInfo} for the given {@link TokenID}, if it exists.
      *
      * @param tokenID
-     * 		the {@link TokenID} for which to return the {@link TokenInfo}
+     * the {@link TokenID} for which to return the {@link TokenInfo}
      * @param readableTokenStore
-     * 		the {@link ReadableTokenStore} from which to retrieve the {@link TokenInfo}
+     * the {@link ReadableTokenStore} from which to retrieve the {@link TokenInfo}
      * @param config
-     * 		the {@link LedgerConfig} containing the ledger ID
+     * the {@link LedgerConfig} containing the ledger ID
      * @return the {@link TokenInfo} for the given {@link TokenID}, if it exists
      */
     private Optional<TokenInfo> infoForToken(
@@ -207,10 +213,54 @@ public class TokenGetInfoHandler extends PaidQueryHandler {
         final var query = queryContext.query();
         final var tokenStore = queryContext.createStore(ReadableTokenStore.class);
         final var op = query.tokenGetInfoOrThrow();
-        final var tokenId = op.tokenOrThrow();
+        final var tokenId = op.tokenOrElse(TokenID.DEFAULT);
         final var token = tokenStore.get(tokenId);
 
-        return queryContext.feeCalculator().legacyCalculate(sigValueObj -> new GetTokenInfoResourceUsage()
-                .usageGiven(fromPbj(query), token));
+        return queryContext
+                .feeCalculator()
+                .legacyCalculate(sigValueObj -> usageGiven(CommonPbjConverters.fromPbj(query), token));
+    }
+
+    private FeeData usageGiven(final com.hederahashgraph.api.proto.java.Query query, final Token token) {
+        if (token != null) {
+            final var estimate = TokenGetInfoUsage.newEstimate(query)
+                    .givenCurrentAdminKey(
+                            token.hasAdminKey()
+                                    ? Optional.of(CommonPbjConverters.fromPbj(token.adminKeyOrThrow()))
+                                    : Optional.empty())
+                    .givenCurrentFreezeKey(
+                            token.hasFreezeKey()
+                                    ? Optional.of(CommonPbjConverters.fromPbj(token.freezeKeyOrThrow()))
+                                    : Optional.empty())
+                    .givenCurrentWipeKey(
+                            token.hasWipeKey()
+                                    ? Optional.of(CommonPbjConverters.fromPbj(token.wipeKeyOrThrow()))
+                                    : Optional.empty())
+                    .givenCurrentSupplyKey(
+                            token.hasSupplyKey()
+                                    ? Optional.of(CommonPbjConverters.fromPbj(token.supplyKeyOrThrow()))
+                                    : Optional.empty())
+                    .givenCurrentKycKey(
+                            token.hasKycKey()
+                                    ? Optional.of(CommonPbjConverters.fromPbj(token.kycKeyOrThrow()))
+                                    : Optional.empty())
+                    .givenCurrentPauseKey(
+                            token.hasPauseKey()
+                                    ? Optional.of(CommonPbjConverters.fromPbj(token.pauseKeyOrThrow()))
+                                    : Optional.empty())
+                    .givenCurrentMetadataKey(
+                            token.hasMetadataKey()
+                                    ? Optional.of(CommonPbjConverters.fromPbj(token.metadataKeyOrThrow()))
+                                    : Optional.empty())
+                    .givenCurrentName(token.name())
+                    .givenCurrentMemo(token.memo())
+                    .givenCurrentSymbol(token.symbol());
+            if (token.hasAutoRenewAccountId()) {
+                estimate.givenCurrentlyUsingAutoRenewAccount();
+            }
+            return estimate.get();
+        } else {
+            return CONSTANT_FEE_DATA;
+        }
     }
 }

@@ -67,7 +67,6 @@ public class TransactionDispatcher {
      */
     public void dispatchPureChecks(@NonNull final TransactionBody txBody) throws PreCheckException {
         requireNonNull(txBody, "The supplied argument 'txBody' cannot be null!");
-
         try {
             final var handler = getHandler(txBody);
             handler.pureChecks(txBody);
@@ -161,7 +160,7 @@ public class TransactionDispatcher {
             case CONTRACT_UPDATE_INSTANCE -> handlers.contractUpdateHandler();
             case CONTRACT_CALL -> handlers.contractCallHandler();
             case CONTRACT_DELETE_INSTANCE -> handlers.contractDeleteHandler();
-            case ETHEREUM_TRANSACTION -> handlers.etherumTransactionHandler();
+            case ETHEREUM_TRANSACTION -> handlers.ethereumTransactionHandler();
 
             case CRYPTO_CREATE_ACCOUNT -> handlers.cryptoCreateHandler();
             case CRYPTO_UPDATE_ACCOUNT -> handlers.cryptoUpdateHandler();
@@ -178,6 +177,10 @@ public class TransactionDispatcher {
             case FILE_APPEND -> handlers.fileAppendHandler();
 
             case FREEZE -> handlers.freezeHandler();
+
+            case NODE_CREATE -> handlers.nodeCreateHandler();
+            case NODE_DELETE -> handlers.nodeDeleteHandler();
+            case NODE_UPDATE -> handlers.nodeUpdateHandler();
 
             case UNCHECKED_SUBMIT -> handlers.networkUncheckedSubmitHandler();
 
@@ -201,6 +204,10 @@ public class TransactionDispatcher {
             case TOKEN_PAUSE -> handlers.tokenPauseHandler();
             case TOKEN_UNPAUSE -> handlers.tokenUnpauseHandler();
             case TOKEN_UPDATE_NFTS -> handlers.tokenUpdateNftsHandler();
+            case TOKEN_REJECT -> handlers.tokenRejectHandler();
+            case TOKEN_CLAIM_AIRDROP -> handlers.tokenClaimAirdropHandler();
+            case TOKEN_AIRDROP -> handlers.tokenAirdropHandler();
+            case TOKEN_CANCEL_AIRDROP -> handlers.tokenCancelAirdropHandler();
 
             case UTIL_PRNG -> handlers.utilPrngHandler();
 

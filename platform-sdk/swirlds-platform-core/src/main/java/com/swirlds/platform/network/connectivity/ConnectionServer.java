@@ -21,15 +21,13 @@ import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.common.threading.interrupt.InterruptableRunnable;
 import com.swirlds.common.threading.manager.ThreadManager;
-import com.swirlds.platform.network.PeerInfo;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
-import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -46,31 +44,27 @@ public class ConnectionServer implements InterruptableRunnable {
     /** responsible for creating and binding the server socket */
     private final SocketFactory socketFactory;
     /** handles newly established connections */
-    private final BiConsumer<Socket, List<PeerInfo>> newConnectionHandler;
+    private final Consumer<Socket> newConnectionHandler;
     /** a thread pool used to handle incoming connections */
     private final ExecutorService incomingConnPool;
 
-    private final List<PeerInfo> peerInfoList;
     /**
      * @param threadManager        responsible for managing thread lifecycles
      * @param port                 the port ot use
      * @param socketFactory        responsible for creating new sockets
      * @param newConnectionHandler handles a new connection after it has been created
-     * @param peerInfoList         List of all peers
      */
     public ConnectionServer(
             final ThreadManager threadManager,
             final int port,
             final SocketFactory socketFactory,
-            final BiConsumer<Socket, List<PeerInfo>> newConnectionHandler,
-            final List<PeerInfo> peerInfoList) {
+            final Consumer<Socket> newConnectionHandler) {
         this.port = port;
         this.newConnectionHandler = newConnectionHandler;
         this.socketFactory = socketFactory;
         this.incomingConnPool = Executors.newCachedThreadPool(new ThreadConfiguration(threadManager)
                 .setThreadName("sync_server")
                 .buildFactory());
-        this.peerInfoList = peerInfoList;
     }
 
     @Override
@@ -78,7 +72,7 @@ public class ConnectionServer implements InterruptableRunnable {
         try (final ServerSocket serverSocket = socketFactory.createServerSocket(port)) {
             listen(serverSocket);
         } catch (final RuntimeException | IOException e) {
-            logger.error(EXCEPTION.getMarker(), "Cannot bind ServerSocket", e);
+            logger.error(EXCEPTION.getMarker(), "Cannot bind ServerSocket on port {}", port, e);
         }
         // if the above fails, sleep a while before trying again
         Thread.sleep(SLEEP_AFTER_BIND_FAILED_MS);
@@ -92,7 +86,7 @@ public class ConnectionServer implements InterruptableRunnable {
         while (!serverSocket.isClosed()) {
             try {
                 final Socket clientSocket = serverSocket.accept(); // listen, waiting until someone connects
-                incomingConnPool.submit(() -> newConnectionHandler.accept(clientSocket, peerInfoList));
+                incomingConnPool.submit(() -> newConnectionHandler.accept(clientSocket));
             } catch (final SocketTimeoutException expectedWithNonZeroSOTimeout) {
                 // A timeout is expected, so we won't log it
                 if (Thread.currentThread().isInterrupted()) {

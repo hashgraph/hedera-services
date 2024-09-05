@@ -32,7 +32,7 @@ import java.util.Objects;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Supplier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -60,7 +60,7 @@ public class AsyncInputStream<T extends SelfSerializable> implements AutoCloseab
 
     private final SerializableDataInputStream inputStream;
 
-    private final AtomicInteger anticipatedMessages;
+    private final AtomicLong anticipatedMessages;
     private final BlockingQueue<SelfSerializable> receivedMessages;
 
     /**
@@ -99,7 +99,7 @@ public class AsyncInputStream<T extends SelfSerializable> implements AutoCloseab
         this.workGroup = Objects.requireNonNull(workGroup, "workGroup must not be null");
         this.messageFactory = Objects.requireNonNull(messageFactory, "messageFactory must not be null");
         this.pollTimeout = config.asyncStreamTimeout();
-        this.anticipatedMessages = new AtomicInteger(0);
+        this.anticipatedMessages = new AtomicLong(0L);
         this.receivedMessages = new LinkedBlockingQueue<>(config.asyncStreamBufferSize());
         this.finishedLatch = new CountDownLatch(1);
         this.alive = true;
@@ -134,12 +134,13 @@ public class AsyncInputStream<T extends SelfSerializable> implements AutoCloseab
      */
     private void run() {
         T message = null;
+        logger.info(RECONNECT.getMarker(), this.toString() + " start run()");
         try {
             while (isAlive() && !Thread.currentThread().isInterrupted()) {
-                final int previous =
-                        anticipatedMessages.getAndUpdate((final int value) -> value == 0 ? 0 : (value - 1));
+                final long previous =
+                        anticipatedMessages.getAndUpdate((final long value) -> value == 0L ? 0L : (value - 1L));
 
-                if (previous == 0) {
+                if (previous == 0L) {
                     MILLISECONDS.sleep(1);
                     continue;
                 }
@@ -149,23 +150,26 @@ public class AsyncInputStream<T extends SelfSerializable> implements AutoCloseab
 
                 final boolean accepted = receivedMessages.offer(message, pollTimeout.toMillis(), MILLISECONDS);
                 if (!accepted) {
-                    new MerkleSynchronizationException("Timed out waiting to add message to received messages queue");
+                    new MerkleSynchronizationException(
+                            this.toString() + " timed out waiting to add message to received messages queue");
                 }
             }
         } catch (final IOException e) {
             throw new MerkleSynchronizationException(
                     String.format(
-                            "Failed to deserialize object with class ID %d(0x%08X) (%s)",
+                            "%s failed to deserialize object with class ID %d(0x%08X) (%s)",
+                            this.toString(),
                             message.getClassId(),
                             message.getClassId(),
                             message.getClass().toString()),
                     e);
         } catch (final InterruptedException e) {
-            logger.warn(RECONNECT.getMarker(), "AsyncInputStream interrupted");
+            logger.warn(RECONNECT.getMarker(), this.toString() + " interrupted");
             Thread.currentThread().interrupt();
         } finally {
             finishedLatch.countDown();
         }
+        logger.info(RECONNECT.getMarker(), this.toString() + " finish run()");
     }
 
     /**

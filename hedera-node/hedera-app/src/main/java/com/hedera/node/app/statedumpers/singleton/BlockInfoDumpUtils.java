@@ -16,24 +16,66 @@
 
 package com.hedera.node.app.statedumpers.singleton;
 
-import static com.hedera.node.app.service.mono.statedumpers.singleton.BlockInfoDumpUtils.reportOnBlockInfo;
-
 import com.hedera.hapi.node.state.blockrecords.BlockInfo;
 import com.hedera.hapi.node.state.blockrecords.RunningHashes;
 import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.node.app.records.impl.BlockRecordInfoUtils;
-import com.hedera.node.app.service.mono.state.submerkle.RichInstant;
-import com.hedera.node.app.service.mono.statedumpers.DumpCheckpoint;
-import com.hedera.node.app.service.mono.statedumpers.singleton.BBMBlockInfoAndRunningHashes;
-import com.hedera.node.app.service.mono.statedumpers.utils.Writer;
+import com.hedera.node.app.statedumpers.DumpCheckpoint;
+import com.hedera.node.app.statedumpers.legacy.RichInstant;
+import com.hedera.node.app.statedumpers.utils.FieldBuilder;
+import com.hedera.node.app.statedumpers.utils.ThingsToStrings;
+import com.hedera.node.app.statedumpers.utils.Writer;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.base.utility.Pair;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.utility.CommonUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.nio.file.Path;
 import java.time.Instant;
+import java.util.List;
+import java.util.function.BiConsumer;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 public class BlockInfoDumpUtils {
+    static Function<Boolean, String> booleanFormatter = b -> b ? "T" : "";
+
+    @NonNull
+    static List<Pair<String, BiConsumer<FieldBuilder, BBMBlockInfoAndRunningHashes>>> fieldFormatters = List.of(
+            Pair.of(
+                    "lastBlockNumber",
+                    getFieldFormatter(BBMBlockInfoAndRunningHashes::lastBlockNumber, Object::toString)),
+            Pair.of("blockHashes", getFieldFormatter(BBMBlockInfoAndRunningHashes::blockHashes, Object::toString)),
+            Pair.of(
+                    "consTimeOfLastHandledTxn",
+                    getFieldFormatter(
+                            BBMBlockInfoAndRunningHashes::consTimeOfLastHandledTxn,
+                            getNullableFormatter(ThingsToStrings::toStringOfRichInstant))),
+            Pair.of(
+                    "migrationRecordsStreamed",
+                    getFieldFormatter(BBMBlockInfoAndRunningHashes::migrationRecordsStreamed, booleanFormatter)),
+            Pair.of(
+                    "firstConsTimeOfCurrentBlock",
+                    getFieldFormatter(
+                            BBMBlockInfoAndRunningHashes::firstConsTimeOfCurrentBlock,
+                            getNullableFormatter(ThingsToStrings::toStringOfRichInstant))),
+            Pair.of("entityId", getFieldFormatter(BBMBlockInfoAndRunningHashes::entityId, Object::toString)),
+            Pair.of(
+                    "runningHash",
+                    getFieldFormatter(
+                            BBMBlockInfoAndRunningHashes::runningHash, getNullableFormatter(Object::toString))),
+            Pair.of(
+                    "nMinus1RunningHash",
+                    getFieldFormatter(
+                            BBMBlockInfoAndRunningHashes::nMinus1RunningHash, getNullableFormatter(Object::toString))),
+            Pair.of(
+                    "nMinus2RunningHash",
+                    getFieldFormatter(
+                            BBMBlockInfoAndRunningHashes::nMinus2RunningHash, getNullableFormatter(Object::toString))),
+            Pair.of(
+                    "nMinus3RunningHas",
+                    getFieldFormatter(
+                            BBMBlockInfoAndRunningHashes::nMinus3RunningHash, getNullableFormatter(Object::toString))));
 
     public static void dumpModBlockInfo(
             @NonNull final Path path,
@@ -112,5 +154,45 @@ public class BlockInfoDumpUtils {
                     .append(i < availableBlocksCount ? ", " : "");
         }
         return jsonSb.append("]").toString();
+    }
+
+    public static void reportOnBlockInfo(
+            @NonNull final Writer writer,
+            @NonNull final BBMBlockInfoAndRunningHashes combinedBlockInfoAndRunningHashes) {
+        writer.writeln(formatHeaderForBlockInfo());
+        formatBlockInfo(writer, combinedBlockInfoAndRunningHashes);
+        writer.writeln("");
+    }
+
+    @NonNull
+    private static String formatHeaderForBlockInfo() {
+        return fieldFormatters.stream().map(Pair::left).collect(Collectors.joining(Writer.FIELD_SEPARATOR));
+    }
+
+    @NonNull
+    static <T> BiConsumer<FieldBuilder, BBMBlockInfoAndRunningHashes> getFieldFormatter(
+            @NonNull final Function<BBMBlockInfoAndRunningHashes, T> fun,
+            @NonNull final Function<T, String> formatter) {
+        return (fb, u) -> formatField(fb, u, fun, formatter);
+    }
+
+    static <T> void formatField(
+            @NonNull final FieldBuilder fb,
+            @NonNull final BBMBlockInfoAndRunningHashes info,
+            @NonNull final Function<BBMBlockInfoAndRunningHashes, T> fun,
+            @NonNull final Function<T, String> formatter) {
+        fb.append(formatter.apply(fun.apply(info)));
+    }
+
+    private static void formatBlockInfo(
+            @NonNull final Writer writer,
+            @NonNull final BBMBlockInfoAndRunningHashes combinedBlockInfoAndRunningHashes) {
+        final var fb = new FieldBuilder(Writer.FIELD_SEPARATOR);
+        fieldFormatters.stream().map(Pair::right).forEach(ff -> ff.accept(fb, combinedBlockInfoAndRunningHashes));
+        writer.writeln(fb);
+    }
+
+    static <T> Function<T, String> getNullableFormatter(@NonNull final Function<T, String> formatter) {
+        return t -> null != t ? formatter.apply(t) : "";
     }
 }

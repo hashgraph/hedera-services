@@ -43,7 +43,7 @@ public interface ReadableFileStore {
     /**
      * Returns the file needed from state, if not exist will return null.
      * @param id file id being looked up
-     * @return
+     * @return file if found, null otherwise
      */
     @Nullable
     File getFileLeaf(@NonNull FileID id);
@@ -51,7 +51,7 @@ public interface ReadableFileStore {
     /**
      * Returns the number of files in the state.
      *
-     * @return the number of files in the state.
+     * @return the number of files in the state
      */
     long sizeOfState();
 }

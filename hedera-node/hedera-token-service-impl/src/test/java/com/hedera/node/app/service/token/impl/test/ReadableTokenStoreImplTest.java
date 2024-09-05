@@ -24,19 +24,19 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
+import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.Fraction;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.state.common.EntityIDPair;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.state.token.TokenRelation;
-import com.hedera.node.app.service.mono.pbj.PbjConverter;
-import com.hedera.node.app.service.mono.state.submerkle.EntityId;
-import com.hedera.node.app.service.mono.state.submerkle.FcCustomFee;
-import com.hedera.node.app.service.mono.state.submerkle.FixedFeeSpec;
+import com.hedera.hapi.node.transaction.CustomFee;
+import com.hedera.hapi.node.transaction.FixedFee;
+import com.hedera.hapi.node.transaction.RoyaltyFee;
 import com.hedera.node.app.service.token.impl.ReadableTokenStoreImpl;
 import com.hedera.node.app.service.token.impl.test.handlers.util.TokenHandlerTestBase;
-import com.hedera.node.app.spi.state.ReadableKVState;
-import com.hedera.node.app.spi.state.ReadableStates;
-import com.hedera.node.app.spi.workflows.PreCheckException;
+import com.swirlds.state.spi.ReadableKVState;
+import com.swirlds.state.spi.ReadableStates;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -86,17 +86,29 @@ class ReadableTokenStoreImplTest extends TokenHandlerTestBase {
     }
 
     @Test
-    void getsNullKeyIfMissingAccount() throws PreCheckException {
+    void getsNullKeyIfMissingAccount() {
         given(tokens.get(tokenId)).willReturn(null);
         assertNull(subject.getTokenMeta(tokenId));
     }
 
     @Test
-    void classifiesRoyaltyWithFallback() throws PreCheckException {
+    void classifiesRoyaltyWithFallback() {
         final var copy = token.copyBuilder();
         copy.tokenType(NON_FUNGIBLE_UNIQUE);
-        copy.customFees(PbjConverter.fromFcCustomFee(
-                FcCustomFee.royaltyFee(1, 2, new FixedFeeSpec(1, null), new EntityId(1, 2, 5), false)));
+        copy.customFees(CustomFee.newBuilder()
+                .royaltyFee(RoyaltyFee.newBuilder()
+                        .exchangeValueFraction(Fraction.newBuilder()
+                                .numerator(1)
+                                .denominator(2)
+                                .build())
+                        .fallbackFee(FixedFee.newBuilder().amount(1).build())
+                        .build())
+                .feeCollectorAccountId(AccountID.newBuilder()
+                        .shardNum(1)
+                        .realmNum(2)
+                        .accountNum(3)
+                        .build())
+                .build());
 
         given(tokens.get(tokenId)).willReturn(copy.build());
 
@@ -107,10 +119,22 @@ class ReadableTokenStoreImplTest extends TokenHandlerTestBase {
     }
 
     @Test
-    void classifiesRoyaltyWithNoFallback() throws PreCheckException {
+    void classifiesRoyaltyWithNoFallback() {
         final var copy = token.copyBuilder();
         copy.tokenType(NON_FUNGIBLE_UNIQUE);
-        copy.customFees(PbjConverter.fromFcCustomFee(FcCustomFee.royaltyFee(1, 2, null, new EntityId(1, 2, 5), false)));
+        copy.customFees(CustomFee.newBuilder()
+                .royaltyFee(RoyaltyFee.newBuilder()
+                        .exchangeValueFraction(Fraction.newBuilder()
+                                .numerator(1)
+                                .denominator(2)
+                                .build())
+                        .build())
+                .feeCollectorAccountId(AccountID.newBuilder()
+                        .shardNum(1)
+                        .realmNum(2)
+                        .accountNum(5)
+                        .build())
+                .build());
 
         given(tokens.get(tokenId)).willReturn(copy.build());
 

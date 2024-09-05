@@ -24,9 +24,9 @@ import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.transaction.ExchangeRate;
 import com.hedera.hapi.node.transaction.ExchangeRateSet;
+import com.hedera.node.app.fees.schemas.V0490FeeSchema;
 import com.hedera.node.app.spi.fees.ExchangeRateInfo;
 import com.hedera.node.app.spi.workflows.HandleException;
-import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.util.FileUtilities;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.AccountsConfig;
@@ -34,8 +34,8 @@ import com.hedera.node.config.data.FilesConfig;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.data.RatesConfig;
 import com.hedera.pbj.runtime.ParseException;
-import com.hedera.pbj.runtime.UncheckedParseException;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.state.State;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.math.BigInteger;
@@ -43,6 +43,8 @@ import java.time.Instant;
 import java.util.stream.LongStream;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * Parses the exchange rate information and makes it available to the workflows.
@@ -63,6 +65,7 @@ import javax.inject.Singleton;
  */
 @Singleton
 public final class ExchangeRateManager {
+    private static final Logger log = LogManager.getLogger(ExchangeRateManager.class);
 
     private static final BigInteger ONE_HUNDRED = BigInteger.valueOf(100);
 
@@ -76,35 +79,33 @@ public final class ExchangeRateManager {
         this.configProvider = requireNonNull(configProvider, "configProvider must not be null");
     }
 
-    public void init(@NonNull final HederaState state, @NonNull final Bytes bytes) {
+    public void init(@NonNull final State state, @NonNull final Bytes bytes) {
         requireNonNull(state, "state must not be null");
         requireNonNull(bytes, "bytes must not be null");
 
-        // First we try to read midnightRates from state
-        midnightRates = state.getReadableStates(FeeService.NAME)
-                .<ExchangeRateSet>getSingleton(FeeService.MIDNIGHT_RATES_STATE_KEY)
-                .get();
-        if (midnightRates != ExchangeRateSet.DEFAULT) {
-            // midnightRates were found in state, a regular update is sufficient
-            //
-            systemUpdate(bytes);
-        }
+        // Re-use the same code path to set the active rates as does the SystemFileUpdateFacility
+        // IMPORTANT - if we first initialized the midnight rates, we couldn't reuse this code path
+        // because it overwrites the midnight rates with the current rates
+        systemUpdate(bytes);
 
-        // If midnightRates were not found in state, we initialize them from the file
-        try {
-            midnightRates = ExchangeRateSet.PROTOBUF.parse(bytes.toReadableSequentialData());
-        } catch (ParseException e) {
-            // an error here is fatal and needs to be handled by the general initialization code
-            throw new UncheckedParseException(e);
-        }
-        this.currentExchangeRateInfo = new ExchangeRateInfoImpl(midnightRates);
+        // Now fix the midnight rates to what is in state (note that all post-initialization
+        // Services states must have a non-null midnight rates set, even at genesis, as
+        // FeeService schema migrate() creates them in that case)
+        midnightRates = state.getReadableStates(FeeService.NAME)
+                .<ExchangeRateSet>getSingleton(V0490FeeSchema.MIDNIGHT_RATES_STATE_KEY)
+                .get();
+        requireNonNull(midnightRates, "an initialized state must have a midnight rates set");
+        log.info(
+                "Initializing exchange rates with midnight rates {} and active rates {}",
+                midnightRates,
+                currentExchangeRateInfo.exchangeRates());
     }
 
     /**
      * Updates the exchange rate information. MUST BE CALLED on the handle thread!
      *
-     * @param bytes   The protobuf encoded {@link ExchangeRateSet}.
-     * @param payerId   The payer of the transaction that triggered this update.
+     * @param bytes The protobuf encoded {@link ExchangeRateSet}.
+     * @param payerId The payer of the transaction that triggered this update.
      */
     public void update(@NonNull final Bytes bytes, @NonNull AccountID payerId) {
         requireNonNull(payerId, "payerId must not be null");
@@ -147,7 +148,6 @@ public final class ExchangeRateManager {
 
         // Update the current ExchangeRateInfo and eventually the midnightRates
         this.currentExchangeRateInfo = new ExchangeRateInfoImpl(proposedRates);
-        // TODO: save the mignightRates in state only
         if (isAdminUser(payerId, accountsConfig)) {
             midnightRates = proposedRates;
         }
@@ -167,15 +167,22 @@ public final class ExchangeRateManager {
         return num == accountsConfig.systemAdmin();
     }
 
-    public void updateMidnightRates(@NonNull final HederaState state) {
+    /**
+     * Updates the midnight rates to the current exchange rates, both internally and in the given state.
+     *
+     * @param state the {@link State} to update the midnight rates in
+     */
+    public void updateMidnightRates(@NonNull final State state) {
         midnightRates = currentExchangeRateInfo.exchangeRates();
         final var singleton = state.getWritableStates(FeeService.NAME)
-                .<ExchangeRateSet>getSingleton(FeeService.MIDNIGHT_RATES_STATE_KEY);
+                .<ExchangeRateSet>getSingleton(V0490FeeSchema.MIDNIGHT_RATES_STATE_KEY);
         singleton.put(midnightRates);
+        log.info("Updated midnight rates to {}", midnightRates);
     }
 
     /**
      * Gets the current {@link ExchangeRateSet}. MUST BE CALLED ON THE HANDLE THREAD!!
+     *
      * @return The current {@link ExchangeRateSet}.
      */
     @NonNull
@@ -188,7 +195,7 @@ public final class ExchangeRateManager {
      * THREAD!!
      *
      * @param consensusTime The consensus time. If after the expiration time of the current rate, the next rate will
-     *                      be returned. Otherwise, the current rate will be returned.
+     * be returned. Otherwise, the current rate will be returned.
      * @return The {@link ExchangeRate} that should be used as of the given consensus time.
      */
     @NonNull
@@ -199,11 +206,11 @@ public final class ExchangeRateManager {
     /**
      * Get the {@link ExchangeRateInfo} that is based on the given state.
      *
-     * @param state The {@link HederaState} to use.
+     * @param state The {@link State} to use.
      * @return The {@link ExchangeRateInfo}.
      */
     @NonNull
-    public ExchangeRateInfo exchangeRateInfo(@NonNull final HederaState state) {
+    public ExchangeRateInfo exchangeRateInfo(@NonNull final State state) {
         final var hederaConfig = configProvider.getConfiguration().getConfigData(HederaConfig.class);
         final var shardNum = hederaConfig.shard();
         final var realmNum = hederaConfig.realm();

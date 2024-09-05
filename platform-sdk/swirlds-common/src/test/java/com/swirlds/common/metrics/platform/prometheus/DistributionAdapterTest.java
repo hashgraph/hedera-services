@@ -23,10 +23,10 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.data.Offset.offset;
 
 import com.swirlds.common.metrics.RunningAverageMetric;
-import com.swirlds.common.metrics.platform.DefaultRunningAverageMetric;
-import com.swirlds.common.metrics.platform.Snapshot;
+import com.swirlds.common.metrics.platform.PlatformRunningAverageMetric;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.metrics.api.Metric;
+import com.swirlds.metrics.api.snapshot.Snapshot;
 import io.prometheus.client.Collector;
 import io.prometheus.client.CollectorRegistry;
 import org.junit.jupiter.api.Test;
@@ -48,7 +48,7 @@ class DistributionAdapterTest {
     void testCreateGlobalMetric() {
         // given
         final CollectorRegistry registry = new CollectorRegistry();
-        final Metric metric = new DefaultRunningAverageMetric(new RunningAverageMetric.Config(CATEGORY, NAME)
+        final Metric metric = new PlatformRunningAverageMetric(new RunningAverageMetric.Config(CATEGORY, NAME)
                 .withDescription(DESCRIPTION)
                 .withUnit(UNIT));
 
@@ -68,7 +68,7 @@ class DistributionAdapterTest {
     void testCreatePlatformMetric() {
         // given
         final CollectorRegistry registry = new CollectorRegistry();
-        final Metric metric = new DefaultRunningAverageMetric(new RunningAverageMetric.Config(CATEGORY, NAME)
+        final Metric metric = new PlatformRunningAverageMetric(new RunningAverageMetric.Config(CATEGORY, NAME)
                 .withDescription(DESCRIPTION)
                 .withUnit(UNIT));
 
@@ -89,7 +89,7 @@ class DistributionAdapterTest {
         // given
         final String brokenName = ".- /%()";
         final CollectorRegistry registry = new CollectorRegistry();
-        final Metric metric = new DefaultRunningAverageMetric(new RunningAverageMetric.Config(brokenName, brokenName));
+        final Metric metric = new PlatformRunningAverageMetric(new RunningAverageMetric.Config(brokenName, brokenName));
 
         // when
         new DistributionAdapter(registry, metric, GLOBAL);
@@ -106,7 +106,7 @@ class DistributionAdapterTest {
     void testConstructorWithNullParameters() {
         // given
         final CollectorRegistry registry = new CollectorRegistry();
-        final Metric metric = new DefaultRunningAverageMetric(
+        final Metric metric = new PlatformRunningAverageMetric(
                 new RunningAverageMetric.Config(CATEGORY, NAME).withDescription(DESCRIPTION));
 
         // then
@@ -126,8 +126,8 @@ class DistributionAdapterTest {
     void testUpdateGlobalMetric() {
         // given
         final CollectorRegistry registry = new CollectorRegistry();
-        final DefaultRunningAverageMetric metric =
-                new DefaultRunningAverageMetric(new RunningAverageMetric.Config(CATEGORY, NAME));
+        final PlatformRunningAverageMetric metric =
+                new PlatformRunningAverageMetric(new RunningAverageMetric.Config(CATEGORY, NAME));
         metric.update(Math.PI);
         final DistributionAdapter adapter = new DistributionAdapter(registry, metric, GLOBAL);
 
@@ -149,8 +149,8 @@ class DistributionAdapterTest {
     void testUpdatePlatformMetric() {
         // given
         final CollectorRegistry registry = new CollectorRegistry();
-        final DefaultRunningAverageMetric metric =
-                new DefaultRunningAverageMetric(new RunningAverageMetric.Config(CATEGORY, NAME));
+        final PlatformRunningAverageMetric metric =
+                new PlatformRunningAverageMetric(new RunningAverageMetric.Config(CATEGORY, NAME));
         metric.update(Math.PI);
         final DistributionAdapter adapter = new DistributionAdapter(registry, metric, PLATFORM);
 
@@ -172,8 +172,8 @@ class DistributionAdapterTest {
     void testUpdateWithNullParameters() {
         // given
         final CollectorRegistry registry = new CollectorRegistry();
-        final DefaultRunningAverageMetric metric =
-                new DefaultRunningAverageMetric(new RunningAverageMetric.Config(CATEGORY, NAME));
+        final PlatformRunningAverageMetric metric =
+                new PlatformRunningAverageMetric(new RunningAverageMetric.Config(CATEGORY, NAME));
         final DistributionAdapter adapter = new DistributionAdapter(registry, metric, PLATFORM);
         final NodeId nodeId = new NodeId(1L);
 

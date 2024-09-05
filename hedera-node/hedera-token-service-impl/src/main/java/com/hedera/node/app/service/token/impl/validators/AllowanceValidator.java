@@ -16,7 +16,9 @@
 
 package com.hedera.node.app.service.token.impl.validators;
 
-import static com.hedera.hapi.node.base.ResponseCodeEnum.*;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ALLOWANCE_OWNER_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_ALLOWANCES_EXCEEDED;
 import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.AccountIDType.NOT_ALIASED_ID;
 import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
@@ -39,17 +41,37 @@ import java.util.HashSet;
 import java.util.List;
 import javax.inject.Inject;
 
+/**
+ * Provides validation for allowances.
+ */
 public class AllowanceValidator {
-
+    /**
+     * Default constructor for Dagger injection.
+     */
     @Inject
     public AllowanceValidator() {
         // Dagger
     }
 
+    /**
+     * Validates the total number of allowances in a transaction. The total number of allowances
+     * should not exceed the maximum limit. This limit includes the total number of crypto
+     * allowances, total number of token allowances and total number of approvedForAll Nft allowances
+     * on owner account.
+     * @param totalAllowances total number of allowances in the transaction
+     * @param hederaConfig the Hedera configuration
+     */
     protected void validateTotalAllowancesPerTxn(final int totalAllowances, @NonNull final HederaConfig hederaConfig) {
         validateFalse(totalAllowances > hederaConfig.allowancesMaxTransactionLimit(), MAX_ALLOWANCES_EXCEEDED);
     }
 
+    /**
+     * Validates the serial numbers in the NftAllowance. The serial numbers should be valid and
+     * should exist in the NftStore.
+     * @param serialNums list of serial numbers
+     * @param tokenId token id
+     * @param nftStore nft store
+     */
     protected void validateSerialNums(
             final List<Long> serialNums, final TokenID tokenId, final ReadableNftStore nftStore) {
         final var serialsSet = new HashSet<>(serialNums);
@@ -127,6 +149,7 @@ public class AllowanceValidator {
      * @param owner given owner
      * @param payer given payer for the transaction
      * @param accountStore account store
+     * @param expiryValidator expiry validator
      * @return owner account
      */
     public static Account getEffectiveOwner(

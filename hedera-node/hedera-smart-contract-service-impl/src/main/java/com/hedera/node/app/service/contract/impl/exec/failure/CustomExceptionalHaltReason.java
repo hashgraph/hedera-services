@@ -56,6 +56,9 @@ public enum CustomExceptionalHaltReason implements ExceptionalHaltReason {
      * @param reason the halt reason
      * @return the status
      */
+    // FUTURE: refactor in the future to be more readable when we start looking for cleanups
+    // Future cannot be addressed until gradle update per
+    // https://github.com/autonomousapps/dependency-analysis-gradle-plugin/issues/1150
     public static ResponseCodeEnum statusFor(@NonNull final ExceptionalHaltReason reason) {
         requireNonNull(reason);
         if (reason == SELF_DESTRUCT_TO_SELF) {
@@ -76,6 +79,8 @@ public enum CustomExceptionalHaltReason implements ExceptionalHaltReason {
             return ResponseCodeEnum.MAX_CHILD_RECORDS_EXCEEDED;
         } else if (reason == CustomExceptionalHaltReason.INVALID_CONTRACT_ID) {
             return ResponseCodeEnum.INVALID_CONTRACT_ID;
+        } else if (reason == CustomExceptionalHaltReason.INVALID_FEE_SUBMITTED) {
+            return ResponseCodeEnum.INVALID_FEE_SUBMITTED;
         } else {
             return ResponseCodeEnum.CONTRACT_EXECUTION_EXCEPTION;
         }

@@ -63,8 +63,8 @@ public final class BirthRoundStateMigration {
             return;
         }
 
-        final State state = initialState.getState();
-        final PlatformState platformState = state.getPlatformState();
+        final MerkleRoot state = initialState.getState();
+        final PlatformStateAccessor platformState = state.getPlatformState();
 
         final boolean alreadyMigrated = platformState.getFirstVersionInBirthRoundMode() != null;
         if (alreadyMigrated) {
@@ -104,8 +104,6 @@ public final class BirthRoundStateMigration {
                 consensusSnapshot.consensusTimestamp());
         platformState.setSnapshot(modifiedConsensusSnapshot);
 
-        // rehash the state
-        platformState.invalidateHash();
         state.invalidateHash();
         MerkleCryptoFactory.getInstance().digestTreeSync(state);
     }

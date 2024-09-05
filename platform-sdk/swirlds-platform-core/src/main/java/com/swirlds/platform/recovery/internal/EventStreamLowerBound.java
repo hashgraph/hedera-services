@@ -16,9 +16,7 @@
 
 package com.swirlds.platform.recovery.internal;
 
-import com.swirlds.platform.internal.EventImpl;
-import com.swirlds.platform.system.events.ConsensusData;
-import com.swirlds.platform.system.events.DetailedConsensusEvent;
+import com.swirlds.platform.system.events.CesEvent;
 
 /**
  * A lower bound on events in an event stream based on the consensus data in the events. The bound is inclusive of exact
@@ -34,33 +32,11 @@ public interface EventStreamLowerBound {
     EventStreamLowerBound UNBOUNDED = consensusData -> 1;
 
     /**
-     * Compares the consensus data to the lower bound.
-     *
-     * @param consensusData the object to be compared.
-     * @return a value greater than, equal to, or less than 0, if the consensus data is greater than, equal to, or less
-     * than the bound.
-     */
-    int compareTo(ConsensusData consensusData);
-
-    /**
      * Compares an event to a lower bound based on the comparison of its consensus data.
      *
      * @param event the event to compare
      * @return a value greater than, equal to, or less than 0, if the event is greater than, equal to, or less than the
      * bound.
      */
-    default int compareTo(DetailedConsensusEvent event) {
-        return this.compareTo(event.getConsensusData());
-    }
-
-    /**
-     * Compares an event to a lower bound based on the comparison of its consensus data.
-     *
-     * @param event the event to compare
-     * @return a value greater than, equal to, or less than 0, if the event is greater than, equal to, or less than the
-     * bound.
-     */
-    default int compareTo(EventImpl event) {
-        return this.compareTo(event.getConsensusData());
-    }
+    int compareTo(CesEvent event);
 }

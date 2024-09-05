@@ -18,6 +18,7 @@ package com.hedera.services.bdd.suites.crypto;
 
 import static com.hedera.services.bdd.junit.TestTags.CRYPTO;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.assertions.AccountDetailsAsserts.accountDetailsWith;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountDetails;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenNftInfo;
@@ -40,7 +41,19 @@ import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoApprove
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.submitModified;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsdWithin;
+import static com.hedera.services.bdd.spec.utilops.mod.ModificationUtils.withSuccessivelyVariedBodyIds;
+import static com.hedera.services.bdd.suites.HapiSuite.APP_PROPERTIES;
+import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PAYER;
+import static com.hedera.services.bdd.suites.HapiSuite.EXCHANGE_RATE_CONTROL;
+import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
+import static com.hedera.services.bdd.suites.HapiSuite.TOKEN_TREASURY;
+import static com.hedera.services.bdd.suites.crypto.CryptoApproveAllowanceSuite.OWNER;
+import static com.hedera.services.bdd.suites.crypto.CryptoApproveAllowanceSuite.SPENDER;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EMPTY_ALLOWANCES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FUNGIBLE_TOKEN_IN_NFT_ALLOWANCES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALLOWANCE_OWNER_ID;
@@ -52,48 +65,57 @@ import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.spec.HapiSpec;
-import com.hedera.services.bdd.suites.HapiSuite;
+import com.hedera.services.bdd.junit.LeakyHapiTest;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import com.hederahashgraph.api.proto.java.TokenType;
 import java.util.List;
 import java.util.Map;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import java.util.stream.Stream;
+import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
-@HapiTestSuite
 @Tag(CRYPTO)
-public class CryptoDeleteAllowanceSuite extends HapiSuite {
-    private static final Logger log = LogManager.getLogger(CryptoDeleteAllowanceSuite.class);
-
-    public static void main(String... args) {
-        new CryptoDeleteAllowanceSuite().runSuiteSync();
-    }
-
-    @Override
-    public List<HapiSpec> getSpecsInSuite() {
-        return List.of(new HapiSpec[] {
-            happyPathWorks(),
-            approvedForAllNotAffectedOnDelete(),
-            noOwnerDefaultsToPayerInDeleteAllowance(),
-            invalidOwnerFails(),
-            canDeleteMultipleOwners(),
-            emptyAllowancesDeleteRejected(),
-            tokenNotAssociatedToAccountFailsOnDeleteAllowance(),
-            invalidTokenTypeFailsInDeleteAllowance(),
-            validatesSerialNums(),
-            exceedsTransactionLimit(),
-            succeedsWhenTokenPausedFrozenKycRevoked(),
-            feesAsExpected(),
-            duplicateEntriesDoesntThrow(),
-            canDeleteAllowanceForDeletedSpender()
-        });
+public class CryptoDeleteAllowanceSuite {
+    @HapiTest
+    final Stream<DynamicTest> idVariantsTreatedAsExpected() {
+        return defaultHapiSpec("idVariantsTreatedAsExpected")
+                .given(
+                        newKeyNamed("supplyKey"),
+                        cryptoCreate(TOKEN_TREASURY),
+                        cryptoCreate(OWNER).maxAutomaticTokenAssociations(2),
+                        cryptoCreate("delegatingOwner").maxAutomaticTokenAssociations(1),
+                        cryptoCreate(SPENDER))
+                .when(
+                        tokenCreate("fungibleToken").initialSupply(123).treasury(TOKEN_TREASURY),
+                        tokenCreate("nonFungibleToken")
+                                .treasury(TOKEN_TREASURY)
+                                .tokenType(NON_FUNGIBLE_UNIQUE)
+                                .initialSupply(0L)
+                                .supplyKey("supplyKey"),
+                        mintToken(
+                                "nonFungibleToken",
+                                List.of(
+                                        ByteString.copyFromUtf8("A"),
+                                        ByteString.copyFromUtf8("B"),
+                                        ByteString.copyFromUtf8("C"))),
+                        cryptoTransfer(
+                                movingUnique("nonFungibleToken", 1L, 2L).between(TOKEN_TREASURY, OWNER),
+                                moving(10, "fungibleToken").between(TOKEN_TREASURY, OWNER)),
+                        cryptoTransfer(movingUnique("nonFungibleToken", 3L).between(TOKEN_TREASURY, "delegatingOwner")))
+                .then(
+                        cryptoApproveAllowance()
+                                .addNftAllowance("delegatingOwner", "nonFungibleToken", OWNER, true, List.of())
+                                .signedBy(DEFAULT_PAYER, "delegatingOwner"),
+                        cryptoApproveAllowance()
+                                .addNftAllowance(OWNER, "nonFungibleToken", SPENDER, false, List.of(1L))
+                                .signedBy(DEFAULT_PAYER, OWNER),
+                        submitModified(withSuccessivelyVariedBodyIds(), () -> cryptoDeleteAllowance()
+                                .addNftDeleteAllowance(OWNER, "nonFungibleToken", List.of(1L))
+                                .signedBy(DEFAULT_PAYER, OWNER)));
     }
 
     @HapiTest
-    final HapiSpec canDeleteAllowanceForDeletedSpender() {
+    final Stream<DynamicTest> canDeleteAllowanceForDeletedSpender() {
         final String owner = "owner";
         final String spender = "spender";
         final String nft = "nft";
@@ -150,7 +172,7 @@ public class CryptoDeleteAllowanceSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec duplicateEntriesDoesntThrow() {
+    final Stream<DynamicTest> duplicateEntriesDoesntThrow() {
         final String owner = "owner";
         final String spender = "spender";
         final String token = "token";
@@ -227,7 +249,7 @@ public class CryptoDeleteAllowanceSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec invalidOwnerFails() {
+    final Stream<DynamicTest> invalidOwnerFails() {
         final String owner = "owner";
         final String spender = "spender";
         final String token = "token";
@@ -283,7 +305,7 @@ public class CryptoDeleteAllowanceSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec feesAsExpected() {
+    final Stream<DynamicTest> feesAsExpected() {
         final String owner = "owner";
         final String spender = "spender";
         final String token = "token";
@@ -371,7 +393,7 @@ public class CryptoDeleteAllowanceSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec succeedsWhenTokenPausedFrozenKycRevoked() {
+    final Stream<DynamicTest> succeedsWhenTokenPausedFrozenKycRevoked() {
         final String owner = "owner";
         final String spender = "spender";
         final String spender1 = "spender1";
@@ -467,83 +489,68 @@ public class CryptoDeleteAllowanceSuite extends HapiSuite {
                                         "hedera.allowances.maxAccountLimit", "100")));
     }
 
-    @HapiTest
-    final HapiSpec exceedsTransactionLimit() {
+    @LeakyHapiTest(overrides = {"hedera.allowances.maxTransactionLimit"})
+    final Stream<DynamicTest> exceedsTransactionLimit() {
         final String owner = "owner";
         final String spender = "spender";
         final String spender1 = "spender1";
         final String spender2 = "spender2";
         final String token = "token";
         final String nft = "nft";
-        return defaultHapiSpec("exceedsTransactionLimit")
-                .given(
-                        newKeyNamed("supplyKey"),
-                        fileUpdate(APP_PROPERTIES)
-                                .fee(ONE_HUNDRED_HBARS)
-                                .payingWith(EXCHANGE_RATE_CONTROL)
-                                .overridingProps(Map.of("hedera.allowances.maxTransactionLimit", "4")),
-                        cryptoCreate(owner).balance(ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(10),
-                        cryptoCreate(spender).balance(ONE_HUNDRED_HBARS),
-                        cryptoCreate(spender1).balance(ONE_HUNDRED_HBARS),
-                        cryptoCreate(spender2).balance(ONE_HUNDRED_HBARS),
-                        cryptoCreate(TOKEN_TREASURY)
-                                .balance(100 * ONE_HUNDRED_HBARS)
-                                .maxAutomaticTokenAssociations(10),
-                        tokenCreate(token)
-                                .tokenType(TokenType.FUNGIBLE_COMMON)
-                                .supplyType(TokenSupplyType.FINITE)
-                                .supplyKey("supplyKey")
-                                .maxSupply(1000L)
-                                .initialSupply(10L)
-                                .treasury(TOKEN_TREASURY),
-                        tokenCreate(nft)
-                                .maxSupply(10L)
-                                .initialSupply(0)
-                                .supplyType(TokenSupplyType.FINITE)
-                                .tokenType(NON_FUNGIBLE_UNIQUE)
-                                .supplyKey("supplyKey")
-                                .treasury(TOKEN_TREASURY),
-                        tokenAssociate(owner, token),
-                        tokenAssociate(owner, nft),
-                        mintToken(
-                                        nft,
-                                        List.of(
-                                                ByteString.copyFromUtf8("a"),
-                                                ByteString.copyFromUtf8("b"),
-                                                ByteString.copyFromUtf8("c")))
-                                .via("nftTokenMint"),
-                        mintToken(token, 500L).via("tokenMint"),
-                        cryptoTransfer(movingUnique(nft, 1L, 2L, 3L).between(TOKEN_TREASURY, owner)))
-                .when(
-                        cryptoApproveAllowance()
-                                .payingWith(owner)
-                                .addNftAllowance(owner, nft, spender, false, List.of(1L, 2L)),
-                        cryptoDeleteAllowance()
-                                .payingWith(owner)
-                                .addNftDeleteAllowance(owner, nft, List.of(1L, 2L, 3L, 3L, 3L))
-                                .hasPrecheck(MAX_ALLOWANCES_EXCEEDED),
-                        cryptoDeleteAllowance()
-                                .payingWith(owner)
-                                .addNftDeleteAllowance(owner, nft, List.of(1L, 1L, 1L, 1L, 1L))
-                                .hasPrecheck(MAX_ALLOWANCES_EXCEEDED),
-                        cryptoDeleteAllowance()
-                                .payingWith(owner)
-                                .addNftDeleteAllowance(owner, nft, List.of(1L))
-                                .addNftDeleteAllowance(owner, nft, List.of(2L))
-                                .addNftDeleteAllowance(owner, nft, List.of(3L))
-                                .addNftDeleteAllowance(owner, nft, List.of(1L))
-                                .addNftDeleteAllowance(owner, nft, List.of(1L))
-                                .hasPrecheck(MAX_ALLOWANCES_EXCEEDED))
-                .then(
-                        // reset
-                        fileUpdate(APP_PROPERTIES)
-                                .fee(ONE_HUNDRED_HBARS)
-                                .payingWith(EXCHANGE_RATE_CONTROL)
-                                .overridingProps(Map.of("hedera.allowances.maxTransactionLimit", "20")));
+        return hapiTest(
+                overriding("hedera.allowances.maxTransactionLimit", "4"),
+                newKeyNamed("supplyKey"),
+                cryptoCreate(owner).balance(ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(10),
+                cryptoCreate(spender).balance(ONE_HUNDRED_HBARS),
+                cryptoCreate(spender1).balance(ONE_HUNDRED_HBARS),
+                cryptoCreate(spender2).balance(ONE_HUNDRED_HBARS),
+                cryptoCreate(TOKEN_TREASURY).balance(100 * ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(10),
+                tokenCreate(token)
+                        .tokenType(TokenType.FUNGIBLE_COMMON)
+                        .supplyType(TokenSupplyType.FINITE)
+                        .supplyKey("supplyKey")
+                        .maxSupply(1000L)
+                        .initialSupply(10L)
+                        .treasury(TOKEN_TREASURY),
+                tokenCreate(nft)
+                        .maxSupply(10L)
+                        .initialSupply(0)
+                        .supplyType(TokenSupplyType.FINITE)
+                        .tokenType(NON_FUNGIBLE_UNIQUE)
+                        .supplyKey("supplyKey")
+                        .treasury(TOKEN_TREASURY),
+                tokenAssociate(owner, token),
+                tokenAssociate(owner, nft),
+                mintToken(
+                                nft,
+                                List.of(
+                                        ByteString.copyFromUtf8("a"),
+                                        ByteString.copyFromUtf8("b"),
+                                        ByteString.copyFromUtf8("c")))
+                        .via("nftTokenMint"),
+                mintToken(token, 500L).via("tokenMint"),
+                cryptoTransfer(movingUnique(nft, 1L, 2L, 3L).between(TOKEN_TREASURY, owner)),
+                cryptoApproveAllowance().payingWith(owner).addNftAllowance(owner, nft, spender, false, List.of(1L, 2L)),
+                cryptoDeleteAllowance()
+                        .payingWith(owner)
+                        .addNftDeleteAllowance(owner, nft, List.of(1L, 2L, 3L, 3L, 3L))
+                        .hasPrecheck(MAX_ALLOWANCES_EXCEEDED),
+                cryptoDeleteAllowance()
+                        .payingWith(owner)
+                        .addNftDeleteAllowance(owner, nft, List.of(1L, 1L, 1L, 1L, 1L))
+                        .hasPrecheck(MAX_ALLOWANCES_EXCEEDED),
+                cryptoDeleteAllowance()
+                        .payingWith(owner)
+                        .addNftDeleteAllowance(owner, nft, List.of(1L))
+                        .addNftDeleteAllowance(owner, nft, List.of(2L))
+                        .addNftDeleteAllowance(owner, nft, List.of(3L))
+                        .addNftDeleteAllowance(owner, nft, List.of(1L))
+                        .addNftDeleteAllowance(owner, nft, List.of(1L))
+                        .hasPrecheck(MAX_ALLOWANCES_EXCEEDED));
     }
 
     @HapiTest
-    final HapiSpec validatesSerialNums() {
+    final Stream<DynamicTest> validatesSerialNums() {
         final String owner = "owner";
         final String spender = "spender";
         final String nft = "nft";
@@ -599,7 +606,7 @@ public class CryptoDeleteAllowanceSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec invalidTokenTypeFailsInDeleteAllowance() {
+    final Stream<DynamicTest> invalidTokenTypeFailsInDeleteAllowance() {
         final String owner = "owner";
         final String spender = "spender";
         final String token = "token";
@@ -628,7 +635,7 @@ public class CryptoDeleteAllowanceSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec emptyAllowancesDeleteRejected() {
+    final Stream<DynamicTest> emptyAllowancesDeleteRejected() {
         final String owner = "owner";
         return defaultHapiSpec("emptyAllowancesDeleteRejected")
                 .given(cryptoCreate(owner).balance(ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(10))
@@ -637,7 +644,7 @@ public class CryptoDeleteAllowanceSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec tokenNotAssociatedToAccountFailsOnDeleteAllowance() {
+    final Stream<DynamicTest> tokenNotAssociatedToAccountFailsOnDeleteAllowance() {
         final String owner = "owner";
         final String spender = "spender";
         final String token = "token";
@@ -685,7 +692,7 @@ public class CryptoDeleteAllowanceSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec canDeleteMultipleOwners() {
+    final Stream<DynamicTest> canDeleteMultipleOwners() {
         final String owner1 = "owner1";
         final String owner2 = "owner2";
         final String spender = "spender";
@@ -777,7 +784,7 @@ public class CryptoDeleteAllowanceSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec noOwnerDefaultsToPayerInDeleteAllowance() {
+    final Stream<DynamicTest> noOwnerDefaultsToPayerInDeleteAllowance() {
         final String payer = "payer";
         final String spender = "spender";
         final String spender1 = "spender1";
@@ -840,7 +847,7 @@ public class CryptoDeleteAllowanceSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec approvedForAllNotAffectedOnDelete() {
+    final Stream<DynamicTest> approvedForAllNotAffectedOnDelete() {
         final String owner = "owner";
         final String spender = "spender";
         final String token = "token";
@@ -915,7 +922,7 @@ public class CryptoDeleteAllowanceSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec happyPathWorks() {
+    final Stream<DynamicTest> happyPathWorks() {
         final String owner = "owner";
         final String spender = "spender";
         final String spender1 = "spender1";
@@ -984,10 +991,5 @@ public class CryptoDeleteAllowanceSuite extends HapiSuite {
                                 .payingWith(GENESIS)
                                 .has(accountDetailsWith().nftApprovedForAllAllowancesCount(1)),
                         getTokenNftInfo(nft, 3L).hasNoSpender());
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return log;
     }
 }

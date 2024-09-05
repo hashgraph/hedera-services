@@ -23,6 +23,7 @@ import com.hedera.node.app.service.contract.impl.exec.TransactionInitialStateMod
 import com.hedera.node.app.service.file.ReadableFileStore;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.api.TokenServiceApi;
+import com.hedera.node.app.spi.store.StoreFactory;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -43,11 +44,15 @@ class TransactionInitialStateModuleTest {
     @Mock
     private HandleContext context;
 
+    @Mock
+    private StoreFactory storeFactory;
+
     @Test
     void providesInitialState() {
-        given(context.serviceApi(TokenServiceApi.class)).willReturn(tokenServiceApi);
-        given(context.readableStore(ReadableAccountStore.class)).willReturn(readableAccountStore);
-        given(context.readableStore(ReadableFileStore.class)).willReturn(readableFileStore);
+        given(context.storeFactory()).willReturn(storeFactory);
+        given(storeFactory.serviceApi(TokenServiceApi.class)).willReturn(tokenServiceApi);
+        given(storeFactory.readableStore(ReadableAccountStore.class)).willReturn(readableAccountStore);
+        given(storeFactory.readableStore(ReadableFileStore.class)).willReturn(readableFileStore);
         assertSame(tokenServiceApi, TransactionInitialStateModule.provideInitialTokenServiceApi(context));
         assertSame(readableAccountStore, TransactionInitialStateModule.provideInitialAccountStore(context));
         assertSame(readableFileStore, TransactionInitialStateModule.provideInitialFileStore(context));

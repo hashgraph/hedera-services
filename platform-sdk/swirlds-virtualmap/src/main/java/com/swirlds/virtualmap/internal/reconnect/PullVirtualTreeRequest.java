@@ -69,7 +69,7 @@ public class PullVirtualTreeRequest implements SelfSerializable {
     public void serialize(final SerializableDataOutputStream out) throws IOException {
         out.writeLong(path);
         if (hash != null) {
-            out.write(hash.getValue());
+            hash.getBytes().writeTo(out);
         }
     }
 
@@ -80,10 +80,11 @@ public class PullVirtualTreeRequest implements SelfSerializable {
     public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
         path = in.readLong();
         if (path >= 0) {
-            hash = new Hash(DigestType.SHA_384);
-            if (VirtualReconnectUtils.completelyRead(in, hash.getValue()) != DigestType.SHA_384.digestLength()) {
+            final byte[] hashBytes = new byte[DigestType.SHA_384.digestLength()];
+            if (VirtualReconnectUtils.completelyRead(in, hashBytes) != DigestType.SHA_384.digestLength()) {
                 throw new IOException("Failed to read node hash from the learner");
             }
+            hash = new Hash(hashBytes, DigestType.SHA_384);
         }
     }
 

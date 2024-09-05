@@ -17,6 +17,7 @@
 package com.hedera.node.app.services;
 
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.service.addressbook.AddressBookService;
 import com.hedera.node.app.service.consensus.ConsensusService;
 import com.hedera.node.app.service.contract.ContractService;
 import com.hedera.node.app.service.file.FileService;
@@ -99,7 +100,11 @@ public class ServiceScopeLookup {
                     TOKEN_FEE_SCHEDULE_UPDATE,
                     TOKEN_PAUSE,
                     TOKEN_UNPAUSE,
-                    TOKEN_UPDATE_NFTS -> TokenService.NAME;
+                    TOKEN_UPDATE_NFTS,
+                    TOKEN_AIRDROP,
+                    TOKEN_CLAIM_AIRDROP,
+                    TOKEN_CANCEL_AIRDROP,
+                    TOKEN_REJECT -> TokenService.NAME;
 
             case UTIL_PRNG -> UtilService.NAME;
 
@@ -113,6 +118,8 @@ public class ServiceScopeLookup {
                 case FILE_ID -> FileService.NAME;
                 default -> NON_EXISTING_SERVICE;
             };
+
+            case NODE_CREATE, NODE_DELETE, NODE_UPDATE -> AddressBookService.NAME;
 
             default -> NON_EXISTING_SERVICE;
         };

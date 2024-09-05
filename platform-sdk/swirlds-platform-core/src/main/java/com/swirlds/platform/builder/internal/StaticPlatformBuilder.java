@@ -20,7 +20,6 @@ import static com.swirlds.common.io.utility.FileUtils.getAbsolutePath;
 import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 import static com.swirlds.platform.builder.PlatformBuildConstants.LOG4J_FILE_NAME;
 import static com.swirlds.platform.util.BootstrapUtils.startJVMPauseDetectorThread;
-import static com.swirlds.platform.util.BootstrapUtils.startThreadDumpGenerator;
 import static com.swirlds.platform.util.BootstrapUtils.writeSettingsUsed;
 
 import com.swirlds.common.config.singleton.ConfigurationHolder;
@@ -112,9 +111,6 @@ public final class StaticPlatformBuilder {
 
         BootstrapUtils.performHealthChecks(configPath, configuration);
         writeSettingsUsed(configuration);
-
-        // Initialize the thread dump generator, if enabled via settings
-        startThreadDumpGenerator(configuration);
 
         // Initialize JVMPauseDetectorThread, if enabled via settings
         startJVMPauseDetectorThread(configuration);

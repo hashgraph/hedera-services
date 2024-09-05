@@ -16,7 +16,7 @@
 
 package com.hedera.node.app.service.token.impl.test.handlers.staking;
 
-import static com.hedera.node.app.service.mono.utils.Units.HBARS_TO_TINYBARS;
+import static com.hedera.node.app.service.token.impl.TokenServiceImpl.HBARS_TO_TINYBARS;
 import static com.hedera.node.app.service.token.impl.handlers.staking.StakingUtilities.roundedToHbar;
 import static com.hedera.node.app.service.token.impl.handlers.staking.StakingUtilities.totalStake;
 import static java.util.Collections.emptyMap;
@@ -37,13 +37,17 @@ import com.hedera.node.app.service.token.impl.handlers.staking.StakeRewardCalcul
 import com.hedera.node.app.service.token.impl.handlers.staking.StakingRewardsDistributor;
 import com.hedera.node.app.service.token.impl.handlers.staking.StakingRewardsHandlerImpl;
 import com.hedera.node.app.service.token.impl.handlers.staking.StakingRewardsHelper;
+import com.hedera.node.app.service.token.impl.handlers.staking.StakingUtilities;
 import com.hedera.node.app.service.token.impl.test.handlers.util.CryptoTokenHandlerTestBase;
-import com.hedera.node.app.service.token.records.CryptoDeleteRecordBuilder;
+import com.hedera.node.app.service.token.records.CryptoDeleteStreamBuilder;
 import com.hedera.node.app.service.token.records.FinalizeContext;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
-import com.hedera.node.app.spi.workflows.record.DeleteCapableTransactionRecordBuilder;
+import com.hedera.node.app.spi.workflows.record.DeleteCapableTransactionStreamBuilder;
 import com.hedera.node.config.ConfigProvider;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
 import java.time.Instant;
+import java.time.InstantSource;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
@@ -64,7 +68,9 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
     private FinalizeContext context;
 
     @Mock
-    private CryptoDeleteRecordBuilder recordBuilder;
+    private CryptoDeleteStreamBuilder recordBuilder;
+
+    private final InstantSource instantSource = InstantSource.system();
 
     private StakingRewardsHandlerImpl subject;
     private StakePeriodManager stakePeriodManager;
@@ -74,7 +80,6 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
     private StakingRewardsHelper stakingRewardHelper;
     protected final EntityNumber node0Id = EntityNumber.newBuilder().number(0L).build();
     protected final EntityNumber node1Id = EntityNumber.newBuilder().number(1L).build();
-    private final long stakingRewardAccountNum = 800L;
 
     @BeforeEach
     public void setUp() {
@@ -87,11 +92,33 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
         givenStoresAndConfig(context);
 
         stakingRewardHelper = new StakingRewardsHelper();
-        stakePeriodManager = new StakePeriodManager(configProvider);
+        stakePeriodManager = new StakePeriodManager(configProvider, instantSource);
         stakeRewardCalculator = new StakeRewardCalculatorImpl(stakePeriodManager);
         rewardsPayer = new StakingRewardsDistributor(stakingRewardHelper, stakeRewardCalculator);
         stakeInfoHelper = new StakeInfoHelper();
         subject = new StakingRewardsHandlerImpl(rewardsPayer, stakePeriodManager, stakeInfoHelper);
+    }
+
+    @Test
+    void testCoverageForPrivateConstructor()
+            throws NoSuchMethodException, InstantiationException, IllegalAccessException {
+        final Constructor<StakingUtilities> constructor = StakingUtilities.class.getDeclaredConstructor();
+        constructor.setAccessible(true);
+        try {
+            constructor.newInstance();
+        } catch (InvocationTargetException e) {
+            Throwable cause = e.getCause();
+            assertThat(cause.getClass()).isEqualTo(UnsupportedOperationException.class);
+        }
+    }
+
+    @Test
+    void testStakeMetaChangesForNullOriginalAccount() {
+        noStakeChanges();
+        final var rewards = subject.applyStakingRewards(context, Collections.emptySet(), emptyMap());
+        final var modifiedAccount = writableAccountStore.get(payerId);
+        assertThat(modifiedAccount).isNotNull();
+        assertThat(StakingUtilities.hasStakeMetaChanges(null, modifiedAccount)).isTrue();
     }
 
     @Test
@@ -465,7 +492,7 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
                         .atStartOfDay(ZoneOffset.UTC)
                         .toInstant());
         given(context.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
-        given(context.userTransactionRecordBuilder(DeleteCapableTransactionRecordBuilder.class))
+        given(context.userTransactionRecordBuilder(DeleteCapableTransactionStreamBuilder.class))
                 .willReturn(recordBuilder);
         given(recordBuilder.getNumberOfDeletedAccounts()).willReturn(1);
         given(recordBuilder.getDeletedAccountBeneficiaryFor(payerId)).willReturn(ownerId);
@@ -707,7 +734,7 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
                         .atStartOfDay(ZoneOffset.UTC)
                         .toInstant());
         given(context.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
-        given(context.userTransactionRecordBuilder(DeleteCapableTransactionRecordBuilder.class))
+        given(context.userTransactionRecordBuilder(DeleteCapableTransactionStreamBuilder.class))
                 .willReturn(recordBuilder);
         given(recordBuilder.getNumberOfDeletedAccounts()).willReturn(1);
         given(recordBuilder.getDeletedAccountBeneficiaryFor(payerId)).willReturn(ownerId);
@@ -759,7 +786,7 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
                         .atStartOfDay(ZoneOffset.UTC)
                         .toInstant());
         given(context.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
-        given(context.userTransactionRecordBuilder(DeleteCapableTransactionRecordBuilder.class))
+        given(context.userTransactionRecordBuilder(DeleteCapableTransactionStreamBuilder.class))
                 .willReturn(recordBuilder);
         given(recordBuilder.getNumberOfDeletedAccounts()).willReturn(1);
         given(recordBuilder.getDeletedAccountBeneficiaryFor(payerId)).willReturn(ownerId);
@@ -815,7 +842,7 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
                         .atStartOfDay(ZoneOffset.UTC)
                         .toInstant());
         given(context.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
-        given(context.userTransactionRecordBuilder(DeleteCapableTransactionRecordBuilder.class))
+        given(context.userTransactionRecordBuilder(DeleteCapableTransactionStreamBuilder.class))
                 .willReturn(recordBuilder);
 
         given(recordBuilder.getNumberOfDeletedAccounts()).willReturn(2);

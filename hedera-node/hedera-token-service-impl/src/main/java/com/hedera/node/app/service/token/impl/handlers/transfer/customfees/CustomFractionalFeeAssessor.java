@@ -28,6 +28,7 @@ import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.TokenID;
+import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.transaction.AssessedCustomFee;
 import com.hedera.hapi.node.transaction.CustomFee;
 import com.hedera.hapi.node.transaction.FractionalFee;
@@ -43,13 +44,18 @@ import javax.inject.Singleton;
  * All fractional fees, that are not netOfTransfers will manipulate the given transaction body.
  * If netOfTransfers flag is set to false, the custom fee si reclaimed from the credits in
  * given transaction body.
- * If netOfTransfers flag is set to true the sender will pay the custom fees.Else the receivers will pay custom fees This means that the fee will be charged from the sender account. This is done to avoid
- * manipulate the given transaction
+ * If netOfTransfers flag is set to true the sender will pay the custom fees, else the receivers will pay custom fees.
+ * This means that the fee will be charged from the sender account. This is done to avoid
+ * manipulation of the given transaction.
  */
 @Singleton
 public class CustomFractionalFeeAssessor {
     private final CustomFixedFeeAssessor fixedFeeAssessor;
 
+    /**
+     * Constructs a {@link CustomFractionalFeeAssessor} instance.
+     * @param fixedFeeAssessor the fixed fee assessor
+     */
     @Inject
     public CustomFractionalFeeAssessor(CustomFixedFeeAssessor fixedFeeAssessor) {
         this.fixedFeeAssessor = fixedFeeAssessor;
@@ -61,17 +67,16 @@ public class CustomFractionalFeeAssessor {
      * as they are the accounts whose balances will be lower than if the fee had not existed.
      * If netOfTransfers is true the assessed fee will be accumulated for next level transaction body.
      * If netOfTransfers is false the assessed fee will be reclaimed from the credits in given transaction body.
-     * @param feeMeta the fee meta
+     *
+     * @param token  the fee meta
      * @param sender the sender, who might be payer for the fee if netOfTransfers is true
      * @param result the result
      */
     // Suppressing the warning about using two "continue" statements
     @SuppressWarnings("java:S135")
     public void assessFractionalFees(
-            @NonNull final CustomFeeMeta feeMeta,
-            @NonNull final AccountID sender,
-            @NonNull final AssessmentResult result) {
-        final var denom = feeMeta.tokenId();
+            @NonNull final Token token, @NonNull final AccountID sender, @NonNull final AssessmentResult result) {
+        final var denom = token.tokenId();
 
         final var nonMutableInputTokenTransfers = result.getImmutableInputTokenAdjustments();
         final var mutableInputTokenTransfers = result.getMutableInputBalanceAdjustments();
@@ -84,7 +89,7 @@ public class CustomFractionalFeeAssessor {
 
         var unitsLeft = -initialAdjustment;
         final var creditsForToken = getFungibleTokenCredits(nonMutableInputTokenTransfers.get(denom));
-        for (final var fee : feeMeta.customFees()) {
+        for (final var fee : token.customFees()) {
             final var collector = fee.feeCollectorAccountId();
             // If the collector 0.0.C for a fractional fee is trying to send X units to
             // a receiver 0.0.R, then we want to let all X units go to 0.0.R, instead of
@@ -92,7 +97,7 @@ public class CustomFractionalFeeAssessor {
             if (!fee.fee().kind().equals(CustomFee.FeeOneOfType.FRACTIONAL_FEE) || sender.equals(collector)) {
                 continue;
             }
-            final var filteredCredits = filteredByExemptions(creditsForToken, feeMeta, fee);
+            final var filteredCredits = filteredByExemptions(creditsForToken, token, fee);
             if (filteredCredits.isEmpty()) {
                 continue;
             }
@@ -107,7 +112,7 @@ public class CustomFractionalFeeAssessor {
             if (fractionalFee.netOfTransfers()) {
                 final var addedFee =
                         asFixedFee(assessedAmount, denom, fee.feeCollectorAccountId(), fee.allCollectorsAreExempt());
-                fixedFeeAssessor.assessFixedFee(feeMeta, sender, addedFee, result);
+                fixedFeeAssessor.assessFixedFee(token, sender, addedFee, result);
             } else {
                 // amount that should be deducted from the credits to token
                 // Inside this reclaim there will be debits to the input transaction
@@ -142,7 +147,7 @@ public class CustomFractionalFeeAssessor {
 
     /**
      * For a given input token transfers from transaction body, if the fractional fee has to be
-     * adjusted from credits, adjusts the given transaction body with the adjustments
+     * adjusted from credits, adjusts the given transaction body with the adjustments.
      *
      * @param mutableInputTokenAdjustments the input token adjustments from given transaction body
      * @param denom the token id
@@ -171,19 +176,19 @@ public class CustomFractionalFeeAssessor {
      * Returns credits back if there are no credits whose payer is not exempt from custom fee.
      * If all credits are exempt from custom fee, returns empty map
      * @param creditsForToken the credits for a token
-     * @param feeMeta the fee meta
+     * @param token the fee meta
      * @param fee the custom fee
      * @return the filtered credits whose payer is not exempt from custom fee
      */
     private Map<AccountID, Long> filteredByExemptions(
             @NonNull final Map<AccountID, Long> creditsForToken,
-            @NonNull final CustomFeeMeta feeMeta,
+            @NonNull final Token token,
             @NonNull final CustomFee fee) {
         final var filteredCredits = new LinkedHashMap<AccountID, Long>();
         for (final var entry : creditsForToken.entrySet()) {
             final var account = entry.getKey();
             final var amount = entry.getValue();
-            if (!isPayerExempt(feeMeta, fee, account)) {
+            if (!isPayerExempt(token, fee, account)) {
                 filteredCredits.put(account, amount);
             }
         }
@@ -191,12 +196,12 @@ public class CustomFractionalFeeAssessor {
     }
 
     /**
-     * Calculates the amount owned to be paid as fractional custom fee
+     * Calculates the amount owned to be paid as fractional custom fee.
      * @param givenUnits  units transferred in the transaction
      * @param fractionalFee the fractional fee
      * @return the amount owned to be paid as fractional custom fee
      */
-    private long amountOwed(final long givenUnits, @NonNull final FractionalFee fractionalFee) {
+    public long amountOwed(final long givenUnits, @NonNull final FractionalFee fractionalFee) {
         final var numerator = fractionalFee.fractionalAmountOrThrow().numerator();
         final var denominator = fractionalFee.fractionalAmountOrThrow().denominator();
         var nominalFee = 0L;

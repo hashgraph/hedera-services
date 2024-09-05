@@ -16,15 +16,17 @@
 
 package com.swirlds.platform.test;
 
+import static com.swirlds.common.test.fixtures.RandomUtils.nextInt;
 import static com.swirlds.common.test.fixtures.RandomUtils.randomHash;
 import static com.swirlds.common.test.fixtures.RandomUtils.randomInstant;
 
 import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.state.MinimumJudgeInfo;
-import com.swirlds.platform.state.PlatformState;
+import com.swirlds.platform.state.PlatformStateAccessor;
+import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.address.AddressBook;
-import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookGenerator;
-import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookGenerator.WeightDistributionStrategy;
+import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
+import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder.WeightDistributionStrategy;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Random;
@@ -36,26 +38,26 @@ public final class PlatformStateUtils {
     /**
      * Generate a randomized PlatformState object. Values contained internally may be nonsensical.
      */
-    public static PlatformState randomPlatformState() {
-        return randomPlatformState(new Random());
+    public static PlatformStateAccessor randomPlatformState(PlatformStateAccessor platformState) {
+        return randomPlatformState(new Random(), platformState);
     }
 
     /**
      * Generate a randomized PlatformState object. Values contained internally may be nonsensical.
      */
-    public static PlatformState randomPlatformState(final Random random) {
-        final PlatformState platformState = new PlatformState();
-
-        final AddressBook addressBook = new RandomAddressBookGenerator()
-                .setSize(4)
-                .setWeightDistributionStrategy(WeightDistributionStrategy.BALANCED)
+    public static PlatformStateAccessor randomPlatformState(final Random random, PlatformStateAccessor platformState) {
+        final AddressBook addressBook = RandomAddressBookBuilder.create(random)
+                .withSize(4)
+                .withWeightDistributionStrategy(WeightDistributionStrategy.BALANCED)
                 .build();
 
-        platformState.setAddressBook(addressBook);
-        platformState.setLegacyRunningEventHash(randomHash(random));
-        platformState.setRunningEventHash(randomHash(random));
-        platformState.setRound(random.nextLong());
-        platformState.setConsensusTimestamp(randomInstant(random));
+        platformState.bulkUpdate(v -> {
+            v.setAddressBook(addressBook);
+            v.setLegacyRunningEventHash(randomHash(random));
+            v.setRound(random.nextLong());
+            v.setConsensusTimestamp(randomInstant(random));
+            v.setCreationSoftwareVersion(new BasicSoftwareVersion(nextInt(1, 100)));
+        });
 
         final List<MinimumJudgeInfo> minimumJudgeInfo = new LinkedList<>();
         for (int index = 0; index < 10; index++) {

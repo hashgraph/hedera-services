@@ -23,12 +23,11 @@ import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts
 
 import com.esaulpaugh.headlong.abi.Function;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AbstractHtsCallTranslator;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.AbstractCallTranslator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.util.Arrays;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -36,7 +35,7 @@ import javax.inject.Singleton;
  * Translates "classic" {@code cryptoTransfer()} calls to the HTS system contract.
  */
 @Singleton
-public class ClassicTransfersTranslator extends AbstractHtsCallTranslator {
+public class ClassicTransfersTranslator extends AbstractCallTranslator<HtsCallAttempt> {
     public static final Function CRYPTO_TRANSFER =
             new Function("cryptoTransfer((address,(address,int64)[],(address,address,int64)[])[])", ReturnTypes.INT_64);
     public static final Function CRYPTO_TRANSFER_V2 = new Function(
@@ -64,14 +63,10 @@ public class ClassicTransfersTranslator extends AbstractHtsCallTranslator {
     @Override
     public boolean matches(@NonNull final HtsCallAttempt attempt) {
         return !attempt.isTokenRedirect()
-                && (Arrays.equals(attempt.selector(), ClassicTransfersTranslator.CRYPTO_TRANSFER.selector())
-                        || Arrays.equals(attempt.selector(), ClassicTransfersTranslator.CRYPTO_TRANSFER_V2.selector())
-                        || Arrays.equals(attempt.selector(), ClassicTransfersTranslator.TRANSFER_TOKENS.selector())
-                        || Arrays.equals(attempt.selector(), ClassicTransfersTranslator.TRANSFER_TOKEN.selector())
-                        || Arrays.equals(attempt.selector(), ClassicTransfersTranslator.TRANSFER_NFTS.selector())
-                        || Arrays.equals(attempt.selector(), ClassicTransfersTranslator.TRANSFER_NFT.selector())
-                        || Arrays.equals(attempt.selector(), ClassicTransfersTranslator.TRANSFER_FROM.selector())
-                        || Arrays.equals(attempt.selector(), ClassicTransfersTranslator.TRANSFER_NFT_FROM.selector()));
+                && (attempt.isSelector(CRYPTO_TRANSFER, CRYPTO_TRANSFER_V2)
+                        || attempt.isSelector(TRANSFER_TOKENS, TRANSFER_TOKEN)
+                        || attempt.isSelector(TRANSFER_NFTS, TRANSFER_NFT)
+                        || attempt.isSelector(TRANSFER_FROM, TRANSFER_NFT_FROM));
     }
 
     @Override
@@ -87,11 +82,11 @@ public class ClassicTransfersTranslator extends AbstractHtsCallTranslator {
                 // test would use the qualified delegate id if applicable
                 // test would use the qualified delegate id if applicable.
                 // Only certain functions support qualified delegates, so restrict to those.
-                isClassicCallSupportingQualifiedDelegate(selector) ? attempt.authorizingId() : attempt.senderId(),
+                isClassicCallSupportingQualifiedDelegate(attempt) ? attempt.authorizingId() : attempt.senderId(),
                 decoder.checkForFailureStatus(attempt),
                 nominalBodyFor(attempt),
                 attempt.configuration(),
-                isClassicCall(selector) ? APPROVAL_SWITCH_HELPER : null,
+                isClassicCall(attempt) ? APPROVAL_SWITCH_HELPER : null,
                 CALL_STATUS_STANDARDIZER,
                 attempt.defaultVerificationStrategy(),
                 SYSTEM_ACCOUNT_CREDIT_SCREEN,
@@ -99,38 +94,31 @@ public class ClassicTransfersTranslator extends AbstractHtsCallTranslator {
     }
 
     private @Nullable TransactionBody nominalBodyFor(@NonNull final HtsCallAttempt attempt) {
-        if (Arrays.equals(attempt.selector(), ClassicTransfersTranslator.CRYPTO_TRANSFER.selector())) {
+        if (attempt.isSelector(CRYPTO_TRANSFER)) {
             return decoder.decodeCryptoTransfer(attempt.inputBytes(), attempt.addressIdConverter());
-        } else if (Arrays.equals(attempt.selector(), ClassicTransfersTranslator.CRYPTO_TRANSFER_V2.selector())) {
+        } else if (attempt.isSelector(CRYPTO_TRANSFER_V2)) {
             return decoder.decodeCryptoTransferV2(attempt.inputBytes(), attempt.addressIdConverter());
-        } else if (Arrays.equals(attempt.selector(), ClassicTransfersTranslator.TRANSFER_TOKENS.selector())) {
+        } else if (attempt.isSelector(TRANSFER_TOKENS)) {
             return decoder.decodeTransferTokens(attempt.inputBytes(), attempt.addressIdConverter());
-        } else if (Arrays.equals(attempt.selector(), ClassicTransfersTranslator.TRANSFER_TOKEN.selector())) {
+        } else if (attempt.isSelector(TRANSFER_TOKEN)) {
             return decoder.decodeTransferToken(attempt.inputBytes(), attempt.addressIdConverter());
-        } else if (Arrays.equals(attempt.selector(), ClassicTransfersTranslator.TRANSFER_NFTS.selector())) {
+        } else if (attempt.isSelector(TRANSFER_NFTS)) {
             return decoder.decodeTransferNfts(attempt.inputBytes(), attempt.addressIdConverter());
-        } else if (Arrays.equals(attempt.selector(), ClassicTransfersTranslator.TRANSFER_NFT.selector())) {
+        } else if (attempt.isSelector(TRANSFER_NFT)) {
             return decoder.decodeTransferNft(attempt.inputBytes(), attempt.addressIdConverter());
-        } else if (Arrays.equals(attempt.selector(), ClassicTransfersTranslator.TRANSFER_FROM.selector())) {
+        } else if (attempt.isSelector(TRANSFER_FROM)) {
             return decoder.decodeHrcTransferFrom(attempt.inputBytes(), attempt.addressIdConverter());
         } else {
             return decoder.decodeHrcTransferNftFrom(attempt.inputBytes(), attempt.addressIdConverter());
         }
     }
 
-    private boolean isClassicCall(@NonNull final byte[] selector) {
-        return Arrays.equals(selector, ClassicTransfersTranslator.CRYPTO_TRANSFER.selector())
-                || Arrays.equals(selector, ClassicTransfersTranslator.CRYPTO_TRANSFER_V2.selector())
-                || Arrays.equals(selector, ClassicTransfersTranslator.TRANSFER_TOKENS.selector())
-                || Arrays.equals(selector, ClassicTransfersTranslator.TRANSFER_TOKEN.selector())
-                || Arrays.equals(selector, ClassicTransfersTranslator.TRANSFER_NFTS.selector())
-                || Arrays.equals(selector, ClassicTransfersTranslator.TRANSFER_NFT.selector());
+    private boolean isClassicCall(@NonNull final HtsCallAttempt attempt) {
+        return attempt.isSelector(
+                CRYPTO_TRANSFER, CRYPTO_TRANSFER_V2, TRANSFER_TOKENS, TRANSFER_TOKEN, TRANSFER_NFTS, TRANSFER_NFT);
     }
 
-    private boolean isClassicCallSupportingQualifiedDelegate(@NonNull final byte[] selector) {
-        return Arrays.equals(selector, ClassicTransfersTranslator.TRANSFER_TOKENS.selector())
-                || Arrays.equals(selector, ClassicTransfersTranslator.TRANSFER_TOKEN.selector())
-                || Arrays.equals(selector, ClassicTransfersTranslator.TRANSFER_NFTS.selector())
-                || Arrays.equals(selector, ClassicTransfersTranslator.TRANSFER_NFT.selector());
+    private boolean isClassicCallSupportingQualifiedDelegate(@NonNull final HtsCallAttempt attempt) {
+        return attempt.isSelector(TRANSFER_TOKENS, TRANSFER_TOKEN, TRANSFER_NFTS, TRANSFER_NFT);
     }
 }

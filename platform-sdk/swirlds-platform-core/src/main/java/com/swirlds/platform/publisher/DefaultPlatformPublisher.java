@@ -18,10 +18,10 @@ package com.swirlds.platform.publisher;
 
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 
+import com.swirlds.platform.builder.ApplicationCallbacks;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
-import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.event.PlatformEvent;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.function.Consumer;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -34,33 +34,31 @@ public class DefaultPlatformPublisher implements PlatformPublisher {
 
     private static final Logger logger = LogManager.getLogger(DefaultPlatformPublisher.class);
 
-    private final Consumer<GossipEvent> preconsensusEventConsumer;
+    private final Consumer<PlatformEvent> preconsensusEventConsumer;
     private boolean preconsensusEventConsumerErrorLogged = false;
 
     private final Consumer<ConsensusSnapshot> snapshotOverrideConsumer;
     private boolean snapshotOverrideConsumerErrorLogged = false;
 
+    private final Consumer<PlatformEvent> staleEventConsumer;
+    private boolean staleEventConsumerErrorLogged = false;
+
     /**
      * Constructor.
      *
-     * @param preconsensusEventConsumer the handler for preconsensus events, if null then it is expected that no
-     *                                  preconsensus events will be sent to this publisher
-     * @param snapshotOverrideConsumer  the handler for snapshot overrides, if null then it is expected that no snapshot
-     *                                  overrides will be sent to this publisher
+     * @param applicationCallbacks the application callbacks
      */
-    public DefaultPlatformPublisher(
-            @Nullable final Consumer<GossipEvent> preconsensusEventConsumer,
-            @Nullable final Consumer<ConsensusSnapshot> snapshotOverrideConsumer) {
-
-        this.preconsensusEventConsumer = preconsensusEventConsumer;
-        this.snapshotOverrideConsumer = snapshotOverrideConsumer;
+    public DefaultPlatformPublisher(@NonNull final ApplicationCallbacks applicationCallbacks) {
+        this.preconsensusEventConsumer = applicationCallbacks.preconsensusEventConsumer();
+        this.snapshotOverrideConsumer = applicationCallbacks.snapshotOverrideConsumer();
+        this.staleEventConsumer = applicationCallbacks.staleEventConsumer();
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public void publishPreconsensusEvent(@NonNull final GossipEvent event) {
+    public void publishPreconsensusEvent(@NonNull final PlatformEvent event) {
         if (preconsensusEventConsumer == null) {
             if (!preconsensusEventConsumerErrorLogged) {
                 // One log is sufficient to alert test validators, no need generate spam beyond the first log.
@@ -86,5 +84,21 @@ public class DefaultPlatformPublisher implements PlatformPublisher {
             return;
         }
         snapshotOverrideConsumer.accept(snapshot);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void publishStaleEvent(@NonNull final PlatformEvent event) {
+        if (staleEventConsumer == null) {
+            if (!staleEventConsumerErrorLogged) {
+                // One log is sufficient to alert test validators, no need generate spam beyond the first log.
+                logger.error(EXCEPTION.getMarker(), "No stale event consumer is registered");
+                staleEventConsumerErrorLogged = true;
+            }
+            return;
+        }
+        staleEventConsumer.accept(event);
     }
 }

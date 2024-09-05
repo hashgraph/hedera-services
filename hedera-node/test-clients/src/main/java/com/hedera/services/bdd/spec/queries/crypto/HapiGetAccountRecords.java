@@ -16,7 +16,7 @@
 
 package com.hedera.services.bdd.spec.queries.crypto;
 
-import static com.hedera.services.bdd.spec.HapiSpec.ensureDir;
+import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.ensureDir;
 import static com.hedera.services.bdd.spec.assertions.AssertUtils.rethrowSummaryError;
 import static com.hedera.services.bdd.spec.queries.QueryUtils.answerCostHeader;
 import static com.hedera.services.bdd.spec.queries.QueryUtils.answerHeader;
@@ -27,6 +27,7 @@ import com.google.common.io.ByteSource;
 import com.google.common.io.CharSink;
 import com.google.common.io.CharSource;
 import com.google.common.io.Files;
+import com.hedera.node.app.hapi.utils.fee.CryptoFeeBuilder;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.assertions.ErroringAssertsProvider;
 import com.hedera.services.bdd.spec.queries.HapiQueryOp;
@@ -34,9 +35,10 @@ import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hederahashgraph.api.proto.java.CryptoGetAccountRecordsQuery;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Query;
-import com.hederahashgraph.api.proto.java.Response;
+import com.hederahashgraph.api.proto.java.ResponseType;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.File;
 import java.nio.charset.Charset;
 import java.util.List;
@@ -102,9 +104,7 @@ public class HapiGetAccountRecords extends HapiQueryOp<HapiGetAccountRecords> {
     }
 
     @Override
-    protected void submitWith(HapiSpec spec, Transaction payment) {
-        Query query = getRecordsQuery(spec, payment, false);
-        response = spec.clients().getCryptoSvcStub(targetNodeFor(spec), useTls).getAccountRecords(query);
+    protected void processAnswerOnlyResponse(@NonNull final HapiSpec spec) {
         List<TransactionRecord> records = response.getCryptoGetAccountRecords().getRecordsList();
         if (verboseLoggingOn) {
             if (customLog.isPresent()) {
@@ -169,12 +169,15 @@ public class HapiGetAccountRecords extends HapiQueryOp<HapiGetAccountRecords> {
         }
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    protected long lookupCostWith(HapiSpec spec, Transaction payment) throws Throwable {
-        Query query = getRecordsQuery(spec, payment, true);
-        Response response =
-                spec.clients().getCryptoSvcStub(targetNodeFor(spec), useTls).getAccountRecords(query);
-        return costFrom(response);
+    protected Query queryFor(
+            @NonNull final HapiSpec spec,
+            @NonNull final Transaction payment,
+            @NonNull final ResponseType responseType) {
+        return getRecordsQuery(spec, payment, responseType == ResponseType.COST_ANSWER);
     }
 
     private Query getRecordsQuery(HapiSpec spec, Transaction payment, boolean costOnly) {
@@ -191,7 +194,7 @@ public class HapiGetAccountRecords extends HapiQueryOp<HapiGetAccountRecords> {
         return spec.fees()
                 .forOp(
                         HederaFunctionality.CryptoGetAccountRecords,
-                        cryptoFees.getCostCryptoAccountRecordsQueryFeeMatrices());
+                        CryptoFeeBuilder.getCostCryptoAccountRecordsQueryFeeMatrices());
     }
 
     @Override

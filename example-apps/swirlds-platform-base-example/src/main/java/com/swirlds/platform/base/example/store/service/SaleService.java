@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.base.example.store.service;
 
-import com.swirlds.platform.base.example.BaseContext;
+import com.swirlds.platform.base.example.ext.BaseContext;
 import com.swirlds.platform.base.example.server.CrudService;
 import com.swirlds.platform.base.example.server.DataTransferUtils;
 import com.swirlds.platform.base.example.store.domain.Operation;
@@ -32,8 +32,9 @@ import java.util.Objects;
  * Creates Sales as a DEDUCTION
  */
 public class SaleService extends CrudService<Sale> {
-    private final @NonNull BaseContext context;
-    private final @NonNull OperationService operationService;
+
+    private final BaseContext context;
+    private final OperationService operationService;
 
     public SaleService(@NonNull final BaseContext context) {
         super(Sale.class);

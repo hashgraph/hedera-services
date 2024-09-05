@@ -30,11 +30,19 @@ import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+/**
+ * This class manages calculations of staking rewards.
+ */
 @Singleton
 public class StakeRewardCalculatorImpl implements StakeRewardCalculator {
     private static final Logger logger = LogManager.getLogger(StakeRewardCalculatorImpl.class);
+
     private final StakePeriodManager stakePeriodManager;
 
+    /**
+     * Default constructor for injection.
+     * @param stakePeriodManager the stake period manager
+     */
     @Inject
     public StakeRewardCalculatorImpl(@NonNull final StakePeriodManager stakePeriodManager) {
         this.stakePeriodManager = stakePeriodManager;
@@ -57,7 +65,6 @@ public class StakeRewardCalculatorImpl implements StakeRewardCalculator {
         final var nodeId = account.stakedNodeIdOrThrow();
         final var stakingInfo = stakingInfoStore.getOriginalValue(nodeId);
         if (stakingInfo != null && stakingInfo.deleted()) {
-            logger.info("Node {} is deleted. Paying zero rewards", nodeId);
             return 0;
         }
         final var rewardOffered = computeRewardFromDetails(
@@ -87,6 +94,14 @@ public class StakeRewardCalculatorImpl implements StakeRewardCalculator {
         return stakePeriodManager.epochSecondAtStartOfPeriod(stakePeriod);
     }
 
+    /**
+     * Computes the reward for the given account based on the given node staking info.
+     * @param account the account
+     * @param nodeStakingInfo the node staking info
+     * @param currentStakePeriod the current stake period
+     * @param effectiveStart the effective start
+     * @return the reward for the given account based on the given node staking info
+     */
     @VisibleForTesting
     public static long computeRewardFromDetails(
             @NonNull final Account account,

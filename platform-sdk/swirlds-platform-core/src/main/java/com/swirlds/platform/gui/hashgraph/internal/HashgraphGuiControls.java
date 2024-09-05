@@ -190,11 +190,18 @@ public class HashgraphGuiControls implements HashgraphPictureOptions {
         checkboxesPanel.add(new Label(" "), constr);
         constr.gridy++;
         checkboxesPanel.add(
-                GuiUtils.newJTextArea(wrap(
-                        50,
-                        "Witnesses are colored circles, non-witnesses are black/gray. "
-                                + "Dark circles are part of the consensus, light are not. "
-                                + "Fame is true for green, false for blue, unknown for red. ")),
+                GuiUtils.newJTextArea(
+                        wrap(
+                                50,
+                                """
+                                - Witnesses are colored circles, non-witnesses are black/gray\s
+                                - Dark circles are part of the consensus, light are not\s
+                                - Judges are blue\s
+                                - Non-famous witnesses are yellow\s
+                                - Famous witnesses are green\s
+                                - Undecided witnesses are red\s
+                                - The selected event is magenta\s
+                                - The events the selected event can strongly see are cyan\s""")),
                 constr);
         constr.gridy++;
         constr.weighty = 1.0; // give this spacer all the leftover vertical space in column

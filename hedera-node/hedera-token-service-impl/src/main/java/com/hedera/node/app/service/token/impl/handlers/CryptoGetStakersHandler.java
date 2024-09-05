@@ -38,6 +38,9 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class CryptoGetStakersHandler extends FreeQueryHandler {
+    /**
+     * Default constructor for injection.
+     */
     @Inject
     public CryptoGetStakersHandler() {
         // Exists for injection

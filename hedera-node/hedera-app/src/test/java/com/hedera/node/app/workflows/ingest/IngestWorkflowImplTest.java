@@ -45,7 +45,6 @@ import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.hapi.node.transaction.TransactionResponse;
 import com.hedera.node.app.fixtures.AppTestBase;
 import com.hedera.node.app.spi.workflows.PreCheckException;
-import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.workflows.TransactionChecker;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.config.ConfigProvider;
@@ -57,6 +56,7 @@ import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.utility.AutoCloseableWrapper;
 import com.swirlds.platform.system.status.PlatformStatus;
+import com.swirlds.state.State;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
@@ -94,10 +94,10 @@ class IngestWorkflowImplTest extends AppTestBase {
 
     // The following fields are all mocked dependencies of the workflow.
     @Mock(strictness = LENIENT)
-    HederaState state;
+    State state;
 
     @Mock(strictness = LENIENT)
-    Supplier<AutoCloseableWrapper<HederaState>> stateAccessor;
+    Supplier<AutoCloseableWrapper<State>> stateAccessor;
 
     @Mock(strictness = LENIENT)
     TransactionChecker transactionChecker;
@@ -141,7 +141,8 @@ class IngestWorkflowImplTest extends AppTestBase {
                 transactionBody,
                 SignatureMap.newBuilder().build(),
                 randomBytes(100), // Not used in this test, so random bytes is OK
-                HederaFunctionality.CONSENSUS_CREATE_TOPIC);
+                HederaFunctionality.CONSENSUS_CREATE_TOPIC,
+                null);
         when(ingestChecker.runAllChecks(state, transaction, configuration)).thenReturn(transactionInfo);
 
         // Create the workflow we are going to test with

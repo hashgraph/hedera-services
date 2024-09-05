@@ -17,10 +17,8 @@
 package com.swirlds.platform.recovery.internal;
 
 import com.swirlds.common.io.IOIterator;
-import com.swirlds.platform.internal.EventImpl;
-import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.address.AddressBook;
-import com.swirlds.platform.system.events.DetailedConsensusEvent;
+import com.swirlds.platform.system.events.CesEvent;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -32,13 +30,13 @@ import java.util.Objects;
 /**
  * Takes an iterator that walks over events and returns an iterator that walks over rounds.
  */
-public class EventStreamRoundIterator implements IOIterator<Round> {
+public class EventStreamRoundIterator implements IOIterator<StreamedRound> {
 
-    private final IOIterator<EventImpl> eventIterator;
+    private final IOIterator<CesEvent> eventIterator;
     private final boolean allowPartialRound;
     private final AddressBook consensusRoster;
 
-    private Round next;
+    private StreamedRound next;
     private boolean ended = false;
 
     /**
@@ -60,8 +58,7 @@ public class EventStreamRoundIterator implements IOIterator<Round> {
             throws IOException {
         this(
                 consensusRoster,
-                new EventStreamMultiFileIterator(eventStreamDirectory, new EventStreamRoundLowerBound(startingRound))
-                        .transform(EventStreamRoundIterator::convertToEventImpl),
+                new EventStreamMultiFileIterator(eventStreamDirectory, new EventStreamRoundLowerBound(startingRound)),
                 allowPartialRound);
     }
 
@@ -73,22 +70,11 @@ public class EventStreamRoundIterator implements IOIterator<Round> {
      */
     public EventStreamRoundIterator(
             @NonNull final AddressBook consensusRoster,
-            final IOIterator<EventImpl> eventIterator,
+            final IOIterator<CesEvent> eventIterator,
             boolean allowPartialRound) {
         this.consensusRoster = Objects.requireNonNull(consensusRoster);
         this.eventIterator = Objects.requireNonNull(eventIterator);
         this.allowPartialRound = allowPartialRound;
-    }
-
-    /**
-     * Convert a {@link DetailedConsensusEvent} to an {@link EventImpl}.
-     *
-     * @param event the event to convert
-     * @return an event impl with the same data as the detailed consensus event
-     */
-    private static EventImpl convertToEventImpl(final DetailedConsensusEvent event) {
-        return new EventImpl(
-                event.getBaseEventHashedData(), event.getBaseEventUnhashedData(), event.getConsensusData());
     }
 
     /**
@@ -112,7 +98,7 @@ public class EventStreamRoundIterator implements IOIterator<Round> {
             return false;
         }
 
-        final List<EventImpl> events = new ArrayList<>();
+        final List<CesEvent> events = new ArrayList<>();
 
         final long round = eventIterator.peek().getRoundReceived();
         while (eventIterator.hasNext() && eventIterator.peek().getRoundReceived() == round) {
@@ -120,7 +106,7 @@ public class EventStreamRoundIterator implements IOIterator<Round> {
         }
 
         if (!allowPartialRound) {
-            final EventImpl lastEvent = events.get(events.size() - 1);
+            final CesEvent lastEvent = events.get(events.size() - 1);
             if (!lastEvent.isLastInRoundReceived()) {
                 ended = true;
                 return false;
@@ -143,7 +129,7 @@ public class EventStreamRoundIterator implements IOIterator<Round> {
      * {@inheritDoc}
      */
     @Override
-    public Round peek() throws IOException {
+    public StreamedRound peek() throws IOException {
         if (!hasNext()) {
             throw new NoSuchElementException();
         }
@@ -154,7 +140,7 @@ public class EventStreamRoundIterator implements IOIterator<Round> {
      * {@inheritDoc}
      */
     @Override
-    public Round next() throws IOException {
+    public StreamedRound next() throws IOException {
         if (!hasNext()) {
             throw new NoSuchElementException();
         }

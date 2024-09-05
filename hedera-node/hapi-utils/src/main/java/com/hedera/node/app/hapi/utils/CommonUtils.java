@@ -17,50 +17,8 @@
 package com.hedera.node.app.hapi.utils;
 
 import static com.hedera.node.app.hapi.utils.ByteStringUtils.unwrapUnsafelyIfPossible;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusCreateTopic;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusDeleteTopic;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusSubmitMessage;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusUpdateTopic;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCreate;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractDelete;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractUpdate;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoAddLiveHash;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoApproveAllowance;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoCreate;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoDelete;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoDeleteAllowance;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoDeleteLiveHash;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoUpdate;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.EthereumTransaction;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileAppend;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileCreate;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileDelete;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileUpdate;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.Freeze;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.ScheduleCreate;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.ScheduleDelete;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.ScheduleSign;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.SystemDelete;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.SystemUndelete;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAccountWipe;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAssociateToAccount;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenBurn;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenCreate;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenDelete;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenDissociateFromAccount;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenFeeScheduleUpdate;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenFreezeAccount;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenGrantKycToAccount;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenMint;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenPause;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenRevokeKycFromAccount;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUnfreezeAccount;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUnpause;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUpdate;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.UncheckedSubmit;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.UtilPrng;
+import static com.hedera.node.app.hapi.utils.CommonPbjConverters.fromPbj;
+import static com.hedera.node.app.hapi.utils.CommonPbjConverters.toPbj;
 import static java.lang.System.arraycopy;
 import static java.util.Objects.requireNonNull;
 
@@ -68,13 +26,13 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.primitives.Longs;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
-import com.hedera.node.app.hapi.utils.exception.UnknownHederaFunctionality;
+import com.hedera.hapi.util.HapiUtils;
+import com.hedera.hapi.util.UnknownHederaFunctionality;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.SignedTransaction;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.api.proto.java.TransactionBody.DataCase;
 import com.hederahashgraph.api.proto.java.TransactionOrBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.security.MessageDigest;
@@ -105,6 +63,21 @@ public final class CommonUtils {
     public static byte[] extractTransactionBodyBytes(final TransactionOrBuilder transaction)
             throws InvalidProtocolBufferException {
         return unwrapUnsafelyIfPossible(extractTransactionBodyByteString(transaction));
+    }
+
+    /**
+     * Extracts the {@link TransactionBody} from a {@link TransactionOrBuilder} and throws an unchecked exception if
+     * the extraction fails.
+     *
+     * @param transaction the {@link TransactionOrBuilder} from which to extract the {@link TransactionBody}
+     * @return the extracted {@link TransactionBody}
+     */
+    public static TransactionBody extractTransactionBodyUnchecked(final TransactionOrBuilder transaction) {
+        try {
+            return TransactionBody.parseFrom(extractTransactionBodyByteString(transaction));
+        } catch (InvalidProtocolBufferException e) {
+            throw new IllegalArgumentException(e);
+        }
     }
 
     public static TransactionBody extractTransactionBody(final TransactionOrBuilder transaction)
@@ -148,60 +121,11 @@ public final class CommonUtils {
      *
      * @param txn the {@code TransactionBody}
      * @return one of HederaFunctionality
-     * @throws UnknownHederaFunctionality if all the check fails
      */
     @NonNull
     public static HederaFunctionality functionOf(@NonNull final TransactionBody txn) throws UnknownHederaFunctionality {
         requireNonNull(txn);
-        DataCase dataCase = txn.getDataCase();
-
-        return switch (dataCase) {
-            case CONTRACTCALL -> ContractCall;
-            case CONTRACTCREATEINSTANCE -> ContractCreate;
-            case CONTRACTUPDATEINSTANCE -> ContractUpdate;
-            case CONTRACTDELETEINSTANCE -> ContractDelete;
-            case ETHEREUMTRANSACTION -> EthereumTransaction;
-            case CRYPTOADDLIVEHASH -> CryptoAddLiveHash;
-            case CRYPTOAPPROVEALLOWANCE -> CryptoApproveAllowance;
-            case CRYPTODELETEALLOWANCE -> CryptoDeleteAllowance;
-            case CRYPTOCREATEACCOUNT -> CryptoCreate;
-            case CRYPTODELETE -> CryptoDelete;
-            case CRYPTODELETELIVEHASH -> CryptoDeleteLiveHash;
-            case CRYPTOTRANSFER -> CryptoTransfer;
-            case CRYPTOUPDATEACCOUNT -> CryptoUpdate;
-            case FILEAPPEND -> FileAppend;
-            case FILECREATE -> FileCreate;
-            case FILEDELETE -> FileDelete;
-            case FILEUPDATE -> FileUpdate;
-            case SYSTEMDELETE -> SystemDelete;
-            case SYSTEMUNDELETE -> SystemUndelete;
-            case FREEZE -> Freeze;
-            case CONSENSUSCREATETOPIC -> ConsensusCreateTopic;
-            case CONSENSUSUPDATETOPIC -> ConsensusUpdateTopic;
-            case CONSENSUSDELETETOPIC -> ConsensusDeleteTopic;
-            case CONSENSUSSUBMITMESSAGE -> ConsensusSubmitMessage;
-            case UNCHECKEDSUBMIT -> UncheckedSubmit;
-            case TOKENCREATION -> TokenCreate;
-            case TOKENFREEZE -> TokenFreezeAccount;
-            case TOKENUNFREEZE -> TokenUnfreezeAccount;
-            case TOKENGRANTKYC -> TokenGrantKycToAccount;
-            case TOKENREVOKEKYC -> TokenRevokeKycFromAccount;
-            case TOKENDELETION -> TokenDelete;
-            case TOKENUPDATE -> TokenUpdate;
-            case TOKENMINT -> TokenMint;
-            case TOKENBURN -> TokenBurn;
-            case TOKENWIPE -> TokenAccountWipe;
-            case TOKENASSOCIATE -> TokenAssociateToAccount;
-            case TOKENDISSOCIATE -> TokenDissociateFromAccount;
-            case TOKEN_FEE_SCHEDULE_UPDATE -> TokenFeeScheduleUpdate;
-            case TOKEN_PAUSE -> TokenPause;
-            case TOKEN_UNPAUSE -> TokenUnpause;
-            case SCHEDULECREATE -> ScheduleCreate;
-            case SCHEDULEDELETE -> ScheduleDelete;
-            case SCHEDULESIGN -> ScheduleSign;
-            case UTIL_PRNG -> UtilPrng;
-            default -> throw new UnknownHederaFunctionality("Unknown HederaFunctionality for " + txn);
-        };
+        return fromPbj(HapiUtils.functionOf(toPbj(txn)));
     }
 
     /**
@@ -218,5 +142,9 @@ public final class CommonUtils {
 
     public static Instant timestampToInstant(final Timestamp timestamp) {
         return Instant.ofEpochSecond(timestamp.getSeconds(), timestamp.getNanos());
+    }
+
+    public static Instant pbjTimestampToInstant(final com.hedera.hapi.node.base.Timestamp timestamp) {
+        return Instant.ofEpochSecond(timestamp.seconds(), timestamp.nanos());
     }
 }

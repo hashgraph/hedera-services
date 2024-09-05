@@ -24,13 +24,16 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.RandomUtils;
+import com.swirlds.platform.Utilities;
 import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.network.ConnectionManager;
+import com.swirlds.platform.network.PeerInfo;
 import com.swirlds.platform.network.connectivity.OutboundConnectionCreator;
+import com.swirlds.platform.network.topology.NetworkTopology;
 import com.swirlds.platform.network.topology.StaticConnectionManagers;
 import com.swirlds.platform.network.topology.StaticTopology;
 import com.swirlds.platform.system.address.AddressBook;
-import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookGenerator;
+import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
 import java.util.List;
 import java.util.Random;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -52,14 +55,17 @@ class StaticConnectionManagersTest {
 
     @ParameterizedTest
     @MethodSource("topologicalVariations")
-    void testShouldConnectToMe(final int numNodes, final int numNeighbors) throws Exception {
+    void testShouldConnectToMe(final int numNodes) throws Exception {
         final Random r = RandomUtils.getRandomPrintSeed();
         final AddressBook addressBook =
-                new RandomAddressBookGenerator(r).setSize(numNodes).build();
+                RandomAddressBookBuilder.create(r).withSize(numNodes).build();
         final NodeId selfId = addressBook.getNodeId(r.nextInt(numNodes));
-        final StaticTopology topology = new StaticTopology(r, addressBook, selfId, numNeighbors);
+
+        final List<PeerInfo> peers = Utilities.createPeerInfoList(addressBook, selfId);
+        final NetworkTopology topology = new StaticTopology(peers, selfId);
+
         final StaticConnectionManagers managers = new StaticConnectionManagers(topology, connectionCreator);
-        final List<NodeId> neighbors = topology.getNeighbors();
+        final List<NodeId> neighbors = topology.getNeighbors().stream().toList();
         final NodeId neighbor = neighbors.get(r.nextInt(neighbors.size()));
 
         if (topology.shouldConnectToMe(neighbor)) {
@@ -85,14 +91,16 @@ class StaticConnectionManagersTest {
 
     @ParameterizedTest
     @MethodSource("topologicalVariations")
-    void testShouldConnectTo(final int numNodes, final int numNeighbors) throws Exception {
+    void testShouldConnectTo(final int numNodes) throws Exception {
         final Random r = RandomUtils.getRandomPrintSeed();
         final AddressBook addressBook =
-                new RandomAddressBookGenerator(r).setSize(numNodes).build();
+                RandomAddressBookBuilder.create(r).withSize(numNodes).build();
         final NodeId selfId = addressBook.getNodeId(r.nextInt(numNodes));
-        final StaticTopology topology = new StaticTopology(r, addressBook, selfId, numNeighbors);
+        final List<PeerInfo> peers = Utilities.createPeerInfoList(addressBook, selfId);
+        final NetworkTopology topology = new StaticTopology(peers, selfId);
+
         final StaticConnectionManagers managers = new StaticConnectionManagers(topology, connectionCreator);
-        final List<NodeId> neighbors = topology.getNeighbors();
+        final List<NodeId> neighbors = topology.getNeighbors().stream().toList();
         final NodeId neighbor = neighbors.get(r.nextInt(neighbors.size()));
 
         if (topology.shouldConnectTo(neighbor)) {

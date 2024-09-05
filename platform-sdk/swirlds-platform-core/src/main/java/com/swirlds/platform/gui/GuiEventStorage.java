@@ -19,22 +19,19 @@ package com.swirlds.platform.gui;
 import static com.swirlds.platform.event.AncientMode.GENERATION_THRESHOLD;
 import static com.swirlds.platform.system.events.EventConstants.FIRST_GENERATION;
 
-import com.swirlds.base.time.Time;
-import com.swirlds.common.context.DefaultPlatformContext;
 import com.swirlds.common.context.PlatformContext;
-import com.swirlds.common.crypto.CryptographyHolder;
-import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.Consensus;
 import com.swirlds.platform.ConsensusImpl;
 import com.swirlds.platform.consensus.ConsensusConfig;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
-import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.metrics.NoOpConsensusMetrics;
 import com.swirlds.platform.system.address.AddressBook;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
 import java.util.Objects;
 
@@ -51,6 +48,7 @@ public class GuiEventStorage {
     private final Consensus consensus;
     private final SimpleLinker linker;
     private final Configuration configuration;
+    private ConsensusRound lastConsensusRound;
 
     /**
      * Constructor
@@ -61,8 +59,7 @@ public class GuiEventStorage {
     public GuiEventStorage(@NonNull final Configuration configuration, @NonNull final AddressBook addressBook) {
 
         this.configuration = Objects.requireNonNull(configuration);
-        final PlatformContext platformContext = new DefaultPlatformContext(
-                configuration, new NoOpMetrics(), CryptographyHolder.get(), Time.getCurrent());
+        final PlatformContext platformContext = PlatformContext.create(configuration);
 
         this.consensus = new ConsensusImpl(platformContext, new NoOpConsensusMetrics(), addressBook);
         // Future work: birth round compatibility for GUI
@@ -82,10 +79,11 @@ public class GuiEventStorage {
      *
      * @param event the event to handle
      */
-    public synchronized void handlePreconsensusEvent(@NonNull final GossipEvent event) {
+    public synchronized void handlePreconsensusEvent(@NonNull final PlatformEvent event) {
         maxGeneration = Math.max(maxGeneration, event.getGeneration());
 
-        final EventImpl eventImpl = linker.linkEvent(event);
+        // since the gui will modify the event, we need to copy it
+        final EventImpl eventImpl = linker.linkEvent(event.copyGossipedData());
         if (eventImpl == null) {
             return;
         }
@@ -95,6 +93,7 @@ public class GuiEventStorage {
         if (rounds.isEmpty()) {
             return;
         }
+        lastConsensusRound = rounds.getLast();
 
         linker.setNonAncientThreshold(rounds.getLast().getEventWindow().getAncientThreshold());
     }
@@ -110,6 +109,7 @@ public class GuiEventStorage {
         linker.clear();
         linker.setNonAncientThreshold(snapshot.getMinimumGenerationNonAncient(
                 configuration.getConfigData(ConsensusConfig.class).roundsNonAncient()));
+        lastConsensusRound = null;
     }
 
     /**
@@ -127,5 +127,12 @@ public class GuiEventStorage {
     @NonNull
     public synchronized List<EventImpl> getNonAncientEvents() {
         return linker.getNonAncientEvents();
+    }
+
+    /**
+     * @return the last round that reached consensus
+     */
+    public synchronized @Nullable ConsensusRound getLastConsensusRound() {
+        return lastConsensusRound;
     }
 }

@@ -30,10 +30,11 @@ import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.KeyList;
 import com.hederahashgraph.api.proto.java.Query;
-import com.hederahashgraph.api.proto.java.Response;
+import com.hederahashgraph.api.proto.java.ResponseType;
 import com.hederahashgraph.api.proto.java.ScheduleGetInfoQuery;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.Transaction;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.BiFunction;
@@ -245,21 +246,21 @@ public class HapiGetScheduleInfo extends HapiQueryOp<HapiGetScheduleInfo> {
     }
 
     @Override
-    protected void submitWith(HapiSpec spec, Transaction payment) throws Throwable {
-        Query query = getScheduleInfoQuery(spec, payment, false);
-        response =
-                spec.clients().getScheduleSvcStub(targetNodeFor(spec), useTls).getScheduleInfo(query);
+    protected void processAnswerOnlyResponse(@NonNull final HapiSpec spec) {
         if (verboseLoggingOn) {
             LOG.info("Info for '{}': {}", () -> schedule, response.getScheduleGetInfo()::getScheduleInfo);
         }
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    protected long lookupCostWith(HapiSpec spec, Transaction payment) throws Throwable {
-        Query query = getScheduleInfoQuery(spec, payment, true);
-        Response response =
-                spec.clients().getScheduleSvcStub(targetNodeFor(spec), useTls).getScheduleInfo(query);
-        return costFrom(response);
+    protected Query queryFor(
+            @NonNull final HapiSpec spec,
+            @NonNull final Transaction payment,
+            @NonNull final ResponseType responseType) {
+        return getScheduleInfoQuery(spec, payment, responseType == ResponseType.COST_ANSWER);
     }
 
     private Query getScheduleInfoQuery(HapiSpec spec, Transaction payment, boolean costOnly) {

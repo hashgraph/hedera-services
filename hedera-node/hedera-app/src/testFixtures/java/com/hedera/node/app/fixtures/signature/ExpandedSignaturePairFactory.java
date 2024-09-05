@@ -19,7 +19,6 @@ package com.hedera.node.app.fixtures.signature;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.SignaturePair;
 import com.hedera.hapi.node.state.token.Account;
-import com.hedera.node.app.service.mono.sigs.utils.MiscCryptoUtils;
 import com.hedera.node.app.signature.ExpandedSignaturePair;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -33,7 +32,7 @@ public class ExpandedSignaturePairFactory {
         final var compressed = key.ecdsaSecp256k1OrThrow();
         final var array = new byte[(int) compressed.length()];
         compressed.getBytes(0, array);
-        final var decompressed = MiscCryptoUtils.decompressSecp256k1(array);
+        final var decompressed = com.hedera.node.app.hapi.utils.MiscCryptoUtils.decompressSecp256k1(array);
         final var sigPair = SignaturePair.newBuilder()
                 .pubKeyPrefix(key.ecdsaSecp256k1OrThrow())
                 .ecdsaSecp256k1(key.ecdsaSecp256k1OrThrow())
@@ -55,7 +54,7 @@ public class ExpandedSignaturePairFactory {
         final var compressed = key.ecdsaSecp256k1OrThrow();
         final var array = new byte[(int) compressed.length()];
         compressed.getBytes(0, array);
-        final var decompressed = MiscCryptoUtils.decompressSecp256k1(array);
+        final var decompressed = com.hedera.node.app.hapi.utils.MiscCryptoUtils.decompressSecp256k1(array);
         final var sigPair = SignaturePair.newBuilder()
                 .pubKeyPrefix(key.ecdsaSecp256k1OrThrow())
                 .ecdsaSecp256k1(key.ecdsaSecp256k1OrThrow())

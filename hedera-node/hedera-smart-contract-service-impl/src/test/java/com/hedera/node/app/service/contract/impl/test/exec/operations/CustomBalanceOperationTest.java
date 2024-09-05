@@ -30,6 +30,7 @@ import com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils;
 import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
 import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.evm.EVM;
+import org.hyperledger.besu.evm.account.Account;
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
@@ -63,6 +64,9 @@ class CustomBalanceOperationTest {
     @Mock
     private ProxyWorldUpdater updater;
 
+    @Mock
+    private Account account;
+
     private CustomBalanceOperation subject;
 
     @BeforeEach
@@ -74,7 +78,8 @@ class CustomBalanceOperationTest {
     void catchesUnderflowWhenStackIsEmpty() {
         setupWarmGasCost();
         given(frame.getStackItem(0)).willThrow(UnderflowException.class);
-        final var expected = new Operation.OperationResult(3L, ExceptionalHaltReason.INSUFFICIENT_STACK_ITEMS);
+        given(frame.getRemainingGas()).willReturn(3L);
+        final var expected = new Operation.OperationResult(1L, ExceptionalHaltReason.INSUFFICIENT_STACK_ITEMS);
         final var actual = subject.execute(frame, evm);
         assertSameResult(expected, actual);
     }
@@ -82,9 +87,10 @@ class CustomBalanceOperationTest {
     @Test
     void systemAccountBalanceHardCodedToZero() {
         setupWarmGasCost();
+        given(frame.getRemainingGas()).willReturn(1L);
         given(frame.getStackItem(0)).willReturn(SYSTEM_ADDRESS);
         given(addressChecks.isSystemAccount(SYSTEM_ADDRESS)).willReturn(true);
-        final var expected = new Operation.OperationResult(3L, null);
+        final var expected = new Operation.OperationResult(1L, null);
         final var actual = subject.execute(frame, evm);
         assertSameResult(expected, actual);
         verify(frame).popStackItem();
@@ -95,12 +101,13 @@ class CustomBalanceOperationTest {
     void rejectsMissingUserAddressIfAllowCallFeatureFlagOff() {
         try (MockedStatic<FrameUtils> frameUtils = Mockito.mockStatic(FrameUtils.class)) {
             setupWarmGasCost();
+            given(frame.getRemainingGas()).willReturn(1L);
             given(frame.getStackItem(0)).willReturn(NON_SYSTEM_LONG_ZERO_ADDRESS);
             frameUtils.when(() -> FrameUtils.proxyUpdaterFor(frame)).thenReturn(updater);
             frameUtils
                     .when(() -> FrameUtils.contractRequired(frame, NON_SYSTEM_LONG_ZERO_ADDRESS, featureFlags))
                     .thenReturn(true);
-            final var expected = new Operation.OperationResult(3L, INVALID_SOLIDITY_ADDRESS);
+            final var expected = new Operation.OperationResult(1L, INVALID_SOLIDITY_ADDRESS);
             final var actual = subject.execute(frame, evm);
             assertSameResult(expected, actual);
         }
@@ -110,11 +117,8 @@ class CustomBalanceOperationTest {
     void delegatesToSuperIfAllowCallFeatureFlagOn() {
         try (MockedStatic<FrameUtils> frameUtils = Mockito.mockStatic(FrameUtils.class)) {
             setupWarmGasCost();
-            given(frame.getStackItem(0)).willReturn(NON_SYSTEM_LONG_ZERO_ADDRESS);
-            given(frame.popStackItem()).willReturn(NON_SYSTEM_LONG_ZERO_ADDRESS);
-            given(frame.warmUpAddress(NON_SYSTEM_LONG_ZERO_ADDRESS)).willReturn(true);
             frameUtils.when(() -> FrameUtils.proxyUpdaterFor(frame)).thenReturn(updater);
-            final var expected = new Operation.OperationResult(3L, ExceptionalHaltReason.INSUFFICIENT_GAS);
+            final var expected = new Operation.OperationResult(1L, ExceptionalHaltReason.INSUFFICIENT_GAS);
             final var actual = subject.execute(frame, evm);
             assertSameResult(expected, actual);
         }
@@ -124,11 +128,14 @@ class CustomBalanceOperationTest {
     void delegatesToSuperForPresentUserAddress() {
         try (MockedStatic<FrameUtils> frameUtils = Mockito.mockStatic(FrameUtils.class)) {
             setupWarmGasCost();
+            given(frame.getRemainingGas()).willReturn(1L);
             given(frame.getStackItem(0)).willReturn(NON_SYSTEM_LONG_ZERO_ADDRESS);
             given(frame.popStackItem()).willReturn(NON_SYSTEM_LONG_ZERO_ADDRESS);
             given(frame.warmUpAddress(NON_SYSTEM_LONG_ZERO_ADDRESS)).willReturn(true);
+            given(frame.getWorldUpdater()).willReturn(updater);
             frameUtils.when(() -> FrameUtils.proxyUpdaterFor(frame)).thenReturn(updater);
-            final var expected = new Operation.OperationResult(3L, ExceptionalHaltReason.INSUFFICIENT_GAS);
+            given(updater.get(NON_SYSTEM_LONG_ZERO_ADDRESS)).willReturn(account);
+            final var expected = new Operation.OperationResult(1L, null);
             final var actual = subject.execute(frame, evm);
             assertSameResult(expected, actual);
         }
@@ -136,6 +143,5 @@ class CustomBalanceOperationTest {
 
     private void setupWarmGasCost() {
         given(gasCalculator.getBalanceOperationGasCost()).willReturn(1L);
-        given(gasCalculator.getWarmStorageReadCost()).willReturn(2L);
     }
 }

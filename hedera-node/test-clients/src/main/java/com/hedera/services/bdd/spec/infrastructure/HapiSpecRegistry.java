@@ -19,12 +19,8 @@ package com.hedera.services.bdd.spec.infrastructure;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asAccountString;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asScheduleString;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asTokenString;
-import static com.hedera.services.bdd.spec.keys.KeyFactory.payerKey;
 import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_CONTRACT_RECEIVER;
 import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_CONTRACT_SENDER;
-import static java.util.stream.Collectors.counting;
-import static java.util.stream.Collectors.groupingBy;
-import static java.util.stream.Collectors.toList;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiPropertySource;
@@ -34,8 +30,6 @@ import com.hedera.services.bdd.spec.infrastructure.listeners.TokenAccountRegistr
 import com.hedera.services.bdd.spec.infrastructure.meta.ActionableContractCall;
 import com.hedera.services.bdd.spec.infrastructure.meta.ActionableContractCallLocal;
 import com.hedera.services.bdd.spec.infrastructure.meta.SupportedContract;
-import com.hedera.services.bdd.spec.stats.OpObs;
-import com.hedera.services.bdd.spec.stats.ThroughputObs;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ConsensusCreateTopicTransactionBody;
@@ -43,11 +37,14 @@ import com.hederahashgraph.api.proto.java.ConsensusUpdateTopicTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractGetInfoResponse;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.CryptoGetInfoResponse;
+import com.hederahashgraph.api.proto.java.EntityNumber;
 import com.hederahashgraph.api.proto.java.FileGetInfoResponse;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.GetAccountDetailsResponse;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
+import com.hederahashgraph.api.proto.java.NodeCreateTransactionBody;
+import com.hederahashgraph.api.proto.java.NodeUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.SchedulableTransactionBody;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.Timestamp;
@@ -64,24 +61,18 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 public class HapiSpecRegistry {
-    static final Logger log = LogManager.getLogger(HapiSpecRegistry.class);
-
     private final Map<String, Object> registry = new HashMap<>();
     private final HapiSpecSetup setup;
-    private final List<OpObs> obs = new ArrayList<>();
-    private final List<ThroughputObs> throughputObs = new ArrayList<>();
-    private Map<Class, List<RegistryChangeListener>> listenersByType = new HashMap<>();
+    private final Map<Class, List<RegistryChangeListener>> listenersByType = new HashMap<>();
 
     private static final Integer ZERO = 0;
 
     public HapiSpecRegistry(HapiSpecSetup setup) throws Exception {
         this.setup = setup;
 
-        final var key = payerKey(setup);
+        final var key = setup.payerKey();
         final var genesisKey = asPublicKey(CommonUtils.hex(key.getAbyte()));
 
         saveAccountId(setup.genesisAccountName(), setup.genesisAccount());
@@ -145,6 +136,10 @@ public class HapiSpecRegistry {
         saveKey(HapiSuite.NONSENSE_KEY, nonsenseKey());
     }
 
+    public void include(@NonNull final HapiSpecRegistry that) {
+        this.registry.putAll(that.registry);
+    }
+
     private Key nonsenseKey() {
         return Key.getDefaultInstance();
     }
@@ -162,27 +157,6 @@ public class HapiSpecRegistry {
     public void register(RegistryChangeListener<?> listener) {
         Class<?> type = listener.forType();
         listenersByType.computeIfAbsent(type, ignore -> new ArrayList<>()).add(listener);
-    }
-
-    public synchronized void record(OpObs stat) {
-        obs.add(stat);
-    }
-
-    public List<OpObs> stats() {
-        return obs;
-    }
-
-    public void saveThroughputObs(ThroughputObs obs) {
-        put(obs.getName(), obs);
-        throughputObs.add(obs);
-    }
-
-    public ThroughputObs getThroughputObs(String name) {
-        return get(name, ThroughputObs.class);
-    }
-
-    public List<ThroughputObs> throughputObs() {
-        return throughputObs;
     }
 
     public void saveContractChoice(String name, SupportedContract choice) {
@@ -231,10 +205,6 @@ public class HapiSpecRegistry {
 
     public long getBalanceSnapshot(String name) {
         return get(name, Long.class);
-    }
-
-    public boolean hasTimestamp(String label) {
-        return registry.containsKey(full(label, Timestamp.class));
     }
 
     public Timestamp getTimestamp(String label) {
@@ -364,16 +334,24 @@ public class HapiSpecRegistry {
         put(token + "Name", name, String.class);
     }
 
+    public void saveEVMAddress(String name, String address) {
+        put(name + "-EVMAddress", address, String.class);
+    }
+
+    public String getEVMAddress(String name) {
+        return get(name + "-EVMAddress", String.class);
+    }
+
+    public boolean hasEVMAddress(String name) {
+        return has(name + "-EVMAddress", String.class);
+    }
+
     public void saveMemo(String entity, String memo) {
         put(entity + "Memo", memo, String.class);
     }
 
     public String getMemo(String entity) {
         return get(entity + "Memo", String.class);
-    }
-
-    public String getSymbol(String token) {
-        return get(token + "Symbol", String.class);
     }
 
     public void forgetSymbol(String token) {
@@ -492,30 +470,6 @@ public class HapiSpecRegistry {
         return get(name, Long.class);
     }
 
-    public void saveIntValue(String name, Integer intVal) {
-        put(name, intVal);
-    }
-
-    public Integer getIntValue(String name) {
-        return get(name, Integer.class);
-    }
-
-    public void saveFloatValue(String name, Float floatVal) {
-        put(name, floatVal);
-    }
-
-    public Float getFloatValue(String name) {
-        return get(name, Float.class);
-    }
-
-    public void saveDoubleValue(String name, Double doubleVal) {
-        put(name, doubleVal);
-    }
-
-    public Double getDoubleValue(String name) {
-        return get(name, Double.class);
-    }
-
     public void saveSigRequirement(String name, Boolean isRequired) {
         put(name, isRequired);
     }
@@ -568,6 +522,11 @@ public class HapiSpecRegistry {
         put(asAccountString(id), name);
     }
 
+    public void saveNodeId(String name, EntityNumber nodeId) {
+        put(name, nodeId);
+        put(String.valueOf(nodeId), name);
+    }
+
     public void saveScheduleId(String name, ScheduleID id) {
         put(name, id);
         put(asScheduleString(id), name);
@@ -606,6 +565,10 @@ public class HapiSpecRegistry {
 
     public void saveTokenRel(String account, String token) {
         put(tokenRelKey(account, token), new TokenAccountRegistryRel(token, account));
+    }
+
+    public boolean hasTokenRel(String account, String token) {
+        return has(tokenRelKey(account, token), TokenAccountRegistryRel.class);
     }
 
     private String tokenRelKey(String account, String token) {
@@ -653,16 +616,8 @@ public class HapiSpecRegistry {
         put(account + "RechargeWindow", seconds);
     }
 
-    public boolean hasRechargingWindow(String rechargingAccount) {
-        return registry.get(full(rechargingAccount + "RechargeWindow", Integer.class)) != null;
-    }
-
     public Integer getRechargingWindow(String account) {
         return getOrElse(account + "RechargeWindow", Integer.class, ZERO);
-    }
-
-    public boolean hasTokenId(String name) {
-        return hasVia(this::getTokenID, name);
     }
 
     public boolean hasAccountId(String name) {
@@ -673,7 +628,7 @@ public class HapiSpecRegistry {
         return get(name, AccountID.class);
     }
 
-    public AccountID aliasIdFor(String keyName) {
+    public AccountID keyAliasIdFor(String keyName) {
         final var key = get(keyName, Key.class);
         return AccountID.newBuilder().setAlias(key.toByteString()).build();
     }
@@ -708,16 +663,16 @@ public class HapiSpecRegistry {
         return get(name, TokenID.class);
     }
 
-    public boolean hasFileId(String name) {
-        return hasVia(this::getFileId, name);
-    }
-
     public void saveFileId(String name, FileID id) {
         put(name, id);
     }
 
     public FileID getFileId(String name) {
         return get(name, FileID.class);
+    }
+
+    public EntityNumber getNodeId(String name) {
+        return get(name, EntityNumber.class);
     }
 
     public void removeFileId(String name) {
@@ -773,13 +728,6 @@ public class HapiSpecRegistry {
         put(name, txnRecord);
     }
 
-    public void removeTransactionRecord(String name) {
-        try {
-            remove(name, TransactionRecord.class);
-        } catch (Exception ignore) {
-        }
-    }
-
     public boolean hasTransactionRecord(String name) {
         return has(name, TransactionRecord.class);
     }
@@ -792,13 +740,6 @@ public class HapiSpecRegistry {
         put(name, info);
     }
 
-    public void removeFileInfo(String name) {
-        try {
-            remove(name, ContractGetInfoResponse.ContractInfo.class);
-        } catch (Exception ignore) {
-        }
-    }
-
     public FileGetInfoResponse.FileInfo getFileInfo(String name) {
         return get(name, FileGetInfoResponse.FileInfo.class);
     }
@@ -809,13 +750,6 @@ public class HapiSpecRegistry {
 
     public void saveAccountDetails(String name, GetAccountDetailsResponse.AccountDetails details) {
         put(name, details);
-    }
-
-    public void removeAccountInfo(String name) {
-        try {
-            remove(name, CryptoGetInfoResponse.AccountInfo.class);
-        } catch (Exception ignore) {
-        }
     }
 
     public CryptoGetInfoResponse.AccountInfo getAccountInfo(String name) {
@@ -901,16 +835,8 @@ public class HapiSpecRegistry {
         return typeName + "-" + name;
     }
 
-    public Map<Class, Long> typeCounts() {
-        return registry.values().stream().collect(groupingBy(Object::getClass, counting()));
-    }
-
-    public List<String> stringValues() {
-        return registry.entrySet().stream()
-                .filter(entry -> entry.getValue().getClass().equals(String.class))
-                .map(entry -> String.format(
-                        "%s -> %s", entry.getKey(), entry.getValue().toString()))
-                .collect(toList());
+    public void forgetMetadataKey(String name) {
+        remove(name + "Metadata", Key.class);
     }
 
     public void saveMetadataKey(String name, Key metadataKey) {
@@ -921,15 +847,42 @@ public class HapiSpecRegistry {
         return get(name + "Metadata", Key.class);
     }
 
-    public boolean hasMetadataKey(String name) {
-        return has(name + "Metadata", Key.class);
-    }
-
     public void saveMetadata(String token, String metadata) {
         put(token + "Metadata", metadata, String.class);
     }
 
-    public String getMetadata(String entity) {
-        return get(entity + "Metadata", String.class);
+    public boolean hasNodeMeta(String name) {
+        return hasVia(this::getNodeMeta, name);
+    }
+
+    public NodeCreateTransactionBody getNodeMeta(String name) {
+        return get(name, NodeCreateTransactionBody.class);
+    }
+
+    public void saveNodeMeta(String name, NodeUpdateTransactionBody txn) {
+        NodeCreateTransactionBody.Builder builder;
+        if (hasNodeMeta(name)) {
+            builder = getNodeMeta(name).toBuilder();
+        } else {
+            builder = NodeCreateTransactionBody.newBuilder();
+        }
+        if (txn.hasAdminKey()) {
+            builder.setAdminKey(txn.getAdminKey());
+        }
+        if (txn.hasAccountId()) {
+            builder.setAccountId(txn.getAccountId());
+        }
+        if (txn.hasDescription()) {
+            builder.setDescription(txn.getDescription().getValue());
+        }
+        if (txn.hasGossipCaCertificate()) {
+            builder.setGossipCaCertificate(txn.getGossipCaCertificate().toByteString());
+        }
+        if (txn.hasGrpcCertificateHash()) {
+            builder.setGrpcCertificateHash(txn.getGossipCaCertificate().toByteString());
+        }
+        builder.addAllGossipEndpoint(txn.getGossipEndpointList());
+        builder.addAllServiceEndpoint(txn.getServiceEndpointList());
+        put(name, builder.build());
     }
 }

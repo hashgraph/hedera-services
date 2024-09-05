@@ -16,21 +16,28 @@
 
 package com.hedera.services.bdd.spec;
 
+import static com.hedera.node.app.hapi.utils.CommonPbjConverters.fromByteString;
 import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.asHeadlongAddress;
+import static com.hedera.services.bdd.suites.utils.sysfiles.BookEntryPojo.asOctets;
 import static java.lang.System.arraycopy;
+import static java.util.Objects.requireNonNull;
 
 import com.esaulpaugh.headlong.abi.Address;
 import com.google.common.primitives.Ints;
 import com.google.common.primitives.Longs;
 import com.google.protobuf.ByteString;
+import com.hedera.hapi.node.base.ServiceEndpoint;
+import com.hedera.node.config.converter.LongPairConverter;
+import com.hedera.node.config.types.LongPair;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.services.bdd.spec.keys.KeyFactory;
 import com.hedera.services.bdd.spec.keys.SigControl;
 import com.hedera.services.bdd.spec.props.JutilPropertySource;
 import com.hedera.services.bdd.spec.props.MapPropertySource;
-import com.hedera.services.bdd.spec.utilops.records.AutoSnapshotRecordSource;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.Duration;
+import com.hederahashgraph.api.proto.java.EntityNumber;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.RealmID;
 import com.hederahashgraph.api.proto.java.ScheduleID;
@@ -41,6 +48,7 @@ import com.hederahashgraph.api.proto.java.TopicID;
 import com.swirlds.common.utility.CommonUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
@@ -83,20 +91,6 @@ public interface HapiPropertySource {
         }
     }
 
-    default HapiSpec.CostSnapshotMode getCostSnapshotMode(String property) {
-        return HapiSpec.CostSnapshotMode.valueOf(get(property));
-    }
-
-    /**
-     * Returns the property as a {@link AutoSnapshotRecordSource} value.
-     *
-     * @param property the property to get
-     * @return the {@link AutoSnapshotRecordSource} value
-     */
-    default AutoSnapshotRecordSource getAutoSnapshotRecordSource(@NonNull final String property) {
-        return AutoSnapshotRecordSource.valueOf(get(property));
-    }
-
     default HapiSpec.UTF8Mode getUTF8Mode(String property) {
         return HapiSpec.UTF8Mode.valueOf(get(property));
     }
@@ -115,6 +109,15 @@ public interface HapiPropertySource {
         } catch (Exception ignore) {
         }
         return AccountID.getDefaultInstance();
+    }
+
+    default ServiceEndpoint getServiceEndpoint(String property) {
+        try {
+            return asServiceEndpoint(get(property));
+        } catch (Exception ignore) {
+            System.out.println("Unable to parse service endpoint from property: " + property);
+        }
+        return ServiceEndpoint.DEFAULT;
     }
 
     default ContractID getContract(String property) {
@@ -143,6 +146,15 @@ public interface HapiPropertySource {
 
     default long getLong(String property) {
         return Long.parseLong(get(property));
+    }
+
+    /**
+     * Returns a {@link LongPair} from the given property.
+     * @param property the property to get the value from
+     * @return the {@link LongPair} value
+     */
+    default LongPair getLongPair(@NonNull final String property) {
+        return new LongPairConverter().convert(get(property));
     }
 
     default HapiSpecSetup.TlsConfig getTlsConfig(String property) {
@@ -190,7 +202,7 @@ public interface HapiPropertySource {
                 .map(s -> (s instanceof HapiPropertySource)
                         ? s
                         : ((s instanceof Map) ? new MapPropertySource((Map) s) : new JutilPropertySource((String) s)))
-                .toArray(n -> new HapiPropertySource[n]);
+                .toArray(HapiPropertySource[]::new);
     }
 
     static TokenID asToken(String v) {
@@ -245,6 +257,57 @@ public interface HapiPropertySource {
         return String.format(ENTITY_STRING, topic.getShardNum(), topic.getRealmNum(), topic.getTopicNum());
     }
 
+    /**
+     * Interprets the given string as a comma-separated list of {@code {<IP>|<DNS>}:{<PORT>}} pairs, returning a list
+     * of {@link ServiceEndpoint} instances with the appropriate host references set.
+     * @param v the string to interpret
+     * @return the parsed list of {@link ServiceEndpoint} instances
+     */
+    static List<ServiceEndpoint> asCsServiceEndpoints(@NonNull final String v) {
+        requireNonNull(v);
+        return Stream.of(v.split(","))
+                .map(HapiPropertySource::asTypedServiceEndpoint)
+                .toList();
+    }
+
+    /**
+     * Interprets the given string as a {@code {<IP>|<DNS>}:{<PORT>}} pair, returning an {@link ServiceEndpoint}
+     * with the appropriate host reference set.
+     * @param v the string to interpret
+     * @return the parsed {@link ServiceEndpoint}
+     */
+    static ServiceEndpoint asTypedServiceEndpoint(@NonNull final String v) {
+        requireNonNull(v);
+        try {
+            return asServiceEndpoint(v);
+        } catch (Exception ignore) {
+            return asDnsServiceEndpoint(v);
+        }
+    }
+
+    static ServiceEndpoint asServiceEndpoint(String v) {
+        String[] parts = v.split(":");
+        return ServiceEndpoint.newBuilder()
+                .ipAddressV4(fromByteString(asOctets(parts[0])))
+                .port(Integer.parseInt(parts[1]))
+                .build();
+    }
+
+    static ServiceEndpoint invalidServiceEndpoint() {
+        return ServiceEndpoint.newBuilder()
+                .ipAddressV4(Bytes.wrap(new byte[3]))
+                .port(33)
+                .build();
+    }
+
+    static ServiceEndpoint asDnsServiceEndpoint(String v) {
+        String[] parts = v.split(":");
+        return ServiceEndpoint.newBuilder()
+                .domainName(parts[0])
+                .port(Integer.parseInt(parts[1]))
+                .build();
+    }
+
     static ContractID asContract(String v) {
         long[] nativeParts = asDotDelimitedLongArray(v);
         return ContractID.newBuilder()
@@ -295,6 +358,10 @@ public interface HapiPropertySource {
                 .setRealmNum(nativeParts[1])
                 .setFileNum(nativeParts[2])
                 .build();
+    }
+
+    static EntityNumber asEntityNumber(String v) {
+        return EntityNumber.newBuilder().setNumber(Long.parseLong(v)).build();
     }
 
     static String asFileString(FileID file) {

@@ -24,7 +24,7 @@ import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.contract.ContractFunctionResult;
 import com.hedera.hapi.node.transaction.ExchangeRate;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.service.contract.impl.records.ContractCallRecordBuilder;
+import com.hedera.node.app.service.contract.impl.records.ContractCallStreamBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.function.Predicate;
 import org.apache.tuweni.bytes.Bytes;
@@ -59,7 +59,7 @@ public interface SystemContractOperations {
      * @param preemptingStatus the status code causing the preemption
      * @return the record of the preemption
      */
-    ContractCallRecordBuilder externalizePreemptedDispatch(
+    ContractCallStreamBuilder externalizePreemptedDispatch(
             @NonNull TransactionBody syntheticBody, @NonNull ResponseCodeEnum preemptingStatus);
 
     /**
@@ -98,10 +98,10 @@ public interface SystemContractOperations {
      * @param isViewCall
      * @return
      */
-    Transaction syntheticTransactionForHtsCall(Bytes input, ContractID contractID, boolean isViewCall);
+    Transaction syntheticTransactionForNativeCall(Bytes input, ContractID contractID, boolean isViewCall);
 
     /**
-     * Returns the {@Link ExchangeRate} for the current consensus time.  This will enable the translation from hbars
+     * Returns the {@link ExchangeRate} for the current consensus time.  This will enable the translation from hbars
      * to dollars
      *
      * @return ExchangeRate for the current consensus time

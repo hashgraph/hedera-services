@@ -16,13 +16,15 @@
 
 package com.hedera.node.app.service.networkadmin.impl;
 
+import static com.hedera.node.app.service.networkadmin.impl.schemas.V0490FreezeSchema.FREEZE_TIME_KEY;
+import static com.hedera.node.app.service.networkadmin.impl.schemas.V0490FreezeSchema.UPGRADE_FILE_HASH_KEY;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.state.primitives.ProtoBytes;
-import com.hedera.node.app.spi.state.WritableSingletonState;
-import com.hedera.node.app.spi.state.WritableStates;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.state.spi.WritableSingletonState;
+import com.swirlds.state.spi.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 
@@ -45,8 +47,8 @@ public class WritableFreezeStore extends ReadableFreezeStoreImpl {
     public WritableFreezeStore(@NonNull final WritableStates states) {
         super(states);
         requireNonNull(states);
-        freezeTimeState = states.getSingleton(FreezeServiceImpl.FREEZE_TIME_KEY);
-        updateFileHash = states.getSingleton(FreezeServiceImpl.UPGRADE_FILE_HASH_KEY);
+        freezeTimeState = states.getSingleton(FREEZE_TIME_KEY);
+        updateFileHash = states.getSingleton(UPGRADE_FILE_HASH_KEY);
     }
 
     /**
@@ -70,17 +72,20 @@ public class WritableFreezeStore extends ReadableFreezeStoreImpl {
     /**
      * Sets or clears the update file hash.
      *
-     * @param updateFileHash The update file hash to set. If null, clears the update file hash.
+     * @param updateFileHashBytes The update file hash to set. If null, clears the update file hash.
      */
-    public void updateFileHash(@NonNull final Bytes updateFileHash) {
-        requireNonNull(updateFileHash);
-        this.updateFileHash.put(new ProtoBytes(updateFileHash));
+    public void updateFileHash(@NonNull final Bytes updateFileHashBytes) {
+        requireNonNull(updateFileHashBytes);
+        this.updateFileHash.put(new ProtoBytes(updateFileHashBytes));
     }
 
     @Override
     @Nullable
     public Bytes updateFileHash() {
-        ProtoBytes fileHash = updateFileHash.get();
+        return effectiveUpdateFileHash(updateFileHash.get());
+    }
+
+    static @Nullable Bytes effectiveUpdateFileHash(@Nullable final ProtoBytes fileHash) {
         if (fileHash == null) {
             return null;
         }

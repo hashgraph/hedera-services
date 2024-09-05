@@ -30,7 +30,7 @@ import java.util.function.Predicate;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class RegistrySourcedNameProvider<T> implements EntityNameProvider<T> {
+public class RegistrySourcedNameProvider<T> implements EntityNameProvider {
     static final Logger log = LogManager.getLogger(RegressionProviderFactory.class);
 
     private final Class<T> type;
@@ -52,11 +52,6 @@ public class RegistrySourcedNameProvider<T> implements EntityNameProvider<T> {
         this.type = type;
         this.selector = selector;
         this.listener = new PresenceTrackingListener<>(type, registry, filter);
-    }
-
-    @Override
-    public Class<T> forType() {
-        return type;
     }
 
     @Override

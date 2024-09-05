@@ -19,7 +19,6 @@ package com.hedera.services.bdd.spec.assertions;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.asId;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.getDeduction;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.readableTransferList;
-import static java.util.stream.Collectors.toSet;
 
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.fees.TinyBarTransfers;
@@ -28,14 +27,11 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TransferList;
 import java.util.AbstractMap;
 import java.util.Arrays;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.function.Function;
 import java.util.function.LongSupplier;
 import java.util.function.ToLongFunction;
-import java.util.stream.Stream;
 import org.junit.jupiter.api.Assertions;
 
 public class TransferListAsserts extends BaseErroringAssertsProvider<TransferList> {
@@ -62,6 +58,7 @@ public class TransferListAsserts extends BaseErroringAssertsProvider<TransferLis
     }
 
     @SafeVarargs
+    @SuppressWarnings("varargs")
     public static TransferListAsserts including(Function<HapiSpec, TransferList>... providers) {
         return new ExplicitTransferAsserts(Arrays.asList(providers));
     }
@@ -78,14 +75,6 @@ public class TransferListAsserts extends BaseErroringAssertsProvider<TransferLis
         return new QualifyingDeductionAssert(desc, payer);
     }
 
-    public static TransferListAsserts atLeastOneTransfer() {
-        return new NonEmptyTransferAsserts();
-    }
-
-    public static TransferListAsserts missingPayments(Function<HapiSpec, Map.Entry<AccountID, Long>>... providers) {
-        return new MissingPaymentAsserts(providers);
-    }
-
     public static Function<HapiSpec, Map.Entry<AccountID, Long>> to(String account, Long amount) {
         return spec -> new AbstractMap.SimpleEntry<>(spec.registry().getAccountID(account), amount);
     }
@@ -98,34 +87,6 @@ public class TransferListAsserts extends BaseErroringAssertsProvider<TransferLis
         if (!new TinyBarTransfers(of).test(in)) {
             Assertions.assertEquals(TxnUtils.printable(of), TxnUtils.printable(in), "Transfers missing from list!");
         }
-    }
-}
-
-class MissingPaymentAsserts extends TransferListAsserts {
-    public MissingPaymentAsserts(Function<HapiSpec, Map.Entry<AccountID, Long>>... providers) {
-        registerProvider((spec, o) -> {
-            TransferList actual = (TransferList) o;
-            Set<String> missing = Stream.of(providers)
-                    .map(provider -> asSig(provider.apply(spec)))
-                    .collect(toSet());
-            Set<String> nonAbsent = new HashSet<>();
-            actual.getAccountAmountsList().stream().forEach(entry -> {
-                String sig = asSig(new AbstractMap.SimpleEntry<>(entry.getAccountID(), entry.getAmount()));
-                if (missing.contains(sig)) {
-                    nonAbsent.add(sig);
-                }
-            });
-            Assertions.assertTrue(nonAbsent.isEmpty(), "Payments not absent from list! " + nonAbsent);
-        });
-    }
-
-    private String asSig(Map.Entry<AccountID, Long> entry) {
-        return String.format(
-                "%d.%d.%d|%d",
-                entry.getKey().getShardNum(),
-                entry.getKey().getRealmNum(),
-                entry.getKey().getAccountNum(),
-                entry.getValue());
     }
 }
 
@@ -162,15 +123,6 @@ class QualifyingDeductionAssert extends TransferListAsserts {
             if (!hasQualifying) {
                 Assertions.fail("No qualifying " + desc + " from " + payer + " in " + readableTransferList(transfers));
             }
-        });
-    }
-}
-
-class NonEmptyTransferAsserts extends TransferListAsserts {
-    public NonEmptyTransferAsserts() {
-        registerProvider((spec, o) -> {
-            TransferList transfers = (TransferList) o;
-            Assertions.assertTrue(!transfers.getAccountAmountsList().isEmpty(), "Transfer list cannot be empty!");
         });
     }
 }

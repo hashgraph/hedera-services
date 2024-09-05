@@ -28,9 +28,8 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.SERIAL_NUMBER_LIMIT_REA
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_HAS_NO_SUPPLY_KEY;
 import static com.hedera.node.app.hapi.fees.usage.SingletonUsageProperties.USAGE_PROPERTIES;
 import static com.hedera.node.app.hapi.fees.usage.token.TokenOpsUsageUtils.TOKEN_OPS_USAGE_UTILS;
-import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
-import static com.hedera.node.app.service.mono.state.merkle.internals.BitPackUtils.MAX_NUM_ALLOWED;
-import static com.hedera.node.app.service.mono.txns.crypto.AbstractAutoCreationLogic.THREE_MONTHS_IN_SECONDS;
+import static com.hedera.node.app.service.token.impl.TokenServiceImpl.MAX_SERIAL_NO_ALLOWED;
+import static com.hedera.node.app.service.token.impl.TokenServiceImpl.THREE_MONTHS_IN_SECONDS;
 import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateFalsePreCheck;
@@ -47,6 +46,7 @@ import com.hedera.hapi.node.state.token.Nft;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.hapi.utils.CommonPbjConverters;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableNftStore;
@@ -54,7 +54,7 @@ import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
 import com.hedera.node.app.service.token.impl.util.TokenHandlerHelper;
 import com.hedera.node.app.service.token.impl.validators.TokenSupplyChangeOpsValidator;
-import com.hedera.node.app.service.token.records.TokenMintRecordBuilder;
+import com.hedera.node.app.service.token.records.TokenMintStreamBuilder;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -79,6 +79,10 @@ import javax.inject.Singleton;
 public class TokenMintHandler extends BaseTokenHandler implements TransactionHandler {
     private final TokenSupplyChangeOpsValidator validator;
 
+    /**
+     * Default constructor for injection.
+     * @param validator the token supply change ops validator
+     */
     @Inject
     public TokenMintHandler(@NonNull final TokenSupplyChangeOpsValidator validator) {
         this.validator = requireNonNull(validator);
@@ -114,9 +118,10 @@ public class TokenMintHandler extends BaseTokenHandler implements TransactionHan
 
         validateSemantics(context);
 
-        final var tokenStore = context.writableStore(WritableTokenStore.class);
-        final var tokenRelStore = context.writableStore(WritableTokenRelationStore.class);
-        final var accountStore = context.writableStore(WritableAccountStore.class);
+        final var storeFactory = context.storeFactory();
+        final var tokenStore = storeFactory.writableStore(WritableTokenStore.class);
+        final var tokenRelStore = storeFactory.writableStore(WritableTokenRelationStore.class);
+        final var accountStore = storeFactory.writableStore(WritableAccountStore.class);
         // validate token exists and is usable
         final var token = TokenHandlerHelper.getIfUsable(tokenId, tokenStore);
         validateTrue(token.supplyKey() != null, TOKEN_HAS_NO_SUPPLY_KEY);
@@ -129,7 +134,7 @@ public class TokenMintHandler extends BaseTokenHandler implements TransactionHan
             validateTrue(treasuryRel.kycGranted(), ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN);
         }
 
-        final var recordBuilder = context.recordBuilder(TokenMintRecordBuilder.class);
+        final var recordBuilder = context.savepointStack().getBaseBuilder(TokenMintStreamBuilder.class);
         if (token.tokenType() == TokenType.FUNGIBLE_COMMON) {
             validateTrue(op.amount() >= 0, INVALID_TOKEN_MINT_AMOUNT);
             // we need to know if treasury mint while creation to ignore supply key exist or not.
@@ -140,7 +145,7 @@ public class TokenMintHandler extends BaseTokenHandler implements TransactionHan
             // get the config needed for validation
             final var tokensConfig = context.configuration().getConfigData(TokensConfig.class);
             final var maxAllowedMints = tokensConfig.nftsMaxAllowedMints();
-            final var nftStore = context.writableStore(WritableNftStore.class);
+            final var nftStore = storeFactory.writableStore(WritableNftStore.class);
             // validate resources exist for minting nft
             final var meta = op.metadata();
             validateTrue(
@@ -177,7 +182,7 @@ public class TokenMintHandler extends BaseTokenHandler implements TransactionHan
      * serial number of the given base unique token, and increments total owned nfts of the
      * non-fungible token.
      *
-     * @param token
+     * @param token        - the token to mint nfts for
      * @param treasuryRel   - the treasury relation of the token
      * @param metadata      - the metadata of the nft to be minted
      * @param consensusTime - the consensus time of the transaction
@@ -207,7 +212,7 @@ public class TokenMintHandler extends BaseTokenHandler implements TransactionHan
 
         // get the latest serial number minted for the token
         var currentSerialNumber = token.lastUsedSerialNumber();
-        validateTrue((currentSerialNumber + metadataCount) <= MAX_NUM_ALLOWED, SERIAL_NUMBER_LIMIT_REACHED);
+        validateTrue((currentSerialNumber + metadataCount) <= MAX_SERIAL_NO_ALLOWED, SERIAL_NUMBER_LIMIT_REACHED);
 
         // Change the supply on token
         changeSupply(token, treasuryRel, metadataCount, FAIL_INVALID, accountStore, tokenStore, tokenRelStore);
@@ -275,7 +280,7 @@ public class TokenMintHandler extends BaseTokenHandler implements TransactionHan
         final var op = feeContext.body().tokenMintOrThrow();
         final var subType = op.amount() > 0 ? SubType.TOKEN_FUNGIBLE_COMMON : SubType.TOKEN_NON_FUNGIBLE_UNIQUE;
 
-        final var calculator = feeContext.feeCalculator(subType);
+        final var calculator = feeContext.feeCalculatorFactory().feeCalculator(subType);
         if (SubType.TOKEN_NON_FUNGIBLE_UNIQUE.equals(subType)) {
             calculator.resetUsage();
             // The price of nft mint should be increased based on number of signatures.
@@ -286,7 +291,9 @@ public class TokenMintHandler extends BaseTokenHandler implements TransactionHan
         // FUTURE: lifetime parameter is not being used by the function below, in order to avoid making changes
         // to mono-service passed a default lifetime of 3 months here
         final var meta = TOKEN_OPS_USAGE_UTILS.tokenMintUsageFrom(
-                fromPbj(feeContext.body()), fromPbj(subType), THREE_MONTHS_IN_SECONDS);
+                CommonPbjConverters.fromPbj(feeContext.body()),
+                CommonPbjConverters.fromPbj(subType),
+                THREE_MONTHS_IN_SECONDS);
 
         calculator.addBytesPerTransaction(meta.getBpt());
         calculator.addRamByteSeconds(meta.getRbs());

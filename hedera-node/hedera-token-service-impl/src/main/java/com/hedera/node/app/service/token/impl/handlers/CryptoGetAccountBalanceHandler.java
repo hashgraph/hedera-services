@@ -21,10 +21,14 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.CONTRACT_DELETED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_CONTRACT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
+import static com.hedera.node.app.spi.validation.Validations.mustExist;
+import static com.hedera.node.app.spi.validation.Validations.validateAccountID;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateFalsePreCheck;
+import static com.hedera.node.app.spi.workflows.PreCheckException.validateTruePreCheck;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.QueryHeader;
 import com.hedera.hapi.node.base.ResponseHeader;
@@ -44,6 +48,8 @@ import com.hedera.node.app.spi.workflows.FreeQueryHandler;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.QueryContext;
 import com.hedera.node.config.data.TokensConfig;
+import com.swirlds.common.metrics.SpeedometerMetric;
+import com.swirlds.metrics.api.Metrics;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.List;
@@ -56,9 +62,19 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class CryptoGetAccountBalanceHandler extends FreeQueryHandler {
+
+    private static final SpeedometerMetric.Config BALANCE_SPEEDOMETER_CONFIG = new SpeedometerMetric.Config(
+                    "app", "queriedAccountBalances")
+            .withDescription("Number of balances requested in GetAccountBalance queries per second");
+
+    private final SpeedometerMetric balanceSpeedometer;
+
+    /**
+     * Default constructor for injection.
+     */
     @Inject
-    public CryptoGetAccountBalanceHandler() {
-        // Exists for injection
+    public CryptoGetAccountBalanceHandler(@NonNull final Metrics metrics) {
+        this.balanceSpeedometer = metrics.getOrCreate(BALANCE_SPEEDOMETER_CONFIG);
     }
 
     @Override
@@ -83,16 +99,38 @@ public class CryptoGetAccountBalanceHandler extends FreeQueryHandler {
         final var accountStore = context.createStore(ReadableAccountStore.class);
         final CryptoGetAccountBalanceQuery op = query.cryptogetAccountBalanceOrThrow();
         if (op.hasAccountID()) {
-            final var account = accountStore.getAliasedAccountById(requireNonNull(op.accountID()));
-            validateFalsePreCheck(account == null, INVALID_ACCOUNT_ID);
-            validateFalsePreCheck(account.deleted(), ACCOUNT_DELETED);
+            validateAccountId(op, accountStore);
         } else if (op.hasContractID()) {
-            final var contract = accountStore.getContractById(requireNonNull(op.contractID()));
-            validateFalsePreCheck(contract == null || !contract.smartContract(), INVALID_CONTRACT_ID);
-            validateFalsePreCheck(contract.deleted(), CONTRACT_DELETED);
+            validateContractId(op, accountStore);
         } else {
             throw new PreCheckException(INVALID_ACCOUNT_ID);
         }
+    }
+
+    private void validateContractId(CryptoGetAccountBalanceQuery op, ReadableAccountStore accountStore)
+            throws PreCheckException {
+        mustExist(op.contractID(), INVALID_CONTRACT_ID);
+        final ContractID contractId = (ContractID) op.balanceSource().value();
+        validateTruePreCheck(contractId.shardNum() == 0, INVALID_CONTRACT_ID);
+        validateTruePreCheck(contractId.realmNum() == 0, INVALID_CONTRACT_ID);
+        validateTruePreCheck(
+                (contractId.hasContractNum() && contractId.contractNumOrThrow() >= 0) || contractId.hasEvmAddress(),
+                INVALID_CONTRACT_ID);
+        final var contract = accountStore.getContractById(requireNonNull(op.contractID()));
+        validateFalsePreCheck(contract == null, INVALID_CONTRACT_ID);
+        validateTruePreCheck(contract.smartContract(), INVALID_CONTRACT_ID);
+        validateFalsePreCheck(contract.deleted(), CONTRACT_DELETED);
+    }
+
+    private void validateAccountId(CryptoGetAccountBalanceQuery op, ReadableAccountStore accountStore)
+            throws PreCheckException {
+        AccountID accountId = (AccountID) op.balanceSource().value();
+        validateTruePreCheck(accountId.shardNum() == 0, INVALID_ACCOUNT_ID);
+        validateTruePreCheck(accountId.realmNum() == 0, INVALID_ACCOUNT_ID);
+        validateAccountID(accountId, INVALID_ACCOUNT_ID);
+        final var account = accountStore.getAliasedAccountById(requireNonNull(op.accountID()));
+        validateFalsePreCheck(account == null, INVALID_ACCOUNT_ID);
+        validateFalsePreCheck(account.deleted(), ACCOUNT_DELETED);
     }
 
     @Override
@@ -115,7 +153,9 @@ public class CryptoGetAccountBalanceHandler extends FreeQueryHandler {
             requireNonNull(account);
             response.accountID(account.accountIdOrThrow()).balance(account.tinybarBalance());
             if (config.balancesInQueriesEnabled()) {
-                response.tokenBalances(getTokenBalances(config, account, tokenStore, tokenRelationStore));
+                final var tokenBalances = getTokenBalances(config, account, tokenStore, tokenRelationStore);
+                balanceSpeedometer.update(tokenBalances.size());
+                response.tokenBalances(tokenBalances);
             }
         }
 
@@ -123,7 +163,7 @@ public class CryptoGetAccountBalanceHandler extends FreeQueryHandler {
     }
 
     /**
-     * Calculate TokenBalance of an Account
+     * Calculate TokenBalance of an Account.
      *
      * @param tokenConfig use TokenConfig to get maxRelsPerInfoQuery value
      * @param account the account to be calculated from

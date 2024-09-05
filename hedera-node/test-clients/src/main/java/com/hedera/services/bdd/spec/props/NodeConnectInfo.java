@@ -17,7 +17,7 @@
 package com.hedera.services.bdd.spec.props;
 
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.isIdLiteral;
-import static com.hedera.services.bdd.spec.transactions.TxnUtils.isPortLiteral;
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.isNumericLiteral;
 
 import com.google.common.base.MoreObjects;
 import com.hedera.services.bdd.spec.HapiPropertySource;
@@ -44,7 +44,7 @@ public class NodeConnectInfo {
     public NodeConnectInfo(String inString) {
         String[] aspects = inString.split(":");
         int[] ports = Stream.of(aspects)
-                .filter(TxnUtils::isPortLiteral)
+                .filter(TxnUtils::isNumericLiteral)
                 .mapToInt(Integer::parseInt)
                 .toArray();
         if (ports.length > 0) {
@@ -63,7 +63,7 @@ public class NodeConnectInfo {
                 .findAny()
                 .orElse(HapiPropertySource.asAccount(String.format("0.0.%d", NEXT_DEFAULT_ACCOUNT_NUM++)));
         host = Stream.of(aspects)
-                .filter(aspect -> !(isIdLiteral(aspect) || isPortLiteral(aspect)))
+                .filter(aspect -> !(isIdLiteral(aspect) || isNumericLiteral(aspect)))
                 .findAny()
                 .orElse(DEFAULT_HOST);
     }

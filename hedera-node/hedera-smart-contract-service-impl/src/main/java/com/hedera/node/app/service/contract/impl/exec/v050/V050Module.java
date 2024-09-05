@@ -42,6 +42,7 @@ import com.hedera.node.app.service.contract.impl.exec.operations.CustomPrevRanda
 import com.hedera.node.app.service.contract.impl.exec.operations.CustomSLoadOperation;
 import com.hedera.node.app.service.contract.impl.exec.operations.CustomSStoreOperation;
 import com.hedera.node.app.service.contract.impl.exec.operations.CustomSelfDestructOperation;
+import com.hedera.node.app.service.contract.impl.exec.operations.CustomSelfDestructOperation.UseEIP6780Semantics;
 import com.hedera.node.app.service.contract.impl.exec.operations.CustomStaticCallOperation;
 import com.hedera.node.app.service.contract.impl.exec.processors.CustomContractCreationProcessor;
 import com.hedera.node.app.service.contract.impl.exec.processors.CustomMessageCallProcessor;
@@ -141,7 +142,7 @@ public interface V050Module {
 
         oneTimeEVMModuleInitialization();
 
-        // Use Cancun EVM with 0.49 custom operations and 0x00 chain id (set at runtime)
+        // Use Cancun EVM with 0.50 custom operations and 0x00 chain id (set at runtime)
         final var operationRegistry = new OperationRegistry();
         registerCancunOperations(operationRegistry, gasCalculator, BigInteger.ZERO);
         customOperations.forEach(operationRegistry::put);
@@ -324,7 +325,8 @@ public interface V050Module {
     @ServicesV050
     static Operation provideSelfDestructOperation(
             @NonNull final GasCalculator gasCalculator, @ServicesV050 @NonNull final AddressChecks addressChecks) {
-        return new CustomSelfDestructOperation(gasCalculator, addressChecks);
+        // Here we adopt EIP-6780 semantics, for SELFDESTRUCT, for the first time
+        return new CustomSelfDestructOperation(gasCalculator, addressChecks, UseEIP6780Semantics.YES);
     }
 
     @Provides

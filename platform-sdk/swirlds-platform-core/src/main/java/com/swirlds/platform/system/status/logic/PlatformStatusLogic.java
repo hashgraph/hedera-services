@@ -20,7 +20,6 @@ import com.swirlds.platform.system.status.IllegalPlatformStatusException;
 import com.swirlds.platform.system.status.PlatformStatus;
 import com.swirlds.platform.system.status.actions.CatastrophicFailureAction;
 import com.swirlds.platform.system.status.actions.DoneReplayingEventsAction;
-import com.swirlds.platform.system.status.actions.EmergencyReconnectStartedAction;
 import com.swirlds.platform.system.status.actions.FallenBehindAction;
 import com.swirlds.platform.system.status.actions.FreezePeriodEnteredAction;
 import com.swirlds.platform.system.status.actions.PlatformStatusAction;
@@ -62,15 +61,6 @@ public interface PlatformStatusLogic {
      */
     @NonNull
     PlatformStatusLogic processDoneReplayingEventsAction(@NonNull final DoneReplayingEventsAction action);
-
-    /**
-     * Process an {@link EmergencyReconnectStartedAction} action.
-     *
-     * @param action the action to process
-     * @return the {@link PlatformStatusLogic} to manage the resulting status
-     */
-    @NonNull
-    PlatformStatusLogic processEmergencyReconnectStartedAction(@NonNull final EmergencyReconnectStartedAction action);
 
     /**
      * Process a {@link FallenBehindAction}

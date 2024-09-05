@@ -143,7 +143,7 @@ class FCQueueTest {
         q3.add(new FCInt(rnd.nextInt(NEXT_INT_BOUNDS)));
         q3.remove();
         q3.remove();
-        final byte[] hh = q3.getHash().getValue();
+        final byte[] hh = q3.getHash().copyToByteArray();
         // the hash of {} should be all zeros
         for (final byte b : hh) {
             assertEquals(0, b);
@@ -225,8 +225,8 @@ class FCQueueTest {
         h++;
 
         // the hash of {} should be all zeros
-        for (int i = 0; i < hash[0].getValue().length; i++) {
-            assertEquals(0, hash[0].getValue()[i]);
+        for (int i = 0; i < hash[0].getBytes().length(); i++) {
+            assertEquals(0, hash[0].getBytes().getByte(i));
         }
 
         // 1={a} 2={a,b} 3={a,b,c}

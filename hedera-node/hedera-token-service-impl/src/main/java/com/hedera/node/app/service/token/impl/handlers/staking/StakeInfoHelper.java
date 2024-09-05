@@ -29,22 +29,26 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
- * Helper class for mutating staking info in the {@link WritableStakingInfoStore}
+ * Helper class for mutating staking info in the {@link WritableStakingInfoStore}.
  */
 @Singleton
 public class StakeInfoHelper {
     private static final Logger log = LogManager.getLogger(StakeInfoHelper.class);
 
+    /**
+     * Default constructor for injection.
+     */
     @Inject
     public StakeInfoHelper() {
         // Needed for Dagger injection
     }
 
     /**
-     * Increases the unclaimed stake reward start for the given node by the given amount
+     * Increases the unclaimed stake reward start for the given node by the given amount.
      *
      * @param nodeId the node's numeric ID
      * @param amount the amount to increase the unclaimed stake reward start by
+     * @param stakingInfoStore the store for the staking info
      */
     public void increaseUnclaimedStakeRewards(
             @NonNull final Long nodeId, final long amount, @NonNull final WritableStakingInfoStore stakingInfoStore) {

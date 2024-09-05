@@ -78,7 +78,7 @@ public final class MessageDigestPool {
 
         KnownDigest kd = messages.get(index);
 
-        return (kd != null && kd.isValid(message.getHash().getValue()));
+        return (kd != null && kd.isValid(message.getHash().copyToByteArray()));
     }
 
     public boolean isValid(final Message message, final byte[] hash) {

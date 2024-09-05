@@ -21,7 +21,7 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
-import com.hedera.services.bdd.suites.TargetNetworkType;
+import com.hedera.services.bdd.spec.TargetNetworkType;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Set;
 

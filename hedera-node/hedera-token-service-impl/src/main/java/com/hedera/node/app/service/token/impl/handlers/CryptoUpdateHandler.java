@@ -22,6 +22,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_ID_DOES_NOT_EXI
 import static com.hedera.hapi.node.base.ResponseCodeEnum.EXISTING_AUTOMATIC_ASSOCIATIONS_EXCEED_GIVEN_LIMIT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ADMIN_KEY;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_MAX_AUTO_ASSOCIATIONS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.PROXY_ACCOUNT_ID_FIELD_IS_DEPRECATED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT;
 import static com.hedera.node.app.hapi.fees.pricing.BaseOperationUsage.THREE_MONTHS_IN_SECONDS;
@@ -32,7 +33,6 @@ import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.BASIC_ENTITY_ID_SIZE
 import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.INT_SIZE;
 import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.LONG_SIZE;
 import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.getAccountKeyStorageSize;
-import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
 import static com.hedera.node.app.service.token.api.AccountSummariesApi.SENTINEL_ACCOUNT_ID;
 import static com.hedera.node.app.service.token.api.AccountSummariesApi.SENTINEL_NODE_ID;
 import static com.hedera.node.app.spi.validation.AttributeValidator.isImmutableKey;
@@ -51,6 +51,7 @@ import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.token.CryptoUpdateTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.hapi.utils.CommonPbjConverters;
 import com.hedera.node.app.service.token.CryptoSignatureWaivers;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
@@ -58,7 +59,6 @@ import com.hedera.node.app.service.token.impl.validators.StakingValidator;
 import com.hedera.node.app.spi.fees.FeeCalculator;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
-import com.hedera.node.app.spi.info.NetworkInfo;
 import com.hedera.node.app.spi.validation.EntityType;
 import com.hedera.node.app.spi.validation.ExpiryMeta;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -83,20 +83,20 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class CryptoUpdateHandler extends BaseCryptoHandler implements TransactionHandler {
-
     private final CryptoSignatureWaivers waivers;
     private final StakingValidator stakingValidator;
-    private final NetworkInfo networkInfo;
 
+    /**
+     * Default constructor for injection.
+     * @param waivers the {@link CryptoSignatureWaivers} to use for checking signature waivers
+     * @param stakingValidator the {@link StakingValidator} to use for staking validation
+     */
     @Inject
     public CryptoUpdateHandler(
-            @NonNull final CryptoSignatureWaivers waivers,
-            @NonNull final StakingValidator stakingValidator,
-            @NonNull final NetworkInfo networkInfo) {
+            @NonNull final CryptoSignatureWaivers waivers, @NonNull final StakingValidator stakingValidator) {
         this.waivers = requireNonNull(waivers, "The supplied argument 'waivers' must not be null");
         this.stakingValidator =
                 requireNonNull(stakingValidator, "The supplied argument 'stakingValidator' must not be null");
-        this.networkInfo = requireNonNull(networkInfo, "The supplied argument 'networkInfo' must not be null");
     }
 
     @Override
@@ -150,7 +150,7 @@ public class CryptoUpdateHandler extends BaseCryptoHandler implements Transactio
         final var target = op.accountIDToUpdateOrThrow();
 
         // validate update account exists
-        final var accountStore = context.writableStore(WritableAccountStore.class);
+        final var accountStore = context.storeFactory().writableStore(WritableAccountStore.class);
         final var targetAccount = accountStore.get(target);
         validateTrue(targetAccount != null, INVALID_ACCOUNT_ID);
         context.attributeValidator().validateMemo(op.memo());
@@ -173,7 +173,7 @@ public class CryptoUpdateHandler extends BaseCryptoHandler implements Transactio
     }
 
     /**
-     * Add a builder from {@link CryptoUpdateTransactionBody} to create {@link Account.Builder} object
+     * Add a builder from {@link CryptoUpdateTransactionBody} to create {@link Account.Builder} object.
      * @param op Crypto update transaction body
      * @return builder
      */
@@ -269,13 +269,19 @@ public class CryptoUpdateHandler extends BaseCryptoHandler implements Transactio
         // validate auto associations
         if (op.hasMaxAutomaticTokenAssociations()) {
             final long newMax = builderAccount.maxAutoAssociations();
-            validateFalse(
-                    newMax < updateAccount.usedAutoAssociations(), EXISTING_AUTOMATIC_ASSOCIATIONS_EXCEED_GIVEN_LIMIT);
-            validateFalse(
-                    newMax > ledgerConfig.maxAutoAssociations(),
-                    REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT);
+            // first validate if the associations are limited and the new max is within
             validateFalse(
                     entitiesConfig.limitTokenAssociations() && newMax > tokensConfig.maxPerAccount(),
+                    REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT);
+            validateFalse(
+                    newMax < -1 && entitiesConfig.unlimitedAutoAssociationsEnabled()
+                            || newMax < 0 && !entitiesConfig.unlimitedAutoAssociationsEnabled(),
+                    INVALID_MAX_AUTO_ASSOCIATIONS);
+            validateFalse(
+                    newMax < updateAccount.usedAutoAssociations() && newMax != -1,
+                    EXISTING_AUTOMATIC_ASSOCIATIONS_EXCEED_GIVEN_LIMIT);
+            validateFalse(
+                    newMax > ledgerConfig.maxAutoAssociations(),
                     REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT);
         }
 
@@ -306,14 +312,14 @@ public class CryptoUpdateHandler extends BaseCryptoHandler implements Transactio
                     .validateAutoRenewPeriod(op.autoRenewPeriod().seconds());
         }
 
-        stakingValidator.validateStakedIdForUpdate(
+        StakingValidator.validateStakedIdForUpdate(
                 context.configuration().getConfigData(StakingConfig.class).isEnabled(),
                 op.hasDeclineReward(),
                 op.stakedId().kind().name(),
                 op.stakedAccountId(),
                 op.stakedNodeId(),
                 accountStore,
-                networkInfo);
+                context.networkInfo());
     }
 
     /**
@@ -330,7 +336,10 @@ public class CryptoUpdateHandler extends BaseCryptoHandler implements Transactio
         final var body = feeContext.body();
         final var accountStore = feeContext.readableStore(ReadableAccountStore.class);
         return cryptoUpdateFees(
-                body, feeContext.feeCalculator(SubType.DEFAULT), accountStore, feeContext.configuration());
+                body,
+                feeContext.feeCalculatorFactory().feeCalculator(SubType.DEFAULT),
+                accountStore,
+                feeContext.configuration());
     }
 
     /**
@@ -340,7 +349,8 @@ public class CryptoUpdateHandler extends BaseCryptoHandler implements Transactio
      * @param keySize the size of the key
      * @return the calculated base size
      */
-    private static long baseSizeOf(final CryptoUpdateTransactionBody op, final long keySize) {
+    private static long baseSizeOf(
+            final CryptoUpdateTransactionBody op, final long keySize, final boolean unlimitedAutoAssociationsEnabled) {
         return BASIC_ENTITY_ID_SIZE
                 + op.memoOrElse("").getBytes(StandardCharsets.UTF_8).length
                 + (op.hasExpirationTime() ? LONG_SIZE : 0L)
@@ -374,7 +384,7 @@ public class CryptoUpdateHandler extends BaseCryptoHandler implements Transactio
      */
     private static int currentNonBaseBytes(final Account account) {
         return account.memo().getBytes(StandardCharsets.UTF_8).length
-                + getAccountKeyStorageSize(fromPbj(account.keyOrElse(Key.DEFAULT)))
+                + getAccountKeyStorageSize(CommonPbjConverters.fromPbj(account.keyOrElse(Key.DEFAULT)))
                 + (account.maxAutoAssociations() == 0 ? 0 : INT_SIZE);
     }
 
@@ -396,10 +406,12 @@ public class CryptoUpdateHandler extends BaseCryptoHandler implements Transactio
         // When dispatching transaction body for hollow account we don't have update account set
         final var account = accountStore.getAccountById(op.accountIDToUpdateOrElse(AccountID.DEFAULT));
         final var autoRenewconfig = configuration.getConfigData(AutoRenewConfig.class);
+        final var entityConfig = configuration.getConfigData(EntitiesConfig.class);
+        final var unlimitedAutoAssoc = entityConfig.unlimitedAutoAssociationsEnabled();
         final var explicitAutoAssocSlotLifetime = autoRenewconfig.expireAccounts() ? 0L : THREE_MONTHS_IN_SECONDS;
 
-        final var keySize = op.hasKey() ? getAccountKeyStorageSize(fromPbj(op.key())) : 0L;
-        final var baseSize = baseSizeOf(op, keySize);
+        final var keySize = op.hasKey() ? getAccountKeyStorageSize(CommonPbjConverters.fromPbj(op.keyOrThrow())) : 0L;
+        final var baseSize = baseSizeOf(op, keySize, unlimitedAutoAssoc);
         final var newMemoSize = op.memoOrElse("").getBytes(StandardCharsets.UTF_8).length;
 
         final var accountMemoSize = (account == null || account.memo() == null)
@@ -407,7 +419,7 @@ public class CryptoUpdateHandler extends BaseCryptoHandler implements Transactio
                 : account.memo().getBytes(StandardCharsets.UTF_8).length;
         final long newVariableBytes = (newMemoSize != 0L ? newMemoSize : accountMemoSize)
                 + (keySize == 0L && account != null
-                        ? getAccountKeyStorageSize(fromPbj(account.keyOrElse(Key.DEFAULT)))
+                        ? getAccountKeyStorageSize(CommonPbjConverters.fromPbj(account.keyOrElse(Key.DEFAULT)))
                         : keySize);
 
         final long tokenRelBytes =
@@ -423,7 +435,7 @@ public class CryptoUpdateHandler extends BaseCryptoHandler implements Transactio
                 cryptoAutoRenewRb(account), oldLifetime, sharedFixedBytes + newVariableBytes, newLifetime);
 
         final var oldSlotsUsage = (account == null ? 0 : account.maxAutoAssociations()) * UPDATE_SLOT_MULTIPLIER;
-        final var newSlotsUsage = op.hasMaxAutomaticTokenAssociations()
+        final var newSlotsUsage = op.hasMaxAutomaticTokenAssociations() && !unlimitedAutoAssoc
                 ? op.maxAutomaticTokenAssociations().longValue() * UPDATE_SLOT_MULTIPLIER
                 : oldSlotsUsage;
         // If given an explicit auto-assoc slot lifetime, we use it as a lower bound for both old and new lifetimes

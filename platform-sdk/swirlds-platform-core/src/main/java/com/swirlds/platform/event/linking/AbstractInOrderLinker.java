@@ -20,19 +20,16 @@ import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
-import com.swirlds.common.sequence.map.SequenceMap;
-import com.swirlds.common.sequence.map.StandardSequenceMap;
 import com.swirlds.common.utility.throttle.RateLimitedLogger;
-import com.swirlds.platform.EventStrings;
 import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.event.EventCounter;
-import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.eventhandling.EventConfig;
 import com.swirlds.platform.internal.EventImpl;
-import com.swirlds.platform.system.events.BaseEventHashedData;
-import com.swirlds.platform.system.events.EventDescriptor;
-import com.swirlds.platform.wiring.NoInput;
+import com.swirlds.platform.sequence.map.SequenceMap;
+import com.swirlds.platform.sequence.map.StandardSequenceMap;
+import com.swirlds.platform.system.events.EventDescriptorWrapper;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Duration;
@@ -55,7 +52,6 @@ import org.apache.logging.log4j.Logger;
  * </ul>
  */
 abstract class AbstractInOrderLinker implements InOrderLinker {
-    private static final Logger logger = LogManager.getLogger(AbstractInOrderLinker.class);
 
     /**
      * The initial capacity of the {@link #parentDescriptorMap} and {@link #parentHashMap}
@@ -78,7 +74,7 @@ abstract class AbstractInOrderLinker implements InOrderLinker {
      * The window of this map is shifted when the minimum non-ancient threshold is changed, so that only non-ancient
      * events are retained.
      */
-    private final SequenceMap<EventDescriptor, EventImpl> parentDescriptorMap;
+    private final SequenceMap<EventDescriptorWrapper, EventImpl> parentDescriptorMap;
 
     /**
      * A map from event hash to event.
@@ -99,6 +95,12 @@ abstract class AbstractInOrderLinker implements InOrderLinker {
      * @param platformContext the platform context
      */
     public AbstractInOrderLinker(@NonNull final PlatformContext platformContext) {
+        // We use a non-static logger here so that we can scope the logger to the concrete
+        // implementation of this class, not to the abstract class. Once instantiated, a
+        // linker has the same life span as a node, so it is not inefficient to
+        // have a non-static logger.
+        final Logger logger = LogManager.getLogger(this.getClass());
+
         this.missingParentLogger = new RateLimitedLogger(logger, platformContext.getTime(), MINIMUM_LOG_PERIOD);
         this.generationMismatchLogger = new RateLimitedLogger(logger, platformContext.getTime(), MINIMUM_LOG_PERIOD);
         this.birthRoundMismatchLogger = new RateLimitedLogger(logger, platformContext.getTime(), MINIMUM_LOG_PERIOD);
@@ -110,11 +112,11 @@ abstract class AbstractInOrderLinker implements InOrderLinker {
                 .getAncientMode();
         this.eventWindow = EventWindow.getGenesisEventWindow(ancientMode);
         if (ancientMode == AncientMode.BIRTH_ROUND_THRESHOLD) {
-            this.parentDescriptorMap =
-                    new StandardSequenceMap<>(0, INITIAL_CAPACITY, true, EventDescriptor::getBirthRound);
+            this.parentDescriptorMap = new StandardSequenceMap<>(
+                    0, INITIAL_CAPACITY, true, ed -> ed.eventDescriptor().birthRound());
         } else {
-            this.parentDescriptorMap =
-                    new StandardSequenceMap<>(0, INITIAL_CAPACITY, true, EventDescriptor::getGeneration);
+            this.parentDescriptorMap = new StandardSequenceMap<>(
+                    0, INITIAL_CAPACITY, true, ed -> ed.eventDescriptor().generation());
         }
     }
 
@@ -125,27 +127,26 @@ abstract class AbstractInOrderLinker implements InOrderLinker {
      * @return the linked event, or null if the event is ancient
      */
     @Nullable
-    public EventImpl linkEvent(@NonNull final GossipEvent event) {
+    public EventImpl linkEvent(@NonNull final PlatformEvent event) {
         if (eventWindow.isAncient(event)) {
             // This event is ancient, so we don't need to link it.
             ancientEventAdded(event);
             return null;
         }
 
-        final BaseEventHashedData hashedData = event.getHashedData();
-        final EventImpl selfParent = getParentToLink(event, hashedData.getSelfParent());
+        final EventImpl selfParent = getParentToLink(event, event.getSelfParent());
 
         // FUTURE WORK: Extend other parent linking to support multiple other parents.
         // Until then, take the first parent in the list.
-        final List<EventDescriptor> otherParents = hashedData.getOtherParents();
+        final List<EventDescriptorWrapper> otherParents = event.getOtherParents();
         final EventImpl otherParent = otherParents.isEmpty() ? null : getParentToLink(event, otherParents.get(0));
 
         final EventImpl linkedEvent = new EventImpl(event, selfParent, otherParent);
         EventCounter.incrementLinkedEventCount();
 
-        final EventDescriptor eventDescriptor = event.getDescriptor();
-        parentDescriptorMap.put(eventDescriptor, linkedEvent);
-        parentHashMap.put(eventDescriptor.getHash(), linkedEvent);
+        final EventDescriptorWrapper eventDescriptorWrapper = event.getDescriptor();
+        parentDescriptorMap.put(eventDescriptorWrapper, linkedEvent);
+        parentHashMap.put(eventDescriptorWrapper.hash(), linkedEvent);
 
         return linkedEvent;
     }
@@ -159,17 +160,16 @@ abstract class AbstractInOrderLinker implements InOrderLinker {
         this.eventWindow = Objects.requireNonNull(eventWindow);
 
         parentDescriptorMap.shiftWindow(eventWindow.getAncientThreshold(), (descriptor, event) -> {
-            parentHashMap.remove(descriptor.getHash());
+            parentHashMap.remove(descriptor.hash());
             eventHasBecomeAncient(event);
         });
     }
 
     /**
      * Clear the internal state of this linker.
-     *
-     * @param ignored ignored trigger object
      */
-    public void clear(@NonNull final NoInput ignored) {
+    @Override
+    public void clear() {
         parentDescriptorMap.clear();
         parentHashMap.clear();
     }
@@ -181,11 +181,11 @@ abstract class AbstractInOrderLinker implements InOrderLinker {
      * @param parentDescriptor the descriptor of the missing parent
      */
     protected void childHasMissingParent(
-            @NonNull final GossipEvent child, @NonNull final EventDescriptor parentDescriptor) {
+            @NonNull final PlatformEvent child, @NonNull final EventDescriptorWrapper parentDescriptor) {
         missingParentLogger.error(
                 EXCEPTION.getMarker(),
                 "Child has a missing parent. This should not be possible. Child: {}, Parent EventDescriptor: {}",
-                EventStrings.toMediumString(child),
+                child,
                 parentDescriptor);
     }
 
@@ -197,16 +197,16 @@ abstract class AbstractInOrderLinker implements InOrderLinker {
      * @param candidateParent  the parent event that we found in the parentHashMap
      */
     protected void parentHasIncorrectGeneration(
-            @NonNull final GossipEvent child,
-            @NonNull final EventDescriptor parentDescriptor,
+            @NonNull final PlatformEvent child,
+            @NonNull final EventDescriptorWrapper parentDescriptor,
             @NonNull final EventImpl candidateParent) {
         generationMismatchLogger.warn(
                 EXCEPTION.getMarker(),
                 "Event has a parent with a different generation than claimed. Child: {}, parent: {}, "
                         + "claimed generation: {}, actual generation: {}",
-                EventStrings.toMediumString(child),
-                EventStrings.toMediumString(candidateParent),
-                parentDescriptor.getGeneration(),
+                child,
+                candidateParent,
+                parentDescriptor.eventDescriptor().generation(),
                 candidateParent.getGeneration());
     }
 
@@ -218,16 +218,16 @@ abstract class AbstractInOrderLinker implements InOrderLinker {
      * @param candidateParent  the parent event that we found in the parentHashMap
      */
     protected void parentHasIncorrectBirthRound(
-            @NonNull final GossipEvent child,
-            @NonNull final EventDescriptor parentDescriptor,
+            @NonNull final PlatformEvent child,
+            @NonNull final EventDescriptorWrapper parentDescriptor,
             @NonNull final EventImpl candidateParent) {
         birthRoundMismatchLogger.warn(
                 EXCEPTION.getMarker(),
                 "Event has a parent with a different birth round than claimed. Child: {}, parent: {}, "
                         + "claimed birth round: {}, actual birth round: {}",
-                EventStrings.toMediumString(child),
-                EventStrings.toMediumString(candidateParent),
-                parentDescriptor.getBirthRound(),
+                child,
+                candidateParent,
+                parentDescriptor.eventDescriptor().birthRound(),
                 candidateParent.getBirthRound());
     }
 
@@ -241,7 +241,7 @@ abstract class AbstractInOrderLinker implements InOrderLinker {
      * @param childTimeCreated  the time created of the child event
      */
     protected void childTimeIsNotAfterSelfParentTime(
-            @NonNull final GossipEvent child,
+            @NonNull final PlatformEvent child,
             @NonNull final EventImpl candidateParent,
             @NonNull final Instant parentTimeCreated,
             @NonNull final Instant childTimeCreated) {
@@ -249,8 +249,8 @@ abstract class AbstractInOrderLinker implements InOrderLinker {
                 EXCEPTION.getMarker(),
                 "Child time created isn't strictly after self parent time created. "
                         + "Child: {}, parent: {}, child time created: {}, parent time created: {}",
-                EventStrings.toMediumString(child),
-                EventStrings.toMediumString(candidateParent),
+                child,
+                candidateParent,
                 childTimeCreated,
                 parentTimeCreated);
     }
@@ -260,12 +260,13 @@ abstract class AbstractInOrderLinker implements InOrderLinker {
      *
      * @param event the event that was discarded
      */
-    protected void ancientEventAdded(@NonNull final GossipEvent event) {
+    protected void ancientEventAdded(@NonNull final PlatformEvent event) {
         // Implement this if extra action is needed.
     }
 
     /**
      * This method is called when this data structure stops tracking an event because it has become ancient.
+     *
      * @param event the event that has become ancient
      */
     protected void eventHasBecomeAncient(@NonNull final EventImpl event) {
@@ -289,7 +290,7 @@ abstract class AbstractInOrderLinker implements InOrderLinker {
      */
     @Nullable
     private EventImpl getParentToLink(
-            @NonNull final GossipEvent child, @Nullable final EventDescriptor parentDescriptor) {
+            @NonNull final PlatformEvent child, @Nullable final EventDescriptorWrapper parentDescriptor) {
 
         if (parentDescriptor == null) {
             // There is no claimed parent for linking.
@@ -301,29 +302,30 @@ abstract class AbstractInOrderLinker implements InOrderLinker {
             return null;
         }
 
-        final EventImpl candidateParent = parentHashMap.get(parentDescriptor.getHash());
+        final EventImpl candidateParent = parentHashMap.get(parentDescriptor.hash());
         if (candidateParent == null) {
             childHasMissingParent(child, parentDescriptor);
             return null;
         }
 
-        if (candidateParent.getGeneration() != parentDescriptor.getGeneration()) {
+        if (candidateParent.getGeneration()
+                != parentDescriptor.eventDescriptor().generation()) {
             parentHasIncorrectGeneration(child, parentDescriptor, candidateParent);
             return null;
         }
 
-        if (candidateParent.getBirthRound() != parentDescriptor.getBirthRound()) {
+        if (candidateParent.getBirthRound()
+                != parentDescriptor.eventDescriptor().birthRound()) {
             parentHasIncorrectBirthRound(child, parentDescriptor, candidateParent);
             return null;
         }
 
-        final Instant parentTimeCreated =
-                candidateParent.getBaseEvent().getHashedData().getTimeCreated();
-        final Instant childTimeCreated = child.getHashedData().getTimeCreated();
+        final Instant parentTimeCreated = candidateParent.getBaseEvent().getTimeCreated();
+        final Instant childTimeCreated = child.getTimeCreated();
 
         // only do this check for self parent, since the event creator doesn't consider other parent creation time
         // when deciding on the event creation time
-        if (parentDescriptor.getCreator().equals(child.getDescriptor().getCreator())
+        if (parentDescriptor.creator().equals(child.getDescriptor().creator())
                 && parentTimeCreated.compareTo(childTimeCreated) >= 0) {
 
             childTimeIsNotAfterSelfParentTime(child, candidateParent, parentTimeCreated, childTimeCreated);

@@ -20,7 +20,8 @@ import static com.swirlds.platform.event.creation.EventCreationStatus.RATE_LIMIT
 
 import com.swirlds.platform.event.creation.EventCreationStatus;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
+import java.util.List;
+import java.util.Objects;
 
 /**
  * Combines multiple {@link EventCreationRule} objects into a single object. Allows event creation if all the contained
@@ -28,7 +29,7 @@ import edu.umd.cs.findbugs.annotations.Nullable;
  */
 public class AggregateEventCreationRules implements EventCreationRule {
 
-    private final EventCreationRule[] rules;
+    private final List<EventCreationRule> rules;
     private EventCreationStatus mostRecentStatus = RATE_LIMITED;
 
     /**
@@ -37,7 +38,7 @@ public class AggregateEventCreationRules implements EventCreationRule {
      * @param rules the rules to combine, if no rules are provided then event creation is always permitted.
      * @return an aggregate rule that permits event creation if and only if all rules permit creation.
      */
-    public static AggregateEventCreationRules of(@Nullable final EventCreationRule... rules) {
+    public static AggregateEventCreationRules of(@NonNull final List<EventCreationRule> rules) {
         return new AggregateEventCreationRules(rules);
     }
 
@@ -46,8 +47,8 @@ public class AggregateEventCreationRules implements EventCreationRule {
      *
      * @param rules the limiters to combine
      */
-    private AggregateEventCreationRules(@Nullable final EventCreationRule... rules) {
-        this.rules = rules == null ? new EventCreationRule[0] : rules;
+    private AggregateEventCreationRules(@NonNull final List<EventCreationRule> rules) {
+        this.rules = Objects.requireNonNull(rules);
     }
 
     /**

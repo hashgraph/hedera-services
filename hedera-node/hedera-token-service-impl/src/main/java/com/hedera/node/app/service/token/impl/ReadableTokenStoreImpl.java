@@ -23,8 +23,9 @@ import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.transaction.CustomFee;
 import com.hedera.node.app.service.token.ReadableTokenStore;
-import com.hedera.node.app.spi.state.ReadableKVState;
-import com.hedera.node.app.spi.state.ReadableStates;
+import com.hedera.node.app.service.token.impl.schemas.V0490TokenSchema;
+import com.swirlds.state.spi.ReadableKVState;
+import com.swirlds.state.spi.ReadableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Optional;
@@ -43,7 +44,7 @@ public class ReadableTokenStoreImpl implements ReadableTokenStore {
      */
     public ReadableTokenStoreImpl(@NonNull final ReadableStates states) {
         requireNonNull(states);
-        this.tokenState = states.get(TokenServiceImpl.TOKENS_KEY);
+        this.tokenState = states.get(V0490TokenSchema.TOKENS_KEY);
     }
 
     // FUTURE: remove this method and the TokenMetadata object entirely
@@ -110,7 +111,7 @@ public class ReadableTokenStoreImpl implements ReadableTokenStore {
 
     /**
      * Returns the number of tokens in the state.
-     * @return the number of tokens in the state.
+     * @return the number of tokens in the state
      */
     @Override
     public long sizeOfState() {

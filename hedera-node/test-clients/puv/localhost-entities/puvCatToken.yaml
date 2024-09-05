@@ -1,8 +1,0 @@
-id: {num: 1019, realm: 0, shard: 0}
-name: puvCatToken
-token:
-  adminKey: {generateIfMissing: true, passphrase: swirlds, pemLoc: puvCatTokenAdmin.pem}
-  frozenByDefault: true
-  name: PostUpdateValidation Cat Token
-  symbol: CAT
-  treasury: puvTreasury

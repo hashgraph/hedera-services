@@ -21,10 +21,9 @@ import static com.swirlds.metrics.api.Metrics.PLATFORM_CATEGORY;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.metrics.api.LongAccumulator;
-import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.internal.EventImpl;
-import com.swirlds.platform.metrics.StaleMetrics;
-import com.swirlds.platform.system.events.EventDescriptor;
+import com.swirlds.platform.system.events.EventDescriptorWrapper;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 
@@ -39,8 +38,6 @@ public class ConsensusLinker extends AbstractInOrderLinker {
     private final LongAccumulator generationMismatchAccumulator;
     private final LongAccumulator birthRoundMismatchAccumulator;
     private final LongAccumulator timeCreatedMismatchAccumulator;
-
-    private final StaleMetrics staleMetrics;
 
     /**
      * Constructor
@@ -73,8 +70,6 @@ public class ConsensusLinker extends AbstractInOrderLinker {
                         new LongAccumulator.Config(PLATFORM_CATEGORY, "timeCreatedMismatch")
                                 .withDescription(
                                         "Parent child relationships where child time created wasn't strictly after parent time created"));
-
-        staleMetrics = new StaleMetrics(platformContext, selfId);
     }
 
     /**
@@ -82,9 +77,6 @@ public class ConsensusLinker extends AbstractInOrderLinker {
      */
     @Override
     protected void eventHasBecomeAncient(@NonNull final EventImpl event) {
-        if (!event.isConsensus()) {
-            staleMetrics.staleEvent(event);
-        }
         event.clear();
     }
 
@@ -93,7 +85,7 @@ public class ConsensusLinker extends AbstractInOrderLinker {
      */
     @Override
     protected void childHasMissingParent(
-            @NonNull final GossipEvent child, @NonNull final EventDescriptor parentDescriptor) {
+            @NonNull final PlatformEvent child, @NonNull final EventDescriptorWrapper parentDescriptor) {
         super.childHasMissingParent(child, parentDescriptor);
         missingParentAccumulator.update(1);
     }
@@ -103,8 +95,8 @@ public class ConsensusLinker extends AbstractInOrderLinker {
      */
     @Override
     protected void parentHasIncorrectGeneration(
-            @NonNull final GossipEvent child,
-            @NonNull final EventDescriptor parentDescriptor,
+            @NonNull final PlatformEvent child,
+            @NonNull final EventDescriptorWrapper parentDescriptor,
             @NonNull final EventImpl candidateParent) {
         super.parentHasIncorrectGeneration(child, parentDescriptor, candidateParent);
         generationMismatchAccumulator.update(1);
@@ -115,8 +107,8 @@ public class ConsensusLinker extends AbstractInOrderLinker {
      */
     @Override
     protected void parentHasIncorrectBirthRound(
-            @NonNull final GossipEvent child,
-            @NonNull final EventDescriptor parentDescriptor,
+            @NonNull final PlatformEvent child,
+            @NonNull final EventDescriptorWrapper parentDescriptor,
             @NonNull final EventImpl candidateParent) {
         super.parentHasIncorrectBirthRound(child, parentDescriptor, candidateParent);
         birthRoundMismatchAccumulator.update(1);
@@ -127,7 +119,7 @@ public class ConsensusLinker extends AbstractInOrderLinker {
      */
     @Override
     protected void childTimeIsNotAfterSelfParentTime(
-            @NonNull final GossipEvent child,
+            @NonNull final PlatformEvent child,
             @NonNull final EventImpl candidateParent,
             @NonNull final Instant parentTimeCreated,
             @NonNull final Instant childTimeCreated) {

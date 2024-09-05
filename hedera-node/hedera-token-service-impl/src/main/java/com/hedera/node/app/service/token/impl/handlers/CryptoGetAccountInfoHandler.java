@@ -22,7 +22,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.hapi.node.base.ResponseType.COST_ANSWER;
 import static com.hedera.node.app.service.token.api.AccountSummariesApi.tokenRelationshipsOf;
-import static com.hedera.node.app.service.token.impl.handlers.transfer.TransferContextImpl.isOfEvmAddressSize;
+import static com.hedera.node.app.spi.fees.Fees.CONSTANT_FEE_DATA;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateFalsePreCheck;
 import static java.util.Objects.requireNonNull;
 
@@ -32,13 +32,16 @@ import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.QueryHeader;
 import com.hedera.hapi.node.base.ResponseHeader;
 import com.hedera.hapi.node.base.Timestamp;
+import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.token.AccountInfo;
 import com.hedera.hapi.node.token.CryptoGetInfoQuery;
 import com.hedera.hapi.node.token.CryptoGetInfoResponse;
 import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.Response;
 import com.hedera.node.app.hapi.fees.usage.crypto.CryptoOpsUsage;
-import com.hedera.node.app.service.mono.fees.calculation.crypto.queries.GetAccountInfoResourceUsage;
+import com.hedera.node.app.hapi.fees.usage.crypto.ExtantCryptoContext;
+import com.hedera.node.app.hapi.utils.CommonPbjConverters;
+import com.hedera.node.app.service.token.AliasUtils;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.ReadableNetworkStakingRewardsStore;
 import com.hedera.node.app.service.token.ReadableStakingInfoStore;
@@ -52,7 +55,10 @@ import com.hedera.node.app.spi.workflows.QueryContext;
 import com.hedera.node.config.data.LedgerConfig;
 import com.hedera.node.config.data.StakingConfig;
 import com.hedera.node.config.data.TokensConfig;
+import com.hederahashgraph.api.proto.java.FeeData;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.time.InstantSource;
+import java.util.Collections;
 import java.util.Optional;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -64,11 +70,17 @@ import javax.inject.Singleton;
 @Singleton
 public class CryptoGetAccountInfoHandler extends PaidQueryHandler {
     private final CryptoOpsUsage cryptoOpsUsage;
+    private final InstantSource instantSource;
 
+    /**
+     * Default constructor for injection.
+     * @param cryptoOpsUsage the usage of the crypto operations for calculating fees
+     */
     @Inject
-    public CryptoGetAccountInfoHandler(final CryptoOpsUsage cryptoOpsUsage) {
-        this.cryptoOpsUsage = cryptoOpsUsage;
-        // Dagger2
+    public CryptoGetAccountInfoHandler(
+            @NonNull final CryptoOpsUsage cryptoOpsUsage, @NonNull final InstantSource instantSource) {
+        this.cryptoOpsUsage = requireNonNull(cryptoOpsUsage);
+        this.instantSource = requireNonNull(instantSource);
     }
 
     @Override
@@ -166,8 +178,7 @@ public class CryptoGetAccountInfoHandler extends PaidQueryHandler {
             info.ownedNfts(account.numberOwnedNfts());
             info.maxAutomaticTokenAssociations(account.maxAutoAssociations());
             info.ethereumNonce(account.ethereumNonce());
-            //  info.proxyAccountID(); Deprecated
-            if (!isOfEvmAddressSize(account.alias())) {
+            if (!AliasUtils.isOfEvmAddressSize(account.alias())) {
                 info.alias(account.alias());
             }
             if (tokensConfig.balancesInQueriesEnabled()) {
@@ -179,7 +190,8 @@ public class CryptoGetAccountInfoHandler extends PaidQueryHandler {
                     stakingConfig.periodMins(),
                     stakingRewardsStore.isStakingRewardsActivated(),
                     account,
-                    stakingInfoStore));
+                    stakingInfoStore,
+                    instantSource.instant()));
             return Optional.of(info.build());
         }
     }
@@ -193,8 +205,24 @@ public class CryptoGetAccountInfoHandler extends PaidQueryHandler {
         final var accountId = op.accountIDOrElse(AccountID.DEFAULT);
         final var account = accountStore.getAliasedAccountById(accountId);
 
-        return queryContext.feeCalculator().legacyCalculate(sigValueObj -> new GetAccountInfoResourceUsage(
-                        cryptoOpsUsage, null, null, null)
-                .usageGiven(query, account));
+        return queryContext.feeCalculator().legacyCalculate(sigValueObj -> usageGiven(query, account));
+    }
+
+    private FeeData usageGiven(final com.hedera.hapi.node.transaction.Query query, final Account account) {
+        if (account == null) {
+            return CONSTANT_FEE_DATA;
+        }
+        final var ctx = ExtantCryptoContext.newBuilder()
+                .setCurrentKey(CommonPbjConverters.fromPbj(account.keyOrThrow()))
+                .setCurrentMemo(account.memo())
+                .setCurrentExpiry(account.expirationSecond())
+                .setCurrentNumTokenRels(account.numberAssociations())
+                .setCurrentMaxAutomaticAssociations(account.maxAutoAssociations())
+                .setCurrentCryptoAllowances(Collections.emptyMap())
+                .setCurrentTokenAllowances(Collections.emptyMap())
+                .setCurrentApproveForAllNftAllowances(Collections.emptySet())
+                .setCurrentlyHasProxy(false)
+                .build();
+        return cryptoOpsUsage.cryptoInfoUsage(CommonPbjConverters.fromPbj(query), ctx);
     }
 }

@@ -30,7 +30,7 @@ import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.MerkleLeaf;
 import com.swirlds.common.merkle.impl.PartialMerkleLeaf;
-import com.swirlds.platform.state.PlatformState;
+import com.swirlds.platform.state.PlatformStateAccessor;
 import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.SwirldState;
 import com.swirlds.platform.system.transaction.Transaction;
@@ -99,7 +99,7 @@ public class HelloSwirldDemoState extends PartialMerkleLeaf implements SwirldSta
     }
 
     @Override
-    public synchronized void handleConsensusRound(final Round round, final PlatformState platformState) {
+    public synchronized void handleConsensusRound(final Round round, final PlatformStateAccessor platformState) {
         throwIfImmutable();
         round.forEachTransaction(this::handleTransaction);
     }
@@ -111,7 +111,10 @@ public class HelloSwirldDemoState extends PartialMerkleLeaf implements SwirldSta
     }
 
     private void handleTransaction(final Transaction transaction) {
-        strings.add(new String(transaction.getContents(), StandardCharsets.UTF_8));
+        if (transaction.isSystem()) {
+            return;
+        }
+        strings.add(new String(transaction.getApplicationTransaction().toByteArray(), StandardCharsets.UTF_8));
     }
 
     @Override

@@ -22,21 +22,19 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.platform.consensus.ConsensusConstants;
 import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.event.AncientMode;
-import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.eventhandling.EventConfig_;
 import com.swirlds.platform.gossip.IntakeEventCounter;
-import com.swirlds.platform.system.events.BaseEventHashedData;
-import com.swirlds.platform.system.events.EventConstants;
-import com.swirlds.platform.system.events.EventDescriptor;
+import com.swirlds.platform.system.events.EventDescriptorWrapper;
 import com.swirlds.platform.test.fixtures.event.TestingEventBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
@@ -44,6 +42,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -62,7 +61,7 @@ class OrphanBufferTests {
     /**
      * Events that will be "received" from intake
      */
-    private List<GossipEvent> intakeEvents;
+    private List<PlatformEvent> intakeEvents;
 
     /**
      * The maximum generation of any event that has been created
@@ -111,10 +110,10 @@ class OrphanBufferTests {
      * @param parentCandidates the list of events to choose from when selecting an other parent
      * @return the bootstrap event descriptor
      */
-    private GossipEvent createBootstrapEvent(
-            @NonNull final NodeId nodeId, @NonNull final List<GossipEvent> parentCandidates) {
+    private PlatformEvent createBootstrapEvent(
+            @NonNull final NodeId nodeId, @NonNull final List<PlatformEvent> parentCandidates) {
 
-        final GossipEvent bootstrapEvent =
+        final PlatformEvent bootstrapEvent =
                 new TestingEventBuilder(random).setCreatorId(nodeId).build();
         parentCandidates.add(bootstrapEvent);
         return bootstrapEvent;
@@ -127,15 +126,15 @@ class OrphanBufferTests {
      * @param tips             the most recent events from each node
      * @return the random event
      */
-    private GossipEvent createRandomEvent(
-            @NonNull final List<GossipEvent> parentCandidates, @NonNull final Map<NodeId, GossipEvent> tips) {
+    private PlatformEvent createRandomEvent(
+            @NonNull final List<PlatformEvent> parentCandidates, @NonNull final Map<NodeId, PlatformEvent> tips) {
 
         final NodeId eventCreator = new NodeId(random.nextInt(NODE_ID_COUNT));
 
-        final GossipEvent selfParent =
+        final PlatformEvent selfParent =
                 tips.computeIfAbsent(eventCreator, creator -> createBootstrapEvent(creator, parentCandidates));
 
-        final GossipEvent otherParent = chooseOtherParent(parentCandidates);
+        final PlatformEvent otherParent = chooseOtherParent(parentCandidates);
 
         final long maxParentGeneration = Math.max(selfParent.getGeneration(), otherParent.getGeneration());
         final long eventGeneration = maxParentGeneration + 1;
@@ -156,11 +155,11 @@ class OrphanBufferTests {
      * @return true if the event has been emitted or is ancient, false otherwise
      */
     private static boolean eventEmittedOrAncient(
-            @NonNull final EventDescriptor event,
+            @NonNull final EventDescriptorWrapper event,
             @NonNull final EventWindow eventWindow,
             @NonNull final Collection<Hash> emittedEvents) {
 
-        return emittedEvents.contains(event.getHash()) || eventWindow.isAncient(event);
+        return emittedEvents.contains(event.hash()) || eventWindow.isAncient(event);
     }
 
     /**
@@ -172,13 +171,11 @@ class OrphanBufferTests {
      * @param emittedEvents the events that have been emitted so far
      */
     private static void assertValidParents(
-            @NonNull final GossipEvent event,
+            @NonNull final PlatformEvent event,
             @NonNull final EventWindow eventWindow,
             @NonNull final Collection<Hash> emittedEvents) {
-        assertTrue(eventEmittedOrAncient(event.getHashedData().getSelfParent(), eventWindow, emittedEvents));
-
-        for (final EventDescriptor otherParent : event.getHashedData().getOtherParents()) {
-            assertTrue(eventEmittedOrAncient(otherParent, eventWindow, emittedEvents));
+        for (final EventDescriptorWrapper parent : event.getAllParents()) {
+            assertTrue(eventEmittedOrAncient(parent, eventWindow, emittedEvents));
         }
     }
 
@@ -189,7 +186,7 @@ class OrphanBufferTests {
      * @param parentCandidates the list of candidates
      * @return the chosen other parent
      */
-    private GossipEvent chooseOtherParent(@NonNull final List<GossipEvent> parentCandidates) {
+    private PlatformEvent chooseOtherParent(@NonNull final List<PlatformEvent> parentCandidates) {
         final int startIndex = Math.max(0, parentCandidates.size() - PARENT_SELECTION_WINDOW);
         return parentCandidates.get(
                 startIndex + random.nextInt(Math.min(PARENT_SELECTION_WINDOW, parentCandidates.size())));
@@ -199,13 +196,13 @@ class OrphanBufferTests {
     void setup() {
         random = getRandomPrintSeed();
 
-        final List<GossipEvent> parentCandidates = new ArrayList<>();
-        final Map<NodeId, GossipEvent> tips = new HashMap<>();
+        final List<PlatformEvent> parentCandidates = new ArrayList<>();
+        final Map<NodeId, PlatformEvent> tips = new HashMap<>();
 
         intakeEvents = new ArrayList<>();
 
         for (long i = 0; i < TEST_EVENT_COUNT; i++) {
-            final GossipEvent newEvent = createRandomEvent(parentCandidates, tips);
+            final PlatformEvent newEvent = createRandomEvent(parentCandidates, tips);
 
             parentCandidates.add(newEvent);
             intakeEvents.add(newEvent);
@@ -246,8 +243,8 @@ class OrphanBufferTests {
         // events that have been emitted from the orphan buffer
         final Collection<Hash> emittedEvents = new HashSet<>();
 
-        for (final GossipEvent intakeEvent : intakeEvents) {
-            final List<GossipEvent> unorphanedEvents = new ArrayList<>();
+        for (final PlatformEvent intakeEvent : intakeEvents) {
+            final List<PlatformEvent> unorphanedEvents = new ArrayList<>();
 
             unorphanedEvents.addAll(orphanBuffer.handleEvent(intakeEvent));
 
@@ -268,9 +265,9 @@ class OrphanBufferTests {
                     ancientMode);
             unorphanedEvents.addAll(orphanBuffer.setEventWindow(eventWindow));
 
-            for (final GossipEvent unorphanedEvent : unorphanedEvents) {
+            for (final PlatformEvent unorphanedEvent : unorphanedEvents) {
                 assertValidParents(unorphanedEvent, eventWindow, emittedEvents);
-                emittedEvents.add(unorphanedEvent.getHashedData().getHash());
+                emittedEvents.add(unorphanedEvent.getHash());
             }
         }
 
@@ -281,31 +278,32 @@ class OrphanBufferTests {
     }
 
     @Test
-    @DisplayName("Test Parent Iterator")
+    @DisplayName("Test All Parents Iterator")
     void testParentIterator() {
-        final GossipEvent event = mock(GossipEvent.class);
+        final Random random = Randotron.create();
 
-        final EventDescriptor selfParent =
-                new EventDescriptor(new Hash(), new NodeId(0), 0, EventConstants.BIRTH_ROUND_UNDEFINED);
-        final EventDescriptor otherParent1 =
-                new EventDescriptor(new Hash(), new NodeId(1), 1, EventConstants.BIRTH_ROUND_UNDEFINED);
-        final EventDescriptor otherParent2 =
-                new EventDescriptor(new Hash(), new NodeId(2), 2, EventConstants.BIRTH_ROUND_UNDEFINED);
-        final EventDescriptor otherParent3 =
-                new EventDescriptor(new Hash(), new NodeId(3), 3, EventConstants.BIRTH_ROUND_UNDEFINED);
-        final List<EventDescriptor> otherParents = new ArrayList<>();
-        otherParents.add(otherParent1);
-        otherParents.add(otherParent2);
-        otherParents.add(otherParent3);
+        final PlatformEvent selfParent =
+                new TestingEventBuilder(random).setCreatorId(new NodeId(0)).build();
+        final PlatformEvent otherParent1 =
+                new TestingEventBuilder(random).setCreatorId(new NodeId(1)).build();
+        final PlatformEvent otherParent2 =
+                new TestingEventBuilder(random).setCreatorId(new NodeId(2)).build();
+        final PlatformEvent otherParent3 =
+                new TestingEventBuilder(random).setCreatorId(new NodeId(3)).build();
 
-        final BaseEventHashedData eventBase = mock(BaseEventHashedData.class);
-        when(eventBase.getSelfParent()).thenReturn(selfParent);
-        when(eventBase.getOtherParents()).thenReturn(otherParents);
-        when(event.getHashedData()).thenReturn(eventBase);
+        final PlatformEvent event = new TestingEventBuilder(random)
+                .setSelfParent(selfParent)
+                .setOtherParents(List.of(otherParent1, otherParent2, otherParent3))
+                .build();
 
-        final ParentIterator iterator = new ParentIterator(event);
+        final List<EventDescriptorWrapper> otherParents = new ArrayList<>();
+        otherParents.add(otherParent1.getDescriptor());
+        otherParents.add(otherParent2.getDescriptor());
+        otherParents.add(otherParent3.getDescriptor());
 
-        assertEquals(selfParent, iterator.next(), "The first parent should be the self parent");
+        final Iterator<EventDescriptorWrapper> iterator = event.getAllParents().iterator();
+
+        assertEquals(selfParent.getDescriptor(), iterator.next(), "The first parent should be the self parent");
         int index = 0;
         while (iterator.hasNext()) {
             assertEquals(otherParents.get(index++), iterator.next(), "The next parent should be the next other parent");

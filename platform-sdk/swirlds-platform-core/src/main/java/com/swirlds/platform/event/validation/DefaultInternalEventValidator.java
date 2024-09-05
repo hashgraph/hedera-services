@@ -26,15 +26,16 @@ import com.swirlds.common.utility.throttle.RateLimitedLogger;
 import com.swirlds.metrics.api.LongAccumulator;
 import com.swirlds.platform.config.TransactionConfig;
 import com.swirlds.platform.event.AncientMode;
-import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.eventhandling.EventConfig;
 import com.swirlds.platform.gossip.IntakeEventCounter;
-import com.swirlds.platform.system.events.BaseEventHashedData;
-import com.swirlds.platform.system.events.EventDescriptor;
-import com.swirlds.platform.system.transaction.ConsensusTransaction;
+import com.swirlds.platform.system.events.EventConstants;
+import com.swirlds.platform.system.events.EventDescriptorWrapper;
+import com.swirlds.platform.system.transaction.Transaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Duration;
+import java.util.Iterator;
 import java.util.Objects;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -64,7 +65,6 @@ public class DefaultInternalEventValidator implements InternalEventValidator {
 
     private final AncientMode ancientMode;
 
-    private final RateLimitedLogger nullHashedDataLogger;
     private final RateLimitedLogger nullUnhashedDataLogger;
     private final RateLimitedLogger tooManyTransactionBytesLogger;
     private final RateLimitedLogger inconsistentSelfParentLogger;
@@ -73,7 +73,6 @@ public class DefaultInternalEventValidator implements InternalEventValidator {
     private final RateLimitedLogger invalidGenerationLogger;
     private final RateLimitedLogger invalidBirthRoundLogger;
 
-    private final LongAccumulator nullHashedDataAccumulator;
     private final LongAccumulator nullUnhashedDataAccumulator;
     private final LongAccumulator tooManyTransactionBytesAccumulator;
     private final LongAccumulator inconsistentSelfParentAccumulator;
@@ -103,7 +102,6 @@ public class DefaultInternalEventValidator implements InternalEventValidator {
                 .getConfigData(EventConfig.class)
                 .getAncientMode();
 
-        this.nullHashedDataLogger = new RateLimitedLogger(logger, platformContext.getTime(), MINIMUM_LOG_PERIOD);
         this.nullUnhashedDataLogger = new RateLimitedLogger(logger, platformContext.getTime(), MINIMUM_LOG_PERIOD);
         this.tooManyTransactionBytesLogger =
                 new RateLimitedLogger(logger, platformContext.getTime(), MINIMUM_LOG_PERIOD);
@@ -115,11 +113,6 @@ public class DefaultInternalEventValidator implements InternalEventValidator {
         this.invalidGenerationLogger = new RateLimitedLogger(logger, platformContext.getTime(), MINIMUM_LOG_PERIOD);
         this.invalidBirthRoundLogger = new RateLimitedLogger(logger, platformContext.getTime(), MINIMUM_LOG_PERIOD);
 
-        this.nullHashedDataAccumulator = platformContext
-                .getMetrics()
-                .getOrCreate(new LongAccumulator.Config(PLATFORM_CATEGORY, "eventsWithNullHashedData")
-                        .withDescription("Events that had null hashed data")
-                        .withUnit("events"));
         this.nullUnhashedDataAccumulator = platformContext
                 .getMetrics()
                 .getOrCreate(new LongAccumulator.Config(PLATFORM_CATEGORY, "eventsWithNullUnhashedData")
@@ -163,17 +156,10 @@ public class DefaultInternalEventValidator implements InternalEventValidator {
      * @param event the event to check
      * @return true if the required fields of the event are non-null, otherwise false
      */
-    private boolean areRequiredFieldsNonNull(@NonNull final GossipEvent event) {
-        if (event.getHashedData() == null) {
+    private boolean areRequiredFieldsNonNull(@NonNull final PlatformEvent event) {
+        if (event.getSignature() == null) {
             // do not log the event itself, since toString would throw a NullPointerException
-            nullHashedDataLogger.error(EXCEPTION.getMarker(), "Event has null hashed data");
-            nullHashedDataAccumulator.update(1);
-            return false;
-        }
-
-        if (event.getUnhashedData() == null) {
-            // do not log the event itself, since toString would throw a NullPointerException
-            nullUnhashedDataLogger.error(EXCEPTION.getMarker(), "Event has null unhashed data");
+            nullUnhashedDataLogger.error(EXCEPTION.getMarker(), "Event has null signature");
             nullUnhashedDataAccumulator.update(1);
             return false;
         }
@@ -187,10 +173,11 @@ public class DefaultInternalEventValidator implements InternalEventValidator {
      * @param event the event to check
      * @return true if the total byte count of transactions in the event is less than the maximum, otherwise false
      */
-    private boolean isTransactionByteCountValid(@NonNull final GossipEvent event) {
+    private boolean isTransactionByteCountValid(@NonNull final PlatformEvent event) {
         int totalTransactionBytes = 0;
-        for (final ConsensusTransaction transaction : event.getHashedData().getTransactions()) {
-            totalTransactionBytes += transaction.getSerializedLength();
+        final Iterator<Transaction> iterator = event.transactionIterator();
+        while (iterator.hasNext()) {
+            totalTransactionBytes += iterator.next().getSize();
         }
 
         if (totalTransactionBytes > transactionConfig.maxTransactionBytesPerEvent()) {
@@ -212,25 +199,23 @@ public class DefaultInternalEventValidator implements InternalEventValidator {
      * @param event the event to check
      * @return true if the parent hashes and generations of the event are internally consistent, otherwise false
      */
-    private boolean areParentsInternallyConsistent(@NonNull final GossipEvent event) {
-        final BaseEventHashedData hashedData = event.getHashedData();
-
+    private boolean areParentsInternallyConsistent(@NonNull final PlatformEvent event) {
         // If a parent is not missing, then the generation and birth round must be valid.
 
-        final EventDescriptor selfParent = event.getHashedData().getSelfParent();
+        final EventDescriptorWrapper selfParent = event.getSelfParent();
         if (selfParent != null) {
-            if (selfParent.getGeneration() < FIRST_GENERATION) {
+            if (selfParent.eventDescriptor().generation() < FIRST_GENERATION) {
                 inconsistentSelfParentLogger.error(
                         EXCEPTION.getMarker(),
                         "Event %s has self parent with generation less than the FIRST_GENERATION. self-parent generation: %s"
-                                .formatted(event, selfParent.getGeneration()));
+                                .formatted(event, selfParent.eventDescriptor().generation()));
                 inconsistentSelfParentAccumulator.update(1);
                 return false;
             }
         }
 
-        for (final EventDescriptor otherParent : hashedData.getOtherParents()) {
-            if (otherParent.getGeneration() < FIRST_GENERATION) {
+        for (final EventDescriptorWrapper otherParent : event.getOtherParents()) {
+            if (otherParent.eventDescriptor().generation() < FIRST_GENERATION) {
                 inconsistentOtherParentLogger.error(
                         EXCEPTION.getMarker(),
                         "Event %s has other parent with generation less than the FIRST_GENERATION. other-parent: %s"
@@ -242,12 +227,12 @@ public class DefaultInternalEventValidator implements InternalEventValidator {
 
         // only single node networks are allowed to have identical self-parent and other-parent hashes
         if (!singleNodeNetwork && selfParent != null) {
-            for (final EventDescriptor otherParent : hashedData.getOtherParents()) {
-                if (selfParent.getHash().equals(otherParent.getHash())) {
+            for (final EventDescriptorWrapper otherParent : event.getOtherParents()) {
+                if (selfParent.hash().equals(otherParent.hash())) {
                     identicalParentsLogger.error(
                             EXCEPTION.getMarker(),
                             "Event %s has identical self-parent and other-parent hash: %s"
-                                    .formatted(event, selfParent.getHash()));
+                                    .formatted(event, selfParent.hash()));
                     identicalParentsAccumulator.update(1);
                     return false;
                 }
@@ -264,7 +249,7 @@ public class DefaultInternalEventValidator implements InternalEventValidator {
      * @param event the event to check
      * @return true if the generation of the event is valid, otherwise false
      */
-    private boolean isEventGenerationValid(@NonNull final GossipEvent event) {
+    private boolean isEventGenerationValid(@NonNull final PlatformEvent event) {
         final long eventGeneration = event.getGeneration();
 
         if (eventGeneration < FIRST_GENERATION) {
@@ -276,9 +261,10 @@ public class DefaultInternalEventValidator implements InternalEventValidator {
             return false;
         }
 
-        long maxParentGeneration = event.getHashedData().getSelfParentGen();
-        for (final EventDescriptor otherParent : event.getHashedData().getOtherParents()) {
-            maxParentGeneration = Math.max(maxParentGeneration, otherParent.getGeneration());
+        long maxParentGeneration = EventConstants.GENERATION_UNDEFINED;
+        for (final EventDescriptorWrapper parent : event.getAllParents()) {
+            maxParentGeneration =
+                    Math.max(maxParentGeneration, parent.eventDescriptor().generation());
         }
 
         if (eventGeneration != maxParentGeneration + 1) {
@@ -300,21 +286,18 @@ public class DefaultInternalEventValidator implements InternalEventValidator {
      * @param event the event to check
      * @return true if the birth round of the event is valid, otherwise false
      */
-    private boolean isEventBirthRoundValid(@NonNull final GossipEvent event) {
+    private boolean isEventBirthRoundValid(@NonNull final PlatformEvent event) {
         if (ancientMode == AncientMode.GENERATION_THRESHOLD) {
             // Don't validate birth rounds in generation mode.
             return true;
         }
 
-        final long eventBirthRound = event.getDescriptor().getBirthRound();
+        final long eventBirthRound = event.getDescriptor().eventDescriptor().birthRound();
 
         long maxParentBirthRound = ROUND_NEGATIVE_INFINITY;
-        final EventDescriptor parent = event.getHashedData().getSelfParent();
-        if (parent != null) {
-            maxParentBirthRound = parent.getBirthRound();
-        }
-        for (final EventDescriptor otherParent : event.getHashedData().getOtherParents()) {
-            maxParentBirthRound = Math.max(maxParentBirthRound, otherParent.getBirthRound());
+        for (final EventDescriptorWrapper parent : event.getAllParents()) {
+            maxParentBirthRound =
+                    Math.max(maxParentBirthRound, parent.eventDescriptor().birthRound());
         }
 
         if (eventBirthRound < maxParentBirthRound) {
@@ -335,7 +318,7 @@ public class DefaultInternalEventValidator implements InternalEventValidator {
      */
     @Override
     @Nullable
-    public GossipEvent validateEvent(@NonNull final GossipEvent event) {
+    public PlatformEvent validateEvent(@NonNull final PlatformEvent event) {
         if (areRequiredFieldsNonNull(event)
                 && isTransactionByteCountValid(event)
                 && areParentsInternallyConsistent(event)

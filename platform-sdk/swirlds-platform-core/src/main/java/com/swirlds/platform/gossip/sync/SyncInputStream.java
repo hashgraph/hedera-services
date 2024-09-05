@@ -22,7 +22,7 @@ import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.extendable.extensions.CountingStreamExtension;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
-import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.network.SocketConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.BufferedInputStream;
@@ -79,7 +79,7 @@ public class SyncInputStream extends SerializableDataInputStream {
         return readSerializableList(numberOfNodes * MAX_TIPS_PER_NODE, false, Hash::new);
     }
 
-    public GossipEvent readEventData() throws IOException {
-        return readSerializable(false, GossipEvent::new);
+    public PlatformEvent readEventData() throws IOException {
+        return readSerializable(false, PlatformEvent::new);
     }
 }

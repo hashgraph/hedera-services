@@ -25,12 +25,13 @@ import com.hedera.hapi.node.state.primitives.ProtoLong;
 import com.hedera.hapi.node.state.schedule.Schedule;
 import com.hedera.hapi.node.state.schedule.ScheduleList;
 import com.hedera.node.app.service.schedule.WritableScheduleStore;
+import com.hedera.node.app.service.schedule.impl.schemas.V0490ScheduleSchema;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.metrics.StoreMetricsService.StoreType;
-import com.hedera.node.app.spi.state.WritableKVState;
-import com.hedera.node.app.spi.state.WritableStates;
 import com.hedera.node.config.data.SchedulingConfig;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.state.spi.WritableKVState;
+import com.swirlds.state.spi.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
@@ -65,9 +66,9 @@ public class WritableScheduleStoreImpl extends ReadableScheduleStoreImpl impleme
             @NonNull final Configuration configuration,
             @NonNull final StoreMetricsService storeMetricsService) {
         super(states);
-        schedulesByIdMutable = states.get(ScheduleServiceImpl.SCHEDULES_BY_ID_KEY);
-        schedulesByEqualityMutable = states.get(ScheduleServiceImpl.SCHEDULES_BY_EQUALITY_KEY);
-        schedulesByExpirationMutable = states.get(ScheduleServiceImpl.SCHEDULES_BY_EXPIRY_SEC_KEY);
+        schedulesByIdMutable = states.get(V0490ScheduleSchema.SCHEDULES_BY_ID_KEY);
+        schedulesByEqualityMutable = states.get(V0490ScheduleSchema.SCHEDULES_BY_EQUALITY_KEY);
+        schedulesByExpirationMutable = states.get(V0490ScheduleSchema.SCHEDULES_BY_EXPIRY_SEC_KEY);
 
         final long maxCapacity =
                 configuration.getConfigData(SchedulingConfig.class).maxNumber();
@@ -81,7 +82,7 @@ public class WritableScheduleStoreImpl extends ReadableScheduleStoreImpl impleme
      * consensus time {@link Instant} provided.
      * @param scheduleToDelete The ID of a schedule to be deleted.
      * @param consensusTime The current consensus time
-     * @return the {@link Schedule} marked as deleted.
+     * @return the {@link Schedule} marked as deleted
      * @throws IllegalStateException if the {@link ScheduleID} to be deleted is not present in this state,
      *     or the ID value has a mismatched realm or shard for this node.
      */
@@ -152,7 +153,10 @@ public class WritableScheduleStoreImpl extends ReadableScheduleStoreImpl impleme
                 schedule.originalCreateTransaction(),
                 schedule.signatories());
     }
-    /** @inheritDoc */
+
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void purgeExpiredSchedulesBetween(long firstSecondToExpire, long lastSecondToExpire) {
         for (long i = firstSecondToExpire; i <= lastSecondToExpire; i++) {

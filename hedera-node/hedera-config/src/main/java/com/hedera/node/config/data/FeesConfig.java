@@ -16,9 +16,9 @@
 
 package com.hedera.node.config.data;
 
-import com.hedera.node.app.service.mono.fees.calculation.CongestionMultipliers;
-import com.hedera.node.app.service.mono.fees.calculation.EntityScaleFactors;
 import com.hedera.node.config.NetworkProperty;
+import com.hedera.node.config.types.CongestionMultipliers;
+import com.hedera.node.config.types.EntityScaleFactors;
 import com.swirlds.config.api.ConfigData;
 import com.swirlds.config.api.ConfigProperty;
 

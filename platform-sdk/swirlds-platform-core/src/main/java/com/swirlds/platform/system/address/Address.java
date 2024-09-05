@@ -100,6 +100,7 @@ public class Address implements SelfSerializable {
     /** signing x509 certificate of the member, contains the public key used for signing */
     private SerializableX509Certificate sigCert = null;
     /** agreement x509 certificate of the member, used for establishing TLS connections. */
+    // now deprecated for removal in version 0.51.0 or later
     private SerializableX509Certificate agreeCert = null;
     /**
      * a String that can be part of any address to supply additional information about that node
@@ -111,34 +112,6 @@ public class Address implements SelfSerializable {
      */
     public Address() {
         this(NodeId.FIRST_NODE_ID, "", "", 1, null, -1, null, -1, null, null, "");
-    }
-
-    public Address(
-            @NonNull final NodeId id,
-            @NonNull final String nickname,
-            @NonNull final String selfName,
-            final long weight,
-            @Nullable final String hostnameInternal,
-            final int portInternal,
-            @Nullable final String hostnameExternal,
-            final int portExternal,
-            @NonNull final String memo) {
-        this(
-                id,
-                nickname,
-                selfName,
-                weight, // weight
-                hostnameInternal,
-                portInternal,
-                hostnameExternal,
-                portExternal,
-                null,
-                null,
-                memo);
-    }
-
-    private byte[] clone(byte[] x) {
-        return x == null ? x : x.clone();
     }
 
     /**
@@ -334,6 +307,7 @@ public class Address implements SelfSerializable {
      *
      * @return The member's PublicKey used for TLS key agreement.
      */
+    @Deprecated(since = "0.51.0", forRemoval = true)
     @Nullable
     public PublicKey getAgreePublicKey() {
         if (agreeCert != null) {
@@ -357,6 +331,7 @@ public class Address implements SelfSerializable {
      *
      * @return The member's x509 certificate used for TLS key agreement, if it exists.
      */
+    @Deprecated(since = "0.51.0", forRemoval = true)
     @Nullable
     public X509Certificate getAgreeCert() {
         return agreeCert == null ? null : agreeCert.getCertificate();
@@ -501,11 +476,11 @@ public class Address implements SelfSerializable {
      * @param agreeCert new agreement certificate for the created Address.
      * @return The new Address.
      */
+    @Deprecated(since = "0.51.0", forRemoval = true)
     @NonNull
-    public Address copySetAgreeCert(@NonNull final X509Certificate agreeCert) {
-        Objects.requireNonNull(agreeCert, "agreeCert must not be null");
+    public Address copySetAgreeCert(@Nullable final X509Certificate agreeCert) {
         Address a = copy();
-        a.agreeCert = checkCertificateEncoding(new SerializableX509Certificate(agreeCert));
+        a.agreeCert = agreeCert == null ? null : checkCertificateEncoding(new SerializableX509Certificate(agreeCert));
         return a;
     }
 

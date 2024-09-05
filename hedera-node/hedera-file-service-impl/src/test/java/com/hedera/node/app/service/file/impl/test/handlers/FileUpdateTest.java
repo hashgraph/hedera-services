@@ -18,15 +18,12 @@ package com.hedera.node.app.service.file.impl.test.handlers;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.FILE_DELETED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_FILE_ID;
-import static com.hedera.node.app.spi.validation.ExpiryMeta.NA;
-import static com.hedera.test.utils.KeyUtils.A_COMPLEX_KEY;
+import static java.util.Objects.requireNonNull;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willThrow;
 import static org.mockito.Mock.Strictness.LENIENT;
@@ -34,10 +31,9 @@ import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.FileID;
-import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
-import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.file.FileUpdateTransactionBody;
@@ -52,17 +48,14 @@ import com.hedera.node.app.service.file.impl.handlers.FileSignatureWaiversImpl;
 import com.hedera.node.app.service.file.impl.handlers.FileUpdateHandler;
 import com.hedera.node.app.service.file.impl.test.FileTestBase;
 import com.hedera.node.app.service.token.ReadableAccountStore;
-import com.hedera.node.app.spi.fees.FeeAccumulator;
-import com.hedera.node.app.spi.fees.FeeCalculator;
-import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.validation.AttributeValidator;
-import com.hedera.node.app.spi.validation.ExpiryMeta;
-import com.hedera.node.app.spi.validation.ExpiryValidator;
+import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
-import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
+import com.hedera.node.app.spi.workflows.record.StreamBuilder;
+import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.app.workflows.prehandle.PreHandleContextImpl;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
@@ -75,7 +68,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.BDDMockito;
 import org.mockito.Mock;
-import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
@@ -84,19 +76,14 @@ class FileUpdateTest extends FileTestBase {
     private static final long EXPIRATION_TIMESTAMP = 3_456_789L;
     private final FileUpdateTransactionBody.Builder OP_BUILDER = FileUpdateTransactionBody.newBuilder();
 
-    private final ExpiryMeta currentExpiryMeta = new ExpiryMeta(expirationTime, NA, null);
-
     @Mock
     private ReadableAccountStore accountStore;
 
     @Mock
-    private Account account;
+    private HandleContext.SavepointStack stack;
 
     @Mock
-    private Account autoRenewAccount;
-
-    @Mock
-    private ExpiryValidator expiryValidator;
+    private StreamBuilder recordBuilder;
 
     @Mock
     private AttributeValidator attributeValidator;
@@ -117,12 +104,6 @@ class FileUpdateTest extends FileTestBase {
     protected FileOpsUsage fileOpsUsage;
 
     @Mock(strictness = Mock.Strictness.LENIENT)
-    protected FeeCalculator feeCalculator;
-
-    @Mock(strictness = Mock.Strictness.LENIENT)
-    private FeeAccumulator feeAccumulator;
-
-    @Mock(strictness = Mock.Strictness.LENIENT)
     private FileSignatureWaiversImpl waivers;
 
     protected Configuration testConfig;
@@ -135,12 +116,6 @@ class FileUpdateTest extends FileTestBase {
         testConfig = HederaTestConfigBuilder.createConfig();
         lenient().when(preHandleContext.configuration()).thenReturn(testConfig);
         lenient().when(handleContext.configuration()).thenReturn(testConfig);
-        when(handleContext.feeCalculator(any(SubType.class))).thenReturn(feeCalculator);
-        when(feeCalculator.calculate()).thenReturn(Fees.FREE);
-        when(feeCalculator.addBytesPerTransaction(anyLong())).thenReturn(feeCalculator);
-        when(feeCalculator.addStorageBytesSeconds(anyLong())).thenReturn(feeCalculator);
-        when(handleContext.feeAccumulator()).thenReturn(feeAccumulator);
-        when(feeCalculator.legacyCalculate(any())).thenReturn(Fees.FREE);
         given(handleContext.consensusNow()).willReturn(Instant.ofEpochSecond(-1_234_567L));
     }
 
@@ -235,9 +210,9 @@ class FileUpdateTest extends FileTestBase {
         given(handleContext.attributeValidator()).willReturn(attributeValidator);
         given(handleContext.body())
                 .willReturn(TransactionBody.newBuilder().fileUpdate(op).build());
-        given(handleContext.writableStore(WritableFileStore.class)).willReturn(writableStore);
-        given(handleContext.verificationFor(Mockito.any(Key.class))).willReturn(signatureVerification);
-        given(signatureVerification.failed()).willReturn(false);
+        given(storeFactory.writableStore(WritableFileStore.class)).willReturn(writableStore);
+        given(handleContext.payer())
+                .willReturn(AccountID.newBuilder().accountNum(1001L).build());
 
         subject.handle(handleContext);
 
@@ -259,10 +234,9 @@ class FileUpdateTest extends FileTestBase {
         given(writableStates.<FileID, File>get(FILES)).willReturn(writableFileState);
         final var configuration = HederaTestConfigBuilder.createConfig();
         writableStore = new WritableFileStore(writableStates, configuration, mock(StoreMetricsService.class));
-        given(handleContext.writableStore(WritableFileStore.class)).willReturn(writableStore);
+        given(storeFactory.writableStore(WritableFileStore.class)).willReturn(writableStore);
 
         given(handleContext.body()).willReturn(txBody);
-        given(handleContext.writableStore(WritableFileStore.class)).willReturn(writableStore);
         final var msg = assertThrows(HandleException.class, () -> subject.handle(handleContext));
 
         assertEquals(ResponseCodeEnum.UNAUTHORIZED, msg.getStatus());
@@ -278,8 +252,7 @@ class FileUpdateTest extends FileTestBase {
         final var txBody = TransactionBody.newBuilder().fileUpdate(op).build();
         when(handleContext.body()).thenReturn(txBody);
         given(handleContext.attributeValidator()).willReturn(attributeValidator);
-        given(handleContext.verificationFor(Mockito.any(Key.class))).willReturn(signatureVerification);
-        given(signatureVerification.failed()).willReturn(false);
+
         willThrow(new HandleException(ResponseCodeEnum.MEMO_TOO_LONG))
                 .given(attributeValidator)
                 .validateMemo(txBody.fileUpdate().memo());
@@ -305,9 +278,10 @@ class FileUpdateTest extends FileTestBase {
                         .build())
                 .build();
         when(handleContext.body()).thenReturn(txBody);
+        when(handleContext.savepointStack()).thenReturn(stack);
+        when(stack.getBaseBuilder(StreamBuilder.class)).thenReturn(recordBuilder);
+        when(recordBuilder.category()).thenReturn(HandleContext.TransactionCategory.USER);
         given(handleContext.attributeValidator()).willReturn(attributeValidator);
-        given(handleContext.verificationFor(Mockito.any(Key.class))).willReturn(signatureVerification);
-        given(signatureVerification.failed()).willReturn(false);
 
         // expect:
         assertFailsWith(ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE, () -> subject.handle(handleContext));
@@ -323,8 +297,8 @@ class FileUpdateTest extends FileTestBase {
         final var txBody = TransactionBody.newBuilder().fileUpdate(op).build();
         when(handleContext.body()).thenReturn(txBody);
         given(handleContext.attributeValidator()).willReturn(attributeValidator);
-        given(handleContext.verificationFor(Mockito.any(Key.class))).willReturn(signatureVerification);
-        given(signatureVerification.failed()).willReturn(false);
+        given(handleContext.payer())
+                .willReturn(AccountID.newBuilder().accountNum(1001L).build());
 
         subject.handle(handleContext);
 
@@ -344,15 +318,15 @@ class FileUpdateTest extends FileTestBase {
         final var txBody = TransactionBody.newBuilder().fileUpdate(op).build();
         when(handleContext.body()).thenReturn(txBody);
         given(handleContext.attributeValidator()).willReturn(attributeValidator);
-        given(handleContext.verificationFor(Mockito.any(Key.class))).willReturn(signatureVerification);
-        given(signatureVerification.failed()).willReturn(false);
+        given(handleContext.payer())
+                .willReturn(AccountID.newBuilder().accountNum(1001L).build());
 
         // expect:
         assertFailsWith(ResponseCodeEnum.MAX_FILE_SIZE_EXCEEDED, () -> subject.handle(handleContext));
     }
 
     @Test
-    void validatesNewContentEmptyRemainSameContent() {
+    void validatesNewContentEmptyRemainSameContentIfNotSuperuserPayer() {
         givenValidFile(false);
         refreshStoresWithCurrentFileInBothReadableAndWritable();
 
@@ -361,15 +335,36 @@ class FileUpdateTest extends FileTestBase {
                 .contents(Bytes.wrap(new byte[0]))
                 .build();
         final var txBody = TransactionBody.newBuilder().fileUpdate(op).build();
+        given(handleContext.payer())
+                .willReturn(AccountID.newBuilder().accountNum(1001L).build());
         when(handleContext.body()).thenReturn(txBody);
-        given(handleContext.verificationFor(Mockito.any(Key.class))).willReturn(signatureVerification);
-        given(signatureVerification.failed()).willReturn(false);
 
         // expect:
         subject.handle(handleContext);
 
         final var updatedFile = writableFileState.get(fileId);
         assertEquals(file.contents(), updatedFile.contents());
+    }
+
+    @Test
+    void validatesNewContentsAreEmptyIfSuperuserPayerAndOverrideFile() {
+        givenValidFile(false);
+        refreshStoresWithCurrentFileInBothReadableAndWritable();
+
+        final var op = OP_BUILDER
+                .fileID(WELL_KNOWN_SYSTEM_FILE_ID)
+                .contents(Bytes.wrap(new byte[0]))
+                .build();
+        final var txBody = TransactionBody.newBuilder().fileUpdate(op).build();
+        given(handleContext.payer())
+                .willReturn(AccountID.newBuilder().accountNum(50L).build());
+        when(handleContext.body()).thenReturn(txBody);
+
+        // expect:
+        subject.handle(handleContext);
+
+        final var updatedFile = requireNonNull(writableFileState.get(WELL_KNOWN_SYSTEM_FILE_ID));
+        assertEquals(0, updatedFile.contents().length());
     }
 
     @Test
@@ -382,8 +377,8 @@ class FileUpdateTest extends FileTestBase {
         final var txBody = TransactionBody.newBuilder().fileUpdate(op).build();
         when(handleContext.body()).thenReturn(txBody);
         given(handleContext.attributeValidator()).willReturn(attributeValidator);
-        given(handleContext.verificationFor(Mockito.any(Key.class))).willReturn(signatureVerification);
-        given(signatureVerification.failed()).willReturn(false);
+        given(handleContext.payer())
+                .willReturn(AccountID.newBuilder().accountNum(1001L).build());
 
         subject.handle(handleContext);
 
@@ -401,7 +396,7 @@ class FileUpdateTest extends FileTestBase {
                 OP_BUILDER.fileID(wellKnowUpgradeId()).contents(newContent).build();
         final var txBody = TransactionBody.newBuilder().fileUpdate(op).build();
         when(handleContext.body()).thenReturn(txBody);
-        given(handleContext.writableStore(WritableUpgradeFileStore.class)).willReturn(writableUpgradeFileStore);
+        given(storeFactory.writableStore(WritableUpgradeFileStore.class)).willReturn(writableUpgradeFileStore);
         subject.handle(handleContext);
 
         final var newFile = writableUpgradeStates.poll();
@@ -425,8 +420,11 @@ class FileUpdateTest extends FileTestBase {
                         .build())
                 .build();
         when(handleContext.body()).thenReturn(txBody);
-        given(handleContext.verificationFor(Mockito.any(Key.class))).willReturn(signatureVerification);
-        given(signatureVerification.failed()).willReturn(false);
+        when(handleContext.savepointStack()).thenReturn(stack);
+        when(stack.getBaseBuilder(StreamBuilder.class)).thenReturn(recordBuilder);
+        when(recordBuilder.category()).thenReturn(HandleContext.TransactionCategory.USER);
+        given(handleContext.payer())
+                .willReturn(AccountID.newBuilder().accountNum(1001L).build());
 
         subject.handle(handleContext);
 
@@ -448,8 +446,11 @@ class FileUpdateTest extends FileTestBase {
                         .build())
                 .build();
         when(handleContext.body()).thenReturn(txBody);
-        given(handleContext.verificationFor(Mockito.any(Key.class))).willReturn(signatureVerification);
-        given(signatureVerification.failed()).willReturn(false);
+        when(handleContext.savepointStack()).thenReturn(stack);
+        when(stack.getBaseBuilder(StreamBuilder.class)).thenReturn(recordBuilder);
+        when(recordBuilder.category()).thenReturn(HandleContext.TransactionCategory.USER);
+        given(handleContext.payer())
+                .willReturn(AccountID.newBuilder().accountNum(1001L).build());
 
         subject.handle(handleContext);
 
@@ -465,8 +466,8 @@ class FileUpdateTest extends FileTestBase {
         final var op = OP_BUILDER.fileID(wellKnownId()).build();
         final var txBody = TransactionBody.newBuilder().fileUpdate(op).build();
         when(handleContext.body()).thenReturn(txBody);
-        given(handleContext.verificationFor(Mockito.any(Key.class))).willReturn(signatureVerification);
-        given(signatureVerification.failed()).willReturn(false);
+        given(handleContext.payer())
+                .willReturn(AccountID.newBuilder().accountNum(1001L).build());
 
         subject.handle(handleContext);
 
@@ -480,8 +481,6 @@ class FileUpdateTest extends FileTestBase {
         final var txBody = TransactionBody.newBuilder().fileUpdate(op).build();
 
         given(handleContext.body()).willReturn(txBody);
-        given(handleContext.verificationFor(Mockito.any(Key.class))).willReturn(signatureVerification);
-        given(signatureVerification.failed()).willReturn(true);
 
         assertThrows(HandleException.class, () -> subject.handle(handleContext));
     }

@@ -16,9 +16,8 @@
 
 package com.hedera.node.app.hapi.utils.ethereum;
 
-import static com.hedera.node.app.hapi.utils.ethereum.EthTxData.EthTransactionType.LEGACY_ETHEREUM;
+import static com.hedera.node.app.hapi.utils.EthSigsUtils.recoverAddressFromPubKey;
 import static com.hedera.node.app.hapi.utils.ethereum.EthTxData.SECP256K1_EC_COMPRESSED;
-import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
 import static org.hyperledger.besu.nativelib.secp256k1.LibSecp256k1.CONTEXT;
 import static org.hyperledger.besu.nativelib.secp256k1.LibSecp256k1.secp256k1_ecdsa_recover;
 import static org.hyperledger.besu.nativelib.secp256k1.LibSecp256k1.secp256k1_ecdsa_recoverable_signature_parse_compact;
@@ -27,9 +26,7 @@ import com.esaulpaugh.headlong.rlp.RLPEncoder;
 import com.esaulpaugh.headlong.util.Integers;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.MoreObjects;
-import com.sun.jna.ptr.IntByReference;
 import com.sun.jna.ptr.LongByReference;
-import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import org.apache.commons.codec.binary.Hex;
@@ -39,67 +36,14 @@ import org.hyperledger.besu.nativelib.secp256k1.LibSecp256k1;
 public record EthTxSigs(byte[] publicKey, byte[] address) {
 
     public static EthTxSigs extractSignatures(EthTxData ethTx) {
-        byte[] message = calculateSignableMessage(ethTx);
-        var pubKey = extractSig(ethTx.recId(), ethTx.r(), ethTx.s(), message);
-        byte[] address = recoverAddressFromPubKey(pubKey);
-        byte[] compressedKey = recoverCompressedPubKey(pubKey);
-
+        final var message = calculateSignableMessage(ethTx);
+        final var pubKey = extractSig(ethTx.recId(), ethTx.r(), ethTx.s(), message);
+        final var address = recoverAddressFromPubKey(pubKey);
+        final var compressedKey = recoverCompressedPubKey(pubKey);
         return new EthTxSigs(compressedKey, address);
     }
 
-    public static EthTxData signMessage(EthTxData ethTx, byte[] privateKey) {
-        byte[] signableMessage = calculateSignableMessage(ethTx);
-        final LibSecp256k1.secp256k1_ecdsa_recoverable_signature signature =
-                new LibSecp256k1.secp256k1_ecdsa_recoverable_signature();
-        LibSecp256k1.secp256k1_ecdsa_sign_recoverable(
-                CONTEXT, signature, new Keccak.Digest256().digest(signableMessage), privateKey, null, null);
-
-        final ByteBuffer compactSig = ByteBuffer.allocate(64);
-        final IntByReference recId = new IntByReference(0);
-        LibSecp256k1.secp256k1_ecdsa_recoverable_signature_serialize_compact(
-                LibSecp256k1.CONTEXT, compactSig, recId, signature);
-        compactSig.flip();
-        final byte[] sig = compactSig.array();
-
-        // wrap in signature object
-        final byte[] r = new byte[32];
-        System.arraycopy(sig, 0, r, 0, 32);
-        final byte[] s = new byte[32];
-        System.arraycopy(sig, 32, s, 0, 32);
-
-        BigInteger val;
-        // calulations originate from https://eips.ethereum.org/EIPS/eip-155
-        if (ethTx.type() == LEGACY_ETHEREUM) {
-            if (ethTx.chainId() == null || ethTx.chainId().length == 0) {
-                val = BigInteger.valueOf(27L + recId.getValue());
-            } else {
-                val = BigInteger.valueOf(35L + recId.getValue())
-                        .add(new BigInteger(1, ethTx.chainId()).multiply(BigInteger.TWO));
-            }
-        } else {
-            val = null;
-        }
-
-        return new EthTxData(
-                ethTx.rawTx(),
-                ethTx.type(),
-                ethTx.chainId(),
-                ethTx.nonce(),
-                ethTx.gasPrice(),
-                ethTx.maxPriorityGas(),
-                ethTx.maxGas(),
-                ethTx.gasLimit(),
-                ethTx.to(),
-                ethTx.value(),
-                ethTx.callData(),
-                ethTx.accessList(),
-                (byte) recId.getValue(),
-                val == null ? null : val.toByteArray(),
-                r,
-                s);
-    }
-
-    static byte[] calculateSignableMessage(EthTxData ethTx) {
+    public static byte[] calculateSignableMessage(EthTxData ethTx) {
         return switch (ethTx.type()) {
             case LEGACY_ETHEREUM -> (ethTx.chainId() != null && ethTx.chainId().length > 0)
                     ? RLPEncoder.encodeAsList(

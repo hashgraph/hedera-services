@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.base.example.store.service;
 
-import com.swirlds.platform.base.example.BaseContext;
+import com.swirlds.platform.base.example.ext.BaseContext;
 import com.swirlds.platform.base.example.server.CrudService;
 import com.swirlds.platform.base.example.server.DataTransferUtils;
 import com.swirlds.platform.base.example.store.domain.Operation;
@@ -30,7 +30,8 @@ import java.util.List;
  * Creates Purchases
  */
 public class PurchaseService extends CrudService<Purchase> {
-    private final @NonNull OperationService operationService;
+
+    private final OperationService operationService;
 
     public PurchaseService(@NonNull final BaseContext context) {
         super(Purchase.class);

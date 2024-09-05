@@ -30,10 +30,10 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.function.Predicate;
 
 /**
- * A {@link KeyVerifier} that delegates resolves complex keys and passes checks for primitive keys
+ * A {@link AppKeyVerifier} that delegates resolves complex keys and passes checks for primitive keys
  * to a provided {@link Predicate}-verifier.
  */
-public class DelegateKeyVerifier implements KeyVerifier {
+public class DelegateKeyVerifier implements AppKeyVerifier {
 
     private final Predicate<Key> baseVerifier;
 

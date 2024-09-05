@@ -82,7 +82,7 @@ on:
         description: "Java JDK Version:"
         type: string
         required: false
-        default: "21.0.1"
+        default: "21"
       gradle-version:
         description: "Gradle Version:"
         type: string
@@ -166,8 +166,10 @@ env:
   JAVA_OPTS: -Xmx28g -XX:ActiveProcessorCount=16
   GRADLE_CACHE_USERNAME: ${{ secrets.gradle-cache-username }}
   GRADLE_CACHE_PASSWORD: ${{ secrets.gradle-cache-password }}
-  CG_EXEC: cgexec -g cpu,memory:gradle-${{ github.run_id }} --sticky ionice -c 2 -n 2 nice -n 19
-  PING_CG_EXEC: cgexec -g cpu,memory:ping-${{ github.run_id }} --sticky ionice -c 2 -n 2 nice -n 19
+  #CG_EXEC: cgexec -g cpu,memory:gradle-${{ github.run_id }} --sticky ionice -c 2 -n 2 nice -n 19
+  CG_EXEC: ionice -c 2 -n 2 nice -n 19
+  #PING_CG_EXEC: cgexec -g cpu,memory:ping-${{ github.run_id }} --sticky ionice -c 2 -n 2 nice -n 19
+  PING_CG_EXEC: ionice -c 2 -n 2 nice -n 19
 
 defaults:
   run:
@@ -182,7 +184,7 @@ permissions:
 jobs:
   jrs-regression:
     name: ${{ inputs.custom-job-name || 'Standard' }}
-    runs-on: [self-hosted, Linux, large, ephemeral]
+    runs-on: network-node-linux-large
     steps:
       - name: Checkout Platform Code
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
@@ -237,48 +239,48 @@ jobs:
 
           echo "file=${FINAL_PATH}" >> "${GITHUB_OUTPUT}"
 
-      - name: Setup Control Groups
-        run: |
-          echo "::group::Get System Configuration"
-            USR_ID="$(id -un)"
-            GRP_ID="$(id -gn)"
-            GRADLE_MEM_LIMIT="30064771072"
-            PING_MEM_LIMIT="1073741824"
-            AGENT_MEM_LIMIT="2147483648"
-            GRADLE_GROUP_NAME="gradle-${{ github.run_id }}"
-            PING_GROUP_NAME="ping-${{ github.run_id }}"
-            AGENT_GROUP_NAME="agent-${{ github.run_id }}"
-          echo "::endgroup::"
-
-          echo "::group::Install Control Group Tools"
-            if ! command -v cgcreate >/dev/null 2>&1; then
-              sudo apt-get update
-              sudo apt-get install -y cgroup-tools
-            fi
-          echo "::endgroup::"
-
-          echo "::group::Create Control Groups"
-            sudo cgcreate -g cpu,memory:${GRADLE_GROUP_NAME} -a ${USR_ID}:${GRP_ID} -t ${USR_ID}:${GRP_ID}
-            sudo cgcreate -g cpu,memory:${PING_GROUP_NAME} -a ${USR_ID}:${GRP_ID} -t ${USR_ID}:${GRP_ID}
-            sudo cgcreate -g cpu,memory:${AGENT_GROUP_NAME} -a ${USR_ID}:${GRP_ID} -t ${USR_ID}:${GRP_ID}
-          echo "::endgroup::"
-
-          echo "::group::Set Control Group Limits"
-            cgset -r cpu.shares=768 ${GRADLE_GROUP_NAME}
-            cgset -r cpu.shares=768 ${PING_GROUP_NAME}
-            cgset -r cpu.shares=500 ${AGENT_GROUP_NAME}
-            cgset -r memory.limit_in_bytes=${GRADLE_MEM_LIMIT} ${GRADLE_GROUP_NAME}
-            cgset -r memory.limit_in_bytes=${PING_MEM_LIMIT} ${PING_GROUP_NAME}
-            cgset -r memory.limit_in_bytes=${AGENT_MEM_LIMIT} ${AGENT_GROUP_NAME}
-            cgset -r memory.memsw.limit_in_bytes=${GRADLE_MEM_LIMIT} ${GRADLE_GROUP_NAME}
-            cgset -r memory.memsw.limit_in_bytes=${PING_MEM_LIMIT} ${PING_GROUP_NAME}
-            cgset -r memory.memsw.limit_in_bytes=${AGENT_MEM_LIMIT} ${AGENT_GROUP_NAME}
-          echo "::endgroup::"
-
-          echo "::group::Move Runner Processes to Control Groups"
-            sudo cgclassify --sticky -g cpu,memory:${AGENT_GROUP_NAME} $(pgrep 'Runner.Listener' | tr '\n' ' ')
-            sudo cgclassify -g cpu,memory:${AGENT_GROUP_NAME} $(pgrep 'Runner.Worker' | tr '\n' ' ')
-          echo "::endgroup::"
+#      - name: Setup Control Groups
+#        run: |
+#          echo "::group::Get System Configuration"
+#            USR_ID="$(id -un)"
+#            GRP_ID="$(id -gn)"
+#            GRADLE_MEM_LIMIT="30064771072"
+#            PING_MEM_LIMIT="1073741824"
+#            AGENT_MEM_LIMIT="2147483648"
+#            GRADLE_GROUP_NAME="gradle-${{ github.run_id }}"
+#            PING_GROUP_NAME="ping-${{ github.run_id }}"
+#            AGENT_GROUP_NAME="agent-${{ github.run_id }}"
+#          echo "::endgroup::"
+#
+#          echo "::group::Install Control Group Tools"
+#            if ! command -v cgcreate >/dev/null 2>&1; then
+#              sudo apt-get update
+#              sudo apt-get install -y cgroup-tools
+#            fi
+#          echo "::endgroup::"
+#
+#          echo "::group::Create Control Groups"
+#            sudo cgcreate -g cpu,memory:${GRADLE_GROUP_NAME} -a ${USR_ID}:${GRP_ID} -t ${USR_ID}:${GRP_ID}
+#            sudo cgcreate -g cpu,memory:${PING_GROUP_NAME} -a ${USR_ID}:${GRP_ID} -t ${USR_ID}:${GRP_ID}
+#            sudo cgcreate -g cpu,memory:${AGENT_GROUP_NAME} -a ${USR_ID}:${GRP_ID} -t ${USR_ID}:${GRP_ID}
+#          echo "::endgroup::"
+#
+#          echo "::group::Set Control Group Limits"
+#            cgset -r cpu.shares=768 ${GRADLE_GROUP_NAME}
+#            cgset -r cpu.shares=768 ${PING_GROUP_NAME}
+#            cgset -r cpu.shares=500 ${AGENT_GROUP_NAME}
+#            cgset -r memory.limit_in_bytes=${GRADLE_MEM_LIMIT} ${GRADLE_GROUP_NAME}
+#            cgset -r memory.limit_in_bytes=${PING_MEM_LIMIT} ${PING_GROUP_NAME}
+#            cgset -r memory.limit_in_bytes=${AGENT_MEM_LIMIT} ${AGENT_GROUP_NAME}
+#            cgset -r memory.memsw.limit_in_bytes=${GRADLE_MEM_LIMIT} ${GRADLE_GROUP_NAME}
+#            cgset -r memory.memsw.limit_in_bytes=${PING_MEM_LIMIT} ${PING_GROUP_NAME}
+#            cgset -r memory.memsw.limit_in_bytes=${AGENT_MEM_LIMIT} ${AGENT_GROUP_NAME}
+#          echo "::endgroup::"
+#
+#          echo "::group::Move Runner Processes to Control Groups"
+#            sudo cgclassify --sticky -g cpu,memory:${AGENT_GROUP_NAME} $(pgrep 'Runner.Listener' | tr '\n' ' ')
+#            sudo cgclassify -g cpu,memory:${AGENT_GROUP_NAME} $(pgrep 'Runner.Worker' | tr '\n' ' ')
+#          echo "::endgroup::"
 
       - name: Install Grafana Agent
         run: |
@@ -334,7 +336,7 @@ jobs:
           java-version: ${{ inputs.java-version }}
 
       - name: Setup Gradle
-        uses: gradle/gradle-build-action@29c0906b64b8fc82467890bfb7a0a7ef34bda89e # v3.1.0
+        uses: gradle/actions/setup-gradle@dbbdc275be76ac10734476cc723d82dfe7ec6eda # v3.4.2
         with:
           gradle-version: ${{ inputs.gradle-version }}
           gradle-home-cache-strict-match: false
@@ -405,14 +407,14 @@ jobs:
 
       - name: Gradle Assemble
         id: gradle-build
-        uses: gradle/gradle-build-action@29c0906b64b8fc82467890bfb7a0a7ef34bda89e # v3.1.0
+        uses: gradle/actions/setup-gradle@dbbdc275be76ac10734476cc723d82dfe7ec6eda # v3.4.2
         with:
           gradle-version: ${{ inputs.gradle-version }}
-          arguments: assemble --scan
+          arguments: assemble :test-clients:shadowJar --scan
 
       - name: Regression Gradle Assemble
         id: regression-gradle-build
-        uses: gradle/gradle-build-action@29c0906b64b8fc82467890bfb7a0a7ef34bda89e # v3.1.0
+        uses: gradle/actions/setup-gradle@dbbdc275be76ac10734476cc723d82dfe7ec6eda # v3.4.2
         with:
           build-root-directory: platform-sdk/regression
           gradle-version: ${{ inputs.gradle-version }}

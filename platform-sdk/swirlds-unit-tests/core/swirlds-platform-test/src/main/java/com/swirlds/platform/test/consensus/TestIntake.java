@@ -36,7 +36,7 @@ import com.swirlds.platform.components.consensus.DefaultConsensusEngine;
 import com.swirlds.platform.consensus.ConsensusConfig;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.consensus.EventWindow;
-import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.event.hashing.DefaultEventHasher;
 import com.swirlds.platform.event.hashing.EventHasher;
 import com.swirlds.platform.event.orphan.DefaultOrphanBuffer;
@@ -44,13 +44,13 @@ import com.swirlds.platform.event.orphan.OrphanBuffer;
 import com.swirlds.platform.gossip.IntakeEventCounter;
 import com.swirlds.platform.gossip.NoOpIntakeEventCounter;
 import com.swirlds.platform.internal.ConsensusRound;
+import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.test.consensus.framework.ConsensusOutput;
-import com.swirlds.platform.test.fixtures.event.IndexedEvent;
 import com.swirlds.platform.wiring.components.PassThroughWiring;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.util.Deque;
+import java.util.LinkedList;
 import java.util.List;
 
 /**
@@ -59,8 +59,8 @@ import java.util.List;
 public class TestIntake {
     private final ConsensusOutput output;
 
-    private final ComponentWiring<EventHasher, GossipEvent> hasherWiring;
-    private final ComponentWiring<OrphanBuffer, List<GossipEvent>> orphanBufferWiring;
+    private final ComponentWiring<EventHasher, PlatformEvent> hasherWiring;
+    private final ComponentWiring<OrphanBuffer, List<PlatformEvent>> orphanBufferWiring;
     private final ComponentWiring<ConsensusEngine, List<ConsensusRound>> consensusEngineWiring;
     private final WiringModel model;
     private final int roundsNonAncient;
@@ -82,11 +82,11 @@ public class TestIntake {
         model = WiringModelBuilder.create(platformContext).build();
 
         hasherWiring = new ComponentWiring<>(model, EventHasher.class, directScheduler("eventHasher"));
-        final EventHasher eventHasher = new DefaultEventHasher(platformContext);
+        final EventHasher eventHasher = new DefaultEventHasher();
         hasherWiring.bind(eventHasher);
 
-        final PassThroughWiring<GossipEvent> postHashCollectorWiring =
-                new PassThroughWiring(model, "GossipEvent", "postHashCollector", TaskSchedulerType.DIRECT);
+        final PassThroughWiring<PlatformEvent> postHashCollectorWiring =
+                new PassThroughWiring(model, "PlatformEvent", "postHashCollector", TaskSchedulerType.DIRECT);
 
         final IntakeEventCounter intakeEventCounter = new NoOpIntakeEventCounter();
         final OrphanBuffer orphanBuffer = new DefaultOrphanBuffer(platformContext, intakeEventCounter);
@@ -104,7 +104,7 @@ public class TestIntake {
 
         hasherWiring.getOutputWire().solderTo(postHashCollectorWiring.getInputWire());
         postHashCollectorWiring.getOutputWire().solderTo(orphanBufferWiring.getInputWire(OrphanBuffer::handleEvent));
-        final OutputWire<GossipEvent> splitOutput = orphanBufferWiring.getSplitOutput();
+        final OutputWire<PlatformEvent> splitOutput = orphanBufferWiring.getSplitOutput();
         splitOutput.solderTo(consensusEngineWiring.getInputWire(ConsensusEngine::addEvent));
 
         final OutputWire<ConsensusRound> consensusRoundOutputWire = consensusEngineWiring.getSplitOutput();
@@ -130,16 +130,16 @@ public class TestIntake {
      *
      * @param event the event to add
      */
-    public void addEvent(@NonNull final GossipEvent event) {
+    public void addEvent(@NonNull final PlatformEvent event) {
         hasherWiring.getInputWire(EventHasher::hashEvent).put(event);
         output.eventAdded(event);
     }
 
     /**
-     * Same as {@link #addEvent(GossipEvent)} but for a list of events
+     * Same as {@link #addEvent(PlatformEvent)} but for a list of events
      */
-    public void addEvents(@NonNull final List<IndexedEvent> events) {
-        for (final IndexedEvent event : events) {
+    public void addEvents(@NonNull final List<EventImpl> events) {
+        for (final EventImpl event : events) {
             addEvent(event.getBaseEvent());
         }
     }
@@ -147,12 +147,12 @@ public class TestIntake {
     /**
      * @return a queue of all rounds that have reached consensus
      */
-    public @NonNull Deque<ConsensusRound> getConsensusRounds() {
+    public @NonNull LinkedList<ConsensusRound> getConsensusRounds() {
         return output.getConsensusRounds();
     }
 
     public @Nullable ConsensusRound getLatestRound() {
-        return output.getConsensusRounds().pollLast();
+        return output.getConsensusRounds().getLast();
     }
 
     public void loadSnapshot(@NonNull final ConsensusSnapshot snapshot) {

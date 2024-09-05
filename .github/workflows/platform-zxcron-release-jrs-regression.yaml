@@ -30,7 +30,7 @@ env:
 jobs:
   cron:
     name: Cron / Launch Workflows
-    runs-on: [self-hosted, Linux, small, scheduler, ephemeral]
+    runs-on: network-node-linux-small-scheduler
     steps:
       - name: Checkout Code
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
@@ -51,7 +51,7 @@ jobs:
             major="${BASH_REMATCH[1]}"
             minor="${BASH_REMATCH[2]}"
 
-            if [[ "${major}" -eq 0 && "${minor}" -lt 48 ]]; then
+            if [[ "${major}" -eq 0 && "${minor}" -lt 53 ]]; then
               continue
             fi
 

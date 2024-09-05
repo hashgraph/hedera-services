@@ -18,8 +18,8 @@ package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.allow
 
 import com.esaulpaugh.headlong.abi.Address;
 import com.esaulpaugh.headlong.abi.Function;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AbstractHtsCallTranslator;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCall;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.AbstractCallTranslator;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.Call;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes;
 import com.hedera.node.app.service.contract.impl.utils.ConversionUtils;
@@ -32,7 +32,7 @@ import javax.inject.Singleton;
  * Translates {@code allowance()} calls to the HTS system contract.
  */
 @Singleton
-public class GetAllowanceTranslator extends AbstractHtsCallTranslator {
+public class GetAllowanceTranslator extends AbstractCallTranslator<HtsCallAttempt> {
 
     public static final Function GET_ALLOWANCE =
             new Function("allowance(address,address,address)", ReturnTypes.RESPONSE_CODE_UINT256);
@@ -48,15 +48,15 @@ public class GetAllowanceTranslator extends AbstractHtsCallTranslator {
      */
     @Override
     public boolean matches(@NonNull final HtsCallAttempt attempt) {
-        return matchesClassicSelector(attempt.selector()) || matchesErcSelector(attempt.selector());
+        return attempt.isSelector(GET_ALLOWANCE, ERC_GET_ALLOWANCE);
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public HtsCall callFrom(@NonNull final HtsCallAttempt attempt) {
-        if (matchesErcSelector(attempt.selector())) {
+    public Call callFrom(@NonNull final HtsCallAttempt attempt) {
+        if (attempt.isSelector(ERC_GET_ALLOWANCE)) {
             final var call = GetAllowanceTranslator.ERC_GET_ALLOWANCE.decodeCall(attempt.inputBytes());
             return new GetAllowanceCall(
                     attempt.addressIdConverter(),
@@ -86,9 +86,5 @@ public class GetAllowanceTranslator extends AbstractHtsCallTranslator {
 
     private boolean matchesErcSelector(@NonNull final byte[] selector) {
         return Arrays.equals(selector, ERC_GET_ALLOWANCE.selector());
-    }
-
-    private boolean matchesClassicSelector(@NonNull final byte[] selector) {
-        return Arrays.equals(selector, GET_ALLOWANCE.selector());
     }
 }

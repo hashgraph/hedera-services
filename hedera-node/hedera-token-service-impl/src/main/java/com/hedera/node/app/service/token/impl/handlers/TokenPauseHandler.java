@@ -27,9 +27,10 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.base.TokenID;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
-import com.hedera.node.app.service.token.records.TokenBaseRecordBuilder;
+import com.hedera.node.app.service.token.records.TokenBaseStreamBuilder;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -46,6 +47,9 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class TokenPauseHandler implements TransactionHandler {
+    /**
+     * Default constructor for injection.
+     */
     @Inject
     public TokenPauseHandler() {
         // Exists for injection
@@ -54,7 +58,6 @@ public class TokenPauseHandler implements TransactionHandler {
     @Override
     public void preHandle(@NonNull final PreHandleContext context) throws PreCheckException {
         requireNonNull(context);
-        preCheck(context);
         final var op = context.body().tokenPause();
         final var tokenStore = context.createStore(ReadableTokenStore.class);
         final var tokenMeta = tokenStore.getTokenMeta(op.tokenOrElse(TokenID.DEFAULT));
@@ -77,7 +80,7 @@ public class TokenPauseHandler implements TransactionHandler {
         requireNonNull(context);
 
         final var op = context.body().tokenPause();
-        final var tokenStore = context.writableStore(WritableTokenStore.class);
+        final var tokenStore = context.storeFactory().writableStore(WritableTokenStore.class);
         var token = tokenStore.get(op.tokenOrElse(TokenID.DEFAULT));
         validateTrue(token != null, INVALID_TOKEN_ID);
         validateTrue(token.hasPauseKey(), TOKEN_HAS_NO_PAUSE_KEY);
@@ -86,19 +89,13 @@ public class TokenPauseHandler implements TransactionHandler {
         final var copyBuilder = token.copyBuilder();
         copyBuilder.paused(true);
         tokenStore.put(copyBuilder.build());
-        final var record = context.recordBuilder(TokenBaseRecordBuilder.class);
-        record.tokenType(token.tokenType());
+        final var recordBuilder = context.savepointStack().getBaseBuilder(TokenBaseStreamBuilder.class);
+        recordBuilder.tokenType(token.tokenType());
     }
 
-    /**
-     * Validate semantics for the given transaction body.
-     * @param context the {@link PreHandleContext} which collects all information that will be
-     *                passed to {@link #handle}
-     * @throws NullPointerException if one of the arguments is {@code null}
-     * @throws PreCheckException if the transaction body is invalid
-     */
-    private void preCheck(@NonNull final PreHandleContext context) throws PreCheckException {
-        final var op = context.body().tokenPause();
+    @Override
+    public void pureChecks(@NonNull final TransactionBody txn) throws PreCheckException {
+        final var op = txn.tokenPauseOrThrow();
         if (!op.hasToken()) {
             throw new PreCheckException(INVALID_TOKEN_ID);
         }
@@ -109,6 +106,7 @@ public class TokenPauseHandler implements TransactionHandler {
     public Fees calculateFees(@NonNull final FeeContext feeContext) {
         final var meta = TOKEN_OPS_USAGE_UTILS.tokenPauseUsageFrom();
         return feeContext
+                .feeCalculatorFactory()
                 .feeCalculator(SubType.DEFAULT)
                 .addBytesPerTransaction(meta.getBpt())
                 .calculate();

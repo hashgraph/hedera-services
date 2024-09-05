@@ -19,15 +19,14 @@ package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.defau
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.fromHeadlongAddress;
 
 import com.esaulpaugh.headlong.abi.Function;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AbstractHtsCallTranslator;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCall;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.AbstractCallTranslator;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.Call;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.Arrays;
 import javax.inject.Inject;
 
-public class DefaultFreezeStatusTranslator extends AbstractHtsCallTranslator {
+public class DefaultFreezeStatusTranslator extends AbstractCallTranslator<HtsCallAttempt> {
 
     public static final Function DEFAULT_FREEZE_STATUS =
             new Function("getTokenDefaultFreezeStatus(address)", ReturnTypes.RESPONSE_CODE_BOOL);
@@ -42,14 +41,14 @@ public class DefaultFreezeStatusTranslator extends AbstractHtsCallTranslator {
      */
     @Override
     public boolean matches(@NonNull final HtsCallAttempt attempt) {
-        return Arrays.equals(attempt.selector(), DEFAULT_FREEZE_STATUS.selector());
+        return attempt.isSelector(DEFAULT_FREEZE_STATUS);
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public HtsCall callFrom(@NonNull final HtsCallAttempt attempt) {
+    public Call callFrom(@NonNull final HtsCallAttempt attempt) {
         final var args = DEFAULT_FREEZE_STATUS.decodeCall(attempt.input().toArrayUnsafe());
         final var token = attempt.linkedToken(fromHeadlongAddress(args.get(0)));
         return new DefaultFreezeStatusCall(

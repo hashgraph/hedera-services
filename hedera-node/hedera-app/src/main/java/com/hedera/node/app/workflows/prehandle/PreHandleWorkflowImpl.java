@@ -20,7 +20,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NODE_ACCOUNT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.PAYER_ACCOUNT_DELETED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.PAYER_ACCOUNT_NOT_FOUND;
-import static com.hedera.node.app.spi.HapiUtils.isHollow;
+import static com.hedera.hapi.util.HapiUtils.isHollow;
 import static com.hedera.node.app.workflows.prehandle.PreHandleResult.Status.SO_FAR_SO_GOOD;
 import static com.hedera.node.app.workflows.prehandle.PreHandleResult.nodeDueDiligenceFailure;
 import static com.hedera.node.app.workflows.prehandle.PreHandleResult.preHandleFailure;
@@ -41,13 +41,12 @@ import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hedera.node.app.state.DeduplicationCache;
+import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.app.workflows.TransactionChecker;
 import com.hedera.node.app.workflows.TransactionInfo;
-import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.VersionedConfiguration;
-import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.platform.system.events.Event;
 import com.swirlds.platform.system.transaction.Transaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -176,7 +175,7 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
             // Transaction info is a pure function of the transaction, so we can
             // always reuse it from a prior result
             txInfo = previousResult == null
-                    ? transactionChecker.parseAndCheck(Bytes.wrap(platformTx.getContents()))
+                    ? transactionChecker.parseAndCheck(platformTx.getApplicationTransaction())
                     : previousResult.txInfo();
             if (txInfo == null) {
                 // In particular, a null transaction info means we already know the transaction's final failure status
@@ -206,10 +205,10 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
 
         // No reason to do this twice, since every transaction passed to handle is first given to pre-handle
         if (previousResult == null) {
-            // Also register this txID as having been seen (we don't actually do deduplication in the pre-handle because
-            // deduplication needs to be done deterministically, but we will keep track of the fact that we have seen
-            // this
-            // transaction ID, so we can give proper results in the different receipt queries)
+            // Also register this txID as having been seen (we don't actually do deduplication in the
+            // pre-handle because deduplication needs to be done deterministically, but we will keep
+            // track of the fact that we have seen this transaction ID, so we can give proper results
+            // in the different receipt queries)
             deduplicationCache.add(txInfo.transactionID());
         }
 

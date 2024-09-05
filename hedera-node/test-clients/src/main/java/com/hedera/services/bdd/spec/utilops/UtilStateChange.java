@@ -16,7 +16,6 @@
 
 package com.hedera.services.bdd.spec.utilops;
 
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromAccountToAlias;
 import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_CONTRACT_RECEIVER;
 import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_CONTRACT_SENDER;
@@ -26,6 +25,7 @@ import static com.hedera.services.bdd.suites.HapiSuite.SECP_256K1_RECEIVER_SOURC
 import static com.hedera.services.bdd.suites.HapiSuite.SECP_256K1_SOURCE_KEY;
 
 import com.hedera.services.bdd.spec.HapiSpec;
+import com.hedera.services.bdd.spec.SpecOperation;
 import com.hedera.services.bdd.spec.assertions.StateChange;
 import com.hedera.services.bdd.spec.assertions.StorageChange;
 import com.hedera.services.bdd.spec.keys.KeyShape;
@@ -37,6 +37,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -71,37 +72,20 @@ public class UtilStateChange {
         return additions;
     }
 
-    public static void initializeEthereumAccountForSpec(final HapiSpec spec) {
-        createEthereumAccount(spec, SECP_256K1_SOURCE_KEY, DEFAULT_CONTRACT_SENDER, "senderCreation");
-        createEthereumAccount(spec, SECP_256K1_RECEIVER_SOURCE_KEY, DEFAULT_CONTRACT_RECEIVER, "receiverCreation");
+    public static List<SpecOperation> createEthereumAccountForSpec(final HapiSpec spec) {
+        final var acc1 = createEthereumAccount(SECP_256K1_SOURCE_KEY, DEFAULT_CONTRACT_SENDER);
+        final var acc2 = createEthereumAccount(SECP_256K1_RECEIVER_SOURCE_KEY, DEFAULT_CONTRACT_RECEIVER);
         specToInitializedEthereumAccount.putIfAbsent(spec.getSuitePrefix() + spec.getName(), true);
+        return Stream.concat(acc1.stream(), acc2.stream()).toList();
     }
 
-    private static void createEthereumAccount(
-            final HapiSpec spec, final String secp256k1Key, final String accountName, final String txnName) {
+    private static List<SpecOperation> createEthereumAccount(final String secp256k1Key, final String txnName) {
         final var newSpecKey = new NewSpecKey(secp256k1Key).shape(secp256k1Shape);
         final var cryptoTransfer = new HapiCryptoTransfer(
                         tinyBarsFromAccountToAlias(GENESIS, secp256k1Key, 20 * ONE_MILLION_HBARS))
                 .via(txnName)
                 .payingWith(GENESIS);
-        final var idLookup = getTxnRecord(txnName).andAllChildRecords().assertingNothing();
-
-        newSpecKey.execFor(spec);
-        cryptoTransfer.execFor(spec);
-        idLookup.execFor(spec);
-
-        final var children = idLookup.getChildRecords();
-        for (int i = 0, n = children.size(); i < n; i++) {
-            final var childRecord = idLookup.getChildRecord(i);
-            final var autoCreatedId = childRecord.getReceipt().getAccountID();
-            if (autoCreatedId.getAccountNum() > 1000L) {
-                log.info("Auto-created {} 0.0.{}", accountName, autoCreatedId.getAccountNum());
-                final var registry = spec.registry();
-                registry.saveAccountId(accountName, autoCreatedId);
-                registry.saveKey(accountName, registry.getKey(secp256k1Key));
-                break;
-            }
-        }
+        return List.of(newSpecKey, cryptoTransfer);
     }
 
     public static boolean isEthereumAccountCreatedForSpec(final HapiSpec spec) {

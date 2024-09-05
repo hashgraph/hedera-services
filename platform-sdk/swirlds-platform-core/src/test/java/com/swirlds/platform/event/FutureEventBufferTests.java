@@ -72,9 +72,9 @@ class FutureEventBufferTests {
         futureEventBuffer.updateEventWindow(eventWindow);
 
         final int count = 1000;
-        final List<GossipEvent> events = new ArrayList<>(count);
+        final List<PlatformEvent> events = new ArrayList<>(count);
         for (int i = 0; i < count; i++) {
-            final GossipEvent event = new TestingEventBuilder(random)
+            final PlatformEvent event = new TestingEventBuilder(random)
                     .setBirthRound(random.nextLong(1, maxFutureRound))
                     .setCreatorId(new NodeId(random.nextInt(100)))
                     .setTimeCreated(randomInstant(random))
@@ -82,17 +82,17 @@ class FutureEventBufferTests {
             events.add(event);
         }
         // Put the events in topological order
-        events.sort(Comparator.comparingLong(a -> a.getHashedData().getBirthRound()));
+        events.sort(Comparator.comparingLong(a -> a.getBirthRound()));
 
-        final List<GossipEvent> futureEvents = new ArrayList<>();
-        for (final GossipEvent event : events) {
-            final List<GossipEvent> returnedEvents = futureEventBuffer.addEvent(event);
+        final List<PlatformEvent> futureEvents = new ArrayList<>();
+        for (final PlatformEvent event : events) {
+            final List<PlatformEvent> returnedEvents = futureEventBuffer.addEvent(event);
             assertTrue(returnedEvents == null || returnedEvents.size() == 1);
-            final GossipEvent returnedEvent = returnedEvents == null ? null : returnedEvents.get(0);
+            final PlatformEvent returnedEvent = returnedEvents == null ? null : returnedEvents.get(0);
             if (eventWindow.isAncient(event)) {
                 // Ancient events should be discarded.
                 assertNull(returnedEvent);
-            } else if (event.getHashedData().getBirthRound() <= eventWindow.getPendingConsensusRound()) {
+            } else if (event.getBirthRound() <= eventWindow.getPendingConsensusRound()) {
                 // Non-future events should be returned immediately.
                 assertSame(event, returnedEvent);
             } else {
@@ -103,7 +103,7 @@ class FutureEventBufferTests {
         }
 
         // Gradually shift the window forward and collect buffered events as they stop being future events.
-        final List<GossipEvent> unBufferedEvents = new ArrayList<>();
+        final List<PlatformEvent> unBufferedEvents = new ArrayList<>();
         for (long newPendingConsensusRound = pendingConsensusRound + 1;
                 newPendingConsensusRound <= maxFutureRound;
                 newPendingConsensusRound++) {
@@ -111,10 +111,10 @@ class FutureEventBufferTests {
             final EventWindow newEventWindow =
                     new EventWindow(newPendingConsensusRound - 1, nonAncientBirthRound, 1, BIRTH_ROUND_THRESHOLD);
 
-            final List<GossipEvent> bufferedEvents = futureEventBuffer.updateEventWindow(newEventWindow);
+            final List<PlatformEvent> bufferedEvents = futureEventBuffer.updateEventWindow(newEventWindow);
 
-            for (final GossipEvent event : bufferedEvents) {
-                assertEquals(newPendingConsensusRound, event.getHashedData().getBirthRound());
+            for (final PlatformEvent event : bufferedEvents) {
+                assertEquals(newPendingConsensusRound, event.getBirthRound());
                 unBufferedEvents.add(event);
             }
         }
@@ -125,7 +125,7 @@ class FutureEventBufferTests {
         // Make a big window shift. There should be no events that come out of the buffer.
         final EventWindow newEventWindow =
                 new EventWindow(pendingConsensusRound * 1000, nonAncientBirthRound, 1, BIRTH_ROUND_THRESHOLD);
-        final List<GossipEvent> bufferedEvents = futureEventBuffer.updateEventWindow(newEventWindow);
+        final List<PlatformEvent> bufferedEvents = futureEventBuffer.updateEventWindow(newEventWindow);
         assertTrue(bufferedEvents.isEmpty());
     }
 
@@ -157,9 +157,9 @@ class FutureEventBufferTests {
         futureEventBuffer.updateEventWindow(eventWindow);
 
         final int count = 1000;
-        final List<GossipEvent> events = new ArrayList<>(count);
+        final List<PlatformEvent> events = new ArrayList<>(count);
         for (int i = 0; i < count; i++) {
-            final GossipEvent event = new TestingEventBuilder(random)
+            final PlatformEvent event = new TestingEventBuilder(random)
                     .setBirthRound(random.nextLong(1, maxFutureRound))
                     .setCreatorId(new NodeId(random.nextInt(100)))
                     .setTimeCreated(randomInstant(random))
@@ -167,16 +167,16 @@ class FutureEventBufferTests {
             events.add(event);
         }
         // Put the events in topological order
-        events.sort(Comparator.comparingLong(a -> a.getHashedData().getBirthRound()));
+        events.sort(Comparator.comparingLong(a -> a.getBirthRound()));
 
-        for (final GossipEvent event : events) {
-            final List<GossipEvent> returnedEvents = futureEventBuffer.addEvent(event);
+        for (final PlatformEvent event : events) {
+            final List<PlatformEvent> returnedEvents = futureEventBuffer.addEvent(event);
             assertTrue(returnedEvents == null || returnedEvents.size() == 1);
-            final GossipEvent returnedEvent = returnedEvents == null ? null : returnedEvents.get(0);
+            final PlatformEvent returnedEvent = returnedEvents == null ? null : returnedEvents.get(0);
             if (eventWindow.isAncient(event)) {
                 // Ancient events should be discarded.
                 assertNull(returnedEvent);
-            } else if (event.getHashedData().getBirthRound() <= eventWindow.getPendingConsensusRound()) {
+            } else if (event.getBirthRound() <= eventWindow.getPendingConsensusRound()) {
                 // Non-future events should be returned immediately.
                 assertSame(event, returnedEvent);
             } else {
@@ -188,7 +188,7 @@ class FutureEventBufferTests {
         final EventWindow newEventWindow =
                 new EventWindow(pendingConsensusRound * 1000, nonAncientBirthRound * 1000, 1, BIRTH_ROUND_THRESHOLD);
 
-        final List<GossipEvent> bufferedEvents = futureEventBuffer.updateEventWindow(newEventWindow);
+        final List<PlatformEvent> bufferedEvents = futureEventBuffer.updateEventWindow(newEventWindow);
         assertTrue(bufferedEvents.isEmpty());
     }
 
@@ -218,7 +218,7 @@ class FutureEventBufferTests {
 
         final long roundsUntilRelease = random.nextLong(10, 20);
         final long eventBirthRound = pendingConsensusRound + roundsUntilRelease;
-        final GossipEvent event = new TestingEventBuilder(random)
+        final PlatformEvent event = new TestingEventBuilder(random)
                 .setBirthRound(eventBirthRound)
                 .setCreatorId(new NodeId(random.nextInt(100)))
                 .setTimeCreated(randomInstant(random))
@@ -234,7 +234,7 @@ class FutureEventBufferTests {
 
             final EventWindow newEventWindow =
                     new EventWindow(currentConsensusRound, nonAncientBirthRound, 1, BIRTH_ROUND_THRESHOLD);
-            final List<GossipEvent> bufferedEvents = futureEventBuffer.updateEventWindow(newEventWindow);
+            final List<PlatformEvent> bufferedEvents = futureEventBuffer.updateEventWindow(newEventWindow);
             assertTrue(bufferedEvents.isEmpty());
         }
 
@@ -246,7 +246,7 @@ class FutureEventBufferTests {
 
         final EventWindow newEventWindow =
                 new EventWindow(eventBirthRound - 1, nonAncientBirthRound, 1, BIRTH_ROUND_THRESHOLD);
-        final List<GossipEvent> bufferedEvents = futureEventBuffer.updateEventWindow(newEventWindow);
+        final List<PlatformEvent> bufferedEvents = futureEventBuffer.updateEventWindow(newEventWindow);
         assertEquals(1, bufferedEvents.size());
         assertSame(event, bufferedEvents.getFirst());
     }

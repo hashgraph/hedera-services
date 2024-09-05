@@ -38,7 +38,6 @@ import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.Response;
 import com.hedera.hapi.node.transaction.TransactionGetRecordQuery;
 import com.hedera.hapi.node.transaction.TransactionGetRecordResponse;
-import com.hedera.node.app.service.mono.fees.calculation.FeeCalcUtils;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.records.RecordCache;
 import com.hedera.node.app.spi.workflows.PaidQueryHandler;
@@ -190,7 +189,31 @@ public class NetworkTransactionGetRecordHandler extends PaidQueryHandler {
         }
 
         // multiply node fees to include duplicate and/or child records
-        final FeeData feeData = FeeCalcUtils.multiplierOfUsages(perRecordFeeData, recordCount);
+        final FeeData feeData = multiplierOfUsages(perRecordFeeData, recordCount);
         return queryContext.feeCalculator().legacyCalculate(sigValueObj -> feeData);
+    }
+
+    private static FeeData multiplierOfUsages(final FeeData feeData, final int multiplier) {
+        return FeeData.newBuilder()
+                .setNodedata(multiplierOfScopedUsages(feeData.getNodedata(), multiplier))
+                .setNetworkdata(multiplierOfScopedUsages(feeData.getNetworkdata(), multiplier))
+                .setServicedata(multiplierOfScopedUsages(feeData.getServicedata(), multiplier))
+                .build();
+    }
+
+    private static FeeComponents multiplierOfScopedUsages(final FeeComponents feeComponents, final int multiplier) {
+        return FeeComponents.newBuilder()
+                .setMin(feeComponents.getMin())
+                .setMax(feeComponents.getMax())
+                .setConstant(feeComponents.getConstant() * multiplier)
+                .setBpt(feeComponents.getBpt() * multiplier)
+                .setVpt(feeComponents.getVpt() * multiplier)
+                .setRbh(feeComponents.getRbh() * multiplier)
+                .setSbh(feeComponents.getSbh() * multiplier)
+                .setGas(feeComponents.getGas() * multiplier)
+                .setTv(feeComponents.getTv() * multiplier)
+                .setBpr(feeComponents.getBpr() * multiplier)
+                .setSbpr(feeComponents.getSbpr() * multiplier)
+                .build();
     }
 }

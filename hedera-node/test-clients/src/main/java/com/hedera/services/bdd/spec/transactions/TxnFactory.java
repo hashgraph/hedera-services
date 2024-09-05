@@ -18,13 +18,13 @@ package com.hedera.services.bdd.spec.transactions;
 
 import static com.hedera.services.bdd.spec.HapiSpec.UTF8Mode.TRUE;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.getUniqueTimestampPlusSecs;
-import static java.util.stream.Collectors.joining;
-import static java.util.stream.Collectors.toList;
+import static java.util.Objects.requireNonNull;
 
 import com.google.protobuf.ByteString;
 import com.google.protobuf.Message;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
-import com.hedera.services.bdd.spec.keys.KeyFactory;
+import com.hedera.services.bdd.spec.utilops.mod.BodyMutation;
 import com.hederahashgraph.api.proto.java.ConsensusCreateTopicTransactionBody;
 import com.hederahashgraph.api.proto.java.ConsensusDeleteTopicTransactionBody;
 import com.hederahashgraph.api.proto.java.ConsensusSubmitMessageTransactionBody;
@@ -45,14 +45,20 @@ import com.hederahashgraph.api.proto.java.FileCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.FileDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.FileUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.FreezeTransactionBody;
+import com.hederahashgraph.api.proto.java.NodeCreateTransactionBody;
+import com.hederahashgraph.api.proto.java.NodeDeleteTransactionBody;
+import com.hederahashgraph.api.proto.java.NodeUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.ScheduleCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.ScheduleDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.ScheduleSignTransactionBody;
 import com.hederahashgraph.api.proto.java.SystemDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.SystemUndeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.Timestamp;
+import com.hederahashgraph.api.proto.java.TokenAirdropTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenAssociateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenBurnTransactionBody;
+import com.hederahashgraph.api.proto.java.TokenCancelAirdropTransactionBody;
+import com.hederahashgraph.api.proto.java.TokenClaimAirdropTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenDissociateTransactionBody;
@@ -61,6 +67,7 @@ import com.hederahashgraph.api.proto.java.TokenFreezeAccountTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenGrantKycTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenMintTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenPauseTransactionBody;
+import com.hederahashgraph.api.proto.java.TokenRejectTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenRevokeKycTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenUnfreezeAccountTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenUnpauseTransactionBody;
@@ -72,99 +79,106 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.UncheckedSubmitBody;
 import com.hederahashgraph.api.proto.java.UtilPrngTransactionBody;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.time.Clock;
-import java.time.Instant;
-import java.util.Arrays;
-import java.util.List;
 import java.util.SplittableRandom;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
-import java.util.stream.IntStream;
-import java.util.stream.Stream;
+import java.util.function.Supplier;
 
+/**
+ * Used by a {@link HapiSpec} to create transactions for submission to its target network.
+ */
 public class TxnFactory {
-    KeyFactory keys;
-    HapiSpecSetup setup;
-
-    private static final int BANNER_WIDTH = 80;
-    private static final int BANNER_BOUNDARY_THICKNESS = 2;
     private static final double TXN_ID_SAMPLE_PROBABILITY = 1.0 / 500;
 
-    AtomicReference<TransactionID> sampleTxnId = new AtomicReference<>(TransactionID.getDefaultInstance());
-    SplittableRandom r = new SplittableRandom();
+    private final HapiSpecSetup setup;
+    private final Supplier<TransactionID> nextTxnId;
+    private final SplittableRandom r = new SplittableRandom();
+    private final AtomicReference<TransactionID> sampleTxnId =
+            new AtomicReference<>(TransactionID.getDefaultInstance());
 
-    public static String bannerWith(String... msgs) {
-        var sb = new StringBuilder();
-        var partial = IntStream.range(0, BANNER_BOUNDARY_THICKNESS)
-                .mapToObj(ignore -> "*")
-                .collect(joining());
-        int printableWidth = BANNER_WIDTH - 2 * (partial.length() + 1);
-        addFullBoundary(sb);
-        List<String> allMsgs = Stream.concat(Stream.of(""), Stream.concat(Arrays.stream(msgs), Stream.of("")))
-                .collect(toList());
-        for (String msg : allMsgs) {
-            int rightPaddingLen = printableWidth - msg.length();
-            var rightPadding =
-                    IntStream.range(0, rightPaddingLen).mapToObj(ignore -> " ").collect(joining());
-            sb.append(partial + " ")
-                    .append(msg)
-                    .append(rightPadding)
-                    .append(" " + partial)
-                    .append("\n");
-        }
-        addFullBoundary(sb);
-        return sb.toString();
+    public TxnFactory(@NonNull final HapiSpecSetup setup) {
+        this(setup, () -> getUniqueTimestampPlusSecs(setup.txnStartOffsetSecs()));
     }
 
-    private static void addFullBoundary(StringBuilder sb) {
-        var full = IntStream.range(0, BANNER_WIDTH).mapToObj(ignore -> "*").collect(joining());
-        for (int i = 0; i < BANNER_BOUNDARY_THICKNESS; i++) {
-            sb.append(full).append("\n");
-        }
+    public TxnFactory(@NonNull final HapiSpecSetup setup, @NonNull final Supplier<Timestamp> nextValidStart) {
+        this.setup = requireNonNull(setup);
+        this.nextTxnId = defaultNextTxnIdFor(setup, nextValidStart);
     }
 
-    public TxnFactory(HapiSpecSetup setup, KeyFactory keys) {
-        this.keys = keys;
-        this.setup = setup;
+    /**
+     * Return the next transaction ID this factory would have used in a transaction.
+     *
+     * @return the next transaction ID
+     */
+    public TransactionID nextTxnId() {
+        return nextTxnId.get();
     }
 
-    public Transaction.Builder getReadyToSign(Consumer<TransactionBody.Builder> spec) {
-        Consumer<TransactionBody.Builder> composedBodySpec = defaultBodySpec().andThen(spec);
-        TransactionBody.Builder bodyBuilder = TransactionBody.newBuilder();
-        composedBodySpec.accept(bodyBuilder);
-        return Transaction.newBuilder()
-                .setBodyBytes(ByteString.copyFrom(bodyBuilder.build().toByteArray()));
-    }
-
+    /**
+     * Returns a recently used transaction ID, useful for constructing random queries in
+     * fuzzing tests.
+     *
+     * @return a recently used transaction ID
+     */
     public TransactionID sampleRecentTxnId() {
         return sampleTxnId.get();
     }
 
-    public TransactionID defaultTransactionID() {
-        return TransactionID.newBuilder()
-                .setTransactionValidStart(getUniqueTimestampPlusSecs(setup.txnStartOffsetSecs()))
-                .setAccountID(setup.defaultPayer())
-                .build();
-    }
-
-    public Consumer<TransactionBody.Builder> defaultBodySpec() {
-        TransactionID defaultTxnId = defaultTransactionID();
-        if (r.nextDouble() < TXN_ID_SAMPLE_PROBABILITY) {
-            sampleTxnId.set(defaultTxnId);
+    /**
+     * Given a {@link Consumer} that mutates a {@link TransactionBody.Builder}, return a {@link Transaction.Builder}
+     * that incorporates this consumer along with default values for some notable
+     * {@link com.hedera.hapi.node.transaction.TransactionBody} fields if not overridden by the consumer.
+     *
+     * <p>The fields given default values are,
+     * <ol>
+     *     <li>{@link com.hedera.hapi.node.transaction.TransactionBody#transactionID()}</li>
+     *     <li>{@link com.hedera.hapi.node.transaction.TransactionBody#nodeAccountID()}</li>
+     *     <li>{@link com.hedera.hapi.node.transaction.TransactionBody#transactionFee()}</li>
+     *     <li>{@link com.hedera.hapi.node.transaction.TransactionBody#transactionValidDuration()}</li>
+     *     <li>{@link com.hedera.hapi.node.transaction.TransactionBody#memo()}</li>
+     * </ol>
+     *
+     * @param bodySpec the {@link Consumer} that mutates the {@link TransactionBody.Builder}
+     * @param modification if non-null, the {@link BodyMutation} that is used to mutate the {@link TransactionBody.Builder}
+     * @param spec if non-null, the {@link HapiSpec} that is used to mutate the {@link TransactionBody.Builder}
+     * @return a {@link Transaction.Builder} that is ready to be signed
+     */
+    public Transaction.Builder getReadyToSign(
+            @NonNull final Consumer<TransactionBody.Builder> bodySpec,
+            @Nullable final BodyMutation modification,
+            @Nullable final HapiSpec spec) {
+        requireNonNull(bodySpec);
+        final var composedBodySpec = defaultBodySpec().andThen(bodySpec);
+        var bodyBuilder = TransactionBody.newBuilder();
+        composedBodySpec.accept(bodyBuilder);
+        if (modification != null) {
+            requireNonNull(spec);
+            bodyBuilder = modification.apply(bodyBuilder, spec);
         }
-
-        final var memoToUse = (setup.isMemoUTF8() == TRUE) ? setup.defaultUTF8memo() : setup.defaultMemo();
-
-        return builder -> builder.setTransactionID(defaultTxnId)
-                .setMemo(memoToUse)
-                .setTransactionFee(setup.defaultFee())
-                .setTransactionValidDuration(setup.defaultValidDuration())
-                .setNodeAccountID(setup.defaultNode());
+        return Transaction.newBuilder()
+                .setBodyBytes(ByteString.copyFrom(bodyBuilder.build().toByteArray()));
     }
 
-    public <T, B extends Message.Builder> T body(Class<T> tClass, Consumer<B> def)
+    /**
+     * Given a {@link Class} of a {@link TransactionBody} and a {@link Consumer} that mutates a
+     * {@link Message.Builder}, return a {@link com.google.protobuf.Message} that incorporates this
+     * consumer along with default values for some notable fields if not overridden by the consumer.
+     *
+     * @param tClass the {@link Class} of the {@link TransactionBody}
+     * @param def the {@link Consumer} that mutates the {@link Message.Builder}
+     * @return a {@link com.google.protobuf.Message} that is ready to be signed
+     * @param <T> the type of the {@link com.google.protobuf.Message}
+     * @param <B> the type of the {@link Message.Builder}
+     * @throws NoSuchMethodException if there is no such body
+     * @throws InvocationTargetException if there is no such body
+     * @throws IllegalAccessException if there is no such body
+     */
+    @SuppressWarnings("unchecked")
+    public <T, B extends Message.Builder> T body(@NonNull final Class<T> tClass, @NonNull final Consumer<B> def)
             throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
         Method newBuilder = tClass.getMethod("newBuilder");
         B opBuilder = (B) newBuilder.invoke(null);
@@ -172,6 +186,19 @@ public class TxnFactory {
         Method defaultBody = this.getClass().getMethod(defaultBodyMethod);
         ((Consumer<B>) defaultBody.invoke(this)).andThen(def).accept(opBuilder);
         return (T) opBuilder.build();
+    }
+
+    private Consumer<TransactionBody.Builder> defaultBodySpec() {
+        final var defaultTxnId = nextTxnId.get();
+        if (r.nextDouble() < TXN_ID_SAMPLE_PROBABILITY) {
+            sampleTxnId.set(defaultTxnId);
+        }
+        final var memoToUse = (setup.isMemoUTF8() == TRUE) ? setup.defaultUTF8memo() : setup.defaultMemo();
+        return builder -> builder.setTransactionID(defaultTxnId)
+                .setMemo(memoToUse)
+                .setTransactionFee(setup.defaultFee())
+                .setTransactionValidDuration(setup.defaultValidDuration())
+                .setNodeAccountID(setup.defaultNode());
     }
 
     public Consumer<TokenAssociateTransactionBody.Builder> defaultDefTokenAssociateTransactionBody() {
@@ -236,7 +263,6 @@ public class TxnFactory {
             builder.setDecimals(setup.defaultTokenDecimals());
             builder.setInitialSupply(setup.defaultTokenInitialSupply());
             builder.setSymbol(TxnUtils.randomUppercase(8));
-            builder.setExpiry(defaultExpiry());
         };
     }
 
@@ -303,8 +329,23 @@ public class TxnFactory {
     public Consumer<FileCreateTransactionBody.Builder> defaultDefFileCreateTransactionBody() {
         return builder -> builder.setRealmID(setup.defaultRealm())
                 .setShardID(setup.defaultShard())
-                .setContents(ByteString.copyFrom(setup.defaultFileContents()))
-                .setExpirationTime(defaultExpiry());
+                .setContents(ByteString.copyFrom(setup.defaultFileContents()));
+    }
+
+    public Consumer<NodeCreateTransactionBody.Builder> defaultDefNodeCreateTransactionBody() {
+        return builder -> builder.setAccountId(setup.defaultPayer())
+                .addGossipEndpoint(setup.defaultGossipEndpointInternal())
+                .addGossipEndpoint(setup.defaultGossipEndpointExternal())
+                .addServiceEndpoint(setup.defaultServiceEndpoint())
+                .setGossipCaCertificate(ByteString.copyFrom(setup.defaultGossipCaCertificate()));
+    }
+
+    public Consumer<NodeUpdateTransactionBody.Builder> defaultDefNodeUpdateTransactionBody() {
+        return builder -> {};
+    }
+
+    public Consumer<NodeDeleteTransactionBody.Builder> defaultDefNodeDeleteTransactionBody() {
+        return builder -> {};
     }
 
     public Consumer<FileAppendTransactionBody.Builder> defaultDefFileAppendTransactionBody() {
@@ -315,15 +356,30 @@ public class TxnFactory {
         return builder -> {};
     }
 
-    private Timestamp defaultExpiry() {
-        return expiryGiven(setup.defaultExpirationSecs());
+    /**
+     * Returns a {@link Timestamp} that is the default expiry time for an entity being created
+     * in the given spec context.
+     *
+     * @param spec the context in which the expiry time is being calculated
+     * @return the default expiry time
+     */
+    public static Timestamp defaultExpiryNowFor(@NonNull final HapiSpec spec) {
+        return Timestamp.newBuilder()
+                .setSeconds(spec.consensusTime().getEpochSecond() + spec.setup().defaultExpirationSecs())
+                .build();
     }
 
-    public static Timestamp expiryGiven(long lifetimeSecs) {
-        Instant expiry = Instant.now(Clock.systemUTC()).plusSeconds(lifetimeSecs);
+    /**
+     * Returns a {@link Timestamp} that is the expiry time for an entity being created
+     * in the given spec context with the given lifetime.
+     *
+     * @param spec the context in which the expiry time is being calculated
+     * @param lifetime the lifetime of the entity
+     * @return the default expiry time
+     */
+    public static Timestamp expiryNowFor(@NonNull final HapiSpec spec, final long lifetime) {
         return Timestamp.newBuilder()
-                .setSeconds(expiry.getEpochSecond())
-                .setNanos(expiry.getNano())
+                .setSeconds(spec.consensusTime().getEpochSecond() + lifetime)
                 .build();
     }
 
@@ -377,7 +433,33 @@ public class TxnFactory {
         return builder -> {};
     }
 
+    public Consumer<TokenRejectTransactionBody.Builder> defaultDefTokenRejectTransactionBody() {
+        return builder -> {};
+    }
+
     public Consumer<UtilPrngTransactionBody.Builder> defaultDefUtilPrngTransactionBody() {
+        return builder -> {};
+    }
+
+    private static Supplier<TransactionID> defaultNextTxnIdFor(
+            @NonNull final HapiSpecSetup setup, @NonNull final Supplier<Timestamp> nextValidStart) {
+        requireNonNull(setup);
+        requireNonNull(nextValidStart);
+        return () -> TransactionID.newBuilder()
+                .setTransactionValidStart(nextValidStart.get())
+                .setAccountID(setup.defaultPayer())
+                .build();
+    }
+
+    public Consumer<TokenCancelAirdropTransactionBody.Builder> defaultDefTokenCancelAirdropTransactionBody() {
+        return builder -> {};
+    }
+
+    public Consumer<TokenClaimAirdropTransactionBody.Builder> defaultDefTokenClaimAirdropTransactionBody() {
+        return builder -> {};
+    }
+
+    public Consumer<TokenAirdropTransactionBody.Builder> defaultDefTokenAirdropTransactionBody() {
         return builder -> {};
     }
 }

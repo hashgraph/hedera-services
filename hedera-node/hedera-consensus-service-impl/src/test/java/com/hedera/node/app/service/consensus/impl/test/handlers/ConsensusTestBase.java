@@ -17,33 +17,31 @@
 package com.hedera.node.app.service.consensus.impl.test.handlers;
 
 import static com.hedera.node.app.service.consensus.impl.ConsensusServiceImpl.TOPICS_KEY;
-import static com.hedera.node.app.service.mono.pbj.PbjConverter.protoToPbj;
-import static com.hedera.test.utils.IdUtils.asAccount;
-import static com.hedera.test.utils.KeyUtils.A_COMPLEX_KEY;
-import static com.hedera.test.utils.KeyUtils.B_COMPLEX_KEY;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mock.Strictness.LENIENT;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Duration;
 import com.hedera.hapi.node.base.Key;
-import com.hedera.hapi.node.base.Timestamp;
+import com.hedera.hapi.node.base.KeyList;
+import com.hedera.hapi.node.base.ThresholdKey;
 import com.hedera.hapi.node.base.TopicID;
 import com.hedera.hapi.node.state.consensus.Topic;
 import com.hedera.node.app.service.consensus.ReadableTopicStore;
 import com.hedera.node.app.service.consensus.impl.ReadableTopicStoreImpl;
 import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
-import com.hedera.node.app.service.mono.utils.EntityNum;
-import com.hedera.node.app.spi.fixtures.state.MapReadableKVState;
-import com.hedera.node.app.spi.fixtures.state.MapWritableKVState;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
-import com.hedera.node.app.spi.state.ReadableStates;
-import com.hedera.node.app.spi.state.WritableStates;
+import com.hedera.node.app.spi.store.StoreFactory;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.state.spi.ReadableStates;
+import com.swirlds.state.spi.WritableStates;
+import com.swirlds.state.test.fixtures.MapReadableKVState;
+import com.swirlds.state.test.fixtures.MapWritableKVState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
+import java.util.function.Function;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -51,10 +49,42 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 public class ConsensusTestBase {
+    private static final String A_NAME = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+    private static final String B_NAME = "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
+    private static final String C_NAME = "cccccccccccccccccccccccccccccccc";
+    private static final Function<String, Key.Builder> KEY_BUILDER =
+            value -> Key.newBuilder().ed25519(Bytes.wrap(value.getBytes()));
+    public static final Key A_THRESHOLD_KEY = Key.newBuilder()
+            .thresholdKey(ThresholdKey.newBuilder()
+                    .threshold(2)
+                    .keys(KeyList.newBuilder()
+                            .keys(
+                                    KEY_BUILDER.apply(A_NAME).build(),
+                                    KEY_BUILDER.apply(B_NAME).build(),
+                                    KEY_BUILDER.apply(C_NAME).build())
+                            .build()))
+            .build();
+    public static final Key A_COMPLEX_KEY = Key.newBuilder()
+            .thresholdKey(ThresholdKey.newBuilder()
+                    .threshold(2)
+                    .keys(KeyList.newBuilder()
+                            .keys(
+                                    KEY_BUILDER.apply(A_NAME).build(),
+                                    KEY_BUILDER.apply(B_NAME).build(),
+                                    A_THRESHOLD_KEY)))
+            .build();
+    public static final Key B_COMPLEX_KEY = Key.newBuilder()
+            .thresholdKey(ThresholdKey.newBuilder()
+                    .threshold(2)
+                    .keys(KeyList.newBuilder()
+                            .keys(
+                                    KEY_BUILDER.apply(A_NAME).build(),
+                                    KEY_BUILDER.apply(B_NAME).build(),
+                                    A_COMPLEX_KEY)))
+            .build();
     protected final Key key = A_COMPLEX_KEY;
     protected final Key anotherKey = B_COMPLEX_KEY;
-    protected final String payerIdLiteral = "0.0.3";
-    protected final AccountID payerId = protoToPbj(asAccount(payerIdLiteral), AccountID.class);
+    protected final AccountID payerId = AccountID.newBuilder().accountNum(3).build();
     public static final AccountID anotherPayer =
             AccountID.newBuilder().accountNum(13257).build();
     protected final AccountID autoRenewId = AccountID.newBuilder().accountNum(1).build();
@@ -62,15 +92,11 @@ public class ConsensusTestBase {
 
     protected final Key adminKey = key;
     protected final Key autoRenewKey = anotherKey;
-    protected final EntityNum topicEntityNum = EntityNum.fromLong(1L);
+    protected final long topicEntityNum = 1L;
     protected final TopicID topicId =
-            TopicID.newBuilder().topicNum(topicEntityNum.longValue()).build();
+            TopicID.newBuilder().topicNum(topicEntityNum).build();
     protected final Duration WELL_KNOWN_AUTO_RENEW_PERIOD =
             Duration.newBuilder().seconds(100).build();
-    protected final Timestamp WELL_KNOWN_EXPIRY =
-            Timestamp.newBuilder().seconds(1_234_567L).build();
-    protected final String beneficiaryIdStr = "0.0.3";
-    protected final long paymentAmount = 1_234L;
     protected final String memo = "test memo";
     protected final long expirationTime = 1_234_567L;
     protected final long sequenceNumber = 1L;
@@ -89,6 +115,9 @@ public class ConsensusTestBase {
 
     @Mock(strictness = LENIENT)
     protected HandleContext handleContext;
+
+    @Mock(strictness = LENIENT)
+    protected StoreFactory storeFactory;
 
     @Mock
     private StoreMetricsService storeMetricsService;
@@ -113,7 +142,8 @@ public class ConsensusTestBase {
         readableStore = new ReadableTopicStoreImpl(readableStates);
         final var configuration = HederaTestConfigBuilder.createConfig();
         writableStore = new WritableTopicStore(writableStates, configuration, storeMetricsService);
-        given(handleContext.writableStore(WritableTopicStore.class)).willReturn(writableStore);
+        given(handleContext.storeFactory()).willReturn(storeFactory);
+        given(storeFactory.writableStore(WritableTopicStore.class)).willReturn(writableStore);
     }
 
     protected void refreshStoresWithCurrentTopicInBothReadableAndWritable() {
@@ -124,7 +154,7 @@ public class ConsensusTestBase {
         readableStore = new ReadableTopicStoreImpl(readableStates);
         final var configuration = HederaTestConfigBuilder.createConfig();
         writableStore = new WritableTopicStore(writableStates, configuration, storeMetricsService);
-        given(handleContext.writableStore(WritableTopicStore.class)).willReturn(writableStore);
+        given(storeFactory.writableStore(WritableTopicStore.class)).willReturn(writableStore);
     }
 
     @NonNull
@@ -198,19 +228,6 @@ public class ConsensusTestBase {
                 .topicId(topicId)
                 .adminKey(key)
                 .submitKey(key)
-                .autoRenewPeriod(autoRenewSecs)
-                .autoRenewAccountId(autoRenewId)
-                .expirationSecond(expirationTime)
-                .sequenceNumber(sequenceNumber)
-                .memo(memo)
-                .deleted(true)
-                .runningHash(Bytes.wrap(runningHash))
-                .build();
-    }
-
-    protected Topic createTopicEmptyKeys() {
-        return new Topic.Builder()
-                .topicId(topicId)
                 .autoRenewPeriod(autoRenewSecs)
                 .autoRenewAccountId(autoRenewId)
                 .expirationSecond(expirationTime)

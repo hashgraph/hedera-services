@@ -16,11 +16,22 @@
 
 package com.swirlds.platform.system.status;
 
+import static com.swirlds.platform.system.status.PlatformStatus.ACTIVE;
+import static com.swirlds.platform.system.status.PlatformStatus.BEHIND;
+import static com.swirlds.platform.system.status.PlatformStatus.CATASTROPHIC_FAILURE;
+import static com.swirlds.platform.system.status.PlatformStatus.CHECKING;
+import static com.swirlds.platform.system.status.PlatformStatus.FREEZE_COMPLETE;
+import static com.swirlds.platform.system.status.PlatformStatus.FREEZING;
+import static com.swirlds.platform.system.status.PlatformStatus.OBSERVING;
+import static com.swirlds.platform.system.status.PlatformStatus.RECONNECT_COMPLETE;
+import static com.swirlds.platform.system.status.PlatformStatus.REPLAYING_EVENTS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.Mockito.mock;
 
 import com.swirlds.base.test.fixtures.time.FakeTime;
+import com.swirlds.common.context.PlatformContext;
+import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.platform.system.status.actions.CatastrophicFailureAction;
@@ -34,7 +45,6 @@ import com.swirlds.platform.system.status.actions.StartedReplayingEventsAction;
 import com.swirlds.platform.system.status.actions.StateWrittenToDiskAction;
 import com.swirlds.platform.system.status.actions.TimeElapsedAction;
 import java.time.Duration;
-import java.util.function.Consumer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -44,7 +54,7 @@ import org.junit.jupiter.api.Test;
  */
 class PlatformStatusStateMachineTests {
     private FakeTime time;
-    private PlatformStatusStateMachine stateMachine;
+    private DefaultStatusStateMachine stateMachine;
 
     @BeforeEach
     void setup() {
@@ -54,360 +64,243 @@ class PlatformStatusStateMachineTests {
                 .withValue(PlatformStatusConfig_.ACTIVE_STATUS_DELAY, "10s")
                 .getOrCreateConfig();
 
-        stateMachine = new PlatformStatusStateMachine(
-                time, configuration.getConfigData(PlatformStatusConfig.class), mock(Consumer.class));
+        final PlatformContext platformContextBuilder = TestPlatformContextBuilder.create()
+                .withTime(time)
+                .withConfiguration(configuration)
+                .build();
+
+        stateMachine = new DefaultStatusStateMachine(platformContextBuilder);
     }
 
     @Test
     @DisplayName("STARTING_UP -> REPLAYING_EVENTS -> FREEZE_COMPLETE")
     void freezeCompleteAfterReplayingEvents() {
-        assertEquals(PlatformStatus.STARTING_UP, stateMachine.getCurrentStatus());
-        stateMachine.processStatusAction(new StartedReplayingEventsAction());
-        assertEquals(PlatformStatus.REPLAYING_EVENTS, stateMachine.getCurrentStatus());
-        stateMachine.processStatusAction(new FreezePeriodEnteredAction(2));
-        assertEquals(PlatformStatus.REPLAYING_EVENTS, stateMachine.getCurrentStatus());
-        stateMachine.processStatusAction(new StateWrittenToDiskAction(2, true));
-        assertEquals(PlatformStatus.FREEZE_COMPLETE, stateMachine.getCurrentStatus());
+        assertEquals(REPLAYING_EVENTS, stateMachine.submitStatusAction(new StartedReplayingEventsAction()));
+        assertNull(stateMachine.submitStatusAction(new FreezePeriodEnteredAction(2)));
+        assertEquals(FREEZE_COMPLETE, stateMachine.submitStatusAction(new StateWrittenToDiskAction(2, true)));
     }
 
     @Test
     @DisplayName("STARTING_UP -> REPLAYING_EVENTS -> OBSERVING -> FREEZE_COMPLETE")
     void freezeCompleteAfterObserving() {
-        assertEquals(PlatformStatus.STARTING_UP, stateMachine.getCurrentStatus());
-        stateMachine.processStatusAction(new StartedReplayingEventsAction());
-        assertEquals(PlatformStatus.REPLAYING_EVENTS, stateMachine.getCurrentStatus());
-        stateMachine.processStatusAction(new DoneReplayingEventsAction(time.now()));
-        assertEquals(PlatformStatus.OBSERVING, stateMachine.getCurrentStatus());
-        stateMachine.processStatusAction(new StateWrittenToDiskAction(2, true));
-        assertEquals(PlatformStatus.FREEZE_COMPLETE, stateMachine.getCurrentStatus());
+        assertEquals(REPLAYING_EVENTS, stateMachine.submitStatusAction(new StartedReplayingEventsAction()));
+        assertEquals(OBSERVING, stateMachine.submitStatusAction(new DoneReplayingEventsAction(time.now())));
+        assertEquals(FREEZE_COMPLETE, stateMachine.submitStatusAction(new StateWrittenToDiskAction(2, true)));
     }
 
     @Test
     @DisplayName("STARTING_UP -> REPLAYING_EVENTS -> OBSERVING -> FREEZING -> FREEZE_COMPLETE")
     void freezeCompleteAfterFreezing() {
-        assertEquals(PlatformStatus.STARTING_UP, stateMachine.getCurrentStatus());
-        stateMachine.processStatusAction(new StartedReplayingEventsAction());
-        assertEquals(PlatformStatus.REPLAYING_EVENTS, stateMachine.getCurrentStatus());
-        stateMachine.processStatusAction(new DoneReplayingEventsAction(time.now()));
-        assertEquals(PlatformStatus.OBSERVING, stateMachine.getCurrentStatus());
-        stateMachine.processStatusAction(new FreezePeriodEnteredAction(2));
-        assertEquals(PlatformStatus.OBSERVING, stateMachine.getCurrentStatus());
+        assertEquals(REPLAYING_EVENTS, stateMachine.submitStatusAction(new StartedReplayingEventsAction()));
+        assertEquals(OBSERVING, stateMachine.submitStatusAction(new DoneReplayingEventsAction(time.now())));
+        assertNull(stateMachine.submitStatusAction(new FreezePeriodEnteredAction(2)));
         time.tick(Duration.ofSeconds(6));
-        stateMachine.processStatusAction(new TimeElapsedAction(time.now()));
-        assertEquals(PlatformStatus.FREEZING, stateMachine.getCurrentStatus());
-        stateMachine.processStatusAction(new StateWrittenToDiskAction(2, true));
-        assertEquals(PlatformStatus.FREEZE_COMPLETE, stateMachine.getCurrentStatus());
+        assertEquals(FREEZING, stateMachine.submitStatusAction(new TimeElapsedAction(time.now())));
+        assertEquals(FREEZE_COMPLETE, stateMachine.submitStatusAction(new StateWrittenToDiskAction(2, true)));
     }
 
     @Test
     @DisplayName("STARTING_UP -> REPLAYING_EVENTS -> OBSERVING -> CHECKING -> FREEZE_COMPLETE")
     void freezeCompleteAfterChecking() {
-        assertEquals(PlatformStatus.STARTING_UP, stateMachine.getCurrentStatus());
-        stateMachine.processStatusAction(new StartedReplayingEventsAction());
-        assertEquals(PlatformStatus.REPLAYING_EVENTS, stateMachine.getCurrentStatus());
-        stateMachine.processStatusAction(new DoneReplayingEventsAction(time.now()));
-        assertEquals(PlatformStatus.OBSERVING, stateMachine.getCurrentStatus());
+        assertEquals(REPLAYING_EVENTS, stateMachine.submitStatusAction(new StartedReplayingEventsAction()));
+        assertEquals(OBSERVING, stateMachine.submitStatusAction(new DoneReplayingEventsAction(time.now())));
         time.tick(Duration.ofSeconds(6));
-        stateMachine.processStatusAction(new TimeElapsedAction(time.now()));
-        assertEquals(PlatformStatus.CHECKING, stateMachine.getCurrentStatus());
-        stateMachine.processStatusAction(new StateWrittenToDiskAction(2, true));
-        assertEquals(PlatformStatus.FREEZE_COMPLETE, stateMachine.getCurrentStatus());
+        assertEquals(CHECKING, stateMachine.submitStatusAction(new TimeElapsedAction(time.now())));
+        assertEquals(FREEZE_COMPLETE, stateMachine.submitStatusAction(new StateWrittenToDiskAction(2, true)));
     }
 
     @Test
     @DisplayName("STARTING_UP -> REPLAYING_EVENTS -> OBSERVING -> CHECKING -> FREEZING")
     void freezingAfterChecking() {
-        assertEquals(PlatformStatus.STARTING_UP, stateMachine.getCurrentStatus());
-        stateMachine.processStatusAction(new StartedReplayingEventsAction());
-        assertEquals(PlatformStatus.REPLAYING_EVENTS, stateMachine.getCurrentStatus());
-        stateMachine.processStatusAction(new DoneReplayingEventsAction(time.now()));
-        assertEquals(PlatformStatus.OBSERVING, stateMachine.getCurrentStatus());
+        assertEquals(REPLAYING_EVENTS, stateMachine.submitStatusAction(new StartedReplayingEventsAction()));
+        assertEquals(OBSERVING, stateMachine.submitStatusAction(new DoneReplayingEventsAction(time.now())));
         time.tick(Duration.ofSeconds(6));
-        stateMachine.processStatusAction(new TimeElapsedAction(time.now()));
-        assertEquals(PlatformStatus.CHECKING, stateMachine.getCurrentStatus());
-        stateMachine.processStatusAction(new FreezePeriodEnteredAction(2));
-        assertEquals(PlatformStatus.FREEZING, stateMachine.getCurrentStatus());
+        assertEquals(CHECKING, stateMachine.submitStatusAction(new TimeElapsedAction(time.now())));
+        assertEquals(FREEZING, stateMachine.submitStatusAction(new FreezePeriodEnteredAction(2)));
     }
 
     @Test
     @DisplayName("STARTING_UP -> REPLAYING_EVENTS -> OBSERVING -> CHECKING -> ACTIVE -> FREEZE_COMPLETE")
     void freezeCompleteAfterActive() {
-        assertEquals(PlatformStatus.STARTING_UP, stateMachine.getCurrentStatus());
-        stateMachine.processStatusAction(new StartedReplayingEventsAction());
-        assertEquals(PlatformStatus.REPLAYING_EVENTS, stateMachine.getCurrentStatus());
-        stateMachine.processStatusAction(new DoneReplayingEventsAction(time.now()));
-        assertEquals(PlatformStatus.OBSERVING, stateMachine.getCurrentStatus());
+        assertEquals(REPLAYING_EVENTS, stateMachine.submitStatusAction(new StartedReplayingEventsAction()));
+        assertEquals(OBSERVING, stateMachine.submitStatusAction(new DoneReplayingEventsAction(time.now())));
         time.tick(Duration.ofSeconds(6));
-        stateMachine.processStatusAction(new TimeElapsedAction(time.now()));
-        assertEquals(PlatformStatus.CHECKING, stateMachine.getCurrentStatus());
-        stateMachine.processStatusAction(new SelfEventReachedConsensusAction(time.now()));
-        assertEquals(PlatformStatus.ACTIVE, stateMachine.getCurrentStatus());
-        stateMachine.processStatusAction(new StateWrittenToDiskAction(2, true));
-        assertEquals(PlatformStatus.FREEZE_COMPLETE, stateMachine.getCurrentStatus());
+        assertEquals(CHECKING, stateMachine.submitStatusAction(new TimeElapsedAction(time.now())));
+        assertEquals(ACTIVE, stateMachine.submitStatusAction(new SelfEventReachedConsensusAction(time.now())));
+        assertEquals(FREEZE_COMPLETE, stateMachine.submitStatusAction(new StateWrittenToDiskAction(2, true)));
     }
 
     @Test
     @DisplayName("STARTING_UP -> REPLAYING_EVENTS -> OBSERVING -> CHECKING -> ACTIVE -> CHECKING")
     void checkingAfterActive() {
-        assertEquals(PlatformStatus.STARTING_UP, stateMachine.getCurrentStatus());
-        stateMachine.processStatusAction(new StartedReplayingEventsAction());
-        assertEquals(PlatformStatus.REPLAYING_EVENTS, stateMachine.getCurrentStatus());
-        stateMachine.processStatusAction(new DoneReplayingEventsAction(time.now()));
-        assertEquals(PlatformStatus.OBSERVING, stateMachine.getCurrentStatus());
+        assertEquals(REPLAYING_EVENTS, stateMachine.submitStatusAction(new StartedReplayingEventsAction()));
+        assertEquals(OBSERVING, stateMachine.submitStatusAction(new DoneReplayingEventsAction(time.now())));
         time.tick(Duration.ofSeconds(6));
-        stateMachine.processStatusAction(new TimeElapsedAction(time.now()));
-        assertEquals(PlatformStatus.CHECKING, stateMachine.getCurrentStatus());
-        stateMachine.processStatusAction(new SelfEventReachedConsensusAction(time.now()));
-        assertEquals(PlatformStatus.ACTIVE, stateMachine.getCurrentStatus());
+        assertEquals(CHECKING, stateMachine.submitStatusAction(new TimeElapsedAction(time.now())));
+        assertEquals(ACTIVE, stateMachine.submitStatusAction(new SelfEventReachedConsensusAction(time.now())));
         time.tick(Duration.ofSeconds(11));
-        stateMachine.processStatusAction(new TimeElapsedAction(time.now()));
-        assertEquals(PlatformStatus.CHECKING, stateMachine.getCurrentStatus());
+        assertEquals(CHECKING, stateMachine.submitStatusAction(new TimeElapsedAction(time.now())));
     }
 
     @Test
     @DisplayName("STARTING_UP -> REPLAYING_EVENTS -> OBSERVING -> CHECKING -> ACTIVE -> BEHIND")
     void behindAfterActive() {
-        assertEquals(PlatformStatus.STARTING_UP, stateMachine.getCurrentStatus());
-        stateMachine.processStatusAction(new StartedReplayingEventsAction());
-        assertEquals(PlatformStatus.REPLAYING_EVENTS, stateMachine.getCurrentStatus());
-        stateMachine.processStatusAction(new DoneReplayingEventsAction(time.now()));
-        assertEquals(PlatformStatus.OBSERVING, stateMachine.getCurrentStatus());
+        assertEquals(REPLAYING_EVENTS, stateMachine.submitStatusAction(new StartedReplayingEventsAction()));
+        assertEquals(OBSERVING, stateMachine.submitStatusAction(new DoneReplayingEventsAction(time.now())));
         time.tick(Duration.ofSeconds(6));
-        stateMachine.processStatusAction(new TimeElapsedAction(time.now()));
-        assertEquals(PlatformStatus.CHECKING, stateMachine.getCurrentStatus());
-        stateMachine.processStatusAction(new SelfEventReachedConsensusAction(time.now()));
-        assertEquals(PlatformStatus.ACTIVE, stateMachine.getCurrentStatus());
-        stateMachine.processStatusAction(new FallenBehindAction());
-        assertEquals(PlatformStatus.BEHIND, stateMachine.getCurrentStatus());
+        assertEquals(CHECKING, stateMachine.submitStatusAction(new TimeElapsedAction(time.now())));
+        assertEquals(ACTIVE, stateMachine.submitStatusAction(new SelfEventReachedConsensusAction(time.now())));
+        assertEquals(BEHIND, stateMachine.submitStatusAction(new FallenBehindAction()));
     }
 
     @Test
     @DisplayName("STARTING_UP -> REPLAYING_EVENTS -> OBSERVING -> CHECKING -> ACTIVE -> FREEZING")
     void freezingAfterActive() {
-        assertEquals(PlatformStatus.STARTING_UP, stateMachine.getCurrentStatus());
-        stateMachine.processStatusAction(new StartedReplayingEventsAction());
-        assertEquals(PlatformStatus.REPLAYING_EVENTS, stateMachine.getCurrentStatus());
-        stateMachine.processStatusAction(new DoneReplayingEventsAction(time.now()));
-        assertEquals(PlatformStatus.OBSERVING, stateMachine.getCurrentStatus());
+        assertEquals(REPLAYING_EVENTS, stateMachine.submitStatusAction(new StartedReplayingEventsAction()));
+        assertEquals(OBSERVING, stateMachine.submitStatusAction(new DoneReplayingEventsAction(time.now())));
         time.tick(Duration.ofSeconds(6));
-        stateMachine.processStatusAction(new TimeElapsedAction(time.now()));
-        assertEquals(PlatformStatus.CHECKING, stateMachine.getCurrentStatus());
-        stateMachine.processStatusAction(new SelfEventReachedConsensusAction(time.now()));
-        assertEquals(PlatformStatus.ACTIVE, stateMachine.getCurrentStatus());
-        stateMachine.processStatusAction(new FreezePeriodEnteredAction(2));
-        assertEquals(PlatformStatus.FREEZING, stateMachine.getCurrentStatus());
+        assertEquals(CHECKING, stateMachine.submitStatusAction(new TimeElapsedAction(time.now())));
+        assertEquals(ACTIVE, stateMachine.submitStatusAction(new SelfEventReachedConsensusAction(time.now())));
+        assertEquals(FREEZING, stateMachine.submitStatusAction(new FreezePeriodEnteredAction(2)));
     }
 
     @Test
     @DisplayName("STARTING_UP -> REPLAYING_EVENTS -> OBSERVING -> CHECKING -> BEHIND")
     void behindAfterChecking() {
-        assertEquals(PlatformStatus.STARTING_UP, stateMachine.getCurrentStatus());
-        stateMachine.processStatusAction(new StartedReplayingEventsAction());
-        assertEquals(PlatformStatus.REPLAYING_EVENTS, stateMachine.getCurrentStatus());
-        stateMachine.processStatusAction(new DoneReplayingEventsAction(time.now()));
-        assertEquals(PlatformStatus.OBSERVING, stateMachine.getCurrentStatus());
+        assertEquals(REPLAYING_EVENTS, stateMachine.submitStatusAction(new StartedReplayingEventsAction()));
+        assertEquals(OBSERVING, stateMachine.submitStatusAction(new DoneReplayingEventsAction(time.now())));
         time.tick(Duration.ofSeconds(6));
-        stateMachine.processStatusAction(new TimeElapsedAction(time.now()));
-        assertEquals(PlatformStatus.CHECKING, stateMachine.getCurrentStatus());
-        stateMachine.processStatusAction(new FallenBehindAction());
-        assertEquals(PlatformStatus.BEHIND, stateMachine.getCurrentStatus());
+        assertEquals(CHECKING, stateMachine.submitStatusAction(new TimeElapsedAction(time.now())));
+        assertEquals(BEHIND, stateMachine.submitStatusAction(new FallenBehindAction()));
     }
 
     @Test
     @DisplayName("STARTING_UP -> REPLAYING_EVENTS -> OBSERVING -> BEHIND -> FREEZE_COMPLETE")
     void freezeCompleteAfterBehind() {
-        assertEquals(PlatformStatus.STARTING_UP, stateMachine.getCurrentStatus());
-        stateMachine.processStatusAction(new StartedReplayingEventsAction());
-        assertEquals(PlatformStatus.REPLAYING_EVENTS, stateMachine.getCurrentStatus());
-        stateMachine.processStatusAction(new DoneReplayingEventsAction(time.now()));
-        assertEquals(PlatformStatus.OBSERVING, stateMachine.getCurrentStatus());
-        stateMachine.processStatusAction(new FallenBehindAction());
-        assertEquals(PlatformStatus.BEHIND, stateMachine.getCurrentStatus());
-        stateMachine.processStatusAction(new StateWrittenToDiskAction(2, true));
-        assertEquals(PlatformStatus.FREEZE_COMPLETE, stateMachine.getCurrentStatus());
+        assertEquals(REPLAYING_EVENTS, stateMachine.submitStatusAction(new StartedReplayingEventsAction()));
+        assertEquals(OBSERVING, stateMachine.submitStatusAction(new DoneReplayingEventsAction(time.now())));
+        assertEquals(BEHIND, stateMachine.submitStatusAction(new FallenBehindAction()));
+        assertEquals(FREEZE_COMPLETE, stateMachine.submitStatusAction(new StateWrittenToDiskAction(2, true)));
     }
 
     @Test
     @DisplayName("STARTING_UP -> REPLAYING_EVENTS -> OBSERVING -> BEHIND -> RECONNECT_COMPLETE -> FREEZE_COMPLETE")
     void freezeCompleteAfterReconnectComplete() {
-        assertEquals(PlatformStatus.STARTING_UP, stateMachine.getCurrentStatus());
-        stateMachine.processStatusAction(new StartedReplayingEventsAction());
-        assertEquals(PlatformStatus.REPLAYING_EVENTS, stateMachine.getCurrentStatus());
-        stateMachine.processStatusAction(new DoneReplayingEventsAction(time.now()));
-        assertEquals(PlatformStatus.OBSERVING, stateMachine.getCurrentStatus());
-        stateMachine.processStatusAction(new FallenBehindAction());
-        assertEquals(PlatformStatus.BEHIND, stateMachine.getCurrentStatus());
-        stateMachine.processStatusAction(new ReconnectCompleteAction(5));
-        assertEquals(PlatformStatus.RECONNECT_COMPLETE, stateMachine.getCurrentStatus());
-        stateMachine.processStatusAction(new StateWrittenToDiskAction(2, true));
-        assertEquals(PlatformStatus.FREEZE_COMPLETE, stateMachine.getCurrentStatus());
+        assertEquals(REPLAYING_EVENTS, stateMachine.submitStatusAction(new StartedReplayingEventsAction()));
+        assertEquals(OBSERVING, stateMachine.submitStatusAction(new DoneReplayingEventsAction(time.now())));
+        assertEquals(BEHIND, stateMachine.submitStatusAction(new FallenBehindAction()));
+        assertEquals(RECONNECT_COMPLETE, stateMachine.submitStatusAction(new ReconnectCompleteAction(5)));
+        assertEquals(FREEZE_COMPLETE, stateMachine.submitStatusAction(new StateWrittenToDiskAction(2, true)));
     }
 
     @Test
     @DisplayName("STARTING_UP -> REPLAYING_EVENTS -> OBSERVING -> BEHIND -> RECONNECT_COMPLETE -> BEHIND")
     void behindAfterReconnectComplete() {
-        assertEquals(PlatformStatus.STARTING_UP, stateMachine.getCurrentStatus());
-        stateMachine.processStatusAction(new StartedReplayingEventsAction());
-        assertEquals(PlatformStatus.REPLAYING_EVENTS, stateMachine.getCurrentStatus());
-        stateMachine.processStatusAction(new DoneReplayingEventsAction(time.now()));
-        assertEquals(PlatformStatus.OBSERVING, stateMachine.getCurrentStatus());
-        stateMachine.processStatusAction(new FallenBehindAction());
-        assertEquals(PlatformStatus.BEHIND, stateMachine.getCurrentStatus());
-        stateMachine.processStatusAction(new ReconnectCompleteAction(5));
-        assertEquals(PlatformStatus.RECONNECT_COMPLETE, stateMachine.getCurrentStatus());
-        stateMachine.processStatusAction(new FallenBehindAction());
-        assertEquals(PlatformStatus.BEHIND, stateMachine.getCurrentStatus());
+        assertEquals(REPLAYING_EVENTS, stateMachine.submitStatusAction(new StartedReplayingEventsAction()));
+        assertEquals(OBSERVING, stateMachine.submitStatusAction(new DoneReplayingEventsAction(time.now())));
+        assertEquals(BEHIND, stateMachine.submitStatusAction(new FallenBehindAction()));
+        assertEquals(RECONNECT_COMPLETE, stateMachine.submitStatusAction(new ReconnectCompleteAction(5)));
+        assertEquals(BEHIND, stateMachine.submitStatusAction(new FallenBehindAction()));
     }
 
     @Test
     @DisplayName("STARTING_UP -> REPLAYING_EVENTS -> OBSERVING -> BEHIND -> RECONNECT_COMPLETE -> FREEZING")
     void freezingAfterReconnectComplete() {
-        assertEquals(PlatformStatus.STARTING_UP, stateMachine.getCurrentStatus());
-        stateMachine.processStatusAction(new StartedReplayingEventsAction());
-        assertEquals(PlatformStatus.REPLAYING_EVENTS, stateMachine.getCurrentStatus());
-        stateMachine.processStatusAction(new DoneReplayingEventsAction(time.now()));
-        assertEquals(PlatformStatus.OBSERVING, stateMachine.getCurrentStatus());
-        stateMachine.processStatusAction(new FallenBehindAction());
-        assertEquals(PlatformStatus.BEHIND, stateMachine.getCurrentStatus());
-        stateMachine.processStatusAction(new ReconnectCompleteAction(5));
-        assertEquals(PlatformStatus.RECONNECT_COMPLETE, stateMachine.getCurrentStatus());
-        stateMachine.processStatusAction(new FreezePeriodEnteredAction(10));
-        assertEquals(PlatformStatus.RECONNECT_COMPLETE, stateMachine.getCurrentStatus());
-        stateMachine.processStatusAction(new StateWrittenToDiskAction(11, false));
-        assertEquals(PlatformStatus.FREEZING, stateMachine.getCurrentStatus());
+        assertEquals(REPLAYING_EVENTS, stateMachine.submitStatusAction(new StartedReplayingEventsAction()));
+        assertEquals(OBSERVING, stateMachine.submitStatusAction(new DoneReplayingEventsAction(time.now())));
+        assertEquals(BEHIND, stateMachine.submitStatusAction(new FallenBehindAction()));
+        assertEquals(RECONNECT_COMPLETE, stateMachine.submitStatusAction(new ReconnectCompleteAction(5)));
+        assertNull(stateMachine.submitStatusAction(new FreezePeriodEnteredAction(10)));
+        assertEquals(FREEZING, stateMachine.submitStatusAction(new StateWrittenToDiskAction(11, false)));
     }
 
     @Test
     @DisplayName("STARTING_UP -> REPLAYING_EVENTS -> OBSERVING -> BEHIND -> RECONNECT_COMPLETE -> CHECKING")
     void checkingAfterReconnectComplete() {
-        assertEquals(PlatformStatus.STARTING_UP, stateMachine.getCurrentStatus());
-        stateMachine.processStatusAction(new StartedReplayingEventsAction());
-        assertEquals(PlatformStatus.REPLAYING_EVENTS, stateMachine.getCurrentStatus());
-        stateMachine.processStatusAction(new DoneReplayingEventsAction(time.now()));
-        assertEquals(PlatformStatus.OBSERVING, stateMachine.getCurrentStatus());
-        stateMachine.processStatusAction(new FallenBehindAction());
-        assertEquals(PlatformStatus.BEHIND, stateMachine.getCurrentStatus());
-        stateMachine.processStatusAction(new ReconnectCompleteAction(5));
-        assertEquals(PlatformStatus.RECONNECT_COMPLETE, stateMachine.getCurrentStatus());
-        stateMachine.processStatusAction(new StateWrittenToDiskAction(11, false));
-        assertEquals(PlatformStatus.CHECKING, stateMachine.getCurrentStatus());
+        assertEquals(REPLAYING_EVENTS, stateMachine.submitStatusAction(new StartedReplayingEventsAction()));
+        assertEquals(OBSERVING, stateMachine.submitStatusAction(new DoneReplayingEventsAction(time.now())));
+        assertEquals(BEHIND, stateMachine.submitStatusAction(new FallenBehindAction()));
+        assertEquals(RECONNECT_COMPLETE, stateMachine.submitStatusAction(new ReconnectCompleteAction(5)));
+        assertEquals(CHECKING, stateMachine.submitStatusAction(new StateWrittenToDiskAction(11, false)));
     }
 
     @Test
     @DisplayName("STARTING_UP -> CATASTROPHIC_FAILURE")
     void startingUpToCatastrophicFailure() {
-        assertEquals(PlatformStatus.STARTING_UP, stateMachine.getCurrentStatus());
-        stateMachine.processStatusAction(new CatastrophicFailureAction());
-        assertEquals(PlatformStatus.CATASTROPHIC_FAILURE, stateMachine.getCurrentStatus());
+        assertEquals(CATASTROPHIC_FAILURE, stateMachine.submitStatusAction(new CatastrophicFailureAction()));
     }
 
     @Test
     @DisplayName("REPLAYING_EVENTS -> CATASTROPHIC_FAILURE")
     void replayingEventsToCatastrophicFailure() {
-        assertEquals(PlatformStatus.STARTING_UP, stateMachine.getCurrentStatus());
-        stateMachine.processStatusAction(new StartedReplayingEventsAction());
-        assertEquals(PlatformStatus.REPLAYING_EVENTS, stateMachine.getCurrentStatus());
-        stateMachine.processStatusAction(new CatastrophicFailureAction());
-        assertEquals(PlatformStatus.CATASTROPHIC_FAILURE, stateMachine.getCurrentStatus());
+        assertEquals(REPLAYING_EVENTS, stateMachine.submitStatusAction(new StartedReplayingEventsAction()));
+        assertEquals(CATASTROPHIC_FAILURE, stateMachine.submitStatusAction(new CatastrophicFailureAction()));
     }
 
     @Test
     @DisplayName("OBSERVING -> CATASTROPHIC_FAILURE")
     void observingToCatastrophicFailure() {
-        assertEquals(PlatformStatus.STARTING_UP, stateMachine.getCurrentStatus());
-        stateMachine.processStatusAction(new StartedReplayingEventsAction());
-        assertEquals(PlatformStatus.REPLAYING_EVENTS, stateMachine.getCurrentStatus());
-        stateMachine.processStatusAction(new DoneReplayingEventsAction(time.now()));
-        assertEquals(PlatformStatus.OBSERVING, stateMachine.getCurrentStatus());
-        stateMachine.processStatusAction(new CatastrophicFailureAction());
-        assertEquals(PlatformStatus.CATASTROPHIC_FAILURE, stateMachine.getCurrentStatus());
+        assertEquals(REPLAYING_EVENTS, stateMachine.submitStatusAction(new StartedReplayingEventsAction()));
+        assertEquals(OBSERVING, stateMachine.submitStatusAction(new DoneReplayingEventsAction(time.now())));
+        assertEquals(CATASTROPHIC_FAILURE, stateMachine.submitStatusAction(new CatastrophicFailureAction()));
     }
 
     @Test
     @DisplayName("CHECKING -> CATASTROPHIC_FAILURE")
     void checkingToCatastrophicFailure() {
-        assertEquals(PlatformStatus.STARTING_UP, stateMachine.getCurrentStatus());
-        stateMachine.processStatusAction(new StartedReplayingEventsAction());
-        assertEquals(PlatformStatus.REPLAYING_EVENTS, stateMachine.getCurrentStatus());
-        stateMachine.processStatusAction(new DoneReplayingEventsAction(time.now()));
-        assertEquals(PlatformStatus.OBSERVING, stateMachine.getCurrentStatus());
+        assertEquals(REPLAYING_EVENTS, stateMachine.submitStatusAction(new StartedReplayingEventsAction()));
+        assertEquals(OBSERVING, stateMachine.submitStatusAction(new DoneReplayingEventsAction(time.now())));
         time.tick(Duration.ofSeconds(6));
-        stateMachine.processStatusAction(new TimeElapsedAction(time.now()));
-        assertEquals(PlatformStatus.CHECKING, stateMachine.getCurrentStatus());
-        stateMachine.processStatusAction(new CatastrophicFailureAction());
-        assertEquals(PlatformStatus.CATASTROPHIC_FAILURE, stateMachine.getCurrentStatus());
+        assertEquals(CHECKING, stateMachine.submitStatusAction(new TimeElapsedAction(time.now())));
+        assertEquals(CATASTROPHIC_FAILURE, stateMachine.submitStatusAction(new CatastrophicFailureAction()));
     }
 
     @Test
     @DisplayName("RECONNECT_COMPLETE -> CATASTROPHIC_FAILURE")
     void reconnectCompleteToCatastrophicFailure() {
-        assertEquals(PlatformStatus.STARTING_UP, stateMachine.getCurrentStatus());
-        stateMachine.processStatusAction(new StartedReplayingEventsAction());
-        assertEquals(PlatformStatus.REPLAYING_EVENTS, stateMachine.getCurrentStatus());
-        stateMachine.processStatusAction(new DoneReplayingEventsAction(time.now()));
-        assertEquals(PlatformStatus.OBSERVING, stateMachine.getCurrentStatus());
-        stateMachine.processStatusAction(new FallenBehindAction());
-        assertEquals(PlatformStatus.BEHIND, stateMachine.getCurrentStatus());
-        stateMachine.processStatusAction(new ReconnectCompleteAction(5));
-        assertEquals(PlatformStatus.RECONNECT_COMPLETE, stateMachine.getCurrentStatus());
-        stateMachine.processStatusAction(new CatastrophicFailureAction());
-        assertEquals(PlatformStatus.CATASTROPHIC_FAILURE, stateMachine.getCurrentStatus());
+        assertEquals(REPLAYING_EVENTS, stateMachine.submitStatusAction(new StartedReplayingEventsAction()));
+        assertEquals(OBSERVING, stateMachine.submitStatusAction(new DoneReplayingEventsAction(time.now())));
+        assertEquals(BEHIND, stateMachine.submitStatusAction(new FallenBehindAction()));
+        assertEquals(RECONNECT_COMPLETE, stateMachine.submitStatusAction(new ReconnectCompleteAction(5)));
+        assertEquals(CATASTROPHIC_FAILURE, stateMachine.submitStatusAction(new CatastrophicFailureAction()));
     }
 
     @Test
     @DisplayName("ACTIVE -> CATASTROPHIC_FAILURE")
     void activeToCatastrophicFailure() {
-        assertEquals(PlatformStatus.STARTING_UP, stateMachine.getCurrentStatus());
-        stateMachine.processStatusAction(new StartedReplayingEventsAction());
-        assertEquals(PlatformStatus.REPLAYING_EVENTS, stateMachine.getCurrentStatus());
-        stateMachine.processStatusAction(new DoneReplayingEventsAction(time.now()));
-        assertEquals(PlatformStatus.OBSERVING, stateMachine.getCurrentStatus());
+        assertEquals(REPLAYING_EVENTS, stateMachine.submitStatusAction(new StartedReplayingEventsAction()));
+        assertEquals(OBSERVING, stateMachine.submitStatusAction(new DoneReplayingEventsAction(time.now())));
         time.tick(Duration.ofSeconds(6));
-        stateMachine.processStatusAction(new TimeElapsedAction(time.now()));
-        assertEquals(PlatformStatus.CHECKING, stateMachine.getCurrentStatus());
-        stateMachine.processStatusAction(new SelfEventReachedConsensusAction(time.now()));
-        assertEquals(PlatformStatus.ACTIVE, stateMachine.getCurrentStatus());
-        stateMachine.processStatusAction(new CatastrophicFailureAction());
-        assertEquals(PlatformStatus.CATASTROPHIC_FAILURE, stateMachine.getCurrentStatus());
+        assertEquals(CHECKING, stateMachine.submitStatusAction(new TimeElapsedAction(time.now())));
+        assertEquals(ACTIVE, stateMachine.submitStatusAction(new SelfEventReachedConsensusAction(time.now())));
+        assertEquals(CATASTROPHIC_FAILURE, stateMachine.submitStatusAction(new CatastrophicFailureAction()));
     }
 
     @Test
     @DisplayName("BEHIND -> CATASTROPHIC_FAILURE")
     void behindToCatastrophicFailure() {
-        assertEquals(PlatformStatus.STARTING_UP, stateMachine.getCurrentStatus());
-        stateMachine.processStatusAction(new StartedReplayingEventsAction());
-        assertEquals(PlatformStatus.REPLAYING_EVENTS, stateMachine.getCurrentStatus());
-        stateMachine.processStatusAction(new DoneReplayingEventsAction(time.now()));
-        assertEquals(PlatformStatus.OBSERVING, stateMachine.getCurrentStatus());
-        stateMachine.processStatusAction(new FallenBehindAction());
-        assertEquals(PlatformStatus.BEHIND, stateMachine.getCurrentStatus());
-        stateMachine.processStatusAction(new CatastrophicFailureAction());
-        assertEquals(PlatformStatus.CATASTROPHIC_FAILURE, stateMachine.getCurrentStatus());
+        assertEquals(REPLAYING_EVENTS, stateMachine.submitStatusAction(new StartedReplayingEventsAction()));
+        assertEquals(OBSERVING, stateMachine.submitStatusAction(new DoneReplayingEventsAction(time.now())));
+        assertEquals(BEHIND, stateMachine.submitStatusAction(new FallenBehindAction()));
+        assertEquals(CATASTROPHIC_FAILURE, stateMachine.submitStatusAction(new CatastrophicFailureAction()));
     }
 
     @Test
     @DisplayName("FREEZING -> CATASTROPHIC_FAILURE")
     void freezingToCatastrophicFailure() {
-        assertEquals(PlatformStatus.STARTING_UP, stateMachine.getCurrentStatus());
-        stateMachine.processStatusAction(new StartedReplayingEventsAction());
-        assertEquals(PlatformStatus.REPLAYING_EVENTS, stateMachine.getCurrentStatus());
-        stateMachine.processStatusAction(new DoneReplayingEventsAction(time.now()));
-        assertEquals(PlatformStatus.OBSERVING, stateMachine.getCurrentStatus());
-        stateMachine.processStatusAction(new FreezePeriodEnteredAction(2));
-        assertEquals(PlatformStatus.OBSERVING, stateMachine.getCurrentStatus());
+        assertEquals(REPLAYING_EVENTS, stateMachine.submitStatusAction(new StartedReplayingEventsAction()));
+        assertEquals(OBSERVING, stateMachine.submitStatusAction(new DoneReplayingEventsAction(time.now())));
+        assertNull(stateMachine.submitStatusAction(new FreezePeriodEnteredAction(2)));
         time.tick(Duration.ofSeconds(6));
-        stateMachine.processStatusAction(new TimeElapsedAction(time.now()));
-        assertEquals(PlatformStatus.FREEZING, stateMachine.getCurrentStatus());
-        stateMachine.processStatusAction(new CatastrophicFailureAction());
-        assertEquals(PlatformStatus.CATASTROPHIC_FAILURE, stateMachine.getCurrentStatus());
+        assertEquals(FREEZING, stateMachine.submitStatusAction(new TimeElapsedAction(time.now())));
+        assertEquals(CATASTROPHIC_FAILURE, stateMachine.submitStatusAction(new CatastrophicFailureAction()));
     }
 
     @Test
     @DisplayName("Illegal action")
     void illegalAction() {
-        assertEquals(PlatformStatus.STARTING_UP, stateMachine.getCurrentStatus());
-        stateMachine.processStatusAction(new FallenBehindAction());
-        assertEquals(PlatformStatus.STARTING_UP, stateMachine.getCurrentStatus());
+        // state machine must be robust to unexpected actions
+        assertNull(stateMachine.submitStatusAction(new FallenBehindAction()));
     }
 
     @Test
@@ -416,7 +309,6 @@ class PlatformStatusStateMachineTests {
         class UnknownAction implements PlatformStatusAction {}
 
         final UnknownAction unknownAction = new UnknownAction();
-        assertEquals(PlatformStatus.STARTING_UP, stateMachine.getCurrentStatus());
-        assertThrows(IllegalArgumentException.class, () -> stateMachine.processStatusAction(unknownAction));
+        assertThrows(IllegalArgumentException.class, () -> stateMachine.submitStatusAction(unknownAction));
     }
 }

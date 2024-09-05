@@ -21,23 +21,22 @@ import static com.swirlds.logging.legacy.LogMarker.SOCKET_EXCEPTIONS;
 
 import com.swirlds.common.crypto.config.CryptoConfig;
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.common.utility.throttle.RateLimiter;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.Utilities;
 import com.swirlds.platform.crypto.KeysAndCerts;
 import com.swirlds.platform.gossip.shadowgraph.SyncTimeoutException;
 import com.swirlds.platform.network.connectivity.SocketFactory;
-import com.swirlds.platform.network.connectivity.TcpFactory;
 import com.swirlds.platform.network.connectivity.TlsFactory;
 import com.swirlds.platform.system.PlatformConstructionException;
-import com.swirlds.platform.system.address.AddressBook;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.Closeable;
 import java.io.IOException;
-import java.security.KeyManagementException;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.UnrecoverableKeyException;
 import java.security.cert.CertificateException;
+import java.util.List;
 import java.util.Objects;
 import javax.net.ssl.SSLException;
 import org.apache.logging.log4j.LogManager;
@@ -72,10 +71,12 @@ public final class NetworkUtils {
      *
      * @param e          the exception that was thrown
      * @param connection the connection used when the exception was thrown
+     * @param socketExceptionRateLimiter a rate limiter for reporting full stack traces for socket exceptions
      * @throws InterruptedException if the provided exception is an {@link InterruptedException}, it will be rethrown
      *                              once the connection is closed
      */
-    public static void handleNetworkException(final Exception e, final Connection connection)
+    public static void handleNetworkException(
+            final Exception e, final Connection connection, final RateLimiter socketExceptionRateLimiter)
             throws InterruptedException {
         final String description;
         // always disconnect when an exception gets thrown
@@ -92,8 +93,12 @@ public final class NetworkUtils {
         // we use a different marker depending on what the root cause is
         final Marker marker = NetworkUtils.determineExceptionMarker(e);
         if (SOCKET_EXCEPTIONS.getMarker().equals(marker)) {
-            final String formattedException = NetworkUtils.formatException(e);
-            logger.warn(marker, "Connection broken: {} {}", description, formattedException);
+            if (socketExceptionRateLimiter.requestAndTrigger()) {
+                logger.warn(marker, "Connection broken: {}", description, e);
+            } else {
+                final String formattedException = NetworkUtils.formatException(e);
+                logger.warn(marker, "Connection broken: {} {}", description, formattedException);
+            }
         } else {
             logger.error(EXCEPTION.getMarker(), "Connection broken: {}", description, e);
         }
@@ -130,42 +135,34 @@ public final class NetworkUtils {
     }
 
     /**
-     * Create a {@link SocketFactory} based on the configuration and the provided keys and certificates. NOTE: This
-     * method is a stepping stone to decoupling the networking from the platform.
+     * Create a TLS-based {@link SocketFactory} using the provided keys and certificates.
+     * NOTE: This method is a stepping stone to decoupling the networking from the platform.
      *
      * @param selfId        the ID of the node
-     * @param addressBook   the address book of the network
+     * @param peers         the list of peers
      * @param keysAndCerts  the keys and certificates to use for the TLS connections
      * @param configuration the configuration of the network
      * @return the created {@link SocketFactory}
      */
     public static @NonNull SocketFactory createSocketFactory(
             @NonNull final NodeId selfId,
-            @NonNull final AddressBook addressBook,
+            @NonNull final List<PeerInfo> peers,
             @NonNull final KeysAndCerts keysAndCerts,
             @NonNull final Configuration configuration) {
         Objects.requireNonNull(selfId);
-        Objects.requireNonNull(addressBook);
+        Objects.requireNonNull(peers);
         Objects.requireNonNull(keysAndCerts);
         Objects.requireNonNull(configuration);
 
         final CryptoConfig cryptoConfig = configuration.getConfigData(CryptoConfig.class);
         final SocketConfig socketConfig = configuration.getConfigData(SocketConfig.class);
 
-        if (!socketConfig.useTLS()) {
-            return new TcpFactory(socketConfig);
-        }
         try {
             return new TlsFactory(
-                    keysAndCerts.agrCert(),
-                    keysAndCerts.agrKeyPair().getPrivate(),
-                    Utilities.createPeerInfoList(addressBook, selfId),
-                    socketConfig,
-                    cryptoConfig);
+                    keysAndCerts.agrCert(), keysAndCerts.agrKeyPair().getPrivate(), peers, socketConfig, cryptoConfig);
         } catch (final NoSuchAlgorithmException
                 | UnrecoverableKeyException
                 | KeyStoreException
-                | KeyManagementException
                 | CertificateException
                 | IOException e) {
             throw new PlatformConstructionException("A problem occurred while creating the SocketFactory", e);

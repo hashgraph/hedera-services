@@ -31,6 +31,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.PLATFORM_NOT_ACTIVE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.UNAUTHORIZED;
 import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.estimatedFee;
 import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
+import static com.hedera.node.app.workflows.handle.dispatch.DispatchValidator.WorkflowCheck.INGEST;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -79,6 +80,7 @@ import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.system.status.PlatformStatus;
 import java.time.Instant;
+import java.time.InstantSource;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
@@ -101,6 +103,8 @@ class IngestCheckerTest extends AppTestBase {
             SignatureMap.newBuilder().build();
 
     private static final Fees DEFAULT_FEES = new Fees(100L, 20L, 3L);
+
+    private final InstantSource instantSource = InstantSource.system();
 
     @Mock(strictness = LENIENT)
     CurrentPlatformStatus currentPlatformStatus;
@@ -162,11 +166,16 @@ class IngestCheckerTest extends AppTestBase {
                 .build();
 
         transactionInfo = new TransactionInfo(
-                tx, txBody, MOCK_SIGNATURE_MAP, tx.signedTransactionBytes(), HederaFunctionality.UNCHECKED_SUBMIT);
-        when(transactionChecker.check(tx)).thenReturn(transactionInfo);
+                tx,
+                txBody,
+                MOCK_SIGNATURE_MAP,
+                tx.signedTransactionBytes(),
+                HederaFunctionality.UNCHECKED_SUBMIT,
+                null);
+        when(transactionChecker.check(tx, null)).thenReturn(transactionInfo);
 
         final var configProvider = HederaTestConfigBuilder.createConfigProvider();
-        this.deduplicationCache = new DeduplicationCacheImpl(configProvider);
+        this.deduplicationCache = new DeduplicationCacheImpl(configProvider, instantSource);
 
         when(solvencyPreCheck.getPayerAccount(any(), eq(ALICE.accountID()))).thenReturn(ALICE.account());
         when(dispatcher.dispatchComputeFees(any())).thenReturn(DEFAULT_FEES);
@@ -182,7 +191,8 @@ class IngestCheckerTest extends AppTestBase {
                 dispatcher,
                 feeManager,
                 authorizer,
-                synchronizedThrottleAccumulator);
+                synchronizedThrottleAccumulator,
+                instantSource);
     }
 
     @Nested
@@ -231,7 +241,8 @@ class IngestCheckerTest extends AppTestBase {
                 dispatcher,
                 feeManager,
                 authorizer,
-                synchronizedThrottleAccumulator);
+                synchronizedThrottleAccumulator,
+                instantSource);
 
         // Then the checker should throw a PreCheckException
         assertThatThrownBy(() -> subject.runAllChecks(state, tx, configuration))
@@ -244,7 +255,12 @@ class IngestCheckerTest extends AppTestBase {
     void testRunAllChecksSuccessfully() throws Exception {
         // given
         final var expected = new TransactionInfo(
-                tx, txBody, MOCK_SIGNATURE_MAP, tx.signedTransactionBytes(), HederaFunctionality.UNCHECKED_SUBMIT);
+                tx,
+                txBody,
+                MOCK_SIGNATURE_MAP,
+                tx.signedTransactionBytes(),
+                HederaFunctionality.UNCHECKED_SUBMIT,
+                null);
         final var verificationResultFuture = mock(SignatureVerificationFuture.class);
         final var verificationResult = mock(SignatureVerification.class);
         when(verificationResult.failed()).thenReturn(false);
@@ -276,7 +292,7 @@ class IngestCheckerTest extends AppTestBase {
         @DisplayName("If the transaction fails TransactionChecker, a failure response is returned with the right error")
         void onsetFailsWithPreCheckException(ResponseCodeEnum failureReason) throws PreCheckException {
             // Given a TransactionChecker that will throw a PreCheckException with the given failure reason
-            when(transactionChecker.check(any())).thenThrow(new PreCheckException(failureReason));
+            when(transactionChecker.check(any(), eq(null))).thenThrow(new PreCheckException(failureReason));
 
             // When the transaction is checked
             assertThatThrownBy(() -> subject.runAllChecks(state, tx, configuration))
@@ -288,7 +304,7 @@ class IngestCheckerTest extends AppTestBase {
         @DisplayName("If some random exception is thrown from TransactionChecker, the exception is bubbled up")
         void randomException() throws PreCheckException {
             // Given a WorkflowOnset that will throw a RuntimeException
-            when(transactionChecker.check(any())).thenThrow(new RuntimeException("check exception"));
+            when(transactionChecker.check(any(), eq(null))).thenThrow(new RuntimeException("check exception"));
 
             // When the transaction is submitted, then the exception is bubbled up
             assertThatThrownBy(() -> subject.runAllChecks(state, tx, configuration))
@@ -411,7 +427,7 @@ class IngestCheckerTest extends AppTestBase {
             givenValidPayerSignature();
             doThrow(new InsufficientBalanceException(failureReason, 123L))
                     .when(solvencyPreCheck)
-                    .checkSolvency(any(), any(), any(), eq(Boolean.TRUE));
+                    .checkSolvency(any(), any(), any(), eq(INGEST));
 
             assertThatThrownBy(() -> subject.runAllChecks(state, tx, configuration))
                     .isInstanceOf(InsufficientBalanceException.class)
@@ -426,7 +442,7 @@ class IngestCheckerTest extends AppTestBase {
             givenValidPayerSignature();
             doThrow(new RuntimeException("checkSolvency exception"))
                     .when(solvencyPreCheck)
-                    .checkSolvency(any(), any(), any(), eq(Boolean.TRUE));
+                    .checkSolvency(any(), any(), any(), eq(INGEST));
 
             // When the transaction is submitted, then the exception is bubbled up
             assertThatThrownBy(() -> subject.runAllChecks(state, tx, configuration))
@@ -505,8 +521,9 @@ class IngestCheckerTest extends AppTestBase {
                     myTxBody,
                     MOCK_SIGNATURE_MAP,
                     myTx.signedTransactionBytes(),
-                    HederaFunctionality.UNCHECKED_SUBMIT);
-            when(transactionChecker.check(myTx)).thenReturn(myTransactionInfo);
+                    HederaFunctionality.UNCHECKED_SUBMIT,
+                    null);
+            when(transactionChecker.check(myTx, null)).thenReturn(myTransactionInfo);
             when(solvencyPreCheck.getPayerAccount(any(), eq(accountID))).thenReturn(account);
             final var verificationResultFutureAlice = mock(SignatureVerificationFuture.class);
             final var verificationResultAlice = mock(SignatureVerification.class);
@@ -557,8 +574,9 @@ class IngestCheckerTest extends AppTestBase {
                     myTxBody,
                     MOCK_SIGNATURE_MAP,
                     myTx.signedTransactionBytes(),
-                    HederaFunctionality.UNCHECKED_SUBMIT);
-            when(transactionChecker.check(myTx)).thenReturn(myTransactionInfo);
+                    HederaFunctionality.UNCHECKED_SUBMIT,
+                    null);
+            when(transactionChecker.check(myTx, null)).thenReturn(myTransactionInfo);
             when(solvencyPreCheck.getPayerAccount(any(), eq(accountID))).thenReturn(account);
             final var verificationResultFutureAlice = mock(SignatureVerificationFuture.class);
             final var verificationResultAlice = mock(SignatureVerification.class);
@@ -610,8 +628,9 @@ class IngestCheckerTest extends AppTestBase {
                     myTxBody,
                     MOCK_SIGNATURE_MAP,
                     myTx.signedTransactionBytes(),
-                    HederaFunctionality.UNCHECKED_SUBMIT);
-            when(transactionChecker.check(myTx)).thenReturn(myTransactionInfo);
+                    HederaFunctionality.UNCHECKED_SUBMIT,
+                    null);
+            when(transactionChecker.check(myTx, null)).thenReturn(myTransactionInfo);
             when(solvencyPreCheck.getPayerAccount(any(), eq(accountID))).thenReturn(account);
             final var verificationResultFutureAlice = mock(SignatureVerificationFuture.class);
             final var verificationResultAlice = mock(SignatureVerification.class);
@@ -664,8 +683,9 @@ class IngestCheckerTest extends AppTestBase {
                     myTxBody,
                     MOCK_SIGNATURE_MAP,
                     myTx.signedTransactionBytes(),
-                    HederaFunctionality.UNCHECKED_SUBMIT);
-            when(transactionChecker.check(myTx)).thenReturn(myTransactionInfo);
+                    HederaFunctionality.UNCHECKED_SUBMIT,
+                    null);
+            when(transactionChecker.check(myTx, null)).thenReturn(myTransactionInfo);
             when(solvencyPreCheck.getPayerAccount(any(), eq(accountID))).thenReturn(account);
             final var verificationResultFutureAlice = mock(SignatureVerificationFuture.class);
             final var verificationResultAlice = mock(SignatureVerification.class);

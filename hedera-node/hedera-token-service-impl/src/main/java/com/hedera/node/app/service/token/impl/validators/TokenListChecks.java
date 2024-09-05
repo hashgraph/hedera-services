@@ -24,7 +24,7 @@ import java.util.HashSet;
 import java.util.List;
 
 /**
- * Utility methods for checking the validity of {@link TokenID} lists
+ * Utility methods for checking the validity of {@link TokenID} lists.
  */
 public final class TokenListChecks {
 
@@ -33,9 +33,10 @@ public final class TokenListChecks {
     }
 
     /**
-     * Verifies that a list of {@link TokenID}s contains no duplicates
+     * Verifies that a list of {@link TokenID}s contains no duplicates.
      *
      * @param tokens the list of {@link TokenID}s to check
+     * @return {@code true} if the list contains no duplicates, {@code false} otherwise
      * @throws NullPointerException if {@code tokens} is {@code null}
      */
     public static boolean repeatsItself(@NonNull final List<TokenID> tokens) {

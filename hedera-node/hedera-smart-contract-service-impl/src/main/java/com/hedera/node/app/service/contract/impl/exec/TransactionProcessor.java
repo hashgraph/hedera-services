@@ -35,7 +35,6 @@ import com.hedera.node.app.service.contract.impl.exec.failure.AbortException;
 import com.hedera.node.app.service.contract.impl.exec.gas.CustomGasCharging;
 import com.hedera.node.app.service.contract.impl.exec.processors.CustomMessageCallProcessor;
 import com.hedera.node.app.service.contract.impl.exec.utils.FrameBuilder;
-import com.hedera.node.app.service.contract.impl.hevm.ActionSidecarContentTracer;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmContext;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmTransaction;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmTransactionResult;
@@ -43,6 +42,7 @@ import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import com.hedera.node.app.service.contract.impl.state.HederaEvmAccount;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.ResourceExhaustedException;
+import com.hedera.node.config.data.ContractsConfig;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -91,6 +91,15 @@ public class TransactionProcessor {
         AccountID senderId() {
             return sender.hederaId();
         }
+    }
+
+    /**
+     * Returns the feature flags used by this processor.
+     *
+     * @return the feature flags
+     */
+    public FeatureFlags featureFlags() {
+        return featureFlags;
     }
 
     /**
@@ -270,7 +279,8 @@ public class TransactionProcessor {
         final var maybeGrandfatheredNumber =
                 (to == null) ? null : to.isTokenFacade() ? null : to.hederaId().accountNumOrThrow();
 
-        return featureFlags.isAllowCallsToNonContractAccountsEnabled(config, maybeGrandfatheredNumber);
+        return featureFlags.isAllowCallsToNonContractAccountsEnabled(
+                config.getConfigData(ContractsConfig.class), maybeGrandfatheredNumber);
     }
 
     private InvolvedParties partiesWhenContractRequired(
@@ -316,8 +326,6 @@ public class TransactionProcessor {
                         new InvolvedParties(sender, relayer, contractIDToBesuAddress(transaction.contractIdOrThrow()));
             }
         } else {
-            // In order to be EVM equivalent, we need to gracefully handle calls to potentially non-existent contracts
-            // and thus create a receiver address even if it may not exist in the ledger
             updater.setContractNotRequired();
             parties = new InvolvedParties(
                     sender,

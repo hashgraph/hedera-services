@@ -16,23 +16,27 @@
 
 package com.hedera.services.bdd.spec.queries.token;
 
+import static com.hedera.node.app.hapi.utils.CommonPbjConverters.fromPbj;
 import static com.hedera.services.bdd.spec.queries.QueryUtils.answerCostHeader;
 import static com.hedera.services.bdd.spec.queries.QueryUtils.answerHeader;
-import static java.util.stream.Collectors.toCollection;
+import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.google.common.base.MoreObjects;
 import com.hedera.services.bdd.spec.HapiSpec;
+import com.hedera.services.bdd.spec.SpecOperation;
 import com.hedera.services.bdd.spec.infrastructure.HapiSpecRegistry;
 import com.hedera.services.bdd.spec.queries.HapiQueryOp;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
-import com.hedera.services.bdd.suites.hip796.operations.TokenFeature;
 import com.hederahashgraph.api.proto.java.CustomFee;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Query;
-import com.hederahashgraph.api.proto.java.Response;
+import com.hederahashgraph.api.proto.java.ResponseType;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenFreezeStatus;
 import com.hederahashgraph.api.proto.java.TokenGetInfoQuery;
+import com.hederahashgraph.api.proto.java.TokenInfo;
 import com.hederahashgraph.api.proto.java.TokenKycStatus;
 import com.hederahashgraph.api.proto.java.TokenPauseStatus;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
@@ -41,20 +45,17 @@ import com.hederahashgraph.api.proto.java.Transaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.EnumSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.OptionalLong;
-import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
+import java.util.function.Function;
 import java.util.function.LongConsumer;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.junit.jupiter.api.Assertions;
 
 public class HapiGetTokenInfo extends HapiQueryOp<HapiGetTokenInfo> {
     private static final Logger LOG = LogManager.getLogger(HapiGetTokenInfo.class);
@@ -82,24 +83,49 @@ public class HapiGetTokenInfo extends HapiQueryOp<HapiGetTokenInfo> {
     private Optional<String> expectedSymbol = Optional.empty();
     private Optional<String> expectedName = Optional.empty();
     private Optional<String> expectedTreasury = Optional.empty();
+
+    @Nullable
+    private com.hedera.hapi.node.base.Key explicitAdminKey;
+
     private Optional<String> expectedAdminKey = Optional.empty();
+
+    @Nullable
+    private com.hedera.hapi.node.base.Key explicitKycKey;
+
     private Optional<String> expectedKycKey = Optional.empty();
+
+    @Nullable
+    private com.hedera.hapi.node.base.Key explicitFreezeKey;
+
     private Optional<String> expectedFreezeKey = Optional.empty();
+
+    @Nullable
+    private com.hedera.hapi.node.base.Key explicitSupplyKey;
+
     private Optional<String> expectedSupplyKey = Optional.empty();
+
+    @Nullable
+    private com.hedera.hapi.node.base.Key explicitWipeKey;
+
     private Optional<String> expectedWipeKey = Optional.empty();
+
+    @Nullable
+    private com.hedera.hapi.node.base.Key explicitFeeScheduleKey;
+
     private Optional<String> expectedFeeScheduleKey = Optional.empty();
+
+    @Nullable
+    private com.hedera.hapi.node.base.Key explicitPauseKey;
+
     private Optional<String> expectedPauseKey = Optional.empty();
-
-    @Nullable
-    private String expectedLockKey = null;
-
-    @Nullable
-    private String expectedPartitionKey = null;
-
-    @Nullable
-    private String expectedPartitionMoveKey = null;
-
-    private Set<TokenFeature> rolesExpectedUnset = EnumSet.noneOf(TokenFeature.class);
+    private boolean emptyAdminKey = false;
+    private boolean emptyWipeKey = false;
+    private boolean emptyKycKey = false;
+    private boolean emptySupplyKey = false;
+    private boolean emptyFreezeKey = false;
+    private boolean emptyFeeScheduleKey = false;
+    private boolean emptyMetadataKey = false;
+    private boolean emptyPauseKey = false;
 
     @SuppressWarnings("java:S1068")
     private Optional<Boolean> expectedDeletion = Optional.empty();
@@ -117,6 +143,11 @@ public class HapiGetTokenInfo extends HapiQueryOp<HapiGetTokenInfo> {
     private Optional<Boolean> expectedExpiry = Optional.empty();
     private List<BiConsumer<HapiSpec, List<CustomFee>>> expectedFees = new ArrayList<>();
 
+    private long explicitExpiry = -1;
+
+    @Nullable
+    private Function<TokenInfo, SpecOperation> validationOp = null;
+
     @Override
     public HederaFunctionality type() {
         return HederaFunctionality.TokenGetInfo;
@@ -129,6 +160,17 @@ public class HapiGetTokenInfo extends HapiQueryOp<HapiGetTokenInfo> {
 
     public HapiGetTokenInfo hasTokenType(TokenType t) {
         expectedTokenType = Optional.of(t);
+        return this;
+    }
+
+    /**
+     * Add a validation operation to be run on the token info.
+     *
+     * @param validationOp the validation operation
+     * @return {@code this}
+     */
+    public HapiGetTokenInfo andVerify(@NonNull final Function<TokenInfo, SpecOperation> validationOp) {
+        this.validationOp = validationOp;
         return this;
     }
 
@@ -202,6 +244,11 @@ public class HapiGetTokenInfo extends HapiQueryOp<HapiGetTokenInfo> {
         return this;
     }
 
+    public HapiGetTokenInfo hasExpiry(final long expiry) {
+        explicitExpiry = expiry;
+        return this;
+    }
+
     public HapiGetTokenInfo hasSymbol(String token) {
         expectedSymbol = Optional.of(token);
         return this;
@@ -222,8 +269,23 @@ public class HapiGetTokenInfo extends HapiQueryOp<HapiGetTokenInfo> {
         return this;
     }
 
+    public HapiGetTokenInfo hasFreezeKey(com.hedera.hapi.node.base.Key key) {
+        explicitFreezeKey = key;
+        return this;
+    }
+
     public HapiGetTokenInfo hasAdminKey(String name) {
         expectedAdminKey = Optional.of(name);
+        return this;
+    }
+
+    public HapiGetTokenInfo hasAdminKey(com.hedera.hapi.node.base.Key key) {
+        explicitAdminKey = key;
+        return this;
+    }
+
+    public HapiGetTokenInfo hasPauseKey(com.hedera.hapi.node.base.Key key) {
+        explicitPauseKey = key;
         return this;
     }
 
@@ -232,30 +294,13 @@ public class HapiGetTokenInfo extends HapiQueryOp<HapiGetTokenInfo> {
         return this;
     }
 
-    public HapiGetTokenInfo hasLockKey(@NonNull final String name) {
-        expectedLockKey = Objects.requireNonNull(name);
-        return this;
-    }
-
-    public HapiGetTokenInfo hasPartitionKey(@NonNull final String name) {
-        expectedPartitionKey = Objects.requireNonNull(name);
-        return this;
-    }
-
-    public HapiGetTokenInfo hasPartitionMoveKey(@NonNull final String name) {
-        expectedPartitionMoveKey = Objects.requireNonNull(name);
-        return this;
-    }
-
-    public HapiGetTokenInfo hasNoneOfRoles(@NonNull final TokenFeature... unsetRoles) {
-        this.rolesExpectedUnset = unsetRoles.length == 0
-                ? EnumSet.noneOf(TokenFeature.class)
-                : Arrays.stream(unsetRoles).collect(toCollection(() -> EnumSet.noneOf(TokenFeature.class)));
-        return this;
-    }
-
     public HapiGetTokenInfo hasPauseStatus(TokenPauseStatus status) {
         expectedPauseStatus = Optional.of(status);
+        return this;
+    }
+
+    public HapiGetTokenInfo hasKycKey(com.hedera.hapi.node.base.Key key) {
+        explicitKycKey = key;
         return this;
     }
 
@@ -264,13 +309,28 @@ public class HapiGetTokenInfo extends HapiQueryOp<HapiGetTokenInfo> {
         return this;
     }
 
+    public HapiGetTokenInfo hasSupplyKey(com.hedera.hapi.node.base.Key key) {
+        explicitSupplyKey = key;
+        return this;
+    }
+
     public HapiGetTokenInfo hasSupplyKey(String name) {
         expectedSupplyKey = Optional.of(name);
         return this;
     }
 
+    public HapiGetTokenInfo hasWipeKey(com.hedera.hapi.node.base.Key key) {
+        explicitWipeKey = key;
+        return this;
+    }
+
     public HapiGetTokenInfo hasWipeKey(String name) {
         expectedWipeKey = Optional.of(name);
+        return this;
+    }
+
+    public HapiGetTokenInfo hasFeeScheduleKey(com.hedera.hapi.node.base.Key key) {
+        explicitFeeScheduleKey = key;
         return this;
     }
 
@@ -294,8 +354,53 @@ public class HapiGetTokenInfo extends HapiQueryOp<HapiGetTokenInfo> {
         return this;
     }
 
+    public HapiGetTokenInfo hasEmptyCustom() {
+        expectedFees = new ArrayList<>();
+        return this;
+    }
+
     public HapiGetTokenInfo searchKeysGlobally() {
         searchKeysGlobally = true;
+        return this;
+    }
+
+    public HapiGetTokenInfo hasEmptyAdminKey() {
+        emptyAdminKey = true;
+        return this;
+    }
+
+    public HapiGetTokenInfo hasEmptyPauseKey() {
+        emptyPauseKey = true;
+        return this;
+    }
+
+    public HapiGetTokenInfo hasEmptyFreezeKey() {
+        emptyFreezeKey = true;
+        return this;
+    }
+
+    public HapiGetTokenInfo hasEmptyKycKey() {
+        emptyKycKey = true;
+        return this;
+    }
+
+    public HapiGetTokenInfo hasEmptySupplyKey() {
+        emptySupplyKey = true;
+        return this;
+    }
+
+    public HapiGetTokenInfo hasEmptyWipeKey() {
+        emptyWipeKey = true;
+        return this;
+    }
+
+    public HapiGetTokenInfo hasEmptyFeeScheduleKey() {
+        emptyFeeScheduleKey = true;
+        return this;
+    }
+
+    public HapiGetTokenInfo hasEmptyMetadataKey() {
+        emptyMetadataKey = true;
         return this;
     }
 
@@ -304,64 +409,66 @@ public class HapiGetTokenInfo extends HapiQueryOp<HapiGetTokenInfo> {
     protected void assertExpectationsGiven(HapiSpec spec) {
         var actualInfo = response.getTokenGetInfo().getTokenInfo();
 
+        if (validationOp != null) {
+            allRunFor(spec, validationOp.apply(actualInfo));
+        }
+
         expectedTokenType.ifPresent(
-                tokenType -> Assertions.assertEquals(tokenType, actualInfo.getTokenType(), "Wrong token type!"));
+                tokenType -> assertEquals(tokenType, actualInfo.getTokenType(), "Wrong token type!"));
 
         expectedSupplyType.ifPresent(
-                supplyType -> Assertions.assertEquals(supplyType, actualInfo.getSupplyType(), "Wrong supply type!"));
+                supplyType -> assertEquals(supplyType, actualInfo.getSupplyType(), "Wrong supply type!"));
 
         if (expectedSymbol.isPresent()) {
-            Assertions.assertEquals(expectedSymbol.get(), actualInfo.getSymbol(), "Wrong symbol!");
+            assertEquals(expectedSymbol.get(), actualInfo.getSymbol(), "Wrong symbol!");
         }
 
         if (expectedName.isPresent()) {
-            Assertions.assertEquals(expectedName.get(), actualInfo.getName(), "Wrong name!");
+            assertEquals(expectedName.get(), actualInfo.getName(), "Wrong name!");
         }
 
         if (expectedAutoRenewAccount.isPresent()) {
             var id = TxnUtils.asId(expectedAutoRenewAccount.get(), spec);
-            Assertions.assertEquals(id, actualInfo.getAutoRenewAccount(), "Wrong auto renew account!");
+            assertEquals(id, actualInfo.getAutoRenewAccount(), "Wrong auto renew account!");
         }
 
         if (expectedAutoRenewPeriod.isPresent()) {
-            Assertions.assertEquals(
+            assertEquals(
                     expectedAutoRenewPeriod.getAsLong(),
                     actualInfo.getAutoRenewPeriod().getSeconds(),
                     "Wrong auto renew period!");
         }
 
         if (expectedMaxSupply.isPresent()) {
-            Assertions.assertEquals(expectedMaxSupply.getAsLong(), actualInfo.getMaxSupply(), "Wrong max supply!");
+            assertEquals(expectedMaxSupply.getAsLong(), actualInfo.getMaxSupply(), "Wrong max supply!");
         }
 
         if (expectedTotalSupply.isPresent()) {
-            Assertions.assertEquals(
-                    expectedTotalSupply.getAsLong(), actualInfo.getTotalSupply(), "Wrong total supply!");
+            assertEquals(expectedTotalSupply.getAsLong(), actualInfo.getTotalSupply(), "Wrong total supply!");
         }
         if (totalSupplyAssertion != null) {
             totalSupplyAssertion.accept(actualInfo.getTotalSupply());
         }
 
         if (expectedDecimals.isPresent()) {
-            Assertions.assertEquals(expectedDecimals.getAsInt(), actualInfo.getDecimals(), "Wrong decimals!");
+            assertEquals(expectedDecimals.getAsInt(), actualInfo.getDecimals(), "Wrong decimals!");
         }
 
         if (expectedTreasury.isPresent()) {
             var id = TxnUtils.asId(expectedTreasury.get(), spec);
-            Assertions.assertEquals(id, actualInfo.getTreasury(), "Wrong treasury account!");
+            assertEquals(id, actualInfo.getTreasury(), "Wrong treasury account!");
         }
 
         expectedPauseStatus.ifPresent(
-                status -> Assertions.assertEquals(status, actualInfo.getPauseStatus(), "wrong Pause status"));
+                status -> assertEquals(status, actualInfo.getPauseStatus(), "wrong Pause status"));
 
         final var actualFees = actualInfo.getCustomFeesList();
         for (var expectedFee : expectedFees) {
             expectedFee.accept(spec, actualFees);
         }
 
-        expectedMemo.ifPresent(s -> Assertions.assertEquals(s, actualInfo.getMemo(), "Wrong memo!"));
-        expectedMetadata.ifPresent(
-                s -> Assertions.assertEquals(s, actualInfo.getMetadata().toStringUtf8(), "Wrong metadata!"));
+        expectedMemo.ifPresent(s -> assertEquals(s, actualInfo.getMemo(), "Wrong memo!"));
+        expectedMetadata.ifPresent(s -> assertEquals(s, actualInfo.getMetadata().toStringUtf8(), "Wrong metadata!"));
 
         var registry = spec.registry();
         assertFor(actualInfo.getTokenId(), expectedId, (n, r) -> r.getTokenID(n), "Wrong token id!", registry);
@@ -371,62 +478,115 @@ public class HapiGetTokenInfo extends HapiQueryOp<HapiGetTokenInfo> {
                 (n, r) -> Timestamp.newBuilder().setSeconds(r.getExpiry(token)).build(),
                 "Wrong token expiry!",
                 registry);
-        assertFor(
-                actualInfo.getFreezeKey(),
-                expectedFreezeKey,
-                (n, r) -> searchKeysGlobally ? r.getKey(n) : r.getFreezeKey(n),
-                "Wrong token freeze key!",
-                registry);
-        assertFor(
-                actualInfo.getAdminKey(),
-                expectedAdminKey,
-                (n, r) -> searchKeysGlobally ? r.getKey(n) : r.getAdminKey(n),
-                "Wrong token admin key!",
-                registry);
 
-        assertFor(
-                actualInfo.getWipeKey(),
-                expectedWipeKey,
-                (n, r) -> searchKeysGlobally ? r.getKey(n) : r.getWipeKey(n),
-                "Wrong token wipe key!",
-                registry);
+        if (explicitExpiry != -1) {
+            assertEquals(explicitExpiry, actualInfo.getExpiry().getSeconds(), "Wrong token expiry");
+        }
 
-        assertFor(
-                actualInfo.getKycKey(),
-                expectedKycKey,
-                (n, r) -> searchKeysGlobally ? r.getKey(n) : r.getKycKey(n),
-                "Wrong token KYC key!",
-                registry);
+        if (emptyFreezeKey) {
+            assertForRemovedKey(actualInfo.getFreezeKey());
+        } else if (explicitFreezeKey != null) {
+            assertEquals(fromPbj(explicitFreezeKey), actualInfo.getFreezeKey(), "Wrong token freeze key!");
+        } else {
+            assertFor(
+                    actualInfo.getFreezeKey(),
+                    expectedFreezeKey,
+                    (n, r) -> searchKeysGlobally ? r.getKey(n) : r.getFreezeKey(n),
+                    "Wrong token freeze key!",
+                    registry);
+        }
 
-        assertFor(
-                actualInfo.getSupplyKey(),
-                expectedSupplyKey,
-                (n, r) -> searchKeysGlobally ? r.getKey(n) : r.getSupplyKey(n),
-                "Wrong token supply key!",
-                registry);
+        if (emptyAdminKey) {
+            assertForRemovedKey(actualInfo.getAdminKey());
+        } else if (explicitAdminKey != null) {
+            assertEquals(fromPbj(explicitAdminKey), actualInfo.getAdminKey(), "Wrong token admin key!");
+        } else {
+            assertFor(
+                    actualInfo.getAdminKey(),
+                    expectedAdminKey,
+                    (n, r) -> searchKeysGlobally ? r.getKey(n) : r.getAdminKey(n),
+                    "Wrong token admin key!",
+                    registry);
+        }
 
-        assertFor(
-                actualInfo.getFeeScheduleKey(),
-                expectedFeeScheduleKey,
-                (n, r) -> searchKeysGlobally ? r.getKey(n) : r.getFeeScheduleKey(n),
-                "Wrong token fee schedule key!",
-                registry);
+        if (emptyWipeKey) {
+            assertForRemovedKey(actualInfo.getWipeKey());
+        } else if (explicitWipeKey != null) {
+            assertEquals(fromPbj(explicitWipeKey), actualInfo.getWipeKey(), "Wrong token wipe key!");
+        } else {
+            assertFor(
+                    actualInfo.getWipeKey(),
+                    expectedWipeKey,
+                    (n, r) -> searchKeysGlobally ? r.getKey(n) : r.getWipeKey(n),
+                    "Wrong token wipe key!",
+                    registry);
+        }
 
-        assertFor(
-                actualInfo.getPauseKey(),
-                expectedPauseKey,
-                (n, r) -> searchKeysGlobally ? r.getKey(n) : r.getPauseKey(n),
-                "Wrong token pause key!",
-                registry);
+        if (emptyKycKey) {
+            assertForRemovedKey(actualInfo.getKycKey());
+        } else if (explicitKycKey != null) {
+            assertEquals(fromPbj(explicitKycKey), actualInfo.getKycKey(), "Wrong token KYC key!");
+        } else {
+            assertFor(
+                    actualInfo.getKycKey(),
+                    expectedKycKey,
+                    (n, r) -> searchKeysGlobally ? r.getKey(n) : r.getKycKey(n),
+                    "Wrong token KYC key!",
+                    registry);
+        }
 
-        assertFor(
-                actualInfo.getMetadataKey(),
-                expectedMetadataKey,
-                (n, r) -> searchKeysGlobally ? r.getKey(n) : r.getMetadataKey(n),
-                "Wrong token metadata key!",
-                registry);
+        if (emptySupplyKey) {
+            assertForRemovedKey(actualInfo.getSupplyKey());
+        } else if (explicitSupplyKey != null) {
+            assertEquals(fromPbj(explicitSupplyKey), actualInfo.getSupplyKey(), "Wrong token supply key!");
+        } else {
+            assertFor(
+                    actualInfo.getSupplyKey(),
+                    expectedSupplyKey,
+                    (n, r) -> searchKeysGlobally ? r.getKey(n) : r.getSupplyKey(n),
+                    "Wrong token supply key!",
+                    registry);
+        }
 
-        expectedLedgerId.ifPresent(id -> Assertions.assertEquals(id, actualInfo.getLedgerId()));
+        if (emptyFeeScheduleKey) {
+            assertForRemovedKey(actualInfo.getFeeScheduleKey());
+        } else if (explicitFeeScheduleKey != null) {
+            assertEquals(
+                    fromPbj(explicitFeeScheduleKey), actualInfo.getFeeScheduleKey(), "Wrong token fee schedule key!");
+        } else {
+            assertFor(
+                    actualInfo.getFeeScheduleKey(),
+                    expectedFeeScheduleKey,
+                    (n, r) -> searchKeysGlobally ? r.getKey(n) : r.getFeeScheduleKey(n),
+                    "Wrong token fee schedule key!",
+                    registry);
+        }
+
+        if (emptyPauseKey) {
+            assertForRemovedKey(actualInfo.getPauseKey());
+        } else if (explicitPauseKey != null) {
+            assertEquals(fromPbj(explicitPauseKey), actualInfo.getPauseKey(), "Wrong token pause key!");
+        } else {
+            assertFor(
+                    actualInfo.getPauseKey(),
+                    expectedPauseKey,
+                    (n, r) -> searchKeysGlobally ? r.getKey(n) : r.getPauseKey(n),
+                    "Wrong token pause key!",
+                    registry);
+        }
+
+        if (emptyMetadataKey) {
+            assertForRemovedKey(actualInfo.getMetadataKey());
+        } else {
+            assertFor(
+                    actualInfo.getMetadataKey(),
+                    expectedMetadataKey,
+                    (n, r) -> searchKeysGlobally ? r.getKey(n) : r.getMetadataKey(n),
+                    "Wrong token metadata key!",
+                    registry);
+        }
+
+        expectedLedgerId.ifPresent(id -> assertEquals(id, actualInfo.getLedgerId()));
     }
 
     private <T, R> void assertFor(
@@ -437,25 +597,30 @@ public class HapiGetTokenInfo extends HapiQueryOp<HapiGetTokenInfo> {
             HapiSpecRegistry registry) {
         if (possible.isPresent()) {
             var expected = expectedFn.apply(possible.get(), registry);
-            Assertions.assertEquals(expected, actual, error);
+            assertEquals(expected, actual, error);
         }
     }
 
+    private void assertForRemovedKey(Key actual) {
+        assertEquals(Key.getDefaultInstance(), actual, "Does not equal to a removed key");
+    }
+
     @Override
-    protected void submitWith(HapiSpec spec, Transaction payment) {
-        Query query = getTokenInfoQuery(spec, payment, false);
-        response = spec.clients().getTokenSvcStub(targetNodeFor(spec), useTls).getTokenInfo(query);
+    protected void processAnswerOnlyResponse(@NonNull final HapiSpec spec) {
         if (verboseLoggingOn) {
             LOG.info("Info for '{}': {}", () -> token, response.getTokenGetInfo()::getTokenInfo);
         }
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    protected long lookupCostWith(HapiSpec spec, Transaction payment) throws Throwable {
-        Query query = getTokenInfoQuery(spec, payment, true);
-        Response response =
-                spec.clients().getTokenSvcStub(targetNodeFor(spec), useTls).getTokenInfo(query);
-        return costFrom(response);
+    protected Query queryFor(
+            @NonNull final HapiSpec spec,
+            @NonNull final Transaction payment,
+            @NonNull final ResponseType responseType) {
+        return getTokenInfoQuery(spec, payment, responseType == ResponseType.COST_ANSWER);
     }
 
     private Query getTokenInfoQuery(HapiSpec spec, Transaction payment, boolean costOnly) {

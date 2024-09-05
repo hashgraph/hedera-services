@@ -16,27 +16,36 @@
 
 package com.swirlds.platform.test.fixtures.event;
 
-import static com.swirlds.platform.system.events.EventConstants.BIRTH_ROUND_UNDEFINED;
+import static com.hedera.hapi.platform.event.EventTransaction.TransactionOneOfType.APPLICATION_TRANSACTION;
+import static com.hedera.hapi.platform.event.EventTransaction.TransactionOneOfType.STATE_SIGNATURE_TRANSACTION;
+import static com.swirlds.platform.system.events.EventConstants.MINIMUM_ROUND_CREATED;
 
+import com.hedera.hapi.node.base.SemanticVersion;
+import com.hedera.hapi.platform.event.EventConsensusData;
+import com.hedera.hapi.platform.event.EventDescriptor;
+import com.hedera.hapi.platform.event.EventTransaction;
+import com.hedera.hapi.platform.event.EventTransaction.TransactionOneOfType;
+import com.hedera.hapi.platform.event.StateSignatureTransaction;
+import com.hedera.hapi.util.HapiUtils;
+import com.hedera.pbj.runtime.OneOf;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.crypto.SignatureType;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.RandomUtils;
-import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.SoftwareVersion;
-import com.swirlds.platform.system.events.BaseEventHashedData;
-import com.swirlds.platform.system.events.BaseEventUnhashedData;
-import com.swirlds.platform.system.events.EventDescriptor;
-import com.swirlds.platform.system.transaction.ConsensusTransactionImpl;
-import com.swirlds.platform.system.transaction.StateSignatureTransaction;
-import com.swirlds.platform.system.transaction.SwirldTransaction;
+import com.swirlds.platform.system.events.EventDescriptorWrapper;
+import com.swirlds.platform.system.events.UnsignedEvent;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
-import java.util.Collections;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Random;
+import java.util.stream.Stream;
 
 /**
  * A builder for creating event instances for testing purposes.
@@ -93,19 +102,17 @@ public class TestingEventBuilder {
      * <p>
      * If not set, transactions will be auto generated, based on configured settings.
      */
-    private ConsensusTransactionImpl[] transactions;
+    private List<EventTransaction> transactions;
 
     /**
      * The self parent of the event.
      */
-    private GossipEvent selfParent;
+    private PlatformEvent selfParent;
 
     /**
-     * The other parent of the event.
-     * <p>
-     * Future work: add support for multiple other parents.
+     * The other parents of the event.
      */
-    private GossipEvent otherParent;
+    private List<PlatformEvent> otherParents;
 
     /**
      * Overrides the generation of the configured self parent.
@@ -151,6 +158,24 @@ public class TestingEventBuilder {
     private SoftwareVersion softwareVersion;
 
     /**
+     * The consensus timestamp of the event.
+     * <p>
+     * If consensus order is set, and consensus timestamp is not set, it will be a random timestamp.
+     * <p>
+     * If neither are set, defaults null, meaning this event will not be a consensus event.
+     */
+    private Instant consensusTimestamp;
+
+    /**
+     * The consensus order of the event.
+     * <p>
+     * If consensus timestamp is set, and consensus order is not set, it will be a random positive long.
+     * <p>
+     * If neither are set, defaults null, meaning this event will not be a consensus event.
+     */
+    private Long consensusOrder;
+
+    /**
      * Constructor
      *
      * @param random a source of randomness
@@ -181,8 +206,8 @@ public class TestingEventBuilder {
      * @param softwareVersion the software version
      * @return this instance
      */
-    public @NonNull TestingEventBuilder setSoftwareVersion(@Nullable final SoftwareVersion softwareVersion) {
-        this.softwareVersion = softwareVersion;
+    public @NonNull TestingEventBuilder setSoftwareVersion(@Nullable final SemanticVersion softwareVersion) {
+        this.softwareVersion = new BasicSoftwareVersion(softwareVersion.major());
         return this;
     }
 
@@ -259,7 +284,7 @@ public class TestingEventBuilder {
      * @param transactions the transactions
      * @return this instance
      */
-    public @NonNull TestingEventBuilder setTransactions(@Nullable final ConsensusTransactionImpl[] transactions) {
+    public @NonNull TestingEventBuilder setTransactions(@Nullable final List<EventTransaction> transactions) {
         if (appTransactionCount != null || systemTransactionCount != null || transactionSize != null) {
             throw new IllegalStateException(
                     "Cannot set transactions when app transaction count, system transaction count, or transaction "
@@ -271,6 +296,20 @@ public class TestingEventBuilder {
     }
 
     /**
+     * Convenience method to set the transactions of an event to wrap to a list of {@link EventTransaction}s
+     *
+     * @param transactions {@link OneOf<TransactionOneOfType>} transactions
+     * @return this instance
+     */
+    public @NonNull TestingEventBuilder setOneOfTransactions(
+            @Nullable final List<OneOf<TransactionOneOfType>> transactions) {
+        Objects.requireNonNull(transactions, "transactions must not be null");
+        final List<EventTransaction> eventTransactions =
+                transactions.stream().map(EventTransaction::new).toList();
+        return setTransactions(eventTransactions);
+    }
+
+    /**
      * Set the self-parent of an event.
      * <p>
      * If not set, a self parent will NOT be generated: the output event will have a null self parent.
@@ -278,21 +317,34 @@ public class TestingEventBuilder {
      * @param selfParent the self-parent
      * @return this instance
      */
-    public @NonNull TestingEventBuilder setSelfParent(@Nullable final GossipEvent selfParent) {
+    public @NonNull TestingEventBuilder setSelfParent(@Nullable final PlatformEvent selfParent) {
         this.selfParent = selfParent;
         return this;
     }
 
     /**
-     * Set the other-parent of an event
+     * Set an other-parent of an event
      * <p>
-     * If not set, an other parent will NOT be generated: the output event will have a null other parent.
+     * If not set, no other-parent will be generated: the output event will have a no other-parents.
      *
      * @param otherParent the other-parent
      * @return this instance
      */
-    public @NonNull TestingEventBuilder setOtherParent(@Nullable final GossipEvent otherParent) {
-        this.otherParent = otherParent;
+    public @NonNull TestingEventBuilder setOtherParent(@Nullable final PlatformEvent otherParent) {
+        this.otherParents = otherParent == null ? null : List.of(otherParent);
+        return this;
+    }
+
+    /**
+     * Set a list of other-parents of an event
+     * <p>
+     * If not set, no other-parents will be generated: the output event will have a no other-parents.
+     *
+     * @param otherParents the other-parents
+     * @return this instance
+     */
+    public @NonNull TestingEventBuilder setOtherParents(@NonNull final List<PlatformEvent> otherParents) {
+        this.otherParents = otherParents;
         return this;
     }
 
@@ -363,6 +415,36 @@ public class TestingEventBuilder {
     }
 
     /**
+     * Set the consensus timestamp of an event.
+     * <p>
+     * If consensus order is set, and consensus timestamp is not set, it will be a random timestamp.
+     * <p>
+     * If neither are set, defaults null, meaning this event will not be a consensus event.
+     *
+     * @param consensusTimestamp the consensus timestamp
+     * @return this instance
+     */
+    public @NonNull TestingEventBuilder setConsensusTimestamp(@Nullable final Instant consensusTimestamp) {
+        this.consensusTimestamp = consensusTimestamp;
+        return this;
+    }
+
+    /**
+     * Set the consensus order of an event.
+     * <p>
+     * If consensus timestamp is set, and consensus order is not set, it will be a random positive long.
+     * <p>
+     * If neither are set, defaults null, meaning this event will not be a consensus event.
+     *
+     * @param consensusOrder the consensus order
+     * @return this instance
+     */
+    public @NonNull TestingEventBuilder setConsensusOrder(@Nullable final Long consensusOrder) {
+        this.consensusOrder = consensusOrder;
+        return this;
+    }
+
+    /**
      * Generate transactions based on the settings provided.
      * <p>
      * Only utilized if the transactions are not set with {@link #setTransactions}.
@@ -370,7 +452,7 @@ public class TestingEventBuilder {
      * @return the generated transactions
      */
     @NonNull
-    private ConsensusTransactionImpl[] generateTransactions() {
+    private List<EventTransaction> generateTransactions() {
         if (appTransactionCount == null) {
             appTransactionCount = DEFAULT_APP_TRANSACTION_COUNT;
         }
@@ -379,8 +461,7 @@ public class TestingEventBuilder {
             systemTransactionCount = DEFAULT_SYSTEM_TRANSACTION_COUNT;
         }
 
-        final ConsensusTransactionImpl[] generatedTransactions =
-                new ConsensusTransactionImpl[appTransactionCount + systemTransactionCount];
+        final List<OneOf<TransactionOneOfType>> generatedTransactions = new ArrayList<>();
 
         if (transactionSize == null) {
             transactionSize = DEFAULT_TRANSACTION_SIZE;
@@ -389,18 +470,20 @@ public class TestingEventBuilder {
         for (int i = 0; i < appTransactionCount; ++i) {
             final byte[] bytes = new byte[transactionSize];
             random.nextBytes(bytes);
-            generatedTransactions[i] = new SwirldTransaction(bytes);
+            generatedTransactions.add(new OneOf<>(APPLICATION_TRANSACTION, Bytes.wrap(bytes)));
         }
 
         for (int i = appTransactionCount; i < appTransactionCount + systemTransactionCount; ++i) {
-            generatedTransactions[i] = new StateSignatureTransaction(
-                    random.nextLong(0, Long.MAX_VALUE),
-                    RandomUtils.randomSignatureBytes(random),
-                    RandomUtils.randomHashBytes(random),
-                    Bytes.EMPTY);
+            generatedTransactions.add(new OneOf<>(
+                    STATE_SIGNATURE_TRANSACTION,
+                    StateSignatureTransaction.newBuilder()
+                            .round(random.nextLong(0, Long.MAX_VALUE))
+                            .signature(RandomUtils.randomSignatureBytes(random))
+                            .hash(RandomUtils.randomHashBytes(random))
+                            .build()));
         }
 
-        return generatedTransactions;
+        return generatedTransactions.stream().map(EventTransaction::new).toList();
     }
 
     /**
@@ -412,8 +495,8 @@ public class TestingEventBuilder {
      * @return the parent event descriptor
      */
     @Nullable
-    private EventDescriptor createDescriptorFromParent(
-            @Nullable final GossipEvent parent,
+    private EventDescriptorWrapper createDescriptorFromParent(
+            @Nullable final PlatformEvent parent,
             @Nullable final Long generationOverride,
             @Nullable final Long birthRoundOverride) {
 
@@ -430,11 +513,10 @@ public class TestingEventBuilder {
         }
 
         final long generation = generationOverride == null ? parent.getGeneration() : generationOverride;
-        final long birthRound =
-                birthRoundOverride == null ? parent.getHashedData().getBirthRound() : birthRoundOverride;
+        final long birthRound = birthRoundOverride == null ? parent.getBirthRound() : birthRoundOverride;
 
-        return new EventDescriptor(
-                parent.getHashedData().getHash(), parent.getHashedData().getCreatorId(), generation, birthRound);
+        return new EventDescriptorWrapper(new EventDescriptor(
+                parent.getHash().getBytes(), parent.getCreatorId().id(), birthRound, generation));
     }
 
     /**
@@ -442,32 +524,35 @@ public class TestingEventBuilder {
      *
      * @return the new event
      */
-    public @NonNull GossipEvent build() {
+    public @NonNull PlatformEvent build() {
         if (softwareVersion == null) {
             softwareVersion = DEFAULT_SOFTWARE_VERSION;
         }
 
         if (creatorId == null) {
             if (selfParent != null) {
-                creatorId = selfParent.getHashedData().getCreatorId();
+                creatorId = selfParent.getCreatorId();
             } else {
                 creatorId = DEFAULT_CREATOR_ID;
             }
         }
 
-        final EventDescriptor selfParentDescriptor =
+        final EventDescriptorWrapper selfParentDescriptor =
                 createDescriptorFromParent(selfParent, selfParentGenerationOverride, selfParentBirthRoundOverride);
-        final EventDescriptor otherParentDescriptor =
-                createDescriptorFromParent(otherParent, otherParentGenerationOverride, otherParentBirthRoundOverride);
+        final List<EventDescriptorWrapper> otherParentDescriptors = Stream.ofNullable(otherParents)
+                .flatMap(List::stream)
+                .map(parent -> createDescriptorFromParent(
+                        parent, otherParentGenerationOverride, otherParentBirthRoundOverride))
+                .toList();
 
         if (this.birthRound == null) {
-            final long maxParentBirthRound = Math.max(
-                    selfParent == null
-                            ? BIRTH_ROUND_UNDEFINED
-                            : selfParent.getHashedData().getBirthRound(),
-                    otherParent == null
-                            ? BIRTH_ROUND_UNDEFINED
-                            : otherParent.getHashedData().getBirthRound());
+
+            final long maxParentBirthRound = Stream.concat(
+                            Stream.ofNullable(selfParent),
+                            Stream.ofNullable(otherParents).flatMap(List::stream))
+                    .mapToLong(PlatformEvent::getBirthRound)
+                    .max()
+                    .orElse(MINIMUM_ROUND_CREATED);
 
             // randomly add between 0 and 2 to max parent birth round
             birthRound = maxParentBirthRound + random.nextLong(0, 3);
@@ -478,7 +563,7 @@ public class TestingEventBuilder {
                 timeCreated = DEFAULT_TIMESTAMP;
             } else {
                 // randomly add between 1 and 99 milliseconds to self parent time created
-                timeCreated = selfParent.getHashedData().getTimeCreated().plusMillis(random.nextLong(1, 100));
+                timeCreated = selfParent.getTimeCreated().plusMillis(random.nextLong(1, 100));
             }
         }
 
@@ -486,25 +571,30 @@ public class TestingEventBuilder {
             transactions = generateTransactions();
         }
 
-        final BaseEventHashedData hashedData = new BaseEventHashedData(
+        final UnsignedEvent unsignedEvent = new UnsignedEvent(
                 softwareVersion,
                 creatorId,
                 selfParentDescriptor,
-                // Future work: add support for multiple other parents
-                otherParentDescriptor == null
-                        ? Collections.emptyList()
-                        : Collections.singletonList(otherParentDescriptor),
+                otherParentDescriptors,
                 birthRound,
                 timeCreated,
                 transactions);
-        hashedData.setHash(RandomUtils.randomHash(random));
 
         final byte[] signature = new byte[SignatureType.RSA.signatureLength()];
         random.nextBytes(signature);
 
-        final BaseEventUnhashedData unhashedData = new BaseEventUnhashedData(signature);
-        final GossipEvent gossipEvent = new GossipEvent(hashedData, unhashedData);
+        final PlatformEvent platformEvent = new PlatformEvent(unsignedEvent, signature);
 
-        return gossipEvent;
+        platformEvent.setHash(RandomUtils.randomHash(random));
+
+        if (consensusTimestamp != null || consensusOrder != null) {
+            platformEvent.setConsensusData(new EventConsensusData.Builder()
+                    .consensusTimestamp(HapiUtils.asTimestamp(
+                            Optional.ofNullable(consensusTimestamp).orElse(RandomUtils.randomInstant(random))))
+                    .consensusOrder(Optional.ofNullable(consensusOrder).orElse(random.nextLong(1, Long.MAX_VALUE)))
+                    .build());
+        }
+
+        return platformEvent;
     }
 }

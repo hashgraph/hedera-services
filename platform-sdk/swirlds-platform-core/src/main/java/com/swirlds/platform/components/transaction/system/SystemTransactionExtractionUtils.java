@@ -19,12 +19,13 @@ package com.swirlds.platform.components.transaction.system;
 import static java.util.stream.Collectors.collectingAndThen;
 import static java.util.stream.Collectors.toList;
 
+import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.internal.ConsensusRound;
-import com.swirlds.platform.system.events.BaseEvent;
 import com.swirlds.platform.system.transaction.Transaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 
@@ -65,23 +66,20 @@ public class SystemTransactionExtractionUtils {
      */
     @SuppressWarnings("unchecked")
     public static @Nullable <T> List<ScopedSystemTransaction<T>> extractFromEvent(
-            @NonNull final BaseEvent event, @NonNull final Class<T> systemTransactionTypeClass) {
-
-        final var transactions = event.getHashedData().getTransactions();
-        if (transactions == null) {
-            return null;
-        }
-
+            @NonNull final PlatformEvent event, @NonNull final Class<T> systemTransactionTypeClass) {
         final List<ScopedSystemTransaction<T>> scopedTransactions = new ArrayList<>();
 
-        for (final Transaction transaction : event.getHashedData().getTransactions()) {
-            if (systemTransactionTypeClass.isInstance(transaction)) {
-                scopedTransactions.add(new ScopedSystemTransaction<>(
-                        event.getHashedData().getCreatorId(),
-                        event.getHashedData().getSoftwareVersion(),
-                        (T) transaction));
+        final Iterator<Transaction> transactionIterator = event.transactionIterator();
+        while (transactionIterator.hasNext()) {
+            final Transaction transaction = transactionIterator.next();
+            if (systemTransactionTypeClass.isInstance(
+                    transaction.getTransaction().transaction().value())) {
+                scopedTransactions.add(
+                        new ScopedSystemTransaction<>(event.getCreatorId(), event.getSoftwareVersion(), (T)
+                                transaction.getTransaction().transaction().value()));
             }
         }
+
         return scopedTransactions.isEmpty() ? null : scopedTransactions;
     }
 }

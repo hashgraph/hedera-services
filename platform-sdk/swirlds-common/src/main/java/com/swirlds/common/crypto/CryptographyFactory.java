@@ -16,11 +16,7 @@
 
 package com.swirlds.common.crypto;
 
-import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
-
-import com.swirlds.common.crypto.config.CryptoConfig;
 import com.swirlds.common.crypto.engine.CryptoEngine;
-import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
@@ -34,13 +30,10 @@ public final class CryptographyFactory {
     /**
      * Creates a new {@link Cryptography} instance using the given configuration.
      *
-     * @param configuration
-     * 		the configuration to use
      * @return a new {@link Cryptography} instance
      */
     @NonNull
-    public static Cryptography create(@NonNull final Configuration configuration) {
-        final CryptoConfig cryptoConfig = configuration.getConfigData(CryptoConfig.class);
-        return new CryptoEngine(getStaticThreadManager(), cryptoConfig);
+    public static Cryptography create() {
+        return new CryptoEngine();
     }
 }

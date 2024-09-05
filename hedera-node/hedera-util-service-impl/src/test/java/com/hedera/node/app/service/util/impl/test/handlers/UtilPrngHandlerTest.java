@@ -21,26 +21,31 @@ import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.res
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatCode;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.notNull;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mock.Strictness.LENIENT;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 
-import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.hapi.node.util.UtilPrngTransactionBody;
 import com.hedera.node.app.service.util.impl.handlers.UtilPrngHandler;
-import com.hedera.node.app.service.util.impl.records.PrngRecordBuilder;
-import com.hedera.node.app.spi.fees.FeeAccumulator;
+import com.hedera.node.app.service.util.impl.records.PrngStreamBuilder;
 import com.hedera.node.app.spi.fees.FeeCalculator;
-import com.hedera.node.app.spi.fixtures.TestBase;
-import com.hedera.node.app.spi.fixtures.fees.FakeFeeAccumulator;
-import com.hedera.node.app.spi.fixtures.fees.FakeFeeCalculator;
+import com.hedera.node.app.spi.fees.FeeCalculatorFactory;
+import com.hedera.node.app.spi.fees.FeeContext;
+import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.records.BlockRecordInfo;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.PreCheckException;
-import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.state.test.fixtures.TestBase;
 import java.util.Random;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -53,15 +58,14 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class UtilPrngHandlerTest {
-    @Mock
-    private PreHandleContext preHandleContext;
-
     @Mock(strictness = LENIENT)
     private HandleContext handleContext;
 
-    private FakePrngRecordBuilder recordBuilder;
-    private FeeCalculator feeCalculator;
-    private FeeAccumulator feeAccumulator;
+    @Mock
+    private PrngStreamBuilder recordBuilder;
+
+    @Mock(strictness = LENIENT)
+    private HandleContext.SavepointStack stack;
 
     @Mock
     private BlockRecordInfo blockRecordInfo;
@@ -74,35 +78,31 @@ class UtilPrngHandlerTest {
 
     @BeforeEach
     void setUp() {
-        recordBuilder = new FakePrngRecordBuilder();
-        feeCalculator = new FakeFeeCalculator();
-        feeAccumulator = new FakeFeeAccumulator();
         final var config = HederaTestConfigBuilder.create()
                 .withValue("utilPrng.isEnabled", true)
                 .getOrCreateConfig();
         given(handleContext.configuration()).willReturn(config);
 
         subject = new UtilPrngHandler();
-        given(handleContext.recordBuilder(PrngRecordBuilder.class)).willReturn(recordBuilder);
+        given(handleContext.savepointStack()).willReturn(stack);
+        given(stack.getBaseBuilder(PrngStreamBuilder.class)).willReturn(recordBuilder);
         givenTxnWithoutRange();
     }
 
     @Test
-    void preHandleValidatesRange() {
+    void pureChecksValidatesRange() {
         final var body = TransactionBody.newBuilder()
                 .utilPrng(UtilPrngTransactionBody.newBuilder())
                 .build();
-        given(preHandleContext.body()).willReturn(body);
-        assertThatCode(() -> subject.preHandle(preHandleContext)).doesNotThrowAnyException();
+        assertThatCode(() -> subject.pureChecks(body)).doesNotThrowAnyException();
     }
 
     @Test
     void rejectsInvalidRange() {
         givenTxnWithRange(-10000);
-        given(preHandleContext.body())
-                .willReturn(TransactionBody.newBuilder().utilPrng(txn).build());
+        final var body = TransactionBody.newBuilder().utilPrng(txn).build();
 
-        assertThatThrownBy(() -> subject.preHandle(preHandleContext))
+        assertThatThrownBy(() -> subject.pureChecks(body))
                 .isInstanceOf(PreCheckException.class)
                 .has(responseCode(INVALID_PRNG_RANGE));
     }
@@ -110,37 +110,53 @@ class UtilPrngHandlerTest {
     @Test
     void acceptsPositiveAndZeroRange() {
         givenTxnWithRange(10000);
-        given(preHandleContext.body())
-                .willReturn(TransactionBody.newBuilder().utilPrng(txn).build());
-        assertThatCode(() -> subject.preHandle(preHandleContext)).doesNotThrowAnyException();
+        final var body = TransactionBody.newBuilder().utilPrng(txn).build();
+        assertThatCode(() -> subject.pureChecks(body)).doesNotThrowAnyException();
 
         givenTxnWithRange(0);
-        given(preHandleContext.body())
-                .willReturn(TransactionBody.newBuilder().utilPrng(txn).build());
-        assertThatCode(() -> subject.preHandle(preHandleContext)).doesNotThrowAnyException();
+        assertThatCode(() -> subject.pureChecks(body)).doesNotThrowAnyException();
     }
 
     @Test
     void acceptsNoRange() {
         givenTxnWithoutRange();
-        given(preHandleContext.body())
-                .willReturn(TransactionBody.newBuilder().utilPrng(txn).build());
+        final var body = TransactionBody.newBuilder().utilPrng(txn).build();
 
-        assertThatCode(() -> subject.preHandle(preHandleContext)).doesNotThrowAnyException();
+        assertThatCode(() -> subject.pureChecks(body)).doesNotThrowAnyException();
     }
 
     @Test
     void followsHappyPathWithNoRange() {
         givenTxnWithoutRange();
         given(handleContext.blockRecordInfo()).willReturn(blockRecordInfo);
-        given(handleContext.feeCalculator(SubType.DEFAULT)).willReturn(feeCalculator);
-        given(handleContext.feeAccumulator()).willReturn(feeAccumulator);
-        given(blockRecordInfo.getNMinus3RunningHash()).willReturn(nMinusThreeHash);
+        given(blockRecordInfo.prngSeed()).willReturn(nMinusThreeHash);
 
         subject.handle(handleContext);
 
-        assertThat(recordBuilder.entropyNumber).isZero();
-        assertThat(recordBuilder.entropyBytes).isEqualTo(hash);
+        verify(recordBuilder, never()).entropyNumber(anyInt());
+        verify(recordBuilder).entropyBytes(hash);
+    }
+
+    @Test
+    void calculateFeesHappyPath() {
+        givenTxnWithoutRange();
+        final var body = TransactionBody.newBuilder().utilPrng(txn).build();
+
+        final var feeCtx = mock(FeeContext.class);
+        given(feeCtx.body()).willReturn(body);
+
+        final var feeCalcFactory = mock(FeeCalculatorFactory.class);
+        final var feeCalc = mock(FeeCalculator.class);
+        given(feeCtx.feeCalculatorFactory()).willReturn(feeCalcFactory);
+        given(feeCalcFactory.feeCalculator(notNull())).willReturn(feeCalc);
+        given(feeCalc.addBytesPerTransaction(anyLong())).willReturn(feeCalc);
+        // The fees wouldn't be free in this scenario, but we don't care about the actual return
+        // value here since we're using a mock calculator
+        given(feeCalc.calculate()).willReturn(Fees.FREE);
+
+        subject.calculateFees(feeCtx);
+
+        verify(feeCalc).addBytesPerTransaction(0);
     }
 
     @ParameterizedTest
@@ -168,18 +184,16 @@ class UtilPrngHandlerTest {
     void followsHappyPathWithRange(final int randomNumber) {
         givenTxnWithRange(20);
         given(handleContext.blockRecordInfo()).willReturn(blockRecordInfo);
-        given(handleContext.feeCalculator(SubType.DEFAULT)).willReturn(feeCalculator);
-        given(handleContext.feeAccumulator()).willReturn(feeAccumulator);
 
         // Make sure the random number given to the test ends up as the first 4 bytes of the hash
-        given(blockRecordInfo.getNMinus3RunningHash()).willReturn(hashWithIntAtStart(randomNumber));
+        given(blockRecordInfo.prngSeed()).willReturn(hashWithIntAtStart(randomNumber));
 
         // When we handle the transaction
         subject.handle(handleContext);
 
         // Then we find that the random number is in the range, and isn't negative!
-        assertThat(recordBuilder.entropyNumber).isBetween(0, 19);
-        assertThat(recordBuilder.entropyBytes).isNull();
+        verify(recordBuilder).entropyNumber(anyInt());
+        verify(recordBuilder, never()).entropyBytes(any());
     }
 
     /**
@@ -216,41 +230,36 @@ class UtilPrngHandlerTest {
     void negativeRandomNumbersReturnPositiveWhenInRange(int rand, int range, int expected) {
         givenTxnWithRange(range);
         given(handleContext.blockRecordInfo()).willReturn(blockRecordInfo);
-        given(handleContext.feeCalculator(SubType.DEFAULT)).willReturn(feeCalculator);
-        given(handleContext.feeAccumulator()).willReturn(feeAccumulator);
 
         // Make sure the random number given to the test ends up as the first 4 bytes of the hash
-        given(blockRecordInfo.getNMinus3RunningHash()).willReturn(hashWithIntAtStart(rand));
+        given(blockRecordInfo.prngSeed()).willReturn(hashWithIntAtStart(rand));
 
         // When we handle the transaction
         subject.handle(handleContext);
 
         // Then we find that the random number is in the range, and isn't negative!
-        assertThat(recordBuilder.entropyNumber).isEqualTo(expected);
-        assertThat(recordBuilder.entropyBytes).isNull();
+        verify(recordBuilder).entropyNumber(expected);
+        verify(recordBuilder, never()).entropyBytes(any());
     }
 
     @Test
     void followsHappyPathWithMaxIntegerRange() {
         givenTxnWithRange(Integer.MAX_VALUE);
         given(handleContext.blockRecordInfo()).willReturn(blockRecordInfo);
-        given(handleContext.feeCalculator(SubType.DEFAULT)).willReturn(feeCalculator);
-        given(handleContext.feeAccumulator()).willReturn(feeAccumulator);
-        given(blockRecordInfo.getNMinus3RunningHash()).willReturn(nMinusThreeHash);
+        given(blockRecordInfo.prngSeed()).willReturn(nMinusThreeHash);
 
         subject.handle(handleContext);
 
-        assertThat(recordBuilder.entropyNumber).isBetween(0, Integer.MAX_VALUE);
-        assertThat(recordBuilder.entropyBytes).isNull();
+        verify(recordBuilder).entropyNumber(anyInt());
+        verify(recordBuilder, never()).entropyBytes(any());
     }
 
     @Test
     void anyNegativeValueThrowsInPrecheck() {
         givenTxnWithRange(Integer.MIN_VALUE);
-        given(preHandleContext.body())
-                .willReturn(TransactionBody.newBuilder().utilPrng(txn).build());
+        final var body = TransactionBody.newBuilder().utilPrng(txn).build();
 
-        assertThatThrownBy(() -> subject.preHandle(preHandleContext))
+        assertThatThrownBy(() -> subject.pureChecks(body))
                 .isInstanceOf(PreCheckException.class)
                 .has(responseCode(INVALID_PRNG_RANGE));
     }
@@ -259,14 +268,12 @@ class UtilPrngHandlerTest {
     void givenRangeZeroGivesBitString() {
         givenTxnWithRange(0);
         given(handleContext.blockRecordInfo()).willReturn(blockRecordInfo);
-        given(handleContext.feeCalculator(SubType.DEFAULT)).willReturn(feeCalculator);
-        given(handleContext.feeAccumulator()).willReturn(feeAccumulator);
-        given(blockRecordInfo.getNMinus3RunningHash()).willReturn(nMinusThreeHash);
+        given(blockRecordInfo.prngSeed()).willReturn(nMinusThreeHash);
 
         subject.handle(handleContext);
 
-        assertThat(recordBuilder.entropyNumber).isZero();
-        assertThat(recordBuilder.entropyBytes).isEqualTo(hash);
+        verify(recordBuilder, never()).entropyNumber(anyInt());
+        verify(recordBuilder).entropyBytes(hash);
     }
 
     @Test
@@ -276,36 +283,44 @@ class UtilPrngHandlerTest {
 
         assertThatThrownBy(() -> subject.handle(handleContext)).isInstanceOf(NullPointerException.class);
 
-        assertThat(recordBuilder.entropyNumber).isZero();
-        assertThat(recordBuilder.entropyBytes).isNull();
+        verify(recordBuilder, never()).entropyNumber(anyInt());
+        verify(recordBuilder, never()).entropyBytes(any());
     }
 
     @Test
     void nullHashFromRunningHashReturnsAllZeros() {
         givenTxnWithRange(0);
         given(handleContext.blockRecordInfo()).willReturn(blockRecordInfo);
-        given(handleContext.feeCalculator(SubType.DEFAULT)).willReturn(feeCalculator);
-        given(handleContext.feeAccumulator()).willReturn(feeAccumulator);
-        given(blockRecordInfo.getNMinus3RunningHash()).willReturn(null);
+        given(blockRecordInfo.prngSeed()).willReturn(null);
 
         subject.handle(handleContext);
 
-        assertThat(recordBuilder.entropyNumber).isZero();
-        assertThat(recordBuilder.entropyBytes).isEqualTo(Bytes.wrap(new byte[48]));
+        verify(recordBuilder, never()).entropyNumber(anyInt());
+        verify(recordBuilder).entropyBytes(Bytes.wrap(new byte[48]));
     }
 
     @Test
     void emptyHashFromRunningHashReturnsAllZeros() {
         givenTxnWithRange(0);
         given(handleContext.blockRecordInfo()).willReturn(blockRecordInfo);
-        given(handleContext.feeCalculator(SubType.DEFAULT)).willReturn(feeCalculator);
-        given(handleContext.feeAccumulator()).willReturn(feeAccumulator);
-        given(blockRecordInfo.getNMinus3RunningHash()).willReturn(Bytes.EMPTY);
+        given(blockRecordInfo.prngSeed()).willReturn(Bytes.EMPTY);
 
         subject.handle(handleContext);
 
-        assertThat(recordBuilder.entropyNumber).isZero();
-        assertThat(recordBuilder.entropyBytes).isEqualTo(Bytes.wrap(new byte[48]));
+        verify(recordBuilder, never()).entropyNumber(anyInt());
+        verify(recordBuilder).entropyBytes(Bytes.wrap(new byte[48]));
+    }
+
+    @Test
+    void verifyModThrowException() {
+        assertThatThrownBy(() -> UtilPrngHandler.mod(0, 0)).isInstanceOf(ArithmeticException.class);
+    }
+
+    @Test
+    void verifyModHappyPath() {
+        assertThatCode(() -> UtilPrngHandler.mod(2, 4)).doesNotThrowAnyException();
+
+        assertThat(UtilPrngHandler.mod(2, 4)).isEqualTo(2);
     }
 
     private void givenTxnWithRange(int range) {

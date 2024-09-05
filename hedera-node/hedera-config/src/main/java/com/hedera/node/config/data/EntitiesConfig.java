@@ -22,6 +22,7 @@ import com.swirlds.config.api.ConfigProperty;
 
 @ConfigData("entities")
 public record EntitiesConfig(
-        @ConfigProperty(defaultValue = "3153600000") @NetworkProperty long maxLifetime,
+        @ConfigProperty(defaultValue = "8000001") @NetworkProperty long maxLifetime,
         // @ConfigProperty(defaultValue = "FILE") Set<EntityType> systemDeletable
-        @ConfigProperty(defaultValue = "false") @NetworkProperty boolean limitTokenAssociations) {}
+        @ConfigProperty(defaultValue = "false") @NetworkProperty boolean limitTokenAssociations,
+        @ConfigProperty(defaultValue = "true") @NetworkProperty boolean unlimitedAutoAssociationsEnabled) {}

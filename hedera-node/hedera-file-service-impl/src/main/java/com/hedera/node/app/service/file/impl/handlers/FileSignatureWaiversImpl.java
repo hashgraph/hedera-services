@@ -29,12 +29,17 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 
 /**
- * A Singleton implementation of signature waivers needed for transactions in {@link com.hedera.node.app.service.file.FileService}
+ * A Singleton implementation of signature waivers needed for transactions in
+ * {@link com.hedera.node.app.service.file.FileService}.
  */
 @Singleton
 public class FileSignatureWaiversImpl implements FileSignatureWaivers {
     private final Authorizer authorizer;
 
+    /**
+     * Constructs a {@link FileSignatureWaiversImpl} with the given {@link Authorizer}.
+     * @param authorizer account is authorized to perform a specific function
+     */
     @Inject
     public FileSignatureWaiversImpl(@NonNull final Authorizer authorizer) {
         this.authorizer = requireNonNull(authorizer);
@@ -43,6 +48,12 @@ public class FileSignatureWaiversImpl implements FileSignatureWaivers {
     @Override
     public boolean areFileUpdateSignaturesWaived(final TransactionBody fileUpdateTxn, final AccountID payer) {
         return authorizer.hasPrivilegedAuthorization(payer, HederaFunctionality.FILE_UPDATE, fileUpdateTxn)
+                == SystemPrivilege.AUTHORIZED;
+    }
+
+    @Override
+    public boolean areFileAppendSignaturesWaived(final TransactionBody fileAppendTxn, final AccountID payer) {
+        return authorizer.hasPrivilegedAuthorization(payer, HederaFunctionality.FILE_APPEND, fileAppendTxn)
                 == SystemPrivilege.AUTHORIZED;
     }
 }

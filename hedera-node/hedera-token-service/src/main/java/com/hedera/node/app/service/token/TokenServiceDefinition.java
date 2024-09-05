@@ -26,10 +26,13 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Set;
 
 /**
- * Transactions and queries for the Token Service
+ * Transactions and queries for the Token Service.
  */
 @SuppressWarnings("java:S6548")
 public final class TokenServiceDefinition implements RpcServiceDefinition {
+    /**
+     * Singleton instance of the Token Service.
+     */
     public static final TokenServiceDefinition INSTANCE = new TokenServiceDefinition();
 
     private static final Set<RpcMethodDefinition<?, ?>> methods = Set.of(
@@ -52,6 +55,10 @@ public final class TokenServiceDefinition implements RpcServiceDefinition {
             new RpcMethodDefinition<>("getTokenNftInfos", Query.class, Response.class),
             new RpcMethodDefinition<>("pauseToken", Transaction.class, TransactionResponse.class),
             new RpcMethodDefinition<>("updateNfts", Transaction.class, TransactionResponse.class),
+            new RpcMethodDefinition<>("rejectToken", Transaction.class, TransactionResponse.class),
+            new RpcMethodDefinition<>("airdropTokens", Transaction.class, TransactionResponse.class),
+            new RpcMethodDefinition<>("claimAirdrop", Transaction.class, TransactionResponse.class),
+            new RpcMethodDefinition<>("cancelAirdrop", Transaction.class, TransactionResponse.class),
             new RpcMethodDefinition<>("unpauseToken", Transaction.class, TransactionResponse.class));
 
     private TokenServiceDefinition() {

@@ -86,8 +86,10 @@ public final class LegacyConfigPropertiesLoader {
         try (final Scanner scanner = new Scanner(configPath, StandardCharsets.UTF_8)) {
             final AddressBook addressBook = new AddressBook();
             boolean nextNodeIdParsed = false;
+            long lineNumber = 0;
             while (scanner.hasNextLine()) {
                 final String line = readNextLine(scanner);
+                lineNumber++;
                 if (!line.isEmpty()) {
                     final String[] lineParameters = splitLine(line);
                     final int len = Math.max(10, lineParameters.length);
@@ -117,6 +119,13 @@ public final class LegacyConfigPropertiesLoader {
                                     addressBook.add(address);
                                 }
                             } catch (final ParseException ex) {
+                                logger.error(
+                                        EXCEPTION.getMarker(),
+                                        "file {}, line {}, offset {}: {}",
+                                        configPath,
+                                        lineNumber,
+                                        ex.getErrorOffset(),
+                                        ex.getMessage());
                                 onError(ERROR_ADDRESS_NOT_ENOUGH_PARAMETERS);
                             }
                         }

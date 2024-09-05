@@ -16,11 +16,22 @@
 
 package com.hedera.node.app.service.token.fixtures;
 
-import com.hedera.node.app.service.token.api.FeeRecordBuilder;
+import static java.util.Objects.requireNonNull;
+
+import com.hedera.hapi.node.base.SemanticVersion;
+import com.hedera.node.app.service.token.api.FeeStreamBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
-public class FakeFeeRecordBuilder implements FeeRecordBuilder {
+/**
+ * A fake implementation of {@link FeeStreamBuilder} for testing purposes.
+ */
+public class FakeFeeRecordBuilder implements FeeStreamBuilder {
     private long transactionFee;
+
+    public FakeFeeRecordBuilder() {
+        // Just something to keep checkModuleInfo from claiming we don't require com.hedera.node.hapi
+        requireNonNull(SemanticVersion.class);
+    }
 
     @Override
     public long transactionFee() {
@@ -29,7 +40,7 @@ public class FakeFeeRecordBuilder implements FeeRecordBuilder {
 
     @Override
     @NonNull
-    public FeeRecordBuilder transactionFee(long transactionFee) {
+    public FeeStreamBuilder transactionFee(long transactionFee) {
         this.transactionFee = transactionFee;
         return this;
     }

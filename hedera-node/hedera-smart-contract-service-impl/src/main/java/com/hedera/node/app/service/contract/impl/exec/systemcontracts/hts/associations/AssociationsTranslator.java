@@ -21,23 +21,22 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.gas.DispatchType;
 import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AbstractHtsCallTranslator;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.AbstractCallTranslator;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.Call;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.DispatchForResponseCodeHtsCall;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.Arrays;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
 /**
  * Translates associate and dissociate calls to the HTS system contract. There are no special cases for
- * these calls, so the returned {@link HtsCall} is simply an instance of {@link DispatchForResponseCodeHtsCall}.
+ * these calls, so the returned {@link Call} is simply an instance of {@link DispatchForResponseCodeHtsCall}.
  */
 @Singleton
-public class AssociationsTranslator extends AbstractHtsCallTranslator {
+public class AssociationsTranslator extends AbstractCallTranslator<HtsCallAttempt> {
     public static final Function HRC_ASSOCIATE = new Function("associate()", ReturnTypes.INT);
     public static final Function ASSOCIATE_ONE = new Function("associateToken(address,address)", ReturnTypes.INT_64);
     public static final Function DISSOCIATE_ONE = new Function("dissociateToken(address,address)", ReturnTypes.INT_64);
@@ -59,18 +58,19 @@ public class AssociationsTranslator extends AbstractHtsCallTranslator {
      */
     @Override
     public boolean matches(@NonNull final HtsCallAttempt attempt) {
-        return (attempt.isTokenRedirect() && matchesHrcSelector(attempt.selector()))
-                || (!attempt.isTokenRedirect() && matchesClassicSelector(attempt.selector()));
+        return attempt.isTokenRedirect()
+                ? attempt.isSelector(HRC_ASSOCIATE, HRC_DISSOCIATE)
+                : attempt.isSelector(ASSOCIATE_ONE, ASSOCIATE_MANY, DISSOCIATE_ONE, DISSOCIATE_MANY);
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public HtsCall callFrom(@NonNull final HtsCallAttempt attempt) {
+    public Call callFrom(@NonNull final HtsCallAttempt attempt) {
         return new DispatchForResponseCodeHtsCall(
                 attempt,
-                matchesHrcSelector(attempt.selector()) ? bodyForHrc(attempt) : bodyForClassic(attempt),
+                attempt.isSelector(HRC_ASSOCIATE, HRC_DISSOCIATE) ? bodyForHrc(attempt) : bodyForClassic(attempt),
                 AssociationsTranslator::gasRequirement);
     }
 
@@ -83,7 +83,7 @@ public class AssociationsTranslator extends AbstractHtsCallTranslator {
     }
 
     private TransactionBody bodyForHrc(@NonNull final HtsCallAttempt attempt) {
-        if (Arrays.equals(attempt.selector(), HRC_ASSOCIATE.selector())) {
+        if (attempt.isSelector(HRC_ASSOCIATE)) {
             return decoder.decodeHrcAssociate(attempt);
         } else {
             return decoder.decodeHrcDissociate(attempt);
@@ -91,25 +91,14 @@ public class AssociationsTranslator extends AbstractHtsCallTranslator {
     }
 
     private TransactionBody bodyForClassic(@NonNull final HtsCallAttempt attempt) {
-        if (Arrays.equals(attempt.selector(), ASSOCIATE_ONE.selector())) {
+        if (attempt.isSelector(ASSOCIATE_ONE)) {
             return decoder.decodeAssociateOne(attempt);
-        } else if (Arrays.equals(attempt.selector(), ASSOCIATE_MANY.selector())) {
+        } else if (attempt.isSelector(ASSOCIATE_MANY)) {
             return decoder.decodeAssociateMany(attempt);
-        } else if (Arrays.equals(attempt.selector(), DISSOCIATE_ONE.selector())) {
+        } else if (attempt.isSelector(DISSOCIATE_ONE)) {
             return decoder.decodeDissociateOne(attempt);
         } else {
             return decoder.decodeDissociateMany(attempt);
         }
-    }
-
-    private static boolean matchesHrcSelector(@NonNull final byte[] selector) {
-        return Arrays.equals(selector, HRC_ASSOCIATE.selector()) || Arrays.equals(selector, HRC_DISSOCIATE.selector());
-    }
-
-    private static boolean matchesClassicSelector(@NonNull final byte[] selector) {
-        return Arrays.equals(selector, ASSOCIATE_ONE.selector())
-                || Arrays.equals(selector, DISSOCIATE_ONE.selector())
-                || Arrays.equals(selector, ASSOCIATE_MANY.selector())
-                || Arrays.equals(selector, DISSOCIATE_MANY.selector());
     }
 }

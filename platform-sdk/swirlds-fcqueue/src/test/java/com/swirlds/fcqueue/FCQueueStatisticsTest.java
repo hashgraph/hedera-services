@@ -24,9 +24,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.swirlds.common.metrics.PlatformMetricsFactory;
 import com.swirlds.common.metrics.RunningAverageMetric;
 import com.swirlds.common.metrics.config.MetricsConfig;
-import com.swirlds.common.metrics.platform.DefaultMetrics;
-import com.swirlds.common.metrics.platform.DefaultMetricsFactory;
+import com.swirlds.common.metrics.platform.DefaultPlatformMetrics;
 import com.swirlds.common.metrics.platform.MetricKeyRegistry;
+import com.swirlds.common.metrics.platform.PlatformMetricsFactoryImpl;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.metrics.api.Metrics;
@@ -43,8 +43,8 @@ class FCQueueStatisticsTest {
         final ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
         final Configuration configuration = new TestConfigBuilder().getOrCreateConfig();
         final MetricsConfig metricsConfig = configuration.getConfigData(MetricsConfig.class);
-        final PlatformMetricsFactory factory = new DefaultMetricsFactory(metricsConfig);
-        final Metrics metrics = new DefaultMetrics(null, registry, executor, factory, metricsConfig);
+        final PlatformMetricsFactory factory = new PlatformMetricsFactoryImpl(metricsConfig);
+        final Metrics metrics = new DefaultPlatformMetrics(null, registry, executor, factory, metricsConfig);
 
         // when
         FCQueueStatistics.register(metrics);

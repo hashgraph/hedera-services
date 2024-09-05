@@ -16,60 +16,49 @@
 
 package com.hedera.services.bdd.suites.crypto;
 
+import static com.hedera.services.bdd.junit.RepeatableReason.NEEDS_VIRTUAL_TIME_FOR_FAST_EXECUTION;
 import static com.hedera.services.bdd.junit.TestTags.CRYPTO;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getReceipt;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
+import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.ifNotEmbeddedTest;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.usableTxnIdNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.suites.HapiSuite.FUNDING;
+import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.RECEIPT_NOT_FOUND;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.RECORD_NOT_FOUND;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNKNOWN;
 
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.spec.HapiSpec;
-import com.hedera.services.bdd.suites.HapiSuite;
-import java.util.List;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import com.hedera.services.bdd.junit.RepeatableHapiTest;
+import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.Timestamp;
+import com.hederahashgraph.api.proto.java.TransactionID;
+import java.util.stream.Stream;
+import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
 /**
  * ! WARNING - Requires a RecordCache TTL of 3s to pass !
  *
  * <p>Even with a 3s TTL, a number of these tests fail. FUTURE: revisit
- * */
-@HapiTestSuite
+ */
 @Tag(CRYPTO)
-public class TxnRecordRegression extends HapiSuite {
-    static final Logger log = LogManager.getLogger(TxnRecordRegression.class);
-
-    public static void main(final String... args) {
-        new TxnRecordRegression().runSuiteSync();
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return log;
-    }
-
-    @Override
-    public List<HapiSpec> getSpecsInSuite() {
-        return List.of(new HapiSpec[] {
-            returnsInvalidForUnspecifiedTxnId(),
-            recordNotFoundIfNotInPayerState(),
-            recordUnavailableIfRejectedInPrecheck(),
-            recordUnavailableBeforeConsensus(),
-            recordsStillQueryableWithDeletedPayerId(),
-        });
-    }
-
-    // FUTURE: revisit this test, which isn't passing in modular or mono code (even with a 3 second TTL)
+public class TxnRecordRegression {
     @HapiTest
-    final HapiSpec recordsStillQueryableWithDeletedPayerId() {
+    final Stream<DynamicTest> recordsStillQueryableWithDeletedPayerId() {
         return defaultHapiSpec("DeletedAccountRecordsUnavailableAfterTtl")
                 .given(
                         cryptoCreate("toBeDeletedPayer"),
@@ -81,7 +70,7 @@ public class TxnRecordRegression extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec returnsInvalidForUnspecifiedTxnId() {
+    final Stream<DynamicTest> returnsInvalidForUnspecifiedTxnId() {
         return defaultHapiSpec("ReturnsInvalidForUnspecifiedTxnId")
                 .given()
                 .when()
@@ -89,7 +78,7 @@ public class TxnRecordRegression extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec recordNotFoundIfNotInPayerState() {
+    final Stream<DynamicTest> recordNotFoundIfNotInPayerState() {
         return defaultHapiSpec("RecordNotFoundIfNotInPayerState")
                 .given(
                         cryptoCreate("misc").via("success"),
@@ -99,17 +88,19 @@ public class TxnRecordRegression extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec recordUnavailableBeforeConsensus() {
+    final Stream<DynamicTest> recordUnavailableBeforeConsensus() {
         return defaultHapiSpec("RecordUnavailableBeforeConsensus")
                 .given()
                 .when()
                 .then(
                         cryptoCreate("misc").via("success").balance(1_000L).deferStatusResolution(),
-                        getTxnRecord("success").hasAnswerOnlyPrecheck(RECORD_NOT_FOUND));
+                        // Running with embedded mode the previous transaction will often already be handled
+                        // and have a record available, so this is only interesting with a live network
+                        ifNotEmbeddedTest(getTxnRecord("success").hasAnswerOnlyPrecheck(RECORD_NOT_FOUND)));
     }
 
     @HapiTest
-    final HapiSpec recordUnavailableIfRejectedInPrecheck() {
+    final Stream<DynamicTest> recordUnavailableIfRejectedInPrecheck() {
         return defaultHapiSpec("RecordUnavailableIfRejectedInPrecheck")
                 .given(
                         cryptoCreate("misc").balance(1000L),
@@ -119,5 +110,83 @@ public class TxnRecordRegression extends HapiSuite {
                         .hasPrecheck(INSUFFICIENT_PAYER_BALANCE)
                         .txnId("failingTxn"))
                 .then(getTxnRecord("failingTxn").hasAnswerOnlyPrecheck(RECORD_NOT_FOUND));
+    }
+
+    @HapiTest
+    final Stream<DynamicTest> getReceiptReturnsInvalidForUnspecifiedTxnId() {
+        return hapiTest(getReceipt("").useDefaultTxnId().hasAnswerOnlyPrecheck(INVALID_TRANSACTION_ID));
+    }
+
+    @RepeatableHapiTest(NEEDS_VIRTUAL_TIME_FOR_FAST_EXECUTION)
+    final Stream<DynamicTest> receiptUnavailableAfterCacheTtl() {
+        return hapiTest(
+                cryptoCreate("misc").via("success").balance(1_000L),
+                sleepFor(181_000L),
+                // Run a transaction to give receipt expiration a chance to occur
+                cryptoTransfer(tinyBarsFromTo(GENESIS, FUNDING, 1L)),
+                getReceipt("success").hasAnswerOnlyPrecheck(RECEIPT_NOT_FOUND));
+    }
+
+    @HapiTest
+    final Stream<DynamicTest> receiptUnknownBeforeConsensus() {
+        return defaultHapiSpec("ReceiptUnknownBeforeConsensus")
+                .given()
+                .when()
+                .then(
+                        cryptoCreate("misc").via("success").balance(1_000L).deferStatusResolution(),
+                        getReceipt("success").hasPriorityStatus(UNKNOWN));
+    }
+
+    @HapiTest
+    final Stream<DynamicTest> receiptAvailableWithinCacheTtl() {
+        return defaultHapiSpec("ReceiptAvailableWithinCacheTtl")
+                .given(cryptoCreate("misc").via("success").balance(1_000L))
+                .when()
+                .then(getReceipt("success").hasPriorityStatus(SUCCESS));
+    }
+
+    @HapiTest
+    final Stream<DynamicTest> receiptUnavailableIfRejectedInPrecheck() {
+        return defaultHapiSpec("ReceiptUnavailableIfRejectedInPrecheck")
+                .given(cryptoCreate("misc").balance(1_000L))
+                .when(cryptoCreate("nope")
+                        .payingWith("misc")
+                        .hasPrecheck(INSUFFICIENT_PAYER_BALANCE)
+                        .via("failingTxn"))
+                .then(getReceipt("failingTxn").hasAnswerOnlyPrecheck(RECEIPT_NOT_FOUND));
+    }
+
+    @HapiTest
+    final Stream<DynamicTest> receiptNotFoundOnUnknownTransactionID() {
+        return defaultHapiSpec("receiptNotFoundOnUnknownTransactionID")
+                .given()
+                .when()
+                .then(withOpContext((spec, ctxLog) -> {
+                    allRunFor(
+                            spec,
+                            getReceipt(TransactionID.newBuilder()
+                                            .setAccountID(AccountID.newBuilder()
+                                                    .setAccountNum(Long.MAX_VALUE)
+                                                    .build())
+                                            .build())
+                                    .hasAnswerOnlyPrecheck(INVALID_TRANSACTION_ID),
+                            getReceipt(TransactionID.newBuilder()
+                                            .setTransactionValidStart(Timestamp.newBuilder()
+                                                    .setSeconds(Long.MAX_VALUE)
+                                                    .setNanos(Integer.MAX_VALUE)
+                                                    .build())
+                                            .build())
+                                    .hasAnswerOnlyPrecheck(INVALID_TRANSACTION_ID),
+                            getReceipt(TransactionID.newBuilder()
+                                            .setAccountID(AccountID.newBuilder()
+                                                    .setAccountNum(Long.MAX_VALUE)
+                                                    .build())
+                                            .setTransactionValidStart(Timestamp.newBuilder()
+                                                    .setSeconds(Long.MAX_VALUE)
+                                                    .setNanos(Integer.MAX_VALUE)
+                                                    .build())
+                                            .build())
+                                    .hasAnswerOnlyPrecheck(RECEIPT_NOT_FOUND));
+                }));
     }
 }

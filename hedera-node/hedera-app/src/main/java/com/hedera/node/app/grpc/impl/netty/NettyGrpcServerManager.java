@@ -22,6 +22,7 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.hapi.node.base.Transaction;
 import com.hedera.node.app.grpc.GrpcServerManager;
 import com.hedera.node.app.services.ServicesRegistry;
+import com.hedera.node.app.spi.RpcService;
 import com.hedera.node.app.workflows.ingest.IngestWorkflow;
 import com.hedera.node.app.workflows.query.QueryWorkflow;
 import com.hedera.node.config.ConfigProvider;
@@ -114,9 +115,14 @@ public final class NettyGrpcServerManager implements GrpcServerManager {
         requireNonNull(queryWorkflow);
         requireNonNull(metrics);
 
-        // Convert the various RPC service definitions into transaction or query endpoints using the GrpcServiceBuilder.
+        // Convert the various RPC service definitions into transaction or query endpoints using the
+        // GrpcServiceBuilder.
         services = servicesRegistry.registrations().stream()
                 .map(ServicesRegistry.Registration::service)
+                // Not all services are RPC services, but here we need RPC services only. The main difference
+                // between RPC service and a service is that the RPC service has RPC definition.
+                .filter(v -> v instanceof RpcService)
+                .map(v -> (RpcService) v)
                 .flatMap(s -> s.rpcDefinitions().stream())
                 .map(d -> {
                     final var builder = new GrpcServiceBuilder(d.basePath(), ingestWorkflow, queryWorkflow);

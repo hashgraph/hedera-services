@@ -16,7 +16,6 @@
 
 package com.swirlds.fchashmap;
 
-import static com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags.TIME_CONSUMING;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -39,7 +38,6 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 @DisplayName("FCHashMap Tests")
@@ -258,7 +256,6 @@ public class FCHashMapTests {
      * While writing to the mutable FCHashMap copy, read from the old copies in another thread.
      */
     @Test
-    @Tag(TIME_CONSUMING)
     @DisplayName("Parallel FCHashMap")
     void parallelFCHashMap() throws InterruptedException {
 

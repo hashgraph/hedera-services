@@ -16,9 +16,9 @@
 
 package com.hedera.node.app.metrics;
 
-import com.hedera.node.app.spi.metrics.StoreMetrics;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.swirlds.metrics.api.Metrics;
+import com.swirlds.state.spi.metrics.StoreMetrics;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.EnumMap;
 import java.util.Map;
@@ -35,6 +35,7 @@ public class StoreMetricsServiceImpl implements StoreMetricsService {
         this.storeMetricsMap = new EnumMap<>(StoreType.class);
         storeMetricsMap.put(StoreType.TOPIC, new StoreMetricsImpl(metrics, "topics"));
         storeMetricsMap.put(StoreType.ACCOUNT, new StoreMetricsImpl(metrics, "accounts"));
+        storeMetricsMap.put(StoreType.AIRDROP, new StoreMetricsImpl(metrics, "airdrops"));
         storeMetricsMap.put(StoreType.NFT, new StoreMetricsImpl(metrics, "nfts"));
         storeMetricsMap.put(StoreType.TOKEN, new StoreMetricsImpl(metrics, "tokens"));
         storeMetricsMap.put(
@@ -43,6 +44,7 @@ public class StoreMetricsServiceImpl implements StoreMetricsService {
         storeMetricsMap.put(StoreType.SLOT_STORAGE, new StoreMetricsImpl(metrics, "storageSlots", "storage slots"));
         storeMetricsMap.put(StoreType.CONTRACT, new StoreMetricsImpl(metrics, "contracts"));
         storeMetricsMap.put(StoreType.SCHEDULE, new StoreMetricsImpl(metrics, "schedules"));
+        storeMetricsMap.put(StoreType.NODE, new StoreMetricsImpl(metrics, "nodes"));
     }
 
     @Override

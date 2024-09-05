@@ -61,11 +61,8 @@ class CryptoFeeSchedulesTest extends FeeSchedulesTestHelper {
     private void testExpectedCreatePriceWith(int numAutoAssocSlots) throws IOException {
         final var expectedBasePrice =
                 canonicalTotalPricesInUsd.get(CryptoCreate).get(DEFAULT);
-
-        final var expectedScaledPrice =
-                expectedBasePrice.add(APPROX_AUTO_ASSOC_SLOT_PRICE.multiply(BigDecimal.valueOf(numAutoAssocSlots)));
         final var scaledUsage = baseOperationUsage.cryptoCreate(numAutoAssocSlots);
-        testExpected(expectedScaledPrice, scaledUsage, CryptoCreate, DEFAULT, CREATE_AUTO_ASSOC_ALLOWED_DEVIATION);
+        testExpected(expectedBasePrice, scaledUsage, CryptoCreate, DEFAULT, CREATE_AUTO_ASSOC_ALLOWED_DEVIATION);
     }
 
     @Test

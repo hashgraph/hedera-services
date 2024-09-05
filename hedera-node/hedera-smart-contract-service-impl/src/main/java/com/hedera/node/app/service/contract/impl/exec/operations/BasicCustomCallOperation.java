@@ -18,6 +18,7 @@ package com.hedera.node.app.service.contract.impl.exec.operations;
 
 import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.contractRequired;
+import static com.hedera.node.app.service.contract.impl.exec.utils.OperationUtils.isDeficientGas;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.service.contract.impl.exec.AddressChecks;
@@ -30,6 +31,7 @@ import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.internal.UnderflowException;
 import org.hyperledger.besu.evm.operation.Operation;
+import org.hyperledger.besu.evm.operation.Operation.OperationResult;
 
 /**
  * Interface to avoid duplicating the exact same {@link org.hyperledger.besu.evm.operation.AbstractCallOperation#execute(MessageFrame, EVM)}
@@ -91,6 +93,11 @@ public interface BasicCustomCallOperation {
         requireNonNull(evm);
         requireNonNull(frame);
         try {
+            final long cost = cost(frame);
+            if (isDeficientGas(frame, cost)) {
+                return new OperationResult(cost, ExceptionalHaltReason.INSUFFICIENT_GAS);
+            }
+
             final var address = to(frame);
             if (contractRequired(frame, address, featureFlags())
                     && addressChecks().isNeitherSystemNorPresent(address, frame)) {

@@ -42,10 +42,11 @@ import java.util.Objects;
  * Controls balance operations
  */
 public class InventoryService extends CrudService<DetailedInventory> {
-    private final @NonNull ItemDao itemDao;
-    private final @NonNull InventoryDao inventoryDao;
-    private final @NonNull StockDao stockDao;
-    private final @NonNull OperationDao operationDao;
+
+    private final ItemDao itemDao;
+    private final InventoryDao inventoryDao;
+    private final StockDao stockDao;
+    private final OperationDao operationDao;
 
     public InventoryService() {
         super(DetailedInventory.class);

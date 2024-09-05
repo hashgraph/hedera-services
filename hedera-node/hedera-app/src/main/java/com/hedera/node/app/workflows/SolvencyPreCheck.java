@@ -22,6 +22,10 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_PAYER_BALA
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
 import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.FEE_DIVISOR_FACTOR;
+import static com.hedera.node.app.workflows.handle.dispatch.DispatchValidator.OfferedFeeCheck;
+import static com.hedera.node.app.workflows.handle.dispatch.DispatchValidator.OfferedFeeCheck.CHECK_OFFERED_FEE;
+import static com.hedera.node.app.workflows.handle.dispatch.DispatchValidator.WorkflowCheck;
+import static com.hedera.node.app.workflows.handle.dispatch.DispatchValidator.WorkflowCheck.INGEST;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountAmount;
@@ -31,10 +35,10 @@ import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.hapi.util.HapiUtils;
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.fees.FeeManager;
 import com.hedera.node.app.service.token.ReadableAccountStore;
-import com.hedera.node.app.spi.HapiUtils;
 import com.hedera.node.app.spi.authorization.Authorizer;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.workflows.InsufficientBalanceException;
@@ -42,8 +46,8 @@ import com.hedera.node.app.spi.workflows.InsufficientNetworkFeeException;
 import com.hedera.node.app.spi.workflows.InsufficientNonFeeDebitsException;
 import com.hedera.node.app.spi.workflows.InsufficientServiceFeeException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
+import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.app.validation.ExpiryValidation;
-import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.Objects;
@@ -111,7 +115,7 @@ public class SolvencyPreCheck {
      * @param txInfo the {@link TransactionInfo} to use during the check
      * @param account the {@link Account} with the balance to check
      * @param fees the fees to use for the check
-     * @param ingestCheck if true, the check is being performed during an ingest workflow.
+     * @param workflowCheck if INGEST, the check will be performed during an ingest workflow.
      * @throws InsufficientBalanceException if the payer account cannot afford the fees. The exception will have a
      * status of {@code INSUFFICIENT_TX_FEE} and the fee amount that would have satisfied the check.
      */
@@ -121,11 +125,33 @@ public class SolvencyPreCheck {
             @NonNull final Fees fees,
             // This is to match mono and pass HapiTest. Should reconsider later.
             // FUTURE ('#9550')
-            final boolean ingestCheck)
+            @NonNull final WorkflowCheck workflowCheck)
             throws PreCheckException {
-        checkSolvency(txInfo.txBody(), txInfo.payerID(), txInfo.functionality(), account, fees, ingestCheck);
+        checkSolvency(
+                txInfo.txBody(),
+                txInfo.payerID(),
+                txInfo.functionality(),
+                account,
+                fees,
+                workflowCheck,
+                CHECK_OFFERED_FEE);
     }
 
+    /**
+     * Checks if the verified payer account of the given transaction can afford to cover its fees.
+     * It also checks if the offered fee is sufficient. If the payer account cannot afford the fees, an
+     * {@link InsufficientBalanceException} is thrown with the appropriate status and fee amount. If the offered fee
+     * is insufficient, an {@link InsufficientServiceFeeException} is thrown with the appropriate status and fee amount.
+     * @param txBody the {@link TransactionBody} to use during the check
+     * @param payerID the {@link AccountID} of the payer
+     * @param functionality the {@link HederaFunctionality} of the transaction
+     * @param account the {@link Account} with the balance to check
+     * @param fees the fees to use for the check
+     * @param workflowCheck if IS_INGEST, the check is being performed during an ingest workflow.
+     * @param offeredFeeCheck if CHECK_OFFERED_FEE, the offered fee is checked against the total fee.
+     * @throws PreCheckException if the payer account cannot afford the fees. The exception will have a status of
+     * {@code INSUFFICIENT_PAYER_BALANCE} and the fee amount that would have satisfied the check.
+     */
     public void checkSolvency(
             @NonNull final TransactionBody txBody,
             @NonNull final AccountID payerID,
@@ -134,23 +160,26 @@ public class SolvencyPreCheck {
             @NonNull final Fees fees,
             // This is to match mono and pass HapiTest. Should reconsider later.
             // FUTURE ('#9550')
-            final boolean ingestCheck)
+            @NonNull final WorkflowCheck workflowCheck,
+            @NonNull OfferedFeeCheck offeredFeeCheck)
             throws PreCheckException {
+        final var isIngest = workflowCheck.equals(INGEST);
+        final var checkOfferedFee = offeredFeeCheck.equals(CHECK_OFFERED_FEE);
         // Skip solvency check for privileged transactions or superusers
         if (authorizer.hasWaivedFees(payerID, functionality, txBody)) {
             return;
         }
-        final var totalFee = ingestCheck ? fees.totalWithoutServiceFee() : fees.totalFee();
+        final var totalFee = isIngest ? fees.totalWithoutServiceFee() : fees.totalFee();
         final var availableBalance = account.tinybarBalance();
         final var offeredFee = txBody.transactionFee();
 
-        if (offeredFee < fees.networkFee()) {
+        if (checkOfferedFee && offeredFee < fees.networkFee()) {
             throw new InsufficientNetworkFeeException(INSUFFICIENT_TX_FEE, totalFee);
         }
         if (availableBalance < fees.networkFee()) {
             throw new InsufficientNetworkFeeException(INSUFFICIENT_PAYER_BALANCE, totalFee);
         }
-        if (offeredFee < totalFee) {
+        if (checkOfferedFee && offeredFee < totalFee) {
             throw new InsufficientServiceFeeException(INSUFFICIENT_TX_FEE, totalFee);
         }
 
@@ -160,8 +189,8 @@ public class SolvencyPreCheck {
 
         long additionalCosts = 0L;
         try {
-            final var now = txBody.transactionIDOrThrow().transactionValidStartOrThrow();
-            if (ingestCheck) {
+            if (isIngest) {
+                final var now = txBody.transactionIDOrThrow().transactionValidStartOrThrow();
                 additionalCosts = Math.max(0, estimateAdditionalCosts(txBody, functionality, HapiUtils.asInstant(now)));
             }
         } catch (final NullPointerException ex) {

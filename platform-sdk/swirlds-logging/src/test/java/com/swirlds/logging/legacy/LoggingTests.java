@@ -26,7 +26,6 @@ import static org.junit.jupiter.api.Assertions.fail;
 
 import com.swirlds.common.test.fixtures.io.ResourceLoader;
 import com.swirlds.common.test.fixtures.junit.tags.TestComponentTags;
-import com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags;
 import com.swirlds.logging.legacy.json.JsonLogEntry;
 import com.swirlds.logging.legacy.json.JsonParser;
 import com.swirlds.logging.legacy.payload.ReconnectLoadFailurePayload;
@@ -152,7 +151,6 @@ public class LoggingTests {
      */
     @Test
     @Tag(TestComponentTags.LOGGING)
-    @Tag(TestQualifierTags.TIME_CONSUMING)
     @DisplayName("Simulation Should Match File")
     public void simulationShouldMatchFile() throws URISyntaxException, IOException {
         File file = new File("./swirlds.json");

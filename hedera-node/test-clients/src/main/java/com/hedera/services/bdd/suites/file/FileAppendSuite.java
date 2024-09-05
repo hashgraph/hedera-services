@@ -17,43 +17,60 @@
 package com.hedera.services.bdd.suites.file;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileContents;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileAppend;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyListNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sendModified;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.submitModified;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsdWithin;
+import static com.hedera.services.bdd.spec.utilops.mod.ModificationUtils.withSuccessivelyVariedBodyIds;
+import static com.hedera.services.bdd.spec.utilops.mod.ModificationUtils.withSuccessivelyVariedQueryIds;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
+import static com.hedera.services.bdd.suites.HapiSuite.THREE_MONTHS_IN_SECONDS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_FILE_SIZE_EXCEEDED;
 
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.spec.HapiSpec;
-import com.hedera.services.bdd.suites.HapiSuite;
+import com.hedera.services.bdd.junit.LeakyHapiTest;
+import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import java.util.stream.Stream;
+import org.junit.jupiter.api.DynamicTest;
 
-@HapiTestSuite
-public class FileAppendSuite extends HapiSuite {
-    private static final Logger log = LogManager.getLogger(FileAppendSuite.class);
-
-    public static void main(String... args) {
-        new FileAppendSuite().runSuiteAsync();
-    }
-
-    @Override
-    public List<HapiSpec> getSpecsInSuite() {
-        return List.of(vanillaAppendSucceeds(), baseOpsHaveExpectedPrices());
-    }
-
-    @Override
-    public boolean canRunConcurrent() {
-        return true;
+public class FileAppendSuite {
+    @HapiTest
+    final Stream<DynamicTest> appendIdVariantsTreatedAsExpected() {
+        return defaultHapiSpec("idVariantsTreatedAsExpected")
+                .given(fileCreate("file").contents("ABC"))
+                .when()
+                .then(submitModified(withSuccessivelyVariedBodyIds(), () -> fileAppend("file")
+                        .content("DEF")));
     }
 
     @HapiTest
-    public HapiSpec baseOpsHaveExpectedPrices() {
+    final Stream<DynamicTest> getContentsIdVariantsTreatedAsExpected() {
+        return defaultHapiSpec("getContentsIdVariantsTreatedAsExpected")
+                .given(fileCreate("file").contents("ABC"))
+                .when()
+                .then(sendModified(withSuccessivelyVariedQueryIds(), () -> getFileContents("file")));
+    }
+
+    @HapiTest
+    final Stream<DynamicTest> getInfoIdVariantsTreatedAsExpected() {
+        return defaultHapiSpec("getInfoIdVariantsTreatedAsExpected")
+                .given(fileCreate("file").contents("ABC"))
+                .when()
+                .then(sendModified(withSuccessivelyVariedQueryIds(), () -> getFileInfo("file")));
+    }
+
+    @HapiTest
+    final Stream<DynamicTest> baseOpsHaveExpectedPrices() {
         final var civilian = "NonExemptPayer";
 
         final var expectedAppendFeesPriceUsd = 0.05;
@@ -86,7 +103,7 @@ public class FileAppendSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec vanillaAppendSucceeds() {
+    final Stream<DynamicTest> vanillaAppendSucceeds() {
         final byte[] first4K = randomUtf8Bytes(BYTES_4K);
         final byte[] next4k = randomUtf8Bytes(BYTES_4K);
         final byte[] all8k = new byte[2 * BYTES_4K];
@@ -97,6 +114,19 @@ public class FileAppendSuite extends HapiSuite {
                 .given(fileCreate("test").contents(first4K))
                 .when(fileAppend("test").content(next4k))
                 .then(getFileContents("test").hasContents(ignore -> all8k));
+    }
+
+    @LeakyHapiTest(overrides = {"files.maxSizeKb"})
+    final Stream<DynamicTest> handleRejectsOversized() {
+        byte[] BYTES_3K_MINUS1 = new byte[3 * 1024 - 1];
+        Arrays.fill(BYTES_3K_MINUS1, (byte) 0xAB);
+        byte[] BYTES_1 = new byte[] {(byte) 0xAB};
+
+        return hapiTest(
+                overriding("files.maxSizeKb", "3"),
+                fileCreate("file").contents(BYTES_3K_MINUS1),
+                fileAppend("file").content(BYTES_1),
+                fileAppend("file").content(BYTES_1).hasKnownStatus(MAX_FILE_SIZE_EXCEEDED));
     }
 
     private final int BYTES_4K = 4 * (1 << 10);
@@ -110,10 +140,5 @@ public class FileAppendSuite extends HapiSuite {
             i += rnd.length;
         }
         return data;
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return log;
     }
 }

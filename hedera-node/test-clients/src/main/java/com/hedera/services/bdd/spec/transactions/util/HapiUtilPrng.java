@@ -31,7 +31,6 @@ import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.api.proto.java.TransactionResponse;
 import com.hederahashgraph.api.proto.java.UtilPrngTransactionBody;
 import java.util.Arrays;
 import java.util.List;
@@ -94,11 +93,6 @@ public class HapiUtilPrng extends HapiTxnOp<HapiUtilPrng> {
     @Override
     protected List<Function<HapiSpec, Key>> defaultSigners() {
         return Arrays.asList(spec -> spec.registry().getKey(effectivePayer(spec)));
-    }
-
-    @Override
-    protected Function<Transaction, TransactionResponse> callToUse(final HapiSpec spec) {
-        return spec.clients().getUtilSvcStub(targetNodeFor(spec), useTls)::prng;
     }
 
     @Override

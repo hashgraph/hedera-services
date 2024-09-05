@@ -23,10 +23,6 @@ import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.node.app.hapi.utils.sysfiles.domain.KnownBlockValues;
 import com.hedera.node.app.hapi.utils.sysfiles.domain.throttling.ScaleFactor;
-import com.hedera.node.app.service.mono.context.domain.security.PermissionedAccountsRange;
-import com.hedera.node.app.service.mono.fees.calculation.CongestionMultipliers;
-import com.hedera.node.app.service.mono.fees.calculation.EntityScaleFactors;
-import com.hedera.node.app.service.mono.keys.LegacyContractIdActivations;
 import com.hedera.node.config.converter.AccountIDConverter;
 import com.hedera.node.config.converter.BytesConverter;
 import com.hedera.node.config.converter.CongestionMultipliersConverter;
@@ -36,7 +32,6 @@ import com.hedera.node.config.converter.FileIDConverter;
 import com.hedera.node.config.converter.FunctionalitySetConverter;
 import com.hedera.node.config.converter.KeyValuePairConverter;
 import com.hedera.node.config.converter.KnownBlockValuesConverter;
-import com.hedera.node.config.converter.LegacyContractIdActivationsConverter;
 import com.hedera.node.config.converter.LongPairConverter;
 import com.hedera.node.config.converter.PermissionedAccountsRangeConverter;
 import com.hedera.node.config.converter.ScaleFactorConverter;
@@ -48,6 +43,7 @@ import com.hedera.node.config.data.AutoRenew2Config;
 import com.hedera.node.config.data.AutoRenewConfig;
 import com.hedera.node.config.data.BalancesConfig;
 import com.hedera.node.config.data.BlockRecordStreamConfig;
+import com.hedera.node.config.data.BlockStreamConfig;
 import com.hedera.node.config.data.BootstrapConfig;
 import com.hedera.node.config.data.CacheConfig;
 import com.hedera.node.config.data.ConsensusConfig;
@@ -64,20 +60,22 @@ import com.hedera.node.config.data.LazyCreationConfig;
 import com.hedera.node.config.data.LedgerConfig;
 import com.hedera.node.config.data.NettyConfig;
 import com.hedera.node.config.data.NetworkAdminConfig;
+import com.hedera.node.config.data.NodesConfig;
 import com.hedera.node.config.data.RatesConfig;
 import com.hedera.node.config.data.SchedulingConfig;
-import com.hedera.node.config.data.SigsConfig;
 import com.hedera.node.config.data.StakingConfig;
 import com.hedera.node.config.data.StatsConfig;
 import com.hedera.node.config.data.TokensConfig;
 import com.hedera.node.config.data.TopicsConfig;
 import com.hedera.node.config.data.TraceabilityConfig;
-import com.hedera.node.config.data.UpgradeConfig;
 import com.hedera.node.config.data.UtilPrngConfig;
 import com.hedera.node.config.data.VersionConfig;
+import com.hedera.node.config.types.CongestionMultipliers;
+import com.hedera.node.config.types.EntityScaleFactors;
 import com.hedera.node.config.types.HederaFunctionalitySet;
 import com.hedera.node.config.types.KeyValuePair;
 import com.hedera.node.config.types.LongPair;
+import com.hedera.node.config.types.PermissionedAccountsRange;
 import com.hedera.node.config.validation.EmulatesMapValidator;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.ConfigurationExtension;
@@ -96,12 +94,14 @@ public class ServicesConfigExtension implements ConfigurationExtension {
 
         return Set.of(
                 AccountsConfig.class,
+                NodesConfig.class,
                 ApiPermissionConfig.class,
                 AutoCreationConfig.class,
                 AutoRenew2Config.class,
                 AutoRenewConfig.class,
                 BalancesConfig.class,
                 BlockRecordStreamConfig.class,
+                BlockStreamConfig.class,
                 BootstrapConfig.class,
                 CacheConfig.class,
                 ConsensusConfig.class,
@@ -120,13 +120,11 @@ public class ServicesConfigExtension implements ConfigurationExtension {
                 NetworkAdminConfig.class,
                 RatesConfig.class,
                 SchedulingConfig.class,
-                SigsConfig.class,
                 StakingConfig.class,
                 StatsConfig.class,
                 TokensConfig.class,
                 TopicsConfig.class,
                 TraceabilityConfig.class,
-                UpgradeConfig.class,
                 UtilPrngConfig.class,
                 VersionConfig.class);
     }
@@ -137,7 +135,6 @@ public class ServicesConfigExtension implements ConfigurationExtension {
                 ConverterPair.of(CongestionMultipliers.class, new CongestionMultipliersConverter()),
                 ConverterPair.of(EntityScaleFactors.class, new EntityScaleFactorsConverter()),
                 ConverterPair.of(KnownBlockValues.class, new KnownBlockValuesConverter()),
-                ConverterPair.of(LegacyContractIdActivations.class, new LegacyContractIdActivationsConverter()),
                 ConverterPair.of(ScaleFactor.class, new ScaleFactorConverter()),
                 ConverterPair.of(AccountID.class, new AccountIDConverter()),
                 ConverterPair.of(ContractID.class, new ContractIDConverter()),

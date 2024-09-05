@@ -169,7 +169,7 @@ public class HashBuilder {
             throw new IllegalArgumentException("hash");
         }
 
-        digest.update(hash.getValue());
+        hash.getBytes().writeTo(digest);
 
         return this;
     }

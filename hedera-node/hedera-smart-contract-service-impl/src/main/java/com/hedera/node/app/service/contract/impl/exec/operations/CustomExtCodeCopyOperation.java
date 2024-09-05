@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.contract.impl.exec.operations;
 
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.contractRequired;
+import static com.hedera.node.app.service.contract.impl.exec.utils.OperationUtils.isDeficientGas;
 import static org.hyperledger.besu.evm.internal.Words.clampedToLong;
 
 import com.hedera.node.app.service.contract.impl.exec.AddressChecks;
@@ -60,16 +61,20 @@ public class CustomExtCodeCopyOperation extends ExtCodeCopyOperation {
             final var memOffset = clampedToLong(frame.getStackItem(1));
             final var sourceOffset = clampedToLong(frame.getStackItem(2));
             final var numBytes = clampedToLong(frame.getStackItem(3));
+            final long cost = cost(frame, memOffset, numBytes, false);
+            if (isDeficientGas(frame, cost)) {
+                return new OperationResult(cost, ExceptionalHaltReason.INSUFFICIENT_GAS);
+            }
+
             // Special behavior for long-zero addresses below 0.0.1001
             if (addressChecks.isNonUserAccount(address)) {
                 frame.writeMemory(memOffset, sourceOffset, numBytes, Bytes.EMPTY);
                 frame.popStackItems(4);
-                return new OperationResult(cost(frame, memOffset, numBytes, true), null);
+                return new OperationResult(cost, null);
             }
             // Otherwise the address must be present
             if (contractRequired(frame, address, featureFlags) && !addressChecks.isPresent(address, frame)) {
-                return new OperationResult(
-                        cost(frame, memOffset, numBytes, true), CustomExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS);
+                return new OperationResult(cost, CustomExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS);
             }
             return super.execute(frame, evm);
         } catch (UnderflowException ignore) {

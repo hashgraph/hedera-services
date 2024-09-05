@@ -203,7 +203,7 @@ class ScheduleSignHandlerTest extends ScheduleHandlerTestBase {
         final Set<Key> acceptedKeys = Set.of(payerKey, optionKey);
         final TestTransactionKeys accepted = new TestTransactionKeys(payerKey, acceptedKeys, Collections.emptySet());
         // This is how you get side-effects replicated, by having the "Answer" called in place of the real method.
-        given(mockContext.verificationFor(BDDMockito.any(Key.class), BDDMockito.any(VerificationAssistant.class)))
+        given(keyVerifier.verificationFor(BDDMockito.any(Key.class), BDDMockito.any(VerificationAssistant.class)))
                 .will(new VerificationForAnswer(accepted));
         return acceptedKeys; // return the expected set of signatories after the transaction is handled.
     }
@@ -215,7 +215,7 @@ class ScheduleSignHandlerTest extends ScheduleHandlerTestBase {
         final Set<Key> allKeys = Set.of(payerKey, adminKey, schedulerKey, optionKey, otherKey);
         final TestTransactionKeys allRequired = new TestTransactionKeys(payerKey, allKeys, Collections.emptySet());
         // This is how you get side-effects replicated, by having the "Answer" called in place of the real method.
-        given(mockContext.verificationFor(BDDMockito.any(Key.class), BDDMockito.any(VerificationAssistant.class)))
+        given(keyVerifier.verificationFor(BDDMockito.any(Key.class), BDDMockito.any(VerificationAssistant.class)))
                 .will(new VerificationForAnswer(allRequired));
     }
 }

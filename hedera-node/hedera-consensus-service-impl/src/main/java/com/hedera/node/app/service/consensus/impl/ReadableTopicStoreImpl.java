@@ -22,11 +22,10 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.hapi.node.base.TopicID;
 import com.hedera.hapi.node.state.consensus.Topic;
 import com.hedera.node.app.service.consensus.ReadableTopicStore;
-import com.hedera.node.app.spi.state.ReadableKVState;
-import com.hedera.node.app.spi.state.ReadableStates;
+import com.swirlds.state.spi.ReadableKVState;
+import com.swirlds.state.spi.ReadableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.util.Optional;
 
 /**
  * Provides read-only methods for interacting with the underlying data storage mechanisms for
@@ -50,28 +49,28 @@ public class ReadableTopicStoreImpl implements ReadableTopicStore {
     }
 
     /**
-     * Returns the topic metadata needed. If the topic doesn't exist returns failureReason. If the
+     * Returns the topic needed. If the topic doesn't exist returns failureReason. If the
      * topic exists , the failure reason will be null.
      *
      * @param id topic id being looked up
-     * @return topic's metadata
+     * @return topic
      */
+    @Override
     @Nullable
     public Topic getTopic(@NonNull final TopicID id) {
         requireNonNull(id);
-        return getTopicLeaf(id).orElse(null);
-    }
-
-    @NonNull
-    public Optional<Topic> getTopicLeaf(@NonNull final TopicID id) {
-        return Optional.ofNullable(topicState.get(id));
+        return topicState.get(id);
     }
 
     /**
      * Returns the number of topics in the state.
-     * @return the number of topics in the state.
+     * @return the number of topics in the state
      */
     public long sizeOfState() {
         return topicState.size();
+    }
+
+    protected <T extends ReadableKVState<TopicID, Topic>> T topicState() {
+        return (T) topicState;
     }
 }

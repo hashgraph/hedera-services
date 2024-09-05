@@ -18,10 +18,12 @@ package com.swirlds.platform.event.creation;
 
 import com.swirlds.common.wiring.component.InputWireLabel;
 import com.swirlds.platform.consensus.EventWindow;
-import com.swirlds.platform.event.GossipEvent;
-import com.swirlds.platform.system.events.BaseEventHashedData;
+import com.swirlds.platform.event.PlatformEvent;
+import com.swirlds.platform.system.events.UnsignedEvent;
+import com.swirlds.platform.system.status.PlatformStatus;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.time.Duration;
 
 /**
  * Wraps an {@link EventCreator} and provides additional functionality. Will sometimes decide not to create new events
@@ -36,15 +38,15 @@ public interface EventCreationManager {
      */
     @InputWireLabel("heartbeat")
     @Nullable
-    BaseEventHashedData maybeCreateEvent();
+    UnsignedEvent maybeCreateEvent();
 
     /**
      * Register a new event from event intake.
      *
      * @param event the event to add
      */
-    @InputWireLabel("GossipEvent")
-    void registerEvent(@NonNull GossipEvent event);
+    @InputWireLabel("PlatformEvent")
+    void registerEvent(@NonNull PlatformEvent event);
 
     /**
      * Update the event window, defining the minimum threshold for an event to be non-ancient.
@@ -53,6 +55,23 @@ public interface EventCreationManager {
      */
     @InputWireLabel("event window")
     void setEventWindow(@NonNull EventWindow eventWindow);
+
+    /**
+     * Update the platform status.
+     *
+     * @param platformStatus the new platform status
+     */
+    @InputWireLabel("PlatformStatus")
+    void updatePlatformStatus(@NonNull PlatformStatus platformStatus);
+
+    /**
+     * Report the amount of time that the system has been in an unhealthy state. Will receive a report of
+     * {@link Duration#ZERO} when the system enters a healthy state.
+     *
+     * @param duration the amount of time that the system has been in an unhealthy state
+     */
+    @InputWireLabel("health info")
+    void reportUnhealthyDuration(@NonNull final Duration duration);
 
     /**
      * Clear the internal state of the event creation manager.

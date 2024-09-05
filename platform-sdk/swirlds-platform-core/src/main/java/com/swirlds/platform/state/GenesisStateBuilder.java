@@ -22,7 +22,6 @@ import com.swirlds.platform.crypto.CryptoStatic;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.system.SoftwareVersion;
-import com.swirlds.platform.system.SwirldState;
 import com.swirlds.platform.system.address.AddressBook;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
@@ -35,55 +34,49 @@ public final class GenesisStateBuilder {
     private GenesisStateBuilder() {}
 
     /**
-     * Construct a genesis platform state.
+     * Initializes a genesis platform state.
      *
-     * @return a genesis platform state
      */
-    private static PlatformState buildGenesisPlatformState(
-            @NonNull final PlatformContext platformContext,
+    private static void initGenesisPlatformState(
+            final PlatformContext platformContext,
+            final PlatformStateAccessor platformState,
             final AddressBook addressBook,
             final SoftwareVersion appVersion) {
+        platformState.bulkUpdate(v -> {
+            v.setAddressBook(addressBook.copy());
+            v.setCreationSoftwareVersion(appVersion);
+            v.setRound(0);
+            v.setLegacyRunningEventHash(null);
+            v.setConsensusTimestamp(Instant.ofEpochSecond(0L));
 
-        final PlatformState platformState = new PlatformState();
-        platformState.setAddressBook(addressBook.copy());
+            final BasicConfig basicConfig = platformContext.getConfiguration().getConfigData(BasicConfig.class);
 
-        platformState.setCreationSoftwareVersion(appVersion);
-        platformState.setRound(0);
-        platformState.setLegacyRunningEventHash(null);
-        platformState.setRunningEventHash(platformContext.getCryptography().getNullHash());
-        platformState.setEpochHash(null);
-        platformState.setConsensusTimestamp(Instant.ofEpochSecond(0L));
-
-        return platformState;
+            final long genesisFreezeTime = basicConfig.genesisFreezeTime();
+            if (genesisFreezeTime > 0) {
+                v.setFreezeTime(Instant.ofEpochSecond(genesisFreezeTime));
+            }
+        });
     }
 
     /**
      * Build and initialize a genesis state.
      *
-     * @param platformContext the platform context
-     * @param addressBook     the current address book
-     * @param appVersion      the software version of the app
-     * @param swirldState     the application's genesis state
+     * @param platformContext       the platform context
+     * @param addressBook           the current address book
+     * @param appVersion            the software version of the app
+     * @param stateRoot             the merkle root node of the state
      * @return a reserved genesis signed state
      */
     public static ReservedSignedState buildGenesisState(
             @NonNull final PlatformContext platformContext,
             @NonNull final AddressBook addressBook,
             @NonNull final SoftwareVersion appVersion,
-            @NonNull final SwirldState swirldState) {
+            @NonNull final MerkleRoot stateRoot) {
 
-        final BasicConfig basicConfig = platformContext.getConfiguration().getConfigData(BasicConfig.class);
-        final State state = new State();
-        state.setPlatformState(buildGenesisPlatformState(platformContext, addressBook, appVersion));
-        state.setSwirldState(swirldState);
+        initGenesisPlatformState(platformContext, stateRoot.getPlatformState(), addressBook, appVersion);
 
-        final long genesisFreezeTime = basicConfig.genesisFreezeTime();
-        if (genesisFreezeTime > 0) {
-            state.getPlatformState().setFreezeTime(Instant.ofEpochSecond(genesisFreezeTime));
-        }
-
-        final SignedState signedState =
-                new SignedState(platformContext, CryptoStatic::verifySignature, state, "genesis state", false, false);
+        final SignedState signedState = new SignedState(
+                platformContext, CryptoStatic::verifySignature, stateRoot, "genesis state", false, false, false);
         return signedState.reserve("initial reservation on genesis state");
     }
 }

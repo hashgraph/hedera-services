@@ -20,6 +20,7 @@ import static com.hedera.node.app.spi.key.KeyUtils.IMMUTABILITY_SENTINEL_KEY;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.Key;
+import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.node.app.spi.key.KeyUtils;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
@@ -41,6 +42,14 @@ public interface AttributeValidator {
      * @throws HandleException if the key is invalid or more than {@value MAX_NESTED_KEY_LEVELS}
      */
     void validateKey(@NonNull Key key);
+
+    /**
+     * Validates the given key. If the key is more than allowed depth, throws responseCodeEnum
+     *
+     * @param key the key to validate
+     * @param responseCodeEnum the response code to throw if the key is invalid
+     */
+    void validateKey(@NonNull Key key, @NonNull ResponseCodeEnum responseCodeEnum);
 
     /**
      * Validates the given memo.

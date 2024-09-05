@@ -43,8 +43,8 @@ import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AddressIdConverter;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.create.ClassicCreatesCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.create.CreateTranslator;
-import com.hedera.node.app.service.contract.impl.records.ContractCallRecordBuilder;
-import com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.hts.HtsCallTestBase;
+import com.hedera.node.app.service.contract.impl.records.ContractCallStreamBuilder;
+import com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.common.CallTestBase;
 import java.math.BigInteger;
 import java.util.ArrayDeque;
 import java.util.Deque;
@@ -55,7 +55,7 @@ import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 
-public class ClassicCreatesCallTest extends HtsCallTestBase {
+public class ClassicCreatesCallTest extends CallTestBase {
     private static final org.hyperledger.besu.datatypes.Address FRAME_SENDER_ADDRESS = EIP_1014_ADDRESS;
 
     @Mock
@@ -65,7 +65,7 @@ public class ClassicCreatesCallTest extends HtsCallTestBase {
     private AddressIdConverter addressIdConverter;
 
     @Mock
-    private ContractCallRecordBuilder recordBuilder;
+    private ContractCallStreamBuilder recordBuilder;
 
     @Mock
     private BlockValues blockValues;
@@ -325,7 +325,7 @@ public class ClassicCreatesCallTest extends HtsCallTestBase {
                             any(TransactionBody.class),
                             eq(verificationStrategy),
                             eq(A_NEW_ACCOUNT_ID),
-                            eq(ContractCallRecordBuilder.class)))
+                            eq(ContractCallStreamBuilder.class)))
                     .willReturn(recordBuilder);
         }
         given(frame.getBlockValues()).willReturn(blockValues);

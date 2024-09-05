@@ -46,6 +46,7 @@ import org.apache.logging.log4j.Logger;
 
 /**
  * The default implementation of {@link PlatformMetricsProvider}
+ * FUTURE: Follow our naming patterns and rename to PlatformMetricsProviderImpl
  */
 public class DefaultMetricsProvider implements PlatformMetricsProvider, Lifecycle {
 
@@ -56,8 +57,8 @@ public class DefaultMetricsProvider implements PlatformMetricsProvider, Lifecycl
             getStaticThreadManager().createThreadFactory("platform-core", "MetricsThread"));
 
     private final @NonNull MetricKeyRegistry metricKeyRegistry = new MetricKeyRegistry();
-    private final @NonNull DefaultMetrics globalMetrics;
-    private final @NonNull ConcurrentMap<NodeId, DefaultMetrics> platformMetrics = new ConcurrentHashMap<>();
+    private final @NonNull DefaultPlatformMetrics globalMetrics;
+    private final @NonNull ConcurrentMap<NodeId, DefaultPlatformMetrics> platformMetrics = new ConcurrentHashMap<>();
     private final @Nullable PrometheusEndpoint prometheusEndpoint;
     private final @NonNull SnapshotService snapshotService;
     private final @NonNull MetricsConfig metricsConfig;
@@ -73,9 +74,9 @@ public class DefaultMetricsProvider implements PlatformMetricsProvider, Lifecycl
 
         metricsConfig = configuration.getConfigData(MetricsConfig.class);
         final PrometheusConfig prometheusConfig = configuration.getConfigData(PrometheusConfig.class);
-        factory = new DefaultMetricsFactory(metricsConfig);
+        factory = new PlatformMetricsFactoryImpl(metricsConfig);
 
-        globalMetrics = new DefaultMetrics(null, metricKeyRegistry, executor, factory, metricsConfig);
+        globalMetrics = new DefaultPlatformMetrics(null, metricKeyRegistry, executor, factory, metricsConfig);
 
         // setup SnapshotService
         snapshotService = new SnapshotService(globalMetrics, executor, metricsConfig.getMetricsSnapshotDuration());
@@ -112,10 +113,10 @@ public class DefaultMetricsProvider implements PlatformMetricsProvider, Lifecycl
     public @NonNull Metrics createPlatformMetrics(@NonNull final NodeId nodeId) {
         Objects.requireNonNull(nodeId, "selfId must not be null");
 
-        final DefaultMetrics newMetrics =
-                new DefaultMetrics(nodeId, metricKeyRegistry, executor, factory, metricsConfig);
+        final DefaultPlatformMetrics newMetrics =
+                new DefaultPlatformMetrics(nodeId, metricKeyRegistry, executor, factory, metricsConfig);
 
-        final DefaultMetrics oldMetrics = platformMetrics.putIfAbsent(nodeId, newMetrics);
+        final DefaultPlatformMetrics oldMetrics = platformMetrics.putIfAbsent(nodeId, newMetrics);
         if (oldMetrics != null) {
             throw new IllegalStateException(String.format("PlatformMetrics for %s already exists", nodeId));
         }
@@ -157,7 +158,7 @@ public class DefaultMetricsProvider implements PlatformMetricsProvider, Lifecycl
     public void start() {
         if (lifecyclePhase == LifecyclePhase.NOT_STARTED) {
             globalMetrics.start();
-            for (final DefaultMetrics metrics : platformMetrics.values()) {
+            for (final DefaultPlatformMetrics metrics : platformMetrics.values()) {
                 metrics.start();
             }
             snapshotService.start();

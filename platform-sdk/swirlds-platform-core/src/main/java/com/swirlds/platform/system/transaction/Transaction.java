@@ -16,8 +16,11 @@
 
 package com.swirlds.platform.system.transaction;
 
+import com.hedera.hapi.platform.event.EventTransaction;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.crypto.TransactionSignature;
-import com.swirlds.common.io.SerializableWithKnownLength;
+import com.swirlds.platform.util.TransactionUtils;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.concurrent.locks.ReadWriteLock;
 
 /**
@@ -25,21 +28,25 @@ import java.util.concurrent.locks.ReadWriteLock;
  * objects. The list of signatures features controlled mutability with a thread-safe and atomic implementation. The
  * transaction internally uses a {@link ReadWriteLock} to provide atomic reads and writes to the underlying list of
  * signatures.
- * <p>
- * The contents provided by this class via {@link #getContents()} must never be mutated. Providing the direct (mutable)
- * reference improves performance by eliminating the need to create copies.
- * </p>
  */
-public sealed interface Transaction extends SerializableWithKnownLength permits ConsensusTransaction {
+public sealed interface Transaction permits ConsensusTransaction {
 
     /**
-     * Returns a direct (mutable) reference to the transaction contents/payload. Care must be
-     * taken to never modify the array returned by this accessor. Modifying the array will result in undefined
-     * behaviors.
-     *
-     * @return a direct reference to the transaction content/payload
+     * Returns the transaction as a PBJ record
+     * @return the transaction
      */
-    byte[] getContents();
+    @NonNull
+    EventTransaction getTransaction();
+
+    /**
+     * A convenience method for retrieving the application transaction {@link Bytes} object. Before calling this method,
+     * ensure that the transaction is not a system transaction by calling {@link #isSystem()}.
+     *
+     * @return the application transaction Bytes or {@code Bytes.EMPTY} if the transaction is a system transaction
+     */
+    default @NonNull Bytes getApplicationTransaction() {
+        return !isSystem() ? getTransaction().transaction().as() : Bytes.EMPTY;
+    }
 
     /**
      * Get the size of the transaction
@@ -54,7 +61,9 @@ public sealed interface Transaction extends SerializableWithKnownLength permits 
      * @return {@code true} if this is a system transaction; otherwise {@code false} if this is an application
      * 		transaction
      */
-    boolean isSystem();
+    default boolean isSystem() {
+        return TransactionUtils.isSystemTransaction(getTransaction());
+    }
 
     /**
      * Returns the custom metadata object set via {@link #setMetadata(Object)}.

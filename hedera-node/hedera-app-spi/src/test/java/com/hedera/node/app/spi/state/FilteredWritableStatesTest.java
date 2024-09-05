@@ -20,6 +20,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 
 import com.hedera.node.app.spi.fixtures.state.MapWritableStates;
+import com.swirlds.state.spi.WritableStates;
+import com.swirlds.state.test.fixtures.StateTestBase;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
@@ -123,6 +126,17 @@ class FilteredWritableStatesTest {
         @DisplayName("Throws IAE for any non-null Singleton key")
         void nonNullSingletonKey() {
             assertThatThrownBy(() -> states.getSingleton(UNKNOWN_KEY)).isInstanceOf(IllegalArgumentException.class);
+        }
+
+        @NonNull
+        protected MapWritableStates allWritableStates() {
+            return MapWritableStates.builder()
+                    .state(writableAnimalState())
+                    .state(writableCountryState())
+                    .state(writableAnimalState())
+                    .state(writableSTEAMState())
+                    .state(writableSpaceState())
+                    .build();
         }
     }
 

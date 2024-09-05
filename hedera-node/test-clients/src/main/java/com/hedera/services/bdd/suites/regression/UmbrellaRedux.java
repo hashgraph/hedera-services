@@ -16,79 +16,49 @@
 
 package com.hedera.services.bdd.suites.regression;
 
+import static com.hedera.services.bdd.junit.TestTags.NOT_REPEATABLE;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
-import static com.hedera.services.bdd.spec.infrastructure.OpProvider.UNIQUE_PAYER_ACCOUNT;
-import static com.hedera.services.bdd.spec.infrastructure.OpProvider.UNIQUE_PAYER_ACCOUNT_INITIAL_BALANCE;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.runWithProvider;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.regression.factories.RegressionProviderFactory.factoryFrom;
-import static com.hedera.services.bdd.suites.utils.sysfiles.serdes.ThrottleDefsLoader.protoDefsFromResource;
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.concurrent.TimeUnit.SECONDS;
 
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.HapiSpec;
-import com.hedera.services.bdd.suites.HapiSuite;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import java.util.stream.Stream;
+import org.junit.jupiter.api.DynamicTest;
+import org.junit.jupiter.api.Tag;
 
-@HapiTestSuite
-public class UmbrellaRedux extends HapiSuite {
-    private static final Logger log = LogManager.getLogger(UmbrellaRedux.class);
-
+public class UmbrellaRedux {
     public static final String DEFAULT_PROPERTIES = "regression-mixed_ops.properties";
 
-    private AtomicLong duration = new AtomicLong(1);
+    private AtomicLong duration = new AtomicLong(10);
     private AtomicInteger maxOpsPerSec = new AtomicInteger(Integer.MAX_VALUE);
     private AtomicInteger maxPendingOps = new AtomicInteger(Integer.MAX_VALUE);
     private AtomicInteger backoffSleepSecs = new AtomicInteger(1);
     private AtomicInteger statusTimeoutSecs = new AtomicInteger(5);
     private AtomicReference<String> props = new AtomicReference<>(DEFAULT_PROPERTIES);
-    private AtomicReference<TimeUnit> unit = new AtomicReference<>(MILLISECONDS);
-
-    public static void main(String... args) {
-        UmbrellaRedux umbrellaRedux = new UmbrellaRedux();
-        umbrellaRedux.runSuiteSync();
-    }
-
-    @Override
-    public List<HapiSpec> getSpecsInSuite() {
-        return List.of(new HapiSpec[] {
-            umbrellaRedux(),
-        });
-    }
+    private AtomicReference<TimeUnit> unit = new AtomicReference<>(SECONDS);
 
     @HapiTest
-    final HapiSpec umbrellaRedux() {
-        var defaultThrottles = protoDefsFromResource("testSystemFiles/throttles-dev.json");
+    @Tag(NOT_REPEATABLE)
+    final Stream<DynamicTest> umbrellaRedux() {
         return defaultHapiSpec("UmbrellaRedux")
-                .given(
-                        withOpContext((spec, opLog) -> {
-                            configureFromCi(spec);
-                            // use ci property statusTimeoutSecs to overwrite default value
-                            // of status.wait.timeout.ms
-                            spec.addOverrideProperties(Map.of(
-                                    "status.wait.timeout.ms", Integer.toString(1_000 * statusTimeoutSecs.get())));
-                        }),
-                        fileUpdate(THROTTLE_DEFS).payingWith(GENESIS).contents(defaultThrottles.toByteArray()),
-                        cryptoCreate(UNIQUE_PAYER_ACCOUNT)
-                                .balance(UNIQUE_PAYER_ACCOUNT_INITIAL_BALANCE)
-                                .withRecharging()
-                                .via("createUniquePayer"),
-                        sleepFor(10000))
-                .when(getTxnRecord("createUniquePayer").logged())
+                .given(withOpContext((spec, opLog) -> {
+                    configureFromCi(spec);
+                    // use ci property statusTimeoutSecs to overwrite default value
+                    // of status.wait.timeout.ms
+                    spec.addOverrideProperties(
+                            Map.of("status.wait.timeout.ms", Integer.toString(1_000 * statusTimeoutSecs.get())));
+                }))
+                .when()
                 .then(sourcing(() -> runWithProvider(factoryFrom(props::get))
                         .lasting(duration::get, unit::get)
                         .maxOpsPerSec(maxOpsPerSec::get)
@@ -122,10 +92,5 @@ public class UmbrellaRedux extends HapiSuite {
         if (ciProps.has("secondsWaitingServerUp")) {
             statusTimeoutSecs.set(ciProps.getInteger("secondsWaitingServerUp"));
         }
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return log;
     }
 }

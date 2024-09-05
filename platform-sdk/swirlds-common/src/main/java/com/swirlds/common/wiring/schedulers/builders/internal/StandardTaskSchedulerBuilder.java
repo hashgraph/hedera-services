@@ -136,6 +136,7 @@ public class StandardTaskSchedulerBuilder<OUT> extends AbstractTaskSchedulerBuil
                             buildUncaughtExceptionHandler(),
                             counters.onRamp(),
                             counters.offRamp(),
+                            unhandledTaskCapacity,
                             flushingEnabled,
                             squelchingEnabled,
                             insertionIsBlocking);
@@ -147,6 +148,7 @@ public class StandardTaskSchedulerBuilder<OUT> extends AbstractTaskSchedulerBuil
                             counters.onRamp(),
                             counters.offRamp(),
                             busyFractionTimer,
+                            unhandledTaskCapacity,
                             flushingEnabled,
                             squelchingEnabled,
                             insertionIsBlocking);
@@ -158,6 +160,7 @@ public class StandardTaskSchedulerBuilder<OUT> extends AbstractTaskSchedulerBuil
                             counters.offRamp(),
                             busyFractionTimer,
                             sleepDuration,
+                            unhandledTaskCapacity,
                             flushingEnabled,
                             squelchingEnabled,
                             insertionIsBlocking);
@@ -173,7 +176,9 @@ public class StandardTaskSchedulerBuilder<OUT> extends AbstractTaskSchedulerBuil
                     case NO_OP -> new NoOpTaskScheduler<>(model, name, type, flushingEnabled, squelchingEnabled);
                 };
 
-        model.registerScheduler(scheduler, hyperlink);
+        if (type != NO_OP) {
+            model.registerScheduler(scheduler, hyperlink);
+        }
 
         return scheduler;
     }

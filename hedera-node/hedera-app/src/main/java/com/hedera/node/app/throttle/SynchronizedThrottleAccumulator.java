@@ -21,12 +21,13 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.transaction.Query;
-import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.throttle.annotations.IngestThrottle;
 import com.hedera.node.app.workflows.TransactionInfo;
+import com.swirlds.state.State;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
+import java.time.InstantSource;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -38,13 +39,17 @@ import javax.inject.Singleton;
 @Singleton
 public class SynchronizedThrottleAccumulator {
 
+    private final InstantSource instantSource;
     private final ThrottleAccumulator frontendThrottle;
 
     @NonNull
     private Instant lastDecisionTime = Instant.EPOCH;
 
     @Inject
-    public SynchronizedThrottleAccumulator(@NonNull @IngestThrottle final ThrottleAccumulator frontendThrottle) {
+    public SynchronizedThrottleAccumulator(
+            @NonNull final InstantSource instantSource,
+            @NonNull @IngestThrottle final ThrottleAccumulator frontendThrottle) {
+        this.instantSource = requireNonNull(instantSource);
         this.frontendThrottle = requireNonNull(frontendThrottle, "frontendThrottle must not be null");
     }
 
@@ -56,9 +61,9 @@ public class SynchronizedThrottleAccumulator {
      * @param state the current state of the node
      * @return whether the transaction should be throttled
      */
-    public synchronized boolean shouldThrottle(@NonNull TransactionInfo txnInfo, HederaState state) {
-        setDecisionTime(Instant.now());
-        return frontendThrottle.shouldThrottle(txnInfo, lastDecisionTime, state);
+    public synchronized boolean shouldThrottle(@NonNull TransactionInfo txnInfo, State state) {
+        setDecisionTime(instantSource.instant());
+        return frontendThrottle.checkAndEnforceThrottle(txnInfo, lastDecisionTime, state);
     }
 
     /**
@@ -76,8 +81,8 @@ public class SynchronizedThrottleAccumulator {
             @Nullable AccountID queryPayerId) {
         requireNonNull(query);
         requireNonNull(queryFunction);
-        setDecisionTime(Instant.now());
-        return frontendThrottle.shouldThrottle(queryFunction, lastDecisionTime, query, queryPayerId);
+        setDecisionTime(instantSource.instant());
+        return frontendThrottle.checkAndEnforceThrottle(queryFunction, lastDecisionTime, query, queryPayerId);
     }
 
     private void setDecisionTime(@NonNull final Instant time) {

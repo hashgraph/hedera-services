@@ -106,12 +106,9 @@ public class RootProxyWorldUpdater extends ProxyWorldUpdater {
 
         if (contractsConfig.enforceCreationThrottle()) {
             final var creationCapacityIsAvailable =
-                    !context.shouldThrottleNOfUnscaled(createdContractIds.size(), CRYPTO_CREATE);
+                    !context.throttleAdviser().shouldThrottleNOfUnscaled(createdContractIds.size(), CRYPTO_CREATE);
             validateResource(creationCapacityIsAvailable, CONSENSUS_GAS_EXHAUSTED);
         }
-
-        final var childThrottleIsAvailable = context.hasThrottleCapacityForChildTransactions();
-        validateResource(childThrottleIsAvailable, CONSENSUS_GAS_EXHAUSTED);
 
         // If nonces externalization is enabled, we need to capture the updated nonces
         if (contractsConfig.noncesExternalizationEnabled()) {

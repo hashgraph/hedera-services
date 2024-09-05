@@ -18,7 +18,7 @@ package com.hedera.node.app.service.contract.impl.exec.scope;
 
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.tuweniToPbjBytes;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.CHILD;
-import static com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder.transactionWith;
+import static com.hedera.node.app.spi.workflows.record.StreamBuilder.transactionWith;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -32,9 +32,10 @@ import com.hedera.hapi.node.contract.ContractFunctionResult;
 import com.hedera.hapi.node.transaction.ExchangeRate;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.annotations.TransactionScope;
-import com.hedera.node.app.service.contract.impl.records.ContractCallRecordBuilder;
+import com.hedera.node.app.service.contract.impl.records.ContractCallStreamBuilder;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.function.Predicate;
 import javax.inject.Inject;
 import org.apache.tuweni.bytes.Bytes;
@@ -50,9 +51,13 @@ import org.apache.tuweni.bytes.Bytes;
 public class HandleSystemContractOperations implements SystemContractOperations {
     private final HandleContext context;
 
+    @Nullable
+    private final Key maybeEthSenderKey;
+
     @Inject
-    public HandleSystemContractOperations(@NonNull final HandleContext context) {
+    public HandleSystemContractOperations(@NonNull final HandleContext context, @Nullable Key maybeEthSenderKey) {
         this.context = requireNonNull(context);
+        this.maybeEthSenderKey = maybeEthSenderKey;
     }
 
     /**
@@ -60,7 +65,7 @@ public class HandleSystemContractOperations implements SystemContractOperations 
      */
     @Override
     public @NonNull Predicate<Key> activeSignatureTestWith(@NonNull final VerificationStrategy strategy) {
-        return strategy.asSignatureTestIn(context);
+        return strategy.asSignatureTestIn(context, maybeEthSenderKey);
     }
 
     /**
@@ -77,16 +82,22 @@ public class HandleSystemContractOperations implements SystemContractOperations 
         requireNonNull(syntheticPayerId);
         requireNonNull(recordBuilderClass);
         return context.dispatchChildTransaction(
-                syntheticBody, recordBuilderClass, activeSignatureTestWith(strategy), syntheticPayerId, CHILD);
+                syntheticBody,
+                recordBuilderClass,
+                activeSignatureTestWith(strategy),
+                syntheticPayerId,
+                CHILD,
+                HandleContext.ConsensusThrottling.ON);
     }
 
     @Override
-    public ContractCallRecordBuilder externalizePreemptedDispatch(
+    public ContractCallStreamBuilder externalizePreemptedDispatch(
             @NonNull final TransactionBody syntheticBody, @NonNull final ResponseCodeEnum preemptingStatus) {
         requireNonNull(syntheticBody);
         requireNonNull(preemptingStatus);
 
-        return context.addChildRecordBuilder(ContractCallRecordBuilder.class)
+        return context.savepointStack()
+                .addChildRecordBuilder(ContractCallStreamBuilder.class)
                 .transaction(transactionWith(syntheticBody))
                 .status(preemptingStatus);
     }
@@ -97,7 +108,7 @@ public class HandleSystemContractOperations implements SystemContractOperations 
     @Override
     public void externalizeResult(
             @NonNull final ContractFunctionResult result, @NonNull final ResponseCodeEnum responseStatus) {
-        final var childRecordBuilder = context.addChildRecordBuilder(ContractCallRecordBuilder.class);
+        final var childRecordBuilder = context.savepointStack().addChildRecordBuilder(ContractCallStreamBuilder.class);
         childRecordBuilder
                 .transaction(Transaction.DEFAULT)
                 .contractID(result.contractID())
@@ -111,14 +122,15 @@ public class HandleSystemContractOperations implements SystemContractOperations 
             @NonNull final ResponseCodeEnum responseStatus,
             @NonNull Transaction transaction) {
         requireNonNull(transaction);
-        context.addChildRecordBuilder(ContractCallRecordBuilder.class)
+        context.savepointStack()
+                .addChildRecordBuilder(ContractCallStreamBuilder.class)
                 .transaction(transaction)
                 .status(responseStatus)
                 .contractCallResult(result);
     }
 
     @Override
-    public Transaction syntheticTransactionForHtsCall(Bytes input, ContractID contractID, boolean isViewCall) {
+    public Transaction syntheticTransactionForNativeCall(Bytes input, ContractID contractID, boolean isViewCall) {
         var functionParameters = tuweniToPbjBytes(input);
         var contractCallBodyBuilder =
                 ContractCallTransactionBody.newBuilder().contractID(contractID).functionParameters(functionParameters);

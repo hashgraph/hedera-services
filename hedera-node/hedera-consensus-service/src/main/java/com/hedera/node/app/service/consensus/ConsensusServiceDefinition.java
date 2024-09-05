@@ -16,10 +16,13 @@
 
 package com.hedera.node.app.service.consensus;
 
+import static java.util.Objects.requireNonNull;
+
 import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.Response;
 import com.hedera.hapi.node.transaction.TransactionResponse;
+import com.hedera.node.app.hapi.utils.CommonUtils;
 import com.hedera.pbj.runtime.RpcMethodDefinition;
 import com.hedera.pbj.runtime.RpcServiceDefinition;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -82,7 +85,9 @@ public final class ConsensusServiceDefinition implements RpcServiceDefinition {
             new RpcMethodDefinition<>("submitMessage", Transaction.class, TransactionResponse.class));
 
     private ConsensusServiceDefinition() {
-        // Forbid instantiation
+        // Just something to keep the Gradle build believing we have a non-transitive
+        // "requires" and hence preserving our module-info.class in the compiled JAR
+        requireNonNull(CommonUtils.class);
     }
 
     @Override

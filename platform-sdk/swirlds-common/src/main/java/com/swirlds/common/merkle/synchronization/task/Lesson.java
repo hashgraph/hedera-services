@@ -118,6 +118,14 @@ public class Lesson<T> implements Releasable, SelfSerializable {
     }
 
     /**
+     * Check if this lesson is about a leaf node.
+     * @return true if the lesson is about a leaf node
+     */
+    public boolean isLeafLesson() {
+        return lessonType == LEAF_NODE_DATA;
+    }
+
+    /**
      * Check if this lesson is about an internal node or a leaf node.
      * Unset if {@link #isCurrentNodeUpToDate()} returns true.
      *

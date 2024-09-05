@@ -19,20 +19,17 @@ package com.hedera.node.app.workflows.query;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
-import com.hedera.hapi.node.state.blockrecords.BlockInfo;
-import com.hedera.hapi.node.state.blockrecords.RunningHashes;
 import com.hedera.hapi.node.transaction.Query;
 import com.hedera.node.app.fees.ExchangeRateManager;
-import com.hedera.node.app.records.BlockRecordService;
 import com.hedera.node.app.records.impl.BlockRecordInfoImpl;
 import com.hedera.node.app.spi.fees.ExchangeRateInfo;
 import com.hedera.node.app.spi.fees.FeeCalculator;
 import com.hedera.node.app.spi.records.BlockRecordInfo;
 import com.hedera.node.app.spi.records.RecordCache;
 import com.hedera.node.app.spi.workflows.QueryContext;
-import com.hedera.node.app.state.HederaState;
-import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
+import com.hedera.node.app.store.ReadableStoreFactory;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.state.State;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 
@@ -45,7 +42,7 @@ public class QueryContextImpl implements QueryContext {
     private final Query query;
     private final Configuration configuration;
     private final RecordCache recordCache;
-    private final HederaState state;
+    private final State state;
     private final ExchangeRateManager exchangeRateManager;
     private final AccountID payer;
     private final FeeCalculator feeCalculator;
@@ -55,7 +52,7 @@ public class QueryContextImpl implements QueryContext {
     /**
      * Constructor of {@code QueryContextImpl}.
      *
-     * @param state         the {@link HederaState} with the current state
+     * @param state         the {@link State} with the current state
      * @param storeFactory  the {@link ReadableStoreFactory} used to create the stores
      * @param query         the query that is currently being processed
      * @param configuration the current {@link Configuration}
@@ -66,7 +63,7 @@ public class QueryContextImpl implements QueryContext {
      * @throws NullPointerException if {@code query} is {@code null}
      */
     public QueryContextImpl(
-            @NonNull final HederaState state,
+            @NonNull final State state,
             @NonNull final ReadableStoreFactory storeFactory,
             @NonNull final Query query,
             @NonNull final Configuration configuration,
@@ -117,16 +114,8 @@ public class QueryContextImpl implements QueryContext {
     @Override
     public BlockRecordInfo blockRecordInfo() {
         if (blockRecordInfo == null) {
-            final var states = state.getReadableStates(BlockRecordService.NAME);
-            final var blockInfoState = states.<BlockInfo>getSingleton(BlockRecordService.BLOCK_INFO_STATE_KEY)
-                    .get();
-            final var runningHashState = states.<RunningHashes>getSingleton(BlockRecordService.RUNNING_HASHES_STATE_KEY)
-                    .get();
-            if (blockInfoState == null) throw new NullPointerException("state cannot be null!");
-            if (runningHashState == null) throw new NullPointerException("state cannot be null!");
-            blockRecordInfo = new BlockRecordInfoImpl(blockInfoState, runningHashState);
+            blockRecordInfo = BlockRecordInfoImpl.from(state);
         }
-
         return blockRecordInfo;
     }
 

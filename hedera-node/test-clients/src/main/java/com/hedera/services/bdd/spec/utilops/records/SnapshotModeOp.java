@@ -17,7 +17,7 @@
 package com.hedera.services.bdd.spec.utilops.records;
 
 import static com.hedera.node.app.hapi.utils.exports.recordstreaming.RecordStreamingUtils.parseRecordFileConsensusTime;
-import static com.hedera.services.bdd.junit.RecordStreamAccess.RECORD_STREAM_ACCESS;
+import static com.hedera.services.bdd.junit.support.RecordStreamAccess.RECORD_STREAM_ACCESS;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
@@ -35,7 +35,6 @@ import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NON
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_NONCE;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TOKEN_NAMES;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
-import static com.hedera.services.bdd.suites.TargetNetworkType.STANDALONE_MONO_NETWORK;
 import static com.hedera.services.bdd.suites.contract.Utils.asInstant;
 import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toSet;
@@ -43,13 +42,14 @@ import static java.util.stream.Collectors.toSet;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.protobuf.Descriptors;
 import com.google.protobuf.GeneratedMessageV3;
-import com.hedera.services.bdd.junit.HapiTestEngine;
-import com.hedera.services.bdd.junit.RecordStreamAccess;
+import com.hedera.services.bdd.junit.SharedNetworkLauncherSessionListener;
+import com.hedera.services.bdd.junit.support.RecordStreamAccess;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.utilops.UtilOp;
 import com.hedera.services.bdd.spec.utilops.domain.ParsedItem;
 import com.hedera.services.bdd.spec.utilops.domain.RecordSnapshot;
 import com.hedera.services.bdd.spec.utilops.domain.SuiteSnapshots;
+import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.FileID;
@@ -143,7 +143,6 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
             "tokenNum");
 
     private static final String PLACEHOLDER_MEMO = "<entity-num-placeholder-creation>";
-    private static final String MONO_STREAMS_LOC = "hedera-node/hedera-app/build/node/data/recordStreams/record0.0.3";
     private static final String HAPI_TEST_STREAMS_LOC_TPL =
             "hedera-node/test-clients/build/hapi-test/node%d/data/recordStreams/record0.0.%d";
     private static final String TEST_CLIENTS_SNAPSHOT_RESOURCES_LOC = "record-snapshots";
@@ -225,12 +224,8 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
         if (isDeterministic && mode.targetNetworkType() == spec.targetNetworkType()) {
             this.snapshotFileMeta = SnapshotFileMeta.from(spec);
             switch (mode) {
-                case TAKE_FROM_MONO_STREAMS -> computePlaceholderNum(
-                        monoStreamLocs(), PROJECT_ROOT_SNAPSHOT_RESOURCES_LOC, spec);
                 case TAKE_FROM_HAPI_TEST_STREAMS -> computePlaceholderNum(
                         hapiTestStreamLocs(), TEST_CLIENTS_SNAPSHOT_RESOURCES_LOC, spec);
-                case FUZZY_MATCH_AGAINST_MONO_STREAMS -> prepToFuzzyMatchAgainstLoc(
-                        monoStreamLocs(), PROJECT_ROOT_SNAPSHOT_RESOURCES_LOC, spec);
                 case FUZZY_MATCH_AGAINST_HAPI_TEST_STREAMS -> prepToFuzzyMatchAgainstLoc(
                         hapiTestStreamLocs(), TEST_CLIENTS_SNAPSHOT_RESOURCES_LOC, spec);
             }
@@ -246,10 +241,7 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
      */
     static Optional<RecordSnapshot> maybeLoadSnapshotFor(@NonNull final HapiSpec spec) {
         final var snapshotFileMeta = SnapshotFileMeta.from(spec);
-        final var snapshotLoc = (spec.targetNetworkType() == STANDALONE_MONO_NETWORK)
-                ? PROJECT_ROOT_SNAPSHOT_RESOURCES_LOC
-                : TEST_CLIENTS_SNAPSHOT_RESOURCES_LOC;
-        return suiteSnapshotsFrom(resourceLocOf(snapshotLoc, snapshotFileMeta.suiteName()))
+        return suiteSnapshotsFrom(resourceLocOf(TEST_CLIENTS_SNAPSHOT_RESOURCES_LOC, snapshotFileMeta.suiteName()))
                 .flatMap(
                         suiteSnapshots -> Optional.ofNullable(suiteSnapshots.getSnapshot(snapshotFileMeta.specName())));
     }
@@ -332,9 +324,8 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
             }
             // Given just these records, either write a snapshot or fuzzy-match against the existing snapshot
             switch (mode) {
-                case TAKE_FROM_MONO_STREAMS, TAKE_FROM_HAPI_TEST_STREAMS -> writeSnapshotOf(postPlaceholderItems);
-                case FUZZY_MATCH_AGAINST_MONO_STREAMS,
-                        FUZZY_MATCH_AGAINST_HAPI_TEST_STREAMS -> fuzzyMatchAgainstSnapshot(postPlaceholderItems);
+                case TAKE_FROM_HAPI_TEST_STREAMS -> writeSnapshotOf(postPlaceholderItems);
+                case FUZZY_MATCH_AGAINST_HAPI_TEST_STREAMS -> fuzzyMatchAgainstSnapshot(postPlaceholderItems);
             }
         } catch (IOException e) {
             throw new UncheckedIOException(e);
@@ -718,7 +709,12 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
         om.writeValue(fout, suiteSnapshots);
     }
 
-    private static Path resourceLocOf(@NonNull final String snapshotLoc, @NonNull final String suiteName) {
+    private static Path resourceLocOf(@NonNull final String snapshotLoc, @NonNull String suiteName) {
+        // If we start a test with Ethereum context we are adding a "_Eth" suffix to test name.
+        // Before we start a test we need to remove this suffix to get the correct snapshot file name.
+        if (suiteName.endsWith(HapiSuite.ETH_SUFFIX)) {
+            suiteName = suiteName.replace(HapiSuite.ETH_SUFFIX, "");
+        }
         return Paths.get(snapshotLoc, suiteName + ".json");
     }
 
@@ -777,13 +773,9 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
         allRunFor(spec, placeholderCreation, consTimeLookup);
     }
 
-    private List<String> monoStreamLocs() {
-        return List.of(MONO_STREAMS_LOC);
-    }
-
     private List<String> hapiTestStreamLocs() {
-        final List<String> locs = new ArrayList<>(HapiTestEngine.NODE_COUNT);
-        for (int i = 0; i < HapiTestEngine.NODE_COUNT; i++) {
+        final List<String> locs = new ArrayList<>(SharedNetworkLauncherSessionListener.CLASSIC_HAPI_TEST_NETWORK_SIZE);
+        for (int i = 0; i < SharedNetworkLauncherSessionListener.CLASSIC_HAPI_TEST_NETWORK_SIZE; i++) {
             locs.add(String.format(HAPI_TEST_STREAMS_LOC_TPL, i, i + 3));
         }
         return locs;

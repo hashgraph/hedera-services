@@ -18,14 +18,27 @@ package com.hedera.services.bdd.suites.consensus;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTopicInfo;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createDefaultContract;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createTopic;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.deleteTopic;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.submitMessageTo;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.updateTopic;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.exposeTargetLedgerIdTo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sendModified;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.submitModified;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsd;
+import static com.hedera.services.bdd.spec.utilops.mod.ModificationUtils.withSuccessivelyVariedBodyIds;
+import static com.hedera.services.bdd.spec.utilops.mod.ModificationUtils.withSuccessivelyVariedQueryIds;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
+import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
+import static com.hedera.services.bdd.suites.HapiSuite.NONSENSE_KEY;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
 import static com.hedera.services.bdd.suites.contract.hapi.ContractCallSuite.PAY_RECEIVABLE_CONTRACT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_ACCOUNT_NOT_ALLOWED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
@@ -33,45 +46,21 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BAD_ENCODING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RENEWAL_PERIOD;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOPIC_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.spec.HapiSpec;
-import com.hedera.services.bdd.suites.HapiSuite;
-import java.util.List;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Stream;
+import org.junit.jupiter.api.DynamicTest;
 
-@HapiTestSuite
-public class TopicCreateSuite extends HapiSuite {
-    private static final Logger log = LogManager.getLogger(TopicCreateSuite.class);
-
-    public static void main(String... args) {
-        new TopicCreateSuite().runSuiteAsync();
-    }
-
-    @Override
-    public List<HapiSpec> getSpecsInSuite() {
-        return List.of(
-                signingRequirementsEnforced(),
-                autoRenewPeriodIsValidated(),
-                autoRenewAccountIdNeedsAdminKeyToo(),
-                submitKeyIsValidated(),
-                adminKeyIsValidated(),
-                autoRenewAccountIsValidated(),
-                noAutoRenewPeriod(),
-                allFieldsSetHappyCase(),
-                feeAsExpected());
-    }
-
-    @Override
-    public boolean canRunConcurrent() {
-        return true;
-    }
+public class TopicCreateSuite {
+    public static final String TEST_TOPIC = "testTopic";
+    public static final String TESTMEMO = "testmemo";
 
     @HapiTest
-    final HapiSpec adminKeyIsValidated() {
+    final Stream<DynamicTest> adminKeyIsValidated() {
         return defaultHapiSpec("AdminKeyIsValidated")
                 .given()
                 .when()
@@ -83,7 +72,7 @@ public class TopicCreateSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec submitKeyIsValidated() {
+    final Stream<DynamicTest> submitKeyIsValidated() {
         return defaultHapiSpec("SubmitKeyIsValidated")
                 .given()
                 .when()
@@ -94,7 +83,7 @@ public class TopicCreateSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec autoRenewAccountIsValidated() {
+    final Stream<DynamicTest> autoRenewAccountIsValidated() {
         return defaultHapiSpec("AutoRenewAccountIsValidated")
                 .given()
                 .when()
@@ -105,7 +94,7 @@ public class TopicCreateSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec autoRenewAccountIdNeedsAdminKeyToo() {
+    final Stream<DynamicTest> autoRenewAccountIdNeedsAdminKeyToo() {
         return defaultHapiSpec("autoRenewAccountIdNeedsAdminKeyToo")
                 .given(cryptoCreate("payer"), cryptoCreate("autoRenewAccount"))
                 .when()
@@ -118,7 +107,18 @@ public class TopicCreateSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec autoRenewPeriodIsValidated() {
+    final Stream<DynamicTest> idVariantsTreatedAsExpected() {
+        final var autoRenewAccount = "autoRenewAccount";
+        return defaultHapiSpec("idVariantsTreatedAsExpected")
+                .given(cryptoCreate(autoRenewAccount), newKeyNamed("adminKey"))
+                .when()
+                .then(submitModified(
+                        withSuccessivelyVariedBodyIds(),
+                        () -> createTopic("topic").adminKeyName("adminKey").autoRenewAccountId(autoRenewAccount)));
+    }
+
+    @HapiTest
+    final Stream<DynamicTest> autoRenewPeriodIsValidated() {
         final var tooShortAutoRenewPeriod = "tooShortAutoRenewPeriod";
         final var tooLongAutoRenewPeriod = "tooLongAutoRenewPeriod";
         return defaultHapiSpec("autoRenewPeriodIsValidated")
@@ -134,7 +134,7 @@ public class TopicCreateSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec noAutoRenewPeriod() {
+    final Stream<DynamicTest> noAutoRenewPeriod() {
         return defaultHapiSpec("noAutoRenewPeriod")
                 .given()
                 .when()
@@ -145,7 +145,7 @@ public class TopicCreateSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec signingRequirementsEnforced() {
+    final Stream<DynamicTest> signingRequirementsEnforced() {
         long PAYER_BALANCE = 1_999_999_999L;
         final var contractWithAdminKey = "nonCryptoAccount";
 
@@ -224,7 +224,7 @@ public class TopicCreateSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec allFieldsSetHappyCase() {
+    final Stream<DynamicTest> allFieldsSetHappyCase() {
         return defaultHapiSpec("AllFieldsSetHappyCase", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(newKeyNamed("adminKey"), newKeyNamed("submitKey"), cryptoCreate("autoRenewAccount"))
                 .when()
@@ -236,7 +236,7 @@ public class TopicCreateSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec feeAsExpected() {
+    final Stream<DynamicTest> feeAsExpected() {
         return defaultHapiSpec("feeAsExpected")
                 .given(
                         newKeyNamed("adminKey"),
@@ -253,8 +253,72 @@ public class TopicCreateSuite extends HapiSuite {
                 .then(validateChargedUsd("topicCreate", 0.0226));
     }
 
-    @Override
-    protected Logger getResultsLogger() {
-        return log;
+    @HapiTest
+    final Stream<DynamicTest> getInfoIdVariantsTreatedAsExpected() {
+        return defaultHapiSpec("idVariantsTreatedAsExpected")
+                .given(createTopic("topic"))
+                .when()
+                .then(sendModified(withSuccessivelyVariedQueryIds(), () -> getTopicInfo("topic")));
+    }
+
+    @HapiTest
+    final Stream<DynamicTest> getInfoAllFieldsSetHappyCase() {
+        // sequenceNumber should be 0 and runningHash should be 48 bytes all 0s.
+        final AtomicReference<ByteString> targetLedgerId = new AtomicReference<>();
+        return defaultHapiSpec("AllFieldsSetHappyCase")
+                .given(
+                        newKeyNamed("adminKey"),
+                        newKeyNamed("submitKey"),
+                        cryptoCreate("autoRenewAccount"),
+                        cryptoCreate("payer"),
+                        createTopic(TEST_TOPIC)
+                                .topicMemo(TESTMEMO)
+                                .adminKeyName("adminKey")
+                                .submitKeyName("submitKey")
+                                .autoRenewAccountId("autoRenewAccount")
+                                .via("createTopic"))
+                .when()
+                .then(
+                        exposeTargetLedgerIdTo(targetLedgerId::set),
+                        sourcing(() -> getTopicInfo(TEST_TOPIC)
+                                .hasEncodedLedgerId(targetLedgerId.get())
+                                .hasMemo(TESTMEMO)
+                                .hasAdminKey("adminKey")
+                                .hasSubmitKey("submitKey")
+                                .hasAutoRenewAccount("autoRenewAccount")
+                                .hasSeqNo(0)
+                                .hasRunningHash(new byte[48])),
+                        getTxnRecord("createTopic").logged(),
+                        submitMessageTo(TEST_TOPIC)
+                                .blankMemo()
+                                .payingWith("payer")
+                                .message(new String("test".getBytes()))
+                                .via("submitMessage"),
+                        getTxnRecord("submitMessage").logged(),
+                        sourcing(() -> getTopicInfo(TEST_TOPIC)
+                                .hasEncodedLedgerId(targetLedgerId.get())
+                                .hasMemo(TESTMEMO)
+                                .hasAdminKey("adminKey")
+                                .hasSubmitKey("submitKey")
+                                .hasAutoRenewAccount("autoRenewAccount")
+                                .hasSeqNo(1)
+                                .logged()),
+                        updateTopic(TEST_TOPIC)
+                                .topicMemo("Don't worry about the vase")
+                                .via("updateTopic"),
+                        getTxnRecord("updateTopic").logged(),
+                        sourcing(() -> getTopicInfo(TEST_TOPIC)
+                                .hasEncodedLedgerId(targetLedgerId.get())
+                                .hasMemo("Don't worry about the vase")
+                                .hasAdminKey("adminKey")
+                                .hasSubmitKey("submitKey")
+                                .hasAutoRenewAccount("autoRenewAccount")
+                                .hasSeqNo(1)
+                                .logged()),
+                        deleteTopic(TEST_TOPIC).via("deleteTopic"),
+                        getTxnRecord("deleteTopic").logged(),
+                        getTopicInfo(TEST_TOPIC)
+                                .hasCostAnswerPrecheck(INVALID_TOPIC_ID)
+                                .logged());
     }
 }

@@ -33,7 +33,9 @@ import java.math.BigInteger;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.security.KeyFactory;
+import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
+import java.security.spec.InvalidKeySpecException;
 import java.util.Optional;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -62,6 +64,17 @@ public class SpecKeyFromEcdsaFile extends UtilOp {
         }
     }
 
+    public static PrivateKey ecdsaFrom(final BigInteger s) {
+        final var params = ECNamedCurveTable.getParameterSpec("secp256k1");
+        final var keySpec = new ECPrivateKeySpec(s, params);
+        try {
+            final KeyFactory kf = KeyFactory.getInstance("EC", BOUNCYCASTLE_PROVIDER);
+            return kf.generatePrivate(keySpec);
+        } catch (InvalidKeySpecException | NoSuchAlgorithmException e) {
+            throw new IllegalStateException(e);
+        }
+    }
+
     static void createAndLinkEcdsaKey(
             final HapiSpec spec,
             final byte[] pubKey,
@@ -87,10 +100,7 @@ public class SpecKeyFromEcdsaFile extends UtilOp {
 
     @Override
     protected boolean submitOp(final HapiSpec spec) throws Throwable {
-        final var params = ECNamedCurveTable.getParameterSpec("secp256k1");
-        final var keySpec = new ECPrivateKeySpec(s, params);
-        final KeyFactory kf = KeyFactory.getInstance("EC", BOUNCYCASTLE_PROVIDER);
-        final var privateKey = kf.generatePrivate(keySpec);
+        final var privateKey = ecdsaFrom(s);
         createAndLinkEcdsaKey(spec, CommonUtils.unhex(hexedPubKey), privateKey, name, linkedId, log);
         return false;
     }

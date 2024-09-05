@@ -148,7 +148,7 @@ public class DataTransferUtils {
     /**
      * @param dateString parses a date from string
      */
-    public static Date parseDate(final String dateString) {
+    public static @NonNull Date parseDate(@NonNull final String dateString) {
 
         Instant result;
         if (dateString.contains(":")) {

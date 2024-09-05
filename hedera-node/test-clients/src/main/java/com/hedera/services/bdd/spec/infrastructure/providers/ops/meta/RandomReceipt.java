@@ -19,14 +19,12 @@ package com.hedera.services.bdd.spec.infrastructure.providers.ops.meta;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getReceipt;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.RECEIPT_NOT_FOUND;
-import static java.util.Collections.EMPTY_LIST;
 
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.infrastructure.OpProvider;
 import com.hedera.services.bdd.spec.queries.meta.HapiGetReceipt;
 import com.hedera.services.bdd.spec.transactions.TxnFactory;
 import com.hederahashgraph.api.proto.java.TransactionID;
-import java.util.List;
 import java.util.Optional;
 
 public class RandomReceipt implements OpProvider {
@@ -34,11 +32,6 @@ public class RandomReceipt implements OpProvider {
 
     public RandomReceipt(TxnFactory txns) {
         this.txns = txns;
-    }
-
-    @Override
-    public List<HapiSpecOperation> suggestedInitializers() {
-        return EMPTY_LIST;
     }
 
     @Override

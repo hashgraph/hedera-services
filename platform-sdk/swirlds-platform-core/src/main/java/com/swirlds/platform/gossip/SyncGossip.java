@@ -16,28 +16,32 @@
 
 package com.swirlds.platform.gossip;
 
-import static com.swirlds.platform.SwirldsPlatform.PLATFORM_THREAD_POOL_NAME;
+import static com.swirlds.platform.consensus.ConsensusConstants.ROUND_UNDEFINED;
 
-import com.swirlds.base.state.Lifecycle;
-import com.swirlds.base.state.LifecyclePhase;
 import com.swirlds.base.state.Startable;
 import com.swirlds.common.context.PlatformContext;
-import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
-import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.common.threading.framework.StoppableThread;
+import com.swirlds.common.threading.framework.config.QueueThreadConfiguration;
+import com.swirlds.common.threading.framework.config.QueueThreadMetricsConfiguration;
 import com.swirlds.common.threading.framework.config.StoppableThreadConfiguration;
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.common.threading.pool.CachedPoolParallelExecutor;
 import com.swirlds.common.threading.pool.ParallelExecutor;
+import com.swirlds.common.wiring.model.WiringModel;
+import com.swirlds.common.wiring.wires.input.BindableInputWire;
+import com.swirlds.common.wiring.wires.output.StandardOutputWire;
 import com.swirlds.platform.Utilities;
 import com.swirlds.platform.config.BasicConfig;
 import com.swirlds.platform.config.StateConfig;
 import com.swirlds.platform.config.ThreadConfig;
+import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.crypto.KeysAndCerts;
-import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.eventhandling.EventConfig;
+import com.swirlds.platform.gossip.permits.SyncPermitProvider;
 import com.swirlds.platform.gossip.shadowgraph.Shadowgraph;
 import com.swirlds.platform.gossip.shadowgraph.ShadowgraphSynchronizer;
 import com.swirlds.platform.gossip.sync.SyncManagerImpl;
@@ -52,13 +56,11 @@ import com.swirlds.platform.network.NetworkUtils;
 import com.swirlds.platform.network.PeerInfo;
 import com.swirlds.platform.network.communication.NegotiationProtocols;
 import com.swirlds.platform.network.communication.ProtocolNegotiatorThread;
-import com.swirlds.platform.network.communication.handshake.HashCompareHandshake;
 import com.swirlds.platform.network.communication.handshake.VersionCompareHandshake;
 import com.swirlds.platform.network.connectivity.ConnectionServer;
 import com.swirlds.platform.network.connectivity.InboundConnectionHandler;
 import com.swirlds.platform.network.connectivity.OutboundConnectionCreator;
 import com.swirlds.platform.network.connectivity.SocketFactory;
-import com.swirlds.platform.network.protocol.EmergencyReconnectProtocolFactory;
 import com.swirlds.platform.network.protocol.HeartbeatProtocolFactory;
 import com.swirlds.platform.network.protocol.ProtocolFactory;
 import com.swirlds.platform.network.protocol.ProtocolRunnable;
@@ -73,23 +75,23 @@ import com.swirlds.platform.reconnect.ReconnectHelper;
 import com.swirlds.platform.reconnect.ReconnectLearnerFactory;
 import com.swirlds.platform.reconnect.ReconnectLearnerThrottle;
 import com.swirlds.platform.reconnect.ReconnectThrottle;
-import com.swirlds.platform.recovery.EmergencyRecoveryManager;
 import com.swirlds.platform.state.SwirldStateManager;
-import com.swirlds.platform.state.nexus.SignedStateNexus;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
-import com.swirlds.platform.system.status.PlatformStatusManager;
+import com.swirlds.platform.system.status.PlatformStatus;
+import com.swirlds.platform.system.status.StatusActionSubmitter;
+import com.swirlds.platform.wiring.NoInput;
+import com.swirlds.platform.wiring.components.Gossip;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import java.util.Random;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.LongSupplier;
 import java.util.function.Supplier;
@@ -97,15 +99,19 @@ import java.util.function.Supplier;
 /**
  * Boilerplate code for gossip.
  */
-public class SyncGossip implements ConnectionTracker, Lifecycle {
-    private LifecyclePhase lifecyclePhase = LifecyclePhase.NOT_STARTED;
+public class SyncGossip implements ConnectionTracker, Gossip {
+    public static final String PLATFORM_THREAD_POOL_NAME = "platform-core";
 
+    private boolean started = false;
+
+    private final PlatformContext platformContext;
     private final ReconnectController reconnectController;
 
     private final AtomicBoolean gossipHalted = new AtomicBoolean(false);
     private final SyncPermitProvider syncPermitProvider;
-    protected final SyncConfig syncConfig;
-    protected final ShadowgraphSynchronizer syncShadowgraphSynchronizer;
+    private final SyncConfig syncConfig;
+    private final Shadowgraph shadowgraph;
+    private final ShadowgraphSynchronizer syncShadowgraphSynchronizer;
 
     /**
      * Keeps track of the number of events in the intake pipeline from each peer
@@ -117,83 +123,79 @@ public class SyncGossip implements ConnectionTracker, Lifecycle {
      */
     private final List<StoppableThread> syncProtocolThreads = new ArrayList<>();
 
-    protected final PlatformContext platformContext;
-    protected final AddressBook addressBook;
-    protected final NodeId selfId;
-    protected final NetworkTopology topology;
-    protected final NetworkMetrics networkMetrics;
-    protected final ReconnectHelper reconnectHelper;
-    protected final StaticConnectionManagers connectionManagers;
-    protected final FallenBehindManagerImpl fallenBehindManager;
-    protected final SyncManagerImpl syncManager;
-    protected final ReconnectThrottle reconnectThrottle;
-    protected final ReconnectMetrics reconnectMetrics;
-    protected final PlatformStatusManager platformStatusManager;
+    private final NetworkTopology topology;
+    private final NetworkMetrics networkMetrics;
+    private final ReconnectHelper reconnectHelper;
+    private final StaticConnectionManagers connectionManagers;
+    private final FallenBehindManagerImpl fallenBehindManager;
+    private final SyncManagerImpl syncManager;
+    private final ReconnectThrottle reconnectThrottle;
+    private final ReconnectMetrics reconnectMetrics;
 
-    protected final List<Startable> thingsToStart = new ArrayList<>();
+    protected final StatusActionSubmitter statusActionSubmitter;
+    protected final AtomicReference<PlatformStatus> currentPlatformStatus =
+            new AtomicReference<>(PlatformStatus.STARTING_UP);
+
+    private final List<Startable> thingsToStart = new ArrayList<>();
+
+    private Consumer<PlatformEvent> receivedEventHandler;
+
+    /**
+     * The old style intake queue (if enabled), null if not enabled.
+     */
+    private QueueThread<PlatformEvent> oldStyleIntakeQueue;
+
+    private final ThreadManager threadManager;
 
     /**
      * Builds the gossip engine, depending on which flavor is requested in the configuration.
      *
      * @param platformContext               the platform context
-     * @param random                        a source of randomness, does not need to be cryptographically secure
      * @param threadManager                 the thread manager
      * @param keysAndCerts                  private keys and public certificates
-     * @param notificationEngine            used to send notifications to the app
      * @param addressBook                   the current address book
      * @param selfId                        this node's ID
      * @param appVersion                    the version of the app
-     * @param epochHash                     the epoch hash of the initial state
-     * @param shadowGraph                   contains non-expired events
-     * @param emergencyRecoveryManager      handles emergency recovery
-     * @param receivedEventHandler          handles events received from other nodes
      * @param intakeQueueSizeSupplier       a supplier for the size of the event intake queue
      * @param swirldStateManager            manages the mutable state
      * @param latestCompleteState           holds the latest signed state that has enough signatures to be verifiable
-     * @param syncMetrics                   metrics for sync
-     * @param platformStatusManager         the platform status manager
+     * @param statusActionSubmitter         for submitting updates to the platform status manager
      * @param loadReconnectState            a method that should be called when a state from reconnect is obtained
      * @param clearAllPipelinesForReconnect this method should be called to clear all pipelines prior to a reconnect
      * @param intakeEventCounter            keeps track of the number of events in the intake pipeline from each peer
-     * @param emergencyStateSupplier        returns the emergency state if available
      */
-    protected SyncGossip(
+    public SyncGossip(
             @NonNull final PlatformContext platformContext,
-            @NonNull final Random random,
             @NonNull final ThreadManager threadManager,
             @NonNull final KeysAndCerts keysAndCerts,
-            @NonNull final NotificationEngine notificationEngine,
             @NonNull final AddressBook addressBook,
             @NonNull final NodeId selfId,
             @NonNull final SoftwareVersion appVersion,
-            @Nullable final Hash epochHash,
-            @NonNull final Shadowgraph shadowGraph,
-            @NonNull final EmergencyRecoveryManager emergencyRecoveryManager,
-            @NonNull final Consumer<GossipEvent> receivedEventHandler,
             @NonNull final LongSupplier intakeQueueSizeSupplier,
             @NonNull final SwirldStateManager swirldStateManager,
-            @NonNull final SignedStateNexus latestCompleteState,
-            @NonNull final SyncMetrics syncMetrics,
-            @NonNull final PlatformStatusManager platformStatusManager,
+            @NonNull final Supplier<ReservedSignedState> latestCompleteState,
+            @NonNull final StatusActionSubmitter statusActionSubmitter,
             @NonNull final Consumer<SignedState> loadReconnectState,
             @NonNull final Runnable clearAllPipelinesForReconnect,
-            @NonNull final IntakeEventCounter intakeEventCounter,
-            @NonNull final Supplier<ReservedSignedState> emergencyStateSupplier) {
+            @NonNull final IntakeEventCounter intakeEventCounter) {
 
         this.platformContext = Objects.requireNonNull(platformContext);
-        this.addressBook = Objects.requireNonNull(addressBook);
-        this.selfId = Objects.requireNonNull(selfId);
-        this.platformStatusManager = Objects.requireNonNull(platformStatusManager);
+
+        this.threadManager = Objects.requireNonNull(threadManager);
+
+        shadowgraph = new Shadowgraph(platformContext, addressBook, intakeEventCounter);
+
+        this.statusActionSubmitter = Objects.requireNonNull(statusActionSubmitter);
 
         final ThreadConfig threadConfig = platformContext.getConfiguration().getConfigData(ThreadConfig.class);
 
         final BasicConfig basicConfig = platformContext.getConfiguration().getConfigData(BasicConfig.class);
-
-        topology = new StaticTopology(random, addressBook, selfId, basicConfig.numConnections());
         final List<PeerInfo> peers = Utilities.createPeerInfoList(addressBook, selfId);
 
+        topology = new StaticTopology(peers, selfId);
+        final NetworkPeerIdentifier peerIdentifier = new NetworkPeerIdentifier(platformContext, peers);
         final SocketFactory socketFactory =
-                NetworkUtils.createSocketFactory(selfId, addressBook, keysAndCerts, platformContext.getConfiguration());
+                NetworkUtils.createSocketFactory(selfId, peers, keysAndCerts, platformContext.getConfiguration());
         // create an instance that can create new outbound connections
         final OutboundConnectionCreator connectionCreator =
                 new OutboundConnectionCreator(platformContext, selfId, this, socketFactory, addressBook);
@@ -201,14 +203,14 @@ public class SyncGossip implements ConnectionTracker, Lifecycle {
         final InboundConnectionHandler inboundConnectionHandler = new InboundConnectionHandler(
                 platformContext,
                 this,
-                new NetworkPeerIdentifier(platformContext),
+                peerIdentifier,
                 selfId,
                 connectionManagers::newConnection,
                 platformContext.getTime());
         // allow other members to create connections to me
         final Address address = addressBook.getAddress(selfId);
         final ConnectionServer connectionServer = new ConnectionServer(
-                threadManager, address.getListenPort(), socketFactory, inboundConnectionHandler::handle, peers);
+                threadManager, address.getListenPort(), socketFactory, inboundConnectionHandler::handle);
         thingsToStart.add(new StoppableThreadConfiguration<>(threadManager)
                 .setPriority(threadConfig.threadPrioritySync())
                 .setNodeId(selfId)
@@ -217,7 +219,13 @@ public class SyncGossip implements ConnectionTracker, Lifecycle {
                 .setWork(connectionServer)
                 .build());
 
-        fallenBehindManager = buildFallenBehindManager();
+        fallenBehindManager = new FallenBehindManagerImpl(
+                addressBook,
+                selfId,
+                topology,
+                statusActionSubmitter,
+                () -> getReconnectController().start(),
+                platformContext.getConfiguration().getConfigData(ReconnectConfig.class));
 
         syncManager = new SyncManagerImpl(
                 platformContext,
@@ -236,13 +244,27 @@ public class SyncGossip implements ConnectionTracker, Lifecycle {
         reconnectMetrics = new ReconnectMetrics(platformContext.getMetrics(), addressBook);
 
         final StateConfig stateConfig = platformContext.getConfiguration().getConfigData(StateConfig.class);
+
+        final LongSupplier getRoundSupplier = () -> {
+            try (final ReservedSignedState reservedState = latestCompleteState.get()) {
+                if (reservedState == null || reservedState.isNull()) {
+                    return ROUND_UNDEFINED;
+                }
+
+                return reservedState.get().getRound();
+            }
+        };
+
         reconnectHelper = new ReconnectHelper(
                 this::pause,
                 clearAllPipelinesForReconnect::run,
                 swirldStateManager::getConsensusState,
-                latestCompleteState::getRound,
+                getRoundSupplier,
                 new ReconnectLearnerThrottle(platformContext.getTime(), selfId, reconnectConfig),
-                loadReconnectState,
+                state -> {
+                    loadReconnectState.accept(state);
+                    syncManager.resetFallenBehind();
+                },
                 new ReconnectLearnerFactory(
                         platformContext,
                         threadManager,
@@ -258,12 +280,13 @@ public class SyncGossip implements ConnectionTracker, Lifecycle {
 
         final ParallelExecutor shadowgraphExecutor = new CachedPoolParallelExecutor(threadManager, "node-sync");
         thingsToStart.add(shadowgraphExecutor);
+        final SyncMetrics syncMetrics = new SyncMetrics(platformContext.getMetrics());
         syncShadowgraphSynchronizer = new ShadowgraphSynchronizer(
                 platformContext,
-                shadowGraph,
+                shadowgraph,
                 addressBook.getSize(),
                 syncMetrics,
-                receivedEventHandler,
+                event -> receivedEventHandler.accept(event),
                 syncManager,
                 intakeEventCounter,
                 shadowgraphExecutor);
@@ -281,28 +304,17 @@ public class SyncGossip implements ConnectionTracker, Lifecycle {
             permitCount = syncConfig.syncProtocolPermitCount();
         }
 
-        syncPermitProvider = new SyncPermitProvider(permitCount, intakeEventCounter);
-
-        if (emergencyRecoveryManager.isEmergencyStateRequired()) {
-            // If we still need an emergency recovery state, we need it via emergency reconnect.
-            // Start the helper first so that it is ready to receive a connection to perform reconnect with when the
-            // protocol is initiated.
-            thingsToStart.addFirst(reconnectController::start);
-        }
+        syncPermitProvider = new SyncPermitProvider(platformContext, permitCount);
 
         buildSyncProtocolThreads(
                 platformContext,
                 threadManager,
-                notificationEngine,
                 selfId,
                 appVersion,
-                epochHash,
-                emergencyRecoveryManager,
                 intakeQueueSizeSupplier,
                 latestCompleteState,
                 syncMetrics,
-                platformStatusManager,
-                emergencyStateSupplier,
+                currentPlatformStatus::get,
                 hangingThreadDuration,
                 protocolConfig,
                 reconnectConfig,
@@ -314,61 +326,47 @@ public class SyncGossip implements ConnectionTracker, Lifecycle {
     private void buildSyncProtocolThreads(
             final PlatformContext platformContext,
             final ThreadManager threadManager,
-            final NotificationEngine notificationEngine,
             final NodeId selfId,
             final SoftwareVersion appVersion,
-            final Hash epochHash,
-            final EmergencyRecoveryManager emergencyRecoveryManager,
             final LongSupplier intakeQueueSizeSupplier,
-            final SignedStateNexus latestCompleteState,
+            final Supplier<ReservedSignedState> getLatestCompleteState,
             final SyncMetrics syncMetrics,
-            final PlatformStatusManager platformStatusManager,
-            final Supplier<ReservedSignedState> emergencyStateSupplier,
+            final Supplier<PlatformStatus> platformStatusSupplier,
             final Duration hangingThreadDuration,
             final ProtocolConfig protocolConfig,
             final ReconnectConfig reconnectConfig,
             final EventConfig eventConfig) {
+
         final ProtocolFactory syncProtocolFactory = new SyncProtocolFactory(
                 platformContext,
                 syncShadowgraphSynchronizer,
                 fallenBehindManager,
                 syncPermitProvider,
+                intakeEventCounter,
                 gossipHalted::get,
                 () -> intakeQueueSizeSupplier.getAsLong() >= eventConfig.eventIntakeQueueThrottleSize(),
                 Duration.ZERO,
                 syncMetrics,
-                platformStatusManager);
+                platformStatusSupplier);
+
         final ProtocolFactory reconnectProtocolFactory = new ReconnectProtocolFactory(
                 platformContext,
                 threadManager,
                 reconnectThrottle,
-                () -> latestCompleteState.getState("SwirldsPlatform: ReconnectProtocol"),
+                getLatestCompleteState,
                 reconnectConfig.asyncStreamTimeout(),
                 reconnectMetrics,
                 reconnectController,
                 new DefaultSignedStateValidator(platformContext),
                 fallenBehindManager,
-                platformStatusManager,
+                platformStatusSupplier,
                 platformContext.getConfiguration());
-        final ProtocolFactory emergencyReconnectProtocolFactory = new EmergencyReconnectProtocolFactory(
-                platformContext,
-                threadManager,
-                notificationEngine,
-                emergencyRecoveryManager,
-                reconnectThrottle,
-                emergencyStateSupplier,
-                reconnectConfig.asyncStreamTimeout(),
-                reconnectMetrics,
-                reconnectController,
-                platformStatusManager,
-                platformContext.getConfiguration());
+
         final ProtocolFactory heartbeatProtocolFactory = new HeartbeatProtocolFactory(
                 Duration.ofMillis(syncConfig.syncProtocolHeartbeatPeriod()), networkMetrics, platformContext.getTime());
-        final HashCompareHandshake hashCompareHandshake =
-                new HashCompareHandshake(epochHash, !protocolConfig.tolerateMismatchedEpochHash());
         final VersionCompareHandshake versionCompareHandshake =
-                new VersionCompareHandshake(appVersion, !protocolConfig.tolerateMismatchedEpochHash());
-        final List<ProtocolRunnable> handshakeProtocols = List.of(hashCompareHandshake, versionCompareHandshake);
+                new VersionCompareHandshake(appVersion, !protocolConfig.tolerateMismatchedVersion());
+        final List<ProtocolRunnable> handshakeProtocols = List.of(versionCompareHandshake);
         for (final NodeId otherId : topology.getNeighbors()) {
             syncProtocolThreads.add(new StoppableThreadConfiguration<>(threadManager)
                     .setPriority(Thread.NORM_PRIORITY)
@@ -383,28 +381,11 @@ public class SyncGossip implements ConnectionTracker, Lifecycle {
                             handshakeProtocols,
                             new NegotiationProtocols(List.of(
                                     heartbeatProtocolFactory.build(otherId),
-                                    emergencyReconnectProtocolFactory.build(otherId),
                                     reconnectProtocolFactory.build(otherId),
-                                    syncProtocolFactory.build(otherId)))))
+                                    syncProtocolFactory.build(otherId))),
+                            platformContext.getTime()))
                     .build());
         }
-    }
-
-    /**
-     * Build the fallen behind manager.
-     */
-    @NonNull
-    protected FallenBehindManagerImpl buildFallenBehindManager() {
-        return new FallenBehindManagerImpl(
-                addressBook,
-                selfId,
-                topology.getConnectionGraph(),
-                platformStatusManager,
-                // this fallen behind impl is different from that of
-                // SingleNodeSyncGossip which was a no-op. Same for the pause/resume impls
-                // which only logged (but they do more here)
-                () -> getReconnectController().start(),
-                platformContext.getConfiguration().getConfigData(ReconnectConfig.class));
     }
 
     /**
@@ -415,53 +396,31 @@ public class SyncGossip implements ConnectionTracker, Lifecycle {
     }
 
     /**
-     * {@inheritDoc}
+     * Start gossiping.
      */
-    @NonNull
-    @Override
-    public LifecyclePhase getLifecyclePhase() {
-        return lifecyclePhase;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void start() {
-        throwIfNotInPhase(LifecyclePhase.NOT_STARTED);
-        lifecyclePhase = LifecyclePhase.STARTED;
+    private void start() {
+        if (started) {
+            throw new IllegalStateException("Gossip already started");
+        }
+        started = true;
         thingsToStart.forEach(Startable::start);
     }
 
     /**
-     * {@inheritDoc}
+     * Stop gossiping.
      */
-    @Override
-    public void stop() {
-        throwIfNotInPhase(LifecyclePhase.STARTED);
-        lifecyclePhase = LifecyclePhase.STOPPED;
+    private void stop() {
+        if (!started) {
+            throw new IllegalStateException("Gossip not started");
+        }
         syncManager.haltRequestedObserver("stopping gossip");
         gossipHalted.set(true);
         // wait for all existing syncs to stop. no new ones will be started, since gossip has been halted, and
         // we've fallen behind
-        syncPermitProvider.waitForAllSyncsToFinish();
+        syncPermitProvider.waitForAllPermitsToBeReleased();
         for (final StoppableThread thread : syncProtocolThreads) {
             thread.stop();
         }
-    }
-
-    /**
-     * This method is called when the node has finished a reconnect
-     */
-    public void resetFallenBehind() {
-        syncManager.resetFallenBehind();
-    }
-
-    /**
-     * Check if we have fallen behind.
-     */
-    public boolean hasFallenBehind() {
-        return syncManager.hasFallenBehind();
     }
 
     /**
@@ -485,18 +444,99 @@ public class SyncGossip implements ConnectionTracker, Lifecycle {
     /**
      * Stop gossiping until {@link #resume()} is called. If called when already paused then this has no effect.
      */
-    protected void pause() {
-        throwIfNotInPhase(LifecyclePhase.STARTED);
+    private void pause() {
+        if (!started) {
+            throw new IllegalStateException("Gossip not started");
+        }
         gossipHalted.set(true);
-        syncPermitProvider.waitForAllSyncsToFinish();
+        syncPermitProvider.waitForAllPermitsToBeReleased();
     }
 
     /**
-     * Resume gossiping. If called when already running then this has no effect.
+     * Resume gossiping. Undoes the effect of {@link #pause()}. Should be called exactly once after each call to
+     * {@link #pause()}.
      */
-    protected void resume() {
-        throwIfNotInPhase(LifecyclePhase.STARTED);
+    private void resume() {
+        if (!started) {
+            throw new IllegalStateException("Gossip not started");
+        }
         intakeEventCounter.reset();
         gossipHalted.set(false);
+
+        // Revoke all permits when we begin gossiping again. Presumably we are behind the pack,
+        // and so we want to avoid talking to too many peers at once until we've had a chance
+        // to properly catch up.
+        syncPermitProvider.revokeAll();
+    }
+
+    /**
+     * Clear the internal state of the gossip engine.
+     */
+    private void clear() {
+        shadowgraph.clear();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void bind(
+            @NonNull final WiringModel model,
+            @NonNull final BindableInputWire<PlatformEvent, Void> eventInput,
+            @NonNull final BindableInputWire<EventWindow, Void> eventWindowInput,
+            @NonNull final StandardOutputWire<PlatformEvent> eventOutput,
+            @NonNull final BindableInputWire<NoInput, Void> startInput,
+            @NonNull final BindableInputWire<NoInput, Void> stopInput,
+            @NonNull final BindableInputWire<NoInput, Void> clearInput,
+            @NonNull final BindableInputWire<Duration, Void> systemHealthInput,
+            @NonNull final BindableInputWire<PlatformStatus, Void> platformStatusInput) {
+
+        startInput.bindConsumer(ignored -> start());
+        stopInput.bindConsumer(ignored -> stop());
+        clearInput.bindConsumer(ignored -> clear());
+
+        eventInput.bindConsumer(shadowgraph::addEvent);
+        eventWindowInput.bindConsumer(shadowgraph::updateEventWindow);
+
+        systemHealthInput.bindConsumer(syncPermitProvider::reportUnhealthyDuration);
+        platformStatusInput.bindConsumer(currentPlatformStatus::set);
+
+        final boolean useOldStyleIntakeQueue = platformContext
+                .getConfiguration()
+                .getConfigData(EventConfig.class)
+                .useOldStyleIntakeQueue();
+
+        if (useOldStyleIntakeQueue) {
+            oldStyleIntakeQueue = new QueueThreadConfiguration<PlatformEvent>(threadManager)
+                    .setCapacity(10_000)
+                    .setThreadName("old_style_intake_queue")
+                    .setComponent("platform")
+                    .setHandler(eventOutput::forward)
+                    .setMetricsConfiguration(
+                            new QueueThreadMetricsConfiguration(platformContext.getMetrics()).enableMaxSizeMetric())
+                    .build();
+            thingsToStart.add(oldStyleIntakeQueue);
+
+            receivedEventHandler = event -> {
+                try {
+                    oldStyleIntakeQueue.put(event);
+                } catch (final InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    throw new RuntimeException("interrupted while attempting to enqueue event from gossip", e);
+                }
+            };
+
+        } else {
+            receivedEventHandler = eventOutput::forward;
+        }
+    }
+
+    /**
+     * Get the size of the old style intake queue.
+     *
+     * @return the size of the old style intake queue
+     */
+    public int getOldStyleIntakeQueueSize() {
+        return oldStyleIntakeQueue.size();
     }
 }

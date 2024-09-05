@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.token.impl.handlers;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.CUSTOM_FEES_LIST_TOO_LONG;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.CUSTOM_SCHEDULE_ALREADY_HAS_NO_FEES;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_CUSTOM_FEE_COLLECTOR;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_HAS_NO_FEE_SCHEDULE_KEY;
@@ -34,17 +35,18 @@ import com.hedera.hapi.node.token.TokenFeeScheduleUpdateTransactionBody;
 import com.hedera.hapi.node.transaction.CustomFee;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.hapi.fees.usage.token.TokenOpsUsage;
-import com.hedera.node.app.service.mono.pbj.PbjConverter;
+import com.hedera.node.app.hapi.utils.CommonPbjConverters;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.ReadableTokenRelationStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
 import com.hedera.node.app.service.token.impl.util.TokenHandlerHelper;
 import com.hedera.node.app.service.token.impl.validators.CustomFeesValidator;
-import com.hedera.node.app.service.token.records.TokenBaseRecordBuilder;
+import com.hedera.node.app.service.token.records.TokenBaseStreamBuilder;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.workflows.HandleContext;
+import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
@@ -62,6 +64,10 @@ import javax.inject.Singleton;
 public class TokenFeeScheduleUpdateHandler implements TransactionHandler {
     private final CustomFeesValidator customFeesValidator;
 
+    /**
+     * Default constructor for injection.
+     * @param customFeesValidator the custom fees validator
+     */
     @Inject
     public TokenFeeScheduleUpdateHandler(@NonNull final CustomFeesValidator customFeesValidator) {
         requireNonNull(customFeesValidator);
@@ -94,7 +100,7 @@ public class TokenFeeScheduleUpdateHandler implements TransactionHandler {
     }
 
     /**
-     * Handles a transaction with {@link HederaFunctionality#TOKEN_FEE_SCHEDULE_UPDATE}
+     * Handles a transaction with {@link HederaFunctionality#TOKEN_FEE_SCHEDULE_UPDATE}.
      * @param context the context of the transaction
      */
     @Override
@@ -108,13 +114,17 @@ public class TokenFeeScheduleUpdateHandler implements TransactionHandler {
         final var op = txn.tokenFeeScheduleUpdateOrThrow();
 
         // validate checks in handle
-        final var tokenStore = context.writableStore(WritableTokenStore.class);
+        final var storeFactory = context.storeFactory();
+        final var tokenStore = storeFactory.writableStore(WritableTokenStore.class);
         final var token = validateSemantics(op, tokenStore, config);
 
         // create readable stores from the context
-        final var readableAccountStore = context.readableStore(ReadableAccountStore.class);
-        final var readableTokenRelsStore = context.readableStore(ReadableTokenRelationStore.class);
+        final var readableAccountStore = storeFactory.readableStore(ReadableAccountStore.class);
+        final var readableTokenRelsStore = storeFactory.readableStore(ReadableTokenRelationStore.class);
 
+        if (token.customFees().isEmpty() && op.customFees().isEmpty()) {
+            throw new HandleException(CUSTOM_SCHEDULE_ALREADY_HAS_NO_FEES);
+        }
         // validate custom fees before committing
         customFeesValidator.validateForFeeScheduleUpdate(
                 token, readableAccountStore, readableTokenRelsStore, tokenStore, op.customFees());
@@ -123,7 +133,7 @@ public class TokenFeeScheduleUpdateHandler implements TransactionHandler {
         // add token to the modifications map
         tokenStore.put(copy.build());
 
-        final var record = context.recordBuilder(TokenBaseRecordBuilder.class);
+        final var record = context.savepointStack().getBaseBuilder(TokenBaseStreamBuilder.class);
         record.tokenType(token.tokenType());
     }
 
@@ -178,7 +188,7 @@ public class TokenFeeScheduleUpdateHandler implements TransactionHandler {
                 .toList();
 
         final var newReprBytes = tokenOpsUsage.bytesNeededToRepr(
-                newFees.stream().map(PbjConverter::fromPbj).toList());
+                newFees.stream().map(CommonPbjConverters::fromPbj).toList());
         final var effConsTime =
                 body.transactionIDOrThrow().transactionValidStartOrThrow().seconds();
         final var lifetime = Math.max(0, token == null ? 0 : token.expirationSecond() - effConsTime);
@@ -186,6 +196,7 @@ public class TokenFeeScheduleUpdateHandler implements TransactionHandler {
         final var existingFeeReprBytes = currentFeeScheduleSize(token.customFees(), tokenOpsUsage);
         final var rbsDelta = ESTIMATOR_UTILS.changeInBsUsage(existingFeeReprBytes, lifetime, newReprBytes, lifetime);
         return feeContext
+                .feeCalculatorFactory()
                 .feeCalculator(SubType.DEFAULT)
                 .addBytesPerTransaction(LONG_BASIC_ENTITY_ID_SIZE + newReprBytes)
                 .addRamByteSeconds(rbsDelta)

@@ -37,6 +37,7 @@ import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.as
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asLongZeroAddress;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asNumberedAccountId;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asNumberedContractId;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.contractIDToBesuAddress;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.numberOfLongZero;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.pbjLogFrom;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.pbjLogsFrom;
@@ -79,6 +80,11 @@ class ConversionUtilsTest {
                 0L, asExactLongValueOrZero(BigInteger.valueOf(Long.MAX_VALUE).add(BigInteger.ONE)));
         assertEquals(
                 0L, asExactLongValueOrZero(BigInteger.valueOf(Long.MIN_VALUE).subtract(BigInteger.ONE)));
+    }
+
+    @Test
+    void besuAddressIsZeroForDefaultContractId() {
+        assertEquals(Address.ZERO, contractIDToBesuAddress(ContractID.DEFAULT));
     }
 
     @Test

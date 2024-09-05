@@ -16,7 +16,6 @@
 
 package com.swirlds.platform.test.consensus;
 
-import static com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags.TIME_CONSUMING;
 import static com.swirlds.platform.test.consensus.ConsensusTestArgs.BIRTH_ROUND_PLATFORM_CONTEXT;
 import static com.swirlds.platform.test.consensus.ConsensusTestArgs.DEFAULT_PLATFORM_CONTEXT;
 import static com.swirlds.platform.test.fixtures.event.EventUtils.areEventListsEquivalent;
@@ -29,12 +28,12 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.test.fixtures.junit.tags.TestComponentTags;
+import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.test.event.emitter.CollectingEventEmitter;
 import com.swirlds.platform.test.event.emitter.EventEmitter;
 import com.swirlds.platform.test.event.emitter.PriorityEventEmitter;
 import com.swirlds.platform.test.event.emitter.ShuffledEventEmitter;
 import com.swirlds.platform.test.event.emitter.StandardEventEmitter;
-import com.swirlds.platform.test.fixtures.event.IndexedEvent;
 import com.swirlds.platform.test.fixtures.event.generator.StandardGraphGenerator;
 import com.swirlds.platform.test.fixtures.event.source.StandardEventSource;
 import java.util.List;
@@ -52,11 +51,11 @@ public class EventEmitterTests {
     /**
      * Assert that two lists of events are distinct but equal objects.
      */
-    private void assertEventListEquality(final List<IndexedEvent> events1, final List<IndexedEvent> events2) {
+    private void assertEventListEquality(final List<EventImpl> events1, final List<EventImpl> events2) {
         assertEquals(events1.size(), events2.size());
         for (int index = 0; index < events1.size(); index++) {
-            final IndexedEvent event1 = events1.get(index);
-            final IndexedEvent event2 = events2.get(index);
+            final EventImpl event1 = events1.get(index);
+            final EventImpl event2 = events2.get(index);
 
             assertNotSame(event1, event2);
             assertEquals(event1, event2);
@@ -72,12 +71,12 @@ public class EventEmitterTests {
 
         emitter.reset();
 
-        final List<IndexedEvent> events1 = emitter.emitEvents(numberOfEvents);
+        final List<EventImpl> events1 = emitter.emitEvents(numberOfEvents);
         assertEquals(numberOfEvents, events1.size());
 
         emitter.reset();
 
-        final List<IndexedEvent> events2 = emitter.emitEvents(numberOfEvents);
+        final List<EventImpl> events2 = emitter.emitEvents(numberOfEvents);
         assertEquals(numberOfEvents, events2.size());
 
         assertEventListEquality(events1, events2);
@@ -94,10 +93,10 @@ public class EventEmitterTests {
 
         final int numberOfEvents = 1000;
 
-        final List<IndexedEvent> events1 = emitter.emitEvents(numberOfEvents);
+        final List<EventImpl> events1 = emitter.emitEvents(numberOfEvents);
         assertEquals(numberOfEvents, events1.size());
 
-        final List<IndexedEvent> events2 = emitterCopy.emitEvents(numberOfEvents);
+        final List<EventImpl> events2 = emitterCopy.emitEvents(numberOfEvents);
         assertEquals(numberOfEvents, events2.size());
 
         assertEventListEquality(events1, events2);
@@ -116,10 +115,10 @@ public class EventEmitterTests {
         emitter.skip(numberOfEvents);
         final EventEmitter<?> emitterCopy = emitter.copy();
 
-        final List<IndexedEvent> events1 = emitter.emitEvents(numberOfEvents);
+        final List<EventImpl> events1 = emitter.emitEvents(numberOfEvents);
         assertEquals(numberOfEvents, events1.size());
 
-        final List<IndexedEvent> events2 = emitterCopy.emitEvents(numberOfEvents);
+        final List<EventImpl> events2 = emitterCopy.emitEvents(numberOfEvents);
         assertEquals(numberOfEvents, events2.size());
 
         assertEventListEquality(events1, events2);
@@ -138,7 +137,7 @@ public class EventEmitterTests {
         emitter.setCheckpoint(numberOfEvents);
         emitter.skip(numberOfEvents);
         emitter.setCheckpoint(numberOfEvents * 2);
-        final List<IndexedEvent> events1 = emitter.emitEvents(numberOfEvents);
+        final List<EventImpl> events1 = emitter.emitEvents(numberOfEvents);
         assertEquals(numberOfEvents, events1.size());
 
         final EventEmitter<?> emitterCopy = emitter.cleanCopy();
@@ -146,7 +145,7 @@ public class EventEmitterTests {
         emitterCopy.setCheckpoint(numberOfEvents);
         emitterCopy.skip(numberOfEvents);
         emitterCopy.setCheckpoint(numberOfEvents * 2);
-        final List<IndexedEvent> events2 = emitterCopy.emitEvents(numberOfEvents);
+        final List<EventImpl> events2 = emitterCopy.emitEvents(numberOfEvents);
         assertEquals(numberOfEvents, events2.size());
 
         assertEventListEquality(events1, events2);
@@ -159,7 +158,7 @@ public class EventEmitterTests {
      */
     public void validateEventOrder(final EventEmitter<?> emitter) {
         System.out.println("Validate Event Order");
-        final List<IndexedEvent> events = emitter.emitEvents(1000);
+        final List<EventImpl> events = emitter.emitEvents(1000);
         assertTrue(areGenerationNumbersValid(events, emitter.getGraphGenerator().getNumberOfSources()));
         assertTrue(isEventOrderValid(events));
 
@@ -172,8 +171,8 @@ public class EventEmitterTests {
         emitter = emitter.cleanCopy();
 
         CollectingEventEmitter collectingEmitter = new CollectingEventEmitter(emitter);
-        final List<IndexedEvent> events = collectingEmitter.emitEvents(1000);
-        List<IndexedEvent> eventsCollected = collectingEmitter.getCollectedEvents();
+        final List<EventImpl> events = collectingEmitter.emitEvents(1000);
+        List<EventImpl> eventsCollected = collectingEmitter.getCollectedEvents();
         assertEquals(events, eventsCollected);
 
         // Resetting the collected generator should produce the same events again
@@ -224,8 +223,8 @@ public class EventEmitterTests {
             final EventEmitter<?> emitter1, final EventEmitter<?> emitter2, final int numberOfEvents) {
         emitter1.setCheckpoint(numberOfEvents);
         emitter2.setCheckpoint(numberOfEvents);
-        final List<IndexedEvent> list1 = emitter1.emitEvents(numberOfEvents);
-        final List<IndexedEvent> list2 = emitter2.emitEvents(numberOfEvents);
+        final List<EventImpl> list1 = emitter1.emitEvents(numberOfEvents);
+        final List<EventImpl> list2 = emitter2.emitEvents(numberOfEvents);
 
         assertTrue(areEventListsEquivalent(list1, list2));
         assertNotEquals(list1, list2);
@@ -316,7 +315,6 @@ public class EventEmitterTests {
     @ValueSource(booleans = {true, false})
     @Tag(TestComponentTags.PLATFORM)
     @Tag(TestComponentTags.CONSENSUS)
-    @Tag(TIME_CONSUMING)
     @DisplayName("Shuffled Emitter Equivalence")
     public void shuffledEmitterEquivalence(final boolean birthRoundAsAncientThreshold) {
         final int numberOfEvents = 100;
@@ -340,8 +338,8 @@ public class EventEmitterTests {
                 final ShuffledEventEmitter emitter1 = shuffledEmitter.cleanCopy(i);
                 final ShuffledEventEmitter emitter2 = shuffledEmitter.cleanCopy(j);
 
-                final List<IndexedEvent> list1 = emitter1.emitEvents(numberOfEvents);
-                final List<IndexedEvent> list2 = emitter2.emitEvents(numberOfEvents);
+                final List<EventImpl> list1 = emitter1.emitEvents(numberOfEvents);
+                final List<EventImpl> list2 = emitter2.emitEvents(numberOfEvents);
 
                 if (i == j) {
                     // Two instances of the same emitter should produce identical events
@@ -381,8 +379,8 @@ public class EventEmitterTests {
 
         collectingEmitter.reset();
 
-        final List<IndexedEvent> events = collectingEmitter.emitEvents(1000);
-        List<IndexedEvent> eventsCollected = collectingEmitter.getCollectedEvents();
+        final List<EventImpl> events = collectingEmitter.emitEvents(1000);
+        List<EventImpl> eventsCollected = collectingEmitter.getCollectedEvents();
         assertEquals(events, eventsCollected);
 
         // Resetting the collected generator should produce the same events again

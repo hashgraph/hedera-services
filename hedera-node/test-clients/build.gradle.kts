@@ -17,88 +17,159 @@
 import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
 
 plugins {
-    id("com.hedera.hashgraph.conventions")
-    id("com.hedera.hashgraph.shadow-jar")
+    id("com.hedera.gradle.services")
+    id("com.hedera.gradle.shadow-jar")
 }
 
 description = "Hedera Services Test Clients for End to End Tests (EET)"
 
-mainModuleInfo { runtimeOnly("org.junit.platform.launcher") }
-
-itestModuleInfo {
-    requires("com.hedera.node.test.clients")
-    requires("com.hedera.node.hapi")
-    requires("org.apache.commons.lang3")
-    requires("org.junit.jupiter.api")
-    requires("org.testcontainers")
-    requires("org.testcontainers.junit.jupiter")
-    requires("org.apache.commons.lang3")
+mainModuleInfo {
+    runtimeOnly("org.junit.jupiter.engine")
+    runtimeOnly("org.junit.platform.launcher")
 }
 
-eetModuleInfo {
-    requires("com.hedera.node.test.clients")
-    requires("org.junit.jupiter.api")
-    requires("org.testcontainers")
-    requires("org.testcontainers.junit.jupiter")
-}
+testModuleInfo { runtimeOnly("org.junit.jupiter.api") }
 
 sourceSets {
-    // Needed because "resource" directory is misnamed. See
-    // https://github.com/hashgraph/hedera-services/issues/3361
-    main { resources { srcDir("src/main/resource") } }
-
     create("rcdiff")
     create("yahcli")
 }
 
-// The following tasks run the 'HapiTestEngine' tests (residing in src/main/java).
-// IntelliJ picks up this task when running tests through in the IDE.
+tasks.register<JavaExec>("runTestClient") {
+    group = "build"
+    description = "Run a test client via -PtestClient=<Class>"
 
-// Runs all tests
-tasks.register<Test>("hapiTest") {
-    testClassesDirs = sourceSets.main.get().output.classesDirs
-    classpath = sourceSets.main.get().runtimeClasspath
-
-    useJUnitPlatform()
-
-    // Limit heap and number of processors
-    maxHeapSize = "8g"
-    jvmArgs("-XX:ActiveProcessorCount=6")
-
-    // Do not yet run things on the '--module-path'
-    modularity.inferModulePath.set(false)
+    classpath = sourceSets.main.get().runtimeClasspath + files(tasks.jar)
+    mainClass = providers.gradleProperty("testClient")
 }
 
-// Runs all tests that are not part of other test tasks
-tasks.register<Test>("hapiTestMisc") {
+val prCheckTags =
+    mapOf(
+        "hapiTestAdhoc" to "ADHOC",
+        "hapiTestCrypto" to "CRYPTO",
+        "hapiTestToken" to "TOKEN",
+        "hapiTestRestart" to "RESTART|UPGRADE",
+        "hapiTestSmartContract" to "SMART_CONTRACT",
+        "hapiTestNDReconnect" to "ND_RECONNECT",
+        "hapiTestTimeConsuming" to "LONG_RUNNING",
+        "hapiTestMisc" to "!(CRYPTO|TOKEN|RESTART|UPGRADE|SMART_CONTRACT|ND_RECONNECT|LONG_RUNNING)"
+    )
+val prCheckStartPorts =
+    mapOf(
+        "hapiTestAdhoc" to "25000",
+        "hapiTestCrypto" to "26000",
+        "hapiTestToken" to "27000",
+        "hapiTestRestart" to "28000",
+        "hapiTestSmartContract" to "29000",
+        "hapiTestNDReconnect" to "30000",
+        "hapiTestTimeConsuming" to "31000",
+        "hapiTestMisc" to "32000"
+    )
+
+tasks { prCheckTags.forEach { (taskName, _) -> register(taskName) { dependsOn("test") } } }
+
+tasks.test {
     testClassesDirs = sourceSets.main.get().output.classesDirs
     classpath = sourceSets.main.get().runtimeClasspath
 
+    val ciTagExpression =
+        gradle.startParameter.taskNames
+            .stream()
+            .map { prCheckTags[it] ?: "" }
+            .filter { it.isNotBlank() }
+            .toList()
+            .joinToString("|")
     useJUnitPlatform {
-        excludeTags(
-            "CRYPTO",
-            "TOKEN",
-            "SMART_CONTRACT",
-            "TIME_CONSUMING",
-            "RESTART",
-            "ND_RECONNECT"
+        includeTags(
+            if (ciTagExpression.isBlank()) "none()|!(EMBEDDED|REPEATABLE)"
+            else "(${ciTagExpression}|STREAM_VALIDATION|LOG_VALIDATION)&!(EMBEDDED|REPEATABLE)"
         )
     }
 
+    // Choose a different initial port for each test task if running as PR check
+    val initialPort =
+        gradle.startParameter.taskNames
+            .stream()
+            .map { prCheckStartPorts[it] ?: "" }
+            .filter { it.isNotBlank() }
+            .findFirst()
+            .orElse("")
+    systemProperty("hapi.spec.initial.port", initialPort)
+
+    // Default quiet mode is "false" unless we are running in CI or set it explicitly to "true"
+    systemProperty(
+        "hapi.spec.quiet.mode",
+        System.getProperty("hapi.spec.quiet.mode")
+            ?: if (ciTagExpression.isNotBlank()) "true" else "false"
+    )
+    systemProperty("junit.jupiter.execution.parallel.enabled", true)
+    systemProperty("junit.jupiter.execution.parallel.mode.default", "concurrent")
+    // Surprisingly, the Gradle JUnitPlatformTestExecutionListener fails to gather result
+    // correctly if test classes run in parallel (concurrent execution WITHIN a test class
+    // is fine). So we need to force the test classes to run in the same thread. Luckily this
+    // is not a huge limitation, as our test classes generally have enough non-leaky tests to
+    // get a material speed up. See https://github.com/gradle/gradle/issues/6453.
+    systemProperty("junit.jupiter.execution.parallel.mode.classes.default", "same_thread")
+    systemProperty(
+        "junit.jupiter.testclass.order.default",
+        "org.junit.jupiter.api.ClassOrderer\$OrderAnnotation"
+    )
+
     // Limit heap and number of processors
     maxHeapSize = "8g"
     jvmArgs("-XX:ActiveProcessorCount=6")
+    maxParallelForks = 1
 
     // Do not yet run things on the '--module-path'
     modularity.inferModulePath.set(false)
 }
 
-// Runs all tests of CryptoService
-tasks.register<Test>("hapiTestCrypto") {
+val prEmbeddedCheckTags =
+    mapOf(
+        "hapiEmbeddedMisc" to "EMBEDDED",
+    )
+
+tasks {
+    prEmbeddedCheckTags.forEach { (taskName, _) ->
+        register(taskName) { dependsOn("testEmbedded") }
+    }
+}
+
+// Runs tests against an embedded network that supports concurrent tests
+tasks.register<Test>("testEmbedded") {
     testClassesDirs = sourceSets.main.get().output.classesDirs
     classpath = sourceSets.main.get().runtimeClasspath
 
-    useJUnitPlatform { includeTags("CRYPTO", "RECORD_STREAM_VALIDATION") }
+    val ciTagExpression =
+        gradle.startParameter.taskNames
+            .stream()
+            .map { prEmbeddedCheckTags[it] ?: "" }
+            .filter { it.isNotBlank() }
+            .toList()
+            .joinToString("|")
+    useJUnitPlatform {
+        includeTags(
+            if (ciTagExpression.isBlank()) "none()|!(RESTART|ND_RECONNECT|UPGRADE|REPEATABLE)"
+            else "(${ciTagExpression}|STREAM_VALIDATION|LOG_VALIDATION)"
+        )
+    }
+
+    systemProperty("junit.jupiter.execution.parallel.enabled", true)
+    systemProperty("junit.jupiter.execution.parallel.mode.default", "concurrent")
+    // Surprisingly, the Gradle JUnitPlatformTestExecutionListener fails to gather result
+    // correctly if test classes run in parallel (concurrent execution WITHIN a test class
+    // is fine). So we need to force the test classes to run in the same thread. Luckily this
+    // is not a huge limitation, as our test classes generally have enough non-leaky tests to
+    // get a material speed up. See https://github.com/gradle/gradle/issues/6453.
+    systemProperty("junit.jupiter.execution.parallel.mode.classes.default", "same_thread")
+    systemProperty(
+        "junit.jupiter.testclass.order.default",
+        "org.junit.jupiter.api.ClassOrderer\$OrderAnnotation"
+    )
+    // Tell our launcher to target an embedded network
+    systemProperty("hapi.spec.embedded.mode", true)
+    // Configure log4j2.xml for the embedded node
+    systemProperty("log4j.configurationFile", "embedded-node0-log4j2.xml")
 
     // Limit heap and number of processors
     maxHeapSize = "8g"
@@ -108,98 +179,55 @@ tasks.register<Test>("hapiTestCrypto") {
     modularity.inferModulePath.set(false)
 }
 
-// Runs all tests of TokenService
-tasks.register<Test>("hapiTestToken") {
+val prRepeatableCheckTags =
+    mapOf(
+        "hapiRepeatableMisc" to "REPEATABLE",
+    )
+
+tasks {
+    prRepeatableCheckTags.forEach { (taskName, _) ->
+        register(taskName) { dependsOn("testRepeatable") }
+    }
+}
+
+// Runs tests against an embedded network that achieves repeatable results by running tests in a
+// single thread
+tasks.register<Test>("testRepeatable") {
     testClassesDirs = sourceSets.main.get().output.classesDirs
     classpath = sourceSets.main.get().runtimeClasspath
 
-    useJUnitPlatform { includeTags("TOKEN", "RECORD_STREAM_VALIDATION") }
+    val ciTagExpression =
+        gradle.startParameter.taskNames
+            .stream()
+            .map { prRepeatableCheckTags[it] ?: "" }
+            .filter { it.isNotBlank() }
+            .toList()
+            .joinToString("|")
+    useJUnitPlatform {
+        includeTags(
+            if (ciTagExpression.isBlank())
+                "none()|!(RESTART|ND_RECONNECT|UPGRADE|EMBEDDED|NOT_REPEATABLE)"
+            else "(${ciTagExpression}|STREAM_VALIDATION|LOG_VALIDATION)"
+        )
+    }
 
-    // Limit heap and number of processors
-    maxHeapSize = "8g"
-    jvmArgs("-XX:ActiveProcessorCount=6")
-
-    // Do not yet run things on the '--module-path'
-    modularity.inferModulePath.set(false)
-}
-
-// Runs all tests of SmartContractService
-tasks.register<Test>("hapiTestSmartContract") {
-    testClassesDirs = sourceSets.main.get().output.classesDirs
-    classpath = sourceSets.main.get().runtimeClasspath
-
-    useJUnitPlatform { includeTags("SMART_CONTRACT", "RECORD_STREAM_VALIDATION") }
-
-    // Limit heap and number of processors
-    maxHeapSize = "8g"
-    jvmArgs("-XX:ActiveProcessorCount=6")
-
-    // Do not yet run things on the '--module-path'
-    modularity.inferModulePath.set(false)
-}
-
-// Runs a handful of test-suites that are extremely time-consuming (10+ minutes)
-tasks.register<Test>("hapiTestTimeConsuming") {
-    testClassesDirs = sourceSets.main.get().output.classesDirs
-    classpath = sourceSets.main.get().runtimeClasspath
-
-    useJUnitPlatform { includeTags("TIME_CONSUMING", "RECORD_STREAM_VALIDATION") }
-
-    // Limit heap and number of processors
-    maxHeapSize = "8g"
-    jvmArgs("-XX:ActiveProcessorCount=6")
-
-    // Do not yet run things on the '--module-path'
-    modularity.inferModulePath.set(false)
-}
-
-// Runs a handful of test-suites that are extremely time-consuming (10+ minutes)
-tasks.register<Test>("hapiTestRestart") {
-    testClassesDirs = sourceSets.main.get().output.classesDirs
-    classpath = sourceSets.main.get().runtimeClasspath
-
-    useJUnitPlatform { includeTags("RESTART", "RECORD_STREAM_VALIDATION") }
-
-    // Limit heap and number of processors
-    maxHeapSize = "8g"
-    jvmArgs("-XX:ActiveProcessorCount=6")
-
-    // Do not yet run things on the '--module-path'
-    modularity.inferModulePath.set(false)
-}
-
-tasks.register<Test>("hapiTestNDReconnect") {
-    testClassesDirs = sourceSets.main.get().output.classesDirs
-    classpath = sourceSets.main.get().runtimeClasspath
-
-    useJUnitPlatform { includeTags("ND_RECONNECT", "RECORD_STREAM_VALIDATION") }
-
-    // Limit heap and number of processors
-    maxHeapSize = "8g"
-    jvmArgs("-XX:ActiveProcessorCount=6")
-
-    // Do not yet run things on the '--module-path'
-    modularity.inferModulePath.set(false)
-}
-
-tasks.test {
-    // Disable these EET tests from being executed as part of the gradle "test" task.
-    // We should maybe remove them from src/test into src/eet,
-    // so it can be part of an eet test task instead. See issue #3412
-    // (https://github.com/hashgraph/hedera-services/issues/3412).
-    exclude("**/*")
-}
-
-tasks.itest {
-    systemProperty("itests", System.getProperty("itests"))
+    // Disable all parallelism
     systemProperty("junit.jupiter.execution.parallel.enabled", false)
-    systemProperty("TAG", "services-node:" + project.version)
-    systemProperty("networkWorkspaceDir", layout.buildDirectory.dir("network/itest").get().asFile)
-}
+    systemProperty(
+        "junit.jupiter.testclass.order.default",
+        "org.junit.jupiter.api.ClassOrderer\$OrderAnnotation"
+    )
+    // Tell our launcher to target a repeatable embedded network
+    systemProperty("hapi.spec.repeatable.mode", true)
+    // Configure log4j2.xml for the embedded node
+    systemProperty("log4j.configurationFile", "repeatable-node0-log4j2.xml")
 
-tasks.eet {
-    systemProperty("TAG", "services-node:" + project.version)
-    systemProperty("networkWorkspaceDir", layout.buildDirectory.dir("network/itest").get().asFile)
+    // Limit heap and number of processors
+    maxHeapSize = "8g"
+    jvmArgs("-XX:ActiveProcessorCount=6")
+
+    // Do not yet run things on the '--module-path'
+    modularity.inferModulePath.set(false)
 }
 
 tasks.shadowJar {
@@ -231,6 +259,7 @@ val yahCliJar =
 val rcdiffJar =
     tasks.register<ShadowJar>("rcdiffJar") {
         exclude(listOf("META-INF/*.DSA", "META-INF/*.RSA", "META-INF/*.SF", "META-INF/INDEX.LIST"))
+        from(sourceSets["main"].output)
         from(sourceSets["rcdiff"].output)
         destinationDirectory.set(project.file("rcdiff"))
         archiveFileName.set("rcdiff.jar")
@@ -238,7 +267,7 @@ val rcdiffJar =
 
         manifest {
             attributes(
-                "Main-Class" to "com.hedera.services.rcdiff.RcDiff",
+                "Main-Class" to "com.hedera.services.rcdiff.RcDiffCmdWrapper",
                 "Multi-Release" to "true"
             )
         }
@@ -285,11 +314,6 @@ val cleanYahCli =
         group = "copy"
         delete(File(project.file("yahcli"), "yahcli.jar"))
     }
-
-tasks.assemble {
-    dependsOn(tasks.shadowJar)
-    dependsOn(copyYahCli)
-}
 
 tasks.clean {
     dependsOn(cleanYahCli)

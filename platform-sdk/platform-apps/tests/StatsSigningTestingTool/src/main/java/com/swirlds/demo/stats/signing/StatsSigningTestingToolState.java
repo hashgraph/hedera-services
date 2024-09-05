@@ -37,7 +37,7 @@ import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.MerkleLeaf;
 import com.swirlds.common.merkle.impl.PartialMerkleLeaf;
-import com.swirlds.platform.state.PlatformState;
+import com.swirlds.platform.state.PlatformStateAccessor;
 import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.SwirldState;
 import com.swirlds.platform.system.events.Event;
@@ -112,10 +112,14 @@ public class StatsSigningTestingToolState extends PartialMerkleLeaf implements S
         final SttTransactionPool sttTransactionPool = transactionPoolSupplier.get();
         if (sttTransactionPool != null) {
             event.forEachTransaction(transaction -> {
-                final TransactionSignature transactionSignature = sttTransactionPool.expandSignatures(transaction);
+                if (transaction.isSystem()) {
+                    return;
+                }
+                final TransactionSignature transactionSignature =
+                        sttTransactionPool.expandSignatures(transaction.getApplicationTransaction());
                 if (transactionSignature != null) {
                     transaction.setMetadata(transactionSignature);
-                    CryptographyHolder.get().verifyAsync(List.of(transactionSignature));
+                    CryptographyHolder.get().verifySync(List.of(transactionSignature));
                 }
             });
         }
@@ -125,12 +129,15 @@ public class StatsSigningTestingToolState extends PartialMerkleLeaf implements S
      * {@inheritDoc}
      */
     @Override
-    public void handleConsensusRound(final Round round, final PlatformState platformState) {
+    public void handleConsensusRound(final Round round, final PlatformStateAccessor platformState) {
         throwIfImmutable();
         round.forEachTransaction(this::handleTransaction);
     }
 
     private void handleTransaction(final ConsensusTransaction trans) {
+        if (trans.isSystem()) {
+            return;
+        }
         final TransactionSignature s = trans.getMetadata();
 
         if (s != null && validateSignature(s, trans) && s.getSignatureStatus() != VerificationStatus.VALID) {
@@ -138,7 +145,7 @@ public class StatsSigningTestingToolState extends PartialMerkleLeaf implements S
                     EXCEPTION.getMarker(),
                     "Invalid Transaction Signature [ transactionId = {}, status = {}, signatureType = {},"
                             + " publicKey = {}, signature = {}, data = {} ]",
-                    TransactionCodec.txId(trans.getContents()),
+                    TransactionCodec.txId(trans.getApplicationTransaction()),
                     s.getSignatureStatus(),
                     s.getSignatureType(),
                     hex(Arrays.copyOfRange(
@@ -153,7 +160,7 @@ public class StatsSigningTestingToolState extends PartialMerkleLeaf implements S
                             s.getContentsDirect(), s.getMessageOffset(), s.getMessageOffset() + s.getMessageLength())));
         }
 
-        runningSum += TransactionCodec.txId(trans.getContents());
+        runningSum += TransactionCodec.txId(trans.getApplicationTransaction());
 
         maybeDelay();
     }

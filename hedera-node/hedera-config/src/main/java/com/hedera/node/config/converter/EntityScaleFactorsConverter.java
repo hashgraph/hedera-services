@@ -16,7 +16,7 @@
 
 package com.hedera.node.config.converter;
 
-import com.hedera.node.app.service.mono.fees.calculation.EntityScaleFactors;
+import com.hedera.node.config.types.EntityScaleFactors;
 import com.swirlds.config.api.converter.ConfigConverter;
 
 /**

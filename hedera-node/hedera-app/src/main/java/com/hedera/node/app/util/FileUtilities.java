@@ -16,17 +16,17 @@
 
 package com.hedera.node.app.util;
 
-import static com.hedera.node.app.service.file.impl.FileServiceImpl.BLOBS_KEY;
+import static com.hedera.node.app.service.file.impl.schemas.V0490FileSchema.BLOBS_KEY;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.state.file.File;
 import com.hedera.node.app.service.file.FileService;
-import com.hedera.node.app.state.HederaState;
 import com.hedera.node.config.data.FilesConfig;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.state.State;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 public class FileUtilities {
@@ -36,7 +36,7 @@ public class FileUtilities {
     }
 
     @NonNull
-    public static Bytes getFileContent(@NonNull final HederaState state, @NonNull final FileID fileID) {
+    public static Bytes getFileContent(@NonNull final State state, @NonNull final FileID fileID) {
         final var states = state.getReadableStates(FileService.NAME);
         final var filesMap = states.<FileID, File>get(BLOBS_KEY);
         final var file = filesMap.get(fileID);
@@ -65,7 +65,7 @@ public class FileUtilities {
      * @param observer the observer to notify
      */
     public static void observePropertiesAndPermissions(
-            @NonNull final HederaState state,
+            @NonNull final State state,
             @NonNull final Configuration config,
             @NonNull final SpecialFilesObserver observer) {
         requireNonNull(state);
@@ -80,7 +80,7 @@ public class FileUtilities {
     }
 
     private static void observePropertiesAndPermissions(
-            @NonNull final HederaState state,
+            @NonNull final State state,
             @NonNull final FileID propertiesId,
             @NonNull final FileID permissionsId,
             @NonNull final SpecialFilesObserver observer) {

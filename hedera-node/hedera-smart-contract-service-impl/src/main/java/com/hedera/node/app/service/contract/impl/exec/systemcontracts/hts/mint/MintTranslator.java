@@ -23,13 +23,12 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.gas.DispatchType;
 import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AbstractHtsCallTranslator;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.AbstractCallTranslator;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.Call;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.DispatchForResponseCodeHtsCall;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.Arrays;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -37,7 +36,7 @@ import javax.inject.Singleton;
  * Translates {@code mintToken()} calls to the HTS system contract.
  */
 @Singleton
-public class MintTranslator extends AbstractHtsCallTranslator {
+public class MintTranslator extends AbstractCallTranslator<HtsCallAttempt> {
     public static final Function MINT = new Function("mintToken(address,uint64,bytes[])", "(int64,int64,int64[])");
     public static final Function MINT_V2 = new Function("mintToken(address,int64,bytes[])", "(int64,int64,int64[])");
     private final MintDecoder decoder;
@@ -52,12 +51,11 @@ public class MintTranslator extends AbstractHtsCallTranslator {
      */
     @Override
     public boolean matches(@NonNull final HtsCallAttempt attempt) {
-        return Arrays.equals(attempt.selector(), MintTranslator.MINT.selector())
-                || Arrays.equals(attempt.selector(), MintTranslator.MINT_V2.selector());
+        return attempt.isSelector(MINT, MINT_V2);
     }
 
     @Override
-    public HtsCall callFrom(@NonNull final HtsCallAttempt attempt) {
+    public Call callFrom(@NonNull final HtsCallAttempt attempt) {
         final var body = bodyForClassic(attempt);
         final var isFungibleMint = body.tokenMintOrThrow().metadata().isEmpty();
         return new DispatchForResponseCodeHtsCall(
@@ -84,7 +82,7 @@ public class MintTranslator extends AbstractHtsCallTranslator {
     }
 
     private TransactionBody bodyForClassic(@NonNull final HtsCallAttempt attempt) {
-        if (Arrays.equals(attempt.selector(), MintTranslator.MINT.selector())) {
+        if (attempt.isSelector(MINT)) {
             return decoder.decodeMint(attempt);
         } else {
             return decoder.decodeMintV2(attempt);

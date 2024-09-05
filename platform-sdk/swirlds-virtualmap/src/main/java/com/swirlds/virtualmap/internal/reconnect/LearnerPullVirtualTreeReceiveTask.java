@@ -97,6 +97,7 @@ public class LearnerPullVirtualTreeReceiveTask {
                     final PullVirtualTreeResponse response = new PullVirtualTreeResponse(view);
                     // the learner tree is notified about the new response in deserialize() method below
                     response.deserialize(in, 0);
+                    view.getMapStats().incrementTransfersFromTeacher();
                     logger.debug(RECONNECT.getMarker(), "Learner receive path: " + response.getPath());
                     if (response.getPath() == 0) {
                         rootResponseReceived.countDown();

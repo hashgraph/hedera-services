@@ -67,7 +67,7 @@ public class FCQueue<E extends FastCopyable & SerializableHashable> extends Part
          */
         public static final int ORIGINAL = 1;
         /**
-         * FCQ implements MerkleLeaf, element implements FastCopyable & SerializableHashable
+         * FCQ implements MerkleLeaf, element implements FastCopyable and SerializableHashable
          */
         public static final int MIGRATE_TO_SERIALIZABLE = 2;
 
@@ -88,8 +88,10 @@ public class FCQueue<E extends FastCopyable & SerializableHashable> extends Part
 
     private static final long HASH_RADIX = 3;
 
+    /** The bytes of a NULL_HASH */
+    private static final byte[] NULL_HASH_BYTES = new byte[DIGEST_TYPE.digestLength()];
     /** A hash value representing a null element or a destroyed queue */
-    private static final ImmutableHash NULL_HASH = new ImmutableHash(new byte[DIGEST_TYPE.digestLength()]);
+    private static final ImmutableHash NULL_HASH = new ImmutableHash(NULL_HASH_BYTES);
 
     /** the number of elements in this queue */
     private int size;
@@ -801,12 +803,12 @@ public class FCQueue<E extends FastCopyable & SerializableHashable> extends Part
     byte[] getHash(final E element) {
         // Handle cases where list methods return null if the list is empty
         if (element == null) {
-            return NULL_HASH.getValue();
+            return NULL_HASH_BYTES;
         }
         final Cryptography crypto = CryptographyHolder.get();
         // return a hash of a hash, in order to make state proofs smaller in the future
         crypto.digestSync(element);
-        return crypto.digestSync(element.getHash()).getValue();
+        return crypto.digestBytesSync(element.getHash(), DigestType.SHA_384);
     }
 
     @Override

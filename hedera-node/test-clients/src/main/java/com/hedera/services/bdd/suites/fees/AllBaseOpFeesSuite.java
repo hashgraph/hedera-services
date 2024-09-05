@@ -16,50 +16,84 @@
 
 package com.hedera.services.bdd.suites.fees;
 
+import static com.hedera.services.bdd.junit.TestTags.TOKEN;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.keys.ControlForKey.forKey;
+import static com.hedera.services.bdd.spec.keys.KeyLabels.complex;
 import static com.hedera.services.bdd.spec.keys.KeyShape.listOf;
+import static com.hedera.services.bdd.spec.keys.SigControl.ANY;
+import static com.hedera.services.bdd.spec.keys.SigControl.OFF;
+import static com.hedera.services.bdd.spec.keys.SigControl.ON;
+import static com.hedera.services.bdd.spec.keys.SigControl.threshSigs;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountRecords;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.burnToken;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createTopic;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.submitMessageTo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenFreeze;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenReject;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUnfreeze;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.wipeTokenAccount;
+import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
+import static com.hedera.services.bdd.spec.transactions.token.HapiTokenReject.rejectingNFT;
+import static com.hedera.services.bdd.spec.transactions.token.HapiTokenReject.rejectingToken;
+import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
+import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.assertionsHold;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsdWithin;
+import static com.hedera.services.bdd.suites.HapiSuite.FUNDING;
+import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_MILLION_HBARS;
+import static com.hedera.services.bdd.suites.HapiSuite.THREE_MONTHS_IN_SECONDS;
+import static com.hedera.services.bdd.suites.HapiSuite.TOKEN_TREASURY;
 import static com.hedera.services.bdd.suites.utils.MiscEETUtils.metadata;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.spec.HapiSpec;
-import com.hedera.services.bdd.suites.HapiSuite;
+import com.hedera.services.bdd.spec.keys.KeyLabels;
+import com.hedera.services.bdd.spec.keys.SigControl;
+import com.hedera.services.bdd.spec.queries.QueryVerbs;
+import com.hedera.services.bdd.spec.transactions.TxnUtils;
+import com.hederahashgraph.api.proto.java.AccountAmount;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
+import com.hederahashgraph.api.proto.java.TokenType;
+import com.hederahashgraph.api.proto.java.TransactionRecord;
 import java.time.Instant;
 import java.util.List;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import java.util.stream.Stream;
+import org.junit.jupiter.api.DynamicTest;
+import org.junit.jupiter.api.Tag;
 
-@HapiTestSuite
-public class AllBaseOpFeesSuite extends HapiSuite {
-    private static final Logger log = LogManager.getLogger(AllBaseOpFeesSuite.class);
-
+@Tag(TOKEN)
+public class AllBaseOpFeesSuite {
+    private static final String PAYER = "payer";
     private static final double ALLOWED_DIFFERENCE_PERCENTAGE = 0.01;
+    private static final double ALLOWED_DIFFERENCE = 1;
 
     private static final String TREASURE_KEY = "treasureKey";
     private static final String FUNGIBLE_COMMON_TOKEN = "fungibleCommonToken";
 
     private static final String ADMIN_KEY = "adminKey";
+    private static final String MULTI_KEY = "multiKey";
     private static final String SUPPLY_KEY = "supplyKey";
     private static final String FREEZE_KEY = "freezeKey";
     private static final String WIPE_KEY = "wipeKey";
     private static final String KYC_KEY = "kycKey";
 
     private static final String CIVILIAN_ACCT = "civilian";
+    private static final String ALICE = "alice";
 
     private static final String UNIQUE_TOKEN = "nftType";
 
@@ -67,30 +101,17 @@ public class AllBaseOpFeesSuite extends HapiSuite {
 
     private static final String UNFREEZE = "unfreeze";
 
+    private static final double EXPECTED_FUNGIBLE_REJECT_PRICE_USD = 0.001;
+    private static final double EXPECTED_NFT_REJECT_PRICE_USD = 0.00100245;
+    private static final double EXPECTED_MIX_REJECT_PRICE_USD = 0.00375498;
     private static final double EXPECTED_UNFREEZE_PRICE_USD = 0.001;
     private static final double EXPECTED_FREEZE_PRICE_USD = 0.001;
     private static final double EXPECTED_NFT_MINT_PRICE_USD = 0.02;
     private static final double EXPECTED_NFT_BURN_PRICE_USD = 0.001;
     private static final double EXPECTED_NFT_WIPE_PRICE_USD = 0.001;
 
-    public static void main(String... args) {
-        new AllBaseOpFeesSuite().runSuiteSync();
-    }
-
-    @Override
-    public List<HapiSpec> getSpecsInSuite() {
-        return allOf(List.of(
-                baseNftFreezeUnfreezeChargedAsExpected(),
-                baseCommonFreezeUnfreezeChargedAsExpected(),
-                baseNftMintOperationIsChargedExpectedFee(),
-                baseNftWipeOperationIsChargedExpectedFee(),
-                baseNftBurnOperationIsChargedExpectedFee(),
-                NftMintsScaleLinearlyBasedOnNumberOfSerialNumbers(),
-                NftMintsScaleLinearlyBasedOnNumberOfSignatures()));
-    }
-
     @HapiTest
-    final HapiSpec baseNftMintOperationIsChargedExpectedFee() {
+    final Stream<DynamicTest> baseNftMintOperationIsChargedExpectedFee() {
         final var standard100ByteMetadata = ByteString.copyFromUtf8(
                 "0123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789");
 
@@ -113,7 +134,7 @@ public class AllBaseOpFeesSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec NftMintsScaleLinearlyBasedOnNumberOfSerialNumbers() {
+    final Stream<DynamicTest> NftMintsScaleLinearlyBasedOnNumberOfSerialNumbers() {
         final var expectedFee = 10 * EXPECTED_NFT_MINT_PRICE_USD;
         final var standard100ByteMetadata = ByteString.copyFromUtf8(
                 "0123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789");
@@ -149,7 +170,7 @@ public class AllBaseOpFeesSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec NftMintsScaleLinearlyBasedOnNumberOfSignatures() {
+    final Stream<DynamicTest> NftMintsScaleLinearlyBasedOnNumberOfSignatures() {
         final var numOfSigs = 10;
         final var extraSigPrice = 0.0006016996;
         final var expectedFee = EXPECTED_NFT_MINT_PRICE_USD + ((numOfSigs - 1) * extraSigPrice);
@@ -175,7 +196,7 @@ public class AllBaseOpFeesSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec baseNftWipeOperationIsChargedExpectedFee() {
+    final Stream<DynamicTest> baseNftWipeOperationIsChargedExpectedFee() {
         return defaultHapiSpec("BaseUniqueWipeOperationIsChargedExpectedFee")
                 .given(
                         newKeyNamed(SUPPLY_KEY),
@@ -201,7 +222,7 @@ public class AllBaseOpFeesSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec baseNftBurnOperationIsChargedExpectedFee() {
+    final Stream<DynamicTest> baseNftBurnOperationIsChargedExpectedFee() {
         return defaultHapiSpec("BaseUniqueBurnOperationIsChargedExpectedFee")
                 .given(
                         newKeyNamed(SUPPLY_KEY),
@@ -222,7 +243,64 @@ public class AllBaseOpFeesSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec baseNftFreezeUnfreezeChargedAsExpected() {
+    final Stream<DynamicTest> baseCommonTokenRejectChargedAsExpected() {
+        return defaultHapiSpec("baseCommonTokenRejectChargedAsExpected")
+                .given(
+                        newKeyNamed(MULTI_KEY),
+                        cryptoCreate(TOKEN_TREASURY).balance(ONE_HUNDRED_HBARS),
+                        cryptoCreate(ALICE).balance(ONE_HUNDRED_HBARS),
+                        tokenCreate(FUNGIBLE_COMMON_TOKEN)
+                                .initialSupply(1000L)
+                                .adminKey(MULTI_KEY)
+                                .supplyKey(MULTI_KEY)
+                                .treasury(TOKEN_TREASURY),
+                        tokenCreate(UNIQUE_TOKEN)
+                                .initialSupply(0)
+                                .adminKey(MULTI_KEY)
+                                .supplyKey(MULTI_KEY)
+                                .treasury(TOKEN_TREASURY)
+                                .tokenType(TokenType.NON_FUNGIBLE_UNIQUE),
+                        mintToken(
+                                UNIQUE_TOKEN,
+                                List.of(
+                                        metadata("nemo the fish"),
+                                        metadata("garfield the cat"),
+                                        metadata("snoopy the dog"))),
+                        tokenAssociate(ALICE, FUNGIBLE_COMMON_TOKEN, UNIQUE_TOKEN),
+                        cryptoTransfer(movingUnique(UNIQUE_TOKEN, 1L).between(TOKEN_TREASURY, ALICE))
+                                .payingWith(TOKEN_TREASURY)
+                                .via("nftTransfer"),
+                        cryptoTransfer(moving(100, FUNGIBLE_COMMON_TOKEN).between(TOKEN_TREASURY, ALICE))
+                                .payingWith(TOKEN_TREASURY)
+                                .via("fungibleTransfer"))
+                .when(
+                        tokenReject(rejectingToken(FUNGIBLE_COMMON_TOKEN))
+                                .payingWith(ALICE)
+                                .via("rejectFungible"),
+                        tokenReject(rejectingNFT(UNIQUE_TOKEN, 1))
+                                .payingWith(ALICE)
+                                .via("rejectNft"),
+                        cryptoTransfer(
+                                        movingUnique(UNIQUE_TOKEN, 1L).between(TOKEN_TREASURY, ALICE),
+                                        moving(100, FUNGIBLE_COMMON_TOKEN).between(TOKEN_TREASURY, ALICE))
+                                .payingWith(ALICE)
+                                .via("transferMix"),
+                        tokenReject(ALICE, rejectingNFT(UNIQUE_TOKEN, 1), rejectingToken(FUNGIBLE_COMMON_TOKEN))
+                                .payingWith(TOKEN_TREASURY)
+                                .via("rejectMix"))
+                .then(
+                        validateChargedUsdWithin(
+                                "fungibleTransfer", EXPECTED_FUNGIBLE_REJECT_PRICE_USD, ALLOWED_DIFFERENCE),
+                        validateChargedUsdWithin("nftTransfer", EXPECTED_NFT_REJECT_PRICE_USD, ALLOWED_DIFFERENCE),
+                        validateChargedUsdWithin("transferMix", EXPECTED_MIX_REJECT_PRICE_USD, ALLOWED_DIFFERENCE),
+                        validateChargedUsdWithin(
+                                "rejectFungible", EXPECTED_FUNGIBLE_REJECT_PRICE_USD, ALLOWED_DIFFERENCE),
+                        validateChargedUsdWithin("rejectNft", EXPECTED_NFT_REJECT_PRICE_USD, ALLOWED_DIFFERENCE),
+                        validateChargedUsdWithin("rejectMix", EXPECTED_MIX_REJECT_PRICE_USD, ALLOWED_DIFFERENCE));
+    }
+
+    @HapiTest
+    final Stream<DynamicTest> baseNftFreezeUnfreezeChargedAsExpected() {
         return defaultHapiSpec("baseNftFreezeUnfreezeChargedAsExpected")
                 .given(
                         newKeyNamed(TREASURE_KEY),
@@ -260,7 +338,7 @@ public class AllBaseOpFeesSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec baseCommonFreezeUnfreezeChargedAsExpected() {
+    final Stream<DynamicTest> baseCommonFreezeUnfreezeChargedAsExpected() {
         return defaultHapiSpec("baseCommonFreezeUnfreezeChargedAsExpected")
                 .given(
                         newKeyNamed(TREASURE_KEY),
@@ -295,8 +373,55 @@ public class AllBaseOpFeesSuite extends HapiSuite {
                         validateChargedUsdWithin(UNFREEZE, EXPECTED_UNFREEZE_PRICE_USD, ALLOWED_DIFFERENCE_PERCENTAGE));
     }
 
-    @Override
-    protected Logger getResultsLogger() {
-        return log;
+    @HapiTest
+    final Stream<DynamicTest> feeCalcUsesNumPayerKeys() {
+        SigControl SHAPE = threshSigs(2, threshSigs(2, ANY, ANY, ANY), threshSigs(2, ANY, ANY, ANY));
+        KeyLabels ONE_UNIQUE_KEY = complex(complex("X", "X", "X"), complex("X", "X", "X"));
+        SigControl SIGN_ONCE = threshSigs(2, threshSigs(3, ON, OFF, OFF), threshSigs(3, OFF, OFF, OFF));
+
+        return defaultHapiSpec("PayerSigRedundancyRecognized")
+                .given(
+                        newKeyNamed("repeatingKey").shape(SHAPE).labels(ONE_UNIQUE_KEY),
+                        cryptoCreate("testAccount").key("repeatingKey").balance(1_000_000_000L))
+                .when()
+                .then(
+                        QueryVerbs.getAccountInfo("testAccount")
+                                .sigControl(forKey("repeatingKey", SIGN_ONCE))
+                                .payingWith("testAccount")
+                                .numPayerSigs(5)
+                                .hasAnswerOnlyPrecheck(INSUFFICIENT_TX_FEE),
+                        QueryVerbs.getAccountInfo("testAccount")
+                                .sigControl(forKey("repeatingKey", SIGN_ONCE))
+                                .payingWith("testAccount")
+                                .numPayerSigs(6));
+    }
+
+    @HapiTest
+    final Stream<DynamicTest> payerRecordCreationSanityChecks() {
+        return defaultHapiSpec("PayerRecordCreationSanityChecks")
+                .given(cryptoCreate(PAYER))
+                .when(
+                        createTopic("ofGeneralInterest").payingWith(PAYER),
+                        cryptoTransfer(tinyBarsFromTo(GENESIS, FUNDING, 1_000L)).payingWith(PAYER),
+                        submitMessageTo("ofGeneralInterest").message("I say!").payingWith(PAYER))
+                .then(assertionsHold((spec, opLog) -> {
+                    final var payerId = spec.registry().getAccountID(PAYER);
+                    final var subOp = getAccountRecords(PAYER).logged();
+                    allRunFor(spec, subOp);
+                    final var records = subOp.getResponse().getCryptoGetAccountRecords().getRecordsList().stream()
+                            .filter(TxnUtils::isNotEndOfStakingPeriodRecord)
+                            .toList();
+                    assertEquals(3, records.size());
+                    for (var record : records) {
+                        assertEquals(record.getTransactionFee(), -netChangeIn(record, payerId));
+                    }
+                }));
+    }
+
+    private long netChangeIn(TransactionRecord record, AccountID id) {
+        return record.getTransferList().getAccountAmountsList().stream()
+                .filter(aa -> id.equals(aa.getAccountID()))
+                .mapToLong(AccountAmount::getAmount)
+                .sum();
     }
 }

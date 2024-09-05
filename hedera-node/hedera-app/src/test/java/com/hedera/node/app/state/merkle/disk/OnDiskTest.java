@@ -16,27 +16,35 @@
 
 package com.hedera.node.app.state.merkle.disk;
 
+import static com.hedera.node.app.fixtures.AppTestBase.DEFAULT_CONFIG;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.state.token.Account;
-import com.hedera.node.app.spi.state.Schema;
-import com.hedera.node.app.spi.state.StateDefinition;
-import com.hedera.node.app.spi.workflows.record.GenesisRecordsBuilder;
 import com.hedera.node.app.state.merkle.MerkleSchemaRegistry;
-import com.hedera.node.app.state.merkle.MerkleTestBase;
-import com.hedera.node.app.state.merkle.StateMetadata;
-import com.hedera.node.app.state.merkle.StateUtils;
+import com.hedera.node.app.state.merkle.SchemaApplications;
 import com.hedera.node.config.data.HederaConfig;
 import com.swirlds.common.crypto.DigestType;
-import com.swirlds.common.io.utility.TemporaryFileBuilder;
+import com.swirlds.common.io.utility.LegacyTemporaryFileBuilder;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.merkledb.MerkleDbDataSourceBuilder;
 import com.swirlds.merkledb.MerkleDbTableConfig;
+import com.swirlds.platform.test.fixtures.state.MerkleTestBase;
+import com.swirlds.state.merkle.StateUtils;
+import com.swirlds.state.merkle.disk.OnDiskKey;
+import com.swirlds.state.merkle.disk.OnDiskKeySerializer;
+import com.swirlds.state.merkle.disk.OnDiskReadableKVState;
+import com.swirlds.state.merkle.disk.OnDiskValue;
+import com.swirlds.state.merkle.disk.OnDiskValueSerializer;
+import com.swirlds.state.merkle.disk.OnDiskWritableKVState;
+import com.swirlds.state.spi.Schema;
+import com.swirlds.state.spi.StateDefinition;
 import com.swirlds.virtualmap.VirtualMap;
 import com.swirlds.virtualmap.internal.merkle.VirtualRootNode;
+import com.swirlds.virtualmap.serialize.KeySerializer;
+import com.swirlds.virtualmap.serialize.ValueSerializer;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -56,14 +64,12 @@ class OnDiskTest extends MerkleTestBase {
 
     private Schema schema;
     private StateDefinition<AccountID, Account> def;
-    private StateMetadata<AccountID, Account> md;
     private VirtualMap<OnDiskKey<AccountID>, OnDiskValue<Account>> virtualMap;
-    private Configuration config;
 
     @BeforeEach
     void setUp() throws IOException {
         setupConstructableRegistry();
-        final Path storageDir = TemporaryFileBuilder.buildTemporaryDirectory();
+        final Path storageDir = LegacyTemporaryFileBuilder.buildTemporaryDirectory();
 
         def = StateDefinition.onDisk(ACCOUNT_STATE_KEY, AccountID.PROTOBUF, Account.PROTOBUF, 100);
 
@@ -76,25 +82,26 @@ class OnDiskTest extends MerkleTestBase {
             }
         };
 
-        md = new StateMetadata<>(SERVICE_NAME, schema, def);
-
-        final var tableConfig = new MerkleDbTableConfig<>(
-                (short) 1,
-                DigestType.SHA_384,
-                (short) 1,
-                new OnDiskKeySerializer<>(md),
-                (short) 1,
-                new OnDiskValueSerializer<>(md));
+        final KeySerializer<OnDiskKey<AccountID>> keySerializer = new OnDiskKeySerializer<>(
+                onDiskKeySerializerClassId(SERVICE_NAME, ACCOUNT_STATE_KEY),
+                onDiskKeyClassId(SERVICE_NAME, ACCOUNT_STATE_KEY),
+                AccountID.PROTOBUF);
+        final ValueSerializer<OnDiskValue<Account>> valueSerializer = new OnDiskValueSerializer<>(
+                onDiskValueSerializerClassId(SERVICE_NAME, ACCOUNT_STATE_KEY),
+                onDiskValueClassId(SERVICE_NAME, ACCOUNT_STATE_KEY),
+                Account.PROTOBUF);
+        final var tableConfig = new MerkleDbTableConfig((short) 1, DigestType.SHA_384);
         // Force all hashes to disk, to make sure we're going through all the
         // serialization paths we can
         tableConfig.hashesRamToDiskThreshold(0);
         tableConfig.maxNumberOfKeys(100);
         tableConfig.preferDiskIndices(true);
 
-        final var builder = new MerkleDbDataSourceBuilder<>(storageDir, tableConfig);
-        virtualMap = new VirtualMap<>(StateUtils.computeLabel(SERVICE_NAME, ACCOUNT_STATE_KEY), builder);
+        final var builder = new MerkleDbDataSourceBuilder(storageDir, tableConfig);
+        virtualMap = new VirtualMap<>(
+                StateUtils.computeLabel(SERVICE_NAME, ACCOUNT_STATE_KEY), keySerializer, valueSerializer, builder);
 
-        this.config = mock(Configuration.class);
+        Configuration config = mock(Configuration.class);
         final var hederaConfig = mock(HederaConfig.class);
         lenient().when(config.getConfigData(HederaConfig.class)).thenReturn(hederaConfig);
     }
@@ -124,7 +131,13 @@ class OnDiskTest extends MerkleTestBase {
     @Test
     void populateTheMapAndFlushToDiskAndReadBack() throws IOException {
         // Populate the data set and flush it all to disk
-        final var ws = new OnDiskWritableKVState<>(md, virtualMap);
+        final var ws = new OnDiskWritableKVState<>(
+                ACCOUNT_STATE_KEY,
+                onDiskKeyClassId(SERVICE_NAME, ACCOUNT_STATE_KEY),
+                AccountID.PROTOBUF,
+                onDiskValueClassId(SERVICE_NAME, ACCOUNT_STATE_KEY),
+                Account.PROTOBUF,
+                virtualMap);
         for (int i = 0; i < 10; i++) {
             final var id = AccountID.newBuilder().accountNum(i).build();
             final var acct = Account.newBuilder()
@@ -144,17 +157,18 @@ class OnDiskTest extends MerkleTestBase {
         virtualMap.copy(); // throw away the copy, we won't use it
         CRYPTO.digestTreeSync(virtualMap);
 
-        final var snapshotDir = TemporaryFileBuilder.buildTemporaryDirectory("snapshot");
+        final var snapshotDir = LegacyTemporaryFileBuilder.buildTemporaryDirectory("snapshot");
         final byte[] serializedBytes = writeTree(virtualMap, snapshotDir);
 
         // Before we can read the data back, we need to register the data types
         // I plan to deserialize.
-        final var r = new MerkleSchemaRegistry(registry, SERVICE_NAME, mock(GenesisRecordsBuilder.class));
+        final var r = new MerkleSchemaRegistry(registry, SERVICE_NAME, DEFAULT_CONFIG, new SchemaApplications());
         r.register(schema);
 
         // read it back now as our map and validate the data come back fine
         virtualMap = parseTree(serializedBytes, snapshotDir);
-        final var rs = new OnDiskReadableKVState<>(md, virtualMap);
+        final var rs = new OnDiskReadableKVState<>(
+                ACCOUNT_STATE_KEY, onDiskKeyClassId(SERVICE_NAME, ACCOUNT_STATE_KEY), AccountID.PROTOBUF, virtualMap);
         for (int i = 0; i < 10; i++) {
             final var id = AccountID.newBuilder().accountNum(i).build();
             final var acct = rs.get(id);
@@ -167,7 +181,13 @@ class OnDiskTest extends MerkleTestBase {
 
     @Test
     void populateFlushToDisk() {
-        final var ws = new OnDiskWritableKVState<>(md, virtualMap);
+        final var ws = new OnDiskWritableKVState<>(
+                ACCOUNT_STATE_KEY,
+                onDiskKeyClassId(SERVICE_NAME, ACCOUNT_STATE_KEY),
+                AccountID.PROTOBUF,
+                onDiskValueClassId(SERVICE_NAME, ACCOUNT_STATE_KEY),
+                Account.PROTOBUF,
+                virtualMap);
         for (int i = 1; i < 10; i++) {
             final var id = AccountID.newBuilder().accountNum(i).build();
             final var acct = Account.newBuilder()
@@ -180,7 +200,8 @@ class OnDiskTest extends MerkleTestBase {
         ws.commit();
         virtualMap = copyHashAndFlush(virtualMap);
 
-        final var rs = new OnDiskReadableKVState<>(md, virtualMap);
+        final var rs = new OnDiskReadableKVState<>(
+                ACCOUNT_STATE_KEY, onDiskKeyClassId(SERVICE_NAME, ACCOUNT_STATE_KEY), AccountID.PROTOBUF, virtualMap);
         for (int i = 1; i < 10; i++) {
             final var id = AccountID.newBuilder().accountNum(i).build();
             final var acct = rs.get(id);
@@ -193,7 +214,7 @@ class OnDiskTest extends MerkleTestBase {
 
     @Test
     void toStringWorks() {
-        final var key = new OnDiskKey<>(md);
+        final var key = new OnDiskKey<>(onDiskKeyClassId(SERVICE_NAME, ACCOUNT_STATE_KEY), AccountID.PROTOBUF);
         final var string = key.toString();
         assertThat(string).isEqualTo("OnDiskKey{key=null}");
     }

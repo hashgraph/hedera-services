@@ -20,15 +20,14 @@ import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.fr
 import static java.util.Objects.requireNonNull;
 
 import com.esaulpaugh.headlong.abi.Function;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AbstractHtsCallTranslator;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCall;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.AbstractCallTranslator;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.Call;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.Arrays;
 import javax.inject.Inject;
 
-public class NftTokenInfoTranslator extends AbstractHtsCallTranslator {
+public class NftTokenInfoTranslator extends AbstractCallTranslator<HtsCallAttempt> {
 
     public static final Function NON_FUNGIBLE_TOKEN_INFO =
             new Function("getNonFungibleTokenInfo(address,int64)", ReturnTypes.RESPONSE_CODE_NON_FUNGIBLE_TOKEN_INFO);
@@ -44,14 +43,14 @@ public class NftTokenInfoTranslator extends AbstractHtsCallTranslator {
     @Override
     public boolean matches(@NonNull final HtsCallAttempt attempt) {
         requireNonNull(attempt);
-        return Arrays.equals(attempt.selector(), NON_FUNGIBLE_TOKEN_INFO.selector());
+        return attempt.isSelector(NON_FUNGIBLE_TOKEN_INFO);
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public HtsCall callFrom(@NonNull final HtsCallAttempt attempt) {
+    public Call callFrom(@NonNull final HtsCallAttempt attempt) {
         requireNonNull(attempt);
         final var args = NON_FUNGIBLE_TOKEN_INFO.decodeCall(attempt.input().toArrayUnsafe());
         final var token = attempt.linkedToken(fromHeadlongAddress(args.get(0)));

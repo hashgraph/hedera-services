@@ -67,7 +67,7 @@ public class GrantApprovalDecoder {
                 .tokenAllowances(TokenAllowance.newBuilder()
                         .tokenId(ConversionUtils.asTokenId(token))
                         .spender(addressIdConverter.convert(spender))
-                        .amount(amount.longValue())
+                        .amount(amount.longValueExact())
                         .build())
                 .build();
     }

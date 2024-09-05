@@ -17,7 +17,7 @@
 package com.swirlds.platform.state.signed;
 
 import com.swirlds.common.crypto.Hash;
-import com.swirlds.platform.state.PlatformState;
+import com.swirlds.platform.state.PlatformStateAccessor;
 import com.swirlds.platform.system.address.AddressBook;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -34,23 +34,20 @@ import java.time.Instant;
  * 		The address book hash value for the current address book (mostly used for diagnostics).
  * @param consensusEventsRunningHash
  * 		The running hash of the consensus event hashes throughout history
- * @param epochHash
- * 		The epoch hash from an earlier state.
  */
 public record SignedStateValidationData(
         long round,
         @NonNull Instant consensusTimestamp,
         @Nullable Hash addressBookHash,
-        @NonNull Hash consensusEventsRunningHash,
-        @Nullable Hash epochHash) {
+        @NonNull Hash consensusEventsRunningHash) {
 
-    public SignedStateValidationData(@NonNull final PlatformState that, @Nullable final AddressBook addressBook) {
+    public SignedStateValidationData(
+            @NonNull final PlatformStateAccessor that, @Nullable final AddressBook addressBook) {
         this(
                 that.getRound(),
                 that.getConsensusTimestamp(),
                 addressBook == null ? null : addressBook.getHash(),
-                that.getLegacyRunningEventHash(),
-                that.getEpochHash());
+                that.getLegacyRunningEventHash());
     }
 
     /**
@@ -69,8 +66,6 @@ public record SignedStateValidationData(
                 .append(consensusEventsRunningHash)
                 .append(", address book hash = ")
                 .append(addressBookHash != null ? addressBookHash : "not provided")
-                .append(", epoch hash = ")
-                .append(epochHash)
                 .toString();
     }
 }

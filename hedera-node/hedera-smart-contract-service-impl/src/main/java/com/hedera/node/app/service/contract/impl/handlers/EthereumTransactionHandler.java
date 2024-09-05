@@ -17,27 +17,31 @@
 package com.hedera.node.app.service.contract.impl.handlers;
 
 import static com.hedera.hapi.node.base.HederaFunctionality.ETHEREUM_TRANSACTION;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_GAS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ETHEREUM_TRANSACTION;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
+import static com.hedera.node.app.hapi.utils.CommonPbjConverters.fromPbj;
+import static com.hedera.node.app.hapi.utils.ethereum.EthTxData.populateEthTxData;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.throwIfUnsuccessful;
-import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
+import static com.hedera.node.app.spi.workflows.PreCheckException.validateFalsePreCheck;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateTruePreCheck;
+import static java.util.Objects.nonNull;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.contract.EthereumTransactionBody;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.hapi.utils.ethereum.EthTxSigs;
 import com.hedera.node.app.hapi.utils.fee.SmartContractFeeBuilder;
-import com.hedera.node.app.service.contract.impl.exec.CallOutcome.ExternalizeAbortResult;
 import com.hedera.node.app.service.contract.impl.exec.TransactionComponent;
 import com.hedera.node.app.service.contract.impl.infra.EthTxSigsCache;
 import com.hedera.node.app.service.contract.impl.infra.EthereumCallDataHydration;
-import com.hedera.node.app.service.contract.impl.records.ContractCallRecordBuilder;
-import com.hedera.node.app.service.contract.impl.records.ContractCreateRecordBuilder;
-import com.hedera.node.app.service.contract.impl.records.EthereumTransactionRecordBuilder;
+import com.hedera.node.app.service.contract.impl.records.ContractCallStreamBuilder;
+import com.hedera.node.app.service.contract.impl.records.ContractCreateStreamBuilder;
+import com.hedera.node.app.service.contract.impl.records.EthereumTransactionStreamBuilder;
 import com.hedera.node.app.service.file.ReadableFileStore;
-import com.hedera.node.app.service.mono.fees.calculation.ethereum.txns.EthereumTransactionResourceUsage;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -50,28 +54,35 @@ import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.math.BigInteger;
+import java.util.Arrays;
 import javax.inject.Inject;
 import javax.inject.Provider;
 import javax.inject.Singleton;
+import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 
 /**
- * This class contains all workflow-related functionality regarding {@link
- * HederaFunctionality#ETHEREUM_TRANSACTION}.
+ * This class contains all workflow-related functionality regarding {@link HederaFunctionality#ETHEREUM_TRANSACTION}.
  */
 @Singleton
 public class EthereumTransactionHandler implements TransactionHandler {
+    private final byte[] EMPTY_ADDRESS = new byte[20];
     private final EthTxSigsCache ethereumSignatures;
     private final EthereumCallDataHydration callDataHydration;
     private final Provider<TransactionComponent.Factory> provider;
+    private final GasCalculator gasCalculator;
+    private final SmartContractFeeBuilder usageEstimator = new SmartContractFeeBuilder();
 
     @Inject
     public EthereumTransactionHandler(
             @NonNull final EthTxSigsCache ethereumSignatures,
             @NonNull final EthereumCallDataHydration callDataHydration,
-            @NonNull final Provider<TransactionComponent.Factory> provider) {
+            @NonNull final Provider<TransactionComponent.Factory> provider,
+            @NonNull final GasCalculator gasCalculator) {
         this.ethereumSignatures = requireNonNull(ethereumSignatures);
         this.callDataHydration = requireNonNull(callDataHydration);
         this.provider = requireNonNull(provider);
+        this.gasCalculator = requireNonNull(gasCalculator);
     }
 
     @Override
@@ -82,6 +93,21 @@ public class EthereumTransactionHandler implements TransactionHandler {
                 context.body().ethereumTransactionOrThrow(),
                 context.createStore(ReadableFileStore.class),
                 context.configuration());
+    }
+
+    @Override
+    public void pureChecks(@NonNull final TransactionBody txn) throws PreCheckException {
+        final var ethTxData = populateEthTxData(
+                requireNonNull(txn.ethereumTransactionOrThrow().ethereumData()).toByteArray());
+        validateTruePreCheck(nonNull(ethTxData), INVALID_ETHEREUM_TRANSACTION);
+        final byte[] callData = ethTxData.hasCallData() ? ethTxData.callData() : new byte[0];
+        final var intrinsicGas =
+                gasCalculator.transactionIntrinsicGasCost(org.apache.tuweni.bytes.Bytes.wrap(callData), false);
+        validateTruePreCheck(ethTxData.gasLimit() >= intrinsicGas, INSUFFICIENT_GAS);
+        // Do not allow sending HBars to Burn Address
+        if (ethTxData.value().compareTo(BigInteger.ZERO) > 0) {
+            validateFalsePreCheck(Arrays.equals(ethTxData.to(), EMPTY_ADDRESS), INVALID_SOLIDITY_ADDRESS);
+        }
     }
 
     /**
@@ -97,6 +123,9 @@ public class EthereumTransactionHandler implements TransactionHandler {
             @NonNull final EthereumTransactionBody op,
             @NonNull final ReadableFileStore fileStore,
             @NonNull final Configuration config) {
+        requireNonNull(op);
+        requireNonNull(config);
+        requireNonNull(fileStore);
         try {
             return computeEthTxSigsFor(op, fileStore, config);
         } catch (PreCheckException ignore) {
@@ -115,17 +144,29 @@ public class EthereumTransactionHandler implements TransactionHandler {
         // Assemble the appropriate top-level record for the result
         final var ethTxData =
                 requireNonNull(requireNonNull(component.hydratedEthTxData()).ethTxData());
-        context.recordBuilder(EthereumTransactionRecordBuilder.class)
+        context.savepointStack()
+                .getBaseBuilder(EthereumTransactionStreamBuilder.class)
                 .ethereumHash(Bytes.wrap(ethTxData.getEthereumHash()));
         if (ethTxData.hasToAddress()) {
-            outcome.addCallDetailsTo(
-                    context.recordBuilder(ContractCallRecordBuilder.class), ExternalizeAbortResult.YES);
+            outcome.addCallDetailsTo(context.savepointStack().getBaseBuilder(ContractCallStreamBuilder.class));
         } else {
-            outcome.addCreateDetailsTo(
-                    context.recordBuilder(ContractCreateRecordBuilder.class), ExternalizeAbortResult.YES);
+            outcome.addCreateDetailsTo(context.savepointStack().getBaseBuilder(ContractCreateStreamBuilder.class));
         }
 
         throwIfUnsuccessful(outcome.status());
+    }
+
+    /**
+     * Does work needed to externalize details after an Ethereum transaction is throttled.
+     * @param context the handle context
+     */
+    public void handleThrottled(@NonNull final HandleContext context) {
+        final var component = provider.get().create(context, ETHEREUM_TRANSACTION);
+        final var ethTxData =
+                requireNonNull(requireNonNull(component.hydratedEthTxData()).ethTxData());
+        context.savepointStack()
+                .getBaseBuilder(EthereumTransactionStreamBuilder.class)
+                .ethereumHash(Bytes.wrap(ethTxData.getEthereumHash()));
     }
 
     @NonNull
@@ -134,9 +175,10 @@ public class EthereumTransactionHandler implements TransactionHandler {
         requireNonNull(feeContext);
         final var body = feeContext.body();
         return feeContext
+                .feeCalculatorFactory()
                 .feeCalculator(SubType.DEFAULT)
-                .legacyCalculate(sigValueObj -> new EthereumTransactionResourceUsage(new SmartContractFeeBuilder())
-                        .usageGiven(fromPbj(body), sigValueObj, null));
+                .legacyCalculate(
+                        sigValueObj -> usageEstimator.getEthereumTransactionFeeMatrices(fromPbj(body), sigValueObj));
     }
 
     private EthTxSigs computeEthTxSigsFor(

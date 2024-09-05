@@ -16,17 +16,19 @@
 
 package com.hedera.node.app.version;
 
-import static com.hedera.node.app.spi.HapiUtils.SEMANTIC_VERSION_COMPARATOR;
+import static com.swirlds.state.spi.HapiUtils.SEMANTIC_VERSION_COMPARATOR;
+import static com.swirlds.state.spi.HapiUtils.deserializeSemVer;
+import static com.swirlds.state.spi.HapiUtils.serializeSemVer;
 
 import com.hedera.hapi.node.base.SemanticVersion;
-import com.hedera.node.app.spi.HapiUtils;
+import com.hedera.hapi.util.HapiUtils;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.platform.system.SoftwareVersion;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
-import java.util.regex.Pattern;
+import java.util.Objects;
 
 /**
  * An implementation of {@link SoftwareVersion} which can be saved in state and holds information about the HAPI and
@@ -43,7 +45,6 @@ public class HederaSoftwareVersion implements SoftwareVersion {
     public static final long CLASS_ID = 0x6f2b1bc2df8cbd0cL;
     public static final int RELEASE_027_VERSION = 1;
     public static final int RELEASE_048_VERSION = 2;
-    public static final Pattern ALPHA_PRE_PATTERN = Pattern.compile("alpha[.](\\d+)");
 
     private int configVersion;
     private SemanticVersion hapiVersion;
@@ -59,19 +60,37 @@ public class HederaSoftwareVersion implements SoftwareVersion {
         // For ConstructableRegistry. Do not use.
     }
 
+    /**
+     * Constructs a new instance with the given versions.
+     * @param hapiVersion HAPI version
+     * @param servicesVersion services version
+     * @param configVersion config version
+     */
     public HederaSoftwareVersion(
-            final SemanticVersion hapiVersion, final SemanticVersion servicesVersion, final int configVersion) {
+            final SemanticVersion hapiVersion,
+            @NonNull final SemanticVersion servicesVersion,
+            final int configVersion) {
         this.hapiVersion = hapiVersion;
         this.configVersion = configVersion;
-        this.servicesVersion = servicesVersion;
+        this.servicesVersion = Objects.requireNonNull(servicesVersion, "servicesVersion must not be null");
+    }
+
+    public SemanticVersion servicesVersion() {
+        return servicesVersion;
+    }
+
+    public int configVersion() {
+        return configVersion;
+    }
+
+    @Override
+    @NonNull
+    public SemanticVersion getPbjSemanticVersion() {
+        return toUpgradeComparableSemVer(configVersion, servicesVersion);
     }
 
     public SemanticVersion getHapiVersion() {
         return hapiVersion;
-    }
-
-    public SemanticVersion getServicesVersion() {
-        return servicesVersion;
     }
 
     @Override
@@ -117,18 +136,6 @@ public class HederaSoftwareVersion implements SoftwareVersion {
         }
     }
 
-    private static SemanticVersion deserializeSemVer(final SerializableDataInputStream in) throws IOException {
-        final var ans = SemanticVersion.newBuilder();
-        ans.major(in.readInt()).minor(in.readInt()).patch(in.readInt());
-        if (in.readBoolean()) {
-            ans.pre(in.readNormalisedString(Integer.MAX_VALUE));
-        }
-        if (in.readBoolean()) {
-            ans.build(in.readNormalisedString(Integer.MAX_VALUE));
-        }
-        return ans.build();
-    }
-
     @Override
     public void serialize(SerializableDataOutputStream out) throws IOException {
         serializeSemVer(hapiVersion, out);
@@ -138,45 +145,21 @@ public class HederaSoftwareVersion implements SoftwareVersion {
         }
     }
 
-    private static void serializeSemVer(final SemanticVersion semVer, final SerializableDataOutputStream out)
-            throws IOException {
-        out.writeInt(semVer.major());
-        out.writeInt(semVer.minor());
-        out.writeInt(semVer.patch());
-        serializeIfUsed(semVer.pre(), out);
-        serializeIfUsed(semVer.build(), out);
-    }
-
-    private static void serializeIfUsed(final String semVerPart, final SerializableDataOutputStream out)
-            throws IOException {
-        if (semVerPart.isBlank()) {
-            out.writeBoolean(false);
-        } else {
-            out.writeBoolean(true);
-            out.writeNormalisedString(semVerPart);
-        }
-    }
-
-    public boolean isAfter(@Nullable final SoftwareVersion deserializedVersion) {
-        if (deserializedVersion == null) {
-            return true;
-        }
-        return compareTo(deserializedVersion) > 0;
-    }
-
-    public boolean isBefore(@Nullable final SoftwareVersion deserializedVersion) {
-        if (deserializedVersion == null) {
-            return false;
-        }
-        return compareTo(deserializedVersion) < 0;
-    }
-
     @Override
     public String toString() {
         // This is called by the platform when printing information on saved states to logs
         return "HederaSoftwareVersion{" + "hapiVersion="
                 + HapiUtils.toString(hapiVersion) + ", servicesVersion="
-                + HapiUtils.toString(servicesVersion) + (configVersion == 0 ? "" : "-c" + configVersion) + '}';
+                + readableServicesVersion() + '}';
+    }
+
+    /**
+     * Returns a readable form of the services version with the config version as the semver build part if non-zero.
+     *
+     * @return a readable form of the services version
+     */
+    public String readableServicesVersion() {
+        return HapiUtils.toString(toUpgradeComparableSemVer(configVersion, servicesVersion));
     }
 
     /**
@@ -199,11 +182,19 @@ public class HederaSoftwareVersion implements SoftwareVersion {
         return builder.build();
     }
 
+    /**
+     * Given a pre-release version, returns the numeric part of the version or {@link Integer#MAX_VALUE} if the
+     * pre-release version is not a number. (Which implies the version is not an alpha version, and comes after
+     * any alpha version.)
+     *
+     * @param pre the pre-release version
+     * @return the numeric part of the pre-release version or {@link Integer#MAX_VALUE}
+     */
     private static int alphaNumberOrMaxValue(@Nullable final String pre) {
         if (pre == null) {
             return Integer.MAX_VALUE;
         }
-        final var alphaMatch = ALPHA_PRE_PATTERN.matcher(pre);
+        final var alphaMatch = HapiUtils.ALPHA_PRE_PATTERN.matcher(pre);
         // alpha versions come before everything else
         return alphaMatch.matches() ? Integer.parseInt(alphaMatch.group(1)) : Integer.MAX_VALUE;
     }

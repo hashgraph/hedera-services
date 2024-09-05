@@ -53,6 +53,9 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class TokenFreezeAccountHandler implements TransactionHandler {
+    /**
+     * Default constructor for injection.
+     */
     @Inject
     public TokenFreezeAccountHandler() {
         // Exists for injection
@@ -80,9 +83,10 @@ public class TokenFreezeAccountHandler implements TransactionHandler {
         requireNonNull(context);
 
         final var op = context.body().tokenFreezeOrThrow();
-        final var accountStore = context.readableStore(ReadableAccountStore.class);
-        final var tokenStore = context.readableStore(ReadableTokenStore.class);
-        final var tokenRelStore = context.writableStore(WritableTokenRelationStore.class);
+        final var storeFactory = context.storeFactory();
+        final var accountStore = storeFactory.readableStore(ReadableAccountStore.class);
+        final var tokenStore = storeFactory.readableStore(ReadableTokenStore.class);
+        final var tokenRelStore = storeFactory.writableStore(WritableTokenRelationStore.class);
         final var expiryValidator = context.expiryValidator();
         final var tokenRel = validateSemantics(op, accountStore, tokenStore, tokenRelStore, expiryValidator);
 
@@ -92,7 +96,7 @@ public class TokenFreezeAccountHandler implements TransactionHandler {
     }
 
     /**
-     * Performs checks independent of state or context
+     * Performs checks independent of state or context.
      */
     @Override
     public void pureChecks(@NonNull final TransactionBody txn) throws PreCheckException {
@@ -108,7 +112,7 @@ public class TokenFreezeAccountHandler implements TransactionHandler {
 
     /**
      * Performs checks that the given token and accounts from the state are valid and that the
-     * token is associated to the account
+     * token is associated to the account.
      *
      * @return the token relation for the given token and account
      */
@@ -152,6 +156,7 @@ public class TokenFreezeAccountHandler implements TransactionHandler {
     public Fees calculateFees(@NonNull final FeeContext feeContext) {
         final var meta = TOKEN_OPS_USAGE_UTILS.tokenFreezeUsageFrom();
         return feeContext
+                .feeCalculatorFactory()
                 .feeCalculator(SubType.DEFAULT)
                 .addBytesPerTransaction(meta.getBpt())
                 .calculate();

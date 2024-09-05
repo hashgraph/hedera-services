@@ -21,7 +21,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETE
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
-import static java.util.Collections.EMPTY_LIST;
 
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.infrastructure.OpProvider;
@@ -29,13 +28,13 @@ import com.hedera.services.bdd.spec.infrastructure.providers.names.RegistrySourc
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
 public class RandomContractDeletion implements OpProvider {
     private final RegistrySourcedNameProvider<AccountID> accounts;
     private final RegistrySourcedNameProvider<ContractID> contracts;
+    private final ResponseCodeEnum[] customOutcomes;
     private boolean transferToContract = true;
 
     private final ResponseCodeEnum[] permissiblePrechecks =
@@ -44,20 +43,19 @@ public class RandomContractDeletion implements OpProvider {
             standardOutcomesAnd(ACCOUNT_DELETED, CONTRACT_DELETED, INVALID_ACCOUNT_ID, INVALID_CONTRACT_ID);
 
     public RandomContractDeletion(
-            RegistrySourcedNameProvider<AccountID> accounts, RegistrySourcedNameProvider<ContractID> contracts) {
+            RegistrySourcedNameProvider<AccountID> accounts,
+            RegistrySourcedNameProvider<ContractID> contracts,
+            ResponseCodeEnum[] customOutcomes) {
         this.accounts = accounts;
         this.contracts = contracts;
-    }
-
-    @Override
-    public List<HapiSpecOperation> suggestedInitializers() {
-        return EMPTY_LIST;
+        this.customOutcomes = customOutcomes;
     }
 
     @Override
     public Optional<HapiSpecOperation> get() {
         final var tbd = contracts.getQualifying();
-        if (tbd.isEmpty()) {
+        final var signer = accounts.getQualifying();
+        if (tbd.isEmpty() || signer.isEmpty()) {
             return Optional.empty();
         }
 
@@ -76,8 +74,10 @@ public class RandomContractDeletion implements OpProvider {
 
         var op = contractDelete(tbd.get())
                 .purging()
-                .hasPrecheckFrom(permissiblePrechecks)
-                .hasKnownStatusFrom(permissibleOutcomes);
+                .payingWith(signer.get())
+                .signedBy(signer.get())
+                .hasPrecheckFrom(plus(permissiblePrechecks, customOutcomes))
+                .hasKnownStatusFrom(plus(permissibleOutcomes, customOutcomes));
         if (contractThisTime) {
             op.transferContract(transfer.get());
         } else {

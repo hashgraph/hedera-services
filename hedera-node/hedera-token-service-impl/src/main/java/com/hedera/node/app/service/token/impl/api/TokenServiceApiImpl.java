@@ -18,6 +18,7 @@ package com.hedera.node.app.service.token.impl.api;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_HAS_PENDING_AIRDROPS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_IS_TREASURY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
@@ -36,23 +37,23 @@ import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.api.ContractChangeSummary;
-import com.hedera.node.app.service.token.api.FeeRecordBuilder;
+import com.hedera.node.app.service.token.api.FeeStreamBuilder;
 import com.hedera.node.app.service.token.api.TokenServiceApi;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.validators.StakingValidator;
 import com.hedera.node.app.spi.fees.Fees;
-import com.hedera.node.app.spi.info.NetworkInfo;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
-import com.hedera.node.app.spi.state.WritableStates;
 import com.hedera.node.app.spi.validation.EntityType;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
-import com.hedera.node.app.spi.workflows.record.DeleteCapableTransactionRecordBuilder;
+import com.hedera.node.app.spi.workflows.record.DeleteCapableTransactionStreamBuilder;
 import com.hedera.node.config.data.AccountsConfig;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.data.LedgerConfig;
 import com.hedera.node.config.data.StakingConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.state.spi.WritableStates;
+import com.swirlds.state.spi.info.NetworkInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.function.Predicate;
@@ -67,7 +68,6 @@ public class TokenServiceApiImpl implements TokenServiceApi {
     private static final Key STANDIN_CONTRACT_KEY =
             Key.newBuilder().contractID(ContractID.newBuilder().contractNum(0)).build();
 
-    private final StakingValidator stakingValidator;
     private final WritableAccountStore accountStore;
     private final AccountID fundingAccountID;
     private final AccountID stakingRewardAccountID;
@@ -75,16 +75,21 @@ public class TokenServiceApiImpl implements TokenServiceApi {
     private final StakingConfig stakingConfig;
     private final Predicate<CryptoTransferTransactionBody> customFeeTest;
 
+    /**
+     * Constructs a {@link TokenServiceApiImpl}.
+     * @param config the configuration
+     * @param storeMetricsService the store metrics service
+     * @param writableStates the writable states
+     * @param customFeeTest a predicate for determining if a transfer has custom fees
+     */
     public TokenServiceApiImpl(
             @NonNull final Configuration config,
             @NonNull final StoreMetricsService storeMetricsService,
-            @NonNull final StakingValidator stakingValidator,
             @NonNull final WritableStates writableStates,
             @NonNull final Predicate<CryptoTransferTransactionBody> customFeeTest) {
         this.customFeeTest = customFeeTest;
         requireNonNull(config);
         this.accountStore = new WritableAccountStore(writableStates, config, storeMetricsService);
-        this.stakingValidator = requireNonNull(stakingValidator);
 
         // Determine whether staking is enabled
         stakingConfig = config.getConfigData(StakingConfig.class);
@@ -117,7 +122,7 @@ public class TokenServiceApiImpl implements TokenServiceApi {
             @Nullable final Long stakedNodeIdInOp,
             @NonNull final ReadableAccountStore accountStore,
             @NonNull final NetworkInfo networkInfo) {
-        stakingValidator.validateStakedIdForCreation(
+        StakingValidator.validateStakedIdForCreation(
                 isStakingEnabled,
                 hasDeclineRewardChange,
                 stakedIdKind,
@@ -136,7 +141,7 @@ public class TokenServiceApiImpl implements TokenServiceApi {
             @Nullable final Long stakedNodeIdInOp,
             @NonNull final ReadableAccountStore accountStore,
             @NonNull final NetworkInfo networkInfo) {
-        stakingValidator.validateStakedIdForUpdate(
+        StakingValidator.validateStakedIdForUpdate(
                 isStakingEnabled,
                 hasDeclineRewardChange,
                 stakedIdKind,
@@ -175,6 +180,7 @@ public class TokenServiceApiImpl implements TokenServiceApi {
                 .copyBuilder()
                 .key(STANDIN_CONTRACT_KEY)
                 .smartContract(true)
+                .maxAutoAssociations(hollowAccount.numberAssociations())
                 .build();
         accountStore.put(accountAsContract);
     }
@@ -321,7 +327,7 @@ public class TokenServiceApiImpl implements TokenServiceApi {
 
     @Override
     public boolean chargeNetworkFee(
-            @NonNull final AccountID payerId, final long amount, @NonNull final FeeRecordBuilder rb) {
+            @NonNull final AccountID payerId, final long amount, @NonNull final FeeStreamBuilder rb) {
         requireNonNull(rb);
         requireNonNull(payerId);
 
@@ -339,7 +345,7 @@ public class TokenServiceApiImpl implements TokenServiceApi {
             @NonNull AccountID payerId,
             AccountID nodeAccountId,
             @NonNull Fees fees,
-            @NonNull final FeeRecordBuilder rb) {
+            @NonNull final FeeStreamBuilder rb) {
         requireNonNull(rb);
         requireNonNull(fees);
         requireNonNull(payerId);
@@ -350,14 +356,14 @@ public class TokenServiceApiImpl implements TokenServiceApi {
         // no conceivable way that these accounts *should* be null at this point.
         final var payerAccount = lookupAccount("Payer", payerId);
         if (payerAccount.tinybarBalance() < fees.networkFee()) {
-            throw new IllegalArgumentException(
-                    "Payer %s (balance=%d) cannot afford network fee of %d, which should have been a due diligence failure"
-                            .formatted(payerId, payerAccount.tinybarBalance(), fees.networkFee()));
+            throw new IllegalArgumentException(("Payer %s (balance=%d) cannot afford network fee of %d, "
+                            + "which should have been a due diligence failure")
+                    .formatted(payerId, payerAccount.tinybarBalance(), fees.networkFee()));
         }
         if (fees.serviceFee() > 0 && payerAccount.tinybarBalance() < fees.totalFee()) {
-            throw new IllegalArgumentException(
-                    "Payer %s (balance=%d) cannot afford total fee of %d, which means service component should have been zeroed out"
-                            .formatted(payerId, payerAccount.tinybarBalance(), fees.totalFee()));
+            throw new IllegalArgumentException(("Payer %s (balance=%d) cannot afford total fee of %d, "
+                            + "which means service component should have been zeroed out")
+                    .formatted(payerId, payerAccount.tinybarBalance(), fees.totalFee()));
         }
         // Prioritize network fee over node fee
         final long chargeableNodeFee = Math.min(fees.nodeFee(), payerAccount.tinybarBalance() - fees.networkFee());
@@ -379,7 +385,7 @@ public class TokenServiceApiImpl implements TokenServiceApi {
     }
 
     @Override
-    public void refundFees(@NonNull AccountID receiver, @NonNull Fees fees, @NonNull final FeeRecordBuilder rb) {
+    public void refundFees(@NonNull AccountID receiver, @NonNull Fees fees, @NonNull final FeeStreamBuilder rb) {
         throw new UnsupportedOperationException("Not yet implemented");
     }
 
@@ -454,7 +460,7 @@ public class TokenServiceApiImpl implements TokenServiceApi {
      *
      * @param logName The name of this account to use in log statements.
      * @param id The account ID to lookup
-     * @return The looked up account.
+     * @return The looked up account
      * @throws IllegalStateException if the given account doesn't exist
      */
     @NonNull
@@ -486,7 +492,7 @@ public class TokenServiceApiImpl implements TokenServiceApi {
             @NonNull final AccountID deletedId,
             @NonNull final AccountID obtainerId,
             @NonNull final ExpiryValidator expiryValidator,
-            @NonNull final DeleteCapableTransactionRecordBuilder recordBuilder,
+            @NonNull final DeleteCapableTransactionStreamBuilder recordBuilder,
             @NonNull final FreeAliasOnDeletion freeAliasOnDeletion) {
         // validate the semantics involving dynamic properties and state.
         // Gets delete and transfer accounts from state
@@ -516,6 +522,7 @@ public class TokenServiceApiImpl implements TokenServiceApi {
         // validate if accounts exist
         final var deletedAccount = accountStore.get(deletedId);
         validateTrue(deletedAccount != null, INVALID_ACCOUNT_ID);
+        validateFalse(deletedAccount.hasHeadPendingAirdropId(), ACCOUNT_HAS_PENDING_AIRDROPS);
         final var transferAccount = accountStore.get(obtainerId);
         validateTrue(transferAccount != null, INVALID_TRANSFER_ACCOUNT_ID);
         // if the account is treasury for any other token, it can't be deleted
@@ -569,7 +576,7 @@ public class TokenServiceApiImpl implements TokenServiceApi {
         return account.smartContract() ? EntityType.CONTRACT : EntityType.ACCOUNT;
     }
 
-    private void distributeToNetworkFundingAccounts(final long amount, @NonNull final FeeRecordBuilder rb) {
+    private void distributeToNetworkFundingAccounts(final long amount, @NonNull final FeeStreamBuilder rb) {
         // We may have a rounding error, so we will first remove the node and staking rewards from the total, and then
         // whatever is left over goes to the funding account.
         long balance = amount;

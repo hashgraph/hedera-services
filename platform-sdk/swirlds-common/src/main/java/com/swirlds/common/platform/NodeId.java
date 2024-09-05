@@ -32,7 +32,7 @@ public class NodeId implements Comparable<NodeId>, SelfSerializable {
     private static final long CLASS_ID = 0xea520dcf050bcaadL;
 
     /** The class version for this class. */
-    private static final class ClassVersion {
+    public static final class ClassVersion {
         /**
          * The original version of the class.
          *

@@ -26,7 +26,7 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.hapi.streams.ContractBytecode;
 import com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
-import com.hedera.node.app.service.contract.impl.state.ProxyEvmAccount;
+import com.hedera.node.app.service.contract.impl.state.AbstractProxyEvmAccount;
 import com.hedera.node.app.spi.workflows.ResourceExhaustedException;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
@@ -99,6 +99,7 @@ public class CustomContractCreationProcessor extends ContractCreationProcessor {
                 halt(frame, tracer, maybeReasonToHalt);
             } else {
                 contract.setNonce(INITIAL_CONTRACT_NONCE);
+                frame.addCreate(addressToCreate);
                 frame.setState(MessageFrame.State.CODE_EXECUTING);
             }
         }
@@ -148,9 +149,9 @@ public class CustomContractCreationProcessor extends ContractCreationProcessor {
     }
 
     private boolean isHollow(@NonNull final MutableAccount account) {
-        if (account instanceof ProxyEvmAccount proxyEvmAccount) {
-            return proxyEvmAccount.isHollow();
+        if (account instanceof AbstractProxyEvmAccount abstractProxyEvmAccount) {
+            return abstractProxyEvmAccount.isHollow();
         }
-        throw new IllegalArgumentException("Creation target not a ProxyEvmAccount - " + account);
+        throw new IllegalArgumentException("Creation target not a AbstractProxyEvmAccount - " + account);
     }
 }

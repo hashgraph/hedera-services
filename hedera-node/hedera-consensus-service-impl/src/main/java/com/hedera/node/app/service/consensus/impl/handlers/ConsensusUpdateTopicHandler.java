@@ -22,15 +22,16 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_AUTORENEW_ACCOU
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_RENEWAL_PERIOD;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOPIC_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.UNAUTHORIZED;
-import static com.hedera.node.app.service.consensus.impl.codecs.ConsensusServiceStateTranslator.pbjToState;
-import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
+import static com.hedera.node.app.hapi.utils.fee.ConsensusServiceFeeBuilder.getConsensusUpdateTopicFee;
+import static com.hedera.node.app.hapi.utils.fee.ConsensusServiceFeeBuilder.getUpdateTopicRbsIncrease;
 import static com.hedera.node.app.spi.key.KeyUtils.isEmpty;
 import static com.hedera.node.app.spi.validation.AttributeValidator.isImmutableKey;
 import static com.hedera.node.app.spi.validation.AttributeValidator.isKeyRemoval;
 import static com.hedera.node.app.spi.validation.ExpiryMeta.NA;
 import static com.hedera.node.app.spi.validation.Validations.mustExist;
 import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
-import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
+import static com.hedera.node.app.spi.workflows.PreCheckException.validateFalsePreCheck;
+import static com.hedera.node.app.spi.workflows.PreCheckException.validateTruePreCheck;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -40,9 +41,11 @@ import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.base.TopicID;
 import com.hedera.hapi.node.consensus.ConsensusUpdateTopicTransactionBody;
 import com.hedera.hapi.node.state.consensus.Topic;
+import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.hapi.utils.CommonPbjConverters;
+import com.hedera.node.app.hapi.utils.fee.SigValueObj;
 import com.hedera.node.app.service.consensus.ReadableTopicStore;
 import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
-import com.hedera.node.app.service.mono.fees.calculation.consensus.txns.UpdateTopicResourceUsage;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.validation.AttributeValidator;
@@ -53,19 +56,31 @@ import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
+import com.hederahashgraph.api.proto.java.FeeData;
+import com.hederahashgraph.api.proto.java.Timestamp;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * This class contains all workflow-related functionality regarding {@link HederaFunctionality#CONSENSUS_UPDATE_TOPIC}.
  */
 @Singleton
 public class ConsensusUpdateTopicHandler implements TransactionHandler {
+    private static final Logger log = LogManager.getLogger(ConsensusUpdateTopicHandler.class);
 
     @Inject
     public ConsensusUpdateTopicHandler() {
         // Exists for injection
+    }
+
+    @Override
+    public void pureChecks(@NonNull final TransactionBody txn) throws PreCheckException {
+        final ConsensusUpdateTopicTransactionBody op = txn.consensusUpdateTopicOrThrow();
+        validateTruePreCheck(op.hasTopicID(), INVALID_TOPIC_ID);
     }
 
     @Override
@@ -77,6 +92,7 @@ public class ConsensusUpdateTopicHandler implements TransactionHandler {
         // The topic ID must be present on the transaction and the topic must exist.
         final var topic = topicStore.getTopic(op.topicIDOrElse(TopicID.DEFAULT));
         mustExist(topic, INVALID_TOPIC_ID);
+        validateFalsePreCheck(topic.deleted(), INVALID_TOPIC_ID);
 
         // Extending the expiry is the *only* update operation permitted without an admin key. So if that is the
         // only thing this transaction is doing, then we don't need to worry about checking any additional keys.
@@ -121,22 +137,22 @@ public class ConsensusUpdateTopicHandler implements TransactionHandler {
     public void handle(@NonNull final HandleContext handleContext) {
         requireNonNull(handleContext);
 
-        final var topicUpdate = handleContext.body().consensusUpdateTopic();
-        final var topicStore = handleContext.writableStore(WritableTopicStore.class);
-        final var maybeTopic = requireNonNull(topicStore).get(topicUpdate.topicIDOrElse(TopicID.DEFAULT));
-        validateTrue(maybeTopic.isPresent(), INVALID_TOPIC_ID);
-        final var topic = maybeTopic.get();
-        validateFalse(topic.deleted(), INVALID_TOPIC_ID);
+        final var txn = handleContext.body();
+        final var op = txn.consensusUpdateTopicOrThrow();
+
+        final var topicStore = handleContext.storeFactory().writableStore(WritableTopicStore.class);
+        final var topic = topicStore.getTopic(op.topicIDOrElse(TopicID.DEFAULT));
+        // preHandle already checks for topic existence, so topic should never be null.
 
         // First validate this topic is mutable; and the pending mutations are allowed
-        validateFalse(topic.adminKey() == null && wantsToMutateNonExpiryField(topicUpdate), UNAUTHORIZED);
-        if (!(topicUpdate.hasAutoRenewAccount() && designatesAccountRemoval(topicUpdate.autoRenewAccount()))
+        validateFalse(topic.adminKey() == null && wantsToMutateNonExpiryField(op), UNAUTHORIZED);
+        if (!(op.hasAutoRenewAccount() && designatesAccountRemoval(op.autoRenewAccount()))
                 && topic.hasAutoRenewAccountId()) {
             validateFalse(
-                    !topic.hasAdminKey() || (topicUpdate.hasAdminKey() && isEmpty(topicUpdate.adminKey())),
+                    !topic.hasAdminKey() || (op.hasAdminKey() && isEmpty(op.adminKey())),
                     AUTORENEW_ACCOUNT_NOT_ALLOWED);
         }
-        validateMaybeNewAttributes(handleContext, topicUpdate, topic);
+        validateMaybeNewAttributes(handleContext, op, topic);
 
         // Now we apply the mutations to a builder
         final var builder = new Topic.Builder();
@@ -146,7 +162,7 @@ public class ConsensusUpdateTopicHandler implements TransactionHandler {
         builder.runningHash(topic.runningHash());
         builder.deleted(topic.deleted());
         // And then resolve mutable attributes, and put the new topic back
-        resolveMutableBuilderAttributes(handleContext, topicUpdate, builder, topic);
+        resolveMutableBuilderAttributes(handleContext, op, builder, topic);
         topicStore.put(builder.build());
     }
 
@@ -155,12 +171,14 @@ public class ConsensusUpdateTopicHandler implements TransactionHandler {
     public Fees calculateFees(@NonNull final FeeContext feeContext) {
         requireNonNull(feeContext);
         final var op = feeContext.body();
-        final var topicUpdate = op.consensusUpdateTopicOrThrow();
+        final var topicUpdate = op.consensusUpdateTopicOrElse(ConsensusUpdateTopicTransactionBody.DEFAULT);
         final var topicId = topicUpdate.topicIDOrElse(TopicID.DEFAULT);
         final var topic = feeContext.readableStore(ReadableTopicStore.class).getTopic(topicId);
 
-        return feeContext.feeCalculator(SubType.DEFAULT).legacyCalculate(sigValueObj -> new UpdateTopicResourceUsage()
-                .usageGivenExplicit(fromPbj(op), sigValueObj, topic != null ? pbjToState(topic) : null));
+        return feeContext
+                .feeCalculatorFactory()
+                .feeCalculator(SubType.DEFAULT)
+                .legacyCalculate(sigValueObj -> usageGivenExplicit(op, sigValueObj, topic));
     }
 
     private void resolveMutableBuilderAttributes(
@@ -300,5 +318,28 @@ public class ConsensusUpdateTopicHandler implements TransactionHandler {
                 && id.hasAccountNum()
                 && id.accountNum() == 0
                 && id.alias() == null;
+    }
+
+    private FeeData usageGivenExplicit(
+            @NonNull final TransactionBody txnBody, @NonNull final SigValueObj sigUsage, @Nullable final Topic topic) {
+        long rbsIncrease = 0;
+        final var protoTxnBody = CommonPbjConverters.fromPbj(txnBody);
+        if (topic != null && topic.hasAdminKey()) {
+            final var expiry =
+                    Timestamp.newBuilder().setSeconds(topic.expirationSecond()).build();
+            try {
+                rbsIncrease = getUpdateTopicRbsIncrease(
+                        protoTxnBody.getTransactionID().getTransactionValidStart(),
+                        CommonPbjConverters.fromPbj(topic.adminKeyOrElse(Key.DEFAULT)),
+                        CommonPbjConverters.fromPbj(topic.submitKeyOrElse(Key.DEFAULT)),
+                        topic.memo(),
+                        topic.hasAutoRenewAccountId(),
+                        expiry,
+                        protoTxnBody.getConsensusUpdateTopic());
+            } catch (Exception e) {
+                log.warn("Usage estimation unexpectedly failed for {}!", txnBody, e);
+            }
+        }
+        return getConsensusUpdateTopicFee(protoTxnBody, rbsIncrease, sigUsage);
     }
 }

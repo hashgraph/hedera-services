@@ -77,11 +77,10 @@ class WritableTopicStoreTest extends ConsensusTestBase {
         topic = createTopic();
         writableStore.put(topic);
 
-        final var maybeReadTopic = writableStore.get(
-                TopicID.newBuilder().topicNum(topicEntityNum.longValue()).build());
+        final var maybeReadTopic = writableStore.getTopic(
+                TopicID.newBuilder().topicNum(topicEntityNum).build());
 
-        assertTrue(maybeReadTopic.isPresent());
-        final var readTopic = maybeReadTopic.get();
-        assertEquals(topic, readTopic);
+        assertNotNull(maybeReadTopic);
+        assertEquals(topic, maybeReadTopic);
     }
 }

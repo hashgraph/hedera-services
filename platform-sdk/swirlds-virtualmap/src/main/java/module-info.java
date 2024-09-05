@@ -7,6 +7,7 @@ open module com.swirlds.virtualmap {
     // Currently, exported only for tests.
     exports com.swirlds.virtualmap.internal.merkle;
     exports com.swirlds.virtualmap.config;
+    exports com.swirlds.virtualmap.serialize;
 
     // Testing-only exports
     exports com.swirlds.virtualmap.internal to
@@ -17,10 +18,11 @@ open module com.swirlds.virtualmap {
     requires transitive com.swirlds.common;
     requires transitive com.swirlds.config.api;
     requires transitive com.swirlds.metrics.api;
+    requires transitive com.hedera.pbj.runtime;
     requires com.swirlds.base;
     requires com.swirlds.config.extensions;
     requires com.swirlds.logging;
     requires java.management; // Test dependency
     requires org.apache.logging.log4j;
-    requires static com.github.spotbugs.annotations;
+    requires static transitive com.github.spotbugs.annotations;
 }

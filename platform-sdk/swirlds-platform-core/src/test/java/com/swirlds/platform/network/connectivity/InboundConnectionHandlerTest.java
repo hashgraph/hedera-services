@@ -47,7 +47,6 @@ class InboundConnectionHandlerTest extends ConnectivityTestBase {
     private static final PlatformContext platformContext = TestPlatformContextBuilder.create()
             .withConfiguration(TLS_NO_IP_TOS_CONFIG)
             .build();
-    private static final NetworkPeerIdentifier identifier = new NetworkPeerIdentifier(platformContext);
     private static final ConnectionTracker ct = Mockito.mock(ConnectionTracker.class);
 
     /**
@@ -65,33 +64,36 @@ class InboundConnectionHandlerTest extends ConnectivityTestBase {
                 .limit(2)
                 .boxed()
                 .toList();
-        final NodeId thisNode = addressBook.getNodeId(nodeIndexes.get(0));
-        final NodeId otherNode = addressBook.getNodeId(nodeIndexes.get(1));
-        final KeysAndCerts keysAndCerts1 = keysAndCerts.get(thisNode);
-        final KeysAndCerts keysAndCerts2 = keysAndCerts.get(otherNode);
-        final List<PeerInfo> peerInfoList = Utilities.createPeerInfoList(addressBook, otherNode);
+        final NodeId node1 = addressBook.getNodeId(nodeIndexes.get(0));
+        final NodeId node2 = addressBook.getNodeId(nodeIndexes.get(1));
+        final KeysAndCerts thisKeysAndCerts = keysAndCerts.get(node1);
+        final KeysAndCerts OtherKeysAndCerts = keysAndCerts.get(node2);
+        final List<PeerInfo> node1Peers = Utilities.createPeerInfoList(addressBook, node1);
+        final List<PeerInfo> node2Peers = Utilities.createPeerInfoList(addressBook, node2);
+        final NetworkPeerIdentifier identifier = new NetworkPeerIdentifier(platformContext, node1Peers);
 
         final SocketFactory socketFactory1 =
-                NetworkUtils.createSocketFactory(thisNode, addressBook, keysAndCerts1, TLS_NO_IP_TOS_CONFIG);
+                NetworkUtils.createSocketFactory(node1, node1Peers, thisKeysAndCerts, TLS_NO_IP_TOS_CONFIG);
         final SocketFactory socketFactory2 =
-                NetworkUtils.createSocketFactory(otherNode, addressBook, keysAndCerts2, TLS_NO_IP_TOS_CONFIG);
+                NetworkUtils.createSocketFactory(node2, node2Peers, OtherKeysAndCerts, TLS_NO_IP_TOS_CONFIG);
 
         final ServerSocket serverSocket = socketFactory1.createServerSocket(PORT);
-        createSocketThread(serverSocket).start();
+        final Thread serverThread = createSocketThread(serverSocket);
+        serverThread.start();
 
         final Socket socket = socketFactory2.createClientSocket(STRING_IP, PORT);
-        socket.getOutputStream().write(DATA);
+        socket.getOutputStream().write(TEST_DATA);
 
         final InterruptableConsumer<Connection> connConsumer = conn -> {
             Assertions.assertNotNull(conn);
             Assertions.assertTrue(conn.connected());
             Assertions.assertFalse(conn.isOutbound());
-            Assertions.assertEquals(conn.getSelfId(), thisNode);
+            Assertions.assertEquals(conn.getSelfId(), node1);
         };
 
-        final InboundConnectionHandler inbound = new InboundConnectionHandler(
-                platformContext, ct, identifier, thisNode, connConsumer, Time.getCurrent());
-        inbound.handle(socket, peerInfoList); // 2 can talk to 1 via tls ok
+        final InboundConnectionHandler inbound =
+                new InboundConnectionHandler(platformContext, ct, identifier, node1, connConsumer, Time.getCurrent());
+        inbound.handle(socket); // 2 can talk to 1 via tls ok
         socket.close();
     }
 
@@ -109,29 +111,34 @@ class InboundConnectionHandlerTest extends ConnectivityTestBase {
                 .limit(2)
                 .boxed()
                 .toList();
-        final NodeId thisNode = addressBook.getNodeId(nodeIndexes.get(0));
-        final NodeId otherNode = addressBook.getNodeId(nodeIndexes.get(1));
-        final KeysAndCerts keysAndCerts1 = keysAndCerts.get(thisNode);
-        final KeysAndCerts keysAndCerts2 = keysAndCerts.get(otherNode);
-        final List<PeerInfo> peerInfoList = Utilities.createPeerInfoList(addressBook, thisNode);
+        final NodeId node1 = addressBook.getNodeId(nodeIndexes.get(0));
+        final NodeId node2 = addressBook.getNodeId(nodeIndexes.get(1));
+        final KeysAndCerts keysAndCerts1 = keysAndCerts.get(node1);
+        final KeysAndCerts keysAndCerts2 = keysAndCerts.get(node2);
+
+        final List<PeerInfo> node1Peers = Utilities.createPeerInfoList(addressBook, node1);
+        final List<PeerInfo> node2Peers = Utilities.createPeerInfoList(addressBook, node2);
+        final NetworkPeerIdentifier identifier = new NetworkPeerIdentifier(platformContext, node1Peers);
 
         final SocketFactory s1 =
-                NetworkUtils.createSocketFactory(thisNode, addressBook, keysAndCerts1, TLS_NO_IP_TOS_CONFIG);
+                NetworkUtils.createSocketFactory(node1, node1Peers, keysAndCerts1, TLS_NO_IP_TOS_CONFIG);
         final SocketFactory s2 =
-                NetworkUtils.createSocketFactory(otherNode, addressBook, keysAndCerts2, TLS_NO_IP_TOS_CONFIG);
+                NetworkUtils.createSocketFactory(node2, node2Peers, keysAndCerts2, TLS_NO_IP_TOS_CONFIG);
 
         final ServerSocket serverSocket = s1.createServerSocket(PORT);
-        createSocketThread(serverSocket).start();
+        final Thread serverThread = createSocketThread(serverSocket);
+        serverThread.start();
 
         final Socket socket = s2.createClientSocket(STRING_IP, PORT);
-        socket.getOutputStream().write(DATA);
+        socket.getOutputStream().write(TEST_DATA);
 
         final InterruptableConsumer<Connection> connConsumer =
                 conn -> Assertions.fail("connection should never have been created");
 
-        final InboundConnectionHandler inbound = new InboundConnectionHandler(
-                platformContext, ct, identifier, thisNode, connConsumer, Time.getCurrent());
-        inbound.handle(socket, peerInfoList);
+        final InboundConnectionHandler inbound =
+                new InboundConnectionHandler(platformContext, ct, identifier, node1, connConsumer, Time.getCurrent());
+        inbound.handle(socket);
         Assertions.assertTrue(socket.isClosed());
+        serverThread.join();
     }
 }

@@ -32,22 +32,9 @@ defaults:
     shell: bash
 
 jobs:
-  interval-01:
-    name: Interval 1
-    uses: ./.github/workflows/platform-zxc-launch-jrs-workflow.yaml
-    with:
-      ref: ${{ github.event.inputs.ref || github.sha }}
-      branch-name: ${{ github.event.inputs.branch-name || github.ref_name }}
-      workflow-file: platform-zxf-jrs-daily-interval-01.yaml
-      concurrency-group: ${{ github.event.inputs.ref || github.sha }}-flow-jrs-daily-group-01
-    secrets:
-      access-token: ${{ secrets.PLATFORM_GH_ACCESS_TOKEN }}
-
   interval-02:
     name: Interval 2
     uses: ./.github/workflows/platform-zxc-launch-jrs-workflow.yaml
-    needs:
-      - interval-01
     with:
       ref: ${{ github.event.inputs.ref || github.sha }}
       branch-name: ${{ github.event.inputs.branch-name || github.ref_name }}

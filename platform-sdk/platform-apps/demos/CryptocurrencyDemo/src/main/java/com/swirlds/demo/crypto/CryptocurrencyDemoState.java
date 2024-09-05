@@ -26,13 +26,14 @@ package com.swirlds.demo.crypto;
  * DISTRIBUTING THIS SOFTWARE OR ITS DERIVATIVES.
  */
 
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.MerkleLeaf;
 import com.swirlds.common.merkle.impl.PartialMerkleLeaf;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.SwirldsPlatform;
-import com.swirlds.platform.state.PlatformState;
+import com.swirlds.platform.state.PlatformStateAccessor;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.Round;
@@ -199,10 +200,9 @@ public class CryptocurrencyDemoState extends PartialMerkleLeaf implements Swirld
     }
 
     @Override
-    public void handleConsensusRound(final Round round, final PlatformState swirldDualState) {
+    public void handleConsensusRound(final Round round, final PlatformStateAccessor platformState) {
         throwIfImmutable();
-        round.forEachEventTransaction(
-                (event, transaction) -> handleTransaction(event.getCreatorId(), true, transaction));
+        round.forEachEventTransaction((event, transaction) -> handleTransaction(event.getCreatorId(), transaction));
     }
 
     /**
@@ -227,21 +227,22 @@ public class CryptocurrencyDemoState extends PartialMerkleLeaf implements Swirld
      * {ASK,s,p} = ask to sell 1 share of stock s at p cents (where 1 &lt;= p &lt;= 127)
      * </pre>
      */
-    private void handleTransaction(
-            @NonNull final NodeId id, final boolean isConsensus, @Nullable final Transaction transaction) {
+    private void handleTransaction(@NonNull final NodeId id, @NonNull final Transaction transaction) {
         Objects.requireNonNull(id, "id must not be null");
-        if (transaction == null || transaction.getContents().length == 0) {
+        Objects.requireNonNull(transaction, "transaction must not be null");
+        if (transaction.isSystem()) {
             return;
         }
-        if (transaction.getContents()[0] == TransType.slow.ordinal()
-                || transaction.getContents()[0] == TransType.fast.ordinal()) {
+        final Bytes contents = transaction.getApplicationTransaction();
+        if (contents.length() < 3) {
             return;
-        } else if (!isConsensus || transaction.getContents().length < 3) {
-            return; // ignore any bid/ask that doesn't have consensus yet
         }
-        final int askBid = transaction.getContents()[0];
-        final int tradeStock = transaction.getContents()[1];
-        int tradePrice = transaction.getContents()[2];
+        if (contents.getByte(0) == TransType.slow.ordinal() || contents.getByte(0) == TransType.fast.ordinal()) {
+            return;
+        }
+        final int askBid = contents.getByte(0);
+        final int tradeStock = contents.getByte(1);
+        int tradePrice = contents.getByte(2);
 
         if (tradePrice < 1 || tradePrice > 127) {
             return; // all asks and bids must be in the range 1 to 127
@@ -376,10 +377,9 @@ public class CryptocurrencyDemoState extends PartialMerkleLeaf implements Swirld
      */
     @Override
     public void init(
-            final Platform platform,
-            final PlatformState swirldDualState,
-            final InitTrigger trigger,
-            final SoftwareVersion previousSoftwareVersion) {
+            @NonNull final Platform platform,
+            @NonNull final InitTrigger trigger,
+            @Nullable final SoftwareVersion previousSoftwareVersion) {
         this.platform = (SwirldsPlatform) platform;
 
         if (trigger == InitTrigger.GENESIS) {

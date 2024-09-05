@@ -16,7 +16,7 @@
 
 package com.hedera.services.bdd.spec.infrastructure.providers.ops.precompile;
 
-import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
+import static com.hedera.node.app.hapi.utils.EthSigsUtils.recoverAddressFromPubKey;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hedera.services.bdd.suites.regression.factories.IdFuzzingProviderFactory.*;
@@ -29,7 +29,6 @@ import com.hedera.services.bdd.spec.infrastructure.HapiSpecRegistry;
 import com.hedera.services.bdd.spec.infrastructure.OpProvider;
 import com.hedera.services.bdd.spec.transactions.contract.HapiContractCall;
 import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
-import com.hederahashgraph.api.proto.java.Key;
 import java.math.BigInteger;
 import java.util.Optional;
 
@@ -38,9 +37,9 @@ public class RandomERC721TransferLazyCreate implements OpProvider {
     private static final long GAS_TO_OFFER = 5_000_000L;
     private static final String TRANSFER_FROM_ACCOUNT_TXN = "transferFromAccountTxn";
     private static final String TRANSFER_FROM = "transferFrom";
-    private final EntityNameProvider<Key> keys;
+    private final EntityNameProvider keys;
 
-    public RandomERC721TransferLazyCreate(HapiSpecRegistry registry, EntityNameProvider<Key> keys) {
+    public RandomERC721TransferLazyCreate(HapiSpecRegistry registry, EntityNameProvider keys) {
         this.registry = registry;
         this.keys = keys;
     }

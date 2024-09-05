@@ -40,13 +40,19 @@ import java.util.Map;
  * The resolved forms are stored in TransferContext and then used in the rest of the transfer logic.
  */
 public class EnsureAliasesStep implements TransferStep {
-    final CryptoTransferTransactionBody op;
+    private final CryptoTransferTransactionBody op;
 
-    // Temporary token transfer resolutions map containing the token transfers to alias, is needed to check if
-    // an alias is repeated. It is allowed to be repeated in multiple token transfer lists, but not in a single
-    // token transfer list
+    /**
+     * Temporary token transfer resolutions map containing the token transfers to alias, is needed to check if
+     * an alias is repeated. It is allowed to be repeated in multiple token transfer lists, but not in a single
+     * token transfer list
+     */
     private final Map<Bytes, AccountID> tokenTransferResolutions = new LinkedHashMap<>();
 
+    /**
+     * Constructs a {@link EnsureAliasesStep} instance.
+     * @param op the crypto transfer transaction body
+     */
     public EnsureAliasesStep(@NonNull final CryptoTransferTransactionBody op) {
         this.op = requireNonNull(op);
     }
@@ -172,7 +178,7 @@ public class EnsureAliasesStep implements TransferStep {
     }
 
     /**
-     * Check if the given accountID is an alias
+     * Check if the given accountID is an alias.
      * @param accountID the accountID to check
      * @return true if the accountID is an alias, false otherwise
      */

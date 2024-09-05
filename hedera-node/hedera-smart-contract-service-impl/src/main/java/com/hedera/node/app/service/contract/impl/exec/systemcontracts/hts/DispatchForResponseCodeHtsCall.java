@@ -20,8 +20,8 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BOD
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.ERROR_DECODING_PRECOMPILE_INPUT;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult.haltResult;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.Call.PricedResult.gasOnly;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.DispatchForResponseCodeHtsCall.OutputFn.STANDARD_OUTPUT_FN;
-import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCall.PricedResult.gasOnly;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes.encodedRc;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes.standardized;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.contractsConfigOf;
@@ -32,8 +32,9 @@ import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.gas.DispatchGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.AbstractCall;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
-import com.hedera.node.app.service.contract.impl.records.ContractCallRecordBuilder;
+import com.hedera.node.app.service.contract.impl.records.ContractCallStreamBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.nio.ByteBuffer;
@@ -45,7 +46,7 @@ import org.hyperledger.besu.evm.frame.MessageFrame;
  * An HTS call that simply dispatches a synthetic transaction body and returns a result that is
  * an encoded {@link com.hedera.hapi.node.base.ResponseCodeEnum}.
  */
-public class DispatchForResponseCodeHtsCall extends AbstractHtsCall {
+public class DispatchForResponseCodeHtsCall extends AbstractCall {
     /**
      * The "standard" failure customizer that replaces {@link ResponseCodeEnum#INVALID_SIGNATURE} with
      * {@link ResponseCodeEnum#INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE}. (Note this code no longer
@@ -94,7 +95,7 @@ public class DispatchForResponseCodeHtsCall extends AbstractHtsCall {
      * A function that can be used to generate the output of a dispatch from its completed
      * record builder.
      */
-    public interface OutputFn extends Function<ContractCallRecordBuilder, ByteBuffer> {
+    public interface OutputFn extends Function<ContractCallStreamBuilder, ByteBuffer> {
         /**
          * The standard output function that simply returns the encoded status.
          */
@@ -211,7 +212,7 @@ public class DispatchForResponseCodeHtsCall extends AbstractHtsCall {
                     false);
         }
         final var recordBuilder = systemContractOperations()
-                .dispatch(syntheticBody, verificationStrategy, senderId, ContractCallRecordBuilder.class);
+                .dispatch(syntheticBody, verificationStrategy, senderId, ContractCallStreamBuilder.class);
         final var gasRequirement =
                 dispatchGasCalculator.gasRequirement(syntheticBody, gasCalculator, enhancement, senderId);
         var status = recordBuilder.status();

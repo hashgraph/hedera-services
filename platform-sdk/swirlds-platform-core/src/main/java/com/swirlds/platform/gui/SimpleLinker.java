@@ -17,15 +17,14 @@
 package com.swirlds.platform.gui;
 
 import com.swirlds.common.crypto.Hash;
-import com.swirlds.common.sequence.map.SequenceMap;
-import com.swirlds.common.sequence.map.StandardSequenceMap;
 import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.event.EventCounter;
-import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.event.linking.InOrderLinker;
 import com.swirlds.platform.internal.EventImpl;
-import com.swirlds.platform.system.events.BaseEventHashedData;
-import com.swirlds.platform.system.events.EventDescriptor;
+import com.swirlds.platform.sequence.map.SequenceMap;
+import com.swirlds.platform.sequence.map.StandardSequenceMap;
+import com.swirlds.platform.system.events.EventDescriptorWrapper;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
@@ -50,7 +49,7 @@ public class SimpleLinker {
      * The window of this map is shifted when the minimum non-ancient threshold is changed, so that only non-ancient
      * events are retained.
      */
-    private final SequenceMap<EventDescriptor, EventImpl> parentDescriptorMap;
+    private final SequenceMap<EventDescriptorWrapper, EventImpl> parentDescriptorMap;
 
     /**
      * A map from event hash to event.
@@ -71,8 +70,8 @@ public class SimpleLinker {
         if (ancientMode == AncientMode.BIRTH_ROUND_THRESHOLD) {
             throw new UnsupportedOperationException("not yet supported");
         } else {
-            this.parentDescriptorMap =
-                    new StandardSequenceMap<>(0, INITIAL_CAPACITY, true, EventDescriptor::getGeneration);
+            this.parentDescriptorMap = new StandardSequenceMap<>(
+                    0, INITIAL_CAPACITY, true, ed -> ed.eventDescriptor().generation());
         }
     }
 
@@ -93,7 +92,7 @@ public class SimpleLinker {
      */
     @Nullable
     private EventImpl getParentToLink(
-            @NonNull final GossipEvent child, @Nullable final EventDescriptor parentDescriptor) {
+            @NonNull final PlatformEvent child, @Nullable final EventDescriptorWrapper parentDescriptor) {
 
         if (parentDescriptor == null) {
             // There is no claimed parent for linking.
@@ -105,26 +104,27 @@ public class SimpleLinker {
             return null;
         }
 
-        final EventImpl candidateParent = parentHashMap.get(parentDescriptor.getHash());
+        final EventImpl candidateParent = parentHashMap.get(parentDescriptor.hash());
         if (candidateParent == null) {
             return null;
         }
 
-        if (candidateParent.getGeneration() != parentDescriptor.getGeneration()) {
+        if (candidateParent.getGeneration()
+                != parentDescriptor.eventDescriptor().generation()) {
             return null;
         }
 
-        if (candidateParent.getBirthRound() != parentDescriptor.getBirthRound()) {
+        if (candidateParent.getBirthRound()
+                != parentDescriptor.eventDescriptor().birthRound()) {
             return null;
         }
 
-        final Instant parentTimeCreated =
-                candidateParent.getBaseEvent().getHashedData().getTimeCreated();
-        final Instant childTimeCreated = child.getHashedData().getTimeCreated();
+        final Instant parentTimeCreated = candidateParent.getBaseEvent().getTimeCreated();
+        final Instant childTimeCreated = child.getTimeCreated();
 
         // only do this check for self parent, since the event creator doesn't consider other parent creation time
         // when deciding on the event creation time
-        if (parentDescriptor.getCreator().equals(child.getDescriptor().getCreator())
+        if (parentDescriptor.creator().equals(child.getDescriptor().creator())
                 && parentTimeCreated.compareTo(childTimeCreated) >= 0) {
             return null;
         }
@@ -139,26 +139,25 @@ public class SimpleLinker {
      * @return the linked event, or null if the event is ancient
      */
     @Nullable
-    public EventImpl linkEvent(@NonNull final GossipEvent event) {
+    public EventImpl linkEvent(@NonNull final PlatformEvent event) {
         if (event.getAncientIndicator(AncientMode.GENERATION_THRESHOLD) < nonAncientThreshold) {
             // This event is ancient, so we don't need to link it.
             return null;
         }
 
-        final BaseEventHashedData hashedData = event.getHashedData();
-        final EventImpl selfParent = getParentToLink(event, hashedData.getSelfParent());
+        final EventImpl selfParent = getParentToLink(event, event.getSelfParent());
 
         // FUTURE WORK: Extend other parent linking to support multiple other parents.
         // Until then, take the first parent in the list.
-        final List<EventDescriptor> otherParents = hashedData.getOtherParents();
+        final List<EventDescriptorWrapper> otherParents = event.getOtherParents();
         final EventImpl otherParent = otherParents.isEmpty() ? null : getParentToLink(event, otherParents.get(0));
 
         final EventImpl linkedEvent = new EventImpl(event, selfParent, otherParent);
         EventCounter.incrementLinkedEventCount();
 
-        final EventDescriptor eventDescriptor = event.getDescriptor();
-        parentDescriptorMap.put(eventDescriptor, linkedEvent);
-        parentHashMap.put(eventDescriptor.getHash(), linkedEvent);
+        final EventDescriptorWrapper eventDescriptorWrapper = event.getDescriptor();
+        parentDescriptorMap.put(eventDescriptorWrapper, linkedEvent);
+        parentHashMap.put(eventDescriptorWrapper.hash(), linkedEvent);
 
         return linkedEvent;
     }
@@ -171,7 +170,7 @@ public class SimpleLinker {
     public void setNonAncientThreshold(final long nonAncientThreshold) {
         this.nonAncientThreshold = nonAncientThreshold;
         parentDescriptorMap.shiftWindow(nonAncientThreshold, (descriptor, event) -> {
-            parentHashMap.remove(descriptor.getHash());
+            parentHashMap.remove(descriptor.hash());
             event.clear();
         });
     }

@@ -20,7 +20,7 @@ import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toMap;
 
 import com.hedera.node.app.hapi.fees.pricing.AssetsLoader;
-import com.hedera.node.app.service.mono.pbj.PbjConverter;
+import com.hedera.node.app.hapi.utils.CommonPbjConverters;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -48,9 +48,10 @@ public class CanonicalDispatchPrices {
         try {
             final var canonicalPrices = assetsLoader.loadCanonicalPrices().entrySet().stream()
                     .collect(toMap(
-                            entry -> PbjConverter.toPbj(entry.getKey()), entry -> entry.getValue().entrySet().stream()
+                            entry -> CommonPbjConverters.toPbj(entry.getKey()),
+                            entry -> entry.getValue().entrySet().stream()
                                     .collect(toMap(
-                                            subEntry -> PbjConverter.toPbj(subEntry.getKey()),
+                                            subEntry -> CommonPbjConverters.toPbj(subEntry.getKey()),
                                             subEntry -> subEntry.getValue()
                                                     .multiply(USD_TO_TINYCENTS)
                                                     .longValue()))));

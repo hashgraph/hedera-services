@@ -38,20 +38,23 @@ import javax.inject.Inject;
 
 /**
  * This class contains validations to be done in handle for Token Mint and
- * Token Burn operations in handle
+ * Token Burn operations in handle.
  */
 public class TokenSupplyChangeOpsValidator {
-
+    /**
+     * Default constructor for injection.
+     */
     @Inject
     public TokenSupplyChangeOpsValidator() {
         // Dagger
     }
 
     /**
-     * Validate the transaction data for a token mint operation
+     * Validate the transaction data for a token mint operation.
      *
      * @param fungibleCount the number of fungible tokens to mint
      * @param metaDataList the list of metadata for the NFTs to mint
+     * @param tokensConfig the tokens configuration
      * @throws HandleException if the transaction data is invalid
      */
     public void validateMint(
@@ -66,10 +69,11 @@ public class TokenSupplyChangeOpsValidator {
     }
 
     /**
-     * Validate the transaction data for a token mint operation
+     * Validate the transaction data for a token mint operation.
      *
      * @param fungibleCount the number of fungible tokens to burn
      * @param nftSerialNums the list of NFT serial numbers to burn
+     * @param tokensConfig  the tokens configuration
      * @throws HandleException if the transaction data is invalid
      */
     public void validateBurn(
@@ -115,10 +119,11 @@ public class TokenSupplyChangeOpsValidator {
     }
 
     /**
-     * Validate the transaction data for a token mint operation
+     * Validate the transaction data for a token mint operation.
      *
      * @param fungibleCount the number of fungible tokens to wipe
      * @param nftSerialNums the list of NFT serial numbers to wipe
+     * @param tokensConfig the tokens configuration
      * @throws HandleException if the transaction data is invalid
      */
     public void validateWipe(
@@ -129,7 +134,8 @@ public class TokenSupplyChangeOpsValidator {
     }
 
     /**
-     * Perform common validation checks for token operations mint, wipe, and burn given the attributes of the transaction.
+     * Perform common validation checks for token operations mint, wipe, and burn given the attributes
+     * of the transaction.
      *
      * @param fungibleCount The number of fungible common token to mint/wipe/burn.
      * @param nftCount the number of NFTs the operation will be performed on.

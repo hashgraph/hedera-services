@@ -10,5 +10,5 @@ module com.swirlds.config.api {
 
     uses ConfigurationBuilderFactory;
 
-    requires static com.github.spotbugs.annotations;
+    requires static transitive com.github.spotbugs.annotations;
 }

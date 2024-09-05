@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.recovery.internal;
 
-import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
@@ -26,4 +26,4 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  * @param state a state that has had transactions applied to it
  * @param judge the proposed judge for the state
  */
-public record RecoveredState(@NonNull ReservedSignedState state, @NonNull GossipEvent judge) {}
+public record RecoveredState(@NonNull ReservedSignedState state, @NonNull PlatformEvent judge) {}

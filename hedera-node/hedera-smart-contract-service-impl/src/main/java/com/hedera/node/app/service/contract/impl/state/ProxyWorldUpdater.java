@@ -38,7 +38,6 @@ import com.hedera.hapi.node.transaction.ExchangeRate;
 import com.hedera.node.app.service.contract.impl.exec.scope.HandleHederaOperations;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import com.hedera.node.app.spi.workflows.ResourceExhaustedException;
-import com.hedera.node.app.spi.workflows.record.RecordListCheckPoint;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.ArrayList;
@@ -79,11 +78,6 @@ public class ProxyWorldUpdater implements HederaWorldUpdater {
      */
     @Nullable
     private final WorldUpdater parent;
-
-    /**
-     * The current checkpoint of the child records for this ProxyWorldUpdater.
-     */
-    private final RecordListCheckPoint recordListCheckPoint;
 
     /**
      * The {@link EvmFrameState} managing this {@code ProxyWorldUpdater}'s state.
@@ -129,11 +123,6 @@ public class ProxyWorldUpdater implements HederaWorldUpdater {
         this.enhancement = requireNonNull(enhancement);
         this.evmFrameStateFactory = requireNonNull(evmFrameStateFactory);
         this.evmFrameState = evmFrameStateFactory.get();
-        // Everytime we create a new child updater, we need to create a new record list checkpoint containing the
-        // last preceding record and the first following record, so that we can revert the child records from the
-        // checkpoint
-        // when revert() operation is called.
-        this.recordListCheckPoint = enhancement.operations().createRecordListCheckPoint();
     }
 
     /**
@@ -175,20 +164,16 @@ public class ProxyWorldUpdater implements HederaWorldUpdater {
     public ContractID getHederaContractId(@NonNull final Address address) {
         requireNonNull(address);
         final var account = (HederaEvmAccount) get(address);
-        // As an important special case, return the pending creation's contract ID if
-        // its address matches and there is no extant account; but still prioritize
-        // existing accounts of course
         if (account == null) {
-            // If configured to allow non-existent contracts, return the address as a contract ID if the account is
-            // not found.
-            if (!contractMustBePresent) {
-                return isLongZero(address) ? asNumberedContractId(address) : asEvmContractId(address);
-            }
+            // Also return ids for pending creations
             if (pendingCreation != null && pendingCreation.address().equals(address)) {
                 return ContractID.newBuilder()
                         .contractNum(pendingCreation.number())
                         .build();
             } else {
+                if (!contractMustBePresent) {
+                    return isLongZero(address) ? asNumberedContractId(address) : asEvmContractId(address);
+                }
                 throw new IllegalArgumentException("No contract pending or extant at " + address);
             }
         }
@@ -311,18 +296,11 @@ public class ProxyWorldUpdater implements HederaWorldUpdater {
      */
     @Override
     public void finalizeHollowAccount(@NonNull final Address address, @NonNull final Address parent) {
-        // (FUTURE) Since for mono-service parity we externalize a ContractCreate populated with the
-        // contract-specific Hedera properties of the parent, we should either (1) actually set those
-        // properties on the finalized hollow account with those properties; or (2) stop adding them
-        // to the externalized creation record
         evmFrameState.finalizeHollowAccount(address);
         // Reset pending creation to null, as a CREATE2 operation "collided" with an existing
         // hollow account instead of creating a truly new contract
         pendingCreation = null;
-        enhancement
-                .operations()
-                .externalizeHollowAccountMerge(
-                        getHederaContractId(address), getHederaContractId(parent), aliasFrom(address));
+        enhancement.operations().externalizeHollowAccountMerge(getHederaContractId(address), aliasFrom(address));
     }
 
     @Override
@@ -363,8 +341,10 @@ public class ProxyWorldUpdater implements HederaWorldUpdater {
         if (pendingCreation == null) {
             throw new IllegalStateException(CANNOT_CREATE + address + " without a pending creation");
         }
-        // TODO - also enforce the account creation limit here, since contracts are accounts
-        if (evmFrameState.numBytecodesInState() + 1 > enhancement.operations().contractCreationLimit()) {
+        // Enforce the contracts and accounts creation limit here, since contracts are accounts
+        final var newEntityCount = evmFrameState.numBytecodesInState() + 1;
+        if (newEntityCount > enhancement.operations().contractCreationLimit()
+                || newEntityCount > enhancement.operations().accountCreationLimit()) {
             throw new ResourceExhaustedException(MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED);
         }
         final var number = getValidatedCreationNumber(address, balance, pendingCreation);
@@ -402,22 +382,11 @@ public class ProxyWorldUpdater implements HederaWorldUpdater {
         // EvmFrameState is just a convenience wrapper around the scope to let us use Besu types, and
         // ultimately the HederaOperations is the one tracking and managing all changes
         enhancement.operations().revert();
-        enhancement.operations().revertRecordsFrom(recordListCheckPoint);
         // Because of the revert-then-commit pattern that Besu uses for force deletions in
         // AbstractMessageProcessor#clearAccumulatedStateBesidesGasAndOutput(), we have
         // to take special measures here to avoid popping the savepoint stack twice for
         // this frame
         reverted = true;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void revertChildRecords() {
-        if (recordListCheckPoint != null) {
-            enhancement.operations().revertRecordsFrom(recordListCheckPoint);
-        }
     }
 
     /**

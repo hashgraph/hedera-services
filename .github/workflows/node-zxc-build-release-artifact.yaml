@@ -29,15 +29,15 @@ on:
         type: string
         required: true
         default: "none"
-      # Valid SDK release profiles are as follows:
+      # Valid release profiles are as follows:
       # - none
       # - AdhocCommit
       # - DevelopCommit
       # - DevelopDailySnapshot
       # - DevelopSnapshot
       # - PrereleaseChannel
-      sdk-release-profile:
-        description: "SDK Release Profile:"
+      release-profile:
+        description: "Release Profile:"
         type: string
         required: true
         default: "none"
@@ -59,7 +59,7 @@ on:
         description: "Java JDK Version:"
         type: string
         required: false
-        default: "21.0.1"
+        default: "21"
       gradle-version:
         description: "Gradle Version:"
         type: string
@@ -119,7 +119,7 @@ permissions:
 jobs:
   validate:
     name: Validate
-    runs-on: [ self-hosted, Linux, large, ephemeral ]
+    runs-on: network-node-linux-large
     outputs:
       branch-name: ${{ steps.parameters.outputs.branch-name }}
       branch-name-lower: ${{ steps.parameters.outputs.branch-name-lower }}
@@ -181,19 +181,19 @@ jobs:
           java-version: ${{ inputs.java-version }}
 
       - name: Setup Gradle
-        uses: gradle/gradle-build-action@29c0906b64b8fc82467890bfb7a0a7ef34bda89e # v3.1.0
+        uses: gradle/actions/setup-gradle@dbbdc275be76ac10734476cc723d82dfe7ec6eda # v3.4.2
         with:
           gradle-version: ${{ inputs.gradle-version }}
 
       - name: Gradle Update Version (As Specified)
-        uses: gradle/gradle-build-action@29c0906b64b8fc82467890bfb7a0a7ef34bda89e # v3.1.0
+        uses: gradle/actions/setup-gradle@dbbdc275be76ac10734476cc723d82dfe7ec6eda # v3.4.2
         if: ${{ inputs.version-policy == 'specified' && !cancelled() && !failure() }}
         with:
           gradle-version: ${{ inputs.gradle-version }}
           arguments: versionAsSpecified -PnewVersion=${{ inputs.new-version }} --scan
 
       - name: Gradle Update Version (Branch Commit)
-        uses: gradle/gradle-build-action@29c0906b64b8fc82467890bfb7a0a7ef34bda89e # v3.1.0
+        uses: gradle/actions/setup-gradle@dbbdc275be76ac10734476cc723d82dfe7ec6eda # v3.4.2
         if: ${{ inputs.version-policy != 'specified' && !cancelled() && !failure() }}
         with:
           gradle-version: ${{ inputs.gradle-version }}
@@ -222,7 +222,7 @@ jobs:
 
   build-artifact:
     name: Build Artifact
-    runs-on: [self-hosted, Linux, large, ephemeral]
+    runs-on: network-node-linux-large
     needs:
       - validate
     steps:
@@ -287,7 +287,7 @@ jobs:
           java-version: ${{ inputs.java-version }}
 
       - name: Setup Gradle
-        uses: gradle/gradle-build-action@29c0906b64b8fc82467890bfb7a0a7ef34bda89e # v3.1.0
+        uses: gradle/actions/setup-gradle@dbbdc275be76ac10734476cc723d82dfe7ec6eda # v3.4.2
         with:
           gradle-version: ${{ inputs.gradle-version }}
 
@@ -306,13 +306,13 @@ jobs:
 
       - name: Gradle Assemble
         id: gradle-build
-        uses: gradle/gradle-build-action@29c0906b64b8fc82467890bfb7a0a7ef34bda89e # v3.1.0
+        uses: gradle/actions/setup-gradle@dbbdc275be76ac10734476cc723d82dfe7ec6eda # v3.4.2
         with:
           gradle-version: ${{ inputs.gradle-version }}
           arguments: assemble --scan
 
       - name: Gradle Version Summary
-        uses: gradle/gradle-build-action@29c0906b64b8fc82467890bfb7a0a7ef34bda89e # v3.1.0
+        uses: gradle/actions/setup-gradle@dbbdc275be76ac10734476cc723d82dfe7ec6eda # v3.4.2
         with:
           gradle-version: ${{ inputs.gradle-version }}
           arguments: githubVersionSummary --scan
@@ -415,7 +415,7 @@ jobs:
 
   local-node-images:
     name: Publish Local Node Images
-    runs-on: [ self-hosted, Linux, large, ephemeral ]
+    runs-on: network-node-linux-large
     needs:
       - validate
       - build-artifact
@@ -452,9 +452,13 @@ jobs:
         uses: docker/setup-qemu-action@68827325e0b33c7199eb31dd4e31fbe9023e06e3 # v3.0.0
 
       - name: Setup Docker Buildx Support
-        uses: docker/setup-buildx-action@f95db51fddba0c2d1ec667646a06c2ce06100226 # v3.0.0
+        uses: docker/setup-buildx-action@988b5a0280414f521da01fcc63a27aeeb4b104db # v3.6.1
         with:
+          version: v0.16.2
           driver-opts: network=host
+          buildkitd-config-inline: |
+            [registry."docker.io"]
+              mirrors = ["https://hub.mirror.docker.lat.ope.eng.hashgraph.io"]
 
       - name: Setup Local Docker Registry
         if: ${{ inputs.dry-run-enabled == true && !cancelled() && !failure() }}
@@ -580,7 +584,7 @@ jobs:
 
   validate-production-image:
     name: Validate Production Image
-    runs-on: [ self-hosted, Linux, large, ephemeral ]
+    runs-on: network-node-linux-large
     needs:
       - gcp-production-image
       - jfr-production-image
@@ -687,103 +691,12 @@ jobs:
           name: Production Image Manifests
           path: ${{ env.DOCKER_MANIFEST_PATH }}
 
-  evm-mc-publish:
-    name: Publish EVM to Maven Central
-    runs-on: [ self-hosted, Linux, large, ephemeral ]
+  publish:
+    name: Publish to ${{ inputs.version-policy == 'specified' && 'Maven Central' || 'GCP Registry' }}
+    runs-on: network-node-linux-large
     needs:
       - validate
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
-
-      - name: Install GnuPG Tools
-        if: ${{ inputs.dry-run-enabled != true }}
-        run: |
-          if ! command -v gpg2 >/dev/null 2>&1; then
-            echo "::group::Updating APT Repository Indices"
-              sudo apt update
-            echo "::endgroup::"
-            echo "::group::Installing GnuPG Tools"
-              sudo apt install -y gnupg2
-            echo "::endgroup::"
-          fi
-
-      - name: Import GPG key
-        id: gpg_key
-        uses: crazy-max/ghaction-import-gpg@01dd5d3ca463c7f10f7f4f7b4f177225ac661ee4 # v6.1.0
-        if: ${{ inputs.dry-run-enabled != true && !cancelled() && !failure() }}
-        with:
-          gpg_private_key: ${{ secrets.svcs-gpg-key-contents }}
-          passphrase: ${{ secrets.svcs-gpg-key-passphrase }}
-          git_config_global: true
-          git_user_signingkey: true
-          git_commit_gpgsign: true
-          git_tag_gpgsign: true
-
-      - name: Setup Java
-        uses: actions/setup-java@387ac29b308b003ca37ba93a6cab5eb57c8f5f93 # v4.0.0
-        with:
-          distribution: ${{ inputs.java-distribution }}
-          java-version: ${{ inputs.java-version }}
-
-      - name: Setup Gradle
-        uses: gradle/gradle-build-action@29c0906b64b8fc82467890bfb7a0a7ef34bda89e # v3.1.0
-        with:
-          gradle-version: ${{ inputs.gradle-version }}
-
-      - name: Restore Build Version
-        uses: actions/cache@ab5e6d0c87105b4c9c2047343972218f562e4319 # v4.0.1
-        with:
-          fail-on-cache-miss: true
-          path: version.txt
-          key: node-build-version-${{ needs.validate.outputs.version }}-${{ github.sha }}
-
-      - name: Gradle Update Version (Snapshot)
-        uses: gradle/gradle-build-action@29c0906b64b8fc82467890bfb7a0a7ef34bda89e # v3.1.0
-        if: ${{ inputs.version-policy != 'specified' && !cancelled() && !failure() }}
-        with:
-          gradle-version: ${{ inputs.gradle-version }}
-          arguments: versionAsSnapshot --scan
-
-      - name: Gradle Assemble
-        id: gradle-build
-        uses: gradle/gradle-build-action@29c0906b64b8fc82467890bfb7a0a7ef34bda89e # v3.1.0
-        with:
-          gradle-version: ${{ inputs.gradle-version }}
-          arguments: assemble --scan
-
-      - name: Gradle Version Summary
-        uses: gradle/gradle-build-action@29c0906b64b8fc82467890bfb7a0a7ef34bda89e # v3.1.0
-        with:
-          gradle-version: ${{ inputs.gradle-version }}
-          arguments: githubVersionSummary --scan
-
-      - name: Gradle Maven Central Release
-        uses: gradle/gradle-build-action@29c0906b64b8fc82467890bfb7a0a7ef34bda89e # v3.1.0
-        if: ${{ inputs.dry-run-enabled != true && inputs.version-policy == 'specified' && !cancelled() && !failure() }}
-        env:
-          OSSRH_USERNAME: ${{ secrets.svcs-ossrh-username }}
-          OSSRH_PASSWORD: ${{ secrets.svcs-ossrh-password }}
-        with:
-          gradle-version: ${{ inputs.gradle-version }}
-          arguments: "releaseEvmMavenCentral --scan -PpublishSigningEnabled=true --no-configuration-cache --no-parallel"
-
-      - name: Gradle Maven Central Snapshot
-        uses: gradle/gradle-build-action@29c0906b64b8fc82467890bfb7a0a7ef34bda89e # v3.1.0
-        if: ${{ inputs.dry-run-enabled != true && inputs.version-policy != 'specified' && !cancelled() && !failure() }}
-        env:
-          OSSRH_USERNAME: ${{ secrets.svcs-ossrh-username }}
-          OSSRH_PASSWORD: ${{ secrets.svcs-ossrh-password }}
-        with:
-          gradle-version: ${{ inputs.gradle-version }}
-          arguments: "releaseEvmMavenCentralSnapshot --scan -PpublishSigningEnabled=true --no-configuration-cache --no-parallel"
-
-  sdk-publish:
-    name: Publish Platform to ${{ inputs.version-policy == 'specified' && 'Maven Central' || 'GCP Registry' }}
-    runs-on: [ self-hosted, Linux, large, ephemeral ]
-    needs:
-      - validate
-    if: ${{ inputs.sdk-release-profile != 'none' }}
+    if: ${{ inputs.release-profile != 'none' }}
     steps:
       - name: Checkout Code
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
@@ -829,7 +742,7 @@ jobs:
           java-version: ${{ inputs.java-version }}
 
       - name: Setup Gradle
-        uses: gradle/gradle-build-action@29c0906b64b8fc82467890bfb7a0a7ef34bda89e # v3.1.0
+        uses: gradle/actions/setup-gradle@dbbdc275be76ac10734476cc723d82dfe7ec6eda # v3.4.2
         with:
           gradle-version: ${{ inputs.gradle-version }}
 
@@ -841,13 +754,13 @@ jobs:
           key: node-build-version-${{ needs.validate.outputs.version }}-${{ github.sha }}
 
       - name: Gradle Assemble
-        uses: gradle/gradle-build-action@29c0906b64b8fc82467890bfb7a0a7ef34bda89e # v3.1.0
+        uses: gradle/actions/setup-gradle@dbbdc275be76ac10734476cc723d82dfe7ec6eda # v3.4.2
         with:
           gradle-version: ${{ inputs.gradle-version }}
           arguments: assemble --scan
 
       - name: Gradle Version Summary
-        uses: gradle/gradle-build-action@29c0906b64b8fc82467890bfb7a0a7ef34bda89e # v3.1.0
+        uses: gradle/actions/setup-gradle@dbbdc275be76ac10734476cc723d82dfe7ec6eda # v3.4.2
         with:
           gradle-version: ${{ inputs.gradle-version }}
           arguments: githubVersionSummary --scan
@@ -924,15 +837,25 @@ jobs:
             gpg --output "${PUBLIC_ARCHIVE_FILE}.sha256.asc" --detach-sig "${PUBLIC_ARCHIVE_FILE}.sha256"
           echo "::endgroup::"
 
-      - name: Gradle Publish to ${{ inputs.version-policy == 'specified' && 'Maven Central' || 'Google Artifact Registry' }} (${{ inputs.sdk-release-profile }})
-        uses: gradle/gradle-build-action@29c0906b64b8fc82467890bfb7a0a7ef34bda89e # v3.1.0
-        if: ${{ inputs.dry-run-enabled != true && inputs.sdk-release-profile != 'none' && !cancelled() && !failure() }}
+      - name: Gradle Publish Platform to ${{ inputs.version-policy == 'specified' && 'Maven Central' || 'Google Artifact Registry' }} (${{ inputs.release-profile }})
+        uses: gradle/actions/setup-gradle@dbbdc275be76ac10734476cc723d82dfe7ec6eda # v3.4.2
+        if: ${{ inputs.dry-run-enabled != true && inputs.release-profile != 'none' && !cancelled() && !failure() }}
         env:
-          OSSRH_USERNAME: ${{ secrets.sdk-ossrh-username }}
-          OSSRH_PASSWORD: ${{ secrets.sdk-ossrh-password }}
+          NEXUS_USERNAME: ${{ secrets.sdk-ossrh-username }}
+          NEXUS_PASSWORD: ${{ secrets.sdk-ossrh-password }}
         with:
           gradle-version: ${{ inputs.gradle-version }}
-          arguments: "release${{ inputs.sdk-release-profile }} --scan -PpublishSigningEnabled=true --no-configuration-cache --no-parallel"
+          arguments: "release${{ inputs.release-profile }} -PpublishingPackageGroup=com.swirlds --scan -PpublishSigningEnabled=true --no-configuration-cache"
+
+      - name: Gradle Publish Services to ${{ inputs.version-policy == 'specified' && 'Maven Central' || 'Google Artifact Registry' }} (${{ inputs.release-profile }})
+        uses: gradle/gradle-build-action@29c0906b64b8fc82467890bfb7a0a7ef34bda89e # v3.1.0
+        if: ${{ inputs.dry-run-enabled != true && inputs.release-profile != 'none' && !cancelled() && !failure() }}
+        env:
+          NEXUS_USERNAME: ${{ secrets.svcs-ossrh-username }}
+          NEXUS_PASSWORD: ${{ secrets.svcs-ossrh-password }}
+        with:
+          gradle-version: ${{ inputs.gradle-version }}
+          arguments: "release${{ inputs.release-profile }} -PpublishingPackageGroup=com.hedera --scan -PpublishSigningEnabled=true --no-configuration-cache"
 
       - name: Upload SDK Release Archives
         if: ${{ inputs.dry-run-enabled != true && inputs.version-policy == 'specified' && !cancelled() && !failure() }}
@@ -944,13 +867,12 @@ jobs:
 
   send-notifications:
     name: Send Release Notifications
-    runs-on: [ self-hosted, Linux, large, ephemeral ]
+    runs-on: network-node-linux-large
     needs:
       - validate
       - local-node-images
       - validate-production-image
-      - evm-mc-publish
-      - sdk-publish
+      - publish
     if: ${{ inputs.dry-run-enabled != true && inputs.version-policy == 'specified' && !cancelled() && !failure() }}
     steps:
       - name: Determine Notification Parameters
@@ -960,7 +882,7 @@ jobs:
           ARTIFACT_LINK_NAME="MC Availability Check"
           ARTIFACT_REGISTRY="Maven Central"
 
-          if [[ "${{ inputs.sdk-release-profile }}" == "PrereleaseChannel" ]]; then
+          if [[ "${{ inputs.release-profile }}" == "PrereleaseChannel" ]]; then
             ARTIFACT_URL="https://console.cloud.google.com/artifacts/maven/swirlds-registry/us/maven-prerelease-channel/com.swirlds:swirlds-platform-core/${{ needs.validate.outputs.version }}?project=swirlds-registry"
             ARTIFACT_LINK_NAME="GCP Registry"
             ARTIFACT_REGISTRY="GCP Artifact Registry"

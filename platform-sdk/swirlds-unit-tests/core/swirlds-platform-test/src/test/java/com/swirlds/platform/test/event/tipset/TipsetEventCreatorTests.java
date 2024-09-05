@@ -20,7 +20,6 @@ import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
 import static com.swirlds.common.test.fixtures.RandomUtils.randomSignature;
 import static com.swirlds.common.utility.CompareTo.isGreaterThanOrEqualTo;
 import static com.swirlds.platform.consensus.ConsensusConstants.ROUND_FIRST;
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -30,6 +29,10 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import com.hedera.hapi.platform.event.EventTransaction;
+import com.hedera.hapi.platform.event.EventTransaction.TransactionOneOfType;
+import com.hedera.pbj.runtime.OneOf;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.base.test.fixtures.time.FakeTime;
 import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
@@ -40,26 +43,22 @@ import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.platform.components.transaction.TransactionSupplier;
 import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.event.AncientMode;
-import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.event.creation.EventCreator;
 import com.swirlds.platform.event.creation.tipset.ChildlessEventTracker;
 import com.swirlds.platform.event.creation.tipset.TipsetEventCreator;
 import com.swirlds.platform.event.creation.tipset.TipsetTracker;
-import com.swirlds.platform.event.creation.tipset.TipsetUtils;
 import com.swirlds.platform.event.creation.tipset.TipsetWeightCalculator;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
-import com.swirlds.platform.system.events.BaseEventHashedData;
-import com.swirlds.platform.system.events.BaseEventUnhashedData;
-import com.swirlds.platform.system.events.ConsensusData;
 import com.swirlds.platform.system.events.EventConstants;
-import com.swirlds.platform.system.events.EventDescriptor;
-import com.swirlds.platform.system.transaction.ConsensusTransactionImpl;
-import com.swirlds.platform.system.transaction.SwirldTransaction;
-import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookGenerator;
+import com.swirlds.platform.system.events.EventDescriptorWrapper;
+import com.swirlds.platform.system.events.UnsignedEvent;
+import com.swirlds.platform.system.transaction.Transaction;
+import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
 import com.swirlds.platform.test.fixtures.event.TestingEventBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -72,6 +71,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.IntStream;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -153,8 +153,8 @@ class TipsetEventCreatorTests {
 
     private void validateNewEvent(
             @NonNull final Map<Hash, EventImpl> events,
-            @NonNull final BaseEventHashedData newEvent,
-            @NonNull final ConsensusTransactionImpl[] expectedTransactions,
+            @NonNull final UnsignedEvent newEvent,
+            @NonNull final List<EventTransaction> expectedTransactions,
             @NonNull final SimulatedNode simulatedNode,
             final boolean slowNode) {
 
@@ -168,7 +168,7 @@ class TipsetEventCreatorTests {
         if (selfParent == null) {
             // The only legal time to have a null self parent is genesis.
             for (final EventImpl event : events.values()) {
-                if (event.getHashedData().getHash().equals(newEvent.getHash())) {
+                if (event.getBaseEvent().getHash().equals(newEvent.getHash())) {
                     // comparing to self
                     continue;
                 }
@@ -195,13 +195,13 @@ class TipsetEventCreatorTests {
         // Timestamp must always increase by 1 nanosecond, and there must always be a unique timestamp
         // with nanosecond precision for transaction.
         if (selfParent != null) {
-            final int minimumIncrement = Math.max(1, selfParent.getTransactions().length);
+            final int minimumIncrement = Math.max(1, selfParent.getBaseEvent().getTransactionCount());
             final Instant minimumTimestamp = selfParent.getTimeCreated().plus(Duration.ofNanos(minimumIncrement));
             assertTrue(isGreaterThanOrEqualTo(newEvent.getTimeCreated(), minimumTimestamp));
         }
 
         // Validate tipset constraints.
-        final EventDescriptor descriptor = newEvent.getDescriptor();
+        final EventDescriptorWrapper descriptor = newEvent.getDescriptor();
         if (selfParent != null) {
             // Except for a genesis event, all other new events must have a positive advancement score.
             assertTrue(simulatedNode
@@ -212,10 +212,20 @@ class TipsetEventCreatorTests {
             simulatedNode.tipsetWeightCalculator.addEventAndGetAdvancementWeight(descriptor);
         }
 
+        final List<EventTransaction> convertedTransactions = newEvent.getTransactions().stream()
+                .map(Transaction::getTransaction)
+                .toList();
         // We should see the expected transactions
-        assertArrayEquals(expectedTransactions, newEvent.getTransactions());
+        IntStream.range(0, expectedTransactions.size()).forEach(i -> {
+            final OneOf<TransactionOneOfType> expected =
+                    expectedTransactions.get(i).transaction();
+            final OneOf<TransactionOneOfType> actual =
+                    convertedTransactions.get(i).transaction();
+            assertEquals(expected.kind(), actual.kind(), "Transaction kind " + i + " mismatch");
+            assertEquals(expected.value(), actual.value(), "Transaction payload " + i + " mismatch");
+        });
 
-        assertDoesNotThrow(() -> simulatedNode.eventCreator.toString());
+        assertDoesNotThrow(simulatedNode.eventCreator::toString);
     }
 
     /**
@@ -224,7 +234,7 @@ class TipsetEventCreatorTests {
     private void linkAndDistributeEvent(
             @NonNull final Map<NodeId, SimulatedNode> eventCreators,
             @NonNull final Map<Hash, EventImpl> events,
-            @NonNull final BaseEventHashedData event) {
+            @NonNull final UnsignedEvent event) {
 
         distributeEvent(eventCreators, linkEvent(eventCreators, events, event));
     }
@@ -236,18 +246,14 @@ class TipsetEventCreatorTests {
     private EventImpl linkEvent(
             @NonNull final Map<NodeId, SimulatedNode> eventCreators,
             @NonNull final Map<Hash, EventImpl> events,
-            @NonNull final BaseEventHashedData event) {
+            @NonNull final UnsignedEvent event) {
 
-        eventCreators
-                .get(event.getCreatorId())
-                .tipsetTracker
-                .addEvent(event.getDescriptor(), TipsetUtils.getParentDescriptors(event));
+        eventCreators.get(event.getCreatorId()).tipsetTracker.addEvent(event.getDescriptor(), event.getAllParents());
 
         final EventImpl selfParent = events.get(event.getSelfParentHash());
         final EventImpl otherParent = events.get(event.getOtherParentHash());
 
-        final EventImpl eventImpl = new EventImpl(
-                new GossipEvent(event, new BaseEventUnhashedData()), new ConsensusData(), selfParent, otherParent);
+        final EventImpl eventImpl = new EventImpl(new PlatformEvent(event, new byte[0]), selfParent, otherParent);
         events.put(event.getHash(), eventImpl);
 
         return eventImpl;
@@ -263,7 +269,7 @@ class TipsetEventCreatorTests {
             eventCreator.eventCreator.registerEvent(eventImpl.getBaseEvent());
             eventCreator.tipsetTracker.addEvent(
                     eventImpl.getBaseEvent().getDescriptor(),
-                    TipsetUtils.getParentDescriptors(eventImpl.getBaseEvent().getHashedData()));
+                    eventImpl.getBaseEvent().getAllParents());
         }
     }
 
@@ -271,15 +277,16 @@ class TipsetEventCreatorTests {
      * Generate a small number of random transactions.
      */
     @NonNull
-    private ConsensusTransactionImpl[] generateRandomTransactions(@NonNull final Random random) {
+    private List<EventTransaction> generateRandomTransactions(@NonNull final Random random) {
         final int transactionCount = random.nextInt(0, 10);
-        final ConsensusTransactionImpl[] transactions = new ConsensusTransactionImpl[transactionCount];
+        final List<EventTransaction> transactions = new ArrayList<>();
 
         for (int i = 0; i < transactionCount; i++) {
             final byte[] bytes = new byte[32];
             random.nextBytes(bytes);
-            final ConsensusTransactionImpl transaction = new SwirldTransaction(bytes);
-            transactions[i] = transaction;
+            final OneOf<TransactionOneOfType> oneOf =
+                    new OneOf<>(TransactionOneOfType.APPLICATION_TRANSACTION, Bytes.wrap(bytes));
+            transactions.add(new EventTransaction(oneOf));
         }
 
         return transactions;
@@ -297,11 +304,11 @@ class TipsetEventCreatorTests {
         final int networkSize = 10;
 
         final AddressBook addressBook =
-                new RandomAddressBookGenerator(random).setSize(networkSize).build();
+                RandomAddressBookBuilder.create(random).withSize(networkSize).build();
 
         final FakeTime time = new FakeTime();
 
-        final AtomicReference<ConsensusTransactionImpl[]> transactionSupplier = new AtomicReference<>();
+        final AtomicReference<List<EventTransaction>> transactionSupplier = new AtomicReference<>();
 
         final Map<NodeId, SimulatedNode> nodes = buildSimulatedNodes(
                 random,
@@ -323,7 +330,7 @@ class TipsetEventCreatorTests {
                 final NodeId nodeId = address.getNodeId();
                 final EventCreator eventCreator = nodes.get(nodeId).eventCreator;
 
-                final BaseEventHashedData event = eventCreator.maybeCreateEvent();
+                final UnsignedEvent event = eventCreator.maybeCreateEvent();
 
                 // In this test, it should be impossible for a node to be unable to create an event.
                 assertNotNull(event);
@@ -351,11 +358,11 @@ class TipsetEventCreatorTests {
         final int networkSize = 10;
 
         final AddressBook addressBook =
-                new RandomAddressBookGenerator(random).setSize(networkSize).build();
+                RandomAddressBookBuilder.create(random).withSize(networkSize).build();
 
         final FakeTime time = new FakeTime();
 
-        final AtomicReference<ConsensusTransactionImpl[]> transactionSupplier = new AtomicReference<>();
+        final AtomicReference<List<EventTransaction>> transactionSupplier = new AtomicReference<>();
 
         final Map<NodeId, SimulatedNode> nodes = buildSimulatedNodes(
                 random,
@@ -384,7 +391,7 @@ class TipsetEventCreatorTests {
                 final NodeId nodeId = address.getNodeId();
                 final EventCreator eventCreator = nodes.get(nodeId).eventCreator;
 
-                final BaseEventHashedData event = eventCreator.maybeCreateEvent();
+                final UnsignedEvent event = eventCreator.maybeCreateEvent();
 
                 // It's possible a node may not be able to create an event. But we are guaranteed
                 // to be able to create at least one event per cycle.
@@ -419,11 +426,11 @@ class TipsetEventCreatorTests {
         final int networkSize = 10;
 
         final AddressBook addressBook =
-                new RandomAddressBookGenerator(random).setSize(networkSize).build();
+                RandomAddressBookBuilder.create(random).withSize(networkSize).build();
 
         final FakeTime time = new FakeTime();
 
-        final AtomicReference<ConsensusTransactionImpl[]> transactionSupplier = new AtomicReference<>();
+        final AtomicReference<List<EventTransaction>> transactionSupplier = new AtomicReference<>();
 
         final Map<NodeId, SimulatedNode> nodes = buildSimulatedNodes(
                 random, time, addressBook, transactionSupplier::get, AncientMode.GENERATION_THRESHOLD);
@@ -449,7 +456,7 @@ class TipsetEventCreatorTests {
                     final NodeId nodeId = address.getNodeId();
                     final EventCreator eventCreator = nodes.get(nodeId).eventCreator;
 
-                    final BaseEventHashedData event = eventCreator.maybeCreateEvent();
+                    final UnsignedEvent event = eventCreator.maybeCreateEvent();
 
                     // It's possible a node may not be able to create an event. But we are guaranteed
                     // to be able to create at least one event per cycle.
@@ -494,11 +501,11 @@ class TipsetEventCreatorTests {
         final int networkSize = 10;
 
         final AddressBook addressBook =
-                new RandomAddressBookGenerator(random).setSize(networkSize).build();
+                RandomAddressBookBuilder.create(random).withSize(networkSize).build();
 
         final FakeTime time = new FakeTime();
 
-        final AtomicReference<ConsensusTransactionImpl[]> transactionSupplier = new AtomicReference<>();
+        final AtomicReference<List<EventTransaction>> transactionSupplier = new AtomicReference<>();
 
         final Map<NodeId, SimulatedNode> nodes = buildSimulatedNodes(
                 random,
@@ -523,7 +530,7 @@ class TipsetEventCreatorTests {
                     final NodeId nodeId = address.getNodeId();
                     final EventCreator eventCreator = nodes.get(nodeId).eventCreator;
 
-                    final BaseEventHashedData event = eventCreator.maybeCreateEvent();
+                    final UnsignedEvent event = eventCreator.maybeCreateEvent();
 
                     if (count == 0) {
                         // The first time we attempt to create an event we should be able to do so.
@@ -562,7 +569,7 @@ class TipsetEventCreatorTests {
         final int networkSize = 10;
 
         final AddressBook addressBook =
-                new RandomAddressBookGenerator(random).setSize(networkSize).build();
+                RandomAddressBookBuilder.create(random).withSize(networkSize).build();
 
         final NodeId zeroWeightNode = addressBook.getNodeId(0);
 
@@ -576,7 +583,7 @@ class TipsetEventCreatorTests {
 
         final FakeTime time = new FakeTime();
 
-        final AtomicReference<ConsensusTransactionImpl[]> transactionSupplier = new AtomicReference<>();
+        final AtomicReference<List<EventTransaction>> transactionSupplier = new AtomicReference<>();
 
         final Map<NodeId, SimulatedNode> nodes = buildSimulatedNodes(
                 random,
@@ -607,7 +614,7 @@ class TipsetEventCreatorTests {
                 final NodeId nodeId = address.getNodeId();
                 final EventCreator eventCreator = nodes.get(nodeId).eventCreator;
 
-                final BaseEventHashedData event = eventCreator.maybeCreateEvent();
+                final UnsignedEvent event = eventCreator.maybeCreateEvent();
 
                 // It's possible a node may not be able to create an event. But we are guaranteed
                 // to be able to create at least one event per cycle.
@@ -618,7 +625,7 @@ class TipsetEventCreatorTests {
 
                 final NodeId otherId;
                 if (event.hasOtherParent()) {
-                    otherId = event.getOtherParents().getFirst().getCreator();
+                    otherId = event.getOtherParents().getFirst().creator();
                 } else {
                     otherId = null;
                 }
@@ -659,7 +666,7 @@ class TipsetEventCreatorTests {
         final int networkSize = 10;
 
         final AddressBook addressBook =
-                new RandomAddressBookGenerator(random).setSize(networkSize).build();
+                RandomAddressBookBuilder.create(random).withSize(networkSize).build();
 
         final NodeId zeroWeightNode = addressBook.getNodeId(0);
 
@@ -673,7 +680,7 @@ class TipsetEventCreatorTests {
 
         final FakeTime time = new FakeTime();
 
-        final AtomicReference<ConsensusTransactionImpl[]> transactionSupplier = new AtomicReference<>();
+        final AtomicReference<List<EventTransaction>> transactionSupplier = new AtomicReference<>();
 
         final Map<NodeId, SimulatedNode> nodes = buildSimulatedNodes(
                 random,
@@ -704,7 +711,7 @@ class TipsetEventCreatorTests {
                 final NodeId nodeId = address.getNodeId();
                 final EventCreator eventCreator = nodes.get(nodeId).eventCreator;
 
-                final BaseEventHashedData event = eventCreator.maybeCreateEvent();
+                final UnsignedEvent event = eventCreator.maybeCreateEvent();
 
                 // It's possible a node may not be able to create an event. But we are guaranteed
                 // to be able to create at least one event per cycle.
@@ -715,7 +722,7 @@ class TipsetEventCreatorTests {
 
                 final NodeId otherId;
                 if (event.hasOtherParent()) {
-                    otherId = event.getOtherParents().getFirst().getCreator();
+                    otherId = event.getOtherParents().getFirst().creator();
                 } else {
                     otherId = null;
                 }
@@ -767,11 +774,11 @@ class TipsetEventCreatorTests {
         final int networkSize = 1;
 
         final AddressBook addressBook =
-                new RandomAddressBookGenerator(random).setSize(networkSize).build();
+                RandomAddressBookBuilder.create(random).withSize(networkSize).build();
 
         final FakeTime time = new FakeTime();
 
-        final AtomicReference<ConsensusTransactionImpl[]> transactionSupplier = new AtomicReference<>();
+        final AtomicReference<List<EventTransaction>> transactionSupplier = new AtomicReference<>();
 
         final Map<NodeId, SimulatedNode> nodes = buildSimulatedNodes(
                 random,
@@ -794,7 +801,7 @@ class TipsetEventCreatorTests {
             final NodeId nodeId = address.getNodeId();
             final EventCreator eventCreator = nodes.get(nodeId).eventCreator;
 
-            final BaseEventHashedData event = eventCreator.maybeCreateEvent();
+            final UnsignedEvent event = eventCreator.maybeCreateEvent();
 
             // In this test, it should be impossible for a node to be unable to create an event.
             assertNotNull(event);
@@ -808,14 +815,14 @@ class TipsetEventCreatorTests {
     }
 
     @NonNull
-    private GossipEvent createTestEvent(
+    private PlatformEvent createTestEvent(
             @NonNull final Random random,
             @NonNull final NodeId creator,
             long selfParentGeneration,
             @Nullable final NodeId otherParentId,
             final long otherParentGeneration) {
 
-        final GossipEvent selfParent =
+        final PlatformEvent selfParent =
                 new TestingEventBuilder(random).setCreatorId(creator).build();
 
         final TestingEventBuilder eventBuilder = new TestingEventBuilder(random)
@@ -824,7 +831,7 @@ class TipsetEventCreatorTests {
                 .overrideSelfParentGeneration(selfParentGeneration);
 
         if (otherParentId != null) {
-            final GossipEvent otherParent =
+            final PlatformEvent otherParent =
                     new TestingEventBuilder(random).setCreatorId(otherParentId).build();
 
             eventBuilder.setOtherParent(otherParent).overrideOtherParentGeneration(otherParentGeneration);
@@ -845,9 +852,10 @@ class TipsetEventCreatorTests {
 
         final int networkSize = 4;
 
-        final AddressBook addressBook = new RandomAddressBookGenerator(random)
-                .setCustomWeightGenerator(x -> 1L)
-                .setSize(networkSize)
+        final AddressBook addressBook = RandomAddressBookBuilder.create(random)
+                .withMinimumWeight(1)
+                .withMaximumWeight(1)
+                .withSize(networkSize)
                 .build();
 
         final FakeTime time = new FakeTime();
@@ -858,18 +866,17 @@ class TipsetEventCreatorTests {
         final NodeId nodeD = addressBook.getNodeId(3);
 
         // All nodes except for node 0 are fully mocked. This test is testing how node 0 behaves.
-        final EventCreator eventCreator =
-                buildEventCreator(random, time, addressBook, nodeA, () -> new ConsensusTransactionImpl[0]);
+        final EventCreator eventCreator = buildEventCreator(random, time, addressBook, nodeA, Collections::emptyList);
 
         // Create some genesis events
-        final BaseEventHashedData eventA1 = eventCreator.maybeCreateEvent();
+        final UnsignedEvent eventA1 = eventCreator.maybeCreateEvent();
         assertNotNull(eventA1);
 
-        final GossipEvent eventB1 = createTestEvent(
+        final PlatformEvent eventB1 = createTestEvent(
                 random, nodeB, EventConstants.GENERATION_UNDEFINED, null, EventConstants.GENERATION_UNDEFINED);
-        final GossipEvent eventC1 = createTestEvent(
+        final PlatformEvent eventC1 = createTestEvent(
                 random, nodeC, EventConstants.GENERATION_UNDEFINED, null, EventConstants.GENERATION_UNDEFINED);
-        final GossipEvent eventD1 = createTestEvent(
+        final PlatformEvent eventD1 = createTestEvent(
                 random, nodeD, EventConstants.GENERATION_UNDEFINED, null, EventConstants.GENERATION_UNDEFINED);
 
         eventCreator.registerEvent(eventB1);
@@ -880,15 +887,15 @@ class TipsetEventCreatorTests {
         // We should be able to create a total of 3 before we exhaust all possible parents.
 
         // This will not advance the snapshot, total advancement weight is 1 (1+1/4 !> 2/3)
-        final BaseEventHashedData eventA2 = eventCreator.maybeCreateEvent();
+        final UnsignedEvent eventA2 = eventCreator.maybeCreateEvent();
         assertNotNull(eventA2);
 
         // This will advance the snapshot, total advancement weight is 2 (2+1/4 > 2/3)
-        final BaseEventHashedData eventA3 = eventCreator.maybeCreateEvent();
+        final UnsignedEvent eventA3 = eventCreator.maybeCreateEvent();
         assertNotNull(eventA3);
 
         // This will not advance the snapshot, total advancement weight is 1 (1+1/4 !> 2/3)
-        final BaseEventHashedData eventA4 = eventCreator.maybeCreateEvent();
+        final UnsignedEvent eventA4 = eventCreator.maybeCreateEvent();
         assertNotNull(eventA4);
 
         // It should not be possible to create another event since we have exhausted all possible other parents.
@@ -899,12 +906,12 @@ class TipsetEventCreatorTests {
 
         final NodeId otherParentId;
         if (eventA2.hasOtherParent()) {
-            otherParentId = eventA2.getOtherParents().getFirst().getCreator();
+            otherParentId = eventA2.getOtherParents().getFirst().creator();
         } else {
             otherParentId = null;
         }
 
-        final GossipEvent legalOtherParent = createTestEvent(random, otherParentId, 0, nodeA, 0);
+        final PlatformEvent legalOtherParent = createTestEvent(random, otherParentId, 0, nodeA, 0);
 
         eventCreator.registerEvent(legalOtherParent);
 
@@ -922,9 +929,10 @@ class TipsetEventCreatorTests {
 
         final int networkSize = 4;
 
-        final AddressBook addressBook = new RandomAddressBookGenerator(random)
-                .setCustomWeightGenerator(x -> 1L)
-                .setSize(networkSize)
+        final AddressBook addressBook = RandomAddressBookBuilder.create(random)
+                .withMinimumWeight(1)
+                .withMaximumWeight(1)
+                .withSize(networkSize)
                 .build();
 
         final FakeTime time = new FakeTime();
@@ -937,20 +945,19 @@ class TipsetEventCreatorTests {
         final NodeId nodeE = new NodeId(nodeD.id() + 1);
 
         // All nodes except for node 0 are fully mocked. This test is testing how node 0 behaves.
-        final EventCreator eventCreator =
-                buildEventCreator(random, time, addressBook, nodeA, () -> new ConsensusTransactionImpl[0]);
+        final EventCreator eventCreator = buildEventCreator(random, time, addressBook, nodeA, Collections::emptyList);
 
         // Create some genesis events
-        final BaseEventHashedData eventA1 = eventCreator.maybeCreateEvent();
+        final UnsignedEvent eventA1 = eventCreator.maybeCreateEvent();
         assertNotNull(eventA1);
 
-        final GossipEvent eventB1 = createTestEvent(
+        final PlatformEvent eventB1 = createTestEvent(
                 random, nodeB, EventConstants.GENERATION_UNDEFINED, null, EventConstants.GENERATION_UNDEFINED);
-        final GossipEvent eventC1 = createTestEvent(
+        final PlatformEvent eventC1 = createTestEvent(
                 random, nodeC, EventConstants.GENERATION_UNDEFINED, null, EventConstants.GENERATION_UNDEFINED);
-        final GossipEvent eventD1 = createTestEvent(
+        final PlatformEvent eventD1 = createTestEvent(
                 random, nodeD, EventConstants.GENERATION_UNDEFINED, null, EventConstants.GENERATION_UNDEFINED);
-        final GossipEvent eventE1 = createTestEvent(
+        final PlatformEvent eventE1 = createTestEvent(
                 random, nodeE, EventConstants.GENERATION_UNDEFINED, null, EventConstants.GENERATION_UNDEFINED);
 
         eventCreator.registerEvent(eventB1);
@@ -963,15 +970,15 @@ class TipsetEventCreatorTests {
         // We should be able to create a total of 3 before we exhaust all possible parents in the address book.
 
         // This will not advance the snapshot, total advancement weight is 1 (1+1/4 !> 2/3)
-        final BaseEventHashedData eventA2 = eventCreator.maybeCreateEvent();
+        final UnsignedEvent eventA2 = eventCreator.maybeCreateEvent();
         assertNotNull(eventA2);
 
         // This will advance the snapshot, total advancement weight is 2 (2+1/4 > 2/3)
-        final BaseEventHashedData eventA3 = eventCreator.maybeCreateEvent();
+        final UnsignedEvent eventA3 = eventCreator.maybeCreateEvent();
         assertNotNull(eventA3);
 
         // This will not advance the snapshot, total advancement weight is 1 (1+1/4 !> 2/3)
-        final BaseEventHashedData eventA4 = eventCreator.maybeCreateEvent();
+        final UnsignedEvent eventA4 = eventCreator.maybeCreateEvent();
         assertNotNull(eventA4);
 
         // It should not be possible to create another event since we have exhausted all possible other parents in the
@@ -991,17 +998,17 @@ class TipsetEventCreatorTests {
 
         final int networkSize = 4;
 
-        final AddressBook addressBook = new RandomAddressBookGenerator(random)
-                .setCustomWeightGenerator(x -> 1L)
-                .setSize(networkSize)
+        final AddressBook addressBook = RandomAddressBookBuilder.create(random)
+                .withMinimumWeight(1)
+                .withMaximumWeight(1)
+                .withSize(networkSize)
                 .build();
 
         final FakeTime time = new FakeTime();
 
         final NodeId nodeA = addressBook.getNodeId(0); // self
 
-        final EventCreator eventCreator =
-                buildEventCreator(random, time, addressBook, nodeA, () -> new ConsensusTransactionImpl[0]);
+        final EventCreator eventCreator = buildEventCreator(random, time, addressBook, nodeA, Collections::emptyList);
 
         eventCreator.setEventWindow(new EventWindow(
                 1,
@@ -1018,7 +1025,6 @@ class TipsetEventCreatorTests {
     /**
      * Checks that birth round on events is being set if the setting for using birth round is set.
      * <p>
-     * FUTURE WORK: Update this test to use RosterDiff instead of EventWindow
      */
     @ParameterizedTest
     @CsvSource({"true, true", "true, false", "false, true", "false, false"})
@@ -1029,11 +1035,11 @@ class TipsetEventCreatorTests {
         final int networkSize = 10;
 
         final AddressBook addressBook =
-                new RandomAddressBookGenerator(random).setSize(networkSize).build();
+                RandomAddressBookBuilder.create(random).withSize(networkSize).build();
 
         final FakeTime time = new FakeTime();
 
-        final AtomicReference<ConsensusTransactionImpl[]> transactionSupplier = new AtomicReference<>();
+        final AtomicReference<List<EventTransaction>> transactionSupplier = new AtomicReference<>();
 
         final Map<NodeId, SimulatedNode> nodes = buildSimulatedNodes(
                 random,
@@ -1075,7 +1081,7 @@ class TipsetEventCreatorTests {
                                     : AncientMode.GENERATION_THRESHOLD));
                 }
 
-                final BaseEventHashedData event = eventCreator.maybeCreateEvent();
+                final UnsignedEvent event = eventCreator.maybeCreateEvent();
 
                 // In this test, it should be impossible for a node to be unable to create an event.
                 assertNotNull(event);

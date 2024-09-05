@@ -20,9 +20,14 @@ import static com.swirlds.logging.legacy.LogMarker.CONSENSUS_VOTING;
 import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 import static com.swirlds.platform.consensus.ConsensusConstants.FIRST_CONSENSUS_NUMBER;
 
+import com.hedera.hapi.platform.event.EventConsensusData;
+import com.hedera.hapi.util.HapiUtils;
+import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.utility.Threshold;
+import com.swirlds.common.utility.throttle.RateLimitedLogger;
+import com.swirlds.logging.legacy.LogMarker;
 import com.swirlds.platform.consensus.AncestorSearch;
 import com.swirlds.platform.consensus.CandidateWitness;
 import com.swirlds.platform.consensus.ConsensusConstants;
@@ -36,14 +41,18 @@ import com.swirlds.platform.consensus.InitJudges;
 import com.swirlds.platform.consensus.RoundElections;
 import com.swirlds.platform.consensus.ThreadSafeConsensusInfo;
 import com.swirlds.platform.event.AncientMode;
+import com.swirlds.platform.event.EventUtils;
+import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.eventhandling.EventConfig;
 import com.swirlds.platform.gossip.shadowgraph.Generations;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.metrics.ConsensusMetrics;
 import com.swirlds.platform.system.address.AddressBook;
+import com.swirlds.platform.util.MarkerFileWriter;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -141,7 +150,15 @@ import org.apache.logging.log4j.Logger;
  */
 public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus {
 
+    public static final String COIN_ROUND_MARKER_FILE = "consensus-coin-round";
+    public static final String NO_SUPER_MAJORITY_MARKER_FILE = "consensus-no-super-majority";
+    public static final String NO_JUDGES_MARKER_FILE = "consensus-no-judges";
+    public static final String CONSENSUS_EXCEPTION_MARKER_FILE = "consensus-exception";
+
     private static final Logger logger = LogManager.getLogger(ConsensusImpl.class);
+
+    /** wall clock time */
+    private final Time time;
     /** the only address book currently, until address book changes are implemented */
     private final AddressBook addressBook;
     /** metrics related to consensus */
@@ -188,6 +205,20 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
      */
     private AncientMode ancientMode;
 
+    /** The marker file writer */
+    private MarkerFileWriter markerFileWriter;
+    /** The rate limited logger for rounds without a super majority of weight on judges */
+    private RateLimitedLogger noSuperMajorityLogger;
+    /** The rate limited logger for rounds with no judge */
+    private RateLimitedLogger noJudgeLogger;
+    /** The rate limited logger for coin rounds */
+    private RateLimitedLogger coinRoundLogger;
+
+    /**
+     * A flag that signals if we are currently replaying the PCES or not.
+     */
+    private boolean pcesMode = false;
+
     /**
      * Constructs an empty object (no events) to keep track of elections and calculate consensus.
      *
@@ -200,6 +231,8 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
             @NonNull final ConsensusMetrics consensusMetrics,
             @NonNull final AddressBook addressBook) {
         super(platformContext);
+        this.time = platformContext.getTime();
+        this.markerFileWriter = new MarkerFileWriter(platformContext);
         this.consensusMetrics = consensusMetrics;
 
         // until we implement address book changes, we will just use the use this address book
@@ -210,6 +243,9 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
                 .getConfiguration()
                 .getConfigData(EventConfig.class)
                 .getAncientMode();
+        this.noSuperMajorityLogger = new RateLimitedLogger(logger, platformContext.getTime(), Duration.ofMinutes(1));
+        this.noJudgeLogger = new RateLimitedLogger(logger, platformContext.getTime(), Duration.ofMinutes(1));
+        this.coinRoundLogger = new RateLimitedLogger(logger, platformContext.getTime(), Duration.ofMinutes(1));
     }
 
     /**
@@ -237,6 +273,15 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
     }
 
     /**
+     * Set whether events are currently being sourced from the PCES.
+     *
+     * @param pcesMode true if we are currently replaying the PCES, false otherwise
+     */
+    public void setPcesMode(final boolean pcesMode) {
+        this.pcesMode = pcesMode;
+    }
+
+    /**
      * Add an event to consensus. It must already have been instantiated, checked for being a
      * duplicate of an existing event, had its signature created or checked. It must also be linked
      * to its parents.
@@ -256,19 +301,39 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
     @NonNull
     @Override
     public List<ConsensusRound> addEvent(@NonNull final EventImpl event) {
-        recentEvents.add(event);
-        final List<ConsensusRound> rounds = new ArrayList<>();
-        // set its round to undefined so that it gets calculated
-        event.setRoundCreated(ConsensusConstants.ROUND_UNDEFINED);
-        checkInitJudges(event);
-        ConsensusRound consensusRound = calculateAndVote(event);
+        try {
+            recentEvents.add(event);
+            // set its round to undefined so that it gets calculated
+            event.setRoundCreated(ConsensusConstants.ROUND_UNDEFINED);
+            ConsensusRound consensusRound;
 
-        while (consensusRound != null) {
-            rounds.add(consensusRound);
+            final boolean lastJudgeFound = checkInitJudges(event);
 
-            consensusRound = recalculateAndVote();
+            if (!noInitJudgesMissing()) {
+                // we should not do any calculations or voting until we have found all the init judges
+                return List.of();
+            }
+
+            if (lastJudgeFound) {
+                // when we find the last init judge, we have to recalculate the metadata for all events
+                consensusRound = recalculateAndVote();
+            } else {
+                // this is the most common case, we are not looking for init judges so we simply calculate the
+                // metadata for the event and vote if it's a witness
+                consensusRound = calculateAndVote(event);
+            }
+
+            final List<ConsensusRound> rounds = new ArrayList<>();
+            while (consensusRound != null) {
+                rounds.add(consensusRound);
+
+                consensusRound = recalculateAndVote();
+            }
+            return rounds;
+        } catch (final Exception e) {
+            markerFileWriter.writeMarkerFile(CONSENSUS_EXCEPTION_MARKER_FILE);
+            throw e;
         }
-        return rounds;
     }
 
     /**
@@ -284,9 +349,13 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
         for (final Iterator<EventImpl> iterator = recentEvents.iterator(); iterator.hasNext(); ) {
             final EventImpl insertedEvent = iterator.next();
 
-            if (rounds.isLastDecidedJudge(insertedEvent)) {
-                // If an event was a judge in the last round decided, we leave all of its metadata
-                // intact.
+            if (rounds.isLastDecidedJudge(insertedEvent)
+                    && round(insertedEvent.getSelfParent()) == ConsensusConstants.ROUND_NEGATIVE_INFINITY
+                    && round(insertedEvent.getOtherParent()) == ConsensusConstants.ROUND_NEGATIVE_INFINITY) {
+                // If an event was a judge in the last round decided AND is not a descendant of any other judge in
+                // this round, we leave all of its metadata intact. We know that it is not a descendant of any other
+                // judge in this round if all of its parents have a round of -infinity.
+                //
                 // Its round must stay intact so that descendants can determine their round numbers.
                 // We don't call calculateAndVote() for this event because:
                 // - its metadata will be unchanged
@@ -325,8 +394,13 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
         // force it to memoize for this event now, to avoid deep recursion of these methods later
         calculateMetadata(event);
 
-        if (witness(event) && rounds.getElectionRoundNumber() <= event.getRoundCreated()) {
-            event.setWitness(true);
+        if (!witness(event)) {
+            return null;
+        }
+
+        event.setWitness(true);
+
+        if (rounds.getElectionRoundNumber() <= event.getRoundCreated()) {
             if (rounds.getElectionRoundNumber() == event.getRoundCreated()) {
                 // this is a candidate witness which we are voting on, we might need to create
                 // elections for this witness, but this witness does not vote
@@ -336,6 +410,10 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
                 // vote in all elections in the current round
                 voteInAllElections(event);
             }
+        } else {
+            // this is a witness for a decided round, so it is not a famous witness
+            event.setFamous(false);
+            event.setFameDecided(true);
         }
 
         // in most cases, we only need to do this check after voting, since that is the only time a
@@ -371,37 +449,42 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
     /**
      * Checks if an event is an init judge. If it is, it will set its round created and judge flags.
      * if it's the last missing judge, it will also mark events which have previously reached
-     * consensus.
+     * consensus and return true.
      *
      * @param event the event to check
+     * @return true if the event is the last init judge we are looking for
      */
-    private void checkInitJudges(@NonNull final EventImpl event) {
+    private boolean checkInitJudges(@NonNull final EventImpl event) {
         if (noInitJudgesMissing() || !initJudges.isInitJudge(event.getBaseHash())) {
-            return;
+            return false;
         }
         // we found one of the missing init judges
         initJudges.judgeFound(event);
         logger.info(
                 STARTUP.getMarker(),
-                "Found init judge {}, num remaining: {}",
-                event::toShortString,
+                "Found init judge %s, num remaining: {}"
+                        .formatted(event.getBaseEvent().getDescriptor()),
                 initJudges::numMissingJudges);
-        if (initJudges.allJudgesFound()) {
-            // we now have the last of the missing judges, so find every known event that is an
-            // ancestor of all of them, and mark it as having consensus.  We won't handle its
-            // transactions or do anything else with it, since it had earlier achieved consensus
-            // and affected the signed state that we started from. We won't even set its consensus
-            // fields such as roundReceived, because they aren't known, will never be known, and
-            // aren't needed.  We'll just mark it as having consensus, so we don't calculate
-            // consensus for it again in the future.
-            final List<EventImpl> ancestors =
-                    search.commonAncestorsOf(initJudges.getJudges(), this::nonConsensusNonAncient);
-            ancestors.forEach(e -> {
-                e.setConsensus(true);
-                e.setRecTimes(null);
-            });
-            initJudges = null;
+        if (!initJudges.allJudgesFound()) {
+            return false;
         }
+
+        // we now have the last of the missing judges, so find every known event that is an
+        // ancestor of all of them, and mark it as having consensus.  We won't handle its
+        // transactions or do anything else with it, since it had earlier achieved consensus
+        // and affected the signed state that we started from. We won't even set its consensus
+        // fields such as roundReceived, because they aren't known, will never be known, and
+        // aren't needed.  We'll just mark it as having consensus, so we don't calculate
+        // consensus for it again in the future.
+        final List<EventImpl> ancestors =
+                search.commonAncestorsOf(initJudges.getJudges(), this::nonConsensusNonAncient);
+        ancestors.forEach(e -> {
+            e.setConsensus(true);
+            e.setRecTimes(null);
+        });
+        initJudges = null;
+
+        return true;
     }
 
     /**
@@ -461,6 +544,12 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
                         candidateWitness,
                         "coin-" + (countingVote.isSupermajority() ? "counting" : "sig"),
                         diff);
+                markerFileWriter.writeMarkerFile(COIN_ROUND_MARKER_FILE);
+                coinRoundLogger.error(
+                        LogMarker.ERROR.getMarker(),
+                        "Coin round {}, voting witness: {}",
+                        roundElections.getRound(),
+                        votingWitness);
                 continue;
             }
 
@@ -624,6 +713,9 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
         final List<EventImpl> judges = roundElections.findAllJudges();
         final long decidedRoundNumber = rounds.getElectionRoundNumber();
 
+        // Check for no judges or super majority conditions.
+        checkJudges(judges, decidedRoundNumber);
+
         // update the round and generation values since fame has been decided for a new round
         rounds.currentElectionDecided();
 
@@ -631,8 +723,10 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
         this.updateRoundGenerations(rounds.getFameDecidedBelow());
 
         // all events that reach consensus during this method call, in consensus order
-        final List<EventImpl> consensusEvents =
-                findConsensusEvents(judges, decidedRoundNumber, ConsensusUtils.generateWhitening(judges));
+        final List<PlatformEvent> consensusEvents =
+                findConsensusEvents(judges, decidedRoundNumber, ConsensusUtils.generateWhitening(judges)).stream()
+                        .map(EventImpl::getBaseEvent)
+                        .toList();
         // all rounds before this round are now decided, and appropriate events marked consensus
         consensusMetrics.consensusReachedOnRound();
 
@@ -667,7 +761,7 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
         return new ConsensusRound(
                 addressBook,
                 consensusEvents,
-                recentEvents.get(recentEvents.size() - 1),
+                recentEvents.get(recentEvents.size() - 1).getBaseEvent(),
                 new Generations(this),
                 new EventWindow(decidedRoundNumber, nonAncientThreshold, nonExpiredThreshold, ancientMode),
                 new ConsensusSnapshot(
@@ -675,7 +769,36 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
                         ConsensusUtils.getHashes(judges),
                         rounds.getMinimumJudgeInfoList(),
                         numConsensus,
-                        lastConsensusTime));
+                        lastConsensusTime),
+                pcesMode,
+                time.now());
+    }
+
+    /**
+     * Check if there are no judges or if there is no super majority of weight on judges.
+     *
+     * @param judges             the judges for this round
+     * @param decidedRoundNumber the round number of the decided round
+     */
+    private void checkJudges(@NonNull final List<EventImpl> judges, final long decidedRoundNumber) {
+        final long judgeWeights = judges.stream()
+                .mapToLong(event -> getWeight(event.getCreatorId()))
+                .sum();
+        consensusMetrics.judgeWeights(judgeWeights);
+        if (judges.isEmpty()) {
+            markerFileWriter.writeMarkerFile(NO_JUDGES_MARKER_FILE);
+            noJudgeLogger.error(LogMarker.ERROR.getMarker(), "no judges in round = {}", decidedRoundNumber);
+        } else {
+            if (!Threshold.SUPER_MAJORITY.isSatisfiedBy(judgeWeights, addressBook.getTotalWeight())) {
+                markerFileWriter.writeMarkerFile(NO_SUPER_MAJORITY_MARKER_FILE);
+                noSuperMajorityLogger.error(
+                        LogMarker.ERROR.getMarker(),
+                        "less than a super majority of weight on judges.  round = {}, judgesWeight = {}, percentage = {}",
+                        decidedRoundNumber,
+                        judgeWeights,
+                        (double) judgeWeights / addressBook.getTotalWeight());
+            }
+        }
     }
 
     /**
@@ -719,7 +842,7 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
      *     first saw it
      * @param receivedRound the round in which event was received
      */
-    private void setIsConsensusTrue(@NonNull final EventImpl event, final long receivedRound) {
+    private static void setIsConsensusTrue(@NonNull final EventImpl event, final long receivedRound) {
         event.setRoundReceived(receivedRound);
         event.setConsensus(true);
 
@@ -728,11 +851,7 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
         final List<Instant> times = event.getRecTimes();
 
         // take middle. If there are 2 middle (even length) then use the 2nd (max) of them
-        event.setConsensusTimestamp(times.get(times.size() / 2));
-
-        event.setReachedConsTimestamp(Instant.now()); // used for statistics
-
-        consensusMetrics.consensusReached(event);
+        event.setPreliminaryConsensusTimestamp(times.get(times.size() / 2));
     }
 
     /**
@@ -749,20 +868,21 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
         EventImpl last = null;
         for (final EventImpl e : events) {
             last = e;
-            e.setConsensusOrder(numConsensus);
-            numConsensus++;
-
             // the minimum timestamp for this event
             final Instant minTimestamp =
                     lastConsensusTime == null ? null : ConsensusUtils.calcMinTimestampForNextEvent(lastConsensusTime);
             // advance this event's consensus timestamp to be at least minTimestamp
-            if (minTimestamp != null && e.getConsensusTimestamp().isBefore(minTimestamp)) {
-                e.setConsensusTimestamp(minTimestamp);
+            if (minTimestamp != null && e.getPreliminaryConsensusTimestamp().isBefore(minTimestamp)) {
+                e.setPreliminaryConsensusTimestamp(minTimestamp);
             }
-            lastConsensusTime = e.getLastTransTime();
-        }
-        if (last != null) {
-            last.setLastInRoundReceived(true);
+
+            e.getBaseEvent()
+                    .setConsensusData(new EventConsensusData(
+                            HapiUtils.asTimestamp(e.getPreliminaryConsensusTimestamp()), numConsensus));
+
+            lastConsensusTime = EventUtils.getLastTransTime(e.getBaseEvent());
+            numConsensus++;
+            consensusMetrics.consensusReached(e);
         }
     }
 
@@ -804,7 +924,7 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
      */
     private boolean witness(@NonNull final EventImpl x) {
         return round(x) > ConsensusConstants.ROUND_NEGATIVE_INFINITY
-                && (!x.getHashedData().hasSelfParent() || round(x) != round(selfParent(x)));
+                && (!x.hasSelfParent() || round(x) != round(selfParent(x)));
     }
 
     /**
@@ -1025,7 +1145,7 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
         //
         // if this event has no parents, then it's the first round
         //
-        if (!x.getHashedData().hasSelfParent() && !x.getHashedData().hasOtherParent()) {
+        if (!x.hasSelfParent() && !x.hasOtherParent()) {
             x.setRoundCreated(ConsensusConstants.ROUND_FIRST);
             return x.getRoundCreated();
         }

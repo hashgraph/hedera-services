@@ -16,7 +16,7 @@
 
 package com.hedera.services.bdd.suites.contract.hapi;
 
-import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
+import static com.hedera.node.app.hapi.utils.EthSigsUtils.recoverAddressFromPubKey;
 import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asSolidityAddress;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
@@ -37,9 +37,17 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.logIt;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sendModified;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.spec.utilops.mod.ModificationUtils.withSuccessivelyVariedQueryIds;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
+import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
+import static com.hedera.services.bdd.suites.HapiSuite.SECP_256K1_SHAPE;
+import static com.hedera.services.bdd.suites.HapiSuite.SECP_256K1_SOURCE_KEY;
+import static com.hedera.services.bdd.suites.HapiSuite.TOKEN_TREASURY;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
@@ -55,12 +63,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
 import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
-import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenType;
@@ -68,17 +73,15 @@ import java.math.BigInteger;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.IntStream;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import java.util.stream.Stream;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
+import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
-@HapiTestSuite(fuzzyMatch = true)
 @Tag(SMART_CONTRACT)
-public class ContractCallLocalSuite extends HapiSuite {
+public class ContractCallLocalSuite {
 
-    private static final Logger log = LogManager.getLogger(ContractCallLocalSuite.class);
     private static final String CONTRACT = "CreateTrivial";
     private static final String OWNERSHIP_CHECK_CONTRACT = "OwnershipCheck";
     private static final String OWNERSHIP_CHECK_CONTRACT_IS_OWNER_FUNCTION = "isOwner";
@@ -90,33 +93,8 @@ public class ContractCallLocalSuite extends HapiSuite {
     private static final String SYMBOL = "ħT";
     private static final int DECIMALS = 13;
 
-    public static void main(String... args) {
-        new ContractCallLocalSuite().runSuiteSync();
-    }
-
-    @Override
-    public boolean canRunConcurrent() {
-        return true;
-    }
-
-    @Override
-    public List<HapiSpec> getSpecsInSuite() {
-        return List.of(
-                successOnDeletedContract(),
-                gasBelowIntrinsicGasFails(),
-                insufficientGasFails(),
-                invalidContractID(),
-                impureCallFails(),
-                insufficientFeeFails(),
-                lowBalanceFails(),
-                erc20Query(),
-                vanillaSuccess(),
-                callLocalDoesNotCheckSignaturesNorPayer(),
-                htsOwnershipCheckWorksWithAliasAddress());
-    }
-
     @HapiTest
-    final HapiSpec htsOwnershipCheckWorksWithAliasAddress() {
+    final Stream<DynamicTest> htsOwnershipCheckWorksWithAliasAddress() {
         final AtomicReference<AccountID> ecdsaAccountId = new AtomicReference<>();
         final AtomicReference<ByteString> ecdsaAccountIdLongZeroAddress = new AtomicReference<>();
         final AtomicReference<ByteString> ecdsaAccountIdAlias = new AtomicReference<>();
@@ -133,7 +111,7 @@ public class ContractCallLocalSuite extends HapiSuite {
                                 .treasury(TOKEN_TREASURY)
                                 .initialSupply(0L)
                                 .supplyKey(SUPPLY_KEY),
-                        mintToken(NFT_TOKEN, List.of(metadata(FIRST_MEMO), metadata(SECOND_MEMO)), "nftMint"),
+                        mintToken(NFT_TOKEN, List.of(metadata(FIRST_MEMO), metadata(SECOND_MEMO))),
                         // Create an account with alias
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoTransfer(TokenMovement.movingUnique(NFT_TOKEN, 1L)
@@ -190,7 +168,15 @@ public class ContractCallLocalSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec vanillaSuccess() {
+    final Stream<DynamicTest> idVariantsTreatedAsExpected() {
+        return defaultHapiSpec("idVariantsTreatedAsExpected")
+                .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT).adminKey(THRESHOLD))
+                .when(contractCall(CONTRACT, "create").gas(785_000))
+                .then(sendModified(withSuccessivelyVariedQueryIds(), () -> contractCallLocal(CONTRACT, "getIndirect")));
+    }
+
+    @HapiTest
+    final Stream<DynamicTest> vanillaSuccess() {
         return defaultHapiSpec("vanillaSuccess", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT).adminKey(THRESHOLD))
                 .when(contractCall(CONTRACT, "create").gas(785_000))
@@ -204,17 +190,20 @@ public class ContractCallLocalSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec gasBelowIntrinsicGasFails() {
+    final Stream<DynamicTest> gasBelowIntrinsicGasFails() {
         return defaultHapiSpec("gasBelowIntrinsicGasFails", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(cryptoCreate("payer"), uploadInitCode(CONTRACT), contractCreate(CONTRACT))
                 .when(contractCall(CONTRACT, "create").gas(785_000))
                 .then(
                         sleepFor(3_000L),
-                        contractCallLocal(CONTRACT, "getIndirect").gas(2_000L).hasAnswerOnlyPrecheck(INSUFFICIENT_GAS));
+                        contractCallLocal(CONTRACT, "getIndirect")
+                                .nodePayment(1_234_567)
+                                .gas(2_000L)
+                                .hasAnswerOnlyPrecheck(INSUFFICIENT_GAS));
     }
 
     @HapiTest
-    final HapiSpec insufficientGasFails() {
+    final Stream<DynamicTest> insufficientGasFails() {
         return defaultHapiSpec("insufficientGasFails", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(cryptoCreate("payer"), uploadInitCode(CONTRACT), contractCreate(CONTRACT))
                 .when(contractCall(CONTRACT, "create").gas(785_000))
@@ -226,7 +215,7 @@ public class ContractCallLocalSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec impureCallFails() {
+    final Stream<DynamicTest> impureCallFails() {
         return defaultHapiSpec("impureCallFails", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT).adminKey(THRESHOLD))
                 .when()
@@ -238,9 +227,11 @@ public class ContractCallLocalSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec successOnDeletedContract() {
+    final Stream<DynamicTest> successOnDeletedContract() {
         return defaultHapiSpec("SuccessOnDeletedContract", NONDETERMINISTIC_TRANSACTION_FEES)
-                .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT))
+                // Refusing ethereum create conversion, because we get INVALID_SIGNATURE upon tokenAssociate,
+                // since we have CONTRACT_ID key
+                .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT).refusingEthConversion())
                 .when(contractDelete(CONTRACT))
                 .then(contractCallLocal(CONTRACT, "create")
                         .nodePayment(1_234_567)
@@ -248,7 +239,7 @@ public class ContractCallLocalSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec invalidContractID() {
+    final Stream<DynamicTest> invalidContractID() {
         final var invalidContract = HapiSpecSetup.getDefaultInstance().invalidContractName();
         final var functionAbi = getABIFor(FUNCTION, "getIndirect", "CreateTrivial");
         return defaultHapiSpec("InvalidContractID", NONDETERMINISTIC_TRANSACTION_FEES)
@@ -264,7 +255,7 @@ public class ContractCallLocalSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec insufficientFeeFails() {
+    final Stream<DynamicTest> insufficientFeeFails() {
         final long adequateQueryPayment = 500_000L;
 
         return defaultHapiSpec("insufficientFeeFails", NONDETERMINISTIC_TRANSACTION_FEES)
@@ -280,7 +271,7 @@ public class ContractCallLocalSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec lowBalanceFails() {
+    final Stream<DynamicTest> lowBalanceFails() {
         final long adequateQueryPayment = 500_000_000L;
 
         return defaultHapiSpec("lowBalanceFails", NONDETERMINISTIC_TRANSACTION_FEES)
@@ -303,7 +294,7 @@ public class ContractCallLocalSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec erc20Query() {
+    final Stream<DynamicTest> erc20Query() {
         final var decimalsABI = "{\"constant\": true,\"inputs\": [],\"name\": \"decimals\","
                 + "\"outputs\": [{\"name\": \"\",\"type\": \"uint8\"}],\"payable\": false,"
                 + "\"type\": \"function\"}";
@@ -317,7 +308,7 @@ public class ContractCallLocalSuite extends HapiSuite {
 
     // https://github.com/hashgraph/hedera-services/pull/5485
     @HapiTest
-    final HapiSpec callLocalDoesNotCheckSignaturesNorPayer() {
+    final Stream<DynamicTest> callLocalDoesNotCheckSignaturesNorPayer() {
         return defaultHapiSpec("callLocalDoesNotCheckSignaturesNorPayer", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT).adminKey(THRESHOLD))
                 .when(contractCall(CONTRACT, "create").gas(785_000))
@@ -328,10 +319,5 @@ public class ContractCallLocalSuite extends HapiSuite {
                             .hasAnswerOnlyPrecheckFrom(OK, BUSY);
                     allRunFor(spec, create, callLocal);
                 })));
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return log;
     }
 }

@@ -32,36 +32,33 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_CONTRACT_CALL_RESULTS;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_GAS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.spec.HapiSpec;
-import com.hedera.services.bdd.suites.HapiSuite;
 import com.swirlds.common.utility.CommonUtils;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import java.util.stream.Stream;
 import org.apache.tuweni.bytes.Bytes;
+import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
-@HapiTestSuite(fuzzyMatch = true)
 @Tag(SMART_CONTRACT)
-public class PrngPrecompileSuite extends HapiSuite {
-
-    private static final Logger log = LogManager.getLogger(PrngPrecompileSuite.class);
+public class PrngPrecompileSuite {
     private static final long GAS_TO_OFFER = 400_000L;
     private static final String THE_GRACEFULLY_FAILING_PRNG_CONTRACT = "GracefullyFailingPrng";
     private static final String THE_PRNG_CONTRACT = "PrngSystemContract";
     private static final String BOB = "bob";
 
     private static final String GET_SEED = "getPseudorandomSeed";
+    private static final String GET_SEED_PAYABLE = "getPseudorandomSeedPayable";
     private static final String EXPLICIT_LARGE_PARAMS =
             "d83bf9a10000000000000000000000d83bf9a10000d83bf9a1000d83bf9a10000000d83bf9a108000d83bf9a100000d83bf9a1000000"
                     + "0000d83bf9a100000d83bf9a1000000d83bf9a100339000000d83bf9a1000000000123456789012345678901234"
@@ -69,34 +66,8 @@ public class PrngPrecompileSuite extends HapiSuite {
                     + "000d83bf9a1083bf9a1000d83bf9a10000000d83bf9a10000000000000000026e790000000000000000000000000000"
                     + "00000000d83bf9a1000000000d83bf9a1000";
 
-    public static void main(String... args) {
-        new PrngPrecompileSuite().runSuiteAsync();
-    }
-
-    @Override
-    public boolean canRunConcurrent() {
-        return true;
-    }
-
-    @Override
-    public List<HapiSpec> getSpecsInSuite() {
-        return allOf(positiveSpecs(), negativeSpecs());
-    }
-
-    List<HapiSpec> negativeSpecs() {
-        return List.of(
-                functionCallWithLessThanFourBytesFailsGracefully(),
-                nonSupportedAbiCallGracefullyFails(),
-                invalidLargeInputFails(),
-                emptyInputCallFails());
-    }
-
-    List<HapiSpec> positiveSpecs() {
-        return List.of(prngPrecompileHappyPathWorks(), multipleCallsHaveIndependentResults());
-    }
-
     @HapiTest
-    final HapiSpec multipleCallsHaveIndependentResults() {
+    final Stream<DynamicTest> multipleCallsHaveIndependentResults() {
         final var prng = THE_PRNG_CONTRACT;
         final var gasToOffer = 400_000;
         final var numCalls = 5;
@@ -144,7 +115,7 @@ public class PrngPrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec emptyInputCallFails() {
+    final Stream<DynamicTest> emptyInputCallFails() {
         final var prng = THE_PRNG_CONTRACT;
         final var emptyInputCall = "emptyInputCall";
         return defaultHapiSpec("emptyInputCallFails", NONDETERMINISTIC_TRANSACTION_FEES)
@@ -172,7 +143,7 @@ public class PrngPrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec invalidLargeInputFails() {
+    final Stream<DynamicTest> invalidLargeInputFails() {
         final var prng = THE_PRNG_CONTRACT;
         final var largeInputCall = "largeInputCall";
         return defaultHapiSpec("invalidLargeInputFails", NONDETERMINISTIC_TRANSACTION_FEES)
@@ -200,7 +171,7 @@ public class PrngPrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec nonSupportedAbiCallGracefullyFails() {
+    final Stream<DynamicTest> nonSupportedAbiCallGracefullyFails() {
         final var prng = THE_GRACEFULLY_FAILING_PRNG_CONTRACT;
         final var failedCall = "failedCall";
         return defaultHapiSpec("nonSupportedAbiCallGracefullyFails", NONDETERMINISTIC_TRANSACTION_FEES)
@@ -223,7 +194,7 @@ public class PrngPrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec functionCallWithLessThanFourBytesFailsGracefully() {
+    final Stream<DynamicTest> functionCallWithLessThanFourBytesFailsGracefully() {
         final var lessThan4Bytes = "lessThan4Bytes";
         return defaultHapiSpec("functionCallWithLessThanFourBytesFailsGracefully", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(cryptoCreate(BOB), uploadInitCode(THE_PRNG_CONTRACT), contractCreate(THE_PRNG_CONTRACT))
@@ -251,7 +222,7 @@ public class PrngPrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec prngPrecompileHappyPathWorks() {
+    final Stream<DynamicTest> prngPrecompileHappyPathWorks() {
         final var prng = THE_PRNG_CONTRACT;
         final var randomBits = "randomBits";
         return defaultHapiSpec(
@@ -276,7 +247,24 @@ public class PrngPrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec prngPrecompileInsufficientGas() {
+    final Stream<DynamicTest> prngPrecompileInvalidFeeSubmitted() {
+        final var TX = "TX";
+        return defaultHapiSpec(
+                        "prngPrecompileInvalidFeeSubmitted",
+                        NONDETERMINISTIC_TRANSACTION_FEES,
+                        NONDETERMINISTIC_CONTRACT_CALL_RESULTS)
+                .given(
+                        uploadInitCode(THE_PRNG_CONTRACT),
+                        contractCreate(THE_PRNG_CONTRACT).balance(ONE_HBAR))
+                .when(contractCall(THE_PRNG_CONTRACT, GET_SEED_PAYABLE)
+                        .gas(GAS_TO_OFFER)
+                        .via(TX)
+                        .hasKnownStatus(INVALID_CONTRACT_ID))
+                .then(getTxnRecord(TX).logged());
+    }
+
+    @HapiTest
+    final Stream<DynamicTest> prngPrecompileInsufficientGas() {
         final var prng = THE_PRNG_CONTRACT;
         final var randomBits = "randomBits";
         return defaultHapiSpec("prngPrecompileInsufficientGas")
@@ -289,10 +277,5 @@ public class PrngPrecompileSuite extends HapiSuite {
                         .hasKnownStatus(INSUFFICIENT_GAS)
                         .logged()))
                 .then();
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return log;
     }
 }

@@ -18,7 +18,7 @@ package com.swirlds.platform;
 
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.system.address.AddressBook;
-import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookGenerator;
+import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.HashMap;
 import java.util.Random;
@@ -37,7 +37,7 @@ public class DummyHashgraph {
         isInCriticalQuorum = new HashMap<>();
         numUserTransEvents = 0;
         lastRoundReceivedAllTransCons = 0;
-        addressBook = new RandomAddressBookGenerator(random).setSize(100).build();
+        addressBook = RandomAddressBookBuilder.create(random).withSize(41).build();
         this.selfId = addressBook.getNodeId(selfIndex);
     }
 

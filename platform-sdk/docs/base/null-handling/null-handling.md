@@ -1,3 +1,5 @@
+[⇧ Platform Base](../base.md)
+
 ## Handling of null values
 
 In the code we should annotate all parameters of methods and constructors with the `@Nullable` or `@NonNull`

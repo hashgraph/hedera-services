@@ -107,14 +107,10 @@ public abstract class VirtualMapBaseBench extends BaseBench {
     }
 
     protected VirtualMap<BenchmarkKey, BenchmarkValue> createEmptyMap(String label) {
-        MerkleDbTableConfig<BenchmarkKey, BenchmarkValue> tableConfig = new MerkleDbTableConfig<>(
-                        (short) 1, DigestType.SHA_384,
-                        (short) 1, new BenchmarkKeySerializer(),
-                        (short) 1, new BenchmarkValueSerializer())
-                .preferDiskIndices(false);
-        MerkleDbDataSourceBuilder<BenchmarkKey, BenchmarkValue> dataSourceBuilder =
-                new MerkleDbDataSourceBuilder<>(tableConfig);
-        return new VirtualMap<>(label, dataSourceBuilder);
+        MerkleDbTableConfig tableConfig =
+                new MerkleDbTableConfig((short) 1, DigestType.SHA_384).preferDiskIndices(false);
+        MerkleDbDataSourceBuilder dataSourceBuilder = new MerkleDbDataSourceBuilder(tableConfig);
+        return new VirtualMap<>(label, new BenchmarkKeySerializer(), new BenchmarkValueSerializer(), dataSourceBuilder);
     }
 
     protected VirtualMap<BenchmarkKey, BenchmarkValue> createMap(final long[] map) {
@@ -331,7 +327,7 @@ public abstract class VirtualMapBaseBench extends BaseBench {
     protected VirtualMap<BenchmarkKey, BenchmarkValue> restoreMap(final String label) {
         Path savedDir = null;
         for (int i = 0; ; i++) {
-            final Path nextSavedDir = getBenchDir().resolve(SAVED + i);
+            final Path nextSavedDir = getBenchDir().resolve(SAVED + i).resolve(label);
             if (!Files.exists(nextSavedDir.resolve(label + SERDE_SUFFIX))) {
                 break;
             }

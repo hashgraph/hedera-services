@@ -24,10 +24,7 @@ import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.infrastructure.EntityNameProvider;
 import com.hedera.services.bdd.spec.infrastructure.OpProvider;
 import com.hedera.services.bdd.spec.queries.QueryVerbs;
-import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import java.util.Collections;
-import java.util.List;
 import java.util.Optional;
 
 public class RandomContents implements OpProvider {
@@ -37,15 +34,10 @@ public class RandomContents implements OpProvider {
     private final ResponseCodeEnum[] permissibleAnswerOnlyPrechecks =
             standardQueryPrechecksAnd(FILE_DELETED, INSUFFICIENT_TX_FEE, INVALID_FILE_ID);
 
-    private final EntityNameProvider<FileID> files;
+    private final EntityNameProvider files;
 
-    public RandomContents(EntityNameProvider<FileID> files) {
+    public RandomContents(EntityNameProvider files) {
         this.files = files;
-    }
-
-    @Override
-    public List<HapiSpecOperation> suggestedInitializers() {
-        return Collections.emptyList();
     }
 
     @Override

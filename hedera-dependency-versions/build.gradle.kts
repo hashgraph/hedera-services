@@ -15,103 +15,222 @@
  */
 
 plugins {
-    id("com.hedera.hashgraph.versions")
+    id("com.hedera.gradle.versions")
 }
-
-val besuNativeVersion = "0.8.2"
-val besuVersion = "24.1.2"
-val bouncycastleVersion = "1.78"
-val daggerVersion = "2.42"
-val eclipseCollectionsVersion = "10.4.0"
-val grpcVersion = "1.54.1"
-val helidonVersion = "3.2.1"
-val jacksonVersion = "2.16.0"
-val log4jVersion = "2.21.1"
-val mockitoVersion = "5.8.0"
-val nettyVersion = "4.1.87.Final"
-val prometheusVersion = "0.16.0"
-val protobufVersion = "3.21.7"
-val systemStubsVersion = "2.1.5"
-val testContainersVersion = "1.17.2"
-val tuweniVersion = "2.4.2"
 
 dependencies {
-    api(enforcedPlatform("io.netty:netty-bom:$nettyVersion"))
-
-    // Force commons compress version to close a security vulnerability
-    api(javaModuleDependencies.gav("org.apache.commons.compress"))
+    api(enforcedPlatform("io.netty:netty-bom:4.1.110.Final"))
 
     // forward logging from modules using SLF4J (e.g. 'org.hyperledger.besu.evm') to Log4J
-    runtime(javaModuleDependencies.gav("org.apache.logging.log4j.slf4j"))
+    runtime(javaModuleDependencies.gav("org.apache.logging.log4j.slf4j2.impl"))
 }
 
-moduleInfo {
-    version("awaitility", "4.2.0")
-    version("com.fasterxml.jackson.core", jacksonVersion)
-    version("com.fasterxml.jackson.databind", jacksonVersion)
-    version("com.github.benmanes.caffeine", "3.1.1")
-    version("com.github.docker.java.api", "3.2.13")
-    version("com.github.spotbugs.annotations", "4.7.3")
-    version("com.google.auto.service", "1.1.1")
-    version("com.google.auto.service.processor", "1.1.1")
-    version("com.google.common", "31.1-jre")
-    version("com.google.jimfs", "1.2")
-    version("com.google.protobuf", protobufVersion)
-    version("com.google.protobuf.util", protobufVersion)
-    version("com.hedera.pbj.runtime", "0.8.5")
-    version("com.squareup.javapoet", "1.13.0")
-    version("com.sun.jna", "5.12.1")
-    version("dagger", daggerVersion)
-    version("dagger.compiler", daggerVersion)
-    version("grpc.netty", grpcVersion)
-    version("grpc.protobuf", grpcVersion)
-    version("grpc.stub", grpcVersion)
-    version("headlong", "6.1.1")
-    version("info.picocli", "4.6.3")
-    version("io.github.classgraph", "4.8.65")
-    version("io.grpc", helidonVersion)
-    version("io.netty.handler", nettyVersion)
-    version("io.netty.transport", nettyVersion)
-    version("io.netty.transport.classes.epoll", nettyVersion)
-    version("io.perfmark", "0.25.0")
-    version("io.prometheus.simpleclient", prometheusVersion)
-    version("io.prometheus.simpleclient.httpserver", prometheusVersion)
-    version("jakarta.inject", "2.0.1")
-    version("java.annotation", "1.3.2")
-    version("javax.inject", "1")
-    version("lazysodium.java", "5.1.1")
-    version("net.i2p.crypto.eddsa", "0.3.0")
-    version("org.antlr.antlr4.runtime", "4.11.1")
-    version("org.apache.commons.codec", "1.15")
-    version("org.apache.commons.collections4", "4.4")
-    version("org.apache.commons.io", "2.15.1")
-    version("org.apache.commons.lang3", "3.14.0")
-    version("org.apache.commons.math3", "3.2")
-    version("org.apache.commons.compress", "1.26.0")
-    version("org.apache.logging.log4j", log4jVersion)
-    version("org.apache.logging.log4j.core", log4jVersion)
-    version("org.apache.logging.log4j.slf4j", log4jVersion)
-    version("org.assertj.core", "3.23.1")
-    version("org.bouncycastle.pkix", bouncycastleVersion)
-    version("org.bouncycastle.provider", bouncycastleVersion)
-    version("org.eclipse.collections.api", eclipseCollectionsVersion)
-    version("org.eclipse.collections.impl", eclipseCollectionsVersion)
-    version("org.hamcrest", "2.2")
-    version("org.hyperledger.besu.datatypes", besuVersion)
-    version("org.hyperledger.besu.evm", besuVersion)
-    version("org.hyperledger.besu.nativelib.secp256k1", besuNativeVersion)
-    version("org.json", "20231013")
-    version("org.junit.jupiter.api", "5.9.1")
-    version("org.junit.platform.engine", "1.9.1")
-    version("org.junitpioneer", "2.0.1")
-    version("org.mockito", mockitoVersion)
-    version("org.mockito.junit.jupiter", mockitoVersion)
-    version("org.opentest4j", "1.2.0")
-    version("org.testcontainers", testContainersVersion)
-    version("org.testcontainers.junit.jupiter", testContainersVersion)
-    version("org.yaml.snakeyaml", "2.2")
-    version("tuweni.bytes", tuweniVersion)
-    version("tuweni.units", tuweniVersion)
-    version("uk.org.webcompere.systemstubs.core", systemStubsVersion)
-    version("uk.org.webcompere.systemstubs.jupiter", systemStubsVersion)
+dependencies.constraints {
+    api("org.awaitility:awaitility:4.2.0") {
+        because("awaitility")
+    }
+    api("com.fasterxml.jackson.core:jackson-core:2.16.0") {
+        because("com.fasterxml.jackson.core")
+    }
+    api("com.fasterxml.jackson.core:jackson-databind:2.16.0") {
+        because("com.fasterxml.jackson.databind")
+    }
+    api("com.github.ben-manes.caffeine:caffeine:3.1.1") {
+        because("com.github.benmanes.caffeine")
+    }
+    api("com.github.docker-java:docker-java-api:3.2.13") {
+        because("com.github.docker.java.api")
+    }
+    api("com.github.spotbugs:spotbugs-annotations:4.7.3") {
+        because("com.github.spotbugs.annotations")
+    }
+    api("com.google.auto.service:auto-service-annotations:1.1.1") {
+        because("com.google.auto.service")
+    }
+    api("com.google.auto.service:auto-service:1.1.1") {
+        because("com.google.auto.service.processor")
+    }
+    api("com.google.guava:guava:31.1-jre") {
+        because("com.google.common")
+    }
+    api("com.google.jimfs:jimfs:1.2") {
+        because("com.google.jimfs")
+    }
+    api("com.google.protobuf:protobuf-java:3.21.7") {
+        because("com.google.protobuf")
+    }
+    api("com.google.protobuf:protobuf-java-util:3.21.7") {
+        because("com.google.protobuf.util")
+    }
+    api("com.hedera.cryptography:hedera-cryptography-pairings-api:0.1.0-SNAPSHOT") {
+        because("com.hedera.cryptography.pairings.api")
+    }
+    api("com.hedera.cryptography:hedera-cryptography-pairings-signatures:0.1.0-SNAPSHOT") {
+        because("com.hedera.cryptography.pairings.signatures")
+    }
+    api("com.hedera.pbj:pbj-runtime:0.9.2") {
+        because("com.hedera.pbj.runtime")
+    }
+    api("com.squareup:javapoet:1.13.0") {
+        because("com.squareup.javapoet")
+    }
+    api("net.java.dev.jna:jna:5.12.1") {
+        because("com.sun.jna")
+    }
+    api("com.google.dagger:dagger:2.42") {
+        because("dagger")
+    }
+    api("com.google.dagger:dagger-compiler:2.42") {
+        because("dagger.compiler")
+    }
+    api("io.grpc:grpc-netty:1.64.0") {
+        because("io.grpc.netty")
+    }
+    api("io.grpc:grpc-protobuf:1.64.0") {
+        because("io.grpc.protobuf")
+    }
+    api("io.grpc:grpc-stub:1.64.0") {
+        because("io.grpc.stub")
+    }
+    api("com.esaulpaugh:headlong:6.1.1") {
+        because("headlong")
+    }
+    api("info.picocli:picocli:4.6.3") {
+        because("info.picocli")
+    }
+    api("io.github.classgraph:classgraph:4.8.65") {
+        because("io.github.classgraph")
+    }
+    api("io.netty:netty-handler:4.1.110.Final") {
+        because("io.netty.handler")
+    }
+    api("io.netty:netty-transport:4.1.111.Final") {
+        because("io.netty.transport")
+    }
+    api("io.netty:netty-transport-classes-epoll:4.1.111.Final") {
+        because("io.netty.transport.classes.epoll")
+    }
+    api("io.perfmark:perfmark-api:0.25.0") {
+        because("io.perfmark")
+    }
+    api("io.prometheus:simpleclient:0.16.0") {
+        because("io.prometheus.simpleclient")
+    }
+    api("io.prometheus:simpleclient_httpserver:0.16.0") {
+        because("io.prometheus.simpleclient.httpserver")
+    }
+    api("jakarta.inject:jakarta.inject-api:2.0.1") {
+        because("jakarta.inject")
+    }
+    api("javax.annotation:javax.annotation-api:1.3.2") {
+        because("java.annotation")
+    }
+    api("javax.inject:javax.inject:1") {
+        because("javax.inject")
+    }
+    api("com.goterl:lazysodium-java:5.1.1") {
+        because("lazysodium.java")
+    }
+    api("net.i2p.crypto:eddsa:0.3.0") {
+        because("net.i2p.crypto.eddsa")
+    }
+    api("org.antlr:antlr4-runtime:4.13.1") {
+        because("org.antlr.antlr4.runtime")
+    }
+    api("commons-codec:commons-codec:1.15") {
+        because("org.apache.commons.codec")
+    }
+    api("org.apache.commons:commons-collections4:4.4") {
+        because("org.apache.commons.collections4")
+    }
+    api("commons-io:commons-io:2.15.1") {
+        because("org.apache.commons.io")
+    }
+    api("org.apache.commons:commons-lang3:3.14.0") {
+        because("org.apache.commons.lang3")
+    }
+    api("org.apache.commons:commons-compress:1.26.0") {
+        because("org.apache.commons.compress")
+    }
+    api("org.apache.logging.log4j:log4j-api:2.21.1") {
+        because("org.apache.logging.log4j")
+    }
+    api("org.apache.logging.log4j:log4j-core:2.21.1") {
+        because("org.apache.logging.log4j.core")
+    }
+    api("org.apache.logging.log4j:log4j-slf4j2-impl:2.21.1") {
+        because("org.apache.logging.log4j.slf4j2.impl")
+    }
+    api("org.assertj:assertj-core:3.23.1") {
+        because("org.assertj.core")
+    }
+    api("org.bouncycastle:bcpkix-jdk18on:1.78") {
+        because("org.bouncycastle.pkix")
+    }
+    api("org.bouncycastle:bcprov-jdk18on:1.78") {
+        because("org.bouncycastle.provider")
+    }
+    api("org.eclipse.collections:eclipse-collections-api:10.4.0") {
+        because("org.eclipse.collections.api")
+    }
+    api("org.eclipse.collections:eclipse-collections:10.4.0") {
+        because("org.eclipse.collections.impl")
+    }
+    api("org.hamcrest:hamcrest:2.2") {
+        because("org.hamcrest")
+    }
+    api("org.hyperledger.besu:besu-datatypes:24.3.3") {
+        because("org.hyperledger.besu.datatypes")
+    }
+    api("org.hyperledger.besu:evm:24.3.3") {
+        because("org.hyperledger.besu.evm")
+    }
+    api("org.hyperledger.besu:secp256k1:0.8.2") {
+        because("org.hyperledger.besu.nativelib.secp256k1")
+    }
+    api("org.json:json:20231013") {
+        because("org.json")
+    }
+    api("org.junit.jupiter:junit-jupiter-api:5.10.2") {
+        because("org.junit.jupiter.api")
+    }
+    api("org.junit-pioneer:junit-pioneer:2.0.1") {
+        because("org.junitpioneer")
+    }
+    api("org.mockito:mockito-core:5.8.0") {
+        because("org.mockito")
+    }
+    api("org.mockito:mockito-junit-jupiter:5.8.0") {
+        because("org.mockito.junit.jupiter")
+    }
+    api("org.opentest4j:opentest4j:1.2.0") {
+        because("org.opentest4j")
+    }
+    api("org.testcontainers:testcontainers:1.17.2") {
+        because("org.testcontainers")
+    }
+    api("org.testcontainers:junit-jupiter:1.17.2") {
+        because("org.testcontainers.junit.jupiter")
+    }
+    api("org.yaml:snakeyaml:2.2") {
+        because("org.yaml.snakeyaml")
+    }
+    api("io.tmio:tuweni-bytes:2.4.2") {
+        because("tuweni.bytes")
+    }
+    api("io.tmio:tuweni-units:2.4.2") {
+        because("tuweni.units")
+    }
+    api("uk.org.webcompere:system-stubs-core:2.1.5") {
+        because("uk.org.webcompere.systemstubs.core")
+    }
+    api("uk.org.webcompere:system-stubs-jupiter:2.1.5") {
+        because("uk.org.webcompere.systemstubs.jupiter")
+    }
+}
+
+dependencies.constraints {
+    // required to merge 'javax.annotation-api' into 'com.google.code.findbugs:jsr305'
+    // to have all annotations on the classpath available at compile time
+    api("javax.annotation:javax.annotation-api:1.3.2")
 }

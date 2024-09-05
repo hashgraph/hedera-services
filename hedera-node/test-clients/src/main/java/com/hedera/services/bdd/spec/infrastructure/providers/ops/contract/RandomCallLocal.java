@@ -17,31 +17,25 @@
 package com.hedera.services.bdd.spec.infrastructure.providers.ops.contract;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_DELETED;
-import static java.util.Collections.EMPTY_LIST;
 
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.infrastructure.EntityNameProvider;
 import com.hedera.services.bdd.spec.infrastructure.OpProvider;
-import com.hedera.services.bdd.spec.infrastructure.meta.ActionableContractCallLocal;
 import com.hedera.services.bdd.spec.queries.QueryVerbs;
 import com.hedera.services.bdd.spec.queries.contract.HapiContractCallLocal;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import java.util.List;
 import java.util.Optional;
 
 public class RandomCallLocal implements OpProvider {
-    private final EntityNameProvider<ActionableContractCallLocal> localCalls;
+    private final EntityNameProvider localCalls;
 
     private final ResponseCodeEnum[] permissibleCostAnswerPrechecks = standardPrechecksAnd(CONTRACT_DELETED);
     private final ResponseCodeEnum[] permissibleAnswerOnlyPrechecks = standardPrechecksAnd(CONTRACT_DELETED);
+    private final ResponseCodeEnum[] customOutcomes;
 
-    public RandomCallLocal(EntityNameProvider<ActionableContractCallLocal> localCalls) {
+    public RandomCallLocal(EntityNameProvider localCalls, ResponseCodeEnum[] customOutcomes) {
         this.localCalls = localCalls;
-    }
-
-    @Override
-    public List<HapiSpecOperation> suggestedInitializers() {
-        return EMPTY_LIST;
+        this.customOutcomes = customOutcomes;
     }
 
     @Override
@@ -53,7 +47,7 @@ public class RandomCallLocal implements OpProvider {
 
         HapiContractCallLocal op = QueryVerbs.contractCallLocalFrom(localCall.get())
                 .hasCostAnswerPrecheckFrom(permissibleCostAnswerPrechecks)
-                .hasAnswerOnlyPrecheckFrom(permissibleAnswerOnlyPrechecks);
+                .hasAnswerOnlyPrecheckFrom(plus(permissibleAnswerOnlyPrechecks, customOutcomes));
 
         return Optional.of(op);
     }

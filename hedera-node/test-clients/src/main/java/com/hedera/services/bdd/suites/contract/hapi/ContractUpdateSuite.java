@@ -18,11 +18,14 @@ package com.hedera.services.bdd.suites.contract.hapi;
 
 import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.isLiteralResult;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.ContractInfoAsserts.contractWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.keys.KeyShape.listOf;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocal;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractBytecode;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
@@ -35,87 +38,111 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.asHeadlongAddress;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.doWithStartupConfigNow;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.submitModified;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.spec.utilops.mod.ModificationUtils.withSuccessivelyVariedBodyIds;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.FULLY_NONDETERMINISTIC;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_CONTRACT_CALL_RESULTS;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
+import static com.hedera.services.bdd.suites.HapiSuite.CIVILIAN_PAYER;
+import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_CONTRACT_SENDER;
+import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PAYER;
+import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PROPS;
+import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
+import static com.hedera.services.bdd.suites.HapiSuite.THREE_MONTHS_IN_SECONDS;
+import static com.hedera.services.bdd.suites.HapiSuite.ZERO_BYTE_MEMO;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
+import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hedera.services.bdd.suites.contract.Utils.captureChildCreate2MetaFor;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EXPIRATION_REDUCTION_NOT_ALLOWED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ADMIN_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_MAX_AUTO_ASSOCIATIONS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MODIFYING_IMMUTABLE_CONTRACT;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.spec.HapiSpec;
-import com.hedera.services.bdd.spec.HapiSpecSetup;
+import com.hedera.services.bdd.junit.LeakyHapiTest;
+import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.assertions.ContractInfoAsserts;
 import com.hedera.services.bdd.spec.keys.KeyShape;
-import com.hedera.services.bdd.suites.HapiSuite;
+import com.hedera.services.bdd.spec.transactions.TxnVerbs;
+import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
+import com.hedera.services.bdd.spec.utilops.RunnableOp;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
+import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
-@HapiTestSuite(fuzzyMatch = true)
 @Tag(SMART_CONTRACT)
-public class ContractUpdateSuite extends HapiSuite {
-
-    private static final Logger log = LogManager.getLogger(ContractUpdateSuite.class);
-
-    private static final long defaultMaxLifetime =
-            Long.parseLong(HapiSpecSetup.getDefaultNodeProps().get("entities.maxLifetime"));
-    private static final long ONE_DAY = 60 * 60 * 24;
-    private static final long ONE_MONTH = 30 * ONE_DAY;
+public class ContractUpdateSuite {
+    private static final long ONE_DAY = 60L * 60L * 24L;
     public static final String ADMIN_KEY = "adminKey";
     public static final String NEW_ADMIN_KEY = "newAdminKey";
     private static final String CONTRACT = "Multipurpose";
     public static final String INITIAL_ADMIN_KEY = "initialAdminKey";
+    private static final String AUTO_RENEW_ACCOUNT = "autoRenewAccount";
+    private static final String STAKED_ACCOUNT = "stakedAccount";
 
-    public static void main(String... args) {
-        new ContractUpdateSuite().runSuiteAsync();
-    }
-
-    @Override
-    public boolean canRunConcurrent() {
-        return true;
-    }
-
-    @Override
-    public List<HapiSpec> getSpecsInSuite() {
-        return List.of(
-                updateWithBothMemoSettersWorks(),
-                updatingExpiryWorks(),
-                rejectsExpiryTooFarInTheFuture(),
-                updateAutoRenewWorks(),
-                updateAdminKeyWorks(),
-                canMakeContractImmutableWithEmptyKeyList(),
-                givenAdminKeyMustBeValid(),
-                fridayThe13thSpec(),
-                updateDoesNotChangeBytecode(),
-                eip1014AddressAlwaysHasPriority(),
-                immutableContractKeyFormIsStandard(),
-                updateAutoRenewAccountWorks(),
-                updateStakingFieldsWorks(),
-                cannotUpdateMaxAutomaticAssociations());
+    @HapiTest
+    final Stream<DynamicTest> updateMaxAutomaticAssociationsAndRequireKey() {
+        return defaultHapiSpec("updateMaxAutomaticAssociationsAndRequireKey")
+                .given(
+                        newKeyNamed(ADMIN_KEY),
+                        uploadInitCode(CONTRACT),
+                        contractCreate(CONTRACT).adminKey(ADMIN_KEY))
+                .when(
+                        contractUpdate(CONTRACT).newMaxAutomaticAssociations(20).signedBy(DEFAULT_PAYER, ADMIN_KEY),
+                        contractUpdate(CONTRACT).newMaxAutomaticAssociations(20).signedBy(DEFAULT_PAYER, ADMIN_KEY),
+                        doWithStartupConfigNow("entities.maxLifetime", (value, now) -> contractUpdate(CONTRACT)
+                                .newMaxAutomaticAssociations(20)
+                                .newExpirySecs(now.getEpochSecond() + Long.parseLong(value) - 12345L)
+                                .signedBy(DEFAULT_PAYER)
+                                .hasKnownStatus(INVALID_SIGNATURE)))
+                .then(getContractInfo(CONTRACT).has(contractWith().maxAutoAssociations(20)));
     }
 
     @HapiTest
-    final HapiSpec updateStakingFieldsWorks() {
+    final Stream<DynamicTest> idVariantsTreatedAsExpected() {
+        return defaultHapiSpec("idVariantsTreatedAsExpected")
+                .given(
+                        newKeyNamed(ADMIN_KEY),
+                        cryptoCreate("a"),
+                        cryptoCreate("b"),
+                        uploadInitCode(CONTRACT),
+                        contractCreate(CONTRACT).autoRenewAccountId("a").stakedAccountId("b"))
+                .when()
+                .then(submitModified(
+                        withSuccessivelyVariedBodyIds(),
+                        () -> contractUpdate(CONTRACT).newAutoRenewAccount("b").newStakedAccountId("a")));
+    }
+
+    @HapiTest
+    final Stream<DynamicTest> updateStakingFieldsWorks() {
         return defaultHapiSpec("updateStakingFieldsWorks", FULLY_NONDETERMINISTIC)
                 .given(
                         uploadInitCode(CONTRACT),
-                        contractCreate(CONTRACT).declinedReward(true).stakedNodeId(0),
+                        // refuse eth conversion because ethereum transaction is missing staking fields to map
+                        // (isDeclinedReward)
+                        contractCreate(CONTRACT)
+                                .declinedReward(true)
+                                .stakedNodeId(0)
+                                .refusingEthConversion(),
                         getContractInfo(CONTRACT)
                                 .has(contractWith()
                                         .isDeclinedReward(true)
@@ -139,7 +166,12 @@ public class ContractUpdateSuite extends HapiSuite {
                                         .noStakingNodeId()
                                         .noStakedAccountId())
                                 .logged(),
-                        contractCreate(CONTRACT).declinedReward(true).stakedNodeId(0),
+                        // refuse eth conversion because ethereum transaction is missing staking fields to map
+                        // (isDeclinedReward)
+                        contractCreate(CONTRACT)
+                                .declinedReward(true)
+                                .stakedNodeId(0)
+                                .refusingEthConversion(),
                         getContractInfo(CONTRACT)
                                 .has(contractWith()
                                         .isDeclinedReward(true)
@@ -160,7 +192,7 @@ public class ContractUpdateSuite extends HapiSuite {
 
     // https://github.com/hashgraph/hedera-services/issues/2877
     @HapiTest
-    final HapiSpec eip1014AddressAlwaysHasPriority() {
+    final Stream<DynamicTest> eip1014AddressAlwaysHasPriority() {
         final var contract = "VariousCreate2Calls";
         final var creationTxn = "creationTxn";
         final var callTxn = "callTxn";
@@ -221,7 +253,7 @@ public class ContractUpdateSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec updateWithBothMemoSettersWorks() {
+    final Stream<DynamicTest> updateWithBothMemoSettersWorks() {
         final var firstMemo = "First";
         final var secondMemo = "Second";
         final var thirdMemo = "Third";
@@ -230,7 +262,13 @@ public class ContractUpdateSuite extends HapiSuite {
                 .given(
                         newKeyNamed(ADMIN_KEY),
                         uploadInitCode(CONTRACT),
-                        contractCreate(CONTRACT).adminKey(ADMIN_KEY).entityMemo(firstMemo))
+                        contractCreate(CONTRACT)
+                                // Refusing ethereum create conversion, because we get INVALID_SIGNATURE upon
+                                // tokenAssociate,
+                                // since we have CONTRACT_ID key
+                                .refusingEthConversion()
+                                .adminKey(ADMIN_KEY)
+                                .entityMemo(firstMemo))
                 .when(
                         contractUpdate(CONTRACT).newMemo(secondMemo),
                         contractUpdate(CONTRACT).newMemo(ZERO_BYTE_MEMO).hasPrecheck(INVALID_ZERO_BYTE_IN_STRING),
@@ -241,49 +279,62 @@ public class ContractUpdateSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec updatingExpiryWorks() {
-        final var newExpiry = Instant.now().getEpochSecond() + 5 * ONE_MONTH;
+    final Stream<DynamicTest> updatingExpiryWorks() {
+        final var someValidExpiry = new AtomicLong();
         return defaultHapiSpec("UpdatingExpiryWorks", NONDETERMINISTIC_TRANSACTION_FEES)
-                .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT))
-                .when(contractUpdate(CONTRACT).newExpirySecs(newExpiry))
-                .then(getContractInfo(CONTRACT).has(contractWith().expiry(newExpiry)));
+                .given(
+                        new RunnableOp(() ->
+                                someValidExpiry.set(Instant.now().getEpochSecond() + THREE_MONTHS_IN_SECONDS + 123L)),
+                        uploadInitCode(CONTRACT),
+                        contractCreate(CONTRACT))
+                .when(sourcing(() -> contractUpdate(CONTRACT).newExpirySecs(someValidExpiry.get())))
+                .then(sourcing(
+                        () -> getContractInfo(CONTRACT).has(contractWith().expiry(someValidExpiry.get()))));
     }
 
     @HapiTest
-    final HapiSpec rejectsExpiryTooFarInTheFuture() {
-        final var smallBuffer = 12_345L;
-        final var excessiveExpiry = defaultMaxLifetime + Instant.now().getEpochSecond() + smallBuffer;
-
+    final Stream<DynamicTest> rejectsExpiryTooFarInTheFuture() {
         return defaultHapiSpec("RejectsExpiryTooFarInTheFuture", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT))
                 .when()
-                .then(contractUpdate(CONTRACT).newExpirySecs(excessiveExpiry).hasKnownStatus(INVALID_EXPIRATION_TIME));
+                .then(doWithStartupConfigNow("entities.maxLifetime", (value, now) -> contractUpdate(CONTRACT)
+                        .newExpirySecs(now.getEpochSecond() + Long.parseLong(value) + 12345L)
+                        .hasKnownStatus(INVALID_EXPIRATION_TIME)));
     }
 
     @HapiTest
-    final HapiSpec updateAutoRenewWorks() {
+    final Stream<DynamicTest> updateAutoRenewWorks() {
         return defaultHapiSpec("UpdateAutoRenewWorks", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         newKeyNamed(ADMIN_KEY),
                         uploadInitCode(CONTRACT),
-                        contractCreate(CONTRACT).adminKey(ADMIN_KEY).autoRenewSecs(THREE_MONTHS_IN_SECONDS))
+                        contractCreate(CONTRACT)
+                                // Refusing ethereum create conversion, because we get INVALID_SIGNATURE upon
+                                // tokenAssociate,
+                                // since we have CONTRACT_ID key
+                                .refusingEthConversion()
+                                .adminKey(ADMIN_KEY)
+                                .autoRenewSecs(THREE_MONTHS_IN_SECONDS))
                 .when(contractUpdate(CONTRACT).newAutoRenew(THREE_MONTHS_IN_SECONDS + ONE_DAY))
                 .then(getContractInfo(CONTRACT).has(contractWith().autoRenew(THREE_MONTHS_IN_SECONDS + ONE_DAY)));
     }
 
     @HapiTest
-    final HapiSpec updateAutoRenewAccountWorks() {
-        final var autoRenewAccount = "autoRenewAccount";
+    final Stream<DynamicTest> updateAutoRenewAccountWorks() {
         final var newAutoRenewAccount = "newAutoRenewAccount";
         return defaultHapiSpec("UpdateAutoRenewAccountWorks", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         newKeyNamed(ADMIN_KEY),
-                        cryptoCreate(autoRenewAccount),
+                        cryptoCreate(AUTO_RENEW_ACCOUNT),
                         cryptoCreate(newAutoRenewAccount),
                         uploadInitCode(CONTRACT),
-                        contractCreate(CONTRACT).adminKey(ADMIN_KEY).autoRenewAccountId(autoRenewAccount),
+                        // refuse eth conversion because ethereum transaction is missing admin key and autoRenewAccount
+                        contractCreate(CONTRACT)
+                                .adminKey(ADMIN_KEY)
+                                .autoRenewAccountId(AUTO_RENEW_ACCOUNT)
+                                .refusingEthConversion(),
                         getContractInfo(CONTRACT)
-                                .has(ContractInfoAsserts.contractWith().autoRenewAccountId(autoRenewAccount))
+                                .has(ContractInfoAsserts.contractWith().autoRenewAccountId(AUTO_RENEW_ACCOUNT))
                                 .logged())
                 .when(
                         contractUpdate(CONTRACT)
@@ -299,13 +350,15 @@ public class ContractUpdateSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec updateAdminKeyWorks() {
+    final Stream<DynamicTest> updateAdminKeyWorks() {
         return defaultHapiSpec("UpdateAdminKeyWorks", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         newKeyNamed(ADMIN_KEY),
                         newKeyNamed(NEW_ADMIN_KEY),
                         uploadInitCode(CONTRACT),
-                        contractCreate(CONTRACT).adminKey(ADMIN_KEY))
+                        // Refusing ethereum create conversion, because we get INVALID_SIGNATURE upon tokenAssociate,
+                        // since we have CONTRACT_ID key
+                        contractCreate(CONTRACT).refusingEthConversion().adminKey(ADMIN_KEY))
                 .when(contractUpdate(CONTRACT).newKey(NEW_ADMIN_KEY))
                 .then(
                         contractUpdate(CONTRACT).newMemo("some new memo"),
@@ -315,7 +368,7 @@ public class ContractUpdateSuite extends HapiSuite {
 
     // https://github.com/hashgraph/hedera-services/issues/3037
     @HapiTest
-    final HapiSpec immutableContractKeyFormIsStandard() {
+    final Stream<DynamicTest> immutableContractKeyFormIsStandard() {
         return defaultHapiSpec("ImmutableContractKeyFormIsStandard", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT).immutable())
                 .when()
@@ -323,37 +376,41 @@ public class ContractUpdateSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec canMakeContractImmutableWithEmptyKeyList() {
+    final Stream<DynamicTest> canMakeContractImmutableWithEmptyKeyList() {
         return defaultHapiSpec("CanMakeContractImmutableWithEmptyKeyList", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         newKeyNamed(ADMIN_KEY),
                         newKeyNamed(NEW_ADMIN_KEY),
                         uploadInitCode(CONTRACT),
-                        contractCreate(CONTRACT).adminKey(ADMIN_KEY))
+                        // Refusing ethereum create conversion, because we get INVALID_SIGNATURE upon tokenAssociate,
+                        // since we have CONTRACT_ID key
+                        contractCreate(CONTRACT).refusingEthConversion().adminKey(ADMIN_KEY))
                 .when(
-                        contractUpdate(CONTRACT).improperlyEmptyingAdminKey().hasKnownStatus(INVALID_ADMIN_KEY),
+                        contractUpdate(CONTRACT).improperlyEmptyingAdminKey().hasPrecheck(INVALID_ADMIN_KEY),
                         contractUpdate(CONTRACT).properlyEmptyingAdminKey())
                 .then(contractUpdate(CONTRACT).newKey(NEW_ADMIN_KEY).hasKnownStatus(MODIFYING_IMMUTABLE_CONTRACT));
     }
 
     @HapiTest
-    final HapiSpec givenAdminKeyMustBeValid() {
+    final Stream<DynamicTest> givenAdminKeyMustBeValid() {
         final var contract = "BalanceLookup";
         return defaultHapiSpec("GivenAdminKeyMustBeValid", NONDETERMINISTIC_TRANSACTION_FEES)
-                .given(uploadInitCode(contract), contractCreate(contract))
+                // Refusing ethereum create conversion, because we get INVALID_SIGNATURE upon tokenAssociate,
+                // since we have CONTRACT_ID key
+                .given(uploadInitCode(contract), contractCreate(contract).refusingEthConversion())
                 .when(getContractInfo(contract).logged())
                 .then(contractUpdate(contract)
                         .useDeprecatedAdminKey()
                         .signedBy(GENESIS, contract)
-                        .hasKnownStatus(INVALID_ADMIN_KEY));
+                        .hasPrecheck(INVALID_ADMIN_KEY));
     }
 
     @HapiTest
-    HapiSpec fridayThe13thSpec() {
+    final Stream<DynamicTest> fridayThe13thSpec() {
         final var contract = "SimpleStorage";
         final var suffix = "Clone";
-        final var newExpiry = Instant.now().getEpochSecond() + DEFAULT_PROPS.defaultExpirationSecs() * 2;
-        final var betterExpiry = Instant.now().getEpochSecond() + DEFAULT_PROPS.defaultExpirationSecs() * 3;
+        final var newExpiry = Instant.now().getEpochSecond() + DEFAULT_PROPS.defaultExpirationSecs() + 200;
+        final var betterExpiry = Instant.now().getEpochSecond() + DEFAULT_PROPS.defaultExpirationSecs() + 300;
         final var INITIAL_MEMO = "This is a memo string with only Ascii characters";
         final var NEW_MEMO = "Turning and turning in the widening gyre, the falcon cannot hear the falconer...";
         final var BETTER_MEMO = "This was Mr. Bleaney's room...";
@@ -369,10 +426,13 @@ public class ContractUpdateSuite extends HapiSuite {
                         uploadInitCode(contract))
                 .when(
                         contractCreate(contract).payingWith(payer).omitAdminKey(),
+                        // refuse eth conversion because ethereum transaction is missing admin key and memo is same as
+                        // parent
                         contractCustomCreate(contract, suffix)
                                 .payingWith(payer)
                                 .adminKey(INITIAL_ADMIN_KEY)
-                                .entityMemo(INITIAL_MEMO),
+                                .entityMemo(INITIAL_MEMO)
+                                .refusingEthConversion(),
                         getContractInfo(contract + suffix)
                                 .payingWith(payer)
                                 .logged()
@@ -420,10 +480,6 @@ public class ContractUpdateSuite extends HapiSuite {
                                 .signedBy(payer)
                                 .newMemo(NEW_MEMO)
                                 .hasKnownStatus(INVALID_SIGNATURE),
-                        contractUpdate(contract + suffix)
-                                .payingWith(payer)
-                                .signedBy(payer, INITIAL_ADMIN_KEY)
-                                .hasKnownStatus(INVALID_SIGNATURE),
                         contractUpdate(contract)
                                 .payingWith(payer)
                                 .newMemo(BETTER_MEMO)
@@ -442,36 +498,193 @@ public class ContractUpdateSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec updateDoesNotChangeBytecode() {
+    final Stream<DynamicTest> updateDoesNotChangeBytecode() {
         // HSCS-DCPR-001
         final var simpleStorageContract = "SimpleStorage";
         final var emptyConstructorContract = "EmptyConstructor";
         return defaultHapiSpec("updateDoesNotChangeBytecode", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         uploadInitCode(simpleStorageContract, emptyConstructorContract),
-                        contractCreate(simpleStorageContract),
+                        // Refusing ethereum create conversion, because we get INVALID_SIGNATURE upon tokenAssociate,
+                        // since we have CONTRACT_ID key
+                        contractCreate(simpleStorageContract).refusingEthConversion(),
                         getContractBytecode(simpleStorageContract).saveResultTo("initialBytecode"))
                 .when(contractUpdate(simpleStorageContract).bytecode(emptyConstructorContract))
                 .then(withOpContext((spec, log) -> {
-                    var op = getContractBytecode(simpleStorageContract)
+                    final var op = getContractBytecode(simpleStorageContract)
                             .hasBytecode(spec.registry().getBytes("initialBytecode"));
                     allRunFor(spec, op);
                 }));
     }
 
-    @HapiTest
-    private HapiSpec cannotUpdateMaxAutomaticAssociations() {
-        return defaultHapiSpec("cannotUpdateMaxAutomaticAssociations")
-                .given(
-                        newKeyNamed(ADMIN_KEY),
-                        uploadInitCode(CONTRACT),
-                        contractCreate(CONTRACT).adminKey(ADMIN_KEY))
-                .when()
-                .then(contractUpdate(CONTRACT).newMaxAutomaticAssociations(20).hasKnownStatus(NOT_SUPPORTED));
+    @LeakyHapiTest(overrides = {"ledger.maxAutoAssociations"})
+    final Stream<DynamicTest> tryContractUpdateWithMaxAutoAssociations() {
+        return hapiTest(
+                overriding("ledger.maxAutoAssociations", "5000"),
+                newKeyNamed(ADMIN_KEY),
+                uploadInitCode(CONTRACT),
+                contractCreate(CONTRACT).adminKey(ADMIN_KEY),
+                contractUpdate(CONTRACT).newMaxAutomaticAssociations(-2).hasKnownStatus(INVALID_MAX_AUTO_ASSOCIATIONS),
+                contractUpdate(CONTRACT)
+                        .newMaxAutomaticAssociations(-200)
+                        .hasKnownStatus(INVALID_MAX_AUTO_ASSOCIATIONS),
+                contractUpdate(CONTRACT)
+                        .newMaxAutomaticAssociations(5001)
+                        .hasKnownStatus(REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT),
+                getContractInfo(CONTRACT).has(contractWith().maxAutoAssociations(0)),
+                contractUpdate(CONTRACT).newMaxAutomaticAssociations(-1).hasKnownStatus(SUCCESS),
+                getContractInfo(CONTRACT).has(contractWith().maxAutoAssociations(-1)),
+                contractUpdate(CONTRACT).newMaxAutomaticAssociations(0).hasKnownStatus(SUCCESS),
+                getContractInfo(CONTRACT).has(contractWith().maxAutoAssociations(0)),
+                contractUpdate(CONTRACT).newMaxAutomaticAssociations(5000).hasKnownStatus(SUCCESS),
+                getContractInfo(CONTRACT).has(contractWith().maxAutoAssociations(5000)));
     }
 
-    @Override
-    protected Logger getResultsLogger() {
-        return log;
+    @HapiTest
+    final Stream<DynamicTest> playGame() {
+        final var dj = "dj";
+        final var players = IntStream.range(1, 30).mapToObj(i -> "Player" + i).toList();
+        final var contract = "MusicalChairs";
+
+        final List<HapiSpecOperation> given = new ArrayList<>();
+        final List<HapiSpecOperation> when = new ArrayList<>();
+        final List<HapiSpecOperation> then = new ArrayList<>();
+
+        ////// Create contract //////
+        given.add(cryptoCreate(dj).balance(10 * ONE_HUNDRED_HBARS));
+        given.add(getAccountInfo(DEFAULT_CONTRACT_SENDER).savingSnapshot(DEFAULT_CONTRACT_SENDER));
+        given.add(uploadInitCode(contract));
+        given.add(withOpContext((spec, opLog) -> allRunFor(
+                spec,
+                contractCreate(
+                                contract,
+                                asHeadlongAddress(spec.registry()
+                                        .getAccountInfo(DEFAULT_CONTRACT_SENDER)
+                                        .getContractAccountID()))
+                        .payingWith(dj))));
+
+        ////// Add the players //////
+        players.stream().map(TxnVerbs::cryptoCreate).forEach(given::add);
+
+        ////// Start the music! //////
+        when.add(contractCall(contract, "startMusic").payingWith(DEFAULT_CONTRACT_SENDER));
+
+        ////// 100 "random" seats taken //////
+        new Random(0x1337)
+                .ints(100, 0, 29)
+                .forEach(i -> when.add(contractCall(contract, "sitDown")
+                        .payingWith(players.get(i))
+                        .refusingEthConversion()
+                        .hasAnyStatusAtAll())); // sometimes a player sits
+        // too soon, so don't fail
+        // on reverts
+
+        ////// Stop the music! //////
+        then.add(contractCall(contract, "stopMusic").payingWith(DEFAULT_CONTRACT_SENDER));
+
+        ////// And the winner is..... //////
+        then.add(withOpContext((spec, opLog) -> allRunFor(
+                spec,
+                contractCallLocal(contract, "whoIsOnTheBubble")
+                        .has(resultWith()
+                                .resultThruAbi(
+                                        getABIFor(FUNCTION, "whoIsOnTheBubble", contract),
+                                        isLiteralResult(new Object[] {
+                                            HapiParserUtil.asHeadlongAddress(
+                                                    asAddress(spec.registry().getAccountID("Player13")))
+                                        }))))));
+
+        return defaultHapiSpec("playGame")
+                .given(given.toArray(HapiSpecOperation[]::new))
+                .when(when.toArray(HapiSpecOperation[]::new))
+                .then(then.toArray(HapiSpecOperation[]::new));
+    }
+
+    @HapiTest
+    final Stream<DynamicTest> cannotUpdateImmutableContractExceptExpiry() {
+        final var someValidExpiry = new AtomicLong(Instant.now().getEpochSecond() + THREE_MONTHS_IN_SECONDS + 1234L);
+        return hapiTest(
+                newKeyNamed(ADMIN_KEY),
+                cryptoCreate(AUTO_RENEW_ACCOUNT),
+                cryptoCreate(STAKED_ACCOUNT),
+                uploadInitCode(CONTRACT),
+                contractCreate(CONTRACT).immutable(),
+                contractUpdate(CONTRACT).newAutoRenew(1).hasKnownStatus(MODIFYING_IMMUTABLE_CONTRACT),
+                contractUpdate(CONTRACT)
+                        .newAutoRenewAccount(AUTO_RENEW_ACCOUNT)
+                        .hasKnownStatus(MODIFYING_IMMUTABLE_CONTRACT),
+                contractUpdate(CONTRACT).newDeclinedReward(true).hasKnownStatus(MODIFYING_IMMUTABLE_CONTRACT),
+                contractUpdate(CONTRACT).newExpirySecs(someValidExpiry.get()).hasKnownStatus(SUCCESS),
+                contractUpdate(CONTRACT).newKey(ADMIN_KEY).hasKnownStatus(MODIFYING_IMMUTABLE_CONTRACT),
+                contractUpdate(CONTRACT).newMaxAutomaticAssociations(100).hasKnownStatus(MODIFYING_IMMUTABLE_CONTRACT),
+                contractUpdate(CONTRACT).newMemo("The new memo").hasKnownStatus(MODIFYING_IMMUTABLE_CONTRACT),
+                contractUpdate(CONTRACT).newProxy(CONTRACT).hasKnownStatus(MODIFYING_IMMUTABLE_CONTRACT),
+                contractUpdate(CONTRACT)
+                        .newStakedAccountId(STAKED_ACCOUNT)
+                        .hasKnownStatus(MODIFYING_IMMUTABLE_CONTRACT),
+                contractUpdate(CONTRACT).newStakedNodeId(1).hasKnownStatus(MODIFYING_IMMUTABLE_CONTRACT));
+    }
+
+    @HapiTest
+    final Stream<DynamicTest> cannotUpdateContractExceptExpiryWithWrongKey() {
+        final var someValidExpiry = new AtomicLong(Instant.now().getEpochSecond() + THREE_MONTHS_IN_SECONDS + 1234L);
+        return hapiTest(
+                newKeyNamed(ADMIN_KEY),
+                newKeyNamed(NEW_ADMIN_KEY),
+                cryptoCreate(AUTO_RENEW_ACCOUNT),
+                cryptoCreate(STAKED_ACCOUNT),
+                cryptoCreate(CIVILIAN_PAYER).balance(10 * ONE_HUNDRED_HBARS),
+                uploadInitCode(CONTRACT),
+                contractCreate(CONTRACT).adminKey(ADMIN_KEY),
+                contractUpdate(CONTRACT)
+                        .payingWith(CIVILIAN_PAYER)
+                        .signedBy(CIVILIAN_PAYER, NEW_ADMIN_KEY)
+                        .newAutoRenew(1)
+                        .hasKnownStatus(INVALID_SIGNATURE),
+                contractUpdate(CONTRACT)
+                        .payingWith(CIVILIAN_PAYER)
+                        .signedBy(CIVILIAN_PAYER, NEW_ADMIN_KEY)
+                        .newAutoRenewAccount(AUTO_RENEW_ACCOUNT)
+                        .hasKnownStatus(INVALID_SIGNATURE),
+                contractUpdate(CONTRACT)
+                        .payingWith(CIVILIAN_PAYER)
+                        .signedBy(CIVILIAN_PAYER, NEW_ADMIN_KEY)
+                        .newDeclinedReward(true)
+                        .hasKnownStatus(INVALID_SIGNATURE),
+                contractUpdate(CONTRACT)
+                        .payingWith(CIVILIAN_PAYER)
+                        .signedBy(CIVILIAN_PAYER, NEW_ADMIN_KEY)
+                        .newExpirySecs(someValidExpiry.get())
+                        .hasKnownStatus(SUCCESS),
+                contractUpdate(CONTRACT)
+                        .payingWith(CIVILIAN_PAYER)
+                        .signedBy(CIVILIAN_PAYER, NEW_ADMIN_KEY)
+                        .newKey(ADMIN_KEY)
+                        .hasKnownStatus(INVALID_SIGNATURE),
+                contractUpdate(CONTRACT)
+                        .payingWith(CIVILIAN_PAYER)
+                        .signedBy(CIVILIAN_PAYER, NEW_ADMIN_KEY)
+                        .newMaxAutomaticAssociations(100)
+                        .hasKnownStatus(INVALID_SIGNATURE),
+                contractUpdate(CONTRACT)
+                        .payingWith(CIVILIAN_PAYER)
+                        .signedBy(CIVILIAN_PAYER, NEW_ADMIN_KEY)
+                        .newMemo("The new memo")
+                        .hasKnownStatus(INVALID_SIGNATURE),
+                contractUpdate(CONTRACT)
+                        .payingWith(CIVILIAN_PAYER)
+                        .signedBy(CIVILIAN_PAYER, NEW_ADMIN_KEY)
+                        .newProxy(CONTRACT)
+                        .hasKnownStatus(INVALID_SIGNATURE),
+                contractUpdate(CONTRACT)
+                        .payingWith(CIVILIAN_PAYER)
+                        .signedBy(CIVILIAN_PAYER, NEW_ADMIN_KEY)
+                        .newStakedAccountId(STAKED_ACCOUNT)
+                        .hasKnownStatus(INVALID_SIGNATURE),
+                contractUpdate(CONTRACT)
+                        .payingWith(CIVILIAN_PAYER)
+                        .signedBy(CIVILIAN_PAYER, NEW_ADMIN_KEY)
+                        .newStakedNodeId(1)
+                        .hasKnownStatus(INVALID_SIGNATURE));
     }
 }

@@ -43,10 +43,20 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.asHeadlongAddress;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.doSeveralWithStartupConfig;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.specOps;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.submitModified;
+import static com.hedera.services.bdd.spec.utilops.mod.ModificationUtils.withSuccessivelyVariedBodyIds;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.HIGHLY_NON_DETERMINISTIC_FEES;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_FUNCTION_PARAMETERS;
+import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
+import static com.hedera.services.bdd.suites.HapiSuite.SYSTEM_DELETE_ADMIN;
+import static com.hedera.services.bdd.suites.HapiSuite.SYSTEM_UNDELETE_ADMIN;
+import static com.hedera.services.bdd.suites.HapiSuite.TOKEN_TREASURY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_IS_TREASURY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_EXECUTION_EXCEPTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
@@ -65,63 +75,48 @@ import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiPropertySource;
-import com.hedera.services.bdd.spec.HapiSpec;
-import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts;
 import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
-import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import java.math.BigInteger;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.IntStream;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import java.util.stream.Stream;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
+import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
-@HapiTestSuite(fuzzyMatch = true)
 @Tag(SMART_CONTRACT)
-public class ContractDeleteSuite extends HapiSuite {
-
-    private static final Logger log = LogManager.getLogger(ContractDeleteSuite.class);
+public class ContractDeleteSuite {
     private static final String CONTRACT = "Multipurpose";
     private static final String PAYABLE_CONSTRUCTOR = "PayableConstructor";
     private static final String CONTRACT_DESTROY = "destroy";
     private static final String RECEIVER_CONTRACT_NAME = "receiver";
     private static final String SIMPLE_STORAGE_CONTRACT = "SimpleStorage";
 
-    public static void main(final String... args) {
-        new ContractDeleteSuite().runSuiteSync();
-    }
-
-    @Override
-    public boolean canRunConcurrent() {
-        return true;
-    }
-
-    @Override
-    public List<HapiSpec> getSpecsInSuite() {
-        return List.of(
-                rejectsWithoutProperSig(),
-                systemCannotDeleteOrUndeleteContracts(),
-                deleteWorksWithMutableContract(),
-                deleteFailsWithImmutableContract(),
-                deleteTransfersToAccount(),
-                deleteTransfersToContract(),
-                cannotDeleteOrSelfDestructTokenTreasury(),
-                cannotDeleteOrSelfDestructContractWithNonZeroBalance(),
-                cannotSendValueToTokenAccount(),
-                cannotUseMoreThanChildContractLimit());
+    @HapiTest
+    final Stream<DynamicTest> idVariantsTreatedAsExpected() {
+        return defaultHapiSpec("idVariantsTreatedAsExpected")
+                .given(
+                        newKeyNamed("adminKey"),
+                        uploadInitCode(CONTRACT),
+                        contractCreate(CONTRACT),
+                        cryptoCreate("transferAccount"))
+                .when(
+                        contractCreate("a").bytecode(CONTRACT).adminKey("adminKey"),
+                        contractCreate("b").bytecode(CONTRACT).adminKey("adminKey"))
+                .then(
+                        submitModified(withSuccessivelyVariedBodyIds(), () -> contractDelete("a")
+                                .transferAccount("transferAccount")),
+                        submitModified(withSuccessivelyVariedBodyIds(), () -> contractDelete("b")
+                                .transferContract(CONTRACT)));
     }
 
     @HapiTest
-    final HapiSpec cannotUseMoreThanChildContractLimit() {
-        final var illegalNumChildren =
-                HapiSpecSetup.getDefaultNodeProps().getInteger("consensus.handle.maxFollowingRecords") + 1;
+    final Stream<DynamicTest> cannotUseMoreThanChildContractLimit() {
         final var fungible = "fungible";
         final var contract = "ManyChildren";
         final var precompileViolation = "precompileViolation";
@@ -142,19 +137,25 @@ public class ContractDeleteSuite extends HapiSuite {
                 .when(
                         uploadInitCode(contract),
                         contractCreate(contract),
-                        sourcing(() -> contractCall(
-                                        contract,
-                                        "checkBalanceRepeatedly",
-                                        asHeadlongAddress(tokenMirrorAddr.get()),
-                                        asHeadlongAddress(treasuryMirrorAddr.get()),
-                                        BigInteger.valueOf(illegalNumChildren))
-                                .via(precompileViolation)
-                                .hasKnownStatus(MAX_CHILD_RECORDS_EXCEEDED)),
-                        sourcing(() -> contractCall(
-                                        contract, "createThingsRepeatedly", BigInteger.valueOf(illegalNumChildren))
-                                .via(internalCreateViolation)
-                                .gas(15_000_000)
-                                .hasKnownStatus(MAX_CHILD_RECORDS_EXCEEDED)))
+                        doSeveralWithStartupConfig("consensus.handle.maxFollowingRecords", value -> {
+                            final var illegalNumChildren = Integer.parseInt(value) + 1;
+                            return specOps(
+                                    contractCall(
+                                                    contract,
+                                                    "checkBalanceRepeatedly",
+                                                    asHeadlongAddress(tokenMirrorAddr.get()),
+                                                    asHeadlongAddress(treasuryMirrorAddr.get()),
+                                                    BigInteger.valueOf(illegalNumChildren))
+                                            .via(precompileViolation)
+                                            .hasKnownStatus(MAX_CHILD_RECORDS_EXCEEDED),
+                                    contractCall(
+                                                    contract,
+                                                    "createThingsRepeatedly",
+                                                    BigInteger.valueOf(illegalNumChildren))
+                                            .via(internalCreateViolation)
+                                            .gas(15_000_000)
+                                            .hasKnownStatus(MAX_CHILD_RECORDS_EXCEEDED));
+                        }))
                 .then(
                         getTxnRecord(precompileViolation)
                                 .andAllChildRecords()
@@ -168,7 +169,7 @@ public class ContractDeleteSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec cannotSendValueToTokenAccount() {
+    final Stream<DynamicTest> cannotSendValueToTokenAccount() {
         final var multiKey = "multiKey";
         final var nonFungibleToken = "NFT";
         final var contract = "ManyChildren";
@@ -208,7 +209,7 @@ public class ContractDeleteSuite extends HapiSuite {
     }
 
     @HapiTest
-    HapiSpec cannotDeleteOrSelfDestructTokenTreasury() {
+    final Stream<DynamicTest> cannotDeleteOrSelfDestructTokenTreasury() {
         final var someToken = "someToken";
         final var selfDestructCallable = "SelfDestructCallable";
         final var multiKey = "multi";
@@ -222,10 +223,18 @@ public class ContractDeleteSuite extends HapiSuite {
                         uploadInitCode(selfDestructCallable),
                         contractCustomCreate(selfDestructCallable, "1")
                                 .adminKey(multiKey)
-                                .balance(123),
+                                .balance(123)
+                                // Refusing ethereum create conversion, because we get INVALID_SIGNATURE upon
+                                // tokenAssociate,
+                                // since we have CONTRACT_ID key
+                                .refusingEthConversion(),
                         contractCustomCreate(selfDestructCallable, "2")
                                 .adminKey(multiKey)
-                                .balance(321),
+                                .balance(321)
+                                // Refusing ethereum create conversion, because we get INVALID_SIGNATURE upon
+                                // tokenAssociate,
+                                // since we have CONTRACT_ID key
+                                .refusingEthConversion(),
                         tokenCreate(someToken).adminKey(multiKey).treasury(selfDestructCallable + "1"))
                 .when(
                         contractDelete(selfDestructCallable + "1").hasKnownStatus(ACCOUNT_IS_TREASURY),
@@ -243,7 +252,7 @@ public class ContractDeleteSuite extends HapiSuite {
     }
 
     @HapiTest
-    HapiSpec cannotDeleteOrSelfDestructContractWithNonZeroBalance() {
+    final Stream<DynamicTest> cannotDeleteOrSelfDestructContractWithNonZeroBalance() {
         final var someToken = "someToken";
         final var multiKey = "multi";
         final var selfDestructableContract = "SelfDestructCallable";
@@ -257,9 +266,15 @@ public class ContractDeleteSuite extends HapiSuite {
                         uploadInitCode(selfDestructableContract),
                         contractCreate(selfDestructableContract)
                                 .adminKey(multiKey)
-                                .balance(123),
+                                .balance(123)
+                                // Refusing ethereum create conversion, because we get INVALID_SIGNATURE upon
+                                // tokenAssociate,
+                                // since we have CONTRACT_ID key
+                                .refusingEthConversion(),
                         uploadInitCode(otherMiscContract),
-                        contractCreate(otherMiscContract),
+                        // Refusing ethereum create conversion, because we get INVALID_SIGNATURE upon tokenAssociate,
+                        // since we have CONTRACT_ID key
+                        contractCreate(otherMiscContract).refusingEthConversion(),
                         tokenCreate(someToken)
                                 .initialSupply(0L)
                                 .adminKey(multiKey)
@@ -280,15 +295,17 @@ public class ContractDeleteSuite extends HapiSuite {
     }
 
     @HapiTest
-    HapiSpec rejectsWithoutProperSig() {
+    final Stream<DynamicTest> rejectsWithoutProperSig() {
         return defaultHapiSpec("rejectsWithoutProperSig")
-                .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT))
+                // Refusing ethereum create conversion, because we get INVALID_SIGNATURE upon tokenAssociate,
+                // since we have CONTRACT_ID key
+                .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT).refusingEthConversion())
                 .when()
                 .then(contractDelete(CONTRACT).signedBy(GENESIS).hasKnownStatus(INVALID_SIGNATURE));
     }
 
     @HapiTest
-    final HapiSpec systemCannotDeleteOrUndeleteContracts() {
+    final Stream<DynamicTest> systemCannotDeleteOrUndeleteContracts() {
         return defaultHapiSpec("SystemCannotDeleteOrUndeleteContracts")
                 .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT))
                 .when()
@@ -303,15 +320,20 @@ public class ContractDeleteSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec deleteWorksWithMutableContract() {
+    final Stream<DynamicTest> deleteWorksWithMutableContract() {
         final var tbdFile = "FTBD";
         final var tbdContract = "CTBD";
         return defaultHapiSpec("DeleteWorksWithMutableContract")
                 .given(
                         fileCreate(tbdFile),
                         fileDelete(tbdFile),
-                        createDefaultContract(tbdContract).bytecode(tbdFile).hasKnownStatus(FILE_DELETED))
-                .when(uploadInitCode(CONTRACT), contractCreate(CONTRACT))
+                        // refuse eth conversion because we can't set invalid bytecode to callData in ethereum
+                        // transaction + trying to delete immutable contract
+                        createDefaultContract(tbdContract)
+                                .bytecode(tbdFile)
+                                .hasKnownStatus(FILE_DELETED)
+                                .refusingEthConversion())
+                .when(uploadInitCode(CONTRACT), contractCreate(CONTRACT).refusingEthConversion())
                 .then(
                         contractDelete(CONTRACT)
                                 .claimingPermanentRemoval()
@@ -321,7 +343,7 @@ public class ContractDeleteSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec deleteFailsWithImmutableContract() {
+    final Stream<DynamicTest> deleteFailsWithImmutableContract() {
         return defaultHapiSpec("DeleteFailsWithImmutableContract")
                 .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT).omitAdminKey())
                 .when()
@@ -329,33 +351,46 @@ public class ContractDeleteSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec deleteTransfersToAccount() {
+    final Stream<DynamicTest> deleteTransfersToAccount() {
         return defaultHapiSpec("DeleteTransfersToAccount")
                 .given(
                         cryptoCreate(RECEIVER_CONTRACT_NAME).balance(0L),
                         uploadInitCode(PAYABLE_CONSTRUCTOR),
-                        contractCreate(PAYABLE_CONSTRUCTOR).balance(1L))
+                        contractCreate(PAYABLE_CONSTRUCTOR)
+                                // Refusing ethereum create conversion, because we get INVALID_SIGNATURE upon
+                                // tokenAssociate,
+                                // since we have CONTRACT_ID key
+                                .refusingEthConversion()
+                                .balance(1L))
                 .when(contractDelete(PAYABLE_CONSTRUCTOR).transferAccount(RECEIVER_CONTRACT_NAME))
                 .then(getAccountBalance(RECEIVER_CONTRACT_NAME).hasTinyBars(1L));
     }
 
     @HapiTest
-    final HapiSpec deleteTransfersToContract() {
+    final Stream<DynamicTest> deleteTransfersToContract() {
         final var suffix = "Receiver";
 
         return defaultHapiSpec("DeleteTransfersToContract")
                 .given(
                         uploadInitCode(PAYABLE_CONSTRUCTOR),
-                        contractCreate(PAYABLE_CONSTRUCTOR).balance(0L),
+                        contractCreate(PAYABLE_CONSTRUCTOR)
+                                // Refusing ethereum create conversion, because we get INVALID_SIGNATURE upon
+                                // tokenAssociate,
+                                // since we have CONTRACT_ID key
+                                .refusingEthConversion()
+                                .balance(0L),
                         contractCustomCreate(PAYABLE_CONSTRUCTOR, suffix).balance(1L))
                 .when(contractDelete(PAYABLE_CONSTRUCTOR).transferContract(PAYABLE_CONSTRUCTOR + suffix))
                 .then(getAccountBalance(PAYABLE_CONSTRUCTOR + suffix).hasTinyBars(1L));
     }
 
     @HapiTest
-    HapiSpec localCallToDeletedContract() {
+    final Stream<DynamicTest> localCallToDeletedContract() {
         return defaultHapiSpec("LocalCallToDeletedContract")
-                .given(uploadInitCode(SIMPLE_STORAGE_CONTRACT), contractCreate(SIMPLE_STORAGE_CONTRACT))
+                // refuse eth conversion because MODIFYING_IMMUTABLE_CONTRACT
+                .given(
+                        uploadInitCode(SIMPLE_STORAGE_CONTRACT),
+                        contractCreate(SIMPLE_STORAGE_CONTRACT).refusingEthConversion())
                 .when(
                         contractCallLocal(SIMPLE_STORAGE_CONTRACT, "get")
                                 .hasCostAnswerPrecheck(OK)
@@ -364,10 +399,5 @@ public class ContractDeleteSuite extends HapiSuite {
                 .then(contractCallLocal(SIMPLE_STORAGE_CONTRACT, "get")
                         .hasCostAnswerPrecheck(OK)
                         .has(resultWith().contractCallResult(() -> Bytes.EMPTY)));
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return log;
     }
 }

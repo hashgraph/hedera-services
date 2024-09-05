@@ -22,6 +22,7 @@ import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.TokenType;
+import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.ReadableTokenRelationStore;
@@ -42,6 +43,12 @@ public class CustomFeeAssessor extends BaseTokenHandler {
     private final CustomRoyaltyFeeAssessor royaltyFeeAssessor;
     private int initialNftChanges = 0;
 
+    /**
+     * Constructs a {@link CustomFeeAssessor} instance.
+     * @param fixedFeeAssessor the fixed fee assessor
+     * @param fractionalFeeAssessor the fractional fee assessor
+     * @param royaltyFeeAssessor the royalty fee assessor
+     */
     @Inject
     public CustomFeeAssessor(
             @NonNull final CustomFixedFeeAssessor fixedFeeAssessor,
@@ -61,29 +68,52 @@ public class CustomFeeAssessor extends BaseTokenHandler {
         return nftTransfers;
     }
 
+    /**
+     * Assesses custom fees for a given crypto transfer transaction. The fees are assessed in the following order:
+     * 1. Fixed fees
+     * 2. Fractional fees (for fungible common tokens)
+     * 3. Royalty fees (for non-fungible unique tokens)
+     * @param sender the sender account ID
+     * @param token the token
+     * @param receiver the receiver account ID
+     * @param result the assessment result
+     * @param tokenRelStore the token relation store
+     * @param accountStore the account store
+     * @param autoCreationTest the auto-creation test
+     */
     public void assess(
             final AccountID sender,
-            final CustomFeeMeta feeMeta,
+            final Token token,
             final AccountID receiver,
             final AssessmentResult result,
             final ReadableTokenRelationStore tokenRelStore,
             final ReadableAccountStore accountStore,
             final Predicate<AccountID> autoCreationTest) {
-        fixedFeeAssessor.assessFixedFees(feeMeta, sender, result);
+        fixedFeeAssessor.assessFixedFees(token, sender, result);
 
         revalidateAssessmentResult(result, tokenRelStore, accountStore, autoCreationTest);
 
         // A FUNGIBLE_COMMON token can have fractional fees but not royalty fees.
         // A NON_FUNGIBLE_UNIQUE token can have royalty fees but not fractional fees.
         // So check token type and do further assessment
-        if (feeMeta.tokenType().equals(TokenType.FUNGIBLE_COMMON)) {
-            fractionalFeeAssessor.assessFractionalFees(feeMeta, sender, result);
+        if (token.tokenType().equals(TokenType.FUNGIBLE_COMMON)) {
+            fractionalFeeAssessor.assessFractionalFees(token, sender, result);
         } else {
-            royaltyFeeAssessor.assessRoyaltyFees(feeMeta, sender, receiver, result);
+            royaltyFeeAssessor.assessRoyaltyFees(token, sender, receiver, result);
         }
         revalidateAssessmentResult(result, tokenRelStore, accountStore, autoCreationTest);
     }
 
+    /**
+     * Validates the assessment result after each type of fees assessment(fixed fees, fractional fees, royalty fees).
+     * The validation consists of two steps:
+     * 1. Ensures that the sender account has sufficient balance to pay the custom fee
+     * 2. Ensures that the sender account is associated with the token
+     * @param result the assessment result
+     * @param tokenRelStore the token relation store
+     * @param accountStore the account store
+     * @param autoCreationTest the auto-creation test
+     */
     private void revalidateAssessmentResult(
             final AssessmentResult result,
             final ReadableTokenRelationStore tokenRelStore,
@@ -147,6 +177,9 @@ public class CustomFeeAssessor extends BaseTokenHandler {
         initialNftChanges = numNftTransfers(op);
     }
 
+    /**
+     * Resets the initial NFT changes for the transaction.
+     */
     public void resetInitialNftChanges() {
         initialNftChanges = 0;
     }

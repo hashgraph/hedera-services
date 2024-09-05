@@ -3,27 +3,28 @@ module com.hedera.node.app.service.contract.impl {
     requires transitive com.hedera.node.app.hapi.utils;
     requires transitive com.hedera.node.app.service.contract;
     requires transitive com.hedera.node.app.service.file;
-    requires transitive com.hedera.node.app.service.mono;
     requires transitive com.hedera.node.app.service.token;
     requires transitive com.hedera.node.app.spi;
     requires transitive com.hedera.node.config;
     requires transitive com.hedera.node.hapi;
-    requires transitive com.hedera.pbj.runtime;
     requires transitive com.swirlds.config.api;
+    requires transitive com.swirlds.state.api;
+    requires transitive com.hedera.pbj.runtime;
     requires transitive dagger;
     requires transitive headlong;
+    requires transitive java.annotation;
     requires transitive javax.inject;
     requires transitive org.apache.logging.log4j;
     requires transitive org.hyperledger.besu.datatypes;
     requires transitive org.hyperledger.besu.evm;
     requires transitive tuweni.bytes;
     requires transitive tuweni.units;
-    requires com.hedera.node.app.service.evm;
+    requires com.swirlds.base;
+    requires com.swirlds.common;
     requires com.github.benmanes.caffeine;
     requires com.google.common;
     requires com.google.protobuf;
-    requires com.swirlds.base;
-    requires com.swirlds.common;
+    requires org.apache.commons.lang3;
     requires org.bouncycastle.provider;
     requires static com.github.spotbugs.annotations;
     requires static java.compiler; // javax.annotation.processing.Generated
@@ -71,4 +72,12 @@ module com.hedera.node.app.service.contract.impl {
 
     exports com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.mint;
     exports com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.associations;
+    exports com.hedera.node.app.service.contract.impl.schemas to
+            com.hedera.node.app,
+            com.hedera.node.app.service.contract.impl.test,
+            com.hedera.node.services.cli;
+    exports com.hedera.node.app.service.contract.impl.exec.tracers;
+
+    opens com.hedera.node.app.service.contract.impl.exec.tracers to
+            com.hedera.node.app.service.contract.impl.test;
 }

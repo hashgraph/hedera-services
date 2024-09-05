@@ -113,6 +113,7 @@ public class LearnerPullVirtualTreeSendTask {
         try (out) {
             // Send a request for the root node first. The response will contain virtual tree path range
             out.sendAsync(new PullVirtualTreeRequest(Path.ROOT_PATH, new Hash()));
+            view.getMapStats().incrementTransfersFromLearner();
             responsesExpected.incrementAndGet();
             if (!rootResponseReceived.await(rootResponseTimeout.toMillis(), TimeUnit.MILLISECONDS)) {
                 throw new MerkleSynchronizationException("Timed out waiting for root node response from the teacher");
@@ -127,6 +128,7 @@ public class LearnerPullVirtualTreeSendTask {
                 }
                 final Hash hash = path == Path.INVALID_PATH ? null : view.getNodeHash(path);
                 out.sendAsync(new PullVirtualTreeRequest(path, hash));
+                view.getMapStats().incrementTransfersFromLearner();
                 if (path == Path.INVALID_PATH) {
                     break;
                 }

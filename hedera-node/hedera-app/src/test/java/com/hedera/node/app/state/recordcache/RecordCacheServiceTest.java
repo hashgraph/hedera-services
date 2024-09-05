@@ -16,12 +16,14 @@
 
 package com.hedera.node.app.state.recordcache;
 
-import static com.hedera.node.app.spi.fixtures.state.TestSchema.CURRENT_VERSION;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
-import com.hedera.node.app.spi.state.Schema;
-import com.hedera.node.app.spi.state.SchemaRegistry;
+import com.hedera.node.app.state.recordcache.schemas.V0490RecordCacheSchema;
+import com.hedera.node.app.state.recordcache.schemas.V0540RecordCacheSchema;
+import com.swirlds.state.spi.Schema;
+import com.swirlds.state.spi.SchemaRegistry;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -43,10 +45,16 @@ final class RecordCacheServiceTest {
     @Test
     void schema(@Mock final SchemaRegistry registry) {
         final var svc = new RecordCacheService();
-        svc.registerSchemas(registry, CURRENT_VERSION);
-        verify(registry).register(captor.capture());
-        final var schema = captor.getValue();
-        assertThat(schema.getVersion()).isEqualTo(CURRENT_VERSION);
-        assertThat(schema.statesToCreate()).hasSize(1);
+        svc.registerSchemas(registry);
+        verify(registry, times(2)).register(captor.capture());
+        final var schemas = captor.getAllValues();
+        assertThat(schemas.get(0)).isInstanceOf(V0490RecordCacheSchema.class);
+        assertThat(schemas.get(1)).isInstanceOf(V0540RecordCacheSchema.class);
+
+        assertThat(schemas.get(0).statesToCreate()).hasSize(1);
+        assertThat(schemas.get(0).statesToRemove()).hasSize(0);
+
+        assertThat(schemas.get(1).statesToCreate()).hasSize(1);
+        assertThat(schemas.get(1).statesToRemove()).hasSize(1);
     }
 }

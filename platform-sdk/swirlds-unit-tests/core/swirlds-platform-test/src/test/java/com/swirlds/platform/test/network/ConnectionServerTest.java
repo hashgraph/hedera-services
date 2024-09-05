@@ -21,17 +21,12 @@ import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 
-import com.swirlds.base.utility.Pair;
-import com.swirlds.common.platform.NodeId;
-import com.swirlds.platform.network.PeerInfo;
 import com.swirlds.platform.network.connectivity.ConnectionServer;
 import com.swirlds.platform.network.connectivity.SocketFactory;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
-import java.security.cert.Certificate;
-import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.Assertions;
@@ -54,19 +49,15 @@ class ConnectionServerTest {
                 .accept();
         final SocketFactory socketFactory = mock(SocketFactory.class);
         doAnswer(i -> serverSocket).when(socketFactory).createServerSocket(anyInt());
-        final AtomicReference<Pair<Socket, List<PeerInfo>>> connectionHandler = new AtomicReference<>(null);
+        final AtomicReference<Socket> connectionHandler = new AtomicReference<>(null);
 
-        final ConnectionServer server = new ConnectionServer(
-                getStaticThreadManager(),
-                0,
-                socketFactory,
-                (a, b) -> connectionHandler.set(Pair.of(a, b)),
-                List.of(new PeerInfo(new NodeId(1), "test", "host1", mock(Certificate.class))));
+        final ConnectionServer server =
+                new ConnectionServer(getStaticThreadManager(), 0, socketFactory, connectionHandler::set);
 
         server.run();
         Assertions.assertSame(
                 socket,
-                connectionHandler.get().left(),
+                connectionHandler.get(),
                 "the socket provided by accept() should have been passed to the connection handler");
 
         // test interrupt

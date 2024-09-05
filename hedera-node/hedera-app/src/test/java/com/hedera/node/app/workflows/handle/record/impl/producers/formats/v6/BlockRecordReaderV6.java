@@ -22,7 +22,6 @@ import static org.junit.jupiter.api.Assertions.fail;
 import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.transaction.TransactionRecord;
 import com.hedera.hapi.streams.RecordStreamFile;
-import com.hedera.node.app.service.mono.stream.RecordStreamObject;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.pbj.runtime.io.stream.ReadableStreamingData;
@@ -48,6 +47,8 @@ import java.util.zip.GZIPInputStream;
  */
 @SuppressWarnings("DataFlowIssue")
 public class BlockRecordReaderV6 {
+    private static final long RECORD_STREAM_OBJECT_CLASS_ID = 0xe370929ba5429d8bL;
+    public static final int RECORD_STREAM_OBJECT_CLASS_VERSION = 1;
 
     /** The version of this format */
     public static final int VERSION = 6;
@@ -74,8 +75,8 @@ public class BlockRecordReaderV6 {
             ByteArrayOutputStream bout = new ByteArrayOutputStream();
             SerializableDataOutputStream sout = new SerializableDataOutputStream(bout);
             bout.reset();
-            sout.writeLong(RecordStreamObject.CLASS_ID);
-            sout.writeInt(RecordStreamObject.CLASS_VERSION);
+            sout.writeLong(RECORD_STREAM_OBJECT_CLASS_ID);
+            sout.writeInt(RECORD_STREAM_OBJECT_CLASS_VERSION);
             RECORD_STREAM_OBJECT_HEADER = bout.toByteArray();
             if (!Arrays.equals(RECORD_STREAM_OBJECT_HEADER, HexFormat.of().parseHex("e370929ba5429d8b00000001"))) {
                 throw new IllegalStateException(

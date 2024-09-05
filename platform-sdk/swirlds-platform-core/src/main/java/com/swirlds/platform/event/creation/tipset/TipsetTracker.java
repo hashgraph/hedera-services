@@ -21,13 +21,13 @@ import static com.swirlds.platform.event.creation.tipset.Tipset.merge;
 
 import com.swirlds.base.time.Time;
 import com.swirlds.common.platform.NodeId;
-import com.swirlds.common.sequence.map.SequenceMap;
-import com.swirlds.common.sequence.map.StandardSequenceMap;
 import com.swirlds.common.utility.throttle.RateLimitedLogger;
 import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.event.AncientMode;
+import com.swirlds.platform.sequence.map.SequenceMap;
+import com.swirlds.platform.sequence.map.StandardSequenceMap;
 import com.swirlds.platform.system.address.AddressBook;
-import com.swirlds.platform.system.events.EventDescriptor;
+import com.swirlds.platform.system.events.EventDescriptorWrapper;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Duration;
@@ -49,7 +49,7 @@ public class TipsetTracker {
     /**
      * Tipsets for all non-ancient events we know about.
      */
-    private final SequenceMap<EventDescriptor, Tipset> tipsets;
+    private final SequenceMap<EventDescriptorWrapper, Tipset> tipsets;
 
     /**
      * This tipset is equivalent to a tipset that would be created by merging all tipsets of all events that this object
@@ -80,9 +80,11 @@ public class TipsetTracker {
         this.latestGenerations = new Tipset(addressBook);
 
         if (ancientMode == AncientMode.BIRTH_ROUND_THRESHOLD) {
-            tipsets = new StandardSequenceMap<>(0, INITIAL_TIPSET_MAP_CAPACITY, true, EventDescriptor::getBirthRound);
+            tipsets = new StandardSequenceMap<>(0, INITIAL_TIPSET_MAP_CAPACITY, true, ed -> ed.eventDescriptor()
+                    .birthRound());
         } else {
-            tipsets = new StandardSequenceMap<>(0, INITIAL_TIPSET_MAP_CAPACITY, true, EventDescriptor::getGeneration);
+            tipsets = new StandardSequenceMap<>(0, INITIAL_TIPSET_MAP_CAPACITY, true, ed -> ed.eventDescriptor()
+                    .generation());
         }
 
         ancientEventLogger = new RateLimitedLogger(logger, time, Duration.ofMinutes(1));
@@ -114,28 +116,29 @@ public class TipsetTracker {
     /**
      * Add a new event to the tracker.
      *
-     * @param eventDescriptor the descriptor of the event to add
+     * @param eventDescriptorWrapper the descriptor of the event to add
      * @param parents         the parents of the event being added
      * @return the tipset for the event that was added
      */
     @NonNull
     public Tipset addEvent(
-            @NonNull final EventDescriptor eventDescriptor, @NonNull final List<EventDescriptor> parents) {
+            @NonNull final EventDescriptorWrapper eventDescriptorWrapper,
+            @NonNull final List<EventDescriptorWrapper> parents) {
 
-        if (eventWindow.isAncient(eventDescriptor)) {
+        if (eventWindow.isAncient(eventDescriptorWrapper)) {
             // Note: although we don't immediately return from this method, the tipsets.put()
             // will not update the data structure for an ancient event. We should never
             // enter this bock of code. This log is here as a canary to alert us if we somehow do.
             ancientEventLogger.error(
                     EXCEPTION.getMarker(),
                     "Rejecting ancient event from {} with generation {}. Current event window is {}",
-                    eventDescriptor.getCreator(),
-                    eventDescriptor.getGeneration(),
+                    eventDescriptorWrapper.creator(),
+                    eventDescriptorWrapper.eventDescriptor().generation(),
                     eventWindow);
         }
 
         final List<Tipset> parentTipsets = new ArrayList<>(parents.size());
-        for (final EventDescriptor parent : parents) {
+        for (final EventDescriptorWrapper parent : parents) {
             final Tipset parentTipset = tipsets.get(parent);
             if (parentTipset != null) {
                 parentTipsets.add(parentTipset);
@@ -144,14 +147,21 @@ public class TipsetTracker {
 
         final Tipset eventTipset;
         if (parentTipsets.isEmpty()) {
-            eventTipset =
-                    new Tipset(addressBook).advance(eventDescriptor.getCreator(), eventDescriptor.getGeneration());
+            eventTipset = new Tipset(addressBook)
+                    .advance(
+                            eventDescriptorWrapper.creator(),
+                            eventDescriptorWrapper.eventDescriptor().generation());
         } else {
-            eventTipset = merge(parentTipsets).advance(eventDescriptor.getCreator(), eventDescriptor.getGeneration());
+            eventTipset = merge(parentTipsets)
+                    .advance(
+                            eventDescriptorWrapper.creator(),
+                            eventDescriptorWrapper.eventDescriptor().generation());
         }
 
-        tipsets.put(eventDescriptor, eventTipset);
-        latestGenerations = latestGenerations.advance(eventDescriptor.getCreator(), eventDescriptor.getGeneration());
+        tipsets.put(eventDescriptorWrapper, eventTipset);
+        latestGenerations = latestGenerations.advance(
+                eventDescriptorWrapper.creator(),
+                eventDescriptorWrapper.eventDescriptor().generation());
 
         return eventTipset;
     }
@@ -159,12 +169,12 @@ public class TipsetTracker {
     /**
      * Get the tipset of an event, or null if the event is not being tracked.
      *
-     * @param eventDescriptor the fingerprint of the event
+     * @param eventDescriptorWrapper the fingerprint of the event
      * @return the tipset of the event, or null if the event is not being tracked
      */
     @Nullable
-    public Tipset getTipset(@NonNull final EventDescriptor eventDescriptor) {
-        return tipsets.get(eventDescriptor);
+    public Tipset getTipset(@NonNull final EventDescriptorWrapper eventDescriptorWrapper) {
+        return tipsets.get(eventDescriptorWrapper);
     }
 
     /**

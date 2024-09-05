@@ -17,7 +17,7 @@
 package com.swirlds.platform.event.validation;
 
 import com.swirlds.common.wiring.component.InputWireLabel;
-import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.event.PlatformEvent;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 
@@ -35,5 +35,5 @@ public interface InternalEventValidator {
      */
     @InputWireLabel("non-validated events")
     @Nullable
-    GossipEvent validateEvent(@NonNull GossipEvent event);
+    PlatformEvent validateEvent(@NonNull PlatformEvent event);
 }

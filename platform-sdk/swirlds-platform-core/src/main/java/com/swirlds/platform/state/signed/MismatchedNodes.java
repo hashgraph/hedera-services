@@ -81,8 +81,8 @@ public record MismatchedNodes(MerkleNode nodeA, MerkleNode nodeB) {
             nodeAString = nodeA.getClass().getSimpleName();
             nodeBString = nodeB.getClass().getSimpleName();
         } else {
-            nodeAString = nodeA.getHash().toShortString(12);
-            nodeBString = nodeB.getHash().toShortString(12);
+            nodeAString = nodeA.getHash().toHex(12);
+            nodeBString = nodeB.getHash().toHex(12);
         }
 
         final String formattedNodeAString = GRAY.apply(nodeAString);

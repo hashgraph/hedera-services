@@ -12,20 +12,20 @@ Java modules.
 Each module needs a `build.gradle.kts` file that describes the module.
 
 General best practices for all our (Java) modules are defined in custom plugins that can be found
-under `build-logic/src/main/kotlin`. For a Java module the `com.hedera.hashgraph.javaConventions` plugin should be used.
+under `gradle/plugins/src/main/kotlin`. For a Java module the `com.hedera.gradle.java` plugin should be used.
 Next to this each module should have a description. Since nothing else is needed for a minimal module the most simple
 `build.gradle.kts` looks like this:
 
 ```
 plugins {
-id("com.hedera.hashgraph.javaConventions")
+  id("com.hedera.gradle.java")
 }
 
 description = "A minimal module without any dependecies"
 ```
 
-The `group`, `name` and `version` of the module should not be added here. The `group` is the same for all modules on the
-repository (`com.hedera.hashgraph`) and its definition can be found in the `com.hedera.hashgraph.conventions` plugin.
+The `group` and `version` of the module should not be added here. The `group` is the same for all modules on the
+repository (`com.hedera.hashgraph`) and its definition can be found in the `com.hedera.gradle.conventions` plugin.
 For the `version` we use a global definition, too. The current `version` is defined in the `gradle.properties` file in
 the root folder of the project. The `name` of a module is simple created based on the folder name of the module.
 
@@ -45,14 +45,14 @@ specific path below the `src/main/resources/com/hedera/node/app/services/foo` fo
 
 ## Tests
 
-All modules can have different types of tests. The `com.hedera.hashgraph.javaConventions` plugin provides direct support
+All modules can have different types of tests. The `com.hedera.gradle.java` plugin provides direct support
 for unit test, integration tests, and end-to-end tests. Next to this the test fixtures functionality of Gradle is
 supported.
 
 ### Test fixtures
 
 To create clean and readable unit tests it is best practice to provide common functionality for tests in the test
-fixtures of a module. Based on the `com.hedera.hashgraph.javaConventions` plugin test fixtures are supported for all
+fixtures of a module. Based on the `com.hedera.gradle.java` plugin test fixtures are supported for all
 Java modules.
 
 All Java sources for the test fixtures must be placed under `src/testFixtures/java`. Additional resources that should be

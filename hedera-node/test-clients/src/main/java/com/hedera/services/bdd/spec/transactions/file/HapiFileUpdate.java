@@ -18,6 +18,7 @@ package com.hedera.services.bdd.spec.transactions.file;
 
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileContents;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileInfo;
+import static com.hedera.services.bdd.spec.transactions.TxnFactory.expiryNowFor;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.suFrom;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.suites.HapiSuite.APP_PROPERTIES;
@@ -36,7 +37,6 @@ import com.hedera.services.bdd.spec.fees.FeeCalculator;
 import com.hedera.services.bdd.spec.queries.file.HapiGetFileContents;
 import com.hedera.services.bdd.spec.queries.file.HapiGetFileInfo;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
-import com.hedera.services.bdd.spec.transactions.TxnFactory;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.ExchangeRateSet;
@@ -52,10 +52,8 @@ import com.hederahashgraph.api.proto.java.Setting;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.api.proto.java.TransactionResponse;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.File;
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
@@ -124,11 +122,6 @@ public class HapiFileUpdate extends HapiTxnOp<HapiFileUpdate> {
     @Override
     public HederaFunctionality type() {
         return HederaFunctionality.FileUpdate;
-    }
-
-    public HapiFileUpdate droppingUnmentioned() {
-        dropUnmentionedProperties = true;
-        return this;
     }
 
     public HapiFileUpdate lifetime(long secs) {
@@ -288,7 +281,7 @@ public class HapiFileUpdate extends HapiTxnOp<HapiFileUpdate> {
         if (expiryExtension.isPresent()) {
             try {
                 var oldExpiry = spec.registry().getTimestamp(file).getSeconds();
-                nl = oldExpiry - Instant.now().getEpochSecond() + expiryExtension.getAsLong();
+                nl = oldExpiry - spec.consensusTime().getEpochSecond() + expiryExtension.getAsLong();
             } catch (Exception ignored) {
                 // Intentionally ignored
             }
@@ -306,7 +299,7 @@ public class HapiFileUpdate extends HapiTxnOp<HapiFileUpdate> {
                                     StringValue.newBuilder().setValue(s).build()));
                             wacl.ifPresent(k -> builder.setKeys(k.getKeyList()));
                             newContents.ifPresent(builder::setContents);
-                            newLifetime.ifPresent(s -> builder.setExpirationTime(TxnFactory.expiryGiven(s)));
+                            newLifetime.ifPresent(s -> builder.setExpirationTime(expiryNowFor(spec, s)));
                         });
         preUpdateCb.ifPresent(cb -> cb.accept(fid));
         return builder -> builder.setFileUpdate(opBody);
@@ -347,11 +340,6 @@ public class HapiFileUpdate extends HapiTxnOp<HapiFileUpdate> {
     private List<Function<HapiSpec, Key>> oldDefaults() {
         return List.of(spec -> spec.registry().getKey(effectivePayer(spec)), spec -> spec.registry()
                 .getKey(file));
-    }
-
-    @Override
-    protected Function<Transaction, TransactionResponse> callToUse(HapiSpec spec) {
-        return spec.clients().getFileSvcStub(targetNodeFor(spec), useTls)::updateFile;
     }
 
     @Override

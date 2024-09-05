@@ -17,6 +17,7 @@
 package com.swirlds.platform;
 
 import static com.swirlds.common.io.utility.FileUtils.getAbsolutePath;
+import static com.swirlds.common.io.utility.FileUtils.rethrowIO;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.platform.builder.PlatformBuildConstants.DEFAULT_CONFIG_FILE_NAME;
@@ -51,6 +52,7 @@ import com.swirlds.platform.gui.internal.WinBrowser;
 import com.swirlds.platform.gui.model.InfoApp;
 import com.swirlds.platform.gui.model.InfoMember;
 import com.swirlds.platform.gui.model.InfoSwirld;
+import com.swirlds.platform.state.snapshot.SignedStateFileUtils;
 import com.swirlds.platform.system.SwirldMain;
 import com.swirlds.platform.system.SystemExitCode;
 import com.swirlds.platform.system.SystemExitUtils;
@@ -207,11 +209,16 @@ public class Browser {
                 configBuilder.withConfigDataType(configType);
             }
 
+            rethrowIO(() ->
+                    BootstrapUtils.setupConfigBuilder(configBuilder, getAbsolutePath(DEFAULT_SETTINGS_FILE_NAME)));
+            final Configuration configuration = configBuilder.build();
+
             final PlatformBuilder builder = PlatformBuilder.create(
                     appMain.getClass().getName(),
                     appDefinition.getSwirldName(),
                     appMain.getSoftwareVersion(),
-                    appMain::newState,
+                    appMain::newMerkleStateRoot,
+                    SignedStateFileUtils::readState,
                     nodeId);
 
             if (showUi && index == 0) {
@@ -219,8 +226,8 @@ public class Browser {
                 builder.withConsensusSnapshotOverrideCallback(guiEventStorage::handleSnapshotOverride);
             }
 
-            final SwirldsPlatform platform = (SwirldsPlatform)
-                    builder.withConfigurationBuilder(configBuilder).build();
+            final SwirldsPlatform platform =
+                    (SwirldsPlatform) builder.withConfiguration(configuration).build();
             platforms.put(nodeId, platform);
 
             if (showUi) {

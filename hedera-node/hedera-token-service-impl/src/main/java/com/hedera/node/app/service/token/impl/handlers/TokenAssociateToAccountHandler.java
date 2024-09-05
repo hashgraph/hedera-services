@@ -23,11 +23,12 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_R
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_ID_REPEATED_IN_TOKEN_LIST;
-import static com.hedera.node.app.hapi.fees.usage.crypto.CryptoOpsUsage.txnEstimateFactory;
-import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
+import static com.hedera.hapi.node.base.SubType.DEFAULT;
+import static com.hedera.node.app.hapi.fees.usage.SingletonEstimatorUtils.ESTIMATOR_UTILS;
 import static com.hedera.node.app.service.token.impl.comparator.TokenComparators.TOKEN_ID_COMPARATOR;
 import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.hasAccountNumOrAlias;
 import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.getIfUsable;
+import static com.hedera.node.app.spi.fees.Fees.CONSTANT_FEE_DATA;
 import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateFalsePreCheck;
@@ -36,12 +37,15 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
-import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.service.mono.fees.calculation.token.txns.TokenAssociateResourceUsage;
+import com.hedera.node.app.hapi.fees.usage.SigUsage;
+import com.hedera.node.app.hapi.fees.usage.TxnUsageEstimator;
+import com.hedera.node.app.hapi.fees.usage.token.TokenAssociateUsage;
+import com.hedera.node.app.hapi.utils.CommonPbjConverters;
+import com.hedera.node.app.hapi.utils.fee.SigValueObj;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
@@ -56,6 +60,7 @@ import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hedera.node.config.data.EntitiesConfig;
 import com.hedera.node.config.data.TokensConfig;
+import com.hederahashgraph.api.proto.java.FeeData;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.List;
@@ -68,9 +73,13 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class TokenAssociateToAccountHandler extends BaseTokenHandler implements TransactionHandler {
-
+    /**
+     * Default constructor for injection.
+     */
     @Inject
-    public TokenAssociateToAccountHandler() {}
+    public TokenAssociateToAccountHandler() {
+        // Exists for injection
+    }
 
     @Override
     public void preHandle(@NonNull final PreHandleContext context) throws PreCheckException {
@@ -84,13 +93,14 @@ public class TokenAssociateToAccountHandler extends BaseTokenHandler implements 
     @Override
     public void handle(@NonNull final HandleContext context) throws HandleException {
         requireNonNull(context);
-        final var tokenStore = requireNonNull(context.readableStore(ReadableTokenStore.class));
+        final var storeFactory = context.storeFactory();
+        final var tokenStore = requireNonNull(storeFactory.readableStore(ReadableTokenStore.class));
         final var op = context.body().tokenAssociateOrThrow();
         final var tokenIds = op.tokens().stream().sorted(TOKEN_ID_COMPARATOR).toList();
         final var tokensConfig = context.configuration().getConfigData(TokensConfig.class);
         final var entitiesConfig = context.configuration().getConfigData(EntitiesConfig.class);
-        final var accountStore = context.writableStore(WritableAccountStore.class);
-        final var tokenRelStore = context.writableStore(WritableTokenRelationStore.class);
+        final var accountStore = storeFactory.writableStore(WritableAccountStore.class);
+        final var tokenRelStore = storeFactory.writableStore(WritableTokenRelationStore.class);
         final var validated = validateSemantics(
                 tokenIds, op.accountOrThrow(), tokensConfig, entitiesConfig, accountStore, tokenStore, tokenRelStore);
 
@@ -100,7 +110,7 @@ public class TokenAssociateToAccountHandler extends BaseTokenHandler implements 
     }
 
     /**
-     * Performs checks independent of state or context
+     * Performs checks independent of state or context.
      */
     @Override
     public void pureChecks(@NonNull final TransactionBody txn) throws PreCheckException {
@@ -113,7 +123,7 @@ public class TokenAssociateToAccountHandler extends BaseTokenHandler implements 
     }
 
     /**
-     * Performs checks that require state and context
+     * Performs checks that require state and context.
      */
     @NonNull
     private Validated validateSemantics(
@@ -166,7 +176,7 @@ public class TokenAssociateToAccountHandler extends BaseTokenHandler implements 
 
     /**
      * Method that checks if the number of token associations for the given account is within the
-     * allowable limit set by the config (if the limit is enabled)
+     * allowable limit set by the config (if the limit is enabled).
      *
      * @return true if tokenAssociationsLimited is false or if the number of token associations is
      * within the allowed maxTokensPerAccount
@@ -190,12 +200,44 @@ public class TokenAssociateToAccountHandler extends BaseTokenHandler implements 
         requireNonNull(feeContext);
         final var body = feeContext.body();
         final var op = body.tokenAssociateOrThrow();
-        final var accountId = op.accountOrThrow();
-        final var readableAccountStore = feeContext.readableStore(ReadableAccountStore.class);
-        final var account = readableAccountStore.getAccountById(accountId);
 
-        return feeContext.feeCalculator(SubType.DEFAULT).legacyCalculate(sigValueObj -> new TokenAssociateResourceUsage(
-                        txnEstimateFactory)
-                .usageGiven(fromPbj(body), sigValueObj, account));
+        final var calculator = feeContext.feeCalculatorFactory().feeCalculator(DEFAULT);
+        final var unlimitedAssociationsEnabled =
+                feeContext.configuration().getConfigData(EntitiesConfig.class).unlimitedAutoAssociationsEnabled();
+
+        // If the unlimited auto-associations feature is enabled, we calculate the fees in a new way, because the
+        // association price is changed to $0.05. When the feature is enabled the feeSchedules.json will be updated
+        // to reflect the price change and the else case will be removed.
+        // Until then, we calculate the fees using the legacy method.
+        // NOTE: If this flag is disabled, the feeSchedules.json should be modified as well
+        if (unlimitedAssociationsEnabled) {
+            calculator.resetUsage();
+            calculator.addVerificationsPerTransaction(Math.max(0, feeContext.numTxnSignatures() - 1));
+            calculator.addBytesPerTransaction(op.tokens().size());
+            return calculator.calculate();
+        } else {
+            final var accountId = op.accountOrThrow();
+            final var readableAccountStore = feeContext.readableStore(ReadableAccountStore.class);
+            final var account = readableAccountStore.getAccountById(accountId);
+            return feeContext
+                    .feeCalculatorFactory()
+                    .feeCalculator(DEFAULT)
+                    .legacyCalculate(
+                            sigValueObj -> usageGiven(CommonPbjConverters.fromPbj(body), sigValueObj, account));
+        }
+    }
+
+    private FeeData usageGiven(
+            final com.hederahashgraph.api.proto.java.TransactionBody txn,
+            final SigValueObj svo,
+            final Account account) {
+        if (account == null) {
+            return CONSTANT_FEE_DATA;
+        } else {
+            final var sigUsage =
+                    new SigUsage(svo.getTotalSigCount(), svo.getSignatureSize(), svo.getPayerAcctSigCount());
+            final var estimate = new TokenAssociateUsage(txn, new TxnUsageEstimator(sigUsage, txn, ESTIMATOR_UTILS));
+            return estimate.givenCurrentExpiry(account.expirationSecond()).get();
+        }
     }
 }

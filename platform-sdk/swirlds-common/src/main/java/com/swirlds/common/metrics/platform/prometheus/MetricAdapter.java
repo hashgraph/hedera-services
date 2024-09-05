@@ -16,8 +16,8 @@
 
 package com.swirlds.common.metrics.platform.prometheus;
 
-import com.swirlds.common.metrics.platform.Snapshot;
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.metrics.api.snapshot.Snapshot;
 import io.prometheus.client.CollectorRegistry;
 
 /**

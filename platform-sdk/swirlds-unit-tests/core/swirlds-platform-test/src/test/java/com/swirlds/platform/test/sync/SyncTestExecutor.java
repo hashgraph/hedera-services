@@ -21,6 +21,7 @@ import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticT
 import com.swirlds.base.utility.Pair;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.test.fixtures.RandomUtils;
+import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.common.threading.pool.CachedPoolParallelExecutor;
 import com.swirlds.common.threading.pool.ParallelExecutor;
@@ -29,13 +30,13 @@ import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.eventhandling.EventConfig_;
 import com.swirlds.platform.gossip.shadowgraph.ShadowEvent;
+import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.test.event.emitter.EventEmitter;
 import com.swirlds.platform.test.event.emitter.EventEmitterFactory;
 import com.swirlds.platform.test.event.emitter.ShuffledEventEmitter;
-import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookGenerator;
-import com.swirlds.platform.test.fixtures.event.IndexedEvent;
+import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.time.Duration;
@@ -69,8 +70,8 @@ public class SyncTestExecutor {
     private BiConsumer<SyncNode, SyncNode> graphCustomization;
     private BiConsumer<SyncNode, SyncNode> customPreSyncConfiguration;
     private BiConsumer<SyncNode, SyncNode> eventWindowDefinitions;
-    private Predicate<IndexedEvent> callerAddToGraphTest;
-    private Predicate<IndexedEvent> listenerAddToGraphTest;
+    private Predicate<EventImpl> callerAddToGraphTest;
+    private Predicate<EventImpl> listenerAddToGraphTest;
     private final AncientMode ancientMode;
 
     /**
@@ -81,8 +82,8 @@ public class SyncTestExecutor {
     public SyncTestExecutor(final SyncTestParams params) {
         this.params = params;
         this.ancientMode = params.getAncientMode();
-        this.addressBook = new RandomAddressBookGenerator()
-                .setSize(params.getNumNetworkNodes())
+        this.addressBook = RandomAddressBookBuilder.create(Randotron.create())
+                .withSize(params.getNumNetworkNodes())
                 .build();
 
         factoryConfig = (f) -> {};
@@ -405,7 +406,7 @@ public class SyncTestExecutor {
      *
      * @param callerAddToGraphTest
      */
-    public void setCallerAddToGraphTest(final Predicate<IndexedEvent> callerAddToGraphTest) {
+    public void setCallerAddToGraphTest(final Predicate<EventImpl> callerAddToGraphTest) {
         this.callerAddToGraphTest = callerAddToGraphTest;
     }
 
@@ -415,7 +416,7 @@ public class SyncTestExecutor {
      *
      * @param listenerAddToGraphTest
      */
-    public void setListenerAddToGraphTest(final Predicate<IndexedEvent> listenerAddToGraphTest) {
+    public void setListenerAddToGraphTest(final Predicate<EventImpl> listenerAddToGraphTest) {
         this.listenerAddToGraphTest = listenerAddToGraphTest;
     }
 

@@ -109,14 +109,29 @@ public class SynthTxnUtils {
         } else if (parent.hasStakedAccountId()) {
             builder.stakedAccountId(parent.stakedAccountIdOrThrow());
         }
-        final var parentAdminKey = parent.keyOrThrow();
-        if (isSelfAdmin(parent)) {
+
+        if (!parent.hasKey() || isSelfAdmin(parent)) {
             // The new contract will manage itself as well, which we indicate via self-referential admin key
             builder.adminKey(Key.newBuilder().contractID(pendingId));
         } else {
+            final var parentAdminKey = parent.keyOrThrow();
             builder.adminKey(parentAdminKey);
         }
         return builder.build();
+    }
+
+    /**
+     * Create a new empty {@link ContractCreateTransactionBody} with only the key set for externalization.
+     *
+     * @param pendingId the pending id
+     * @return the corresponding {@link CryptoCreateTransactionBody}
+     */
+    public static ContractCreateTransactionBody synthContractCreationForExternalization(
+            @NonNull final ContractID pendingId) {
+        requireNonNull(pendingId);
+        return ContractCreateTransactionBody.newBuilder()
+                .adminKey(Key.newBuilder().contractID(pendingId).build())
+                .build();
     }
 
     /**
@@ -140,7 +155,6 @@ public class SynthTxnUtils {
      */
     public static CryptoCreateTransactionBody synthHollowAccountCreation(@NonNull final Bytes evmAddress) {
         requireNonNull(evmAddress);
-        // TODO - for mono-service equivalence, need to set the initial balance here
         return CryptoCreateTransactionBody.newBuilder()
                 .initialBalance(0L)
                 .alias(evmAddress)

@@ -162,7 +162,7 @@ public class StatsSpeedometer implements StatsBuffered {
     /**
      * Start over on the measurements and counts, to get an exponentially-weighted average number of calls
      * to cycle() per second, with the weighting having a half life of halfLife seconds. This is equivalent
-     * to instantiating a new Speedometer. If halfLife < 0.01 then 0.01 will be used.
+     * to instantiating a new Speedometer. If halfLife &lt; 0.01 then 0.01 will be used.
      *
      * @param halfLife
      * 		half of the exponential weighting comes from the last halfLife seconds

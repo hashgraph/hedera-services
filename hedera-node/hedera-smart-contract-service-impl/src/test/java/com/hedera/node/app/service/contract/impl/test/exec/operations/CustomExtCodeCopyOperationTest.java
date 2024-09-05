@@ -17,7 +17,7 @@
 package com.hedera.node.app.service.contract.impl.test.exec.operations;
 
 import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS;
-import static com.hedera.node.app.service.contract.impl.test.TestHelpers.NON_SYSTEM_LONG_ZERO_ADDRESS;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.GAS_LIMIT;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.assertSameResult;
 import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.INSUFFICIENT_GAS;
 import static org.mockito.ArgumentMatchers.any;
@@ -51,6 +51,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class CustomExtCodeCopyOperationTest {
+    private static final String HEX_ADDRESS_STR = "0x123";
+    private static final Address HEX_ADDRESS = Address.fromHexString(HEX_ADDRESS_STR);
+
     @Mock
     private GasCalculator gasCalculator;
 
@@ -89,7 +92,8 @@ class CustomExtCodeCopyOperationTest {
             given(frame.getStackItem(1)).willReturn(Bytes32.leftPad(Bytes.ofUnsignedLong(1L)));
             given(frame.getStackItem(2)).willReturn(Bytes32.leftPad(Bytes.ofUnsignedLong(2L)));
             given(frame.getStackItem(3)).willReturn(Bytes32.leftPad(Bytes.ofUnsignedLong(3)));
-            givenWellKnownFrameWith(Address.fromHexString("0x123"));
+            givenWellKnownFrameWith(Address.fromHexString(HEX_ADDRESS_STR));
+            given(frame.getRemainingGas()).willReturn(GAS_LIMIT);
             frameUtils.when(() -> FrameUtils.proxyUpdaterFor(frame)).thenReturn(updater);
             frameUtils
                     .when(() -> FrameUtils.contractRequired(any(), any(), any()))
@@ -105,9 +109,7 @@ class CustomExtCodeCopyOperationTest {
             given(frame.getStackItem(1)).willReturn(Bytes32.leftPad(Bytes.ofUnsignedLong(1L)));
             given(frame.getStackItem(2)).willReturn(Bytes32.leftPad(Bytes.ofUnsignedLong(2L)));
             given(frame.getStackItem(3)).willReturn(Bytes32.leftPad(Bytes.ofUnsignedLong(3)));
-            given(frame.popStackItem()).willReturn(NON_SYSTEM_LONG_ZERO_ADDRESS);
-            given(frame.warmUpAddress(NON_SYSTEM_LONG_ZERO_ADDRESS)).willReturn(true);
-            givenWellKnownFrameWith(Address.fromHexString("0x123"));
+            givenWellKnownFrameWith(Address.fromHexString(HEX_ADDRESS_STR));
             frameUtils.when(() -> FrameUtils.proxyUpdaterFor(frame)).thenReturn(updater);
             final var expected = new Operation.OperationResult(123L, INSUFFICIENT_GAS);
             assertSameResult(expected, subject.execute(frame, evm));
@@ -116,9 +118,11 @@ class CustomExtCodeCopyOperationTest {
 
     @Test
     void hasSpecialBehaviorForNonUserAccount() {
-        given(addressChecks.isNonUserAccount(Address.fromHexString("0x123"))).willReturn(true);
+        given(addressChecks.isNonUserAccount(Address.fromHexString(HEX_ADDRESS_STR)))
+                .willReturn(true);
         given(frame.getStackItem(anyInt())).willReturn(Bytes32.leftPad(Bytes.ofUnsignedLong(1)));
-        givenWellKnownFrameWith(Address.fromHexString("0x123"));
+        givenWellKnownFrameWith(HEX_ADDRESS);
+        given(frame.getRemainingGas()).willReturn(GAS_LIMIT);
         final var expected = new Operation.OperationResult(123L, null);
         assertSameResult(expected, subject.execute(frame, evm));
         verify(frame).popStackItems(4);
@@ -128,8 +132,9 @@ class CustomExtCodeCopyOperationTest {
     void hasNormalBehaviorForUserAccount() {
         try (MockedStatic<FrameUtils> frameUtils = Mockito.mockStatic(FrameUtils.class)) {
             given(frame.getStackItem(anyInt())).willReturn(Bytes32.leftPad(Bytes.ofUnsignedLong(1)));
-            givenWellKnownFrameWith(Address.fromHexString("0x123"));
-            given(frame.popStackItem()).willReturn(Bytes32.leftPad(Bytes.ofUnsignedLong(1)));
+            given(frame.getRemainingGas()).willReturn(0L);
+            given(gasCalculator.extCodeCopyOperationGasCost(eq(frame), anyLong(), anyLong()))
+                    .willReturn(123L);
             frameUtils.when(() -> FrameUtils.proxyUpdaterFor(frame)).thenReturn(updater);
             final var expected = new Operation.OperationResult(123L, INSUFFICIENT_GAS);
             assertSameResult(expected, subject.execute(frame, evm));

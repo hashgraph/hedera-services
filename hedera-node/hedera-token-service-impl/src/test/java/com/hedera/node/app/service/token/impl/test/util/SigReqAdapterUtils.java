@@ -16,69 +16,73 @@
 
 package com.hedera.node.app.service.token.impl.test.util;
 
-import static com.hedera.node.app.service.mono.context.BasicTransactionContext.EMPTY_KEY;
-import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromFcCustomFee;
-import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromGrpcKey;
-import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
-import static com.hedera.node.app.service.mono.pbj.PbjConverter.toPbj;
-import static com.hedera.node.app.service.mono.utils.MiscUtils.asKeyUnchecked;
-import static com.hedera.node.app.service.token.impl.TokenServiceImpl.ALIASES_KEY;
-import static com.hedera.node.app.service.token.impl.TokenServiceImpl.TOKEN_RELS_KEY;
+import static com.hedera.node.app.hapi.utils.CommonPbjConverters.toPbj;
+import static com.hedera.node.app.service.token.impl.schemas.V0490TokenSchema.ALIASES_KEY;
+import static com.hedera.node.app.service.token.impl.schemas.V0490TokenSchema.TOKEN_RELS_KEY;
 import static com.hedera.node.app.service.token.impl.test.handlers.util.AdapterUtils.mockStates;
 import static com.hedera.node.app.service.token.impl.test.handlers.util.AdapterUtils.mockWritableStates;
 import static com.hedera.node.app.service.token.impl.test.handlers.util.AdapterUtils.wellKnownAliasState;
-import static com.hedera.test.factories.scenarios.TxnHandlingScenario.COMPLEX_KEY_ACCOUNT;
-import static com.hedera.test.factories.scenarios.TxnHandlingScenario.COMPLEX_KEY_ACCOUNT_KT;
-import static com.hedera.test.factories.scenarios.TxnHandlingScenario.CUSTOM_PAYER_ACCOUNT;
-import static com.hedera.test.factories.scenarios.TxnHandlingScenario.CUSTOM_PAYER_ACCOUNT_KT;
-import static com.hedera.test.factories.scenarios.TxnHandlingScenario.DEFAULT_BALANCE;
-import static com.hedera.test.factories.scenarios.TxnHandlingScenario.DEFAULT_PAYER_BALANCE;
-import static com.hedera.test.factories.scenarios.TxnHandlingScenario.DELEGATING_SPENDER;
-import static com.hedera.test.factories.scenarios.TxnHandlingScenario.DELEGATING_SPENDER_KT;
-import static com.hedera.test.factories.scenarios.TxnHandlingScenario.DELETED_TOKEN;
-import static com.hedera.test.factories.scenarios.TxnHandlingScenario.DILIGENT_SIGNING_PAYER;
-import static com.hedera.test.factories.scenarios.TxnHandlingScenario.DILIGENT_SIGNING_PAYER_KT;
-import static com.hedera.test.factories.scenarios.TxnHandlingScenario.FIRST_TOKEN_SENDER;
-import static com.hedera.test.factories.scenarios.TxnHandlingScenario.FIRST_TOKEN_SENDER_KT;
-import static com.hedera.test.factories.scenarios.TxnHandlingScenario.FROM_OVERLAP_PAYER;
-import static com.hedera.test.factories.scenarios.TxnHandlingScenario.FROM_OVERLAP_PAYER_KT;
-import static com.hedera.test.factories.scenarios.TxnHandlingScenario.KNOWN_TOKEN_IMMUTABLE;
-import static com.hedera.test.factories.scenarios.TxnHandlingScenario.KNOWN_TOKEN_NO_SPECIAL_KEYS;
-import static com.hedera.test.factories.scenarios.TxnHandlingScenario.KNOWN_TOKEN_WITH_FEE_SCHEDULE_KEY;
-import static com.hedera.test.factories.scenarios.TxnHandlingScenario.KNOWN_TOKEN_WITH_FREEZE;
-import static com.hedera.test.factories.scenarios.TxnHandlingScenario.KNOWN_TOKEN_WITH_KYC;
-import static com.hedera.test.factories.scenarios.TxnHandlingScenario.KNOWN_TOKEN_WITH_PAUSE;
-import static com.hedera.test.factories.scenarios.TxnHandlingScenario.KNOWN_TOKEN_WITH_ROYALTY_FEE_AND_FALLBACK;
-import static com.hedera.test.factories.scenarios.TxnHandlingScenario.KNOWN_TOKEN_WITH_SUPPLY;
-import static com.hedera.test.factories.scenarios.TxnHandlingScenario.KNOWN_TOKEN_WITH_WIPE;
-import static com.hedera.test.factories.scenarios.TxnHandlingScenario.MISC_ACCOUNT;
-import static com.hedera.test.factories.scenarios.TxnHandlingScenario.MISC_ACCOUNT_KT;
-import static com.hedera.test.factories.scenarios.TxnHandlingScenario.NO_RECEIVER_SIG;
-import static com.hedera.test.factories.scenarios.TxnHandlingScenario.NO_RECEIVER_SIG_KT;
-import static com.hedera.test.factories.scenarios.TxnHandlingScenario.OWNER_ACCOUNT;
-import static com.hedera.test.factories.scenarios.TxnHandlingScenario.OWNER_ACCOUNT_KT;
-import static com.hedera.test.factories.scenarios.TxnHandlingScenario.RECEIVER_SIG;
-import static com.hedera.test.factories.scenarios.TxnHandlingScenario.RECEIVER_SIG_KT;
-import static com.hedera.test.factories.scenarios.TxnHandlingScenario.SECOND_TOKEN_SENDER;
-import static com.hedera.test.factories.scenarios.TxnHandlingScenario.SECOND_TOKEN_SENDER_KT;
-import static com.hedera.test.factories.scenarios.TxnHandlingScenario.SYS_ACCOUNT;
-import static com.hedera.test.factories.scenarios.TxnHandlingScenario.SYS_ACCOUNT_KT;
-import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_RECEIVER;
-import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_TREASURY;
-import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_TREASURY_KT;
-import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_WIPE_KT;
-import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_NODE;
-import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_PAYER;
-import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_PAYER_KT;
-import static com.hedera.test.factories.txns.SignedTxnFactory.MASTER_PAYER;
-import static com.hedera.test.factories.txns.SignedTxnFactory.STAKING_FUND;
-import static com.hedera.test.factories.txns.SignedTxnFactory.TREASURY_PAYER;
+import static com.hedera.node.app.service.token.impl.test.keys.KeysAndIds.COMPLEX_KEY_ACCOUNT;
+import static com.hedera.node.app.service.token.impl.test.keys.KeysAndIds.COMPLEX_KEY_ACCOUNT_KT;
+import static com.hedera.node.app.service.token.impl.test.keys.KeysAndIds.CUSTOM_PAYER_ACCOUNT;
+import static com.hedera.node.app.service.token.impl.test.keys.KeysAndIds.CUSTOM_PAYER_ACCOUNT_KT;
+import static com.hedera.node.app.service.token.impl.test.keys.KeysAndIds.DEFAULT_BALANCE;
+import static com.hedera.node.app.service.token.impl.test.keys.KeysAndIds.DEFAULT_NODE;
+import static com.hedera.node.app.service.token.impl.test.keys.KeysAndIds.DEFAULT_PAYER;
+import static com.hedera.node.app.service.token.impl.test.keys.KeysAndIds.DEFAULT_PAYER_BALANCE;
+import static com.hedera.node.app.service.token.impl.test.keys.KeysAndIds.DEFAULT_PAYER_KT;
+import static com.hedera.node.app.service.token.impl.test.keys.KeysAndIds.DELEGATING_SPENDER;
+import static com.hedera.node.app.service.token.impl.test.keys.KeysAndIds.DELEGATING_SPENDER_KT;
+import static com.hedera.node.app.service.token.impl.test.keys.KeysAndIds.DELETED_TOKEN;
+import static com.hedera.node.app.service.token.impl.test.keys.KeysAndIds.DILIGENT_SIGNING_PAYER;
+import static com.hedera.node.app.service.token.impl.test.keys.KeysAndIds.DILIGENT_SIGNING_PAYER_KT;
+import static com.hedera.node.app.service.token.impl.test.keys.KeysAndIds.FIRST_TOKEN_SENDER;
+import static com.hedera.node.app.service.token.impl.test.keys.KeysAndIds.FIRST_TOKEN_SENDER_KT;
+import static com.hedera.node.app.service.token.impl.test.keys.KeysAndIds.FROM_OVERLAP_PAYER;
+import static com.hedera.node.app.service.token.impl.test.keys.KeysAndIds.FROM_OVERLAP_PAYER_KT;
+import static com.hedera.node.app.service.token.impl.test.keys.KeysAndIds.KNOWN_TOKEN_IMMUTABLE;
+import static com.hedera.node.app.service.token.impl.test.keys.KeysAndIds.KNOWN_TOKEN_NO_SPECIAL_KEYS;
+import static com.hedera.node.app.service.token.impl.test.keys.KeysAndIds.KNOWN_TOKEN_WITH_FEE_SCHEDULE_KEY;
+import static com.hedera.node.app.service.token.impl.test.keys.KeysAndIds.KNOWN_TOKEN_WITH_FREEZE;
+import static com.hedera.node.app.service.token.impl.test.keys.KeysAndIds.KNOWN_TOKEN_WITH_KYC;
+import static com.hedera.node.app.service.token.impl.test.keys.KeysAndIds.KNOWN_TOKEN_WITH_PAUSE;
+import static com.hedera.node.app.service.token.impl.test.keys.KeysAndIds.KNOWN_TOKEN_WITH_ROYALTY_FEE_AND_FALLBACK;
+import static com.hedera.node.app.service.token.impl.test.keys.KeysAndIds.KNOWN_TOKEN_WITH_SUPPLY;
+import static com.hedera.node.app.service.token.impl.test.keys.KeysAndIds.KNOWN_TOKEN_WITH_WIPE;
+import static com.hedera.node.app.service.token.impl.test.keys.KeysAndIds.MASTER_PAYER;
+import static com.hedera.node.app.service.token.impl.test.keys.KeysAndIds.MISC_ACCOUNT;
+import static com.hedera.node.app.service.token.impl.test.keys.KeysAndIds.MISC_ACCOUNT_KT;
+import static com.hedera.node.app.service.token.impl.test.keys.KeysAndIds.NO_RECEIVER_SIG;
+import static com.hedera.node.app.service.token.impl.test.keys.KeysAndIds.NO_RECEIVER_SIG_KT;
+import static com.hedera.node.app.service.token.impl.test.keys.KeysAndIds.OWNER_ACCOUNT;
+import static com.hedera.node.app.service.token.impl.test.keys.KeysAndIds.OWNER_ACCOUNT_KT;
+import static com.hedera.node.app.service.token.impl.test.keys.KeysAndIds.RECEIVER_SIG;
+import static com.hedera.node.app.service.token.impl.test.keys.KeysAndIds.RECEIVER_SIG_KT;
+import static com.hedera.node.app.service.token.impl.test.keys.KeysAndIds.SECOND_TOKEN_SENDER;
+import static com.hedera.node.app.service.token.impl.test.keys.KeysAndIds.SECOND_TOKEN_SENDER_KT;
+import static com.hedera.node.app.service.token.impl.test.keys.KeysAndIds.STAKING_FUND;
+import static com.hedera.node.app.service.token.impl.test.keys.KeysAndIds.SYS_ACCOUNT;
+import static com.hedera.node.app.service.token.impl.test.keys.KeysAndIds.SYS_ACCOUNT_KT;
+import static com.hedera.node.app.service.token.impl.test.keys.KeysAndIds.TOKEN_ADMIN_KT;
+import static com.hedera.node.app.service.token.impl.test.keys.KeysAndIds.TOKEN_FEE_SCHEDULE_KT;
+import static com.hedera.node.app.service.token.impl.test.keys.KeysAndIds.TOKEN_FREEZE_KT;
+import static com.hedera.node.app.service.token.impl.test.keys.KeysAndIds.TOKEN_KYC_KT;
+import static com.hedera.node.app.service.token.impl.test.keys.KeysAndIds.TOKEN_PAUSE_KT;
+import static com.hedera.node.app.service.token.impl.test.keys.KeysAndIds.TOKEN_RECEIVER;
+import static com.hedera.node.app.service.token.impl.test.keys.KeysAndIds.TOKEN_SUPPLY_KT;
+import static com.hedera.node.app.service.token.impl.test.keys.KeysAndIds.TOKEN_TREASURY;
+import static com.hedera.node.app.service.token.impl.test.keys.KeysAndIds.TOKEN_TREASURY_KT;
+import static com.hedera.node.app.service.token.impl.test.keys.KeysAndIds.TOKEN_WIPE_KT;
+import static com.hedera.node.app.service.token.impl.test.keys.KeysAndIds.TREASURY_PAYER;
+import static com.hedera.node.app.spi.key.KeyUtils.IMMUTABILITY_SENTINEL_KEY;
 import static org.mockito.Mockito.mock;
 
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.Fraction;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.NftID;
 import com.hedera.hapi.node.base.TokenID;
+import com.hedera.hapi.node.base.TokenType;
 import com.hedera.hapi.node.state.common.EntityIDPair;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.AccountApprovalForAllAllowance;
@@ -87,33 +91,31 @@ import com.hedera.hapi.node.state.token.AccountFungibleTokenAllowance;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.hapi.node.transaction.CustomFee;
-import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.service.mono.state.merkle.MerkleToken;
-import com.hedera.node.app.service.mono.utils.accessors.PlatformTxnAccessor;
+import com.hedera.hapi.node.transaction.FixedFee;
+import com.hedera.hapi.node.transaction.RoyaltyFee;
+import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.ReadableAccountStoreImpl;
 import com.hedera.node.app.service.token.impl.ReadableTokenStoreImpl;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
-import com.hedera.node.app.spi.fixtures.state.MapWritableKVState;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
-import com.hedera.node.app.spi.state.WritableKVState;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.OneOf;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.hedera.test.factories.scenarios.TxnHandlingScenario;
-import com.hedera.test.utils.StateKeyAdapter;
 import com.swirlds.config.api.Configuration;
-import java.util.ArrayList;
+import com.swirlds.state.spi.WritableKVState;
+import com.swirlds.state.test.fixtures.MapWritableKVState;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
-import org.apache.commons.lang3.NotImplementedException;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+/**
+ * Provides utility methods for testing signature requirements in the token service.
+ */
 @ExtendWith(MockitoExtension.class)
 public class SigReqAdapterUtils {
     private static final String TOKENS_KEY = "TOKENS";
@@ -121,7 +123,9 @@ public class SigReqAdapterUtils {
     private static final Configuration CONFIGURATION = HederaTestConfigBuilder.createConfig();
 
     protected final Bytes metadata = Bytes.wrap(new byte[] {1, 2, 3, 4});
-
+    /**
+     * Represents an unset staked ID.
+     */
     public static final OneOf<Account.StakedIdOneOfType> UNSET_STAKED_ID =
             new OneOf<>(Account.StakedIdOneOfType.UNSET, null);
 
@@ -159,8 +163,7 @@ public class SigReqAdapterUtils {
      * @return the well-known token store
      */
     public static ReadableTokenStore wellKnownTokenStoreAt() {
-        final var wrappedState = wellKnownTokenState();
-        final var state = new StateKeyAdapter<>(wrappedState, Function.identity());
+        final var state = wellKnownTokenState();
         return new ReadableTokenStoreImpl(mockStates(Map.of(TOKENS_KEY, state)));
     }
 
@@ -178,23 +181,171 @@ public class SigReqAdapterUtils {
     }
 
     private static WritableKVState<TokenID, Token> wellKnownTokenState() {
-        final var source = sigReqsMockTokenStore();
         final Map<TokenID, Token> destination = new HashMap<>();
-        List.of(
-                        toPbj(KNOWN_TOKEN_IMMUTABLE),
-                        toPbj(KNOWN_TOKEN_NO_SPECIAL_KEYS),
-                        toPbj(KNOWN_TOKEN_WITH_PAUSE),
-                        toPbj(KNOWN_TOKEN_WITH_FREEZE),
-                        toPbj(KNOWN_TOKEN_WITH_KYC),
-                        toPbj(KNOWN_TOKEN_WITH_FEE_SCHEDULE_KEY),
-                        toPbj(KNOWN_TOKEN_WITH_ROYALTY_FEE_AND_FALLBACK),
-                        toPbj(KNOWN_TOKEN_WITH_SUPPLY),
-                        toPbj(KNOWN_TOKEN_WITH_WIPE),
-                        toPbj(DELETED_TOKEN))
-                .forEach(id -> destination.put(id, asToken(source.get(fromPbj(id)))));
+        destination.put(
+                toPbj(KNOWN_TOKEN_IMMUTABLE),
+                Token.newBuilder()
+                        .tokenId(toPbj(KNOWN_TOKEN_IMMUTABLE))
+                        .maxSupply(Long.MAX_VALUE)
+                        .totalSupply(100)
+                        .symbol("ImmutableToken")
+                        .name("ImmutableTokenName")
+                        .treasuryAccountId(AccountID.newBuilder().accountNum(3).build())
+                        .build());
+        destination.put(
+                toPbj(KNOWN_TOKEN_NO_SPECIAL_KEYS),
+                Token.newBuilder()
+                        .tokenId(toPbj(KNOWN_TOKEN_NO_SPECIAL_KEYS))
+                        .maxSupply(Long.MAX_VALUE)
+                        .totalSupply(100)
+                        .symbol("VanillaToken")
+                        .name("TOKENNAME")
+                        .adminKey(TOKEN_ADMIN_KT.asPbjKey())
+                        .treasuryAccountId(AccountID.newBuilder().accountNum(3).build())
+                        .build());
+        destination.put(
+                toPbj(KNOWN_TOKEN_WITH_PAUSE),
+                Token.newBuilder()
+                        .tokenId(toPbj(KNOWN_TOKEN_WITH_PAUSE))
+                        .maxSupply(Long.MAX_VALUE)
+                        .totalSupply(100)
+                        .symbol("PausedToken")
+                        .name("PAUSEDTOKEN")
+                        .adminKey(TOKEN_ADMIN_KT.asPbjKey())
+                        .pauseKey(TOKEN_PAUSE_KT.asPbjKey())
+                        .paused(true)
+                        .treasuryAccountId(AccountID.newBuilder()
+                                .shardNum(1)
+                                .realmNum(2)
+                                .accountNum(3)
+                                .build())
+                        .build());
+        destination.put(
+                toPbj(KNOWN_TOKEN_WITH_FREEZE),
+                Token.newBuilder()
+                        .tokenId(toPbj(KNOWN_TOKEN_WITH_FREEZE))
+                        .maxSupply(Long.MAX_VALUE)
+                        .totalSupply(100)
+                        .symbol("FrozenToken")
+                        .name("FRZNTKN")
+                        .adminKey(TOKEN_ADMIN_KT.asPbjKey())
+                        .freezeKey(TOKEN_FREEZE_KT.asPbjKey())
+                        .accountsFrozenByDefault(true)
+                        .treasuryAccountId(AccountID.newBuilder()
+                                .shardNum(1)
+                                .realmNum(2)
+                                .accountNum(3)
+                                .build())
+                        .build());
+        destination.put(
+                toPbj(KNOWN_TOKEN_WITH_KYC),
+                Token.newBuilder()
+                        .tokenId(toPbj(KNOWN_TOKEN_WITH_KYC))
+                        .maxSupply(Long.MAX_VALUE)
+                        .totalSupply(100)
+                        .symbol("KycToken")
+                        .name("KYCTOKENNAME")
+                        .adminKey(TOKEN_ADMIN_KT.asPbjKey())
+                        .kycKey(TOKEN_KYC_KT.asPbjKey())
+                        .treasuryAccountId(AccountID.newBuilder()
+                                .shardNum(1)
+                                .realmNum(2)
+                                .accountNum(4)
+                                .build())
+                        .build());
+        destination.put(
+                toPbj(KNOWN_TOKEN_WITH_FEE_SCHEDULE_KEY),
+                Token.newBuilder()
+                        .tokenId(toPbj(KNOWN_TOKEN_WITH_FEE_SCHEDULE_KEY))
+                        .maxSupply(Long.MAX_VALUE)
+                        .totalSupply(100)
+                        .symbol("FsToken")
+                        .name("FEE_SCHEDULETOKENNAME")
+                        .feeScheduleKey(TOKEN_FEE_SCHEDULE_KT.asPbjKey())
+                        .accountsKycGrantedByDefault(true)
+                        .treasuryAccountId(AccountID.newBuilder()
+                                .shardNum(1)
+                                .realmNum(2)
+                                .accountNum(4)
+                                .build())
+                        .build());
+        destination.put(
+                toPbj(KNOWN_TOKEN_WITH_ROYALTY_FEE_AND_FALLBACK),
+                Token.newBuilder()
+                        .tokenId(toPbj(KNOWN_TOKEN_WITH_ROYALTY_FEE_AND_FALLBACK))
+                        .maxSupply(Long.MAX_VALUE)
+                        .totalSupply(100)
+                        .symbol("ZPHYR")
+                        .name("West Wind Art")
+                        .feeScheduleKey(TOKEN_FEE_SCHEDULE_KT.asPbjKey())
+                        .accountsKycGrantedByDefault(true)
+                        .treasuryAccountId(
+                                AccountID.newBuilder().accountNum(1339).build())
+                        .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
+                        .customFees(CustomFee.newBuilder()
+                                .royaltyFee(RoyaltyFee.newBuilder()
+                                        .exchangeValueFraction(new Fraction(1, 2))
+                                        .fallbackFee(
+                                                FixedFee.newBuilder().amount(1).build())
+                                        .build())
+                                .build())
+                        .build());
+        destination.put(
+                toPbj(KNOWN_TOKEN_WITH_SUPPLY),
+                Token.newBuilder()
+                        .tokenId(toPbj(KNOWN_TOKEN_WITH_SUPPLY))
+                        .maxSupply(Long.MAX_VALUE)
+                        .totalSupply(100)
+                        .symbol("SupplyToken")
+                        .name("SUPPLYTOKENNAME")
+                        .adminKey(TOKEN_ADMIN_KT.asPbjKey())
+                        .supplyKey(TOKEN_SUPPLY_KT.asPbjKey())
+                        .treasuryAccountId(AccountID.newBuilder()
+                                .shardNum(1)
+                                .realmNum(2)
+                                .accountNum(4)
+                                .build())
+                        .build());
+        destination.put(
+                toPbj(KNOWN_TOKEN_WITH_WIPE),
+                Token.newBuilder()
+                        .tokenId(toPbj(KNOWN_TOKEN_WITH_WIPE))
+                        .maxSupply(Long.MAX_VALUE)
+                        .totalSupply(100)
+                        .symbol("WipeToken")
+                        .name("WIPETOKENNAME")
+                        .adminKey(TOKEN_ADMIN_KT.asPbjKey())
+                        .wipeKey(TOKEN_WIPE_KT.asPbjKey())
+                        .treasuryAccountId(AccountID.newBuilder()
+                                .shardNum(1)
+                                .realmNum(2)
+                                .accountNum(4)
+                                .build())
+                        .build());
+        destination.put(
+                toPbj(DELETED_TOKEN),
+                Token.newBuilder()
+                        .tokenId(toPbj(DELETED_TOKEN))
+                        .maxSupply(Long.MAX_VALUE)
+                        .totalSupply(100)
+                        .symbol("DeletedToken")
+                        .name("DELETEDTOKENNAME")
+                        .adminKey(TOKEN_ADMIN_KT.asPbjKey())
+                        .deleted(true)
+                        .treasuryAccountId(AccountID.newBuilder()
+                                .shardNum(1)
+                                .realmNum(2)
+                                .accountNum(4)
+                                .build())
+                        .build());
         return new MapWritableKVState<>("TOKENS", destination);
     }
 
+    /**
+     * Returns the {@link WritableTokenRelationStore} containing the "well-known" token relations that exist in a
+     * {@code SigRequirementsTest} scenario.
+     * @return the well-known token relation store
+     */
     public static WritableTokenRelationStore wellKnownTokenRelStoreAt() {
         final var destination = new HashMap<EntityIDPair, TokenRelation>();
         destination.put(
@@ -235,11 +386,21 @@ public class SigReqAdapterUtils {
                 mock(StoreMetricsService.class));
     }
 
+    /**
+     * Returns the {@link ReadableAccountStore} containing the "well-known" accounts that exist in a
+     * {@code SigRequirementsTest} scenario.
+     * @return the well-known account store
+     */
     public static ReadableAccountStoreImpl wellKnownAccountStoreAt() {
         return new ReadableAccountStoreImpl(
                 mockStates(Map.of(ACCOUNTS_KEY, wrappedAccountState(), ALIASES_KEY, wellKnownAliasState())));
     }
 
+    /**
+     * Returns the {@link WritableAccountStore} containing the "well-known" accounts that exist in a
+     * {@code SigRequirementsTest} scenario.
+     * @return the well-known account store
+     */
     public static WritableAccountStore wellKnownWritableAccountStoreAt() {
         return new WritableAccountStore(
                 mockWritableStates(Map.of(ACCOUNTS_KEY, wrappedAccountState(), ALIASES_KEY, wellKnownAliasState())),
@@ -262,8 +423,7 @@ public class SigReqAdapterUtils {
         destination.put(
                 toPbj(DEFAULT_PAYER),
                 toPbjAccount(DEFAULT_PAYER.getAccountNum(), DEFAULT_PAYER_KT.asPbjKey(), DEFAULT_PAYER_BALANCE));
-        destination.put(
-                toPbj(STAKING_FUND), toPbjAccount(STAKING_FUND.getAccountNum(), toPbj(asKeyUnchecked(EMPTY_KEY)), 0L));
+        destination.put(toPbj(STAKING_FUND), toPbjAccount(STAKING_FUND.getAccountNum(), IMMUTABILITY_SENTINEL_KEY, 0L));
         destination.put(
                 toPbj(MASTER_PAYER),
                 toPbjAccount(MASTER_PAYER.getAccountNum(), DEFAULT_PAYER_KT.asPbjKey(), DEFAULT_PAYER_BALANCE));
@@ -371,84 +531,8 @@ public class SigReqAdapterUtils {
                 fungibleTokenAllowances,
                 2,
                 false,
-                null);
-    }
-
-    @SuppressWarnings("java:S1604")
-    private static com.hedera.node.app.service.mono.store.tokens.TokenStore sigReqsMockTokenStore() {
-        final var dummyScenario = new TxnHandlingScenario() {
-            @Override
-            public PlatformTxnAccessor platformTxn() {
-                throw new NotImplementedException();
-            }
-        };
-        return dummyScenario.tokenStore();
-    }
-
-    public static TransactionBody txnFrom(final TxnHandlingScenario scenario) {
-        try {
-            return toPbj(scenario.platformTxn().getTxn());
-        } catch (final Throwable e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    private static Token asToken(final MerkleToken token) {
-        final var customFee = token.customFeeSchedule();
-        final List<CustomFee> pbjFees = new ArrayList<>();
-        if (customFee != null) {
-            customFee.forEach(fee -> pbjFees.add(fromFcCustomFee(fee)));
-        }
-        return new Token(
-                TokenID.newBuilder().tokenNum(token.entityNum()).build(),
-                token.name(),
-                token.symbol(),
-                token.decimals(),
-                token.totalSupply(),
-                AccountID.newBuilder()
-                        .accountNum(token.treasuryNum().longValue())
-                        .build(),
-                !token.adminKey().isEmpty()
-                        ? fromGrpcKey(asKeyUnchecked(token.adminKey().get()))
-                        : Key.DEFAULT,
-                !token.kycKey().isEmpty()
-                        ? fromGrpcKey(asKeyUnchecked(token.kycKey().get()))
-                        : Key.DEFAULT,
-                !token.freezeKey().isEmpty()
-                        ? fromGrpcKey(asKeyUnchecked(token.freezeKey().get()))
-                        : Key.DEFAULT,
-                !token.wipeKey().isEmpty()
-                        ? fromGrpcKey(asKeyUnchecked(token.wipeKey().get()))
-                        : Key.DEFAULT,
-                !token.supplyKey().isEmpty() ? fromGrpcKey(asKeyUnchecked(token.getSupplyKey())) : Key.DEFAULT,
-                !token.feeScheduleKey().isEmpty()
-                        ? fromGrpcKey(asKeyUnchecked(token.feeScheduleKey().get()))
-                        : Key.DEFAULT,
-                !token.pauseKey().isEmpty()
-                        ? fromGrpcKey(asKeyUnchecked(token.pauseKey().get()))
-                        : Key.DEFAULT,
-                token.getLastUsedSerialNumber(),
-                token.isDeleted(),
-                token.tokenType() == com.hedera.node.app.service.evm.store.tokens.TokenType.FUNGIBLE_COMMON
-                        ? com.hedera.hapi.node.base.TokenType.FUNGIBLE_COMMON
-                        : com.hedera.hapi.node.base.TokenType.NON_FUNGIBLE_UNIQUE,
-                token.supplyType() == com.hedera.node.app.service.mono.state.enums.TokenSupplyType.FINITE
-                        ? com.hedera.hapi.node.base.TokenSupplyType.FINITE
-                        : com.hedera.hapi.node.base.TokenSupplyType.INFINITE,
-                token.autoRenewAccount() == null
-                        ? AccountID.DEFAULT
-                        : AccountID.newBuilder()
-                                .accountNum(token.autoRenewAccount().num())
-                                .build(),
-                token.autoRenewPeriod(),
-                token.expiry(),
-                token.memo(),
-                token.maxSupply(),
-                token.isPaused(),
-                token.accountsAreFrozenByDefault(),
-                token.accountsAreFrozenByDefault(),
-                pbjFees,
-                Bytes.wrap(new byte[] {0}),
-                Key.DEFAULT);
+                null,
+                null,
+                0);
     }
 }

@@ -20,40 +20,14 @@ import com.swirlds.common.constructable.ConstructableIgnored;
 import java.util.Arrays;
 
 @ConstructableIgnored
+@Deprecated(forRemoval = true) // this class does not need to exist since Hash is already immutable
 public class ImmutableHash extends Hash {
 
-    /**
-     * {@inheritDoc}
-     */
-    public ImmutableHash() {}
-
-    /**
-     * {@inheritDoc}
-     */
     public ImmutableHash(final byte[] value) {
-        super(value, DigestType.SHA_384, true, true);
+        super(Arrays.copyOf(value, value.length), DigestType.SHA_384);
     }
 
-    /**
-     * {@inheritDoc}
-     */
     public ImmutableHash(final byte[] value, final DigestType digestType) {
-        super(value, digestType, true, true);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    public ImmutableHash(final Hash mutable) {
-        super(mutable);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public byte[] getValue() {
-        final byte[] value = super.getValue();
-        return Arrays.copyOf(value, value.length);
+        super(Arrays.copyOf(value, value.length), digestType);
     }
 }

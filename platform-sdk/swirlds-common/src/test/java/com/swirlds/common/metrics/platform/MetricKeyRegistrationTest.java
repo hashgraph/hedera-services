@@ -16,7 +16,7 @@
 
 package com.swirlds.common.metrics.platform;
 
-import static com.swirlds.common.metrics.platform.DefaultMetrics.calculateMetricKey;
+import static com.swirlds.common.metrics.platform.DefaultPlatformMetrics.calculateMetricKey;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.swirlds.common.platform.NodeId;

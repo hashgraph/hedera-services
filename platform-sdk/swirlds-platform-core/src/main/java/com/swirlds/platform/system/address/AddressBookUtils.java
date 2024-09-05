@@ -16,14 +16,22 @@
 
 package com.swirlds.platform.system.address;
 
+import com.hedera.hapi.node.base.ServiceEndpoint;
+import com.hedera.hapi.node.state.roster.Roster;
+import com.hedera.hapi.node.state.roster.RosterEntry;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.formatting.TextTable;
 import com.swirlds.common.platform.NodeId;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.security.cert.CertificateEncodingException;
 import java.text.ParseException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
+import java.util.regex.Pattern;
 
 /**
  * A utility class for AddressBook functionality.
@@ -49,6 +57,8 @@ public class AddressBookUtils {
 
     public static final String ADDRESS_KEYWORD = "address";
     public static final String NEXT_NODE_ID_KEYWORD = "nextNodeId";
+    private static final Pattern IPV4_ADDRESS_PATTERN =
+            Pattern.compile("^((25[0-5]|(2[0-4]|1\\d|[1-9]|)\\d)\\.?\\b){4}$");
 
     private AddressBookUtils() {}
 
@@ -214,7 +224,7 @@ public class AddressBookUtils {
             // validate that an InetAddress can be created from the internal hostname.
             InetAddress.getByName(internalHostname);
         } catch (UnknownHostException e) {
-            throw new ParseException("Cannot parse ip address from '" + parts[5] + ",", 5);
+            throw new ParseException("Cannot parse ip address from '" + parts[5] + "'", 5);
         }
         final int internalPort;
         try {
@@ -228,7 +238,7 @@ public class AddressBookUtils {
             // validate that an InetAddress can be created from the external hostname.
             InetAddress.getByName(externalHostname);
         } catch (UnknownHostException e) {
-            throw new ParseException("Cannot parse ip address from '" + parts[7] + ",", 7);
+            throw new ParseException("Cannot parse ip address from '" + parts[7] + "'", 7);
         }
         final int externalPort;
         try {
@@ -247,6 +257,8 @@ public class AddressBookUtils {
                 internalPort,
                 externalHostname,
                 externalPort,
+                null,
+                null,
                 memoToUse);
     }
 
@@ -281,5 +293,83 @@ public class AddressBookUtils {
                 throw new IllegalStateException("The address books do not have the same addresses.");
             }
         }
+    }
+
+    /**
+     * Given a host and port, creates a {@link ServiceEndpoint} object with either an IP address or domain name
+     * depending on the given host.
+     *
+     * @param host the host
+     * @param port the port
+     * @return the {@link ServiceEndpoint} object
+     */
+    public static ServiceEndpoint endpointFor(@NonNull final String host, final int port) {
+        final var builder = ServiceEndpoint.newBuilder().port(port);
+        if (IPV4_ADDRESS_PATTERN.matcher(host).matches()) {
+            final var octets = host.split("[.]");
+            builder.ipAddressV4(Bytes.wrap(new byte[] {
+                (byte) Integer.parseInt(octets[0]),
+                (byte) Integer.parseInt(octets[1]),
+                (byte) Integer.parseInt(octets[2]),
+                (byte) Integer.parseInt(octets[3])
+            }));
+        } else {
+            builder.domainName(host);
+        }
+        return builder.build();
+    }
+
+    /**
+     * Creates a new roster from the bootstrap address book.
+     *
+     * @return a new roster
+     */
+    @NonNull
+    public static Roster createRoster(@NonNull final AddressBook bootstrapAddressBook) {
+        Objects.requireNonNull(bootstrapAddressBook, "The bootstrapAddressBook must not be null.");
+        final List<RosterEntry> rosterEntries = new ArrayList<>(bootstrapAddressBook.getSize());
+        for (int i = 0; i < bootstrapAddressBook.getSize(); i++) {
+            final NodeId nodeId = bootstrapAddressBook.getNodeId(i);
+            final Address address = bootstrapAddressBook.getAddress(nodeId);
+
+            final RosterEntry rosterEntry = AddressBookUtils.toRosterEntry(address, nodeId);
+            rosterEntries.add(rosterEntry);
+        }
+        return Roster.newBuilder().rosters(rosterEntries).build();
+    }
+
+    /**
+     * Converts an address to a roster entry.
+     *
+     * @param address the address to convert
+     * @param nodeId  the node ID to use for the roster entry
+     * @return the roster entry
+     */
+    private static RosterEntry toRosterEntry(@NonNull final Address address, @NonNull final NodeId nodeId) {
+        Objects.requireNonNull(address);
+        Objects.requireNonNull(nodeId);
+        final var signingCertificate = address.getSigCert();
+        Bytes signingCertificateBytes;
+        try {
+            signingCertificateBytes =
+                    signingCertificate == null ? Bytes.EMPTY : Bytes.wrap(signingCertificate.getEncoded());
+        } catch (final CertificateEncodingException e) {
+            signingCertificateBytes = Bytes.EMPTY;
+        }
+
+        final List<ServiceEndpoint> serviceEndpoints = new ArrayList<>(2);
+        if (address.getHostnameInternal() != null) {
+            serviceEndpoints.add(endpointFor(address.getHostnameInternal(), address.getPortInternal()));
+        }
+        if (address.getHostnameExternal() != null) {
+            serviceEndpoints.add(endpointFor(address.getHostnameExternal(), address.getPortExternal()));
+        }
+
+        return RosterEntry.newBuilder()
+                .nodeId(nodeId.id())
+                .weight(address.getWeight())
+                .gossipCaCertificate(signingCertificateBytes)
+                .gossipEndpoint(serviceEndpoints)
+                .build();
     }
 }

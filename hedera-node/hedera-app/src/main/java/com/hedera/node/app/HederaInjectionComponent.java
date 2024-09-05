@@ -16,10 +16,16 @@
 
 package com.hedera.node.app;
 
+import com.hedera.hapi.block.stream.output.StateChanges;
+import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.node.app.annotations.MaxSignedTxnSize;
 import com.hedera.node.app.authorization.AuthorizerInjectionModule;
+import com.hedera.node.app.blocks.BlockStreamManager;
+import com.hedera.node.app.blocks.BlockStreamModule;
+import com.hedera.node.app.blocks.impl.BoundaryStateChangeListener;
+import com.hedera.node.app.blocks.impl.KVStateChangeListener;
 import com.hedera.node.app.components.IngestInjectionComponent;
-import com.hedera.node.app.components.QueryInjectionComponent;
+import com.hedera.node.app.config.BootstrapConfigProviderImpl;
 import com.hedera.node.app.config.ConfigProviderImpl;
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.fees.FeeManager;
@@ -31,46 +37,43 @@ import com.hedera.node.app.metrics.MetricsInjectionModule;
 import com.hedera.node.app.platform.PlatformModule;
 import com.hedera.node.app.records.BlockRecordInjectionModule;
 import com.hedera.node.app.records.BlockRecordManager;
-import com.hedera.node.app.service.mono.context.annotations.BootstrapProps;
-import com.hedera.node.app.service.mono.context.properties.PropertySource;
-import com.hedera.node.app.service.mono.state.PlatformStateAccessor;
-import com.hedera.node.app.service.mono.utils.NamedDigestFactory;
-import com.hedera.node.app.service.mono.utils.SystemExits;
+import com.hedera.node.app.service.contract.impl.ContractServiceImpl;
+import com.hedera.node.app.service.file.impl.FileServiceImpl;
 import com.hedera.node.app.services.ServicesInjectionModule;
 import com.hedera.node.app.services.ServicesRegistry;
-import com.hedera.node.app.spi.info.NetworkInfo;
-import com.hedera.node.app.spi.info.SelfNodeInfo;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.records.RecordCache;
 import com.hedera.node.app.state.HederaStateInjectionModule;
-import com.hedera.node.app.state.LedgerValidator;
 import com.hedera.node.app.state.WorkingStateAccessor;
 import com.hedera.node.app.throttle.ThrottleServiceManager;
 import com.hedera.node.app.throttle.ThrottleServiceModule;
+import com.hedera.node.app.workflows.FacilityInitModule;
 import com.hedera.node.app.workflows.WorkflowsInjectionModule;
 import com.hedera.node.app.workflows.handle.HandleWorkflow;
-import com.hedera.node.app.workflows.handle.PlatformStateUpdateFacility;
-import com.hedera.node.app.workflows.handle.record.GenesisRecordsConsensusHook;
+import com.hedera.node.app.workflows.ingest.IngestWorkflow;
 import com.hedera.node.app.workflows.prehandle.PreHandleWorkflow;
-import com.hedera.node.config.ConfigProvider;
+import com.hedera.node.app.workflows.query.QueryWorkflow;
 import com.swirlds.common.crypto.Cryptography;
-import com.swirlds.common.platform.NodeId;
+import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.listeners.ReconnectCompleteListener;
 import com.swirlds.platform.listeners.StateWriteToDiskCompleteListener;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;
+import com.swirlds.state.State;
+import com.swirlds.state.spi.info.NetworkInfo;
+import com.swirlds.state.spi.info.SelfNodeInfo;
 import dagger.BindsInstance;
 import dagger.Component;
 import java.nio.charset.Charset;
 import java.time.InstantSource;
+import java.util.List;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 import javax.inject.Provider;
 import javax.inject.Singleton;
 
 /**
- * The infrastructure used to implement the platform contract for a Hedera Services node. This is needed for adding
- * dagger subcomponents. Currently, it extends {@link com.hedera.node.app.service.mono.ServicesApp}. But, in the future
- * this class will be cleaned up to not have multiple module dependencies
+ * The infrastructure used to implement the platform contract for a Hedera Services node.
  */
 @Singleton
 @Component(
@@ -83,48 +86,43 @@ import javax.inject.Singleton;
             AuthorizerInjectionModule.class,
             InfoInjectionModule.class,
             BlockRecordInjectionModule.class,
+            BlockStreamModule.class,
             PlatformModule.class,
-            ThrottleServiceModule.class
+            ThrottleServiceModule.class,
+            FacilityInitModule.class,
         })
 public interface HederaInjectionComponent {
-    /* Needed by ServicesState */
-    Provider<QueryInjectionComponent.Factory> queryComponentFactory();
+    InitTrigger initTrigger();
 
     Provider<IngestInjectionComponent.Factory> ingestComponentFactory();
 
     WorkingStateAccessor workingStateAccessor();
 
+    Consumer<State> initializer();
+
     RecordCache recordCache();
 
     GrpcServerManager grpcServerManager();
 
-    NodeId nodeId();
-
     Supplier<Charset> nativeCharset();
 
-    SystemExits systemExits();
-
-    NamedDigestFactory digestFactory();
-
     NetworkInfo networkInfo();
-
-    LedgerValidator ledgerValidator();
 
     PreHandleWorkflow preHandleWorkflow();
 
     HandleWorkflow handleWorkflow();
 
+    IngestWorkflow ingestWorkflow();
+
+    QueryWorkflow queryWorkflow();
+
     BlockRecordManager blockRecordManager();
+
+    BlockStreamManager blockStreamManager();
 
     FeeManager feeManager();
 
     ExchangeRateManager exchangeRateManager();
-
-    PlatformStateUpdateFacility platformStateUpdateFacility();
-
-    GenesisRecordsConsensusHook genesisRecordsConsensusHook();
-
-    InitTrigger initTrigger();
 
     ThrottleServiceManager throttleServiceManager();
 
@@ -132,12 +130,21 @@ public interface HederaInjectionComponent {
 
     StateWriteToDiskCompleteListener stateWriteToDiskListener();
 
-    PlatformStateAccessor platformStateAccessor();
-
     StoreMetricsService storeMetricsService();
 
     @Component.Builder
     interface Builder {
+        @BindsInstance
+        Builder fileServiceImpl(FileServiceImpl fileService);
+
+        @BindsInstance
+        Builder contractServiceImpl(ContractServiceImpl contractService);
+
+        @BindsInstance
+        Builder configProviderImpl(ConfigProviderImpl configProvider);
+
+        @BindsInstance
+        Builder bootstrapConfigProviderImpl(BootstrapConfigProviderImpl bootstrapConfigProvider);
 
         @BindsInstance
         Builder servicesRegistry(ServicesRegistry registry);
@@ -155,15 +162,6 @@ public interface HederaInjectionComponent {
         Builder self(final SelfNodeInfo self);
 
         @BindsInstance
-        Builder bootstrapProps(@BootstrapProps PropertySource bootstrapProps);
-
-        @BindsInstance
-        Builder configProvider(ConfigProvider configProvider);
-
-        @BindsInstance
-        Builder configProviderImpl(ConfigProviderImpl configProviderImpl);
-
-        @BindsInstance
         Builder maxSignedTxnSize(@MaxSignedTxnSize final int maxSignedTxnSize);
 
         @BindsInstance
@@ -173,7 +171,19 @@ public interface HederaInjectionComponent {
         Builder instantSource(InstantSource instantSource);
 
         @BindsInstance
-        Builder genesisRecordsConsensusHook(GenesisRecordsConsensusHook genesisRecordsBuilder);
+        Builder softwareVersion(SemanticVersion softwareVersion);
+
+        @BindsInstance
+        Builder metrics(Metrics metrics);
+
+        @BindsInstance
+        Builder boundaryStateChangeListener(BoundaryStateChangeListener boundaryStateChangeListener);
+
+        @BindsInstance
+        Builder kvStateChangeListener(KVStateChangeListener kvStateChangeListener);
+
+        @BindsInstance
+        Builder migrationStateChanges(List<StateChanges.Builder> migrationStateChanges);
 
         HederaInjectionComponent build();
     }

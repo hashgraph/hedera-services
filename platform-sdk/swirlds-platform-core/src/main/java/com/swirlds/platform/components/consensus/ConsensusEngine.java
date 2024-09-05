@@ -19,9 +19,10 @@ package com.swirlds.platform.components.consensus;
 import com.swirlds.common.wiring.component.InputWireLabel;
 import com.swirlds.platform.Consensus;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
-import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.internal.ConsensusRound;
-import com.swirlds.platform.internal.EventImpl;
+import com.swirlds.platform.system.events.CesEvent;
+import com.swirlds.platform.system.status.PlatformStatus;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 
@@ -29,6 +30,15 @@ import java.util.List;
  * Responsible for adding events to {@link Consensus}.
  */
 public interface ConsensusEngine {
+
+    /**
+     * Update the platform status.
+     *
+     * @param platformStatus the new platform status
+     */
+    @InputWireLabel("PlatformStatus")
+    void updatePlatformStatus(@NonNull PlatformStatus platformStatus);
+
     /**
      * Add an event to the hashgraph
      *
@@ -36,8 +46,8 @@ public interface ConsensusEngine {
      * @return a list of rounds that came to consensus as a result of adding the event
      */
     @NonNull
-    @InputWireLabel("GossipEvent")
-    List<ConsensusRound> addEvent(@NonNull GossipEvent event);
+    @InputWireLabel("PlatformEvent")
+    List<ConsensusRound> addEvent(@NonNull PlatformEvent event);
 
     /**
      * Perform an out-of-band snapshot update. This happens at restart/reconnect boundaries.
@@ -47,12 +57,12 @@ public interface ConsensusEngine {
     void outOfBandSnapshotUpdate(@NonNull ConsensusSnapshot snapshot);
 
     /**
-     * Extract a list of consensus events from a consensus round
+     * Extract a list of events intended for the consensus events stream
      *
-     * @return a list of consensus events
+     * @return a list of CES events
      */
     @NonNull
-    default List<EventImpl> getConsensusEvents(@NonNull final ConsensusRound round) {
-        return round.getConsensusEvents();
+    default List<CesEvent> getCesEvents(@NonNull final ConsensusRound round) {
+        return round.getStreamedEvents();
     }
 }

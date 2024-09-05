@@ -33,16 +33,18 @@ import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
-import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.event.creation.EventCreationConfig_;
 import com.swirlds.platform.event.creation.EventCreator;
 import com.swirlds.platform.event.creation.rules.AggregateEventCreationRules;
 import com.swirlds.platform.event.creation.rules.EventCreationRule;
 import com.swirlds.platform.event.creation.rules.MaximumRateRule;
+import com.swirlds.platform.event.creation.rules.PlatformHealthRule;
 import com.swirlds.platform.event.creation.rules.PlatformStatusRule;
-import com.swirlds.platform.eventhandling.TransactionPool;
+import com.swirlds.platform.pool.TransactionPoolNexus;
 import com.swirlds.platform.system.status.PlatformStatus;
 import java.time.Duration;
+import java.util.List;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -54,9 +56,8 @@ import org.junit.jupiter.api.Test;
 class EventCreationRulesTests {
 
     @Test
-    @DisplayName("Empty Aggregate Test")
     void emptyAggregateTest() {
-        final EventCreationRule rule = AggregateEventCreationRules.of();
+        final EventCreationRule rule = AggregateEventCreationRules.of(List.of());
         assertTrue(rule.isEventCreationPermitted());
 
         // should not throw
@@ -64,7 +65,6 @@ class EventCreationRulesTests {
     }
 
     @Test
-    @DisplayName("Aggregate Test")
     void aggregateTest() {
         final EventCreationRule rule1 = mock(EventCreationRule.class);
         when(rule1.isEventCreationPermitted()).thenAnswer(invocation -> true);
@@ -106,7 +106,7 @@ class EventCreationRulesTests {
                 .when(rule4)
                 .eventWasCreated();
 
-        final EventCreationRule aggregateRule = AggregateEventCreationRules.of(rule1, rule2, rule3, rule4);
+        final EventCreationRule aggregateRule = AggregateEventCreationRules.of(List.of(rule1, rule2, rule3, rule4));
 
         assertTrue(aggregateRule.isEventCreationPermitted());
 
@@ -130,13 +130,12 @@ class EventCreationRulesTests {
     }
 
     @Test
-    @DisplayName("Blocked by Freeze Test")
     void blockedByFreeze() {
         final Supplier<PlatformStatus> platformStatusSupplier = () -> FREEZING;
 
         final AtomicInteger numSignatureTransactions = new AtomicInteger(0);
-        final TransactionPool transactionPool = mock(TransactionPool.class);
-        when(transactionPool.hasBufferedSignatureTransactions())
+        final TransactionPoolNexus transactionPoolNexus = mock(TransactionPoolNexus.class);
+        when(transactionPoolNexus.hasBufferedSignatureTransactions())
                 .thenAnswer(invocation -> numSignatureTransactions.get() > 0);
 
         final AtomicInteger eventCreationCount = new AtomicInteger(0);
@@ -146,7 +145,7 @@ class EventCreationRulesTests {
             return null;
         });
 
-        final EventCreationRule rule = new PlatformStatusRule(platformStatusSupplier, transactionPool);
+        final EventCreationRule rule = new PlatformStatusRule(platformStatusSupplier, transactionPoolNexus);
 
         assertFalse(rule.isEventCreationPermitted());
         numSignatureTransactions.set(1);
@@ -154,9 +153,8 @@ class EventCreationRulesTests {
     }
 
     @Test
-    @DisplayName("Blocked by Status Test")
     void blockedByStatus() {
-        final TransactionPool transactionPool = mock(TransactionPool.class);
+        final TransactionPoolNexus transactionPoolNexus = mock(TransactionPoolNexus.class);
 
         final AtomicReference<PlatformStatus> status = new AtomicReference<>();
 
@@ -167,7 +165,7 @@ class EventCreationRulesTests {
             return null;
         });
 
-        final EventCreationRule rule = new PlatformStatusRule(status::get, transactionPool);
+        final EventCreationRule rule = new PlatformStatusRule(status::get, transactionPoolNexus);
 
         for (final PlatformStatus platformStatus : PlatformStatus.values()) {
             if (platformStatus == FREEZING) {
@@ -186,7 +184,6 @@ class EventCreationRulesTests {
     }
 
     @Test
-    @DisplayName("No Rate Limit Test")
     void noRateLimitTest() {
         final Time time = new FakeTime();
         final PlatformContext platformContext =
@@ -196,7 +193,7 @@ class EventCreationRulesTests {
         final EventCreator baseEventCreator = mock(EventCreator.class);
         when(baseEventCreator.maybeCreateEvent()).thenAnswer(invocation -> {
             eventCreationCount.incrementAndGet();
-            return mock(GossipEvent.class);
+            return mock(PlatformEvent.class);
         });
 
         final EventCreationRule rule = new MaximumRateRule(platformContext);
@@ -208,7 +205,6 @@ class EventCreationRulesTests {
     }
 
     @Test
-    @DisplayName("Rate Limit Test")
     void rateLimitTest() {
         final Random random = getRandomPrintSeed();
 
@@ -248,5 +244,28 @@ class EventCreationRulesTests {
                 assertFalse(rule.isEventCreationPermitted());
             }
         }
+    }
+
+    @Test
+    void platformHealthRuleTest() {
+        final AtomicReference<Duration> unhealthyDuration = new AtomicReference<>(Duration.ZERO);
+        final EventCreationRule rule = new PlatformHealthRule(Duration.ofSeconds(5), unhealthyDuration::get);
+
+        assertTrue(rule.isEventCreationPermitted());
+
+        unhealthyDuration.set(Duration.ofSeconds(1));
+        assertTrue(rule.isEventCreationPermitted());
+
+        unhealthyDuration.set(Duration.ofSeconds(5));
+        assertTrue(rule.isEventCreationPermitted());
+
+        unhealthyDuration.set(Duration.ofSeconds(5, 1));
+        assertFalse(rule.isEventCreationPermitted());
+
+        unhealthyDuration.set(Duration.ofSeconds(50000000));
+        assertFalse(rule.isEventCreationPermitted());
+
+        unhealthyDuration.set(Duration.ofSeconds(5));
+        assertTrue(rule.isEventCreationPermitted());
     }
 }

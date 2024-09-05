@@ -18,7 +18,7 @@ package com.swirlds.platform.gui.hashgraph.internal;
 
 import com.swirlds.platform.gui.hashgraph.HashgraphGuiConstants;
 import com.swirlds.platform.gui.hashgraph.HashgraphPictureOptions;
-import com.swirlds.platform.system.events.PlatformEvent;
+import com.swirlds.platform.internal.EventImpl;
 import java.awt.Color;
 
 /**
@@ -70,19 +70,26 @@ public final class HashgraphGuiUtils {
      * 		the event to color
      * @return its color
      */
-    public static Color eventColor(final PlatformEvent event, final HashgraphPictureOptions options) {
+    public static Color eventColor(final EventImpl event, final HashgraphPictureOptions options) {
         if (options.simpleColors()) { // if checkbox checked
             return event.isConsensus() ? HashgraphGuiConstants.LIGHT_BLUE : HashgraphGuiConstants.LIGHT_GREEN;
         }
         if (!event.isWitness()) {
             return event.isConsensus() ? HashgraphGuiConstants.DARK_GRAY : HashgraphGuiConstants.LIGHT_GRAY;
         }
+        // after this point, we know the event is a witness
         if (!event.isFameDecided()) {
             return event.isConsensus() ? HashgraphGuiConstants.DARK_RED : HashgraphGuiConstants.LIGHT_RED;
+        }
+        // after this point, we know the event is a witness and fame is decided
+        if (event.isJudge()) {
+            return event.isConsensus() ? HashgraphGuiConstants.DARK_BLUE : HashgraphGuiConstants.LIGHT_BLUE;
         }
         if (event.isFamous()) {
             return event.isConsensus() ? HashgraphGuiConstants.DARK_GREEN : HashgraphGuiConstants.LIGHT_GREEN;
         }
-        return event.isConsensus() ? HashgraphGuiConstants.DARK_BLUE : HashgraphGuiConstants.LIGHT_BLUE;
+
+        // if we reached here, it means the event is a witness, fame is decided, but it is not famous
+        return event.isConsensus() ? HashgraphGuiConstants.DARK_YELLOW : HashgraphGuiConstants.LIGHT_YELLOW;
     }
 }

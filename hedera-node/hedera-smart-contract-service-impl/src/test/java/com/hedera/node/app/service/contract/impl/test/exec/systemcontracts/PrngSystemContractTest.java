@@ -35,13 +35,14 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.PrngSystemContract;
 import com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater.Enhancement;
-import com.hedera.node.app.service.contract.impl.records.ContractCallRecordBuilder;
-import com.hedera.node.app.service.contract.impl.state.ProxyEvmAccount;
+import com.hedera.node.app.service.contract.impl.records.ContractCallStreamBuilder;
+import com.hedera.node.app.service.contract.impl.state.ProxyEvmContract;
 import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
+import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.frame.BlockValues;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
@@ -70,10 +71,10 @@ class PrngSystemContractTest {
     ProxyWorldUpdater proxyWorldUpdater;
 
     @Mock
-    ContractCallRecordBuilder contractCallRecordBuilder;
+    ContractCallStreamBuilder contractCallRecordBuilder;
 
     @Mock
-    private ProxyEvmAccount mutableAccount;
+    private ProxyEvmContract mutableAccount;
 
     @Mock
     private AccountID accountID;
@@ -119,6 +120,7 @@ class PrngSystemContractTest {
         givenInitialFrame();
         given(messageFrame.isStatic()).willReturn(true);
         given(messageFrame.getWorldUpdater()).willReturn(proxyWorldUpdater);
+        given(messageFrame.getValue()).willReturn(Wei.ZERO);
         given(proxyWorldUpdater.entropy()).willReturn(EXPECTED_RANDOM_NUMBER);
 
         // when:
@@ -135,6 +137,7 @@ class PrngSystemContractTest {
         commonMocks();
         given(messageFrame.isStatic()).willReturn(false);
         given(messageFrame.getWorldUpdater()).willReturn(proxyWorldUpdater);
+        given(messageFrame.getValue()).willReturn(Wei.ZERO);
         given(proxyWorldUpdater.entropy()).willReturn(EXPECTED_RANDOM_NUMBER);
         given(systemContractGasCalculator.canonicalGasRequirement(any())).willReturn(GAS_REQUIRED);
 
@@ -157,13 +160,32 @@ class PrngSystemContractTest {
         given(systemContractGasCalculator.canonicalGasRequirement(any())).willReturn(GAS_REQUIRED);
         given(messageFrame.isStatic()).willReturn(false);
         given(messageFrame.getWorldUpdater()).willReturn(proxyWorldUpdater);
+        given(messageFrame.getValue()).willReturn(Wei.ZERO);
         given(proxyWorldUpdater.entropy()).willReturn(Bytes.wrap(ZERO_ENTROPY.toByteArray()));
         when(systemContractOperations.externalizePreemptedDispatch(any(), any()))
-                .thenReturn(mock(ContractCallRecordBuilder.class));
+                .thenReturn(mock(ContractCallStreamBuilder.class));
 
         // when:
         var actual = subject.computeFully(PSEUDO_RANDOM_SYSTEM_CONTRACT_ADDRESS, messageFrame);
 
+        // then:
+        assertEqualContractResult(PRECOMPILE_CONTRACT_FAILED_RESULT, actual, GAS_REQUIRED);
+    }
+
+    @Test
+    void computePrecompileInvalidFeeSubmittedFailedTest() {
+        // given:
+        givenCommon();
+        commonMocks();
+        given(systemContractGasCalculator.canonicalGasRequirement(any())).willReturn(GAS_REQUIRED);
+        given(messageFrame.isStatic()).willReturn(false);
+        given(messageFrame.getWorldUpdater()).willReturn(proxyWorldUpdater);
+        given(messageFrame.getValue()).willReturn(Wei.ONE);
+        when(systemContractOperations.externalizePreemptedDispatch(any(), any()))
+                .thenReturn(mock(ContractCallStreamBuilder.class));
+
+        // when:
+        var actual = subject.computeFully(PSEUDO_RANDOM_SYSTEM_CONTRACT_ADDRESS, messageFrame);
         // then:
         assertEqualContractResult(PRECOMPILE_CONTRACT_FAILED_RESULT, actual, GAS_REQUIRED);
     }
@@ -176,7 +198,7 @@ class PrngSystemContractTest {
 
         given(systemContractGasCalculator.canonicalGasRequirement(any())).willReturn(GAS_REQUIRED);
         when(systemContractOperations.externalizePreemptedDispatch(any(), any()))
-                .thenReturn(mock(ContractCallRecordBuilder.class));
+                .thenReturn(mock(ContractCallStreamBuilder.class));
 
         // when:
         var actual = subject.computeFully(EXPECTED_RANDOM_NUMBER, messageFrame);

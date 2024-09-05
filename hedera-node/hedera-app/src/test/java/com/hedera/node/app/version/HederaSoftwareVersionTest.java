@@ -17,6 +17,7 @@
 package com.hedera.node.app.version;
 
 import static com.hedera.node.app.version.HederaSoftwareVersion.RELEASE_027_VERSION;
+import static com.swirlds.state.spi.HapiUtils.SEMANTIC_VERSION_COMPARATOR;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -70,6 +71,18 @@ final class HederaSoftwareVersionTest {
             case "<" -> assertThat(versionA).isLessThan(versionB);
             case "=" -> assertThat(versionA).isEqualByComparingTo(versionB);
             case ">" -> assertThat(versionA).isGreaterThan(versionB);
+            default -> throw new IllegalArgumentException("Unknown expected value: " + expected);
+        }
+        // Ensure that the PBJ versions are also ordered correctly.
+        final SemanticVersion pbjA = versionA.servicesVersion();
+        final SemanticVersion pbjB = versionB.servicesVersion();
+        switch (expected) {
+            case "<" -> assertThat(SEMANTIC_VERSION_COMPARATOR.compare(pbjA, pbjB))
+                    .isLessThan(0);
+            case "=" -> assertThat(SEMANTIC_VERSION_COMPARATOR.compare(pbjA, pbjB))
+                    .isEqualTo(0);
+            case ">" -> assertThat(SEMANTIC_VERSION_COMPARATOR.compare(pbjA, pbjB))
+                    .isGreaterThan(0);
             default -> throw new IllegalArgumentException("Unknown expected value: " + expected);
         }
     }
@@ -129,7 +142,7 @@ final class HederaSoftwareVersionTest {
 
         assertEquals(RELEASE_027_VERSION, deserializedVersion.getVersion());
         assertEquals(semver("1.2.3"), deserializedVersion.getHapiVersion());
-        assertEquals(semver("4.5.6"), deserializedVersion.getServicesVersion());
+        assertEquals(semver("4.5.6-2147483647"), deserializedVersion.getPbjSemanticVersion());
 
         // Write the deserialized version back to a byte array. It should exactly match the original byte array.
         final ByteArrayOutputStream newBytes = new ByteArrayOutputStream();
@@ -172,7 +185,7 @@ final class HederaSoftwareVersionTest {
         deserializedVersion.deserialize(in, deserializedVersion.getVersion());
 
         assertThat(deserializedVersion.getHapiVersion()).isEqualTo(version.getHapiVersion());
-        assertThat(deserializedVersion.getServicesVersion()).isEqualTo(version.getServicesVersion());
+        assertThat(deserializedVersion.getPbjSemanticVersion()).isEqualTo(version.getPbjSemanticVersion());
     }
 
     private SemanticVersion semver(@NonNull final String s) {

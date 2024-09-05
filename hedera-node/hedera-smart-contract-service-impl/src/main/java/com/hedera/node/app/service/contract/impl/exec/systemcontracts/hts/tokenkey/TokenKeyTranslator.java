@@ -21,17 +21,16 @@ import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.fr
 import com.esaulpaugh.headlong.abi.Function;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.state.token.Token;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AbstractHtsCallTranslator;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCall;
+import com.hedera.node.app.hapi.utils.InvalidTransactionException;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.AbstractCallTranslator;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.Call;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes;
-import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.math.BigInteger;
-import java.util.Arrays;
 import javax.inject.Inject;
 
-public class TokenKeyTranslator extends AbstractHtsCallTranslator {
+public class TokenKeyTranslator extends AbstractCallTranslator<HtsCallAttempt> {
 
     public static final Function TOKEN_KEY =
             new Function("getTokenKey(address,uint)", ReturnTypes.RESPONSE_CODE_TOKEN_KEY);
@@ -46,14 +45,14 @@ public class TokenKeyTranslator extends AbstractHtsCallTranslator {
      */
     @Override
     public boolean matches(@NonNull final HtsCallAttempt attempt) {
-        return Arrays.equals(attempt.selector(), TOKEN_KEY.selector());
+        return attempt.isSelector(TOKEN_KEY);
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public HtsCall callFrom(@NonNull final HtsCallAttempt attempt) {
+    public Call callFrom(@NonNull final HtsCallAttempt attempt) {
         final var args = TOKEN_KEY.decodeCall(attempt.input().toArrayUnsafe());
         final var token = attempt.linkedToken(fromHeadlongAddress(args.get(0)));
         final BigInteger keyType = args.get(1);

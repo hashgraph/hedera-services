@@ -29,8 +29,8 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.MISSING_TOKEN_NAME;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MISSING_TOKEN_SYMBOL;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_NAME_TOO_LONG;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_SYMBOL_TOO_LONG;
+import static com.hedera.node.app.service.token.impl.test.handlers.util.CryptoHandlerTestBase.A_COMPLEX_KEY;
 import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
-import static com.hedera.test.utils.KeyUtils.A_COMPLEX_KEY;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -41,8 +41,8 @@ import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.config.data.TokensConfig;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.hedera.test.utils.TxnUtils;
 import java.io.ByteArrayOutputStream;
+import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -66,7 +66,7 @@ class TokenAttributesValidatorTest {
 
     @Test
     void validatesMetadataWithRandomBytes() {
-        byte[] randomBytes = TxnUtils.randomUtf8Bytes(48);
+        byte[] randomBytes = randomUtf8Bytes(48);
         ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
         for (byte b : randomBytes) {
             if (b != 0) {
@@ -101,7 +101,7 @@ class TokenAttributesValidatorTest {
 
     @Test
     void failsMetadataForVeryLongValue() {
-        byte[] randomLongBytes = TxnUtils.randomUtf8Bytes(101);
+        byte[] randomLongBytes = randomUtf8Bytes(101);
         assertThatThrownBy(() -> subject.validateTokenMetadata(Bytes.wrap(randomLongBytes), tokensConfig))
                 .isInstanceOf(HandleException.class)
                 .has(responseCode(METADATA_TOO_LONG));
@@ -437,5 +437,16 @@ class TokenAttributesValidatorTest {
                         Key.DEFAULT,
                         true,
                         A_COMPLEX_KEY));
+    }
+
+    private static byte[] randomUtf8Bytes(int n) {
+        byte[] data = new byte[n];
+        int i = 0;
+        while (i < n) {
+            byte[] rnd = UUID.randomUUID().toString().getBytes();
+            System.arraycopy(rnd, 0, data, i, Math.min(rnd.length, n - 1 - i));
+            i += rnd.length;
+        }
+        return data;
     }
 }

@@ -19,23 +19,23 @@ package com.swirlds.platform.event.deduplication;
 import static com.swirlds.metrics.api.FloatFormats.FORMAT_10_2;
 import static com.swirlds.metrics.api.Metrics.PLATFORM_CATEGORY;
 
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.metrics.RunningAverageMetric;
 import com.swirlds.common.metrics.extensions.CountPerSecond;
-import com.swirlds.common.sequence.map.SequenceMap;
-import com.swirlds.common.sequence.map.StandardSequenceMap;
 import com.swirlds.metrics.api.LongAccumulator;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.event.AncientMode;
-import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.eventhandling.EventConfig;
 import com.swirlds.platform.gossip.IntakeEventCounter;
-import com.swirlds.platform.system.events.EventDescriptor;
+import com.swirlds.platform.sequence.map.SequenceMap;
+import com.swirlds.platform.sequence.map.StandardSequenceMap;
+import com.swirlds.platform.system.events.EventDescriptorWrapper;
 import com.swirlds.platform.wiring.NoInput;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.nio.ByteBuffer;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
@@ -48,7 +48,7 @@ public class StandardEventDeduplicator implements EventDeduplicator {
     /**
      * Avoid the creation of lambdas for Map.computeIfAbsent() by reusing this lambda.
      */
-    private static final Function<EventDescriptor, Set<ByteBuffer>> NEW_HASH_SET = ignored -> new HashSet<>();
+    private static final Function<EventDescriptorWrapper, Set<Bytes>> NEW_HASH_SET = ignored -> new HashSet<>();
 
     /**
      * Initial capacity of {@link #observedEvents}.
@@ -68,7 +68,7 @@ public class StandardEventDeduplicator implements EventDeduplicator {
     /**
      * A map from event descriptor to a set of signatures that have been received for that event.
      */
-    private final SequenceMap<EventDescriptor, Set<ByteBuffer>> observedEvents;
+    private final SequenceMap<EventDescriptorWrapper, Set<Bytes>> observedEvents;
 
     private static final LongAccumulator.Config DISPARATE_SIGNATURE_CONFIG = new LongAccumulator.Config(
                     PLATFORM_CATEGORY, "eventsWithDisparateSignature")
@@ -112,9 +112,11 @@ public class StandardEventDeduplicator implements EventDeduplicator {
                 .getAncientMode();
         this.eventWindow = EventWindow.getGenesisEventWindow(ancientMode);
         if (ancientMode == AncientMode.BIRTH_ROUND_THRESHOLD) {
-            observedEvents = new StandardSequenceMap<>(0, INITIAL_CAPACITY, true, EventDescriptor::getBirthRound);
+            observedEvents = new StandardSequenceMap<>(
+                    0, INITIAL_CAPACITY, true, ed -> ed.eventDescriptor().birthRound());
         } else {
-            observedEvents = new StandardSequenceMap<>(0, INITIAL_CAPACITY, true, EventDescriptor::getGeneration);
+            observedEvents = new StandardSequenceMap<>(
+                    0, INITIAL_CAPACITY, true, ed -> ed.eventDescriptor().generation());
         }
     }
 
@@ -123,15 +125,15 @@ public class StandardEventDeduplicator implements EventDeduplicator {
      */
     @Override
     @Nullable
-    public GossipEvent handleEvent(@NonNull final GossipEvent event) {
+    public PlatformEvent handleEvent(@NonNull final PlatformEvent event) {
         if (eventWindow.isAncient(event)) {
             // Ancient events can be safely ignored.
             intakeEventCounter.eventExitedIntakePipeline(event.getSenderId());
             return null;
         }
 
-        final Set<ByteBuffer> signatures = observedEvents.computeIfAbsent(event.getDescriptor(), NEW_HASH_SET);
-        if (signatures.add(ByteBuffer.wrap(event.getUnhashedData().getSignature()))) {
+        final Set<Bytes> signatures = observedEvents.computeIfAbsent(event.getDescriptor(), NEW_HASH_SET);
+        if (signatures.add(event.getSignature())) {
             if (signatures.size() != 1) {
                 // signature is unique, but descriptor is not
                 disparateSignatureAccumulator.update(1);

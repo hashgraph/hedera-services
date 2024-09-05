@@ -39,6 +39,8 @@ import com.hedera.hapi.node.transaction.CustomFee;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.ReadableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
+import com.hedera.node.app.service.token.impl.util.TokenHandlerHelper;
+import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleException;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
@@ -50,10 +52,15 @@ import javax.inject.Inject;
  * to validate custom fees for token creation and fee schedule updates.
  */
 public class CustomFeesValidator {
-    // Sentinel token id used to denote that the fee is denominated in the same token as the token being created.
+    /**
+     * Sentinel token id used to denote that the fee is denominated in the same token as the token being created.
+     */
     public static final TokenID SENTINEL_TOKEN_ID =
             TokenID.newBuilder().shardNum(0L).realmNum(0L).tokenNum(0L).build();
 
+    /**
+     * Constructs a {@link CustomFeesValidator} instance.
+     */
     @Inject
     public CustomFeesValidator() {
         // Needed for Dagger injection
@@ -65,24 +72,27 @@ public class CustomFeesValidator {
      * for fixed fees with denominating token id set to sentinel value of 0.0.0.
      * NOTE: This logic is subject to change in future PR for TokenCreate
      *
-     * @param createdToken The token being created.
-     * @param accountStore The account store.
+     * @param createdToken       The token being created.
+     * @param accountStore       The account store.
      * @param tokenRelationStore The token relation store.
-     * @param tokenStore The token store.
-     * @param customFees The custom fees to validate.
-     * @return The set of custom fees that need to auto associate collector accounts.
+     * @param tokenStore         The token store.
+     * @param customFees         The custom fees to validate.
+     * @param expiryValidator    The expiry validator to use (for fee collector accounts)
+     * @return The set of custom fees that need to auto associate collector accounts
      */
     public List<CustomFee> validateForCreation(
             @NonNull final Token createdToken,
             @NonNull final ReadableAccountStore accountStore,
             @NonNull final ReadableTokenRelationStore tokenRelationStore,
             @NonNull final WritableTokenStore tokenStore,
-            @NonNull final List<CustomFee> customFees) {
+            @NonNull final List<CustomFee> customFees,
+            @NonNull final ExpiryValidator expiryValidator) {
         requireNonNull(createdToken);
         requireNonNull(accountStore);
         requireNonNull(tokenRelationStore);
         requireNonNull(tokenStore);
         requireNonNull(customFees);
+        requireNonNull(expiryValidator);
 
         // It is possible that denominating tokenId is set to sentinel value of 0.0.0.
         // In that scenario, the created token should be used as the denominating token.
@@ -92,8 +102,14 @@ public class CustomFeesValidator {
         final var tokenType = createdToken.tokenType();
         final var createdTokenId = createdToken.tokenId();
         for (final var fee : customFees) {
-            final var collector = accountStore.getAccountById(fee.feeCollectorAccountIdOrElse(AccountID.DEFAULT));
-            validateTrue(collector != null, INVALID_CUSTOM_FEE_COLLECTOR);
+            // Validate the fee collector account is in a usable state
+            TokenHandlerHelper.getIfUsable(
+                    fee.feeCollectorAccountIdOrElse(AccountID.DEFAULT),
+                    accountStore,
+                    expiryValidator,
+                    INVALID_CUSTOM_FEE_COLLECTOR,
+                    INVALID_CUSTOM_FEE_COLLECTOR,
+                    TokenHandlerHelper.AccountIDType.NOT_ALIASED_ID);
 
             final var isSpecified = fee.hasFixedFee() || fee.hasFractionalFee() || fee.hasRoyaltyFee();
             validateTrue(isSpecified, CUSTOM_FEE_NOT_FULLY_SPECIFIED);
@@ -102,7 +118,7 @@ public class CustomFeesValidator {
                 case FIXED_FEE -> validateFixedFeeForCreation(
                         tokenType, fee, createdTokenId, tokenRelationStore, tokenStore, fees);
                 case FRACTIONAL_FEE -> validateFractionalFeeForCreation(tokenType, fee, fees);
-                case ROYALTY_FEE -> validateRoyaltyFeeForCreation(tokenType, fee, tokenRelationStore, tokenStore, fees);
+                case ROYALTY_FEE -> validateRoyaltyFee(tokenType, fee, tokenRelationStore, tokenStore);
                 default -> throw new IllegalArgumentException(
                         "Unexpected value for custom fee type: " + fee.fee().kind());
             }
@@ -154,29 +170,11 @@ public class CustomFeesValidator {
                                 collectorId, fixedFee.denominatingTokenId(), tokenRelationStore, tokenStore);
                     }
                 }
-                case FRACTIONAL_FEE -> {
-                    // fractional fee can be only applied to fungible common tokens
-                    validateFractionalFeeForFeeScheduleUpdate(token, tokenRelationStore, collectorId, fee);
-                }
-                case ROYALTY_FEE -> {
-                    // royalty fee can be only applied to non-fungible unique tokens
-                    validateTrue(
-                            isNonFungibleUnique(tokenType), CUSTOM_ROYALTY_FEE_ONLY_ALLOWED_FOR_NON_FUNGIBLE_UNIQUE);
-                    final var royaltyFee = fee.royaltyFeeOrThrow();
-                    if (royaltyFee.hasFallbackFee()
-                            && royaltyFee.fallbackFeeOrThrow().hasDenominatingTokenId()) {
-                        final var tokenNum = royaltyFee
-                                .fallbackFeeOrThrow()
-                                .denominatingTokenId()
-                                .tokenNum();
-                        final var tokenId =
-                                TokenID.newBuilder().tokenNum(tokenNum).build();
-                        validateExplicitTokenDenomination(collectorId, tokenId, tokenRelationStore, tokenStore);
-                    }
-                }
-                default -> {
-                    throw new HandleException(CUSTOM_FEE_NOT_FULLY_SPECIFIED);
-                }
+                case FRACTIONAL_FEE -> // fractional fee can be only applied to fungible common tokens
+                validateFractionalFeeForFeeScheduleUpdate(token, tokenRelationStore, collectorId, fee);
+                case ROYALTY_FEE -> // royalty fee can be only applied to non-fungible unique tokens
+                validateRoyaltyFee(tokenType, fee, tokenRelationStore, tokenStore);
+                default -> throw new HandleException(CUSTOM_FEE_NOT_FULLY_SPECIFIED);
             }
         }
     }
@@ -203,7 +201,7 @@ public class CustomFeesValidator {
     /**
      * Validates that the given token type is fungible common.
      * @param tokenType The token type to validate.
-     * @return {@code true} if the token type is fungible common, otherwise {@code false}.
+     * @return {@code true} if the token type is fungible common, otherwise {@code false}
      */
     private boolean isFungibleCommon(@NonNull final TokenType tokenType) {
         return tokenType.equals(TokenType.FUNGIBLE_COMMON);
@@ -212,7 +210,7 @@ public class CustomFeesValidator {
     /**
      * Validates that the given token type is non-fungible unique.
      * @param tokenType The token type to validate.
-     * @return {@code true} if the token type is non-fungible unique, otherwise {@code false}.
+     * @return {@code true} if the token type is non-fungible unique, otherwise {@code false}
      */
     private boolean isNonFungibleUnique(@NonNull final TokenType tokenType) {
         return tokenType.equals(TokenType.NON_FUNGIBLE_UNIQUE);
@@ -252,12 +250,11 @@ public class CustomFeesValidator {
         fees.add(fee);
     }
 
-    private void validateRoyaltyFeeForCreation(
+    private void validateRoyaltyFee(
             @NonNull final TokenType tokenType,
             @NonNull final CustomFee fee,
             @NonNull final ReadableTokenRelationStore tokenRelationStore,
-            @NonNull final WritableTokenStore tokenStore,
-            @NonNull final List<CustomFee> fees) {
+            @NonNull final WritableTokenStore tokenStore) {
         validateTrue(isNonFungibleUnique(tokenType), CUSTOM_ROYALTY_FEE_ONLY_ALLOWED_FOR_NON_FUNGIBLE_UNIQUE);
         final var royaltyFee = fee.royaltyFeeOrThrow();
 

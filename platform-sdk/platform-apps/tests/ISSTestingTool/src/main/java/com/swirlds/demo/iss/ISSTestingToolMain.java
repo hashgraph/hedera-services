@@ -19,10 +19,11 @@ package com.swirlds.demo.iss;
 import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.platform.state.MerkleRoot;
+import com.swirlds.platform.state.State;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.SwirldMain;
-import com.swirlds.platform.system.SwirldState;
 import com.swirlds.platform.system.state.notifications.IssListener;
 import com.swirlds.platform.system.state.notifications.IssNotification;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -41,6 +42,7 @@ import org.apache.logging.log4j.Logger;
  * a halt, even if an ISS isn't detected.
  */
 public class ISSTestingToolMain implements SwirldMain {
+
     private static final Logger logger = LogManager.getLogger(ISSTestingToolMain.class);
 
     private static final BasicSoftwareVersion softwareVersion = new BasicSoftwareVersion(1);
@@ -87,8 +89,10 @@ public class ISSTestingToolMain implements SwirldMain {
      */
     @Override
     @NonNull
-    public SwirldState newState() {
-        return new ISSTestingToolState();
+    public MerkleRoot newMerkleStateRoot() {
+        final State state = new State();
+        state.setSwirldState(new ISSTestingToolState());
+        return state;
     }
 
     /**

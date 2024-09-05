@@ -25,7 +25,6 @@ import com.swirlds.platform.gui.hashgraph.HashgraphGuiSource;
 import com.swirlds.platform.gui.hashgraph.HashgraphPictureOptions;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.system.address.AddressBook;
-import com.swirlds.platform.system.events.PlatformEvent;
 import java.awt.AWTException;
 import java.awt.Color;
 import java.awt.Font;
@@ -53,6 +52,7 @@ public class HashgraphPicture extends JPanel {
     private static final Logger logger = LogManager.getLogger(HashgraphPicture.class);
     private final HashgraphGuiSource hashgraphSource;
     private final HashgraphPictureOptions options;
+    private final EventSelector selector;
     private PictureMetadata pictureMetadata;
     /** used to store an image when the freeze checkbox is checked */
     private BufferedImage image = null;
@@ -63,6 +63,8 @@ public class HashgraphPicture extends JPanel {
     public HashgraphPicture(final HashgraphGuiSource hashgraphSource, final HashgraphPictureOptions options) {
         this.hashgraphSource = hashgraphSource;
         this.options = options;
+        this.selector = new EventSelector();
+        this.addMouseListener(selector);
         createMetadata();
     }
 
@@ -94,7 +96,7 @@ public class HashgraphPicture extends JPanel {
             List<EventImpl> events;
             if (options.displayLatestEvents()) {
                 final long startGen = Math.max(
-                        hashgraphSource.getMaxGeneration() - options.getNumGenerationsDisplay(),
+                        hashgraphSource.getMaxGeneration() - options.getNumGenerationsDisplay() + 1,
                         GraphGenerations.FIRST_GENERATION);
                 options.setStartGeneration(startGen);
                 events = hashgraphSource.getEvents(startGen, options.getNumGenerationsDisplay());
@@ -112,10 +114,13 @@ public class HashgraphPicture extends JPanel {
 
             pictureMetadata = new PictureMetadata(fm, this.getSize(), currentMetadata, events);
 
+            selector.setMetadata(pictureMetadata);
+            selector.setEventsInPicture(events);
+
             g.setColor(Color.BLACK);
 
             for (int i = 0; i < currentMetadata.getNumColumns(); i++) {
-                final String name = currentMetadata.getName(i);
+                final String name = currentMetadata.getLabel(i);
 
                 // gap between columns
                 final int betweenGap = pictureMetadata.getGapBetweenColumns();
@@ -128,15 +133,15 @@ public class HashgraphPicture extends JPanel {
                         name, (int) (x - rect.getWidth() / 2), (int) (pictureMetadata.getYmax() + rect.getHeight()));
             }
 
-            final int d = (int) (2 * pictureMetadata.getR());
+            final int d = pictureMetadata.getD();
 
             // for each event, draw 2 downward lines to its parents
-            for (final PlatformEvent event : events) {
+            for (final EventImpl event : events) {
                 drawLinksToParents(g, event);
             }
 
             // for each event, draw its circle
-            for (final PlatformEvent event : events) {
+            for (final EventImpl event : events) {
                 drawEventCircle(g, event, options, d);
             }
         } catch (final Exception e) {
@@ -144,10 +149,10 @@ public class HashgraphPicture extends JPanel {
         }
     }
 
-    private void drawLinksToParents(final Graphics g, final PlatformEvent event) {
+    private void drawLinksToParents(final Graphics g, final EventImpl event) {
         g.setColor(HashgraphGuiUtils.eventColor(event, options));
-        final PlatformEvent e1 = event.getSelfParent();
-        PlatformEvent e2 = event.getOtherParent();
+        final EventImpl e1 = event.getSelfParent();
+        EventImpl e2 = event.getOtherParent();
         final AddressBook addressBook = hashgraphSource.getAddressBook();
         if (e2 != null
                 && (!addressBook.contains(e2.getCreatorId())
@@ -173,19 +178,30 @@ public class HashgraphPicture extends JPanel {
     }
 
     private void drawEventCircle(
-            final Graphics g, final PlatformEvent event, final HashgraphPictureOptions options, final int d) {
+            final Graphics g, final EventImpl event, final HashgraphPictureOptions options, final int d) {
         final FontMetrics fm = g.getFontMetrics();
         final int fa = fm.getMaxAscent();
         final int fd = fm.getMaxDescent();
-        final PlatformEvent e2 = event.getOtherParent() != null
+        final EventImpl e2 = event.getOtherParent() != null
                         && hashgraphSource
                                 .getAddressBook()
                                 .contains(event.getOtherParent().getCreatorId())
                 ? event.getOtherParent()
                 : null;
-        final Color color = HashgraphGuiUtils.eventColor(event, options);
+        final Color color;
+        if (selector.isSelected(event)) {
+            color = Color.MAGENTA;
+        } else if (selector.isStronglySeen(event)) {
+            color = Color.CYAN;
+        } else {
+            color = HashgraphGuiUtils.eventColor(event, options);
+        }
         g.setColor(color);
-        g.fillOval(pictureMetadata.xpos(e2, event) - d / 2, pictureMetadata.ypos(event) - d / 2, d, d);
+
+        final int xPos = pictureMetadata.xpos(e2, event) - d / 2;
+        final int yPos = pictureMetadata.ypos(event) - d / 2;
+
+        g.fillOval(xPos, yPos, d, d);
         g.setFont(g.getFont().deriveFont(Font.BOLD));
 
         String s = "";
@@ -198,7 +214,7 @@ public class HashgraphPicture extends JPanel {
         }
         // if not consensus, then there's no order yet
         if (options.writeConsensusOrder() && event.isConsensus()) {
-            s += " " + event.getConsensusOrder();
+            s += " " + event.getBaseEvent().getConsensusOrder();
         }
         if (options.writeConsensusTimeStamp()) {
             final Instant t = event.getConsensusTimestamp();

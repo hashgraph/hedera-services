@@ -28,9 +28,12 @@ import static com.hedera.node.app.service.contract.impl.test.TestHelpers.CALLED_
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.VALID_CONTRACT_ADDRESS;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.asNumericContractId;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.assertFailsWith;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.notNull;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -40,9 +43,13 @@ import com.hedera.hapi.node.contract.ContractDeleteTransactionBody;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.handlers.ContractDeleteHandler;
-import com.hedera.node.app.service.contract.impl.records.ContractDeleteRecordBuilder;
+import com.hedera.node.app.service.contract.impl.records.ContractDeleteStreamBuilder;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.api.TokenServiceApi;
+import com.hedera.node.app.spi.fees.FeeCalculator;
+import com.hedera.node.app.spi.fees.FeeCalculatorFactory;
+import com.hedera.node.app.spi.fees.FeeContext;
+import com.hedera.node.app.spi.store.StoreFactory;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
@@ -61,13 +68,19 @@ class ContractDeleteHandlerTest {
     private PreHandleContext preHandleContext;
 
     @Mock
+    private StoreFactory storeFactory;
+
+    @Mock
     private TokenServiceApi tokenServiceApi;
 
     @Mock
     private ReadableAccountStore readableAccountStore;
 
     @Mock
-    private ContractDeleteRecordBuilder recordBuilder;
+    private ContractDeleteStreamBuilder recordBuilder;
+
+    @Mock
+    private HandleContext.SavepointStack stack;
 
     private final ContractDeleteHandler subject = new ContractDeleteHandler();
 
@@ -85,20 +98,19 @@ class ContractDeleteHandlerTest {
     }
 
     @Test
-    void preHandleRejectsPermanentRemoval() {
+    void pureChecksRejectsPermanentRemoval() {
         final var txn = TransactionBody.newBuilder()
                 .contractDeleteInstance(
                         ContractDeleteTransactionBody.newBuilder().permanentRemoval(true))
                 .build();
-        given(preHandleContext.body()).willReturn(txn);
-
-        final var ex = assertThrows(PreCheckException.class, () -> subject.preHandle(preHandleContext));
+        final var ex = assertThrows(PreCheckException.class, () -> subject.pureChecks(txn));
         assertEquals(PERMANENT_REMOVAL_REQUIRES_SYSTEM_INITIATION, ex.responseCode());
     }
 
     @Test
     void delegatesUsingObtainerAccountIfSet() {
-        given(context.readableStore(ReadableAccountStore.class)).willReturn(readableAccountStore);
+        given(context.storeFactory()).willReturn(storeFactory);
+        given(storeFactory.readableStore(ReadableAccountStore.class)).willReturn(readableAccountStore);
         given(readableAccountStore.getContractById(VALID_CONTRACT_ADDRESS)).willReturn(TBD_CONTRACT);
         given(readableAccountStore.getAccountById(CALLED_EOA_ID)).willReturn(OBTAINER_ACCOUNT);
         givenSuccessContextWith(deletion(VALID_CONTRACT_ADDRESS, CALLED_EOA_ID));
@@ -110,7 +122,8 @@ class ContractDeleteHandlerTest {
 
     @Test
     void delegatesUsingObtainerContractIfSet() {
-        given(context.readableStore(ReadableAccountStore.class)).willReturn(readableAccountStore);
+        given(context.storeFactory()).willReturn(storeFactory);
+        given(storeFactory.readableStore(ReadableAccountStore.class)).willReturn(readableAccountStore);
         given(readableAccountStore.getContractById(VALID_CONTRACT_ADDRESS)).willReturn(TBD_CONTRACT);
         given(readableAccountStore.getContractById(CALLED_CONTRACT_ID)).willReturn(OBTAINER_CONTRACT);
         givenSuccessContextWith(deletion(VALID_CONTRACT_ADDRESS, CALLED_CONTRACT_ID));
@@ -122,14 +135,17 @@ class ContractDeleteHandlerTest {
 
     @Test
     void failsWithoutObtainerSet() {
-        givenFailContextWith(missingObtainer(VALID_CONTRACT_ADDRESS));
-
-        assertFailsWith(OBTAINER_REQUIRED, () -> subject.handle(context));
+        final var txn = TransactionBody.newBuilder()
+                .contractDeleteInstance(missingObtainer(VALID_CONTRACT_ADDRESS))
+                .build();
+        final var ex = assertThrows(PreCheckException.class, () -> subject.pureChecks(txn));
+        assertEquals(OBTAINER_REQUIRED, ex.responseCode());
     }
 
     @Test
     void failsWithoutObtainerExtant() {
-        given(context.readableStore(ReadableAccountStore.class)).willReturn(readableAccountStore);
+        given(context.storeFactory()).willReturn(storeFactory);
+        given(storeFactory.readableStore(ReadableAccountStore.class)).willReturn(readableAccountStore);
         given(readableAccountStore.getContractById(VALID_CONTRACT_ADDRESS)).willReturn(TBD_CONTRACT);
         givenFailContextWith(deletion(VALID_CONTRACT_ADDRESS, CALLED_EOA_ID));
 
@@ -138,7 +154,8 @@ class ContractDeleteHandlerTest {
 
     @Test
     void failsWithInvalidContractId() {
-        given(context.readableStore(ReadableAccountStore.class)).willReturn(readableAccountStore);
+        given(context.storeFactory()).willReturn(storeFactory);
+        given(storeFactory.readableStore(ReadableAccountStore.class)).willReturn(readableAccountStore);
         final var deletedObtainer =
                 OBTAINER_ACCOUNT.copyBuilder().smartContract(true).deleted(true).build();
         given(readableAccountStore.getContractById(VALID_CONTRACT_ADDRESS)).willReturn(TBD_CONTRACT);
@@ -150,7 +167,8 @@ class ContractDeleteHandlerTest {
 
     @Test
     void failsWithObtainerDeleted() {
-        given(context.readableStore(ReadableAccountStore.class)).willReturn(readableAccountStore);
+        given(context.storeFactory()).willReturn(storeFactory);
+        given(storeFactory.readableStore(ReadableAccountStore.class)).willReturn(readableAccountStore);
         final var deletedObtainer = OBTAINER_ACCOUNT
                 .copyBuilder()
                 .smartContract(false)
@@ -165,6 +183,20 @@ class ContractDeleteHandlerTest {
 
     private ContractDeleteTransactionBody missingObtainer(final ContractID targetId) {
         return ContractDeleteTransactionBody.newBuilder().contractID(targetId).build();
+    }
+
+    @Test
+    void testCalculateFeesWithNoDeleteBody() {
+        final var txn = TransactionBody.newBuilder().build();
+        final var feeCtx = mock(FeeContext.class);
+        given(feeCtx.body()).willReturn(txn);
+
+        final var feeCalcFactory = mock(FeeCalculatorFactory.class);
+        final var feeCalc = mock(FeeCalculator.class);
+        given(feeCtx.feeCalculatorFactory()).willReturn(feeCalcFactory);
+        given(feeCalcFactory.feeCalculator(notNull())).willReturn(feeCalc);
+
+        assertDoesNotThrow(() -> subject.calculateFees(feeCtx));
     }
 
     private ContractDeleteTransactionBody deletion(final ContractID targetId, final ContractID transferId) {
@@ -191,8 +223,10 @@ class ContractDeleteHandlerTest {
         final var txn =
                 TransactionBody.newBuilder().contractDeleteInstance(body).build();
         given(context.body()).willReturn(txn);
-        given(context.serviceApi(TokenServiceApi.class)).willReturn(tokenServiceApi);
-        given(context.recordBuilder(ContractDeleteRecordBuilder.class)).willReturn(recordBuilder);
+        given(context.storeFactory()).willReturn(storeFactory);
+        given(storeFactory.serviceApi(TokenServiceApi.class)).willReturn(tokenServiceApi);
+        given(context.savepointStack()).willReturn(stack);
+        given(stack.getBaseBuilder(ContractDeleteStreamBuilder.class)).willReturn(recordBuilder);
     }
 
     private static final Account TBD_CONTRACT = Account.newBuilder()

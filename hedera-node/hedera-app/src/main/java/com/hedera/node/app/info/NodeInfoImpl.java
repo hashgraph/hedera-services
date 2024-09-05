@@ -16,14 +16,17 @@
 
 package com.hedera.node.app.info;
 
-import static com.hedera.node.app.spi.HapiUtils.parseAccount;
+import static com.hedera.hapi.util.HapiUtils.parseAccount;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
-import com.hedera.node.app.spi.info.NodeInfo;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.platform.system.address.Address;
+import com.swirlds.state.spi.info.NodeInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
+import java.security.cert.CertificateEncodingException;
 
 public record NodeInfoImpl(
         long nodeId,
@@ -31,18 +34,33 @@ public record NodeInfoImpl(
         long stake,
         @NonNull String externalHostName,
         int externalPort,
+        @NonNull String internalHostName,
+        int internalPort,
         @NonNull String hexEncodedPublicKey,
-        @NonNull String memo)
+        @NonNull String memo,
+        @Nullable Bytes sigCertBytes,
+        @NonNull String selfName)
         implements NodeInfo {
     @NonNull
-    static NodeInfo fromAddress(@NonNull final Address address) {
+    public static NodeInfo fromAddress(@NonNull final Address address) {
+        final var sigCert = address.getSigCert();
+        Bytes sigCertBytes;
+        try {
+            sigCertBytes = sigCert == null ? Bytes.EMPTY : Bytes.wrap(sigCert.getEncoded());
+        } catch (CertificateEncodingException e) {
+            sigCertBytes = Bytes.EMPTY;
+        }
         return new NodeInfoImpl(
                 address.getNodeId().id(),
                 parseAccount(address.getMemo()),
                 address.getWeight(),
                 requireNonNull(address.getHostnameExternal()),
                 address.getPortExternal(),
+                requireNonNull(address.getHostnameInternal()),
+                address.getPortInternal(),
                 CommonUtils.hex(requireNonNull(address.getSigPublicKey()).getEncoded()),
-                address.getMemo());
+                address.getMemo(),
+                sigCertBytes,
+                address.getSelfName());
     }
 }

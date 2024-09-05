@@ -217,6 +217,14 @@ public abstract class TaskScheduler<OUT> extends TaskSchedulerInput<OUT> {
     public abstract long getUnprocessedTaskCount();
 
     /**
+     * Get this task scheduler's desired maximum desired capacity. If {@link TaskSchedulerBuilder#UNLIMITED_CAPACITY} is
+     * returned, then this task scheduler does not have a maximum capacity.
+     *
+     * @return the maximum desired capacity of this task scheduler
+     */
+    public abstract long getCapacity();
+
+    /**
      * Flush all data in the task scheduler. Blocks until all data currently in flight has been processed.
      *
      * <p>

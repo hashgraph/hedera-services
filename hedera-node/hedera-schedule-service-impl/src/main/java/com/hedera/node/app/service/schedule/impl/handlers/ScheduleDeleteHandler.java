@@ -16,7 +16,7 @@
 
 package com.hedera.node.app.service.schedule.impl.handlers;
 
-import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
+import static com.hedera.node.app.hapi.utils.CommonPbjConverters.fromPbj;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
@@ -27,10 +27,11 @@ import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.scheduled.ScheduleDeleteTransactionBody;
 import com.hedera.hapi.node.state.schedule.Schedule;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.hapi.fees.usage.SigUsage;
 import com.hedera.node.app.hapi.fees.usage.schedule.ScheduleOpsUsage;
-import com.hedera.node.app.service.mono.fees.calculation.schedule.txns.ScheduleDeleteResourceUsage;
+import com.hedera.node.app.hapi.utils.fee.SigValueObj;
 import com.hedera.node.app.service.schedule.ReadableScheduleStore;
-import com.hedera.node.app.service.schedule.ScheduleRecordBuilder;
+import com.hedera.node.app.service.schedule.ScheduleStreamBuilder;
 import com.hedera.node.app.service.schedule.WritableScheduleStore;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
@@ -42,6 +43,7 @@ import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hedera.node.config.data.LedgerConfig;
 import com.hedera.node.config.data.SchedulingConfig;
+import com.hederahashgraph.api.proto.java.FeeData;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Objects;
@@ -53,10 +55,10 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class ScheduleDeleteHandler extends AbstractScheduleHandler implements TransactionHandler {
+    private final ScheduleOpsUsage scheduleOpsUsage = new ScheduleOpsUsage();
+
     @Inject
-    public ScheduleDeleteHandler() {
-        super();
-    }
+    public ScheduleDeleteHandler() {}
 
     @Override
     public void pureChecks(@Nullable final TransactionBody currentTransaction) throws PreCheckException {
@@ -107,7 +109,7 @@ public class ScheduleDeleteHandler extends AbstractScheduleHandler implements Tr
     @Override
     public void handle(@NonNull final HandleContext context) throws HandleException {
         Objects.requireNonNull(context, NULL_CONTEXT_MESSAGE);
-        final WritableScheduleStore scheduleStore = context.writableStore(WritableScheduleStore.class);
+        final WritableScheduleStore scheduleStore = context.storeFactory().writableStore(WritableScheduleStore.class);
         final TransactionBody currentTransaction = context.body();
         final SchedulingConfig schedulingConfig = context.configuration().getConfigData(SchedulingConfig.class);
         try {
@@ -118,11 +120,11 @@ public class ScheduleDeleteHandler extends AbstractScheduleHandler implements Tr
                 final Schedule scheduleData = reValidate(scheduleStore, isLongTermEnabled, idToDelete);
                 if (scheduleData.hasAdminKey()) {
                     final SignatureVerification verificationResult =
-                            context.verificationFor(scheduleData.adminKeyOrThrow());
+                            context.keyVerifier().verificationFor(scheduleData.adminKeyOrThrow());
                     if (verificationResult.passed()) {
                         scheduleStore.delete(idToDelete, context.consensusNow());
-                        final ScheduleRecordBuilder scheduleRecords =
-                                context.recordBuilder(ScheduleRecordBuilder.class);
+                        final ScheduleStreamBuilder scheduleRecords =
+                                context.savepointStack().getBaseBuilder(ScheduleStreamBuilder.class);
                         scheduleRecords.scheduleID(idToDelete);
                     } else {
                         throw new HandleException(ResponseCodeEnum.UNAUTHORIZED);
@@ -146,7 +148,7 @@ public class ScheduleDeleteHandler extends AbstractScheduleHandler implements Tr
      * @param scheduleStore a Readable source of Schedule data from state
      * @param isLongTermEnabled a flag indicating if long term scheduling is enabled in configuration.
      * @param idToDelete the Schedule ID of the item to mark as deleted.
-     * @return a schedule metadata read from state for the ID given, if all validation checks pass.
+     * @return a schedule metadata read from state for the ID given, if all validation checks pass
      * @throws HandleException if any validation check fails.
      */
     @NonNull
@@ -175,9 +177,10 @@ public class ScheduleDeleteHandler extends AbstractScheduleHandler implements Tr
         final var scheduleStore = feeContext.readableStore(ReadableScheduleStore.class);
         final var schedule = scheduleStore.get(op.scheduleDeleteOrThrow().scheduleIDOrThrow());
 
-        return feeContext.feeCalculator(SubType.DEFAULT).legacyCalculate(sigValueObj -> new ScheduleDeleteResourceUsage(
-                        new ScheduleOpsUsage(), null)
-                .usageGiven(
+        return feeContext
+                .feeCalculatorFactory()
+                .feeCalculator(SubType.DEFAULT)
+                .legacyCalculate(sigValueObj -> usageGiven(
                         fromPbj(op),
                         sigValueObj,
                         schedule,
@@ -185,5 +188,21 @@ public class ScheduleDeleteHandler extends AbstractScheduleHandler implements Tr
                                 .configuration()
                                 .getConfigData(LedgerConfig.class)
                                 .scheduleTxExpiryTimeSecs()));
+    }
+
+    private FeeData usageGiven(
+            final com.hederahashgraph.api.proto.java.TransactionBody txn,
+            final SigValueObj svo,
+            final Schedule schedule,
+            final long scheduledTxExpiryTimeSecs) {
+        final var sigUsage = new SigUsage(svo.getTotalSigCount(), svo.getSignatureSize(), svo.getPayerAcctSigCount());
+
+        if (schedule != null) {
+            return scheduleOpsUsage.scheduleDeleteUsage(txn, sigUsage, schedule.calculatedExpirationSecond());
+        } else {
+            final long latestExpiry =
+                    txn.getTransactionID().getTransactionValidStart().getSeconds() + scheduledTxExpiryTimeSecs;
+            return scheduleOpsUsage.scheduleDeleteUsage(txn, sigUsage, latestExpiry);
+        }
     }
 }

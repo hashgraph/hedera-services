@@ -16,13 +16,13 @@
 
 package com.hedera.services.yahcli.commands.keys;
 
+import static com.hedera.services.bdd.spec.keys.deterministic.Bip0039.randomMnemonic;
 import static com.hedera.services.bdd.spec.utilops.inventory.AccessoryUtils.setLogLevels;
 import static com.hedera.services.yahcli.config.ConfigUtils.YAHCLI_LOGGING_CLASSES;
 import static com.hedera.services.yahcli.output.CommonMessages.COMMON_MESSAGES;
 
 import com.hedera.node.app.hapi.utils.keys.Ed25519Utils;
 import com.hedera.services.bdd.spec.keys.deterministic.Bip0032;
-import com.hedera.services.bdd.spec.persistence.SpecKey;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.yahcli.config.ConfigUtils;
 import com.swirlds.common.utility.CommonUtils;
@@ -60,7 +60,7 @@ public class NewPemCommand implements Callable<Integer> {
             ConfigUtils.ensureDir(loc.substring(0, lastSepI));
         }
 
-        final var mnemonic = SpecKey.randomMnemonic();
+        final var mnemonic = randomMnemonic();
         final var seed = Bip0032.seedFrom(mnemonic);
         final var curvePoint = Bip0032.privateKeyFrom(seed);
         final EdDSAPrivateKey privateKey = Ed25519Utils.keyFrom(curvePoint);

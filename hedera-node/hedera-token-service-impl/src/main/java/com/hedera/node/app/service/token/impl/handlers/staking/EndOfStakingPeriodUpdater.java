@@ -17,18 +17,20 @@
 package com.hedera.node.app.service.token.impl.handlers.staking;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
-import static com.hedera.node.app.service.mono.utils.Units.HBARS_TO_TINYBARS;
+import static com.hedera.node.app.service.token.impl.TokenServiceImpl.HBARS_TO_TINYBARS;
 import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.asAccount;
 import static com.hedera.node.app.service.token.impl.handlers.staking.EndOfStakingPeriodUtils.calculateRewardSumHistory;
 import static com.hedera.node.app.service.token.impl.handlers.staking.EndOfStakingPeriodUtils.computeNextStake;
 import static com.hedera.node.app.service.token.impl.handlers.staking.EndOfStakingPeriodUtils.readableNonZeroHistory;
-import static com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder.transactionWith;
+import static com.hedera.node.app.spi.workflows.record.StreamBuilder.transactionWith;
+import static java.util.Objects.requireNonNull;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.hedera.hapi.node.base.Fraction;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.state.token.NetworkStakingRewards;
 import com.hedera.hapi.node.state.token.StakingNodeInfo;
+import com.hedera.hapi.node.transaction.ExchangeRateSet;
 import com.hedera.hapi.node.transaction.NodeStake;
 import com.hedera.hapi.node.transaction.NodeStakeUpdateTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
@@ -36,11 +38,13 @@ import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.ReadableNetworkStakingRewardsStore;
 import com.hedera.node.app.service.token.impl.WritableNetworkStakingRewardsStore;
 import com.hedera.node.app.service.token.impl.WritableStakingInfoStore;
-import com.hedera.node.app.service.token.records.NodeStakeUpdateRecordBuilder;
+import com.hedera.node.app.service.token.records.NodeStakeUpdateStreamBuilder;
 import com.hedera.node.app.service.token.records.TokenContext;
 import com.hedera.node.app.spi.numbers.HederaAccountNumbers;
+import com.hedera.node.app.spi.workflows.record.StreamBuilder;
 import com.hedera.node.config.data.StakingConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.math.MathContext;
@@ -58,6 +62,9 @@ import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+/**
+ * Updates the stake and reward values for all nodes at the end of a staking period.
+ */
 @Singleton
 public class EndOfStakingPeriodUpdater {
     private static final Logger log = LogManager.getLogger(EndOfStakingPeriodUpdater.class);
@@ -68,6 +75,12 @@ public class EndOfStakingPeriodUpdater {
     private final HederaAccountNumbers accountNumbers;
     private final StakingRewardsHelper stakeRewardsHelper;
 
+    /**
+     * Constructs an {@link EndOfStakingPeriodUpdater} instance.
+     *
+     * @param accountNumbers the account numbers
+     * @param stakeRewardsHelper the staking rewards helper
+     */
     @Inject
     public EndOfStakingPeriodUpdater(
             @NonNull final HederaAccountNumbers accountNumbers,
@@ -81,8 +94,12 @@ public class EndOfStakingPeriodUpdater {
      * at the end of a staking period. This method must be invoked during handling of a transaction
      *
      * @param context the context of the transaction used to end the staking period
+     * @param exchangeRates the active exchange rate set
      */
-    public void updateNodes(@NonNull final TokenContext context) {
+    public @Nullable StreamBuilder updateNodes(
+            @NonNull final TokenContext context, @NonNull final ExchangeRateSet exchangeRates) {
+        requireNonNull(context);
+        requireNonNull(exchangeRates);
         final var consensusTime = context.consensusTime();
         log.info("Updating node stakes for a just-finished period @ {}", consensusTime);
 
@@ -90,7 +107,7 @@ public class EndOfStakingPeriodUpdater {
         final var stakingConfig = context.configuration().getConfigData(StakingConfig.class);
         if (!stakingConfig.isEnabled()) {
             log.info("Staking not enabled, nothing to do");
-            return;
+            return null;
         }
 
         final ReadableAccountStore accountStore = context.readableStore(ReadableAccountStore.class);
@@ -98,7 +115,7 @@ public class EndOfStakingPeriodUpdater {
         final WritableNetworkStakingRewardsStore stakingRewardsStore =
                 context.writableStore(WritableNetworkStakingRewardsStore.class);
 
-        final var nodeIds = stakingInfoStore.getAll();
+        final var nodeIds = context.knownNodeIds();
         final var totalStakedRewardStart = stakingRewardsStore.totalStakeRewardStart();
         final var rewardRate = perHbarRewardRateForEndingPeriod(
                 totalStakedRewardStart, accountStore, stakingRewardsStore, stakingConfig);
@@ -107,7 +124,8 @@ public class EndOfStakingPeriodUpdater {
         // plus a boundary-case check for zero whole hbars staked
         final var perHbarRate = totalStakedRewardStart < HBARS_TO_TINYBARS ? 0 : rewardRate;
         log.info(
-                "The reward rate for the period was {} tb ({} tb/hbar for nodes with in-range stake, given {} total stake reward start)",
+                "The reward rate for the period was {} tb ({} tb/hbar for nodes with in-range stake, "
+                        + "given {} total stake reward start)",
                 rewardRate,
                 perHbarRate,
                 totalStakedRewardStart);
@@ -119,7 +137,7 @@ public class EndOfStakingPeriodUpdater {
         final Map<Long, StakingNodeInfo> updatedNodeInfos = new HashMap<>();
         final Map<Long, Long> newPendingRewardRates = new HashMap<>();
         for (final var nodeNum : nodeIds.stream().sorted().toList()) {
-            var currStakingInfo = stakingInfoStore.getForModify(nodeNum);
+            var currStakingInfo = requireNonNull(stakingInfoStore.getForModify(nodeNum));
 
             // The return value here includes both the new reward sum history, and the reward rate
             // (tinybars-per-hbar-staked-to-reward) that will be paid to all accounts who had staked-to-reward for this
@@ -136,7 +154,8 @@ public class EndOfStakingPeriodUpdater {
                     .rewardSumHistory(newRewardSumHistory.rewardSumHistory())
                     .build();
             log.info(
-                    "   > Non-zero reward sum history is now {}",
+                    "Non-zero reward sum history for node number {} is now {}",
+                    () -> nodeNum,
                     () -> readableNonZeroHistory(newRewardSumHistory.rewardSumHistory()));
 
             final var oldStakeRewardStart = currStakingInfo.stakeRewardStart();
@@ -246,20 +265,22 @@ public class EndOfStakingPeriodUpdater {
         // We don't want to fail adding the preceding child record for the node stake update that happens every
         // midnight. So, we add the preceding child record builder as unchecked, that doesn't fail with
         // MAX_CHILD_RECORDS_EXCEEDED
-        final var nodeStakeUpdateBuilder =
-                context.addUncheckedPrecedingChildRecordBuilder(NodeStakeUpdateRecordBuilder.class);
-        nodeStakeUpdateBuilder
+        return context.addPrecedingChildRecordBuilder(NodeStakeUpdateStreamBuilder.class)
                 .transaction(transactionWith(syntheticNodeStakeUpdateTxn.build()))
                 .memo("End of staking period calculation record")
+                .exchangeRate(exchangeRates)
                 .status(SUCCESS);
     }
 
     /**
-     * Scales up the weight of the node to the range [minStake, maxStakeOfAllNodes] from the consensus weight range [0, sumOfConsensusWeights].
+     * Scales up the weight of the node to the range [minStake, maxStakeOfAllNodes]
+     * from the consensus weight range [0, sumOfConsensusWeights].
      *
      * @param weight weight of the node
      * @param newMinStake min stake of the node
      * @param newMaxStake real max stake of all nodes computed by taking max(stakeOfNode1, stakeOfNode2, ...)
+     * @param totalStakeOfAllNodes total stake of all nodes at the start of new period
+     * @param sumOfConsensusWeights sum of consensus weights of all nodes
      * @return scaled weight of the node
      */
     @VisibleForTesting
@@ -277,7 +298,8 @@ public class EndOfStakingPeriodUpdater {
         if (totalStakeOfAllNodes == 0) {
             // This should never happen, but if it does, return zero
             log.warn(
-                    "Total stake of all nodes is 0, which shouldn't happen (weight={}, minStake={}, maxStake={}, sumOfConsensusWeights={})",
+                    "Total stake of all nodes is 0, which shouldn't happen "
+                            + "(weight={}, minStake={}, maxStake={}, sumOfConsensusWeights={})",
                     weight,
                     newMinStake,
                     newMaxStake,
@@ -306,12 +328,13 @@ public class EndOfStakingPeriodUpdater {
      * Calculates consensus weight of the node. The network normalizes the weights of nodes above minStake so that the
      * total sum of weight is approximately as described by {@code StakingConfig#sumOfConsensusWeights}.
      * The stake field in {@code StakingNodeInfo} is already clamped to [minStake, maxStake].
-     * If stake is less than minStake the weight of a node A will be 0. If stake is greater than minStake, the weight of a node A
-     * will be computed so that every node above minStake has weight at least 1; but any node that has staked at least 1
-     * out of every 250 whole hbars staked will have weight >= 2.
+     * If stake is less than minStake the weight of a node A will be 0. If stake is greater than minStake,
+     * the weight of a node A will be computed so that every node above minStake has weight at least 1;
+     * but any node that has staked at least 1 out of every 250 whole hbars staked will have weight >= 2.
      *
      * @param stake the stake of current node, includes stake rewarded and non-rewarded
      * @param totalStakeOfAllNodes the total stake of all nodes at the start of new period
+     * @param sumOfConsensusWeights the sum of consensus weights of all nodes
      * @return calculated consensus weight of the node
      */
     @VisibleForTesting
@@ -333,9 +356,14 @@ public class EndOfStakingPeriodUpdater {
         return (int) Math.max(weight, 1);
     }
 
+    /**
+     * Returns the timestamp that is just before midnight of the day of the given consensus time.
+     *
+     * @param consensusTime the consensus time
+     * @return the timestamp that is just before midnight of the day of the given consensus time
+     */
     @VisibleForTesting
-    public static com.hedera.hapi.node.base.Timestamp lastInstantOfPreviousPeriodFor(
-            @NonNull final Instant consensusTime) {
+    public static Timestamp lastInstantOfPreviousPeriodFor(@NonNull final Instant consensusTime) {
         final var justBeforeMidNightTime = LocalDate.ofInstant(consensusTime, ZoneId.of("UTC"))
                 .atStartOfDay()
                 .minusNanos(1); // give out the timestamp that is just before midnight
@@ -414,8 +442,7 @@ public class EndOfStakingPeriodUpdater {
     }
 
     private long getRewardsBalance(@NonNull final ReadableAccountStore accountStore) {
-        return accountStore
-                .getAccountById(asAccount(accountNumbers.stakingRewardAccount()))
+        return requireNonNull(accountStore.getAccountById(asAccount(accountNumbers.stakingRewardAccount())))
                 .tinybarBalance();
     }
 
@@ -455,9 +482,9 @@ public class EndOfStakingPeriodUpdater {
      * @return the transaction builder with the {@code NodeStakeUpdateTransactionBody} set
      */
     private static TransactionBody.Builder newNodeStakeUpdateBuilder(
-            final com.hedera.hapi.node.base.Timestamp stakingPeriodEnd,
-            final List<NodeStake> nodeStakes,
-            final StakingConfig stakingConfig,
+            final Timestamp stakingPeriodEnd,
+            @NonNull final List<NodeStake> nodeStakes,
+            @NonNull final StakingConfig stakingConfig,
             final long totalStakedRewardStart,
             final long maxPerHbarRewardRate,
             final long reservedStakingRewards,
@@ -468,7 +495,7 @@ public class EndOfStakingPeriodUpdater {
         final var stakingPeriod = stakingConfig.periodMins();
         final var stakingPeriodsStored = stakingConfig.rewardHistoryNumStoredPeriods();
 
-        final var nodeRewardFeeFraction = com.hedera.hapi.node.base.Fraction.newBuilder()
+        final var nodeRewardFeeFraction = Fraction.newBuilder()
                 .numerator(stakingConfig.feesNodeRewardPercentage())
                 .denominator(100L)
                 .build();
@@ -497,6 +524,8 @@ public class EndOfStakingPeriodUpdater {
                 .maxStakeRewarded(maxStakeRewarded)
                 .build();
 
-        return TransactionBody.newBuilder().nodeStakeUpdate(txnBody);
+        return TransactionBody.newBuilder()
+                .memo("End of staking period calculation record")
+                .nodeStakeUpdate(txnBody);
     }
 }

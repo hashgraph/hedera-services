@@ -49,6 +49,9 @@ import static com.hedera.hapi.node.base.HederaFunctionality.FREEZE;
 import static com.hedera.hapi.node.base.HederaFunctionality.GET_ACCOUNT_DETAILS;
 import static com.hedera.hapi.node.base.HederaFunctionality.GET_VERSION_INFO;
 import static com.hedera.hapi.node.base.HederaFunctionality.NETWORK_GET_EXECUTION_TIME;
+import static com.hedera.hapi.node.base.HederaFunctionality.NODE_CREATE;
+import static com.hedera.hapi.node.base.HederaFunctionality.NODE_DELETE;
+import static com.hedera.hapi.node.base.HederaFunctionality.NODE_UPDATE;
 import static com.hedera.hapi.node.base.HederaFunctionality.SCHEDULE_CREATE;
 import static com.hedera.hapi.node.base.HederaFunctionality.SCHEDULE_DELETE;
 import static com.hedera.hapi.node.base.HederaFunctionality.SCHEDULE_GET_INFO;
@@ -56,8 +59,11 @@ import static com.hedera.hapi.node.base.HederaFunctionality.SCHEDULE_SIGN;
 import static com.hedera.hapi.node.base.HederaFunctionality.SYSTEM_DELETE;
 import static com.hedera.hapi.node.base.HederaFunctionality.SYSTEM_UNDELETE;
 import static com.hedera.hapi.node.base.HederaFunctionality.TOKEN_ACCOUNT_WIPE;
+import static com.hedera.hapi.node.base.HederaFunctionality.TOKEN_AIRDROP;
 import static com.hedera.hapi.node.base.HederaFunctionality.TOKEN_ASSOCIATE_TO_ACCOUNT;
 import static com.hedera.hapi.node.base.HederaFunctionality.TOKEN_BURN;
+import static com.hedera.hapi.node.base.HederaFunctionality.TOKEN_CANCEL_AIRDROP;
+import static com.hedera.hapi.node.base.HederaFunctionality.TOKEN_CLAIM_AIRDROP;
 import static com.hedera.hapi.node.base.HederaFunctionality.TOKEN_CREATE;
 import static com.hedera.hapi.node.base.HederaFunctionality.TOKEN_DELETE;
 import static com.hedera.hapi.node.base.HederaFunctionality.TOKEN_DISSOCIATE_FROM_ACCOUNT;
@@ -70,6 +76,7 @@ import static com.hedera.hapi.node.base.HederaFunctionality.TOKEN_GET_NFT_INFOS;
 import static com.hedera.hapi.node.base.HederaFunctionality.TOKEN_GRANT_KYC_TO_ACCOUNT;
 import static com.hedera.hapi.node.base.HederaFunctionality.TOKEN_MINT;
 import static com.hedera.hapi.node.base.HederaFunctionality.TOKEN_PAUSE;
+import static com.hedera.hapi.node.base.HederaFunctionality.TOKEN_REJECT;
 import static com.hedera.hapi.node.base.HederaFunctionality.TOKEN_REVOKE_KYC_FROM_ACCOUNT;
 import static com.hedera.hapi.node.base.HederaFunctionality.TOKEN_UNFREEZE_ACCOUNT;
 import static com.hedera.hapi.node.base.HederaFunctionality.TOKEN_UNPAUSE;
@@ -81,7 +88,7 @@ import static com.hedera.hapi.node.base.HederaFunctionality.TRANSACTION_GET_RECO
 import static com.hedera.hapi.node.base.HederaFunctionality.UTIL_PRNG;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
-import com.hedera.node.app.service.mono.context.domain.security.PermissionedAccountsRange;
+import com.hedera.node.config.types.PermissionedAccountsRange;
 import com.swirlds.config.api.ConfigData;
 import com.swirlds.config.api.ConfigProperty;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -172,6 +179,14 @@ import java.util.function.Function;
  * @param freeze                     the permission for {@link HederaFunctionality#FREEZE} functionality
  * @param getAccountDetails          the permission for {@link HederaFunctionality#GET_ACCOUNT_DETAILS} functionality
  * @param tokenUpdateNfts            the permission for {@link HederaFunctionality#TOKEN_UPDATE_NFTS} functionality
+ * @param tokenReject                the permission for {@link HederaFunctionality#TOKEN_REJECT} functionality
+ * @param tokenAirdrop               the permission for {@link HederaFunctionality#TOKEN_AIRDROP} functionality
+ * @param tokenCancelAirdrop         the permission for {@link HederaFunctionality#TOKEN_CANCEL_AIRDROP} functionality
+ * @param tokenClaimAirdrop          the permission for {@link HederaFunctionality#TOKEN_CLAIM_AIRDROP} functionality
+ *
+ * @param createNode                   the permission for {@link HederaFunctionality#NODE_CREATE} functionality
+ * @param updateNode                   the permission for {@link HederaFunctionality#NODE_UPDATE} functionality
+ * @param deleteNode                   the permission for {@link HederaFunctionality#NODE_DELETE} functionality
  */
 @ConfigData
 public record ApiPermissionConfig(
@@ -237,7 +252,14 @@ public record ApiPermissionConfig(
         @ConfigProperty(defaultValue = "2-60") PermissionedAccountsRange systemUndelete,
         @ConfigProperty(defaultValue = "2-58") PermissionedAccountsRange freeze,
         @ConfigProperty(defaultValue = "2-50") PermissionedAccountsRange getAccountDetails,
-        @ConfigProperty(defaultValue = "0-*") PermissionedAccountsRange tokenUpdateNfts) {
+        @ConfigProperty(defaultValue = "0-*") PermissionedAccountsRange tokenUpdateNfts,
+        @ConfigProperty(defaultValue = "0-*") PermissionedAccountsRange tokenReject,
+        @ConfigProperty(defaultValue = "0-*") PermissionedAccountsRange tokenAirdrop,
+        @ConfigProperty(defaultValue = "0-*") PermissionedAccountsRange tokenCancelAirdrop,
+        @ConfigProperty(defaultValue = "0-*") PermissionedAccountsRange tokenClaimAirdrop,
+        @ConfigProperty(defaultValue = "2-55") PermissionedAccountsRange createNode,
+        @ConfigProperty(defaultValue = "0-*") PermissionedAccountsRange updateNode,
+        @ConfigProperty(defaultValue = "2-55") PermissionedAccountsRange deleteNode) {
 
     private static final EnumMap<HederaFunctionality, Function<ApiPermissionConfig, PermissionedAccountsRange>>
             permissionKeys = new EnumMap<>(HederaFunctionality.class);
@@ -284,6 +306,10 @@ public record ApiPermissionConfig(
         permissionKeys.put(SCHEDULE_DELETE, c -> c.scheduleDelete);
         permissionKeys.put(SCHEDULE_SIGN, c -> c.scheduleSign);
         permissionKeys.put(TOKEN_UPDATE_NFTS, c -> c.tokenUpdateNfts);
+        permissionKeys.put(TOKEN_REJECT, c -> c.tokenReject);
+        permissionKeys.put(TOKEN_AIRDROP, c -> c.tokenAirdrop);
+        permissionKeys.put(TOKEN_CANCEL_AIRDROP, c -> c.tokenCancelAirdrop);
+        permissionKeys.put(TOKEN_CLAIM_AIRDROP, c -> c.tokenClaimAirdrop);
         /* Queries */
         permissionKeys.put(CONSENSUS_GET_TOPIC_INFO, c -> c.getTopicInfo);
         permissionKeys.put(CONTRACT_CALL_LOCAL, c -> c.contractCallLocalMethod);
@@ -308,6 +334,9 @@ public record ApiPermissionConfig(
         permissionKeys.put(TOKEN_GET_ACCOUNT_NFT_INFOS, c -> c.tokenGetAccountNftInfos);
         permissionKeys.put(TOKEN_FEE_SCHEDULE_UPDATE, c -> c.tokenFeeScheduleUpdate);
         permissionKeys.put(UTIL_PRNG, c -> c.utilPrng);
+        permissionKeys.put(NODE_CREATE, c -> c.createNode);
+        permissionKeys.put(NODE_UPDATE, c -> c.updateNode);
+        permissionKeys.put(NODE_DELETE, c -> c.deleteNode);
     }
 
     /**

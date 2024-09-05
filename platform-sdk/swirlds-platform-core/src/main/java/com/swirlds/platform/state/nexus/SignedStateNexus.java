@@ -17,6 +17,7 @@
 package com.swirlds.platform.state.nexus;
 
 import com.swirlds.common.utility.Clearable;
+import com.swirlds.common.wiring.component.SchedulerLabel;
 import com.swirlds.platform.consensus.ConsensusConstants;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -25,6 +26,7 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 /**
  * A thread-safe container that also manages reservations for a single signed state.
  */
+@SchedulerLabel("LatestImmutableStateNexus")
 public interface SignedStateNexus extends Clearable {
     /**
      * Returns the current signed state and reserves it. If the current signed state is null, or cannot be reserved,

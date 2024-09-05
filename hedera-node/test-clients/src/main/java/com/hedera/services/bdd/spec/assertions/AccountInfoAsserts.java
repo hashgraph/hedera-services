@@ -19,6 +19,7 @@ package com.hedera.services.bdd.spec.assertions;
 import static com.hedera.services.bdd.suites.HapiSuite.EMPTY_KEY;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
 import static com.hederahashgraph.api.proto.java.CryptoGetInfoResponse.AccountInfo;
+import static java.util.Objects.requireNonNull;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -31,6 +32,7 @@ import com.hedera.services.bdd.spec.queries.crypto.ExpectedTokenRel;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.swirlds.common.utility.CommonUtils;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
@@ -93,14 +95,6 @@ public class AccountInfoAsserts extends BaseErroringAssertsProvider<AccountInfo>
         return this;
     }
 
-    public AccountInfoAsserts hasDefaultKey() {
-        registerProvider((spec, o) -> assertEquals(
-                ((AccountInfo) o).getKey(),
-                com.hederahashgraph.api.proto.java.Key.getDefaultInstance(),
-                "Has non-default key!"));
-        return this;
-    }
-
     public AccountInfoAsserts noStakedAccountId() {
         registerProvider((spec, o) -> assertEquals(
                 AccountID.getDefaultInstance(),
@@ -139,17 +133,13 @@ public class AccountInfoAsserts extends BaseErroringAssertsProvider<AccountInfo>
         return this;
     }
 
-    public AccountInfoAsserts solidityId(String cid) {
-        registerProvider((spec, o) -> {
-            AccountID id = spec.registry().getAccountID(cid);
-            final var solidityId = HapiPropertySource.asHexedSolidityAddress(id);
-            assertEquals(solidityId, ((AccountInfo) o).getContractAccountID(), "Bad Solidity contract Id!");
-        });
+    public AccountInfoAsserts hasEmptyKey() {
+        registerProvider((spec, o) -> assertEquals(EMPTY_KEY, ((AccountInfo) o).getKey(), "Has non-empty key!"));
         return this;
     }
 
-    public AccountInfoAsserts hasEmptyKey() {
-        registerProvider((spec, o) -> assertEquals(EMPTY_KEY, ((AccountInfo) o).getKey(), "Has non-empty key!"));
+    public AccountInfoAsserts hasNonEmptyKey() {
+        registerProvider((spec, o) -> assertNotEquals(EMPTY_KEY, ((AccountInfo) o).getKey(), "Has empty key!"));
         return this;
     }
 
@@ -215,20 +205,6 @@ public class AccountInfoAsserts extends BaseErroringAssertsProvider<AccountInfo>
                     errorMsgIfOutsideTolerance);
         });
         return this;
-    }
-
-    public static void assertTinybarAmountIsApproxUsd(
-            final HapiSpec spec,
-            final double expectedFractionalUsd,
-            final long actualTinybars,
-            final double allowedPercentDiff) {
-        final var expectedTinybars = expectedFractionalUsd
-                * 100
-                * spec.ratesProvider().rates().getHbarEquiv()
-                / spec.ratesProvider().rates().getCentEquiv()
-                * ONE_HBAR;
-        final var allowedDiff = (allowedPercentDiff / 100.0) * expectedTinybars;
-        assertEquals(expectedTinybars, actualTinybars, allowedDiff, "Wrong balance");
     }
 
     public AccountInfoAsserts hasAlias() {
@@ -325,16 +301,26 @@ public class AccountInfoAsserts extends BaseErroringAssertsProvider<AccountInfo>
         };
     }
 
-    public AccountInfoAsserts sendThreshold(long amount) {
-        registerProvider((spec, o) ->
-                assertEquals(amount, ((AccountInfo) o).getGenerateSendRecordThreshold(), "Bad send threshold!"));
-        return this;
-    }
-
-    public AccountInfoAsserts receiveThreshold(long amount) {
-        registerProvider((spec, o) ->
-                assertEquals(amount, ((AccountInfo) o).getGenerateReceiveRecordThreshold(), "Bad receive threshold!"));
-        return this;
+    /**
+     * Returns a factory that creates a matcher that will return an appropriate error message when an account's
+     * balance did not decrease from the balance captured by the given snapshot.
+     *
+     * @param snapshot the name of the snapshot
+     * @return the factory
+     */
+    public static Function<HapiSpec, Function<Long, Optional<String>>> reducedFromSnapshot(
+            @NonNull final String snapshot) {
+        requireNonNull(snapshot);
+        return spec -> actual -> {
+            final var snapshotBalance = spec.registry().getBalanceSnapshot(snapshot);
+            final var balanceChangeSinceSnapshot = actual - snapshotBalance;
+            if (balanceChangeSinceSnapshot < 0) {
+                return Optional.empty();
+            } else {
+                return Optional.of(
+                        String.format("Expected balance to decrease, but went from %d to %d", snapshotBalance, actual));
+            }
+        };
     }
 
     public AccountInfoAsserts expiry(long approxTime, long epsilon) {

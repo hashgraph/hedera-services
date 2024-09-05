@@ -31,7 +31,7 @@ import java.util.Map;
  * The resolutions are needed in further steps to is IDs instead of aliases.
  * It also has helper function to create accounts from alias.
  * This class stores all the needed information that is shared between steps in handling a CryptoTransfer transaction.
- * The lifecycle of this clas is the same as the lifecycle of a CryptoTransfer transaction.
+ * The lifecycle of this class is the same as the lifecycle of a CryptoTransfer transaction.
  */
 public interface TransferContext {
     /**
@@ -44,34 +44,41 @@ public interface TransferContext {
 
     /**
      * Creates an account from the given alias. This is called when the account associated with alias
-     * is not found in the account store
+     * is not found in the account store.
      *
      * @param alias                  the alias of the account
-     * @param reqMaxAutoAssociations
+     * @param reqMaxAutoAssociations the maximum number of auto-associations allowed for the account
      */
     void createFromAlias(Bytes alias, int reqMaxAutoAssociations);
 
     /**
-     * Returns the number of auto-creation of accounts in current transfer
+     * Returns the number of auto-creation of accounts in current transfer.
      * @return the number of auto-creation of accounts
      */
     int numOfAutoCreations();
 
     /**
-     * Returns the number of lazy-creation of accounts in current transfer
+     * Returns the number of lazy-creation of accounts in current transfer.
      * @return the number of lazy-creation of accounts
      */
     int numOfLazyCreations();
 
     /**
-     * Returns the resolved accounts with alias and its account ID
+     * Returns the resolved accounts with alias and its account ID.
      * @return the resolved accounts with alias and its account ID
      */
     Map<Bytes, AccountID> resolutions();
 
-    // Throw if the fee cannot be charged for whatever reason
+    /**
+     * Charges extra fee to the HAPI payer account in the current transfer context with the given amount.
+     * @param amount the amount to charge
+     */
     void chargeExtraFeeToHapiPayer(long amount);
 
+    /**
+     * Returns the handle context of the current transfer context.
+     * @return the handle context of the current transfer context
+     */
     HandleContext getHandleContext();
 
     /* ------------------- Needed for building records ------------------- */
@@ -112,8 +119,7 @@ public interface TransferContext {
 
     /**
      * Validates hbar allowances for the top-level operation in this transfer context.
-     *
-     * <p> (FUTURE) Remove this, only needed for diff testing and has no logical priority.
      */
+    // @Future Remove this, only needed for diff testing and has no logical priority.
     void validateHbarAllowances();
 }

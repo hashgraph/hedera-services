@@ -30,6 +30,8 @@ import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.AssessedCustomFee;
 import com.hederahashgraph.api.proto.java.ContractID;
+import com.hederahashgraph.api.proto.java.PendingAirdropId;
+import com.hederahashgraph.api.proto.java.PendingAirdropRecord;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenAssociation;
@@ -39,8 +41,10 @@ import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.lang.reflect.Method;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -112,6 +116,75 @@ public class TransactionRecordAsserts extends BaseErroringAssertsProvider<Transa
         return this;
     }
 
+    public static ErroringAssertsProvider<List<PendingAirdropRecord>> includingFungiblePendingAirdrop(
+            final TokenMovement... movements) {
+        var listOfMovements = List.of(movements);
+        return includingPendingAirdrop(listOfMovements, true);
+    }
+
+    public static ErroringAssertsProvider<List<PendingAirdropRecord>> includingNftPendingAirdrop(
+            final TokenMovement... movements) {
+        var listOfMovements = List.of(movements);
+        return includingPendingAirdrop(listOfMovements, false);
+    }
+
+    private static ErroringAssertsProvider<List<PendingAirdropRecord>> includingPendingAirdrop(
+            final List<TokenMovement> movements, final boolean fungible) {
+
+        return spec -> {
+            // convert movements to pending airdrop records
+            List<PendingAirdropRecord> expectedRecords = new ArrayList<>();
+            movements.forEach(tokenMovement -> {
+                if (fungible) {
+                    var pendingAirdropRecords = tokenMovement.specializedForPendingAirdrop(spec);
+                    if (!pendingAirdropRecords.isEmpty()) {
+                        expectedRecords.addAll(pendingAirdropRecords);
+                    }
+                } else {
+                    var pendingAirdropRecords = tokenMovement.specializedForNftPendingAirdop(spec);
+                    if (!pendingAirdropRecords.isEmpty()) {
+                        expectedRecords.addAll(pendingAirdropRecords);
+                    }
+                }
+            });
+            return (ErroringAsserts<List<PendingAirdropRecord>>) allPendingAirdrops -> {
+                List<Throwable> errs = Collections.emptyList();
+                AtomicBoolean found = new AtomicBoolean(true);
+                try {
+                    expectedRecords.stream().takeWhile(n -> found.get()).forEach(record -> {
+                        if (!allPendingAirdrops.contains(record)) {
+                            found.set(false);
+                        }
+                    });
+                    if (!found.get()) {
+                        Assertions.fail("Expected pending airdrops " + expectedRecords + " but not present in "
+                                + allPendingAirdrops);
+                    }
+                } catch (Throwable t) {
+                    errs = List.of(t);
+                }
+                return errs;
+            };
+        };
+    }
+
+    public TransactionRecordAsserts pendingAirdrops(ErroringAssertsProvider<List<PendingAirdropRecord>> provider) {
+        registerTypedProvider("newPendingAirdropsList", provider);
+        return this;
+    }
+
+    public TransactionRecordAsserts pendingAirdropsCount(final int n) {
+        this.<List<PendingAirdropId>>registerTypedProvider("newPendingAirdropsList", spec -> pendingAirdrops -> {
+            try {
+                assertEquals(n, pendingAirdrops.size(), "Wrong # of pending airdrops");
+            } catch (Throwable t) {
+                return List.of(t);
+            }
+            return EMPTY_LIST;
+        });
+        return this;
+    }
+
     public TransactionRecordAsserts txnId(String expectedTxn) {
         this.<TransactionID>registerTypedProvider("transactionID", spec -> txnId -> {
             try {
@@ -124,7 +197,7 @@ public class TransactionRecordAsserts extends BaseErroringAssertsProvider<Transa
         return this;
     }
 
-    public TransactionRecordAsserts consensusTimeImpliedByNonce(final Timestamp parentTime, final int nonce) {
+    public TransactionRecordAsserts consensusTimeImpliedByOffset(final Timestamp parentTime, final int nonce) {
         this.<Timestamp>registerTypedProvider("consensusTimestamp", spec -> actualTime -> {
             try {
                 final var expectedTime = parentTime.toBuilder()
@@ -355,6 +428,19 @@ public class TransactionRecordAsserts extends BaseErroringAssertsProvider<Transa
 
     public TransactionRecordAsserts autoAssociated(ErroringAssertsProvider<List<TokenAssociation>> provider) {
         registerTypedProvider("automaticTokenAssociationsList", provider);
+        return this;
+    }
+
+    public TransactionRecordAsserts autoAssociationCount(int autoAssociations) {
+        this.<List<TokenAssociation>>registerTypedProvider("automaticTokenAssociationsList", spec -> associations -> {
+            try {
+                assertEquals(
+                        autoAssociations, associations.size(), "Wrong # of automatic associations: " + associations);
+            } catch (Throwable t) {
+                return List.of(t);
+            }
+            return EMPTY_LIST;
+        });
         return this;
     }
 

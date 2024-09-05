@@ -23,7 +23,6 @@ import static com.hedera.services.bdd.suites.utils.ZipUtil.createZip;
 
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.hapi.utils.CommonUtils;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiSuite;
 import java.io.File;
@@ -33,15 +32,20 @@ import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Stream;
 import org.apache.commons.io.FileUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.DynamicTest;
 
+/**
+ * (FUTURE) Integrate this function to CI in some form?
+ */
 public class UpdateServerFiles extends HapiSuite {
     private static final Logger log = LogManager.getLogger(UpdateServerFiles.class);
     private static final String zipFile = "Archive.zip";
-    private static final String DEFAULT_SCRIPT = "src/main/resource/testfiles/updateFeature/updateSettings/exec.sh";
+    private static final String DEFAULT_SCRIPT = "src/main/resources/testfiles/updateFeature/updateSettings/exec.sh";
 
     private static String uploadPath = "updateFiles/";
 
@@ -66,17 +70,17 @@ public class UpdateServerFiles extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return allOf(postiveTests());
     }
 
-    private List<HapiSpec> postiveTests() {
+    private List<Stream<DynamicTest>> postiveTests() {
         return Arrays.asList(uploadGivenDirectory());
     }
 
     // Zip all files under target directory and add an unzip and launch script to it
     // then send to server to update server
-    final HapiSpec uploadGivenDirectory() {
+    final Stream<DynamicTest> uploadGivenDirectory() {
 
         log.info("Creating zip file from {}", uploadPath);
         // create directory if uploadPath doesn't exist

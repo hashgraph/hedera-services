@@ -16,135 +16,207 @@
 
 package com.hedera.node.app.fixtures.state;
 
-import static com.hedera.node.app.spi.fixtures.state.TestSchema.CURRENT_VERSION;
+import static com.hedera.node.app.state.merkle.SchemaApplicationType.MIGRATION;
+import static com.hedera.node.app.state.merkle.SchemaApplicationType.RESTART;
+import static com.hedera.node.app.state.merkle.SchemaApplicationType.STATE_DEFINITIONS;
+import static com.swirlds.platform.test.fixtures.state.TestSchema.CURRENT_VERSION;
+import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.SemanticVersion;
-import com.hedera.node.app.spi.fixtures.state.ListWritableQueueState;
-import com.hedera.node.app.spi.fixtures.state.MapWritableKVState;
+import com.hedera.hapi.util.HapiUtils;
 import com.hedera.node.app.spi.fixtures.state.MapWritableStates;
-import com.hedera.node.app.spi.fixtures.state.NoOpGenesisRecordsBuilder;
-import com.hedera.node.app.spi.info.NetworkInfo;
-import com.hedera.node.app.spi.state.EmptyReadableStates;
-import com.hedera.node.app.spi.state.MigrationContext;
-import com.hedera.node.app.spi.state.ReadableStates;
-import com.hedera.node.app.spi.state.Schema;
-import com.hedera.node.app.spi.state.SchemaRegistry;
-import com.hedera.node.app.spi.state.WritableSingletonStateBase;
-import com.hedera.node.app.spi.state.WritableStates;
-import com.hedera.node.app.spi.workflows.record.GenesisRecordsBuilder;
+import com.hedera.node.app.spi.state.FilteredReadableStates;
+import com.hedera.node.app.spi.state.FilteredWritableStates;
+import com.hedera.node.app.state.merkle.SchemaApplications;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
+import com.swirlds.state.spi.MigrationContext;
+import com.swirlds.state.spi.ReadableStates;
+import com.swirlds.state.spi.Schema;
+import com.swirlds.state.spi.SchemaRegistry;
+import com.swirlds.state.spi.WritableStates;
+import com.swirlds.state.spi.info.NetworkInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.SortedSet;
+import java.util.TreeSet;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 public class FakeSchemaRegistry implements SchemaRegistry {
+    private static final Logger logger = LogManager.getLogger(FakeSchemaRegistry.class);
+    private final SchemaApplications schemaApplications = new SchemaApplications();
 
-    private final List<Schema> schemas = new LinkedList<>();
+    /**
+     * The ordered set of all schemas registered by the service
+     */
+    private final SortedSet<Schema> schemas = new TreeSet<>();
+
+    @Override
+    public SchemaRegistry register(@NonNull final Schema schema) {
+        requireNonNull(schema);
+        schemas.add(schema);
+        return this;
+    }
 
     @SuppressWarnings("rawtypes")
     public void migrate(
+            @NonNull final String serviceName, @NonNull final FakeState state, @NonNull final NetworkInfo networkInfo) {
+        migrate(
+                serviceName,
+                state,
+                CURRENT_VERSION,
+                networkInfo,
+                ConfigurationBuilder.create().build(),
+                new HashMap<>(),
+                new AtomicLong());
+    }
+
+    public void migrate(
             @NonNull final String serviceName,
-            @NonNull final FakeHederaState state,
-            @NonNull final NetworkInfo networkInfo) {
+            @NonNull final FakeState state,
+            @Nullable final SemanticVersion previousVersion,
+            @NonNull final NetworkInfo networkInfo,
+            @NonNull final Configuration config,
+            @NonNull final Map<String, Object> sharedValues,
+            @NonNull final AtomicLong nextEntityNum) {
+        if (schemas.isEmpty()) {
+            logger.info("Service {} does not use state", serviceName);
+            return;
+        }
         // For each schema, create the underlying raw data sources (maps, or lists) and the writable states that
         // will wrap them. Then call the schema's migrate method to populate those states, and commit each of them
         // to the underlying data sources. At that point, we have properly migrated the state.
+        final var latestVersion = schemas.getLast().getVersion();
+        logger.info(
+                "Applying {} schemas for service {} and latest service schema version {}",
+                schemas::size,
+                () -> serviceName,
+                () -> HapiUtils.toString(latestVersion));
         for (final var schema : schemas) {
-            // Collect the data sources and the writable states
-            final var dataSources = new HashMap<String, Object>();
-            final var writables = new HashMap<String, Object>();
-            for (final var sd : schema.statesToCreate()) {
-                if (sd.queue()) {
-                    final var dataSource = new LinkedList<>();
-                    dataSources.put(sd.stateKey(), dataSource);
-                    writables.put(sd.stateKey(), new ListWritableQueueState<>(sd.stateKey(), dataSource));
-                } else if (sd.singleton()) {
-                    final var dataSource = new AtomicReference();
-                    dataSources.put(sd.stateKey(), dataSource);
-                    writables.put(
-                            sd.stateKey(),
-                            new WritableSingletonStateBase<>(sd.stateKey(), dataSource::get, dataSource::set));
-                } else {
-                    final var dataSource = new HashMap<String, Object>();
-                    dataSources.put(sd.stateKey(), dataSource);
-                    writables.put(sd.stateKey(), new MapWritableKVState<>(sd.stateKey(), dataSource));
-                }
+            final var applications =
+                    schemaApplications.computeApplications(previousVersion, latestVersion, schema, config);
+            logger.info("Applying {} schema {} ({})", serviceName, schema.getVersion(), applications);
+            final var readableStates = state.getReadableStates(serviceName);
+            final var previousStates = new FilteredReadableStates(readableStates, readableStates.stateKeys());
+            final WritableStates writableStates;
+            final WritableStates newStates;
+            if (applications.contains(STATE_DEFINITIONS)) {
+                final var redefinedWritableStates = applyStateDefinitions(serviceName, schema, config, state);
+                writableStates = redefinedWritableStates.beforeStates();
+                newStates = redefinedWritableStates.afterStates();
+            } else {
+                newStates = writableStates = state.getWritableStates(serviceName);
             }
-
-            // Run the migration which will populate the writable states
-            final var previousStates = new EmptyReadableStates();
-            final var writableStates = new MapWritableStates(writables);
-            schema.migrate(new MigrationContext() {
-                @Override
-                public void copyAndReleaseOnDiskState(String stateKey) {
-                    // No-op
-                }
-
-                @Override
-                public SemanticVersion previousVersion() {
-                    return CURRENT_VERSION;
-                }
-
-                @NonNull
-                @Override
-                public ReadableStates previousStates() {
-                    return previousStates;
-                }
-
-                @NonNull
-                @Override
-                public WritableStates newStates() {
-                    return writableStates;
-                }
-
-                @NonNull
-                @Override
-                public Configuration configuration() {
-                    return ConfigurationBuilder.create().build();
-                }
-
-                @NonNull
-                @Override
-                public GenesisRecordsBuilder genesisRecordsBuilder() {
-                    return new NoOpGenesisRecordsBuilder();
-                }
-
-                @Override
-                public NetworkInfo networkInfo() {
-                    return networkInfo;
-                }
-
-                @Override
-                public long newEntityNum() {
-                    return 0;
-                }
-            });
-
-            // Now commit them all
-            for (final var s : writables.values()) {
-                if (s instanceof ListWritableQueueState listState) {
-                    listState.commit();
-                } else if (s instanceof MapWritableKVState mapState) {
-                    mapState.commit();
-                } else if (s instanceof WritableSingletonStateBase singletonState) {
-                    singletonState.commit();
-                } else {
-                    throw new RuntimeException("Not yet supported here");
-                }
+            final var context = newMigrationContext(
+                    previousVersion, previousStates, newStates, config, networkInfo, nextEntityNum, sharedValues);
+            if (applications.contains(MIGRATION)) {
+                schema.migrate(context);
             }
-
-            if (!dataSources.isEmpty()) {
-                state.addService(serviceName, dataSources);
+            if (applications.contains(RESTART)) {
+                schema.restart(context);
             }
+            if (writableStates instanceof MapWritableStates mws) {
+                mws.commit();
+            }
+            // And finally we can remove any states we need to remove
+            schema.statesToRemove().forEach(stateKey -> state.removeServiceState(serviceName, stateKey));
         }
     }
 
-    @Override
-    public SchemaRegistry register(@NonNull Schema schema) {
-        schemas.add(schema);
-        return this;
+    /**
+     * Encapsulates the writable states before and after applying a schema's state definitions.
+     *
+     * @param beforeStates the writable states before applying the schema's state definitions
+     * @param afterStates the writable states after applying the schema's state definitions
+     */
+    private record RedefinedWritableStates(WritableStates beforeStates, WritableStates afterStates) {}
+
+    private RedefinedWritableStates applyStateDefinitions(
+            @NonNull final String serviceName,
+            @NonNull final Schema schema,
+            @NonNull final Configuration configuration,
+            @NonNull final FakeState state) {
+        final Map<String, Object> stateDataSources = new HashMap<>();
+        schema.statesToCreate(configuration).forEach(def -> {
+            final var stateKey = def.stateKey();
+            logger.info("  Ensuring {} has state {}", serviceName, stateKey);
+            if (def.singleton()) {
+                stateDataSources.put(def.stateKey(), new AtomicReference<>());
+            } else if (def.queue()) {
+                stateDataSources.put(def.stateKey(), new ConcurrentLinkedDeque<>());
+            } else {
+                stateDataSources.put(def.stateKey(), new ConcurrentHashMap<>());
+            }
+        });
+        state.addService(serviceName, stateDataSources);
+
+        final var statesToRemove = schema.statesToRemove();
+        final var writableStates = state.getWritableStates(serviceName);
+        final var remainingStates = new HashSet<>(writableStates.stateKeys());
+        remainingStates.removeAll(statesToRemove);
+        final var newStates = new FilteredWritableStates(writableStates, remainingStates);
+        return new RedefinedWritableStates(writableStates, newStates);
+    }
+
+    private MigrationContext newMigrationContext(
+            @Nullable final SemanticVersion previousVersion,
+            @NonNull final ReadableStates previousStates,
+            @NonNull final WritableStates writableStates,
+            @NonNull final Configuration config,
+            @NonNull final NetworkInfo networkInfo,
+            @NonNull final AtomicLong nextEntityNum,
+            @NonNull final Map<String, Object> sharedValues) {
+        return new MigrationContext() {
+            @Override
+            public void copyAndReleaseOnDiskState(String stateKey) {
+                // No-op
+            }
+
+            @Override
+            public SemanticVersion previousVersion() {
+                return previousVersion;
+            }
+
+            @NonNull
+            @Override
+            public ReadableStates previousStates() {
+                return previousStates;
+            }
+
+            @NonNull
+            @Override
+            public WritableStates newStates() {
+                return writableStates;
+            }
+
+            @NonNull
+            @Override
+            public Configuration configuration() {
+                return config;
+            }
+
+            @Override
+            public NetworkInfo networkInfo() {
+                return networkInfo;
+            }
+
+            @Override
+            public long newEntityNum() {
+                return nextEntityNum.getAndIncrement();
+            }
+
+            @Override
+            public Map<String, Object> sharedValues() {
+                return sharedValues;
+            }
+        };
     }
 }

@@ -18,14 +18,10 @@ package com.swirlds.platform.event.linking;
 
 import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
 import static com.swirlds.platform.consensus.ConsensusConstants.ROUND_FIRST;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.mock;
 
 import com.swirlds.base.test.fixtures.time.FakeTime;
 import com.swirlds.common.platform.NodeId;
@@ -33,33 +29,28 @@ import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.event.AncientMode;
-import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.eventhandling.EventConfig_;
-import com.swirlds.platform.gossip.IntakeEventCounter;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.test.fixtures.event.TestingEventBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
 import java.util.Random;
-import java.util.concurrent.atomic.AtomicLong;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
 /**
- * Tests the {@link InOrderLinker} class. For historical reasons, the linker implementation used in this test is
- * {@link GossipLinker}, and so we also test that the intake event counter is updated correctly (this is a feature
- * specific to {@link GossipLinker}).
+ * Tests the {@link InOrderLinker} class.
  */
 class InOrderLinkerTests {
-    private AtomicLong exitedIntakePipelineCount;
     private Random random;
 
     private InOrderLinker inOrderLinker;
 
-    private GossipEvent genesisSelfParent;
-    private GossipEvent genesisOtherParent;
+    private PlatformEvent genesisSelfParent;
+    private PlatformEvent genesisOtherParent;
 
     private FakeTime time;
 
@@ -74,22 +65,11 @@ class InOrderLinkerTests {
     @BeforeEach
     void setup() {
         random = getRandomPrintSeed();
-
-        exitedIntakePipelineCount = new AtomicLong(0);
-
         time = new FakeTime();
     }
 
     private void inOrderLinkerSetup(@NonNull final AncientMode ancientMode) {
-        final IntakeEventCounter intakeEventCounter = mock(IntakeEventCounter.class);
-        doAnswer(invocation -> {
-                    exitedIntakePipelineCount.incrementAndGet();
-                    return null;
-                })
-                .when(intakeEventCounter)
-                .eventExitedIntakePipeline(any());
-
-        inOrderLinker = new GossipLinker(
+        inOrderLinker = new ConsensusLinker(
                 TestPlatformContextBuilder.create()
                         .withConfiguration(new TestConfigBuilder()
                                 .withValue(
@@ -98,7 +78,7 @@ class InOrderLinkerTests {
                                 .getOrCreateConfig())
                         .withTime(time)
                         .build(),
-                intakeEventCounter);
+                selfId);
 
         time.tick(Duration.ofSeconds(1));
         genesisSelfParent = new TestingEventBuilder(random)
@@ -129,13 +109,12 @@ class InOrderLinkerTests {
      * @return the event window that will cause the given events to be considered ancient
      */
     private static EventWindow chooseEventWindow(
-            @NonNull final AncientMode ancientMode, final GossipEvent... ancientEvents) {
+            @NonNull final AncientMode ancientMode, final PlatformEvent... ancientEvents) {
 
         long ancientValue = 0;
-        for (final GossipEvent ancientEvent : ancientEvents) {
+        for (final PlatformEvent ancientEvent : ancientEvents) {
             ancientValue = switch (ancientMode) {
-                case BIRTH_ROUND_THRESHOLD -> Math.max(
-                        ancientValue, ancientEvent.getHashedData().getBirthRound());
+                case BIRTH_ROUND_THRESHOLD -> Math.max(ancientValue, ancientEvent.getBirthRound());
                 case GENERATION_THRESHOLD -> Math.max(ancientValue, ancientEvent.getGeneration());};
         }
 
@@ -145,7 +124,7 @@ class InOrderLinkerTests {
                 ROUND_FIRST /* ignored in this context */,
                 ancientMode);
 
-        for (final GossipEvent ancientEvent : ancientEvents) {
+        for (final PlatformEvent ancientEvent : ancientEvents) {
             assertTrue(eventWindow.isAncient(ancientEvent));
         }
 
@@ -164,11 +143,11 @@ class InOrderLinkerTests {
         // The linking should fail to occur based on the advancing event window.
         // The values used for birthRound and generation are just for this test and do not reflect real world values.
 
-        final GossipEvent child1 = new TestingEventBuilder(random)
+        final PlatformEvent child1 = new TestingEventBuilder(random)
                 .setCreatorId(selfId)
                 .setSelfParent(genesisSelfParent)
                 .setOtherParent(genesisOtherParent)
-                .setBirthRound(genesisSelfParent.getHashedData().getBirthRound() + 1)
+                .setBirthRound(genesisSelfParent.getBirthRound() + 1)
                 .setTimeCreated(time.now())
                 .build();
 
@@ -176,7 +155,6 @@ class InOrderLinkerTests {
         assertNotEquals(null, linkedEvent1);
         assertNotEquals(null, linkedEvent1.getSelfParent(), "Self parent is non-ancient, and should not be null");
         assertNotEquals(null, linkedEvent1.getOtherParent(), "Other parent is non-ancient, and should not be null");
-        assertEquals(0, exitedIntakePipelineCount.get());
 
         time.tick(Duration.ofSeconds(1));
 
@@ -185,11 +163,11 @@ class InOrderLinkerTests {
         assertFalse(eventWindow.isAncient(child1));
         inOrderLinker.setEventWindow(eventWindow);
 
-        final GossipEvent child2 = new TestingEventBuilder(random)
+        final PlatformEvent child2 = new TestingEventBuilder(random)
                 .setCreatorId(selfId)
                 .setSelfParent(child1)
                 .setOtherParent(genesisOtherParent)
-                .setBirthRound(child1.getHashedData().getBirthRound() + 1)
+                .setBirthRound(child1.getBirthRound() + 1)
                 .setTimeCreated(time.now())
                 .build();
 
@@ -197,7 +175,6 @@ class InOrderLinkerTests {
         assertNotEquals(null, linkedEvent2);
         assertNotEquals(null, linkedEvent2.getSelfParent(), "Self parent is non-ancient, and should not be null");
         assertNull(linkedEvent2.getOtherParent(), "Other parent is ancient, and should be null");
-        assertEquals(0, exitedIntakePipelineCount.get());
 
         time.tick(Duration.ofSeconds(1));
 
@@ -206,11 +183,11 @@ class InOrderLinkerTests {
         assertFalse(eventWindow.isAncient(child2));
         inOrderLinker.setEventWindow(eventWindow);
 
-        final GossipEvent child3 = new TestingEventBuilder(random)
+        final PlatformEvent child3 = new TestingEventBuilder(random)
                 .setCreatorId(selfId)
                 .setSelfParent(child1)
                 .setOtherParent(child2)
-                .setBirthRound(child2.getHashedData().getBirthRound() + 1)
+                .setBirthRound(child2.getBirthRound() + 1)
                 .setTimeCreated(time.now())
                 .build();
 
@@ -218,18 +195,17 @@ class InOrderLinkerTests {
         assertNotEquals(null, linkedEvent3);
         assertNull(linkedEvent3.getSelfParent(), "Self parent is ancient, and should be null");
         assertNotEquals(null, linkedEvent3.getOtherParent(), "Other parent is non-ancient, and should not be null");
-        assertEquals(0, exitedIntakePipelineCount.get());
 
         time.tick(Duration.ofSeconds(1));
         // make both parents ancient.
         eventWindow = chooseEventWindow(ancientMode, child2, child3);
         inOrderLinker.setEventWindow(eventWindow);
 
-        final GossipEvent child4 = new TestingEventBuilder(random)
+        final PlatformEvent child4 = new TestingEventBuilder(random)
                 .setCreatorId(selfId)
                 .setSelfParent(child2)
                 .setOtherParent(child3)
-                .setBirthRound(child3.getHashedData().getBirthRound() + 1)
+                .setBirthRound(child3.getBirthRound() + 1)
                 .setTimeCreated(time.now())
                 .build();
 
@@ -237,7 +213,6 @@ class InOrderLinkerTests {
         assertNotEquals(null, linkedEvent4);
         assertNull(linkedEvent4.getSelfParent(), "Self parent is ancient, and should be null");
         assertNull(linkedEvent4.getOtherParent(), "Other parent is ancient, and should be null");
-        assertEquals(0, exitedIntakePipelineCount.get());
     }
 
     @ParameterizedTest
@@ -248,7 +223,7 @@ class InOrderLinkerTests {
                 useBirthRoundForAncient ? AncientMode.BIRTH_ROUND_THRESHOLD : AncientMode.GENERATION_THRESHOLD;
         inOrderLinkerSetup(ancientMode);
 
-        final GossipEvent child = new TestingEventBuilder(random)
+        final PlatformEvent child = new TestingEventBuilder(random)
                 .setCreatorId(selfId)
                 .setOtherParent(genesisOtherParent)
                 .setTimeCreated(time.now())
@@ -258,8 +233,6 @@ class InOrderLinkerTests {
         assertNotEquals(null, linkedEvent);
         assertNull(linkedEvent.getSelfParent(), "Self parent is missing, and should be null");
         assertNotEquals(null, linkedEvent.getOtherParent(), "Other parent is not missing, and should not be null");
-
-        assertEquals(0, exitedIntakePipelineCount.get());
     }
 
     @ParameterizedTest
@@ -270,7 +243,7 @@ class InOrderLinkerTests {
                 useBirthRoundForAncient ? AncientMode.BIRTH_ROUND_THRESHOLD : AncientMode.GENERATION_THRESHOLD;
         inOrderLinkerSetup(ancientMode);
 
-        final GossipEvent child = new TestingEventBuilder(random)
+        final PlatformEvent child = new TestingEventBuilder(random)
                 .setCreatorId(selfId)
                 .setSelfParent(genesisSelfParent)
                 .setTimeCreated(time.now())
@@ -280,13 +253,11 @@ class InOrderLinkerTests {
         assertNotEquals(null, linkedEvent);
         assertNotEquals(null, linkedEvent.getSelfParent(), "Self parent is not missing, and should not be null");
         assertNull(linkedEvent.getOtherParent(), "Other parent is missing, and should be null");
-
-        assertEquals(0, exitedIntakePipelineCount.get());
     }
 
     @ParameterizedTest
     @ValueSource(booleans = {true, false})
-    @DisplayName("Ancient events should immediately exit the intake pipeline")
+    @DisplayName("Ancient events should not be linked")
     void ancientEvent(final boolean useBirthRoundForAncient) {
         final AncientMode ancientMode =
                 useBirthRoundForAncient ? AncientMode.BIRTH_ROUND_THRESHOLD : AncientMode.GENERATION_THRESHOLD;
@@ -298,7 +269,7 @@ class InOrderLinkerTests {
                 ROUND_FIRST /* ignored in this context */,
                 ancientMode));
 
-        final GossipEvent child1 = new TestingEventBuilder(random)
+        final PlatformEvent child1 = new TestingEventBuilder(random)
                 .setCreatorId(selfId)
                 .setSelfParent(genesisSelfParent)
                 .setOtherParent(genesisOtherParent)
@@ -310,7 +281,7 @@ class InOrderLinkerTests {
 
         assertNull(inOrderLinker.linkEvent(child1));
 
-        final GossipEvent child2 = new TestingEventBuilder(random)
+        final PlatformEvent child2 = new TestingEventBuilder(random)
                 .setCreatorId(selfId)
                 .setSelfParent(child1)
                 .setOtherParent(genesisOtherParent)
@@ -319,7 +290,6 @@ class InOrderLinkerTests {
                 .build();
 
         assertNull(inOrderLinker.linkEvent(child2));
-        assertEquals(2, exitedIntakePipelineCount.get());
     }
 
     @ParameterizedTest
@@ -330,7 +300,7 @@ class InOrderLinkerTests {
                 useBirthRoundForAncient ? AncientMode.BIRTH_ROUND_THRESHOLD : AncientMode.GENERATION_THRESHOLD;
         inOrderLinkerSetup(ancientMode);
 
-        final GossipEvent child = new TestingEventBuilder(random)
+        final PlatformEvent child = new TestingEventBuilder(random)
                 .setCreatorId(selfId)
                 .setSelfParent(genesisSelfParent)
                 .setOtherParent(genesisOtherParent)
@@ -341,7 +311,6 @@ class InOrderLinkerTests {
         assertNotEquals(null, linkedEvent);
         assertNull(linkedEvent.getSelfParent(), "Self parent has mismatched generation, and should be null");
         assertNotEquals(null, linkedEvent.getOtherParent(), "Other parent should not be null");
-        assertEquals(0, exitedIntakePipelineCount.get());
     }
 
     @ParameterizedTest
@@ -352,19 +321,17 @@ class InOrderLinkerTests {
                 useBirthRoundForAncient ? AncientMode.BIRTH_ROUND_THRESHOLD : AncientMode.GENERATION_THRESHOLD;
         inOrderLinkerSetup(ancientMode);
 
-        final GossipEvent child = new TestingEventBuilder(random)
+        final PlatformEvent child = new TestingEventBuilder(random)
                 .setCreatorId(selfId)
                 .setSelfParent(genesisSelfParent)
                 .setOtherParent(genesisOtherParent)
-                .overrideSelfParentBirthRound(
-                        genesisSelfParent.getHashedData().getBirthRound() + 1) // birth round doesn't match actual
+                .overrideSelfParentBirthRound(genesisSelfParent.getBirthRound() + 1) // birth round doesn't match actual
                 .build();
 
         final EventImpl linkedEvent = inOrderLinker.linkEvent(child);
         assertNotEquals(null, linkedEvent);
         assertNull(linkedEvent.getSelfParent(), "Self parent has mismatched birth round, and should be null");
         assertNotEquals(null, linkedEvent.getOtherParent(), "Other parent should not be null");
-        assertEquals(0, exitedIntakePipelineCount.get());
     }
 
     @ParameterizedTest
@@ -375,7 +342,7 @@ class InOrderLinkerTests {
                 useBirthRoundForAncient ? AncientMode.BIRTH_ROUND_THRESHOLD : AncientMode.GENERATION_THRESHOLD;
         inOrderLinkerSetup(ancientMode);
 
-        final GossipEvent child = new TestingEventBuilder(random)
+        final PlatformEvent child = new TestingEventBuilder(random)
                 .setCreatorId(selfId)
                 .setSelfParent(genesisSelfParent)
                 .setOtherParent(genesisOtherParent)
@@ -387,7 +354,6 @@ class InOrderLinkerTests {
         assertNotEquals(null, linkedEvent);
         assertNotEquals(null, linkedEvent.getSelfParent(), "Self parent should not be null");
         assertNull(linkedEvent.getOtherParent(), "Other parent has mismatched generation, and should be null");
-        assertEquals(0, exitedIntakePipelineCount.get());
     }
 
     @ParameterizedTest
@@ -397,19 +363,18 @@ class InOrderLinkerTests {
         final AncientMode ancientMode =
                 useBirthRoundForAncient ? AncientMode.BIRTH_ROUND_THRESHOLD : AncientMode.GENERATION_THRESHOLD;
         inOrderLinkerSetup(ancientMode);
-        final GossipEvent child = new TestingEventBuilder(random)
+        final PlatformEvent child = new TestingEventBuilder(random)
                 .setCreatorId(selfId)
                 .setSelfParent(genesisSelfParent)
                 .setOtherParent(genesisOtherParent)
                 .overrideOtherParentBirthRound(
-                        genesisOtherParent.getHashedData().getBirthRound() + 1) // birth round doesn't match actual
+                        genesisOtherParent.getBirthRound() + 1) // birth round doesn't match actual
                 .build();
 
         final EventImpl linkedEvent = inOrderLinker.linkEvent(child);
         assertNotEquals(null, linkedEvent);
         assertNotEquals(null, linkedEvent.getSelfParent(), "Self parent should not be null");
         assertNull(linkedEvent.getOtherParent(), "Other parent has mismatched birth round, and should be null");
-        assertEquals(0, exitedIntakePipelineCount.get());
     }
 
     @ParameterizedTest
@@ -420,7 +385,7 @@ class InOrderLinkerTests {
                 useBirthRoundForAncient ? AncientMode.BIRTH_ROUND_THRESHOLD : AncientMode.GENERATION_THRESHOLD;
         inOrderLinkerSetup(ancientMode);
 
-        final GossipEvent lateParent = new TestingEventBuilder(random)
+        final PlatformEvent lateParent = new TestingEventBuilder(random)
                 .setCreatorId(selfId)
                 .setSelfParent(genesisSelfParent)
                 .setOtherParent(genesisOtherParent)
@@ -429,7 +394,7 @@ class InOrderLinkerTests {
 
         inOrderLinker.linkEvent(lateParent);
 
-        final GossipEvent child = new TestingEventBuilder(random)
+        final PlatformEvent child = new TestingEventBuilder(random)
                 .setCreatorId(selfId)
                 .setSelfParent(lateParent)
                 .setOtherParent(genesisOtherParent)
@@ -440,7 +405,6 @@ class InOrderLinkerTests {
         assertNotEquals(null, linkedEvent);
         assertNull(linkedEvent.getSelfParent(), "Self parent has mismatched time created, and should be null");
         assertNotEquals(null, linkedEvent.getOtherParent(), "Other parent should not be null");
-        assertEquals(0, exitedIntakePipelineCount.get());
     }
 
     @ParameterizedTest
@@ -450,7 +414,7 @@ class InOrderLinkerTests {
         final AncientMode ancientMode =
                 useBirthRoundForAncient ? AncientMode.BIRTH_ROUND_THRESHOLD : AncientMode.GENERATION_THRESHOLD;
         inOrderLinkerSetup(ancientMode);
-        final GossipEvent lateParent = new TestingEventBuilder(random)
+        final PlatformEvent lateParent = new TestingEventBuilder(random)
                 .setCreatorId(otherId)
                 .setSelfParent(genesisOtherParent)
                 .setOtherParent(genesisSelfParent)
@@ -459,7 +423,7 @@ class InOrderLinkerTests {
 
         inOrderLinker.linkEvent(lateParent);
 
-        final GossipEvent child = new TestingEventBuilder(random)
+        final PlatformEvent child = new TestingEventBuilder(random)
                 .setCreatorId(selfId)
                 .setSelfParent(genesisSelfParent)
                 .setOtherParent(lateParent)
@@ -470,6 +434,5 @@ class InOrderLinkerTests {
         assertNotEquals(null, linkedEvent);
         assertNotEquals(null, linkedEvent.getSelfParent(), "Self parent should not be null");
         assertNotEquals(null, linkedEvent.getOtherParent(), "Other parent should not be null");
-        assertEquals(0, exitedIntakePipelineCount.get());
     }
 }

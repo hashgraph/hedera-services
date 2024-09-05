@@ -16,16 +16,18 @@
 
 package com.hedera.node.app.info;
 
-import static com.hedera.node.app.spi.HapiUtils.parseAccount;
+import static com.hedera.hapi.util.HapiUtils.parseAccount;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.SemanticVersion;
-import com.hedera.node.app.spi.info.SelfNodeInfo;
-import com.hedera.node.app.version.HederaSoftwareVersion;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.platform.system.address.Address;
+import com.swirlds.state.spi.info.SelfNodeInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
+import java.security.cert.CertificateEncodingException;
 
 public record SelfNodeInfoImpl(
         long nodeId,
@@ -33,42 +35,47 @@ public record SelfNodeInfoImpl(
         long stake,
         @NonNull String externalHostName,
         int externalPort,
+        @NonNull String internalHostName,
+        int internalPort,
         @NonNull String hexEncodedPublicKey,
         @NonNull String memo,
-        @NonNull HederaSoftwareVersion version)
+        @Nullable Bytes sigCertBytes,
+        @NonNull SemanticVersion hapiVersion,
+        @NonNull String selfName)
         implements SelfNodeInfo {
 
     public SelfNodeInfoImpl {
         requireNonNull(accountId);
         requireNonNull(memo);
-        requireNonNull(version);
+        requireNonNull(hapiVersion);
         if (nodeId < 0) {
             throw new IllegalArgumentException("node ID cannot be less than 0");
         }
     }
 
     @NonNull
-    public static SelfNodeInfo of(@NonNull final Address address, @NonNull final HederaSoftwareVersion version) {
+    public static SelfNodeInfo of(@NonNull final Address address, @NonNull final SemanticVersion hapiVersion) {
+        requireNonNull(address);
+        requireNonNull(hapiVersion);
+        final var sigCert = address.getSigCert();
+        Bytes sigCertBytes;
+        try {
+            sigCertBytes = sigCert == null ? Bytes.EMPTY : Bytes.wrap(sigCert.getEncoded());
+        } catch (CertificateEncodingException e) {
+            sigCertBytes = Bytes.EMPTY;
+        }
         return new SelfNodeInfoImpl(
                 address.getNodeId().id(),
                 parseAccount(address.getMemo()),
                 address.getWeight(),
                 requireNonNull(address.getHostnameExternal()),
                 address.getPortExternal(),
+                requireNonNull(address.getHostnameInternal()),
+                address.getPortInternal(),
                 CommonUtils.hex(requireNonNull(address.getSigPublicKey()).getEncoded()),
                 address.getMemo(),
-                version);
-    }
-
-    @NonNull
-    @Override
-    public SemanticVersion hapiVersion() {
-        return version.getHapiVersion();
-    }
-
-    @NonNull
-    @Override
-    public SemanticVersion appVersion() {
-        return version.getServicesVersion();
+                sigCertBytes,
+                hapiVersion,
+                address.getSelfName());
     }
 }

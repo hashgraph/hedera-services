@@ -27,54 +27,30 @@ import edu.umd.cs.findbugs.annotations.Nullable;
  */
 public class BaseCryptoHandler {
     /**
-     * Gets the stakedId from the provided staked_account_id or staked_node_id.
-     * When staked_node_id is provided, it is stored as negative number in state to
-     * distinguish it from staked_account_id. It will be converted back to positive number
-     * when it is retrieved from state.
-     * To distinguish for node 0, it will be stored as - node_id -1.
-     * For example, if staked_node_id is 0, it will be stored as -1 in state.
-     *
-     * @param stakedIdType staked id type, if staked node id or staked account id
-     * @param stakedNodeId staked node id
-     * @param stakedAccountId staked account id
-     * @return valid staked id
+     * Gets the accountId from the account number provided.
+     * @param num the account number
+     * @return the accountID
      */
-    protected long getStakedId(
-            @NonNull final String stakedIdType,
-            @Nullable final Long stakedNodeId,
-            @Nullable final AccountID stakedAccountId) {
-        if ("STAKED_ACCOUNT_ID".equals(stakedIdType) && stakedAccountId != null) {
-            return stakedAccountId.accountNum();
-        } else if ("STAKED_NODE_ID".equals(stakedIdType) && stakedNodeId != null) {
-            // return a number less than the given node Id, in order to recognize the if nodeId 0 is
-            // set
-            return -stakedNodeId - 1;
-        } else {
-            throw new IllegalStateException("StakedIdOneOfType is not set");
-        }
-    }
-
     @NonNull
     public static AccountID asAccount(final long num) {
         return AccountID.newBuilder().accountNum(num).build();
     }
 
     /**
-     * Checks that an accountId represents one of the staking accounts
+     * Checks that an accountId represents one of the staking accounts.
+     * @param configuration the configuration
      * @param accountID    the accountID to check
+     * @return {@code true} if the accountID represents one of the staking accounts, {@code false} otherwise
      */
     public static boolean isStakingAccount(
             @NonNull final Configuration configuration, @Nullable final AccountID accountID) {
         final var accountNum = accountID != null ? accountID.accountNum() : 0;
         final var accountsConfig = configuration.getConfigData(AccountsConfig.class);
-        if (accountNum == accountsConfig.stakingRewardAccount() || accountNum == accountsConfig.nodeRewardAccount()) {
-            return true;
-        }
-        return false;
+        return accountNum == accountsConfig.stakingRewardAccount() || accountNum == accountsConfig.nodeRewardAccount();
     }
 
     /**
-     * Checks if the accountID has an account number or alias
+     * Checks if the accountID has an account number or alias.
      * @param accountID   the accountID to check
      * @return {@code true} if the accountID has an account number or alias, {@code false} otherwise
      */

@@ -26,7 +26,8 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.mockStatic;
+import static org.mockito.Mockito.times;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
@@ -36,22 +37,22 @@ import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.node.app.service.token.api.ContractChangeSummary;
 import com.hedera.node.app.service.token.fixtures.FakeFeeRecordBuilder;
-import com.hedera.node.app.service.token.impl.TokenServiceImpl;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.api.TokenServiceApiImpl;
+import com.hedera.node.app.service.token.impl.schemas.V0490TokenSchema;
 import com.hedera.node.app.service.token.impl.validators.StakingValidator;
 import com.hedera.node.app.spi.fees.Fees;
-import com.hedera.node.app.spi.fixtures.state.MapWritableKVState;
 import com.hedera.node.app.spi.fixtures.state.MapWritableStates;
-import com.hedera.node.app.spi.info.NetworkInfo;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
-import com.hedera.node.app.spi.state.WritableKVState;
-import com.hedera.node.app.spi.state.WritableKVStateBase;
-import com.hedera.node.app.spi.state.WritableStates;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
+import com.swirlds.state.spi.WritableKVState;
+import com.swirlds.state.spi.WritableKVStateBase;
+import com.swirlds.state.spi.WritableStates;
+import com.swirlds.state.spi.info.NetworkInfo;
+import com.swirlds.state.test.fixtures.MapWritableKVState;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -92,16 +93,13 @@ class TokenServiceApiImplTest {
             .build();
 
     private final WritableKVState<Bytes, AccountID> aliasesState =
-            new MapWritableKVState<>(TokenServiceImpl.ALIASES_KEY);
+            new MapWritableKVState<>(V0490TokenSchema.ALIASES_KEY);
     private final WritableKVState<AccountID, Account> accountState =
-            new MapWritableKVState<>(TokenServiceImpl.ACCOUNTS_KEY);
+            new MapWritableKVState<>(V0490TokenSchema.ACCOUNTS_KEY);
     private final WritableStates writableStates = new MapWritableStates(Map.of(
-            TokenServiceImpl.ACCOUNTS_KEY, accountState,
-            TokenServiceImpl.ALIASES_KEY, aliasesState));
+            V0490TokenSchema.ACCOUNTS_KEY, accountState,
+            V0490TokenSchema.ALIASES_KEY, aliasesState));
     private WritableAccountStore accountStore;
-
-    @Mock
-    private StakingValidator stakingValidator;
 
     @Mock
     private NetworkInfo networkInfo;
@@ -117,8 +115,7 @@ class TokenServiceApiImplTest {
     @BeforeEach
     void setUp() {
         accountStore = new WritableAccountStore(writableStates, DEFAULT_CONFIG, storeMetricsService);
-        subject = new TokenServiceApiImpl(
-                DEFAULT_CONFIG, storeMetricsService, stakingValidator, writableStates, customFeeTest);
+        subject = new TokenServiceApiImpl(DEFAULT_CONFIG, storeMetricsService, writableStates, customFeeTest);
     }
 
     @Test
@@ -129,11 +126,14 @@ class TokenServiceApiImplTest {
 
     @Test
     void delegatesStakingValidationAsExpected() {
-        subject.assertValidStakingElectionForCreation(
-                true, false, "STAKED_NODE_ID", null, 123L, accountStore, networkInfo);
-
-        verify(stakingValidator)
-                .validateStakedIdForCreation(true, false, "STAKED_NODE_ID", null, 123L, accountStore, networkInfo);
+        try (var mockedValidator = mockStatic(StakingValidator.class)) {
+            subject.assertValidStakingElectionForCreation(
+                    true, false, "STAKED_NODE_ID", null, 123L, accountStore, networkInfo);
+            mockedValidator.verify(
+                    () -> StakingValidator.validateStakedIdForCreation(
+                            true, false, "STAKED_NODE_ID", null, 123L, accountStore, networkInfo),
+                    times(1));
+        }
     }
 
     @Test
@@ -475,8 +475,7 @@ class TokenServiceApiImplTest {
             final var config =
                     configBuilder.withValue("staking.isEnabled", true).getOrCreateConfig();
 
-            subject = new TokenServiceApiImpl(
-                    config, storeMetricsService, stakingValidator, writableStates, customFeeTest);
+            subject = new TokenServiceApiImpl(config, storeMetricsService, writableStates, customFeeTest);
 
             // When we charge network+service fees of 10 tinybars and a node fee of 2 tinybars
             subject.chargeFees(EOA_ACCOUNT_ID, NODE_ACCOUNT_ID, fees, rb);
@@ -506,8 +505,7 @@ class TokenServiceApiImplTest {
             final var config =
                     configBuilder.withValue("staking.isEnabled", false).getOrCreateConfig();
 
-            subject = new TokenServiceApiImpl(
-                    config, storeMetricsService, stakingValidator, writableStates, customFeeTest);
+            subject = new TokenServiceApiImpl(config, storeMetricsService, writableStates, customFeeTest);
 
             // When we charge fees of 10 tinybars
             subject.chargeFees(EOA_ACCOUNT_ID, NODE_ACCOUNT_ID, fees, rb);
@@ -547,8 +545,7 @@ class TokenServiceApiImplTest {
                     .withValue("ledger.fundingAccount", unknownAccountId.accountNumOrThrow())
                     .getOrCreateConfig();
 
-            subject = new TokenServiceApiImpl(
-                    config, storeMetricsService, stakingValidator, writableStates, customFeeTest);
+            subject = new TokenServiceApiImpl(config, storeMetricsService, writableStates, customFeeTest);
 
             // When we try to charge a payer account that DOES exist, then we get an IllegalStateException
             assertThatThrownBy(() -> subject.chargeFees(EOA_ACCOUNT_ID, NODE_ACCOUNT_ID, fees, rb))
@@ -565,8 +562,7 @@ class TokenServiceApiImplTest {
                     .withValue("accounts.stakingRewardAccount", unknownAccountId.accountNumOrThrow())
                     .getOrCreateConfig();
 
-            subject = new TokenServiceApiImpl(
-                    config, storeMetricsService, stakingValidator, writableStates, customFeeTest);
+            subject = new TokenServiceApiImpl(config, storeMetricsService, writableStates, customFeeTest);
 
             // When we try to charge a payer account that DOES exist, then we get an IllegalStateException
             assertThatThrownBy(() -> subject.chargeFees(EOA_ACCOUNT_ID, NODE_ACCOUNT_ID, fees, rb))
@@ -583,8 +579,7 @@ class TokenServiceApiImplTest {
                     .withValue("accounts.nodeRewardAccount", unknownAccountId.accountNumOrThrow())
                     .getOrCreateConfig();
 
-            subject = new TokenServiceApiImpl(
-                    config, storeMetricsService, stakingValidator, writableStates, customFeeTest);
+            subject = new TokenServiceApiImpl(config, storeMetricsService, writableStates, customFeeTest);
 
             // When we try to charge a payer account that DOES exist, then we get an IllegalStateException
             assertThatThrownBy(() -> subject.chargeFees(EOA_ACCOUNT_ID, NODE_ACCOUNT_ID, fees, rb))
@@ -598,11 +593,7 @@ class TokenServiceApiImplTest {
             fees = new Fees(1000, 100, 0); // more than the 100 the user has
 
             subject = new TokenServiceApiImpl(
-                    configBuilder.getOrCreateConfig(),
-                    storeMetricsService,
-                    stakingValidator,
-                    writableStates,
-                    customFeeTest);
+                    configBuilder.getOrCreateConfig(), storeMetricsService, writableStates, customFeeTest);
             subject.chargeFees(EOA_ACCOUNT_ID, NODE_ACCOUNT_ID, fees, rb);
 
             final var payerAccount = requireNonNull(accountState.get(EOA_ACCOUNT_ID));

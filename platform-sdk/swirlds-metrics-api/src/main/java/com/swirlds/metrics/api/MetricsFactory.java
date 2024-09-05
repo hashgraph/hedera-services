@@ -16,6 +16,8 @@
 
 package com.swirlds.metrics.api;
 
+import edu.umd.cs.findbugs.annotations.NonNull;
+
 /**
  * Factory for basic {@link Metric}-implementations
  */
@@ -28,7 +30,8 @@ public interface MetricsFactory {
      * @return the new {@code Counter}
      * @throws IllegalArgumentException if {@code config} is {@code null}
      */
-    Counter createCounter(final Counter.Config config);
+    @NonNull
+    Counter createCounter(@NonNull final Counter.Config config);
 
     /**
      * Creates a {@link DoubleAccumulator}
@@ -37,7 +40,8 @@ public interface MetricsFactory {
      * @return the new {@code DoubleAccumulator}
      * @throws IllegalArgumentException if {@code config} is {@code null}
      */
-    DoubleAccumulator createDoubleAccumulator(final DoubleAccumulator.Config config);
+    @NonNull
+    DoubleAccumulator createDoubleAccumulator(@NonNull final DoubleAccumulator.Config config);
 
     /**
      * Creates a {@link DoubleGauge}
@@ -46,7 +50,8 @@ public interface MetricsFactory {
      * @return the new {@code DoubleGauge}
      * @throws IllegalArgumentException if {@code config} is {@code null}
      */
-    DoubleGauge createDoubleGauge(final DoubleGauge.Config config);
+    @NonNull
+    DoubleGauge createDoubleGauge(@NonNull final DoubleGauge.Config config);
 
     /**
      * Creates a {@link IntegerAccumulator}
@@ -55,7 +60,8 @@ public interface MetricsFactory {
      * @return the new {@code IntegerAccumulator}
      * @throws IllegalArgumentException if {@code config} is {@code null}
      */
-    IntegerAccumulator createIntegerAccumulator(IntegerAccumulator.Config config);
+    @NonNull
+    IntegerAccumulator createIntegerAccumulator(@NonNull IntegerAccumulator.Config config);
 
     /**
      * Creates a {@link IntegerGauge}
@@ -64,7 +70,8 @@ public interface MetricsFactory {
      * @return the new {@code IntegerGauge}
      * @throws IllegalArgumentException if {@code config} is {@code null}
      */
-    IntegerGauge createIntegerGauge(final IntegerGauge.Config config);
+    @NonNull
+    IntegerGauge createIntegerGauge(@NonNull final IntegerGauge.Config config);
 
     /**
      * Creates a {@link LongAccumulator}
@@ -73,7 +80,8 @@ public interface MetricsFactory {
      * @return the new {@code LongAccumulator}
      * @throws IllegalArgumentException if {@code config} is {@code null}
      */
-    LongAccumulator createLongAccumulator(LongAccumulator.Config config);
+    @NonNull
+    LongAccumulator createLongAccumulator(@NonNull LongAccumulator.Config config);
 
     /**
      * Creates a {@link LongGauge}
@@ -82,5 +90,6 @@ public interface MetricsFactory {
      * @return the new {@code LongGauge}
      * @throws IllegalArgumentException if {@code config} is {@code null}
      */
-    LongGauge createLongGauge(final LongGauge.Config config);
+    @NonNull
+    LongGauge createLongGauge(@NonNull final LongGauge.Config config);
 }

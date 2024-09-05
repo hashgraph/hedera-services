@@ -21,11 +21,14 @@ import static com.swirlds.metrics.api.Metrics.PLATFORM_CATEGORY;
 
 import com.swirlds.common.metrics.extensions.CountPerSecond;
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.common.units.TimeUnit;
 import com.swirlds.metrics.api.Counter;
+import com.swirlds.metrics.api.LongAccumulator;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -61,6 +64,29 @@ public class ReconnectMetrics {
      */
     private final Map<NodeId, CountPerSecond> rejectionFrequency = new HashMap<>();
 
+    private static final LongAccumulator.Config SENDER_DURATION_CONFIG = new LongAccumulator.Config(
+                    RECONNECT_CATEGORY, "senderReconnectDurationSeconds")
+            .withInitialValue(0)
+            .withAccumulator(Long::sum)
+            .withDescription("duration of reconnect as a sender")
+            .withUnit(TimeUnit.UNIT_SECONDS.getAbbreviation());
+    private final LongAccumulator senderReconnectDurationSeconds;
+
+    private static final LongAccumulator.Config RECEIVER_DURATION_CONFIG = new LongAccumulator.Config(
+                    RECONNECT_CATEGORY, "receiverReconnectDurationSeconds")
+            .withInitialValue(0)
+            .withAccumulator(Long::sum)
+            .withDescription("duration of reconnect as a receiver")
+            .withUnit(TimeUnit.UNIT_SECONDS.getAbbreviation());
+    private final LongAccumulator receiverReconnectDurationSeconds;
+
+    // Assuming that reconnect is a "singleton" operation (a single node cannot teach multiple learners
+    // simultaneously, and a single node cannot learn from multiple teachers at once), we maintain
+    // state variables here to measure the duration of reconnect operations.
+    // A caller of incrementStart/End methods is responsible for synchronizing access to these.
+    private long senderStartNanos = 0L;
+    private long receiverStartNanos = 0L;
+
     /**
      * Constructor of {@code ReconnectMetrics}
      *
@@ -75,6 +101,8 @@ public class ReconnectMetrics {
         receiverStartTimes = metrics.getOrCreate(RECEIVER_START_TIMES_CONFIG);
         senderEndTimes = metrics.getOrCreate(SENDER_END_TIMES_CONFIG);
         receiverEndTimes = metrics.getOrCreate(RECEIVER_END_TIMES_CONFIG);
+        senderReconnectDurationSeconds = metrics.getOrCreate(SENDER_DURATION_CONFIG);
+        receiverReconnectDurationSeconds = metrics.getOrCreate(RECEIVER_DURATION_CONFIG);
 
         for (final Address address : addressBook) {
             final NodeId nodeId = address.getNodeId();
@@ -93,19 +121,25 @@ public class ReconnectMetrics {
     }
 
     public void incrementSenderStartTimes() {
+        senderStartNanos = System.nanoTime();
         senderStartTimes.increment();
     }
 
     public void incrementReceiverStartTimes() {
+        receiverStartNanos = System.nanoTime();
         receiverStartTimes.increment();
     }
 
     public void incrementSenderEndTimes() {
         senderEndTimes.increment();
+        senderReconnectDurationSeconds.update(
+                Duration.ofNanos(System.nanoTime() - senderStartNanos).toSeconds());
     }
 
     public void incrementReceiverEndTimes() {
         receiverEndTimes.increment();
+        receiverReconnectDurationSeconds.update(
+                Duration.ofNanos(System.nanoTime() - receiverStartNanos).toSeconds());
     }
 
     /**

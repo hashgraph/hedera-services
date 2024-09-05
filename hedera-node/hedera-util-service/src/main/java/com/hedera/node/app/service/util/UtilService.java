@@ -16,9 +16,10 @@
 
 package com.hedera.node.app.service.util;
 
-import com.hedera.node.app.spi.Service;
-import com.hedera.node.app.spi.ServiceFactory;
+import com.hedera.node.app.spi.RpcService;
+import com.hedera.node.app.spi.RpcServiceFactory;
 import com.hedera.pbj.runtime.RpcServiceDefinition;
+import com.swirlds.state.spi.SchemaRegistry;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ServiceLoader;
 import java.util.Set;
@@ -28,7 +29,7 @@ import java.util.Set;
  * href="https://github.com/hashgraph/hedera-protobufs/blob/main/services/util_service.proto">Util
  * Service</a>.
  */
-public interface UtilService extends Service {
+public interface UtilService extends RpcService {
 
     String NAME = "UtilService";
 
@@ -45,12 +46,17 @@ public interface UtilService extends Service {
     }
 
     /**
-     * Returns the concrete implementation instance of the service
+     * Returns the concrete implementation instance of the service.
      *
      * @return the implementation instance
      */
     @NonNull
     static UtilService getInstance() {
-        return ServiceFactory.loadService(UtilService.class, ServiceLoader.load(UtilService.class));
+        return RpcServiceFactory.loadService(UtilService.class, ServiceLoader.load(UtilService.class));
+    }
+
+    @Override
+    default void registerSchemas(@NonNull SchemaRegistry registry) {
+        // no schemas to register
     }
 }

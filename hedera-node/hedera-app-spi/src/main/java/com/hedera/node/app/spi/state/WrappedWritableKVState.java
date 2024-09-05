@@ -16,7 +16,9 @@
 
 package com.hedera.node.app.spi.state;
 
-import com.hedera.node.app.spi.metrics.StoreMetrics;
+import com.swirlds.state.spi.WritableKVState;
+import com.swirlds.state.spi.WritableKVStateBase;
+import com.swirlds.state.spi.metrics.StoreMetrics;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Iterator;
 import java.util.Objects;

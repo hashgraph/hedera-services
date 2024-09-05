@@ -45,7 +45,7 @@ import javax.tools.StandardLocation;
  * An annotation processor that creates documentation and constants for config data records.
  */
 @SupportedAnnotationTypes(ConfigProcessorConstants.CONFIG_DATA_ANNOTATION)
-@SupportedSourceVersion(SourceVersion.RELEASE_17)
+@SupportedSourceVersion(SourceVersion.RELEASE_21)
 @AutoService(Processor.class)
 public final class ConfigDataAnnotationProcessor extends AbstractProcessor {
 
@@ -78,7 +78,7 @@ public final class ConfigDataAnnotationProcessor extends AbstractProcessor {
                     .forEach(typeElement -> handleTypeElement(typeElement, configDocumentationFile));
             return true;
         } catch (final Exception e) {
-            log("Error while processing annotations: " + e.getMessage());
+            log(Kind.ERROR, "Error while processing annotations: " + e.getMessage());
             e.printStackTrace();
             return false;
         }
@@ -104,12 +104,12 @@ public final class ConfigDataAnnotationProcessor extends AbstractProcessor {
                 final JavaFileObject constantsSourceFile =
                         getConstantSourceFile(packageName, simpleClassName, typeElement);
                 log("generating config constants file: " + constantsSourceFile.getName());
-                ConstantClassFactory.doWork(recordDefinitions.get(0), constantsSourceFile);
+                ConstantClassFactory.doWork(recordDefinitions.getFirst(), constantsSourceFile);
                 log("generating config doc file: " + configDocumentationFile.getFileName());
-                DocumentationFactory.doWork(recordDefinitions.get(0), configDocumentationFile);
+                DocumentationFactory.doWork(recordDefinitions.getFirst(), configDocumentationFile);
             }
-        } catch (final IOException e) {
-            throw new RuntimeException("Error while handling " + typeElement, e);
+        } catch (final Exception e) {
+            throw new RuntimeException("Error handling " + typeElement, e);
         }
     }
 
@@ -135,11 +135,15 @@ public final class ConfigDataAnnotationProcessor extends AbstractProcessor {
         return processingEnv.getFiler().getResource(StandardLocation.SOURCE_PATH, packageName, fileName);
     }
 
-    protected void log(@NonNull final String message) {
+    private void log(@NonNull final String message) {
+        log(Kind.OTHER, message);
+    }
+
+    private void log(@NonNull final Kind kind, @NonNull final String message) {
         Objects.requireNonNull(message, "message must not be null");
 
         processingEnv
                 .getMessager()
-                .printMessage(Kind.OTHER, ConfigDataAnnotationProcessor.class.getSimpleName() + ": " + message);
+                .printMessage(kind, ConfigDataAnnotationProcessor.class.getSimpleName() + ": " + message);
     }
 }

@@ -348,7 +348,7 @@ class DeterministicModelTests {
             mesh.inputWire.put(next);
         }
 
-        int maxIterations = 10_000;
+        int maxIterations = 20_000;
         while (!mesh.isQuiescent.getAsBoolean()) {
             waitForNextCycle.run();
 

@@ -559,14 +559,6 @@ public final class ExpectedFCMFamilyImpl implements ExpectedFCMFamily {
             if (!isRemovedEntity(key)) {
                 // update deleteIdx to be i + 1
                 updateDeleteIndex(entityType, i + 1);
-                if (key.getShardId() != nodeId) {
-                    logger.error(
-                            EXCEPTION.getMarker(),
-                            "getMapKeyToDelete :: shardId {} doesn't match nodeID {}: , entityType: {}",
-                            key.getShardId(),
-                            nodeId,
-                            entityType);
-                }
                 return key;
             }
         }

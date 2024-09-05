@@ -205,7 +205,6 @@ class CryptoOpsUsageTest {
         expected.resetForTransaction(baseMeta, singleSigUsage);
         expected.addBpt(baseSize + 2 * LONG_SIZE + BOOL_SIZE);
         expected.addRbs((CRYPTO_ENTITY_SIZES.fixedBytesInAccountRepr() + baseSize) * secs);
-        expected.addRbs(maxAutoAssociations * secs * CryptoOpsUsage.CREATE_SLOT_MULTIPLIER);
         expected.addNetworkRbs(BASIC_ENTITY_ID_SIZE * USAGE_PROPERTIES.legacyReceiptStorageSecs());
 
         subject.cryptoCreateUsage(singleSigUsage, baseMeta, opMeta, actual);

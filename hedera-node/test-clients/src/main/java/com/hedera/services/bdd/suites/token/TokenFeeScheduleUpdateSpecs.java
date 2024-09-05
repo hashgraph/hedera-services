@@ -25,55 +25,48 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenFeeScheduleUpdate;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHbarFee;
+import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHbarFeeInheritingRoyaltyCollector;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHtsFee;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fractionalFee;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.incompleteCustomFee;
+import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.royaltyFeeNoFallback;
+import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.royaltyFeeWithFallback;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeTests.fixedHbarFeeInSchedule;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeTests.fixedHtsFeeInSchedule;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeTests.fractionalFeeInSchedule;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.submitModified;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsdWithin;
+import static com.hedera.services.bdd.spec.utilops.mod.ModificationUtils.withSuccessivelyVariedBodyIds;
+import static com.hedera.services.bdd.suites.HapiSuite.APP_PROPERTIES;
+import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
+import static com.hedera.services.bdd.suites.HapiSuite.THREE_MONTHS_IN_SECONDS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEES_LIST_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_MUST_BE_POSITIVE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_NOT_FULLY_SPECIFIED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_SCHEDULE_ALREADY_HAS_NO_FEES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FRACTION_DIVIDES_BY_ZERO;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CUSTOM_FEE_COLLECTOR;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID_IN_CUSTOM_FEES;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ROYALTY_FRACTION_CANNOT_EXCEED_ONE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_FEE_SCHEDULE_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_FEE_COLLECTOR;
 
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode;
-import com.hedera.services.bdd.suites.HapiSuite;
+import com.hederahashgraph.api.proto.java.TokenType;
 import java.time.Instant;
-import java.util.List;
 import java.util.Map;
 import java.util.OptionalLong;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import java.util.stream.Stream;
+import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
-@HapiTestSuite(fuzzyMatch = true)
 @Tag(TOKEN)
-public class TokenFeeScheduleUpdateSpecs extends HapiSuite {
-
-    private static final Logger log = LogManager.getLogger(TokenFeeScheduleUpdateSpecs.class);
-
-    public static void main(String... args) {
-        new TokenFeeScheduleUpdateSpecs().runSuiteSync();
-    }
-
-    @Override
-    public List<HapiSpec> getSpecsInSuite() {
-        return List.of(new HapiSpec[] {
-            onlyValidCustomFeeScheduleCanBeUpdated(), baseOperationIsChargedExpectedFee(),
-        });
-    }
-
+public class TokenFeeScheduleUpdateSpecs {
     @HapiTest
-    final HapiSpec baseOperationIsChargedExpectedFee() {
+    final Stream<DynamicTest> baseOperationIsChargedExpectedFee() {
         final var htsAmount = 2_345L;
         final var targetToken = "immutableToken";
         final var feeDenom = "denom";
@@ -100,7 +93,74 @@ public class TokenFeeScheduleUpdateSpecs extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec onlyValidCustomFeeScheduleCanBeUpdated() {
+    final Stream<DynamicTest> idVariantsTreatedAsExpected() {
+        return defaultHapiSpec("idVariantsTreatedAsExpected")
+                .given(
+                        newKeyNamed("feeScheduleKey"),
+                        cryptoCreate("feeCollector"),
+                        tokenCreate("t").feeScheduleKey("feeScheduleKey"),
+                        tokenAssociate("feeCollector", "t"))
+                .when()
+                .then(submitModified(withSuccessivelyVariedBodyIds(), () -> tokenFeeScheduleUpdate("t")
+                        .withCustom(fixedHbarFee(1, "feeCollector"))
+                        .fee(ONE_HBAR)));
+    }
+
+    @HapiTest
+    final Stream<DynamicTest> failsUpdatingToEmptyFees() {
+        return defaultHapiSpec("idVariantsTreatedAsExpected")
+                .given(
+                        newKeyNamed("feeScheduleKey"),
+                        cryptoCreate("feeCollector"),
+                        tokenCreate("t").feeScheduleKey("feeScheduleKey"),
+                        tokenAssociate("feeCollector", "t"))
+                .when()
+                .then(submitModified(withSuccessivelyVariedBodyIds(), () -> tokenFeeScheduleUpdate("t")
+                        .hasKnownStatus(CUSTOM_SCHEDULE_ALREADY_HAS_NO_FEES)
+                        .fee(ONE_HBAR)));
+    }
+
+    @HapiTest
+    final Stream<DynamicTest> validatesRoyaltyFee() {
+        return defaultHapiSpec("validatesRoyaltyFee")
+                .given(
+                        newKeyNamed("feeScheduleKey"),
+                        newKeyNamed("supplyKey"),
+                        cryptoCreate("feeCollector"),
+                        tokenCreate("t")
+                                .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
+                                .feeScheduleKey("feeScheduleKey")
+                                .initialSupply(0)
+                                .supplyKey("supplyKey"),
+                        tokenAssociate("feeCollector", "t"))
+                .when(
+                        tokenFeeScheduleUpdate("t")
+                                .withCustom(royaltyFeeNoFallback(1, 0, "feeCollector"))
+                                .hasKnownStatus(FRACTION_DIVIDES_BY_ZERO)
+                                .fee(ONE_HBAR),
+                        tokenFeeScheduleUpdate("t")
+                                .withCustom(royaltyFeeNoFallback(2, 1, "feeCollector"))
+                                .hasKnownStatus(ROYALTY_FRACTION_CANNOT_EXCEED_ONE)
+                                .fee(ONE_HBAR),
+                        tokenFeeScheduleUpdate("t")
+                                .withCustom(royaltyFeeNoFallback(0, 1, "feeCollector"))
+                                .hasKnownStatus(CUSTOM_FEE_MUST_BE_POSITIVE)
+                                .fee(ONE_HBAR))
+                .then(
+                        tokenFeeScheduleUpdate("t")
+                                .withCustom(royaltyFeeWithFallback(
+                                        1, 2, fixedHbarFeeInheritingRoyaltyCollector(0), "feeCollector"))
+                                .hasKnownStatus(CUSTOM_FEE_MUST_BE_POSITIVE)
+                                .fee(ONE_HBAR),
+                        tokenFeeScheduleUpdate("t")
+                                .withCustom(royaltyFeeWithFallback(
+                                        1, 2, fixedHbarFeeInheritingRoyaltyCollector(-1), "feeCollector"))
+                                .hasKnownStatus(CUSTOM_FEE_MUST_BE_POSITIVE)
+                                .fee(ONE_HBAR));
+    }
+
+    @HapiTest
+    final Stream<DynamicTest> onlyValidCustomFeeScheduleCanBeUpdated() {
         final var hbarAmount = 1_234L;
         final var htsAmount = 2_345L;
         final var numerator = 1;
@@ -275,10 +335,5 @@ public class TokenFeeScheduleUpdateSpecs extends HapiSuite {
                                 OptionalLong.of(newMaximumToCollect),
                                 false,
                                 newTokenCollector)));
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return log;
     }
 }

@@ -94,21 +94,21 @@ class NetworkPeerIdentifierTest {
 
     /**
      * Tests that given a list of valid Swirlds production certificates (like the type used in mainnet),
-     * {@link NetworkPeerIdentifier#identifyTlsPeer(Certificate[], List)} is able to successfully identify a matching
+     * {@link NetworkPeerIdentifier#identifyTlsPeer(Certificate[])} is able to successfully identify a matching
      * peer.
      */
     @Test
     void testExtractPeerInfoWorksForMainnet() throws KeyStoreException, InvalidAlgorithmParameterException {
         final PKIXParameters params = new PKIXParameters(publicStores.agrTrustStore());
         final Set<TrustAnchor> trustAnchors = params.getTrustAnchors();
-        final NetworkPeerIdentifier peerIdentifier = new NetworkPeerIdentifier(platformContext);
+        final NetworkPeerIdentifier peerIdentifier = new NetworkPeerIdentifier(platformContext, peerInfoList);
         final Set<PeerInfo> matches = new HashSet<>();
 
         final Certificate[] certificates =
                 trustAnchors.stream().map(TrustAnchor::getTrustedCert).toArray(Certificate[]::new);
         for (final Certificate certificate : certificates) {
             final PeerInfo matchedPeer =
-                    peerIdentifier.identifyTlsPeer(List.of(certificate).toArray(Certificate[]::new), peerInfoList);
+                    peerIdentifier.identifyTlsPeer(List.of(certificate).toArray(Certificate[]::new));
             Assertions.assertNotNull(matchedPeer);
             matches.add(matchedPeer);
         }
@@ -121,12 +121,12 @@ class NetworkPeerIdentifierTest {
      */
     @Test
     void testReturnsIntendedPeerForMainnet() throws KeyStoreException {
-        final NetworkPeerIdentifier peerIdentifier = new NetworkPeerIdentifier(platformContext);
+        final NetworkPeerIdentifier peerIdentifier = new NetworkPeerIdentifier(platformContext, peerInfoList);
         // pick a node's agreement certificate, node20
         final Certificate certUnderTest = publicStores.agrTrustStore().getCertificate("a-node20");
 
         final PeerInfo matchedPeer =
-                peerIdentifier.identifyTlsPeer(List.of(certUnderTest).toArray(Certificate[]::new), peerInfoList);
+                peerIdentifier.identifyTlsPeer(List.of(certUnderTest).toArray(Certificate[]::new));
 
         Assertions.assertNotNull(matchedPeer);
         // assert the peer we got back is node20
@@ -152,7 +152,7 @@ class NetworkPeerIdentifierTest {
         final Certificate[] certificates = new Certificate[] {rsaCert};
 
         final PeerInfo matchedPeer =
-                new NetworkPeerIdentifier(platformContext).identifyTlsPeer(certificates, peerInfoList);
+                new NetworkPeerIdentifier(platformContext, peerInfoList).identifyTlsPeer(certificates);
         Assertions.assertNull(matchedPeer);
     }
 }

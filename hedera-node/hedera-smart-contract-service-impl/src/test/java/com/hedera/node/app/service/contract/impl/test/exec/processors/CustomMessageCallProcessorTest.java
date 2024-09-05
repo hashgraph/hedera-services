@@ -29,14 +29,15 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
+import com.hedera.node.app.service.contract.impl.exec.ActionSidecarContentTracer;
 import com.hedera.node.app.service.contract.impl.exec.AddressChecks;
 import com.hedera.node.app.service.contract.impl.exec.FeatureFlags;
 import com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason;
 import com.hedera.node.app.service.contract.impl.exec.processors.CustomMessageCallProcessor;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.PrngSystemContract;
-import com.hedera.node.app.service.contract.impl.hevm.ActionSidecarContentTracer;
 import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
 import com.hedera.node.app.service.contract.impl.test.TestHelpers;
 import com.swirlds.config.api.Configuration;
@@ -68,6 +69,7 @@ class CustomMessageCallProcessorTest {
     private static final long GAS_REQUIREMENT = 2L;
     private static final Bytes INPUT_DATA = Bytes.fromHexString("0x1234");
     private static final Bytes OUTPUT_DATA = Bytes.fromHexString("0x5678");
+    private static final Bytes NOOP_OUTPUT_DATA = Bytes.fromHexString("0x");
     private static final Address NON_EVM_PRECOMPILE_SYSTEM_ADDRESS = Address.fromHexString("0x222");
     private static final Address CODE_ADDRESS = Address.fromHexString("0x111222333");
     private static final Address SENDER_ADDRESS = Address.fromHexString("0x222333444");
@@ -128,6 +130,7 @@ class CustomMessageCallProcessorTest {
     @Test
     void callPrngSystemContractHappyPath() {
         givenPrngCall(ZERO_GAS_REQUIREMENT);
+        given(frame.getValue()).willReturn(Wei.ZERO);
         given(result.getOutput()).willReturn(OUTPUT_DATA);
         given(result.getState()).willReturn(MessageFrame.State.CODE_SUCCESS);
 
@@ -145,6 +148,7 @@ class CustomMessageCallProcessorTest {
     @Test
     void callPrngSystemContractInsufficientGas() {
         givenPrngCall(GAS_REQUIREMENT);
+        given(frame.getValue()).willReturn(Wei.ZERO);
 
         subject.start(frame, operationTracer);
 
@@ -155,14 +159,16 @@ class CustomMessageCallProcessorTest {
 
     @Test
     void callsToNonStandardSystemContractsAreNotSupported() {
-        final var isHalted = new AtomicBoolean();
-        givenHaltableFrame(isHalted);
+        final Deque<MessageFrame> stack = new ArrayDeque<>();
         givenCallWithCode(NON_EVM_PRECOMPILE_SYSTEM_ADDRESS);
+
         given(addressChecks.isSystemAccount(NON_EVM_PRECOMPILE_SYSTEM_ADDRESS)).willReturn(true);
+        when(frame.getValue()).thenReturn(Wei.ZERO);
 
         subject.start(frame, operationTracer);
-
-        verifyHalt(ExceptionalHaltReason.PRECOMPILE_ERROR);
+        verify(frame).setOutputData(NOOP_OUTPUT_DATA);
+        verify(frame).setState(MessageFrame.State.COMPLETED_SUCCESS);
+        verify(frame).setExceptionalHaltReason(Optional.empty());
     }
 
     @Test
@@ -171,12 +177,11 @@ class CustomMessageCallProcessorTest {
         givenHaltableFrame(isHalted);
         givenCallWithCode(ADDRESS_6);
         given(addressChecks.isSystemAccount(ADDRESS_6)).willReturn(true);
-        given(registry.get(ADDRESS_6)).willReturn(nativePrecompile);
         given(frame.getValue()).willReturn(Wei.ONE);
 
         subject.start(frame, operationTracer);
 
-        verifyHalt(CustomExceptionalHaltReason.INVALID_FEE_SUBMITTED);
+        verifyHalt(CustomExceptionalHaltReason.INVALID_CONTRACT_ID);
     }
 
     @Test
@@ -198,8 +203,6 @@ class CustomMessageCallProcessorTest {
 
     @Test
     void haltsAndTracesInsufficientGasIfPrecompileGasRequirementExceedsRemaining() {
-        final var isHalted = new AtomicBoolean();
-        givenHaltableFrame(isHalted);
         givenEvmPrecompileCall();
         given(nativePrecompile.gasRequirement(INPUT_DATA)).willReturn(GAS_REQUIREMENT);
         given(frame.getRemainingGas()).willReturn(1L);
@@ -218,7 +221,6 @@ class CustomMessageCallProcessorTest {
         given(nativePrecompile.computePrecompile(INPUT_DATA, frame)).willReturn(result);
         given(nativePrecompile.gasRequirement(INPUT_DATA)).willReturn(GAS_REQUIREMENT);
         given(frame.getRemainingGas()).willReturn(3L);
-        given(frame.getState()).willReturn(MessageFrame.State.COMPLETED_SUCCESS);
 
         subject.start(frame, operationTracer);
 
@@ -237,7 +239,6 @@ class CustomMessageCallProcessorTest {
         given(nativePrecompile.computePrecompile(INPUT_DATA, frame)).willReturn(result);
         given(nativePrecompile.gasRequirement(INPUT_DATA)).willReturn(GAS_REQUIREMENT);
         given(frame.getRemainingGas()).willReturn(3L);
-        given(frame.getState()).willReturn(MessageFrame.State.REVERT);
 
         subject.start(frame, operationTracer);
 
@@ -291,6 +292,15 @@ class CustomMessageCallProcessorTest {
                 .getState();
     }
 
+    private void givenCallWithIsTopLevelTransaction(@NonNull final AtomicBoolean isTopLevelTransaction) {
+        doAnswer(invocation -> {
+                    isTopLevelTransaction.set(false);
+                    return null;
+                })
+                .when(frame)
+                .setExceptionalHaltReason(any());
+    }
+
     private void givenCallWithCode(@NonNull final Address contract) {
         given(frame.getContractAddress()).willReturn(contract);
     }
@@ -302,11 +312,9 @@ class CustomMessageCallProcessorTest {
     }
 
     private void givenEvmPrecompileCall() {
-        given(addressChecks.isSystemAccount(ADDRESS_6)).willReturn(true);
         given(registry.get(ADDRESS_6)).willReturn(nativePrecompile);
         given(frame.getContractAddress()).willReturn(ADDRESS_6);
         given(frame.getInputData()).willReturn(INPUT_DATA);
-        given(frame.getValue()).willReturn(Wei.ZERO);
     }
 
     private void givenPrngCall(long gasRequirement) {

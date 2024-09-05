@@ -31,11 +31,20 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Objects;
 
+/**
+ * Provides utility methods for the schedule store.
+ * Used to calculate the hash of a schedule which is then used to store the schedule in the schedule store.
+ * */
 public final class ScheduleStoreUtility {
     private ScheduleStoreUtility() {}
 
-    // @todo('7773') This requires rebuilding the equality virtual map on migration,
-    //      because it's different from ScheduleVirtualValue (and must be, due to PBJ shift)
+    /**
+     * Calculate bytes hash of a schedule based on the schedule's memo, admin key, scheduled transaction, expiration
+     * time, and wait for expiry flag.
+     *
+     * @param scheduleToHash the schedule to hash
+     * @return the bytes
+     */
     @SuppressWarnings("UnstableApiUsage")
     public static Bytes calculateBytesHash(@NonNull final Schedule scheduleToHash) {
         Objects.requireNonNull(scheduleToHash);
@@ -77,7 +86,22 @@ public final class ScheduleStoreUtility {
                 .anyMatch(s -> s.scheduleIdOrThrow().equals(scheduleId));
     }
 
-    static ScheduleList addOrReplace(final Schedule schedule, @Nullable final ScheduleList scheduleList) {
+    /**
+     * Adds a {@link Schedule} to a {@link ScheduleList}, replacing it if it already exists.
+     *
+     * <p>This method checks if the provided {@code Schedule} is already present in the {@code ScheduleList}.
+     * If it is, the existing {@code Schedule} is replaced with the new one. If it isn't, the {@code Schedule}
+     * is added to the list. This allows for updating entries within a {@code ScheduleList} without needing to
+     * manually manage duplicates or replacements.
+     *
+     * @param schedule The {@link Schedule} to add or replace in the {@code ScheduleList}. Must not be {@code null},
+     *     unless the {@code ScheduleList} is also {@code null}.
+     * @param scheduleList The {@link ScheduleList} to which the {@code Schedule} will be added or replaced. May be
+     *     {@code null}, in which case a new {@link ScheduleList} containing only the provided
+     *     {@code Schedule} is returned.
+     * @return A new {@link ScheduleList} containing the {@link Schedule} either added or replacing an existing one
+     */
+    static @NonNull ScheduleList addOrReplace(final Schedule schedule, @Nullable final ScheduleList scheduleList) {
         if (scheduleList == null) {
             return new ScheduleList(Collections.singletonList(schedule));
         }

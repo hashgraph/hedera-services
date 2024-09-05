@@ -25,7 +25,6 @@ import static com.swirlds.common.io.streams.SerializableStreamConstants.SERIALIZ
 import static com.swirlds.common.io.streams.SerializableStreamConstants.VERSION_BYTES;
 
 import com.swirlds.common.io.FunctionalSerialize;
-import com.swirlds.common.io.OptionalSelfSerializable;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.SerializableDet;
 import com.swirlds.common.io.SerializableWithKnownLength;
@@ -96,11 +95,6 @@ public class SerializableDataOutputStream extends AugmentedDataOutputStream {
      */
     public void writeSerializable(SelfSerializable serializable, boolean writeClassId) throws IOException {
         writeSerializable(serializable, writeClassId, serializable);
-    }
-
-    public <E extends Enum<E>> void writeOptionalSerializable(
-            OptionalSelfSerializable<E> serializable, boolean writeClassId, E option) throws IOException {
-        writeSerializable(serializable, writeClassId, out -> serializable.serialize(out, option));
     }
 
     /**
