@@ -18,7 +18,6 @@ package com.hedera.node.app.workflows.handle.cache;
 
 import static java.util.Objects.requireNonNull;
 
-import com.google.common.annotations.VisibleForTesting;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.transaction.TransactionBody;
@@ -31,8 +30,6 @@ import com.hedera.node.app.workflows.TransactionChecker;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.app.workflows.prehandle.PreHandleResult;
-import com.hedera.node.config.ConfigProvider;
-import com.hedera.node.config.data.CacheConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.events.ConsensusEvent;
@@ -41,8 +38,8 @@ import com.swirlds.state.State;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.concurrent.Executor;
-import java.util.concurrent.ForkJoinPool;
 import javax.inject.Inject;
+import javax.inject.Named;
 import javax.inject.Singleton;
 
 /**
@@ -61,21 +58,7 @@ public class CacheWarmer {
     public CacheWarmer(
             @NonNull final TransactionChecker checker,
             @NonNull final TransactionDispatcher dispatcher,
-            @NonNull final ConfigProvider configProvider) {
-        this(
-                checker,
-                dispatcher,
-                new ForkJoinPool(configProvider
-                        .getConfiguration()
-                        .getConfigData(CacheConfig.class)
-                        .warmThreads()));
-    }
-
-    @VisibleForTesting
-    CacheWarmer(
-            @NonNull final TransactionChecker checker,
-            @NonNull final TransactionDispatcher dispatcher,
-            @NonNull final Executor executor) {
+            @NonNull @Named("CacheWarmer") final Executor executor) {
         this.checker = checker;
         this.dispatcher = requireNonNull(dispatcher);
         this.executor = requireNonNull(executor);
