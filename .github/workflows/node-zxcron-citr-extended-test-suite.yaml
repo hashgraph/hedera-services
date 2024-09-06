@@ -65,10 +65,6 @@ jobs:
         id: gradle-build
         run: ${GRADLE_EXEC} assemble :test-clients:yahCliJar --scan
 
-      - name: Spotless Check
-        if: ${{ !cancelled() }}
-        run: ${GRADLE_EXEC} spotlessCheck --scan
-
       - name: Timing Sensitive Tests
         id: gradle-timing-sensitive
         if: ${{ steps.gradle-build.conclusion == 'success' && !cancelled() }}
@@ -108,7 +104,7 @@ jobs:
         with:
           check_name: 'Node: Hammer Test Results'
           json_thousands_separator: ','
-          junit_files: "**/test-clients/build/test-results/hammer/TEST-*.xml"
+          junit_files: "**/build/test-results/hammer/TEST-*.xml"
           comment_mode: errors # only comment if we could not find or parse the JUnit XML files
 
       - name: HAPI Testing (Time Consuming)
