@@ -18,6 +18,7 @@ package com.hedera.services.bdd.suites.crypto;
 
 import static com.hedera.services.bdd.junit.TestTags.CRYPTO;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
 import static com.hedera.services.bdd.spec.keys.SigControl.OFF;
 import static com.hedera.services.bdd.spec.keys.SigControl.ON;
@@ -62,45 +63,49 @@ public class AutoAccountUpdateSuite {
 
     @HapiTest
     final Stream<DynamicTest> modifySigRequiredAfterAutoAccountCreation() {
-        return defaultHapiSpec("modifySigRequiredAfterAutoAccountCreation")
-                .given(newKeyNamed(ALIAS), cryptoCreate(PAYER).balance(INITIAL_BALANCE * ONE_HBAR))
-                .when(
-                        cryptoTransfer(tinyBarsFromToWithAlias(PAYER, ALIAS, ONE_HUNDRED_HBARS))
-                                .via(TRANSFER_TXN),
-                        withOpContext((spec, opLog) -> updateSpecFor(spec, ALIAS)),
-                        /* validate child record has no alias set and has fields as expected */
-                        getTxnRecord(TRANSFER_TXN)
-                                .andAllChildRecords()
-                                .hasNonStakingChildRecordCount(1)
-                                .hasNoAliasInChildRecord(0)
-                                .logged(),
-                        getAliasedAccountInfo(ALIAS)
-                                .has(accountWith()
-                                        .autoRenew(THREE_MONTHS_IN_SECONDS)
-                                        .receiverSigReq(false)
-                                        .expectedBalanceWithChargedUsd((ONE_HUNDRED_HBARS), 0, 0)))
-                .then(
-                        /* change receiverSigRequired to false and validate */
-                        cryptoUpdateAliased(ALIAS).receiverSigRequired(true).signedBy(ALIAS, PAYER, DEFAULT_PAYER),
-                        getAliasedAccountInfo(ALIAS)
-                                .has(accountWith()
-                                        .autoRenew(THREE_MONTHS_IN_SECONDS)
-                                        .receiverSigReq(true)
-                                        .expectedBalanceWithChargedUsd((ONE_HUNDRED_HBARS), 0, 0)),
+        return hapiTest(
+                newKeyNamed(ALIAS),
+                cryptoCreate(PAYER)
+                        .balance(INITIAL_BALANCE * ONE_HBAR),
 
-                        /* transfer without receiver sig fails */
-                        cryptoTransfer(tinyBarsFromToWithAlias(PAYER, ALIAS, ONE_HUNDRED_HBARS))
-                                .via(TRANSFER_TXN_2)
-                                .signedBy(PAYER, DEFAULT_PAYER)
-                                .hasKnownStatus(INVALID_SIGNATURE),
+                cryptoTransfer(tinyBarsFromToWithAlias(PAYER, ALIAS, ONE_HUNDRED_HBARS))
+                        .via(TRANSFER_TXN),
+                withOpContext((spec, opLog) -> updateSpecFor(spec, ALIAS)),
+                /* validate child record has no alias set and has fields as expected */
+                getTxnRecord(TRANSFER_TXN)
+                        .andAllChildRecords()
+                        .hasNonStakingChildRecordCount(1)
+                        .hasNoAliasInChildRecord(0)
+                        .logged(),
+                getAliasedAccountInfo(ALIAS)
+                        .has(accountWith()
+                                .autoRenew(THREE_MONTHS_IN_SECONDS)
+                                .receiverSigReq(false)
+                                .expectedBalanceWithChargedUsd((ONE_HUNDRED_HBARS), 0, 0)),
 
-                        /* transfer with receiver sig passes */
-                        cryptoTransfer(tinyBarsFromToWithAlias(PAYER, ALIAS, ONE_HUNDRED_HBARS))
-                                .via(TRANSFER_TXN_3)
-                                .signedBy(ALIAS, PAYER, DEFAULT_PAYER),
-                        getTxnRecord(TRANSFER_TXN_3).andAllChildRecords().hasNonStakingChildRecordCount(0),
-                        getAliasedAccountInfo(ALIAS)
-                                .has(accountWith().expectedBalanceWithChargedUsd((2 * ONE_HUNDRED_HBARS), 0, 0)));
+                /* change receiverSigRequired to false and validate */
+                cryptoUpdateAliased(ALIAS).receiverSigRequired(true).signedBy(ALIAS, PAYER, DEFAULT_PAYER),
+                getAliasedAccountInfo(ALIAS)
+                        .has(accountWith()
+                                .autoRenew(THREE_MONTHS_IN_SECONDS)
+                                .receiverSigReq(true)
+                                .expectedBalanceWithChargedUsd((ONE_HUNDRED_HBARS), 0, 0)),
+
+                /* transfer without receiver sig fails */
+                cryptoTransfer(tinyBarsFromToWithAlias(PAYER, ALIAS, ONE_HUNDRED_HBARS))
+                        .via(TRANSFER_TXN_2)
+                        .signedBy(PAYER, DEFAULT_PAYER)
+                        .hasKnownStatus(INVALID_SIGNATURE),
+
+                /* transfer with receiver sig passes */
+                cryptoTransfer(tinyBarsFromToWithAlias(PAYER, ALIAS, ONE_HUNDRED_HBARS))
+                        .via(TRANSFER_TXN_3)
+                        .signedBy(ALIAS, PAYER, DEFAULT_PAYER),
+                getTxnRecord(TRANSFER_TXN_3).andAllChildRecords().hasNonStakingChildRecordCount(0),
+                getAliasedAccountInfo(ALIAS)
+                        .has(accountWith().expectedBalanceWithChargedUsd((2 * ONE_HUNDRED_HBARS), 0, 0))
+
+        );
     }
 
     @HapiTest
@@ -112,31 +117,32 @@ public class AutoAccountUpdateSuite {
                 KeyShape.threshSigs(1, OFF, OFF, OFF, OFF, OFF, OFF, ON),
                 KeyShape.threshSigs(3, ON, ON, ON, OFF, OFF, OFF, OFF));
 
-        return defaultHapiSpec("updateKeyOnAutoCreatedAccount", NONDETERMINISTIC_TRANSACTION_FEES)
-                .given(
-                        newKeyNamed(ALIAS),
-                        newKeyNamed(complexKey).shape(ENOUGH_UNIQUE_SIGS),
-                        cryptoCreate(PAYER).balance(INITIAL_BALANCE * ONE_HBAR))
-                .when(
-                        /* auto account is created */
-                        cryptoTransfer(tinyBarsFromToWithAlias(PAYER, ALIAS, ONE_HUNDRED_HBARS))
-                                .payingWith(PAYER)
-                                .via(TRANSFER_TXN),
-                        withOpContext((spec, opLog) -> updateSpecFor(spec, ALIAS)),
-                        getTxnRecord(TRANSFER_TXN).andAllChildRecords().logged(),
-                        getAliasedAccountInfo(ALIAS)
-                                .has(accountWith()
-                                        .expectedBalanceWithChargedUsd(ONE_HUNDRED_HBARS, 0, 0)
-                                        .alias(ALIAS)))
-                .then(
-                        /* validate the key on account can be updated to complex key, and has no relation to alias*/
-                        cryptoUpdateAliased(ALIAS)
-                                .key(complexKey)
-                                .payingWith(PAYER)
-                                .signedBy(ALIAS, complexKey, PAYER, DEFAULT_PAYER),
-                        getAliasedAccountInfo(ALIAS)
-                                .has(accountWith()
-                                        .expectedBalanceWithChargedUsd((ONE_HUNDRED_HBARS), 0, 0)
-                                        .key(complexKey)));
+        return hapiTest(
+                newKeyNamed(ALIAS),
+                newKeyNamed(complexKey).shape(ENOUGH_UNIQUE_SIGS),
+                cryptoCreate(PAYER).balance(INITIAL_BALANCE * ONE_HBAR),
+
+                /* auto account is created */
+                cryptoTransfer(tinyBarsFromToWithAlias(PAYER, ALIAS, ONE_HUNDRED_HBARS))
+                        .payingWith(PAYER)
+                        .via(TRANSFER_TXN),
+                withOpContext((spec, opLog) -> updateSpecFor(spec, ALIAS)),
+                getTxnRecord(TRANSFER_TXN).andAllChildRecords().logged(),
+                getAliasedAccountInfo(ALIAS)
+                        .has(accountWith()
+                                .expectedBalanceWithChargedUsd(ONE_HUNDRED_HBARS, 0, 0)
+                                .alias(ALIAS)),
+
+                /* validate the key on account can be updated to complex key, and has no relation to alias*/
+                cryptoUpdateAliased(ALIAS)
+                        .key(complexKey)
+                        .payingWith(PAYER)
+                        .signedBy(ALIAS, complexKey, PAYER, DEFAULT_PAYER),
+                getAliasedAccountInfo(ALIAS)
+                        .has(accountWith()
+                                .expectedBalanceWithChargedUsd((ONE_HUNDRED_HBARS), 0, 0)
+                                .key(complexKey))
+
+        );
     }
 }
