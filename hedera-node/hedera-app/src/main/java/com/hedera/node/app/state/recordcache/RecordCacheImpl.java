@@ -98,17 +98,6 @@ public class RecordCacheImpl implements HederaRecordCache {
             e -> e.transactionIdOrElse(TransactionID.DEFAULT).transactionValidStartOrElse(Timestamp.DEFAULT),
             TIMESTAMP_COMPARATOR);
 
-    // nested ternary expressions
-    @SuppressWarnings("java:S3358")
-    private static final Comparator<BlockTransactionalUnit> BLOCK_TRANSACTIONAL_UNIT_COMPARATOR =
-            Comparator.<BlockTransactionalUnit, ResponseCodeEnum>comparing(
-                            unit -> unit.blockTransactionParts().getFirst().status(),
-                            (a, b) -> DUE_DILIGENCE_FAILURES.contains(a) == DUE_DILIGENCE_FAILURES.contains(b)
-                                    ? 0
-                                    : DUE_DILIGENCE_FAILURES.contains(b) ? -1 : 1)
-                    .thenComparing(
-                            unit -> unit.blockTransactionParts().getFirst().consensusTimestamp(), TIMESTAMP_COMPARATOR);
-
     /**
      * This empty History is returned whenever a transaction is known to the deduplication cache, but not yet
      * added to this cache.
@@ -221,7 +210,6 @@ public class RecordCacheImpl implements HederaRecordCache {
         final BlockTransactionalUnitTranslator translator = new BlockTransactionalUnitTranslator();
 
         final var blockTransactionalUnits = blockUnitSplit.split(blockItems);
-        blockTransactionalUnits.sort(BLOCK_TRANSACTIONAL_UNIT_COMPARATOR);
 
         final List<SingleTransactionRecord> singleTransactionRecords = new ArrayList<>();
         for (final var blockTransactionalUnit : blockTransactionalUnits) {
