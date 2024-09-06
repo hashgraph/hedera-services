@@ -226,7 +226,7 @@ public final class PcesBirthRoundMigration {
                 new BufferedOutputStream(new FileOutputStream(temporaryFile.toFile())));
         outputStream.writeInt(PcesMutableFile.FILE_VERSION);
         for (final PlatformEvent event : eventsToMigrate) {
-            EventSerializationUtils.serializePlatformEvent(outputStream, event);
+            EventSerializationUtils.serializePlatformEvent(outputStream, event, true);
         }
         outputStream.close();
 

@@ -92,7 +92,7 @@ public class CesEvent extends AbstractSerializableHashable
         Objects.requireNonNull(out);
         Objects.requireNonNull(platformEvent);
 
-        EventSerializationUtils.serializePlatformEvent(out, platformEvent);
+        EventSerializationUtils.serializePlatformEvent(out, platformEvent, false);
 
         // some fields used to be part of the stream but are no longer used
         // in order to maintain compatibility with older versions of the stream, we write a constant in their place
@@ -114,7 +114,7 @@ public class CesEvent extends AbstractSerializableHashable
 
     @Override
     public void deserialize(@NonNull final SerializableDataInputStream in, final int version) throws IOException {
-        this.platformEvent = EventSerializationUtils.deserializePlatformEvent(in);
+        this.platformEvent = EventSerializationUtils.deserializePlatformEvent(in, false);
 
         in.readInt(); // ConsensusData.version
         in.readLong(); // ConsensusData.generation

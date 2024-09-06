@@ -209,10 +209,10 @@ public class SimulatedNetwork {
         try {
             final ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
             final SerializableDataOutputStream outputStream = new SerializableDataOutputStream(byteArrayOutputStream);
-            EventSerializationUtils.serializePlatformEvent(outputStream, event);
+            EventSerializationUtils.serializePlatformEvent(outputStream, event, true);
             final SerializableDataInputStream inputStream =
                     new SerializableDataInputStream(new ByteArrayInputStream(byteArrayOutputStream.toByteArray()));
-            final PlatformEvent copy = EventSerializationUtils.deserializePlatformEvent(inputStream);
+            final PlatformEvent copy = EventSerializationUtils.deserializePlatformEvent(inputStream, true);
             copy.setHash(event.getHash());
             return copy;
         } catch (final IOException e) {

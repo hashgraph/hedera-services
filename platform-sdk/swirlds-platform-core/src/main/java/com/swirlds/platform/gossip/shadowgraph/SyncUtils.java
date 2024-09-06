@@ -206,7 +206,7 @@ public final class SyncUtils {
                     events.size());
             for (final PlatformEvent event : events) {
                 connection.getDos().writeByte(ByteConstants.COMM_EVENT_NEXT);
-                EventSerializationUtils.serializePlatformEvent(connection.getDos(), event);
+                EventSerializationUtils.serializePlatformEvent(connection.getDos(), event, true);
             }
             if (writeAborted.get()) {
                 logger.info(SYNC_INFO.getMarker(), "{} writing events aborted", connection.getDescription());
@@ -284,7 +284,7 @@ public final class SyncUtils {
                             }
 
                             final PlatformEvent platformEvent =
-                                    EventSerializationUtils.deserializePlatformEvent(connection.getDis());
+                                    EventSerializationUtils.deserializePlatformEvent(connection.getDis(), true);
 
                             platformEvent.setSenderId(connection.getOtherId());
                             intakeEventCounter.eventEnteredIntakePipeline(connection.getOtherId());

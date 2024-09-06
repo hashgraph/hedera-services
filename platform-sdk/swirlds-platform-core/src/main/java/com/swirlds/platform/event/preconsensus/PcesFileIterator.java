@@ -85,7 +85,7 @@ public class PcesFileIterator implements IOIterator<PlatformEvent> {
             final long initialCount = counter.getCount();
 
             try {
-                final PlatformEvent candidate = EventSerializationUtils.deserializePlatformEvent(stream);
+                final PlatformEvent candidate = EventSerializationUtils.deserializePlatformEvent(stream, true);
                 if (candidate.getAncientIndicator(fileType) >= lowerBound) {
                     next = candidate;
                 }

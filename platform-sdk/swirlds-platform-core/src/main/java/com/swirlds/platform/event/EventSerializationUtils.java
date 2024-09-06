@@ -142,49 +142,29 @@ public final class EventSerializationUtils {
     }
 
     /**
-     * Serialize the given {@link PlatformEvent} to the output stream {@code out}.
-     * @param out the stream to which this object is to be written
-     * @param event the event to serialize
+     * Serialize the given {@link PlatformEvent} to the output stream {@code out}
+     *
+     * @param out          the stream to which this object is to be written
+     * @param event        the event to serialize
+     * @param writeVersion if true, the event version number will be written to the stream
      * @throws IOException if an I/O error occurs
      */
     public static void serializePlatformEvent(
-            @NonNull final SerializableDataOutputStream out, @NonNull final PlatformEvent event) throws IOException {
-        out.writeInt(PLATFORM_EVENT_VERSION);
-        serializeSignedEvent(
+            @NonNull final SerializableDataOutputStream out,
+            @NonNull final PlatformEvent event,
+            final boolean writeVersion) throws IOException {
+        if(writeVersion) {
+            out.writeInt(PLATFORM_EVENT_VERSION);
+        }
+        serializeUnsignedEvent(
                 out,
                 event.getOldSoftwareVersion(),
                 event.getEventCore(),
                 event.getSelfParent(),
                 event.getOtherParents(),
-                event.getEventTransactions(),
-                event.getSignature());
-    }
-
-    /**
-     * Serialize a signed event to the output stream {@code out}.
-     *
-     * @param out the stream to which this object is to be written
-     * @param softwareVersion the software version
-     * @param eventCore the event core
-     * @param selfParent the self parent
-     * @param otherParents the other parents
-     * @param eventTransactions the event transactions
-     * @param signature the signature
-     *
-     * @throws IOException if an I/O error occurs
-     */
-    private static void serializeSignedEvent(
-            @NonNull final SerializableDataOutputStream out,
-            @NonNull final SoftwareVersion softwareVersion,
-            @NonNull final EventCore eventCore,
-            @Nullable final EventDescriptorWrapper selfParent,
-            @NonNull final List<EventDescriptorWrapper> otherParents,
-            @NonNull final List<EventTransaction> eventTransactions,
-            @NonNull final Bytes signature)
-            throws IOException {
-        serializeUnsignedEvent(out, softwareVersion, eventCore, selfParent, otherParents, eventTransactions);
-        out.writeInt((int) signature.length());
-        signature.writeTo(out);
+                event.getEventTransactions());
+        out.writeInt((int) event.getSignature().length());
+        event.getSignature().writeTo(out);
     }
 
     /**
@@ -273,16 +253,20 @@ public final class EventSerializationUtils {
     /**
      * Deserialize the event as {@link PlatformEvent}.
      *
-     * @param in the stream from which this object is to be read
+     * @param in          the stream from which this object is to be read
+     * @param readVersion if true, the event version number will be read from the stream
      * @return the deserialized event
      * @throws IOException if unsupported transaction types are encountered
      */
     @NonNull
-    public static PlatformEvent deserializePlatformEvent(@NonNull final SerializableDataInputStream in)
+    public static PlatformEvent deserializePlatformEvent(@NonNull final SerializableDataInputStream in,
+            final boolean readVersion)
             throws IOException {
-        final int eventVersion = in.readInt();
-        if (eventVersion != PLATFORM_EVENT_VERSION) {
-            throw new IOException("Unsupported event version: " + eventVersion);
+        if(readVersion){
+            final int eventVersion = in.readInt();
+            if (eventVersion != PLATFORM_EVENT_VERSION) {
+                throw new IOException("Unsupported event version: " + eventVersion);
+            }
         }
         final UnsignedEvent unsignedEvent = EventSerializationUtils.deserializeUnsignedEvent(in);
         final byte[] signature = in.readByteArray(SignatureType.RSA.signatureLength());
@@ -302,11 +286,11 @@ public final class EventSerializationUtils {
             throws IOException {
         try (final ByteArrayOutputStream io = new ByteArrayOutputStream()) {
             final SerializableDataOutputStream out = new SerializableDataOutputStream(io);
-            serializePlatformEvent(out, original);
+            serializePlatformEvent(out, original, true);
             out.flush();
             final SerializableDataInputStream in =
                     new SerializableDataInputStream(new ByteArrayInputStream(io.toByteArray()));
-            return deserializePlatformEvent(in);
+            return deserializePlatformEvent(in, true);
         }
     }
 }

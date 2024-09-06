@@ -52,7 +52,7 @@ public final class EventUtils {
     public static byte[] serializePlatformEvent(@NonNull final PlatformEvent event) {
         final ByteArrayOutputStream stream = new ByteArrayOutputStream();
         try {
-            EventSerializationUtils.serializePlatformEvent(new SerializableDataOutputStream(stream), event);
+            EventSerializationUtils.serializePlatformEvent(new SerializableDataOutputStream(stream), event, true);
         } catch (final IOException e) {
             throw new UncheckedIOException(e);
         }

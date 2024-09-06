@@ -96,8 +96,8 @@ public class EventBenchmarks {
         //
         // Benchmark                                (seed)   Mode  Cnt    Score    Error   Units
         // EventSerialization.serializeDeserialize       0  thrpt    3  962.486 ± 29.252  ops/ms
-        EventSerializationUtils.serializePlatformEvent(outStream, event);
-        bh.consume(EventSerializationUtils.deserializePlatformEvent(inStream));
+        EventSerializationUtils.serializePlatformEvent(outStream, event, true);
+        bh.consume(EventSerializationUtils.deserializePlatformEvent(inStream, true));
     }
 
     /*
