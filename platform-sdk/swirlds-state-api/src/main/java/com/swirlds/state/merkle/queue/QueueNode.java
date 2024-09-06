@@ -47,6 +47,7 @@ import com.swirlds.virtualmap.serialize.ValueSerializer;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ConcurrentModificationException;
 import java.util.Iterator;
+import java.util.NoSuchElementException;
 import java.util.Objects;
 
 /**
@@ -59,6 +60,10 @@ import java.util.Objects;
 @ConstructableIgnored
 @DebugIterationEndpoint
 public class QueueNode<E> extends PartialBinaryMerkleInternal implements Labeled, MerkleInternal {
+
+    // A "max keys" hint to the underlying virtual map. The largest queue so far has
+    // slightly less than 2M elements
+    private static final long QUEUE_MAX_KEYS_HINT = 2_000_000;
 
     private static final long CLASS_ID = 0x990FF87AD2691DCL;
 
@@ -259,15 +264,23 @@ public class QueueNode<E> extends PartialBinaryMerkleInternal implements Labeled
         final ValueSerializer<OnDiskValue<E>> valueSerializer =
                 new OnDiskValueSerializer<>(elementSerializerClassId, elementClassId, codec);
         final MerkleDbTableConfig merkleDbTableConfig = new MerkleDbTableConfig((short) 1, DigestType.SHA_384);
-        merkleDbTableConfig.maxNumberOfKeys(2_000_000);
+        merkleDbTableConfig.maxNumberOfKeys(QUEUE_MAX_KEYS_HINT);
         final VirtualDataSourceBuilder dsBuilder = new MerkleDbDataSourceBuilder(merkleDbTableConfig);
         return new VirtualMap<>(label, keySerializer, valueSerializer, dsBuilder);
     }
 
+    /**
+     * A tiny utility class to iterate over the queue node.
+     */
     private class QueueIterator implements Iterator<E> {
 
+        // Queue position to start from, inclusive
         private final long start;
+
+        // Queue position to iterate up to, exclusive
         private final long limit;
+
+        // The current iterator position, start <= current < limit
         private long current;
 
         // Start (inc), limit (exc)
@@ -284,6 +297,9 @@ public class QueueNode<E> extends PartialBinaryMerkleInternal implements Labeled
 
         @Override
         public E next() {
+            if (current == limit) {
+                throw new NoSuchElementException();
+            }
             try {
                 return getFromStore(current++).getValue();
             } catch (final IllegalStateException e) {
@@ -291,7 +307,7 @@ public class QueueNode<E> extends PartialBinaryMerkleInternal implements Labeled
             }
         }
 
-        public void reset() {
+        void reset() {
             current = start;
         }
     }
