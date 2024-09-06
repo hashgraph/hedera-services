@@ -107,7 +107,7 @@ public class DefaultStaleEventDetector implements StaleEventDetector {
         if (currentEventWindow.isAncient(event)) {
             // Although unlikely, it is plausible for an event to go stale before it is added to the detector.
             handleStaleEvent(event);
-            logger.warn(INVALID_EVENT_ERROR.getMarker(), "addSelfEvent gen: {}  created: {}  #txn: {}  threshold: {}",
+            logger.warn(INVALID_EVENT_ERROR.getMarker(), "addSelfEvent STALE gen: {}  created: {}  #txn: {}  threshold: {}",
                     event.getGeneration(),
                     event.getTimeCreated(),
                     event.getTransactionCount(),
@@ -132,6 +132,11 @@ public class DefaultStaleEventDetector implements StaleEventDetector {
         for (final PlatformEvent event : consensusRound.getConsensusEvents()) {
             if (event.getCreatorId().equals(selfId)) {
                 selfEvents.remove(event.getDescriptor());
+                logger.warn(INVALID_EVENT_ERROR.getMarker(), "addConsensusRound CONSENSUS gen: {}  created: {}  #txn: {}  threshold: {}",
+                        event.getGeneration(),
+                        event.getTimeCreated(),
+                        event.getTransactionCount(),
+                        currentEventWindow.getAncientThreshold());
             }
         }
 
@@ -142,7 +147,7 @@ public class DefaultStaleEventDetector implements StaleEventDetector {
         final List<RoutableData<StaleEventDetectorOutput>> output = new ArrayList<>(staleEvents.size());
         for (final PlatformEvent event : staleEvents) {
             handleStaleEvent(event);
-            logger.warn(INVALID_EVENT_ERROR.getMarker(), "addConsensusRound gen: {}  created: {}  #txn: {}  threshold: {}",
+            logger.warn(INVALID_EVENT_ERROR.getMarker(), "addConsensusRound STALE gen: {}  created: {}  #txn: {}  threshold: {}",
                     event.getGeneration(),
                     event.getTimeCreated(),
                     event.getTransactionCount(),

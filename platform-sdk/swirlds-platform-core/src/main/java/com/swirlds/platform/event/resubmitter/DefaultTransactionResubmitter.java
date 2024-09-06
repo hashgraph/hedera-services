@@ -16,6 +16,8 @@
 
 package com.swirlds.platform.event.resubmitter;
 
+import static com.swirlds.logging.legacy.LogMarker.INVALID_EVENT_ERROR;
+
 import com.hedera.hapi.platform.event.EventTransaction;
 import com.hedera.hapi.platform.event.EventTransaction.TransactionOneOfType;
 import com.hedera.hapi.platform.event.StateSignatureTransaction;
@@ -29,11 +31,15 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * A default implementation of {@link TransactionResubmitter}.
  */
 public class DefaultTransactionResubmitter implements TransactionResubmitter {
+
+    private static final Logger logger = LogManager.getLogger(DefaultTransactionResubmitter.class);
 
     private EventWindow eventWindow;
     private final long maxSignatureResubmitAge;
@@ -81,7 +87,11 @@ public class DefaultTransactionResubmitter implements TransactionResubmitter {
                 }
             }
         }
-
+        logger.warn(INVALID_EVENT_ERROR.getMarker(), "resubmitStaleTransactions gen: {} total: {} resubmitted: {}  dropped: {}",
+                event.getGeneration(),
+                event.getTransactionCount(),
+                transactionsToResubmit.size(),
+                event.getTransactionCount() - transactionsToResubmit.size());
         return transactionsToResubmit;
     }
 
