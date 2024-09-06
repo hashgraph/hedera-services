@@ -152,8 +152,9 @@ public final class EventSerializationUtils {
     public static void serializePlatformEvent(
             @NonNull final SerializableDataOutputStream out,
             @NonNull final PlatformEvent event,
-            final boolean writeVersion) throws IOException {
-        if(writeVersion) {
+            final boolean writeVersion)
+            throws IOException {
+        if (writeVersion) {
             out.writeInt(PLATFORM_EVENT_VERSION);
         }
         serializeUnsignedEvent(
@@ -259,10 +260,9 @@ public final class EventSerializationUtils {
      * @throws IOException if unsupported transaction types are encountered
      */
     @NonNull
-    public static PlatformEvent deserializePlatformEvent(@NonNull final SerializableDataInputStream in,
-            final boolean readVersion)
-            throws IOException {
-        if(readVersion){
+    public static PlatformEvent deserializePlatformEvent(
+            @NonNull final SerializableDataInputStream in, final boolean readVersion) throws IOException {
+        if (readVersion) {
             final int eventVersion = in.readInt();
             if (eventVersion != PLATFORM_EVENT_VERSION) {
                 throw new IOException("Unsupported event version: " + eventVersion);
