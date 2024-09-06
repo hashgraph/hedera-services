@@ -28,6 +28,7 @@ import static java.util.concurrent.CompletableFuture.supplyAsync;
 
 import com.hedera.hapi.block.stream.BlockItem;
 import com.hedera.hapi.block.stream.BlockProof;
+import com.hedera.hapi.block.stream.MerkleSiblingHash;
 import com.hedera.hapi.block.stream.output.BlockHeader;
 import com.hedera.hapi.block.stream.output.TransactionResult;
 import com.hedera.hapi.node.base.SemanticVersion;
@@ -38,6 +39,7 @@ import com.hedera.node.app.blocks.BlockStreamManager;
 import com.hedera.node.app.blocks.BlockStreamService;
 import com.hedera.node.app.blocks.StreamingTreeHasher;
 import com.hedera.node.app.records.impl.BlockRecordInfoUtils;
+import com.hedera.node.app.tss.TssBaseService;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.BlockRecordStreamConfig;
 import com.hedera.node.config.data.BlockStreamConfig;
@@ -69,12 +71,12 @@ import org.apache.logging.log4j.Logger;
 public class BlockStreamManagerImpl implements BlockStreamManager {
     private static final Logger log = LogManager.getLogger(BlockStreamManagerImpl.class);
 
-    private static final Bytes MOCK_HASH = Bytes.wrap(new byte[48]);
     private static final int CHUNK_SIZE = 8;
     private static final CompletableFuture<Bytes> MOCK_START_STATE_ROOT_HASH_FUTURE =
             completedFuture(Bytes.wrap(new byte[48]));
 
     private final int roundsPerBlock;
+    private final TssBaseService tssBaseService;
     private final SemanticVersion hapiVersion;
     private final SemanticVersion nodeVersion;
     private final ExecutorService executor;
@@ -83,7 +85,7 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
     private final Supplier<BlockItemWriter> writerSupplier;
     private final BoundaryStateChangeListener boundaryStateChangeListener;
 
-    // All this state is scoped to producing the block for the last-started round
+    // All this state is scoped to producing the current block
     private long blockNumber;
     // Set to the round number of the last round handled before entering a freeze period
     private long freezeRoundNumber = -1;
@@ -104,12 +106,18 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
     /**
      * Represents a block pending completion by the block hash signature needed for its block proof.
      *
-     * @param blockNumber the block number
+     * @param number the block number
+     * @param blockHash the block hash
      * @param proofBuilder the block proof builder
      * @param writer the block item writer
+     * @param siblingHashes the sibling hashes needed for an indirect block proof of an earlier block
      */
     private record PendingBlock(
-            long blockNumber, @NonNull BlockProof.Builder proofBuilder, @NonNull BlockItemWriter writer) {}
+            long number,
+            @NonNull Bytes blockHash,
+            @NonNull BlockProof.Builder proofBuilder,
+            @NonNull BlockItemWriter writer,
+            @NonNull MerkleSiblingHash... siblingHashes) {}
 
     /**
      * A queue of blocks pending completion by the block hash signature needed for their block proofs.
@@ -121,9 +129,11 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
             @NonNull final Supplier<BlockItemWriter> writerSupplier,
             @NonNull final ExecutorService executor,
             @NonNull final ConfigProvider configProvider,
+            @NonNull final TssBaseService tssBaseService,
             @NonNull final BoundaryStateChangeListener boundaryStateChangeListener) {
         this.writerSupplier = requireNonNull(writerSupplier);
         this.executor = requireNonNull(executor);
+        this.tssBaseService = tssBaseService;
         this.boundaryStateChangeListener = requireNonNull(boundaryStateChangeListener);
         final var config = requireNonNull(configProvider).getConfiguration();
         this.hapiVersion = hapiVersionFrom(config);
@@ -184,53 +194,28 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
             schedulePendingWork();
             writeFuture.join();
 
-            final var inputRootHash = inputTreeHasher.rootHash().join();
-            final var outputRootHash = outputTreeHasher.rootHash().join();
+            final var inputHash = inputTreeHasher.rootHash().join();
+            final var outputHash = outputTreeHasher.rootHash().join();
             final var blockStartStateHash = MOCK_START_STATE_ROOT_HASH_FUTURE.join();
-            final var blockHash = computeBlockHash(lastBlockHash, inputRootHash, outputRootHash, blockStartStateHash);
-            // FUTURE: sign the block hash and gossip our signature
-
-            final var blockProofBuilder = BlockProof.newBuilder()
+            final var leftParent = combine(lastBlockHash, inputHash);
+            final var rightParent = combine(outputHash, blockStartStateHash);
+            final var blockHash = combine(leftParent, rightParent);
+            final var pendingProof = BlockProof.newBuilder()
                     .block(blockNumber)
                     .previousBlockRootHash(lastBlockHash)
                     .startOfBlockStateRootHash(blockStartStateHash);
-            pendingBlocks.add(new PendingBlock(blockNumber, blockProofBuilder, writer));
+            pendingBlocks.add(new PendingBlock(
+                    blockNumber,
+                    blockHash,
+                    pendingProof,
+                    writer,
+                    new MerkleSiblingHash(false, inputHash),
+                    new MerkleSiblingHash(false, rightParent)));
             // Update in-memory state to prepare for the next block
             lastBlockHash = blockHash;
             writer = null;
 
-            // Simulate the completion of the block proof
-            final long blockNumberToComplete = this.blockNumber;
-            CompletableFuture.runAsync(
-                    () -> {
-                        try {
-                            finishBlockProof(blockNumberToComplete, Bytes.wrap(new byte[48]));
-                        } catch (Exception e) {
-                            log.error("Failed to finish proof for block {}", blockNumberToComplete, e);
-                        }
-                    },
-                    executor);
-        }
-    }
-
-    /**
-     * {@inheritDoc}
-     * Synchronized to ensure that block proofs are always written in order, even in edge cases where multiple
-     * pending block proofs become available at the same time.
-     * @param blockNumber the number of the block to finish
-     * @param signature the signature to use in the block proof
-     */
-    @Override
-    public synchronized void finishBlockProof(final long blockNumber, @NonNull final Bytes signature) {
-        requireNonNull(signature);
-        while (!pendingBlocks.isEmpty() && pendingBlocks.peek().blockNumber() <= blockNumber) {
-            final var block = pendingBlocks.poll();
-            // Note the actual proof for an earlier block number awaiting proof will be more complicated than this
-            final var proof = block.proofBuilder().blockSignature(signature).build();
-            block.writer()
-                    .writeItem(BlockItem.PROTOBUF.toBytes(
-                            BlockItem.newBuilder().blockProof(proof).build()))
-                    .closeBlock();
+            tssBaseService.requestLedgerSignature(blockHash.toByteArray());
         }
     }
 
@@ -263,21 +248,56 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
         return blockHashManager.hashOfBlock(blockNo);
     }
 
+    /**
+     * Synchronized to ensure that block proofs are always written in order, even in edge cases where multiple
+     * pending block proofs become available at the same time.
+     * @param message the number of the block to finish
+     * @param signature the signature to use in the block proof
+     */
+    @Override
+    public synchronized void accept(@NonNull final byte[] message, @NonNull final byte[] signature) {
+        // Find the block whose hash as the signed message, tracking any sibling hashes
+        // needed for indirect proofs of earlier blocks along the way
+        long blockNumber = Long.MIN_VALUE;
+        boolean impliesIndirectProof = false;
+        final List<List<MerkleSiblingHash>> siblingHashes = new ArrayList<>();
+        final var blockHash = Bytes.wrap(message);
+        for (final var block : pendingBlocks) {
+            if (impliesIndirectProof) {
+                siblingHashes.add(List.of(block.siblingHashes()));
+            }
+            if (block.blockHash().equals(blockHash)) {
+                blockNumber = block.number();
+                break;
+            }
+            impliesIndirectProof = true;
+        }
+        if (blockNumber == Long.MIN_VALUE) {
+            log.warn("Received signature for unknown block hash: {}", blockHash);
+            return;
+        }
+        // Write proofs for all pending blocks up to and including the signed block number
+        final var blockSignature = Bytes.wrap(signature);
+        while (!pendingBlocks.isEmpty() && pendingBlocks.peek().number() <= blockNumber) {
+            final var block = pendingBlocks.poll();
+            final var proof = block.proofBuilder()
+                    .blockSignature(blockSignature)
+                    .siblingHashes(siblingHashes.stream().flatMap(List::stream).toList());
+            block.writer()
+                    .writeItem(BlockItem.PROTOBUF.toBytes(
+                            BlockItem.newBuilder().blockProof(proof).build()))
+                    .closeBlock();
+            if (block.number() != blockNumber) {
+                siblingHashes.removeFirst();
+            }
+        }
+    }
+
     private void schedulePendingWork() {
         final var scheduledWork = new ScheduledWork(pendingItems);
         final var pendingSerialization = CompletableFuture.supplyAsync(scheduledWork::serializeItems, executor);
         writeFuture = writeFuture.thenCombine(pendingSerialization, scheduledWork::combineSerializedItems);
         pendingItems = new ArrayList<>();
-    }
-
-    private Bytes computeBlockHash(
-            @NonNull final Bytes prevBlockHash,
-            @NonNull final Bytes inputRootHash,
-            @NonNull final Bytes outputRootHash,
-            @NonNull final Bytes stateRootHash) {
-        final var leftParent = combine(prevBlockHash.toByteArray(), inputRootHash.toByteArray());
-        final var rightParent = combine(outputRootHash.toByteArray(), stateRootHash.toByteArray());
-        return Bytes.wrap(combine(leftParent, rightParent));
     }
 
     private @NonNull BlockStreamInfo blockStreamInfoFrom(@NonNull final State state) {
@@ -460,14 +480,26 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
         }
 
         /**
-         * Returns the hash of the block with the given number, or null if it is not available.
+         * Returns the hash of the block with the given number, or null if it is not available. Note that,
+         * <ul>
+         *     <li>We never know the hash of the {@code N+1} block currently being created.</li>
+         *     <li>The block hashes in state at the end of block {@code N} can only include up
+         *     to block {@code N-1}, because the hash of block {@code N} is influenced by every
+         *     state change.</li>
+         *     <li>But we always have the previous block hash in hand, either because we just computed it
+         *     ourselves; or because we obtained it when restarting or reconnecting.</li>
+         * </ul>
          *
          * @param blockNo the block number
          * @return the hash of the block with the given number, or null if it is not available
          */
         @Nullable
         Bytes hashOfBlock(final long blockNo) {
-            return BlockRecordInfoUtils.blockHashByBlockNumber(blockHashes, blockNumber - 1, blockNo);
+            if (blockNo == blockNumber - 1) {
+                return lastBlockHash;
+            } else {
+                return BlockRecordInfoUtils.blockHashByBlockNumber(blockHashes, blockNumber - 2, blockNo);
+            }
         }
 
         /**

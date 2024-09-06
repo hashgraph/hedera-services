@@ -18,10 +18,10 @@ package com.hedera.node.app.blocks;
 
 import com.hedera.hapi.block.stream.BlockItem;
 import com.hedera.node.app.spi.records.BlockRecordInfo;
-import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.platform.system.Round;
 import com.swirlds.state.State;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.function.BiConsumer;
 
 /**
  * Maintains the state and process objects needed to produce the block stream.
@@ -34,7 +34,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  * Items written to the stream will be produced in the order they are written. The leaves of the input and output item
  * Merkle trees will be in the order they are written.
  */
-public interface BlockStreamManager extends BlockRecordInfo {
+public interface BlockStreamManager extends BlockRecordInfo, BiConsumer<byte[], byte[]> {
     /**
      * Updates the internal state of the block stream manager to reflect the start of a new round.
      * @param round the round that has just started
@@ -57,11 +57,4 @@ public interface BlockStreamManager extends BlockRecordInfo {
      * @throws IllegalStateException if the stream is closed
      */
     void writeItem(@NonNull BlockItem item);
-
-    /**
-     * Completes the block proof for the given block with the given signature.
-     * @param blockNumber the number of the block to finish
-     * @param signature the signature to use in the block proof
-     */
-    void finishBlockProof(long blockNumber, @NonNull Bytes signature);
 }

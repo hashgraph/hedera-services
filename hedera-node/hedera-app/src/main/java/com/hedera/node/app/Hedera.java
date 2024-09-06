@@ -69,6 +69,8 @@ import com.hedera.node.app.statedumpers.DumpCheckpoint;
 import com.hedera.node.app.statedumpers.MerkleStateChild;
 import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.app.throttle.CongestionThrottleService;
+import com.hedera.node.app.tss.TssBaseService;
+import com.hedera.node.app.tss.impl.PlaceholderTssBaseService;
 import com.hedera.node.app.version.HederaSoftwareVersion;
 import com.hedera.node.app.version.ServicesSoftwareVersion;
 import com.hedera.node.app.workflows.handle.HandleWorkflow;
@@ -191,6 +193,11 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener {
     private final InstantSource instantSource;
 
     /**
+     * The supplier for the TSS base service.
+     */
+    private final Supplier<TssBaseService> tssBaseServiceSupplier;
+
+    /**
      * The contract service singleton, kept as a field here to avoid constructing twice
      * (once in constructor to register schemas, again inside Dagger component).
      */
@@ -268,14 +275,17 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener {
      * @param constructableRegistry the registry to register {@link RuntimeConstructable} factories with
      * @param registryFactory the factory to use for creating the services registry
      * @param migrator the migrator to use with the services
+     * @param tssBaseServiceSupplier the supplier for the TSS base service
      */
     public Hedera(
             @NonNull final ConstructableRegistry constructableRegistry,
             @NonNull final ServicesRegistry.Factory registryFactory,
             @NonNull final ServiceMigrator migrator,
-            @NonNull final InstantSource instantSource) {
+            @NonNull final InstantSource instantSource,
+            @NonNull final Supplier<TssBaseService> tssBaseServiceSupplier) {
         requireNonNull(registryFactory);
         requireNonNull(constructableRegistry);
+        this.tssBaseServiceSupplier = requireNonNull(tssBaseServiceSupplier);
         this.serviceMigrator = requireNonNull(migrator);
         this.instantSource = requireNonNull(instantSource);
         logger.info(
@@ -784,6 +794,7 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener {
             notifications.unregister(PlatformStatusChangeListener.class, this);
             notifications.unregister(ReconnectCompleteListener.class, daggerApp.reconnectListener());
             notifications.unregister(StateWriteToDiskCompleteListener.class, daggerApp.stateWriteToDiskListener());
+            daggerApp.tssBaseService().unregisterLedgerSignatureConsumer(daggerApp.blockStreamManager());
         }
         // Fully qualified so as to not confuse javadoc
         daggerApp = com.hedera.node.app.DaggerHederaInjectionComponent.builder()
@@ -804,12 +815,17 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener {
                 .kvStateChangeListener(kvStateChangeListener)
                 .boundaryStateChangeListener(boundaryStateChangeListener)
                 .migrationStateChanges(migrationStateChanges)
+                .tssBaseService(tssBaseServiceSupplier.get())
                 .build();
         // Initialize infrastructure for fees, exchange rates, and throttles from the working state
         daggerApp.initializer().accept(state);
         notifications.register(PlatformStatusChangeListener.class, this);
         notifications.register(ReconnectCompleteListener.class, daggerApp.reconnectListener());
         notifications.register(StateWriteToDiskCompleteListener.class, daggerApp.stateWriteToDiskListener());
+        daggerApp.tssBaseService().registerLedgerSignatureConsumer(daggerApp.blockStreamManager());
+        if (daggerApp.tssBaseService() instanceof PlaceholderTssBaseService placeholderTssBaseService) {
+            daggerApp.inject(placeholderTssBaseService);
+        }
     }
 
     private static ServicesSoftwareVersion getNodeStartupVersion(@NonNull final Configuration config) {
