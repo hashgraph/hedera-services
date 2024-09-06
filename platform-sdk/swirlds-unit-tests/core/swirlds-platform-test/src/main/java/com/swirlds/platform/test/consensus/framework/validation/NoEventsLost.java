@@ -16,7 +16,6 @@
 
 package com.swirlds.platform.test.consensus.framework.validation;
 
-import com.swirlds.common.AbstractHashable;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.Hashable;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
