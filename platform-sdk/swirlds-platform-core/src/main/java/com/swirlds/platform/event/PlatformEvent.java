@@ -27,6 +27,7 @@ import com.hedera.hapi.util.HapiUtils;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.AbstractHashable;
 import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.crypto.Hashable;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.consensus.ConsensusConstants;
 import com.swirlds.platform.system.SoftwareVersion;
@@ -49,7 +50,7 @@ import java.util.concurrent.CountDownLatch;
 /**
  * A class used to hold information about an event transferred through gossip
  */
-public class PlatformEvent extends AbstractHashable implements ConsensusEvent {
+public class PlatformEvent implements ConsensusEvent, Hashable {
     private static final EventConsensusData NO_CONSENSUS =
             new EventConsensusData(null, ConsensusConstants.NO_CONSENSUS_ORDER);
     /** The gossip event */
@@ -475,9 +476,15 @@ public class PlatformEvent extends AbstractHashable implements ConsensusEvent {
         return getHash().hashCode();
     }
 
+    @Nullable
+    @Override
+    public Hash getHash() {
+        return metadata.getHash();
+    }
+
     @Override
     public void setHash(final Hash hash) {
-        super.setHash(hash);
+        metadata.setHash(hash);
     }
 
     /**

@@ -18,6 +18,7 @@ package com.swirlds.platform.test.consensus.framework.validation;
 
 import com.swirlds.common.AbstractHashable;
 import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.crypto.Hashable;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.platform.consensus.ConsensusConfig;
 import com.swirlds.platform.event.PlatformEvent;
@@ -41,7 +42,7 @@ public final class NoEventsLost {
     public static void validateNoEventsAreLost(
             @NonNull final ConsensusOutput output, @NonNull final ConsensusOutput ignored) {
         final Map<Hash, PlatformEvent> stale =
-                output.getStaleEvents().stream().collect(Collectors.toMap(AbstractHashable::getHash, e -> e));
+                output.getStaleEvents().stream().collect(Collectors.toMap(Hashable::getHash, e -> e));
         final Map<Hash, PlatformEvent> cons = output.getConsensusRounds().stream()
                 .flatMap(r -> r.getConsensusEvents().stream())
                 .collect(Collectors.toMap(PlatformEvent::getHash, e -> e));
