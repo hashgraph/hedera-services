@@ -111,7 +111,7 @@ public class ContextTransactionProcessor implements Callable<CallOutcome> {
         // the error.
         final var hevmTransaction = safeCreateHevmTransaction();
         if (hevmTransaction.isException() && contractsConfig.chargeGasOnPreEvmException()) {
-            return chargeFeesAndReturnOutcome(
+            return maybeChargeFeesAndReturnOutcome(
                     hevmTransaction, context.body().transactionIDOrThrow().accountIDOrThrow(), null, true);
         }
 
@@ -141,7 +141,7 @@ public class ContextTransactionProcessor implements Callable<CallOutcome> {
             final var sender = rootProxyWorldUpdater.getHederaAccount(hevmTransaction.senderId());
             final var senderId = sender != null ? sender.hederaId() : hevmTransaction.senderId();
 
-            return chargeFeesAndReturnOutcome(
+            return maybeChargeFeesAndReturnOutcome(
                     hevmTransaction.withException(e),
                     senderId,
                     sender,
@@ -158,7 +158,7 @@ public class ContextTransactionProcessor implements Callable<CallOutcome> {
         }
     }
 
-    private CallOutcome chargeFeesAndReturnOutcome(
+    private CallOutcome maybeChargeFeesAndReturnOutcome(
             @NonNull final HederaEvmTransaction hevmTransaction,
             @NonNull final AccountID senderId,
             @Nullable final HederaEvmAccount sender,
