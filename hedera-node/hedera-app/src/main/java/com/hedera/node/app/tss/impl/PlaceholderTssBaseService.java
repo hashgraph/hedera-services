@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.tss.impl;
 
+import static com.hedera.node.app.hapi.utils.CommonUtils.noThrowSha384HashOf;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.tss.TssBaseService;
@@ -37,8 +38,6 @@ import org.apache.logging.log4j.Logger;
 public class PlaceholderTssBaseService implements TssBaseService {
     private static final Logger log = LogManager.getLogger(PlaceholderTssBaseService.class);
 
-    private static final byte[] MOCK_SIGNATURE = new byte[48];
-
     /**
      * Copy-on-write list to avoid concurrent modification exceptions if a consumer unregisters
      * itself in its callback.
@@ -56,15 +55,17 @@ public class PlaceholderTssBaseService implements TssBaseService {
     public void requestLedgerSignature(@NonNull final byte[] messageHash) {
         requireNonNull(messageHash);
         requireNonNull(executor);
+        // The "signature" is a hash of the message hash
+        final var mockSignature = noThrowSha384HashOf(messageHash);
         // Simulate asynchronous completion of the ledger signature
         CompletableFuture.runAsync(
                 () -> consumers.forEach(consumer -> {
                     try {
-                        consumer.accept(messageHash, MOCK_SIGNATURE);
+                        consumer.accept(messageHash, mockSignature);
                     } catch (Exception e) {
                         log.error(
                                 "Failed to provide signature {} on message {} to consumer {}",
-                                CommonUtils.hex(MOCK_SIGNATURE),
+                                CommonUtils.hex(mockSignature),
                                 CommonUtils.hex(messageHash),
                                 consumer,
                                 e);

@@ -16,17 +16,75 @@
 
 package com.hedera.services.bdd.junit.hedera.embedded.fakes;
 
+import static com.hedera.node.app.hapi.utils.CommonUtils.noThrowSha384HashOf;
+import static java.util.Objects.requireNonNull;
+
 import com.hedera.node.app.tss.TssBaseService;
+import com.swirlds.common.utility.CommonUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.BiConsumer;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 public class FakeTssBaseService implements TssBaseService {
-    @Override
-    public void requestLedgerSignature(@NonNull final byte[] messageHash) {}
+    private static final Logger log = LogManager.getLogger(FakeTssBaseService.class);
+
+    /**
+     * Copy-on-write list to avoid concurrent modification exceptions if a consumer unregisters
+     * itself in its callback.
+     */
+    private final List<BiConsumer<byte[], byte[]>> consumers = new CopyOnWriteArrayList<>();
+
+    private boolean ignoreRequests = false;
+
+    /**
+     * When called, will start ignoring any requests for ledger signatures.
+     */
+    public void startIgnoringRequests() {
+        ignoreRequests = true;
+    }
+
+    /**
+     * When called, will stop ignoring any requests for ledger signatures.
+     */
+    public void stopIgnoringRequests() {
+        ignoreRequests = false;
+    }
 
     @Override
-    public void registerLedgerSignatureConsumer(@NonNull final BiConsumer<byte[], byte[]> consumer) {}
+    public void requestLedgerSignature(@NonNull final byte[] messageHash) {
+        requireNonNull(messageHash);
+        if (ignoreRequests) {
+            return;
+        }
+        final var mockSignature = noThrowSha384HashOf(messageHash);
+        // Simulate asynchronous completion of the ledger signature
+        CompletableFuture.runAsync(() -> consumers.forEach(consumer -> {
+            try {
+                consumer.accept(messageHash, mockSignature);
+            } catch (Exception e) {
+                log.error(
+                        "Failed to provide signature {} on message {} to consumer {}",
+                        CommonUtils.hex(mockSignature),
+                        CommonUtils.hex(messageHash),
+                        consumer,
+                        e);
+            }
+        }));
+    }
 
     @Override
-    public void unregisterLedgerSignatureConsumer(@NonNull final BiConsumer<byte[], byte[]> consumer) {}
+    public void registerLedgerSignatureConsumer(@NonNull final BiConsumer<byte[], byte[]> consumer) {
+        requireNonNull(consumer);
+        consumers.add(consumer);
+    }
+
+    @Override
+    public void unregisterLedgerSignatureConsumer(@NonNull final BiConsumer<byte[], byte[]> consumer) {
+        requireNonNull(consumer);
+        consumers.remove(consumer);
+    }
 }
