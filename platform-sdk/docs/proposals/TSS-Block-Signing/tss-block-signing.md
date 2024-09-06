@@ -101,10 +101,10 @@ hash of the previous block as its first element with 1 internal merkle node betw
 the root hash of the previous block. The length of a Merkle Proof extending the signature from Block N to Block
 (N-Y) is 3Y+1 hashes.
 
-To construct a TSS ledger signature, at least 1/2 the shares must sign the same message. These share signatures
+To construct a TSS ledger signature, more than 1/2 the shares must sign the same message. These share signatures
 are then aggregated to produce the ledger signature. Shares are proportional representations of weight. In order for
 consensus to advance, 2/3 of weight must be participating in consensus. It is highly improbable that consensus can
-advance with 2/3 weight without the network being able to generate ledger signatures with at least 1/2 number of
+advance with 2/3 weight without the network being able to generate ledger signatures with more than 1/2 number of
 shares.
 
 If we wanted a guarantee of generating a ledger signature on every block, we would need to add state that
@@ -176,12 +176,19 @@ public interface TssBaseService {
     void requestLedgerSignature(@Nonnull byte[] messageHash);
 
     /**
-     * Registers a consumer of pairs where the first element is the message hash and the second element is the
-     * ledger signature on the message hash.
+     * Registers a consumer of the message hash and the ledger signature on the message hash.
      *
-     * @param consumer the consumer of ledger signatures on message hashes.
+     * @param consumer the consumer of ledger signatures and message hashes.
      */
     void registerLedgerSignatureConsumer(@Nonnull final BiConsumer<byte[], PairingSignature> consumer);
+
+    /**
+     * Unregisters a consumer of the message hash and the ledger signature on the message hash.  The input object
+     * reference must match by object equality to the registered consumer that is being unregistered.
+     *
+     * @param consumer the consumer of ledger signatures and message hashes to unregister.
+     */
+    void unRegisterLedgerSignatureConsumer(@Nonnull final BiConsumer<byte[], PairingSignature> consumer);
 }
 ```
 
@@ -194,7 +201,8 @@ It may be possible that a node is aggregating share signature transactions from 
 In addition to the `share_signature`, the `roster_hash` and `share_index` are needed to identify the share public
 key to use for validation. The `message_hash` is needed to identify the message that was signed. A ledger signature
 can be produced by a threshold number of `share_signatures` for the same message. The threshold value for
-aggregation is determined by the roster indicated by the `roster_hash`.
+aggregation is `(TS +2)/2` using integer division where `TS` is the total number of shares in the roster indicated by
+the `roster_hash`.  See the `TSS-Ledger-ID` proposal for more information on the threshold value.
 
 ```protobuf
 message TssShareSignatureTransaction {
