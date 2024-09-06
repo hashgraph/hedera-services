@@ -42,12 +42,12 @@ import com.hedera.node.app.service.token.impl.handlers.staking.StakingRewardsHel
 import com.hedera.node.app.service.token.impl.test.handlers.util.TestStoreFactory;
 import com.hedera.node.app.service.token.records.NodeStakeUpdateStreamBuilder;
 import com.hedera.node.app.service.token.records.TokenContext;
-import com.hedera.node.app.spi.fixtures.numbers.FakeHederaNumbers;
 import com.hedera.node.app.spi.fixtures.state.MapWritableStates;
 import com.hedera.node.app.spi.fixtures.util.LogCaptor;
 import com.hedera.node.app.spi.fixtures.util.LogCaptureExtension;
 import com.hedera.node.app.spi.fixtures.util.LoggingSubject;
 import com.hedera.node.app.spi.fixtures.util.LoggingTarget;
+import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.StakingConfig;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
@@ -90,13 +90,15 @@ public class EndOfStakingPeriodUpdaterTest {
     private WritableStakingInfoStore stakingInfoStore;
     private WritableNetworkStakingRewardsStore stakingRewardsStore;
 
+    private static final ConfigProvider DEFAULT_CONFIG_PROVIDER = HederaTestConfigBuilder.createConfigProvider();
+
     @BeforeEach
     void setup() {
         accountStore = TestStoreFactory.newReadableStoreWithAccounts(Account.newBuilder()
                 .accountId(asAccount(800))
                 .tinybarBalance(100_000_000_000L)
                 .build());
-        subject = new EndOfStakingPeriodUpdater(new FakeHederaNumbers(), new StakingRewardsHelper());
+        subject = new EndOfStakingPeriodUpdater(new StakingRewardsHelper(), DEFAULT_CONFIG_PROVIDER);
     }
 
     @Test
