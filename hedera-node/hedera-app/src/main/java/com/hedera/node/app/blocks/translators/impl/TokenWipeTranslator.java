@@ -21,10 +21,10 @@ import static com.hedera.hapi.node.base.TokenType.NON_FUNGIBLE_UNIQUE;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.block.stream.output.StateChange;
-import com.hedera.node.app.state.SingleTransactionRecord;
 import com.hedera.node.app.blocks.translators.BaseTranslator;
-import com.hedera.node.app.blocks.translators.BlockTransactionPartsTranslator;
 import com.hedera.node.app.blocks.translators.BlockTransactionParts;
+import com.hedera.node.app.blocks.translators.BlockTransactionPartsTranslator;
+import com.hedera.node.app.state.SingleTransactionRecord;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.List;
