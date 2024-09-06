@@ -110,6 +110,7 @@ class EvmAddressAliasCallTest extends CallTestBase {
         given(attempt.enhancement()).willReturn(mockEnhancement());
         given(nativeOperations.getAccount(numberOfLongZero(NON_SYSTEM_BUT_IS_LONG_ZERO_ADDRESS)))
                 .willReturn(account);
+        given(account.hasAccountId()).willReturn(true);
         given(account.alias()).willReturn(RECEIVER_ADDRESS);
         subject = new EvmAddressAliasCall(attempt, asHeadlongAddress(NON_SYSTEM_BUT_IS_LONG_ZERO_ADDRESS.toArray()));
 

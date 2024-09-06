@@ -30,10 +30,6 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.Abs
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.has.HasCallAttempt;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
-/**
- * Implements the {@code isValidAlias(address)} call of the HAS system contract.
- * This call will return true if the address exists and false otherwise.
- */
 public class IsValidAliasCall extends AbstractCall {
 
     private final Address address;
