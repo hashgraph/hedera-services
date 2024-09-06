@@ -16,9 +16,46 @@
 
 name: "ZXF: Deploy Production Release"
 on:
+  workflow_call:
+    secrets:
+      access-token:
+        required: true
+      bucket-name:
+        required: true
+      cdn-bucket-name:
+        required: true
+      svcs-ossrh-username:
+        required: true
+      svcs-ossrh-password:
+        required: true
+      svcs-gpg-key-contents:
+        required: true
+      svcs-gpg-key-passphrase:
+        required: true
+      sdk-ossrh-username:
+        required: true
+      sdk-ossrh-password:
+        required: true
+      sdk-gpg-key-contents:
+        required: true
+      sdk-gpg-key-passphrase:
+        required: true
+      slack-webhook-url:
+        required: true
+      jenkins-integration-url:
+        required: true
+      jf-url:
+        required: true
+      jf-docker-registry:
+        required: true
+      jf-user-name:
+        required: true
+      jf-access-token:
+        required: true
   push:
-    branches:
-      - develop
+    # remove branches: develop as this is now handled by citr-prepare-XTS suite workflow
+    # branches:
+    #  - develop
     tags:
       - "v[0-9]+.[0-9]+.[0-9]+-?*"
 
@@ -110,26 +147,26 @@ jobs:
   release-branch:
     name: Release [Branch]
     uses: ./.github/workflows/node-zxc-build-release-artifact.yaml
-    if: ${{ github.event_name == 'push' && !startsWith(github.ref, 'refs/tags/v') }}
+    if: ${{ github.event_name == 'workflow_call' }}
     with:
       version-policy: branch-commit
       trigger-env-deploy: integration
       release-profile: DevelopCommit
     secrets:
-      access-token: ${{ secrets.GITHUB_TOKEN }}
-      bucket-name: ${{ secrets.RELEASE_ARTIFACT_BUCKET_NAME }}
-      cdn-bucket-name: ${{ secrets.CDN_ARTIFACT_BUCKET_NAME }}
-      svcs-ossrh-username: ${{ secrets.SVCS_OSSRH_USERNAME }}
-      svcs-ossrh-password: ${{ secrets.SVCS_OSSRH_PASSWORD }}
-      svcs-gpg-key-contents: ${{ secrets.SVCS_GPG_KEY_CONTENTS }}
-      svcs-gpg-key-passphrase: ${{ secrets.SVCS_GPG_KEY_PASSPHRASE }}
-      sdk-ossrh-username: ${{ secrets.PLATFORM_OSSRH_USERNAME }}
-      sdk-ossrh-password: ${{ secrets.PLATFORM_OSSRH_PASSWORD }}
-      sdk-gpg-key-contents: ${{ secrets.PLATFORM_GPG_KEY_CONTENTS }}
-      sdk-gpg-key-passphrase: ${{ secrets.PLATFORM_GPG_KEY_PASSPHRASE }}
-      slack-webhook-url: ${{ secrets.PLATFORM_SLACK_RELEASE_WEBHOOK }}
-      jenkins-integration-url: ${{ secrets.RELEASE_JENKINS_INTEGRATION_URL }}
-      jf-url: ${{ vars.JF_URL }}
-      jf-docker-registry: ${{ vars.JF_DOCKER_REGISTRY }}
-      jf-user-name: ${{ vars.JF_USER_NAME }}
-      jf-access-token: ${{ secrets.JF_ACCESS_TOKEN }}
+      access-token: ${{ secrets.access-token }}
+      bucket-name: ${{ secrets.bucket-name }}
+      cdn-bucket-name: ${{ secrets.cdn-bucket-name }}
+      svcs-ossrh-username: ${{ secrets.svcs-ossrh-username }}
+      svcs-ossrh-password: ${{ secrets.svcs-ossrh-password }}
+      svcs-gpg-key-contents: ${{ secrets.svcs-gpg-key-contents }}
+      svcs-gpg-key-passphrase: ${{ secrets.svcs-gpg-key-passphrase }}
+      sdk-ossrh-username: ${{ secrets.sdk-ossrh-username }}
+      sdk-ossrh-password: ${{ secrets.sdk-ossrh-password }}
+      sdk-gpg-key-contents: ${{ secrets.sdk-gpg-key-contents}}
+      sdk-gpg-key-passphrase: ${{ secrets.sdk-gpg-key-passphrase }}
+      slack-webhook-url: ${{ secrets.slack-webhook-url }}
+      jenkins-integration-url: ${{ secrets.jenkins-integration-url }}
+      jf-url: ${{ vars.jf-url }}
+      jf-docker-registry: ${{ vars.jf-docker-registry }}
+      jf-user-name: ${{ vars.jf-user-name }}
+      jf-access-token: ${{ secrets.jf-access-token }}

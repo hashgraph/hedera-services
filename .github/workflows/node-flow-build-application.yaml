@@ -50,9 +50,59 @@ on:
         default: "temurin"
   push:
     branches:
-      - develop
-      - main
       - 'release/*'
+  workflow_call:
+    # replaces push->branches->develop/main
+    inputs:
+      enable-unit-tests:
+        description: "Unit Testing Enabled"
+        type: boolean
+        required: false
+        default: true
+      enable-hapi-tests:
+        description: "HAPI Testing Enabled"
+        type: boolean
+        required: false
+        default: false
+      enable-spotless-check:
+        description: "Spotless Check Enabled"
+        type: boolean
+        required: false
+        default: false
+      enable-snyk-scan:
+        description: "Snyk Scan Enabled"
+        type: boolean
+        required: false
+        default: false
+      java-version:
+        description: "Java JDK Version:"
+        type: string
+        required: false
+        default: "21"
+      java-distribution:
+        description: "Java JDK Distribution:"
+        type: string
+        required: false
+        default: "temurin"
+    secrets:
+      GITHUB_TOKEN:
+        description: "The Github access token used to checkout the repository, submodules, and make GitHub API calls."
+        required: true
+      SNYK_TOKEN:
+        description: "The Snyk access token is used by Snyk to analyze the code for vulnerabilities "
+        required: true
+      CODACY_PROJECT_TOKEN:
+        description: "The Codacy project token used to report code coverage."
+        required: true
+      GRADLE_CACHE_USERNAME:
+        description: "The username used to authenticate with the Gradle Build Cache Node."
+        required: true
+      GRADLE_CACHE_PASSWORD:
+        description: "The password used to authenticate with the Gradle Build Cache Node."
+        required: true
+      CODECOV_TOKEN:
+        description: "The Codecov token used to report code coverage."
+        required: true
 
 defaults:
   run:
@@ -65,7 +115,7 @@ jobs:
     with:
       java-version: ${{ github.event.inputs.java-version || '21' }}
       java-distribution: ${{ github.event.inputs.java-distribution || 'temurin' }}
-      enable-unit-tests: ${{ github.event_name == 'push' || github.event.inputs.enable-unit-tests == 'true' }}
+      enable-unit-tests: ${{ github.event_name == 'push' || github.event_name == 'workflow_call' || github.event.inputs.enable-unit-tests == 'true' }}
       enable-hapi-tests-misc: ${{ github.event.inputs.enable-hapi-tests == 'true' }}
       enable-hapi-tests-crypto: ${{ github.event.inputs.enable-hapi-tests == 'true' }}
       enable-hapi-tests-token: ${{ github.event.inputs.enable-hapi-tests == 'true' }}
@@ -74,7 +124,7 @@ jobs:
       enable-hapi-tests-restart: ${{ github.event.inputs.enable-hapi-tests == 'true' }}
       enable-hapi-tests-nd-reconnect: ${{ github.event.inputs.enable-hapi-tests == 'true' }}
       enable-spotless-check: ${{ github.event.inputs.enable-spotless-check == 'true' }}
-      enable-snyk-scan: ${{ github.event_name == 'push' || github.event.inputs.enable-snyk-scan == 'true' }}
+      enable-snyk-scan: ${{ github.event_name == 'push' || github.event_name == 'workflow_call' || github.event.inputs.enable-snyk-scan == 'true' }}
       enable-network-log-capture: true
     secrets:
       access-token: ${{ secrets.GITHUB_TOKEN }}

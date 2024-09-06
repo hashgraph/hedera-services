@@ -1,0 +1,96 @@
+##
+# Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+##
+
+name: Prepare Extended Test Suite
+on:
+  push:
+    branches:
+      - develop
+
+defaults:
+  run:
+    shell: bash
+
+permissions:
+  contents: write
+
+jobs:
+  Build-Application:
+    name: Build Application
+    uses: ./.github/workflows/node-flow-build-application.yaml
+    secrets:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        CODACY_PROJECT_TOKEN : ${{ secrets.CODACY_PROJECT_TOKEN }}
+        GRADLE_CACHE_USERNAME: ${{ secrets.GRADLE_CACHE_USERNAME }}
+        GRADLE_CACHE_PASSWORD: ${{ secrets.GRADLE_CACHE_PASSWORD }}
+        CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+
+  Deploy-Release-Artifact:
+    name: Deploy Release Artifact
+    needs:
+      - Build-Application
+    uses: ./.github/workflows/node-flow-deploy-release-artifact.yaml
+    secrets:
+      access-token: ${{ secrets.GITHUB_TOKEN }}
+      bucket-name: ${{ secrets.RELEASE_ARTIFACT_BUCKET_NAME }}
+      cdn-bucket-name: ${{ secrets.CDN_ARTIFACT_BUCKET_NAME }}
+      svcs-ossrh-username: ${{ secrets.SVCS_OSSRH_USERNAME }}
+      svcs-ossrh-password: ${{ secrets.SVCS_OSSRH_PASSWORD }}
+      svcs-gpg-key-contents: ${{ secrets.SVCS_GPG_KEY_CONTENTS }}
+      svcs-gpg-key-passphrase: ${{ secrets.SVCS_GPG_KEY_PASSPHRASE }}
+      sdk-ossrh-username: ${{ secrets.PLATFORM_OSSRH_USERNAME }}
+      sdk-ossrh-password: ${{ secrets.PLATFORM_OSSRH_PASSWORD }}
+      sdk-gpg-key-contents: ${{ secrets.PLATFORM_GPG_KEY_CONTENTS }}
+      sdk-gpg-key-passphrase: ${{ secrets.PLATFORM_GPG_KEY_PASSPHRASE }}
+      slack-webhook-url: ${{ secrets.PLATFORM_SLACK_RELEASE_WEBHOOK }}
+      jenkins-integration-url: ${{ secrets.RELEASE_JENKINS_INTEGRATION_URL }}
+      jf-url: ${{ vars.JF_URL }}
+      jf-docker-registry: ${{ vars.JF_DOCKER_REGISTRY }}
+      jf-user-name: ${{ vars.JF_USER_NAME }}
+      jf-access-token: ${{ secrets.JF_ACCESS_TOKEN }}
+
+  Tag-For-XTS:
+    name: Tag for XTS promotion
+    runs-on: network-node-linux-medium
+    needs:
+      - Build-Application
+      - Deploy-Release-Artifact
+    if: ${{ needs.Build-Application.result == 'success' && needs.Deploy-Release-Artifact.result == 'success' }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+
+      # move the tag if successful
+      - name: Tag Code and push
+        run: |
+          git tag --force --annotate "xts-candidate"
+          git push --set-upstream origin --tags
+
+  Report-Failure:
+    name: Report XTS preparation failure
+    runs-on: network-node-linux-medium
+    needs:
+      - Build-Application
+      - Deploy-Release-Artifact
+    if: ${{ needs.Build-Application.result != 'success' || needs.Deploy-Release-Artifact.result != 'success' }}
+    steps:
+      - name: Report failure
+        run: |
+          echo "Failure encountered. Report on slack/pager duty"
+          
+
+
