@@ -75,19 +75,19 @@ jobs:
           junit_files: "**/build/test-results/timingSensitive/TEST-*.xml"
           comment_mode: errors # only comment if we could not find or parse the JUnit XML files
 
-      #      - name: Time Consuming Tests
-      #        id: gradle-time-consuming
-      #        if: ${{ steps.gradle-build.conclusion == 'success' && !cancelled() }}
-      #        run: ${GRADLE_EXEC} timeConsuming --continue --scan
-      #
-      #      - name: Publish Unit Test (Time Consuming) Report
-      #        uses: step-security/publish-unit-test-result-action@4519d7c9f71dd765f8bbb98626268780f23bab28 # v2.17.0
-      #        if: ${{ steps.gradle-build.conclusion == 'success' && !cancelled() }}
-      #        with:
-      #          check_name: 'Node: Time Consuming Unit Test Results'
-      #          json_thousands_separator: ','
-      #          junit_files: "**/build/test-results/timeConsuming/TEST-*.xml"
-      #          comment_mode: errors # only comment if we could not find or parse the JUnit XML files
+      - name: Time Consuming Tests
+        id: gradle-time-consuming
+        if: ${{ steps.gradle-build.conclusion == 'success' && !cancelled() }}
+        run: ${GRADLE_EXEC} timeConsuming --continue --scan
+
+      - name: Publish Unit Test (Time Consuming) Report
+        uses: step-security/publish-unit-test-result-action@4519d7c9f71dd765f8bbb98626268780f23bab28 # v2.17.0
+        if: ${{ steps.gradle-build.conclusion == 'success' && !cancelled() }}
+        with:
+          check_name: 'Node: Time Consuming Unit Test Results'
+          json_thousands_separator: ','
+          junit_files: "**/build/test-results/timeConsuming/TEST-*.xml"
+          comment_mode: errors # only comment if we could not find or parse the JUnit XML files
 
       - name: Hammer Tests
         id: gradle-hammer-tests
