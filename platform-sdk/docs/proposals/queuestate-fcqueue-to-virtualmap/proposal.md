@@ -24,7 +24,7 @@ the queue is an `FCQueue`.
 
 `FCQueue` is an in-memory implementation of a queue. It provides all APIs expected from a queue,
 like to add an element to the head of the queue or to poll an element at the tail of the queue. It
-also provides efficient implementation of hashCode(). This is critical, since queues may contain
+also provides efficient implementation of `hashCode()`. This is critical, since queues may contain
 lots of elements, and queue hashes must be computed fast.
 
 There are several drawbacks in `FCQueue`, too:
@@ -66,20 +66,20 @@ No changes to `ReadableQueueStateImpl` and `WritableQueueStateImpl` classes.
 The underlying `VirtualMap` will map longs to E, where E is the type of the queue. The longs
 will be used to organize the links between queue elements: if an element has position N, then
 its next element has position N+1. When an empty queue is created, its head and tail are both
-pointing to 0. The head is _the next_ position to add, the tails is _the current_ position to
+pointing to 0. The tail is _the next_ position to add, the head is _the current_ position to
 remove. If head and tail positions are equal, the queue is empty.
 
 ![Map keys](map-keys.svg)
 
 **Add**:
 
-* Insert an element to the head position
-* Increment the head by one
+* Insert an element to the tail position
+* Increment the tail by one
 * Code snippet:
 
 ```java
 public void add(final E element) {
-    map.put(head++, element);
+    map.put(tail++, element);
 }
 ```
 
@@ -88,8 +88,8 @@ public void add(final E element) {
 **Poll / remove**:
 
 * Check if the queue is empty
-* Remove the element from the tail position
-* Increment the tail by one
+* Remove the element from the head position
+* Increment the head by one
 * Code snippet:
 
 ```java
@@ -97,7 +97,7 @@ public E remove() {
     if (tail == head) {
         return null;
     }
-    return map.remove(tail++);
+    return map.remove(head++);
 }
 ```
 
