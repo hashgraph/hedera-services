@@ -16,17 +16,8 @@
 
 package com.hedera.node.app.blocks.translators;
 
-import static com.hedera.hapi.node.base.HederaFunctionality.CONTRACT_CALL;
-import static com.hedera.hapi.node.base.HederaFunctionality.CONTRACT_CREATE;
-import static com.hedera.hapi.node.base.HederaFunctionality.ETHEREUM_TRANSACTION;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.hapi.util.HapiUtils.asInstant;
 import static com.hedera.hapi.util.HapiUtils.asTimestamp;
-import static com.hedera.node.config.types.EntityType.ACCOUNT;
-import static com.hedera.node.config.types.EntityType.FILE;
-import static com.hedera.node.config.types.EntityType.SCHEDULE;
-import static com.hedera.node.config.types.EntityType.TOKEN;
-import static com.hedera.node.config.types.EntityType.TOPIC;
 import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNull;
 
@@ -37,8 +28,10 @@ import com.hedera.hapi.block.stream.output.EthereumOutput;
 import com.hedera.hapi.block.stream.output.StateChange;
 import com.hedera.hapi.block.stream.output.TransactionOutput;
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.PendingAirdropId;
 import com.hedera.hapi.node.base.PendingAirdropValue;
+import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.ScheduleID;
 import com.hedera.hapi.node.base.TokenAssociation;
 import com.hedera.hapi.node.base.TokenID;
@@ -371,21 +364,21 @@ public class BaseTranslator {
                     }
                     if (tokenId.tokenNum() > highestKnownEntityNum) {
                         nextCreatedNums
-                                .computeIfAbsent(TOKEN, ignore -> new LinkedList<>())
+                                .computeIfAbsent(EntityType.TOKEN, ignore -> new LinkedList<>())
                                 .add(tokenId.tokenNum());
                     }
                 } else if (key.hasTopicIdKey()) {
                     final var num = key.topicIdKeyOrThrow().topicNum();
                     if (num > highestKnownEntityNum) {
                         nextCreatedNums
-                                .computeIfAbsent(TOPIC, ignore -> new LinkedList<>())
+                                .computeIfAbsent(EntityType.TOPIC, ignore -> new LinkedList<>())
                                 .add(num);
                     }
                 } else if (key.hasFileIdKey()) {
                     final var num = key.fileIdKeyOrThrow().fileNum();
                     if (num > highestKnownEntityNum) {
                         nextCreatedNums
-                                .computeIfAbsent(FILE, ignore -> new LinkedList<>())
+                                .computeIfAbsent(EntityType.FILE, ignore -> new LinkedList<>())
                                 .add(num);
                     } else if (num == EXCHANGE_RATES_FILE_NUM) {
                         updateActiveRates(stateChange);
@@ -394,7 +387,7 @@ public class BaseTranslator {
                     final var num = key.scheduleIdKeyOrThrow().scheduleNum();
                     if (num > highestKnownEntityNum) {
                         nextCreatedNums
-                                .computeIfAbsent(SCHEDULE, ignore -> new LinkedList<>())
+                                .computeIfAbsent(EntityType.SCHEDULE, ignore -> new LinkedList<>())
                                 .add(num);
                     }
                     scheduleRef = key.scheduleIdKeyOrThrow();
@@ -402,7 +395,7 @@ public class BaseTranslator {
                     final var num = key.accountIdKeyOrThrow().accountNumOrThrow();
                     if (num > highestKnownEntityNum) {
                         nextCreatedNums
-                                .computeIfAbsent(ACCOUNT, ignore -> new LinkedList<>())
+                                .computeIfAbsent(EntityType.ACCOUNT, ignore -> new LinkedList<>())
                                 .add(num);
                     }
                 } else if (key.hasNftIdKey()) {
@@ -421,7 +414,7 @@ public class BaseTranslator {
             }
             switch (parts.functionality()) {
                 case TOKEN_MINT -> {
-                    if (parts.status() == SUCCESS) {
+                    if (parts.status() == ResponseCodeEnum.SUCCESS) {
                         final var op = parts.body().tokenMintOrThrow();
                         final var numMetadata = op.metadata().size();
                         if (numMetadata > 0) {
@@ -458,6 +451,8 @@ public class BaseTranslator {
 
     private static boolean isContractOp(@NonNull final BlockTransactionParts parts) {
         final var function = parts.functionality();
-        return function == CONTRACT_CALL || function == CONTRACT_CREATE || function == ETHEREUM_TRANSACTION;
+        return function == HederaFunctionality.CONTRACT_CALL
+                || function == HederaFunctionality.CONTRACT_CREATE
+                || function == HederaFunctionality.ETHEREUM_TRANSACTION;
     }
 }

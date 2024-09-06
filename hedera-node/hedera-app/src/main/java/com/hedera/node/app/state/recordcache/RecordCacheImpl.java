@@ -100,12 +100,12 @@ public class RecordCacheImpl implements HederaRecordCache {
 
     // nested ternary expressions
     @SuppressWarnings("java:S3358")
-    Comparator<BlockTransactionalUnit> BLOCK_TRANSACTIONAL_UNIT_COMPARATOR =
+    private static final Comparator<BlockTransactionalUnit> BLOCK_TRANSACTIONAL_UNIT_COMPARATOR =
             Comparator.<BlockTransactionalUnit, ResponseCodeEnum>comparing(
                             unit -> unit.blockTransactionParts().getFirst().status(),
                             (a, b) -> DUE_DILIGENCE_FAILURES.contains(a) == DUE_DILIGENCE_FAILURES.contains(b)
                                     ? 0
-                                    : (DUE_DILIGENCE_FAILURES.contains(b) ? -1 : 1))
+                                    : DUE_DILIGENCE_FAILURES.contains(b) ? -1 : 1)
                     .thenComparing(
                             unit -> unit.blockTransactionParts().getFirst().consensusTimestamp(), TIMESTAMP_COMPARATOR);
 
@@ -223,7 +223,7 @@ public class RecordCacheImpl implements HederaRecordCache {
         final var blockTransactionalUnits = blockUnitSplit.split(blockItems);
         blockTransactionalUnits.sort(BLOCK_TRANSACTIONAL_UNIT_COMPARATOR);
 
-        List<SingleTransactionRecord> singleTransactionRecords = new ArrayList<>();
+        final List<SingleTransactionRecord> singleTransactionRecords = new ArrayList<>();
         for (final var blockTransactionalUnit : blockTransactionalUnits) {
             singleTransactionRecords.addAll(translator.translate(blockTransactionalUnit));
         }

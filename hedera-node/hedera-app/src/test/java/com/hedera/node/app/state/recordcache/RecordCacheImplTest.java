@@ -103,7 +103,7 @@ final class RecordCacheImplTest extends AppTestBase {
     private ConfigProvider props;
 
     @BeforeEach
-    void setUp(
+    public void setUp(
             @Mock final VersionedConfiguration versionedConfig,
             @Mock final HederaConfig hederaConfig,
             @Mock final LedgerConfig ledgerConfig,
@@ -138,7 +138,7 @@ final class RecordCacheImplTest extends AppTestBase {
     @Test
     @DisplayName("Null args to constructor throw NPE")
     @SuppressWarnings("DataFlowIssue")
-    void nullArgsToConstructorThrowNPE() {
+    public void nullArgsToConstructorThrowNPE() {
         assertThatThrownBy(() -> new RecordCacheImpl(null, wsa, props)).isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new RecordCacheImpl(dedupeCache, null, props))
                 .isInstanceOf(NullPointerException.class);
@@ -250,7 +250,7 @@ final class RecordCacheImplTest extends AppTestBase {
 
         @Test
         @DisplayName("Rebuild replaces all entries in the in-memory data structures")
-        void reloadsIntoCache() {
+        public void reloadsIntoCache() {
             // Given a state with some entries and a cache created with that state
             final var oldPayer = accountId(1003);
             final var oldTxId =
@@ -332,7 +332,7 @@ final class RecordCacheImplTest extends AppTestBase {
     final class ReceiptQueryTests {
         @Test
         @DisplayName("Query for receipt for no such txn returns null")
-        void queryForReceiptForNoSuchTxnReturnsNull() {
+        public void queryForReceiptForNoSuchTxnReturnsNull() {
             // Given a transaction unknown to the record cache and de-duplication cache
             final var cache = new RecordCacheImpl(dedupeCache, wsa, props);
             final var missingTxId = transactionID();
@@ -343,7 +343,7 @@ final class RecordCacheImplTest extends AppTestBase {
 
         @Test
         @DisplayName("Query for receipts for no such txn returns EMPTY LIST")
-        void queryForReceiptsForNoSuchTxnReturnsNull() {
+        public void queryForReceiptsForNoSuchTxnReturnsNull() {
             // Given a transaction unknown to the record cache and de-duplication cache
             final var cache = new RecordCacheImpl(dedupeCache, wsa, props);
             final var missingTxId = transactionID();
@@ -354,7 +354,7 @@ final class RecordCacheImplTest extends AppTestBase {
 
         @Test
         @DisplayName("Query for receipts for an account ID with no receipts returns EMPTY LIST")
-        void queryForReceiptsForAccountWithNoRecords() {
+        public void queryForReceiptsForAccountWithNoRecords() {
             // Given a transaction unknown to the record cache and de-duplication cache
             final var cache = new RecordCacheImpl(dedupeCache, wsa, props);
 
@@ -364,7 +364,7 @@ final class RecordCacheImplTest extends AppTestBase {
 
         @Test
         @DisplayName("Query for receipt for txn in UNKNOWN state returns UNKNOWN")
-        void queryForReceiptForUnhandledTxnReturnsNull() {
+        public void queryForReceiptForUnhandledTxnReturnsNull() {
             // Given a transaction known to the de-duplication cache but not the record cache
             final var cache = new RecordCacheImpl(dedupeCache, wsa, props);
             final var unhandledTxId = transactionID();
@@ -376,7 +376,7 @@ final class RecordCacheImplTest extends AppTestBase {
 
         @Test
         @DisplayName("Query for receipts by account ID for txn in UNKNOWN state returns EMPTY LIST")
-        void queryForReceiptsForUnhandledTxnByAccountID() {
+        public void queryForReceiptsForUnhandledTxnByAccountID() {
             // Given a transaction known to the de-duplication cache but not the record cache
             final var cache = new RecordCacheImpl(dedupeCache, wsa, props);
             final var unhandledTxId = transactionID();
@@ -392,7 +392,7 @@ final class RecordCacheImplTest extends AppTestBase {
         @ParameterizedTest
         @MethodSource("receiptStatusCodes")
         @DisplayName("Query for receipt for a txn with a proper record")
-        void queryForReceiptForTxnWithRecord(@NonNull final ResponseCodeEnum status) {
+        public void queryForReceiptForTxnWithRecord(@NonNull final ResponseCodeEnum status) {
             // Given a transaction known to the de-duplication cache but not the record cache
             final var cache = new RecordCacheImpl(dedupeCache, wsa, props);
             final var txId = transactionID();
@@ -413,18 +413,18 @@ final class RecordCacheImplTest extends AppTestBase {
         @ParameterizedTest
         @MethodSource("receiptStatusCodes")
         @DisplayName("Query for receipt for a txn with a proper record using addBlockItems")
-        void queryForReceiptForTxnWithRecordUsingAddBlockItems(@NonNull final ResponseCodeEnum status) {
+        public void queryForReceiptForTxnWithRecordUsingAddBlockItems(@NonNull final ResponseCodeEnum status) {
             // Given a transaction known to the de-duplication cache but not the record cache
             final var cache = new RecordCacheImpl(dedupeCache, wsa, props);
             final var txId = transactionID();
             final var tx = simpleCryptoTransfer(txId);
             final var receipt = TransactionReceipt.newBuilder().status(status).build();
-            List<BlockItem> blockItems = new ArrayList<>();
-            BlockItem eventTransaction = BlockItem.newBuilder()
+            final List<BlockItem> blockItems = new ArrayList<>();
+            final BlockItem eventTransaction = BlockItem.newBuilder()
                     .eventTransaction(
                             EventTransaction.newBuilder().applicationTransaction(Transaction.PROTOBUF.toBytes(tx)))
                     .build();
-            BlockItem transactionResult = BlockItem.newBuilder()
+            final BlockItem transactionResult = BlockItem.newBuilder()
                     .transactionResult(
                             TransactionResult.newBuilder().status(status).consensusTimestamp(Timestamp.DEFAULT))
                     .build();
@@ -441,7 +441,7 @@ final class RecordCacheImplTest extends AppTestBase {
         @ParameterizedTest
         @MethodSource("receiptStatusCodes")
         @DisplayName("Query for receipts for a txn with a proper record")
-        void queryForReceiptsForTxnWithRecord(@NonNull final ResponseCodeEnum status) {
+        public void queryForReceiptsForTxnWithRecord(@NonNull final ResponseCodeEnum status) {
             // Given a transaction known to the de-duplication cache but not the record cache
             final var cache = new RecordCacheImpl(dedupeCache, wsa, props);
             final var txId = transactionID();
@@ -462,18 +462,18 @@ final class RecordCacheImplTest extends AppTestBase {
         @ParameterizedTest
         @MethodSource("receiptStatusCodes")
         @DisplayName("Query for receipt for a txn with a proper record using addBlockItems")
-        void queryForReceiptsForTxnWithRecordUsingAddBlockItems(@NonNull final ResponseCodeEnum status) {
+        public void queryForReceiptsForTxnWithRecordUsingAddBlockItems(@NonNull final ResponseCodeEnum status) {
             // Given a transaction known to the de-duplication cache but not the record cache
             final var cache = new RecordCacheImpl(dedupeCache, wsa, props);
             final var txId = transactionID();
             final var tx = simpleCryptoTransfer(txId);
             final var receipt = TransactionReceipt.newBuilder().status(status).build();
-            List<BlockItem> blockItems = new ArrayList<>();
-            BlockItem eventTransaction = BlockItem.newBuilder()
+            final List<BlockItem> blockItems = new ArrayList<>();
+            final BlockItem eventTransaction = BlockItem.newBuilder()
                     .eventTransaction(
                             EventTransaction.newBuilder().applicationTransaction(Transaction.PROTOBUF.toBytes(tx)))
                     .build();
-            BlockItem transactionResult = BlockItem.newBuilder()
+            final BlockItem transactionResult = BlockItem.newBuilder()
                     .transactionResult(
                             TransactionResult.newBuilder().status(status).consensusTimestamp(Timestamp.DEFAULT))
                     .build();
@@ -490,7 +490,7 @@ final class RecordCacheImplTest extends AppTestBase {
         @ParameterizedTest
         @MethodSource("receiptStatusCodes")
         @DisplayName("Query for receipts for an account ID with a proper record")
-        void queryForReceiptsForAccountIdWithRecord(@NonNull final ResponseCodeEnum status) {
+        public void queryForReceiptsForAccountIdWithRecord(@NonNull final ResponseCodeEnum status) {
             // Given a transaction known to the de-duplication cache but not the record cache
             final var cache = new RecordCacheImpl(dedupeCache, wsa, props);
             final var txId = transactionID();
@@ -511,18 +511,18 @@ final class RecordCacheImplTest extends AppTestBase {
         @ParameterizedTest
         @MethodSource("receiptStatusCodes")
         @DisplayName("Query for receipts for an account ID with a proper record using addBlockItems")
-        void queryForReceiptsForAccountIdWithRecordUsingAddBlockItems(@NonNull final ResponseCodeEnum status) {
+        public void queryForReceiptsForAccountIdWithRecordUsingAddBlockItems(@NonNull final ResponseCodeEnum status) {
             // Given a transaction known to the de-duplication cache but not the record cache
             final var cache = new RecordCacheImpl(dedupeCache, wsa, props);
             final var txId = transactionID();
             final var tx = simpleCryptoTransfer(txId);
             final var receipt = TransactionReceipt.newBuilder().status(status).build();
-            List<BlockItem> blockItems = new ArrayList<>();
-            BlockItem eventTransaction = BlockItem.newBuilder()
+            final List<BlockItem> blockItems = new ArrayList<>();
+            final BlockItem eventTransaction = BlockItem.newBuilder()
                     .eventTransaction(
                             EventTransaction.newBuilder().applicationTransaction(Transaction.PROTOBUF.toBytes(tx)))
                     .build();
-            BlockItem transactionResult = BlockItem.newBuilder()
+            final BlockItem transactionResult = BlockItem.newBuilder()
                     .transactionResult(
                             TransactionResult.newBuilder().status(status).consensusTimestamp(Timestamp.DEFAULT))
                     .build();
@@ -540,7 +540,7 @@ final class RecordCacheImplTest extends AppTestBase {
         @ValueSource(ints = {20, 30, 40})
         @DisplayName(
                 "Only up to recordsMaxQueryableByAccount receipts are returned for an account ID with multiple records")
-        void queryForManyReceiptsForAccountID(final int numRecords) {
+        public void queryForManyReceiptsForAccountID(final int numRecords) {
             // Given a number of transactions with several records each, all for the same payer
             final var cache = new RecordCacheImpl(dedupeCache, wsa, props);
             // Normally consensus time is AFTER the transaction ID time by a couple of seconds
@@ -575,7 +575,7 @@ final class RecordCacheImplTest extends AppTestBase {
         @ValueSource(ints = {20, 30, 40})
         @DisplayName(
                 "Only up to recordsMaxQueryableByAccount receipts are returned for an account ID with multiple records using addBlockItems")
-        void queryForManyReceiptsForAccountIDUsingAddBlockItems(final int numRecords) {
+        public void queryForManyReceiptsForAccountIDUsingAddBlockItems(final int numRecords) {
             // Given a number of transactions with several records each, all for the same payer
             final var cache = new RecordCacheImpl(dedupeCache, wsa, props);
             // Normally consensus time is AFTER the transaction ID time by a couple of seconds
@@ -586,12 +586,12 @@ final class RecordCacheImplTest extends AppTestBase {
                 for (int j = 0; j < 3; j++) {
                     consensusTime = consensusTime.plus(1, ChronoUnit.NANOS);
                     final var status = j == 0 ? OK : DUPLICATE_TRANSACTION;
-                    List<BlockItem> blockItems = new ArrayList<>();
-                    BlockItem eventTransaction = BlockItem.newBuilder()
+                    final List<BlockItem> blockItems = new ArrayList<>();
+                    final BlockItem eventTransaction = BlockItem.newBuilder()
                             .eventTransaction(EventTransaction.newBuilder()
                                     .applicationTransaction(Transaction.PROTOBUF.toBytes(tx)))
                             .build();
-                    BlockItem transactionResult = BlockItem.newBuilder()
+                    final BlockItem transactionResult = BlockItem.newBuilder()
                             .transactionResult(TransactionResult.newBuilder()
                                     .status(status)
                                     .consensusTimestamp(Timestamp.DEFAULT))
@@ -622,7 +622,7 @@ final class RecordCacheImplTest extends AppTestBase {
     final class RecordQueryTests {
         @Test
         @DisplayName("Query for record for unknown txn returns null")
-        void queryForRecordForUnknownTxnReturnsNull() {
+        public void queryForRecordForUnknownTxnReturnsNull() {
             final var cache = new RecordCacheImpl(dedupeCache, wsa, props);
             final var missingTxId = transactionID();
 
@@ -631,7 +631,7 @@ final class RecordCacheImplTest extends AppTestBase {
 
         @Test
         @DisplayName("Query for records for unknown txn returns EMPTY LIST")
-        void queryForRecordsForUnknownTxnReturnsNull() {
+        public void queryForRecordsForUnknownTxnReturnsNull() {
             final var cache = new RecordCacheImpl(dedupeCache, wsa, props);
             final var missingTxId = transactionID();
 
@@ -640,7 +640,7 @@ final class RecordCacheImplTest extends AppTestBase {
 
         @Test
         @DisplayName("Query for record for account ID with no receipts returns EMPTY LIST")
-        void queryForRecordByAccountForUnknownTxn() {
+        public void queryForRecordByAccountForUnknownTxn() {
             final var cache = new RecordCacheImpl(dedupeCache, wsa, props);
 
             assertThat(cache.getRecords(PAYER_ACCOUNT_ID)).isEmpty();
@@ -648,7 +648,7 @@ final class RecordCacheImplTest extends AppTestBase {
 
         @Test
         @DisplayName("Query for record for tx with receipt in UNKNOWN state returns null")
-        void queryForRecordForUnknownTxn() {
+        public void queryForRecordForUnknownTxn() {
             final var cache = new RecordCacheImpl(dedupeCache, wsa, props);
             final var txId = transactionID();
             dedupeCache.add(txId);
@@ -658,7 +658,7 @@ final class RecordCacheImplTest extends AppTestBase {
 
         @Test
         @DisplayName("Query for records for tx with receipt in UNKNOWN state returns EMPTY LIST")
-        void queryForRecordsForUnknownTxn() {
+        public void queryForRecordsForUnknownTxn() {
             final var cache = new RecordCacheImpl(dedupeCache, wsa, props);
             final var txId = transactionID();
             dedupeCache.add(txId);
@@ -668,7 +668,7 @@ final class RecordCacheImplTest extends AppTestBase {
 
         @Test
         @DisplayName("Query for records for tx by account ID with receipt in UNKNOWN state returns EMPTY LIST")
-        void queryForRecordsByAccountForUnknownTxn() {
+        public void queryForRecordsByAccountForUnknownTxn() {
             final var cache = new RecordCacheImpl(dedupeCache, wsa, props);
             final var txId = transactionID();
             dedupeCache.add(txId);
@@ -679,7 +679,7 @@ final class RecordCacheImplTest extends AppTestBase {
         @ParameterizedTest
         @MethodSource("receiptStatusCodes")
         @DisplayName("Query for record for a txn with a proper record")
-        void queryForRecordForTxnWithRecord(@NonNull final ResponseCodeEnum status) {
+        public void queryForRecordForTxnWithRecord(@NonNull final ResponseCodeEnum status) {
             // Given a transaction known to the de-duplication cache but not the record cache
             final var cache = new RecordCacheImpl(dedupeCache, wsa, props);
             final var txId = transactionID();
@@ -700,7 +700,7 @@ final class RecordCacheImplTest extends AppTestBase {
         @ParameterizedTest
         @MethodSource("receiptStatusCodes")
         @DisplayName("Query for record for a txn with a proper record using addBlockItems")
-        void queryForRecordForTxnWithRecordUsingAddBlockItems(@NonNull final ResponseCodeEnum status) {
+        public void queryForRecordForTxnWithRecordUsingAddBlockItems(@NonNull final ResponseCodeEnum status) {
             // Given a transaction known to the de-duplication cache but not the record cache
             final var cache = new RecordCacheImpl(dedupeCache, wsa, props);
             final var txId = transactionID();
@@ -713,12 +713,12 @@ final class RecordCacheImplTest extends AppTestBase {
                             noThrowSha384HashOf(tx.signedTransactionBytes().toByteArray())))
                     .receipt(receipt)
                     .build();
-            List<BlockItem> blockItems = new ArrayList<>();
-            BlockItem eventTransaction = BlockItem.newBuilder()
+            final List<BlockItem> blockItems = new ArrayList<>();
+            final BlockItem eventTransaction = BlockItem.newBuilder()
                     .eventTransaction(
                             EventTransaction.newBuilder().applicationTransaction(Transaction.PROTOBUF.toBytes(tx)))
                     .build();
-            BlockItem transactionResult = BlockItem.newBuilder()
+            final BlockItem transactionResult = BlockItem.newBuilder()
                     .transactionResult(
                             TransactionResult.newBuilder().status(status).consensusTimestamp(Timestamp.DEFAULT))
                     .build();
@@ -735,7 +735,7 @@ final class RecordCacheImplTest extends AppTestBase {
         @ParameterizedTest
         @MethodSource("receiptStatusCodes")
         @DisplayName("Query for records for a txn with a proper record")
-        void queryForRecordsForTxnWithRecord(@NonNull final ResponseCodeEnum status) {
+        public void queryForRecordsForTxnWithRecord(@NonNull final ResponseCodeEnum status) {
             // Given a transaction known to the de-duplication cache but not the record cache
             final var cache = new RecordCacheImpl(dedupeCache, wsa, props);
             final var txId = transactionID();
@@ -756,7 +756,7 @@ final class RecordCacheImplTest extends AppTestBase {
         @ParameterizedTest
         @MethodSource("receiptStatusCodes")
         @DisplayName("Query for records for a txn with a proper record using addBlockItems")
-        void queryForRecordsForTxnWithRecordUsingAddBlockItems(@NonNull final ResponseCodeEnum status) {
+        public void queryForRecordsForTxnWithRecordUsingAddBlockItems(@NonNull final ResponseCodeEnum status) {
             // Given a transaction known to the de-duplication cache but not the record cache
             final var cache = new RecordCacheImpl(dedupeCache, wsa, props);
             final var txId = transactionID();
@@ -769,12 +769,12 @@ final class RecordCacheImplTest extends AppTestBase {
                             noThrowSha384HashOf(tx.signedTransactionBytes().toByteArray())))
                     .receipt(receipt)
                     .build();
-            List<BlockItem> blockItems = new ArrayList<>();
-            BlockItem eventTransaction = BlockItem.newBuilder()
+            final List<BlockItem> blockItems = new ArrayList<>();
+            final BlockItem eventTransaction = BlockItem.newBuilder()
                     .eventTransaction(
                             EventTransaction.newBuilder().applicationTransaction(Transaction.PROTOBUF.toBytes(tx)))
                     .build();
-            BlockItem transactionResult = BlockItem.newBuilder()
+            final BlockItem transactionResult = BlockItem.newBuilder()
                     .transactionResult(
                             TransactionResult.newBuilder().status(status).consensusTimestamp(Timestamp.DEFAULT))
                     .build();
@@ -789,7 +789,7 @@ final class RecordCacheImplTest extends AppTestBase {
         }
 
         @Test
-        void unclassifiableStatusIsNotPriority() {
+        public void unclassifiableStatusIsNotPriority() {
             // Given a transaction known to the de-duplication cache but not the record cache
             final var cache = new RecordCacheImpl(dedupeCache, wsa, props);
             final var txId = transactionID();
@@ -827,22 +827,15 @@ final class RecordCacheImplTest extends AppTestBase {
         }
 
         @Test
-        void unclassifiableStatusIsNotPriorityUsingAddBlockItems() {
+        public void unclassifiableStatusIsNotPriorityUsingAddBlockItems() {
             // Given a transaction known to the de-duplication cache but not the record cache
             final var cache = new RecordCacheImpl(dedupeCache, wsa, props);
             final var txId = transactionID();
             final var tx = simpleCryptoTransfer(txId);
             final var unclassifiableReceipt =
                     TransactionReceipt.newBuilder().status(INVALID_NODE_ACCOUNT).build();
-            final var unclassifiableRecord = TransactionRecord.newBuilder()
-                    .transactionID(txId)
-                    .receipt(unclassifiableReceipt)
-                    .consensusTimestamp(Timestamp.DEFAULT)
-                    .transactionHash(Bytes.wrap(
-                            noThrowSha384HashOf(tx.signedTransactionBytes().toByteArray())))
-                    .build();
             List<BlockItem> unclassifiableBlockItems = new ArrayList<>();
-            BlockItem eventTransaction = BlockItem.newBuilder()
+            final BlockItem eventTransaction = BlockItem.newBuilder()
                     .eventTransaction(
                             EventTransaction.newBuilder().applicationTransaction(Transaction.PROTOBUF.toBytes(tx)))
                     .build();
@@ -863,10 +856,6 @@ final class RecordCacheImplTest extends AppTestBase {
                             noThrowSha384HashOf(tx.signedTransactionBytes().toByteArray())))
                     .build();
             List<BlockItem> classifiableBlockItems = new ArrayList<>();
-            eventTransaction = BlockItem.newBuilder()
-                    .eventTransaction(
-                            EventTransaction.newBuilder().applicationTransaction(Transaction.PROTOBUF.toBytes(tx)))
-                    .build();
             transactionResult = BlockItem.newBuilder()
                     .transactionResult(
                             TransactionResult.newBuilder().status(SUCCESS).consensusTimestamp(Timestamp.DEFAULT))
@@ -890,7 +879,7 @@ final class RecordCacheImplTest extends AppTestBase {
         @ParameterizedTest
         @MethodSource("receiptStatusCodes")
         @DisplayName("Query for records for an account ID with a proper record")
-        void queryForRecordsForAccountIdWithRecord(@NonNull final ResponseCodeEnum status) {
+        public void queryForRecordsForAccountIdWithRecord(@NonNull final ResponseCodeEnum status) {
             // Given a transaction known to the de-duplication cache but not the record cache
             final var cache = new RecordCacheImpl(dedupeCache, wsa, props);
             final var txId = transactionID();
@@ -911,7 +900,7 @@ final class RecordCacheImplTest extends AppTestBase {
         @ParameterizedTest
         @MethodSource("receiptStatusCodes")
         @DisplayName("Query for records for an account ID with a proper record using addBlockItems")
-        void queryForRecordsForAccountIdWithRecordUsingAddBlockItems(@NonNull final ResponseCodeEnum status) {
+        public void queryForRecordsForAccountIdWithRecordUsingAddBlockItems(@NonNull final ResponseCodeEnum status) {
             // Given a transaction known to the de-duplication cache but not the record cache
             final var cache = new RecordCacheImpl(dedupeCache, wsa, props);
             final var txId = transactionID();
@@ -924,12 +913,12 @@ final class RecordCacheImplTest extends AppTestBase {
                             noThrowSha384HashOf(tx.signedTransactionBytes().toByteArray())))
                     .receipt(receipt)
                     .build();
-            List<BlockItem> blockItems = new ArrayList<>();
-            BlockItem eventTransaction = BlockItem.newBuilder()
+            final List<BlockItem> blockItems = new ArrayList<>();
+            final BlockItem eventTransaction = BlockItem.newBuilder()
                     .eventTransaction(
                             EventTransaction.newBuilder().applicationTransaction(Transaction.PROTOBUF.toBytes(tx)))
                     .build();
-            BlockItem transactionResult = BlockItem.newBuilder()
+            final BlockItem transactionResult = BlockItem.newBuilder()
                     .transactionResult(
                             TransactionResult.newBuilder().status(status).consensusTimestamp(Timestamp.DEFAULT))
                     .build();
@@ -958,14 +947,14 @@ final class RecordCacheImplTest extends AppTestBase {
         @Test
         @DisplayName("Null args to hasDuplicate throw NPE")
         @SuppressWarnings("DataFlowIssue")
-        void duplicateCheckWithIllegalParameters() {
+        public void duplicateCheckWithIllegalParameters() {
             final var cache = new RecordCacheImpl(dedupeCache, wsa, props);
             assertThatThrownBy(() -> cache.hasDuplicate(null, 1L)).isInstanceOf(NullPointerException.class);
         }
 
         @Test
         @DisplayName("Check duplicate for unknown txn returns NO_DUPLICATE")
-        void duplicateCheckForUnknownTxn() {
+        public void duplicateCheckForUnknownTxn() {
             final var cache = new RecordCacheImpl(dedupeCache, wsa, props);
             final var missingTxId = transactionID();
 
@@ -974,7 +963,7 @@ final class RecordCacheImplTest extends AppTestBase {
 
         @Test
         @DisplayName("Check duplicate for tx with receipt in UNKNOWN state returns NO_DUPLICATE")
-        void duplicateCheckForUnknownState() {
+        public void duplicateCheckForUnknownState() {
             final var cache = new RecordCacheImpl(dedupeCache, wsa, props);
             final var txId = transactionID();
             dedupeCache.add(txId);
@@ -984,7 +973,7 @@ final class RecordCacheImplTest extends AppTestBase {
 
         @Test
         @DisplayName("Check duplicate for txn with a proper record from other node")
-        void duplicateCheckForTxnFromOtherNode() {
+        public void duplicateCheckForTxnFromOtherNode() {
             // Given a transaction known to the de-duplication cache but not the record cache
             final var cache = new RecordCacheImpl(dedupeCache, wsa, props);
             final var txId = transactionID();
@@ -1004,17 +993,17 @@ final class RecordCacheImplTest extends AppTestBase {
 
         @Test
         @DisplayName("Check duplicate for txn with a proper record from other node using addBlockItems")
-        void duplicateCheckForTxnFromOtherNodeUsingAddBlockItems() {
+        public void duplicateCheckForTxnFromOtherNodeUsingAddBlockItems() {
             // Given a transaction known to the de-duplication cache but not the record cache
             final var cache = new RecordCacheImpl(dedupeCache, wsa, props);
             final var txId = transactionID();
             final var tx = simpleCryptoTransfer(txId);
-            List<BlockItem> blockItems = new ArrayList<>();
-            BlockItem eventTransaction = BlockItem.newBuilder()
+            final List<BlockItem> blockItems = new ArrayList<>();
+            final BlockItem eventTransaction = BlockItem.newBuilder()
                     .eventTransaction(
                             EventTransaction.newBuilder().applicationTransaction(Transaction.PROTOBUF.toBytes(tx)))
                     .build();
-            BlockItem transactionResult = BlockItem.newBuilder()
+            final BlockItem transactionResult = BlockItem.newBuilder()
                     .transactionResult(TransactionResult.newBuilder().status(OK).consensusTimestamp(Timestamp.DEFAULT))
                     .build();
             blockItems.add(eventTransaction);
@@ -1029,7 +1018,7 @@ final class RecordCacheImplTest extends AppTestBase {
 
         @Test
         @DisplayName("Check duplicate for txn with a proper record from same node")
-        void duplicateCheckForTxnFromSameNode() {
+        public void duplicateCheckForTxnFromSameNode() {
             // Given a transaction known to the de-duplication cache but not the record cache
             final var cache = new RecordCacheImpl(dedupeCache, wsa, props);
             final var txId = transactionID();
@@ -1049,17 +1038,17 @@ final class RecordCacheImplTest extends AppTestBase {
 
         @Test
         @DisplayName("Check duplicate for txn with a proper record from same node using addBlockItems")
-        void duplicateCheckForTxnFromSameNodeUsingAddBlockItems() {
+        public void duplicateCheckForTxnFromSameNodeUsingAddBlockItems() {
             // Given a transaction known to the de-duplication cache but not the record cache
             final var cache = new RecordCacheImpl(dedupeCache, wsa, props);
             final var txId = transactionID();
             final var tx = simpleCryptoTransfer(txId);
-            List<BlockItem> blockItems = new ArrayList<>();
-            BlockItem eventTransaction = BlockItem.newBuilder()
+            final List<BlockItem> blockItems = new ArrayList<>();
+            final BlockItem eventTransaction = BlockItem.newBuilder()
                     .eventTransaction(
                             EventTransaction.newBuilder().applicationTransaction(Transaction.PROTOBUF.toBytes(tx)))
                     .build();
-            BlockItem transactionResult = BlockItem.newBuilder()
+            final BlockItem transactionResult = BlockItem.newBuilder()
                     .transactionResult(TransactionResult.newBuilder().status(OK).consensusTimestamp(Timestamp.DEFAULT))
                     .build();
             blockItems.add(eventTransaction);
@@ -1074,7 +1063,7 @@ final class RecordCacheImplTest extends AppTestBase {
 
         @Test
         @DisplayName("Check duplicate for txn with a proper record from several other nodes")
-        void duplicateCheckForTxnFromMultipleOtherNodes() {
+        public void duplicateCheckForTxnFromMultipleOtherNodes() {
             // Given a transaction known to the de-duplication cache but not the record cache
             final var cache = new RecordCacheImpl(dedupeCache, wsa, props);
             final var txId = transactionID();
@@ -1096,17 +1085,17 @@ final class RecordCacheImplTest extends AppTestBase {
 
         @Test
         @DisplayName("Check duplicate for txn with a proper record from several other nodes using addBlockitems")
-        void duplicateCheckForTxnFromMultipleOtherNodesUsingAddBlockItems() {
+        public void duplicateCheckForTxnFromMultipleOtherNodesUsingAddBlockItems() {
             // Given a transaction known to the de-duplication cache but not the record cache
             final var cache = new RecordCacheImpl(dedupeCache, wsa, props);
             final var txId = transactionID();
             final var tx = simpleCryptoTransfer(txId);
-            List<BlockItem> blockItems = new ArrayList<>();
-            BlockItem eventTransaction = BlockItem.newBuilder()
+            final List<BlockItem> blockItems = new ArrayList<>();
+            final BlockItem eventTransaction = BlockItem.newBuilder()
                     .eventTransaction(
                             EventTransaction.newBuilder().applicationTransaction(Transaction.PROTOBUF.toBytes(tx)))
                     .build();
-            BlockItem transactionResult = BlockItem.newBuilder()
+            final BlockItem transactionResult = BlockItem.newBuilder()
                     .transactionResult(TransactionResult.newBuilder().status(OK).consensusTimestamp(Timestamp.DEFAULT))
                     .build();
             blockItems.add(eventTransaction);
@@ -1124,7 +1113,7 @@ final class RecordCacheImplTest extends AppTestBase {
         @ParameterizedTest
         @ValueSource(longs = {1L, 2L, 3L})
         @DisplayName("Check duplicate for txn with a proper record from several nodes including the current")
-        void duplicateCheckForTxnFromMultipleNodesIncludingCurrent(final long currentNodeId) {
+        public void duplicateCheckForTxnFromMultipleNodesIncludingCurrent(final long currentNodeId) {
             // Given a transaction known to the de-duplication cache but not the record cache
             final var cache = new RecordCacheImpl(dedupeCache, wsa, props);
             final var txId = transactionID();
@@ -1148,17 +1137,17 @@ final class RecordCacheImplTest extends AppTestBase {
         @ValueSource(longs = {1L, 2L, 3L})
         @DisplayName(
                 "Check duplicate for txn with a proper record from several nodes including the current using addBlockItems")
-        void duplicateCheckForTxnFromMultipleNodesIncludingCurrentUsingAddBlockItems(final long currentNodeId) {
+        public void duplicateCheckForTxnFromMultipleNodesIncludingCurrentUsingAddBlockItems(final long currentNodeId) {
             // Given a transaction known to the de-duplication cache but not the record cache
             final var cache = new RecordCacheImpl(dedupeCache, wsa, props);
             final var txId = transactionID();
             final var tx = simpleCryptoTransfer(txId);
-            List<BlockItem> blockItems = new ArrayList<>();
-            BlockItem eventTransaction = BlockItem.newBuilder()
+            final List<BlockItem> blockItems = new ArrayList<>();
+            final BlockItem eventTransaction = BlockItem.newBuilder()
                     .eventTransaction(
                             EventTransaction.newBuilder().applicationTransaction(Transaction.PROTOBUF.toBytes(tx)))
                     .build();
-            BlockItem transactionResult = BlockItem.newBuilder()
+            final BlockItem transactionResult = BlockItem.newBuilder()
                     .transactionResult(TransactionResult.newBuilder().status(OK).consensusTimestamp(Timestamp.DEFAULT))
                     .build();
             blockItems.add(eventTransaction);

@@ -16,17 +16,16 @@
 
 package com.hedera.node.app.blocks.translators.impl;
 
-import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
-import static com.hedera.node.app.service.token.AliasUtils.extractEvmAddress;
-import static com.hedera.node.app.service.token.AliasUtils.isOfEvmAddressSize;
-import static com.hedera.node.config.types.EntityType.ACCOUNT;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.block.stream.output.StateChange;
+import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.node.app.blocks.translators.BaseTranslator;
 import com.hedera.node.app.blocks.translators.BlockTransactionParts;
 import com.hedera.node.app.blocks.translators.BlockTransactionPartsTranslator;
+import com.hedera.node.app.service.token.AliasUtils;
 import com.hedera.node.app.state.SingleTransactionRecord;
+import com.hedera.node.config.types.EntityType;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
@@ -47,8 +46,8 @@ public class CryptoCreateTranslator implements BlockTransactionPartsTranslator {
         requireNonNull(baseTranslator);
         requireNonNull(remainingStateChanges);
         return baseTranslator.recordFrom(parts, (receiptBuilder, recordBuilder) -> {
-            if (parts.status() == SUCCESS) {
-                final var createdNum = baseTranslator.nextCreatedNum(ACCOUNT);
+            if (parts.status() == ResponseCodeEnum.SUCCESS) {
+                final var createdNum = baseTranslator.nextCreatedNum(EntityType.ACCOUNT);
                 final var iter = remainingStateChanges.listIterator();
                 while (iter.hasNext()) {
                     final var stateChange = iter.next();
@@ -62,8 +61,8 @@ public class CryptoCreateTranslator implements BlockTransactionPartsTranslator {
                                     .valueOrThrow()
                                     .accountValueOrThrow();
                             receiptBuilder.accountID(accountId);
-                            if (!isOfEvmAddressSize(account.alias())) {
-                                final var maybeEvmAddress = extractEvmAddress(account.alias());
+                            if (!AliasUtils.isOfEvmAddressSize(account.alias())) {
+                                final var maybeEvmAddress = AliasUtils.extractEvmAddress(account.alias());
                                 if (maybeEvmAddress != null) {
                                     recordBuilder.evmAddress(maybeEvmAddress);
                                 }
