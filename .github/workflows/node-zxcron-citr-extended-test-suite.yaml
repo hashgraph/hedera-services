@@ -21,7 +21,7 @@ on:
     - cron: '0 */3 * * *'
 
 permissions:
-  contents: read
+  contents: write
 
 defaults:
   run:
@@ -31,6 +31,7 @@ env:
   GRADLE_CACHE_USERNAME: ${{ secrets.gradle-cache-username }}
   GRADLE_CACHE_PASSWORD: ${{ secrets.gradle-cache-password }}
   GRADLE_EXEC: ionice -c 2 -n 2 nice -n 19 ./gradlew
+  XTS_CANDIDATE_TAG: "xts-candidate"
 
 jobs:
   extended-test-suite:
@@ -38,8 +39,41 @@ jobs:
     runs-on: network-node-linux-medium
 
     steps:
+      # Checkout the latest from dev
       - name: Checkout Code
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+
+      # Check if the xts-candidate tag exists
+      - name: Check for tags
+        id: check_tags_exist
+        run: |
+          TAG=${XTS_CANDIDATE_TAG}
+          if [ $(git tag -l "${TAG}") ]; then
+            echo "xts_tag_exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "xts_tag_exists=false" >> $GITHUB_OUTPUT
+          fi
+
+      # If no xts-candidate tag exists error out and exit the workflow
+      - name: No Tags Found
+        if: ${{ steps.check_tags_exist.outputs.xts_tag_exists == 'false' }}
+        run: |
+          echo "No XTS tags found. Ending CITR check.
+          exit 1
+
+      # Checkout the tagged reference
+      - name: Checkout Tagged Code
+        id: checkout_tagged_code
+        if: ${{ steps.check_tags_exist.outputs.xts_tag_exists == 'true' }}
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+        with:
+          ref: '${XTS_CANDIDATE_TAG}'
+
+      # Remove the tag so other jobs can be promoted to xts-candidate status
+      - name: Remove xts-candidate tag
+        run: |
+          git tag -d ${XTS_CANDIDATE_TAG}
+          git push --delete origin ${XTS_CANDIDATE_TAG}
 
       - name: Setup Java
         uses: actions/setup-java@387ac29b308b003ca37ba93a6cab5eb57c8f5f93 # v4.0.0
@@ -57,6 +91,7 @@ jobs:
         with:
           node-version: 20
 
+      # prepare to run eXtended Test Suite
       - name: Compile
         id: gradle-build
         run: ${GRADLE_EXEC} assemble :test-clients:yahCliJar --scan
@@ -130,16 +165,24 @@ jobs:
             hedera-node/test-clients/build/hapi-test/**/output/**
           retention-days: 7
 
-  tag:
-    name: Tag for promotion / release
-    runs-on: network-node-linux-medium
+      # Report failure if XTS failed.
+      - name: Report XTS failure
+        if: ${{ steps.gradle-timing-sensitive.conclusion == 'failure' ||
+          steps.gradle-time-consuming.conclusion == 'failure' ||
+          steps.gradle-hammer-tests.conclusion == 'failure' ||
+          steps.gradle-hapi-time-consuming.conclusion == 'failure' }}
+        run: |
+          echo "eXtended Test Suite failed during execution."
+          exit 2
 
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
-
-      - name: Add BuildID Tag
-        run: echo "Add Build Identifier"
-
-      - name: Add Promotion Tag
-        run: echo "Add promotion tag"
+      # Now that the XTS suite has run we should be able to tag for promotion
+      - name: Tag for XTS promotion
+        if: ${{ steps.gradle-timing-sensitive.conclusion == 'success' &&
+                steps.gradle-time-consuming.conclusion == 'success' &&
+                steps.gradle-hammer-tests.conclusion == 'success' &&
+                steps.gradle-hapi-time-consuming.conclusion == 'success' }}
+        run: |
+          EPOCH_TIME=`date -j -f "%a %b %d %T %Z %Y" "\`LC_ALL=C date\`" "+%s"`
+          TAG=xts-pass-${EPOCH_TIME}
+          git tag --annotate ${TAG}
+          git push --set-upstream origin --tags

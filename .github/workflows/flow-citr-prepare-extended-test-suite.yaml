@@ -27,6 +27,9 @@ defaults:
 permissions:
   contents: write
 
+env:
+  XTS_CANDIDATE_TAG: "xts-candidate"
+
 jobs:
   Build-Application:
     name: Build Application
@@ -77,7 +80,7 @@ jobs:
       # move the tag if successful
       - name: Tag Code and push
         run: |
-          git tag --force --annotate "xts-candidate"
+          git tag --force --annotate ${XTS_CANDIDATE_TAG}
           git push --set-upstream origin --tags
 
   Report-Failure:
