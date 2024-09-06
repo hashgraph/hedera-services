@@ -84,6 +84,87 @@ public class BlockUnitSplit {
         }
     }
 
+    private static class BlockItemProcessor {
+        private TxnIdType lastTxnIdType = null;
+        private TransactionID unitTxnId = null;
+        private final PendingBlockTransactionParts pendingParts = new PendingBlockTransactionParts();
+        private final List<BlockTransactionParts> unitParts = new ArrayList<>();
+        private final List<StateChange> unitStateChanges = new ArrayList<>();
+
+        public void processBlockItem(BlockItem item, List<BlockTransactionalUnit> units) {
+            switch (item.item().kind()) {
+                case UNSET, RECORD_FILE -> throw new IllegalStateException(
+                        "Cannot split block with item of kind " + item.item().kind());
+                case BLOCK_HEADER, EVENT_HEADER, ROUND_HEADER, FILTERED_ITEM_HASH, BLOCK_PROOF -> {
+                    // No-op
+                }
+                case EVENT_TRANSACTION -> processEventTransaction(item, units);
+                case TRANSACTION_RESULT -> pendingParts.result = item.transactionResultOrThrow();
+                case TRANSACTION_OUTPUT -> pendingParts.addOutput(item.transactionOutputOrThrow());
+                case STATE_CHANGES -> unitStateChanges.addAll(
+                        item.stateChangesOrThrow().stateChanges());
+            }
+        }
+
+        private void processEventTransaction(BlockItem item, List<BlockTransactionalUnit> units) {
+            final var eventTransaction = item.eventTransactionOrThrow();
+            if (eventTransaction.hasApplicationTransaction()) {
+                final var nextParts = TransactionParts.from(eventTransaction.applicationTransactionOrThrow());
+                final var txnId = nextParts.transactionIdOrThrow();
+                if (pendingParts.areComplete()) {
+                    unitParts.add(pendingParts.toBlockTransactionParts());
+                }
+                final var txnIdType = classifyTxnId(txnId, unitTxnId, nextParts, lastTxnIdType);
+                if (txnIdType == TxnIdType.NEW_UNIT_BY_ID && !unitParts.isEmpty()) {
+                    completeAndAdd(units, unitParts, unitStateChanges);
+                }
+                pendingParts.clear();
+                if (txnIdType != TxnIdType.AUTO_SYSFILE_MGMT_ID) {
+                    unitTxnId = txnId;
+                }
+                pendingParts.parts = nextParts;
+                lastTxnIdType = txnIdType;
+            }
+        }
+
+        private TxnIdType classifyTxnId(
+                @NonNull final TransactionID nextId,
+                @Nullable final TransactionID unitTxnId,
+                @NonNull final TransactionParts parts,
+                @Nullable final TxnIdType lastTxnIdType) {
+            if (isAutoSysFileMgmtTxn(parts)) {
+                return TxnIdType.AUTO_SYSFILE_MGMT_ID;
+            }
+            if (lastTxnIdType == TxnIdType.AUTO_SYSFILE_MGMT_ID) {
+                // Automatic system file management transactions never end a transactional unit
+                return TxnIdType.SAME_UNIT_BY_ID;
+            }
+            if (unitTxnId == null) {
+                return TxnIdType.NEW_UNIT_BY_ID;
+            }
+            // Scheduled transactions never begin a new transactional unit and
+            final var radicallyDifferent = !nextId.scheduled()
+                    && (!nextId.accountIDOrElse(AccountID.DEFAULT).equals(unitTxnId.accountIDOrElse(AccountID.DEFAULT))
+                            || !nextId.transactionValidStartOrElse(Timestamp.DEFAULT)
+                                    .equals(unitTxnId.transactionValidStartOrElse(Timestamp.DEFAULT)));
+            return radicallyDifferent ? TxnIdType.NEW_UNIT_BY_ID : TxnIdType.SAME_UNIT_BY_ID;
+        }
+
+        private boolean isAutoSysFileMgmtTxn(@NonNull final TransactionParts parts) {
+            return (parts.function() == FILE_CREATE || parts.function() == FILE_UPDATE)
+                    && parts.transactionIdOrThrow().nonce() > 0;
+        }
+
+        private void completeAndAdd(
+                @NonNull final List<BlockTransactionalUnit> units,
+                @NonNull final List<BlockTransactionParts> unitParts,
+                @NonNull final List<StateChange> unitStateChanges) {
+            units.add(new BlockTransactionalUnit(new ArrayList<>(unitParts), new LinkedList<>(unitStateChanges)));
+            unitParts.clear();
+            unitStateChanges.clear();
+        }
+    }
+
     /**
      * Splits the given block into transactional units.
      * @param blockItems the block items to split
@@ -91,92 +172,20 @@ public class BlockUnitSplit {
      */
     public List<BlockTransactionalUnit> split(@NonNull final List<BlockItem> blockItems) {
         final List<BlockTransactionalUnit> units = new ArrayList<>();
+        final BlockItemProcessor processor = new BlockItemProcessor();
 
-        TxnIdType lastTxnIdType = null;
-        TransactionID unitTxnId = null;
-        PendingBlockTransactionParts pendingParts = new PendingBlockTransactionParts();
-        final List<BlockTransactionParts> unitParts = new ArrayList<>();
-        final List<StateChange> unitStateChanges = new ArrayList<>();
         for (final var item : blockItems) {
-            switch (item.item().kind()) {
-                case UNSET, RECORD_FILE -> throw new IllegalStateException(
-                        "Cannot split block with item of kind " + item.item().kind());
-                case BLOCK_HEADER, EVENT_HEADER, ROUND_HEADER, FILTERED_ITEM_HASH, BLOCK_PROOF -> {
-                    // No-op
-                }
-                case EVENT_TRANSACTION -> {
-                    final var eventTransaction = item.eventTransactionOrThrow();
-                    if (eventTransaction.hasApplicationTransaction()) {
-                        final var nextParts = TransactionParts.from(eventTransaction.applicationTransactionOrThrow());
-                        final var txnId = nextParts.transactionIdOrThrow();
-                        if (pendingParts.areComplete()) {
-                            unitParts.add(pendingParts.toBlockTransactionParts());
-                        }
-                        final var txnIdType = classifyTxnId(txnId, unitTxnId, nextParts, lastTxnIdType);
-                        if (txnIdType == TxnIdType.NEW_UNIT_BY_ID && !unitParts.isEmpty()) {
-                            completeAndAdd(units, unitParts, unitStateChanges);
-                        }
-                        pendingParts.clear();
-                        if (txnIdType != TxnIdType.AUTO_SYSFILE_MGMT_ID) {
-                            unitTxnId = txnId;
-                        }
-                        pendingParts.parts = nextParts;
-                        lastTxnIdType = txnIdType;
-                    }
-                }
-                case TRANSACTION_RESULT -> pendingParts.result = item.transactionResultOrThrow();
-                case TRANSACTION_OUTPUT -> pendingParts.addOutput(item.transactionOutputOrThrow());
-                case STATE_CHANGES -> unitStateChanges.addAll(
-                        item.stateChangesOrThrow().stateChanges());
-            }
+            processor.processBlockItem(item, units);
         }
-        if (pendingParts.areComplete()) {
-            unitParts.add(pendingParts.toBlockTransactionParts());
-            completeAndAdd(units, unitParts, unitStateChanges);
+        if (processor.pendingParts.areComplete()) {
+            processor.completeAndAdd(units, processor.unitParts, processor.unitStateChanges);
         }
         return units;
-    }
-
-    private TxnIdType classifyTxnId(
-            @NonNull final TransactionID nextId,
-            @Nullable final TransactionID unitTxnId,
-            @NonNull final TransactionParts parts,
-            @Nullable final TxnIdType lastTxnIdType) {
-        if (isAutoSysFileMgmtTxn(parts)) {
-            return TxnIdType.AUTO_SYSFILE_MGMT_ID;
-        }
-        if (lastTxnIdType == TxnIdType.AUTO_SYSFILE_MGMT_ID) {
-            // Automatic system file management transactions never end a transactional unit
-            return TxnIdType.SAME_UNIT_BY_ID;
-        }
-        if (unitTxnId == null) {
-            return TxnIdType.NEW_UNIT_BY_ID;
-        }
-        // Scheduled transactions never begin a new transactional unit and
-        final var radicallyDifferent = !nextId.scheduled()
-                && (!nextId.accountIDOrElse(AccountID.DEFAULT).equals(unitTxnId.accountIDOrElse(AccountID.DEFAULT))
-                        || !nextId.transactionValidStartOrElse(Timestamp.DEFAULT)
-                                .equals(unitTxnId.transactionValidStartOrElse(Timestamp.DEFAULT)));
-        return radicallyDifferent ? TxnIdType.NEW_UNIT_BY_ID : TxnIdType.SAME_UNIT_BY_ID;
-    }
-
-    private boolean isAutoSysFileMgmtTxn(@NonNull final TransactionParts parts) {
-        return (parts.function() == FILE_CREATE || parts.function() == FILE_UPDATE)
-                && parts.transactionIdOrThrow().nonce() > 0;
     }
 
     private enum TxnIdType {
         AUTO_SYSFILE_MGMT_ID,
         SAME_UNIT_BY_ID,
         NEW_UNIT_BY_ID,
-    }
-
-    private void completeAndAdd(
-            @NonNull final List<BlockTransactionalUnit> units,
-            @NonNull final List<BlockTransactionParts> unitParts,
-            @NonNull final List<StateChange> unitStateChanges) {
-        units.add(new BlockTransactionalUnit(new ArrayList<>(unitParts), new LinkedList<>(unitStateChanges)));
-        unitParts.clear();
-        unitStateChanges.clear();
     }
 }

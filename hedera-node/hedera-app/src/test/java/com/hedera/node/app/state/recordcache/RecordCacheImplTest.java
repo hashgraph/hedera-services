@@ -413,7 +413,7 @@ final class RecordCacheImplTest extends AppTestBase {
         @ParameterizedTest
         @MethodSource("receiptStatusCodes")
         @DisplayName("Query for receipt for a txn with a proper record using addBlockItems")
-        void queryForReceiptForTxnWithRecordUsingAddBlockItems(@NonNull final ResponseCodeEnum status) {
+        public void queryForReceiptForTxnWithRecordUsingAddBlockItems(@NonNull final ResponseCodeEnum status) {
             // Given a transaction known to the de-duplication cache but not the record cache
             final var cache = new RecordCacheImpl(dedupeCache, wsa, props);
             final var txId = transactionID();
@@ -462,7 +462,7 @@ final class RecordCacheImplTest extends AppTestBase {
         @ParameterizedTest
         @MethodSource("receiptStatusCodes")
         @DisplayName("Query for receipt for a txn with a proper record using addBlockItems")
-        void queryForReceiptsForTxnWithRecordUsingAddBlockItems(@NonNull final ResponseCodeEnum status) {
+        public void queryForReceiptsForTxnWithRecordUsingAddBlockItems(@NonNull final ResponseCodeEnum status) {
             // Given a transaction known to the de-duplication cache but not the record cache
             final var cache = new RecordCacheImpl(dedupeCache, wsa, props);
             final var txId = transactionID();
@@ -511,7 +511,7 @@ final class RecordCacheImplTest extends AppTestBase {
         @ParameterizedTest
         @MethodSource("receiptStatusCodes")
         @DisplayName("Query for receipts for an account ID with a proper record using addBlockItems")
-        void queryForReceiptsForAccountIdWithRecordUsingAddBlockItems(@NonNull final ResponseCodeEnum status) {
+        public void queryForReceiptsForAccountIdWithRecordUsingAddBlockItems(@NonNull final ResponseCodeEnum status) {
             // Given a transaction known to the de-duplication cache but not the record cache
             final var cache = new RecordCacheImpl(dedupeCache, wsa, props);
             final var txId = transactionID();
@@ -575,7 +575,7 @@ final class RecordCacheImplTest extends AppTestBase {
         @ValueSource(ints = {20, 30, 40})
         @DisplayName(
                 "Only up to recordsMaxQueryableByAccount receipts are returned for an account ID with multiple records using addBlockItems")
-        void queryForManyReceiptsForAccountIDUsingAddBlockItems(final int numRecords) {
+        public void queryForManyReceiptsForAccountIDUsingAddBlockItems(final int numRecords) {
             // Given a number of transactions with several records each, all for the same payer
             final var cache = new RecordCacheImpl(dedupeCache, wsa, props);
             // Normally consensus time is AFTER the transaction ID time by a couple of seconds

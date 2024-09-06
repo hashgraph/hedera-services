@@ -61,7 +61,7 @@ import org.apache.logging.log4j.Logger;
  * Defines a translator for a {@link BlockTransactionalUnit} into a list of {@link SingleTransactionRecord}s.
  */
 public class BlockTransactionalUnitTranslator {
-    private static final Logger log = LogManager.getLogger(BlockTransactionalUnitTranslator.class);
+    private static final Logger LOGGER = LogManager.getLogger(BlockTransactionalUnitTranslator.class);
 
     /**
      * The base translator used to create the {@link SingleTransactionRecord}s.
@@ -71,60 +71,60 @@ public class BlockTransactionalUnitTranslator {
      * The translators used to translate the block transaction parts for a logical HAPI transaction.
      */
     private final Map<HederaFunctionality, BlockTransactionPartsTranslator> translators =
-            new EnumMap<>(HederaFunctionality.class) {
-                {
-                    put(HederaFunctionality.CONSENSUS_CREATE_TOPIC, new TopicCreateTranslator());
-                    put(HederaFunctionality.CONSENSUS_DELETE_TOPIC, NO_EXPLICIT_SIDE_EFFECTS_TRANSLATOR);
-                    put(HederaFunctionality.CONSENSUS_SUBMIT_MESSAGE, new SubmitMessageTranslator());
-                    put(HederaFunctionality.CONSENSUS_UPDATE_TOPIC, NO_EXPLICIT_SIDE_EFFECTS_TRANSLATOR);
-                    put(HederaFunctionality.CONTRACT_CALL, new ContractCallTranslator());
-                    put(HederaFunctionality.CONTRACT_CREATE, new ContractCreateTranslator());
-                    put(HederaFunctionality.CONTRACT_DELETE, new ContractDeleteTranslator());
-                    put(HederaFunctionality.CONTRACT_UPDATE, new ContractUpdateTranslator());
-                    put(HederaFunctionality.CRYPTO_APPROVE_ALLOWANCE, NO_EXPLICIT_SIDE_EFFECTS_TRANSLATOR);
-                    put(HederaFunctionality.CRYPTO_DELETE_ALLOWANCE, NO_EXPLICIT_SIDE_EFFECTS_TRANSLATOR);
-                    put(HederaFunctionality.CRYPTO_CREATE, new CryptoCreateTranslator());
-                    put(HederaFunctionality.CRYPTO_DELETE, NO_EXPLICIT_SIDE_EFFECTS_TRANSLATOR);
-                    put(HederaFunctionality.CRYPTO_TRANSFER, new CryptoTransferTranslator());
-                    put(HederaFunctionality.CRYPTO_UPDATE, new CryptoUpdateTranslator());
-                    put(HederaFunctionality.ETHEREUM_TRANSACTION, new EthereumTransactionTranslator());
-                    put(HederaFunctionality.FILE_APPEND, NO_EXPLICIT_SIDE_EFFECTS_TRANSLATOR);
-                    put(HederaFunctionality.FILE_CREATE, new FileCreateTranslator());
-                    put(HederaFunctionality.FILE_DELETE, NO_EXPLICIT_SIDE_EFFECTS_TRANSLATOR);
-                    put(HederaFunctionality.FILE_UPDATE, NO_EXPLICIT_SIDE_EFFECTS_TRANSLATOR);
-                    put(HederaFunctionality.FREEZE, NO_EXPLICIT_SIDE_EFFECTS_TRANSLATOR);
-                    put(HederaFunctionality.NODE_CREATE, new NodeCreateTranslator());
-                    put(HederaFunctionality.NODE_DELETE, NO_EXPLICIT_SIDE_EFFECTS_TRANSLATOR);
-                    put(HederaFunctionality.NODE_UPDATE, NO_EXPLICIT_SIDE_EFFECTS_TRANSLATOR);
-                    put(HederaFunctionality.NODE_STAKE_UPDATE, NO_EXPLICIT_SIDE_EFFECTS_TRANSLATOR);
-                    put(HederaFunctionality.SCHEDULE_CREATE, new ScheduleCreateTranslator());
-                    put(HederaFunctionality.SCHEDULE_DELETE, new ScheduleDeleteTranslator());
-                    put(HederaFunctionality.SCHEDULE_SIGN, new ScheduleSignTranslator());
-                    put(HederaFunctionality.SYSTEM_DELETE, NO_EXPLICIT_SIDE_EFFECTS_TRANSLATOR);
-                    put(HederaFunctionality.SYSTEM_UNDELETE, NO_EXPLICIT_SIDE_EFFECTS_TRANSLATOR);
-                    put(HederaFunctionality.TOKEN_AIRDROP, new TokenAirdropTranslator());
-                    put(HederaFunctionality.TOKEN_CLAIM_AIRDROP, AIRDROP_REMOVAL_TRANSLATOR);
-                    put(HederaFunctionality.TOKEN_CANCEL_AIRDROP, AIRDROP_REMOVAL_TRANSLATOR);
-                    put(HederaFunctionality.TOKEN_FEE_SCHEDULE_UPDATE, NO_EXPLICIT_SIDE_EFFECTS_TRANSLATOR);
-                    put(HederaFunctionality.TOKEN_REJECT, NO_EXPLICIT_SIDE_EFFECTS_TRANSLATOR);
-                    put(HederaFunctionality.TOKEN_ACCOUNT_WIPE, new TokenWipeTranslator());
-                    put(HederaFunctionality.TOKEN_ASSOCIATE_TO_ACCOUNT, new TokenAssociateTranslator());
-                    put(HederaFunctionality.TOKEN_DISSOCIATE_FROM_ACCOUNT, new TokenDissociateTranslator());
-                    put(HederaFunctionality.TOKEN_GRANT_KYC_TO_ACCOUNT, NO_EXPLICIT_SIDE_EFFECTS_TRANSLATOR);
-                    put(HederaFunctionality.TOKEN_REVOKE_KYC_FROM_ACCOUNT, NO_EXPLICIT_SIDE_EFFECTS_TRANSLATOR);
-                    put(HederaFunctionality.TOKEN_BURN, new TokenBurnTranslator());
-                    put(HederaFunctionality.TOKEN_CREATE, new TokenCreateTranslator());
-                    put(HederaFunctionality.TOKEN_DELETE, NO_EXPLICIT_SIDE_EFFECTS_TRANSLATOR);
-                    put(HederaFunctionality.TOKEN_FREEZE_ACCOUNT, NO_EXPLICIT_SIDE_EFFECTS_TRANSLATOR);
-                    put(HederaFunctionality.TOKEN_UNFREEZE_ACCOUNT, NO_EXPLICIT_SIDE_EFFECTS_TRANSLATOR);
-                    put(HederaFunctionality.TOKEN_UPDATE_NFTS, NO_EXPLICIT_SIDE_EFFECTS_TRANSLATOR);
-                    put(HederaFunctionality.TOKEN_MINT, new TokenMintTranslator());
-                    put(HederaFunctionality.TOKEN_PAUSE, NO_EXPLICIT_SIDE_EFFECTS_TRANSLATOR);
-                    put(HederaFunctionality.TOKEN_UNPAUSE, NO_EXPLICIT_SIDE_EFFECTS_TRANSLATOR);
-                    put(HederaFunctionality.TOKEN_UPDATE, new TokenUpdateTranslator());
-                    put(HederaFunctionality.UTIL_PRNG, new UtilPrngTranslator());
-                }
-            };
+            new EnumMap<>(HederaFunctionality.class);
+
+    public BlockTransactionalUnitTranslator() {
+        translators.put(HederaFunctionality.CONSENSUS_CREATE_TOPIC, new TopicCreateTranslator());
+        translators.put(HederaFunctionality.CONSENSUS_DELETE_TOPIC, NO_EXPLICIT_SIDE_EFFECTS_TRANSLATOR);
+        translators.put(HederaFunctionality.CONSENSUS_SUBMIT_MESSAGE, new SubmitMessageTranslator());
+        translators.put(HederaFunctionality.CONSENSUS_UPDATE_TOPIC, NO_EXPLICIT_SIDE_EFFECTS_TRANSLATOR);
+        translators.put(HederaFunctionality.CONTRACT_CALL, new ContractCallTranslator());
+        translators.put(HederaFunctionality.CONTRACT_CREATE, new ContractCreateTranslator());
+        translators.put(HederaFunctionality.CONTRACT_DELETE, new ContractDeleteTranslator());
+        translators.put(HederaFunctionality.CONTRACT_UPDATE, new ContractUpdateTranslator());
+        translators.put(HederaFunctionality.CRYPTO_APPROVE_ALLOWANCE, NO_EXPLICIT_SIDE_EFFECTS_TRANSLATOR);
+        translators.put(HederaFunctionality.CRYPTO_DELETE_ALLOWANCE, NO_EXPLICIT_SIDE_EFFECTS_TRANSLATOR);
+        translators.put(HederaFunctionality.CRYPTO_CREATE, new CryptoCreateTranslator());
+        translators.put(HederaFunctionality.CRYPTO_DELETE, NO_EXPLICIT_SIDE_EFFECTS_TRANSLATOR);
+        translators.put(HederaFunctionality.CRYPTO_TRANSFER, new CryptoTransferTranslator());
+        translators.put(HederaFunctionality.CRYPTO_UPDATE, new CryptoUpdateTranslator());
+        translators.put(HederaFunctionality.ETHEREUM_TRANSACTION, new EthereumTransactionTranslator());
+        translators.put(HederaFunctionality.FILE_APPEND, NO_EXPLICIT_SIDE_EFFECTS_TRANSLATOR);
+        translators.put(HederaFunctionality.FILE_CREATE, new FileCreateTranslator());
+        translators.put(HederaFunctionality.FILE_DELETE, NO_EXPLICIT_SIDE_EFFECTS_TRANSLATOR);
+        translators.put(HederaFunctionality.FILE_UPDATE, NO_EXPLICIT_SIDE_EFFECTS_TRANSLATOR);
+        translators.put(HederaFunctionality.FREEZE, NO_EXPLICIT_SIDE_EFFECTS_TRANSLATOR);
+        translators.put(HederaFunctionality.NODE_CREATE, new NodeCreateTranslator());
+        translators.put(HederaFunctionality.NODE_DELETE, NO_EXPLICIT_SIDE_EFFECTS_TRANSLATOR);
+        translators.put(HederaFunctionality.NODE_UPDATE, NO_EXPLICIT_SIDE_EFFECTS_TRANSLATOR);
+        translators.put(HederaFunctionality.NODE_STAKE_UPDATE, NO_EXPLICIT_SIDE_EFFECTS_TRANSLATOR);
+        translators.put(HederaFunctionality.SCHEDULE_CREATE, new ScheduleCreateTranslator());
+        translators.put(HederaFunctionality.SCHEDULE_DELETE, new ScheduleDeleteTranslator());
+        translators.put(HederaFunctionality.SCHEDULE_SIGN, new ScheduleSignTranslator());
+        translators.put(HederaFunctionality.SYSTEM_DELETE, NO_EXPLICIT_SIDE_EFFECTS_TRANSLATOR);
+        translators.put(HederaFunctionality.SYSTEM_UNDELETE, NO_EXPLICIT_SIDE_EFFECTS_TRANSLATOR);
+        translators.put(HederaFunctionality.TOKEN_AIRDROP, new TokenAirdropTranslator());
+        translators.put(HederaFunctionality.TOKEN_CLAIM_AIRDROP, AIRDROP_REMOVAL_TRANSLATOR);
+        translators.put(HederaFunctionality.TOKEN_CANCEL_AIRDROP, AIRDROP_REMOVAL_TRANSLATOR);
+        translators.put(HederaFunctionality.TOKEN_FEE_SCHEDULE_UPDATE, NO_EXPLICIT_SIDE_EFFECTS_TRANSLATOR);
+        translators.put(HederaFunctionality.TOKEN_REJECT, NO_EXPLICIT_SIDE_EFFECTS_TRANSLATOR);
+        translators.put(HederaFunctionality.TOKEN_ACCOUNT_WIPE, new TokenWipeTranslator());
+        translators.put(HederaFunctionality.TOKEN_ASSOCIATE_TO_ACCOUNT, new TokenAssociateTranslator());
+        translators.put(HederaFunctionality.TOKEN_DISSOCIATE_FROM_ACCOUNT, new TokenDissociateTranslator());
+        translators.put(HederaFunctionality.TOKEN_GRANT_KYC_TO_ACCOUNT, NO_EXPLICIT_SIDE_EFFECTS_TRANSLATOR);
+        translators.put(HederaFunctionality.TOKEN_REVOKE_KYC_FROM_ACCOUNT, NO_EXPLICIT_SIDE_EFFECTS_TRANSLATOR);
+        translators.put(HederaFunctionality.TOKEN_BURN, new TokenBurnTranslator());
+        translators.put(HederaFunctionality.TOKEN_CREATE, new TokenCreateTranslator());
+        translators.put(HederaFunctionality.TOKEN_DELETE, NO_EXPLICIT_SIDE_EFFECTS_TRANSLATOR);
+        translators.put(HederaFunctionality.TOKEN_FREEZE_ACCOUNT, NO_EXPLICIT_SIDE_EFFECTS_TRANSLATOR);
+        translators.put(HederaFunctionality.TOKEN_UNFREEZE_ACCOUNT, NO_EXPLICIT_SIDE_EFFECTS_TRANSLATOR);
+        translators.put(HederaFunctionality.TOKEN_UPDATE_NFTS, NO_EXPLICIT_SIDE_EFFECTS_TRANSLATOR);
+        translators.put(HederaFunctionality.TOKEN_MINT, new TokenMintTranslator());
+        translators.put(HederaFunctionality.TOKEN_PAUSE, NO_EXPLICIT_SIDE_EFFECTS_TRANSLATOR);
+        translators.put(HederaFunctionality.TOKEN_UNPAUSE, NO_EXPLICIT_SIDE_EFFECTS_TRANSLATOR);
+        translators.put(HederaFunctionality.TOKEN_UPDATE, new TokenUpdateTranslator());
+        translators.put(HederaFunctionality.UTIL_PRNG, new UtilPrngTranslator());
+    }
 
     /**
      * Scans a block for genesis information and returns true if found.
@@ -148,7 +148,11 @@ public class BlockTransactionalUnitTranslator {
         for (final var blockTransactionParts : unit.blockTransactionParts()) {
             final var translator = translators.get(blockTransactionParts.functionality());
             if (translator == null) {
-                log.warn("No translator found for functionality {}, skipping", blockTransactionParts.functionality());
+                if (LOGGER.isDebugEnabled()) {
+                    LOGGER.warn(
+                            "No translator found for functionality {}, skipping",
+                            blockTransactionParts.functionality());
+                }
             } else {
                 final var translation =
                         translator.translate(blockTransactionParts, baseTranslator, remainingStateChanges);

@@ -25,14 +25,12 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.block.stream.BlockItem;
 import com.hedera.hapi.node.base.AccountID;
-import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.state.recordcache.TransactionReceiptEntries;
 import com.hedera.hapi.node.state.recordcache.TransactionReceiptEntry;
 import com.hedera.hapi.node.transaction.TransactionReceipt;
 import com.hedera.hapi.node.transaction.TransactionRecord;
-import com.hedera.node.app.blocks.translators.BlockTransactionalUnit;
 import com.hedera.node.app.blocks.translators.BlockTransactionalUnitTranslator;
 import com.hedera.node.app.blocks.translators.BlockUnitSplit;
 import com.hedera.node.app.state.DeduplicationCache;
