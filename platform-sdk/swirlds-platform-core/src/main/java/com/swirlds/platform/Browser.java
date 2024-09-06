@@ -87,8 +87,12 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
- * The Browser that launches the Platforms that run the apps.
+ * The Browser that launches the Platforms that run the apps. This is used by the demo apps to launch the
+ * Platforms.
+ * This class will be removed once the demo apps moved to Inversion of Control pattern to build and start platform
+ * directly.
  */
+@Deprecated(forRemoval = true)
 public class Browser {
     // Each member is represented by an AddressBook entry in config.txt. On a given computer, a single java
     // process runs all members whose listed internal IP address matches some address on that computer. That

@@ -193,9 +193,6 @@ public class ServicesMain implements SwirldMain {
         final SoftwareVersion version = hedera.getSoftwareVersion();
         logger.info("Starting node {} with version {}", selfId, version);
 
-        final var cryptography = CryptographyFactory.create();
-        CryptographyHolder.set(cryptography);
-
         final var configuration = buildConfiguration();
         final var keysAndCerts =
                 initNodeSecurity(bootstrapAddressBook, configuration).get(selfId);
@@ -206,6 +203,9 @@ public class ServicesMain implements SwirldMain {
         final var fileSystemManager = FileSystemManager.create(configuration);
         final var recycleBin =
                 RecycleBin.create(metrics, configuration, getStaticThreadManager(), time, fileSystemManager, selfId);
+
+        final var cryptography = CryptographyFactory.create();
+        CryptographyHolder.set(cryptography);
         // the AddressBook is not changed after this point, so we calculate the hash now
         cryptography.digestSync(bootstrapAddressBook);
 
