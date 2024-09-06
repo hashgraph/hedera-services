@@ -103,7 +103,7 @@ final class RecordCacheImplTest extends AppTestBase {
     private ConfigProvider props;
 
     @BeforeEach
-    public void setUp(
+    void setUp(
             @Mock final VersionedConfiguration versionedConfig,
             @Mock final HederaConfig hederaConfig,
             @Mock final LedgerConfig ledgerConfig,
@@ -138,7 +138,7 @@ final class RecordCacheImplTest extends AppTestBase {
     @Test
     @DisplayName("Null args to constructor throw NPE")
     @SuppressWarnings("DataFlowIssue")
-    public void nullArgsToConstructorThrowNPE() {
+    void nullArgsToConstructorThrowNPE() {
         assertThatThrownBy(() -> new RecordCacheImpl(null, wsa, props)).isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new RecordCacheImpl(dedupeCache, null, props))
                 .isInstanceOf(NullPointerException.class);
@@ -250,7 +250,7 @@ final class RecordCacheImplTest extends AppTestBase {
 
         @Test
         @DisplayName("Rebuild replaces all entries in the in-memory data structures")
-        public void reloadsIntoCache() {
+        void reloadsIntoCache() {
             // Given a state with some entries and a cache created with that state
             final var oldPayer = accountId(1003);
             final var oldTxId =
@@ -332,7 +332,7 @@ final class RecordCacheImplTest extends AppTestBase {
     final class ReceiptQueryTests {
         @Test
         @DisplayName("Query for receipt for no such txn returns null")
-        public void queryForReceiptForNoSuchTxnReturnsNull() {
+        void queryForReceiptForNoSuchTxnReturnsNull() {
             // Given a transaction unknown to the record cache and de-duplication cache
             final var cache = new RecordCacheImpl(dedupeCache, wsa, props);
             final var missingTxId = transactionID();
@@ -343,7 +343,7 @@ final class RecordCacheImplTest extends AppTestBase {
 
         @Test
         @DisplayName("Query for receipts for no such txn returns EMPTY LIST")
-        public void queryForReceiptsForNoSuchTxnReturnsNull() {
+        void queryForReceiptsForNoSuchTxnReturnsNull() {
             // Given a transaction unknown to the record cache and de-duplication cache
             final var cache = new RecordCacheImpl(dedupeCache, wsa, props);
             final var missingTxId = transactionID();
@@ -354,7 +354,7 @@ final class RecordCacheImplTest extends AppTestBase {
 
         @Test
         @DisplayName("Query for receipts for an account ID with no receipts returns EMPTY LIST")
-        public void queryForReceiptsForAccountWithNoRecords() {
+        void queryForReceiptsForAccountWithNoRecords() {
             // Given a transaction unknown to the record cache and de-duplication cache
             final var cache = new RecordCacheImpl(dedupeCache, wsa, props);
 
@@ -364,7 +364,7 @@ final class RecordCacheImplTest extends AppTestBase {
 
         @Test
         @DisplayName("Query for receipt for txn in UNKNOWN state returns UNKNOWN")
-        public void queryForReceiptForUnhandledTxnReturnsNull() {
+        void queryForReceiptForUnhandledTxnReturnsNull() {
             // Given a transaction known to the de-duplication cache but not the record cache
             final var cache = new RecordCacheImpl(dedupeCache, wsa, props);
             final var unhandledTxId = transactionID();
@@ -376,7 +376,7 @@ final class RecordCacheImplTest extends AppTestBase {
 
         @Test
         @DisplayName("Query for receipts by account ID for txn in UNKNOWN state returns EMPTY LIST")
-        public void queryForReceiptsForUnhandledTxnByAccountID() {
+        void queryForReceiptsForUnhandledTxnByAccountID() {
             // Given a transaction known to the de-duplication cache but not the record cache
             final var cache = new RecordCacheImpl(dedupeCache, wsa, props);
             final var unhandledTxId = transactionID();
@@ -392,7 +392,7 @@ final class RecordCacheImplTest extends AppTestBase {
         @ParameterizedTest
         @MethodSource("receiptStatusCodes")
         @DisplayName("Query for receipt for a txn with a proper record")
-        public void queryForReceiptForTxnWithRecord(@NonNull final ResponseCodeEnum status) {
+        void queryForReceiptForTxnWithRecord(@NonNull final ResponseCodeEnum status) {
             // Given a transaction known to the de-duplication cache but not the record cache
             final var cache = new RecordCacheImpl(dedupeCache, wsa, props);
             final var txId = transactionID();
@@ -413,7 +413,7 @@ final class RecordCacheImplTest extends AppTestBase {
         @ParameterizedTest
         @MethodSource("receiptStatusCodes")
         @DisplayName("Query for receipt for a txn with a proper record using addBlockItems")
-        public void queryForReceiptForTxnWithRecordUsingAddBlockItems(@NonNull final ResponseCodeEnum status) {
+        void queryForReceiptForTxnWithRecordUsingAddBlockItems(@NonNull final ResponseCodeEnum status) {
             // Given a transaction known to the de-duplication cache but not the record cache
             final var cache = new RecordCacheImpl(dedupeCache, wsa, props);
             final var txId = transactionID();
@@ -441,7 +441,7 @@ final class RecordCacheImplTest extends AppTestBase {
         @ParameterizedTest
         @MethodSource("receiptStatusCodes")
         @DisplayName("Query for receipts for a txn with a proper record")
-        public void queryForReceiptsForTxnWithRecord(@NonNull final ResponseCodeEnum status) {
+        void queryForReceiptsForTxnWithRecord(@NonNull final ResponseCodeEnum status) {
             // Given a transaction known to the de-duplication cache but not the record cache
             final var cache = new RecordCacheImpl(dedupeCache, wsa, props);
             final var txId = transactionID();
@@ -462,7 +462,7 @@ final class RecordCacheImplTest extends AppTestBase {
         @ParameterizedTest
         @MethodSource("receiptStatusCodes")
         @DisplayName("Query for receipt for a txn with a proper record using addBlockItems")
-        public void queryForReceiptsForTxnWithRecordUsingAddBlockItems(@NonNull final ResponseCodeEnum status) {
+        void queryForReceiptsForTxnWithRecordUsingAddBlockItems(@NonNull final ResponseCodeEnum status) {
             // Given a transaction known to the de-duplication cache but not the record cache
             final var cache = new RecordCacheImpl(dedupeCache, wsa, props);
             final var txId = transactionID();
@@ -490,7 +490,7 @@ final class RecordCacheImplTest extends AppTestBase {
         @ParameterizedTest
         @MethodSource("receiptStatusCodes")
         @DisplayName("Query for receipts for an account ID with a proper record")
-        public void queryForReceiptsForAccountIdWithRecord(@NonNull final ResponseCodeEnum status) {
+        void queryForReceiptsForAccountIdWithRecord(@NonNull final ResponseCodeEnum status) {
             // Given a transaction known to the de-duplication cache but not the record cache
             final var cache = new RecordCacheImpl(dedupeCache, wsa, props);
             final var txId = transactionID();
@@ -511,7 +511,7 @@ final class RecordCacheImplTest extends AppTestBase {
         @ParameterizedTest
         @MethodSource("receiptStatusCodes")
         @DisplayName("Query for receipts for an account ID with a proper record using addBlockItems")
-        public void queryForReceiptsForAccountIdWithRecordUsingAddBlockItems(@NonNull final ResponseCodeEnum status) {
+        void queryForReceiptsForAccountIdWithRecordUsingAddBlockItems(@NonNull final ResponseCodeEnum status) {
             // Given a transaction known to the de-duplication cache but not the record cache
             final var cache = new RecordCacheImpl(dedupeCache, wsa, props);
             final var txId = transactionID();
@@ -540,7 +540,7 @@ final class RecordCacheImplTest extends AppTestBase {
         @ValueSource(ints = {20, 30, 40})
         @DisplayName(
                 "Only up to recordsMaxQueryableByAccount receipts are returned for an account ID with multiple records")
-        public void queryForManyReceiptsForAccountID(final int numRecords) {
+        void queryForManyReceiptsForAccountID(final int numRecords) {
             // Given a number of transactions with several records each, all for the same payer
             final var cache = new RecordCacheImpl(dedupeCache, wsa, props);
             // Normally consensus time is AFTER the transaction ID time by a couple of seconds
@@ -575,7 +575,7 @@ final class RecordCacheImplTest extends AppTestBase {
         @ValueSource(ints = {20, 30, 40})
         @DisplayName(
                 "Only up to recordsMaxQueryableByAccount receipts are returned for an account ID with multiple records using addBlockItems")
-        public void queryForManyReceiptsForAccountIDUsingAddBlockItems(final int numRecords) {
+        void queryForManyReceiptsForAccountIDUsingAddBlockItems(final int numRecords) {
             // Given a number of transactions with several records each, all for the same payer
             final var cache = new RecordCacheImpl(dedupeCache, wsa, props);
             // Normally consensus time is AFTER the transaction ID time by a couple of seconds
@@ -622,7 +622,7 @@ final class RecordCacheImplTest extends AppTestBase {
     final class RecordQueryTests {
         @Test
         @DisplayName("Query for record for unknown txn returns null")
-        public void queryForRecordForUnknownTxnReturnsNull() {
+        void queryForRecordForUnknownTxnReturnsNull() {
             final var cache = new RecordCacheImpl(dedupeCache, wsa, props);
             final var missingTxId = transactionID();
 
@@ -631,7 +631,7 @@ final class RecordCacheImplTest extends AppTestBase {
 
         @Test
         @DisplayName("Query for records for unknown txn returns EMPTY LIST")
-        public void queryForRecordsForUnknownTxnReturnsNull() {
+        void queryForRecordsForUnknownTxnReturnsNull() {
             final var cache = new RecordCacheImpl(dedupeCache, wsa, props);
             final var missingTxId = transactionID();
 
@@ -640,7 +640,7 @@ final class RecordCacheImplTest extends AppTestBase {
 
         @Test
         @DisplayName("Query for record for account ID with no receipts returns EMPTY LIST")
-        public void queryForRecordByAccountForUnknownTxn() {
+        void queryForRecordByAccountForUnknownTxn() {
             final var cache = new RecordCacheImpl(dedupeCache, wsa, props);
 
             assertThat(cache.getRecords(PAYER_ACCOUNT_ID)).isEmpty();
@@ -648,7 +648,7 @@ final class RecordCacheImplTest extends AppTestBase {
 
         @Test
         @DisplayName("Query for record for tx with receipt in UNKNOWN state returns null")
-        public void queryForRecordForUnknownTxn() {
+        void queryForRecordForUnknownTxn() {
             final var cache = new RecordCacheImpl(dedupeCache, wsa, props);
             final var txId = transactionID();
             dedupeCache.add(txId);
@@ -658,7 +658,7 @@ final class RecordCacheImplTest extends AppTestBase {
 
         @Test
         @DisplayName("Query for records for tx with receipt in UNKNOWN state returns EMPTY LIST")
-        public void queryForRecordsForUnknownTxn() {
+        void queryForRecordsForUnknownTxn() {
             final var cache = new RecordCacheImpl(dedupeCache, wsa, props);
             final var txId = transactionID();
             dedupeCache.add(txId);
@@ -668,7 +668,7 @@ final class RecordCacheImplTest extends AppTestBase {
 
         @Test
         @DisplayName("Query for records for tx by account ID with receipt in UNKNOWN state returns EMPTY LIST")
-        public void queryForRecordsByAccountForUnknownTxn() {
+        void queryForRecordsByAccountForUnknownTxn() {
             final var cache = new RecordCacheImpl(dedupeCache, wsa, props);
             final var txId = transactionID();
             dedupeCache.add(txId);
@@ -679,7 +679,7 @@ final class RecordCacheImplTest extends AppTestBase {
         @ParameterizedTest
         @MethodSource("receiptStatusCodes")
         @DisplayName("Query for record for a txn with a proper record")
-        public void queryForRecordForTxnWithRecord(@NonNull final ResponseCodeEnum status) {
+        void queryForRecordForTxnWithRecord(@NonNull final ResponseCodeEnum status) {
             // Given a transaction known to the de-duplication cache but not the record cache
             final var cache = new RecordCacheImpl(dedupeCache, wsa, props);
             final var txId = transactionID();
@@ -700,7 +700,7 @@ final class RecordCacheImplTest extends AppTestBase {
         @ParameterizedTest
         @MethodSource("receiptStatusCodes")
         @DisplayName("Query for record for a txn with a proper record using addBlockItems")
-        public void queryForRecordForTxnWithRecordUsingAddBlockItems(@NonNull final ResponseCodeEnum status) {
+        void queryForRecordForTxnWithRecordUsingAddBlockItems(@NonNull final ResponseCodeEnum status) {
             // Given a transaction known to the de-duplication cache but not the record cache
             final var cache = new RecordCacheImpl(dedupeCache, wsa, props);
             final var txId = transactionID();
@@ -735,7 +735,7 @@ final class RecordCacheImplTest extends AppTestBase {
         @ParameterizedTest
         @MethodSource("receiptStatusCodes")
         @DisplayName("Query for records for a txn with a proper record")
-        public void queryForRecordsForTxnWithRecord(@NonNull final ResponseCodeEnum status) {
+        void queryForRecordsForTxnWithRecord(@NonNull final ResponseCodeEnum status) {
             // Given a transaction known to the de-duplication cache but not the record cache
             final var cache = new RecordCacheImpl(dedupeCache, wsa, props);
             final var txId = transactionID();
@@ -756,7 +756,7 @@ final class RecordCacheImplTest extends AppTestBase {
         @ParameterizedTest
         @MethodSource("receiptStatusCodes")
         @DisplayName("Query for records for a txn with a proper record using addBlockItems")
-        public void queryForRecordsForTxnWithRecordUsingAddBlockItems(@NonNull final ResponseCodeEnum status) {
+        void queryForRecordsForTxnWithRecordUsingAddBlockItems(@NonNull final ResponseCodeEnum status) {
             // Given a transaction known to the de-duplication cache but not the record cache
             final var cache = new RecordCacheImpl(dedupeCache, wsa, props);
             final var txId = transactionID();
@@ -789,7 +789,7 @@ final class RecordCacheImplTest extends AppTestBase {
         }
 
         @Test
-        public void unclassifiableStatusIsNotPriority() {
+        void unclassifiableStatusIsNotPriority() {
             // Given a transaction known to the de-duplication cache but not the record cache
             final var cache = new RecordCacheImpl(dedupeCache, wsa, props);
             final var txId = transactionID();
@@ -827,7 +827,7 @@ final class RecordCacheImplTest extends AppTestBase {
         }
 
         @Test
-        public void unclassifiableStatusIsNotPriorityUsingAddBlockItems() {
+        void unclassifiableStatusIsNotPriorityUsingAddBlockItems() {
             // Given a transaction known to the de-duplication cache but not the record cache
             final var cache = new RecordCacheImpl(dedupeCache, wsa, props);
             final var txId = transactionID();
@@ -879,7 +879,7 @@ final class RecordCacheImplTest extends AppTestBase {
         @ParameterizedTest
         @MethodSource("receiptStatusCodes")
         @DisplayName("Query for records for an account ID with a proper record")
-        public void queryForRecordsForAccountIdWithRecord(@NonNull final ResponseCodeEnum status) {
+        void queryForRecordsForAccountIdWithRecord(@NonNull final ResponseCodeEnum status) {
             // Given a transaction known to the de-duplication cache but not the record cache
             final var cache = new RecordCacheImpl(dedupeCache, wsa, props);
             final var txId = transactionID();
@@ -900,7 +900,7 @@ final class RecordCacheImplTest extends AppTestBase {
         @ParameterizedTest
         @MethodSource("receiptStatusCodes")
         @DisplayName("Query for records for an account ID with a proper record using addBlockItems")
-        public void queryForRecordsForAccountIdWithRecordUsingAddBlockItems(@NonNull final ResponseCodeEnum status) {
+        void queryForRecordsForAccountIdWithRecordUsingAddBlockItems(@NonNull final ResponseCodeEnum status) {
             // Given a transaction known to the de-duplication cache but not the record cache
             final var cache = new RecordCacheImpl(dedupeCache, wsa, props);
             final var txId = transactionID();
@@ -947,14 +947,14 @@ final class RecordCacheImplTest extends AppTestBase {
         @Test
         @DisplayName("Null args to hasDuplicate throw NPE")
         @SuppressWarnings("DataFlowIssue")
-        public void duplicateCheckWithIllegalParameters() {
+        void duplicateCheckWithIllegalParameters() {
             final var cache = new RecordCacheImpl(dedupeCache, wsa, props);
             assertThatThrownBy(() -> cache.hasDuplicate(null, 1L)).isInstanceOf(NullPointerException.class);
         }
 
         @Test
         @DisplayName("Check duplicate for unknown txn returns NO_DUPLICATE")
-        public void duplicateCheckForUnknownTxn() {
+        void duplicateCheckForUnknownTxn() {
             final var cache = new RecordCacheImpl(dedupeCache, wsa, props);
             final var missingTxId = transactionID();
 
@@ -963,7 +963,7 @@ final class RecordCacheImplTest extends AppTestBase {
 
         @Test
         @DisplayName("Check duplicate for tx with receipt in UNKNOWN state returns NO_DUPLICATE")
-        public void duplicateCheckForUnknownState() {
+        void duplicateCheckForUnknownState() {
             final var cache = new RecordCacheImpl(dedupeCache, wsa, props);
             final var txId = transactionID();
             dedupeCache.add(txId);
@@ -973,7 +973,7 @@ final class RecordCacheImplTest extends AppTestBase {
 
         @Test
         @DisplayName("Check duplicate for txn with a proper record from other node")
-        public void duplicateCheckForTxnFromOtherNode() {
+        void duplicateCheckForTxnFromOtherNode() {
             // Given a transaction known to the de-duplication cache but not the record cache
             final var cache = new RecordCacheImpl(dedupeCache, wsa, props);
             final var txId = transactionID();
@@ -993,7 +993,7 @@ final class RecordCacheImplTest extends AppTestBase {
 
         @Test
         @DisplayName("Check duplicate for txn with a proper record from other node using addBlockItems")
-        public void duplicateCheckForTxnFromOtherNodeUsingAddBlockItems() {
+        void duplicateCheckForTxnFromOtherNodeUsingAddBlockItems() {
             // Given a transaction known to the de-duplication cache but not the record cache
             final var cache = new RecordCacheImpl(dedupeCache, wsa, props);
             final var txId = transactionID();
@@ -1018,7 +1018,7 @@ final class RecordCacheImplTest extends AppTestBase {
 
         @Test
         @DisplayName("Check duplicate for txn with a proper record from same node")
-        public void duplicateCheckForTxnFromSameNode() {
+        void duplicateCheckForTxnFromSameNode() {
             // Given a transaction known to the de-duplication cache but not the record cache
             final var cache = new RecordCacheImpl(dedupeCache, wsa, props);
             final var txId = transactionID();
@@ -1038,7 +1038,7 @@ final class RecordCacheImplTest extends AppTestBase {
 
         @Test
         @DisplayName("Check duplicate for txn with a proper record from same node using addBlockItems")
-        public void duplicateCheckForTxnFromSameNodeUsingAddBlockItems() {
+        void duplicateCheckForTxnFromSameNodeUsingAddBlockItems() {
             // Given a transaction known to the de-duplication cache but not the record cache
             final var cache = new RecordCacheImpl(dedupeCache, wsa, props);
             final var txId = transactionID();
@@ -1063,7 +1063,7 @@ final class RecordCacheImplTest extends AppTestBase {
 
         @Test
         @DisplayName("Check duplicate for txn with a proper record from several other nodes")
-        public void duplicateCheckForTxnFromMultipleOtherNodes() {
+        void duplicateCheckForTxnFromMultipleOtherNodes() {
             // Given a transaction known to the de-duplication cache but not the record cache
             final var cache = new RecordCacheImpl(dedupeCache, wsa, props);
             final var txId = transactionID();
@@ -1085,7 +1085,7 @@ final class RecordCacheImplTest extends AppTestBase {
 
         @Test
         @DisplayName("Check duplicate for txn with a proper record from several other nodes using addBlockitems")
-        public void duplicateCheckForTxnFromMultipleOtherNodesUsingAddBlockItems() {
+        void duplicateCheckForTxnFromMultipleOtherNodesUsingAddBlockItems() {
             // Given a transaction known to the de-duplication cache but not the record cache
             final var cache = new RecordCacheImpl(dedupeCache, wsa, props);
             final var txId = transactionID();
@@ -1113,7 +1113,7 @@ final class RecordCacheImplTest extends AppTestBase {
         @ParameterizedTest
         @ValueSource(longs = {1L, 2L, 3L})
         @DisplayName("Check duplicate for txn with a proper record from several nodes including the current")
-        public void duplicateCheckForTxnFromMultipleNodesIncludingCurrent(final long currentNodeId) {
+        void duplicateCheckForTxnFromMultipleNodesIncludingCurrent(final long currentNodeId) {
             // Given a transaction known to the de-duplication cache but not the record cache
             final var cache = new RecordCacheImpl(dedupeCache, wsa, props);
             final var txId = transactionID();
@@ -1137,7 +1137,7 @@ final class RecordCacheImplTest extends AppTestBase {
         @ValueSource(longs = {1L, 2L, 3L})
         @DisplayName(
                 "Check duplicate for txn with a proper record from several nodes including the current using addBlockItems")
-        public void duplicateCheckForTxnFromMultipleNodesIncludingCurrentUsingAddBlockItems(final long currentNodeId) {
+        void duplicateCheckForTxnFromMultipleNodesIncludingCurrentUsingAddBlockItems(final long currentNodeId) {
             // Given a transaction known to the de-duplication cache but not the record cache
             final var cache = new RecordCacheImpl(dedupeCache, wsa, props);
             final var txId = transactionID();
