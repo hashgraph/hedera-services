@@ -27,7 +27,19 @@ import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.address.AddressBook;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
+/**
+ * Utility class for address book operations.
+ */
 public class AddressBookUtils {
+    /**
+     * Initializes the address book from the configuration and platform saved state.
+     * @param selfId the node ID of the current node
+     * @param version the software version of the current node
+     * @param initialState the initial state of the platform
+     * @param bootstrapAddressBook the bootstrap address book
+     * @param platformContext the platform context
+     * @return the initialized address book
+     */
     public static @NonNull AddressBook initializeAddressBook(
             final NodeId selfId,
             final SoftwareVersion version,

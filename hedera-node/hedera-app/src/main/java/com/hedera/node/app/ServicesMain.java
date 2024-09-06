@@ -237,6 +237,7 @@ public class ServicesMain implements SwirldMain {
         final var addressBook =
                 initializeAddressBook(selfId, version, initialState, bootstrapAddressBook, platformContext);
 
+        // Follow the Inversion of Control pattern by injecting all needed dependencies into the PlatformBuilder.
         final var platformBuilder = PlatformBuilder.create(
                         Hedera.APP_NAME, Hedera.SWIRLD_NAME, version, initialState, selfId)
                 .withPlatformContext(platformContext)
