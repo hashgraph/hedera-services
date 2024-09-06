@@ -514,25 +514,63 @@ Rounds are immutable. They are sent "fire and forget" style from the Hashgraph m
 them. Some modules only really need the metadata, or a part of the metadata. Others require the actual round data.
 We will pass the full round info (metadata + events) to all listeners, and they can pull from it what they need.
 
-#### Roster Changes
+#### Roster and Configuration Changes
 
-When the roster changes, the Hashgraph algorithm must be made aware. It needs roster information to be able to come
-to consensus. While several modules must respond to roster changes, it is the Hashgraph module that knows the
-applicable roster for any given round. It is given the roster by the Execution layer when it is instructed to produce
-a new round.
+When the roster (or any other network-wide configuration impacting Consensus) changes, Consensus must be updated in a
+deterministic manner. This section discusses specifically how rosters are updated, but configuration in general would
+use a similar path.
 
-At runtime, there is a service in Execution that exposes to the world API for adding nodes to, or removing nodes from,
-the address book. At some point in time, Execution will decide the time is right to construct a new consensus roster,
-and pass that roster to the consensus system. **This must be deterministic**. Each node in the network must assign the
-same roster to the same rounds. The Execution module is able to say exactly which consensus round should use this new
-roster, since it knows about all the rounds already created, and all the rounds it has authorized the Hashgraph module
-to produce, and can therefore know exactly what the next round to produce is, and can tie the new roster to that round.
+![Roster Changes](roster-changes.png)
 
-The Hashgraph module may then apply that roster to that round **or some round in the future**. When a round is produced
-and sent to Execution, the roster used will be supplied. The reason for this is that 3 rounds are involved when coming
-to consensus -- the round that is coming to consensus and 2 newer rounds. Each of these must have been using a
-previously known roster. So when a new roster is supplied, it is **applied** 3 rounds in the future of the currently
-processing round.
+Execution may hold many rounds. It will have a round that is currently being signed, one that is being hashed (which
+happens before signing), one that is being handled, and any number of rounds it is holding awaiting execution. It is
+very likely this "awaiting execution" buffer will be a very small number, perhaps as small as 1. This number of rounds
+held in buffer is completely under the control of Execution. Consensus does not concern itself with rounds once they
+are handed to Execution.
+
+Consensus **only produces rounds on demand**. Execution will ask Consensus to produce the next round. Only then does
+Consensus begin inserting events into the hashgraph and executing the hashgraph consensus algorithm. When any one event
+is added to the hashgraph, it may produce 0 or more consensus rounds. Events are added until at least one consensus
+round is produced.
+
+The Execution module is responsible for defining the roster. When it asks Consensus for a new round, it also supplies
+the new roster. The Hashgraph module will decide in what round the new roster becomes active. Let us define `N` as the
+number of rounds from the latest consensus round at which the candidate roster will become active. This number will be
+configured with the same value for all nodes in the network.
+
+For example, suppose Execution has just finished handling round 10, and has buffered up round 11. The most recent round
+that the Hashgraph module produced was round 11. Suppose `N` is 10. If the call to `nextRound` from Execution at the
+end of round 10 were to supply a new Roster (`R`). The Hashgraph module will assign `R` to become active as of round 22
+(`latest_consensus_round + N + 1`). It will then work on producing consensus round 12. Once produced, metadata
+indicating that `R` will be used for rounds starting at 22 is passed to Gossip, Event Intake, Event Creator, and
+Execution. The roster used for round 22 may also be included in this metadata.
+
+There is a critical relationship between the value of N, the latency for adopting a new roster, and the number of future
+events held in memory on the node. Remember that each event has a birth-round. Let us define another variable called
+`Z`, such that `Z <= N`. Any event with `birth_round > latest_consensus_round + z` is considered a "far future" event,
+and will be dropped by the birth-round filtering logic in Event Intake. Any event with
+`birth_round > latest_consensus_round` is just a "future" event.
+
+The smaller the value of `Z`, the fewer events are held in memory on the node. However, events with birth-rounds just
+larger than `Z` will be dropped and have to be retrieved on demand with sync gossip, rather than through the broadcast
+tree. Sync is slower and more laborious than broadcast gossip, so the efficiency of the node will go down with low
+values of `Z`. Larger values of `Z` means more events in memory, but it also means more "smoothing" in gossip and
+in handling any performance spikes.
+
+On the other hand, the larger the value of `N`, the larger the latency between the round we know about a new roster, and
+the round at which it can be actually used. Ideally, the value of `N` would be small, like 3, but we may find that 3 is
+too small a number for `Z`.
+
+Each node may select its own value of `Z`, so long as it is less than or equal to `N`. But all nodes must use the same
+value for `N`, or they will ISS since they will assign different rosters to different rounds. The value of `N` is not
+defined here, but will need some investigation. Unfortunately, this number appears to require "just being chosen" and
+cannot be deterministically dynamically computed based on network conditions.
+
+Note: when the roster is applied to some future round `latest_consensus_round + N + 1`, if such a round already exists
+in the hashgraph, then that round and any future rounds must be removed and the events reapplied in order given the new
+roster.
+
+#### State
 
 The Hashgraph module also includes a `state` section in the metadata of the round. This is used by the Execution layer
 to persist the Consensus state, for reconnect and for restart. In the state are the judges for the round, and possibly
