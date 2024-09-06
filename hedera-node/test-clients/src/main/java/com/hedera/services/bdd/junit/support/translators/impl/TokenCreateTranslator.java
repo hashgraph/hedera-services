@@ -44,7 +44,7 @@ public class TokenCreateTranslator implements BlockTransactionPartsTranslator {
         requireNonNull(parts);
         requireNonNull(baseTranslator);
         requireNonNull(remainingStateChanges);
-        return baseTranslator.recordFrom(parts, (receiptBuilder, recordBuilder, sidecarRecords, involvedTokenId) -> {
+        return baseTranslator.recordFrom(parts, (receiptBuilder, recordBuilder) -> {
             if (parts.status() == SUCCESS) {
                 final var createdNum = baseTranslator.nextCreatedNum(TOKEN);
                 final var iter = remainingStateChanges.listIterator();
@@ -56,6 +56,9 @@ public class TokenCreateTranslator implements BlockTransactionPartsTranslator {
                                 stateChange.mapUpdateOrThrow().keyOrThrow().tokenIdKeyOrThrow();
                         if (tokenId.tokenNum() == createdNum) {
                             receiptBuilder.tokenID(tokenId);
+                            final var op = parts.body().tokenCreationOrThrow();
+                            baseTranslator.initTotalSupply(tokenId, op.initialSupply());
+                            baseTranslator.trackAssociation(tokenId, op.treasuryOrThrow());
                             iter.remove();
                             return;
                         }

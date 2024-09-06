@@ -136,8 +136,8 @@ class EnhancedKeyStoreLoaderTest {
                 assertThat(keysAndCerts.sigKeyPair()).isNotNull();
             }
 
-            assertThat(addr.getAgreePublicKey()).isNotNull();
             assertThat(addr.getSigPublicKey()).isNotNull();
+            assertThat(addr.getAgreePublicKey()).isNull();
         }
     }
 

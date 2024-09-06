@@ -966,7 +966,7 @@ public class LoggingSystemTest {
     }
 
     @Test
-    void testWithConfigUpdateWitEmptyConfig() {
+    void testWithConfigUpdateWithEmptyConfig() {
         // given
         final Configuration configuration = LoggingTestUtils.getConfigBuilder()
                 .withValue("logging.level", "INFO")

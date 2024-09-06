@@ -44,7 +44,7 @@ import org.hyperledger.besu.datatypes.Address;
  * Translates a valid attempt into an appropriate {@link Call} subclass, giving the {@link Call}
  * everything it will need to execute.
  */
-public class HtsCallAttempt extends AbstractCallAttempt {
+public class HtsCallAttempt extends AbstractCallAttempt<HtsCallAttempt> {
     public static final Function REDIRECT_FOR_TOKEN = new Function("redirectForToken(address,bytes)");
 
     // The id address of the account authorizing the call, in the sense
@@ -71,7 +71,7 @@ public class HtsCallAttempt extends AbstractCallAttempt {
             @NonNull final AddressIdConverter addressIdConverter,
             @NonNull final VerificationStrategies verificationStrategies,
             @NonNull final SystemContractGasCalculator gasCalculator,
-            @NonNull final List<CallTranslator> callTranslators,
+            @NonNull final List<CallTranslator<HtsCallAttempt>> callTranslators,
             final boolean isStaticCall) {
         super(
                 input,
@@ -93,6 +93,11 @@ public class HtsCallAttempt extends AbstractCallAttempt {
         }
         this.authorizingId =
                 (authorizingAddress != senderAddress) ? addressIdConverter.convertSender(authorizingAddress) : senderId;
+    }
+
+    @Override
+    protected HtsCallAttempt self() {
+        return this;
     }
 
     /**

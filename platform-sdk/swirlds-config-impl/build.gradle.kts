@@ -26,7 +26,6 @@ testModuleInfo {
     requires("org.junit.jupiter.api")
     requires("org.junit.jupiter.params")
     requires("com.swirlds.common")
-    requires("com.swirlds.config.api.test.fixtures")
     runtimeOnly("com.swirlds.platform.core")
 }
 
