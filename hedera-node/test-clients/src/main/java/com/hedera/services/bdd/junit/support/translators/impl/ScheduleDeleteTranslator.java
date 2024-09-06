@@ -16,8 +16,8 @@
 
 package com.hedera.services.bdd.junit.support.translators.impl;
 
+import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_SCHEDULES_BY_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
-import static com.hedera.node.config.types.EntityType.TOPIC;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.block.stream.output.StateChange;
@@ -30,11 +30,8 @@ import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-/**
- * Translates a consensus topic create transaction into a {@link SingleTransactionRecord}.
- */
-public class TopicCreateTranslator implements BlockTransactionPartsTranslator {
-    private static final Logger log = LogManager.getLogger(TopicCreateTranslator.class);
+public class ScheduleDeleteTranslator implements BlockTransactionPartsTranslator {
+    private static final Logger log = LogManager.getLogger(ScheduleDeleteTranslator.class);
 
     @Override
     public SingleTransactionRecord translate(
@@ -46,23 +43,22 @@ public class TopicCreateTranslator implements BlockTransactionPartsTranslator {
         requireNonNull(remainingStateChanges);
         return baseTranslator.recordFrom(parts, (receiptBuilder, recordBuilder) -> {
             if (parts.status() == SUCCESS) {
-                final var createdNum = baseTranslator.nextCreatedNum(TOPIC);
                 final var iter = remainingStateChanges.listIterator();
                 while (iter.hasNext()) {
                     final var stateChange = iter.next();
                     if (stateChange.hasMapUpdate()
-                            && stateChange.mapUpdateOrThrow().keyOrThrow().hasTopicIdKey()) {
-                        final var topicId =
-                                stateChange.mapUpdateOrThrow().keyOrThrow().topicIdKeyOrThrow();
-                        if (topicId.topicNum() == createdNum) {
-                            receiptBuilder.topicID(topicId);
+                            && stateChange.stateId() == STATE_ID_SCHEDULES_BY_ID.protoOrdinal()) {
+                        final var schedule =
+                                stateChange.mapUpdateOrThrow().valueOrThrow().scheduleValueOrThrow();
+                        if (schedule.deleted()) {
+                            receiptBuilder.scheduleID(schedule.scheduleIdOrThrow());
                             iter.remove();
                             return;
                         }
                     }
                 }
                 log.error(
-                        "No matching state change found for successful topic create with id {}",
+                        "No matching state change found for successful schedule delete with id {}",
                         parts.transactionIdOrThrow());
             }
         });

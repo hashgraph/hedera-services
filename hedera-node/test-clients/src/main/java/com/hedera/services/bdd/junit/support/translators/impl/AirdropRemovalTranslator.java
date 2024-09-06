@@ -16,6 +16,8 @@
 
 package com.hedera.services.bdd.junit.support.translators.impl;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
+
 import com.hedera.hapi.block.stream.output.StateChange;
 import com.hedera.node.app.state.SingleTransactionRecord;
 import com.hedera.services.bdd.junit.support.translators.BaseTranslator;
@@ -25,15 +27,26 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 
 /**
- * Translates a crypto transfer transaction into a {@link SingleTransactionRecord}.
+ * Defines a translator for transactions that can remove pending airdrops.
  */
-public class CryptoTransferTranslator implements BlockTransactionPartsTranslator {
+public enum AirdropRemovalTranslator implements BlockTransactionPartsTranslator {
+    AIRDROP_REMOVAL_TRANSLATOR;
+
     @Override
     public SingleTransactionRecord translate(
             @NonNull final BlockTransactionParts parts,
             @NonNull final BaseTranslator baseTranslator,
             @NonNull final List<StateChange> remainingStateChanges) {
-        return baseTranslator.recordFrom(
-                parts, (receiptBuilder, recordBuilder) -> recordBuilder.assessedCustomFees(parts.assessedCustomFees()));
+        return baseTranslator.recordFrom(parts, (receiptBuilder, recordBuilder) -> {
+            if (parts.status() == SUCCESS) {
+                for (final var stateChange : remainingStateChanges) {
+                    if (stateChange.hasMapDelete()
+                            && stateChange.mapDeleteOrThrow().keyOrThrow().hasPendingAirdropIdKey()) {
+                        baseTranslator.remove(
+                                stateChange.mapDeleteOrThrow().keyOrThrow().pendingAirdropIdKeyOrThrow());
+                    }
+                }
+            }
+        });
     }
 }

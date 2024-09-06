@@ -16,6 +16,8 @@
 
 package com.hedera.services.bdd.junit.support.translators.impl;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
+
 import com.hedera.hapi.block.stream.output.StateChange;
 import com.hedera.node.app.state.SingleTransactionRecord;
 import com.hedera.services.bdd.junit.support.translators.BaseTranslator;
@@ -25,15 +27,20 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 
 /**
- * Translates a crypto transfer transaction into a {@link SingleTransactionRecord}.
+ * Defines a translator for a token dissociate transaction into a {@link SingleTransactionRecord}.
  */
-public class CryptoTransferTranslator implements BlockTransactionPartsTranslator {
+public class TokenDissociateTranslator implements BlockTransactionPartsTranslator {
     @Override
     public SingleTransactionRecord translate(
             @NonNull final BlockTransactionParts parts,
-            @NonNull final BaseTranslator baseTranslator,
+            @NonNull BaseTranslator baseTranslator,
             @NonNull final List<StateChange> remainingStateChanges) {
-        return baseTranslator.recordFrom(
-                parts, (receiptBuilder, recordBuilder) -> recordBuilder.assessedCustomFees(parts.assessedCustomFees()));
+        return baseTranslator.recordFrom(parts, (receiptBuilder, recordBuilder) -> {
+            if (parts.status() == SUCCESS) {
+                final var op = parts.body().tokenDissociateOrThrow();
+                final var accountId = op.accountOrThrow();
+                op.tokens().forEach(tokenId -> baseTranslator.trackDissociation(tokenId, accountId));
+            }
+        });
     }
 }
