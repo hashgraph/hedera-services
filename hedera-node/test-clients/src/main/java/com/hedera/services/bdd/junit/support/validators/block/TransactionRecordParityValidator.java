@@ -43,6 +43,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.Assertions;
 
 /**
  * A validator that asserts the block stream contains all information previously exported in the record stream
@@ -134,10 +135,12 @@ public class TransactionRecordParityValidator implements BlockStreamValidator {
         if (diffs.isEmpty()) {
             logger.info("Validation complete. Summary: {}", validatorSummary);
         } else {
-            final var rcDiffSummary = rcDiff.buildDiffOutput(diffs);
-            logger.error("Found errors, validation failed!");
-            rcDiffSummary.forEach(logger::error);
-            logger.error("Validation failed. Summary: {}", validatorSummary);
+            final var diffOutput = rcDiff.buildDiffOutput(diffs);
+            final var errorMsg = new StringBuilder()
+                    .append(diffOutput.size())
+                    .append(" differences found between translated and expected records");
+            diffOutput.forEach(summary -> errorMsg.append("\n\n").append(summary));
+            Assertions.fail(errorMsg.toString());
         }
     }
 
