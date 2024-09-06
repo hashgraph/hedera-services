@@ -43,16 +43,19 @@ import com.swirlds.platform.state.MerkleStateRoot;
 import com.swirlds.state.State;
 import com.swirlds.state.merkle.StateMetadata;
 import com.swirlds.state.merkle.StateUtils;
-import com.swirlds.state.merkle.disk.OnDiskKey;
-import com.swirlds.state.merkle.disk.OnDiskKeySerializer;
-import com.swirlds.state.merkle.disk.OnDiskValue;
-import com.swirlds.state.merkle.disk.OnDiskValueSerializer;
 import com.swirlds.state.merkle.memory.InMemoryValue;
 import com.swirlds.state.merkle.memory.InMemoryWritableKVState;
 import com.swirlds.state.merkle.queue.QueueNode;
+import com.swirlds.state.merkle.queue.QueueNodeState;
 import com.swirlds.state.merkle.singleton.SingletonNode;
 import com.swirlds.state.merkle.singleton.StringLeaf;
 import com.swirlds.state.merkle.singleton.ValueLeaf;
+import com.swirlds.state.merkle.vmapsupport.OnDiskKey;
+import com.swirlds.state.merkle.vmapsupport.OnDiskKeySerializer;
+import com.swirlds.state.merkle.vmapsupport.OnDiskValue;
+import com.swirlds.state.merkle.vmapsupport.OnDiskValueSerializer;
+import com.swirlds.state.merkle.vmapsupport.SingleLongKey;
+import com.swirlds.state.merkle.vmapsupport.SingleLongKeySerializer;
 import com.swirlds.state.spi.MigrationContext;
 import com.swirlds.state.spi.Schema;
 import com.swirlds.state.spi.SchemaRegistry;
@@ -310,7 +313,8 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
                                         md.serviceName(),
                                         md.stateDefinition().stateKey(),
                                         md.queueNodeClassId(),
-                                        md.singletonClassId(),
+                                        md.onDiskValueSerializerClassId(),
+                                        md.onDiskValueClassId(),
                                         md.stateDefinition().valueCodec()));
 
                     } else if (!def.onDisk()) {
@@ -408,14 +412,22 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
                             md.singletonClassId(),
                             md.stateDefinition().valueCodec(),
                             null)));
+            constructableRegistry.registerConstructable(
+                    new ClassConstructorPair(QueueNodeState.class, QueueNodeState::new));
+            constructableRegistry.registerConstructable(
+                    new ClassConstructorPair(SingleLongKey.class, SingleLongKey::new));
+            constructableRegistry.registerConstructable(
+                    new ClassConstructorPair(SingleLongKeySerializer.class, SingleLongKeySerializer::new));
             constructableRegistry.registerConstructable(new ClassConstructorPair(
                     QueueNode.class,
                     () -> new QueueNode<>(
                             md.serviceName(),
                             md.stateDefinition().stateKey(),
                             md.queueNodeClassId(),
-                            md.singletonClassId(),
-                            md.stateDefinition().valueCodec())));
+                            md.onDiskValueSerializerClassId(),
+                            md.onDiskValueClassId(),
+                            md.stateDefinition().valueCodec(),
+                            false)));
             constructableRegistry.registerConstructable(new ClassConstructorPair(StringLeaf.class, StringLeaf::new));
             constructableRegistry.registerConstructable(new ClassConstructorPair(
                     ValueLeaf.class,

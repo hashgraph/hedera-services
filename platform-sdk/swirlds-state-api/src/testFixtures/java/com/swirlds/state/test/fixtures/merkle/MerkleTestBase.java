@@ -38,14 +38,14 @@ import com.swirlds.merkledb.MerkleDbDataSourceBuilder;
 import com.swirlds.merkledb.MerkleDbTableConfig;
 import com.swirlds.merkledb.config.MerkleDbConfig;
 import com.swirlds.state.merkle.StateUtils;
-import com.swirlds.state.merkle.disk.OnDiskKey;
-import com.swirlds.state.merkle.disk.OnDiskKeySerializer;
-import com.swirlds.state.merkle.disk.OnDiskValue;
-import com.swirlds.state.merkle.disk.OnDiskValueSerializer;
 import com.swirlds.state.merkle.memory.InMemoryKey;
 import com.swirlds.state.merkle.memory.InMemoryValue;
 import com.swirlds.state.merkle.queue.QueueNode;
 import com.swirlds.state.merkle.singleton.SingletonNode;
+import com.swirlds.state.merkle.vmapsupport.OnDiskKey;
+import com.swirlds.state.merkle.vmapsupport.OnDiskKeySerializer;
+import com.swirlds.state.merkle.vmapsupport.OnDiskValue;
+import com.swirlds.state.merkle.vmapsupport.OnDiskValueSerializer;
 import com.swirlds.state.test.fixtures.StateTestBase;
 import com.swirlds.virtualmap.VirtualMap;
 import com.swirlds.virtualmap.config.VirtualMapConfig;
@@ -252,7 +252,8 @@ public class MerkleTestBase extends StateTestBase {
                 FIRST_SERVICE,
                 STEAM_STATE_KEY,
                 computeClassId(FIRST_SERVICE, STEAM_STATE_KEY, TEST_VERSION, QUEUE_NODE_CLASS_ID_SUFFIX),
-                computeClassId(FIRST_SERVICE, STEAM_STATE_KEY, TEST_VERSION, SINGLETON_CLASS_ID_SUFFIX),
+                computeClassId(FIRST_SERVICE, STEAM_STATE_KEY, TEST_VERSION, ON_DISK_VALUE_SERIALIZER_CLASS_ID_SUFFIX),
+                computeClassId(FIRST_SERVICE, STEAM_STATE_KEY, TEST_VERSION, ON_DISK_VALUE_CLASS_ID_SUFFIX),
                 STRING_CODEC);
     }
 

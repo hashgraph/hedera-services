@@ -140,4 +140,8 @@ public class ValueLeaf<T> extends PartialMerkleLeaf implements MerkleLeaf {
         throwIfImmutable();
         this.val = value;
     }
+
+    public Codec<T> getCodec() {
+        return codec;
+    }
 }
