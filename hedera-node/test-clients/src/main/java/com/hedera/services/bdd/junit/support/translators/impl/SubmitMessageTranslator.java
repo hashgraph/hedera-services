@@ -43,7 +43,7 @@ public class SubmitMessageTranslator implements BlockTransactionPartsTranslator 
             @NonNull final BlockTransactionParts parts,
             @NonNull BaseTranslator baseTranslator,
             @NonNull final List<StateChange> remainingStateChanges) {
-        return baseTranslator.recordFrom(parts, (receiptBuilder, recordBuilder, sidecarRecords, involvedTokenId) -> {
+        return baseTranslator.recordFrom(parts, (receiptBuilder, recordBuilder) -> {
             if (parts.status() == SUCCESS) {
                 receiptBuilder.topicRunningHashVersion(RUNNING_HASH_VERSION);
                 final var iter = remainingStateChanges.listIterator();

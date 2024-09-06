@@ -113,8 +113,11 @@ public class StreamValidationOp extends UtilOp {
         readMaybeBlockStreamsFor(spec)
                 .ifPresentOrElse(
                         blocks -> {
+                            // Re-read the record streams since they may have been updated
+                            readMaybeRecordStreamDataFor(spec)
+                                    .ifPresentOrElse(
+                                            dataRef::set, () -> Assertions.fail("No record stream data found"));
                             final var data = requireNonNull(dataRef.get());
-                            // TODO - append the final record file to the record stream data
                             final var maybeErrors = BLOCK_STREAM_VALIDATOR_FACTORIES.stream()
                                     .filter(factory -> factory.appliesTo(spec))
                                     .map(factory -> factory.create(spec))

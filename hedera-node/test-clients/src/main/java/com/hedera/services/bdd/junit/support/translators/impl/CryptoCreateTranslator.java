@@ -18,6 +18,7 @@ package com.hedera.services.bdd.junit.support.translators.impl;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.node.app.service.token.AliasUtils.extractEvmAddress;
+import static com.hedera.node.app.service.token.AliasUtils.isOfEvmAddressSize;
 import static com.hedera.node.config.types.EntityType.ACCOUNT;
 import static java.util.Objects.requireNonNull;
 
@@ -45,7 +46,7 @@ public class CryptoCreateTranslator implements BlockTransactionPartsTranslator {
         requireNonNull(parts);
         requireNonNull(baseTranslator);
         requireNonNull(remainingStateChanges);
-        return baseTranslator.recordFrom(parts, (receiptBuilder, recordBuilder, sidecarRecords, involvedTokenId) -> {
+        return baseTranslator.recordFrom(parts, (receiptBuilder, recordBuilder) -> {
             if (parts.status() == SUCCESS) {
                 final var createdNum = baseTranslator.nextCreatedNum(ACCOUNT);
                 final var iter = remainingStateChanges.listIterator();
@@ -60,10 +61,12 @@ public class CryptoCreateTranslator implements BlockTransactionPartsTranslator {
                                     .mapUpdateOrThrow()
                                     .valueOrThrow()
                                     .accountValueOrThrow();
-                            final var maybeEvmAddress = extractEvmAddress(account.alias());
                             receiptBuilder.accountID(accountId);
-                            if (maybeEvmAddress != null) {
-                                recordBuilder.evmAddress(maybeEvmAddress);
+                            if (!isOfEvmAddressSize(account.alias())) {
+                                final var maybeEvmAddress = extractEvmAddress(account.alias());
+                                if (maybeEvmAddress != null) {
+                                    recordBuilder.evmAddress(maybeEvmAddress);
+                                }
                             }
                             iter.remove();
                             return;
