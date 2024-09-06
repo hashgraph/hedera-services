@@ -97,8 +97,8 @@ val hapiProtoVersion = "0.54.0"
 dependencyResolutionManagement {
     // Protobuf tool versions
     versionCatalogs.create("libs") {
-        version("google-proto", "3.19.4")
-        version("grpc-proto", "1.45.1")
+        version("google-proto", "3.25.4")
+        version("grpc-proto", "1.66.0")
         version("hapi-proto", hapiProtoVersion)
 
         plugin("pbj", "com.hedera.pbj.pbj-compiler").version("0.9.2")
