@@ -122,7 +122,7 @@ the transactions within the event).
 
 Each node has a _roster_ listing all other nodes, their public cryptographic keys, their consensus weights (since the
 network is a proof-of-stake network, different nodes may have different "weights" when voting for consensus), etc. The
-cryptographic keys are used to verify that an event sent by a creator was truly sent by that creator. The roster can
+cryptographic keys are used to verify that an event created by a creator was truly created by that creator. The roster can
 change over time, so it is vital that the correct roster be used for verifying each event.
 
 ![Hashgraph](hashgraph.png)
