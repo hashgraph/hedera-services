@@ -39,7 +39,6 @@ mainModuleInfo {
 testModuleInfo {
     requires("com.swirlds.config.extensions.test.fixtures")
     requires("com.swirlds.base.test.fixtures")
-    requires("com.swirlds.config.api.test.fixtures")
     requires("com.swirlds.config.extensions")
     requires("org.assertj.core")
     requires("org.junit.jupiter.api")
@@ -55,7 +54,6 @@ timingSensitiveModuleInfo {
     requires("com.swirlds.common")
     requires("com.swirlds.common.test.fixtures")
     requires("com.swirlds.config.api")
-    requires("com.swirlds.config.api.test.fixtures")
     requires("com.swirlds.config.extensions.test.fixtures")
     requires("com.swirlds.logging")
     requires("com.swirlds.logging.test.fixtures")
