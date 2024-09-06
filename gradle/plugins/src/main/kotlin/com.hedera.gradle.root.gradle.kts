@@ -24,7 +24,6 @@ plugins {
     id("com.hedera.gradle.nexus-publish")
     id("com.hedera.gradle.spotless-kotlin")
     id("com.hedera.gradle.spotless-markdown")
-    id("com.autonomousapps.dependency-analysis")
 }
 
 spotless {
