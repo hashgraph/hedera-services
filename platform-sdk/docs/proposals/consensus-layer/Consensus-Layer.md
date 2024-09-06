@@ -397,6 +397,8 @@ If an event has a very old birth-round that is ancient, it is dropped. If a node
 it may end up being disciplined (the exact rules around this will be defined in subsequent design docs for the
 Event Intake module).
 
+If an event builds upon a parent with a newer birth-round than itself, then it is invalid and discarded.
+
 #### Topological Ordering
 
 Events are buffered if necessary to ensure that each parent event has been emitted from Event Intake before any child
