@@ -116,7 +116,7 @@ public class BlockUnitSplit {
                 }
                 final var txnIdType = classifyTxnId(txnId, unitTxnId, nextParts, lastTxnIdType);
                 if (txnIdType == TxnIdType.NEW_UNIT_BY_ID && !unitParts.isEmpty()) {
-                    completeAndAdd(units, unitParts, unitStateChanges);
+                    completeAndAdd(units);
                 }
                 pendingParts.clear();
                 if (txnIdType != TxnIdType.AUTO_SYSFILE_MGMT_ID) {
@@ -155,13 +155,17 @@ public class BlockUnitSplit {
                     && parts.transactionIdOrThrow().nonce() > 0;
         }
 
-        private void completeAndAdd(
-                @NonNull final List<BlockTransactionalUnit> units,
-                @NonNull final List<BlockTransactionParts> unitParts,
-                @NonNull final List<StateChange> unitStateChanges) {
+        private void completeAndAdd(@NonNull final List<BlockTransactionalUnit> units) {
             units.add(new BlockTransactionalUnit(new ArrayList<>(unitParts), new LinkedList<>(unitStateChanges)));
             unitParts.clear();
             unitStateChanges.clear();
+        }
+
+        public void checkComplete(final List<BlockTransactionalUnit> units) {
+            if (pendingParts.areComplete()) {
+                unitParts.add(pendingParts.toBlockTransactionParts());
+                completeAndAdd(units);
+            }
         }
     }
 
@@ -177,9 +181,7 @@ public class BlockUnitSplit {
         for (final var item : blockItems) {
             processor.processBlockItem(item, units);
         }
-        if (processor.pendingParts.areComplete()) {
-            processor.completeAndAdd(units, processor.unitParts, processor.unitStateChanges);
-        }
+        processor.checkComplete(units);
         return units;
     }
 
