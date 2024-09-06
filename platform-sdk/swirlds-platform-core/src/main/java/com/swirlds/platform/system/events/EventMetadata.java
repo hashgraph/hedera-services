@@ -97,11 +97,9 @@ public class EventMetadata extends AbstractHashable {
         this.softwareVersion = Objects.requireNonNull(softwareVersion, "The softwareVersion must not be null");
         this.creatorId = Objects.requireNonNull(creatorId, "The creatorId must not be null");
         this.selfParent = selfParent;
-        Objects.requireNonNull(otherParents, "The otherParents must not be null");
-        otherParents.forEach(Objects::requireNonNull);
-        this.otherParents = otherParents;
+        this.otherParents = List.copyOf(otherParents); // checks for null values and makes a copy
         this.allParents = selfParent == null
-                ? otherParents
+                ? this.otherParents
                 : Stream.concat(Stream.of(selfParent), otherParents.stream()).toList();
         this.generation = calculateGeneration(allParents);
         this.timeCreated = Objects.requireNonNull(timeCreated, "The timeCreated must not be null");

@@ -47,16 +47,17 @@ import java.util.Objects;
  * event serialization is completely migrated to protobuf.
  */
 public final class EventSerializationUtils {
-    private EventSerializationUtils() {
-        // Utility class
-    }
-
+    private static final int MAX_ARRAY_LENGTH = 1_000_000;
     private static final long APPLICATION_TRANSACTION_CLASS_ID = 0x9ff79186f4c4db97L;
     private static final int APPLICATION_TRANSACTION_VERSION = 1;
     private static final long STATE_SIGNATURE_CLASS_ID = 0xaf7024c653caabf4L;
     private static final int STATE_SIGNATURE_VERSION = 3;
     private static final int UNSIGNED_EVENT_VERSION = 4;
     private static final int PLATFORM_EVENT_VERSION = 3;
+
+    private EventSerializationUtils() {
+        // Utility class
+    }
 
     /**
      * Serialize a unsigned event to the output stream {@code out}.
@@ -196,12 +197,12 @@ public final class EventSerializationUtils {
     @NonNull
     private static UnsignedEvent deserializeUnsignedEvent(@NonNull final SerializableDataInputStream in)
             throws IOException {
+        Objects.requireNonNull(in, "The input stream must not be null");
         final int version = in.readInt();
         if (version != UNSIGNED_EVENT_VERSION) {
             throw new IOException("Unsupported version: " + version);
         }
 
-        Objects.requireNonNull(in, "The input stream must not be null");
         final SoftwareVersion softwareVersion =
                 in.readSerializable(StaticSoftwareVersion.getSoftwareVersionClassIdSet());
 
@@ -248,7 +249,7 @@ public final class EventSerializationUtils {
         if (classVersion != APPLICATION_TRANSACTION_VERSION) {
             throw new IOException("Unsupported application class version: " + classVersion);
         }
-        final byte[] bytes = in.readByteArray(1000000);
+        final byte[] bytes = in.readByteArray(MAX_ARRAY_LENGTH);
 
         if (bytes != null) {
             return Bytes.wrap(bytes);
@@ -258,12 +259,12 @@ public final class EventSerializationUtils {
 
     @NonNull
     private static StateSignatureTransaction deserializeStateSignatureTransaction(
-            final SerializableDataInputStream in, final int classVersion) throws IOException {
+            @NonNull final SerializableDataInputStream in, final int classVersion) throws IOException {
         if (classVersion != STATE_SIGNATURE_VERSION) {
             throw new IOException("Unsupported state signature class version: " + classVersion);
         }
-        final byte[] sigBytes = in.readByteArray(1000000);
-        final byte[] hashBytes = in.readByteArray(1000000);
+        final byte[] sigBytes = in.readByteArray(MAX_ARRAY_LENGTH);
+        final byte[] hashBytes = in.readByteArray(MAX_ARRAY_LENGTH);
         final long round = in.readLong();
         in.readInt(); // epochHash is always null
         return new StateSignatureTransaction(round, Bytes.wrap(sigBytes), Bytes.wrap(hashBytes));
