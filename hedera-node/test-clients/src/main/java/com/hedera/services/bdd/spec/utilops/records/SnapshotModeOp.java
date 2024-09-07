@@ -17,7 +17,7 @@
 package com.hedera.services.bdd.spec.utilops.records;
 
 import static com.hedera.node.app.hapi.utils.exports.recordstreaming.RecordStreamingUtils.parseRecordFileConsensusTime;
-import static com.hedera.services.bdd.junit.support.RecordStreamAccess.RECORD_STREAM_ACCESS;
+import static com.hedera.services.bdd.junit.support.StreamFileAccess.STREAM_FILE_ACCESS;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
@@ -43,7 +43,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.protobuf.Descriptors;
 import com.google.protobuf.GeneratedMessageV3;
 import com.hedera.services.bdd.junit.SharedNetworkLauncherSessionListener;
-import com.hedera.services.bdd.junit.support.RecordStreamAccess;
+import com.hedera.services.bdd.junit.support.StreamFileAccess;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.utilops.UtilOp;
 import com.hedera.services.bdd.spec.utilops.domain.ParsedItem;
@@ -260,11 +260,11 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
             return;
         }
         try {
-            RecordStreamAccess.Data data = RecordStreamAccess.Data.EMPTY_DATA;
+            StreamFileAccess.RecordStreamData data = StreamFileAccess.RecordStreamData.EMPTY_DATA;
             for (final var recordLoc : recordLocs) {
                 try {
                     log.info("Trying to read post-placeholder items from {}", recordLoc);
-                    data = RECORD_STREAM_ACCESS.readStreamDataFrom(recordLoc, "sidecar", f -> {
+                    data = STREAM_FILE_ACCESS.readStreamDataFrom(recordLoc, "sidecar", f -> {
                         final var fileConsTime = parseRecordFileConsensusTime(f);
                         return fileConsTime.isAfter(lowerBoundConsensusStartTime)
                                 && new File(f).length() > MIN_GZIP_SIZE_IN_BYTES;

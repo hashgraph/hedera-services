@@ -138,6 +138,11 @@ public abstract class AbstractEmbeddedHedera implements EmbeddedHedera {
     }
 
     @Override
+    public FakeTssBaseService tssBaseService() {
+        return tssBaseService;
+    }
+
+    @Override
     public SoftwareVersion version() {
         return version;
     }
