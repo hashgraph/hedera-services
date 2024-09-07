@@ -190,7 +190,7 @@ public interface StakingRewardsApi {
     static long clampedStakePeriodStart(
             final long stakePeriodStart, final long currentStakePeriod, final int numStoredPeriods) {
         if (stakePeriodStart > -1 && stakePeriodStart < currentStakePeriod - numStoredPeriods) {
-            return currentStakePeriod - numStoredPeriods;
+            return currentStakePeriod - numStoredPeriods - 1;
         }
         return stakePeriodStart;
     }
@@ -205,7 +205,7 @@ public interface StakingRewardsApi {
             return 0;
         }
 
-        final var firstRewardSum = rewardSumHistory.get(0);
+        final var firstRewardSum = rewardSumHistory.getFirst();
         final var rewardFromSum = rewardSumHistory.get(rewardFrom);
         if (account.stakeAtStartOfLastRewardedPeriod() != -1) {
             final var rewardFromMinus1Sum = rewardSumHistory.get(rewardFrom - 1);
