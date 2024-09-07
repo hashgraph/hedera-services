@@ -84,8 +84,8 @@ public class State extends PartialNaryMerkleInternal implements MerkleRoot {
         if (that.getSwirldState() != null) {
             this.setSwirldState(that.getSwirldState().copy());
         }
-        if (that.getPlatformState() != null) {
-            this.updatePlatformState(that.getPlatformState().copy());
+        if (that.getWritablePlatformState() != null) {
+            this.updatePlatformState(that.getWritablePlatformState().copy());
         }
     }
 
@@ -101,7 +101,7 @@ public class State extends PartialNaryMerkleInternal implements MerkleRoot {
 
         if (version < ClassVersion.MIGRATE_PLATFORM_STATE
                 && getSwirldState() instanceof MerkleStateRoot merkleStateRoot) {
-            PlatformState platformState = getPlatformState().copy();
+            PlatformState platformState = getWritablePlatformState().copy();
             setChild(ChildIndices.PLATFORM_STATE, null);
             merkleStateRoot.updatePlatformState(platformState);
             merkleStateRoot.setRoute(MerkleRouteFactory.getEmptyRoute());
@@ -140,13 +140,22 @@ public class State extends PartialNaryMerkleInternal implements MerkleRoot {
     }
 
     /**
+     * Immutable platform state is not supported by this class.
+     */
+    @NonNull
+    @Override
+    public PlatformStateAccessor getReadablePlatformState() {
+        throw new UnsupportedOperationException(
+                "com.swirlds.platform.state.State doesn't support read-only mode for PlatformState");
+    }
+
+    /**
      * Get the platform state.
-     *
      * @return the platform state
      */
     @NonNull
     @Override
-    public PlatformState getPlatformState() {
+    public PlatformState getWritablePlatformState() {
         return getChild(ChildIndices.PLATFORM_STATE);
     }
 
@@ -214,7 +223,7 @@ public class State extends PartialNaryMerkleInternal implements MerkleRoot {
             return false;
         }
         final MerkleRoot state = (MerkleRoot) other;
-        return Objects.equals(getPlatformState(), state.getPlatformState())
+        return Objects.equals(getWritablePlatformState(), state.getWritablePlatformState())
                 && Objects.equals(getSwirldState(), state.getSwirldState());
     }
 
@@ -223,7 +232,7 @@ public class State extends PartialNaryMerkleInternal implements MerkleRoot {
      */
     @Override
     public int hashCode() {
-        return Objects.hash(getPlatformState(), getSwirldState());
+        return Objects.hash(getWritablePlatformState(), getSwirldState());
     }
 
     /**
@@ -234,7 +243,7 @@ public class State extends PartialNaryMerkleInternal implements MerkleRoot {
     @NonNull
     @Override
     public String getInfoString(final int hashDepth) {
-        final PlatformStateAccessor platformState = getPlatformState();
+        final PlatformStateAccessor platformState = getWritablePlatformState();
         return createInfoString(hashDepth, platformState, getHash(), this);
     }
 
@@ -244,7 +253,7 @@ public class State extends PartialNaryMerkleInternal implements MerkleRoot {
     @Override
     public String toString() {
         return new ToStringBuilder(this)
-                .append("platformState", getPlatformState())
+                .append("platformState", getWritablePlatformState())
                 .append("swirldState", getSwirldState())
                 .toString();
     }

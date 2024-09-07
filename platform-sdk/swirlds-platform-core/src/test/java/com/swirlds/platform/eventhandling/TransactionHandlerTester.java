@@ -63,7 +63,7 @@ public class TransactionHandlerTester {
         final SwirldState swirldState = mock(SwirldState.class);
         when(consensusState.getSwirldState()).thenReturn(swirldState);
         when(consensusState.copy()).thenReturn(consensusState);
-        when(consensusState.getPlatformState()).thenReturn(platformState);
+        when(consensusState.getWritablePlatformState()).thenReturn(platformState);
         doAnswer(i -> {
                     handledRounds.add(i.getArgument(0));
                     return null;

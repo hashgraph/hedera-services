@@ -53,7 +53,7 @@ public final class BirthRoundStateMigration {
             @NonNull final SoftwareVersion appVersion) {
 
         if (ancientMode == AncientMode.GENERATION_THRESHOLD) {
-            if (initialState.getState().getPlatformState().getFirstVersionInBirthRoundMode() != null) {
+            if (initialState.getState().getReadablePlatformState().getFirstVersionInBirthRoundMode() != null) {
                 throw new IllegalStateException(
                         "Cannot revert to generation mode after birth round migration has been completed.");
             }
@@ -64,7 +64,7 @@ public final class BirthRoundStateMigration {
         }
 
         final MerkleRoot state = initialState.getState();
-        final PlatformStateAccessor platformState = state.getPlatformState();
+        final PlatformStateAccessor platformState = state.getWritablePlatformState();
 
         final boolean alreadyMigrated = platformState.getFirstVersionInBirthRoundMode() != null;
         if (alreadyMigrated) {
