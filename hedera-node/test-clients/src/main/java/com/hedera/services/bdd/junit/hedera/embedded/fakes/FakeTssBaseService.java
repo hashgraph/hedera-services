@@ -20,6 +20,7 @@ import static com.hedera.node.app.hapi.utils.CommonUtils.noThrowSha384HashOf;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.tss.TssBaseService;
+import com.hedera.services.bdd.junit.HapiTest;
 import com.swirlds.common.utility.CommonUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
@@ -29,6 +30,15 @@ import java.util.function.BiConsumer;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+/**
+ * A fake implementation of the {@link TssBaseService} that,
+ * <ul>
+ *     <Li>Lets the author of an embedded {@link HapiTest} control whether the TSS base service ignores
+ *     signature requests; and, when requests are <i>not</i> ignored,</Li>
+ *     <li>"Signs" messages by scheduling callback to its consumers using the SHA-384 hash of the
+ *     message as the signature.</li>
+ * </ul>
+ */
 public class FakeTssBaseService implements TssBaseService {
     private static final Logger log = LogManager.getLogger(FakeTssBaseService.class);
 

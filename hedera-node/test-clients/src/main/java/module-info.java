@@ -110,7 +110,6 @@ module com.hedera.node.test.clients {
     requires io.netty.handler;
     requires java.desktop;
     requires java.net.http;
-    requires javax.inject;
     requires org.apache.commons.lang3;
     requires org.apache.logging.log4j.core;
     requires org.assertj.core;
