@@ -16,7 +16,6 @@
 
 package com.hedera.node.app.tss;
 
-import com.swirlds.state.spi.SchemaRegistry;
 import com.swirlds.state.spi.Service;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.function.BiConsumer;
@@ -36,11 +35,6 @@ public interface TssBaseService extends Service {
     @Override
     default String getServiceName() {
         return NAME;
-    }
-
-    @Override
-    default void registerSchemas(@NonNull final SchemaRegistry registry) {
-        // FUTURE - add required schemas
     }
 
     /**

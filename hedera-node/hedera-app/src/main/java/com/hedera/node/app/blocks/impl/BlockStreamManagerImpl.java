@@ -17,7 +17,7 @@
 package com.hedera.node.app.blocks.impl;
 
 import static com.hedera.hapi.node.base.BlockHashAlgorithm.SHA2_384;
-import static com.hedera.node.app.blocks.BlockStreamManager.ZERO_BLOCK_HASH;
+import static com.hedera.hapi.util.HapiUtils.asInstant;
 import static com.hedera.node.app.blocks.impl.BlockImplUtils.appendHash;
 import static com.hedera.node.app.blocks.impl.BlockImplUtils.combine;
 import static com.hedera.node.app.blocks.schemas.V0540BlockStreamSchema.BLOCK_STREAM_INFO_KEY;
@@ -36,6 +36,7 @@ import com.hedera.hapi.block.stream.output.TransactionResult;
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.state.blockstream.BlockStreamInfo;
+import com.hedera.hapi.platform.state.PlatformState;
 import com.hedera.node.app.blocks.BlockItemWriter;
 import com.hedera.node.app.blocks.BlockStreamManager;
 import com.hedera.node.app.blocks.BlockStreamService;
@@ -45,12 +46,11 @@ import com.hedera.node.app.tss.TssBaseService;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.BlockRecordStreamConfig;
 import com.hedera.node.config.data.BlockStreamConfig;
-import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.data.VersionConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.state.service.PlatformStateService;
-import com.swirlds.platform.state.service.ReadablePlatformStateStore;
+import com.swirlds.platform.state.service.schemas.V0540PlatformStateSchema;
 import com.swirlds.platform.system.Round;
 import com.swirlds.state.State;
 import com.swirlds.state.spi.CommittableWritableStates;
@@ -80,7 +80,6 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
     private final int roundsPerBlock;
     private final TssBaseService tssBaseService;
     private final SemanticVersion hapiVersion;
-    private final SemanticVersion nodeVersion;
     private final ExecutorService executor;
     private final Supplier<BlockItemWriter> writerSupplier;
     private final BoundaryStateChangeListener boundaryStateChangeListener;
@@ -140,9 +139,9 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
         this.executor = requireNonNull(executor);
         this.tssBaseService = requireNonNull(tssBaseService);
         this.boundaryStateChangeListener = requireNonNull(boundaryStateChangeListener);
-        final var config = requireNonNull(configProvider).getConfiguration();
+        requireNonNull(configProvider);
+        final var config = configProvider.getConfiguration();
         this.hapiVersion = hapiVersionFrom(config);
-        this.nodeVersion = nodeVersionFrom(config);
         this.roundsPerBlock = config.getConfigData(BlockStreamConfig.class).roundsPerBlock();
         this.blockHashManager = new BlockHashManager(config);
         this.runningHashManager = new RunningHashManager();
@@ -158,7 +157,11 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
         if (lastBlockHash == null) {
             throw new IllegalStateException("Last block hash must be initialized before starting a round");
         }
-        if (isFreezeRound(state, round)) {
+        final var platformState = state.getReadableStates(PlatformStateService.NAME)
+                .<PlatformState>getSingleton(V0540PlatformStateSchema.PLATFORM_STATE_KEY)
+                .get();
+        requireNonNull(platformState);
+        if (isFreezeRound(platformState, round)) {
             // Track freeze round numbers because they always end a block
             freezeRoundNumber = round.getRoundNum();
         }
@@ -181,7 +184,7 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
                             .number(blockNumber)
                             .previousBlockHash(lastBlockHash)
                             .hashAlgorithm(SHA2_384)
-                            .softwareVersion(nodeVersion)
+                            .softwareVersion(platformState.creationSoftwareVersionOrThrow())
                             .hapiProtoVersion(hapiVersion))
                     .build());
 
@@ -242,6 +245,10 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
 
     @Override
     public @Nullable Bytes prngSeed() {
+        // Incorporate all pending results before returning the seed to guarantee
+        // no two consecutive transactions ever get the same seed
+        schedulePendingWork();
+        writeFuture.join();
         final var seed = runningHashManager.nMinus3HashFuture.join();
         return seed == null ? null : Bytes.wrap(seed);
     }
@@ -331,10 +338,11 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
         return roundNumber % roundsPerBlock == 0 || roundNumber == freezeRoundNumber;
     }
 
-    private boolean isFreezeRound(@NonNull final State state, @NonNull final Round round) {
-        final var platformState = new ReadablePlatformStateStore(state.getReadableStates(PlatformStateService.NAME));
+    private boolean isFreezeRound(@NonNull final PlatformState platformState, @NonNull final Round round) {
         return isInFreezePeriod(
-                round.getConsensusTimestamp(), platformState.getFreezeTime(), platformState.getLastFrozenTime());
+                round.getConsensusTimestamp(),
+                platformState.freezeTime() == null ? null : asInstant(platformState.freezeTime()),
+                platformState.lastFrozenTime() == null ? null : asInstant(platformState.lastFrozenTime()));
     }
 
     /**
@@ -402,18 +410,6 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
         }
     }
 
-    private SemanticVersion nodeVersionFrom(@NonNull final Configuration config) {
-        final var hederaConfig = config.getConfigData(HederaConfig.class);
-        final var versionConfig = config.getConfigData(VersionConfig.class);
-        return (hederaConfig.configVersion() == 0)
-                ? versionConfig.servicesVersion()
-                : versionConfig
-                        .servicesVersion()
-                        .copyBuilder()
-                        .build("" + hederaConfig.configVersion())
-                        .build();
-    }
-
     private SemanticVersion hapiVersionFrom(@NonNull final Configuration config) {
         return config.getConfigData(VersionConfig.class).hapiVersion();
     }
@@ -444,8 +440,8 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
          *
          * @param blockStreamInfo the trailing block hashes at the start of the round
          */
-        void startBlock(@Nullable final BlockStreamInfo blockStreamInfo) {
-            final var hashes = blockStreamInfo == null ? Bytes.EMPTY : blockStreamInfo.trailingOutputHashes();
+        void startBlock(@NonNull final BlockStreamInfo blockStreamInfo) {
+            final var hashes = blockStreamInfo.trailingOutputHashes();
             final var n = (int) (hashes.length() / HASH_SIZE);
             nMinus3HashFuture = completedFuture(n < 4 ? null : hashes.toByteArray(0, HASH_SIZE));
             nMinus2HashFuture = completedFuture(n < 3 ? null : hashes.toByteArray((n - 3) * HASH_SIZE, HASH_SIZE));
@@ -490,6 +486,7 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
             if (appendRealHashes) {
                 blockHashes = appendHash(prevBlockHash, blockStreamInfo.trailingBlockHashes(), numTrailingBlocks);
             } else {
+                // (FUTURE) Remove this after reconnect protocol also transmits the last block hash
                 blockHashes = appendHash(ZERO_BLOCK_HASH, blockStreamInfo.trailingBlockHashes(), numTrailingBlocks);
             }
         }

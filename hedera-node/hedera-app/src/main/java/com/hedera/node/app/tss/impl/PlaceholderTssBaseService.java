@@ -21,6 +21,7 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.tss.TssBaseService;
 import com.swirlds.common.utility.CommonUtils;
+import com.swirlds.state.spi.SchemaRegistry;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -49,6 +50,11 @@ public class PlaceholderTssBaseService implements TssBaseService {
     @Inject
     public void setExecutor(@NonNull final ExecutorService executor) {
         this.executor = requireNonNull(executor);
+    }
+
+    @Override
+    public void registerSchemas(@NonNull final SchemaRegistry registry) {
+        // FUTURE - add required schemas
     }
 
     @Override

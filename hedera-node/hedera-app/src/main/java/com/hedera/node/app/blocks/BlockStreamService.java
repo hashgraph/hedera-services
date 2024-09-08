@@ -50,15 +50,6 @@ public class BlockStreamService implements Service {
         this.enabled = config.getConfigData(BlockStreamConfig.class).streamMode() != RECORDS;
     }
 
-    /**
-     * Returns the last block hash as migrated from a state that used record streams, or empty
-     * if there was no such hash observed during migration.
-     * @return the last block hash
-     */
-    public Optional<Bytes> migratedLastBlockHash() {
-        return Optional.ofNullable(migratedLastBlockHash);
-    }
-
     @NonNull
     @Override
     public String getServiceName() {
@@ -71,6 +62,15 @@ public class BlockStreamService implements Service {
         if (enabled) {
             registry.register(new V0540BlockStreamSchema(this::setMigratedLastBlockHash));
         }
+    }
+
+    /**
+     * Returns the last block hash as migrated from a state that used record streams, or empty
+     * if there was no such hash observed during migration.
+     * @return the last block hash
+     */
+    public Optional<Bytes> migratedLastBlockHash() {
+        return Optional.ofNullable(migratedLastBlockHash);
     }
 
     private void setMigratedLastBlockHash(@NonNull final Bytes migratedLastBlockHash) {

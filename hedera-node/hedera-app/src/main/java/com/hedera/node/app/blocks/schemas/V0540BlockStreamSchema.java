@@ -34,23 +34,17 @@ import java.util.Set;
 import java.util.function.Consumer;
 
 /**
- * Defines the schema for two forms of state,
+ * Defines the schema for state with two notable properties:
  * <ol>
- *     <li>State needed for a new or reconnected node to construct the next block exactly as will
+ *     <li>It is needed for a new or reconnected node to construct the next block exactly as will
  *     nodes already in the network.</li>
- *     <li>State derived from the block stream, and hence the natural provenance of the same service
+ *     <li>It is derived from the block stream, and hence the natural provenance of the same service
  *     that is managing and producing blocks.</li>
  * </ol>
  * <p>
- * The two pieces of state in the first category are,
+ * The particular items with these properties are,
  * <ol>
  *     <li>The <b>number of the last completed block</b>, which each node must increment in the next block.</li>
- *     <li>The <b>hash of the last completed block</b>, which each node must include in the header and proof
- *     of the next block.</li>
- * </ol>
- * <p>
- * State in the second category has three parts,
- * <ol>
  *     <li>The <b>first consensus time of the last finished block</b>, for comparison with the consensus
  *     time at the start of the current block. Depending on the elapsed period between these times,
  *     the network may deterministically choose to purge expired entities, adjust node stakes and
@@ -110,7 +104,7 @@ public class V0540BlockStreamSchema extends Schema {
                 migratedBlockHashConsumer.accept(lastBlockHash);
                 final var trailingBlockHashes = blockInfo
                         .blockHashes()
-                        .slice(lastBlockHash.length(), blockInfo.blockHashes().length());
+                        .slice(lastBlockHash.length(), blockInfo.blockHashes().length() - lastBlockHash.length());
                 state.put(BlockStreamInfo.newBuilder()
                         .blockTime(blockInfo.firstConsTimeOfLastBlock())
                         .blockNumber(blockInfo.lastBlockNumber())
@@ -122,10 +116,10 @@ public class V0540BlockStreamSchema extends Schema {
     }
 
     private Bytes appendedHashes(final RunningHashes runningHashes) {
-        Bytes appendedHashes = Bytes.EMPTY;
-        appendedHashes = appendHash(runningHashes.nMinus3RunningHash(), appendedHashes, 4);
-        appendedHashes = appendHash(runningHashes.nMinus2RunningHash(), appendedHashes, 4);
-        appendedHashes = appendHash(runningHashes.nMinus1RunningHash(), appendedHashes, 4);
-        return appendHash(runningHashes.runningHash(), appendedHashes, 4);
+        var hashes = Bytes.EMPTY;
+        hashes = appendHash(runningHashes.nMinus3RunningHash(), hashes, 4);
+        hashes = appendHash(runningHashes.nMinus2RunningHash(), hashes, 4);
+        hashes = appendHash(runningHashes.nMinus1RunningHash(), hashes, 4);
+        return appendHash(runningHashes.runningHash(), hashes, 4);
     }
 }

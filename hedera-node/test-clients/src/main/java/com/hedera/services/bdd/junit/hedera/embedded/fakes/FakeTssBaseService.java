@@ -22,6 +22,7 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.node.app.tss.TssBaseService;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.swirlds.common.utility.CommonUtils;
+import com.swirlds.state.spi.SchemaRegistry;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -62,6 +63,11 @@ public class FakeTssBaseService implements TssBaseService {
      */
     public void stopIgnoringRequests() {
         ignoreRequests = false;
+    }
+
+    @Override
+    public void registerSchemas(@NonNull final SchemaRegistry registry) {
+        // No-op for now
     }
 
     @Override
