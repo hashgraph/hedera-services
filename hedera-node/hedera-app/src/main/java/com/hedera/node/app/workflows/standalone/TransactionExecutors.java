@@ -56,7 +56,7 @@ public enum TransactionExecutors {
             final var dispatch = executor.standaloneDispatchFactory().newDispatch(state, transactionBody, consensusNow);
             OPERATION_TRACERS.set(List.of(operationTracers));
             executor.dispatchProcessor().processDispatch(dispatch);
-            return dispatch.stack().buildHandleOutput(consensusNow).recordsOrThrow();
+            return dispatch.stack().buildHandleOutput(consensusNow, exchangeRateManager.exchangeRates()).recordsOrThrow();
         };
     }
 
