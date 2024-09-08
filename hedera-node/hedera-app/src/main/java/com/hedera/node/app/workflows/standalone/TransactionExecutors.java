@@ -16,6 +16,8 @@
 
 package com.hedera.node.app.workflows.standalone;
 
+import static com.hedera.node.app.workflows.standalone.impl.NoopVerificationStrategies.NOOP_VERIFICATION_STRATEGIES;
+
 import com.hedera.node.app.config.BootstrapConfigProviderImpl;
 import com.hedera.node.app.config.ConfigProviderImpl;
 import com.hedera.node.app.service.contract.impl.ContractServiceImpl;
@@ -68,7 +70,8 @@ public enum TransactionExecutors {
                         bootstrapConfigProvider.getConfiguration().getConfigData(HederaConfig.class),
                         new SignatureExpanderImpl(),
                         new SignatureVerifierImpl(CryptographyHolder.get())));
-        final var contractService = new ContractServiceImpl(appContext, OPERATION_TRACERS::get);
+        final var contractService =
+                new ContractServiceImpl(appContext, NOOP_VERIFICATION_STRATEGIES, OPERATION_TRACERS::get);
         final var fileService = new FileServiceImpl();
         final var configProvider = new ConfigProviderImpl(false, null, properties);
         return DaggerExecutorComponent.builder()
