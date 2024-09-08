@@ -17,6 +17,7 @@
 package com.hedera.node.app.blocks.impl;
 
 import static com.hedera.hapi.node.base.BlockHashAlgorithm.SHA2_384;
+import static com.hedera.node.app.blocks.impl.BlockImplUtils.appendHash;
 import static com.hedera.node.app.blocks.impl.BlockImplUtils.combine;
 import static com.hedera.node.app.blocks.schemas.V0540BlockStreamSchema.BLOCK_STREAM_INFO_KEY;
 import static com.hedera.node.app.hapi.utils.CommonUtils.noThrowSha384HashOf;
@@ -80,17 +81,17 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
     private final SemanticVersion hapiVersion;
     private final SemanticVersion nodeVersion;
     private final ExecutorService executor;
-    private final BlockHashManager blockHashManager;
-    private final RunningHashManager runningHashManager;
     private final Supplier<BlockItemWriter> writerSupplier;
     private final BoundaryStateChangeListener boundaryStateChangeListener;
+
+    private final BlockHashManager blockHashManager;
+    private final RunningHashManager runningHashManager;
 
     // All this state is scoped to producing the current block
     private long blockNumber;
     // Set to the round number of the last round handled before entering a freeze period
     private long freezeRoundNumber = -1;
-    // FUTURE - initialize to the actual last block hash (this is only correct at genesis)
-    private Bytes lastBlockHash = Bytes.wrap(new byte[48]);
+    private Bytes lastBlockHash;
     private Instant blockTimestamp;
     private BlockItemWriter writer;
     private List<BlockItem> pendingItems;
@@ -133,7 +134,7 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
             @NonNull final BoundaryStateChangeListener boundaryStateChangeListener) {
         this.writerSupplier = requireNonNull(writerSupplier);
         this.executor = requireNonNull(executor);
-        this.tssBaseService = tssBaseService;
+        this.tssBaseService = requireNonNull(tssBaseService);
         this.boundaryStateChangeListener = requireNonNull(boundaryStateChangeListener);
         final var config = requireNonNull(configProvider).getConfiguration();
         this.hapiVersion = hapiVersionFrom(config);
@@ -144,10 +145,17 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
     }
 
     @Override
+    public void initLastBlockHash(@NonNull final Bytes blockHash) {
+        lastBlockHash = requireNonNull(blockHash);
+    }
+
+    @Override
     public void startRound(@NonNull final Round round, @NonNull final State state) {
-        // We will always close the block at the end of the freeze round, even if
-        // its number would not otherwise trigger a block closing
+        if (lastBlockHash == null) {
+            throw new IllegalStateException("Last block hash must be initialized before starting a round");
+        }
         if (isFreezeRound(state, round)) {
+            // Track freeze round numbers because they always end a block
             freezeRoundNumber = round.getRoundNum();
         }
         if (writer == null) {
@@ -182,7 +190,8 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
         if (shouldCloseBlock(roundNum, roundsPerBlock)) {
             final var writableState = state.getWritableStates(BlockStreamService.NAME);
             final var blockStreamInfoState = writableState.<BlockStreamInfo>getSingleton(BLOCK_STREAM_INFO_KEY);
-            // Ensure all runningHashManager futures are complete
+            // Ensure runningHashManager futures include all result items and are completed
+            schedulePendingWork();
             writeFuture.join();
             // Commit the block stream info to state before flushing the boundary state changes
             blockStreamInfoState.put(new BlockStreamInfo(
@@ -251,6 +260,7 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
     /**
      * Synchronized to ensure that block proofs are always written in order, even in edge cases where multiple
      * pending block proofs become available at the same time.
+     *
      * @param message the number of the block to finish
      * @param signature the signature to use in the block proof
      */
@@ -424,7 +434,7 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
          * @param blockStreamInfo the trailing block hashes at the start of the round
          */
         void startBlock(@Nullable final BlockStreamInfo blockStreamInfo) {
-            final var hashes = blockStreamInfo == null ? Bytes.EMPTY : blockStreamInfo.trailingBlockHashes();
+            final var hashes = blockStreamInfo == null ? Bytes.EMPTY : blockStreamInfo.trailingOutputHashes();
             final var n = (int) (hashes.length() / HASH_SIZE);
             nMinus3HashFuture = completedFuture(n < 4 ? null : hashes.toByteArray(0, HASH_SIZE));
             nMinus2HashFuture = completedFuture(n < 3 ? null : hashes.toByteArray((n - 3) * HASH_SIZE, HASH_SIZE));
@@ -466,28 +476,15 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
          * @param blockStreamInfo the trailing block hashes at the start of the round
          */
         void startBlock(@NonNull final BlockStreamInfo blockStreamInfo, @NonNull Bytes prevBlockHash) {
-            blockHashes = blockStreamInfo.trailingBlockHashes();
-            appendHash(prevBlockHash);
-        }
-
-        /**
-         * Appends the given block hash to the trailing block hashes.
-         *
-         * @param blockHash the block hash to append
-         */
-        void appendHash(@NonNull final Bytes blockHash) {
-            BlockImplUtils.appendHash(blockHash, blockHashes, numTrailingBlocks);
+            blockHashes = appendHash(prevBlockHash, blockStreamInfo.trailingBlockHashes(), numTrailingBlocks);
         }
 
         /**
          * Returns the hash of the block with the given number, or null if it is not available. Note that,
          * <ul>
          *     <li>We never know the hash of the {@code N+1} block currently being created.</li>
-         *     <li>The block hashes in state at the end of block {@code N} can only include up
-         *     to block {@code N-1}, because the hash of block {@code N} is influenced by every
-         *     state change.</li>
-         *     <li>But we always have the previous block hash in hand, either because we just computed it
-         *     ourselves; or because we obtained it when restarting or reconnecting.</li>
+         *     <li>We start every block {@code N} by concatenating the {@code N-1} block hash to the trailing
+         *     hashes up to block {@code N-2} that were in state at the end of block {@code N-1}.
          * </ul>
          *
          * @param blockNo the block number
@@ -495,11 +492,7 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
          */
         @Nullable
         Bytes hashOfBlock(final long blockNo) {
-            if (blockNo == blockNumber - 1) {
-                return lastBlockHash;
-            } else {
-                return BlockRecordInfoUtils.blockHashByBlockNumber(blockHashes, blockNumber - 2, blockNo);
-            }
+            return BlockRecordInfoUtils.blockHashByBlockNumber(blockHashes, blockNumber - 1, blockNo);
         }
 
         /**

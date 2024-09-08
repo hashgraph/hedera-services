@@ -26,12 +26,14 @@ import static org.mockito.Mockito.when;
 
 import com.hedera.hapi.node.state.blockstream.BlockStreamInfo;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.state.spi.MigrationContext;
 import com.swirlds.state.spi.StateDefinition;
 import com.swirlds.state.spi.WritableSingletonState;
 import com.swirlds.state.spi.WritableStates;
 import java.util.Set;
+import java.util.function.Consumer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -50,13 +52,16 @@ public class V0540BlockStreamSchemaTest {
     @Mock(strictness = LENIENT)
     private WritableStates mockWritableStates;
 
+    @Mock
+    private Consumer<Bytes> migratedBlockHashConsumer;
+
     public static final Configuration DEFAULT_CONFIG = HederaTestConfigBuilder.createConfig();
 
     private V0540BlockStreamSchema schema;
 
     @BeforeEach
     void setUp() {
-        schema = new V0540BlockStreamSchema();
+        schema = new V0540BlockStreamSchema(migratedBlockHashConsumer);
         when(mockCtx.newStates()).thenReturn(mockWritableStates);
         when(mockWritableStates.getSingleton(BLOCK_STREAM_INFO_KEY)).thenReturn(mockBlockStreamInfo);
     }
