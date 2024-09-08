@@ -17,6 +17,7 @@
 package com.hedera.node.app.blocks.impl;
 
 import static com.hedera.hapi.node.base.BlockHashAlgorithm.SHA2_384;
+import static com.hedera.node.app.blocks.BlockStreamManager.ZERO_BLOCK_HASH;
 import static com.hedera.node.app.blocks.impl.BlockImplUtils.appendHash;
 import static com.hedera.node.app.blocks.impl.BlockImplUtils.combine;
 import static com.hedera.node.app.blocks.schemas.V0540BlockStreamSchema.BLOCK_STREAM_INFO_KEY;
@@ -103,6 +104,9 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
      * hashes if applicable; <b>and</b> written to the block item writer.
      */
     private CompletableFuture<Void> writeFuture = completedFuture(null);
+
+    // (FUTURE) Remove this once reconnect protocol also transmits the last block hash
+    private boolean appendRealHashes = false;
 
     /**
      * Represents a block pending completion by the block hash signature needed for its block proof.
@@ -303,6 +307,13 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
         }
     }
 
+    /**
+     * (FUTURE) Remove this after reconnect protocol also transmits the last block hash.
+     */
+    public void appendRealHashes() {
+        this.appendRealHashes = true;
+    }
+
     private void schedulePendingWork() {
         final var scheduledWork = new ScheduledWork(pendingItems);
         final var pendingSerialization = CompletableFuture.supplyAsync(scheduledWork::serializeItems, executor);
@@ -476,7 +487,11 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
          * @param blockStreamInfo the trailing block hashes at the start of the round
          */
         void startBlock(@NonNull final BlockStreamInfo blockStreamInfo, @NonNull Bytes prevBlockHash) {
-            blockHashes = appendHash(prevBlockHash, blockStreamInfo.trailingBlockHashes(), numTrailingBlocks);
+            if (appendRealHashes) {
+                blockHashes = appendHash(prevBlockHash, blockStreamInfo.trailingBlockHashes(), numTrailingBlocks);
+            } else {
+                blockHashes = appendHash(ZERO_BLOCK_HASH, blockStreamInfo.trailingBlockHashes(), numTrailingBlocks);
+            }
         }
 
         /**

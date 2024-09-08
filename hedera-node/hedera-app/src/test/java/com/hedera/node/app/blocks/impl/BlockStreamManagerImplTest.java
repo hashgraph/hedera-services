@@ -195,6 +195,7 @@ class BlockStreamManagerImplTest {
                 configProvider,
                 tssBaseService,
                 boundaryStateChangeListener);
+        subject.appendRealHashes();
         given(state.getReadableStates(BlockStreamService.NAME)).willReturn(readableStates);
         given(state.getReadableStates(PlatformStateService.NAME)).willReturn(readableStates);
         infoRef.set(blockStreamInfo);
