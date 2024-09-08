@@ -73,17 +73,35 @@ message ConsensusCreateTopicTransactionBody {
     AccountID autoRenewAccount = 7;
 
     /**
-     * Access control for update/delete of custom fees. Null if there is no key.
+     * Access control for update/delete of custom fees.
+     * <p>
+     * If unset, custom fees CANNOT be set for this topic.<br/>
+     * If not set when the topic is created, this field CANNOT be set via update.
+     * If set when the topic is created, this field CAN be changed via update.
      */
     Key fee_schedule_key = 8;
 
     /**
-      * If the transaction contains a signer from this list, no custom fees are applied.
-      */
+     * A set of keys that are allowed to submit messages to the topic without
+     * paying the topic's custom fees.
+     * <p>
+     * If a submit transaction is signed by _any_ key included in this set,
+     *  custom fees SHALL NOT be charged for that transaction.
+     * <p>
+     * If free_messages_key_list is unset, the following keys are exempt
+     *  from custom fees: adminKey, submitKey, fee_schedule_key.
+     */
     repeated Key free_messages_key_list = 9;
 
     /**
-      * The custom fee to be assessed during a message submission to this topic
-      */
+     * A set of custom fee definitions.<br/>
+     * These are fees to be assessed for each submit to this topic.
+     * <p>
+     * Each fee defined in this set SHALL be evaluated for
+     * each message submitted to this topic, and the resultant
+     * total assessed fees SHALL be charged.<br/>
+     * Custom fees defined here SHALL be in addition to the base
+     * network and node fees.
+     */
     repeated ConsensusCustomFee custom_fees = 10;
 }

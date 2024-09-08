@@ -174,14 +174,30 @@ message AssessedCustomFee {
   repeated AccountID effective_payer_account_id = 4;
 }
 
+/**
+ * A custom fee definition for a consensus topic.
+ * <p>
+ * This fee definition is specific to an Hedera Consensus Service (HCS) topic
+ * and SHOULD NOT be used in any other context.<br/>
+ * All fields for this message are REQUIRED.<br/>
+ * Only "fixed" fee definitions are supported because there is no basis for
+ * a fractional fee on a consensus submit transaction.
+ */
 message ConsensusCustomFee {
   /**
-  * Fixed fee to be charged
-  */
+     * A fixed custom fee.
+     * <p>
+     * The amount of HBAR or other token described by this `FixedFee` SHALL
+     * be charged to the transction payer for each message submitted to a
+     * topic that assigns this consensus custom fee.
+    */
   FixedFee fixed_fee = 1;
 
   /**
-  * The account to receive the custom fee
-  */
+   * A collection account identifier.
+   * <p>
+   * All amounts collected for this consensus custom fee SHALL be transferred
+   * to the account identified by this field.
+   */
   AccountID fee_collector_account_id = 2;
 }

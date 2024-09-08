@@ -49,6 +49,9 @@ option java_multiple_files = true;
  *   5. A memo string whose UTF-8 encoding is at most 100 bytes.
  *   6. (Optional) An admin key whose signature must be active for the topic's metadata to be updated.
  *   7. (Optional) A submit key whose signature must be active for the topic to receive a message.
+ *   8. (Optional) A fee schedule key whose signature must be active for the topic's custom fees to be updated.
+ *   9. (Optional) A list of keys that can submit messages without paying custom fees.
+ *   10. (Optional) A list of custom fees to be assessed for each message submitted to the topic.
  */
 message Topic {
     /**
@@ -99,16 +102,38 @@ message Topic {
      * If present, enforces access control for message submission to the topic.
      */
     Key submit_key = 10;
+
     /**
-     * If present, enforces access control for update/delete of this topic custom fees.
-     */
+	     * Access control for update/delete of custom fees.
+	     * <p>
+	     * If this field is unset, the current custom fees CANNOT be changed.<br/>
+	     * If this field is set, that `Key` MUST sign any transaction to update
+	     * the custom fee schedule for this topic.
+	     */
     Key fee_schedule_key = 11;
+
     /**
-      * If the transaction contains a signer from this list, no custom fees are applied.
-      */
+     * A list of "privileged payer" keys.
+     * <p>
+     * If a submit transaction is signed by _any_ key from this list,
+     * custom fees SHALL NOT be charged for that transaction.<br/>
+     * If free_messages_key_list is unset, it SHALL _implicitly_ contain
+     * the key `admin_key`, the key `submit_key`, and the key
+     * `fee_schedule_key`, if any of those keys are set.
+     */
     repeated Key free_messages_key_list = 12;
-    /*
-     * The custom fee to be assessed during a message submission to this topic
+
+    /**
+     * A set of custom fee definitions.<br/>
+     * These are fees to be assessed for each submit to this topic.
+     * <p>
+     * If this list is empty, the only fees charged for a submit to this
+     * topic SHALL be the network and node fees.<br/>
+     * If this list is not empty, each fee defined in this set SHALL
+     * be evaluated for each message submitted to this topic, and the
+     * resultant total assessed fees SHALL be charged.<br/>
+     * If this list is not empty, custom fees defined here SHALL be
+     * charged _in addition to_ the base network and node fees.
      */
     repeated ConsensusCustomFee custom_fees = 13;
 }

@@ -90,17 +90,28 @@ message ConsensusUpdateTopicTransactionBody {
     AccountID autoRenewAccount = 9;
 
     /**
-     * Access control for update/delete of custom fees. Null if there is no key.
+     * Access control for update/delete of custom fees.
+     * <p>
+     * If unset in state, this field MUST NOT be set.<br/>
+     * If unset in this transaction and set in state, the current value SHALL
+     *  be removed.<br/>
+     * If set in this transaction, the existing key MUST sign this transaction.
      */
     Key fee_schedule_key = 10;
 
     /**
-      * If the transaction contains a signer from this list, no custom fees are applied.
-      */
+     * A set of keys that are allowed to submit messages to the topic without
+     * paying the topic's custom fees.
+     * <p>
+     * If this list is empty, the current set of keys is unchanged.
+     */
     repeated Key free_messages_key_list = 11;
 
-    /*
-     * The custom fee to be assessed during a message submission to this topic
+    /**
+     * A set of custom fee definitions.<br/>
+     * These are fees to be assessed for each submit to this topic.
+     * <p>
+     * If this list is empty, the current set of fees is unchanged.
      */
     repeated ConsensusCustomFee custom_fees = 12;
 }
