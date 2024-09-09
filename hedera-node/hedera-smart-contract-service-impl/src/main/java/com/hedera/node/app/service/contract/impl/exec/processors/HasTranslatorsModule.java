@@ -18,9 +18,12 @@ package com.hedera.node.app.service.contract.impl.exec.processors;
 
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.CallTranslator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.has.HasCallAttempt;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.has.getevmaddressalias.EvmAddressAliasTranslator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.has.hbarallowance.HbarAllowanceTranslator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.has.hbarapprove.HbarApproveTranslator;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.has.hederaaccountnumalias.HederaAccountNumAliasTranslator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.has.isauthorizedraw.IsAuthorizedRawTranslator;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.has.isvalidalias.IsValidAliasTranslator;
 import dagger.Module;
 import dagger.Provides;
 import dagger.multibindings.IntoSet;
@@ -58,6 +61,33 @@ public interface HasTranslatorsModule {
     @Named("HasTranslators")
     static CallTranslator<HasCallAttempt> provideHbarApproveTranslator(
             @NonNull final HbarApproveTranslator translator) {
+        return translator;
+    }
+
+    @Provides
+    @Singleton
+    @IntoSet
+    @Named("HasTranslators")
+    static CallTranslator<HasCallAttempt> provideEvmAddressAliasTranslator(
+            @NonNull final EvmAddressAliasTranslator translator) {
+        return translator;
+    }
+
+    @Provides
+    @Singleton
+    @IntoSet
+    @Named("HasTranslators")
+    static CallTranslator<HasCallAttempt> provideHederaAccountNumAliasTranslator(
+            @NonNull final HederaAccountNumAliasTranslator translator) {
+        return translator;
+    }
+
+    @Provides
+    @Singleton
+    @IntoSet
+    @Named("HasTranslators")
+    static CallTranslator<HasCallAttempt> provideIsValidAliasTranslator(
+            @NonNull final IsValidAliasTranslator translator) {
         return translator;
     }
 

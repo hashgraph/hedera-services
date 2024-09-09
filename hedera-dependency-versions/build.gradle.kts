@@ -194,6 +194,9 @@ dependencies.constraints {
     api("org.junit.jupiter:junit-jupiter-api:5.10.2") {
         because("org.junit.jupiter.api")
     }
+    api("org.junit.jupiter:junit-jupiter-engine:5.10.2") {
+        because("org.junit.jupiter.engine")
+    }
     api("org.junit-pioneer:junit-pioneer:2.0.1") {
         because("org.junitpioneer")
     }

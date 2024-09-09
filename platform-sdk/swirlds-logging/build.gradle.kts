@@ -19,6 +19,7 @@ plugins {
     id("com.hedera.gradle.platform-publish")
     id("com.hedera.gradle.feature.benchmark")
     id("com.hedera.gradle.feature.test-fixtures")
+    id("com.hedera.gradle.feature.test-time-consuming")
     id("com.hedera.gradle.feature.test-timing-sensitive")
 }
 

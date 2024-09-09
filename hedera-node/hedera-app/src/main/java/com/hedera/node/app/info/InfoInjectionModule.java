@@ -18,7 +18,6 @@ package com.hedera.node.app.info;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.node.app.annotations.NodeSelfId;
-import com.hedera.node.app.spi.numbers.HederaAccountNumbers;
 import com.swirlds.state.spi.info.NetworkInfo;
 import com.swirlds.state.spi.info.SelfNodeInfo;
 import dagger.Binds;
@@ -33,10 +32,6 @@ public abstract class InfoInjectionModule {
     @Binds
     @Singleton
     abstract NetworkInfo provideNetworkInfo(@NonNull final NetworkInfoImpl impl);
-
-    @Binds
-    @Singleton
-    abstract HederaAccountNumbers provideAccountNumbers(@NonNull final HederaAccountNumbersImpl impl);
 
     @Provides
     @NodeSelfId

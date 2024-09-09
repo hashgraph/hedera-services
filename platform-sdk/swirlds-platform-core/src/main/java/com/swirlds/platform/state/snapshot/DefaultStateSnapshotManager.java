@@ -198,8 +198,9 @@ public class DefaultStateSnapshotManager implements StateSnapshotManager {
         // this is debug information for ticket #11422
         final long signingWeight1 = reservedState.getSigningWeight();
         final long totalWeight1 = reservedState.getAddressBook().getTotalWeight();
-        if (reservedState.isComplete()) {
+        if (reservedState.isComplete() || reservedState.isPcesRound()) {
             // state is complete, nothing to do
+            // no signatures are generated for PCES rounds: https://github.com/hashgraph/hedera-services/issues/15229
             return;
         }
         metrics.getTotalUnsignedDiskStatesMetric().increment();

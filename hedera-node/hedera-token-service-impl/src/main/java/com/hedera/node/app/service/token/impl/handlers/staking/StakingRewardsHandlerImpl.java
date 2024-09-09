@@ -337,7 +337,7 @@ public class StakingRewardsHandlerImpl implements StakingRewardsHandler {
                                     && earnedZeroRewardsBecauseOfZeroStake(
                                             originalAccount, stakingRewardStore, consensusNow)));
             final var stakePeriodStart = stakePeriodManager.startUpdateFor(
-                    originalAccount, modifiedAccount, wasRewarded, containStakeMetaChanges, consensusNow);
+                    originalAccount, modifiedAccount, wasRewarded, containStakeMetaChanges);
             if (stakePeriodStart != -1) {
                 final var copy = modifiedAccount.copyBuilder();
                 copy.stakePeriodStart(stakePeriodStart);
@@ -365,7 +365,7 @@ public class StakingRewardsHandlerImpl implements StakingRewardsHandler {
             @NonNull final ReadableNetworkStakingRewardsStore stakingRewardStore,
             @NonNull final Instant consensusNow) {
         return Objects.requireNonNull(account).stakePeriodStart()
-                < stakePeriodManager.firstNonRewardableStakePeriod(stakingRewardStore, consensusNow);
+                < stakePeriodManager.firstNonRewardableStakePeriod(stakingRewardStore);
     }
 
     private void adjustNodeStakes(
@@ -388,8 +388,8 @@ public class StakingRewardsHandlerImpl implements StakingRewardsHandler {
                     // So, it will be leaving some rewards from its current node unclaimed.
                     // We need to record that, so we don't include them in the pendingRewards
                     // calculation later
-                    final var effectiveStakeRewardStart = rewardableStakeStartFor(
-                            stakingRewardStore.isStakingRewardsActivated(), originalAccount, consensusNow);
+                    final var effectiveStakeRewardStart =
+                            rewardableStakeStartFor(stakingRewardStore.isStakingRewardsActivated(), originalAccount);
                     stakeInfoHelper.increaseUnclaimedStakeRewards(
                             currentStakedNodeId, effectiveStakeRewardStart, stakingInfoStore);
                 }
@@ -466,17 +466,16 @@ public class StakingRewardsHandlerImpl implements StakingRewardsHandler {
             // either because she is staking < 1 hbar, or because she started staking only
             // today or yesterday; we don't care about the exact reason, we just remember
             // her total stake as long as she didn't begin staking today exactly
-            return account.stakePeriodStart() < stakePeriodManager.currentStakePeriod(consensusNow);
+            return account.stakePeriodStart() < stakePeriodManager.currentStakePeriod();
         }
     }
 
-    private long rewardableStakeStartFor(
-            final boolean rewardsActivated, @NonNull final Account account, @NonNull final Instant consensusNow) {
+    private long rewardableStakeStartFor(final boolean rewardsActivated, @NonNull final Account account) {
         if (!rewardsActivated || account.declineReward()) {
             return 0;
         }
         final var startPeriod = account.stakePeriodStart();
-        final var currentPeriod = stakePeriodManager.currentStakePeriod(consensusNow);
+        final var currentPeriod = stakePeriodManager.currentStakePeriod();
         if (startPeriod >= currentPeriod) {
             return 0;
         } else {

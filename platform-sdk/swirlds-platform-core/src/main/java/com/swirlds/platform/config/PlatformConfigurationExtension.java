@@ -28,6 +28,7 @@ import com.swirlds.common.metrics.platform.prometheus.PrometheusConfig;
 import com.swirlds.common.wiring.WiringConfig;
 import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerConfiguration;
 import com.swirlds.config.api.ConfigurationExtension;
+import com.swirlds.logging.api.internal.configuration.InternalLoggingConfig;
 import com.swirlds.merkledb.config.MerkleDbConfig;
 import com.swirlds.platform.consensus.ConsensusConfig;
 import com.swirlds.platform.event.creation.EventCreationConfig;
@@ -87,7 +88,8 @@ public class PlatformConfigurationExtension implements ConfigurationExtension {
                 TransactionConfig.class,
                 UptimeConfig.class,
                 VirtualMapConfig.class,
-                WiringConfig.class);
+                WiringConfig.class,
+                InternalLoggingConfig.class);
     }
 
     @NonNull
