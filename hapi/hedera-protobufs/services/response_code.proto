@@ -1593,4 +1593,8 @@ enum ResponseCodeEnum {
      * airdrop and whether the sender can fulfill the offer.
      */
     INVALID_TOKEN_IN_PENDING_AIRDROP = 369;
+
+    MAX_ENTRIES_FOR_FMKL_EXCEEDED = 370;
+    FMKL_CONTAINS_DUPLICATED_KEYS = 371;
+    INVALID_KEY_IN_FMKL = 372;
 }

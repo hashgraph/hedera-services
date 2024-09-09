@@ -19,25 +19,38 @@ package com.hedera.node.app.service.consensus.impl.handlers;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.AUTORENEW_ACCOUNT_NOT_ALLOWED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.BAD_ENCODING;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.CUSTOM_FEES_LIST_TOO_LONG;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_CUSTOM_FEE_SCHEDULE_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_KEY_IN_FMKL;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_ENTRIES_FOR_FMKL_EXCEEDED;
 import static com.hedera.node.app.hapi.utils.fee.ConsensusServiceFeeBuilder.getConsensusCreateTopicFee;
 import static com.hedera.node.app.service.consensus.impl.ConsensusServiceImpl.RUNNING_HASH_BYTE_ARRAY_SIZE;
 import static com.hedera.node.app.spi.validation.AttributeValidator.isImmutableKey;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
+import static com.hedera.node.app.spi.workflows.PreCheckException.validateTruePreCheck;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.Duration;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.base.TopicID;
+import com.hedera.hapi.node.consensus.ConsensusCreateTopicTransactionBody;
 import com.hedera.hapi.node.state.consensus.Topic;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.hapi.utils.CommonPbjConverters;
 import com.hedera.node.app.hapi.utils.fee.SigValueObj;
+import com.hedera.node.app.service.consensus.ReadableTopicStore;
 import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
 import com.hedera.node.app.service.consensus.impl.records.ConsensusCreateTopicStreamBuilder;
+import com.hedera.node.app.service.consensus.impl.validators.ConsensusCustomFeesValidator;
+import com.hedera.node.app.service.token.ReadableAccountStore;
+import com.hedera.node.app.service.token.ReadableTokenRelationStore;
+import com.hedera.node.app.service.token.ReadableTokenStore;
+// import com.hedera.node.app.service.token.impl.util.TokenHandlerHelper;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.validation.ExpiryMeta;
@@ -58,14 +71,23 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class ConsensusCreateTopicHandler implements TransactionHandler {
+    private final ConsensusCustomFeesValidator customFeesValidator;
+
+    /**
+     * Default constructor for injection.
+     * @param customFeesValidator custom fees validator
+     */
     @Inject
-    public ConsensusCreateTopicHandler() {
-        // Exists for injection
+    public ConsensusCreateTopicHandler(@NonNull final ConsensusCustomFeesValidator customFeesValidator) {
+        requireNonNull(customFeesValidator);
+        this.customFeesValidator = customFeesValidator;
     }
 
     @Override
     public void pureChecks(@NonNull final TransactionBody txn) throws PreCheckException {
-        // nothing to do
+        final var op = txn.consensusCreateTopicOrThrow();
+        final var uniqueKeysCount = op.freeMessagesKeyList().stream().distinct().count();
+        validateTruePreCheck(uniqueKeysCount == op.freeMessagesKeyList().size(), INVALID_TRANSACTION_BODY);
     }
 
     @Override
@@ -98,33 +120,10 @@ public class ConsensusCreateTopicHandler implements TransactionHandler {
         requireNonNull(handleContext, "The argument 'context' must not be null");
 
         final var op = handleContext.body().consensusCreateTopicOrThrow();
-
-        final var configuration = handleContext.configuration();
-        final var topicConfig = configuration.getConfigData(TopicsConfig.class);
         final var topicStore = handleContext.storeFactory().writableStore(WritableTopicStore.class);
 
         final var builder = new Topic.Builder();
-
-        /* Validate admin and submit keys and set them. Empty key list is allowed and is used for immutable entities */
-        if (op.hasAdminKey() && !isImmutableKey(op.adminKey())) {
-            handleContext.attributeValidator().validateKey(op.adminKey());
-            builder.adminKey(op.adminKey());
-        }
-
-        // submitKey() is not checked in preCheck()
-        if (op.hasSubmitKey()) {
-            handleContext.attributeValidator().validateKey(op.submitKey());
-            builder.submitKey(op.submitKey());
-        }
-
-        /* Validate if the current topic can be created */
-        if (topicStore.sizeOfState() >= topicConfig.maxNumber()) {
-            throw new HandleException(MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED);
-        }
-
-        /* Validate the topic memo */
-        handleContext.attributeValidator().validateMemo(op.memo());
-        builder.memo(op.memo());
+        validateSemantics(op, handleContext, builder);
 
         final var impliedExpiry = handleContext.consensusNow().getEpochSecond()
                 + op.autoRenewPeriodOrElse(Duration.DEFAULT).seconds();
@@ -172,6 +171,71 @@ public class ConsensusCreateTopicHandler implements TransactionHandler {
             }
             throw e;
         }
+    }
+
+    private void validateSemantics(
+            ConsensusCreateTopicTransactionBody op, HandleContext handleContext, Topic.Builder builder) {
+
+        final var configuration = handleContext.configuration();
+        final var topicConfig = configuration.getConfigData(TopicsConfig.class);
+        final var topicStore = handleContext.storeFactory().readableStore(ReadableTopicStore.class);
+        final var accountStore = handleContext.storeFactory().readableStore(ReadableAccountStore.class);
+        final var tokenStore = handleContext.storeFactory().readableStore(ReadableTokenStore.class);
+        final var tokenRelStore = handleContext.storeFactory().readableStore(ReadableTokenRelationStore.class);
+
+        // validate max size of lists in the transaction body
+        if (!op.freeMessagesKeyList().isEmpty()) {
+            validateTrue(
+                    op.freeMessagesKeyList().size() <= topicConfig.maxEntriesForFreeMessagesKeyList(),
+                    MAX_ENTRIES_FOR_FMKL_EXCEEDED);
+        }
+
+        if (!op.customFees().isEmpty()) {
+            validateTrue(
+                    op.customFees().size() <= topicConfig.maxCustoFeeEntriesForTopics(), CUSTOM_FEES_LIST_TOO_LONG);
+        }
+
+        /* Validate admin and submit keys and set them. Empty key list is allowed and is used for immutable entities */
+        if (op.hasAdminKey() && !isImmutableKey(op.adminKey())) {
+            handleContext.attributeValidator().validateKey(op.adminKey());
+            builder.adminKey(op.adminKey());
+        }
+
+        // submitKey() is not checked in preCheck()
+        if (op.hasSubmitKey()) {
+            handleContext.attributeValidator().validateKey(op.submitKey());
+            builder.submitKey(op.submitKey());
+        }
+
+        // validate keys
+        if (op.hasFeeScheduleKey()) {
+            handleContext.attributeValidator().validateKey(op.feeScheduleKey(), INVALID_CUSTOM_FEE_SCHEDULE_KEY);
+            builder.feeScheduleKey(op.feeScheduleKey());
+        }
+
+        // validate keys
+        if (!op.freeMessagesKeyList().isEmpty()) {
+            op.freeMessagesKeyList()
+                    .forEach(key -> handleContext.attributeValidator().validateKey(key, INVALID_KEY_IN_FMKL));
+            builder.freeMessagesKeyList(op.freeMessagesKeyList());
+        }
+
+        // validate custom fees
+        if (!op.customFees().isEmpty()) {
+            // todo check if token is frozen to fee collector in token create handler
+            customFeesValidator.validateForCreation(
+                    accountStore, tokenRelStore, tokenStore, op.customFees(), handleContext.expiryValidator());
+            builder.customFees(op.customFees());
+        }
+
+        /* Validate if the current topic can be created */
+        if (topicStore.sizeOfState() >= topicConfig.maxNumber()) {
+            throw new HandleException(MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED);
+        }
+
+        /* Validate the topic memo */
+        handleContext.attributeValidator().validateMemo(op.memo());
+        builder.memo(op.memo());
     }
 
     @NonNull

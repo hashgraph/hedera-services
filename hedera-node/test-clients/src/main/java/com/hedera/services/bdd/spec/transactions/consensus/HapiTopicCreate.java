@@ -22,6 +22,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnUtils.bannerWith;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.netOf;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusCreateTopic;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
+import static java.util.stream.Collectors.toList;
 
 import com.google.common.base.MoreObjects;
 import com.google.protobuf.ByteString;
@@ -31,6 +32,7 @@ import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hederahashgraph.api.proto.java.ConsensusCreateTopicTransactionBody;
+import com.hederahashgraph.api.proto.java.ConsensusCustomFee;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Transaction;
@@ -41,6 +43,7 @@ import java.util.Optional;
 import java.util.OptionalLong;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -58,6 +61,12 @@ public class HapiTopicCreate extends HapiTxnOp<HapiTopicCreate> {
     private Optional<String> autoRenewAccountId = Optional.empty();
     private Optional<KeyShape> adminKeyShape = Optional.empty();
     private Optional<KeyShape> submitKeyShape = Optional.empty();
+    private Optional<Key> feeScheduleKey = Optional.empty();
+    private Optional<String> feeScheduleKeyName = Optional.empty();
+    private Optional<KeyShape> feeScheduleKeyShape = Optional.empty();
+    private final List<Function<HapiSpec, ConsensusCustomFee>> feeScheduleSuppliers = new ArrayList<>();
+    private Optional<List<Function<HapiSpec, Key>>> freeMesssagesKeyNamesList = Optional.empty();
+    private Optional<List<Key>> freeMesssageKeyList = Optional.empty();
 
     /** For some test we need the capability to build transaction has no autoRenewPeiord */
     private boolean clearAutoRenewPeriod = false;
@@ -83,6 +92,23 @@ public class HapiTopicCreate extends HapiTxnOp<HapiTopicCreate> {
 
     public HapiTopicCreate submitKeyName(final String s) {
         submitKeyName = Optional.of(s);
+        return this;
+    }
+
+    public HapiTopicCreate feeScheduleKeyName(final String s) {
+        feeScheduleKeyName = Optional.of(s);
+        return this;
+    }
+
+    public HapiTopicCreate freeMessagesKeys(String... keys) {
+        freeMesssagesKeyNamesList = Optional.of(Stream.of(keys)
+                .<Function<HapiSpec, Key>>map(k -> spec -> spec.registry().getKey(k))
+                .collect(toList()));
+        return self();
+    }
+
+    public HapiTopicCreate withConsensusCustomFee(final Function<HapiSpec, ConsensusCustomFee> supplier) {
+        feeScheduleSuppliers.add(supplier);
         return this;
     }
 
@@ -143,6 +169,14 @@ public class HapiTopicCreate extends HapiTxnOp<HapiTopicCreate> {
                             submitKey.ifPresent(b::setSubmitKey);
                             autoRenewAccountId.ifPresent(id -> b.setAutoRenewAccount(asId(id, spec)));
                             autoRenewPeriod.ifPresent(secs -> b.setAutoRenewPeriod(asDuration(secs)));
+                            feeScheduleKey.ifPresent(b::setFeeScheduleKey);
+                            freeMesssageKeyList.ifPresent(keys -> keys.forEach(b::addFreeMessagesKeyList));
+                            if (!feeScheduleSuppliers.isEmpty()) {
+                                for (final var supplier : feeScheduleSuppliers) {
+                                    b.addCustomFees(supplier.apply(spec));
+                                }
+                            }
+                            // todo add custom fee
                             if (clearAutoRenewPeriod) {
                                 b.clearAutoRenewPeriod();
                             }
@@ -158,6 +192,15 @@ public class HapiTopicCreate extends HapiTxnOp<HapiTopicCreate> {
         if (submitKeyName.isPresent() || submitKeyShape.isPresent()) {
             submitKey = Optional.of(netOf(spec, submitKeyName, submitKeyShape));
         }
+
+        if (feeScheduleKeyName.isPresent() || feeScheduleKeyShape.isPresent()) {
+            feeScheduleKey = Optional.of(netOf(spec, feeScheduleKeyName, feeScheduleKeyShape));
+        }
+
+        freeMesssagesKeyNamesList.ifPresent(functions -> freeMesssageKeyList = Optional.of(functions.stream()
+                .map(f -> f.apply(spec))
+                .filter(k -> k != null && k != Key.getDefaultInstance())
+                .collect(toList())));
     }
 
     @Override

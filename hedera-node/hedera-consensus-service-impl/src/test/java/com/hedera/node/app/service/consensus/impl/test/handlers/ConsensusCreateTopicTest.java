@@ -46,6 +46,7 @@ import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
 import com.hedera.node.app.service.consensus.impl.handlers.ConsensusCreateTopicHandler;
 import com.hedera.node.app.service.consensus.impl.records.ConsensusCreateTopicStreamBuilder;
+import com.hedera.node.app.service.consensus.impl.validators.ConsensusCustomFeesValidator;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
 import com.hedera.node.app.spi.ids.EntityNumGenerator;
@@ -117,7 +118,7 @@ class ConsensusCreateTopicTest extends ConsensusTestBase {
 
     @BeforeEach
     void setUp() {
-        subject = new ConsensusCreateTopicHandler();
+        subject = new ConsensusCreateTopicHandler(new ConsensusCustomFeesValidator());
         config = HederaTestConfigBuilder.create()
                 .withValue("topics.maxNumber", 10L)
                 .getOrCreateConfig();

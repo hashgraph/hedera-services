@@ -225,4 +225,34 @@ public class CustomFeeSpecs {
         final var fixedBuilder = FixedFee.newBuilder().setAmount(amount);
         return ConsensusCustomFee.newBuilder().setFixedFee(fixedBuilder).setFeeCollectorAccountId(collectorId);
     }
+
+    // consensus custom fee suppliers
+    public static Function<HapiSpec, ConsensusCustomFee> fixedConsensusHbarFee(long amount, String collector) {
+        return spec -> builtConsensusFixedHbar(amount, collector, spec);
+    }
+
+    public static Function<HapiSpec, ConsensusCustomFee> fixedConsensusHtsFee(
+            long amount, String denom, String collector) {
+        return spec -> builtConsensusFixedHts(amount, denom, collector, spec);
+    }
+
+    // builders
+    static ConsensusCustomFee builtConsensusFixedHbar(long amount, String collector, HapiSpec spec) {
+        return baseFixedTopicBuilder(amount, collector, spec).build();
+    }
+
+    static ConsensusCustomFee builtConsensusFixedHts(long amount, String denom, String collector, HapiSpec spec) {
+        final var builder = baseFixedTopicBuilder(amount, collector, spec);
+        final var denomId =
+                isIdLiteral(denom) ? asToken(denom) : spec.registry().getTokenID(denom);
+        builder.getFixedFeeBuilder().setDenominatingTokenId(denomId);
+        return builder.build();
+    }
+
+    //    static ConsensusCustomFee.Builder baseFixedTopicBuilder(long amount, String collector, HapiSpec spec) {
+    //        final var collectorId =
+    //                isIdLiteral(collector) ? asAccount(collector) : spec.registry().getAccountID(collector);
+    //        final var fixedBuilder = FixedFee.newBuilder().setAmount(amount);
+    //        return ConsensusCustomFee.newBuilder().setFixedFee(fixedBuilder).setFeeCollectorAccountId(collectorId);
+    //    }
 }

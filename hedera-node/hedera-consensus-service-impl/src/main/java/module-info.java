@@ -2,6 +2,8 @@ import com.hedera.node.app.service.consensus.impl.ConsensusServiceImpl;
 
 module com.hedera.node.app.service.consensus.impl {
     requires transitive com.hedera.node.app.service.consensus;
+    requires transitive com.hedera.node.app.service.token.impl;
+    requires transitive com.hedera.node.app.service.token;
     requires transitive com.hedera.node.app.spi;
     requires transitive com.hedera.node.hapi;
     requires transitive com.swirlds.config.api;
@@ -24,4 +26,5 @@ module com.hedera.node.app.service.consensus.impl {
     exports com.hedera.node.app.service.consensus.impl.handlers;
     exports com.hedera.node.app.service.consensus.impl.records;
     exports com.hedera.node.app.service.consensus.impl.schemas;
+    exports com.hedera.node.app.service.consensus.impl.validators;
 }
