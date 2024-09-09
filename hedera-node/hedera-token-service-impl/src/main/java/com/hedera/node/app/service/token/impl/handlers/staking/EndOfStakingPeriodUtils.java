@@ -80,11 +80,11 @@ public final class EndOfStakingPeriodUtils {
             final boolean requireMinStakeToReward) {
         final var currRewardSumHistory = currentInfo.rewardSumHistory();
         final var newRewardSumHistory = new ArrayList<>(currRewardSumHistory);
-        final var droppedRewardSum = currRewardSumHistory.get(currRewardSumHistory.size() - 1);
+        final var droppedRewardSum = currRewardSumHistory.getLast();
         for (int i = currRewardSumHistory.size() - 1; i > 0; i--) {
             newRewardSumHistory.set(i, currRewardSumHistory.get(i - 1) - droppedRewardSum);
         }
-        newRewardSumHistory.set(0, currRewardSumHistory.get(0) - droppedRewardSum);
+        newRewardSumHistory.set(0, currRewardSumHistory.getFirst() - droppedRewardSum);
 
         long perHbarRateThisNode = 0;
         // If this node was "active"---i.e., node.numRoundsWithJudge / numRoundsInPeriod >= activeThreshold---and it had
@@ -108,7 +108,7 @@ public final class EndOfStakingPeriodUtils {
             }
         }
         perHbarRateThisNode = Math.min(perHbarRateThisNode, maxPerHbarRate);
-        newRewardSumHistory.set(0, newRewardSumHistory.get(0) + perHbarRateThisNode);
+        newRewardSumHistory.set(0, newRewardSumHistory.getFirst() + perHbarRateThisNode);
 
         return new RewardSumHistory(newRewardSumHistory, perHbarRateThisNode);
     }
