@@ -188,6 +188,8 @@ public class SwirldsPlatform implements Platform {
 
         // The reservation on this state is held by the caller of this constructor.
         final SignedState initialState = blocks.initialState().get();
+        // make sure that the platform state is initialized
+        initialState.getState().getWritablePlatformState();
 
         // This method is a no-op if we are not in birth round mode, or if we have already migrated.
         final SoftwareVersion appVersion = blocks.appVersion();

@@ -927,7 +927,7 @@ class MerkleStateRootTest extends MerkleTestBase {
         @Test
         @DisplayName("Platform state should be registered by default")
         void platformStateIsRegisteredByDefault() {
-            assertThat(stateRoot.getReadablePlatformState()).isNotNull();
+            assertThat(stateRoot.getWritablePlatformState()).isNotNull();
         }
 
         @Test

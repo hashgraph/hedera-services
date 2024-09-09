@@ -209,6 +209,8 @@ class SignedStateTests {
         final MerkleRoot state = spy(new MerkleStateRoot(
                 FAKE_MERKLE_STATE_LIFECYCLES, version -> new BasicSoftwareVersion(version.major())));
         final PlatformStateAccessor platformState = mock(PlatformStateAccessor.class);
+        // init state first
+        state.getWritablePlatformState();
         when(state.getReadablePlatformState()).thenReturn(platformState);
         when(platformState.getRound()).thenReturn(0L);
         final SignedState signedState = new SignedState(
