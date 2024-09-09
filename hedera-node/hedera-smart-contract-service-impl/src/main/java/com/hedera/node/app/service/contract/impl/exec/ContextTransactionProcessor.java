@@ -110,9 +110,12 @@ public class ContextTransactionProcessor implements Callable<CallOutcome> {
         // if an exception occurs during a ContractCall, charge fees to the sender and return a CallOutcome reflecting
         // the error.
         final var hevmTransaction = safeCreateHevmTransaction();
-        if (hevmTransaction.isException() && contractsConfig.chargeGasOnPreEvmException()) {
+        if (hevmTransaction.isException()) {
             return maybeChargeFeesAndReturnOutcome(
-                    hevmTransaction, context.body().transactionIDOrThrow().accountIDOrThrow(), null, true);
+                    hevmTransaction,
+                    context.body().transactionIDOrThrow().accountIDOrThrow(),
+                    null,
+                    contractsConfig.chargeGasOnEvmHandleException());
         }
 
         // Process the transaction and return its outcome
@@ -145,7 +148,7 @@ public class ContextTransactionProcessor implements Callable<CallOutcome> {
                     hevmTransaction.withException(e),
                     senderId,
                     sender,
-                    hevmTransaction.isContractCall() && contractsConfig.chargeGasOnPreEvmException());
+                    hevmTransaction.isContractCall() && contractsConfig.chargeGasOnEvmHandleException());
         }
     }
 

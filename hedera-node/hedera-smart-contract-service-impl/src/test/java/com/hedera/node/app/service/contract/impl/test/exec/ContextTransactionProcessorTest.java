@@ -31,6 +31,7 @@ import static com.hedera.node.app.service.contract.impl.test.TestHelpers.process
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 import com.hedera.hapi.node.base.TransactionID;
@@ -60,6 +61,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class ContextTransactionProcessorTest {
     private static final Configuration CONFIGURATION = HederaTestConfigBuilder.createConfig();
+    private static final Configuration CONFIG_NO_CHARGE_ON_EXCEPTION = HederaTestConfigBuilder.create()
+            .withValue("contracts.evm.chargeGasOnEvmHandleException", false)
+            .getOrCreateConfig();
 
     @Mock
     private HandleContext context;
@@ -227,6 +231,7 @@ class ContextTransactionProcessorTest {
 
         subject.call();
 
+        verify(customGasCharging).chargeGasForAbortedTransaction(any(), any(), any(), any());
         verify(rootProxyWorldUpdater).commit();
     }
 
@@ -254,6 +259,36 @@ class ContextTransactionProcessorTest {
 
         final var outcome = subject.call();
 
+        verify(customGasCharging).chargeGasForAbortedTransaction(any(), any(), any(), any());
+        verify(rootProxyWorldUpdater).commit();
+        assertEquals(INVALID_CONTRACT_ID, outcome.status());
+    }
+
+    @Test
+    void doesNotChargeHapiFeesOnHevmExceptionIfSoConfiggured() {
+        final var contractsConfig = CONFIG_NO_CHARGE_ON_EXCEPTION.getConfigData(ContractsConfig.class);
+        final var subject = new ContextTransactionProcessor(
+                null,
+                context,
+                contractsConfig,
+                CONFIG_NO_CHARGE_ON_EXCEPTION,
+                hederaEvmContext,
+                null,
+                tracer,
+                rootProxyWorldUpdater,
+                hevmTransactionFactory,
+                feesOnlyUpdater,
+                processor,
+                customGasCharging);
+
+        given(context.body()).willReturn(transactionBody);
+        given(hevmTransactionFactory.fromHapiTransaction(transactionBody)).willReturn(HEVM_Exception);
+        given(transactionBody.transactionIDOrThrow()).willReturn(transactionID);
+        given(transactionID.accountIDOrThrow()).willReturn(SENDER_ID);
+
+        final var outcome = subject.call();
+
+        verify(customGasCharging, never()).chargeGasForAbortedTransaction(any(), any(), any(), any());
         verify(rootProxyWorldUpdater).commit();
         assertEquals(INVALID_CONTRACT_ID, outcome.status());
     }
@@ -284,6 +319,38 @@ class ContextTransactionProcessorTest {
 
         final var outcome = subject.call();
 
+        verify(customGasCharging).chargeGasForAbortedTransaction(any(), any(), any(), any());
+        verify(rootProxyWorldUpdater).commit();
+        assertEquals(INVALID_CONTRACT_ID, outcome.status());
+    }
+
+    @Test
+    void doesNotChargeHapiFeesOnExceptionThrownIfSoConfigured() {
+        final var contractsConfig = CONFIG_NO_CHARGE_ON_EXCEPTION.getConfigData(ContractsConfig.class);
+        final var subject = new ContextTransactionProcessor(
+                null,
+                context,
+                contractsConfig,
+                CONFIG_NO_CHARGE_ON_EXCEPTION,
+                hederaEvmContext,
+                null,
+                tracer,
+                rootProxyWorldUpdater,
+                hevmTransactionFactory,
+                feesOnlyUpdater,
+                processor,
+                customGasCharging);
+
+        given(context.body()).willReturn(transactionBody);
+        given(hevmTransactionFactory.fromHapiTransaction(transactionBody))
+                .willThrow(new HandleException(INVALID_CONTRACT_ID));
+        given(hevmTransactionFactory.fromContractTxException(any(), any())).willReturn(HEVM_Exception);
+        given(transactionBody.transactionIDOrThrow()).willReturn(transactionID);
+        given(transactionID.accountIDOrThrow()).willReturn(SENDER_ID);
+
+        final var outcome = subject.call();
+
+        verify(customGasCharging, never()).chargeGasForAbortedTransaction(any(), any(), any(), any());
         verify(rootProxyWorldUpdater).commit();
         assertEquals(INVALID_CONTRACT_ID, outcome.status());
     }
