@@ -20,6 +20,7 @@ import com.hedera.node.app.service.contract.impl.handlers.ContractHandlers;
 import com.hedera.node.app.spi.signatures.SignatureVerifier;
 import dagger.BindsInstance;
 import dagger.Component;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.InstantSource;
 import java.util.List;
 import java.util.function.Supplier;
@@ -34,7 +35,7 @@ public interface ContractServiceComponent {
         ContractServiceComponent create(
                 @BindsInstance InstantSource instantSource,
                 @BindsInstance SignatureVerifier signatureVerifier,
-                @BindsInstance @javax.annotation.Nullable Supplier<List<OperationTracer>> addOnTracers);
+                @BindsInstance @Nullable Supplier<List<OperationTracer>> addOnTracers);
     }
 
     ContractHandlers handlers();
