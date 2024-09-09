@@ -379,17 +379,18 @@ public final class EventRecoveryWorkflow {
         final PlatformEvent lastEvent = ((CesEvent) getLastEvent(round)).getPlatformEvent();
         new DefaultEventHasher().hashEvent(lastEvent);
 
-        final PlatformStateAccessor platformState = newState.getReadablePlatformState();
+        final PlatformStateAccessor newWritablePlatformState = newState.getWritablePlatformState();
+        final PlatformStateAccessor previousReadablePlatformState =
+                previousState.get().getState().getReadablePlatformState();
 
-        platformState.bulkUpdate(v -> {
+        newWritablePlatformState.bulkUpdate(v -> {
             v.setRound(round.getRoundNum());
-            v.setLegacyRunningEventHash(getHashEventsCons(
-                    previousState.get().getState().getReadablePlatformState().getLegacyRunningEventHash(), round));
+            v.setLegacyRunningEventHash(
+                    getHashEventsCons(previousReadablePlatformState.getLegacyRunningEventHash(), round));
             v.setConsensusTimestamp(currentRoundTimestamp);
             v.setSnapshot(SyntheticSnapshot.generateSyntheticSnapshot(
                     round.getRoundNum(), lastEvent.getConsensusOrder(), currentRoundTimestamp, config, lastEvent));
-            v.setCreationSoftwareVersion(
-                    previousState.get().getState().getReadablePlatformState().getCreationSoftwareVersion());
+            v.setCreationSoftwareVersion(previousReadablePlatformState.getCreationSoftwareVersion());
         });
 
         applyTransactions(

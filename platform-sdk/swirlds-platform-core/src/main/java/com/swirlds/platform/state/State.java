@@ -145,8 +145,7 @@ public class State extends PartialNaryMerkleInternal implements MerkleRoot {
     @NonNull
     @Override
     public PlatformStateAccessor getReadablePlatformState() {
-        throw new UnsupportedOperationException(
-                "com.swirlds.platform.state.State doesn't support read-only mode for PlatformState");
+        return getChild(ChildIndices.PLATFORM_STATE);
     }
 
     /**
@@ -223,7 +222,7 @@ public class State extends PartialNaryMerkleInternal implements MerkleRoot {
             return false;
         }
         final MerkleRoot state = (MerkleRoot) other;
-        return Objects.equals(getWritablePlatformState(), state.getWritablePlatformState())
+        return Objects.equals(getReadablePlatformState(), state.getReadablePlatformState())
                 && Objects.equals(getSwirldState(), state.getSwirldState());
     }
 
@@ -232,7 +231,7 @@ public class State extends PartialNaryMerkleInternal implements MerkleRoot {
      */
     @Override
     public int hashCode() {
-        return Objects.hash(getWritablePlatformState(), getSwirldState());
+        return Objects.hash(getReadablePlatformState(), getSwirldState());
     }
 
     /**
@@ -243,7 +242,7 @@ public class State extends PartialNaryMerkleInternal implements MerkleRoot {
     @NonNull
     @Override
     public String getInfoString(final int hashDepth) {
-        final PlatformStateAccessor platformState = getWritablePlatformState();
+        final PlatformStateAccessor platformState = getReadablePlatformState();
         return createInfoString(hashDepth, platformState, getHash(), this);
     }
 
@@ -253,7 +252,7 @@ public class State extends PartialNaryMerkleInternal implements MerkleRoot {
     @Override
     public String toString() {
         return new ToStringBuilder(this)
-                .append("platformState", getWritablePlatformState())
+                .append("platformState", getReadablePlatformState())
                 .append("swirldState", getSwirldState())
                 .toString();
     }
