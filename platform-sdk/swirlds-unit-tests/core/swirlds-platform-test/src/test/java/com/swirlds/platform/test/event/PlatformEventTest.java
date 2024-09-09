@@ -112,11 +112,14 @@ class PlatformEventTest {
     }
 
     @Test
-    void validateDescriptor(){
+    void validateDescriptor() {
         final Randotron r = Randotron.create();
         final PlatformEvent event = new TestingEventBuilder(r).build();
         event.invalidateHash();
-        assertThrows(IllegalStateException.class, event::getDescriptor, "When the descriptor is not set, an exception should be thrown");
+        assertThrows(
+                IllegalStateException.class,
+                event::getDescriptor,
+                "When the descriptor is not set, an exception should be thrown");
         event.setHash(r.nextHash());
         assertNotNull(event.getDescriptor(), "When the hash is set, the descriptor should be returned");
     }

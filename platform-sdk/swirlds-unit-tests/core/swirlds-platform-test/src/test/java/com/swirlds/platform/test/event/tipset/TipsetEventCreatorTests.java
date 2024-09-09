@@ -161,7 +161,10 @@ class TipsetEventCreatorTests {
         final EventImpl selfParent = events.get(newEvent.getMetadata().getSelfParentHash());
         final long selfParentGeneration =
                 selfParent == null ? EventConstants.GENERATION_UNDEFINED : selfParent.getGeneration();
-        final EventImpl otherParent = events.get(newEvent.getMetadata().getOtherParents().stream().findFirst().map(EventDescriptorWrapper::hash).orElse(null));
+        final EventImpl otherParent = events.get(newEvent.getMetadata().getOtherParents().stream()
+                .findFirst()
+                .map(EventDescriptorWrapper::hash)
+                .orElse(null));
         final long otherParentGeneration =
                 otherParent == null ? EventConstants.GENERATION_UNDEFINED : otherParent.getGeneration();
 
@@ -255,7 +258,10 @@ class TipsetEventCreatorTests {
                 .addEvent(event.getDescriptor(), event.getMetadata().getAllParents());
 
         final EventImpl selfParent = events.get(event.getMetadata().getSelfParentHash());
-        final EventImpl otherParent = events.get(event.getMetadata().getOtherParents().stream().findFirst().map(EventDescriptorWrapper::hash).orElse(null));
+        final EventImpl otherParent = events.get(event.getMetadata().getOtherParents().stream()
+                .findFirst()
+                .map(EventDescriptorWrapper::hash)
+                .orElse(null));
 
         final EventImpl eventImpl = new EventImpl(new PlatformEvent(event, new byte[0]), selfParent, otherParent);
         events.put(event.getHash(), eventImpl);
