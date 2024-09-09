@@ -379,6 +379,7 @@ public final class EventRecoveryWorkflow {
         final PlatformEvent lastEvent = ((CesEvent) getLastEvent(round)).getPlatformEvent();
         new DefaultEventHasher().hashEvent(lastEvent);
 
+        final PlatformStateAccessor newReadablePlatformState = newState.getReadablePlatformState();
         final PlatformStateAccessor newWritablePlatformState = newState.getWritablePlatformState();
         final PlatformStateAccessor previousReadablePlatformState =
                 previousState.get().getState().getReadablePlatformState();
@@ -402,10 +403,9 @@ public final class EventRecoveryWorkflow {
         final boolean isFreezeState = isFreezeState(
                 previousState.get().getConsensusTimestamp(),
                 currentRoundTimestamp,
-                newState.getReadablePlatformState().getFreezeTime());
+                newReadablePlatformState.getFreezeTime());
         if (isFreezeState) {
-            newState.getWritablePlatformState()
-                    .setLastFrozenTime(newState.getReadablePlatformState().getFreezeTime());
+            newWritablePlatformState.setLastFrozenTime(newReadablePlatformState.getFreezeTime());
         }
 
         final ReservedSignedState signedState = new SignedState(
