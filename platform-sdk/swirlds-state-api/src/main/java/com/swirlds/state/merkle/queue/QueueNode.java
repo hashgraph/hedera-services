@@ -16,6 +16,7 @@
 
 package com.swirlds.state.merkle.queue;
 
+import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 import static com.swirlds.state.merkle.logging.StateLogger.logQueueAdd;
 import static com.swirlds.state.merkle.logging.StateLogger.logQueueIterate;
 import static com.swirlds.state.merkle.logging.StateLogger.logQueuePeek;
@@ -49,6 +50,8 @@ import java.util.ConcurrentModificationException;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.Objects;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * A merkle node with a string (the label) as the left child, and the merkle node value as the right
@@ -65,13 +68,13 @@ public class QueueNode<E> extends PartialBinaryMerkleInternal implements Labeled
     // slightly less than 2M elements
     private static final long QUEUE_MAX_KEYS_HINT = 2_000_000;
 
-    private static final long CLASS_ID = 0x990FF87AD2691DCL;
-
     // Class version with initial implementation using FCQueue
     public static final int CLASS_VERSION_ORIGINAL = 1;
 
     // Class version where data is migrated from FCQueue to VirtualMap
     public static final int CLASS_VERSION_VMAP = 2;
+
+    private static final Logger logger = LogManager.getLogger(QueueNode.class);
 
     /** Codec for queue elements */
     private final Codec<E> codec;
@@ -173,6 +176,9 @@ public class QueueNode<E> extends PartialBinaryMerkleInternal implements Labeled
     @Override
     public MerkleNode migrate(int version) {
         if (version < CLASS_VERSION_VMAP) {
+            final long start = System.currentTimeMillis();
+            logger.info(STARTUP.getMarker(), "Migrating QueueNode from FCQueue to VirtualMap");
+
             final StringLeaf originalLabeled = getLeft();
             final String label = originalLabeled.getLabel();
             final FCQueue<ValueLeaf<E>> originalStore = getRight();
@@ -191,6 +197,9 @@ public class QueueNode<E> extends PartialBinaryMerkleInternal implements Labeled
             // Replace child nodes
             setLeft(new QueueNodeState(label, head, tail));
             setRight(store);
+
+            final long end = System.currentTimeMillis();
+            logger.info(STARTUP.getMarker(), "QueueNode migration is complete in {} ms", start - end);
         }
         return this;
     }
