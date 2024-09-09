@@ -90,7 +90,7 @@ public class WritableAccountStore extends ReadableAccountStoreImpl {
     }
 
     /**
-     * Persists a new alias linked to the account persisted to state
+     * Persists a new alias linked to the account persisted to state.
      *
      * @param alias - the alias to be added to modifications in state.
      * @param accountId - the account number to be added to modifications in state.
@@ -135,7 +135,7 @@ public class WritableAccountStore extends ReadableAccountStoreImpl {
      * null}
      *
      * @param accountID - the id of the Account to be retrieved.
-     * @return the Account with the given AccountID, or null if no such account exists.
+     * @return the Account with the given AccountID, or null if no such account exists
      */
     @Nullable
     public Account get(@NonNull final AccountID accountID) {
@@ -147,7 +147,7 @@ public class WritableAccountStore extends ReadableAccountStoreImpl {
      * to get the account. If no such account exists, returns {@code null}
      *
      * @param id - the number of the account to be retrieved.
-     * @return the account with the given account number, or null if no such account exists.
+     * @return the account with the given account number, or null if no such account exists
      */
     @Nullable
     public Account getForModify(@NonNull final AccountID id) {
@@ -186,7 +186,7 @@ public class WritableAccountStore extends ReadableAccountStoreImpl {
      * Returns the number of accounts in the state. It also includes modifications in the {@link
      * WritableKVState}.
      *
-     * @return the number of accounts in the state.
+     * @return the number of accounts in the state
      */
     public long sizeOfAccountState() {
         return accountState().size();
@@ -196,7 +196,7 @@ public class WritableAccountStore extends ReadableAccountStoreImpl {
      * Returns the number of aliases in the state. It also includes modifications in the {@link
      * WritableKVState}.
      *
-     * @return the number of aliases in the state.
+     * @return the number of aliases in the state
      */
     public long sizeOfAliasesState() {
         return aliases().size();
@@ -224,7 +224,9 @@ public class WritableAccountStore extends ReadableAccountStoreImpl {
             final var newAccount = accountState().get(accountId);
             if (newAccount != null && newAccount.smartContract()) {
                 final var oldAccount = accountState().getOriginalValue(accountId);
-                if (oldAccount == null || oldAccount.ethereumNonce() != newAccount.ethereumNonce()) {
+                if (oldAccount == null
+                        || !oldAccount.smartContract()
+                        || oldAccount.ethereumNonce() != newAccount.ethereumNonce()) {
                     final var contractId = ContractID.newBuilder()
                             .contractNum(accountId.accountNumOrThrow())
                             .build();
@@ -232,7 +234,7 @@ public class WritableAccountStore extends ReadableAccountStoreImpl {
                     if (!newAccount.deleted()) {
                         updates.add(new ContractNonceInfo(contractId, newAccount.ethereumNonce()));
                     }
-                    if (oldAccount == null) {
+                    if (oldAccount == null || !oldAccount.smartContract()) {
                         newContractIds.add(contractId);
                     }
                 }

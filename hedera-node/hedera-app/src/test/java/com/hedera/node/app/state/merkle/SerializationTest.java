@@ -22,7 +22,7 @@ import static org.mockito.Mockito.mock;
 
 import com.hedera.node.app.ids.WritableEntityIdStore;
 import com.hedera.node.app.services.MigrationStateChanges;
-import com.hedera.node.app.version.HederaSoftwareVersion;
+import com.hedera.node.app.version.ServicesSoftwareVersion;
 import com.hedera.node.config.data.HederaConfig;
 import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistryException;
@@ -244,7 +244,7 @@ class SerializationTest extends MerkleTestBase {
         // Register the MerkleStateRoot so, when found in serialized bytes, it will register with
         // our migration callback, etc. (normally done by the Hedera main method)
         final Supplier<RuntimeConstructable> constructor =
-                () -> new MerkleStateRoot(lifecycles, version -> new HederaSoftwareVersion(null, version));
+                () -> new MerkleStateRoot(lifecycles, version -> new ServicesSoftwareVersion(version, 0));
         final var pair = new ClassConstructorPair(MerkleStateRoot.class, constructor);
         registry.registerConstructable(pair);
 
@@ -265,7 +265,7 @@ class SerializationTest extends MerkleTestBase {
     }
 
     private MerkleStateRoot createMerkleHederaState(Schema schemaV1) {
-        final var originalTree = new MerkleStateRoot(lifecycles, version -> new HederaSoftwareVersion(null, version));
+        final var originalTree = new MerkleStateRoot(lifecycles, version -> new ServicesSoftwareVersion(version, 0));
         final var originalRegistry =
                 new MerkleSchemaRegistry(registry, FIRST_SERVICE, DEFAULT_CONFIG, new SchemaApplications());
         originalRegistry.register(schemaV1);

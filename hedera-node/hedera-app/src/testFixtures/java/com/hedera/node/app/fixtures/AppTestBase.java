@@ -33,7 +33,6 @@ import com.hedera.node.app.spi.fixtures.Scenarios;
 import com.hedera.node.app.spi.fixtures.TransactionFactory;
 import com.hedera.node.app.spi.fixtures.state.MapWritableStates;
 import com.hedera.node.app.state.WorkingStateAccessor;
-import com.hedera.node.app.version.HederaSoftwareVersion;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.VersionedConfigImpl;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
@@ -132,10 +131,8 @@ public class AppTestBase extends TestBase implements TransactionFactory, Scenari
         };
     }
 
-    private final HederaSoftwareVersion softwareVersion = new HederaSoftwareVersion(
-            SemanticVersion.newBuilder().major(1).minor(2).patch(3).build(),
-            SemanticVersion.newBuilder().major(1).minor(2).patch(3).build(),
-            0);
+    private final SemanticVersion hapiVersion =
+            SemanticVersion.newBuilder().major(1).minor(2).patch(3).build();
     /** Represents "this node" in our tests. */
     protected final NodeId nodeSelfId = new NodeId(7);
     /** The AccountID of "this node" in our tests. */
@@ -159,7 +156,7 @@ public class AppTestBase extends TestBase implements TransactionFactory, Scenari
             "0123456789012345678901234567890123456789012345678901234567890123",
             "Node7",
             Bytes.wrap("cert7"),
-            softwareVersion,
+            hapiVersion,
             "Node7");
 
     /**
@@ -193,7 +190,7 @@ public class AppTestBase extends TestBase implements TransactionFactory, Scenari
 
     public interface App {
         @NonNull
-        HederaSoftwareVersion softwareVersion();
+        SemanticVersion hapiVersion();
 
         @NonNull
         WorkingStateAccessor workingStateAccessor();
@@ -317,8 +314,6 @@ public class AppTestBase extends TestBase implements TransactionFactory, Scenari
         }
 
         public App build() {
-            final var hederaSoftwareVersion = new HederaSoftwareVersion(this.hapiVersion, this.softwareVersion, 0);
-
             final SelfNodeInfo realSelfNodeInfo;
             if (this.selfNodeInfo == null) {
                 final var nodeSelfAccountId = AccountID.newBuilder()
@@ -337,7 +332,7 @@ public class AppTestBase extends TestBase implements TransactionFactory, Scenari
                         "0123456789012345678901234567890123456789012345678901234567890123",
                         "Node7",
                         Bytes.wrap("cert7"),
-                        hederaSoftwareVersion,
+                        hapiVersion,
                         "Node7");
             } else {
                 realSelfNodeInfo = new SelfNodeInfoImpl(
@@ -351,7 +346,7 @@ public class AppTestBase extends TestBase implements TransactionFactory, Scenari
                         selfNodeInfo.hexEncodedPublicKey(),
                         selfNodeInfo.memo(),
                         selfNodeInfo.sigCertBytes(),
-                        hederaSoftwareVersion,
+                        hapiVersion,
                         selfNodeInfo.selfName());
             }
 
@@ -379,8 +374,8 @@ public class AppTestBase extends TestBase implements TransactionFactory, Scenari
             return new App() {
                 @NonNull
                 @Override
-                public HederaSoftwareVersion softwareVersion() {
-                    return hederaSoftwareVersion;
+                public SemanticVersion hapiVersion() {
+                    return hapiVersion;
                 }
 
                 @NonNull

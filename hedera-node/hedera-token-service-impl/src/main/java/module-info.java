@@ -17,7 +17,6 @@ module com.hedera.node.app.service.token.impl {
     requires com.swirlds.base;
     requires com.swirlds.common;
     requires com.google.common;
-    requires com.hedera.evm;
     requires org.apache.commons.lang3;
     requires org.apache.logging.log4j;
     requires org.bouncycastle.provider;
@@ -47,4 +46,5 @@ module com.hedera.node.app.service.token.impl {
             com.hedera.node.app,
             com.hedera.node.app.service.token.impl.api.test,
             com.hedera.node.test.clients;
+    exports com.hedera.node.app.service.token.impl.comparator;
 }

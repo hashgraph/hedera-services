@@ -18,7 +18,7 @@ package com.hedera.services.bdd.suites.crypto;
 
 import static com.google.protobuf.ByteString.EMPTY;
 import static com.google.protobuf.ByteString.copyFromUtf8;
-import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
+import static com.hedera.node.app.hapi.utils.EthSigsUtils.recoverAddressFromPubKey;
 import static com.hedera.services.bdd.junit.ContextRequirement.FEE_SCHEDULE_OVERRIDES;
 import static com.hedera.services.bdd.junit.TestTags.CRYPTO;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asContractString;

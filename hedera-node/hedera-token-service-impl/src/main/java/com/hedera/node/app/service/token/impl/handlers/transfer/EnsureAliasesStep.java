@@ -40,7 +40,7 @@ import java.util.Map;
  * The resolved forms are stored in TransferContext and then used in the rest of the transfer logic.
  */
 public class EnsureAliasesStep implements TransferStep {
-    final CryptoTransferTransactionBody op;
+    private final CryptoTransferTransactionBody op;
 
     /**
      * Temporary token transfer resolutions map containing the token transfers to alias, is needed to check if
@@ -178,7 +178,7 @@ public class EnsureAliasesStep implements TransferStep {
     }
 
     /**
-     * Check if the given accountID is an alias
+     * Check if the given accountID is an alias.
      * @param accountID the accountID to check
      * @return true if the accountID is an alias, false otherwise
      */

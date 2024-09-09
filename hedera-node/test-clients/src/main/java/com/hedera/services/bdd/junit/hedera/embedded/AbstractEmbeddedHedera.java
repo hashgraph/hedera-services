@@ -32,7 +32,7 @@ import com.hedera.node.app.Hedera;
 import com.hedera.node.app.fixtures.state.FakeServiceMigrator;
 import com.hedera.node.app.fixtures.state.FakeServicesRegistry;
 import com.hedera.node.app.fixtures.state.FakeState;
-import com.hedera.node.app.version.HederaSoftwareVersion;
+import com.hedera.node.app.version.ServicesSoftwareVersion;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.services.bdd.junit.hedera.embedded.fakes.AbstractFakePlatform;
@@ -92,7 +92,7 @@ public abstract class AbstractEmbeddedHedera implements EmbeddedHedera {
     protected final NodeId defaultNodeId;
     protected final AtomicInteger nextNano = new AtomicInteger(0);
     protected final Hedera hedera;
-    protected final HederaSoftwareVersion version;
+    protected final ServicesSoftwareVersion version;
     protected final ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor();
 
     protected AbstractEmbeddedHedera(@NonNull final EmbeddedNode node) {
@@ -109,7 +109,7 @@ public abstract class AbstractEmbeddedHedera implements EmbeddedHedera {
                 FakeServicesRegistry.FACTORY,
                 new FakeServiceMigrator(),
                 this::now);
-        version = (HederaSoftwareVersion) hedera.getSoftwareVersion();
+        version = (ServicesSoftwareVersion) hedera.getSoftwareVersion();
         Runtime.getRuntime().addShutdownHook(new Thread(executorService::shutdownNow));
     }
 

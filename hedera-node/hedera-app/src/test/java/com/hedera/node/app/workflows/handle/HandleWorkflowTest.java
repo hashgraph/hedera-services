@@ -29,6 +29,7 @@ import com.hedera.node.app.blocks.impl.KVStateChangeListener;
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.fees.FeeManager;
 import com.hedera.node.app.records.BlockRecordManager;
+import com.hedera.node.app.service.token.impl.handlers.staking.StakePeriodManager;
 import com.hedera.node.app.services.ServiceScopeLookup;
 import com.hedera.node.app.spi.authorization.Authorizer;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
@@ -90,6 +91,9 @@ class HandleWorkflowTest {
 
     @Mock
     private NetworkUtilizationManager networkUtilizationManager;
+
+    @Mock
+    private StakePeriodManager stakePeriodManager;
 
     @Mock
     private ConfigProvider configProvider;
@@ -174,6 +178,7 @@ class HandleWorkflowTest {
                 recordCache,
                 exchangeRateManager,
                 preHandleWorkflow,
+                stakePeriodManager,
                 kvStateChangeListener,
                 boundaryStateChangeListener,
                 List.of());

@@ -17,8 +17,10 @@
 package com.hedera.node.app.state.merkle;
 
 import static com.swirlds.state.spi.HapiUtils.SEMANTIC_VERSION_COMPARATOR;
+import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.SemanticVersion;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 
 /**
@@ -39,6 +41,24 @@ public class VersionUtils {
      */
     public static boolean isSameVersion(@Nullable final SemanticVersion a, @Nullable final SemanticVersion b) {
         return (a == null && b == null) || (a != null && b != null && SEMANTIC_VERSION_COMPARATOR.compare(a, b) == 0);
+    }
+
+    /**
+     * Returns true only if the given schema's state definitions will have been already incorporated in a
+     * deserialized state of the given version. This ignores any pre-release or build metadata in the version.
+     * @param stateVersion The version of the state, or null at genesis.
+     * @param schemaVersion The version of the schema.
+     * @return True if the  schema's state definitions are already included in the state.
+     */
+    public static boolean alreadyIncludesStateDefs(
+            @Nullable final SemanticVersion stateVersion, @NonNull final SemanticVersion schemaVersion) {
+        requireNonNull(schemaVersion);
+        if (stateVersion == null) {
+            return false;
+        }
+        final var coreStateVersion =
+                stateVersion.copyBuilder().pre("").build("").build();
+        return SEMANTIC_VERSION_COMPARATOR.compare(coreStateVersion, schemaVersion) >= 0;
     }
 
     /**

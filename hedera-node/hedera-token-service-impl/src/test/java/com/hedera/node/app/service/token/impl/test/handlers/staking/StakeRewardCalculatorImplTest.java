@@ -103,7 +103,7 @@ class StakeRewardCalculatorImplTest {
         rewardHistory.set(2, 1L);
         setUpMocks();
         given(stakingInfoStore.getOriginalValue(0L)).willReturn(stakingNodeInfo);
-        given(stakePeriodManager.currentStakePeriod(consensusTime)).willReturn(TODAY_NUMBER);
+        given(stakePeriodManager.currentStakePeriod()).willReturn(TODAY_NUMBER);
         given(stakingNodeInfo.rewardSumHistory()).willReturn(rewardHistory);
         // Staked node ID of -1 will return a node ID address of 0
         given(account.stakedNodeId()).willReturn(-1L);
@@ -167,10 +167,10 @@ class StakeRewardCalculatorImplTest {
     }
 
     private void setUpMocks() {
-        given(stakePeriodManager.firstNonRewardableStakePeriod(stakingRewardsStore, consensusTime))
+        given(stakePeriodManager.firstNonRewardableStakePeriod(stakingRewardsStore))
                 .willReturn(TODAY_NUMBER);
         willCallRealMethod().given(stakePeriodManager).effectivePeriod(anyLong());
-        willCallRealMethod().given(stakePeriodManager).isRewardable(anyLong(), any(), any());
+        willCallRealMethod().given(stakePeriodManager).isRewardable(anyLong(), any());
     }
 
     private static List<Long> newRewardHistory() {

@@ -16,18 +16,18 @@
 
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts;
 
+import static com.hedera.node.app.hapi.utils.ValidationUtils.validateTrue;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.contractsConfigOf;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.proxyUpdaterFor;
-import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrue;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FEE_SUBMITTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
 import static java.util.Objects.requireNonNull;
 
 import com.esaulpaugh.headlong.abi.BigIntegerType;
 import com.esaulpaugh.headlong.abi.TypeFactory;
+import com.hedera.node.app.hapi.utils.InvalidTransactionException;
 import com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason;
 import com.hedera.node.app.service.contract.impl.utils.ConversionUtils;
-import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.math.BigInteger;
 import java.util.Optional;

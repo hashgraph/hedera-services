@@ -25,16 +25,17 @@ module com.hedera.node.app.hapi.utils {
     requires transitive javax.inject;
     requires transitive net.i2p.crypto.eddsa;
     requires transitive org.apache.commons.lang3;
+    requires transitive org.hyperledger.besu.evm;
+    requires transitive org.hyperledger.besu.nativelib.secp256k1;
+    requires transitive tuweni.bytes;
     requires com.swirlds.base;
     requires com.fasterxml.jackson.databind;
     requires com.google.common;
-    requires com.hedera.evm;
     requires com.sun.jna;
     requires org.apache.commons.codec;
     requires org.apache.logging.log4j.core;
     requires org.apache.logging.log4j;
     requires org.bouncycastle.pkix;
     requires org.bouncycastle.provider;
-    requires org.hyperledger.besu.nativelib.secp256k1;
     requires static com.github.spotbugs.annotations;
 }
