@@ -17,11 +17,14 @@
 package com.swirlds.platform.test.event;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.test.fixtures.RandomUtils;
+import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.platform.event.EventSerializationUtils;
 import com.swirlds.platform.event.PlatformEvent;
@@ -106,5 +109,15 @@ class PlatformEventTest {
     @Test
     void validateEqualsHashCode() {
         assertTrue(EqualsVerifier.verify(random -> new TestingEventBuilder(random).build()));
+    }
+
+    @Test
+    void validateDescriptor(){
+        final Randotron r = Randotron.create();
+        final PlatformEvent event = new TestingEventBuilder(r).build();
+        event.invalidateHash();
+        assertThrows(IllegalStateException.class, event::getDescriptor, "When the descriptor is not set, an exception should be thrown");
+        event.setHash(r.nextHash());
+        assertNotNull(event.getDescriptor(), "When the hash is set, the descriptor should be returned");
     }
 }

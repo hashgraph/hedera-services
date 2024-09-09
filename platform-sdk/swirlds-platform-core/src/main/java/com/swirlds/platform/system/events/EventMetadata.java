@@ -201,24 +201,6 @@ public class EventMetadata extends AbstractHashable {
     }
 
     /**
-     * @return the hash of the other parent
-     */
-    @Nullable
-    @Deprecated
-    public Hash getOtherParentHash() {
-        if (otherParents == null || otherParents.isEmpty()) {
-            return null;
-        }
-        if (otherParents.size() == 1) {
-            return otherParents.getFirst().hash();
-        }
-        // 0.46.0 adds support for multiple other parents in the serialization scheme, but not yet in the
-        // implementation. This exception should never be reached unless we have multiple parents and need to
-        // update the implementation.
-        throw new UnsupportedOperationException("Multiple other parents is not supported yet");
-    }
-
-    /**
      * Check if the event has other parents.
      *
      * @return true if the event has other parents

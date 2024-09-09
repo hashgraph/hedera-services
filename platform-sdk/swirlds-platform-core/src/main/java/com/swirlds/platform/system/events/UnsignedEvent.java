@@ -90,16 +90,6 @@ public class UnsignedEvent implements Hashable {
         return metadata;
     }
 
-    /**
-     * Returns the software version of the node that created this event.
-     *
-     * @return the software version of the node that created this event
-     */
-    @NonNull
-    public SoftwareVersion getSoftwareVersion() { // TODO remove this method
-        return metadata.getSoftwareVersion();
-    }
-
     @NonNull
     public Instant getTimeCreated() {
         return metadata.getTimeCreated();

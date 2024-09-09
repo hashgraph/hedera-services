@@ -224,18 +224,13 @@ public final class EventSerializationUtils {
                 softwareVersion, creatorId, selfParent, otherParents, birthRound, timeCreated, transactionList);
     }
 
-    @Nullable
+    @NonNull
     private static Bytes deserializeApplicationTransaction(
             @NonNull final SerializableDataInputStream in, final int classVersion) throws IOException {
         if (classVersion != APPLICATION_TRANSACTION_VERSION) {
             throw new IOException("Unsupported application class version: " + classVersion);
         }
-        final byte[] bytes = in.readByteArray(MAX_ARRAY_LENGTH);
-
-        if (bytes != null) {
-            return Bytes.wrap(bytes);
-        }
-        return null;
+        return Bytes.wrap(Objects.requireNonNull(in.readByteArray(MAX_ARRAY_LENGTH)));
     }
 
     @NonNull
