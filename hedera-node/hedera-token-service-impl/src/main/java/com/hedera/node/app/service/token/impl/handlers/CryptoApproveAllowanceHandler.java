@@ -244,10 +244,9 @@ public class CryptoApproveAllowanceHandler implements TransactionHandler {
 
         /* --- Apply changes to state --- */
         final var allowanceMaxAccountLimit = hederaConfig.allowancesMaxAccountLimit();
-        applyCryptoAllowances(
-                cryptoAllowances, payerId, accountStore, allowanceMaxAccountLimit, context.expiryValidator());
-        applyFungibleTokenAllowances(
-                tokenAllowances, payerId, accountStore, allowanceMaxAccountLimit, context.expiryValidator());
+        final var expiryValidator = context.expiryValidator();
+        applyCryptoAllowances(cryptoAllowances, payerId, accountStore, allowanceMaxAccountLimit, expiryValidator);
+        applyFungibleTokenAllowances(tokenAllowances, payerId, accountStore, allowanceMaxAccountLimit, expiryValidator);
         applyNftAllowances(
                 nftAllowances,
                 payerId,
@@ -255,7 +254,7 @@ public class CryptoApproveAllowanceHandler implements TransactionHandler {
                 tokenStore,
                 uniqueTokenStore,
                 allowanceMaxAccountLimit,
-                context.expiryValidator());
+                expiryValidator);
     }
 
     /**
