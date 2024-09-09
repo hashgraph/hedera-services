@@ -21,6 +21,8 @@ import static com.swirlds.common.io.streams.SerializableStreamConstants.NULL_LIS
 import static com.swirlds.common.io.streams.SerializableStreamConstants.NULL_VERSION;
 import static com.swirlds.common.io.streams.SerializableStreamConstants.SERIALIZATION_PROTOCOL_VERSION;
 
+import com.hedera.pbj.runtime.io.ReadableSequentialData;
+import com.hedera.pbj.runtime.io.stream.ReadableStreamingData;
 import com.swirlds.base.function.CheckedFunction;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.io.SelfSerializable;
@@ -49,6 +51,9 @@ public class SerializableDataInputStream extends AugmentedDataInputStream {
 
     private static final int PROTOCOL_VERSION = SERIALIZATION_PROTOCOL_VERSION;
 
+    /** A stream used to read PBJ objects */
+    private final ReadableSequentialData readableSequentialData;
+
     /**
      * Creates a stream capable of deserializing serializable objects.
      *
@@ -56,6 +61,16 @@ public class SerializableDataInputStream extends AugmentedDataInputStream {
      */
     public SerializableDataInputStream(final InputStream in) {
         super(in);
+        readableSequentialData = new ReadableStreamingData(in);
+    }
+
+    /**
+     * While transitioning serialization from {@link SelfSerializable} to protobuf, this stream will support both
+     * serialization methods by providing a separate instance to deserialize protobuf objects.
+     * @return the readable sequential data stream
+     */
+    public @NonNull ReadableSequentialData getReadableSequentialData() {
+        return readableSequentialData;
     }
 
     /**
