@@ -446,8 +446,7 @@ public class SavepointStackImpl implements HandleContext.SavepointStack, State {
      * @return the stream of records
      */
     public HandleOutput buildHandleOutput(
-            @NonNull final Instant consensusTime,
-            @NonNull final ExchangeRateSet exchangeRates) {
+            @NonNull final Instant consensusTime, @NonNull final ExchangeRateSet exchangeRates) {
         final List<BlockItem> blockItems;
         Instant lastAssignedConsenusTime = consensusTime;
         if (streamMode == RECORDS) {

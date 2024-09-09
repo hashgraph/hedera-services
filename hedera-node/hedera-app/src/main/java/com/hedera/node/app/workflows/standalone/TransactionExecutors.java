@@ -52,11 +52,14 @@ public enum TransactionExecutors {
         final var executor = newExecutorComponent(properties);
         executor.initializer().accept(state);
         executor.stateNetworkInfo().initFrom(state);
+        final var exchangeRateManager = executor.exchangeRateManager();
         return (transactionBody, consensusNow, operationTracers) -> {
             final var dispatch = executor.standaloneDispatchFactory().newDispatch(state, transactionBody, consensusNow);
             OPERATION_TRACERS.set(List.of(operationTracers));
             executor.dispatchProcessor().processDispatch(dispatch);
-            return dispatch.stack().buildHandleOutput(consensusNow, exchangeRateManager.exchangeRates()).recordsOrThrow();
+            return dispatch.stack()
+                    .buildHandleOutput(consensusNow, exchangeRateManager.exchangeRates())
+                    .recordsOrThrow();
         };
     }
 
