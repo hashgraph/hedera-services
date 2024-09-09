@@ -205,15 +205,21 @@ public class AsyncInputStream {
             readLimit = currentlyAvailable;
         }
         while (readLimit - readPos < bytes) {
-            // Try to read up to the end of the buffer
-            final int toRead = readBuffer.length - readLimit;
+            // Read at least the requested number of bytes
+            int toRead = bytes - (readLimit - readPos);
+            // If more bytes are inputStream.available(), read all of them, but no more than to the
+            // end of the read buffer
+            final int avail = inputStream.available();
+            if (avail > toRead) {
+                toRead = Math.min(avail, readBuffer.length - readLimit);
+            }
             readLimit += inputStream.read(readBuffer, readLimit, toRead);
         }
         assert readPos + bytes <= readBuffer.length;
     }
 
     private int readInt() throws IOException {
-        ensureAvailable(4);
+        ensureAvailable(Integer.BYTES);
         final int result = inputStreamAccessor.getInt(readPos);
         readPos += Integer.BYTES;
         return result;
