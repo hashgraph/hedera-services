@@ -37,6 +37,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
  * Implements the  {@code evmAddressAlias()} call of the Has system contract.
+ * This call will return the EVM address alias of the given long zero Hedera account number if it exists.
  */
 public class EvmAddressAliasCall extends AbstractCall {
     private final Address address;
@@ -61,7 +62,7 @@ public class EvmAddressAliasCall extends AbstractCall {
         final var accountNum = numberOfLongZero(explicitAddress);
         final var account = enhancement.nativeOperations().getAccount(accountNum);
         // If the account is null or does not have an account id then return bail
-        if (account == null || !account.hasAccountId()) {
+        if (account == null) {
             return gasOnly(fullResultsFor(INVALID_ACCOUNT_ID, ZERO_ADDRESS), INVALID_ACCOUNT_ID, true);
         }
 

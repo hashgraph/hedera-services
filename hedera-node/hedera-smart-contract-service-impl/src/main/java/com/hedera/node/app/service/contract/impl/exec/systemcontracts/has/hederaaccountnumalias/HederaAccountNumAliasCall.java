@@ -35,6 +35,10 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.Abs
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.has.HasCallAttempt;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
+/**
+ * Implements the {@code hederaAccountNumAlias(address)} call of the HAS system contract.
+ * This call will return the long zero Hedera account number of the given alias if it exists.
+ */
 public class HederaAccountNumAliasCall extends AbstractCall {
     private final Address address;
 
@@ -55,9 +59,11 @@ public class HederaAccountNumAliasCall extends AbstractCall {
             return gasOnly(fullResultsFor(INVALID_SOLIDITY_ADDRESS, ZERO_ADDRESS), INVALID_SOLIDITY_ADDRESS, true);
         }
         final var account = enhancement.nativeOperations().getAccount(accountNum);
-        if (account == null
-                || !account.hasAccountId()
-                || !account.accountIdOrElse(AccountID.DEFAULT).hasAccountNum()) {
+        if (account == null) {
+            return gasOnly(fullResultsFor(INVALID_SOLIDITY_ADDRESS, ZERO_ADDRESS), INVALID_SOLIDITY_ADDRESS, true);
+        }
+        requireNonNull(account.accountId());
+        if (!account.accountIdOrElse(AccountID.DEFAULT).hasAccountNum()) {
             return gasOnly(fullResultsFor(INVALID_SOLIDITY_ADDRESS, ZERO_ADDRESS), INVALID_SOLIDITY_ADDRESS, true);
         }
         final var accountAsAddress = asHeadlongAddress(
