@@ -84,7 +84,7 @@ public class SingleLongKeySerializer implements KeySerializer<SingleLongKey> {
         final int tag = in.readVarInt(false);
         final int number = tag >>> ProtoParserTools.TAG_FIELD_OFFSET;
         final int type = tag & ProtoConstants.TAG_WIRE_TYPE_MASK;
-        if ((number != FIELD.number()) || (type != FIELD.type().ordinal())) {
+        if ((number != FIELD.number()) || (type != ProtoConstants.WIRE_TYPE_VARINT_OR_ZIGZAG.ordinal())) {
             throw new RuntimeException("Unknown tag: " + tag);
         }
         final long value = in.readVarLong(false);
@@ -99,7 +99,7 @@ public class SingleLongKeySerializer implements KeySerializer<SingleLongKey> {
             return false;
         }
         final int type = tag & ProtoConstants.TAG_WIRE_TYPE_MASK;
-        if (type != FIELD.type().ordinal()) {
+        if (type != ProtoConstants.WIRE_TYPE_VARINT_OR_ZIGZAG.ordinal()) {
             return false;
         }
         return keyToCompare.getValue() == in.readVarLong(false);

@@ -23,6 +23,8 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.state.test.fixtures.merkle.MerkleTestBase;
+import com.swirlds.virtualmap.VirtualMap;
+import com.swirlds.virtualmap.internal.merkle.VirtualRootNode;
 import java.util.Iterator;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -102,9 +104,7 @@ class QueueNodeTest extends MerkleTestBase {
     void addRemoveWithCopies() {
         queueNode.add(APPLE);
         queueNode.add(BANANA);
-        final QueueNode<String> copy = queueNode.copy();
-        queueNode.release();
-        queueNode = copy;
+        makeCopy();
         assertEquals(APPLE, queueNode.remove(), "remove() should return APPLE");
         queueNode.add(CHERRY);
         assertIteratorYieldsValues(queueNode.iterator(), BANANA, CHERRY);
@@ -114,15 +114,52 @@ class QueueNodeTest extends MerkleTestBase {
     void removeAllAfterCopy() {
         queueNode.add(BANANA);
         queueNode.add(CHERRY);
+        makeCopy();
+        assertEquals(BANANA, queueNode.remove(), "remove() should return BANANA");
+        makeCopy();
+        assertEquals(CHERRY, queueNode.remove(), "remove() should return CHERRY");
+        assertNull(queueNode.peek(), "Queue should be empty now");
+    }
+
+    @Test
+    @SuppressWarnings("rawtypes")
+    void copiesWithFlush() throws InterruptedException {
+        final String s = "abcdefghijklmnopqrstuvwxyz";
+        final int count = 1000;
+        for (int i = 0; i < count; i++) {
+            queueNode.add(getSubstring(s, i));
+            // Make a copy every 10 versions
+            if (i % 10 == 0) {
+                final VirtualMap store = queueNode.getRight();
+                final VirtualRootNode root = store.getRight();
+                // Every 100 copies, wait till the copy is flushed to disk
+                if (i % 100 == 0) {
+                    root.enableFlush();
+                }
+                makeCopy();
+                if (i % 100 == 0) {
+                    root.waitUntilFlushed();
+                }
+            }
+        }
+        for (int i = 0; i < count; i++) {
+            assertEquals(getSubstring(s, i), queueNode.remove(), "remove() should return " + getSubstring(s, i));
+        }
+    }
+
+    // Makes queueNode copy and releases the old version
+    private void makeCopy() {
         QueueNode<String> copy = queueNode.copy();
         queueNode.release();
         queueNode = copy;
-        assertEquals(BANANA, queueNode.remove(), "remove() should return BANANA");
-        copy = queueNode.copy();
-        queueNode.release();
-        queueNode = copy;
-        assertEquals(CHERRY, queueNode.remove(), "remove() should return CHERRY");
-        assertNull(queueNode.peek(), "Queue should be empty now");
+    }
+
+    // Utility method used in copiesWithFlush()
+    private String getSubstring(final String s, final int i) {
+        final int sl = s.length();
+        int start = (i % sl == sl - 1) ? 0 : i % sl;
+        int end = (i % sl == sl - 1) ? sl : i % sl + 1;
+        return s.substring(start, end);
     }
 
     private void assertIteratorYieldsValues(final Iterator<String> it, final String... values) {
