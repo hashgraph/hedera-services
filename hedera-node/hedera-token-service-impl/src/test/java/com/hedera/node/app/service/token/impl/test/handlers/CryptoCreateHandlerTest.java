@@ -164,7 +164,7 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
         cryptoCreateValidator = new CryptoCreateValidator();
         stakingValidator = new StakingValidator();
         given(handleContext.networkInfo()).willReturn(networkInfo);
-        subject = new CryptoCreateHandler(cryptoCreateValidator, stakingValidator);
+        subject = new CryptoCreateHandler(cryptoCreateValidator);
     }
 
     @Test
