@@ -74,8 +74,6 @@ jvmDependencyConflicts {
     }
 }
 
-configurations.javaModulesMergeJars { extendsFrom(configurations["internal"]) }
-
 tasks.buildDependents { setGroup(null) }
 
 tasks.buildNeeded { setGroup(null) }
