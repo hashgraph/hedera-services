@@ -315,8 +315,6 @@ val cleanYahCli =
         delete(File(project.file("yahcli"), "yahcli.jar"))
     }
 
-dependencies { implementation(project(":app")) }
-
 tasks.clean {
     dependsOn(cleanYahCli)
     dependsOn(cleanValidation)
