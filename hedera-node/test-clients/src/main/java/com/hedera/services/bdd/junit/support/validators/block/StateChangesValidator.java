@@ -237,7 +237,7 @@ public class StateChangesValidator implements BlockStreamValidator {
         final var lifecycles = newPlatformInitLifecycle(bootstrapConfig, currentVersion, migrator, servicesRegistry);
         state = new MerkleStateRoot(lifecycles, version -> new ServicesSoftwareVersion(version, configVersion));
         // initialize the platform state
-        state.getReadablePlatformState();
+        state.getWritablePlatformState();
         migrator.doMigrations(
                 state,
                 servicesRegistry,
