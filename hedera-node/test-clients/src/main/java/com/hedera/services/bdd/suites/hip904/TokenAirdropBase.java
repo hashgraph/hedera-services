@@ -98,7 +98,6 @@ public class TokenAirdropBase {
     protected static final String FT_ALL_COLLECTORS_EXEMPT_TOKEN = "ftAllCollectorsExemptToken";
 
     // owner, receivers with 0 auto-associations, collectors and tokens for multiple tokens with all custom fees airdrop
-    // test
     // treasury
     protected static final String TREASURY_FOR_ALL_CUSTOM_FEE_TOKENS = "treasuryForAllCustomFeeTokens";
     // owner
@@ -324,8 +323,17 @@ public class TokenAirdropBase {
         return t.toArray(new SpecOperation[0]);
     }
 
+    /**
+     * Create Fungible and Non-Fungible tokens and set up all scenario receivers and fee collector accounts
+     * - all receivers are with 0 auto associations
+     * - Fungible tokens with hBar, Fractional and HTS fees
+     * - Non-Fungible tokens with hBar, HTS and Royalty fees
+     * - different fee collector account for each token
+     *
+     * @return array of operations
+     */
     protected static SpecOperation[] setUpAccountsAndTokensWithAllCustomFees(
-            long tokenTotal, long hbarFee, long htsFee) {
+            final long tokenTotal, final long hbarFee, final long htsFee) {
         var nftWithCustomFeeSupplyKey = "nftWithCustomFeeSupplyKey";
         final var initialBalance = 100 * ONE_HUNDRED_HBARS;
         final var t = new ArrayList<SpecOperation>(List.of(
@@ -339,7 +347,6 @@ public class TokenAirdropBase {
                 cryptoCreate(RECEIVER_NFT_HTS_FEE).maxAutomaticTokenAssociations(0),
                 cryptoCreate(RECEIVER_NFT_ROYALTY_FEE).maxAutomaticTokenAssociations(0),
                 cryptoCreate(RECEIVER_HTS_FEE_SECOND).maxAutomaticTokenAssociations(0),
-
                 // create collector accounts
                 cryptoCreate(FT_HBAR_COLLECTOR).balance(0L),
                 cryptoCreate(FT_FRACTIONAL_COLLECTOR).balance(ONE_HUNDRED_HBARS),
@@ -347,13 +354,11 @@ public class TokenAirdropBase {
                 cryptoCreate(NFT_HBAR_COLLECTOR).balance(0L),
                 cryptoCreate(NFT_HTS_COLLECTOR).balance(0L),
                 cryptoCreate(NFT_ROYALTY_FEE_COLLECTOR).balance(0L),
-
                 // create FT with HBAR fee
                 tokenCreate(FT_WITH_HBAR_FEE)
                         .treasury(TREASURY_FOR_ALL_CUSTOM_FEE_TOKENS)
                         .tokenType(FUNGIBLE_COMMON)
                         .withCustom(fixedHbarFee(hbarFee, FT_HBAR_COLLECTOR)),
-
                 // create FT with Fractional fee and Net of transfers
                 tokenCreate(FT_WITH_FRACTIONAL_FEE_WITH_NET_OF_TRANSFERS)
                         .treasury(TREASURY_FOR_ALL_CUSTOM_FEE_TOKENS)
@@ -362,12 +367,10 @@ public class TokenAirdropBase {
                                 fractionalFeeNetOfTransfers(1, 10L, 1L, OptionalLong.of(100), FT_FRACTIONAL_COLLECTOR))
                         .initialSupply(Long.MAX_VALUE)
                         .payingWith(FT_FRACTIONAL_COLLECTOR),
-
                 // create denom token for FT with HTS fee
                 tokenCreate(DENOM_TOKEN_HTS)
                         .treasury(TREASURY_FOR_ALL_CUSTOM_FEE_TOKENS)
                         .initialSupply(tokenTotal),
-
                 // create FT with HTS fee
                 tokenAssociate(FT_WITH_HTS_FEE_COLLECTOR, DENOM_TOKEN_HTS),
                 tokenCreate(FT_WITH_HTS_FEE)
@@ -375,7 +378,6 @@ public class TokenAirdropBase {
                         .tokenType(FUNGIBLE_COMMON)
                         .withCustom(fixedHtsFee(htsFee, DENOM_TOKEN_HTS, FT_WITH_HTS_FEE_COLLECTOR))
                         .initialSupply(tokenTotal),
-
                 // create NFT with HBar fixed fee
                 newKeyNamed(nftWithCustomFeeSupplyKey),
                 tokenCreate(NFT_WITH_HBAR_FEE)
@@ -387,7 +389,6 @@ public class TokenAirdropBase {
                         .withCustom(fixedHbarFee(hbarFee, NFT_HBAR_COLLECTOR)),
                 mintToken(
                         NFT_WITH_HBAR_FEE, List.of(ByteStringUtils.wrapUnsafely("tokenWithHbarCustomFee".getBytes()))),
-
                 // create NFT with HTS fixed fee - two layers of fees
                 tokenAssociate(NFT_HTS_COLLECTOR, FT_WITH_HTS_FEE),
                 newKeyNamed(nftWithCustomFeeSupplyKey),
@@ -399,7 +400,6 @@ public class TokenAirdropBase {
                         .initialSupply(0)
                         .withCustom(fixedHtsFee(htsFee, FT_WITH_HTS_FEE, NFT_HTS_COLLECTOR)),
                 mintToken(NFT_WITH_HTS_FEE, List.of(ByteStringUtils.wrapUnsafely("tokenWithHtsCustomFee".getBytes()))),
-
                 // create NFT with Royalty fee no fallback
                 newKeyNamed(nftWithCustomFeeSupplyKey),
                 tokenCreate(NFT_WITH_ROYALTY_FEE_NO_FALLBACK)
@@ -412,7 +412,6 @@ public class TokenAirdropBase {
                 mintToken(
                         NFT_WITH_ROYALTY_FEE_NO_FALLBACK,
                         List.of(ByteStringUtils.wrapUnsafely("tokenWithRoyaltyFee".getBytes()))),
-
                 // create owner of tokens with all kinds of custom fees and associate it to the tokens
                 cryptoCreate(OWNER_OF_TOKENS_WITH_ALL_CUSTOM_FEES).balance(initialBalance),
                 // HBAR fee
