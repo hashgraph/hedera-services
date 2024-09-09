@@ -31,6 +31,7 @@ import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fra
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.royaltyFeeNoFallback;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.royaltyFeeWithFallback;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
+import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
@@ -414,25 +415,34 @@ public class TokenAirdropBase {
 
                 // create owner of tokens with all kinds of custom fees and associate it to the tokens
                 cryptoCreate(OWNER_OF_TOKENS_WITH_ALL_CUSTOM_FEES).balance(initialBalance),
-
                 // HBAR fee
                 tokenAssociate(OWNER_OF_TOKENS_WITH_ALL_CUSTOM_FEES, FT_WITH_HBAR_FEE),
-
+                cryptoTransfer(moving(1000, FT_WITH_HBAR_FEE)
+                        .between(TREASURY_FOR_ALL_CUSTOM_FEE_TOKENS, OWNER_OF_TOKENS_WITH_ALL_CUSTOM_FEES)),
                 // FRACTIONAL fee
                 tokenAssociate(OWNER_OF_TOKENS_WITH_ALL_CUSTOM_FEES, FT_WITH_FRACTIONAL_FEE_WITH_NET_OF_TRANSFERS),
-
+                cryptoTransfer(moving(1000, FT_WITH_FRACTIONAL_FEE_WITH_NET_OF_TRANSFERS)
+                        .between(TREASURY_FOR_ALL_CUSTOM_FEE_TOKENS, OWNER_OF_TOKENS_WITH_ALL_CUSTOM_FEES)),
                 // HTS fee
                 tokenAssociate(OWNER_OF_TOKENS_WITH_ALL_CUSTOM_FEES, FT_WITH_HTS_FEE),
                 tokenAssociate(OWNER_OF_TOKENS_WITH_ALL_CUSTOM_FEES, DENOM_TOKEN_HTS),
-
+                cryptoTransfer(
+                        moving(1000, FT_WITH_HTS_FEE)
+                                .between(TREASURY_FOR_ALL_CUSTOM_FEE_TOKENS, OWNER_OF_TOKENS_WITH_ALL_CUSTOM_FEES),
+                        moving(tokenTotal, DENOM_TOKEN_HTS)
+                                .between(TREASURY_FOR_ALL_CUSTOM_FEE_TOKENS, OWNER_OF_TOKENS_WITH_ALL_CUSTOM_FEES)),
                 // NFT with HBAR fee
                 tokenAssociate(OWNER_OF_TOKENS_WITH_ALL_CUSTOM_FEES, NFT_WITH_HBAR_FEE),
-
+                cryptoTransfer(movingUnique(NFT_WITH_HBAR_FEE, 1L)
+                        .between(TREASURY_FOR_ALL_CUSTOM_FEE_TOKENS, OWNER_OF_TOKENS_WITH_ALL_CUSTOM_FEES)),
                 // NFT with HTS fee
                 tokenAssociate(OWNER_OF_TOKENS_WITH_ALL_CUSTOM_FEES, NFT_WITH_HTS_FEE),
+                cryptoTransfer(movingUnique(NFT_WITH_HTS_FEE, 1L)
+                        .between(TREASURY_FOR_ALL_CUSTOM_FEE_TOKENS, OWNER_OF_TOKENS_WITH_ALL_CUSTOM_FEES)),
                 // NFT with Royalty fee no fallback
-                tokenAssociate(OWNER_OF_TOKENS_WITH_ALL_CUSTOM_FEES, NFT_WITH_ROYALTY_FEE_NO_FALLBACK)));
-
+                tokenAssociate(OWNER_OF_TOKENS_WITH_ALL_CUSTOM_FEES, NFT_WITH_ROYALTY_FEE_NO_FALLBACK),
+                cryptoTransfer(movingUnique(NFT_WITH_ROYALTY_FEE_NO_FALLBACK, 1L)
+                        .between(TREASURY_FOR_ALL_CUSTOM_FEE_TOKENS, OWNER_OF_TOKENS_WITH_ALL_CUSTOM_FEES))));
         return t.toArray(new SpecOperation[0]);
     }
 
