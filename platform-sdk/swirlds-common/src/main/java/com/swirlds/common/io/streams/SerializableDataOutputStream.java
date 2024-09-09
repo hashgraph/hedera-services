@@ -64,6 +64,7 @@ public class SerializableDataOutputStream extends AugmentedDataOutputStream {
     /**
      * While transitioning serialization from {@link SelfSerializable} to protobuf, this stream will support both
      * serialization methods by providing a separate instance to serialize protobuf objects.
+     *
      * @return the writable sequential data stream
      */
     public @NonNull WritableSequentialData getWritableSequentialData() {

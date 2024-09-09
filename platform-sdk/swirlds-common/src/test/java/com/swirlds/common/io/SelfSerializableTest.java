@@ -80,7 +80,7 @@ class SelfSerializableTest {
         final byte[] byteArray = {1, 2, 3};
         final Bytes bytes = Bytes.wrap(byteArray);
 
-        try(final InputOutputStream io = new InputOutputStream()){
+        try (final InputOutputStream io = new InputOutputStream()) {
             io.getOutput().writeSerializable(serializable, true);
             bytes.writeTo(io.getOutput().getWritableSequentialData());
             io.getOutput().writeSerializable(serializable, false);

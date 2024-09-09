@@ -67,6 +67,7 @@ public class SerializableDataInputStream extends AugmentedDataInputStream {
     /**
      * While transitioning serialization from {@link SelfSerializable} to protobuf, this stream will support both
      * serialization methods by providing a separate instance to deserialize protobuf objects.
+     *
      * @return the readable sequential data stream
      */
     public @NonNull ReadableSequentialData getReadableSequentialData() {
