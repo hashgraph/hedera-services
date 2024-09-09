@@ -37,6 +37,10 @@ public class AbortException extends HandleException {
     // Whether gas can still be charged for the transaction
     private final boolean isChargeable;
 
+    /**
+     * @param status the status of the exception
+     * @param senderId the sender of the transaction
+     */
     public AbortException(@NonNull final ResponseCodeEnum status, @NonNull final AccountID senderId) {
         super(status);
         this.senderId = requireNonNull(senderId);
@@ -44,6 +48,12 @@ public class AbortException extends HandleException {
         this.isChargeable = false;
     }
 
+    /**
+     * @param status the status of the exception
+     * @param senderId the sender of the transaction
+     * @param relayerId the relayer of the transaction
+     * @param isChargeable true if the gas will still be charged
+     */
     public AbortException(
             @NonNull final ResponseCodeEnum status,
             @NonNull final AccountID senderId,

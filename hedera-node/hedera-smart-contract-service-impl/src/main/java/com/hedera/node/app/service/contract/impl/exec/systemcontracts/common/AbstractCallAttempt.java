@@ -38,6 +38,7 @@ import org.hyperledger.besu.datatypes.Address;
 
 /**
  * Base class for HTS and HAS system contract call attempts.
+ * @param <T> the type of the abstract call attempt
  */
 public abstract class AbstractCallAttempt<T extends AbstractCallAttempt<T>> {
     private final byte[] selector;
@@ -60,6 +61,20 @@ public abstract class AbstractCallAttempt<T extends AbstractCallAttempt<T>> {
     // to be the redirecting entity for this call attempt
     protected @Nullable final Address redirectAddress;
 
+    /**
+     * @param input the input in bytes
+     * @param senderAddress the address of the sender of this call
+     * @param authorizingAddress the contract whose keys are to be activated
+     * @param onlyDelegatableContractKeysActive whether the strategy should require a delegatable contract id key
+     * @param enhancement the enhancement to get the native operations to look up the contract's number
+     * @param configuration the configuration for this call
+     * @param addressIdConverter the address ID converter for this call
+     * @param verificationStrategies the verification strategies for this call
+     * @param gasCalculator the system contract gas calculator for this call
+     * @param callTranslators the call translators for this call
+     * @param isStaticCall whether this is a static call
+     * @param redirectFunction the redirect function
+     */
     // too many parameters
     @SuppressWarnings("java:S107")
     public AbstractCallAttempt(
@@ -241,6 +256,9 @@ public abstract class AbstractCallAttempt<T extends AbstractCallAttempt<T>> {
         return isStaticCall;
     }
 
+    /**
+     * @return whether the current call attempt is redirected to a system contract address
+     */
     public boolean isRedirect() {
         return redirectAddress != null;
     }
