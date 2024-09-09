@@ -49,6 +49,7 @@ import com.hedera.node.app.fees.FeeManager;
 import com.hedera.node.app.records.BlockRecordManager;
 import com.hedera.node.app.service.schedule.ScheduleService;
 import com.hedera.node.app.service.schedule.WritableScheduleStore;
+import com.hedera.node.app.service.token.impl.handlers.staking.StakePeriodManager;
 import com.hedera.node.app.services.ServiceScopeLookup;
 import com.hedera.node.app.spi.authorization.Authorizer;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
@@ -80,6 +81,7 @@ import com.swirlds.state.spi.info.NetworkInfo;
 import com.swirlds.state.spi.info.NodeInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -96,7 +98,6 @@ public class HandleWorkflow {
     private static final Logger logger = LogManager.getLogger(HandleWorkflow.class);
 
     public static final String ALERT_MESSAGE = "Possibly CATASTROPHIC failure";
-
     private final NetworkInfo networkInfo;
     private final NodeStakeUpdates nodeStakeUpdates;
     private final Authorizer authorizer;
@@ -120,6 +121,7 @@ public class HandleWorkflow {
     private final HederaRecordCache recordCache;
     private final ExchangeRateManager exchangeRateManager;
     private final PreHandleWorkflow preHandleWorkflow;
+    private final StakePeriodManager stakePeriodManager;
     private final KVStateChangeListener kvStateChangeListener;
     private final BoundaryStateChangeListener boundaryStateChangeListener;
     private final List<StateChanges.Builder> migrationStateChanges;
@@ -149,6 +151,7 @@ public class HandleWorkflow {
             @NonNull final HederaRecordCache recordCache,
             @NonNull final ExchangeRateManager exchangeRateManager,
             @NonNull final PreHandleWorkflow preHandleWorkflow,
+            @NonNull final StakePeriodManager stakePeriodManager,
             @NonNull final KVStateChangeListener kvStateChangeListener,
             @NonNull final BoundaryStateChangeListener boundaryStateChangeListener,
             @NonNull final List<StateChanges.Builder> migrationStateChanges) {
@@ -175,9 +178,10 @@ public class HandleWorkflow {
         this.recordCache = requireNonNull(recordCache);
         this.exchangeRateManager = requireNonNull(exchangeRateManager);
         this.preHandleWorkflow = requireNonNull(preHandleWorkflow);
+        this.stakePeriodManager = requireNonNull(stakePeriodManager);
         this.kvStateChangeListener = requireNonNull(kvStateChangeListener);
         this.boundaryStateChangeListener = requireNonNull(boundaryStateChangeListener);
-        this.migrationStateChanges = requireNonNull(migrationStateChanges);
+        this.migrationStateChanges = new ArrayList<>(migrationStateChanges);
     }
 
     /**
@@ -288,6 +292,7 @@ public class HandleWorkflow {
 
         // Always use platform-assigned time for user transaction, c.f. https://hips.hedera.com/hip/hip-993
         final var consensusNow = txn.getConsensusTimestamp();
+        stakePeriodManager.setCurrentStakePeriodFor(consensusNow);
         final var userTxn = newUserTxn(state, event, creator, txn, consensusNow);
 
         if (blockStreamConfig.streamRecords()) {
@@ -329,6 +334,7 @@ public class HandleWorkflow {
      * @return the stream of records
      */
     private HandleOutput execute(@NonNull final UserTxn userTxn) {
+        final var blockStreamConfig = userTxn.config().getConfigData(BlockStreamConfig.class);
         try {
             if (isOlderSoftwareEvent(userTxn)) {
                 initializeBuilderInfo(userTxn.baseBuilder(), userTxn.txnInfo(), exchangeRateManager.exchangeRates())
@@ -342,16 +348,12 @@ public class HandleWorkflow {
                             userTxn.tokenContextImpl(), exchangeRateManager.exchangeRates());
                 }
                 updateNodeStakes(userTxn);
-                final var streamsRecords = configProvider
-                        .getConfiguration()
-                        .getConfigData(BlockStreamConfig.class)
-                        .streamRecords();
-                if (streamsRecords) {
+                if (blockStreamConfig.streamRecords()) {
                     blockRecordManager.advanceConsensusClock(userTxn.consensusNow(), userTxn.state());
                 }
                 expireSchedules(userTxn);
                 logPreDispatch(userTxn);
-                final var dispatch = dispatchFor(userTxn);
+                final var dispatch = dispatchFor(userTxn, blockStreamConfig);
                 if (userTxn.type() == GENESIS_TRANSACTION) {
                     systemSetup.doGenesisSetup(dispatch);
                 } else if (userTxn.type() == POST_UPGRADE_TRANSACTION) {
@@ -362,8 +364,14 @@ public class HandleWorkflow {
                 updateWorkflowMetrics(userTxn);
             }
             final var handleOutput = userTxn.stack().buildHandleOutput(userTxn.consensusNow());
-            recordCache.add(
-                    userTxn.creatorInfo().nodeId(), userTxn.txnInfo().payerID(), handleOutput.recordStreamItems());
+            // Note that we don't yet support producing ONLY blocks, because we haven't integrated
+            // translators from block items to records for answering queries
+            if (blockStreamConfig.streamRecords()) {
+                recordCache.add(
+                        userTxn.creatorInfo().nodeId(), userTxn.txnInfo().payerID(), handleOutput.recordsOrThrow());
+            } else {
+                throw new IllegalStateException("Records must be produced directly without block item translators");
+            }
             return handleOutput;
         } catch (final Exception e) {
             logger.error("{} - exception thrown while handling user transaction", ALERT_MESSAGE, e);
@@ -427,9 +435,10 @@ public class HandleWorkflow {
      * Returns the user dispatch for the given user transaction.
      *
      * @param userTxn the user transaction
+     * @param blockStreamConfig the block stream configuration
      * @return the user dispatch
      */
-    private Dispatch dispatchFor(@NonNull final UserTxn userTxn) {
+    private Dispatch dispatchFor(@NonNull final UserTxn userTxn, @NonNull final BlockStreamConfig blockStreamConfig) {
         final var baseBuilder =
                 initializeBuilderInfo(userTxn.baseBuilder(), userTxn.txnInfo(), exchangeRateManager.exchangeRates());
         return userTxn.newDispatch(
@@ -444,7 +453,8 @@ public class HandleWorkflow {
                 childDispatchFactory,
                 dispatcher,
                 networkUtilizationManager,
-                baseBuilder);
+                baseBuilder,
+                blockStreamConfig);
     }
 
     /**
@@ -472,6 +482,7 @@ public class HandleWorkflow {
             transactionBytes = Transaction.PROTOBUF.toBytes(transaction);
         }
         return builder.transaction(txnInfo.transaction())
+                .functionality(txnInfo.functionality())
                 .serializedTransaction(txnInfo.serializedTransaction())
                 .transactionBytes(transactionBytes)
                 .transactionID(txnInfo.txBody().transactionIDOrThrow())

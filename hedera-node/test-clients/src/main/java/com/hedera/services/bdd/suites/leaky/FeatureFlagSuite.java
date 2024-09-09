@@ -16,7 +16,7 @@
 
 package com.hedera.services.bdd.suites.leaky;
 
-import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
+import static com.hedera.node.app.hapi.utils.EthSigsUtils.recoverAddressFromPubKey;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.infrastructure.providers.ops.crypto.RandomAccount.INITIAL_BALANCE;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;

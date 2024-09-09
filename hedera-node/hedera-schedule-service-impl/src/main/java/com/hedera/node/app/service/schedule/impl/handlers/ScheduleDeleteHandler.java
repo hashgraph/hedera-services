@@ -58,9 +58,7 @@ public class ScheduleDeleteHandler extends AbstractScheduleHandler implements Tr
     private final ScheduleOpsUsage scheduleOpsUsage = new ScheduleOpsUsage();
 
     @Inject
-    public ScheduleDeleteHandler() {
-        super();
-    }
+    public ScheduleDeleteHandler() {}
 
     @Override
     public void pureChecks(@Nullable final TransactionBody currentTransaction) throws PreCheckException {
@@ -150,7 +148,7 @@ public class ScheduleDeleteHandler extends AbstractScheduleHandler implements Tr
      * @param scheduleStore a Readable source of Schedule data from state
      * @param isLongTermEnabled a flag indicating if long term scheduling is enabled in configuration.
      * @param idToDelete the Schedule ID of the item to mark as deleted.
-     * @return a schedule metadata read from state for the ID given, if all validation checks pass.
+     * @return a schedule metadata read from state for the ID given, if all validation checks pass
      * @throws HandleException if any validation check fails.
      */
     @NonNull

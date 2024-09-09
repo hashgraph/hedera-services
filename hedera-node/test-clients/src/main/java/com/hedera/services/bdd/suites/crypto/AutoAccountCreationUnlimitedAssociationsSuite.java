@@ -16,7 +16,7 @@
 
 package com.hedera.services.bdd.suites.crypto;
 
-import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
+import static com.hedera.node.app.hapi.utils.EthSigsUtils.recoverAddressFromPubKey;
 import static com.hedera.services.bdd.junit.TestTags.CRYPTO;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asSolidityAddress;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
@@ -309,7 +309,7 @@ public class AutoAccountCreationUnlimitedAssociationsSuite {
                     allRunFor(spec, completedAccount);
                 }),
                 getTxnRecord(HBAR_XFER)
-                        .hasChildRecordCount(1)
+                        .hasNonStakingChildRecordCount(1)
                         .hasChildRecords(recordWith().status(SUCCESS).memo(LAZY_MEMO)),
                 cryptoTransfer(tinyBarsFromToWithAlias(PARTY, SECP_256K1_SOURCE_KEY, ONE_HBAR))
                         .hasKnownStatus(SUCCESS)

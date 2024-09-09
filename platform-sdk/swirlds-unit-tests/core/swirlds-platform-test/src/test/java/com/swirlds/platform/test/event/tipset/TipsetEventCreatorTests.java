@@ -158,10 +158,13 @@ class TipsetEventCreatorTests {
             @NonNull final SimulatedNode simulatedNode,
             final boolean slowNode) {
 
-        final EventImpl selfParent = events.get(newEvent.getSelfParentHash());
+        final EventImpl selfParent = events.get(newEvent.getMetadata().getSelfParentHash());
         final long selfParentGeneration =
                 selfParent == null ? EventConstants.GENERATION_UNDEFINED : selfParent.getGeneration();
-        final EventImpl otherParent = events.get(newEvent.getOtherParentHash());
+        final EventImpl otherParent = events.get(newEvent.getMetadata().getOtherParents().stream()
+                .findFirst()
+                .map(EventDescriptorWrapper::hash)
+                .orElse(null));
         final long otherParentGeneration =
                 otherParent == null ? EventConstants.GENERATION_UNDEFINED : otherParent.getGeneration();
 
@@ -172,7 +175,8 @@ class TipsetEventCreatorTests {
                     // comparing to self
                     continue;
                 }
-                Assertions.assertNotEquals(event.getCreatorId(), newEvent.getCreatorId());
+                Assertions.assertNotEquals(
+                        event.getCreatorId().id(), newEvent.getEventCore().creatorNodeId());
             }
         }
 
@@ -190,7 +194,7 @@ class TipsetEventCreatorTests {
 
         // Generation should be max of parents plus one
         final long expectedGeneration = Math.max(selfParentGeneration, otherParentGeneration) + 1;
-        assertEquals(expectedGeneration, newEvent.getGeneration());
+        assertEquals(expectedGeneration, newEvent.getMetadata().getGeneration());
 
         // Timestamp must always increase by 1 nanosecond, and there must always be a unique timestamp
         // with nanosecond precision for transaction.
@@ -248,10 +252,16 @@ class TipsetEventCreatorTests {
             @NonNull final Map<Hash, EventImpl> events,
             @NonNull final UnsignedEvent event) {
 
-        eventCreators.get(event.getCreatorId()).tipsetTracker.addEvent(event.getDescriptor(), event.getAllParents());
+        eventCreators
+                .get(new NodeId(event.getEventCore().creatorNodeId()))
+                .tipsetTracker
+                .addEvent(event.getDescriptor(), event.getMetadata().getAllParents());
 
-        final EventImpl selfParent = events.get(event.getSelfParentHash());
-        final EventImpl otherParent = events.get(event.getOtherParentHash());
+        final EventImpl selfParent = events.get(event.getMetadata().getSelfParentHash());
+        final EventImpl otherParent = events.get(event.getMetadata().getOtherParents().stream()
+                .findFirst()
+                .map(EventDescriptorWrapper::hash)
+                .orElse(null));
 
         final EventImpl eventImpl = new EventImpl(new PlatformEvent(event, new byte[0]), selfParent, otherParent);
         events.put(event.getHash(), eventImpl);
@@ -624,8 +634,8 @@ class TipsetEventCreatorTests {
                 atLeastOneEventCreated = true;
 
                 final NodeId otherId;
-                if (event.hasOtherParent()) {
-                    otherId = event.getOtherParents().getFirst().creator();
+                if (event.getMetadata().hasOtherParent()) {
+                    otherId = event.getMetadata().getOtherParents().getFirst().creator();
                 } else {
                     otherId = null;
                 }
@@ -721,8 +731,8 @@ class TipsetEventCreatorTests {
                 atLeastOneEventCreated = true;
 
                 final NodeId otherId;
-                if (event.hasOtherParent()) {
-                    otherId = event.getOtherParents().getFirst().creator();
+                if (event.getMetadata().hasOtherParent()) {
+                    otherId = event.getMetadata().getOtherParents().getFirst().creator();
                 } else {
                     otherId = null;
                 }
@@ -905,8 +915,8 @@ class TipsetEventCreatorTests {
         // but has not been updated in the current snapshot.
 
         final NodeId otherParentId;
-        if (eventA2.hasOtherParent()) {
-            otherParentId = eventA2.getOtherParents().getFirst().creator();
+        if (eventA2.getMetadata().hasOtherParent()) {
+            otherParentId = eventA2.getMetadata().getOtherParents().getFirst().creator();
         } else {
             otherParentId = null;
         }
@@ -1093,10 +1103,10 @@ class TipsetEventCreatorTests {
                 }
 
                 if (eventIndex == 0) {
-                    final long birthRound = event.getBirthRound();
+                    final long birthRound = event.getEventCore().birthRound();
                     assertEquals(ROUND_FIRST, birthRound);
                 } else {
-                    final long birthRound = event.getBirthRound();
+                    final long birthRound = event.getEventCore().birthRound();
                     if (useBirthRoundForAncient) {
                         assertEquals(pendingConsensusRound, birthRound);
                     } else {

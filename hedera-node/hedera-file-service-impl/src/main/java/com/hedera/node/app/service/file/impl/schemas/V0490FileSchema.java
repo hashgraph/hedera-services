@@ -104,7 +104,7 @@ import org.apache.logging.log4j.Logger;
 public class V0490FileSchema extends Schema {
     private static final Logger logger = LogManager.getLogger(V0490FileSchema.class);
 
-    private static final AtomicInteger NEXT_DISPATCH_NONCE = new AtomicInteger(0);
+    private static final AtomicInteger NEXT_DISPATCH_NONCE = new AtomicInteger(1);
 
     public static final String BLOBS_KEY = "FILES";
     public static final String UPGRADE_FILE_KEY = "UPGRADE_FILE";

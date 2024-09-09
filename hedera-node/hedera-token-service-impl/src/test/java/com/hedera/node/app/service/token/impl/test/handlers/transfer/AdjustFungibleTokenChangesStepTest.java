@@ -46,6 +46,7 @@ import com.hedera.node.app.service.token.impl.handlers.transfer.EnsureAliasesSte
 import com.hedera.node.app.service.token.impl.handlers.transfer.ReplaceAliasesWithIDsInOp;
 import com.hedera.node.app.service.token.impl.handlers.transfer.TransferContextImpl;
 import com.hedera.node.app.spi.workflows.HandleException;
+import com.hedera.node.app.spi.workflows.record.StreamBuilder;
 import com.hedera.node.app.workflows.handle.record.RecordStreamBuilder;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -66,7 +67,8 @@ class AdjustFungibleTokenChangesStepTest extends StepsBase {
         associateTokenRecepientsStep = new AssociateTokenRecipientsStep(body);
         transferContext = new TransferContextImpl(handleContext);
         writableTokenStore.put(givenValidFungibleToken(ownerId, false, false, false, false, false));
-        given(handleContext.dispatchRemovablePrecedingTransaction(any(), any(), eq(null), any(), any()))
+        given(handleContext.dispatchRemovablePrecedingTransaction(
+                        any(), eq(StreamBuilder.class), eq(null), any(), any()))
                 .will((invocation) -> {
                     final var relation =
                             new TokenRelation(fungibleTokenId, tokenReceiverId, 1, false, true, true, null, null);
@@ -148,7 +150,7 @@ class AdjustFungibleTokenChangesStepTest extends StepsBase {
         assertThat(receiverAccountBefore.numberPositiveBalances()).isEqualTo(2);
         assertThat(senderRelBefore.balance()).isEqualTo(1000L);
         // There is an association happening during the transfer for auto creation
-        assertThat(receiverRelBefore.balance()).isEqualTo(1);
+        assertThat(receiverRelBefore.balance()).isEqualTo(0);
 
         assertThat(senderAccountBefore.tokenAllowances()).hasSize(1);
 
@@ -164,7 +166,7 @@ class AdjustFungibleTokenChangesStepTest extends StepsBase {
         assertThat(senderAccountAfter.numberPositiveBalances())
                 .isEqualTo(senderAccountBefore.numberPositiveBalances() - 1);
         assertThat(receiverAccountAfter.numberPositiveBalances())
-                .isEqualTo(receiverAccountBefore.numberPositiveBalances());
+                .isEqualTo(receiverAccountBefore.numberPositiveBalances() + 1);
         assertThat(senderRelAfter.balance()).isEqualTo(senderRelBefore.balance() - 1000);
         assertThat(receiverRelAfter.balance()).isEqualTo(receiverRelBefore.balance() + 1000);
 

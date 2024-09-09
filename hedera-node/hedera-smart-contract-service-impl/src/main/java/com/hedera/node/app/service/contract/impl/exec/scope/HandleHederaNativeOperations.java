@@ -108,6 +108,7 @@ public class HandleHederaNativeOperations implements HederaNativeOperations {
     public @NonNull ResponseCodeEnum createHollowAccount(@NonNull final Bytes evmAddress) {
         final var synthTxn = TransactionBody.newBuilder()
                 .cryptoCreateAccount(synthHollowAccountCreation(evmAddress))
+                .memo(LAZY_CREATION_MEMO)
                 .build();
 
         // Note the use of the null "verification assistant" callback; we don't want any

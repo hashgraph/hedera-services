@@ -19,7 +19,9 @@ package com.hedera.node.app.service.token.impl.comparator;
 import static com.hedera.hapi.util.HapiUtils.ACCOUNT_ID_COMPARATOR;
 
 import com.hedera.hapi.node.base.AccountAmount;
+import com.hedera.hapi.node.base.NftID;
 import com.hedera.hapi.node.base.NftTransfer;
+import com.hedera.hapi.node.base.PendingAirdropId;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenTransferList;
 import com.hedera.hapi.node.state.token.Account;
@@ -48,6 +50,31 @@ public final class TokenComparators {
      * Comparator for {@link TokenID} objects.
      */
     public static final Comparator<TokenID> TOKEN_ID_COMPARATOR = Comparator.comparingLong(TokenID::tokenNum);
+
+    /**
+     * Comparator for {@link NftID} objects.
+     */
+    public static final Comparator<NftID> NFT_ID_COMPARATOR =
+            Comparator.comparing(NftID::tokenIdOrThrow, TOKEN_ID_COMPARATOR).thenComparingLong(NftID::serialNumber);
+    /**
+     * Comparator for {@link PendingAirdropId} objects.
+     */
+    public static final Comparator<PendingAirdropId> PENDING_AIRDROP_ID_COMPARATOR = Comparator.comparing(
+                    PendingAirdropId::receiverIdOrThrow, ACCOUNT_ID_COMPARATOR)
+            .thenComparing(PendingAirdropId::senderIdOrThrow, ACCOUNT_ID_COMPARATOR)
+            .thenComparing(PendingAirdropId::tokenReference, (a, b) -> {
+                final var ordinalComparison =
+                        Integer.compare(a.kind().protoOrdinal(), b.kind().protoOrdinal());
+                if (ordinalComparison != 0) {
+                    return ordinalComparison;
+                } else {
+                    if (a.kind() == PendingAirdropId.TokenReferenceOneOfType.FUNGIBLE_TOKEN_TYPE) {
+                        return TOKEN_ID_COMPARATOR.compare(a.as(), b.as());
+                    } else {
+                        return NFT_ID_COMPARATOR.compare(a.as(), b.as());
+                    }
+                }
+            });
     /**
      * Comparator for {@link TokenTransferList} objects.
      */

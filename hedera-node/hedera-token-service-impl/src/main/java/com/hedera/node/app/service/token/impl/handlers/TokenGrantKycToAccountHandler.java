@@ -79,7 +79,7 @@ public class TokenGrantKycToAccountHandler implements TransactionHandler {
     }
 
     /**
-     * Performs checks independent of state or context
+     * Performs checks independent of state or context.
      */
     @Override
     public void pureChecks(@NonNull final TransactionBody txn) throws PreCheckException {
@@ -122,7 +122,7 @@ public class TokenGrantKycToAccountHandler implements TransactionHandler {
     }
 
     /**
-     * Performs checks that the entities related to this transaction exist and are valid
+     * Performs checks that the entities related to this transaction exist and are valid.
      *
      * @return the token relation for the given token and account
      */

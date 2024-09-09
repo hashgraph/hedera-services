@@ -24,10 +24,10 @@ import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.com
 
 import com.hedera.hapi.node.base.TokenType;
 import com.hedera.hapi.node.state.token.Token;
+import com.hedera.node.app.hapi.utils.HederaExceptionalHaltReason;
 import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AbstractRevertibleTokenViewCall;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
-import com.hedera.node.app.service.evm.contracts.operations.HederaExceptionalHaltReason;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 

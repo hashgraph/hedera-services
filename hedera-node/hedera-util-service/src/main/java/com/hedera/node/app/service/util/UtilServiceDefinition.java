@@ -24,7 +24,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Set;
 
 /**
- * Transactions and queries for the Util Service
+ * Transactions and queries for the Util Service.
  */
 @SuppressWarnings("java:S6548")
 public final class UtilServiceDefinition implements RpcServiceDefinition {

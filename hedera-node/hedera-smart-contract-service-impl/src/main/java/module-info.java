@@ -12,7 +12,6 @@ module com.hedera.node.app.service.contract.impl {
     requires transitive com.hedera.pbj.runtime;
     requires transitive dagger;
     requires transitive headlong;
-    requires transitive java.annotation;
     requires transitive javax.inject;
     requires transitive org.apache.logging.log4j;
     requires transitive org.hyperledger.besu.datatypes;
@@ -24,7 +23,6 @@ module com.hedera.node.app.service.contract.impl {
     requires com.github.benmanes.caffeine;
     requires com.google.common;
     requires com.google.protobuf;
-    requires com.hedera.evm;
     requires org.apache.commons.lang3;
     requires org.bouncycastle.provider;
     requires static com.github.spotbugs.annotations;

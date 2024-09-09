@@ -71,7 +71,7 @@ public class BaseTokenHandler {
     protected static final Set<TokenKey> TOKEN_KEYS = EnumSet.allOf(TokenKey.class);
 
     /**
-     * The value for unlimited automatic associations
+     * The value for unlimited automatic associations.
      */
     public static final int UNLIMITED_AUTOMATIC_ASSOCIATIONS = -1;
 
@@ -449,7 +449,7 @@ public class BaseTokenHandler {
     }
 
     /**
-     * Determines if a given token is valid
+     * Determines if a given token is valid.
      *
      * @param tokenId the token to check
      * @return true if the token is valid

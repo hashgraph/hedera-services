@@ -182,7 +182,7 @@ public class TokenMintHandler extends BaseTokenHandler implements TransactionHan
      * serial number of the given base unique token, and increments total owned nfts of the
      * non-fungible token.
      *
-     * @param token
+     * @param token        - the token to mint nfts for
      * @param treasuryRel   - the treasury relation of the token
      * @param metadata      - the metadata of the nft to be minted
      * @param consensusTime - the consensus time of the transaction

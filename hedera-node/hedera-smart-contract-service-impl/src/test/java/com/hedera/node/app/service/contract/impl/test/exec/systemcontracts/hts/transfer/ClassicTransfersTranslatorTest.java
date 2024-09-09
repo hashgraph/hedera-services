@@ -65,7 +65,7 @@ class ClassicTransfersTranslatorTest extends CallTestBase {
 
     private ClassicTransfersTranslator subject;
 
-    private List<CallTranslator> callTranslators;
+    private List<CallTranslator<HtsCallAttempt>> callTranslators;
 
     @BeforeEach
     void setUp() {

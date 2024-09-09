@@ -29,7 +29,6 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.block.stream.BlockItem;
 import com.hedera.hapi.node.base.TransactionID;
-import com.hedera.node.app.blocks.impl.BlockStreamBuilder;
 import com.hedera.node.app.blocks.impl.BoundaryStateChangeListener;
 import com.hedera.node.app.blocks.impl.KVStateChangeListener;
 import com.hedera.node.app.blocks.impl.PairedStreamBuilder;
@@ -145,6 +144,7 @@ public class SavepointStackImpl implements HandleContext.SavepointStack, State {
      * @param maxBuildersAfterUser the maximum number of following builders to create
      * @param roundStateChangeListener the listener for the round state changes
      * @param kvStateChangeListener the listener for the key-value state changes
+     * @param streamMode the stream mode
      */
     private SavepointStackImpl(
             @NonNull final State state,
@@ -482,11 +482,12 @@ public class SavepointStackImpl implements HandleContext.SavepointStack, State {
             lastAssignedConsenusTime = consensusNow;
             builder.consensusTimestamp(consensusNow);
             if (i > indexOfUserRecord && builder.category() != SCHEDULED) {
-                builder.parentConsensus(consensusTime);
+                // Only set exchange rates on transactions preceding the user transaction, since
+                // no subsequent child can change the exchange rate
+                builder.parentConsensus(consensusTime).exchangeRate(null);
             }
             switch (streamMode) {
                 case RECORDS -> records.add(((RecordStreamBuilder) builder).build());
-                case BLOCKS -> requireNonNull(blockItems).addAll(((BlockStreamBuilder) builder).build());
                 case BOTH -> {
                     final var pairedBuilder = (PairedStreamBuilder) builder;
                     records.add(pairedBuilder.recordStreamBuilder().build());

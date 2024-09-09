@@ -74,8 +74,8 @@ final class HederaSoftwareVersionTest {
             default -> throw new IllegalArgumentException("Unknown expected value: " + expected);
         }
         // Ensure that the PBJ versions are also ordered correctly.
-        final SemanticVersion pbjA = versionA.getPbjSemanticVersion();
-        final SemanticVersion pbjB = versionB.getPbjSemanticVersion();
+        final SemanticVersion pbjA = versionA.servicesVersion();
+        final SemanticVersion pbjB = versionB.servicesVersion();
         switch (expected) {
             case "<" -> assertThat(SEMANTIC_VERSION_COMPARATOR.compare(pbjA, pbjB))
                     .isLessThan(0);
