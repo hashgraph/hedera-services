@@ -197,7 +197,7 @@ class StakePeriodManagerTest {
 
         final var expectedEffectivePeriod = LocalDate.ofInstant(Instant.ofEpochSecond(12345678910L), ZONE_UTC)
                 .toEpochDay();
-        assertEquals(expectedEffectivePeriod - 365, period);
+        assertEquals(expectedEffectivePeriod - 366, period);
         assertEquals(expectedEffectivePeriod - 10, subject.effectivePeriod(stakePeriod - 10));
     }
 
