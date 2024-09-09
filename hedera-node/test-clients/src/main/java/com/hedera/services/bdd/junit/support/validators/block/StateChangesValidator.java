@@ -16,6 +16,7 @@
 
 package com.hedera.services.bdd.junit.support.validators.block;
 
+import static com.hedera.node.app.blocks.impl.BlockImplUtils.combine;
 import static com.hedera.node.app.info.UnavailableNetworkInfo.UNAVAILABLE_NETWORK_INFO;
 import static com.hedera.node.app.workflows.handle.metric.UnavailableMetrics.UNAVAILABLE_METRICS;
 import static com.hedera.services.bdd.junit.hedera.ExternalPath.APPLICATION_PROPERTIES;
@@ -30,6 +31,8 @@ import static com.swirlds.platform.state.service.PlatformStateService.PLATFORM_S
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.block.stream.Block;
+import com.hedera.hapi.block.stream.BlockItem;
+import com.hedera.hapi.block.stream.BlockProof;
 import com.hedera.hapi.block.stream.output.MapChangeKey;
 import com.hedera.hapi.block.stream.output.MapChangeValue;
 import com.hedera.hapi.block.stream.output.QueuePushChange;
@@ -45,9 +48,11 @@ import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.hapi.node.state.primitives.ProtoLong;
 import com.hedera.hapi.node.state.primitives.ProtoString;
 import com.hedera.node.app.blocks.BlockStreamService;
+import com.hedera.node.app.blocks.StreamingTreeHasher;
 import com.hedera.node.app.config.BootstrapConfigProviderImpl;
 import com.hedera.node.app.config.ConfigProviderImpl;
 import com.hedera.node.app.fees.FeeService;
+import com.hedera.node.app.hapi.utils.CommonUtils;
 import com.hedera.node.app.ids.EntityIdService;
 import com.hedera.node.app.info.NodeInfoImpl;
 import com.hedera.node.app.records.BlockRecordService;
@@ -135,6 +140,7 @@ public class StateChangesValidator implements BlockStreamValidator {
     private static final Pattern NUMBER_PATTERN = Pattern.compile("\\d+");
     private static final Pattern STATE_ROOT_PATTERN = Pattern.compile(".*MerkleStateRoot.*/.*\\s+(.+)");
     private static final Pattern CHILD_STATE_PATTERN = Pattern.compile("\\s+\\d+ \\w+\\s+(\\S+)\\s+.+\\s+(.+)");
+    private static final Bytes INITIAL_BLOCK_HASH = Bytes.wrap(new byte[HASH_SIZE]);
 
     private final Path pathToNode0SwirldsLog;
     private final Bytes expectedRootHash;
@@ -245,16 +251,28 @@ public class StateChangesValidator implements BlockStreamValidator {
                 new ConfigProviderImpl().getConfiguration(),
                 networkInfo,
                 new NoOpMetrics());
-
         logger.info("Registered all Service and migrated state definitions to version {}", servicesVersion);
     }
 
     @Override
     public void validateBlocks(@NonNull final List<Block> blocks) {
         logger.info("Beginning validation of expected root hash {}", expectedRootHash);
+        var previousBlockHash = INITIAL_BLOCK_HASH;
+
         for (final var block : blocks) {
+            StateChanges lastStateChanges = null;
+            // get the state hash before applying the state changes from current block
+            //            CRYPTO.digestTreeSync(state);
+            final var startOfBlockStateHash = Bytes.wrap(new byte[48]); // state.getHash();
+
+            final StreamingTreeHasher inputTreeHasher = new NaiveStreamingTreeHasher();
+            final StreamingTreeHasher outputTreeHasher = new NaiveStreamingTreeHasher();
+
             for (final var item : block.items()) {
                 servicesWritten.clear();
+
+                hashInputOutputTree(item, inputTreeHasher, outputTreeHasher);
+
                 if (item.hasStateChanges()) {
                     final var stateChanges = item.stateChangesOrThrow();
                     if (genesisMigrationTimestamp == null) {
@@ -268,10 +286,18 @@ public class StateChangesValidator implements BlockStreamValidator {
                 }
                 servicesWritten.forEach(name -> ((CommittableWritableStates) state.getWritableStates(name)).commit());
             }
+            final var lastBlockItem = block.items().getLast();
+            Assertions.assertTrue(lastBlockItem.hasBlockProof());
+            Assertions.assertEquals(lastBlockItem.blockProofOrThrow().previousBlockRootHash(), previousBlockHash);
+
+            final var currentBlockHash = getBlockHash(
+                    requireNonNull(startOfBlockStateHash), previousBlockHash, inputTreeHasher, outputTreeHasher);
+            validateBlockProof(lastBlockItem.blockProofOrThrow(), currentBlockHash);
+            previousBlockHash = currentBlockHash;
         }
         logger.info("Summary of changes by service:\n{}", stateChangesSummary);
         CRYPTO.digestTreeSync(state);
-        final var rootHash = state.getHash().getBytes();
+        final var rootHash = requireNonNull(state.getHash()).getBytes();
         if (!expectedRootHash.equals(rootHash)) {
             final var expectedHashes = getMaybeLastHashMnemonics(pathToNode0SwirldsLog);
             if (expectedHashes == null) {
@@ -292,6 +318,48 @@ public class StateChangesValidator implements BlockStreamValidator {
             });
             Assertions.fail(errorMsg.toString());
         }
+    }
+
+    private void hashInputOutputTree(
+            final BlockItem item,
+            final StreamingTreeHasher inputTreeHasher,
+            final StreamingTreeHasher outputTreeHasher) {
+        final var itemSerialized = BlockItem.PROTOBUF.toBytes(item);
+        switch (item.item().kind()) {
+            case EVENT_HEADER, EVENT_TRANSACTION -> inputTreeHasher.addLeaf(itemSerialized);
+            case TRANSACTION_RESULT, TRANSACTION_OUTPUT, STATE_CHANGES -> outputTreeHasher.addLeaf(itemSerialized);
+            default -> {
+                // Other items are not part of the input/output trees
+            }
+        }
+    }
+
+    private Bytes getBlockHash(
+            final Bytes startOfBlockStateHash,
+            final Bytes previousBlockHash,
+            final StreamingTreeHasher inputTreeHasher,
+            final StreamingTreeHasher outputTreeHasher) {
+        final var inputTreeHash = inputTreeHasher.rootHash().join();
+        final var outputTreeHash = outputTreeHasher.rootHash().join();
+
+        final var leftHash = combine(previousBlockHash, inputTreeHash);
+        final var rightHash = combine(outputTreeHash, startOfBlockStateHash);
+        return combine(leftHash, rightHash);
+    }
+
+    private void validateBlockProof(final BlockProof blockProof, final Bytes currentBlockHash) {
+        // validate the signature of the block proof is the expected
+        final var actualSignature = blockProof.blockSignature();
+        var blockHash = currentBlockHash;
+
+        final var siblingHashes = blockProof.siblingHashes();
+        if (!siblingHashes.isEmpty()) {
+            for (final var siblingHash : siblingHashes) {
+                blockHash = combine(blockHash, siblingHash.siblingHash());
+            }
+        }
+        final var computedSignature = Bytes.wrap(CommonUtils.noThrowSha384HashOf(blockHash.toByteArray()));
+        Assertions.assertEquals(computedSignature, actualSignature);
     }
 
     private Map<String, String> hashesFor(@NonNull final MerkleStateRoot state) {
