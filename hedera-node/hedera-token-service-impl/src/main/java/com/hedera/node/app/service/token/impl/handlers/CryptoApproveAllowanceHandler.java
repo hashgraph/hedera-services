@@ -477,7 +477,8 @@ public class CryptoApproveAllowanceHandler implements TransactionHandler {
             final var nftId =
                     NftID.newBuilder().serialNumber(serialNum).tokenId(tokenId).build();
             final var nft = TokenHandlerHelper.getIfUsable(nftId, uniqueTokenStore);
-            final var token = TokenHandlerHelper.getIfUsable(tokenId, tokenStore);
+            final var token = TokenHandlerHelper.getIfUsable(
+                    tokenId, tokenStore, TokenHandlerHelper.TokenValidations.PERMIT_PAUSED);
 
             final AccountID accountOwner = owner.accountId();
             validateTrue(isValidOwner(nft, accountOwner, token), SENDER_DOES_NOT_OWN_NFT_SERIAL_NO);

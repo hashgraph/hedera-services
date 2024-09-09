@@ -27,6 +27,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_STAKING_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MEMO_TOO_LONG;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.PROXY_ACCOUNT_ID_FIELD_IS_DEPRECATED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.STAKING_NOT_ENABLED;
@@ -146,6 +147,9 @@ class CryptoUpdateHandlerTest extends CryptoHandlerTestBase {
         updateReadableAccountStore(Map.of(updateAccountId.accountNum(), updateAccount, accountNum, account));
         lenient().when(handleContext.savepointStack()).thenReturn(stack);
         lenient().when(stack.getBaseBuilder(CryptoUpdateStreamBuilder.class)).thenReturn(streamBuilder);
+        lenient()
+                .when(expiryValidator.expirationStatus(any(), anyBoolean(), anyLong()))
+                .thenReturn(OK);
 
         subject = new CryptoUpdateHandler(waivers);
     }
