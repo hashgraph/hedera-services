@@ -187,10 +187,7 @@ jobs:
     needs:
       - dependency-check
       - spotless
-    if: ${{ github.event_name != 'pull_request' || (github.actor != 'dependabot[bot]' && github.event.pull_request.head.repo.full_name == github.repository) }}
     with:
-      branch-name: ${{ github.head_ref || github.ref_name }}
-      base-branch-name: ${{ github.base_ref || '' }}
       custom-job-label: Standard
       enable-unit-tests: false
       enable-hapi-tests-time-consuming: true
