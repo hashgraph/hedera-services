@@ -17,6 +17,7 @@
 package com.hedera.services.bdd.junit.hedera.embedded;
 
 import com.hedera.node.app.fixtures.state.FakeState;
+import com.hedera.services.bdd.junit.hedera.embedded.fakes.FakeTssBaseService;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;
@@ -42,10 +43,15 @@ public interface EmbeddedHedera {
 
     /**
      * Returns the fake state of the embedded Hedera node.
-     *
      * @return the fake state of the embedded Hedera node
      */
     FakeState state();
+
+    /**
+     * Returns the fake TSS base service of the embedded Hedera node.
+     * @return the fake TSS base service of the embedded Hedera node
+     */
+    FakeTssBaseService tssBaseService();
 
     /**
      * Returns the software version of the embedded Hedera node.

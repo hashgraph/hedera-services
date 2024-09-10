@@ -46,14 +46,14 @@ public interface BlockStreamValidator {
     }
 
     /**
-     * Validate the given {@link Block}s in the context of the given {@link RecordStreamAccess.Data} and
+     * Validate the given {@link Block}s in the context of the given {@link StreamFileAccess.RecordStreamData} and
      * returns a {@link Stream} of {@link Throwable}s representing any validation errors.
      * @param blocks the blocks to validate
      * @param data the record stream data
      * @return a stream of validation errors
      */
     default Stream<Throwable> validationErrorsIn(
-            @NonNull final List<Block> blocks, @NonNull final RecordStreamAccess.Data data) {
+            @NonNull final List<Block> blocks, @NonNull final StreamFileAccess.RecordStreamData data) {
         try {
             validateBlockVsRecords(blocks, data);
         } catch (final Throwable t) {
@@ -63,12 +63,12 @@ public interface BlockStreamValidator {
     }
 
     /**
-     * Validate the given {@link Block}s in the context of the given {@link RecordStreamAccess.Data}.
+     * Validate the given {@link Block}s in the context of the given {@link StreamFileAccess.RecordStreamData}.
      * @param blocks the blocks to validate
      * @param data the record stream data
      */
     default void validateBlockVsRecords(
-            @NonNull final List<Block> blocks, @NonNull final RecordStreamAccess.Data data) {
+            @NonNull final List<Block> blocks, @NonNull final StreamFileAccess.RecordStreamData data) {
         validateBlocks(blocks);
     }
 
