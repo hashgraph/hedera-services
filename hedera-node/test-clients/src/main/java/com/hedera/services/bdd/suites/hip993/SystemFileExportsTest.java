@@ -40,12 +40,12 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.given;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.nOps;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingTwo;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.recordStreamMustIncludeNoFailuresFrom;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.recordStreamMustIncludePassFrom;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.selectedItems;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.simulatePostUpgradeTransaction;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcingContextual;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.streamMustIncludeNoFailuresFrom;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.streamMustIncludePassFrom;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsdWithin;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.visibleItems;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
@@ -124,7 +124,7 @@ public class SystemFileExportsTest {
         };
         final AtomicReference<Map<Long, X509Certificate>> gossipCertificates = new AtomicReference<>();
         return hapiTest(
-                streamMustIncludePassFrom(selectedItems(
+                recordStreamMustIncludePassFrom(selectedItems(
                         addressBookExportValidator(grpcCertHashes, gossipCertificates), 1, this::isSysFileUpdate)),
                 given(() -> gossipCertificates.set(generateCertificates(CLASSIC_HAPI_TEST_NETWORK_SIZE))),
                 // This is the genesis transaction
@@ -148,7 +148,7 @@ public class SystemFileExportsTest {
         final var upgradeFeeSchedules =
                 CurrentAndNextFeeSchedule.parseFrom(SYS_FILE_SERDES.get(111L).toRawFile(feeSchedulesJson, null));
         return hapiTest(
-                streamMustIncludePassFrom(selectedItems(
+                recordStreamMustIncludePassFrom(selectedItems(
                         sysFileExportValidator(
                                 "files.feeSchedules", upgradeFeeSchedules, SystemFileExportsTest::parseFeeSchedule),
                         2,
@@ -191,7 +191,7 @@ public class SystemFileExportsTest {
         final var upgradeThrottleDefs =
                 ThrottleDefinitions.parseFrom(SYS_FILE_SERDES.get(123L).toRawFile(throttlesJson, null));
         return hapiTest(
-                streamMustIncludePassFrom(selectedItems(
+                recordStreamMustIncludePassFrom(selectedItems(
                         sysFileExportValidator(
                                 "files.throttleDefinitions",
                                 upgradeThrottleDefs,
@@ -232,7 +232,7 @@ public class SystemFileExportsTest {
         final var upgradePropOverrides =
                 ServicesConfigurationList.parseFrom(SYS_FILE_SERDES.get(121L).toRawFile(overrideProperties, null));
         return hapiTest(
-                streamMustIncludePassFrom(selectedItems(
+                recordStreamMustIncludePassFrom(selectedItems(
                         sysFileExportValidator(
                                 "files.networkProperties",
                                 upgradePropOverrides,
@@ -267,7 +267,7 @@ public class SystemFileExportsTest {
     @GenesisHapiTest
     final Stream<DynamicTest> syntheticPropertyOverridesUpdateCanBeEmptyFile() {
         return hapiTest(
-                streamMustIncludePassFrom(selectedItems(
+                recordStreamMustIncludePassFrom(selectedItems(
                         sysFileExportValidator(
                                 "files.networkProperties",
                                 ServicesConfigurationList.getDefaultInstance(),
@@ -308,7 +308,7 @@ public class SystemFileExportsTest {
         final var upgradePermissionOverrides =
                 ServicesConfigurationList.parseFrom(SYS_FILE_SERDES.get(122L).toRawFile(overridePermissions, null));
         return hapiTest(
-                streamMustIncludePassFrom(selectedItems(
+                recordStreamMustIncludePassFrom(selectedItems(
                         sysFileExportValidator(
                                 "files.hapiPermissions",
                                 upgradePermissionOverrides,
@@ -347,7 +347,7 @@ public class SystemFileExportsTest {
     final Stream<DynamicTest> syntheticFileCreationsMatchQueries() {
         final AtomicReference<Map<FileID, Bytes>> preGenesisContents = new AtomicReference<>();
         return hapiTest(
-                streamMustIncludeNoFailuresFrom(visibleItems(validatorFor(preGenesisContents), "genesisTxn")),
+                recordStreamMustIncludeNoFailuresFrom(visibleItems(validatorFor(preGenesisContents), "genesisTxn")),
                 getSystemFiles(preGenesisContents::set),
                 cryptoCreate("firstUser").via("genesisTxn"),
                 // Assert the first created entity still has the expected number

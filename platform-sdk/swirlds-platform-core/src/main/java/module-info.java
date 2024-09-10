@@ -1,6 +1,3 @@
-import com.swirlds.config.api.ConfigurationExtension;
-import com.swirlds.platform.config.PlatformConfigurationExtension;
-
 /**
  * The Swirlds public API module used by platform applications.
  */

@@ -36,6 +36,11 @@ import java.util.Objects;
  */
 public class WritableRosterStore extends ReadableRosterStoreImpl {
 
+    /**
+     * Constructs a new {@link WritableRosterStore} instance.
+     *
+     * @param states the readable states
+     */
     public WritableRosterStore(@NonNull final ReadableStates states) {
         super(states);
     }
@@ -56,17 +61,17 @@ public class WritableRosterStore extends ReadableRosterStoreImpl {
      * @param roster the roster to set
      *  @param round the round in which this roster became active
      */
-    public void setActiveRoster(final Roster roster, final long round) {
+    public void setActiveRoster(@NonNull final Roster roster, final long round) {
         Objects.requireNonNull(roster);
-        final RosterState previousRosterState = rosterState().get();
-        Objects.requireNonNull(previousRosterState);
+        final RosterState currentRosterState = rosterState().get();
+        Objects.requireNonNull(currentRosterState);
 
         // update the roster state
-        final List<RoundRosterPair> roundRosterPairs = new LinkedList<>(previousRosterState.roundRosterPairs());
-        final Bytes activeRosterHash = Bytes.wrap(RosterUtils.hashOf(roster));
+        final List<RoundRosterPair> roundRosterPairs = new LinkedList<>(currentRosterState.roundRosterPairs());
+        final Bytes activeRosterHash = RosterUtils.hashOf(roster).getBytes();
         roundRosterPairs.addFirst(new RoundRosterPair(round, activeRosterHash));
         final Builder rosterStateBuilder = RosterState.newBuilder()
-                .candidateRosterHash(previousRosterState.candidateRosterHash())
+                .candidateRosterHash(currentRosterState.candidateRosterHash())
                 .roundRosterPairs(roundRosterPairs);
         rosterState().put(rosterStateBuilder.build());
 
@@ -83,8 +88,10 @@ public class WritableRosterStore extends ReadableRosterStoreImpl {
         Objects.requireNonNull(roster);
 
         // update the roster state
-        final Bytes candidateRosterHash = Bytes.wrap(RosterUtils.hashOf(roster));
-        final Builder rosterStateBuilder = RosterState.newBuilder().candidateRosterHash(candidateRosterHash);
+        final Bytes candidateRosterHash = RosterUtils.hashOf(roster).getBytes();
+        final Builder rosterStateBuilder = RosterState.newBuilder()
+                .candidateRosterHash(candidateRosterHash)
+                .roundRosterPairs(rosterState().get().roundRosterPairs());
         rosterState().put(rosterStateBuilder.build());
 
         // update the roster map
