@@ -88,10 +88,11 @@ public class PcesFileIterator implements IOIterator<PlatformEvent> {
             final long initialCount = counter.getCount();
 
             try {
-                final PlatformEvent candidate = switch (fileVersion){
-                    case ORIGINAL -> EventSerializationUtils.deserializePlatformEvent(stream, true);
-                    case PROTOBUF_EVENTS -> new PlatformEvent(stream.readPbjRecord(GossipEvent.PROTOBUF));
-                };
+                final PlatformEvent candidate =
+                        switch (fileVersion) {
+                            case ORIGINAL -> EventSerializationUtils.deserializePlatformEvent(stream, true);
+                            case PROTOBUF_EVENTS -> new PlatformEvent(stream.readPbjRecord(GossipEvent.PROTOBUF));
+                        };
                 if (candidate.getAncientIndicator(fileType) >= lowerBound) {
                     next = candidate;
                 }

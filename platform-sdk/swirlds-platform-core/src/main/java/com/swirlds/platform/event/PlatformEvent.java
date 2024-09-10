@@ -113,9 +113,7 @@ public class PlatformEvent implements ConsensusEvent, Hashable {
      * @param gossipEvent the gossip event
      */
     public PlatformEvent(@NonNull final GossipEvent gossipEvent) {
-        this(
-                Objects.requireNonNull(gossipEvent, "The gossipEvent must not be null"),
-                new EventMetadata(gossipEvent));
+        this(Objects.requireNonNull(gossipEvent, "The gossipEvent must not be null"), new EventMetadata(gossipEvent));
     }
 
     private PlatformEvent(@NonNull final GossipEvent gossipEvent, @NonNull final EventMetadata metadata) {

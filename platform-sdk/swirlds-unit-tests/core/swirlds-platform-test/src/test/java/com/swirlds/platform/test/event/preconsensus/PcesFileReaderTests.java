@@ -44,7 +44,6 @@ import com.swirlds.platform.event.preconsensus.PcesFile;
 import com.swirlds.platform.event.preconsensus.PcesFileReader;
 import com.swirlds.platform.event.preconsensus.PcesFileTracker;
 import com.swirlds.platform.event.preconsensus.PcesFileVersion;
-import com.swirlds.platform.event.preconsensus.PcesMutableFile;
 import com.swirlds.platform.eventhandling.EventConfig_;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.FileOutputStream;
