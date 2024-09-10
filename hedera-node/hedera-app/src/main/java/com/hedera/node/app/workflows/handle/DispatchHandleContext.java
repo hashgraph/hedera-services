@@ -52,7 +52,6 @@ import com.hedera.node.app.spi.store.StoreFactory;
 import com.hedera.node.app.spi.throttle.ThrottleAdviser;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
-import com.hedera.node.app.spi.workflows.ComputeDispatchFeesAsTopLevel;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
@@ -197,14 +196,6 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
         return verifier.numSignaturesVerified();
     }
 
-    @Override
-    public Fees dispatchComputeFees(
-            @NonNull final TransactionBody childTxBody, @NonNull final AccountID syntheticPayerId) {
-        requireNonNull(childTxBody);
-        requireNonNull(syntheticPayerId);
-        return dispatchComputeFees(childTxBody, syntheticPayerId, ComputeDispatchFeesAsTopLevel.NO);
-    }
-
     @NonNull
     @Override
     public BlockRecordInfo blockRecordInfo() {
@@ -227,7 +218,6 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
                 SignatureMap.PROTOBUF.measureRecord(txnInfo.signatureMap()),
                 consensusNow,
                 subType,
-                false,
                 storeFactory.asReadOnly());
     }
 
@@ -308,10 +298,7 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
     }
 
     @Override
-    public Fees dispatchComputeFees(
-            @NonNull final TransactionBody txBody,
-            @NonNull final AccountID syntheticPayerId,
-            @NonNull final ComputeDispatchFeesAsTopLevel computeDispatchFeesAsTopLevel) {
+    public Fees dispatchComputeFees(@NonNull final TransactionBody txBody, @NonNull final AccountID syntheticPayerId) {
         final var bodyToDispatch = ensureTxnId(txBody);
         try {
             // If the payer is authorized to waive fees, then we can skip the fee calculation.
@@ -327,7 +314,6 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
                 this,
                 bodyToDispatch,
                 syntheticPayerId,
-                computeDispatchFeesAsTopLevel == ComputeDispatchFeesAsTopLevel.NO,
                 authorizer,
                 storeFactory.asReadOnly(),
                 consensusNow));

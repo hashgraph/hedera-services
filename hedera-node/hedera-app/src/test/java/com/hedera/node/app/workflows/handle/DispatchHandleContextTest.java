@@ -93,7 +93,6 @@ import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
 import com.hedera.node.app.spi.signatures.VerificationAssistant;
 import com.hedera.node.app.spi.throttle.ThrottleAdviser;
-import com.hedera.node.app.spi.workflows.ComputeDispatchFeesAsTopLevel;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
@@ -347,7 +346,6 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
                         eq(0),
                         eq(CONSENSUS_NOW),
                         eq(TOKEN_NON_FUNGIBLE_UNIQUE_WITH_CUSTOM_FEES),
-                        eq(false),
                         eq(readableStoreFactory)))
                 .willReturn(feeCalculator);
         final var factory = subject.feeCalculatorFactory();
@@ -498,7 +496,7 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
             final var fees = new Fees(1L, 2L, 3L);
             given(dispatcher.dispatchComputeFees(any())).willReturn(fees);
             final var captor = ArgumentCaptor.forClass(FeeContext.class);
-            final var result = subject.dispatchComputeFees(txBody, account1002, ComputeDispatchFeesAsTopLevel.NO);
+            final var result = subject.dispatchComputeFees(txBody, account1002);
             verify(dispatcher).dispatchComputeFees(captor.capture());
             final var feeContext = captor.getValue();
             assertInstanceOf(ChildFeeContextImpl.class, feeContext);
@@ -511,8 +509,7 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
             final var fees = new Fees(1L, 2L, 3L);
             given(dispatcher.dispatchComputeFees(any())).willReturn(fees);
             final var captor = ArgumentCaptor.forClass(FeeContext.class);
-            final var result =
-                    subject.dispatchComputeFees(txnBodyWithoutId, account1002, ComputeDispatchFeesAsTopLevel.NO);
+            final var result = subject.dispatchComputeFees(txnBodyWithoutId, account1002);
             verify(dispatcher).dispatchComputeFees(captor.capture());
             final var feeContext = captor.getValue();
             assertInstanceOf(ChildFeeContextImpl.class, feeContext);

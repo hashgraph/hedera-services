@@ -44,7 +44,6 @@ public class ChildFeeContextImpl implements FeeContext {
     private final FeeContext context;
     private final TransactionBody body;
     private final AccountID payerId;
-    private final boolean computeFeesAsInternalDispatch;
     private final Authorizer authorizer;
     private final ReadableStoreFactory storeFactory;
     private final Instant consensusNow;
@@ -54,7 +53,6 @@ public class ChildFeeContextImpl implements FeeContext {
             @NonNull final FeeContext context,
             @NonNull final TransactionBody body,
             @NonNull final AccountID payerId,
-            final boolean computeFeesAsInternalDispatch,
             @NonNull final Authorizer authorizer,
             @NonNull final ReadableStoreFactory storeFactory,
             @NonNull final Instant consensusNow) {
@@ -62,7 +60,6 @@ public class ChildFeeContextImpl implements FeeContext {
         this.context = requireNonNull(context);
         this.body = requireNonNull(body);
         this.payerId = requireNonNull(payerId);
-        this.computeFeesAsInternalDispatch = computeFeesAsInternalDispatch;
         this.authorizer = requireNonNull(authorizer);
         this.storeFactory = requireNonNull(storeFactory);
         this.consensusNow = requireNonNull(consensusNow);
@@ -81,15 +78,7 @@ public class ChildFeeContextImpl implements FeeContext {
     private @NonNull FeeCalculator createFeeCalculator(@NonNull final SubType subType) {
         try {
             return feeManager.createFeeCalculator(
-                    body,
-                    Key.DEFAULT,
-                    functionOf(body),
-                    0,
-                    0,
-                    consensusNow,
-                    subType,
-                    computeFeesAsInternalDispatch,
-                    storeFactory);
+                    body, Key.DEFAULT, functionOf(body), 0, 0, consensusNow, subType, storeFactory);
         } catch (UnknownHederaFunctionality e) {
             throw new IllegalStateException(
                     "Child fee context was constructed with invalid transaction body " + body, e);

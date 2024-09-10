@@ -180,7 +180,6 @@ public final class FeeManager {
             final int signatureMapSize,
             @NonNull final Instant consensusTime,
             @NonNull final SubType subType,
-            final boolean isInternalDispatch,
             final ReadableStoreFactory storeFactory) {
 
         if (txBody == null || payerKey == null || functionality == null) {
@@ -200,7 +199,6 @@ public final class FeeManager {
                 signatureMapSize,
                 feeData,
                 exchangeRateManager.activeRate(consensusTime),
-                isInternalDispatch,
                 congestionMultipliers,
                 storeFactory);
     }

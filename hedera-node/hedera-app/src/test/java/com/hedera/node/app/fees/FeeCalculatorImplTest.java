@@ -66,7 +66,6 @@ public class FeeCalculatorImplTest {
                 0,
                 feeData,
                 ExchangeRate.DEFAULT,
-                false,
                 congestionMultipliers,
                 new ReadableStoreFactory(new FakeState()));
         assertNotNull(calculator);
@@ -94,7 +93,6 @@ public class FeeCalculatorImplTest {
                         0,
                         feeData,
                         ExchangeRate.DEFAULT,
-                        false,
                         congestionMultipliers,
                         new ReadableStoreFactory(new FakeState())));
     }

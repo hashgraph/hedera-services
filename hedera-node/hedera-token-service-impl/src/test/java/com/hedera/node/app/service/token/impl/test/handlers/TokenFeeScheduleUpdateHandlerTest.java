@@ -26,7 +26,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
@@ -279,7 +278,7 @@ class TokenFeeScheduleUpdateHandlerTest extends CryptoTokenHandlerTestBase {
         customFees.add(withFractionalFee(fractionalFee));
         customFees.add(withRoyaltyFee(royaltyFee));
 
-        when(feeManager.createFeeCalculator(any(), any(), any(), anyInt(), anyInt(), any(), any(), anyBoolean(), any()))
+        when(feeManager.createFeeCalculator(any(), any(), any(), anyInt(), anyInt(), any(), any(), any()))
                 .thenReturn(feeCalculator);
         when(txnInfo.txBody()).thenReturn(transactionBody);
         when(transactionBody.tokenFeeScheduleUpdateOrThrow()).thenReturn(tokenFeeScheduleUpdateTransactionBody);

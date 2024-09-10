@@ -220,7 +220,7 @@ public class StepsBase extends CryptoTokenHandlerTestBase {
                         any(ExternalizedRecordCustomizer.class),
                         any()))
                 .willReturn(cryptoCreateRecordBuilder);
-        given(handleContext.dispatchComputeFees(any(), any(), any())).willReturn(new Fees(1l, 2l, 3l));
+        given(handleContext.dispatchComputeFees(any(), any())).willReturn(new Fees(1l, 2l, 3l));
         transferContext = new TransferContextImpl(handleContext);
         given(configProvider.getConfiguration()).willReturn(versionedConfig);
     }
