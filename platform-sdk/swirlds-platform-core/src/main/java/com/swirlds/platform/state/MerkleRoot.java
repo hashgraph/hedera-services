@@ -33,12 +33,23 @@ public interface MerkleRoot extends MerkleInternal {
     SwirldState getSwirldState();
 
     /**
-     * Get the platform state.
+     * Get readable platform state.
+     * Works on both - mutable and immutable {@link MerkleRoot} and, therefore, this method should be preferred.
      *
-     * @return the platform state
+     * @return immutable platform state
      */
     @NonNull
-    PlatformStateAccessor getPlatformState();
+    PlatformStateAccessor getReadablePlatformState();
+
+    /**
+     * Get writable platform state. Works only on mutable {@link MerkleRoot}.
+     * Call this method only if you need to modify the platform state.
+     *
+     * @return mutable platform state
+     */
+    @NonNull
+    PlatformStateAccessor getWritablePlatformState();
+
     /**
      * Set the platform state.
      *

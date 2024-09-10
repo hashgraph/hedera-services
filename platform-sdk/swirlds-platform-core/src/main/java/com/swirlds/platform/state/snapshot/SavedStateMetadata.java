@@ -167,7 +167,7 @@ public record SavedStateMetadata(
         Objects.requireNonNull(signedState.getState().getHash(), "state must be hashed");
         Objects.requireNonNull(now, "now must not be null");
 
-        final PlatformStateAccessor platformState = signedState.getState().getPlatformState();
+        final PlatformStateAccessor platformState = signedState.getState().getReadablePlatformState();
 
         final List<NodeId> signingNodes = signedState.getSigSet().getSigningNodes();
         Collections.sort(signingNodes);
