@@ -40,9 +40,13 @@ import com.swirlds.common.utility.RuntimeObjectRecord;
 import com.swirlds.common.utility.RuntimeObjectRegistry;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.metrics.api.Metrics;
+import com.swirlds.platform.crypto.CryptoStatic;
 import com.swirlds.platform.state.service.PlatformStateService;
 import com.swirlds.platform.state.service.ReadablePlatformStateStore;
 import com.swirlds.platform.state.service.WritablePlatformStateStore;
+import com.swirlds.platform.state.signed.SignedState;
+import com.swirlds.platform.state.snapshot.SignedStateFileWriter;
+import com.swirlds.platform.state.snapshot.StateToDiskReason;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.Round;
@@ -84,6 +88,7 @@ import com.swirlds.virtualmap.VirtualMap;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -144,6 +149,8 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
 
     private final Function<SemanticVersion, SoftwareVersion> versionFactory;
     private MerkleCryptography merkleCryptography;
+    private PlatformContext platformContext;
+    private Platform platform;
 
     public Map<String, Map<String, StateMetadata<?, ?>>> getServices() {
         return services;
@@ -235,8 +242,10 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
             @NonNull final Platform platform,
             @NonNull final InitTrigger trigger,
             @Nullable final SoftwareVersion deserializedVersion) {
-        metrics = platform.getContext().getMetrics();
-        merkleCryptography = platform.getContext().getMerkleCryptography();
+        this.platform = platform;
+        platformContext = this.platform.getContext();
+        metrics = platformContext.getMetrics();
+        merkleCryptography = platformContext.getMerkleCryptography();
 
         // If we are initialized for event stream recovery, we have to register an
         // extra listener to make sure we call all the required Hedera lifecycles
@@ -1080,6 +1089,29 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
         } catch (final InterruptedException e) {
             logger.error(EXCEPTION.getMarker(), "Interrupted while hashing state. Expect buggy behavior.");
             Thread.currentThread().interrupt();
+        }
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void createSnapshot(Path targetPath) {
+        throwIfMutable();
+        throwIfDestroyed();
+        final SignedState signedState = new SignedState(
+                platformContext, CryptoStatic::verifySignature, this, "MerkleStateRoot.snapshot()", true, true, false);
+        signedState.markAsStateToSave(StateToDiskReason.SNAPSHOT_ON_DEMAND);
+        try {
+            SignedStateFileWriter.writeSignedStateToDisk(
+                    platformContext, platform.getSelfId(), targetPath, signedState, signedState.getStateToDiskReason());
+        } catch (final Throwable e) {
+            logger.error(
+                    EXCEPTION.getMarker(),
+                    "Unable to write signed state to disk for round {} to {}.",
+                    signedState.getRound(),
+                    targetPath,
+                    e);
         }
     }
 }
