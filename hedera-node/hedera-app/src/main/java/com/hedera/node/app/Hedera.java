@@ -104,6 +104,7 @@ import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.SwirldMain;
 import com.swirlds.platform.system.events.Event;
+import com.swirlds.platform.system.state.notifications.StateHashedListener;
 import com.swirlds.platform.system.status.PlatformStatus;
 import com.swirlds.platform.system.transaction.Transaction;
 import com.swirlds.state.State;
@@ -805,6 +806,7 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener {
             notifications.unregister(ReconnectCompleteListener.class, daggerApp.reconnectListener());
             notifications.unregister(StateWriteToDiskCompleteListener.class, daggerApp.stateWriteToDiskListener());
             if (blockStreamEnabled) {
+                notifications.unregister(StateHashedListener.class, daggerApp.blockStreamManager());
                 daggerApp.tssBaseService().unregisterLedgerSignatureConsumer(daggerApp.blockStreamManager());
             }
         }
@@ -835,6 +837,7 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener {
         notifications.register(ReconnectCompleteListener.class, daggerApp.reconnectListener());
         notifications.register(StateWriteToDiskCompleteListener.class, daggerApp.stateWriteToDiskListener());
         if (blockStreamEnabled) {
+            notifications.register(StateHashedListener.class, daggerApp.blockStreamManager());
             daggerApp
                     .blockStreamManager()
                     .initLastBlockHash(

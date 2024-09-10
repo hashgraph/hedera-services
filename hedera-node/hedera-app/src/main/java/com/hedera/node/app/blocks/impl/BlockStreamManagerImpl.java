@@ -66,6 +66,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
@@ -134,7 +135,7 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
     /**
      * A map of round numbers to the hash of the round state.
      */
-    private final Map<AtomicLong, AtomicReference<CompletableFuture<Bytes>>> roundHashes = new ConcurrentHashMap<>();
+    private final Map<Long, AtomicReference<CompletableFuture<Bytes>>> roundHashes = new ConcurrentHashMap<>();
 
     @Inject
     public BlockStreamManagerImpl(
@@ -220,10 +221,14 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
 
             final var inputHash = inputTreeHasher.rootHash().join();
             final var outputHash = outputTreeHasher.rootHash().join();
-            final var blockStartStateHash =
-                    roundHashes.get(new AtomicLong(roundNum)).get().join();
 
             final var leftParent = combine(lastBlockHash, inputHash);
+
+            final var blockStartStateHashRef = roundHashes.computeIfAbsent(roundNum, (k) -> new AtomicReference<>());
+            final CompletableFuture<Bytes> blockStartStateFuture = new CompletableFuture<>();
+            blockStartStateHashRef.compareAndSet(null, blockStartStateFuture);
+            final var blockStartStateHash = blockStartStateHashRef.get().join();
+
             final var rightParent = combine(outputHash, blockStartStateHash);
             final var blockHash = combine(leftParent, rightParent);
             final var pendingProof = BlockProof.newBuilder()
@@ -533,8 +538,8 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
                 "StateHashedNotification Received : hash: {}, roundNumber: {}",
                 notification.hash(),
                 notification.round());
-        roundHashes.put(
-                new AtomicLong(notification.round()),
-                new AtomicReference<>(completedFuture(notification.hash().getBytes())));
+        final var ref = roundHashes.computeIfAbsent(notification.round(), k -> new AtomicReference<>());
+        ref.compareAndSet(null, completedFuture(notification.hash().getBytes()));
+        ref.get().complete(notification.hash().getBytes());
     }
 }

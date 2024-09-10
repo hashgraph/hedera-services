@@ -263,9 +263,8 @@ public class StateChangesValidator implements BlockStreamValidator {
         for (final var block : blocks) {
             StateChanges lastStateChanges = null;
             // get the state hash before applying the state changes from current block
-            //            CRYPTO.digestTreeSync(state);
-            // (FUTURE) use `state.getHash()` instead of an empty byte array
-            final var startOfBlockStateHash = Bytes.wrap(new byte[48]); 
+            CRYPTO.digestTreeSync(state);
+            final var startOfBlockStateHash = state.getHash();
 
             final StreamingTreeHasher inputTreeHasher = new NaiveStreamingTreeHasher();
             final StreamingTreeHasher outputTreeHasher = new NaiveStreamingTreeHasher();
@@ -292,8 +291,8 @@ public class StateChangesValidator implements BlockStreamValidator {
             Assertions.assertTrue(lastBlockItem.hasBlockProof());
             Assertions.assertEquals(lastBlockItem.blockProofOrThrow().previousBlockRootHash(), previousBlockHash);
 
-            final var currentBlockHash = getBlockHash(
-                    requireNonNull(startOfBlockStateHash), previousBlockHash, inputTreeHasher, outputTreeHasher);
+            final var currentBlockHash = getBlockHash(requireNonNull(startOfBlockStateHash).getBytes(),
+                    previousBlockHash, inputTreeHasher, outputTreeHasher);
             validateBlockProof(lastBlockItem.blockProofOrThrow(), currentBlockHash);
             previousBlockHash = currentBlockHash;
         }
