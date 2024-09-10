@@ -127,10 +127,6 @@ public class CustomFeeSpecs {
         return baseFixedBuilder(amount, collector, allCollectorsExempt, spec).build();
     }
 
-    static ConsensusCustomFee builtFixedTopicHbar(long amount, String collector, HapiSpec spec) {
-        return baseFixedTopicBuilder(amount, collector, spec).build();
-    }
-
     static FixedFee builtFixedHbarSansCollector(long amount) {
         return FixedFee.newBuilder().setAmount(amount).build();
     }
@@ -219,7 +215,7 @@ public class CustomFeeSpecs {
                 .setFeeCollectorAccountId(collectorId);
     }
 
-    static ConsensusCustomFee.Builder baseFixedTopicBuilder(long amount, String collector, HapiSpec spec) {
+    static ConsensusCustomFee.Builder baseConsensusFixedBuilder(long amount, String collector, HapiSpec spec) {
         final var collectorId =
                 isIdLiteral(collector) ? asAccount(collector) : spec.registry().getAccountID(collector);
         final var fixedBuilder = FixedFee.newBuilder().setAmount(amount);
@@ -238,21 +234,14 @@ public class CustomFeeSpecs {
 
     // builders
     static ConsensusCustomFee builtConsensusFixedHbar(long amount, String collector, HapiSpec spec) {
-        return baseFixedTopicBuilder(amount, collector, spec).build();
+        return baseConsensusFixedBuilder(amount, collector, spec).build();
     }
 
     static ConsensusCustomFee builtConsensusFixedHts(long amount, String denom, String collector, HapiSpec spec) {
-        final var builder = baseFixedTopicBuilder(amount, collector, spec);
+        final var builder = baseConsensusFixedBuilder(amount, collector, spec);
         final var denomId =
                 isIdLiteral(denom) ? asToken(denom) : spec.registry().getTokenID(denom);
         builder.getFixedFeeBuilder().setDenominatingTokenId(denomId);
         return builder.build();
     }
-
-    //    static ConsensusCustomFee.Builder baseFixedTopicBuilder(long amount, String collector, HapiSpec spec) {
-    //        final var collectorId =
-    //                isIdLiteral(collector) ? asAccount(collector) : spec.registry().getAccountID(collector);
-    //        final var fixedBuilder = FixedFee.newBuilder().setAmount(amount);
-    //        return ConsensusCustomFee.newBuilder().setFixedFee(fixedBuilder).setFeeCollectorAccountId(collectorId);
-    //    }
 }

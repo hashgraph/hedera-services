@@ -176,7 +176,6 @@ public class HapiTopicCreate extends HapiTxnOp<HapiTopicCreate> {
                                     b.addCustomFees(supplier.apply(spec));
                                 }
                             }
-                            // todo add custom fee
                             if (clearAutoRenewPeriod) {
                                 b.clearAutoRenewPeriod();
                             }

@@ -20,11 +20,16 @@ import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTopicInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createTopic;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedConsensusHbarFee;
-import static com.hedera.services.bdd.spec.transactions.token.CustomFeeTests.fixedTopicHbarFee;
+import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedConsensusHtsFee;
+import static com.hedera.services.bdd.spec.transactions.token.CustomFeeTests.expectedConsensusFixedHTSFee;
+import static com.hedera.services.bdd.spec.transactions.token.CustomFeeTests.expectedConsensusFixedHbarFee;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 
 import com.hedera.services.bdd.junit.HapiTest;
+import com.hederahashgraph.api.proto.java.TokenType;
 import java.util.List;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.DisplayName;
@@ -103,8 +108,32 @@ public class TopicCustomFeeTest {
                         .hasAdminKey(adminKey)
                         .hasSubmitKey(submitKey)
                         .hasFeeScheduleKey(feeScheduleKey)
-                        .hasCustom(fixedTopicHbarFee(1, collector)));
+                        .hasCustom(expectedConsensusFixedHbarFee(1, collector)));
     }
 
-    // todo add test get info of deleted or expired-?
+    @HapiTest
+    @DisplayName("Create topic with 1 HTS fixed fee")
+    final Stream<DynamicTest> createTopicWithOneHTSFixedFee() {
+        final var adminKey = "adminKey";
+        final var submitKey = "submitKey";
+        final var feeScheduleKey = "feeScheduleKey";
+        final var collector = "collector";
+        return hapiTest(
+                newKeyNamed(adminKey),
+                newKeyNamed(submitKey),
+                newKeyNamed(feeScheduleKey),
+                cryptoCreate(collector),
+                tokenCreate("testToken").tokenType(TokenType.FUNGIBLE_COMMON).initialSupply(500),
+                tokenAssociate(collector, "testToken"),
+                createTopic("testTopic")
+                        .adminKeyName(adminKey)
+                        .submitKeyName(submitKey)
+                        .feeScheduleKeyName(feeScheduleKey)
+                        .withConsensusCustomFee(fixedConsensusHtsFee(1, "testToken", collector)),
+                getTopicInfo("testTopic")
+                        .hasAdminKey(adminKey)
+                        .hasSubmitKey(submitKey)
+                        .hasFeeScheduleKey(feeScheduleKey)
+                        .hasCustom(expectedConsensusFixedHTSFee(1, "testToken", collector)));
+    }
 }

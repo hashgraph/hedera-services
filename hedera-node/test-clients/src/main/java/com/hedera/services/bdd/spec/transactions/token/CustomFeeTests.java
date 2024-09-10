@@ -92,10 +92,19 @@ public class CustomFeeTests {
         };
     }
 
-    public static BiConsumer<HapiSpec, List<ConsensusCustomFee>> fixedTopicHbarFee(long amount, String collector) {
+    public static BiConsumer<HapiSpec, List<ConsensusCustomFee>> expectedConsensusFixedHbarFee(
+            long amount, String collector) {
         return (spec, actual) -> {
-            final var expected = CustomFeeSpecs.builtFixedTopicHbar(amount, collector, spec);
+            final var expected = CustomFeeSpecs.builtConsensusFixedHbar(amount, collector, spec);
             failUnlessConsensusFeePresent("fixed ℏ", actual, expected);
+        };
+    }
+
+    public static BiConsumer<HapiSpec, List<ConsensusCustomFee>> expectedConsensusFixedHTSFee(
+            long amount, String token, String collector) {
+        return (spec, actual) -> {
+            final var expected = CustomFeeSpecs.builtConsensusFixedHts(amount, token, collector, spec);
+            failUnlessConsensusFeePresent("fixed hts", actual, expected);
         };
     }
 
