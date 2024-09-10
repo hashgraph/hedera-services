@@ -235,7 +235,7 @@ public final class HandlerUtility {
      * @param currentConsensusTime The current consensus time for the network.
      * @param maxLifeSeconds The maximum number of seconds a schedule is permitted to exist on the ledger
      *     before it expires.
-     * @return a newly created Schedule with a null schedule ID.
+     * @return a newly created Schedule with a null schedule ID
      * @throws HandleException if the
      */
     @NonNull
@@ -365,7 +365,7 @@ public final class HandlerUtility {
 
     private static void filterSignatoriesToRequired(
             final Set<Key> signatories, final Collection<Key> required, final Set<Key> incomingSignatories) {
-        for (final Key next : required)
+        for (final Key next : required) {
             switch (next.key().kind()) {
                 case ED25519, ECDSA_SECP256K1, CONTRACT_ID, DELEGATABLE_CONTRACT_ID:
                     // Handle "primitive" keys, which are what the signatories set stores.
@@ -386,5 +386,6 @@ public final class HandlerUtility {
                     // These types are unsupported
                     break;
             }
+        }
     }
 }

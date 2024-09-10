@@ -26,12 +26,12 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Set;
 
 /**
- * Transactions and queries for the Crypto Service
+ * Transactions and queries for the Crypto Service.
  */
 @SuppressWarnings("java:S6548")
 public final class CryptoServiceDefinition implements RpcServiceDefinition {
     /**
-     * The singleton instance of this class
+     * The singleton instance of this class.
      */
     public static final CryptoServiceDefinition INSTANCE = new CryptoServiceDefinition();
 

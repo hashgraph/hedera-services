@@ -66,7 +66,7 @@ public class StakingRewardsDistributor {
      * @param stakingInfoStore The store to update the staking info in.
      * @param consensusNow The current consensus time.
      * @param recordBuilder The record builder to use for deleted account beneficiaries.
-     * @return The map of rewards paid to each receiver, which includes zero rewards if the calculated reward is zero.
+     * @return The map of rewards paid to each receiver, which includes zero rewards if the calculated reward is zero
      */
     public Map<AccountID, Long> payRewardsIfPending(
             @NonNull final Set<AccountID> possibleRewardReceivers,
@@ -101,9 +101,9 @@ public class StakingRewardsDistributor {
                 // accounts until we find a non-deleted account to try to reward (it may still decline)
                 if (modifiedAccount.deleted()) {
                     final var maxRedirects = recordBuilder.getNumberOfDeletedAccounts();
-                    var j = 1;
+                    var curRedirects = 1;
                     do {
-                        if (j++ > maxRedirects) {
+                        if (curRedirects++ > maxRedirects) {
                             log.error(
                                     "With {} accounts deleted, last redirect in modifications led to deleted"
                                             + " beneficiary {}",

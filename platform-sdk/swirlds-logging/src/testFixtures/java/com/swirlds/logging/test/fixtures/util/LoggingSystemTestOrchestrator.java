@@ -20,6 +20,7 @@ import com.swirlds.logging.api.internal.LoggingSystem;
 import java.time.Duration;
 import java.util.Collections;
 import java.util.List;
+import java.util.Random;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -47,15 +48,16 @@ public final class LoggingSystemTestOrchestrator {
                 .boxed()
                 .collect(Collectors.toList());
         Collections.shuffle(list);
-        long startTime = System.currentTimeMillis();
 
         for (Integer index : list) {
             orchestrator.testScenario(index, loggingSystem);
         }
         if (durationLimit != null && !durationLimit.isZero()) {
+            final long startTime = System.currentTimeMillis();
             long availableTime = durationLimit.toMillis() - (System.currentTimeMillis() - startTime);
-            for (int i = 0; availableTime > 0; i++) {
-                orchestrator.testScenario(list.get(i % list.size()), loggingSystem);
+            final Random random = new Random(System.currentTimeMillis());
+            while (availableTime > 0) {
+                orchestrator.testScenario(list.get(random.nextInt(list.size())), loggingSystem);
                 availableTime -= (System.currentTimeMillis() - startTime);
             }
         } else {
@@ -77,9 +79,10 @@ public final class LoggingSystemTestOrchestrator {
      * Performs the verification of scenario given by its index on the list
      */
     private void testScenario(int scenario, LoggingSystem system) {
+        final LoggingTestScenario loggingTestScenario = this.scenarios.get(scenario);
         // Reload Configuration for desired scenario
-        system.update(this.scenarios.get(scenario).configuration());
+        system.update(loggingTestScenario.configuration());
         // Performs the check
-        this.scenarios.get(scenario).verifyAssertionRules(system);
+        loggingTestScenario.verifyAssertionRules(system);
     }
 }

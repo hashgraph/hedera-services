@@ -23,7 +23,7 @@ import static com.hedera.node.app.service.contract.impl.test.TestHelpers.OWNER_B
 import com.esaulpaugh.headlong.abi.Function;
 import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategies;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.AbstractCallTranslator;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.CallTranslator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.has.HasCallAttempt;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AddressIdConverter;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
@@ -37,7 +37,7 @@ public final class CallAttemptHelpers {
 
     public static HtsCallAttempt prepareHtsAttemptWithSelector(
             final Function function,
-            final AbstractCallTranslator<?> translator,
+            final CallTranslator<HtsCallAttempt> translator,
             final HederaWorldUpdater.Enhancement enhancement,
             final AddressIdConverter addressIdConverter,
             final VerificationStrategies verificationStrategies,
@@ -60,7 +60,7 @@ public final class CallAttemptHelpers {
 
     public static HtsCallAttempt prepareHtsAttemptWithSelectorForRedirect(
             final Function function,
-            final AbstractCallTranslator<?> translator,
+            final CallTranslator<HtsCallAttempt> translator,
             final HederaWorldUpdater.Enhancement enhancement,
             final AddressIdConverter addressIdConverter,
             final VerificationStrategies verificationStrategies,
@@ -83,7 +83,7 @@ public final class CallAttemptHelpers {
 
     public static HtsCallAttempt prepareHtsAttemptWithSelectorAndCustomConfig(
             final Function function,
-            final AbstractCallTranslator<?> translator,
+            final CallTranslator<HtsCallAttempt> translator,
             final HederaWorldUpdater.Enhancement enhancement,
             final AddressIdConverter addressIdConverter,
             final VerificationStrategies verificationStrategies,
@@ -107,7 +107,7 @@ public final class CallAttemptHelpers {
 
     public static HasCallAttempt prepareHasAttemptWithSelector(
             final Function function,
-            final AbstractCallTranslator<?> translator,
+            final CallTranslator<HasCallAttempt> translator,
             final HederaWorldUpdater.Enhancement enhancement,
             final AddressIdConverter addressIdConverter,
             final VerificationStrategies verificationStrategies,

@@ -34,6 +34,9 @@ option java_package = "com.hedera.hapi.block.stream.output.protoc";
 // <<<pbj.java_package = "com.hedera.hapi.block.stream.output">>> This comment is special code for setting PBJ Compiler java package
 option java_multiple_files = true;
 
+import "custom_fees.proto";
+import "transaction_record.proto";
+
 /**
  * Block Stream data for a `createToken` transaction.
  *
@@ -161,3 +164,18 @@ message UnpauseTokenOutput {}
  * the original transaction.
  */
 message UpdateTokenNftsOutput {}
+
+/**
+ * Block Stream data for a `tokenAirdrop` transaction.
+ *
+ * This message SHALL NOT duplicate information already contained in
+ * the original transaction.
+ */
+message TokenAirdropOutput {
+  /**
+   * Custom fees assessed during a TokenAirdrop.
+   * <p>
+   * These fees SHALL be present in the full transfer list for the transaction.
+   */
+  repeated proto.AssessedCustomFee assessed_custom_fees = 1;
+}

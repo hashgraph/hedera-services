@@ -48,7 +48,8 @@ public class ReadablePlatformStateStore implements PlatformStateAccessor {
     };
 
     private final ReadableSingletonState<PlatformState> state;
-    private final Function<SemanticVersion, SoftwareVersion> versionFactory;
+
+    private Function<SemanticVersion, SoftwareVersion> versionFactory;
 
     /**
      * Constructor that supports getting full {@link SoftwareVersion} information from the platform state. Must
@@ -69,6 +70,10 @@ public class ReadablePlatformStateStore implements PlatformStateAccessor {
      */
     public ReadablePlatformStateStore(@NonNull final ReadableStates readableStates) {
         this(readableStates, UNKNOWN_VERSION_FACTORY);
+    }
+
+    public void setVersionFactory(@NonNull final Function<SemanticVersion, SoftwareVersion> versionFactory) {
+        this.versionFactory = requireNonNull(versionFactory);
     }
 
     /**

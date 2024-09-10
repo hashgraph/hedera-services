@@ -99,6 +99,7 @@ import com.swirlds.platform.state.snapshot.StateSnapshotManager;
 import com.swirlds.platform.system.events.BirthRoundMigrationShim;
 import com.swirlds.platform.system.events.UnsignedEvent;
 import com.swirlds.platform.system.state.notifications.IssNotification;
+import com.swirlds.platform.system.state.notifications.StateHashedNotification;
 import com.swirlds.platform.system.status.PlatformStatus;
 import com.swirlds.platform.system.status.PlatformStatusConfig;
 import com.swirlds.platform.system.status.StatusActionSubmitter;
@@ -665,6 +666,9 @@ public class PlatformWiring {
         hashedStateOutputWire.solderTo(hashLoggerWiring.getInputWire(HashLogger::logHashes));
         hashedStateOutputWire.solderTo(stateSignerWiring.getInputWire(StateSigner::signState));
         hashedStateAndRoundOutputWire.solderTo(issDetectorWiring.getInputWire(IssDetector::handleStateAndRound));
+        hashedStateAndRoundOutputWire
+                .buildTransformer("postHasher_notifier", "state and round", StateHashedNotification::from)
+                .solderTo(notifierWiring.getInputWire(AppNotifier::sendStateHashedNotification));
 
         stateSignerWiring
                 .getOutputWire()

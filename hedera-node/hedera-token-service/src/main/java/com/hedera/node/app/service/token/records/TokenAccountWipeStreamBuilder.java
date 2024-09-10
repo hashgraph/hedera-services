@@ -25,16 +25,16 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 public interface TokenAccountWipeStreamBuilder extends TokenBaseStreamBuilder {
 
     /**
-     * Gets the new total supply of a token
+     * Gets the new total supply of a token.
      * @return new total supply of a token
      */
     long getNewTotalSupply();
 
     /**
-     * Sets the new total supply of a token
+     * Sets the new total supply of a token.
      * @param newTotalSupply the new total supply of a token
      * @return this builder
      */
     @NonNull
-    TokenAccountWipeStreamBuilder newTotalSupply(final long newTotalSupply);
+    TokenAccountWipeStreamBuilder newTotalSupply(long newTotalSupply);
 }

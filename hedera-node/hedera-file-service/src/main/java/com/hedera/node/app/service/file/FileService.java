@@ -31,7 +31,7 @@ import java.util.Set;
 public interface FileService extends RpcService {
 
     /**
-     * The name of the service
+     * The name of the service.
      */
     String NAME = "FileService";
 
@@ -48,7 +48,7 @@ public interface FileService extends RpcService {
     }
 
     /**
-     * Returns the concrete implementation instance of the service
+     * Returns the concrete implementation instance of the service.
      *
      * @return the implementation instance
      */

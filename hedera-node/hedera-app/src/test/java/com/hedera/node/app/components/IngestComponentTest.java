@@ -39,7 +39,6 @@ import com.hedera.node.app.signature.AppSignatureVerifier;
 import com.hedera.node.app.signature.impl.SignatureExpanderImpl;
 import com.hedera.node.app.signature.impl.SignatureVerifierImpl;
 import com.hedera.node.app.state.recordcache.RecordCacheService;
-import com.hedera.node.app.version.HederaSoftwareVersion;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -87,10 +86,7 @@ class IngestComponentTest {
                 "0123456789012345678901234567890123456789012345678901234567890123",
                 "Node7",
                 Bytes.wrap("cert7"),
-                new HederaSoftwareVersion(
-                        SemanticVersion.newBuilder().major(1).build(),
-                        SemanticVersion.newBuilder().major(2).build(),
-                        0),
+                SemanticVersion.newBuilder().major(1).build(),
                 "Node7");
 
         final var configProvider = new ConfigProviderImpl(false);

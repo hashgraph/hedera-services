@@ -123,7 +123,7 @@ public class UtilPrngHandler implements TransactionHandler {
     }
 
     /**
-     * Generate a random number from the given bytes in the given range
+     * Generate a random number from the given bytes in the given range.
      * @param pseudoRandomBytes bytes to generate random number from
      * @param range range of the random number
      * @return random number
@@ -138,16 +138,16 @@ public class UtilPrngHandler implements TransactionHandler {
     }
 
     /**
-     * Returns {@code x mod m}, a non-negative value less than {@code m}. This differs from {@code x %
-     * m}, which might be negative.
+     * Returns {@code dividend mod divisor}, a non-negative value less than {@code divisor}.
+     * This differs from {@code dividend % divisor}, which might be negative.
      *
      * @throws ArithmeticException if {@code m <= 0}
      */
-    public static long mod(long x, int m) {
-        if (m <= 0) {
+    public static long mod(long dividend, int divisor) {
+        if (divisor <= 0) {
             throw new ArithmeticException("Modulus must be positive");
         }
-        long result = x % m;
-        return (result >= 0) ? result : result + m;
+        long result = dividend % divisor;
+        return (result >= 0) ? result : result + divisor;
     }
 }
