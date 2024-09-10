@@ -20,9 +20,9 @@ import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.io.streams.MerkleDataInputStream;
 import com.swirlds.common.io.streams.MerkleDataOutputStream;
+import com.swirlds.platform.event.EventSerializationUtils;
 import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.event.hashing.EventHasher;
-import com.swirlds.platform.event.hashing.PbjBytesHasher;
 import com.swirlds.platform.event.hashing.PbjStreamHasher;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.StaticSoftwareVersion;
@@ -60,7 +60,7 @@ public class EventBenchmarks {
     @Param({"10"})
     public int numSys;
 
-    @Param({"PBJ_BYTES_DIGEST", "PBJ_STREAM_DIGEST"})
+    @Param({"PBJ_STREAM_DIGEST"})
     public HasherType hasherType;
 
     private PlatformEvent event;
@@ -96,8 +96,8 @@ public class EventBenchmarks {
         //
         // Benchmark                                (seed)   Mode  Cnt    Score    Error   Units
         // EventSerialization.serializeDeserialize       0  thrpt    3  962.486 ± 29.252  ops/ms
-        outStream.writeSerializable(event, false);
-        bh.consume(inStream.readSerializable(false, PlatformEvent::new));
+        EventSerializationUtils.serializePlatformEvent(outStream, event, true);
+        bh.consume(EventSerializationUtils.deserializePlatformEvent(inStream, true));
     }
 
     /*
@@ -116,12 +116,10 @@ public class EventBenchmarks {
     }
 
     public enum HasherType {
-        PBJ_BYTES_DIGEST,
         PBJ_STREAM_DIGEST;
 
         public EventHasher newHasher() {
             return switch (this) {
-                case PBJ_BYTES_DIGEST -> new PbjBytesHasher();
                 case PBJ_STREAM_DIGEST -> new PbjStreamHasher();
             };
         }
