@@ -16,6 +16,8 @@
 
 package com.swirlds.platform.core.jmh;
 
+import com.hedera.hapi.platform.event.GossipEvent;
+import com.hedera.pbj.runtime.ParseException;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.io.streams.MerkleDataInputStream;
@@ -91,13 +93,13 @@ public class EventBenchmarks {
     @Benchmark
     @BenchmarkMode(Mode.Throughput)
     @OutputTimeUnit(TimeUnit.MILLISECONDS)
-    public void serializeDeserialize(final Blackhole bh) throws IOException {
+    public void serializeDeserialize(final Blackhole bh) throws IOException, ParseException {
         // results on Lazar's M1 Max MacBook Pro:
         //
         // Benchmark                                (seed)   Mode  Cnt    Score    Error   Units
         // EventSerialization.serializeDeserialize       0  thrpt    3  962.486 ± 29.252  ops/ms
-        EventSerializationUtils.serializePlatformEvent(outStream, event, true);
-        bh.consume(EventSerializationUtils.deserializePlatformEvent(inStream, true));
+        outStream.writePbjRecord(event.getGossipEvent(), GossipEvent.PROTOBUF);
+        bh.consume(inStream.readPbjRecord(GossipEvent.PROTOBUF));
     }
 
     /*

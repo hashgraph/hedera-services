@@ -98,7 +98,7 @@ public class PcesMutableFile {
             throw new IllegalStateException("Cannot write event " + event.getHash() + " with ancient indicator "
                     + event.getAncientIndicator(descriptor.getFileType()) + " to file " + descriptor);
         }
-        EventSerializationUtils.serializePlatformEvent(out, event, true);
+        //EventSerializationUtils.serializePlatformEvent(out, event, true);
         highestAncientIdentifierInFile =
                 Math.max(highestAncientIdentifierInFile, event.getAncientIndicator(descriptor.getFileType()));
     }

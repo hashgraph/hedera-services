@@ -19,6 +19,7 @@ package com.swirlds.platform.gossip.shadowgraph;
 import static com.swirlds.common.utility.CompareTo.isGreaterThan;
 import static com.swirlds.logging.legacy.LogMarker.SYNC_INFO;
 
+import com.hedera.hapi.platform.event.GossipEvent;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
@@ -206,7 +207,7 @@ public final class SyncUtils {
                     events.size());
             for (final PlatformEvent event : events) {
                 connection.getDos().writeByte(ByteConstants.COMM_EVENT_NEXT);
-                EventSerializationUtils.serializePlatformEvent(connection.getDos(), event, true);
+                connection.getDos().writePbjRecord(event.getGossipEvent(), GossipEvent.PROTOBUF);
             }
             if (writeAborted.get()) {
                 logger.info(SYNC_INFO.getMarker(), "{} writing events aborted", connection.getDescription());
@@ -282,9 +283,8 @@ public final class SyncUtils {
                                     throw new IOException("max event count " + maxEventCount + " exceeded");
                                 }
                             }
-
-                            final PlatformEvent platformEvent =
-                                    EventSerializationUtils.deserializePlatformEvent(connection.getDis(), true);
+                            final GossipEvent gossipEvent = connection.getDis().readPbjRecord(GossipEvent.PROTOBUF);
+                            final PlatformEvent platformEvent = new PlatformEvent(gossipEvent);
 
                             platformEvent.setSenderId(connection.getOtherId());
                             intakeEventCounter.eventEnteredIntakePipeline(connection.getOtherId());

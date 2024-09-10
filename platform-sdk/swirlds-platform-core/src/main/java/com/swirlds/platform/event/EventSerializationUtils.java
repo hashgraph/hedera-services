@@ -159,7 +159,7 @@ public final class EventSerializationUtils {
         }
         serializeUnsignedEvent(
                 out,
-                event.getOldSoftwareVersion(),
+                null,
                 event.getEventCore(),
                 event.getSelfParent(),
                 event.getOtherParents(),

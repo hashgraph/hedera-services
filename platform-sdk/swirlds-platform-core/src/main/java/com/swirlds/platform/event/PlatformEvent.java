@@ -111,14 +111,12 @@ public class PlatformEvent implements ConsensusEvent, Hashable {
     }
 
     /**
-     * @param softwareVersion the software version instance
      * @param gossipEvent the gossip event
      */
-    public PlatformEvent(@NonNull final SoftwareVersion softwareVersion, @NonNull final GossipEvent gossipEvent) {
+    public PlatformEvent(@NonNull final GossipEvent gossipEvent) {
         this(
                 Objects.requireNonNull(gossipEvent, "The gossipEvent must not be null"),
-                new EventMetadata(
-                        Objects.requireNonNull(softwareVersion, "The softwareVersion must not be null"), gossipEvent));
+                new EventMetadata(null, gossipEvent));
     }
 
     private PlatformEvent(@NonNull final GossipEvent gossipEvent, @NonNull final EventMetadata metadata) {
@@ -138,7 +136,7 @@ public class PlatformEvent implements ConsensusEvent, Hashable {
      * @return a copy of this event
      */
     public PlatformEvent copyGossipedData() {
-        final PlatformEvent platformEvent = new PlatformEvent(metadata.getSoftwareVersion(), gossipEvent);
+        final PlatformEvent platformEvent = new PlatformEvent(gossipEvent);
         platformEvent.setHash(getHash());
         return platformEvent;
     }
@@ -203,13 +201,7 @@ public class PlatformEvent implements ConsensusEvent, Hashable {
     @NonNull
     @Override
     public SemanticVersion getSoftwareVersion() {
-        return metadata.getSoftwareVersion().getPbjSemanticVersion();
-    }
-
-    @NonNull
-    @Deprecated(forRemoval = true)
-    public SoftwareVersion getOldSoftwareVersion() {
-        return metadata.getSoftwareVersion();
+        return gossipEvent.eventCore().version();
     }
 
     /**

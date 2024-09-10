@@ -24,6 +24,7 @@ import static com.swirlds.common.io.streams.SerializableStreamConstants.NULL_VER
 import static com.swirlds.common.io.streams.SerializableStreamConstants.SERIALIZATION_PROTOCOL_VERSION;
 import static com.swirlds.common.io.streams.SerializableStreamConstants.VERSION_BYTES;
 
+import com.hedera.pbj.runtime.Codec;
 import com.hedera.pbj.runtime.io.WritableSequentialData;
 import com.hedera.pbj.runtime.io.stream.WritableStreamingData;
 import com.swirlds.common.io.FunctionalSerialize;
@@ -59,16 +60,6 @@ public class SerializableDataOutputStream extends AugmentedDataOutputStream {
     public SerializableDataOutputStream(OutputStream out) {
         super(out);
         writableSequentialData = new WritableStreamingData(out);
-    }
-
-    /**
-     * While transitioning serialization from {@link SelfSerializable} to protobuf, this stream will support both
-     * serialization methods by providing a separate instance to serialize protobuf objects.
-     *
-     * @return the writable sequential data stream
-     */
-    public @NonNull WritableSequentialData getWritableSequentialData() {
-        return writableSequentialData;
     }
 
     /**
@@ -294,5 +285,11 @@ public class SerializableDataOutputStream extends AugmentedDataOutputStream {
             this.writeLong(serializable.getClassId());
         }
         this.writeInt(serializable.getVersion());
+    }
+
+    public <T extends Record> void writePbjRecord(@NonNull final T record, @NonNull final Codec<T> codec)
+            throws IOException {
+        writeInt(codec.measureRecord(record));
+        codec.write(record, writableSequentialData);
     }
 }

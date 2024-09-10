@@ -21,6 +21,8 @@ import static com.swirlds.common.io.streams.SerializableStreamConstants.NULL_LIS
 import static com.swirlds.common.io.streams.SerializableStreamConstants.NULL_VERSION;
 import static com.swirlds.common.io.streams.SerializableStreamConstants.SERIALIZATION_PROTOCOL_VERSION;
 
+import com.hedera.pbj.runtime.Codec;
+import com.hedera.pbj.runtime.ParseException;
 import com.hedera.pbj.runtime.io.ReadableSequentialData;
 import com.hedera.pbj.runtime.io.stream.ReadableStreamingData;
 import com.swirlds.base.function.CheckedFunction;
@@ -62,16 +64,6 @@ public class SerializableDataInputStream extends AugmentedDataInputStream {
     public SerializableDataInputStream(final InputStream in) {
         super(in);
         readableSequentialData = new ReadableStreamingData(in);
-    }
-
-    /**
-     * While transitioning serialization from {@link SelfSerializable} to protobuf, this stream will support both
-     * serialization methods by providing a separate instance to deserialize protobuf objects.
-     *
-     * @return the readable sequential data stream
-     */
-    public @NonNull ReadableSequentialData getReadableSequentialData() {
-        return readableSequentialData;
     }
 
     /**
@@ -585,5 +577,11 @@ public class SerializableDataInputStream extends AugmentedDataInputStream {
             throw new ClassNotFoundException(classId);
         }
         return rc;
+    }
+
+    public @NonNull <T extends Record> T readPbjRecord(@NonNull final Codec<T> codec) throws IOException, ParseException {
+        final int size = readInt();
+        readableSequentialData.limit(readableSequentialData.position() + size);
+        return codec.parse(readableSequentialData);
     }
 }

@@ -198,7 +198,6 @@ class EventDeduplicatorTests {
                 // submit a duplicate event with a different signature 25% of the time
                 final PlatformEvent platformEvent = submittedEvents.get(random.nextInt(submittedEvents.size()));
                 final PlatformEvent duplicateEvent = new PlatformEvent(
-                        platformEvent.getOldSoftwareVersion(),
                         new GossipEvent.Builder()
                                 .eventCore(platformEvent.getGossipEvent().eventCore())
                                 .signature(randomSignatureBytes(random)) // randomize the signature
