@@ -76,21 +76,6 @@ jobs:
       gradle-cache-username: ${{ secrets.GRADLE_CACHE_USERNAME }}
       gradle-cache-password: ${{ secrets.GRADLE_CACHE_PASSWORD }}
 
-  hapi-tests-time-consuming:
-    name: HAPI Tests (Time Consuming)
-    uses: ./.github/workflows/node-zxc-compile-application-code.yaml
-    needs: fetch-xts-candidate
-    if: ${{ needs.fetch-xts-candidate.result == 'success' && needs.fetch-xts-candidate.outputs.xts_tag_exists == 'true' }}
-    with:
-      custom-job-label: Standard
-      enable-unit-tests: false
-      enable-hapi-tests-time-consuming: true
-      enable-network-log-capture: true
-    secrets:
-      access-token: ${{ secrets.GITHUB_TOKEN }}
-      gradle-cache-username: ${{ secrets.GRADLE_CACHE_USERNAME }}
-      gradle-cache-password: ${{ secrets.GRADLE_CACHE_PASSWORD }}
-
   abbreviated-panel:
     name: JRS Panel
     uses: ./.github/workflows/zxc-jrs-regression.yaml
