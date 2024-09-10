@@ -19,6 +19,8 @@ package com.hedera.node.app.service.contract.impl;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.service.contract.ContractService;
+import com.hedera.node.app.service.contract.impl.exec.scope.DefaultVerificationStrategies;
+import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategies;
 import com.hedera.node.app.service.contract.impl.handlers.ContractHandlers;
 import com.hedera.node.app.service.contract.impl.schemas.V0490ContractSchema;
 import com.hedera.node.app.service.contract.impl.schemas.V0500ContractSchema;
@@ -27,6 +29,7 @@ import com.swirlds.state.spi.SchemaRegistry;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Supplier;
 import org.hyperledger.besu.evm.tracing.OperationTracer;
 
@@ -40,11 +43,13 @@ public class ContractServiceImpl implements ContractService {
     private final ContractServiceComponent component;
 
     public ContractServiceImpl(@NonNull final AppContext appContext) {
-        this(appContext, null);
+        this(appContext, null, null);
     }
 
     public ContractServiceImpl(
-            @NonNull final AppContext appContext, @Nullable final Supplier<List<OperationTracer>> addOnTracers) {
+            @NonNull final AppContext appContext,
+            @Nullable final VerificationStrategies verificationStrategies,
+            @Nullable final Supplier<List<OperationTracer>> addOnTracers) {
         requireNonNull(appContext);
         this.component = DaggerContractServiceComponent.factory()
                 .create(
@@ -52,6 +57,7 @@ public class ContractServiceImpl implements ContractService {
                         // (FUTURE) Inject the signature verifier instance into the IsAuthorizedSystemContract
                         // C.f. https://github.com/hashgraph/hedera-services/issues/14248
                         appContext.signatureVerifier(),
+                        Optional.ofNullable(verificationStrategies).orElseGet(DefaultVerificationStrategies::new),
                         addOnTracers);
     }
 

@@ -30,10 +30,7 @@ import com.hedera.hapi.block.stream.Block;
 import com.hedera.node.app.blocks.BlockStreamManager;
 import com.hedera.services.bdd.junit.RepeatableHapiTest;
 import com.hedera.services.bdd.junit.hedera.embedded.fakes.FakeTssBaseService;
-import com.hedera.services.bdd.spec.utilops.streams.assertions.BlockStreamAssertion;
-import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
+import com.hedera.services.bdd.spec.utilops.streams.assertions.IndirectProofsAssertion;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.DynamicTest;
 
@@ -62,43 +59,15 @@ public class RepeatableTssTests {
      */
     @RepeatableHapiTest(NEEDS_TSS_CONTROL)
     Stream<DynamicTest> blockStreamManagerCatchesUpWithIndirectProofs() {
-        final AtomicBoolean expectBlocks = new AtomicBoolean(false);
-        // Once blocks are produced again, the first two will need indirect proofs
-        final AtomicInteger remainingIndirectionLevels = new AtomicInteger(2);
-        final var streamAssertion = new BlockStreamAssertion() {
-            @Override
-            public boolean test(@NonNull final Block block) throws AssertionError {
-                if (!expectBlocks.get()) {
-                    throw new AssertionError("No blocks should be written when TSS is ignoring signature requests");
-                } else {
-                    final var items = block.items();
-                    final var proofItem = items.getLast();
-                    assertTrue(proofItem.hasBlockProof(), "Block proof is expected as the last item");
-                    final var proof = proofItem.blockProofOrThrow();
-                    if (remainingIndirectionLevels.get() == 0) {
-                        assertTrue(
-                                proof.siblingHashes().isEmpty(),
-                                "No sibling hashes should be present on a direct proof");
-                        return true;
-                    } else {
-                        assertEquals(
-                                // Two sibling hashes per indirection level
-                                2 * remainingIndirectionLevels.get(),
-                                proof.siblingHashes().size(),
-                                "Wrong number of sibling hashes for indirect proof");
-                    }
-                    remainingIndirectionLevels.decrementAndGet();
-                    return false;
-                }
-            }
-        };
+        final var indirectProofsAssertion = new IndirectProofsAssertion(2);
         return hapiTest(
                 startIgnoringTssSignatureRequests(),
-                blockStreamMustIncludePassFrom(spec -> streamAssertion),
+                blockStreamMustIncludePassFrom(spec -> indirectProofsAssertion),
+                // Each transaction is placed into its own round and hence block with default config
                 cryptoCreate("firstIndirectProof"),
                 cryptoCreate("secondIndirectProof"),
                 stopIgnoringTssSignatureRequests(),
-                doAdhoc(() -> expectBlocks.set(true)),
+                doAdhoc(indirectProofsAssertion::startExpectingBlocks),
                 cryptoCreate("directProof"));
     }
 }

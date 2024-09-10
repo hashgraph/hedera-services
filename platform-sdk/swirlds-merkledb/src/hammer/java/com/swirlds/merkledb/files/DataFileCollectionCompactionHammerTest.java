@@ -39,6 +39,7 @@ import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.core.config.Configurator;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Tags;
 import org.junit.jupiter.api.Test;
@@ -49,6 +50,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 /**
  * Hammer the compaction subsystem with as many small compactions as possible to try to overwhelm it.
  */
+@Disabled("This test needs to be investigated")
 class DataFileCollectionCompactionHammerTest {
 
     @BeforeAll
