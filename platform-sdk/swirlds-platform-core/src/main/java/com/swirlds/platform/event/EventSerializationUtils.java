@@ -16,11 +16,10 @@
 
 package com.swirlds.platform.event;
 
-import com.hedera.hapi.platform.event.EventCore;
 import com.hedera.hapi.platform.event.EventTransaction;
 import com.hedera.hapi.platform.event.EventTransaction.TransactionOneOfType;
+import com.hedera.hapi.platform.event.GossipEvent;
 import com.hedera.hapi.platform.event.StateSignatureTransaction;
-import com.hedera.hapi.util.HapiUtils;
 import com.hedera.pbj.runtime.OneOf;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.crypto.SignatureType;
@@ -31,9 +30,7 @@ import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.StaticSoftwareVersion;
 import com.swirlds.platform.system.events.EventDescriptorWrapper;
 import com.swirlds.platform.system.events.UnsignedEvent;
-import com.swirlds.platform.util.TransactionUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -57,115 +54,6 @@ public final class EventSerializationUtils {
 
     private EventSerializationUtils() {
         // Utility class
-    }
-
-    /**
-     * Serialize a unsigned event to the output stream {@code out}.
-     *
-     * @param out the stream to which this object is to be written
-     * @param softwareVersion the software version
-     * @param eventCore the event core
-     * @param selfParent the self parent
-     * @param otherParents the other parents
-     * @param eventTransactions the event transactions
-     *
-     * @throws IOException if an I/O error occurs
-     */
-    private static void serializeUnsignedEvent(
-            @NonNull final SerializableDataOutputStream out,
-            @NonNull final SoftwareVersion softwareVersion,
-            @NonNull final EventCore eventCore,
-            @Nullable final EventDescriptorWrapper selfParent,
-            @NonNull final List<EventDescriptorWrapper> otherParents,
-            @NonNull final List<EventTransaction> eventTransactions)
-            throws IOException {
-        out.writeInt(UNSIGNED_EVENT_VERSION);
-        out.writeSerializable(softwareVersion, true);
-        out.writeInt(NodeId.ClassVersion.ORIGINAL);
-        out.writeLong(eventCore.creatorNodeId());
-        EventDescriptorWrapper.serialize(out, selfParent);
-        EventDescriptorWrapper.serializeList(out, otherParents);
-        out.writeLong(eventCore.birthRound());
-        out.writeInstant(HapiUtils.asInstant(eventCore.timeCreated()));
-
-        // write serialized length of transaction array first, so during the deserialization proces
-        // it is possible to skip transaction array and move on to the next object
-        out.writeInt(TransactionUtils.getLegacyObjectSize(eventTransactions));
-        // transactions may include both system transactions and application transactions
-        // so writeClassId set to true and allSameClass set to false
-        out.writeInt(eventTransactions.size());
-        if (!eventTransactions.isEmpty()) {
-            final boolean allSameClass = false;
-            out.writeBoolean(allSameClass);
-        }
-        for (final EventTransaction transaction : eventTransactions) {
-            switch (transaction.transaction().kind()) {
-                case APPLICATION_TRANSACTION:
-                    serializeApplicationTransaction(out, transaction);
-                    break;
-                case STATE_SIGNATURE_TRANSACTION:
-                    serializeStateSignatureTransaction(out, transaction);
-                    break;
-                default:
-                    throw new IOException("Unknown transaction type: "
-                            + transaction.transaction().kind());
-            }
-        }
-    }
-
-    private static void serializeApplicationTransaction(
-            @NonNull final SerializableDataOutputStream out, @NonNull final EventTransaction transaction)
-            throws IOException {
-        out.writeLong(APPLICATION_TRANSACTION_CLASS_ID);
-        out.writeInt(APPLICATION_TRANSACTION_VERSION);
-        final Bytes bytes = transaction.transaction().as();
-        out.writeInt((int) bytes.length());
-        bytes.writeTo(out);
-    }
-
-    private static void serializeStateSignatureTransaction(
-            @NonNull final SerializableDataOutputStream out, @NonNull final EventTransaction transaction)
-            throws IOException {
-        final StateSignatureTransaction stateSignatureTransaction =
-                transaction.transaction().as();
-
-        out.writeLong(STATE_SIGNATURE_CLASS_ID);
-        out.writeInt(STATE_SIGNATURE_VERSION);
-        out.writeInt((int) stateSignatureTransaction.signature().length());
-        stateSignatureTransaction.signature().writeTo(out);
-
-        out.writeInt((int) stateSignatureTransaction.hash().length());
-        stateSignatureTransaction.hash().writeTo(out);
-
-        out.writeLong(stateSignatureTransaction.round());
-        out.writeInt(Integer.MIN_VALUE); // epochHash is always null
-    }
-
-    /**
-     * Serialize the given {@link PlatformEvent} to the output stream {@code out}
-     *
-     * @param out          the stream to which this object is to be written
-     * @param event        the event to serialize
-     * @param writeVersion if true, the event version number will be written to the stream
-     * @throws IOException if an I/O error occurs
-     */
-    public static void serializePlatformEvent(
-            @NonNull final SerializableDataOutputStream out,
-            @NonNull final PlatformEvent event,
-            final boolean writeVersion)
-            throws IOException {
-        if (writeVersion) {
-            out.writeInt(PLATFORM_EVENT_VERSION);
-        }
-        serializeUnsignedEvent(
-                out,
-                null,
-                event.getEventCore(),
-                event.getSelfParent(),
-                event.getOtherParents(),
-                event.getEventTransactions());
-        out.writeInt((int) event.getSignature().length());
-        event.getSignature().writeTo(out);
     }
 
     /**
@@ -281,11 +169,11 @@ public final class EventSerializationUtils {
             throws IOException {
         try (final ByteArrayOutputStream io = new ByteArrayOutputStream()) {
             final SerializableDataOutputStream out = new SerializableDataOutputStream(io);
-            serializePlatformEvent(out, original, true);
+            out.writePbjRecord(original.getGossipEvent(), GossipEvent.PROTOBUF);
             out.flush();
             final SerializableDataInputStream in =
                     new SerializableDataInputStream(new ByteArrayInputStream(io.toByteArray()));
-            return deserializePlatformEvent(in, true);
+            return new PlatformEvent(in.readPbjRecord(GossipEvent.PROTOBUF));
         }
     }
 }

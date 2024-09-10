@@ -72,7 +72,7 @@ public class UnsignedEvent implements Hashable {
         Objects.requireNonNull(transactions, "The transactions must not be null");
         this.eventTransactions = Objects.requireNonNull(transactions, "transactions must not be null");
         this.metadata =
-                new EventMetadata(softwareVersion, creatorId, selfParent, otherParents, timeCreated, transactions);
+                new EventMetadata(creatorId, selfParent, otherParents, timeCreated, transactions);
         this.eventCore = new EventCore(
                 creatorId.id(),
                 birthRound,

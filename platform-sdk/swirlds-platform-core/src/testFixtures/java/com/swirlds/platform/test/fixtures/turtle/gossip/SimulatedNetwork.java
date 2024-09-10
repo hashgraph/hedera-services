@@ -186,7 +186,8 @@ public class SimulatedNetwork {
                     final Instant deliveryTime = now.plusNanos(
                             (long) (averageDelayNanos + random.nextGaussian() * standardDeviationDelayNanos));
 
-                    final PlatformEvent eventToDeliver = deepCopyEvent(event);
+                    // create a copy so that nodes don't modify each other's events
+                    final PlatformEvent eventToDeliver = event.copyGossipedData();
                     eventToDeliver.setSenderId(sender);
                     eventToDeliver.setTimeReceived(deliveryTime);
                     final EventInTransit eventInTransit = new EventInTransit(eventToDeliver, sender, deliveryTime);
@@ -194,29 +195,6 @@ public class SimulatedNetwork {
                 }
             }
             events.clear();
-        }
-    }
-
-    /**
-     * Create a deep copy of an event. Until events become entirely immutable, this is necessary to prevent nodes from
-     * modifying each other's events.
-     *
-     * @param event the event to copy
-     * @return a deep copy of the event
-     */
-    @NonNull
-    private PlatformEvent deepCopyEvent(@NonNull final PlatformEvent event) {
-        try {
-            final ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-            final SerializableDataOutputStream outputStream = new SerializableDataOutputStream(byteArrayOutputStream);
-            EventSerializationUtils.serializePlatformEvent(outputStream, event, true);
-            final SerializableDataInputStream inputStream =
-                    new SerializableDataInputStream(new ByteArrayInputStream(byteArrayOutputStream.toByteArray()));
-            final PlatformEvent copy = EventSerializationUtils.deserializePlatformEvent(inputStream, true);
-            copy.setHash(event.getHash());
-            return copy;
-        } catch (final IOException e) {
-            throw new RuntimeException(e);
         }
     }
 }

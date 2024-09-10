@@ -579,9 +579,13 @@ public class SerializableDataInputStream extends AugmentedDataInputStream {
         return rc;
     }
 
-    public @NonNull <T extends Record> T readPbjRecord(@NonNull final Codec<T> codec) throws IOException, ParseException {
+    public @NonNull <T extends Record> T readPbjRecord(@NonNull final Codec<T> codec) throws IOException {
         final int size = readInt();
         readableSequentialData.limit(readableSequentialData.position() + size);
-        return codec.parse(readableSequentialData);
+        try {
+            return codec.parse(readableSequentialData);
+        } catch (final ParseException e) {
+            throw new IOException(e);
+        }
     }
 }

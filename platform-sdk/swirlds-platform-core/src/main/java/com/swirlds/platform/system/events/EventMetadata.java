@@ -23,7 +23,6 @@ import com.hedera.hapi.util.HapiUtils;
 import com.swirlds.common.AbstractHashable;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.platform.NodeId;
-import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.transaction.TransactionWrapper;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -73,7 +72,6 @@ public class EventMetadata extends AbstractHashable {
     /**
      * Create a EventMetadata object
      *
-     * @param softwareVersion the software version of the node that created this event.
      * @param creatorId       ID of this event's creator
      * @param selfParent      self parent event descriptor
      * @param otherParents    other parent event descriptors
@@ -81,7 +79,6 @@ public class EventMetadata extends AbstractHashable {
      * @param transactions    list of transactions included in this event instance
      */
     public EventMetadata(
-            @NonNull final SoftwareVersion softwareVersion,
             @NonNull final NodeId creatorId,
             @Nullable final EventDescriptorWrapper selfParent,
             @NonNull final List<EventDescriptorWrapper> otherParents,
@@ -105,10 +102,9 @@ public class EventMetadata extends AbstractHashable {
     /**
      * Create a EventMetadata object
      *
-     * @param softwareVersion the software version of the node that created this event.
      * @param gossipEvent     the gossip event to extract metadata from
      */
-    public EventMetadata(@NonNull final SoftwareVersion softwareVersion, @NonNull final GossipEvent gossipEvent) {
+    public EventMetadata(@NonNull final GossipEvent gossipEvent) {
         Objects.requireNonNull(gossipEvent.eventCore(), "The eventCore must not be null");
         this.creatorId = new NodeId(gossipEvent.eventCore().creatorNodeId());
         this.allParents = gossipEvent.eventCore().parents().stream()

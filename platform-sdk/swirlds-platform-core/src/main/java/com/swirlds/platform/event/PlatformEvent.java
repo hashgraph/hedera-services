@@ -29,7 +29,6 @@ import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.Hashable;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.consensus.ConsensusConstants;
-import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.events.ConsensusEvent;
 import com.swirlds.platform.system.events.EventDescriptorWrapper;
 import com.swirlds.platform.system.events.EventMetadata;
@@ -97,8 +96,8 @@ public class PlatformEvent implements ConsensusEvent, Hashable {
     private long birthRound;
 
     /**
-     * @param unsignedEvent   the unsigned event
-     * @param signature the signature for the event
+     * @param unsignedEvent the unsigned event
+     * @param signature     the signature for the event
      */
     public PlatformEvent(@NonNull final UnsignedEvent unsignedEvent, @NonNull final byte[] signature) {
         this(
@@ -116,7 +115,7 @@ public class PlatformEvent implements ConsensusEvent, Hashable {
     public PlatformEvent(@NonNull final GossipEvent gossipEvent) {
         this(
                 Objects.requireNonNull(gossipEvent, "The gossipEvent must not be null"),
-                new EventMetadata(null, gossipEvent));
+                new EventMetadata(gossipEvent));
     }
 
     private PlatformEvent(@NonNull final GossipEvent gossipEvent, @NonNull final EventMetadata metadata) {
