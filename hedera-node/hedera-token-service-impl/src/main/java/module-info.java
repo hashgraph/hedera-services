@@ -46,4 +46,5 @@ module com.hedera.node.app.service.token.impl {
             com.hedera.node.app,
             com.hedera.node.app.service.token.impl.api.test,
             com.hedera.node.test.clients;
+    exports com.hedera.node.app.service.token.impl.comparator;
 }

@@ -16,6 +16,8 @@
 
 package com.hedera.services.bdd.junit.support.translators;
 
+import static com.hedera.hapi.node.base.HederaFunctionality.FILE_CREATE;
+import static com.hedera.hapi.node.base.HederaFunctionality.FILE_UPDATE;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.block.stream.Block;
@@ -41,7 +43,7 @@ public class BlockUnitSplit {
     /**
      * Holds the parts of a transaction that are pending processing.
      */
-    private class PendingBlockTransactionParts {
+    private static class PendingBlockTransactionParts {
         @Nullable
         private TransactionParts parts;
 
@@ -49,7 +51,7 @@ public class BlockUnitSplit {
         private TransactionResult result;
 
         @Nullable
-        private TransactionOutput output;
+        private List<TransactionOutput> outputs;
 
         /**
          * Clears the pending parts.
@@ -57,7 +59,7 @@ public class BlockUnitSplit {
         void clear() {
             parts = null;
             result = null;
-            output = null;
+            outputs = null;
         }
 
         /**
@@ -69,18 +71,31 @@ public class BlockUnitSplit {
             return parts != null && result != null;
         }
 
+        void addOutput(@NonNull final TransactionOutput output) {
+            if (outputs == null) {
+                outputs = new ArrayList<>();
+            }
+            outputs.add(output);
+        }
+
         BlockTransactionParts toBlockTransactionParts() {
             requireNonNull(parts);
             requireNonNull(result);
-            return output == null
+            return outputs == null
                     ? BlockTransactionParts.sansOutput(parts, result)
-                    : BlockTransactionParts.withOutput(parts, result, output);
+                    : BlockTransactionParts.withOutputs(parts, result, outputs.toArray(TransactionOutput[]::new));
         }
     }
 
+    /**
+     * Splits the given block into transactional units.
+     * @param block the block to split
+     * @return the transactional units
+     */
     public List<BlockTransactionalUnit> split(@NonNull final Block block) {
         final List<BlockTransactionalUnit> units = new ArrayList<>();
 
+        TxnIdType lastTxnIdType = null;
         TransactionID unitTxnId = null;
         PendingBlockTransactionParts pendingParts = new PendingBlockTransactionParts();
         final List<BlockTransactionParts> unitParts = new ArrayList<>();
@@ -100,16 +115,20 @@ public class BlockUnitSplit {
                         if (pendingParts.areComplete()) {
                             unitParts.add(pendingParts.toBlockTransactionParts());
                         }
-                        if (beginsNewUnit(txnId, unitTxnId) && !unitParts.isEmpty()) {
+                        final var txnIdType = classifyTxnId(txnId, unitTxnId, nextParts, lastTxnIdType);
+                        if (txnIdType == TxnIdType.NEW_UNIT_BY_ID && !unitParts.isEmpty()) {
                             completeAndAdd(units, unitParts, unitStateChanges);
                         }
                         pendingParts.clear();
-                        unitTxnId = txnId;
+                        if (txnIdType != TxnIdType.AUTO_SYSFILE_MGMT_ID) {
+                            unitTxnId = txnId;
+                        }
                         pendingParts.parts = nextParts;
+                        lastTxnIdType = txnIdType;
                     }
                 }
                 case TRANSACTION_RESULT -> pendingParts.result = item.transactionResultOrThrow();
-                case TRANSACTION_OUTPUT -> pendingParts.output = item.transactionOutputOrThrow();
+                case TRANSACTION_OUTPUT -> pendingParts.addOutput(item.transactionOutputOrThrow());
                 case STATE_CHANGES -> unitStateChanges.addAll(
                         item.stateChangesOrThrow().stateChanges());
             }
@@ -121,13 +140,38 @@ public class BlockUnitSplit {
         return units;
     }
 
-    private boolean beginsNewUnit(@NonNull final TransactionID nextId, @Nullable final TransactionID unitTxnId) {
-        if (unitTxnId == null) {
-            return true;
+    private TxnIdType classifyTxnId(
+            @NonNull final TransactionID nextId,
+            @Nullable final TransactionID unitTxnId,
+            @NonNull final TransactionParts parts,
+            @Nullable final TxnIdType lastTxnIdType) {
+        if (isAutoSysFileMgmtTxn(parts)) {
+            return TxnIdType.AUTO_SYSFILE_MGMT_ID;
         }
-        return !nextId.accountIDOrElse(AccountID.DEFAULT).equals(unitTxnId.accountIDOrElse(AccountID.DEFAULT))
-                || !nextId.transactionValidStartOrElse(Timestamp.DEFAULT)
-                        .equals(unitTxnId.transactionValidStartOrElse(Timestamp.DEFAULT));
+        if (lastTxnIdType == TxnIdType.AUTO_SYSFILE_MGMT_ID) {
+            // Automatic system file management transactions never end a transactional unit
+            return TxnIdType.SAME_UNIT_BY_ID;
+        }
+        if (unitTxnId == null) {
+            return TxnIdType.NEW_UNIT_BY_ID;
+        }
+        // Scheduled transactions never begin a new transactional unit and
+        final var radicallyDifferent = !nextId.scheduled()
+                && (!nextId.accountIDOrElse(AccountID.DEFAULT).equals(unitTxnId.accountIDOrElse(AccountID.DEFAULT))
+                        || !nextId.transactionValidStartOrElse(Timestamp.DEFAULT)
+                                .equals(unitTxnId.transactionValidStartOrElse(Timestamp.DEFAULT)));
+        return radicallyDifferent ? TxnIdType.NEW_UNIT_BY_ID : TxnIdType.SAME_UNIT_BY_ID;
+    }
+
+    private boolean isAutoSysFileMgmtTxn(@NonNull final TransactionParts parts) {
+        return (parts.function() == FILE_CREATE || parts.function() == FILE_UPDATE)
+                && parts.transactionIdOrThrow().nonce() > 0;
+    }
+
+    private enum TxnIdType {
+        AUTO_SYSFILE_MGMT_ID,
+        SAME_UNIT_BY_ID,
+        NEW_UNIT_BY_ID,
     }
 
     private void completeAndAdd(
