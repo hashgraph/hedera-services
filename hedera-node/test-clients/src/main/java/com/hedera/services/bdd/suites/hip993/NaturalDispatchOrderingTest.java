@@ -51,6 +51,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static java.util.Objects.requireNonNull;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.esaulpaugh.headlong.abi.Function;
 import com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory;
@@ -454,6 +455,9 @@ public class NaturalDispatchOrderingTest {
                 assertEquals(
                         withNonce(userTransactionID, nextExpectedNonce++ - postTriggeredOffset), following.txnId());
                 assertEquals(userConsensusTime, following.parentConsensusTimestamp());
+            }
+            if (following.txnId().getScheduled()) {
+                assertTrue(following.txnRecord().getReceipt().hasExchangeRate());
             }
         }
     }
