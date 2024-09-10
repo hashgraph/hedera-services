@@ -23,6 +23,21 @@ on:
         type: boolean
         required: false
         default: false
+      enable-timing-sensitive-tests:
+        description: "Unit Test (Timing Sensitive) Enabled"
+        type: boolean
+        required: false
+        default: false
+      enable-time-consuming-tests:
+        description: "Unit Test (Time Consuming) Enabled"
+        type: boolean
+        required: false
+        default: false
+      enable-hammer-tests:
+        description: "Hammer Testing Enabled"
+        type: boolean
+        required: false
+        default: false
       enable-hapi-tests-misc:
         description: "HAPI Testing (misc) Enabled"
         type: boolean
@@ -98,6 +113,11 @@ on:
         type: string
         required: false
         default: "Compiles"
+      ref-object:
+        description: "Git Ref Object to checkout"
+        type: string
+        required: false
+        default: ""
 
     secrets:
       access-token:
@@ -144,7 +164,19 @@ jobs:
     name: ${{ inputs.custom-job-label || 'Compiles' }}
     runs-on: network-node-linux-large
     steps:
+
+      # check if the ref object was passed in for checkout
+      - name: Checkout Code with Ref
+        id: checkout-with-ref
+        continue-on-error: true
+        if: ${{ inputs.ref-object != '' }} # some ref object was past in
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+        with:
+          ref: ${{ inputs.ref-object }}
+
+      # default checkout action
       - name: Checkout Code
+        if: ${{ inputs.ref-object == '' || steps.checkout-with-ref.outcome == 'failure' }}
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
 
       - name: Expand Shallow Clone for and Spotless
@@ -221,10 +253,6 @@ jobs:
         if: ${{ inputs.enable-unit-tests && steps.gradle-build.conclusion == 'success' && !cancelled() }}
         run: ${GRADLE_EXEC} :reports:testCodeCoverageReport -x :test-clients:test --continue --scan
 
-      #      - name: Timing Sensitive Tests
-      #        id: gradle-timing-sensitive
-      #        if: ${{ inputs.enable-unit-tests && steps.gradle-build.conclusion == 'success' && !cancelled() }}
-      #        run: ${GRADLE_EXEC} timingSensitive --continue --scan
 
       - name: Publish Unit Test Report
         uses: EnricoMi/publish-unit-test-result-action@30eadd5010312f995f0d3b3cff7fe2984f69409e # v2.16.1
@@ -241,6 +269,72 @@ jobs:
         with:
           name: Unit Test Report
           path: "**/build/test-results/test/TEST-*.xml"
+          retention-days: 7
+
+      - name: Timing Sensitive Tests
+        id: gradle-timing-sensitive
+        if: ${{ inputs.enable-timing-sensitive-tests && steps.gradle-build.conclusion == 'success' && !cancelled() }}
+        run: ${GRADLE_EXEC} timingSensitive --continue --scan
+
+      - name: Publish Unit Test (Timing Sensitive) Report
+        uses: step-security/publish-unit-test-result-action@4519d7c9f71dd765f8bbb98626268780f23bab28 # v2.17.0
+        if: ${{ inputs.enable-timing-sensitive-tests && steps.gradle-build.conclusion == 'success' && !cancelled() }}
+        with:
+          check_name: 'Node: Timing Sensitive Unit Test Results'
+          json_thousands_separator: ','
+          junit_files: "**/build/test-results/timingSensitive/TEST-*.xml"
+          comment_mode: errors # only comment if we could not find or parse the JUnit XML files
+
+      - name: Upload Unit Test (Timing Sensitive) Report Artifacts
+        uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 # v4.3.1
+        if: ${{ inputs.enable-timing-sensitive-tests && steps.gradle-build.conclusion == 'success' && !cancelled() }}
+        with:
+          name: Unit Test Report (Timing Sensitive)
+          path: "**/build/test-results/timingSensitive/TEST-*.xml"
+          retention-days: 7
+
+      - name: Time Consuming Tests
+        id: gradle-time-consuming
+        if: ${{ inputs.enable-time-consuming-tests && steps.gradle-build.conclusion == 'success' && !cancelled() }}
+        run: ${GRADLE_EXEC} timeConsuming --continue --scan
+
+      - name: Publish Unit Test (Time Consuming) Report
+        uses: step-security/publish-unit-test-result-action@4519d7c9f71dd765f8bbb98626268780f23bab28 # v2.17.0
+        if: ${{ inputs.enable-time-consuming-tests && steps.gradle-build.conclusion == 'success' && !cancelled() }}
+        with:
+          check_name: 'Node: Time Consuming Unit Test Results'
+          json_thousands_separator: ','
+          junit_files: "**/build/test-results/timeConsuming/TEST-*.xml"
+          comment_mode: errors # only comment if we could not find or parse the JUnit XML files
+
+      - name: Upload Unit Test (Time Consuming) Report Artifacts
+        uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 # v4.3.1
+        if: ${{ inputs.enable-time-consuming-tests && steps.gradle-build.conclusion == 'success' && !cancelled() }}
+        with:
+          name: Unit Test Report (Time Consuming)
+          path: "**/build/test-results/timeConsuming/TEST-*.xml"
+          retention-days: 7
+
+      - name: Hammer Tests
+        id: gradle-hammer-tests
+        if: ${{ inputs.enable-hammer-tests && steps.gradle-build.conclusion == 'success' && !cancelled() }}
+        run: ${GRADLE_EXEC} hammer --continue --scan
+
+      - name: Publish Hammer Test Report
+        uses: step-security/publish-unit-test-result-action@4519d7c9f71dd765f8bbb98626268780f23bab28 # v2.17.0
+        if: ${{ inputs.enable-hammer-tests && steps.gradle-build.conclusion == 'success' && !cancelled() }}
+        with:
+          check_name: 'Node: Hammer Test Results'
+          json_thousands_separator: ','
+          junit_files: "**/build/test-results/hammer/TEST-*.xml"
+          comment_mode: errors # only comment if we could not find or parse the JUnit XML files
+
+      - name: Upload Hammer Test Report Artifacts
+        uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 # v4.3.1
+        if: ${{ inputs.enable-hammer-tests && steps.gradle-build.conclusion == 'success' && !cancelled() }}
+        with:
+          name: Hammer Test Report
+          path: "**/build/test-results/hammer/TEST-*.xml"
           retention-days: 7
 
       - name: HAPI Testing (Misc)
@@ -380,39 +474,39 @@ jobs:
             hedera-node/test-clients/build/hapi-test/**/output/**
           retention-days: 7
 
-      #      - name: HAPI Testing (Time Consuming)
-      #        id: gradle-hapi-time-consuming
-      #        if: ${{ inputs.enable-hapi-tests-time-consuming && steps.gradle-build.conclusion == 'success' && !cancelled() }}
-      #        env:
-      #          LC_ALL: en.UTF-8
-      #          LANG: en_US.UTF-8
-      #        run: ${GRADLE_EXEC} hapiTestTimeConsuming --scan
-      #
-      #      - name: Publish HAPI Test (Time Consuming) Report
-      #        uses: EnricoMi/publish-unit-test-result-action@30eadd5010312f995f0d3b3cff7fe2984f69409e # v2.16.1
-      #        if: ${{ inputs.enable-hapi-tests-time-consuming && steps.gradle-build.conclusion == 'success' && !cancelled() }}
-      #        with:
-      #          check_name: 'Node: HAPI Test (Time Consuming) Results'
-      #          json_thousands_separator: ','
-      #          junit_files: "**/test-clients/build/test-results/test/TEST-*.xml"
-      #          comment_mode: errors # only comment if we could not find or parse the JUnit XML files
-      #
-      #      - name: Upload HAPI Test (Time Consuming) Report Artifacts
-      #        uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 # v4.3.1
-      #        if: ${{ inputs.enable-hapi-tests-time-consuming && steps.gradle-build.conclusion == 'success' && !cancelled() }}
-      #        with:
-      #          name: HAPI Test (Time Consuming) Report
-      #          path: "**/test-clients/build/test-results/test/TEST-*.xml"
-      #          retention-days: 7
-      #
-      #      - name: Upload HAPI Test (Time Consuming) Network Logs
-      #        uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 # v4.3.1
-      #        if: ${{ inputs.enable-hapi-tests-time-consuming && inputs.enable-network-log-capture && steps.gradle-hapi-time-consuming.conclusion == 'failure' && !cancelled() }}
-      #        with:
-      #          name: HAPI Test (Time Consuming) Network Logs
-      #          path: |
-      #            hedera-node/test-clients/build/hapi-test/**/output/**
-      #          retention-days: 7
+      - name: HAPI Testing (Time Consuming)
+        id: gradle-hapi-time-consuming
+        if: ${{ inputs.enable-hapi-tests-time-consuming && steps.gradle-build.conclusion == 'success' && !cancelled() }}
+        env:
+          LC_ALL: en.UTF-8
+          LANG: en_US.UTF-8
+        run: ${GRADLE_EXEC} hapiTestTimeConsuming --scan
+
+      - name: Publish HAPI Test (Time Consuming) Report
+        uses: EnricoMi/publish-unit-test-result-action@30eadd5010312f995f0d3b3cff7fe2984f69409e # v2.16.1
+        if: ${{ inputs.enable-hapi-tests-time-consuming && steps.gradle-build.conclusion == 'success' && !cancelled() }}
+        with:
+          check_name: 'Node: HAPI Test (Time Consuming) Results'
+          json_thousands_separator: ','
+          junit_files: "**/test-clients/build/test-results/test/TEST-*.xml"
+          comment_mode: errors # only comment if we could not find or parse the JUnit XML files
+
+      - name: Upload HAPI Test (Time Consuming) Report Artifacts
+        uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 # v4.3.1
+        if: ${{ inputs.enable-hapi-tests-time-consuming && steps.gradle-build.conclusion == 'success' && !cancelled() }}
+        with:
+          name: HAPI Test (Time Consuming) Report
+          path: "**/test-clients/build/test-results/test/TEST-*.xml"
+          retention-days: 7
+
+      - name: Upload HAPI Test (Time Consuming) Network Logs
+        uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 # v4.3.1
+        if: ${{ inputs.enable-hapi-tests-time-consuming && inputs.enable-network-log-capture && steps.gradle-hapi-time-consuming.conclusion == 'failure' && !cancelled() }}
+        with:
+          name: HAPI Test (Time Consuming) Network Logs
+          path: |
+            hedera-node/test-clients/build/hapi-test/**/output/**
+          retention-days: 7
 
       - name: HAPI Testing (Restart)
         id: gradle-hapi-restart
