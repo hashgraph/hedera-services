@@ -36,6 +36,7 @@ import static com.swirlds.platform.util.BootstrapUtils.checkNodesToRun;
 import static com.swirlds.platform.util.BootstrapUtils.getNodesToRun;
 import static java.util.Objects.requireNonNull;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.hedera.node.app.services.OrderedServiceMigrator;
 import com.hedera.node.app.services.ServicesRegistryImpl;
 import com.hedera.node.app.tss.impl.PlaceholderTssBaseService;
@@ -43,12 +44,14 @@ import com.swirlds.base.time.Time;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.RuntimeConstructable;
 import com.swirlds.common.context.PlatformContext;
+import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.crypto.CryptographyFactory;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.io.filesystem.FileSystemManager;
 import com.swirlds.common.io.utility.FileUtils;
 import com.swirlds.common.io.utility.RecycleBin;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
+import com.swirlds.common.merkle.crypto.MerkleCryptography;
 import com.swirlds.common.merkle.crypto.MerkleCryptographyFactory;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.config.api.Configuration;
@@ -75,6 +78,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.InstantSource;
 import java.util.List;
 import java.util.Set;
+import java.util.function.BiFunction;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -91,6 +95,9 @@ public class ServicesMain implements SwirldMain {
      * The {@link SwirldMain} to actually use, depending on whether workflows are enabled.
      */
     private final SwirldMain delegate;
+
+    private static BiFunction<Configuration, Cryptography, MerkleCryptography> merkleCryptographyFn =
+            MerkleCryptographyFactory::create;
 
     /**
      * Create a new instance
@@ -211,7 +218,7 @@ public class ServicesMain implements SwirldMain {
         cryptography.digestSync(bootstrapAddressBook);
 
         // Initialize the Merkle cryptography
-        final var merkleCryptography = MerkleCryptographyFactory.create(configuration, cryptography);
+        final var merkleCryptography = merkleCryptographyFn.apply(configuration, cryptography);
         MerkleCryptoFactory.set(merkleCryptography);
 
         // Create the platform context
@@ -361,5 +368,11 @@ public class ServicesMain implements SwirldMain {
                 new OrderedServiceMigrator(),
                 InstantSource.system(),
                 PlaceholderTssBaseService::new);
+    }
+
+    @VisibleForTesting
+    public static void setMerkleCryptography(
+            final BiFunction<Configuration, Cryptography, MerkleCryptography> merkleCryptographyFn) {
+        ServicesMain.merkleCryptographyFn = merkleCryptographyFn;
     }
 }
