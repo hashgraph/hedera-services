@@ -16,14 +16,24 @@
 
 package com.swirlds.platform.roster;
 
-import com.google.common.hash.Hasher;
-import com.google.common.hash.Hashing;
 import com.hedera.hapi.node.base.ServiceEndpoint;
 import com.hedera.hapi.node.state.roster.Roster;
+import com.swirlds.common.crypto.DigestType;
+import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.crypto.HashBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.Objects;
 
+/**
+ * Provides utility methods for {@link Roster} objects.
+ */
 public class RosterUtils {
+
+    /**
+     * Prevents instantiation of this utility class.
+     */
     private RosterUtils() {}
 
     /**
@@ -32,20 +42,28 @@ public class RosterUtils {
      * @param roster the roster to hash
      * @return the hash of the roster
      */
-    public static byte[] hashOf(@NonNull final Roster roster) {
+    @NonNull
+    public static Hash hashOf(@NonNull final Roster roster) {
         Objects.requireNonNull(roster);
-        final Hasher hasher = Hashing.sha256().newHasher();
+        final HashBuilder hashBuilder;
+        try {
+            hashBuilder = new HashBuilder(MessageDigest.getInstance(DigestType.SHA_384.algorithmName()));
+        } catch (final NoSuchAlgorithmException e) {
+            throw new IllegalStateException(e);
+        }
+        hashBuilder.reset();
         roster.rosters().forEach(entry -> {
-            hasher.putLong(entry.nodeId());
-            hasher.putLong(entry.weight());
-            hasher.putBytes(entry.gossipCaCertificate().toByteArray());
-            hasher.putBytes(entry.tssEncryptionKey().toByteArray());
+            hashBuilder
+                    .update(entry.nodeId())
+                    .update(entry.weight())
+                    .update(entry.gossipCaCertificate().toByteArray())
+                    .update(entry.tssEncryptionKey().toByteArray());
             entry.gossipEndpoint().forEach(endpoint -> {
                 final byte[] bytes = ServiceEndpoint.PROTOBUF.toBytes(endpoint).toByteArray();
-                hasher.putInt(bytes.length);
-                hasher.putBytes(bytes);
+                hashBuilder.update(bytes.length);
+                hashBuilder.update(bytes);
             });
         });
-        return hasher.hash().asBytes();
+        return hashBuilder.build();
     }
 }

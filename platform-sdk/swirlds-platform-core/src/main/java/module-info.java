@@ -1,6 +1,3 @@
-import com.swirlds.config.api.ConfigurationExtension;
-import com.swirlds.platform.config.PlatformConfigurationExtension;
-
 /**
  * The Swirlds public API module used by platform applications.
  */
@@ -143,7 +140,6 @@ module com.swirlds.platform.core {
     requires com.swirlds.virtualmap;
     requires com.fasterxml.jackson.core;
     requires com.fasterxml.jackson.dataformat.yaml;
-    requires com.google.common;
     requires java.desktop;
     requires java.management;
     requires java.scripting;

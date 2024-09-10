@@ -68,7 +68,7 @@ public class WritableRosterStore extends ReadableRosterStoreImpl {
 
         // update the roster state
         final List<RoundRosterPair> roundRosterPairs = new LinkedList<>(currentRosterState.roundRosterPairs());
-        final Bytes activeRosterHash = Bytes.wrap(RosterUtils.hashOf(roster));
+        final Bytes activeRosterHash = RosterUtils.hashOf(roster).getBytes();
         roundRosterPairs.addFirst(new RoundRosterPair(round, activeRosterHash));
         final Builder rosterStateBuilder = RosterState.newBuilder()
                 .candidateRosterHash(currentRosterState.candidateRosterHash())
@@ -88,7 +88,7 @@ public class WritableRosterStore extends ReadableRosterStoreImpl {
         Objects.requireNonNull(roster);
 
         // update the roster state
-        final Bytes candidateRosterHash = Bytes.wrap(RosterUtils.hashOf(roster));
+        final Bytes candidateRosterHash = RosterUtils.hashOf(roster).getBytes();
         final Builder rosterStateBuilder = RosterState.newBuilder()
                 .candidateRosterHash(candidateRosterHash)
                 .roundRosterPairs(rosterState().get().roundRosterPairs());
