@@ -155,17 +155,7 @@ public class ConsensusUpdateTopicHandler implements TransactionHandler {
         validateMaybeNewAttributes(handleContext, op, topic);
 
         // Now we apply the mutations to a builder
-        final var builder = new Topic.Builder();
-        // But first copy over the immutable topic attributes to the builder
-        builder.topicId(topic.topicId());
-        builder.sequenceNumber(topic.sequenceNumber());
-        builder.runningHash(topic.runningHash());
-        builder.deleted(topic.deleted());
-        // TODO: added so unit tests pass (fix this when implementing the actual logic)
-        builder.feeScheduleKey(topic.feeScheduleKey());
-        builder.freeMessagesKeyList(topic.freeMessagesKeyList());
-        builder.customFees(topic.customFees());
-        // And then resolve mutable attributes, and put the new topic back
+        final var builder = topic.copyBuilder();
         resolveMutableBuilderAttributes(handleContext, op, builder, topic);
         topicStore.put(builder.build());
     }
