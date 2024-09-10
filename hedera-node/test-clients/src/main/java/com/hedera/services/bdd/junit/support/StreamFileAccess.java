@@ -50,24 +50,26 @@ import org.apache.logging.log4j.Logger;
  * A singleton that provides near real-time access to the record stream files for all concurrently
  * executing {@link com.hedera.services.bdd.spec.HapiSpec}'s.
  */
-public enum RecordStreamAccess {
-    RECORD_STREAM_ACCESS;
+public enum StreamFileAccess {
+    STREAM_FILE_ACCESS;
 
-    private static final Logger log = LogManager.getLogger(RecordStreamAccess.class);
+    private static final Logger log = LogManager.getLogger(StreamFileAccess.class);
 
     private static final int MONITOR_INTERVAL_MS = 250;
 
     /**
-     * A map of record stream file locations to the listeners that are watching them. (In general we
-     * only validate records from the single node0, but this could change?)
+     * A map of stream file locations to the listeners that are watching them.
+     * <p>
+     * Note that in general we only validate stream files from {@code node0}, since if other nodes are producing
+     * different files they are certain to hit an ISS in very short order.
      */
-    private final Map<String, BroadcastingRecordStreamListener> validatingListeners = new ConcurrentHashMap<>();
+    private final Map<String, StreamFileAlterationListener> locationListeners = new ConcurrentHashMap<>();
 
     /** A bit of infrastructure that runs the polling loop for all the listeners. */
     private final FileAlterationMonitor monitor = new FileAlterationMonitor(MONITOR_INTERVAL_MS);
 
-    public record Data(List<RecordWithSidecars> records, List<RecordStreamFile> files) {
-        public static Data EMPTY_DATA = new Data(List.of(), List.of());
+    public record RecordStreamData(List<RecordWithSidecars> records, List<RecordStreamFile> files) {
+        public static RecordStreamData EMPTY_DATA = new RecordStreamData(List.of(), List.of());
     }
 
     /**
@@ -82,9 +84,9 @@ public enum RecordStreamAccess {
         requireNonNull(path);
         requireNonNull(listener);
         try {
-            final var unsubscribe = getValidatingListener(
-                            path.toAbsolutePath().normalize().toString())
-                    .subscribe(listener);
+            final var alterationListener =
+                    getOrCreateListener(path.toAbsolutePath().normalize().toString());
+            final var unsubscribe = alterationListener.subscribe(listener);
             return () -> {
                 try {
                     unsubscribe.run();
@@ -103,14 +105,14 @@ public enum RecordStreamAccess {
      */
     public synchronized void stopMonitorIfNoSubscribers() {
         // Count the number of subscribers (could derive from more than one concurrent HapiSpec)
-        final var numSubscribers = validatingListeners.values().stream()
-                .mapToInt(BroadcastingRecordStreamListener::numListeners)
+        final var numSubscribers = locationListeners.values().stream()
+                .mapToInt(StreamFileAlterationListener::numListeners)
                 .sum();
         if (numSubscribers == 0) {
             try {
-                if (!validatingListeners.isEmpty()) {
-                    log.info("Stopping record stream access monitor (locations were {})", validatingListeners.keySet());
-                    validatingListeners.clear();
+                if (!locationListeners.isEmpty()) {
+                    log.info("Stopping record stream access monitor (locations were {})", locationListeners.keySet());
+                    locationListeners.clear();
                 }
                 // Remove all observers and stop the monitor
                 monitor.getObservers().forEach(monitor::removeObserver);
@@ -122,26 +124,6 @@ public enum RecordStreamAccess {
     }
 
     /**
-     * If the given location is not already being watched, starts a new listener for it and returns
-     * the listener.
-     *
-     * @param loc the record stream file location to watch
-     * @return the listener for the given location
-     * @throws Exception if there is an error starting the listener
-     */
-    public synchronized BroadcastingRecordStreamListener getValidatingListener(final String loc) throws Exception {
-        if (!validatingListeners.containsKey(loc)) {
-            var fAtLoc = relocatedIfNotPresentWithCurrentPathPrefix(new File(loc), "..", TEST_CLIENTS_PREFIX);
-            if (!fAtLoc.exists()) {
-                Files.createDirectories(fAtLoc.toPath());
-            }
-            validatingListeners.put(loc, newValidatingListener(fAtLoc.getAbsolutePath()));
-            log.info("Started record stream listener for {}", loc);
-        }
-        return validatingListeners.get(loc);
-    }
-
-    /**
      * Reads the record and sidecar stream files from a given directory.
      *
      * @param loc the directory to read from
@@ -149,7 +131,7 @@ public enum RecordStreamAccess {
      * @return the list of record and sidecar files
      * @throws IOException if there is an error reading the files
      */
-    public Data readStreamDataFrom(String loc, final String relativeSidecarLoc) throws IOException {
+    public RecordStreamData readStreamDataFrom(String loc, final String relativeSidecarLoc) throws IOException {
         return readStreamDataFrom(loc, relativeSidecarLoc, f -> true);
     }
 
@@ -163,7 +145,7 @@ public enum RecordStreamAccess {
      * @return the list of record and sidecar files
      * @throws IOException if there is an error reading the files
      */
-    public Data readStreamDataFrom(
+    public RecordStreamData readStreamDataFrom(
             @NonNull String loc,
             @NonNull final String relativeSidecarLoc,
             @NonNull final Predicate<String> inclusionTest)
@@ -191,11 +173,11 @@ public enum RecordStreamAccess {
                             sidecarFilesByRecordFile
                                     .getOrDefault(parseRecordFileConsensusTime(f), Collections.emptyList())
                                     .stream()
-                                    .map(RecordStreamAccess::ensurePresentSidecarFile)
+                                    .map(StreamFileAccess::ensurePresentSidecarFile)
                                     .toList());
                 })
                 .toList();
-        return new Data(recordsWithSideCars, fullRecordFiles);
+        return new RecordStreamData(recordsWithSideCars, fullRecordFiles);
     }
 
     public static RecordStreamFile ensurePresentRecordFile(final String f) {
@@ -218,9 +200,29 @@ public enum RecordStreamAccess {
         }
     }
 
-    private BroadcastingRecordStreamListener newValidatingListener(final String loc) throws Exception {
+    /**
+     * If the given location is not already being watched, starts a new listener for it and returns
+     * the listener.
+     *
+     * @param loc the record stream file location to watch
+     * @return the listener for the given location
+     * @throws Exception if there is an error starting the listener
+     */
+    private StreamFileAlterationListener getOrCreateListener(final String loc) throws Exception {
+        if (!locationListeners.containsKey(loc)) {
+            final var fAtLoc = relocatedIfNotPresentWithCurrentPathPrefix(new File(loc), "..", TEST_CLIENTS_PREFIX);
+            if (!fAtLoc.exists()) {
+                Files.createDirectories(fAtLoc.toPath());
+            }
+            locationListeners.put(loc, newValidatingListener(fAtLoc.getAbsolutePath()));
+            log.info("Started stream file listener for {}", loc);
+        }
+        return locationListeners.get(loc);
+    }
+
+    private StreamFileAlterationListener newValidatingListener(final String loc) throws Exception {
         final var observer = new FileAlterationObserver(loc);
-        final var listener = new BroadcastingRecordStreamListener();
+        final var listener = new StreamFileAlterationListener();
         observer.addListener(listener);
         monitor.addObserver(observer);
         try {
