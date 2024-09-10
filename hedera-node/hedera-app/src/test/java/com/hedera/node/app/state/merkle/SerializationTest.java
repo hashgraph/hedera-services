@@ -188,7 +188,6 @@ class SerializationTest extends MerkleTestBase {
             CRYPTO.digestTreeSync(copy);
             serializedBytes = writeTree(copy, dir);
         } else {
-            copy.copy();
             CRYPTO.digestTreeSync(copy);
             serializedBytes = writeTree(originalTree, dir);
         }

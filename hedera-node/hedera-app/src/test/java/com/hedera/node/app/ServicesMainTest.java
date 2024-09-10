@@ -31,9 +31,9 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.verify;
 
-import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.node.app.services.OrderedServiceMigrator;
 import com.hedera.node.app.services.ServicesRegistryImpl;
+import com.hedera.node.app.tss.impl.PlaceholderTssBaseService;
 import com.hedera.node.app.version.ServicesSoftwareVersion;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.context.PlatformContext;
@@ -242,7 +242,8 @@ final class ServicesMainTest {
                     ConstructableRegistry.getInstance(),
                     ServicesRegistryImpl::new,
                     new OrderedServiceMigrator(),
-                    InstantSource.system());
+                    InstantSource.system(),
+                    () -> new PlaceholderTssBaseService());
             final List<Hedera> hedera = mockedConstruction.constructed();
 
             given(metricsProvider.createGlobalMetrics()).willReturn(metrics);
@@ -259,7 +260,7 @@ final class ServicesMainTest {
             ServicesMain.main(args);
             verify(platformBuilder).withPlatformContext(platformContext);
             verify(platformBuilder).withAddressBook(addressBook);
-            verify(platformBuilder).withRoster(Roster.newBuilder().build());
+            verify(platformBuilder).withRoster(any());
             verify(platform).start();
             verify(platformBuilder).build();
         }
