@@ -17,10 +17,16 @@
 name: "ZXF: Deploy Production Release"
 on:
   push:
-    branches:
-      - develop
     tags:
       - "v[0-9]+.[0-9]+.[0-9]+-?*"
+  workflow_run:
+    workflows:
+      - "Node: Build Application"
+    branches:
+      - develop
+    types:
+      - completed
+
 
 defaults:
   run:
@@ -110,7 +116,7 @@ jobs:
   release-branch:
     name: Release [Branch]
     uses: ./.github/workflows/node-zxc-build-release-artifact.yaml
-    if: ${{ github.event_name == 'push' && !startsWith(github.ref, 'refs/tags/v') }}
+    if: ${{ github.event_name == 'workflow_run' }}
     with:
       version-policy: branch-commit
       trigger-env-deploy: integration
