@@ -143,8 +143,11 @@ jobs:
     name: Tag as XTS-Passing
     runs-on: network-node-linux-medium
     needs:
+      - abbreviated-panel
       - extended-test-suite
       - fetch-xts-candidate
+      - hapi-tests-time-consuming
+      - hedera-node-jrs-panel
     if: ${{ needs.extended-test-suite.result == 'success' }}
     steps:
       - name: Checkout Tagged Code
@@ -166,10 +169,18 @@ jobs:
     name: Report XTS preparation failure
     runs-on: network-node-linux-medium
     needs:
+      - abbreviated-panel
       - extended-test-suite
       - fetch-xts-candidate
+      - hapi-tests-time-consuming
+      - hedera-node-jrs-panel
       - tag-for-promotion
-    if: ${{ needs.extended-test-suite.result != 'success' || needs.fetch-xts-candidate.result != 'success' || needs.tag-for-promotion.result != 'success' }}
+    if: ${{ needs.abbreviated-panel.result != 'success' ||
+            needs.extended-test-suite.result != 'success' || 
+            needs.fetch-xts-candidate.result != 'success' ||
+            needs.hapi-tests-time-consuming.result != 'success' ||
+            needs.hedera-node-jrs-panel.result != 'success' ||
+            needs.tag-for-promotion.result != 'success' }}
     steps:
       - name: Report failure
         run: |
