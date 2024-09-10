@@ -363,7 +363,8 @@ public class HandleWorkflow {
                 dispatchProcessor.processDispatch(dispatch);
                 updateWorkflowMetrics(userTxn);
             }
-            final var handleOutput = userTxn.stack().buildHandleOutput(userTxn.consensusNow());
+            final var handleOutput =
+                    userTxn.stack().buildHandleOutput(userTxn.consensusNow(), exchangeRateManager.exchangeRates());
             // Note that we don't yet support producing ONLY blocks, because we haven't integrated
             // translators from block items to records for answering queries
             if (blockStreamConfig.streamRecords()) {
@@ -435,7 +436,7 @@ public class HandleWorkflow {
      * Returns the user dispatch for the given user transaction.
      *
      * @param userTxn the user transaction
-     * @param blockStreamConfig
+     * @param blockStreamConfig the block stream configuration
      * @return the user dispatch
      */
     private Dispatch dispatchFor(@NonNull final UserTxn userTxn, @NonNull final BlockStreamConfig blockStreamConfig) {
@@ -482,6 +483,7 @@ public class HandleWorkflow {
             transactionBytes = Transaction.PROTOBUF.toBytes(transaction);
         }
         return builder.transaction(txnInfo.transaction())
+                .functionality(txnInfo.functionality())
                 .serializedTransaction(txnInfo.serializedTransaction())
                 .transactionBytes(transactionBytes)
                 .transactionID(txnInfo.txBody().transactionIDOrThrow())

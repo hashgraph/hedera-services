@@ -30,6 +30,7 @@ import com.swirlds.platform.system.transaction.TransactionWrapper;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.security.MessageDigest;
+import java.util.List;
 import java.util.Objects;
 
 /**
@@ -52,8 +53,8 @@ public class PbjStreamHasher implements EventHasher, UnsignedEventHasher {
     @NonNull
     public PlatformEvent hashEvent(@NonNull final PlatformEvent event) {
         Objects.requireNonNull(event);
-        hashUnsignedEvent(event.getUnsignedEvent());
-        event.setHash(event.getUnsignedEvent().getHash());
+        final Hash hash = hashEvent(event.getEventCore(), event.getTransactions());
+        event.setHash(hash);
         return event;
     }
 
@@ -63,9 +64,23 @@ public class PbjStreamHasher implements EventHasher, UnsignedEventHasher {
      * @param event the event to hash
      */
     public void hashUnsignedEvent(@NonNull final UnsignedEvent event) {
+        final Hash hash = hashEvent(event.getEventCore(), event.getTransactions());
+        event.setHash(hash);
+    }
+
+    /**
+     * Hashes the given event and returns the hash.
+     *
+     * @param eventCore the event to hash
+     * @param transactions the transactions to hash
+     *
+     * @return the hash of the event
+     */
+    @NonNull
+    private Hash hashEvent(@NonNull final EventCore eventCore, @NonNull final List<TransactionWrapper> transactions) {
         try {
-            EventCore.PROTOBUF.write(event.getEventCore(), eventStream);
-            for (final TransactionWrapper transaction : event.getTransactions()) {
+            EventCore.PROTOBUF.write(eventCore, eventStream);
+            for (final TransactionWrapper transaction : transactions) {
                 EventTransaction.PROTOBUF.write(transaction.getTransaction(), transactionStream);
                 byte[] hash = transactionDigest.digest();
                 transaction.setHash(Bytes.wrap(hash));
@@ -75,6 +90,6 @@ public class PbjStreamHasher implements EventHasher, UnsignedEventHasher {
             throw new RuntimeException("An exception occurred while trying to hash an event!", e);
         }
 
-        event.setHash(new Hash(eventDigest.digest(), DigestType.SHA_384));
+        return new Hash(eventDigest.digest(), DigestType.SHA_384);
     }
 }

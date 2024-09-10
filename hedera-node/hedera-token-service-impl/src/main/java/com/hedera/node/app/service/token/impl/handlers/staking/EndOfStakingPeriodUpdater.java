@@ -40,8 +40,9 @@ import com.hedera.node.app.service.token.impl.WritableNetworkStakingRewardsStore
 import com.hedera.node.app.service.token.impl.WritableStakingInfoStore;
 import com.hedera.node.app.service.token.records.NodeStakeUpdateStreamBuilder;
 import com.hedera.node.app.service.token.records.TokenContext;
-import com.hedera.node.app.spi.numbers.HederaAccountNumbers;
 import com.hedera.node.app.spi.workflows.record.StreamBuilder;
+import com.hedera.node.config.ConfigProvider;
+import com.hedera.node.config.data.AccountsConfig;
 import com.hedera.node.config.data.StakingConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -72,21 +73,21 @@ public class EndOfStakingPeriodUpdater {
     // The exact choice of precision will not have a large effect on the per-hbar reward rate
     private static final MathContext MATH_CONTEXT = new MathContext(8, RoundingMode.DOWN);
 
-    private final HederaAccountNumbers accountNumbers;
     private final StakingRewardsHelper stakeRewardsHelper;
+
+    private AccountsConfig accountsConfig;
 
     /**
      * Constructs an {@link EndOfStakingPeriodUpdater} instance.
      *
-     * @param accountNumbers the account numbers
      * @param stakeRewardsHelper the staking rewards helper
      */
     @Inject
     public EndOfStakingPeriodUpdater(
-            @NonNull final HederaAccountNumbers accountNumbers,
-            @NonNull final StakingRewardsHelper stakeRewardsHelper) {
-        this.accountNumbers = accountNumbers;
+            @NonNull final StakingRewardsHelper stakeRewardsHelper, @NonNull final ConfigProvider configProvider) {
         this.stakeRewardsHelper = stakeRewardsHelper;
+        final var config = configProvider.getConfiguration();
+        this.accountsConfig = config.getConfigData(AccountsConfig.class);
     }
 
     /**
@@ -442,7 +443,7 @@ public class EndOfStakingPeriodUpdater {
     }
 
     private long getRewardsBalance(@NonNull final ReadableAccountStore accountStore) {
-        return requireNonNull(accountStore.getAccountById(asAccount(accountNumbers.stakingRewardAccount())))
+        return requireNonNull(accountStore.getAccountById(asAccount(accountsConfig.stakingRewardAccount())))
                 .tinybarBalance();
     }
 

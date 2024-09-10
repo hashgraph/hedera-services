@@ -76,7 +76,7 @@ public class GenesisPlatformStateCommand extends AbstractCommand {
                 SignedStateFileReader.readStateFile(platformContext, statePath, SignedStateFileUtils::readState);
         try (final ReservedSignedState reservedSignedState = deserializedSignedState.reservedSignedState()) {
             final PlatformStateAccessor platformState =
-                    reservedSignedState.get().getState().getPlatformState();
+                    reservedSignedState.get().getState().getWritablePlatformState();
             platformState.bulkUpdate(v -> {
                 System.out.printf("Replacing platform data %n");
                 v.setRound(PlatformStateAccessor.GENESIS_ROUND);

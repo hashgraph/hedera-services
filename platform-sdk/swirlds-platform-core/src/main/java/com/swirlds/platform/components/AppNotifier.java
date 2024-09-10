@@ -21,6 +21,7 @@ import com.swirlds.platform.components.appcomm.CompleteStateNotificationWithClea
 import com.swirlds.platform.listeners.ReconnectCompleteNotification;
 import com.swirlds.platform.listeners.StateWriteToDiskCompleteNotification;
 import com.swirlds.platform.system.state.notifications.IssNotification;
+import com.swirlds.platform.system.state.notifications.StateHashedNotification;
 import com.swirlds.platform.system.status.PlatformStatus;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
@@ -35,6 +36,14 @@ public interface AppNotifier {
      */
     @InputWireLabel("state written notification")
     void sendStateWrittenToDiskNotification(@NonNull final StateWriteToDiskCompleteNotification notification);
+
+    /**
+     * Send a notification to the app that a state has been written to disk.
+     *
+     * @param notification the notification
+     */
+    @InputWireLabel("state hashed notification")
+    void sendStateHashedNotification(@NonNull final StateHashedNotification notification);
 
     /**
      * Send a notification to the app that a reconnect has completed.

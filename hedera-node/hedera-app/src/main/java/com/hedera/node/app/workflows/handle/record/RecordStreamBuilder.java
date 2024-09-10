@@ -17,6 +17,7 @@
 package com.hedera.node.app.workflows.handle.record;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.IDENTICAL_SCHEDULE_ALREADY_CREATED;
+import static com.hedera.node.app.service.token.impl.comparator.TokenComparators.PENDING_AIRDROP_ID_COMPARATOR;
 import static com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer.NOOP_RECORD_CUSTOMIZER;
 import static com.hedera.node.app.state.logging.TransactionStateLogger.logEndTransactionRecord;
 import static java.util.Collections.emptySet;
@@ -26,6 +27,7 @@ import com.hedera.hapi.node.base.AccountAmount;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.FileID;
+import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.ScheduleID;
 import com.hedera.hapi.node.base.Timestamp;
@@ -144,6 +146,8 @@ public class RecordStreamBuilder
     private static final Comparator<TokenAssociation> TOKEN_ASSOCIATION_COMPARATOR =
             Comparator.<TokenAssociation>comparingLong(a -> a.tokenId().tokenNum())
                     .thenComparingLong(a -> a.accountIdOrThrow().accountNum());
+    private static final Comparator<PendingAirdropRecord> PENDING_AIRDROP_RECORD_COMPARATOR =
+            Comparator.comparing(PendingAirdropRecord::pendingAirdropIdOrThrow, PENDING_AIRDROP_ID_COMPARATOR);
     // base transaction data
     private Transaction transaction;
 
@@ -244,10 +248,16 @@ public class RecordStreamBuilder
         final Timestamp parentConsensusTimestamp =
                 parentConsensus != null ? HapiUtils.asTimestamp(parentConsensus) : null;
 
-        // sort the automatic associations to match the order of mono-service records
-        final var newAutomaticTokenAssociations = new ArrayList<>(automaticTokenAssociations);
+        // Sort non-empty automatic associations and pending airdrops to simplify record translation
+        var newAutomaticTokenAssociations = automaticTokenAssociations;
         if (!automaticTokenAssociations.isEmpty()) {
+            newAutomaticTokenAssociations = new ArrayList<>(automaticTokenAssociations);
             newAutomaticTokenAssociations.sort(TOKEN_ASSOCIATION_COMPARATOR);
+        }
+        var newPendingAirdropRecords = pendingAirdropRecords;
+        if (!pendingAirdropRecords.isEmpty()) {
+            newPendingAirdropRecords = new ArrayList<>(pendingAirdropRecords);
+            newPendingAirdropRecords.sort(PENDING_AIRDROP_RECORD_COMPARATOR);
         }
 
         final var transactionRecord = transactionRecordBuilder
@@ -258,7 +268,7 @@ public class RecordStreamBuilder
                 .parentConsensusTimestamp(parentConsensusTimestamp)
                 .transferList(transferList)
                 .tokenTransferLists(tokenTransferLists)
-                .newPendingAirdrops(pendingAirdropRecords)
+                .newPendingAirdrops(newPendingAirdropRecords)
                 .assessedCustomFees(assessedCustomFees)
                 .automaticTokenAssociations(newAutomaticTokenAssociations)
                 .paidStakingRewards(paidStakingRewards)
@@ -852,8 +862,7 @@ public class RecordStreamBuilder
     /**{@inheritDoc}*/
     @NonNull
     @Override
-    public RecordStreamBuilder exchangeRate(@NonNull final ExchangeRateSet exchangeRate) {
-        requireNonNull(exchangeRate, "exchangeRate must not be null");
+    public RecordStreamBuilder exchangeRate(@Nullable final ExchangeRateSet exchangeRate) {
         this.exchangeRate = exchangeRate;
         return this;
     }
@@ -1175,5 +1184,11 @@ public class RecordStreamBuilder
     @NonNull
     public TransactionCategory category() {
         return category;
+    }
+
+    @Override
+    public StreamBuilder functionality(@NonNull final HederaFunctionality functionality) {
+        // No-op
+        return this;
     }
 }

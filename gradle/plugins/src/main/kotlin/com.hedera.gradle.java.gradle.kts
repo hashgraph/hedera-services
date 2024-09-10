@@ -15,7 +15,6 @@
  */
 
 import com.adarshr.gradle.testlogger.theme.ThemeType
-import com.autonomousapps.AbstractExtension
 import com.autonomousapps.DependencyAnalysisSubExtension
 import com.hedera.gradle.services.TaskLockService
 import com.hedera.gradle.utils.Utils.versionTxt
@@ -27,6 +26,7 @@ plugins {
     id("jacoco")
     id("checkstyle")
     id("com.adarshr.test-logger")
+    id("com.autonomousapps.dependency-analysis")
     id("com.hedera.gradle.lifecycle")
     id("com.hedera.gradle.jpms-modules")
     id("com.hedera.gradle.repositories")
@@ -73,8 +73,6 @@ jvmDependencyConflicts {
         platform(":hedera-dependency-versions")
     }
 }
-
-configurations.javaModulesMergeJars { extendsFrom(configurations["internal"]) }
 
 tasks.buildDependents { setGroup(null) }
 
@@ -215,6 +213,16 @@ testing.suites {
             }
         }
     }
+    // remove automatically added compile time dependencies, as we want to define them all
+    // explicitly
+    withType<JvmTestSuite> {
+        configurations.getByName(sources.implementationConfigurationName) {
+            withDependencies {
+                removeIf { it.group == "org.junit.jupiter" && it.name == "junit-jupiter" }
+            }
+        }
+        dependencies { runtimeOnly("org.junit.jupiter:junit-jupiter-engine") }
+    }
 }
 
 // If user gave the argument '-PactiveProcessorCount', then do:
@@ -272,11 +280,7 @@ tasks.withType<JavaCompile>().configureEach {
 // add as testModuleInfo { require(...) } to the main module. This is
 // conceptually wrong, because in whitebox testing the 'main' and 'test'
 // module are conceptually considered one module (main module extended with tests)
-val dependencyAnalysis = extensions.findByType<AbstractExtension>()
-
-if (dependencyAnalysis is DependencyAnalysisSubExtension) {
-    dependencyAnalysis.issues { onAny { exclude(project.path) } }
-}
+configure<DependencyAnalysisSubExtension> { issues { onAny { exclude(project.path) } } }
 
 checkstyle { toolVersion = "10.12.7" }
 
