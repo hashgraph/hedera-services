@@ -17,6 +17,7 @@
 package com.hedera.node.app;
 
 import static com.swirlds.platform.system.SystemExitCode.NODE_ADDRESS_MISMATCH;
+import static com.swirlds.platform.system.address.AddressBookUtils.initializeAddressBook;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
@@ -52,13 +53,13 @@ import com.swirlds.platform.config.legacy.LegacyConfigPropertiesLoader;
 import com.swirlds.platform.crypto.CryptoStatic;
 import com.swirlds.platform.crypto.KeysAndCerts;
 import com.swirlds.platform.state.MerkleStateRoot;
-import com.swirlds.platform.state.address.AddressBookUtils;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.StartupStateUtils;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.SystemExitUtils;
 import com.swirlds.platform.system.address.AddressBook;
+import com.swirlds.platform.system.address.AddressBookUtils;
 import com.swirlds.platform.util.BootstrapUtils;
 import java.time.InstantSource;
 import java.util.ArrayList;
@@ -235,7 +236,7 @@ final class ServicesMainTest {
                     .when(() -> BootstrapUtils.detectSoftwareUpgrade(any(), any()))
                     .thenReturn(false);
             addressbookUtilsMockedStatic
-                    .when(() -> AddressBookUtils.initializeAddressBook(any(), any(), any(), any(), any()))
+                    .when(() -> initializeAddressBook(any(), any(), any(), any(), any()))
                     .thenReturn(addressBook);
             new Hedera(
                     ConstructableRegistry.getInstance(),
