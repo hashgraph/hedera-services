@@ -79,8 +79,8 @@ public class CustomGasCalculator extends CancunGasCalculator {
         final var hevmGasCost = gasCostOfStoring(
                 logSize(numTopics, dataLength),
                 lifetime,
-                tinybarValues.topLevelTinyCentRbhPrice(),
-                tinybarValues.topLevelTinyCentGasPrice());
+                tinybarValues.topLevelTinycentRbhPrice(),
+                tinybarValues.topLevelTinycentGasPrice());
 
         return Math.max(evmGasCost, hevmGasCost);
     }
@@ -104,15 +104,15 @@ public class CustomGasCalculator extends CancunGasCalculator {
 
     /**
      * Logically, would return the gas cost of storing the given number of bytes for the given number of seconds,
-     * given the relative prices of a byte-hour and a gas unit in tinyCent.
+     * given the relative prices of a byte-hour and a gas unit in tinycent.
      *
      * <p>But for differential testing, ignores the {@code numBytes} and returns the gas cost of storing just a
      * single byte for the given number of seconds.
      *
      * @param numBytes ignored
      * @param lifetime the number of seconds to store a single byte
-     * @param rbhPrice the price of a byte-hour in tinyCent
-     * @param gasPrice the price of a gas unit in tinyCent
+     * @param rbhPrice the price of a byte-hour in tinycent
+     * @param gasPrice the price of a gas unit in tinycent
      * @return the gas cost of storing a single byte for the given number of seconds
      */
     private static long gasCostOfStoring(

@@ -172,7 +172,7 @@ public class ClassicTransfersCall extends AbstractCall {
 
     /**
      * Simulates the mono-service gas calculation for a classic transfer, which is significantly complicated by our
-     * current strategy for setting the minimum tinyCent price based on the canonical prices of various operations.
+     * current strategy for setting the minimum tinycent price based on the canonical prices of various operations.
      *
      * @param body the transaction body to be dispatched
      * @param systemContractGasCalculator the gas calculator to use
@@ -191,29 +191,29 @@ public class ClassicTransfersCall extends AbstractCall {
         final var hasCustomFees = enhancement.nativeOperations().checkForCustomFees(op);
         // For fungible there are always at least two operations, so only charge half for each
         // operation
-        final var baseUnitAdjustTinycentPrice = systemContractGasCalculator.canonicalPriceInTinyCents(
+        final var baseUnitAdjustTinycentPrice = systemContractGasCalculator.canonicalPriceInTinycents(
                         hasCustomFees ? DispatchType.TRANSFER_FUNGIBLE_CUSTOM_FEES : DispatchType.TRANSFER_FUNGIBLE)
                 / 2;
         // NFTs are atomic, one line can do it.
-        final var baseNftTransferTinyCentsPrice = systemContractGasCalculator.canonicalPriceInTinyCents(
+        final var baseNftTransferTinycentsPrice = systemContractGasCalculator.canonicalPriceInTinycents(
                 hasCustomFees ? DispatchType.TRANSFER_NFT_CUSTOM_FEES : DispatchType.TRANSFER_NFT);
         // Hbar transfer is similar to fungible tokens so only charge half for each operation
-        final var baseAdjustTinyCentsPrice =
-                systemContractGasCalculator.canonicalPriceInTinyCents(DispatchType.TRANSFER_HBAR) / 2;
+        final var baseAdjustTinycentsPrice =
+                systemContractGasCalculator.canonicalPriceInTinycents(DispatchType.TRANSFER_HBAR) / 2;
         final var baseLazyCreationPrice =
-                systemContractGasCalculator.canonicalPriceInTinyCents(DispatchType.CRYPTO_CREATE)
-                        + systemContractGasCalculator.canonicalPriceInTinyCents(DispatchType.CRYPTO_UPDATE);
+                systemContractGasCalculator.canonicalPriceInTinycents(DispatchType.CRYPTO_CREATE)
+                        + systemContractGasCalculator.canonicalPriceInTinycents(DispatchType.CRYPTO_UPDATE);
 
         final var extantAccounts = enhancement.nativeOperations().readableAccountStore();
         final long minimumTinyCents = minimumTinyCentPriceGiven(
                 op,
                 baseUnitAdjustTinycentPrice,
-                baseAdjustTinyCentsPrice,
-                baseNftTransferTinyCentsPrice,
+                baseAdjustTinycentsPrice,
+                baseNftTransferTinycentsPrice,
                 baseLazyCreationPrice,
                 extantAccounts,
                 selector);
-        return systemContractGasCalculator.gasRequirementWithTinyCents(body, payerId, minimumTinyCents);
+        return systemContractGasCalculator.gasRequirementWithTinycents(body, payerId, minimumTinyCents);
     }
 
     private static long minimumTinyCentPriceGiven(

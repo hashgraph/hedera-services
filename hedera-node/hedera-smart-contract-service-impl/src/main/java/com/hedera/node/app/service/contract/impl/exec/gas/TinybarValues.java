@@ -93,13 +93,13 @@ public class TinybarValues {
         return fromTinycentsToTinybars(exchangeRate, tinycents);
     }
 
-    public long asTinyCents(final long tinyBars) {
+    public long asTinycents(final long tinyBars) {
         return fromTinybarsToTinycents(exchangeRate, tinyBars);
     }
 
     /**
      * Returns the tinyBar-denominated price of a unit of gas for the current operation based on the current exchange
-     * rate, the current congestion multiplier, and the tinyCent-denominated price of gas in the {@code service} fee
+     * rate, the current congestion multiplier, and the tinycent-denominated price of gas in the {@code service} fee
      * component.
      *
      * @return the tinyBar-denominated price of a unit of gas for the current operation
@@ -113,9 +113,9 @@ public class TinybarValues {
 
     /**
      * Returns the tinyBar price of a unit of gas for the current operation based on the current exchange
-     * rate, the current congestion multiplier without being denominated in tinyCents units.
+     * rate, the current congestion multiplier without being denominated in tinycents units.
      *
-     * @return the full precision tinyBar price of a unit of gas for the current operation
+     * @return the full precision tinybar price of a unit of gas for the current operation
      */
     public long topLevelTinybarGasPriceFullPrecision() {
         return asTinybars(
@@ -124,10 +124,10 @@ public class TinybarValues {
     }
 
     /**
-     * Returns the topLevel gas price cost in tinyCents, without denomination, but with congestion multiplier.
-     * @return the tinyCents gas price
+     * Returns the topLevel gas price cost in tinycents, without denomination, but with congestion multiplier.
+     * @return the tinycents gas price
      */
-    public long topLevelTinyCentGasPrice() {
+    public long topLevelTinycentGasPrice() {
         if (!isGasPrecisionLossFixEnabled) {
             return topLevelTinybarGasPrice();
         }
@@ -153,11 +153,11 @@ public class TinybarValues {
     }
 
     /**
-     * Returns the tinyCent gas price for dispatching a child transaction based on the current exchange rate,
+     * Returns the tinycent gas price for dispatching a child transaction based on the current exchange rate,
      * Without denomination, but with congestion multiplier, saving the precision.
-     * @return the tinyCent gas price
+     * @return the tinycent gas price
      */
-    public long childTransactionTinyCentGasPrice() {
+    public long childTransactionTinycentGasPrice() {
         if (childTransactionResourcePrices == null) {
             throw new IllegalStateException("Cannot dispatch a child transaction from a query");
         }
@@ -172,7 +172,7 @@ public class TinybarValues {
      *
      * @return the tinybar-denominated price of a rbh for the current operation
      */
-    public long topLevelTinyCentRbhPrice() {
+    public long topLevelTinycentRbhPrice() {
         if (!isGasPrecisionLossFixEnabled) {
             return asTinybars(
                     topLevelResourcePrices.basePrices().servicedataOrThrow().rbh()

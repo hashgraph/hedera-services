@@ -68,7 +68,7 @@ public class SystemContractGasCalculator {
         if (!tinybarValues.isGasPrecisionLossFixEnabled()) {
             return gasRequirementOldWithPrecisionLoss(body, payer, canonicalPriceInTinybars(dispatchType));
         }
-        return gasRequirementWithTinyCents(body, payer, dispatchPrices.canonicalPriceInTinycents(dispatchType));
+        return gasRequirementWithTinycents(body, payer, dispatchPrices.canonicalPriceInTinycents(dispatchType));
     }
 
     /**
@@ -76,25 +76,25 @@ public class SystemContractGasCalculator {
      * calculate the gas requirement and returns it.
      * @param body the transaction body
      * @param payer the payer of the transaction
-     * @param minimumPriceInTinyCents the minimum price in tiny cents
+     * @param minimumPriceInTinycents the minimum price in tiny cents
      * @return the gas requirement for the transaction
      */
-    public long gasRequirementWithTinyCents(
-            @NonNull final TransactionBody body, @NonNull final AccountID payer, final long minimumPriceInTinyCents) {
+    public long gasRequirementWithTinycents(
+            @NonNull final TransactionBody body, @NonNull final AccountID payer, final long minimumPriceInTinycents) {
         // If not enabled, make the calculation using the old method.
         if (!tinybarValues.isGasPrecisionLossFixEnabled()) {
-            return gasRequirementOldWithPrecisionLoss(body, payer, minimumPriceInTinyCents);
+            return gasRequirementOldWithPrecisionLoss(body, payer, minimumPriceInTinycents);
         }
-        final var computedPriceInTinyBars = feeCalculator.applyAsLong(body, payer);
-        final var priceInTinyCents =
-                Math.max(minimumPriceInTinyCents, tinybarValues.asTinyCents(computedPriceInTinyBars));
-        // For the rare cases where computedPrice > minimumPriceInTinyCents:
-        // Precision loss may occur as we convert between tinyBars and tinyCents, but it is typically negligible.
-        // The minimal computed price is > 1e6 tinyCents, ensuring enough precision.
+        final var computedPriceInTinybars = feeCalculator.applyAsLong(body, payer);
+        final var priceInTinycents =
+                Math.max(minimumPriceInTinycents, tinybarValues.asTinycents(computedPriceInTinybars));
+        // For the rare cases where computedPrice > minimumPriceInTinycents:
+        // Precision loss may occur as we convert between tinyBars and tinycents, but it is typically negligible.
+        // The minimal computed price is > 1e6 tinycents, ensuring enough precision.
         // In most cases, the gas difference is zero.
         // In scenarios where we compare significant price fluctuations (200x, 100x), the gas difference should still be
         // unlikely to exceed 0 gas.
-        return gasRequirementFromTinyCents(priceInTinyCents, tinybarValues.childTransactionTinyCentGasPrice());
+        return gasRequirementFromTinycents(priceInTinycents, tinybarValues.childTransactionTinycentGasPrice());
     }
 
     /**
@@ -122,6 +122,7 @@ public class SystemContractGasCalculator {
         }
         final var gasRequirement = gasRequirementFromTinyCents(
                 dispatchPrices.canonicalPriceInTinycents(DispatchType.TOKEN_INFO), FIXED_TINY_CENT_GAS_PRICE_COST);
+        final var gasRequirement = gasRequirementFromTinycents(
         return Math.max(FIXED_VIEW_GAS_COST, gasRequirement);
     }
 
@@ -139,9 +140,9 @@ public class SystemContractGasCalculator {
         if (!tinybarValues.isGasPrecisionLossFixEnabled()) {
             return asGasRequirement(canonicalPriceInTinybars(dispatchType));
         }
-        return gasRequirementFromTinyCents(
+        return gasRequirementFromTinycents(
                 dispatchPrices.canonicalPriceInTinycents(dispatchType),
-                tinybarValues.childTransactionTinyCentGasPrice());
+                tinybarValues.childTransactionTinycentGasPrice());
     }
 
     /**
@@ -150,7 +151,7 @@ public class SystemContractGasCalculator {
      * @param dispatchType the dispatch type
      * @return the canonical price for that dispatch type
      */
-    public long canonicalPriceInTinyCents(@NonNull final DispatchType dispatchType) {
+    public long canonicalPriceInTinycents(@NonNull final DispatchType dispatchType) {
         requireNonNull(dispatchType);
         // If not enabled, return the price in TinyBars.
         // This is directly used only in ClassicTransfersCall. However, it is easier to place the feature flag here.
@@ -182,17 +183,17 @@ public class SystemContractGasCalculator {
     }
 
     /**
-     * Calculates the gas requirement for an operation based on the provided tinyCents price and gas price.
+     * Calculates the gas requirement for an operation based on the provided tinycents price and gas price.
      * The calculation rounds up the result to the nearest gas unit and then adds 20% to the computed gas
      * requirement to account for the premium of executing a HAPI operation within the EVM.
      *
-     * @param tinyCentsPrice the price of the operation in tinyCents
+     * @param tinycentsPrice the price of the operation in tinycents
      * @param gasPriceInCents the current gas price in cents
      * @return the computed gas requirement for the operation
      */
-    private long gasRequirementFromTinyCents(long tinyCentsPrice, final long gasPriceInCents) {
+    private long gasRequirementFromTinycents(long tinycentsPrice, final long gasPriceInCents) {
         final var gasRequirement =
-                (tinyCentsPrice + gasPriceInCents - 1) * FEE_SCHEDULE_UNITS_PER_TINYCENT / gasPriceInCents;
+                (tinycentsPrice + gasPriceInCents - 1) * FEE_SCHEDULE_UNITS_PER_TINYCENT / gasPriceInCents;
         return gasRequirement + (gasRequirement / 5);
     }
 

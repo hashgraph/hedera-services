@@ -59,7 +59,7 @@ class SystemContractGasCalculatorTest {
     void computesCanonicalDispatchType() {
         given(dispatchPrices.canonicalPriceInTinycents(DispatchType.APPROVE)).willReturn(123L);
         given(tinybarValues.asTinybars(123L)).willReturn(321L);
-        assertEquals(321L, subject.canonicalPriceInTinyCents(DispatchType.APPROVE));
+        assertEquals(321L, subject.canonicalPriceInTinycents(DispatchType.APPROVE));
     }
 
     @Test

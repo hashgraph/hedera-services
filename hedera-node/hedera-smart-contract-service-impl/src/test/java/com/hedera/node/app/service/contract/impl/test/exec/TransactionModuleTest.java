@@ -254,7 +254,7 @@ class TransactionModuleTest {
         given(context.dispatchComputeFees(TransactionBody.DEFAULT, AccountID.DEFAULT, ComputeDispatchFeesAsTopLevel.NO))
                 .willReturn(new Fees(1, 2, 3));
         // The 6 tinyBars = 12000 tinyCents
-        given(tinybarValues.asTinyCents(6L)).willReturn(12000L);
+        given(tinybarValues.asTinycents(6L)).willReturn(12000L);
 
         // But a canonical price of 66000 tinyCents for an approve call (which, being
         // greater than the above 12000 tinyCents, is the effective price)...
@@ -262,7 +262,7 @@ class TransactionModuleTest {
                 .willReturn(66000L);
 
         // With each gas costing 2000 tinyCents...
-        given(tinybarValues.childTransactionTinyCentGasPrice()).willReturn(2000L * FEE_SCHEDULE_UNITS_PER_TINYCENT);
+        given(tinybarValues.childTransactionTinycentGasPrice()).willReturn(2000L * FEE_SCHEDULE_UNITS_PER_TINYCENT);
         final var calculator =
                 TransactionModule.provideSystemContractGasCalculator(context, canonicalDispatchPrices, tinybarValues);
         final var result = calculator.gasRequirement(TransactionBody.DEFAULT, DispatchType.APPROVE, AccountID.DEFAULT);

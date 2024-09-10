@@ -70,7 +70,7 @@ class TinybarValuesTest {
     @Test
     void computesExpectedRbhServicePrice() {
         withTransactionSubject();
-        assertEquals(RBH_FEE_SCHEDULE_PRICE, subject.topLevelTinyCentRbhPrice());
+        assertEquals(RBH_FEE_SCHEDULE_PRICE, subject.topLevelTinycentRbhPrice());
     }
 
     @Test
