@@ -14,23 +14,15 @@
  * limitations under the License.
  */
 
-package com.hedera.cryptography.tss.api;
+package com.swirlds.platform.system.state.notifications;
 
-import static java.util.Objects.requireNonNull;
-
-import edu.umd.cs.findbugs.annotations.NonNull;
+import com.swirlds.common.notification.DispatchMode;
+import com.swirlds.common.notification.DispatchModel;
+import com.swirlds.common.notification.DispatchOrder;
+import com.swirlds.common.notification.Listener;
 
 /**
- * A message sent as part of either genesis keying, or rekeying.
- * @param bytes the byte representation of the opaque underlying structure used by the library
+ * A method that listens for the newly hashed states.
  */
-public record TssMessage(@NonNull byte[] bytes) {
-
-    /**
-     * Constructor
-     * @param bytes bytes the byte representation of the opaque underlying structure used by the library
-     */
-    public TssMessage {
-        requireNonNull(bytes, "bytes must not be null");
-    }
-}
+@DispatchModel(mode = DispatchMode.SYNC, order = DispatchOrder.UNORDERED)
+public interface StateHashedListener extends Listener<StateHashedNotification> {}
