@@ -161,7 +161,7 @@ jobs:
       - hedera-node-jrs-panel
       - tag-for-promotion
     if: ${{ needs.abbreviated-panel.result != 'success' ||
-            needs.extended-test-suite.result != 'success' || 
+            needs.extended-test-suite.result != 'success' ||
             needs.fetch-xts-candidate.result != 'success' ||
             needs.hedera-node-jrs-panel.result != 'success' ||
             needs.tag-for-promotion.result != 'success' }}
