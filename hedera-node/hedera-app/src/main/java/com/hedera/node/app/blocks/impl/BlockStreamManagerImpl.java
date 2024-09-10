@@ -48,7 +48,6 @@ import com.hedera.node.config.data.BlockRecordStreamConfig;
 import com.hedera.node.config.data.BlockStreamConfig;
 import com.hedera.node.config.data.VersionConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.swirlds.common.crypto.Hash;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.state.service.PlatformStateService;
 import com.swirlds.platform.state.service.schemas.V0540PlatformStateSchema;
@@ -67,7 +66,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
@@ -77,7 +75,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 @Singleton
-public class BlockStreamManagerImpl implements BlockStreamManager{
+public class BlockStreamManagerImpl implements BlockStreamManager {
     private static final Logger log = LogManager.getLogger(BlockStreamManagerImpl.class);
 
     private static final int CHUNK_SIZE = 8;
@@ -222,7 +220,8 @@ public class BlockStreamManagerImpl implements BlockStreamManager{
 
             final var inputHash = inputTreeHasher.rootHash().join();
             final var outputHash = outputTreeHasher.rootHash().join();
-            final var blockStartStateHash = roundHashes.get(new AtomicLong(roundNum)).get().join();
+            final var blockStartStateHash =
+                    roundHashes.get(new AtomicLong(roundNum)).get().join();
 
             final var leftParent = combine(lastBlockHash, inputHash);
             final var rightParent = combine(outputHash, blockStartStateHash);
@@ -534,7 +533,8 @@ public class BlockStreamManagerImpl implements BlockStreamManager{
                 "StateHashedNotification Received : hash: {}, roundNumber: {}",
                 notification.hash(),
                 notification.round());
-        roundHashes.put(new AtomicLong(notification.round()),
+        roundHashes.put(
+                new AtomicLong(notification.round()),
                 new AtomicReference<>(completedFuture(notification.hash().getBytes())));
     }
 }

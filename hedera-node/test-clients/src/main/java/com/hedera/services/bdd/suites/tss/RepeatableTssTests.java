@@ -23,10 +23,7 @@ import static com.hedera.services.bdd.spec.utilops.TssVerbs.startIgnoringTssSign
 import static com.hedera.services.bdd.spec.utilops.TssVerbs.stopIgnoringTssSignatureRequests;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.blockStreamMustIncludePassFrom;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.doAdhoc;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.hedera.hapi.block.stream.Block;
 import com.hedera.node.app.blocks.BlockStreamManager;
 import com.hedera.services.bdd.junit.RepeatableHapiTest;
 import com.hedera.services.bdd.junit.hedera.embedded.fakes.FakeTssBaseService;
