@@ -328,9 +328,12 @@ public final class PbjConverter {
         return new com.hedera.hapi.platform.state.MinimumJudgeInfo(v.round(), v.minimumJudgeAncientThreshold());
     }
 
-    @NonNull
-    private static SerializableX509Certificate fromPbjX509Certificate(@NonNull final Bytes bytes) {
-        requireNonNull(bytes);
+    @Nullable
+    private static SerializableX509Certificate fromPbjX509Certificate(@Nullable final Bytes bytes) {
+        if (bytes == null || bytes.length() == 0) {
+            // as of release 0.55.0, future address books in state will not have the agreement key serialized.
+            return null;
+        }
         final byte[] encoded = bytes.toByteArray();
         try {
             return new SerializableX509Certificate((X509Certificate)
