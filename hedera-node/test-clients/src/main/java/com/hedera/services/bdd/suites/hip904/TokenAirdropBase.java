@@ -332,7 +332,7 @@ public class TokenAirdropBase {
      *
      * @return array of operations
      */
-    protected static SpecOperation[] setUpAccountsAndTokensWithAllCustomFees(
+    protected static SpecOperation[] createAccountsAndTokensWithAllCustomFees(
             final long tokenTotal, final long hbarFee, final long htsFee) {
         var nftWithCustomFeeSupplyKey = "nftWithCustomFeeSupplyKey";
         final var initialBalance = 100 * ONE_HUNDRED_HBARS;

@@ -1093,7 +1093,7 @@ public class TokenAirdropTest extends TokenAirdropBase {
             final var initialBalance = 100 * ONE_HUNDRED_HBARS;
             return hapiTest(flattened(
                     // test setup
-                    setUpAccountsAndTokensWithAllCustomFees(TOKEN_TOTAL, HBAR_FEE, HTS_FEE),
+                    createAccountsAndTokensWithAllCustomFees(TOKEN_TOTAL, HBAR_FEE, HTS_FEE),
                     // create Airdrop
                     tokenAirdrop(
                                     moving(1, FT_WITH_HBAR_FEE)
