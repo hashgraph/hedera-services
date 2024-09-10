@@ -30,22 +30,44 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
 import java.util.Objects;
 
+/**
+ * ReadableRosterStore implementation.
+ */
 public class ReadableRosterStoreImpl implements ReadableRosterStore {
-    /** The underlying data storages that hold the roster data. */
+
+    /**
+     * The roster state singleton.
+     * This is the state that holds the candidate roster hash and the list of pairs
+     * of round and active roster hashes.
+     */
     private final ReadableSingletonState<RosterState> rosterState;
 
+    /**
+     * The key-value map of roster hashes and rosters.
+     */
     private final ReadableKVState<ProtoBytes, Roster> rosters;
 
+    /**
+     * Create a new {@link ReadableRosterStoreImpl} instance.
+     *
+     * @param states The state to use.
+     */
     public ReadableRosterStoreImpl(@NonNull final ReadableStates states) {
         Objects.requireNonNull(states);
         this.rosterState = states.getSingleton(RosterStateId.ROSTER_STATES_KEY);
         this.rosters = states.get(RosterStateId.ROSTER_KEY);
     }
 
+    /**
+     * Returns the roster map.
+     */
     protected <T extends ReadableKVState<ProtoBytes, Roster>> T rosters() {
         return (T) rosters;
     }
 
+    /**
+     * Returns the roster state singleton.
+     */
     protected <T extends ReadableSingletonState<RosterState>> T rosterState() {
         return (T) rosterState;
     }
@@ -73,8 +95,8 @@ public class ReadableRosterStoreImpl implements ReadableRosterStore {
         }
         // by design, the first round roster pair is the active roster
         // this may need to be revisited when we reach DAB
-        final RoundRosterPair lastRoundRosterPair = rostersAndRounds.getFirst();
-        final Bytes activeRosterHash = lastRoundRosterPair.activeRosterHash();
+        final RoundRosterPair latestRoundRosterPair = rostersAndRounds.getFirst();
+        final Bytes activeRosterHash = latestRoundRosterPair.activeRosterHash();
         return rosters.get(ProtoBytes.newBuilder().value(activeRosterHash).build());
     }
 }

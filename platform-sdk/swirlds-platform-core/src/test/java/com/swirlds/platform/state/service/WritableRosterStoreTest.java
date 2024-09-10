@@ -22,6 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import com.hedera.hapi.node.base.ServiceEndpoint;
 import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.hapi.node.state.roster.RosterEntry;
@@ -108,7 +109,12 @@ class WritableRosterStoreTest {
 
     @Test
     void testSetActiveRosterWithValidInputs() {
-        Roster roster = mock(Roster.class);
+        Roster roster = Roster.newBuilder()
+                .rosters(List.of(RosterEntry.newBuilder()
+                        .gossipEndpoint(ServiceEndpoint.newBuilder().build())
+                        .build()))
+                .build();
+
         writableRosterStore.setActiveRoster(roster, 1L);
 
         assertEquals(1, writableRosterStore.rosters().size());
