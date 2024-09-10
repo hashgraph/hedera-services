@@ -11,9 +11,6 @@ public enum PcesFileVersion {
     /** The version of the file format that serializes events as protobuf. */
     PROTOBUF_EVENTS(2);
 
-    private static final Set<Integer> SUPPORTED_VERSIONS = Arrays.stream(PcesFileVersion.values()).map(PcesFileVersion::getVersionNumber).collect(Collectors.toSet());
-    private static final Map<Integer, PcesFileVersion> VERSION_MAP = Arrays.stream(PcesFileVersion.values()).map(PcesFileVersion::getVersionNumber).collect(Collectors.toSet());
-
     private final int versionNumber;
 
     PcesFileVersion(final int versionNumber) {
@@ -26,10 +23,6 @@ public enum PcesFileVersion {
 
     public static int currentVersionNumber() {
         return PROTOBUF_EVENTS.getVersionNumber();
-    }
-
-    public static Set<Integer> supportedVersions() {
-        return SUPPORTED_VERSIONS;
     }
 
     public static PcesFileVersion fromVersionNumber(final int versionNumber) {
