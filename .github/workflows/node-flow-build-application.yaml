@@ -50,8 +50,8 @@ on:
         default: "temurin"
   push:
     branches:
-      - 'develop'
-      - 'main'
+      - develop
+      - main
       - 'release/*'
 
 defaults:
