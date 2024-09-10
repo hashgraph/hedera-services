@@ -20,6 +20,7 @@ import com.hedera.hapi.block.stream.BlockItem;
 import com.hedera.node.app.spi.records.BlockRecordInfo;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.platform.system.Round;
+import com.swirlds.platform.system.state.notifications.StateHashedListener;
 import com.swirlds.state.State;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.function.BiConsumer;
@@ -35,7 +36,7 @@ import java.util.function.BiConsumer;
  * Items written to the stream will be produced in the order they are written. The leaves of the input and output item
  * Merkle trees will be in the order they are written.
  */
-public interface BlockStreamManager extends BlockRecordInfo, BiConsumer<byte[], byte[]> {
+public interface BlockStreamManager extends BlockRecordInfo, BiConsumer<byte[], byte[]>, StateHashedListener {
     Bytes ZERO_BLOCK_HASH = Bytes.wrap(new byte[48]);
 
     /**

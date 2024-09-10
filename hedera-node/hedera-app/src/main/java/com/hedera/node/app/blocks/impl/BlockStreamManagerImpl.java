@@ -48,10 +48,12 @@ import com.hedera.node.config.data.BlockRecordStreamConfig;
 import com.hedera.node.config.data.BlockStreamConfig;
 import com.hedera.node.config.data.VersionConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.common.crypto.Hash;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.state.service.PlatformStateService;
 import com.swirlds.platform.state.service.schemas.V0540PlatformStateSchema;
 import com.swirlds.platform.system.Round;
+import com.swirlds.platform.system.state.notifications.StateHashedNotification;
 import com.swirlds.state.State;
 import com.swirlds.state.spi.CommittableWritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -59,10 +61,15 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -70,12 +77,10 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 @Singleton
-public class BlockStreamManagerImpl implements BlockStreamManager {
+public class BlockStreamManagerImpl implements BlockStreamManager{
     private static final Logger log = LogManager.getLogger(BlockStreamManagerImpl.class);
 
     private static final int CHUNK_SIZE = 8;
-    private static final CompletableFuture<Bytes> MOCK_START_STATE_ROOT_HASH_FUTURE =
-            completedFuture(Bytes.wrap(new byte[48]));
 
     private final int roundsPerBlock;
     private final TssBaseService tssBaseService;
@@ -127,6 +132,11 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
      * A queue of blocks pending completion by the block hash signature needed for their block proofs.
      */
     private final Queue<PendingBlock> pendingBlocks = new ConcurrentLinkedQueue<>();
+
+    /**
+     * A map of round numbers to the hash of the round state.
+     */
+    private final Map<AtomicLong, AtomicReference<CompletableFuture<Bytes>>> roundHashes = new ConcurrentHashMap<>();
 
     @Inject
     public BlockStreamManagerImpl(
@@ -212,7 +222,8 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
 
             final var inputHash = inputTreeHasher.rootHash().join();
             final var outputHash = outputTreeHasher.rootHash().join();
-            final var blockStartStateHash = MOCK_START_STATE_ROOT_HASH_FUTURE.join();
+            final var blockStartStateHash = roundHashes.get(new AtomicLong(roundNum)).get().join();
+
             final var leftParent = combine(lastBlockHash, inputHash);
             final var rightParent = combine(outputHash, blockStartStateHash);
             final var blockHash = combine(leftParent, rightParent);
@@ -515,5 +526,15 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
         Bytes blockHashes() {
             return blockHashes;
         }
+    }
+
+    @Override
+    public void notify(final StateHashedNotification notification) {
+        log.info(
+                "StateHashedNotification Received : hash: {}, roundNumber: {}",
+                notification.hash(),
+                notification.round());
+        roundHashes.put(new AtomicLong(notification.round()),
+                new AtomicReference<>(completedFuture(notification.hash().getBytes())));
     }
 }
