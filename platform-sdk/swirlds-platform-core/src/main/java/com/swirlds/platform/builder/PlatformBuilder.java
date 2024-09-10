@@ -146,7 +146,7 @@ public final class PlatformBuilder {
      * @param swirldName          the name of the swirld, currently used for deciding where to store states on disk
      * @param selfId              the ID of this node
      * @param softwareVersion     the software version of the application
-     * @param initialState        a supplier that will be called to create the genesis state, if necessary
+     * @param initialState        the genesis state supplied by the application
      */
     @NonNull
     public static PlatformBuilder create(
@@ -165,7 +165,7 @@ public final class PlatformBuilder {
      *                              disk
      * @param swirldName            the name of the swirld, currently used for deciding where to store states on disk
      * @param softwareVersion       the software version of the application
-     * @param initialState   a supplier that will be called to create the genesis state, if necessary
+     * @param initialState          the genesis state supplied by application
      * @param selfId                the ID of this node
      */
     private PlatformBuilder(
