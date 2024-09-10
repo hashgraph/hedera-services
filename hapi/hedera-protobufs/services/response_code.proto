@@ -1594,7 +1594,18 @@ enum ResponseCodeEnum {
      */
     INVALID_TOKEN_IN_PENDING_AIRDROP = 369;
 
+    /**
+    * The number of entries in the free messages key list exceed the maximum.
+    */
     MAX_ENTRIES_FOR_FMKL_EXCEEDED = 370;
+
+    /**
+    * There is a duplicate key in the free messages key list.
+    */
     FMKL_CONTAINS_DUPLICATED_KEYS = 371;
+
+    /**
+    * There is an invalid key in the free messages key list.
+    */
     INVALID_KEY_IN_FMKL = 372;
 }

@@ -20,11 +20,11 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.AUTORENEW_ACCOUNT_NOT_A
 import static com.hedera.hapi.node.base.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.BAD_ENCODING;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.CUSTOM_FEES_LIST_TOO_LONG;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.FMKL_CONTAINS_DUPLICATED_KEYS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_CUSTOM_FEE_SCHEDULE_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_KEY_IN_FMKL;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_ENTRIES_FOR_FMKL_EXCEEDED;
 import static com.hedera.node.app.hapi.utils.fee.ConsensusServiceFeeBuilder.getConsensusCreateTopicFee;
@@ -50,7 +50,6 @@ import com.hedera.node.app.service.consensus.impl.validators.ConsensusCustomFees
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.ReadableTokenRelationStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
-// import com.hedera.node.app.service.token.impl.util.TokenHandlerHelper;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.validation.ExpiryMeta;
@@ -87,7 +86,7 @@ public class ConsensusCreateTopicHandler implements TransactionHandler {
     public void pureChecks(@NonNull final TransactionBody txn) throws PreCheckException {
         final var op = txn.consensusCreateTopicOrThrow();
         final var uniqueKeysCount = op.freeMessagesKeyList().stream().distinct().count();
-        validateTruePreCheck(uniqueKeysCount == op.freeMessagesKeyList().size(), INVALID_TRANSACTION_BODY);
+        validateTruePreCheck(uniqueKeysCount == op.freeMessagesKeyList().size(), FMKL_CONTAINS_DUPLICATED_KEYS);
     }
 
     @Override
@@ -183,19 +182,7 @@ public class ConsensusCreateTopicHandler implements TransactionHandler {
         final var tokenStore = handleContext.storeFactory().readableStore(ReadableTokenStore.class);
         final var tokenRelStore = handleContext.storeFactory().readableStore(ReadableTokenRelationStore.class);
 
-        // validate max size of lists in the transaction body
-        if (!op.freeMessagesKeyList().isEmpty()) {
-            validateTrue(
-                    op.freeMessagesKeyList().size() <= topicConfig.maxEntriesForFreeMessagesKeyList(),
-                    MAX_ENTRIES_FOR_FMKL_EXCEEDED);
-        }
-
-        if (!op.customFees().isEmpty()) {
-            validateTrue(
-                    op.customFees().size() <= topicConfig.maxCustoFeeEntriesForTopics(), CUSTOM_FEES_LIST_TOO_LONG);
-        }
-
-        /* Validate admin and submit keys and set them. Empty key list is allowed and is used for immutable entities */
+        // Validate admin and submit keys and set them. Empty key list is allowed and is used for immutable entities
         if (op.hasAdminKey() && !isImmutableKey(op.adminKey())) {
             handleContext.attributeValidator().validateKey(op.adminKey());
             builder.adminKey(op.adminKey());
@@ -207,14 +194,17 @@ public class ConsensusCreateTopicHandler implements TransactionHandler {
             builder.submitKey(op.submitKey());
         }
 
-        // validate keys
+        // validate hasFeeScheduleKey()
         if (op.hasFeeScheduleKey()) {
             handleContext.attributeValidator().validateKey(op.feeScheduleKey(), INVALID_CUSTOM_FEE_SCHEDULE_KEY);
             builder.feeScheduleKey(op.feeScheduleKey());
         }
 
-        // validate keys
+        // validate size of the list and the keys
         if (!op.freeMessagesKeyList().isEmpty()) {
+            validateTrue(
+                    op.freeMessagesKeyList().size() <= topicConfig.maxEntriesForFreeMessagesKeyList(),
+                    MAX_ENTRIES_FOR_FMKL_EXCEEDED);
             op.freeMessagesKeyList()
                     .forEach(key -> handleContext.attributeValidator().validateKey(key, INVALID_KEY_IN_FMKL));
             builder.freeMessagesKeyList(op.freeMessagesKeyList());
@@ -222,16 +212,16 @@ public class ConsensusCreateTopicHandler implements TransactionHandler {
 
         // validate custom fees
         if (!op.customFees().isEmpty()) {
-            // todo check if token is frozen to fee collector in token create handler
+            validateTrue(
+                    op.customFees().size() <= topicConfig.maxCustoFeeEntriesForTopics(), CUSTOM_FEES_LIST_TOO_LONG);
             customFeesValidator.validateForCreation(
                     accountStore, tokenRelStore, tokenStore, op.customFees(), handleContext.expiryValidator());
             builder.customFees(op.customFees());
         }
 
         /* Validate if the current topic can be created */
-        if (topicStore.sizeOfState() >= topicConfig.maxNumber()) {
-            throw new HandleException(MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED);
-        }
+        validateTrue(
+                topicStore.sizeOfState() < topicConfig.maxNumber(), MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED);
 
         /* Validate the topic memo */
         handleContext.attributeValidator().validateMemo(op.memo());

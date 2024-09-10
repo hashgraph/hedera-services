@@ -22,6 +22,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.CUSTOM_FEE_NOT_FULLY_SP
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_CUSTOM_FEE_COLLECTOR;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID_IN_CUSTOM_FEES;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_FEE_COLLECTOR;
+import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.getIfUsableForAliasedId;
 import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static java.util.Objects.requireNonNull;
@@ -33,10 +34,8 @@ import com.hedera.hapi.node.transaction.ConsensusCustomFee;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.ReadableTokenRelationStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
-import com.hedera.node.app.service.token.impl.util.TokenHandlerHelper;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.ArrayList;
 import java.util.List;
 import javax.inject.Inject;
 
@@ -50,17 +49,13 @@ public class ConsensusCustomFeesValidator {
     }
 
     /**
-     * Validates custom fees for {@code TokenCreate} operation.This returns list of custom
-     * fees that need to be auto associated with the collector account. This is required
-     * for fixed fees with denominating token id set to sentinel value of 0.0.0.
-     * NOTE: This logic is subject to change in future PR for TokenCreate
+     * Validates custom fees for {@code ConsensusCreateTopic} operation.
      *
      * @param accountStore       The account store.
      * @param tokenRelationStore The token relation store.
      * @param tokenStore         The token store.
      * @param customFees         The custom fees to validate.
      * @param expiryValidator    The expiry validator to use (for fee collector accounts)
-     * @return The set of custom fees that need to auto associate collector accounts
      */
     public void validateForCreation(
             @NonNull final ReadableAccountStore accountStore,
@@ -74,10 +69,9 @@ public class ConsensusCustomFeesValidator {
         requireNonNull(customFees);
         requireNonNull(expiryValidator);
 
-        final List<ConsensusCustomFee> fees = new ArrayList<>();
         for (final var fee : customFees) {
             // Validate the fee collector account is in a usable state
-            TokenHandlerHelper.getIfUsableForAliasedId(
+            getIfUsableForAliasedId(
                     fee.feeCollectorAccountIdOrElse(AccountID.DEFAULT),
                     accountStore,
                     expiryValidator,
@@ -103,6 +97,7 @@ public class ConsensusCustomFeesValidator {
 
     /**
      * Validate explicitly set token denomination for custom fees.
+     *
      * @param feeCollectorNum The fee collector account number.
      * @param tokenNum The token number used for token denomination.
      * @param tokenRelationStore The token relation store.
@@ -122,6 +117,7 @@ public class ConsensusCustomFeesValidator {
 
     /**
      * Validates that the given token type is fungible common.
+     *
      * @param tokenType The token type to validate.
      * @return {@code true} if the token type is fungible common, otherwise {@code false}
      */
