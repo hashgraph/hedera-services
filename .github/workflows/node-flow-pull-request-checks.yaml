@@ -188,7 +188,7 @@ jobs:
     needs:
       - dependency-check
       - spotless
-    if: ${{ (github.event_name != 'pull_request' || (github.actor != 'dependabot[bot]' && github.event.pull_request.head.repo.full_name == github.repository)) && github.event.base_ref != github.event.repository.default_branch }}
+    if: ${{ github.event.base_ref != github.event.repository.default_branch && (github.event_name != 'pull_request' || (github.actor != 'dependabot[bot]' && github.event.pull_request.head.repo.full_name == github.repository)) }}
     with:
       custom-job-label: Standard
       enable-unit-tests: false
@@ -206,7 +206,7 @@ jobs:
     needs:
       - dependency-check
       - spotless
-    if: ${{ (github.event_name != 'pull_request' || (github.actor != 'dependabot[bot]' && github.event.pull_request.head.repo.full_name == github.repository)) && github.event.base_ref != github.event.repository.default_branch }}
+    if: ${{ github.event.base_ref != github.event.repository.default_branch && (github.event_name != 'pull_request' || (github.actor != 'dependabot[bot]' && github.event.pull_request.head.repo.full_name == github.repository)) }}
     with:
       custom-job-name: "Platform SDK"
       panel-config: "configs/suites/GCP-PRCheck-Abbrev-4N.json"
@@ -234,7 +234,7 @@ jobs:
     needs:
       - dependency-check
       - spotless
-    if: ${{ (github.event_name != 'pull_request' || (github.actor != 'dependabot[bot]' && github.event.pull_request.head.repo.full_name == github.repository)) && github.event.base_ref != github.event.repository.default_branch }}
+    if: ${{ github.event.base_ref != github.event.repository.default_branch && (github.event_name != 'pull_request' || (github.actor != 'dependabot[bot]' && github.event.pull_request.head.repo.full_name == github.repository)) }}
     with:
       custom-job-name: "Abbrev Update Test"
       branch-name: ${{ github.head_ref || github.ref_name }}
