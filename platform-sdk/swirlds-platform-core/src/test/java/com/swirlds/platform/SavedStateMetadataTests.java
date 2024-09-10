@@ -213,7 +213,7 @@ class SavedStateMetadataTests {
         final AddressBook addressBook = mock(AddressBook.class);
 
         when(signedState.getState()).thenReturn(state);
-        when(state.getPlatformState()).thenReturn(platformState);
+        when(state.getReadablePlatformState()).thenReturn(platformState);
         when(platformState.getAddressBook()).thenReturn(addressBook);
         when(signedState.getSigSet()).thenReturn(sigSet);
         when(sigSet.getSigningNodes())

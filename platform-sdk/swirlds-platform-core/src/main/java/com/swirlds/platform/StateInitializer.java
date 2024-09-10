@@ -65,7 +65,8 @@ public final class StateInitializer {
             previousSoftwareVersion = NO_VERSION;
             trigger = GENESIS;
         } else {
-            previousSoftwareVersion = signedState.getState().getPlatformState().getCreationSoftwareVersion();
+            previousSoftwareVersion =
+                    signedState.getState().getReadablePlatformState().getCreationSoftwareVersion();
             trigger = RESTART;
         }
 
