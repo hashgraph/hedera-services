@@ -99,6 +99,7 @@ jobs:
     with:
       custom-job-name: "Platform SDK"
       panel-config: "configs/suites/GCP-PRCheck-Abbrev-4N.json"
+      ref: ${{ needs.fetch-xts-candidate.outputs.xts_tag_commit }} # pass the xts-candidate tag to the JRS panel for checkout
       branch-name: ${{ github.head_ref || github.ref_name }}
       base-branch-name: ${{ github.base_ref || '' }}
       slack-results-channel: "regression-test"
@@ -123,6 +124,7 @@ jobs:
     if: ${{ needs.fetch-xts-candidate.result == 'success' && needs.fetch-xts-candidate.outputs.xts_tag_exists == 'true' }}
     with:
       custom-job-name: "Abbrev Update Test"
+      ref: ${{ needs.fetch-xts-candidate.outputs.xts_tag_commit }} # pass the xts-candidate tag to the JRS panel for checkout
       branch-name: ${{ github.head_ref || github.ref_name }}
       hedera-tests-enabled: true
       use-branch-for-slack-channel: false
