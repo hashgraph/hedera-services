@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.contract.impl;
 
+import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategies;
 import com.hedera.node.app.service.contract.impl.handlers.ContractHandlers;
 import com.hedera.node.app.spi.signatures.SignatureVerifier;
 import dagger.BindsInstance;
@@ -35,6 +36,7 @@ public interface ContractServiceComponent {
         ContractServiceComponent create(
                 @BindsInstance InstantSource instantSource,
                 @BindsInstance SignatureVerifier signatureVerifier,
+                @BindsInstance VerificationStrategies verificationStrategies,
                 @BindsInstance @Nullable Supplier<List<OperationTracer>> addOnTracers);
     }
 
