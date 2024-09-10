@@ -157,7 +157,7 @@ public class HashLoggerTest {
         when(platformState.getRound()).thenReturn(round);
         when(platformState.getAddressBook()).thenReturn(addressBook);
 
-        when(state.getPlatformState()).thenReturn(platformState);
+        when(state.getReadablePlatformState()).thenReturn(platformState);
         when(state.getRoute()).thenReturn(merkleNode.getRoute());
         when(state.getHash()).thenReturn(merkleNode.getHash());
 

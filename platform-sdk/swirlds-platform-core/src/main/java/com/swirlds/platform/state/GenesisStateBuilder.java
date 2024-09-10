@@ -73,7 +73,7 @@ public final class GenesisStateBuilder {
             @NonNull final SoftwareVersion appVersion,
             @NonNull final MerkleRoot stateRoot) {
 
-        initGenesisPlatformState(platformContext, stateRoot.getPlatformState(), addressBook, appVersion);
+        initGenesisPlatformState(platformContext, stateRoot.getWritablePlatformState(), addressBook, appVersion);
 
         final SignedState signedState = new SignedState(
                 platformContext, CryptoStatic::verifySignature, stateRoot, "genesis state", false, false, false);
