@@ -52,14 +52,12 @@ public class CryptoCornerCasesSuite {
     @HapiTest
     final Stream<DynamicTest> invalidTransactionBody() {
 
-        return hapiTest(
-                cryptoCreate(NEW_PAYEE)
-                        .balance(10000L)
-                        .withProtoStructure(HapiSpecSetup.TxnProtoStructure.OLD) // Ensure legacy construction so
-                        // removeTransactionBody() works
-                        .withTxnTransform(CryptoCornerCasesSuite::removeTransactionBody)
-                        .hasPrecheckFrom(INVALID_TRANSACTION_BODY, INVALID_TRANSACTION)
-        );
+        return hapiTest(cryptoCreate(NEW_PAYEE)
+                .balance(10000L)
+                .withProtoStructure(HapiSpecSetup.TxnProtoStructure.OLD) // Ensure legacy construction so
+                // removeTransactionBody() works
+                .withTxnTransform(CryptoCornerCasesSuite::removeTransactionBody)
+                .hasPrecheckFrom(INVALID_TRANSACTION_BODY, INVALID_TRANSACTION));
     }
 
     private static Transaction replaceTxnNodeAccount(Transaction txn) {
@@ -73,12 +71,10 @@ public class CryptoCornerCasesSuite {
 
     @HapiTest
     final Stream<DynamicTest> invalidNodeAccount() {
-        return hapiTest(
-                cryptoCreate(NEW_PAYEE)
-                        .balance(10000L)
-                        .withTxnTransform(CryptoCornerCasesSuite::replaceTxnNodeAccount)
-                        .hasPrecheckFrom(INVALID_NODE_ACCOUNT, INVALID_TRANSACTION)
-        );
+        return hapiTest(cryptoCreate(NEW_PAYEE)
+                .balance(10000L)
+                .withTxnTransform(CryptoCornerCasesSuite::replaceTxnNodeAccount)
+                .hasPrecheckFrom(INVALID_NODE_ACCOUNT, INVALID_TRANSACTION));
     }
 
     private static Transaction replaceTxnDuration(Transaction txn) {
@@ -88,12 +84,10 @@ public class CryptoCornerCasesSuite {
     @HapiTest
     final Stream<DynamicTest> invalidTransactionDuration() {
 
-        return hapiTest(
-                cryptoCreate(NEW_PAYEE)
-                        .balance(10000L)
-                        .withTxnTransform(CryptoCornerCasesSuite::replaceTxnDuration)
-                        .hasPrecheckFrom(INVALID_TRANSACTION_DURATION, INVALID_TRANSACTION)
-        );
+        return hapiTest(cryptoCreate(NEW_PAYEE)
+                .balance(10000L)
+                .withTxnTransform(CryptoCornerCasesSuite::replaceTxnDuration)
+                .hasPrecheckFrom(INVALID_TRANSACTION_DURATION, INVALID_TRANSACTION));
     }
 
     private static Transaction replaceTxnMemo(Transaction txn) {
@@ -103,12 +97,10 @@ public class CryptoCornerCasesSuite {
 
     @HapiTest
     final Stream<DynamicTest> invalidTransactionMemoTooLong() {
-        return hapiTest(
-                cryptoCreate(NEW_PAYEE)
-                        .balance(10000L)
-                        .withTxnTransform(CryptoCornerCasesSuite::replaceTxnMemo)
-                        .hasPrecheckFrom(MEMO_TOO_LONG, INVALID_TRANSACTION)
-        );
+        return hapiTest(cryptoCreate(NEW_PAYEE)
+                .balance(10000L)
+                .withTxnTransform(CryptoCornerCasesSuite::replaceTxnMemo)
+                .hasPrecheckFrom(MEMO_TOO_LONG, INVALID_TRANSACTION));
     }
 
     private static Transaction replaceTxnPayerAccount(Transaction txn) {
@@ -122,12 +114,10 @@ public class CryptoCornerCasesSuite {
 
     @HapiTest
     final Stream<DynamicTest> invalidTransactionPayerAccountNotFound() {
-        return hapiTest(
-                cryptoCreate(NEW_PAYEE)
-                        .balance(10000L)
-                        .withTxnTransform(CryptoCornerCasesSuite::replaceTxnPayerAccount)
-                        .hasPrecheckFrom(PAYER_ACCOUNT_NOT_FOUND, INVALID_TRANSACTION)
-        );
+        return hapiTest(cryptoCreate(NEW_PAYEE)
+                .balance(10000L)
+                .withTxnTransform(CryptoCornerCasesSuite::replaceTxnPayerAccount)
+                .hasPrecheckFrom(PAYER_ACCOUNT_NOT_FOUND, INVALID_TRANSACTION));
     }
 
     private static Transaction replaceTxnStartTtime(Transaction txn) {
@@ -137,11 +127,9 @@ public class CryptoCornerCasesSuite {
 
     @HapiTest
     final Stream<DynamicTest> invalidTransactionStartTime() {
-        return hapiTest(
-                cryptoCreate(NEW_PAYEE)
-                        .balance(10000L)
-                        .withTxnTransform(CryptoCornerCasesSuite::replaceTxnStartTtime)
-                        .hasPrecheckFrom(INVALID_TRANSACTION_START, INVALID_TRANSACTION)
-        );
+        return hapiTest(cryptoCreate(NEW_PAYEE)
+                .balance(10000L)
+                .withTxnTransform(CryptoCornerCasesSuite::replaceTxnStartTtime)
+                .hasPrecheckFrom(INVALID_TRANSACTION_START, INVALID_TRANSACTION));
     }
 }

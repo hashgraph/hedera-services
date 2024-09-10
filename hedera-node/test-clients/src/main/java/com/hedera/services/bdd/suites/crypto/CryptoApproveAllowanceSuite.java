@@ -153,7 +153,6 @@ public class CryptoApproveAllowanceSuite {
         final var nestedContract = "NestedERC20Contract";
 
         return hapiTest(
-                
                 newKeyNamed(MULTI_KEY),
                 cryptoCreate(ACCOUNT).balance(10 * ONE_MILLION_HBARS),
                 cryptoCreate(RECIPIENT),
@@ -281,13 +280,11 @@ public class CryptoApproveAllowanceSuite {
                         .adminKey(cryptoAdminKey)
                         .balance(ONE_HUNDRED_HBARS)
                         .exposingNumTo(contractNum::set),
-
                 sourcing(() -> cryptoTransfer(tinyBarsFromTo(contract, FUNDING, 1))
                         .fee(ONE_HBAR)
                         .payingWith("0.0." + contractNum.longValue())
                         .signedBy(cryptoAdminKey)
-                        .hasPrecheck(PAYER_ACCOUNT_NOT_FOUND))
-        );
+                        .hasPrecheck(PAYER_ACCOUNT_NOT_FOUND)));
     }
 
     @HapiTest
@@ -297,9 +294,7 @@ public class CryptoApproveAllowanceSuite {
                 cryptoCreate(OWNER).balance(ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(10),
                 cryptoCreate(RECEIVER).balance(ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(10),
                 cryptoCreate(SPENDER).balance(ONE_HUNDRED_HBARS),
-                cryptoCreate(TOKEN_TREASURY)
-                        .balance(100 * ONE_HUNDRED_HBARS)
-                        .maxAutomaticTokenAssociations(10),
+                cryptoCreate(TOKEN_TREASURY).balance(100 * ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(10),
                 tokenCreate(NON_FUNGIBLE_TOKEN)
                         .maxSupply(10L)
                         .initialSupply(0)
@@ -314,20 +309,18 @@ public class CryptoApproveAllowanceSuite {
                                 ByteString.copyFromUtf8("a"),
                                 ByteString.copyFromUtf8("b"),
                                 ByteString.copyFromUtf8("c"))),
-
                 cryptoTransfer((spec, builder) -> builder.addTokenTransfers(TokenTransferList.newBuilder()
-                        .setToken(spec.registry().getTokenID(NON_FUNGIBLE_TOKEN))
-                        .addNftTransfers(NftTransfer.newBuilder()
-                                // Doesn't exist
-                                .setSerialNumber(4L)
-                                .setSenderAccountID(spec.registry().getAccountID(OWNER))
-                                .setReceiverAccountID(spec.registry().getAccountID(RECEIVER))
-                                .setIsApproval(true)
-                                .build())))
+                                .setToken(spec.registry().getTokenID(NON_FUNGIBLE_TOKEN))
+                                .addNftTransfers(NftTransfer.newBuilder()
+                                        // Doesn't exist
+                                        .setSerialNumber(4L)
+                                        .setSenderAccountID(spec.registry().getAccountID(OWNER))
+                                        .setReceiverAccountID(spec.registry().getAccountID(RECEIVER))
+                                        .setIsApproval(true)
+                                        .build())))
                         .payingWith(SPENDER)
                         .signedBy(SPENDER, OWNER)
-                        .hasKnownStatus(INVALID_NFT_ID)
-        );
+                        .hasKnownStatus(INVALID_NFT_ID));
     }
 
     @HapiTest
@@ -336,9 +329,7 @@ public class CryptoApproveAllowanceSuite {
                 newKeyNamed(SUPPLY_KEY),
                 cryptoCreate(OWNER).balance(ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(10),
                 cryptoCreate(SPENDER).balance(ONE_HUNDRED_HBARS),
-                cryptoCreate(TOKEN_TREASURY)
-                        .balance(100 * ONE_HUNDRED_HBARS)
-                        .maxAutomaticTokenAssociations(10),
+                cryptoCreate(TOKEN_TREASURY).balance(100 * ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(10),
                 tokenCreate(FUNGIBLE_TOKEN)
                         .tokenType(TokenType.FUNGIBLE_COMMON)
                         .supplyType(TokenSupplyType.FINITE)
@@ -362,7 +353,6 @@ public class CryptoApproveAllowanceSuite {
                                 ByteString.copyFromUtf8("a"),
                                 ByteString.copyFromUtf8("b"),
                                 ByteString.copyFromUtf8("c"))),
-
                 cryptoApproveAllowance()
                         .payingWith(OWNER)
                         .addCryptoAllowance(OWNER, SPENDER, 100L)
@@ -422,8 +412,7 @@ public class CryptoApproveAllowanceSuite {
                         .has(accountDetailsWith()
                                 .cryptoAllowancesCount(0)
                                 .tokenAllowancesCount(0)
-                                .nftApprovedForAllAllowancesCount(0))
-        );
+                                .nftApprovedForAllAllowancesCount(0)));
     }
 
     @HapiTest
@@ -432,9 +421,7 @@ public class CryptoApproveAllowanceSuite {
                 newKeyNamed(SUPPLY_KEY),
                 cryptoCreate(OWNER).balance(ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(10),
                 cryptoCreate(SPENDER).balance(ONE_HUNDRED_HBARS),
-                cryptoCreate(TOKEN_TREASURY)
-                        .balance(100 * ONE_HUNDRED_HBARS)
-                        .maxAutomaticTokenAssociations(10),
+                cryptoCreate(TOKEN_TREASURY).balance(100 * ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(10),
                 tokenCreate(FUNGIBLE_TOKEN)
                         .tokenType(TokenType.FUNGIBLE_COMMON)
                         .supplyType(TokenSupplyType.FINITE)
@@ -452,16 +439,14 @@ public class CryptoApproveAllowanceSuite {
                 tokenAssociate(OWNER, FUNGIBLE_TOKEN),
                 tokenAssociate(OWNER, NON_FUNGIBLE_TOKEN),
                 mintToken(
-                        NON_FUNGIBLE_TOKEN,
-                        List.of(
-                                ByteString.copyFromUtf8("a"),
-                                ByteString.copyFromUtf8("b"),
-                                ByteString.copyFromUtf8("c")))
+                                NON_FUNGIBLE_TOKEN,
+                                List.of(
+                                        ByteString.copyFromUtf8("a"),
+                                        ByteString.copyFromUtf8("b"),
+                                        ByteString.copyFromUtf8("c")))
                         .via(NFT_TOKEN_MINT_TXN),
                 mintToken(FUNGIBLE_TOKEN, 500L).via(FUNGIBLE_TOKEN_MINT_TXN),
-                cryptoTransfer(
-                        movingUnique(NON_FUNGIBLE_TOKEN, 1L, 2L, 3L).between(TOKEN_TREASURY, OWNER)),
-
+                cryptoTransfer(movingUnique(NON_FUNGIBLE_TOKEN, 1L, 2L, 3L).between(TOKEN_TREASURY, OWNER)),
                 cryptoApproveAllowance()
                         .payingWith(OWNER)
                         .addCryptoAllowance(OWNER, SPENDER, 100L)
@@ -470,9 +455,7 @@ public class CryptoApproveAllowanceSuite {
                         .logged(),
                 getAccountDetails(OWNER)
                         .payingWith(GENESIS)
-                        .has(accountDetailsWith()
-                                .cryptoAllowancesCount(1)
-                                .cryptoAllowancesContaining(SPENDER, 200L)),
+                        .has(accountDetailsWith().cryptoAllowancesCount(1).cryptoAllowancesContaining(SPENDER, 200L)),
                 cryptoApproveAllowance()
                         .payingWith(OWNER)
                         .addCryptoAllowance(OWNER, SPENDER, 300L)
@@ -505,11 +488,9 @@ public class CryptoApproveAllowanceSuite {
                                 .tokenAllowancesCount(1)
                                 .tokenAllowancesContaining(FUNGIBLE_TOKEN, SPENDER, 600L)
                                 .nftApprovedForAllAllowancesCount(1)),
-
                 getTokenNftInfo(NON_FUNGIBLE_TOKEN, 1L).hasSpenderID(SPENDER),
                 getTokenNftInfo(NON_FUNGIBLE_TOKEN, 2L).hasSpenderID(SPENDER),
-                getTokenNftInfo(NON_FUNGIBLE_TOKEN, 3L).hasSpenderID(SPENDER)
-        );
+                getTokenNftInfo(NON_FUNGIBLE_TOKEN, 3L).hasSpenderID(SPENDER));
     }
 
     @HapiTest
@@ -521,9 +502,7 @@ public class CryptoApproveAllowanceSuite {
                 cryptoCreate(OWNER).balance(ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(10),
                 cryptoCreate(delegatingSpender).balance(ONE_HUNDRED_HBARS),
                 cryptoCreate(newSpender).balance(ONE_HUNDRED_HBARS),
-                cryptoCreate(TOKEN_TREASURY)
-                        .balance(100 * ONE_HUNDRED_HBARS)
-                        .maxAutomaticTokenAssociations(10),
+                cryptoCreate(TOKEN_TREASURY).balance(100 * ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(10),
                 tokenCreate(NON_FUNGIBLE_TOKEN)
                         .maxSupply(10L)
                         .initialSupply(0)
@@ -532,18 +511,14 @@ public class CryptoApproveAllowanceSuite {
                         .supplyKey(SUPPLY_KEY)
                         .treasury(TOKEN_TREASURY),
                 tokenAssociate(OWNER, NON_FUNGIBLE_TOKEN),
-                mintToken(
-                        NON_FUNGIBLE_TOKEN,
-                        List.of(ByteString.copyFromUtf8("a"), ByteString.copyFromUtf8("b")))
+                mintToken(NON_FUNGIBLE_TOKEN, List.of(ByteString.copyFromUtf8("a"), ByteString.copyFromUtf8("b")))
                         .via(NFT_TOKEN_MINT_TXN),
                 cryptoTransfer(movingUnique(NON_FUNGIBLE_TOKEN, 1L, 2L).between(TOKEN_TREASURY, OWNER)),
-
                 cryptoApproveAllowance()
                         .payingWith(DEFAULT_PAYER)
                         .addNftAllowance(OWNER, NON_FUNGIBLE_TOKEN, delegatingSpender, true, List.of(1L))
                         .addNftAllowance(OWNER, NON_FUNGIBLE_TOKEN, newSpender, false, List.of(2L))
                         .signedBy(DEFAULT_PAYER, OWNER),
-
                 cryptoApproveAllowance()
                         .payingWith(DEFAULT_PAYER)
                         .addDelegatedNftAllowance(
@@ -573,9 +548,7 @@ public class CryptoApproveAllowanceSuite {
                         .addDelegatedNftAllowance(
                                 OWNER, NON_FUNGIBLE_TOKEN, newSpender, delegatingSpender, false, List.of(1L))
                         .signedBy(DEFAULT_PAYER, delegatingSpender),
-                getTokenNftInfo(NON_FUNGIBLE_TOKEN, 1L).hasSpenderID(newSpender)
-
-        );
+                getTokenNftInfo(NON_FUNGIBLE_TOKEN, 1L).hasSpenderID(newSpender));
     }
 
     @HapiTest
@@ -591,14 +564,12 @@ public class CryptoApproveAllowanceSuite {
                         .maxSupply(10000)
                         .initialSupply(5000),
                 cryptoCreate(OTHER_RECEIVER).balance(ONE_HBAR).maxAutomaticTokenAssociations(1),
-
                 cryptoApproveAllowance()
                         .addTokenAllowance(TOKEN_TREASURY, FUNGIBLE_TOKEN, SPENDER, 10)
                         .signedBy(TOKEN_TREASURY, DEFAULT_PAYER),
                 cryptoApproveAllowance()
                         .addTokenAllowance(TOKEN_TREASURY, FUNGIBLE_TOKEN, SPENDER, 110)
                         .signedBy(TOKEN_TREASURY, DEFAULT_PAYER),
-
                 cryptoTransfer(movingWithAllowance(30, FUNGIBLE_TOKEN).between(TOKEN_TREASURY, OTHER_RECEIVER))
                         .payingWith(SPENDER)
                         .signedBy(SPENDER),
@@ -609,8 +580,7 @@ public class CryptoApproveAllowanceSuite {
                 getAccountDetails(TOKEN_TREASURY)
                         .payingWith(GENESIS)
                         .has(accountDetailsWith().tokenAllowancesContaining(FUNGIBLE_TOKEN, SPENDER, 80))
-                        .logged()
-        );
+                        .logged());
     }
 
     @HapiTest
@@ -632,7 +602,6 @@ public class CryptoApproveAllowanceSuite {
                                 ByteString.copyFromUtf8("b"),
                                 ByteString.copyFromUtf8("c"))),
                 cryptoCreate(OTHER_RECEIVER).balance(ONE_HBAR).maxAutomaticTokenAssociations(1),
-
                 cryptoApproveAllowance()
                         .addNftAllowance(TOKEN_TREASURY, NON_FUNGIBLE_TOKEN, SPENDER, false, List.of(4L))
                         .signedBy(TOKEN_TREASURY, DEFAULT_PAYER)
@@ -644,17 +613,15 @@ public class CryptoApproveAllowanceSuite {
                         .addNftDeleteAllowance(TOKEN_TREASURY, NON_FUNGIBLE_TOKEN, List.of(4L))
                         .signedBy(TOKEN_TREASURY, DEFAULT_PAYER)
                         .hasPrecheck(INVALID_TOKEN_NFT_SERIAL_NUMBER),
-
                 getAccountDetails(TOKEN_TREASURY).payingWith(GENESIS).logged(),
                 cryptoTransfer(movingUniqueWithAllowance(NON_FUNGIBLE_TOKEN, 1L)
-                        .between(TOKEN_TREASURY, OTHER_RECEIVER))
+                                .between(TOKEN_TREASURY, OTHER_RECEIVER))
                         .payingWith(SPENDER)
                         .signedBy(SPENDER),
                 getAccountDetails(TOKEN_TREASURY)
                         .payingWith(GENESIS)
                         .has(accountDetailsWith().nftApprovedForAllAllowancesCount(0))
-                        .logged()
-        );
+                        .logged());
     }
 
     @HapiTest
@@ -664,9 +631,7 @@ public class CryptoApproveAllowanceSuite {
                 cryptoCreate(OWNER).balance(ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(10),
                 cryptoCreate(PAYER).balance(ONE_HUNDRED_HBARS),
                 cryptoCreate(SPENDER).balance(ONE_HUNDRED_HBARS),
-                cryptoCreate(TOKEN_TREASURY)
-                        .balance(100 * ONE_HUNDRED_HBARS)
-                        .maxAutomaticTokenAssociations(10),
+                cryptoCreate(TOKEN_TREASURY).balance(100 * ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(10),
                 tokenCreate(FUNGIBLE_TOKEN)
                         .tokenType(TokenType.FUNGIBLE_COMMON)
                         .supplyType(TokenSupplyType.FINITE)
@@ -682,14 +647,13 @@ public class CryptoApproveAllowanceSuite {
                         .supplyKey(SUPPLY_KEY)
                         .treasury(TOKEN_TREASURY),
                 mintToken(
-                        NON_FUNGIBLE_TOKEN,
-                        List.of(
-                                ByteString.copyFromUtf8("a"),
-                                ByteString.copyFromUtf8("b"),
-                                ByteString.copyFromUtf8("c")))
+                                NON_FUNGIBLE_TOKEN,
+                                List.of(
+                                        ByteString.copyFromUtf8("a"),
+                                        ByteString.copyFromUtf8("b"),
+                                        ByteString.copyFromUtf8("c")))
                         .via(NFT_TOKEN_MINT_TXN),
                 mintToken(FUNGIBLE_TOKEN, 500L).via(FUNGIBLE_TOKEN_MINT_TXN),
-
                 cryptoApproveAllowance()
                         .payingWith(PAYER)
                         .addCryptoAllowance(OWNER, SPENDER, 100L)
@@ -715,12 +679,7 @@ public class CryptoApproveAllowanceSuite {
                         .via(BASE_APPROVE_TXN)
                         .blankMemo()
                         .hasPrecheck(INVALID_ALLOWANCE_OWNER_ID),
-
-                getAccountDetails(OWNER)
-                        .has(accountDetailsWith().deleted(true))
-                        .payingWith(GENESIS)
-
-        );
+                getAccountDetails(OWNER).has(accountDetailsWith().deleted(true)).payingWith(GENESIS));
     }
 
     @HapiTest
@@ -730,9 +689,7 @@ public class CryptoApproveAllowanceSuite {
                 newKeyNamed(SUPPLY_KEY),
                 cryptoCreate(OWNER).balance(ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(10),
                 cryptoCreate(SPENDER).balance(ONE_HUNDRED_HBARS),
-                cryptoCreate(TOKEN_TREASURY)
-                        .balance(100 * ONE_HUNDRED_HBARS)
-                        .maxAutomaticTokenAssociations(10),
+                cryptoCreate(TOKEN_TREASURY).balance(100 * ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(10),
                 tokenCreate(FUNGIBLE_TOKEN)
                         .tokenType(TokenType.FUNGIBLE_COMMON)
                         .supplyType(TokenSupplyType.FINITE)
@@ -750,16 +707,14 @@ public class CryptoApproveAllowanceSuite {
                 tokenAssociate(OWNER, FUNGIBLE_TOKEN),
                 tokenAssociate(OWNER, NON_FUNGIBLE_TOKEN),
                 mintToken(
-                        NON_FUNGIBLE_TOKEN,
-                        List.of(
-                                ByteString.copyFromUtf8("a"),
-                                ByteString.copyFromUtf8("b"),
-                                ByteString.copyFromUtf8("c")))
+                                NON_FUNGIBLE_TOKEN,
+                                List.of(
+                                        ByteString.copyFromUtf8("a"),
+                                        ByteString.copyFromUtf8("b"),
+                                        ByteString.copyFromUtf8("c")))
                         .via(NFT_TOKEN_MINT_TXN),
                 mintToken(FUNGIBLE_TOKEN, 500L).via(FUNGIBLE_TOKEN_MINT_TXN),
-                cryptoTransfer(
-                        movingUnique(NON_FUNGIBLE_TOKEN, 1L, 2L, 3L).between(TOKEN_TREASURY, OWNER)),
-
+                cryptoTransfer(movingUnique(NON_FUNGIBLE_TOKEN, 1L, 2L, 3L).between(TOKEN_TREASURY, OWNER)),
                 cryptoDelete(SPENDER),
                 cryptoApproveAllowance()
                         .payingWith(OWNER)
@@ -776,8 +731,7 @@ public class CryptoApproveAllowanceSuite {
                         .addNftAllowance(OWNER, NON_FUNGIBLE_TOKEN, SPENDER, false, List.of(1L))
                         .via(BASE_APPROVE_TXN)
                         .blankMemo()
-                        .hasKnownStatus(INVALID_ALLOWANCE_SPENDER_ID)
-        );
+                        .hasKnownStatus(INVALID_ALLOWANCE_SPENDER_ID));
     }
 
     @HapiTest
@@ -787,9 +741,7 @@ public class CryptoApproveAllowanceSuite {
                 cryptoCreate(PAYER).balance(ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(10),
                 cryptoCreate(SPENDER).balance(ONE_HUNDRED_HBARS),
                 cryptoCreate(ANOTHER_SPENDER).balance(ONE_HUNDRED_HBARS),
-                cryptoCreate(TOKEN_TREASURY)
-                        .balance(100 * ONE_HUNDRED_HBARS)
-                        .maxAutomaticTokenAssociations(10),
+                cryptoCreate(TOKEN_TREASURY).balance(100 * ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(10),
                 tokenCreate(FUNGIBLE_TOKEN)
                         .tokenType(TokenType.FUNGIBLE_COMMON)
                         .supplyType(TokenSupplyType.FINITE)
@@ -807,16 +759,14 @@ public class CryptoApproveAllowanceSuite {
                 tokenAssociate(PAYER, FUNGIBLE_TOKEN),
                 tokenAssociate(PAYER, NON_FUNGIBLE_TOKEN),
                 mintToken(
-                        NON_FUNGIBLE_TOKEN,
-                        List.of(
-                                ByteString.copyFromUtf8("a"),
-                                ByteString.copyFromUtf8("b"),
-                                ByteString.copyFromUtf8("c")))
+                                NON_FUNGIBLE_TOKEN,
+                                List.of(
+                                        ByteString.copyFromUtf8("a"),
+                                        ByteString.copyFromUtf8("b"),
+                                        ByteString.copyFromUtf8("c")))
                         .via(NFT_TOKEN_MINT_TXN),
                 mintToken(FUNGIBLE_TOKEN, 500L).via(FUNGIBLE_TOKEN_MINT_TXN),
-                cryptoTransfer(
-                        movingUnique(NON_FUNGIBLE_TOKEN, 1L, 2L, 3L).between(TOKEN_TREASURY, PAYER)),
-
+                cryptoTransfer(movingUnique(NON_FUNGIBLE_TOKEN, 1L, 2L, 3L).between(TOKEN_TREASURY, PAYER)),
                 cryptoApproveAllowance()
                         .payingWith(PAYER)
                         .addCryptoAllowance(MISSING_OWNER, ANOTHER_SPENDER, 100L)
@@ -826,7 +776,6 @@ public class CryptoApproveAllowanceSuite {
                         .blankMemo()
                         .logged(),
                 getTxnRecord(APPROVE_TXN).logged(),
-
                 validateChargedUsdWithin(APPROVE_TXN, 0.05238, 0.01),
                 getAccountDetails(PAYER)
                         .payingWith(GENESIS)
@@ -835,8 +784,7 @@ public class CryptoApproveAllowanceSuite {
                                 .nftApprovedForAllAllowancesCount(0)
                                 .tokenAllowancesCount(1)
                                 .cryptoAllowancesContaining(ANOTHER_SPENDER, 100L)
-                                .tokenAllowancesContaining(FUNGIBLE_TOKEN, SPENDER, 100L))
-        );
+                                .tokenAllowancesContaining(FUNGIBLE_TOKEN, SPENDER, 100L)));
     }
 
     @HapiTest
@@ -846,9 +794,7 @@ public class CryptoApproveAllowanceSuite {
                 cryptoCreate(OWNER).balance(ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(10),
                 cryptoCreate(SECOND_OWNER).balance(ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(10),
                 cryptoCreate(SPENDER).balance(ONE_HUNDRED_HBARS),
-                cryptoCreate(TOKEN_TREASURY)
-                        .balance(100 * ONE_HUNDRED_HBARS)
-                        .maxAutomaticTokenAssociations(10),
+                cryptoCreate(TOKEN_TREASURY).balance(100 * ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(10),
                 tokenCreate(FUNGIBLE_TOKEN)
                         .tokenType(TokenType.FUNGIBLE_COMMON)
                         .supplyType(TokenSupplyType.FINITE)
@@ -866,14 +812,14 @@ public class CryptoApproveAllowanceSuite {
                 tokenAssociate(OWNER, FUNGIBLE_TOKEN, NON_FUNGIBLE_TOKEN),
                 tokenAssociate(SECOND_OWNER, FUNGIBLE_TOKEN, NON_FUNGIBLE_TOKEN),
                 mintToken(
-                        NON_FUNGIBLE_TOKEN,
-                        List.of(
-                                ByteString.copyFromUtf8("a"),
-                                ByteString.copyFromUtf8("b"),
-                                ByteString.copyFromUtf8("c"),
-                                ByteString.copyFromUtf8("d"),
-                                ByteString.copyFromUtf8("e"),
-                                ByteString.copyFromUtf8("f")))
+                                NON_FUNGIBLE_TOKEN,
+                                List.of(
+                                        ByteString.copyFromUtf8("a"),
+                                        ByteString.copyFromUtf8("b"),
+                                        ByteString.copyFromUtf8("c"),
+                                        ByteString.copyFromUtf8("d"),
+                                        ByteString.copyFromUtf8("e"),
+                                        ByteString.copyFromUtf8("f")))
                         .via(NFT_TOKEN_MINT_TXN),
                 mintToken(FUNGIBLE_TOKEN, 1000L).via(FUNGIBLE_TOKEN_MINT_TXN),
                 cryptoTransfer(
@@ -881,7 +827,6 @@ public class CryptoApproveAllowanceSuite {
                         moving(500, FUNGIBLE_TOKEN).between(TOKEN_TREASURY, SECOND_OWNER),
                         movingUnique(NON_FUNGIBLE_TOKEN, 1L, 2L, 3L).between(TOKEN_TREASURY, OWNER),
                         movingUnique(NON_FUNGIBLE_TOKEN, 4L, 5L, 6L).between(TOKEN_TREASURY, SECOND_OWNER)),
-
                 cryptoApproveAllowance()
                         .payingWith(DEFAULT_PAYER)
                         .addCryptoAllowance(OWNER, SPENDER, ONE_HBAR)
@@ -920,7 +865,6 @@ public class CryptoApproveAllowanceSuite {
                         .addTokenAllowance(SECOND_OWNER, FUNGIBLE_TOKEN, SPENDER, 300L)
                         .addNftAllowance(SECOND_OWNER, NON_FUNGIBLE_TOKEN, SPENDER, false, List.of(4L, 5L))
                         .signedBy(DEFAULT_PAYER, OWNER, SECOND_OWNER),
-
                 getAccountDetails(OWNER)
                         .payingWith(GENESIS)
                         .has(accountDetailsWith()
@@ -930,9 +874,7 @@ public class CryptoApproveAllowanceSuite {
                         .payingWith(GENESIS)
                         .has(accountDetailsWith()
                                 .tokenAllowancesContaining(FUNGIBLE_TOKEN, SPENDER, 300L)
-                                .cryptoAllowancesContaining(SPENDER, 2 * ONE_HBAR))
-
-        );
+                                .cryptoAllowancesContaining(SPENDER, 2 * ONE_HBAR)));
     }
 
     @HapiTest
@@ -944,9 +886,7 @@ public class CryptoApproveAllowanceSuite {
                 cryptoCreate(SPENDER).balance(ONE_HUNDRED_HBARS),
                 cryptoCreate(ANOTHER_SPENDER).balance(ONE_HUNDRED_HBARS),
                 cryptoCreate(SECOND_SPENDER).balance(ONE_HUNDRED_HBARS),
-                cryptoCreate(TOKEN_TREASURY)
-                        .balance(100 * ONE_HUNDRED_HBARS)
-                        .maxAutomaticTokenAssociations(10),
+                cryptoCreate(TOKEN_TREASURY).balance(100 * ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(10),
                 tokenCreate(FUNGIBLE_TOKEN)
                         .tokenType(TokenType.FUNGIBLE_COMMON)
                         .supplyType(TokenSupplyType.FINITE)
@@ -964,16 +904,14 @@ public class CryptoApproveAllowanceSuite {
                 tokenAssociate(OWNER, FUNGIBLE_TOKEN),
                 tokenAssociate(OWNER, NON_FUNGIBLE_TOKEN),
                 mintToken(
-                        NON_FUNGIBLE_TOKEN,
-                        List.of(
-                                ByteString.copyFromUtf8("a"),
-                                ByteString.copyFromUtf8("b"),
-                                ByteString.copyFromUtf8("c")))
+                                NON_FUNGIBLE_TOKEN,
+                                List.of(
+                                        ByteString.copyFromUtf8("a"),
+                                        ByteString.copyFromUtf8("b"),
+                                        ByteString.copyFromUtf8("c")))
                         .via(NFT_TOKEN_MINT_TXN),
                 mintToken(FUNGIBLE_TOKEN, 500L).via(FUNGIBLE_TOKEN_MINT_TXN),
-                cryptoTransfer(
-                        movingUnique(NON_FUNGIBLE_TOKEN, 1L, 2L, 3L).between(TOKEN_TREASURY, OWNER)),
-
+                cryptoTransfer(movingUnique(NON_FUNGIBLE_TOKEN, 1L, 2L, 3L).between(TOKEN_TREASURY, OWNER)),
                 cryptoApproveAllowance()
                         .payingWith(OWNER)
                         .addCryptoAllowance(OWNER, SPENDER, 100L)
@@ -990,7 +928,6 @@ public class CryptoApproveAllowanceSuite {
                         .blankMemo()
                         .logged(),
                 validateChargedUsdWithin("approveTokenTxn", 0.05012, 0.01),
-
                 cryptoApproveAllowance()
                         .payingWith(OWNER)
                         .addNftAllowance(OWNER, NON_FUNGIBLE_TOKEN, SPENDER, false, List.of(1L))
@@ -1057,8 +994,7 @@ public class CryptoApproveAllowanceSuite {
                                 .nftApprovedForAllAllowancesCount(0)
                                 .tokenAllowancesCount(2)
                                 .cryptoAllowancesContaining(SECOND_SPENDER, 200L)
-                                .tokenAllowancesContaining(FUNGIBLE_TOKEN, SECOND_SPENDER, 200L))
-        );
+                                .tokenAllowancesContaining(FUNGIBLE_TOKEN, SECOND_SPENDER, 200L)));
     }
 
     @HapiTest
@@ -1068,9 +1004,7 @@ public class CryptoApproveAllowanceSuite {
                 cryptoCreate(OWNER).balance(ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(10),
                 cryptoCreate(SPENDER).balance(ONE_HUNDRED_HBARS),
                 cryptoCreate(ANOTHER_SPENDER).balance(ONE_HUNDRED_HBARS),
-                cryptoCreate(TOKEN_TREASURY)
-                        .balance(100 * ONE_HUNDRED_HBARS)
-                        .maxAutomaticTokenAssociations(10),
+                cryptoCreate(TOKEN_TREASURY).balance(100 * ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(10),
                 tokenCreate(NON_FUNGIBLE_TOKEN)
                         .maxSupply(10L)
                         .initialSupply(0)
@@ -1080,16 +1014,14 @@ public class CryptoApproveAllowanceSuite {
                         .treasury(TOKEN_TREASURY),
                 tokenAssociate(OWNER, NON_FUNGIBLE_TOKEN),
                 mintToken(
-                        NON_FUNGIBLE_TOKEN,
-                        List.of(
-                                ByteString.copyFromUtf8("a"),
-                                ByteString.copyFromUtf8("b"),
-                                ByteString.copyFromUtf8("c"),
-                                ByteString.copyFromUtf8("d")))
+                                NON_FUNGIBLE_TOKEN,
+                                List.of(
+                                        ByteString.copyFromUtf8("a"),
+                                        ByteString.copyFromUtf8("b"),
+                                        ByteString.copyFromUtf8("c"),
+                                        ByteString.copyFromUtf8("d")))
                         .via(NFT_TOKEN_MINT_TXN),
-                cryptoTransfer(
-                        movingUnique(NON_FUNGIBLE_TOKEN, 1L, 2L, 3L, 4L).between(TOKEN_TREASURY, OWNER)),
-
+                cryptoTransfer(movingUnique(NON_FUNGIBLE_TOKEN, 1L, 2L, 3L, 4L).between(TOKEN_TREASURY, OWNER)),
                 cryptoApproveAllowance()
                         .payingWith(OWNER)
                         .addNftAllowance(OWNER, NON_FUNGIBLE_TOKEN, SPENDER, true, List.of(1L))
@@ -1098,14 +1030,12 @@ public class CryptoApproveAllowanceSuite {
                         .payingWith(OWNER)
                         .addNftAllowance(OWNER, NON_FUNGIBLE_TOKEN, ANOTHER_SPENDER, false, List.of(4L, 2L, 3L))
                         .fee(ONE_HBAR),
-
                 getAccountDetails(OWNER)
                         .payingWith(GENESIS)
                         .logged()
                         .has(accountDetailsWith()
                                 .nftApprovedForAllAllowancesCount(1)
-                                .nftApprovedAllowancesContaining(NON_FUNGIBLE_TOKEN, SPENDER))
-        );
+                                .nftApprovedAllowancesContaining(NON_FUNGIBLE_TOKEN, SPENDER)));
     }
 
     @HapiTest
@@ -1122,9 +1052,7 @@ public class CryptoApproveAllowanceSuite {
                 cryptoCreate(ANOTHER_SPENDER).balance(ONE_HUNDRED_HBARS),
                 cryptoCreate(SECOND_SPENDER).balance(ONE_HUNDRED_HBARS),
                 cryptoCreate(THIRD_SPENDER).balance(ONE_HUNDRED_HBARS),
-                cryptoCreate(TOKEN_TREASURY)
-                        .balance(100 * ONE_HUNDRED_HBARS)
-                        .maxAutomaticTokenAssociations(10),
+                cryptoCreate(TOKEN_TREASURY).balance(100 * ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(10),
                 tokenCreate(FUNGIBLE_TOKEN)
                         .tokenType(TokenType.FUNGIBLE_COMMON)
                         .supplyType(TokenSupplyType.FINITE)
@@ -1150,18 +1078,16 @@ public class CryptoApproveAllowanceSuite {
                 tokenAssociate(OWNER, FUNGIBLE_TOKEN),
                 tokenAssociate(OWNER, NON_FUNGIBLE_TOKEN),
                 mintToken(
-                        NON_FUNGIBLE_TOKEN,
-                        List.of(
-                                ByteString.copyFromUtf8("a"),
-                                ByteString.copyFromUtf8("b"),
-                                ByteString.copyFromUtf8("c")))
+                                NON_FUNGIBLE_TOKEN,
+                                List.of(
+                                        ByteString.copyFromUtf8("a"),
+                                        ByteString.copyFromUtf8("b"),
+                                        ByteString.copyFromUtf8("c")))
                         .via(NFT_TOKEN_MINT_TXN),
                 mintToken(FUNGIBLE_TOKEN, 500L).via(FUNGIBLE_TOKEN_MINT_TXN),
                 grantTokenKyc(FUNGIBLE_TOKEN, OWNER),
                 grantTokenKyc(NON_FUNGIBLE_TOKEN, OWNER),
-                cryptoTransfer(
-                        movingUnique(NON_FUNGIBLE_TOKEN, 1L, 2L, 3L).between(TOKEN_TREASURY, OWNER)),
-
+                cryptoTransfer(movingUnique(NON_FUNGIBLE_TOKEN, 1L, 2L, 3L).between(TOKEN_TREASURY, OWNER)),
                 cryptoApproveAllowance()
                         .payingWith(OWNER)
                         .addTokenAllowance(OWNER, FUNGIBLE_TOKEN, SPENDER, 100L)
@@ -1174,7 +1100,6 @@ public class CryptoApproveAllowanceSuite {
                         .addTokenAllowance(OWNER, FUNGIBLE_TOKEN, ANOTHER_SPENDER, 100L)
                         .addNftAllowance(OWNER, NON_FUNGIBLE_TOKEN, ANOTHER_SPENDER, false, List.of(1L))
                         .fee(ONE_HBAR),
-
                 tokenPause(FUNGIBLE_TOKEN),
                 tokenPause(NON_FUNGIBLE_TOKEN),
                 cryptoApproveAllowance()
@@ -1196,8 +1121,7 @@ public class CryptoApproveAllowanceSuite {
                         .has(accountDetailsWith()
                                 .cryptoAllowancesCount(0)
                                 .nftApprovedForAllAllowancesCount(0)
-                                .tokenAllowancesCount(4))
-        );
+                                .tokenAllowancesCount(4)));
     }
 
     @HapiTest
@@ -1207,9 +1131,7 @@ public class CryptoApproveAllowanceSuite {
                 newKeyNamed(SUPPLY_KEY),
                 cryptoCreate(OWNER).balance(ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(10),
                 cryptoCreate(SPENDER).balance(ONE_HUNDRED_HBARS),
-                cryptoCreate(TOKEN_TREASURY)
-                        .balance(100 * ONE_HUNDRED_HBARS)
-                        .maxAutomaticTokenAssociations(10),
+                cryptoCreate(TOKEN_TREASURY).balance(100 * ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(10),
                 tokenCreate(FUNGIBLE_TOKEN)
                         .tokenType(TokenType.FUNGIBLE_COMMON)
                         .supplyType(TokenSupplyType.FINITE)
@@ -1219,13 +1141,11 @@ public class CryptoApproveAllowanceSuite {
                         .treasury(TOKEN_TREASURY),
                 tokenAssociate(OWNER, FUNGIBLE_TOKEN),
                 mintToken(FUNGIBLE_TOKEN, 500L).via(FUNGIBLE_TOKEN_MINT_TXN),
-
                 cryptoApproveAllowance()
                         .payingWith(OWNER)
                         .addTokenAllowance(OWNER, FUNGIBLE_TOKEN, SPENDER, 5000L)
                         .fee(ONE_HUNDRED_HBARS)
-                        .hasPrecheck(AMOUNT_EXCEEDS_TOKEN_MAX_SUPPLY)
-        );
+                        .hasPrecheck(AMOUNT_EXCEEDS_TOKEN_MAX_SUPPLY));
     }
 
     @HapiTest
@@ -1235,9 +1155,7 @@ public class CryptoApproveAllowanceSuite {
                 newKeyNamed(SUPPLY_KEY),
                 cryptoCreate(OWNER).balance(ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(10),
                 cryptoCreate(SPENDER).balance(ONE_HUNDRED_HBARS),
-                cryptoCreate(TOKEN_TREASURY)
-                        .balance(100 * ONE_HUNDRED_HBARS)
-                        .maxAutomaticTokenAssociations(10),
+                cryptoCreate(TOKEN_TREASURY).balance(100 * ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(10),
                 tokenCreate(NON_FUNGIBLE_TOKEN)
                         .maxSupply(10L)
                         .initialSupply(0)
@@ -1247,14 +1165,13 @@ public class CryptoApproveAllowanceSuite {
                         .treasury(TOKEN_TREASURY),
                 tokenAssociate(OWNER, NON_FUNGIBLE_TOKEN),
                 mintToken(
-                        NON_FUNGIBLE_TOKEN,
-                        List.of(
-                                ByteString.copyFromUtf8("a"),
-                                ByteString.copyFromUtf8("b"),
-                                ByteString.copyFromUtf8("c")))
+                                NON_FUNGIBLE_TOKEN,
+                                List.of(
+                                        ByteString.copyFromUtf8("a"),
+                                        ByteString.copyFromUtf8("b"),
+                                        ByteString.copyFromUtf8("c")))
                         .via(NFT_TOKEN_MINT_TXN),
                 cryptoTransfer(movingUnique(NON_FUNGIBLE_TOKEN, 1L, 2L).between(TOKEN_TREASURY, OWNER)),
-
                 cryptoApproveAllowance()
                         .payingWith(OWNER)
                         .addNftAllowance(OWNER, NON_FUNGIBLE_TOKEN, SPENDER, false, List.of(1000L))
@@ -1273,8 +1190,7 @@ public class CryptoApproveAllowanceSuite {
                 cryptoApproveAllowance()
                         .payingWith(OWNER)
                         .addNftAllowance(OWNER, NON_FUNGIBLE_TOKEN, SPENDER, false, List.of(2L, 2L, 2L))
-                        .fee(ONE_HUNDRED_HBARS)
-        );
+                        .fee(ONE_HUNDRED_HBARS));
     }
 
     @HapiTest
@@ -1283,9 +1199,7 @@ public class CryptoApproveAllowanceSuite {
                 newKeyNamed(SUPPLY_KEY),
                 cryptoCreate(OWNER).balance(ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(10),
                 cryptoCreate(SPENDER).balance(ONE_HUNDRED_HBARS),
-                cryptoCreate(TOKEN_TREASURY)
-                        .balance(100 * ONE_HUNDRED_HBARS)
-                        .maxAutomaticTokenAssociations(10),
+                cryptoCreate(TOKEN_TREASURY).balance(100 * ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(10),
                 tokenCreate(FUNGIBLE_TOKEN)
                         .tokenType(TokenType.FUNGIBLE_COMMON)
                         .supplyType(TokenSupplyType.FINITE)
@@ -1303,16 +1217,14 @@ public class CryptoApproveAllowanceSuite {
                 tokenAssociate(OWNER, FUNGIBLE_TOKEN),
                 tokenAssociate(OWNER, NON_FUNGIBLE_TOKEN),
                 mintToken(
-                        NON_FUNGIBLE_TOKEN,
-                        List.of(
-                                ByteString.copyFromUtf8("a"),
-                                ByteString.copyFromUtf8("b"),
-                                ByteString.copyFromUtf8("c")))
+                                NON_FUNGIBLE_TOKEN,
+                                List.of(
+                                        ByteString.copyFromUtf8("a"),
+                                        ByteString.copyFromUtf8("b"),
+                                        ByteString.copyFromUtf8("c")))
                         .via(NFT_TOKEN_MINT_TXN),
                 mintToken(FUNGIBLE_TOKEN, 500L).via(FUNGIBLE_TOKEN_MINT_TXN),
-                cryptoTransfer(
-                        movingUnique(NON_FUNGIBLE_TOKEN, 1L, 2L, 3L).between(TOKEN_TREASURY, OWNER)),
-
+                cryptoTransfer(movingUnique(NON_FUNGIBLE_TOKEN, 1L, 2L, 3L).between(TOKEN_TREASURY, OWNER)),
                 cryptoApproveAllowance()
                         .payingWith(OWNER)
                         .addTokenAllowance(OWNER, NON_FUNGIBLE_TOKEN, SPENDER, 100L)
@@ -1322,16 +1234,14 @@ public class CryptoApproveAllowanceSuite {
                         .payingWith(OWNER)
                         .addNftAllowance(OWNER, FUNGIBLE_TOKEN, SPENDER, false, List.of(1L))
                         .fee(ONE_HUNDRED_HBARS)
-                        .hasPrecheck(FUNGIBLE_TOKEN_IN_NFT_ALLOWANCES)
-        );
+                        .hasPrecheck(FUNGIBLE_TOKEN_IN_NFT_ALLOWANCES));
     }
 
     @HapiTest
     final Stream<DynamicTest> emptyAllowancesRejected() {
         return hapiTest(
                 cryptoCreate(OWNER).balance(ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(10),
-                cryptoApproveAllowance().hasPrecheck(EMPTY_ALLOWANCES).fee(ONE_HUNDRED_HBARS)
-        );
+                cryptoApproveAllowance().hasPrecheck(EMPTY_ALLOWANCES).fee(ONE_HUNDRED_HBARS));
     }
 
     @HapiTest
@@ -1341,9 +1251,7 @@ public class CryptoApproveAllowanceSuite {
                 newKeyNamed(SUPPLY_KEY),
                 cryptoCreate(OWNER).balance(ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(10),
                 cryptoCreate(SPENDER).balance(ONE_HUNDRED_HBARS),
-                cryptoCreate(TOKEN_TREASURY)
-                        .balance(100 * ONE_HUNDRED_HBARS)
-                        .maxAutomaticTokenAssociations(10),
+                cryptoCreate(TOKEN_TREASURY).balance(100 * ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(10),
                 tokenCreate(FUNGIBLE_TOKEN)
                         .tokenType(TokenType.FUNGIBLE_COMMON)
                         .supplyType(TokenSupplyType.FINITE)
@@ -1359,14 +1267,13 @@ public class CryptoApproveAllowanceSuite {
                         .supplyKey(SUPPLY_KEY)
                         .treasury(TOKEN_TREASURY),
                 mintToken(
-                        NON_FUNGIBLE_TOKEN,
-                        List.of(
-                                ByteString.copyFromUtf8("a"),
-                                ByteString.copyFromUtf8("b"),
-                                ByteString.copyFromUtf8("c")))
+                                NON_FUNGIBLE_TOKEN,
+                                List.of(
+                                        ByteString.copyFromUtf8("a"),
+                                        ByteString.copyFromUtf8("b"),
+                                        ByteString.copyFromUtf8("c")))
                         .via(NFT_TOKEN_MINT_TXN),
                 mintToken(FUNGIBLE_TOKEN, 500L).via(FUNGIBLE_TOKEN_MINT_TXN),
-
                 cryptoApproveAllowance()
                         .payingWith(OWNER)
                         .addTokenAllowance(OWNER, FUNGIBLE_TOKEN, SPENDER, 100L)
@@ -1377,15 +1284,12 @@ public class CryptoApproveAllowanceSuite {
                         .addNftAllowance(OWNER, NON_FUNGIBLE_TOKEN, SPENDER, false, List.of(1L))
                         .fee(ONE_HUNDRED_HBARS)
                         .hasPrecheck(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT),
-
                 getAccountDetails(OWNER)
                         .payingWith(GENESIS)
                         .has(accountDetailsWith()
                                 .cryptoAllowancesCount(0)
                                 .nftApprovedForAllAllowancesCount(0)
-                                .tokenAllowancesCount(0))
-
-        );
+                                .tokenAllowancesCount(0)));
     }
 
     @HapiTest
@@ -1394,9 +1298,7 @@ public class CryptoApproveAllowanceSuite {
                 newKeyNamed(SUPPLY_KEY),
                 cryptoCreate(OWNER).balance(ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(10),
                 cryptoCreate(SPENDER).balance(ONE_HUNDRED_HBARS),
-                cryptoCreate(TOKEN_TREASURY)
-                        .balance(100 * ONE_HUNDRED_HBARS)
-                        .maxAutomaticTokenAssociations(10),
+                cryptoCreate(TOKEN_TREASURY).balance(100 * ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(10),
                 tokenCreate(FUNGIBLE_TOKEN)
                         .tokenType(TokenType.FUNGIBLE_COMMON)
                         .supplyType(TokenSupplyType.FINITE)
@@ -1414,16 +1316,14 @@ public class CryptoApproveAllowanceSuite {
                 tokenAssociate(OWNER, FUNGIBLE_TOKEN),
                 tokenAssociate(OWNER, NON_FUNGIBLE_TOKEN),
                 mintToken(
-                        NON_FUNGIBLE_TOKEN,
-                        List.of(
-                                ByteString.copyFromUtf8("a"),
-                                ByteString.copyFromUtf8("b"),
-                                ByteString.copyFromUtf8("c")))
+                                NON_FUNGIBLE_TOKEN,
+                                List.of(
+                                        ByteString.copyFromUtf8("a"),
+                                        ByteString.copyFromUtf8("b"),
+                                        ByteString.copyFromUtf8("c")))
                         .via(NFT_TOKEN_MINT_TXN),
                 mintToken(FUNGIBLE_TOKEN, 500L).via(FUNGIBLE_TOKEN_MINT_TXN),
-                cryptoTransfer(
-                        movingUnique(NON_FUNGIBLE_TOKEN, 1L, 2L, 3L).between(TOKEN_TREASURY, OWNER)),
-
+                cryptoTransfer(movingUnique(NON_FUNGIBLE_TOKEN, 1L, 2L, 3L).between(TOKEN_TREASURY, OWNER)),
                 cryptoApproveAllowance()
                         .payingWith(OWNER)
                         .addCryptoAllowance(OWNER, SPENDER, -100L)
@@ -1434,14 +1334,12 @@ public class CryptoApproveAllowanceSuite {
                         .addTokenAllowance(OWNER, FUNGIBLE_TOKEN, SPENDER, -100L)
                         .fee(ONE_HUNDRED_HBARS)
                         .hasPrecheck(NEGATIVE_ALLOWANCE_AMOUNT),
-
                 getAccountDetails(OWNER)
                         .payingWith(GENESIS)
                         .has(accountDetailsWith()
                                 .cryptoAllowancesCount(0)
                                 .nftApprovedForAllAllowancesCount(0)
-                                .tokenAllowancesCount(0))
-        );
+                                .tokenAllowancesCount(0)));
     }
 
     @HapiTest
@@ -1451,9 +1349,7 @@ public class CryptoApproveAllowanceSuite {
                 cryptoCreate(OWNER).balance(ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(10),
                 cryptoCreate(SPENDER).balance(ONE_HUNDRED_HBARS),
                 cryptoCreate(ANOTHER_SPENDER).balance(ONE_HUNDRED_HBARS),
-                cryptoCreate(TOKEN_TREASURY)
-                        .balance(100 * ONE_HUNDRED_HBARS)
-                        .maxAutomaticTokenAssociations(10),
+                cryptoCreate(TOKEN_TREASURY).balance(100 * ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(10),
                 tokenCreate(FUNGIBLE_TOKEN)
                         .tokenType(TokenType.FUNGIBLE_COMMON)
                         .supplyType(TokenSupplyType.FINITE)
@@ -1471,16 +1367,14 @@ public class CryptoApproveAllowanceSuite {
                 tokenAssociate(OWNER, FUNGIBLE_TOKEN),
                 tokenAssociate(OWNER, NON_FUNGIBLE_TOKEN),
                 mintToken(
-                        NON_FUNGIBLE_TOKEN,
-                        List.of(
-                                ByteString.copyFromUtf8("a"),
-                                ByteString.copyFromUtf8("b"),
-                                ByteString.copyFromUtf8("c")))
+                                NON_FUNGIBLE_TOKEN,
+                                List.of(
+                                        ByteString.copyFromUtf8("a"),
+                                        ByteString.copyFromUtf8("b"),
+                                        ByteString.copyFromUtf8("c")))
                         .via(NFT_TOKEN_MINT_TXN),
                 mintToken(FUNGIBLE_TOKEN, 500L).via(FUNGIBLE_TOKEN_MINT_TXN),
-                cryptoTransfer(
-                        movingUnique(NON_FUNGIBLE_TOKEN, 1L, 2L, 3L).between(TOKEN_TREASURY, OWNER)),
-
+                cryptoTransfer(movingUnique(NON_FUNGIBLE_TOKEN, 1L, 2L, 3L).between(TOKEN_TREASURY, OWNER)),
                 cryptoApproveAllowance()
                         .payingWith(OWNER)
                         .addCryptoAllowance(OWNER, SPENDER, 100L)
@@ -1496,7 +1390,6 @@ public class CryptoApproveAllowanceSuite {
                         .via(APPROVE_TXN)
                         .blankMemo()
                         .logged(),
-
                 validateChargedUsdWithin(APPROVE_TXN, 0.05238, 0.01),
                 getAccountDetails(OWNER)
                         .payingWith(GENESIS)
@@ -1506,8 +1399,7 @@ public class CryptoApproveAllowanceSuite {
                                 .tokenAllowancesCount(1)
                                 .cryptoAllowancesContaining(SPENDER, 100L)
                                 .tokenAllowancesContaining(FUNGIBLE_TOKEN, SPENDER, 100L)),
-                getTokenNftInfo(NON_FUNGIBLE_TOKEN, 1L).hasSpenderID(SPENDER)
-        );
+                getTokenNftInfo(NON_FUNGIBLE_TOKEN, 1L).hasSpenderID(SPENDER));
     }
 
     @HapiTest
@@ -1516,9 +1408,7 @@ public class CryptoApproveAllowanceSuite {
                 newKeyNamed(SUPPLY_KEY),
                 cryptoCreate(OWNER).balance(ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(10),
                 cryptoCreate(SPENDER).balance(ONE_HUNDRED_HBARS),
-                cryptoCreate(TOKEN_TREASURY)
-                        .balance(100 * ONE_HUNDRED_HBARS)
-                        .maxAutomaticTokenAssociations(10),
+                cryptoCreate(TOKEN_TREASURY).balance(100 * ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(10),
                 tokenCreate(FUNGIBLE_TOKEN)
                         .tokenType(TokenType.FUNGIBLE_COMMON)
                         .supplyType(TokenSupplyType.FINITE)
@@ -1536,16 +1426,14 @@ public class CryptoApproveAllowanceSuite {
                 tokenAssociate(OWNER, FUNGIBLE_TOKEN),
                 tokenAssociate(OWNER, NON_FUNGIBLE_TOKEN),
                 mintToken(
-                        NON_FUNGIBLE_TOKEN,
-                        List.of(
-                                ByteString.copyFromUtf8("a"),
-                                ByteString.copyFromUtf8("b"),
-                                ByteString.copyFromUtf8("c")))
+                                NON_FUNGIBLE_TOKEN,
+                                List.of(
+                                        ByteString.copyFromUtf8("a"),
+                                        ByteString.copyFromUtf8("b"),
+                                        ByteString.copyFromUtf8("c")))
                         .via(NFT_TOKEN_MINT_TXN),
                 mintToken(FUNGIBLE_TOKEN, 500L).via(FUNGIBLE_TOKEN_MINT_TXN),
-                cryptoTransfer(
-                        movingUnique(NON_FUNGIBLE_TOKEN, 1L, 2L, 3L).between(TOKEN_TREASURY, OWNER)),
-
+                cryptoTransfer(movingUnique(NON_FUNGIBLE_TOKEN, 1L, 2L, 3L).between(TOKEN_TREASURY, OWNER)),
                 cryptoApproveAllowance()
                         .payingWith(OWNER)
                         .addCryptoAllowance(OWNER, SPENDER, 100L)
@@ -1582,7 +1470,6 @@ public class CryptoApproveAllowanceSuite {
                                 .tokenAllowancesCount(1)
                                 .cryptoAllowancesContaining(SPENDER, 200L)
                                 .tokenAllowancesContaining(FUNGIBLE_TOKEN, SPENDER, 300L)),
-
                 cryptoApproveAllowance()
                         .payingWith(OWNER)
                         .addCryptoAllowance(OWNER, SPENDER, 0L)
@@ -1598,9 +1485,7 @@ public class CryptoApproveAllowanceSuite {
                                 .nftApprovedAllowancesContaining(NON_FUNGIBLE_TOKEN, SPENDER)),
                 getTokenNftInfo(NON_FUNGIBLE_TOKEN, 1L).hasSpenderID(SPENDER),
                 getTokenNftInfo(NON_FUNGIBLE_TOKEN, 2L).hasSpenderID(SPENDER),
-                getTokenNftInfo(NON_FUNGIBLE_TOKEN, 3L).hasSpenderID(SPENDER)
-
-        );
+                getTokenNftInfo(NON_FUNGIBLE_TOKEN, 3L).hasSpenderID(SPENDER));
     }
 
     @HapiTest
@@ -1612,9 +1497,7 @@ public class CryptoApproveAllowanceSuite {
                 cryptoCreate(SPENDER).balance(ONE_HUNDRED_HBARS),
                 cryptoCreate(SECOND_SPENDER).balance(ONE_HUNDRED_HBARS),
                 cryptoCreate(RECEIVER).balance(ONE_HUNDRED_HBARS),
-                cryptoCreate(TOKEN_TREASURY)
-                        .balance(100 * ONE_HUNDRED_HBARS)
-                        .maxAutomaticTokenAssociations(10),
+                cryptoCreate(TOKEN_TREASURY).balance(100 * ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(10),
                 tokenCreate(NON_FUNGIBLE_TOKEN)
                         .maxSupply(10L)
                         .initialSupply(0)
@@ -1627,7 +1510,6 @@ public class CryptoApproveAllowanceSuite {
                 mintToken(NON_FUNGIBLE_TOKEN, List.of(ByteString.copyFromUtf8("a")))
                         .via(NFT_TOKEN_MINT_TXN),
                 cryptoTransfer(movingUnique(NON_FUNGIBLE_TOKEN, 1L).between(TOKEN_TREASURY, OWNER)),
-
                 cryptoApproveAllowance()
                         .payingWith(DEFAULT_PAYER)
                         .addNftAllowance(OWNER, NON_FUNGIBLE_TOKEN, SPENDER, true, List.of(1L))
@@ -1642,15 +1524,12 @@ public class CryptoApproveAllowanceSuite {
                 getAccountDetails(OWNER)
                         .payingWith(GENESIS)
                         .has(accountDetailsWith().nftApprovedForAllAllowancesCount(2)),
-
-                cryptoTransfer(movingUniqueWithAllowance(NON_FUNGIBLE_TOKEN, 1)
-                        .between(OWNER, RECEIVER))
+                cryptoTransfer(movingUniqueWithAllowance(NON_FUNGIBLE_TOKEN, 1).between(OWNER, RECEIVER))
                         .payingWith(SECOND_SPENDER)
                         .signedBy(SECOND_SPENDER),
                 getTokenNftInfo(NON_FUNGIBLE_TOKEN, 1L).hasNoSpender().logged(),
                 cryptoTransfer(movingUnique(NON_FUNGIBLE_TOKEN, 1).between(RECEIVER, OWNER)),
-                cryptoTransfer(movingUniqueWithAllowance(NON_FUNGIBLE_TOKEN, 1)
-                        .between(OWNER, RECEIVER))
+                cryptoTransfer(movingUniqueWithAllowance(NON_FUNGIBLE_TOKEN, 1).between(OWNER, RECEIVER))
                         .payingWith(SECOND_SPENDER)
                         .signedBy(SECOND_SPENDER),
                 cryptoApproveAllowance()
@@ -1661,8 +1540,7 @@ public class CryptoApproveAllowanceSuite {
                         .payingWith(GENESIS)
                         .has(accountDetailsWith().nftApprovedForAllAllowancesCount(1)),
                 cryptoTransfer(movingUnique(NON_FUNGIBLE_TOKEN, 1).between(RECEIVER, OWNER)),
-                cryptoTransfer(movingUniqueWithAllowance(NON_FUNGIBLE_TOKEN, 1)
-                        .between(OWNER, RECEIVER))
+                cryptoTransfer(movingUniqueWithAllowance(NON_FUNGIBLE_TOKEN, 1).between(OWNER, RECEIVER))
                         .payingWith(SECOND_SPENDER)
                         .signedBy(SECOND_SPENDER)
                         .hasKnownStatus(SPENDER_DOES_NOT_HAVE_ALLOWANCE),
@@ -1670,18 +1548,14 @@ public class CryptoApproveAllowanceSuite {
                         .payingWith(DEFAULT_PAYER)
                         .addNftAllowance(OWNER, NON_FUNGIBLE_TOKEN, SECOND_SPENDER, false, List.of(1L))
                         .signedBy(DEFAULT_PAYER, OWNER),
-                cryptoTransfer(movingUniqueWithAllowance(NON_FUNGIBLE_TOKEN, 1)
-                        .between(OWNER, RECEIVER))
+                cryptoTransfer(movingUniqueWithAllowance(NON_FUNGIBLE_TOKEN, 1).between(OWNER, RECEIVER))
                         .payingWith(SECOND_SPENDER)
                         .signedBy(SECOND_SPENDER),
                 cryptoTransfer(movingUnique(NON_FUNGIBLE_TOKEN, 1).between(RECEIVER, OWNER)),
-                cryptoTransfer(movingUniqueWithAllowance(NON_FUNGIBLE_TOKEN, 1)
-                        .between(OWNER, RECEIVER))
+                cryptoTransfer(movingUniqueWithAllowance(NON_FUNGIBLE_TOKEN, 1).between(OWNER, RECEIVER))
                         .payingWith(SECOND_SPENDER)
                         .signedBy(SECOND_SPENDER)
-                        .hasKnownStatus(SPENDER_DOES_NOT_HAVE_ALLOWANCE)
-
-        );
+                        .hasKnownStatus(SPENDER_DOES_NOT_HAVE_ALLOWANCE));
     }
 
     @HapiTest
@@ -1692,9 +1566,7 @@ public class CryptoApproveAllowanceSuite {
                 cryptoCreate(OWNER).balance(ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(10),
                 cryptoCreate(SPENDER).balance(ONE_HUNDRED_HBARS),
                 cryptoCreate(RECEIVER).balance(ONE_HUNDRED_HBARS),
-                cryptoCreate(TOKEN_TREASURY)
-                        .balance(100 * ONE_HUNDRED_HBARS)
-                        .maxAutomaticTokenAssociations(10),
+                cryptoCreate(TOKEN_TREASURY).balance(100 * ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(10),
                 tokenCreate(NON_FUNGIBLE_TOKEN)
                         .maxSupply(10L)
                         .initialSupply(0)
@@ -1708,7 +1580,6 @@ public class CryptoApproveAllowanceSuite {
                 mintToken(NON_FUNGIBLE_TOKEN, List.of(ByteString.copyFromUtf8("a")))
                         .via(NFT_TOKEN_MINT_TXN),
                 cryptoTransfer(movingUnique(NON_FUNGIBLE_TOKEN, 1L).between(TOKEN_TREASURY, OWNER)),
-
                 cryptoApproveAllowance()
                         .payingWith(DEFAULT_PAYER)
                         .addNftAllowance(OWNER, NON_FUNGIBLE_TOKEN, SPENDER, true, List.of())
@@ -1717,12 +1588,9 @@ public class CryptoApproveAllowanceSuite {
                 getAccountDetails(OWNER)
                         .payingWith(GENESIS)
                         .has(accountDetailsWith().nftApprovedForAllAllowancesCount(1)),
-
-                cryptoTransfer(movingUniqueWithAllowance(NON_FUNGIBLE_TOKEN, 1)
-                        .between(OWNER, RECEIVER))
+                cryptoTransfer(movingUniqueWithAllowance(NON_FUNGIBLE_TOKEN, 1).between(OWNER, RECEIVER))
                         .payingWith(SPENDER),
-                getTokenNftInfo(NON_FUNGIBLE_TOKEN, 1L).hasNoSpender().logged()
-        );
+                getTokenNftInfo(NON_FUNGIBLE_TOKEN, 1L).hasNoSpender().logged());
     }
 
     @HapiTest
@@ -1760,7 +1628,6 @@ public class CryptoApproveAllowanceSuite {
                                 ByteString.copyFromUtf8("a"),
                                 ByteString.copyFromUtf8("b"),
                                 ByteString.copyFromUtf8("c"))),
-
                 tokenAssociate(OWNER, FUNGIBLE_TOKEN, NON_FUNGIBLE_TOKEN, TOKEN_WITH_CUSTOM_FEE),
                 tokenAssociate(RECEIVER, FUNGIBLE_TOKEN, NON_FUNGIBLE_TOKEN, TOKEN_WITH_CUSTOM_FEE),
                 cryptoTransfer(
@@ -1768,19 +1635,16 @@ public class CryptoApproveAllowanceSuite {
                         moving(15, TOKEN_WITH_CUSTOM_FEE).between(TOKEN_TREASURY, OWNER),
                         movingUnique(NON_FUNGIBLE_TOKEN, 1L, 2L, 3L).between(TOKEN_TREASURY, OWNER)),
                 scheduleCreate(
-                        SCHEDULED_TXN,
-                        cryptoApproveAllowance()
-                                .addCryptoAllowance(OWNER, SPENDER, 10 * ONE_HBAR)
-                                .addTokenAllowance(OWNER, FUNGIBLE_TOKEN, SPENDER, 1500)
-                                .addTokenAllowance(OWNER, TOKEN_WITH_CUSTOM_FEE, SPENDER, 100)
-                                .addNftAllowance(
-                                        OWNER, NON_FUNGIBLE_TOKEN, SPENDER, false, List.of(1L, 2L, 3L))
-                                .fee(ONE_HUNDRED_HBARS))
+                                SCHEDULED_TXN,
+                                cryptoApproveAllowance()
+                                        .addCryptoAllowance(OWNER, SPENDER, 10 * ONE_HBAR)
+                                        .addTokenAllowance(OWNER, FUNGIBLE_TOKEN, SPENDER, 1500)
+                                        .addTokenAllowance(OWNER, TOKEN_WITH_CUSTOM_FEE, SPENDER, 100)
+                                        .addNftAllowance(OWNER, NON_FUNGIBLE_TOKEN, SPENDER, false, List.of(1L, 2L, 3L))
+                                        .fee(ONE_HUNDRED_HBARS))
                         .via("successTx"),
                 getTxnRecord("successTx").logged(),
-
-                cryptoTransfer(movingUniqueWithAllowance(NON_FUNGIBLE_TOKEN, 3)
-                        .between(OWNER, OTHER_RECEIVER))
+                cryptoTransfer(movingUniqueWithAllowance(NON_FUNGIBLE_TOKEN, 3).between(OWNER, OTHER_RECEIVER))
                         .payingWith(SPENDER)
                         .hasKnownStatus(SPENDER_DOES_NOT_HAVE_ALLOWANCE),
                 cryptoTransfer(movingWithAllowance(50, FUNGIBLE_TOKEN).between(OWNER, RECEIVER))
@@ -1790,8 +1654,7 @@ public class CryptoApproveAllowanceSuite {
                         .payingWith(SPENDER)
                         .hasKnownStatus(SPENDER_DOES_NOT_HAVE_ALLOWANCE),
                 scheduleSign(SCHEDULED_TXN).alsoSigningWith(OWNER),
-                cryptoTransfer(movingUniqueWithAllowance(NON_FUNGIBLE_TOKEN, 3)
-                        .between(OWNER, OTHER_RECEIVER))
+                cryptoTransfer(movingUniqueWithAllowance(NON_FUNGIBLE_TOKEN, 3).between(OWNER, OTHER_RECEIVER))
                         .payingWith(SPENDER),
                 getAccountBalance(OTHER_RECEIVER).hasTokenBalance(NON_FUNGIBLE_TOKEN, 1),
                 cryptoTransfer(movingWithAllowance(50, FUNGIBLE_TOKEN).between(OWNER, RECEIVER))
@@ -1799,9 +1662,7 @@ public class CryptoApproveAllowanceSuite {
                 getAccountBalance(RECEIVER).hasTokenBalance(FUNGIBLE_TOKEN, 50),
                 cryptoTransfer(allowanceTinyBarsFromTo(OWNER, RECEIVER, 5 * ONE_HBAR))
                         .payingWith(SPENDER),
-                getAccountBalance(RECEIVER).hasTinyBars(15 * ONE_HBAR)
-
-        );
+                getAccountBalance(RECEIVER).hasTinyBars(15 * ONE_HBAR));
     }
 
     @HapiTest
@@ -1815,9 +1676,7 @@ public class CryptoApproveAllowanceSuite {
                 newKeyNamed(SUPPLY_KEY),
                 cryptoCreate(OWNER).balance(ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(10),
                 cryptoCreate(SPENDER).balance(ONE_HUNDRED_HBARS),
-                cryptoCreate(TOKEN_TREASURY)
-                        .balance(100 * ONE_HUNDRED_HBARS)
-                        .maxAutomaticTokenAssociations(10),
+                cryptoCreate(TOKEN_TREASURY).balance(100 * ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(10),
                 tokenCreate(FUNGIBLE_TOKEN)
                         .supplyType(TokenSupplyType.FINITE)
                         .tokenType(FUNGIBLE_COMMON)
@@ -1843,7 +1702,6 @@ public class CryptoApproveAllowanceSuite {
                 cryptoTransfer(
                         moving(500L, FUNGIBLE_TOKEN).between(TOKEN_TREASURY, OWNER),
                         movingUnique(NON_FUNGIBLE_TOKEN, 1L, 2L, 3L).between(TOKEN_TREASURY, OWNER)),
-
                 cryptoApproveAllowance()
                         .payingWith(DEFAULT_PAYER)
                         .addTokenAllowance(OWNER, FUNGIBLE_TOKEN, OWNER, 100L)
@@ -1868,7 +1726,6 @@ public class CryptoApproveAllowanceSuite {
                         .signedBy(DEFAULT_PAYER, OWNER)
                         .hasKnownStatus(INVALID_TOKEN_NFT_SERIAL_NUMBER)
                         .via(tryApprovingNFTWithInvalidSerial),
-
                 emptyChildRecordsCheck(tryApprovingTheSender, SUCCESS),
                 emptyChildRecordsCheck(tryApprovingAboveBalance, SUCCESS),
                 emptyChildRecordsCheck(tryApprovingNFTToOwner, SPENDER_ACCOUNT_SAME_AS_OWNER),
@@ -1876,7 +1733,6 @@ public class CryptoApproveAllowanceSuite {
                 getAccountBalance(OWNER).hasTokenBalance(FUNGIBLE_TOKEN, 500L),
                 getAccountBalance(SPENDER).hasTokenBalance(FUNGIBLE_TOKEN, 0L),
                 getAccountBalance(OWNER).hasTokenBalance(NON_FUNGIBLE_TOKEN, 3L),
-                getAccountBalance(SPENDER).hasTokenBalance(NON_FUNGIBLE_TOKEN, 0L)
-        );
+                getAccountBalance(SPENDER).hasTokenBalance(NON_FUNGIBLE_TOKEN, 0L));
     }
 }
