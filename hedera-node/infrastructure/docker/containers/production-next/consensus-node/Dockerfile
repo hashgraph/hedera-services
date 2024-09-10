@@ -235,6 +235,7 @@ COPY --from=java-builder ${JAVA_HOME}/ ${JAVA_HOME}/
 # Add SDK components
 COPY sdk/data/apps/* /opt/hgcapp/services-hedera/HapiApp2.0/data/apps/
 COPY sdk/data/lib/* /opt/hgcapp/services-hedera/HapiApp2.0/data/lib/
+COPY sdk/VERSION /opt/hgcapp/services-hedera/HapiApp2.0/
 
 # Add the entrypoint script
 ADD entrypoint.sh /opt/hgcapp/services-hedera/HapiApp2.0/
