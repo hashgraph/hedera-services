@@ -13,33 +13,34 @@ Provide necessary components for signing messages using a TSS scheme.
 
 ## Purpose and Context
 
-A threshold signature scheme (TSS) aims to enable a threshold number of participants (shareholders) to securely and efficiently generate succinct aggregate signatures.
-Our TSS implementation will be base on Groth21 [link]
-A static public key should be produced that doesn't change even when the number of participants in the scheme varies,
+A threshold signature scheme (TSS) aims to enable a threshold number of participants (shareholders) to securely and efficiently generate succinct aggregate signatures
+to cryptographically sign and verify signatures in the presence of some corruption threshold in a decentralized network.
 
+In that scheme, a static public key is produced that doesn't change even when the number of participants in the scheme varies.
 This is important for producing proofs that are easily consumable and verifiable by external entities.
 
-This proposal covers the implementation of all necessary components to provide the consensus node and future library users with
-the functionality to sign and verify blocks using a Threshold Signature Scheme (TSS) and EC Cryptography.
+Our implementation will be based on Groth21 [link]. This algorithm generates a public key and a private key for each participant.
+The private key is distributed as key-splits (or shares of shares) such that no single party knows the private key.
+Only a threshold number of key-splits can produce a valid signature that the aggregated public key can later verify.
+It uses BLS signatures, Shamir's secret sharing, ElGamal, and Zero-Knowledge Proofs to achieve that goal.
 
-The related proposal, TSS-Ledger-Id, provides an overview of the process and background for TSS and how it impacts the platform’s functionality.
+This document covers the implementation of all necessary components to provide a generic library with the functionality to sign and verify
+information using a Threshold Signature Scheme (TSS) and EC Cryptography.
 
 This proposal assumes no relation with the platform and defines a generic component that any consumer can integrate.
 It only assumes that there exists a channel to connect participants, where the identity of the message sender has been previously validated.
-
-The process of sending messages through that channel and receiving the responses is outside the scope of this proposal.
+The process of sending messages through that channel and receiving the responses is also outside the scope of this proposal.
 Additionally, participants will need access to each other's public key. While the generation of the public/private keys is included in this proposal,
 the distribution aspect, the loading, and the in-memory interpretation from each participant are outside the scope of this proposal.
+The related proposal, TSS-Ledger-Id, provides an overview of the process and background for TSS and how it impacts the platform’s functionality.
 
 ### Glossary
 
+- **BLS (Boneh, Lynn, and Shacham) Signatures**: BLS signatures are a type of succinct signatures that allows aggregation.
 - **TSS (Threshold Signature Scheme)**: A cryptographic signing scheme in which a minimum number of parties (reconstruction threshold) must collaborate
   to produce an aggregate signature that can be used to sign messages and an aggregate public key that can be used to verify that signature.
 - **Groth 21**: Publicly verifiable secret sharing and resharing schemes that enable secure and efficient distribution and management of secret shares,
-  with many possible use cases supporting applications in distributed key generation and threshold signatures.
-  Uses Shamir's secret sharing, ElGamal, and Zero-Knowledge Proofs.
-- **Distribute key generation**: Aims to solve the problem of getting n parties able to cryptographically sign and verify signatures in the presence of some corruption threshold in a decentralized network.
-  To do so, this algorithm generates a public key and a private key. The private key is distributed as key-splits (or shares of shares) such that no single party knows the private key.
+  with many possible use cases supporting applications in distributed key generation and threshold signatures.  As mentioned, it uses Shamir's secret sharing, ElGamal, and Zero-Knowledge Proofs.
 - **Shamir’s Secret Sharing**: In Shamir’s SS, a secret `s` is divided into `n` shares by a dealer, and shares are sent to shareholders secretly.
   The secret `s` is shared among `n` shareholders in such a way that:
   (a) any party with at least `t` shares can recover the secret, and (b) any party with fewer than `t` shares cannot obtain the secret.
@@ -47,14 +48,13 @@ the distribution aspect, the loading, and the in-memory interpretation from each
 - **SNARK**: A proof system for proving arbitrary statements (circuits / programs).
 - **Zero-Knowledge Proofs**: A proof system where one can prove possession of certain information, e.g., a secret key, without revealing that information or any interaction between the prover and verifier.
 - **NIZK**: A non-interactive zero-knowledge proof for an statement. In TSS we use NIZK proofs for encoding the correctness of the secret sharing.
-- **EC (Elliptic Curve)**: `Elliptic` is not elliptic in the sense of an `oval circle`. In the field `Fp`, an `EC` is like a non-connected cloud of points where
+- **Elliptic Curve (EC)**: `Elliptic` is not elliptic in the sense of an `oval circle`. In the field `Fp`, an `EC` is like a non-connected cloud of points where
   all points satisfy an equation, and all operations are performed modulo `p`. Some elliptic curves are pairing-friendly.
 - **Bilinear Pairings**: These are mathematical functions used in cryptography to map two elements of different groups (in EC, the group is an elliptic curve) to a single value in another group
   in a way that preserves specific algebraic properties.
 - **Fields**: Mathematical structures where addition, subtraction, multiplication, and division are defined and behave as expected (excluding division by zero).
 - **Groups**: Sets equipped with an operation (like addition or multiplication) that satisfies certain conditions (closure, associativity, identity element, and inverses).
-- **Share**: Represents a piece of the necessary public/private elements to create signatures. Each share is in itself a valid Ec-Key In TSS,
-  a threshold number of shares is needed to produce an aggregate signature that the aggregated public key can later verify.
+- **Share**: Represents a piece of the necessary public/private elements to create signatures. Each share is in itself a valid Ec-Key.
 - **Polynomial Commitment**: A process that enables evaluations of a polynomial at specific points to be verified without revealing the entire polynomial.
 - **Participant**: Also share-holder, is any party involved in the distributed key generation protocol.
 - **Participant Directory**: An address book of participants of the distributed key generation protocol.
@@ -67,7 +67,6 @@ the distribution aspect, the loading, and the in-memory interpretation from each
 - **Security**: Our produced code should be able to pass internal and external security audits.
 - **Flexibility**: Minimize the impact of introducing support for other elliptic curves.
 - **Independent Release**: When applicable, the new libraries should have the release cycle separate from the platform.
-  They should be implemented in a way that is easy for both platform and block node to depend on.
 
 ### Non-Goals
 
@@ -93,9 +92,9 @@ which may or may not overlap with the original set of shareholders.
 Participants can hold one or more shares, each of which can be used to sign a message.
 The goal is to generate an aggregate signature which is valid if a threshold number of individual signatures are combined.
 
-Each participant brings their own Elliptic Curve (EC) key pair (private and public). They share their public keys with all other participants while securing their private keys.
+Each participant brings their own BLS key pair (private and public). They share their public keys with all other participants while securing their private keys.
 Before the protocol begins, all participants agree on the cryptographic parameters (type of curve and what group of the pairing will be used for public keys and signatures).
-When the protocol is initialized, a participant directory is built. This directory includes the number of participants, each participant’s EC public key, and the shares they own.
+When the protocol is initialized, a participant directory is built. This directory includes the number of participants, each participant’s BLS public key, and the shares they own.
 
 Each participant generates portions of a secret share and distributes them among the other participants using the following process:
 
@@ -104,7 +103,7 @@ Each participant generates portions of a secret share and distributes them among
 2. Each portion is encrypted with the share owner's public key, ensuring only the intended recipient can read it.
 3. A message is created that includes all encrypted values so that only the intended recipients can decrypt their respective portions of the secret share.
 
-(e.g.: for a directory of 10 participants and 10 shares distributing 1 share each with a threshold value of 6, Participant 1 will generate a message out of a random key,
+(e.g.: for a directory of 10 participants and 10 shares distributing 1 share each with a threshold value of 6, `Participant 1` will generate a message out of a random key,
 that will contain 10 portions of that key, each one encrypted under each participants' public key)
 This setup allows participants to share secret information securely. The message also contains additional information necessary for its validation (Such as a polynomial commitment and a NIZK proof).
 
@@ -115,7 +114,7 @@ Upon receiving a threshold number of messages, each participant:
 3. Retrieves a public key for each share in the system to validate signatures.
 
 (e.g.: for a directory of 5 participants and 10 shares with a threshold value of 6 where Participant 1 has 2 shares;
-Participant 1 will collect at least 6 valid messages from all participants, take the first and second portions of each message, decrypt and aggregate them respectively, so they become the first and second owned secret share )
+`Participant 1` will collect at least 6 valid messages from all participants, take the first and second portions of each message, decrypt with it's BLS private key and aggregate them, so they become the first and second owned secret share)
 
 Individual signing can then begin. Participants use the private information of their shares to sign messages.
 
@@ -130,22 +129,13 @@ To implement the functionality detailed in the previous section, the following c
 
 ![img_5.png](img_5.svg)
 
-1. **TSS Lib**: The consensus node will use the TSS library to create shares, create TSS messages to send to other nodes,
-   assemble shared public keys (ledgerId), and sign block hashes.
-2. **Pairings Signatures Library**: This library provides cryptographic objects (PrivateKey, PublicKey, and Signature)
-   and operations for the block node and consensus node to sign and verify signatures. The consensus node uses this library indirectly through the TSS Library.
-3. **Pairings API**: An API definition for the cryptography primitives
-   and arithmetic operations required to work with a specific EC curve and the
-   underlying Groups, Fields, and Pairings. This API minimizes the impact of
-   changing to different curve implementations.
+1. **TSS Lib**: Used to create shares, create TSS messages to send to other nodes, assemble shared public keys, and sign messages.
+2. **Pairings Signatures Library**: This library provides cryptographic objects (PrivateKey, PublicKey, and Signature) and operations to sign and verify signatures.
+3. **Pairings API**: An API definition for the arithmetic operations required to work with a specific EC curves and the underlying Groups, Fields, and Pairings concepts. This API minimizes the impact of changing to different curves.
 4. **Bilinear Pairings Impl**: An implementation of the Bilinear Pairings API that will be loaded at runtime using Java’s service provider (SPI) mechanism.
-   Multiple implementations can be provided to support different types of curves and
-   the Java service provider approach facilitates easily changing between
-   implementations and dependencies.
-5. **Native Support Lib**: Provides a set of generic functions loading native libraries in different system architectures when packaged in a jar
-   using a predefined organization so they can be accessed with JNI.
-6. **[Arkworks](https://github.com/arkworks-rs)**: A Rust ecosystem for cryptography. Our implementation uses it as the library responsible for elliptic curve cryptography.
-7. **EC-Key Utils** is a utility module that enables the node operator to generate a bootstrap public/private key pair.
+   Multiple implementations can be provided to support different types of curves and  the Java service provider approach facilitates easily changing between implementations and dependencies.
+5. **Native Support Lib**: Provides a set of generic functions for loading native libraries in different system architectures when packaged in a jar, using a predefined organization so they can be accessed with JNI.
+6. **EC-Key Utils** is a utility module that enables the node operator to generate a bootstrap public/private key pair.
 
 ### Module organization and repositories
 
@@ -187,9 +177,7 @@ hedera-multilanguage-project
     └── build.gradle.kts
 ```
 
-Then it will be compiled using `Cargo` and cross-compiler mechanisms into a binary library and then packaged in the same jar.
-Once the code is merged to develop, the CI/CD pipeline compiles the Rust code into a binary library for each of the multiple supported platforms, packages it into the jar that consumes it,
-and publishes it to Maven.  The dependency from the Maven repo will contain the Java code and the binary library cross-compiled for all supported architectures.
+Then it will be cross-compiled into a set of binary libraries and then packaged in the same jar as the java code accessing it.
 
 Rust code will be compiled first and the build process will create the following folder structure where binaries files will be placed and then distributed.
 They will be arranged by platform identifier, as returned by `System.getProperty("os.name")` and `System.getProperty("os.arch")`.
@@ -210,6 +198,8 @@ They will be arranged by platform identifier, as returned by `System.getProperty
         └── amd64
             └── native_lib.dll
 ```
+
+This whole process will be produced both locally and in CI/CD.
 
 ### Libraries Specifications
 
@@ -351,7 +341,9 @@ This provides Public Keys, Private Keys, and Signatures and operations to produc
 ###### `SignatureSchema`
 
 A pairings signature scheme can be implemented with different types of curves and group assignment configurations.
-For example, two different configurations might consist of a `BLS_12_381` curve using `G₁` of the pairing to generate public key elements or `G₂` for the same purpose.
+For example, two different configurations might consist of a `BLS_12_381` curve using short signatures or short public keys
+(which translates to choosing `G₁` of the curve to generate public key elements or `G₂` for the same purpose).
+This class allows to specify those parameters internally, so users of the library don't need to keep track of the specific parameters that were used to produce the keys or signatures.
 
 ###### `PairingsPrivateKey`
 
@@ -391,22 +383,20 @@ return { c1, c2 }
 
 ##### Serialization Note
 
-Consumers of this library should not need the `pairings-api` in compile time, it should only be a runtime dependency.
-There is no use for them to understand the elements inside as points on the curve.
+Consumers of this library should not need to understand the elements as points on the curve. It is sufficient for them to interact with an opaque representation.
 To decouple the keys and signatures from the api, internal structure of the signatures and the keys should be stored in byte arrays or a serializable structure.
 
 Two possibilities :
 1. **Use arkworks-based serialization mechanism**
-
-        This serialization mechanism uses the encoding defined for the `parings-api` and its ability to produce byte arrays from its components.
-        Given that we have the guarantee to be canonical, and that we do not plan for internal java consumers to need to operate with the individual values.
-        Pros:
-           - decouples the serialization mechanism from the pairings internal structure and allows to switch curves with 0 impact on the consumers
-           - It allows consumers that have no access or cannot use serialization libraries such as protobuf
-           - Simple and reduced effort, low infra support needed.
-        Cons
-           - It is coupled to arkworks serialization mecanism
-           - The communication needs to happen verbally or through documents and there is no technical interface we can share.
+This serialization mechanism uses the encoding defined for the `parings-api` and its ability to produce byte arrays from its components.
+Given that we have the guarantee to be canonical, and that we do not plan for internal java consumers to need to operate with the individual values.
+Pros:
+- decouples the serialization mechanism from the pairings internal structure and allows to switch curves with 0 impact on the consumers
+- It allows consumers that have no access or cannot use serialization libraries such as protobuf
+- Simple and reduced effort, low infra support needed.
+Cons:
+- It is coupled to arkworks serialization mecanism
+- The communication needs to happen verbally or through documents and there is no technical interface we can share.
 
 2. **Use Protobuf serialization**
    This serialization mechanism consist on generating a structure that represents the internal representation of PublicKey, PrivateKey, Signature in a defined protobuf schema.
@@ -414,7 +404,7 @@ Two possibilities :
    Pros:
    - Allows to share a schema to know how to interpret the curve
    - Any client that can use protobuf can interpret our elements
-     Cons
+     Cons:
    - Only clients that can use protobuf can interpret signatures, and public keys
    - By producing a structure for the internals of the pairings api, new curves would need new structures.
 
@@ -593,7 +583,7 @@ List<TssPublicShare> publicShares = service.computePublicShare(participantDirect
 Given Participant's `TssEncryptionPrivateKey` and precisely `t` number of validated messages (t=threshold)
 The participant will decrypt all `Cᵢ` to generate an aggregated value `sᵢ` that will become a  `SecretShare(sidᵢ, sᵢ)` for each `ShareId`: `sidᵢ` owned.
 
-**Note:** All participants must choose the same set of valid `TssMessages` and have a threshold number of valid messages.
+**Note:** All participants must choose the same set of valid `TssMessages` and have a threshold number of them.
 
 ![img_1.svg](img_1.svg)
 
@@ -710,7 +700,7 @@ Helper class that will load a library for the current O.S/Architecture
 
 ## Test Plan
 
-Refer to: [Test Plan](https://docs.google.com/document/d/1Dc22J8-E39Bq__soPwh1yhDPrhXZE_aeoeJeBaugapo/edit#heading=h.3hs6fjub75xl)
+Refer to: [TSS-Library-Test-Plan.md](TSS-Library-Test-Plan.md)
 
 ### Performance Testing
 
