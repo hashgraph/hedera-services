@@ -19,7 +19,6 @@ package com.swirlds.platform.test.event;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.hedera.hapi.platform.event.GossipEvent;
-import com.hedera.pbj.runtime.ParseException;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.common.test.fixtures.io.InputOutputStream;
@@ -29,8 +28,12 @@ import org.junit.jupiter.api.Test;
 
 public class GossipEventTest {
 
+    /**
+     * Tests the serialization of a {@link GossipEvent} object alonside legacy
+     * {@link com.swirlds.common.io.SelfSerializable} objects.
+     */
     @Test
-    void gossipEventSerializationTest() throws IOException, ParseException {
+    void pbjSerializationTest() throws IOException {
         final Randotron r = Randotron.create();
         final Hash serializable = r.nextHash();
         final GossipEvent original = new TestingEventBuilder(r)

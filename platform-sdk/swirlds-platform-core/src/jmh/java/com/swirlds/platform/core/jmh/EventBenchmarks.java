@@ -92,7 +92,7 @@ public class EventBenchmarks {
     @Benchmark
     @BenchmarkMode(Mode.Throughput)
     @OutputTimeUnit(TimeUnit.MILLISECONDS)
-    public void serializeDeserialize(final Blackhole bh) throws IOException, ParseException {
+    public void serializeDeserialize(final Blackhole bh) throws IOException {
         // results on Lazar's M1 Max MacBook Pro:
         //
         // Benchmark                                (seed)   Mode  Cnt    Score    Error   Units

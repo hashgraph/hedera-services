@@ -287,6 +287,18 @@ public class SerializableDataOutputStream extends AugmentedDataOutputStream {
         this.writeInt(serializable.getVersion());
     }
 
+    /**
+     * Write a PBJ record to the stream
+     *
+     * @param record
+     * 		the record to write
+     * @param codec
+     * 		the codec to use to write the record
+     * @param <T>
+     * 		the type of the record
+     * @throws IOException
+     * 		thrown if any IO problems occur
+     */
     public <T extends Record> void writePbjRecord(@NonNull final T record, @NonNull final Codec<T> codec)
             throws IOException {
         writeInt(codec.measureRecord(record));

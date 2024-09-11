@@ -581,6 +581,14 @@ public class SerializableDataInputStream extends AugmentedDataInputStream {
         return rc;
     }
 
+    /**
+     * Reads a PBJ record from the stream.
+     *
+     * @param codec the codec to use to parse the record
+     * @param <T>   the type of the record
+     * @return the parsed record
+     * @throws IOException if an IO error occurs
+     */
     public @NonNull <T extends Record> T readPbjRecord(@NonNull final Codec<T> codec) throws IOException {
         final int size = readInt();
         readableSequentialData.limit(readableSequentialData.position() + size);

@@ -46,7 +46,7 @@ import java.util.Objects;
 import java.util.concurrent.CountDownLatch;
 
 /**
- * A class used to hold information about an event transferred through gossip
+ * A class used to hold information about an event throughout its lifecycle.
  */
 public class PlatformEvent implements ConsensusEvent, Hashable {
     private static final EventConsensusData NO_CONSENSUS =
@@ -96,6 +96,8 @@ public class PlatformEvent implements ConsensusEvent, Hashable {
     private long birthRound;
 
     /**
+     * Construct a new instance from an unsigned event and a signature.
+     *
      * @param unsignedEvent the unsigned event
      * @param signature     the signature for the event
      */
@@ -110,6 +112,8 @@ public class PlatformEvent implements ConsensusEvent, Hashable {
     }
 
     /**
+     * Construct a new instance from a gossip event.
+     *
      * @param gossipEvent the gossip event
      * @throws NullPointerException if gossipEvent or any of its fields are null
      */
