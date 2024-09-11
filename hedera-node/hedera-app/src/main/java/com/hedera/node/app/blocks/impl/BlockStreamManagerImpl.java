@@ -534,6 +534,10 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
 
     @Override
     public void notify(final StateHashedNotification notification) {
+        log.info(
+                "StateHashedNotification Received : hash: {}, roundNumber: {}",
+                notification.hash(),
+                notification.round());
         final var ref = roundHashes.computeIfAbsent(notification.round(), k -> new AtomicReference<>());
         ref.compareAndSet(null, completedFuture(notification.hash().getBytes()));
         ref.get().complete(notification.hash().getBytes());
