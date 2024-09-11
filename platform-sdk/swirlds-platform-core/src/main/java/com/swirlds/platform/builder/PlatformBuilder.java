@@ -563,7 +563,7 @@ public final class PlatformBuilder {
             // Update the address book with the current address book read from config.txt.
             // Eventually we will not do this, and only transactions will be capable of
             // modifying the address book.
-            final PlatformStateAccessor platformState = state.getPlatformState();
+            final PlatformStateAccessor platformState = state.getWritablePlatformState();
             platformState.bulkUpdate(v -> {
                 v.setAddressBook(addressBookInitializer.getCurrentAddressBook().copy());
                 v.setPreviousAddressBook(
@@ -577,7 +577,7 @@ public final class PlatformBuilder {
 
         // At this point the initial state must have the current address book set.  If not, something is wrong.
         final AddressBook addressBook =
-                initialState.get().getState().getPlatformState().getAddressBook();
+                initialState.get().getState().getReadablePlatformState().getAddressBook();
         if (addressBook == null) {
             throw new IllegalStateException("The current address book of the initial state is null.");
         }

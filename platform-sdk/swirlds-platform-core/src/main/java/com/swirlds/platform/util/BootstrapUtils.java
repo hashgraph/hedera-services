@@ -45,6 +45,7 @@ import com.swirlds.platform.health.clock.OSClockSpeedSourceChecker;
 import com.swirlds.platform.health.entropy.OSEntropyChecker;
 import com.swirlds.platform.health.filesystem.OSFileSystemChecker;
 import com.swirlds.platform.network.Network;
+import com.swirlds.platform.state.MerkleRoot;
 import com.swirlds.platform.state.address.AddressBookNetworkUtils;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.swirldapp.AppLoaderException;
@@ -192,9 +193,13 @@ public final class BootstrapUtils {
             @NonNull final SoftwareVersion appVersion, @Nullable final SignedState loadedSignedState) {
         Objects.requireNonNull(appVersion, "The app version must not be null.");
 
-        final SoftwareVersion loadedSoftwareVersion = loadedSignedState == null
-                ? null
-                : loadedSignedState.getState().getPlatformState().getCreationSoftwareVersion();
+        final SoftwareVersion loadedSoftwareVersion;
+        if (loadedSignedState == null) {
+            loadedSoftwareVersion = null;
+        } else {
+            MerkleRoot state = loadedSignedState.getState();
+            loadedSoftwareVersion = state.getReadablePlatformState().getCreationSoftwareVersion();
+        }
         final int versionComparison = loadedSoftwareVersion == null ? 1 : appVersion.compareTo(loadedSoftwareVersion);
         final boolean softwareUpgrade;
         if (versionComparison < 0) {
