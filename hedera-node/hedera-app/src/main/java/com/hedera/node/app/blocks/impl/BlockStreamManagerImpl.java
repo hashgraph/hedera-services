@@ -152,6 +152,7 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
         this.roundsPerBlock = config.getConfigData(BlockStreamConfig.class).roundsPerBlock();
         this.blockHashManager = new BlockHashManager(config);
         this.runningHashManager = new RunningHashManager();
+        roundHashes.put(0L, new AtomicReference<>(completedFuture(Bytes.wrap(new byte[HASH_SIZE]))));
     }
 
     @Override
@@ -222,32 +223,30 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
 
             final var leftParent = combine(lastBlockHash, inputHash);
 
-            final var blockStartStateHashRef = roundHashes.computeIfAbsent(roundNum, (k) -> new AtomicReference<>());
+            final var blockStartStateHashRef =
+                    roundHashes.computeIfAbsent(roundNum - 1, (k) -> new AtomicReference<>());
             final CompletableFuture<Bytes> blockStartStateFuture = new CompletableFuture<>();
             blockStartStateHashRef.compareAndSet(null, blockStartStateFuture);
-            log.info("Blocking in {} in round {}", Thread.currentThread().getName(), roundNum);
-            final var blockStartStateHashFuture = blockStartStateHashRef.get();
-            blockStartStateHashFuture.thenAccept(blockStartStateHash -> {
-                // Continue processing with blockStartStateHash
-                final var rightParent = combine(outputHash, blockStartStateHash);
-                final var blockHash = combine(leftParent, rightParent);
-                final var pendingProof = BlockProof.newBuilder()
-                        .block(blockNumber)
-                        .previousBlockRootHash(lastBlockHash)
-                        .startOfBlockStateRootHash(blockStartStateHash);
-                pendingBlocks.add(new PendingBlock(
-                        blockNumber,
-                        blockHash,
-                        pendingProof,
-                        writer,
-                        new MerkleSiblingHash(false, inputHash),
-                        new MerkleSiblingHash(false, rightParent)));
-                // Update in-memory state to prepare for the next block
-                lastBlockHash = blockHash;
-                writer = null;
+            final var blockStartStateHash = blockStartStateHashRef.get().join();
 
-                tssBaseService.requestLedgerSignature(blockHash.toByteArray());
-            });
+            final var rightParent = combine(outputHash, blockStartStateHash);
+            final var blockHash = combine(leftParent, rightParent);
+            final var pendingProof = BlockProof.newBuilder()
+                    .block(blockNumber)
+                    .previousBlockRootHash(lastBlockHash)
+                    .startOfBlockStateRootHash(blockStartStateHash);
+            pendingBlocks.add(new PendingBlock(
+                    blockNumber,
+                    blockHash,
+                    pendingProof,
+                    writer,
+                    new MerkleSiblingHash(false, inputHash),
+                    new MerkleSiblingHash(false, rightParent)));
+            // Update in-memory state to prepare for the next block
+            lastBlockHash = blockHash;
+            writer = null;
+
+            tssBaseService.requestLedgerSignature(blockHash.toByteArray());
         }
     }
 
@@ -535,10 +534,6 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
 
     @Override
     public void notify(final StateHashedNotification notification) {
-        log.info(
-                "StateHashedNotification Received : hash: {}, roundNumber: {}",
-                notification.hash(),
-                notification.round());
         final var ref = roundHashes.computeIfAbsent(notification.round(), k -> new AtomicReference<>());
         ref.compareAndSet(null, completedFuture(notification.hash().getBytes()));
         ref.get().complete(notification.hash().getBytes());
