@@ -21,7 +21,6 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.platform.state.PlatformState;
-import com.swirlds.platform.state.MerkleRoot;
 import com.swirlds.platform.state.MerkleStateRoot;
 import com.swirlds.platform.state.service.schemas.V0540PlatformStateSchema;
 import com.swirlds.state.merkle.singleton.SingletonNode;
@@ -33,8 +32,8 @@ import java.util.Collection;
 import java.util.List;
 
 /**
- * A service that provides the schema for the platform state, used by {@link MerkleStateRoot} to implement
- * {@link MerkleRoot#getPlatformState()}.
+ * A service that provides the schema for the platform state, used by {@link MerkleStateRoot}
+ * to implement accessors to the platform state.
  */
 public enum PlatformStateService implements Service {
     PLATFORM_STATE_SERVICE;

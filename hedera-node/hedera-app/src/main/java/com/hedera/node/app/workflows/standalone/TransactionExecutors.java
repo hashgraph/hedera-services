@@ -16,6 +16,8 @@
 
 package com.hedera.node.app.workflows.standalone;
 
+import static com.hedera.node.app.workflows.standalone.impl.NoopVerificationStrategies.NOOP_VERIFICATION_STRATEGIES;
+
 import com.hedera.node.app.config.BootstrapConfigProviderImpl;
 import com.hedera.node.app.config.ConfigProviderImpl;
 import com.hedera.node.app.service.contract.impl.ContractServiceImpl;
@@ -52,11 +54,14 @@ public enum TransactionExecutors {
         final var executor = newExecutorComponent(properties);
         executor.initializer().accept(state);
         executor.stateNetworkInfo().initFrom(state);
+        final var exchangeRateManager = executor.exchangeRateManager();
         return (transactionBody, consensusNow, operationTracers) -> {
             final var dispatch = executor.standaloneDispatchFactory().newDispatch(state, transactionBody, consensusNow);
             OPERATION_TRACERS.set(List.of(operationTracers));
             executor.dispatchProcessor().processDispatch(dispatch);
-            return dispatch.stack().buildHandleOutput(consensusNow).recordsOrThrow();
+            return dispatch.stack()
+                    .buildHandleOutput(consensusNow, exchangeRateManager.exchangeRates())
+                    .recordsOrThrow();
         };
     }
 
@@ -68,7 +73,8 @@ public enum TransactionExecutors {
                         bootstrapConfigProvider.getConfiguration().getConfigData(HederaConfig.class),
                         new SignatureExpanderImpl(),
                         new SignatureVerifierImpl(CryptographyHolder.get())));
-        final var contractService = new ContractServiceImpl(appContext, OPERATION_TRACERS::get);
+        final var contractService =
+                new ContractServiceImpl(appContext, NOOP_VERIFICATION_STRATEGIES, OPERATION_TRACERS::get);
         final var fileService = new FileServiceImpl();
         final var configProvider = new ConfigProviderImpl(false, null, properties);
         return DaggerExecutorComponent.builder()

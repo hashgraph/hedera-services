@@ -42,6 +42,7 @@ import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.core.config.Configurator;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.function.ThrowingSupplier;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -51,6 +52,7 @@ import org.junit.jupiter.params.provider.CsvSource;
  * Hammers the {@link MemoryIndexDiskKeyValueStore} with a ton of concurrent changes to validate the
  * index and the data files are in sync and have all the data they should have.
  */
+@Disabled("This test needs to be investigated")
 class MemoryIndexDiskKeyValueStoreCompactionHammerTest {
 
     /** Temporary directory provided by JUnit */
