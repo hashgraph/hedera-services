@@ -57,6 +57,7 @@ import com.hedera.node.app.service.token.impl.validators.TokenSupplyChangeOpsVal
 import com.hedera.node.app.service.token.records.TokenMintStreamBuilder;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
+import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
@@ -138,8 +139,14 @@ public class TokenMintHandler extends BaseTokenHandler implements TransactionHan
         if (token.tokenType() == TokenType.FUNGIBLE_COMMON) {
             validateTrue(op.amount() >= 0, INVALID_TOKEN_MINT_AMOUNT);
             // we need to know if treasury mint while creation to ignore supply key exist or not.
-            long newTotalSupply =
-                    mintFungible(token, treasuryRel, op.amount(), accountStore, tokenStore, tokenRelStore);
+            long newTotalSupply = mintFungible(
+                    token,
+                    treasuryRel,
+                    op.amount(),
+                    accountStore,
+                    tokenStore,
+                    tokenRelStore,
+                    context.expiryValidator());
             recordBuilder.newTotalSupply(newTotalSupply);
         } else {
             // get the config needed for validation
@@ -159,7 +166,8 @@ public class TokenMintHandler extends BaseTokenHandler implements TransactionHan
                     accountStore,
                     tokenStore,
                     tokenRelStore,
-                    nftStore);
+                    nftStore,
+                    context.expiryValidator());
             recordBuilder.newTotalSupply(tokenStore.get(tokenId).totalSupply());
             recordBuilder.serialNumbers(mintedSerials);
         }
@@ -182,14 +190,15 @@ public class TokenMintHandler extends BaseTokenHandler implements TransactionHan
      * serial number of the given base unique token, and increments total owned nfts of the
      * non-fungible token.
      *
-     * @param token        - the token to mint nfts for
-     * @param treasuryRel   - the treasury relation of the token
-     * @param metadata      - the metadata of the nft to be minted
-     * @param consensusTime - the consensus time of the transaction
-     * @param accountStore  - the account store
-     * @param tokenStore    - the token store
-     * @param tokenRelStore - the token relation store
-     * @param nftStore      - the nft store
+     * @param token           - the token to mint nfts for
+     * @param treasuryRel     - the treasury relation of the token
+     * @param metadata        - the metadata of the nft to be minted
+     * @param consensusTime   - the consensus time of the transaction
+     * @param accountStore    - the account store
+     * @param tokenStore      - the token store
+     * @param tokenRelStore   - the token relation store
+     * @param nftStore        - the nft store
+     * @param expiryValidator - the expiry validator
      */
     private List<Long> mintNonFungible(
             final Token token,
@@ -199,7 +208,8 @@ public class TokenMintHandler extends BaseTokenHandler implements TransactionHan
             @NonNull final WritableAccountStore accountStore,
             @NonNull final WritableTokenStore tokenStore,
             @NonNull final WritableTokenRelationStore tokenRelStore,
-            @NonNull final WritableNftStore nftStore) {
+            @NonNull final WritableNftStore nftStore,
+            @NonNull final ExpiryValidator expiryValidator) {
         final var metadataCount = metadata.size();
         validateFalse(metadata.isEmpty(), INVALID_TOKEN_MINT_METADATA);
 
@@ -207,15 +217,23 @@ public class TokenMintHandler extends BaseTokenHandler implements TransactionHan
         final var tokenId = treasuryRel.tokenId();
 
         // get the treasury account
-        var treasuryAccount = accountStore.get(treasuryRel.accountIdOrThrow());
-        validateTrue(treasuryAccount != null, INVALID_TREASURY_ACCOUNT_FOR_TOKEN);
+        var treasuryAccount = TokenHandlerHelper.getIfUsable(
+                treasuryRel.accountIdOrThrow(), accountStore, expiryValidator, INVALID_TREASURY_ACCOUNT_FOR_TOKEN);
 
         // get the latest serial number minted for the token
         var currentSerialNumber = token.lastUsedSerialNumber();
         validateTrue((currentSerialNumber + metadataCount) <= MAX_SERIAL_NO_ALLOWED, SERIAL_NUMBER_LIMIT_REACHED);
 
         // Change the supply on token
-        changeSupply(token, treasuryRel, metadataCount, FAIL_INVALID, accountStore, tokenStore, tokenRelStore);
+        changeSupply(
+                token,
+                treasuryRel,
+                metadataCount,
+                FAIL_INVALID,
+                accountStore,
+                tokenStore,
+                tokenRelStore,
+                expiryValidator);
         // Since changeSupply call above modifies the treasuryAccount, we need to get the modified treasuryAccount
         treasuryAccount = accountStore.get(treasuryRel.accountIdOrThrow());
         // The token is modified in previous step, so we need to get the modified token
