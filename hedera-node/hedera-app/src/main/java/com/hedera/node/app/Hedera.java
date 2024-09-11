@@ -806,6 +806,7 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener {
             notifications.unregister(ReconnectCompleteListener.class, daggerApp.reconnectListener());
             notifications.unregister(StateWriteToDiskCompleteListener.class, daggerApp.stateWriteToDiskListener());
             if (blockStreamEnabled) {
+                logger.info("Unregistering block stream manager");
                 notifications.unregister(StateHashedListener.class, daggerApp.blockStreamManager());
                 daggerApp.tssBaseService().unregisterLedgerSignatureConsumer(daggerApp.blockStreamManager());
             }
@@ -837,6 +838,7 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener {
         notifications.register(ReconnectCompleteListener.class, daggerApp.reconnectListener());
         notifications.register(StateWriteToDiskCompleteListener.class, daggerApp.stateWriteToDiskListener());
         if (blockStreamEnabled) {
+            logger.info("Registering block stream manager");
             notifications.register(StateHashedListener.class, daggerApp.blockStreamManager());
             daggerApp
                     .blockStreamManager()

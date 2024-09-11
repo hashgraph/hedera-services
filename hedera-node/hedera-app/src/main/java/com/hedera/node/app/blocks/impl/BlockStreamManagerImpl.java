@@ -66,8 +66,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 import javax.inject.Inject;
@@ -227,26 +225,29 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
             final var blockStartStateHashRef = roundHashes.computeIfAbsent(roundNum, (k) -> new AtomicReference<>());
             final CompletableFuture<Bytes> blockStartStateFuture = new CompletableFuture<>();
             blockStartStateHashRef.compareAndSet(null, blockStartStateFuture);
-            final var blockStartStateHash = blockStartStateHashRef.get().join();
+            log.info("Blocking in {} in round {}", Thread.currentThread().getName(), roundNum);
+            final var blockStartStateHashFuture = blockStartStateHashRef.get();
+            blockStartStateHashFuture.thenAccept(blockStartStateHash -> {
+                // Continue processing with blockStartStateHash
+                final var rightParent = combine(outputHash, blockStartStateHash);
+                final var blockHash = combine(leftParent, rightParent);
+                final var pendingProof = BlockProof.newBuilder()
+                        .block(blockNumber)
+                        .previousBlockRootHash(lastBlockHash)
+                        .startOfBlockStateRootHash(blockStartStateHash);
+                pendingBlocks.add(new PendingBlock(
+                        blockNumber,
+                        blockHash,
+                        pendingProof,
+                        writer,
+                        new MerkleSiblingHash(false, inputHash),
+                        new MerkleSiblingHash(false, rightParent)));
+                // Update in-memory state to prepare for the next block
+                lastBlockHash = blockHash;
+                writer = null;
 
-            final var rightParent = combine(outputHash, blockStartStateHash);
-            final var blockHash = combine(leftParent, rightParent);
-            final var pendingProof = BlockProof.newBuilder()
-                    .block(blockNumber)
-                    .previousBlockRootHash(lastBlockHash)
-                    .startOfBlockStateRootHash(blockStartStateHash);
-            pendingBlocks.add(new PendingBlock(
-                    blockNumber,
-                    blockHash,
-                    pendingProof,
-                    writer,
-                    new MerkleSiblingHash(false, inputHash),
-                    new MerkleSiblingHash(false, rightParent)));
-            // Update in-memory state to prepare for the next block
-            lastBlockHash = blockHash;
-            writer = null;
-
-            tssBaseService.requestLedgerSignature(blockHash.toByteArray());
+                tssBaseService.requestLedgerSignature(blockHash.toByteArray());
+            });
         }
     }
 
