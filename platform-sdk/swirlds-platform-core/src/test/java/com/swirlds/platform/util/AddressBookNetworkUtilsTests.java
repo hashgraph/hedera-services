@@ -32,6 +32,7 @@ import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.platform.builder.PlatformBuilder;
 import com.swirlds.platform.network.Network;
 import com.swirlds.platform.state.address.AddressBookNetworkUtils;
+import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
@@ -97,8 +98,7 @@ class AddressBookNetworkUtilsTests {
                 "name",
                 "swirldName",
                 new BasicSoftwareVersion(1),
-                () -> null,
-                (inputStream, path) -> null,
+                ReservedSignedState.createNullReservation(),
                 new NodeId(0));
 
         final Address address1 = new Address(new NodeId(1), "", "", 10, null, 77, null, 88, null, null, "");
@@ -106,7 +106,7 @@ class AddressBookNetworkUtilsTests {
         final AddressBook addressBook = new AddressBook();
         addressBook.add(address1);
         addressBook.add(address2);
-        platformBuilder.withBootstrapAddressBook(addressBook);
+        platformBuilder.withAddressBook(addressBook);
         final Roster roster = AddressBookUtils.createRoster(addressBook);
 
         assertNotNull(roster);
@@ -129,11 +129,10 @@ class AddressBookNetworkUtilsTests {
                 "name",
                 "swirldName",
                 new BasicSoftwareVersion(1),
-                () -> null,
-                (inputStream, path) -> null,
+                ReservedSignedState.createNullReservation(),
                 new NodeId(0));
         final AddressBook addressBook = new AddressBook();
-        platformBuilder.withBootstrapAddressBook(addressBook);
+        platformBuilder.withAddressBook(addressBook);
         final Roster roster = AddressBookUtils.createRoster(addressBook);
 
         assertNotNull(roster);
