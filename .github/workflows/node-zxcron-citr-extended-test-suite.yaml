@@ -54,7 +54,7 @@ jobs:
           TAG=${XTS_CANDIDATE_TAG}
           if [ $(git tag -l "${TAG}") ]; then
             echo "xts_tag_exists=true" >> $GITHUB_OUTPUT
-            xts_commit=`git rev-list -n 1 ${XTS_CANDIDATE_TAG}`"
+            xts_commit=`git rev-list -n 1 ${XTS_CANDIDATE_TAG}`
             git branch --contains ${xts_commit} | grep -q develop
             echo "xts_tag_commit=`${xts_commit}`" >> $GITHUB_OUTPUT 
             git tag -d ${XTS_CANDIDATE_TAG}
