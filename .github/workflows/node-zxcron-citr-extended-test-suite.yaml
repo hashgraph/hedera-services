@@ -70,7 +70,7 @@ jobs:
       enable-hammer-tests: true
       enable-hapi-tests-time-consuming: true
       enable-network-log-capture: true
-      ref-object: ${{ needs.fetch-xts-candidate.outputs.xts_tag_commit }}
+      ref: ${{ needs.fetch-xts-candidate.outputs.xts_tag_commit }}
     secrets:
       access-token: ${{ secrets.GITHUB_TOKEN }}
       gradle-cache-username: ${{ secrets.GRADLE_CACHE_USERNAME }}
