@@ -36,7 +36,6 @@ import java.util.Set;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -52,8 +51,7 @@ public class EventMigrationTest {
     public static Stream<Arguments> migrationTestArguments() {
         return Stream.of(
                 Arguments.of("eventFiles/previewnet-53/2024-08-26T10_38_35.016340634Z.events", 637, 4),
-                Arguments.of("eventFiles/testnet-53/2024-09-10T00_00_00.021456201Z.events", 635, 5)
-        );
+                Arguments.of("eventFiles/testnet-53/2024-09-10T00_00_00.021456201Z.events", 635, 5));
     }
 
     /**
@@ -67,18 +65,15 @@ public class EventMigrationTest {
      */
     @ParameterizedTest
     @MethodSource("migrationTestArguments")
-    public void migration(@NonNull final String fileName, final int numEventsExpected, final int unmatchedHashesExpected) throws URISyntaxException, IOException {
+    public void migration(
+            @NonNull final String fileName, final int numEventsExpected, final int unmatchedHashesExpected)
+            throws URISyntaxException, IOException {
         final Set<Hash> eventHashes = new HashSet<>();
         final Set<Hash> parentHashes = new HashSet<>();
         int numEventsFound = 0;
 
         try (final EventStreamSingleFileIterator iterator = new EventStreamSingleFileIterator(
-                new File(this.getClass()
-                                .getClassLoader()
-                                .getResource(fileName)
-                                .toURI())
-                        .toPath(),
-                false)) {
+                new File(this.getClass().getClassLoader().getResource(fileName).toURI()).toPath(), false)) {
             while (iterator.hasNext()) {
                 final PlatformEvent platformEvent = iterator.next().getPlatformEvent();
                 new DefaultEventHasher().hashEvent(platformEvent);
