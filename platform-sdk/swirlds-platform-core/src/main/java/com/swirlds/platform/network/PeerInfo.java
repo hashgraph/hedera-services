@@ -28,15 +28,13 @@ import java.security.cert.Certificate;
  * @param hostname           the hostname (or IP address) of the peer
  * @param signingCertificate the certificate used to validate the peer's TLS certificate
  */
-public record PeerInfo(
-        @NonNull NodeId nodeId,
-        @NonNull String hostname,
-        @NonNull Certificate signingCertificate) {
+public record PeerInfo(@NonNull NodeId nodeId, @NonNull String hostname, @NonNull Certificate signingCertificate) {
     /**
-     * Return a "node name" for the peer, e.g. "node0" for a peer with NodeId == 0.
+     * Return a "node name" for the peer, e.g. "node1" for a peer with NodeId == 0.
      * @return a "node name"
      */
-    @NonNull public String nodeName() {
+    @NonNull
+    public String nodeName() {
         return RosterUtils.formatNodeName(nodeId.id());
     }
 }

@@ -50,7 +50,6 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -61,7 +60,6 @@ class NetworkPeerIdentifierTest {
     final PlatformContext platformContext = mock(PlatformContext.class);
     List<PeerInfo> peerInfoList = null;
     PublicStores publicStores = null;
-
 
     @BeforeEach
     void setUp() throws URISyntaxException, KeyLoadingException, KeyStoreException {
@@ -84,7 +82,7 @@ class NetworkPeerIdentifierTest {
             if (!nameMatcher.matches()) {
                 throw new RuntimeException("Invalid node name " + name);
             }
-            final int id = Integer.parseInt(nameMatcher.group(1));
+            final int id = Integer.parseInt(nameMatcher.group(1)) - 1;
             final NodeId node = new NodeId(id);
             final PeerInfo peer;
             try {

@@ -25,7 +25,7 @@ public final class RosterUtils {
     private RosterUtils() {}
 
     /**
-     * Formats a "node name" for a given node id, e.g. "node0" for nodeId == 0.
+     * Formats a "node name" for a given node id, e.g. "node1" for nodeId == 0.
      * This name can be used for logging purposes, or to support code that
      * uses strings to identify nodes.
      *
@@ -34,6 +34,6 @@ public final class RosterUtils {
      */
     @NonNull
     public static String formatNodeName(final long nodeId) {
-        return "node" + nodeId;
+        return "node" + (nodeId + 1);
     }
 }
