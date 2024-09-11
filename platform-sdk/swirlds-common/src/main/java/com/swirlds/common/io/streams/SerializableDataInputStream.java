@@ -35,8 +35,10 @@ import com.swirlds.common.utility.ValueReference;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.DataInputStream;
+import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.BufferOverflowException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -585,6 +587,12 @@ public class SerializableDataInputStream extends AugmentedDataInputStream {
         try {
             return codec.parse(readableSequentialData);
         } catch (final ParseException e) {
+            if (e.getCause() instanceof BufferOverflowException) {
+                // PBJ Codec will throw a BufferOverflowException if it does not read enough bytes
+                final EOFException eofException = new EOFException("Buffer underflow while reading PBJ record");
+                eofException.addSuppressed(e);
+                throw eofException;
+            }
             throw new IOException(e);
         }
     }
