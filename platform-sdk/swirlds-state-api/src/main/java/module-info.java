@@ -17,6 +17,7 @@ module com.swirlds.state.api {
     requires transitive com.swirlds.virtualmap;
     requires transitive com.hedera.pbj.runtime;
     requires com.swirlds.fcqueue;
+    requires com.swirlds.logging;
     requires com.swirlds.merkledb;
     requires org.apache.logging.log4j;
     requires static transitive com.github.spotbugs.annotations;
