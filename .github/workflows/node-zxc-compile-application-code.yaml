@@ -494,7 +494,7 @@ jobs:
       - name: Publish to Codacy
         env:
           CODACY_PROJECT_TOKEN: ${{ secrets.codacy-project-token }}
-        if: ${{ inputs.enable-unit-tests && !cancelled() && github.event.pull_request.head.repo.full_name == 'org/repo' }}
+        if: ${{ inputs.enable-unit-tests && !cancelled() && github.event.pull_request.head.repo.full_name == github.repository }}
         run: bash <(curl -Ls https://coverage.codacy.com/get.sh) report -l Java -r gradle/reports/build/reports/jacoco/testCodeCoverageReport/testCodeCoverageReport.xml
 
       - name: Upload Test Reports
