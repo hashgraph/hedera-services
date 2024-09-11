@@ -17,8 +17,9 @@
 plugins {
     id("com.hedera.gradle.platform")
     id("com.hedera.gradle.platform-publish")
-    id("com.hedera.gradle.benchmark")
-    id("com.hedera.gradle.java-test-fixtures")
+    id("com.hedera.gradle.feature.benchmark")
+    id("com.hedera.gradle.feature.test-fixtures")
+    id("com.hedera.gradle.feature.test-timing-sensitive")
 }
 
 // Remove the following line to enable all 'javac' lint checks that we have turned on by default
@@ -27,8 +28,10 @@ tasks.withType<JavaCompile>().configureEach {
     options.compilerArgs.add("-Xlint:-exports,-varargs,-static")
 }
 
-testModuleInfo {
-    requires("org.junit.jupiter.api")
+testModuleInfo { requires("org.junit.jupiter.api") }
+
+timingSensitiveModuleInfo {
+    requires("com.swirlds.base.test.fixtures")
     requires("org.assertj.core")
-    requires("com.swirlds.common.test.fixtures")
+    requires("org.junit.jupiter.api")
 }

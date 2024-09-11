@@ -25,7 +25,8 @@ import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
 import com.hedera.node.app.service.contract.impl.annotations.TransactionScope;
 import com.hedera.node.app.service.contract.impl.exec.failure.AbortException;
 import com.hedera.node.app.service.contract.impl.exec.gas.CustomGasCharging;
-import com.hedera.node.app.service.contract.impl.hevm.ActionSidecarContentTracer;
+import com.hedera.node.app.service.contract.impl.exec.tracers.AddOnEvmActionTracer;
+import com.hedera.node.app.service.contract.impl.exec.tracers.EvmActionTracer;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmContext;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmTransaction;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmTransactionResult;
@@ -39,10 +40,12 @@ import com.hedera.node.config.data.ContractsConfig;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.Callable;
 import java.util.function.Supplier;
 import javax.inject.Inject;
+import org.hyperledger.besu.evm.tracing.OperationTracer;
 
 /**
  * A small utility that runs the
@@ -59,8 +62,11 @@ public class ContextTransactionProcessor implements Callable<CallOutcome> {
     @Nullable
     private final HydratedEthTxData hydratedEthTxData;
 
+    @Nullable
+    private final Supplier<List<OperationTracer>> addOnTracers;
+
     private final TransactionProcessor processor;
-    private final ActionSidecarContentTracer tracer;
+    private final EvmActionTracer evmActionTracer;
     private final RootProxyWorldUpdater rootProxyWorldUpdater;
     public final HevmTransactionFactory hevmTransactionFactory;
     private final Supplier<HederaWorldUpdater> feesOnlyUpdater;
@@ -73,7 +79,8 @@ public class ContextTransactionProcessor implements Callable<CallOutcome> {
             @NonNull final ContractsConfig contractsConfig,
             @NonNull final Configuration configuration,
             @NonNull final HederaEvmContext hederaEvmContext,
-            @NonNull final ActionSidecarContentTracer tracer,
+            @Nullable Supplier<List<OperationTracer>> addOnTracers,
+            @NonNull final EvmActionTracer evmActionTracer,
             @NonNull final RootProxyWorldUpdater worldUpdater,
             @NonNull final HevmTransactionFactory hevmTransactionFactory,
             @NonNull final Supplier<HederaWorldUpdater> feesOnlyUpdater,
@@ -81,7 +88,8 @@ public class ContextTransactionProcessor implements Callable<CallOutcome> {
             @NonNull final CustomGasCharging customGasCharging) {
         this.context = Objects.requireNonNull(context);
         this.hydratedEthTxData = hydratedEthTxData;
-        this.tracer = Objects.requireNonNull(tracer);
+        this.addOnTracers = addOnTracers;
+        this.evmActionTracer = Objects.requireNonNull(evmActionTracer);
         this.feesOnlyUpdater = Objects.requireNonNull(feesOnlyUpdater);
         this.processor = Objects.requireNonNull(processor);
         this.rootProxyWorldUpdater = Objects.requireNonNull(worldUpdater);
@@ -107,6 +115,9 @@ public class ContextTransactionProcessor implements Callable<CallOutcome> {
 
         // Process the transaction and return its outcome
         try {
+            final var tracer = addOnTracers != null
+                    ? new AddOnEvmActionTracer(evmActionTracer, addOnTracers.get())
+                    : evmActionTracer;
             var result = processor.processTransaction(
                     hevmTransaction, rootProxyWorldUpdater, feesOnlyUpdater, hederaEvmContext, tracer, configuration);
 

@@ -22,7 +22,6 @@ import com.esaulpaugh.headlong.abi.Function;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.AbstractCallTranslator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.Arrays;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -45,7 +44,7 @@ public class IsApprovedForAllTranslator extends AbstractCallTranslator<HtsCallAt
      */
     @Override
     public boolean matches(@NonNull final HtsCallAttempt attempt) {
-        return matchesClassicSelector(attempt.selector()) || matchesErcSelector(attempt.selector());
+        return attempt.isSelector(CLASSIC_IS_APPROVED_FOR_ALL, ERC_IS_APPROVED_FOR_ALL);
     }
 
     /**
@@ -53,7 +52,7 @@ public class IsApprovedForAllTranslator extends AbstractCallTranslator<HtsCallAt
      */
     @Override
     public IsApprovedForAllCall callFrom(@NonNull final HtsCallAttempt attempt) {
-        if (matchesErcSelector(attempt.selector())) {
+        if (attempt.isSelector(ERC_IS_APPROVED_FOR_ALL)) {
             final var args = ERC_IS_APPROVED_FOR_ALL.decodeCall(attempt.input().toArrayUnsafe());
             return new IsApprovedForAllCall(
                     attempt.systemContractGasCalculator(),
@@ -74,13 +73,5 @@ public class IsApprovedForAllTranslator extends AbstractCallTranslator<HtsCallAt
                     args.get(2),
                     false);
         }
-    }
-
-    private boolean matchesClassicSelector(@NonNull final byte[] selector) {
-        return Arrays.equals(selector, CLASSIC_IS_APPROVED_FOR_ALL.selector());
-    }
-
-    private boolean matchesErcSelector(@NonNull final byte[] selector) {
-        return Arrays.equals(selector, ERC_IS_APPROVED_FOR_ALL.selector());
     }
 }

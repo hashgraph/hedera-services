@@ -41,7 +41,6 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 import java.util.concurrent.ScheduledExecutorService;
-import org.jetbrains.annotations.NotNull;
 
 /**
  * An embedded Hedera node that handles transactions synchronously on ingest and thus
@@ -69,7 +68,7 @@ class RepeatableEmbeddedHedera extends AbstractEmbeddedHedera implements Embedde
     }
 
     @Override
-    public void tick(@NotNull Duration duration) {
+    public void tick(@NonNull Duration duration) {
         time.tick(duration);
     }
 
@@ -95,8 +94,10 @@ class RepeatableEmbeddedHedera extends AbstractEmbeddedHedera implements Embedde
         }
         if (response.getNodeTransactionPrecheckCode() == OK) {
             hedera.onPreHandle(platform.lastCreatedEvent, state);
+            final var round = platform.nextConsensusRound();
             // Handle each transaction in own round
-            hedera.handleWorkflow().handleRound(state, platformState, platform.nextConsensusRound());
+            hedera.handleWorkflow().handleRound(state, round);
+            hedera.onSealConsensusRound(round, state);
         }
         return response;
     }

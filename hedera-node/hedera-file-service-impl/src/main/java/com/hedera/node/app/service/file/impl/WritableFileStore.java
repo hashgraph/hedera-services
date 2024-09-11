@@ -95,7 +95,7 @@ public class WritableFileStore extends ReadableFileStoreImpl {
     /**
      * Returns the number of files in the state.
      *
-     * @return the number of files in the state.
+     * @return the number of files in the state
      */
     public long sizeOfState() {
         return filesState.size();

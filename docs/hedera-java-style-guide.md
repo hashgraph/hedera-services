@@ -536,6 +536,10 @@ static analysis tools to issue a warning if any cases were missed.
 
 #### 4.8.5 Annotations
 
+Do not use the annotations defined in the `javax.annotation` or `org.jetbrains.annotations` packages anywhere,
+instead use only annotations from the Spotbugs package
+(defined here: https://spotbugs.readthedocs.io/en/latest/annotations.html)
+
 ##### 4.8.5.1 Type-use annotations
 
 Type-use annotations appear immediately before the annotated type. An annotation is a type-use

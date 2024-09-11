@@ -22,7 +22,7 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 
 /**
  * Provides read-only methods for interacting with the underlying data storage mechanisms for
- * working with freeze state
+ * working with freeze state.
  */
 public interface ReadableFreezeStore {
     /**
@@ -34,7 +34,7 @@ public interface ReadableFreezeStore {
     Bytes updateFileHash();
 
     /**
-     * Returns the scheduled freeze time, or null if there is no freeze currently scheduled
+     * Returns the scheduled freeze time, or null if there is no freeze currently scheduled.
      */
     @Nullable
     Timestamp freezeTime();

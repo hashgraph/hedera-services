@@ -26,21 +26,21 @@ import java.util.List;
 public interface TokenBurnStreamBuilder extends TokenBaseStreamBuilder {
 
     /**
-     * Gets the new total supply of a token
+     * Gets the new total supply of a token.
      * @return new total supply of a token
      */
     long getNewTotalSupply();
 
     /**
-     * Sets the new total supply of a token
+     * Sets the new total supply of a token.
      * @param newTotalSupply the new total supply of a token
      * @return this builder
      */
     @NonNull
-    TokenBurnStreamBuilder newTotalSupply(final long newTotalSupply);
+    TokenBurnStreamBuilder newTotalSupply(long newTotalSupply);
 
     /**
-     * Sets the list of serial numbers burned
+     * Sets the list of serial numbers burned.
      * @param serialNumbers list of serial numbers burned
      * @return this builder
      */

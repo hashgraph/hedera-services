@@ -59,4 +59,18 @@ public @interface LeakyEmbeddedHapiTest {
      * @return the names of properties this test overrides
      */
     String[] overrides() default {};
+
+    /**
+     * If not blank, the path of a JSON file containing the throttles to apply to the test. The
+     * original contents of the throttles system file will be restored after the test completes.
+     * @return the name of a resource to load throttles from
+     */
+    String throttles() default "";
+
+    /**
+     * If not blank, the path of a JSON file containing the fee schedules to apply to the test. The
+     * original contents of the fee schedules system file will be restored after the test completes.
+     * @return the name of a resource to load fee schedules from
+     */
+    String fees() default "";
 }

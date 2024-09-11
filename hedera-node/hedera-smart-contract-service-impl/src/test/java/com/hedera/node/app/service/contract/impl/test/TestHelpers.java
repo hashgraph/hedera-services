@@ -91,6 +91,7 @@ import com.hedera.node.app.service.contract.impl.state.StorageAccesses;
 import com.hedera.node.app.spi.key.KeyUtils;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.ResourceExhaustedException;
+import com.hedera.node.config.data.AccountsConfig;
 import com.hedera.node.config.data.ContractsConfig;
 import com.hedera.node.config.data.EntitiesConfig;
 import com.hedera.node.config.data.HederaConfig;
@@ -143,6 +144,7 @@ public class TestHelpers {
     public static final HederaConfig DEFAULT_HEDERA_CONFIG = DEFAULT_CONFIG.getConfigData(HederaConfig.class);
     public static final ContractsConfig DEFAULT_CONTRACTS_CONFIG = DEFAULT_CONFIG.getConfigData(ContractsConfig.class);
     public static final EntitiesConfig DEFAULT_ENTITIES_CONFIG = DEFAULT_CONFIG.getConfigData(EntitiesConfig.class);
+    public static final AccountsConfig DEFAULT_ACCOUNTS_CONFIG = DEFAULT_CONFIG.getConfigData(AccountsConfig.class);
 
     public static final Configuration PERMITTED_CALLERS_CONFIG = HederaTestConfigBuilder.create()
             .withValue("contracts.permittedContractCallers", Set.of(1062787L))
@@ -626,6 +628,8 @@ public class TestHelpers {
             AccountID.newBuilder().accountNum(OWNER_ACCOUNT_NUM).build();
     public static final Account OWNER_ACCOUNT =
             Account.newBuilder().accountId(OWNER_ID).build();
+    public static final com.esaulpaugh.headlong.abi.Address OWNER_ACCOUNT_AS_ADDRESS =
+            asHeadlongAddress(asEvmAddress(OWNER_ACCOUNT.accountIdOrThrow().accountNumOrThrow()));
     public static final Bytes OWNER_ADDRESS = Bytes.fromHex("a213624b8b83a724438159ba7c0d333a2b6b3990");
     public static final com.esaulpaugh.headlong.abi.Address OWNER_HEADLONG_ADDRESS =
             asHeadlongAddress(OWNER_ADDRESS.toByteArray());
@@ -646,11 +650,13 @@ public class TestHelpers {
             asHeadlongAddress(APPROVED_ADDRESS.toByteArray());
 
     public static final AccountID RECEIVER_ID =
-            AccountID.newBuilder().accountNum(7773777L).build();
+            AccountID.newBuilder().accountNum(7773777L).build(); // 7773777L == 0x769e51
     public static final Bytes RECEIVER_ADDRESS = Bytes.fromHex("3b1ef340808e37344e8150037c0deee33060e123");
     public static final AccountID ALIASED_RECEIVER_ID =
             AccountID.newBuilder().alias(RECEIVER_ADDRESS).build();
 
+    public static final Account UNALIASED_RECEIVER =
+            Account.newBuilder().accountId(RECEIVER_ID).build();
     public static final Account ALIASED_RECEIVER =
             Account.newBuilder().accountId(RECEIVER_ID).alias(RECEIVER_ADDRESS).build();
 

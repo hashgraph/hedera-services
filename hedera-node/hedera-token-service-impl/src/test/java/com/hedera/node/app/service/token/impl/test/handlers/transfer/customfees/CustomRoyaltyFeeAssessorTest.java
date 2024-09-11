@@ -37,12 +37,12 @@ import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenTransferList;
 import com.hedera.hapi.node.base.TokenType;
 import com.hedera.hapi.node.base.TransferList;
+import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.transaction.AssessedCustomFee;
 import com.hedera.hapi.node.transaction.CustomFee;
 import com.hedera.hapi.node.transaction.FixedFee;
 import com.hedera.hapi.node.transaction.RoyaltyFee;
 import com.hedera.node.app.service.token.impl.handlers.transfer.customfees.AssessmentResult;
-import com.hedera.node.app.service.token.impl.handlers.transfer.customfees.CustomFeeMeta;
 import com.hedera.node.app.service.token.impl.handlers.transfer.customfees.CustomFixedFeeAssessor;
 import com.hedera.node.app.service.token.impl.handlers.transfer.customfees.CustomRoyaltyFeeAssessor;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -112,18 +112,18 @@ public class CustomRoyaltyFeeAssessorTest {
     void doesNothingIfNoValueExchangedAndNoFallback() {
         result = new AssessmentResult(List.of(nftTransferList), List.of());
 
-        final CustomFeeMeta feeMeta = withCustomFeeMeta(
+        final Token token = withCustomToken(
                 List.of(withFixedFee(fixedFee, otherCollector, false), withRoyaltyFee(royaltyFee, targetCollector)),
                 NON_FUNGIBLE_UNIQUE);
 
-        subject.assessRoyaltyFees(feeMeta, payer, funding, result);
+        subject.assessRoyaltyFees(token, payer, funding, result);
 
         assertThat(result.getAssessedCustomFees()).isEmpty();
         verify(fixedFeeAssessor, never()).assessFixedFee(any(), any(), any(), any());
 
         // We add to the set of royalties paid to track the royalties paid.
         // Even though nothing is paid, once its analyzed it should be added to the set
-        assertThat(result.getRoyaltiesPaid()).contains(Pair.of(funding, feeMeta.tokenId()));
+        assertThat(result.getRoyaltiesPaid()).contains(Pair.of(funding, token.tokenId()));
         assertThat(result.getAssessedCustomFees()).isEmpty();
     }
 
@@ -135,18 +135,17 @@ public class CustomRoyaltyFeeAssessorTest {
                 royaltyFee.copyBuilder().fallbackFee(hbarFallbackFee).build(), targetCollector);
         final var royaltyFixedFee = withFixedFee(fixedFee, otherCollector, false);
 
-        final CustomFeeMeta feeMeta =
-                withCustomFeeMeta(List.of(royaltyFixedFee, royaltyCustomFee), NON_FUNGIBLE_UNIQUE);
+        final Token token = withCustomToken(List.of(royaltyFixedFee, royaltyCustomFee), NON_FUNGIBLE_UNIQUE);
 
-        subject.assessRoyaltyFees(feeMeta, payer, funding, result);
+        subject.assessRoyaltyFees(token, payer, funding, result);
 
         assertThat(result.getAssessedCustomFees()).isEmpty();
         // receiver will pay the fallback fee
         verify(fixedFeeAssessor)
-                .assessFixedFee(feeMeta, funding, withFixedFee(hbarFallbackFee, targetCollector, false), result);
+                .assessFixedFee(token, funding, withFixedFee(hbarFallbackFee, targetCollector, false), result);
 
         // We add to the set of royalties paid to track the royalties paid. It should have an entry with receiver
-        assertThat(result.getRoyaltiesPaid()).contains(Pair.of(funding, feeMeta.tokenId()));
+        assertThat(result.getRoyaltiesPaid()).contains(Pair.of(funding, token.tokenId()));
     }
 
     @Test
@@ -157,18 +156,17 @@ public class CustomRoyaltyFeeAssessorTest {
                 royaltyFee.copyBuilder().fallbackFee(htsFallbackFee).build(), targetCollector);
         final var royaltyFixedFee = withFixedFee(fixedFee, otherCollector, false);
 
-        final CustomFeeMeta feeMeta =
-                withCustomFeeMeta(List.of(royaltyFixedFee, royaltyCustomFee), NON_FUNGIBLE_UNIQUE);
+        final Token token = withCustomToken(List.of(royaltyFixedFee, royaltyCustomFee), NON_FUNGIBLE_UNIQUE);
 
-        subject.assessRoyaltyFees(feeMeta, payer, funding, result);
+        subject.assessRoyaltyFees(token, payer, funding, result);
 
         assertThat(result.getAssessedCustomFees()).isEmpty();
         // receiver will pay the fallback fee
         verify(fixedFeeAssessor)
-                .assessFixedFee(feeMeta, funding, withFixedFee(htsFallbackFee, targetCollector, false), result);
+                .assessFixedFee(token, funding, withFixedFee(htsFallbackFee, targetCollector, false), result);
 
         // We add to the set of royalties paid to track the royalties paid. It should have an entry with receiver
-        assertThat(result.getRoyaltiesPaid()).contains(Pair.of(funding, feeMeta.tokenId()));
+        assertThat(result.getRoyaltiesPaid()).contains(Pair.of(funding, token.tokenId()));
     }
 
     @Test
@@ -179,17 +177,17 @@ public class CustomRoyaltyFeeAssessorTest {
                 royaltyFee.copyBuilder().fallbackFee(htsFallbackFee).build(), targetCollector);
         final var fixedFee = withFixedFee(this.fixedFee, otherCollector, false);
 
-        final CustomFeeMeta feeMeta = withCustomFeeMeta(List.of(fixedFee, royaltyCustomFee), NON_FUNGIBLE_UNIQUE);
+        final Token token = withCustomToken(List.of(fixedFee, royaltyCustomFee), NON_FUNGIBLE_UNIQUE);
 
-        subject.assessRoyaltyFees(feeMeta, payer, funding, result);
+        subject.assessRoyaltyFees(token, payer, funding, result);
 
         assertThat(result.getAssessedCustomFees()).isEmpty();
         // receiver will pay the fallback fee
         verify(fixedFeeAssessor)
-                .assessFixedFee(feeMeta, funding, withFixedFee(htsFallbackFee, targetCollector, false), result);
+                .assessFixedFee(token, funding, withFixedFee(htsFallbackFee, targetCollector, false), result);
 
         // We add to the set of royalties paid to track the royalties paid. It should have an entry with receiver
-        assertThat(result.getRoyaltiesPaid()).contains(Pair.of(funding, feeMeta.tokenId()));
+        assertThat(result.getRoyaltiesPaid()).contains(Pair.of(funding, token.tokenId()));
     }
 
     @Test
@@ -202,9 +200,9 @@ public class CustomRoyaltyFeeAssessorTest {
                 royaltyFee.copyBuilder().fallbackFee(htsFallbackFee).build(), targetCollector);
         final var fixedFee = withFixedFee(this.fixedFee, otherCollector, false);
 
-        final CustomFeeMeta feeMeta = withCustomFeeMeta(List.of(fixedFee, royaltyCustomFee), NON_FUNGIBLE_UNIQUE);
+        final Token token = withCustomToken(List.of(fixedFee, royaltyCustomFee), NON_FUNGIBLE_UNIQUE);
 
-        subject.assessRoyaltyFees(feeMeta, payer, funding, result);
+        subject.assessRoyaltyFees(token, payer, funding, result);
 
         assertThat(result.getAssessedCustomFees()).isEmpty();
 
@@ -221,9 +219,9 @@ public class CustomRoyaltyFeeAssessorTest {
                 royaltyFee.copyBuilder().fallbackFee(htsFallbackFee).build(), targetCollector);
         final var fixedFee = withFixedFee(this.fixedFee, otherCollector, false);
 
-        final CustomFeeMeta feeMeta = withCustomFeeMeta(List.of(fixedFee, royaltyCustomFee), NON_FUNGIBLE_UNIQUE);
+        final Token token = withCustomToken(List.of(fixedFee, royaltyCustomFee), NON_FUNGIBLE_UNIQUE);
 
-        subject.assessRoyaltyFees(feeMeta, payer, funding, result);
+        subject.assessRoyaltyFees(token, payer, funding, result);
 
         assertThat(result.getAssessedCustomFees()).isEmpty();
 
@@ -249,10 +247,9 @@ public class CustomRoyaltyFeeAssessorTest {
                 royaltyFee.copyBuilder().fallbackFee(htsFallbackFee).build(), targetCollector);
         final var royaltyFixedFee = withFixedFee(fixedFee, otherCollector, false);
 
-        final CustomFeeMeta feeMeta =
-                withCustomFeeMeta(List.of(royaltyFixedFee, royaltyCustomFee), NON_FUNGIBLE_UNIQUE);
+        final Token token = withCustomToken(List.of(royaltyFixedFee, royaltyCustomFee), NON_FUNGIBLE_UNIQUE);
 
-        subject.assessRoyaltyFees(feeMeta, payer, funding, result);
+        subject.assessRoyaltyFees(token, payer, funding, result);
 
         assertThat(result.getAssessedCustomFees()).isNotEmpty();
         assertThat(result.getAssessedCustomFees()).contains(hbarAssessedFee);
@@ -261,7 +258,7 @@ public class CustomRoyaltyFeeAssessorTest {
         verify(fixedFeeAssessor, never()).assessFixedFees(any(), any(), any());
 
         // We add to the set of royalties paid to track the royalties paid. It should have an entry with sender
-        assertThat(result.getRoyaltiesPaid()).contains(Pair.of(payer, feeMeta.tokenId()));
+        assertThat(result.getRoyaltiesPaid()).contains(Pair.of(payer, token.tokenId()));
     }
 
     @Test
@@ -283,17 +280,21 @@ public class CustomRoyaltyFeeAssessorTest {
                 royaltyFee.copyBuilder().fallbackFee(htsFallbackFee).build(), payer);
         final var royaltyFixedFee = withFixedFee(fixedFee, payer, false);
 
-        final CustomFeeMeta feeMeta =
-                withCustomFeeMeta(List.of(royaltyFixedFee, royaltyCustomFee), NON_FUNGIBLE_UNIQUE);
+        final Token token = withCustomToken(List.of(royaltyFixedFee, royaltyCustomFee), NON_FUNGIBLE_UNIQUE);
 
-        subject.assessRoyaltyFees(feeMeta, payer, funding, result);
+        subject.assessRoyaltyFees(token, payer, funding, result);
 
         assertThat(result.getAssessedCustomFees()).isEmpty();
         // sender will pay from exchange credits
         verify(fixedFeeAssessor, never()).assessFixedFees(any(), any(), any());
     }
 
-    public CustomFeeMeta withCustomFeeMeta(List<CustomFee> customFees, TokenType tokenType) {
-        return new CustomFeeMeta(firstFungibleTokenId, minter, customFees, tokenType);
+    public Token withCustomToken(List<CustomFee> customFees, TokenType tokenType) {
+        return Token.newBuilder()
+                .customFees(customFees)
+                .tokenId(firstFungibleTokenId)
+                .tokenType(tokenType)
+                .treasuryAccountId(minter)
+                .build();
     }
 }

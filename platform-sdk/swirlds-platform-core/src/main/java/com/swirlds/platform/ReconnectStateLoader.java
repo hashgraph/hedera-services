@@ -106,9 +106,8 @@ public class ReconnectStateLoader {
                     .getSwirldState()
                     .init(
                             platform,
-                            signedState.getState().getPlatformState(),
                             InitTrigger.RECONNECT,
-                            signedState.getState().getPlatformState().getCreationSoftwareVersion());
+                            signedState.getState().getReadablePlatformState().getCreationSoftwareVersion());
             if (!Objects.equals(signedState.getState().getHash(), reconnectHash)) {
                 throw new IllegalStateException(
                         "State hash is not permitted to change during a reconnect init() call. Previous hash was "
@@ -137,13 +136,13 @@ public class ReconnectStateLoader {
                     .getSignatureCollectorStateInput()
                     .put(signedState.reserve("loading reconnect state into sig collector"));
             platformWiring.consensusSnapshotOverride(Objects.requireNonNull(
-                    signedState.getState().getPlatformState().getSnapshot()));
+                    signedState.getState().getReadablePlatformState().getSnapshot()));
 
             platformWiring
                     .getAddressBookUpdateInput()
                     .inject(new AddressBookUpdate(
-                            signedState.getState().getPlatformState().getPreviousAddressBook(),
-                            signedState.getState().getPlatformState().getAddressBook()));
+                            signedState.getState().getReadablePlatformState().getPreviousAddressBook(),
+                            signedState.getState().getReadablePlatformState().getAddressBook()));
 
             final AncientMode ancientMode = platformContext
                     .getConfiguration()
@@ -152,12 +151,12 @@ public class ReconnectStateLoader {
 
             platformWiring.updateEventWindow(new EventWindow(
                     signedState.getRound(),
-                    signedState.getState().getPlatformState().getAncientThreshold(),
-                    signedState.getState().getPlatformState().getAncientThreshold(),
+                    signedState.getState().getReadablePlatformState().getAncientThreshold(),
+                    signedState.getState().getReadablePlatformState().getAncientThreshold(),
                     ancientMode));
 
             final RunningEventHashOverride runningEventHashOverride = new RunningEventHashOverride(
-                    signedState.getState().getPlatformState().getLegacyRunningEventHash(), true);
+                    signedState.getState().getReadablePlatformState().getLegacyRunningEventHash(), true);
             platformWiring.updateRunningHash(runningEventHashOverride);
             platformWiring.getPcesWriterRegisterDiscontinuityInput().inject(signedState.getRound());
 

@@ -32,7 +32,6 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCal
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.Arrays;
 import javax.inject.Inject;
 
 public class UpdateKeysTranslator extends AbstractCallTranslator<HtsCallAttempt> {
@@ -48,7 +47,7 @@ public class UpdateKeysTranslator extends AbstractCallTranslator<HtsCallAttempt>
 
     @Override
     public boolean matches(@NonNull HtsCallAttempt attempt) {
-        return Arrays.equals(attempt.selector(), TOKEN_UPDATE_KEYS_FUNCTION.selector());
+        return attempt.isSelector(TOKEN_UPDATE_KEYS_FUNCTION);
     }
 
     @Override

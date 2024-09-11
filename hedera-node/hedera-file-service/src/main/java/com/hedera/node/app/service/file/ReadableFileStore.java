@@ -51,7 +51,7 @@ public interface ReadableFileStore {
     /**
      * Returns the number of files in the state.
      *
-     * @return the number of files in the state.
+     * @return the number of files in the state
      */
     long sizeOfState();
 }

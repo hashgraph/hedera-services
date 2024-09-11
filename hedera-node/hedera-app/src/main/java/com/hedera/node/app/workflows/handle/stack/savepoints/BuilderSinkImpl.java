@@ -160,11 +160,6 @@ public class BuilderSinkImpl implements BuilderSink {
         return Math.min(maxFollowing - followingBuilders.size(), maxTotal - numBuilders());
     }
 
-    @Override
-    public List<StreamBuilder> followingBuilders() {
-        return followingBuilders;
-    }
-
     private int numBuilders() {
         return precedingBuilders.size() + followingBuilders.size();
     }

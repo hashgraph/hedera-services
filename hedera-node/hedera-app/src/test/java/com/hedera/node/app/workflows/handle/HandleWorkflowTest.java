@@ -16,15 +16,20 @@
 
 package com.hedera.node.app.workflows.handle;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static com.hedera.node.app.fixtures.AppTestBase.DEFAULT_CONFIG;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
 import com.hedera.hapi.node.base.SemanticVersion;
+import com.hedera.node.app.blocks.BlockStreamManager;
+import com.hedera.node.app.blocks.impl.BoundaryStateChangeListener;
+import com.hedera.node.app.blocks.impl.KVStateChangeListener;
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.fees.FeeManager;
 import com.hedera.node.app.records.BlockRecordManager;
+import com.hedera.node.app.service.token.impl.handlers.staking.StakePeriodManager;
 import com.hedera.node.app.services.ServiceScopeLookup;
 import com.hedera.node.app.spi.authorization.Authorizer;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
@@ -40,14 +45,15 @@ import com.hedera.node.app.workflows.handle.steps.HollowAccountCompletions;
 import com.hedera.node.app.workflows.handle.steps.NodeStakeUpdates;
 import com.hedera.node.app.workflows.prehandle.PreHandleWorkflow;
 import com.hedera.node.config.ConfigProvider;
+import com.hedera.node.config.VersionedConfigImpl;
 import com.swirlds.common.platform.NodeId;
-import com.swirlds.platform.state.PlatformState;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.events.ConsensusEvent;
 import com.swirlds.state.State;
 import com.swirlds.state.spi.info.NetworkInfo;
 import com.swirlds.state.spi.info.NodeInfo;
+import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -87,6 +93,9 @@ class HandleWorkflowTest {
     private NetworkUtilizationManager networkUtilizationManager;
 
     @Mock
+    private StakePeriodManager stakePeriodManager;
+
+    @Mock
     private ConfigProvider configProvider;
 
     @Mock
@@ -94,6 +103,9 @@ class HandleWorkflowTest {
 
     @Mock
     private BlockRecordManager blockRecordManager;
+
+    @Mock
+    private BlockStreamManager blockStreamManager;
 
     @Mock
     private CacheWarmer cacheWarmer;
@@ -129,15 +141,19 @@ class HandleWorkflowTest {
     private State state;
 
     @Mock
-    private PlatformState platformState;
+    private Round round;
 
     @Mock
-    private Round round;
+    private KVStateChangeListener kvStateChangeListener;
+
+    @Mock
+    private BoundaryStateChangeListener boundaryStateChangeListener;
 
     private HandleWorkflow subject;
 
     @BeforeEach
     void setUp() {
+        given(configProvider.getConfiguration()).willReturn(new VersionedConfigImpl(DEFAULT_CONFIG, 1L));
         subject = new HandleWorkflow(
                 networkInfo,
                 nodeStakeUpdates,
@@ -151,6 +167,7 @@ class HandleWorkflowTest {
                 configProvider,
                 storeMetricsService,
                 blockRecordManager,
+                blockStreamManager,
                 cacheWarmer,
                 handleWorkflowMetrics,
                 throttleServiceManager,
@@ -160,7 +177,11 @@ class HandleWorkflowTest {
                 systemSetup,
                 recordCache,
                 exchangeRateManager,
-                preHandleWorkflow);
+                preHandleWorkflow,
+                stakePeriodManager,
+                kvStateChangeListener,
+                boundaryStateChangeListener,
+                List.of());
     }
 
     @Test
@@ -177,9 +198,13 @@ class HandleWorkflowTest {
         given(networkInfo.nodeInfo(presentCreatorId.id())).willReturn(mock(NodeInfo.class));
         given(networkInfo.nodeInfo(missingCreatorId.id())).willReturn(null);
         given(eventFromPresentCreator.consensusTransactionIterator()).willReturn(Collections.emptyIterator());
+        given(round.getConsensusTimestamp()).willReturn(Instant.ofEpochSecond(12345L));
+        given(configProvider.getConfiguration()).willReturn(new VersionedConfigImpl(DEFAULT_CONFIG, 1));
 
-        subject.handleRound(state, platformState, round);
+        subject.handleRound(state, round);
 
         verify(eventFromPresentCreator).consensusTransactionIterator();
+        verify(recordCache).resetRoundReceipts();
+        verify(recordCache).commitRoundReceipts(any(), any());
     }
 }

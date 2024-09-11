@@ -58,7 +58,8 @@ public class ScheduleGetInfoHandler extends PaidQueryHandler {
     private final ScheduleOpsUsage legacyUsage;
 
     /**
-     * Constructor is used by the Dagger dependency injection framework to provide the necessary dependencies to the handler.
+     * Constructor is used by the Dagger dependency injection framework to provide the necessary dependencies
+     * to the handler.
      * The handler is responsible for handling the {@link HederaFunctionality#SCHEDULE_GET_INFO} query.
      *
      * @param legacyUsage the legacy usage

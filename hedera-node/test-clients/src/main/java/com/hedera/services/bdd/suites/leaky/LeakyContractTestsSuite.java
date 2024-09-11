@@ -18,7 +18,7 @@ package com.hedera.services.bdd.suites.leaky;
 
 import static com.google.protobuf.ByteString.EMPTY;
 import static com.hedera.node.app.hapi.utils.CommonUtils.asEvmAddress;
-import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
+import static com.hedera.node.app.hapi.utils.EthSigsUtils.recoverAddressFromPubKey;
 import static com.hedera.services.bdd.junit.ContextRequirement.FEE_SCHEDULE_OVERRIDES;
 import static com.hedera.services.bdd.junit.ContextRequirement.PROPERTY_OVERRIDES;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asContract;
@@ -83,7 +83,6 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.tokenTransferList;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.tokenTransferLists;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.uploadDefaultFeeSchedules;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.usableTxnIdNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.FULLY_NONDETERMINISTIC;
@@ -218,7 +217,6 @@ public class LeakyContractTestsSuite {
     private static final Logger log = LogManager.getLogger(LeakyContractTestsSuite.class);
     public static final String SENDER = "yahcliSender";
     public static final String RECEIVER = "yahcliReceiver";
-    private static final String CONTRACTS_NONCES_EXTERNALIZATION_ENABLED = "contracts.nonces.externalization.enabled";
     private static final KeyShape DELEGATE_CONTRACT_KEY_SHAPE =
             KeyShape.threshOf(1, KeyShape.SIMPLE, DELEGATE_CONTRACT);
     private static final String CRYPTO_TRANSFER = "CryptoTransfer";
@@ -450,8 +448,7 @@ public class LeakyContractTestsSuite {
                         getAccountDetails(ACCOUNT)
                                 .has(accountDetailsWith()
                                         .balanceLessThan(
-                                                INIT_ACCOUNT_BALANCE - REDUCED_NETWORK_FEE - REDUCED_NODE_FEE)),
-                        uploadDefaultFeeSchedules(GENESIS));
+                                                INIT_ACCOUNT_BALANCE - REDUCED_NETWORK_FEE - REDUCED_NODE_FEE)));
     }
 
     @HapiTest
@@ -1597,7 +1594,6 @@ public class LeakyContractTestsSuite {
 
         return hapiTest(
                 overriding("contracts.evm.version", "v0.38"),
-                uploadDefaultFeeSchedules(GENESIS),
                 newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                 cryptoCreate(RELAYER).balance(ONE_HUNDRED_HBARS),
                 cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS))
@@ -1605,8 +1601,6 @@ public class LeakyContractTestsSuite {
                 getTxnRecord("autoAccount").andAllChildRecords(),
                 uploadInitCode(PAY_RECEIVABLE_CONTRACT),
                 contractCreate(PAY_RECEIVABLE_CONTRACT).adminKey(THRESHOLD),
-                // The cost to the relayer to transmit a simple call with sufficient gas
-                // allowance is ≈ $0.0001
                 ethereumCall(PAY_RECEIVABLE_CONTRACT, DEPOSIT, BigInteger.valueOf(depositAmount))
                         .type(EthTxData.EthTransactionType.EIP1559)
                         .signingWith(SECP_256K1_SOURCE_KEY)
@@ -1619,9 +1613,8 @@ public class LeakyContractTestsSuite {
                         .gasLimit(1_000_000L)
                         .sending(depositAmount),
                 getAccountInfo(RELAYER)
-                        .has(accountWith().expectedBalanceWithChargedUsd(ONE_HUNDRED_HBARS, 0.0001, 0.5))
-                        .logged(),
-                uploadDefaultFeeSchedules(GENESIS));
+                        .has(accountWith().expectedBalanceWithChargedUsd(ONE_HUNDRED_HBARS, 0.0545, 0.5))
+                        .logged());
     }
 
     @Order(38)

@@ -74,7 +74,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.GeneratedMessageV3;
 import com.google.protobuf.InvalidProtocolBufferException;
-import com.hedera.node.app.hapi.utils.exception.UnknownHederaFunctionality;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ConsensusCreateTopicTransactionBody;
 import com.hederahashgraph.api.proto.java.ConsensusDeleteTopicTransactionBody;
@@ -212,7 +211,9 @@ class CommonUtilsTest {
 
     @Test
     void throwsOnUnexpectedFunctionality() {
-        assertThrows(UnknownHederaFunctionality.class, () -> functionOf(TransactionBody.getDefaultInstance()));
+        assertThrows(
+                com.hedera.hapi.util.UnknownHederaFunctionality.class,
+                () -> functionOf(TransactionBody.getDefaultInstance()));
     }
 
     @Test
@@ -271,7 +272,7 @@ class CommonUtilsTest {
             try {
                 final var input = txn.build();
                 assertEquals(function, functionOf(input));
-            } catch (final UnknownHederaFunctionality uhf) {
+            } catch (final com.hedera.hapi.util.UnknownHederaFunctionality uhf) {
                 Assertions.fail("Failed HederaFunctionality check :: " + uhf.getMessage());
             }
         });

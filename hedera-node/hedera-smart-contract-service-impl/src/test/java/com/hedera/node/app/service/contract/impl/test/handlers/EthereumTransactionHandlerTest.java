@@ -44,8 +44,8 @@ import com.hedera.node.app.service.contract.impl.exec.ContextTransactionProcesso
 import com.hedera.node.app.service.contract.impl.exec.TransactionComponent;
 import com.hedera.node.app.service.contract.impl.exec.TransactionProcessor;
 import com.hedera.node.app.service.contract.impl.exec.gas.CustomGasCharging;
+import com.hedera.node.app.service.contract.impl.exec.tracers.EvmActionTracer;
 import com.hedera.node.app.service.contract.impl.handlers.EthereumTransactionHandler;
-import com.hedera.node.app.service.contract.impl.hevm.ActionSidecarContentTracer;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmContext;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import com.hedera.node.app.service.contract.impl.hevm.HydratedEthTxData;
@@ -123,7 +123,7 @@ class EthereumTransactionHandlerTest {
     private HederaEvmContext hederaEvmContext;
 
     @Mock
-    private ActionSidecarContentTracer tracer;
+    private EvmActionTracer tracer;
 
     @Mock
     private Supplier<HederaWorldUpdater> feesOnlyUpdater;
@@ -159,6 +159,7 @@ class EthereumTransactionHandlerTest {
                 contractsConfig,
                 DEFAULT_CONFIG,
                 hederaEvmContext,
+                null,
                 tracer,
                 baseProxyWorldUpdater,
                 hevmTransactionFactory,
@@ -204,6 +205,18 @@ class EthereumTransactionHandlerTest {
         given(callRecordBuilder.withCommonFieldsSetFrom(expectedOutcome)).willReturn(callRecordBuilder);
 
         assertDoesNotThrow(() -> subject.handle(handleContext));
+    }
+
+    @Test
+    void setsEthHashOnThrottledContext() {
+        given(factory.create(handleContext, ETHEREUM_TRANSACTION)).willReturn(component);
+        given(component.hydratedEthTxData()).willReturn(HydratedEthTxData.successFrom(ETH_DATA_WITH_TO_ADDRESS));
+        given(handleContext.savepointStack()).willReturn(stack);
+        given(stack.getBaseBuilder(EthereumTransactionStreamBuilder.class)).willReturn(recordBuilder);
+        given(recordBuilder.ethereumHash(Bytes.wrap(ETH_DATA_WITH_TO_ADDRESS.getEthereumHash())))
+                .willReturn(recordBuilder);
+
+        assertDoesNotThrow(() -> subject.handleThrottled(handleContext));
     }
 
     @Test

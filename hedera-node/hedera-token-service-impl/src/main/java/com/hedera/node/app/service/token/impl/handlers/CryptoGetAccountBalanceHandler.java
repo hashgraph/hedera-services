@@ -48,6 +48,8 @@ import com.hedera.node.app.spi.workflows.FreeQueryHandler;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.QueryContext;
 import com.hedera.node.config.data.TokensConfig;
+import com.swirlds.common.metrics.SpeedometerMetric;
+import com.swirlds.metrics.api.Metrics;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.List;
@@ -60,12 +62,19 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class CryptoGetAccountBalanceHandler extends FreeQueryHandler {
+
+    private static final SpeedometerMetric.Config BALANCE_SPEEDOMETER_CONFIG = new SpeedometerMetric.Config(
+                    "app", "queriedAccountBalances")
+            .withDescription("Number of balances requested in GetAccountBalance queries per second");
+
+    private final SpeedometerMetric balanceSpeedometer;
+
     /**
      * Default constructor for injection.
      */
     @Inject
-    public CryptoGetAccountBalanceHandler() {
-        // Exists for injection
+    public CryptoGetAccountBalanceHandler(@NonNull final Metrics metrics) {
+        this.balanceSpeedometer = metrics.getOrCreate(BALANCE_SPEEDOMETER_CONFIG);
     }
 
     @Override
@@ -144,7 +153,9 @@ public class CryptoGetAccountBalanceHandler extends FreeQueryHandler {
             requireNonNull(account);
             response.accountID(account.accountIdOrThrow()).balance(account.tinybarBalance());
             if (config.balancesInQueriesEnabled()) {
-                response.tokenBalances(getTokenBalances(config, account, tokenStore, tokenRelationStore));
+                final var tokenBalances = getTokenBalances(config, account, tokenStore, tokenRelationStore);
+                balanceSpeedometer.update(tokenBalances.size());
+                response.tokenBalances(tokenBalances);
             }
         }
 
@@ -152,7 +163,7 @@ public class CryptoGetAccountBalanceHandler extends FreeQueryHandler {
     }
 
     /**
-     * Calculate TokenBalance of an Account
+     * Calculate TokenBalance of an Account.
      *
      * @param tokenConfig use TokenConfig to get maxRelsPerInfoQuery value
      * @param account the account to be calculated from

@@ -29,14 +29,13 @@ import static org.mockito.Mockito.when;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
-import com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags;
 import com.swirlds.common.test.fixtures.merkle.util.MerkleTestUtils;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.platform.config.StateConfig_;
 import com.swirlds.platform.state.MerkleRoot;
-import com.swirlds.platform.state.PlatformState;
+import com.swirlds.platform.state.PlatformStateAccessor;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.system.address.AddressBook;
@@ -45,7 +44,6 @@ import java.util.List;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.util.MessageSupplier;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 public class HashLoggerTest {
@@ -95,7 +93,6 @@ public class HashLoggerTest {
     }
 
     @Test
-    @Tag(TestQualifierTags.TIME_CONSUMING)
     public void loggingEarlierEventsDropped() {
         hashLogger.logHashes(createSignedState(1));
         hashLogger.logHashes(createSignedState(2));
@@ -152,17 +149,15 @@ public class HashLoggerTest {
         MerkleCryptoFactory.getInstance().digestTreeSync(merkleNode);
         final SignedState signedState = mock(SignedState.class);
         final MerkleRoot state = mock(MerkleRoot.class);
+        final PlatformStateAccessor platformState = mock(PlatformStateAccessor.class);
 
         final AddressBook addressBook = new AddressBook();
         addressBook.setHash(merkleNode.getHash());
 
-        final PlatformState platformState = new PlatformState();
+        when(platformState.getRound()).thenReturn(round);
+        when(platformState.getAddressBook()).thenReturn(addressBook);
 
-        platformState.setRound(round);
-        platformState.setHash(merkleNode.getHash());
-        platformState.setAddressBook(addressBook);
-
-        when(state.getPlatformState()).thenReturn(platformState);
+        when(state.getReadablePlatformState()).thenReturn(platformState);
         when(state.getRoute()).thenReturn(merkleNode.getRoute());
         when(state.getHash()).thenReturn(merkleNode.getHash());
 

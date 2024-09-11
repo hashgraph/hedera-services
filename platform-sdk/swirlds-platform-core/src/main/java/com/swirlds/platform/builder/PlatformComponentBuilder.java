@@ -67,7 +67,6 @@ import com.swirlds.platform.event.validation.EventSignatureValidator;
 import com.swirlds.platform.event.validation.InternalEventValidator;
 import com.swirlds.platform.eventhandling.DefaultTransactionHandler;
 import com.swirlds.platform.eventhandling.DefaultTransactionPrehandler;
-import com.swirlds.platform.eventhandling.EventConfig;
 import com.swirlds.platform.eventhandling.TransactionHandler;
 import com.swirlds.platform.eventhandling.TransactionPrehandler;
 import com.swirlds.platform.gossip.SyncGossip;
@@ -258,12 +257,7 @@ public class PlatformComponentBuilder {
     @NonNull
     public EventHasher buildEventHasher() {
         if (eventHasher == null) {
-            eventHasher = new DefaultEventHasher(
-                    blocks.appVersion().getPbjSemanticVersion(),
-                    blocks.platformContext()
-                            .getConfiguration()
-                            .getConfigData(EventConfig.class)
-                            .migrateEventHashing());
+            eventHasher = new DefaultEventHasher();
         }
         return eventHasher;
     }
@@ -366,7 +360,11 @@ public class PlatformComponentBuilder {
                     blocks.platformContext(),
                     CryptoStatic::verifySignature,
                     blocks.appVersion().getPbjSemanticVersion(),
-                    blocks.initialState().get().getState().getPlatformState().getPreviousAddressBook(),
+                    blocks.initialState()
+                            .get()
+                            .getState()
+                            .getReadablePlatformState()
+                            .getPreviousAddressBook(),
                     blocks.initialAddressBook(),
                     blocks.intakeEventCounter());
         }
@@ -865,7 +863,11 @@ public class PlatformComponentBuilder {
 
             issDetector = new DefaultIssDetector(
                     blocks.platformContext(),
-                    blocks.initialState().get().getState().getPlatformState().getAddressBook(),
+                    blocks.initialState()
+                            .get()
+                            .getState()
+                            .getReadablePlatformState()
+                            .getAddressBook(),
                     blocks.appVersion().getPbjSemanticVersion(),
                     ignorePreconsensusSignatures,
                     roundToIgnore);

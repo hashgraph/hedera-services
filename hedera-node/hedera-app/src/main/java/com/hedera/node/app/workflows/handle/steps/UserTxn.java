@@ -26,6 +26,9 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.state.blockrecords.BlockInfo;
+import com.hedera.hapi.platform.state.PlatformState;
+import com.hedera.node.app.blocks.impl.BoundaryStateChangeListener;
+import com.hedera.node.app.blocks.impl.KVStateChangeListener;
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.fees.FeeAccumulator;
 import com.hedera.node.app.fees.FeeManager;
@@ -41,7 +44,7 @@ import com.hedera.node.app.services.ServiceScopeLookup;
 import com.hedera.node.app.signature.DefaultKeyVerifier;
 import com.hedera.node.app.spi.authorization.Authorizer;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
-import com.hedera.node.app.spi.records.RecordCache;
+import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.record.StreamBuilder;
 import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.app.store.ServiceApiFactory;
@@ -54,18 +57,20 @@ import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.app.workflows.handle.Dispatch;
 import com.hedera.node.app.workflows.handle.DispatchHandleContext;
 import com.hedera.node.app.workflows.handle.DispatchProcessor;
-import com.hedera.node.app.workflows.handle.HandleWorkflow;
 import com.hedera.node.app.workflows.handle.RecordDispatch;
 import com.hedera.node.app.workflows.handle.TransactionType;
 import com.hedera.node.app.workflows.handle.dispatch.ChildDispatchFactory;
 import com.hedera.node.app.workflows.handle.record.TokenContextImpl;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.node.app.workflows.prehandle.PreHandleResult;
+import com.hedera.node.app.workflows.prehandle.PreHandleWorkflow;
 import com.hedera.node.config.ConfigProvider;
+import com.hedera.node.config.data.BlockStreamConfig;
 import com.hedera.node.config.data.ConsensusConfig;
 import com.hedera.node.config.data.HederaConfig;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.platform.state.PlatformState;
+import com.swirlds.platform.state.service.PlatformStateService;
+import com.swirlds.platform.state.service.schemas.V0540PlatformStateSchema;
 import com.swirlds.platform.system.events.ConsensusEvent;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
 import com.swirlds.state.State;
@@ -79,7 +84,6 @@ public record UserTxn(
         @NonNull HederaFunctionality functionality,
         @NonNull Instant consensusNow,
         @NonNull State state,
-        @NonNull PlatformState platformState,
         @NonNull ConsensusEvent event,
         @NonNull ConsensusTransaction platformTxn,
         @NonNull TransactionInfo txnInfo,
@@ -94,7 +98,6 @@ public record UserTxn(
     public static UserTxn from(
             // @UserTxnScope
             @NonNull final State state,
-            @NonNull final PlatformState platformState,
             @NonNull final ConsensusEvent event,
             @NonNull final NodeInfo creatorInfo,
             @NonNull final ConsensusTransaction platformTxn,
@@ -103,13 +106,14 @@ public record UserTxn(
             // @Singleton
             @NonNull final ConfigProvider configProvider,
             @NonNull final StoreMetricsService storeMetricsService,
-            @NonNull final BlockRecordManager blockRecordManager,
-            @NonNull final HandleWorkflow handleWorkflow) {
+            @NonNull final KVStateChangeListener kvStateChangeListener,
+            @NonNull final BoundaryStateChangeListener boundaryStateChangeListener,
+            @NonNull final PreHandleWorkflow preHandleWorkflow) {
 
         final TransactionType type;
         if (lastHandledConsensusTime.equals(Instant.EPOCH)) {
             type = GENESIS_TRANSACTION;
-        } else if (isUpgradeBoundary(platformState, state)) {
+        } else if (isUpgradeBoundary(state)) {
             type = POST_UPGRADE_TRANSACTION;
         } else {
             type = ORDINARY_TRANSACTION;
@@ -117,22 +121,24 @@ public record UserTxn(
         final var isGenesis = lastHandledConsensusTime.equals(Instant.EPOCH);
         final var config = configProvider.getConfiguration();
         final var consensusConfig = config.getConfigData(ConsensusConfig.class);
+        final var blockStreamConfig = config.getConfigData(BlockStreamConfig.class);
         final var stack = SavepointStackImpl.newRootStack(
                 state,
                 isGenesis ? Integer.MAX_VALUE : consensusConfig.handleMaxPrecedingRecords(),
-                consensusConfig.handleMaxFollowingRecords());
+                consensusConfig.handleMaxFollowingRecords(),
+                boundaryStateChangeListener,
+                kvStateChangeListener,
+                blockStreamConfig.streamMode());
         final var readableStoreFactory = new ReadableStoreFactory(stack);
         final var preHandleResult =
-                handleWorkflow.getCurrentPreHandleResult(creatorInfo, platformTxn, readableStoreFactory);
+                preHandleWorkflow.getCurrentPreHandleResult(creatorInfo, platformTxn, readableStoreFactory);
         final var txnInfo = requireNonNull(preHandleResult.txInfo());
-        final var tokenContext =
-                new TokenContextImpl(config, storeMetricsService, stack, blockRecordManager, consensusNow);
+        final var tokenContext = new TokenContextImpl(config, storeMetricsService, stack, consensusNow);
         return new UserTxn(
                 type,
                 txnInfo.functionality(),
                 consensusNow,
                 state,
-                platformState,
                 event,
                 platformTxn,
                 txnInfo,
@@ -146,32 +152,11 @@ public record UserTxn(
     }
 
     /**
-     * Returns whether the given state indicates this transaction is the first after an upgrade.
-     * @param platformState the platform state
-     * @param state the Hedera state
-     * @return whether the given state indicates this transaction is the first after an upgrade
-     */
-    private static boolean isUpgradeBoundary(@NonNull final PlatformState platformState, @NonNull final State state) {
-        if (platformState.getFreezeTime() == null
-                || !platformState.getFreezeTime().equals(platformState.getLastFrozenTime())) {
-            return false;
-        } else {
-            // Check the state directly here instead of going through BlockManager to allow us
-            // to manipulate this condition easily in embedded tests
-            final var blockInfo = state.getReadableStates(BlockRecordService.NAME)
-                    .<BlockInfo>getSingleton(BLOCK_INFO_STATE_KEY)
-                    .get();
-            return !requireNonNull(blockInfo).migrationRecordsStreamed();
-        }
-    }
-
-    /**
      * Creates a new {@link Dispatch} instance for this user transaction in the given context.
      *
      * @param authorizer the authorizer to use
      * @param networkInfo the network information
      * @param feeManager the fee manager
-     * @param recordCache the record cache
      * @param dispatchProcessor the dispatch processor
      * @param blockRecordManager the block record manager
      * @param serviceScopeLookup the service scope lookup
@@ -181,6 +166,7 @@ public record UserTxn(
      * @param dispatcher the transaction dispatcher
      * @param networkUtilizationManager the network utilization manager
      * @param baseBuilder the base record builder
+     * @param blockStreamConfig the block stream configuration
      * @return the new dispatch instance
      */
     public Dispatch newDispatch(
@@ -188,7 +174,6 @@ public record UserTxn(
             @NonNull final Authorizer authorizer,
             @NonNull final NetworkInfo networkInfo,
             @NonNull final FeeManager feeManager,
-            @NonNull final RecordCache recordCache,
             @NonNull final DispatchProcessor dispatchProcessor,
             @NonNull final BlockRecordManager blockRecordManager,
             @NonNull final ServiceScopeLookup serviceScopeLookup,
@@ -198,7 +183,8 @@ public record UserTxn(
             @NonNull final TransactionDispatcher dispatcher,
             @NonNull final NetworkUtilizationManager networkUtilizationManager,
             // @UserTxnScope
-            @NonNull final StreamBuilder baseBuilder) {
+            @NonNull final StreamBuilder baseBuilder,
+            @NonNull final BlockStreamConfig blockStreamConfig) {
         final var keyVerifier = new DefaultKeyVerifier(
                 txnInfo.signatureMap().sigPair().size(),
                 config.getConfigData(HederaConfig.class),
@@ -213,7 +199,7 @@ public record UserTxn(
         final var entityNumGenerator = new EntityNumGeneratorImpl(
                 new WritableStoreFactory(stack, EntityIdService.NAME, config, storeMetricsService)
                         .getStore(WritableEntityIdStore.class));
-        final var throttleAdvisor = new AppThrottleAdviser(networkUtilizationManager, consensusNow, stack);
+        final var throttleAdvisor = new AppThrottleAdviser(networkUtilizationManager, consensusNow);
         final var feeAccumulator =
                 new FeeAccumulator(serviceApiFactory.getApi(TokenServiceApi.class), (FeeStreamBuilder) baseBuilder);
         final var dispatchHandleContext = new DispatchHandleContext(
@@ -228,20 +214,25 @@ public record UserTxn(
                 storeFactory,
                 requireNonNull(txnInfo.payerID()),
                 keyVerifier,
-                platformState,
                 txnInfo.functionality(),
                 preHandleResult.payerKey() == null ? Key.DEFAULT : preHandleResult.payerKey(),
                 exchangeRateManager,
                 stack,
                 entityNumGenerator,
                 dispatcher,
-                recordCache,
                 networkInfo,
                 childDispatchFactory,
                 dispatchProcessor,
                 throttleAdvisor,
                 feeAccumulator);
         final var fees = dispatcher.dispatchComputeFees(dispatchHandleContext);
+        if (blockStreamConfig.streamBlocks()) {
+            final var congestionMultiplier = feeManager.congestionMultiplierFor(
+                    txnInfo.txBody(), txnInfo.functionality(), storeFactory.asReadOnly());
+            if (congestionMultiplier > 1) {
+                baseBuilder.congestionMultiplier(congestionMultiplier);
+            }
+        }
         return new RecordDispatch(
                 baseBuilder,
                 config,
@@ -259,8 +250,8 @@ public record UserTxn(
                 stack,
                 USER,
                 tokenContextImpl,
-                platformState,
-                preHandleResult);
+                preHandleResult,
+                HandleContext.ConsensusThrottling.ON);
     }
 
     /**
@@ -269,5 +260,28 @@ public record UserTxn(
      */
     public StreamBuilder baseBuilder() {
         return stack.getBaseBuilder(StreamBuilder.class);
+    }
+
+    /**
+     * Returns whether the given state indicates this transaction is the first after an upgrade.
+     * @param state the Hedera state
+     * @return whether the given state indicates this transaction is the first after an upgrade
+     */
+    private static boolean isUpgradeBoundary(@NonNull final State state) {
+        final var platformState = state.getReadableStates(PlatformStateService.NAME)
+                .<PlatformState>getSingleton(V0540PlatformStateSchema.PLATFORM_STATE_KEY)
+                .get();
+        requireNonNull(platformState);
+        if (platformState.freezeTime() == null
+                || !platformState.freezeTimeOrThrow().equals(platformState.lastFrozenTime())) {
+            return false;
+        } else {
+            // Check the state directly here instead of going through BlockManager to allow us
+            // to manipulate this condition easily in embedded tests
+            final var blockInfo = state.getReadableStates(BlockRecordService.NAME)
+                    .<BlockInfo>getSingleton(BLOCK_INFO_STATE_KEY)
+                    .get();
+            return !requireNonNull(blockInfo).migrationRecordsStreamed();
+        }
     }
 }

@@ -72,6 +72,28 @@ public interface SpecEntity {
     }
 
     /**
+     * Given a list of entities, create them (if not already created) and register them all, in
+     * the order listed.  That is, perform {@link SpecEntity#registerOrCreateWith} for each entity given, in order.
+     *
+     * <p>Useful to force entities to be created at a specific time and in a specific order, if you need
+     * to predict the Hedera entity numbers of entities dynamically created during a test; e.g., by
+     * smart contracts which themselves create contracts, or which use HTS.
+     *
+     * <p>Always use with <code>&#64;LeakyHapiTest(requirement = NO_CONCURRENT_CREATIONS)</code>.
+     *
+     * <p>(See, e.g., {@link com.hedera.services.bdd.suites.contract.opcodes.SelfDestructSuite#selfDestructedContractIsDeletedInSameTx(String,SpecAccount,SpecContract,SpecContract)}.)
+     *
+     * @param spec the spec to use to create an entity if it is not already created
+     * @param entities - the entities to create, in order
+     */
+    static void forceCreateAndRegister(@NonNull final HapiSpec spec, final SpecEntity... entities) {
+        requireNonNull(spec);
+        for (final var entity : entities) {
+            requireNonNull(entity).registerOrCreateWith(spec);
+        }
+    }
+
+    /**
      * Creates this entity with the given {@link HapiSpec}, returning the registrar
      * for the spec's target network.
      *

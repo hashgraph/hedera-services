@@ -40,7 +40,7 @@ import com.swirlds.platform.config.StateConfig;
 import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.recovery.emergencyfile.EmergencyRecoveryFile;
 import com.swirlds.platform.recovery.internal.StreamedRound;
-import com.swirlds.platform.state.PlatformState;
+import com.swirlds.platform.state.PlatformStateAccessor;
 import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.SwirldState;
 import com.swirlds.platform.system.events.CesEvent;
@@ -107,7 +107,7 @@ class EventRecoveryWorkflowTests {
     @Test
     @DisplayName("applyTransactions() Test")
     void applyTransactionsTest() {
-        final PlatformState platformState = mock(PlatformState.class);
+        final PlatformStateAccessor platformState = mock(PlatformStateAccessor.class);
 
         final List<ConsensusEvent> events = new ArrayList<>();
         for (int i = 0; i < 100; i++) {

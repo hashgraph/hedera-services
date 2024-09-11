@@ -17,70 +17,67 @@
 package com.swirlds.platform.test.fixtures.state;
 
 import static com.swirlds.common.threading.interrupt.Uninterruptable.abortAndThrowIfInterrupted;
+import static com.swirlds.platform.test.fixtures.state.FakeMerkleStateLifecycles.FAKE_MERKLE_STATE_LIFECYCLES;
 
+import com.swirlds.common.constructable.ClassConstructorPair;
+import com.swirlds.common.constructable.ConstructableRegistry;
+import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
-import com.swirlds.common.merkle.MerkleLeaf;
-import com.swirlds.common.merkle.MerkleNode;
-import com.swirlds.common.merkle.impl.PartialMerkleLeaf;
-import com.swirlds.common.merkle.route.MerkleRoute;
 import com.swirlds.platform.state.MerkleRoot;
-import com.swirlds.platform.state.PlatformState;
+import com.swirlds.platform.state.MerkleStateRoot;
+import com.swirlds.platform.state.PlatformStateAccessor;
+import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.SwirldState;
-import edu.umd.cs.findbugs.annotations.NonNull;
+import com.swirlds.state.merkle.singleton.StringLeaf;
 import java.io.IOException;
 import java.util.Objects;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * A test implementation of {@link MerkleRoot} and {@link SwirldState} state for SignedStateManager unit tests.
  * Node that some of the {@link MerkleRoot} methods are intentionally not implemented. If a test needs these methods,
  * {@link com.swirlds.platform.state.MerkleStateRoot} should be used instead.
  */
-public class BlockingSwirldState extends PartialMerkleLeaf implements MerkleLeaf, SwirldState, MerkleRoot {
+public class BlockingSwirldState extends MerkleStateRoot {
 
-    private static final long DEFAULT_UNIT_TEST_SECS = 10;
-
-    // The version history of this class.
-    // Versions that have been released must NEVER be given a different value.
-    /**
-     * In this version, serialization was performed by copyTo/copyToExtra and deserialization was performed by
-     * copyFrom/copyFromExtra. This version is not supported by later deserialization methods and must be handled
-     * specially by the platform.
-     */
-    private static final int VERSION_ORIGINAL = 1;
+    static {
+        try {
+            ConstructableRegistry.getInstance()
+                    .registerConstructable(new ClassConstructorPair(BlockingStringLeaf.class, BlockingStringLeaf::new));
+        } catch (ConstructableRegistryException e) {
+            throw new RuntimeException(e);
+        }
+    }
     /**
      * In this version, serialization was performed by serialize/deserialize.
      */
-    private static final int VERSION_MIGRATE_TO_SERIALIZABLE = 2;
+    private static final int VERSION_MIGRATE_TO_SERIALIZABLE = MerkleStateRoot.CURRENT_VERSION;
 
     private static final int CLASS_VERSION = VERSION_MIGRATE_TO_SERIALIZABLE;
 
     private static final long CLASS_ID = 0xa7d6e4b5feda7ce5L;
-    private PlatformState platformState;
 
-    private CountDownLatch serializationLatch;
-
-    protected AtomicBoolean released = new AtomicBoolean(false);
+    private final BlockingStringLeaf value;
 
     /**
      * Constructs a new instance of {@link BlockingSwirldState}.
      */
     public BlockingSwirldState() {
-        super();
+        super(FAKE_MERKLE_STATE_LIFECYCLES, version -> new BasicSoftwareVersion(version.major()));
+        value = new BlockingStringLeaf();
+        setChild(1, value);
     }
 
     private BlockingSwirldState(final BlockingSwirldState that) {
         super(that);
-        this.platformState = that.platformState;
-        this.released = new AtomicBoolean(that.released.get());
-        this.serializationLatch = that.serializationLatch;
+        this.value = that.value;
+        setChild(1, value);
     }
 
     @Override
-    public void handleConsensusRound(final Round round, final PlatformState platformState) {
+    public void handleConsensusRound(final Round round, final PlatformStateAccessor platformState) {
         // intentionally does nothing
     }
 
@@ -105,8 +102,8 @@ public class BlockingSwirldState extends PartialMerkleLeaf implements MerkleLeaf
             return false;
         }
         return Objects.equals(
-                this.getPlatformState().getAddressBook(),
-                that.getPlatformState().getAddressBook());
+                this.getReadablePlatformState().getAddressBook(),
+                that.getReadablePlatformState().getAddressBook());
     }
 
     /**
@@ -137,86 +134,56 @@ public class BlockingSwirldState extends PartialMerkleLeaf implements MerkleLeaf
      * If called, the next serialization attempt will block until {@link #unblockSerialization()} has been called.
      */
     public void enableBlockingSerialization() {
-        serializationLatch = new CountDownLatch(1);
+        value.enableBlockingSerialization();
     }
 
     /**
      * Should only be called if {@link #enableBlockingSerialization()} has previously been called.
      */
     public void unblockSerialization() {
-        serializationLatch.countDown();
+        value.unblockSerialization();
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    @NonNull
-    public PlatformState getPlatformState() {
-        return platformState;
-    }
+    private static class BlockingStringLeaf extends StringLeaf {
 
-    /**
-     * {@inheritDoc}
-     */
-    public void setPlatformState(@NonNull PlatformState platformState) {
-        this.platformState = platformState;
-    }
+        private static final long CLASS_ID = 0x9C829FF3B2284L;
 
-    /**
-     * {@inheritDoc}
-     */
-    @NonNull
-    @Override
-    public SwirldState getSwirldState() {
-        return this;
-    }
+        private CountDownLatch serializationLatch;
 
-    /**
-     * {@inheritDoc}
-     */
-    @NonNull
-    @Override
-    public String getInfoString(int hashDepth) {
-        return "<test info string>";
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public int getNumberOfChildren() {
-        throw new UnsupportedOperationException("Not implemented");
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public <T extends MerkleNode> T getChild(int index) {
-        throw new UnsupportedOperationException("Not implemented");
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void setChild(int index, MerkleNode child, MerkleRoute childRoute, boolean childMayBeImmutable) {
-        throw new UnsupportedOperationException("Not implemented");
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void serialize(final SerializableDataOutputStream out) throws IOException {
-        if (serializationLatch != null) {
-            abortAndThrowIfInterrupted(serializationLatch::await, "interrupted while waiting for latch");
+        public BlockingStringLeaf() {
+            super("BlockingStringLeaf");
         }
-        out.writeSerializable(platformState, true);
-    }
 
-    @Override
-    public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
-        platformState = in.readSerializable();
+        /**
+         * If called, the next serialization attempt will block until {@link #unblockSerialization()} has been called.
+         */
+        public void enableBlockingSerialization() {
+            serializationLatch = new CountDownLatch(1);
+        }
+
+        /**
+         * Should only be called if {@link #enableBlockingSerialization()} has previously been called.
+         */
+        public void unblockSerialization() {
+            serializationLatch.countDown();
+        }
+
+        @Override
+        public long getClassId() {
+            return CLASS_ID;
+        }
+
+        @Override
+        public void serialize(final SerializableDataOutputStream out) throws IOException {
+            if (serializationLatch != null) {
+                abortAndThrowIfInterrupted(serializationLatch::await, "interrupted while waiting for latch");
+            }
+            super.serialize(out);
+        }
+
+        @Override
+        public void deserialize(SerializableDataInputStream in, int version) throws IOException {
+            super.deserialize(in, version);
+        }
     }
 }

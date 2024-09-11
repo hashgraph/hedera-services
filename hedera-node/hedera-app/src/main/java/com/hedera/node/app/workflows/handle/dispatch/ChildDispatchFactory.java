@@ -40,7 +40,6 @@ import com.hedera.node.app.fees.ResourcePriceCalculatorImpl;
 import com.hedera.node.app.ids.EntityIdService;
 import com.hedera.node.app.ids.EntityNumGeneratorImpl;
 import com.hedera.node.app.ids.WritableEntityIdStore;
-import com.hedera.node.app.records.BlockRecordManager;
 import com.hedera.node.app.service.token.api.FeeStreamBuilder;
 import com.hedera.node.app.service.token.api.TokenServiceApi;
 import com.hedera.node.app.services.ServiceScopeLookup;
@@ -51,7 +50,7 @@ import com.hedera.node.app.spi.authorization.Authorizer;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
-import com.hedera.node.app.spi.records.RecordCache;
+import com.hedera.node.app.spi.records.BlockRecordInfo;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
 import com.hedera.node.app.spi.signatures.VerificationAssistant;
 import com.hedera.node.app.spi.throttle.ThrottleAdviser;
@@ -75,9 +74,9 @@ import com.hedera.node.app.workflows.handle.record.TokenContextImpl;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.node.app.workflows.prehandle.PreHandleContextImpl;
 import com.hedera.node.app.workflows.prehandle.PreHandleResult;
+import com.hedera.node.config.data.BlockStreamConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.platform.state.PlatformState;
 import com.swirlds.state.spi.info.NetworkInfo;
 import com.swirlds.state.spi.info.NodeInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -94,15 +93,13 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class ChildDispatchFactory {
-    private static final NoOpKeyVerifier NO_OP_KEY_VERIFIER = new NoOpKeyVerifier();
+    public static final NoOpKeyVerifier NO_OP_KEY_VERIFIER = new NoOpKeyVerifier();
 
     private final TransactionDispatcher dispatcher;
     private final Authorizer authorizer;
     private final NetworkInfo networkInfo;
     private final FeeManager feeManager;
-    private final RecordCache recordCache;
     private final DispatchProcessor dispatchProcessor;
-    private final BlockRecordManager blockRecordManager;
     private final ServiceScopeLookup serviceScopeLookup;
     private final StoreMetricsService storeMetricsService;
     private final ExchangeRateManager exchangeRateManager;
@@ -113,9 +110,7 @@ public class ChildDispatchFactory {
             @NonNull final Authorizer authorizer,
             @NonNull final NetworkInfo networkInfo,
             @NonNull final FeeManager feeManager,
-            @NonNull final RecordCache recordCache,
             @NonNull final DispatchProcessor dispatchProcessor,
-            @NonNull final BlockRecordManager blockRecordManager,
             @NonNull final ServiceScopeLookup serviceScopeLookup,
             @NonNull final StoreMetricsService storeMetricsService,
             @NonNull final ExchangeRateManager exchangeRateManager) {
@@ -123,9 +118,7 @@ public class ChildDispatchFactory {
         this.authorizer = requireNonNull(authorizer);
         this.networkInfo = requireNonNull(networkInfo);
         this.feeManager = requireNonNull(feeManager);
-        this.recordCache = requireNonNull(recordCache);
         this.dispatchProcessor = requireNonNull(dispatchProcessor);
-        this.blockRecordManager = requireNonNull(blockRecordManager);
         this.serviceScopeLookup = requireNonNull(serviceScopeLookup);
         this.storeMetricsService = requireNonNull(storeMetricsService);
         this.exchangeRateManager = requireNonNull(exchangeRateManager);
@@ -135,19 +128,20 @@ public class ChildDispatchFactory {
      * Creates a child dispatch. This method computes the transaction info and initializes record builder for the child
      * transaction. This method also computes a pre-handle result for the child transaction.
      *
-     * @param txBody               the transaction body
-     * @param callback             the key verifier for child dispatch
-     * @param syntheticPayerId     the synthetic payer id
-     * @param category             the transaction category
-     * @param customizer           the externalized record customizer
-     * @param reversingBehavior    the reversing behavior
-     * @param config               the configuration
-     * @param stack                the savepoint stack
+     * @param txBody the transaction body
+     * @param callback the key verifier for child dispatch
+     * @param syntheticPayerId the synthetic payer id
+     * @param category the transaction category
+     * @param customizer the externalized record customizer
+     * @param reversingBehavior the reversing behavior
+     * @param config the configuration
+     * @param stack the savepoint stack
      * @param readableStoreFactory the readable store factory
-     * @param creatorInfo          the node info of the creator
-     * @param platformState        the platform state
-     * @param topLevelFunction     the top level functionality
-     * @param consensusNow         the consensus time
+     * @param creatorInfo the node info of the creator
+     * @param topLevelFunction the top level functionality
+     * @param consensusNow the consensus time
+     * @param blockRecordInfo the block record info
+     * @param throttleStrategy     the throttle strategy
      * @return the child dispatch
      * @throws HandleException if the child stack base builder cannot be created
      */
@@ -162,14 +156,17 @@ public class ChildDispatchFactory {
             @NonNull final SavepointStackImpl stack,
             @NonNull final ReadableStoreFactory readableStoreFactory,
             @NonNull final NodeInfo creatorInfo,
-            @NonNull final PlatformState platformState,
             @NonNull final HederaFunctionality topLevelFunction,
             @NonNull final ThrottleAdviser throttleAdviser,
-            @NonNull final Instant consensusNow) {
+            @NonNull final Instant consensusNow,
+            @NonNull final BlockRecordInfo blockRecordInfo,
+            @NonNull final HandleContext.ConsensusThrottling throttleStrategy) {
         final var preHandleResult = preHandleChild(txBody, syntheticPayerId, config, readableStoreFactory);
         final var childVerifier = getKeyVerifier(callback);
-        final var childTxnInfo = getTxnInfoFrom(txBody);
-        final var childStack = SavepointStackImpl.newChildStack(stack, reversingBehavior, category, customizer);
+        final var childTxnInfo = getTxnInfoFrom(syntheticPayerId, txBody);
+        final var streamMode = config.getConfigData(BlockStreamConfig.class).streamMode();
+        final var childStack =
+                SavepointStackImpl.newChildStack(stack, reversingBehavior, category, customizer, streamMode);
         final var streamBuilder = initializedForChild(childStack.getBaseBuilder(StreamBuilder.class), childTxnInfo);
         return newChildDispatch(
                 streamBuilder,
@@ -182,19 +179,18 @@ public class ChildDispatchFactory {
                 consensusNow,
                 creatorInfo,
                 config,
-                platformState,
                 topLevelFunction,
                 throttleAdviser,
                 authorizer,
                 networkInfo,
                 feeManager,
-                recordCache,
                 dispatchProcessor,
-                blockRecordManager,
+                blockRecordInfo,
                 serviceScopeLookup,
                 storeMetricsService,
                 exchangeRateManager,
-                dispatcher);
+                dispatcher,
+                throttleStrategy);
     }
 
     private RecordDispatch newChildDispatch(
@@ -210,20 +206,19 @@ public class ChildDispatchFactory {
             // @UserTxnScope
             @NonNull final NodeInfo creatorInfo,
             @NonNull final Configuration config,
-            @NonNull final PlatformState platformState,
             @NonNull final HederaFunctionality topLevelFunction,
             @NonNull final ThrottleAdviser throttleAdviser,
             // @Singleton
             @NonNull final Authorizer authorizer,
             @NonNull final NetworkInfo networkInfo,
             @NonNull final FeeManager feeManager,
-            @NonNull final RecordCache recordCache,
             @NonNull final DispatchProcessor dispatchProcessor,
-            @NonNull final BlockRecordManager blockRecordManager,
+            @NonNull final BlockRecordInfo blockRecordInfo,
             @NonNull final ServiceScopeLookup serviceScopeLookup,
             @NonNull final StoreMetricsService storeMetricsService,
             @NonNull final ExchangeRateManager exchangeRateManager,
-            @NonNull final TransactionDispatcher dispatcher) {
+            @NonNull final TransactionDispatcher dispatcher,
+            @NonNull final HandleContext.ConsensusThrottling throttleStrategy) {
         final var readableStoreFactory = new ReadableStoreFactory(childStack);
         final var writableStoreFactory = new WritableStoreFactory(
                 childStack, serviceScopeLookup.getServiceName(txnInfo.txBody()), config, storeMetricsService);
@@ -234,7 +229,7 @@ public class ChildDispatchFactory {
         final var entityNumGenerator = new EntityNumGeneratorImpl(
                 new WritableStoreFactory(childStack, EntityIdService.NAME, config, storeMetricsService)
                         .getStore(WritableEntityIdStore.class));
-        final var feeAccumulator =
+        final var childFeeAccumulator =
                 new FeeAccumulator(serviceApiFactory.getApi(TokenServiceApi.class), (FeeStreamBuilder) builder);
         final var dispatchHandleContext = new DispatchHandleContext(
                 consensusNow,
@@ -242,31 +237,31 @@ public class ChildDispatchFactory {
                 txnInfo,
                 config,
                 authorizer,
-                blockRecordManager,
+                blockRecordInfo,
                 priceCalculator,
                 feeManager,
                 storeFactory,
                 payerId,
                 keyVerifier,
-                platformState,
                 topLevelFunction,
                 Key.DEFAULT,
                 exchangeRateManager,
                 childStack,
                 entityNumGenerator,
                 dispatcher,
-                recordCache,
                 networkInfo,
                 this,
                 dispatchProcessor,
                 throttleAdviser,
-                feeAccumulator);
+                childFeeAccumulator);
         final var childFees =
                 computeChildFees(payerId, dispatchHandleContext, category, dispatcher, topLevelFunction, txnInfo);
-        final var childFeeAccumulator =
-                new FeeAccumulator(serviceApiFactory.getApi(TokenServiceApi.class), (RecordStreamBuilder) builder);
-        final var childTokenContext =
-                new TokenContextImpl(config, storeMetricsService, childStack, blockRecordManager, consensusNow);
+        final var congestionMultiplier = feeManager.congestionMultiplierFor(
+                txnInfo.txBody(), txnInfo.functionality(), storeFactory.asReadOnly());
+        if (congestionMultiplier > 1) {
+            builder.congestionMultiplier(congestionMultiplier);
+        }
+        final var childTokenContext = new TokenContextImpl(config, storeMetricsService, childStack, consensusNow);
         return new RecordDispatch(
                 builder,
                 config,
@@ -284,8 +279,8 @@ public class ChildDispatchFactory {
                 childStack,
                 category,
                 childTokenContext,
-                platformState,
-                preHandleResult);
+                preHandleResult,
+                throttleStrategy);
     }
 
     private static Fees computeChildFees(
@@ -434,10 +429,11 @@ public class ChildDispatchFactory {
     /**
      * Provides the transaction information for the given dispatched transaction body.
      *
+     * @param payerId the payer id
      * @param txBody the transaction body
      * @return the transaction information
      */
-    private TransactionInfo getTxnInfoFrom(TransactionBody txBody) {
+    private TransactionInfo getTxnInfoFrom(@NonNull final AccountID payerId, @NonNull final TransactionBody txBody) {
         final var bodyBytes = TransactionBody.PROTOBUF.toBytes(txBody);
         final var signedTransaction =
                 SignedTransaction.newBuilder().bodyBytes(bodyBytes).build();
@@ -445,18 +441,15 @@ public class ChildDispatchFactory {
         final var transaction = Transaction.newBuilder()
                 .signedTransactionBytes(signedTransactionBytes)
                 .build();
-        // Since in the current systems the synthetic transactions need not have a transaction ID
-        // Payer will be injected as synthetic payer in dagger subcomponent, since the payer could be different
-        // for schedule dispatches. Also, there will not be signature verifications for synthetic transactions.
-        // So these fields are set to default values and will not be used.
         return new TransactionInfo(
                 transaction,
                 txBody,
                 TransactionID.DEFAULT,
-                AccountID.DEFAULT,
+                payerId,
                 SignatureMap.DEFAULT,
                 signedTransactionBytes,
-                functionOfTxn(txBody));
+                functionOfTxn(txBody),
+                null);
     }
 
     /**
@@ -481,6 +474,7 @@ public class ChildDispatchFactory {
     private StreamBuilder initializedForChild(
             @NonNull final StreamBuilder builder, @NonNull final TransactionInfo txnInfo) {
         builder.transaction(txnInfo.transaction())
+                .functionality(txnInfo.functionality())
                 .transactionBytes(txnInfo.signedBytes())
                 .memo(txnInfo.txBody().memo());
         final var transactionID = txnInfo.txBody().transactionID();

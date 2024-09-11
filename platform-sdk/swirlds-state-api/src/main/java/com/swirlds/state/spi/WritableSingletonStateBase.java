@@ -16,7 +16,11 @@
 
 package com.swirlds.state.spi;
 
+import static java.util.Objects.requireNonNull;
+
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
@@ -27,9 +31,17 @@ import java.util.function.Supplier;
  * @param <T> The type
  */
 public class WritableSingletonStateBase<T> extends ReadableSingletonStateBase<T> implements WritableSingletonState<T> {
+    /**
+     * A sentinel value to represent null in the backing store.
+     */
+    private static final Object NULL_VALUE = new Object();
+
     private final Consumer<T> backingStoreMutator;
-    private boolean modified;
-    private T value;
+    private Object value;
+    /**
+     * Listeners to be notified when the singleton changes.
+     */
+    private final List<SingletonChangeListener<T>> listeners = new ArrayList<>();
 
     /**
      * Creates a new instance.
@@ -47,27 +59,40 @@ public class WritableSingletonStateBase<T> extends ReadableSingletonStateBase<T>
         this.backingStoreMutator = Objects.requireNonNull(backingStoreMutator);
     }
 
+    /**
+     * Register a listener to be notified of changes to the state on {@link #commit()}. We do not support unregistering
+     * a listener, as the lifecycle of a {@link WritableSingletonState} is scoped to the set of mutations made to a
+     * state in a round; and there is no case where an application would only want to be notified of a subset of those
+     * changes.
+     * @param listener the listener to register
+     */
+    public void registerListener(@NonNull final SingletonChangeListener<T> listener) {
+        requireNonNull(listener);
+        listeners.add(listener);
+    }
+
     @Override
     public T get() {
         // Possible pattern: "put" and then "get". In this case, "read" should be false!! Otherwise,
         // we invalidate tx when we don't need to
-        if (modified) {
-            return value;
+        final var currentValue = currentValue();
+        if (currentValue != null) {
+            // C.f. https://github.com/hashgraph/hedera-services/issues/14582; in principle we should
+            // also return null here if value is NULL_VALUE, but in production with the SingletonNode
+            // backing store, null values are never actually set so this doesn't matter
+            return currentValue;
         }
-
-        value = super.get();
-        return value;
+        return super.get();
     }
 
     @Override
     public void put(T value) {
-        this.modified = true;
-        this.value = value;
+        this.value = value == null ? NULL_VALUE : value;
     }
 
     @Override
     public boolean isModified() {
-        return modified;
+        return value != null;
     }
 
     /**
@@ -76,10 +101,19 @@ public class WritableSingletonStateBase<T> extends ReadableSingletonStateBase<T>
      * it. Don't cast and commit unless you own the instance!
      */
     public void commit() {
-        if (modified) {
-            backingStoreMutator.accept(value);
+        if (value != null) {
+            final var currentValue = currentValue();
+            backingStoreMutator.accept(currentValue);
+            if (currentValue != null) {
+                listeners.forEach(l -> l.singletonUpdateChange(currentValue));
+            }
         }
         reset();
+    }
+
+    @SuppressWarnings("unchecked")
+    private T currentValue() {
+        return value == NULL_VALUE ? null : (T) value;
     }
 
     /**
@@ -89,7 +123,6 @@ public class WritableSingletonStateBase<T> extends ReadableSingletonStateBase<T>
      */
     @Override
     public void reset() {
-        this.modified = false;
         this.value = null;
         super.reset();
     }

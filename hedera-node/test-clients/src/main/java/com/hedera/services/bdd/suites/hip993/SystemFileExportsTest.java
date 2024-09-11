@@ -23,32 +23,59 @@ import static com.hedera.services.bdd.junit.SharedNetworkLauncherSessionListener
 import static com.hedera.services.bdd.spec.HapiPropertySource.asDnsServiceEndpoint;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asServiceEndpoint;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileContents;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.randomUtf8Bytes;
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.resourceAsString;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.nodeUpdate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.blockingOrder;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.doWithStartupConfig;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.given;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.nOps;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingTwo;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.recordStreamMustIncludeNoFailuresFrom;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.recordStreamMustIncludePassFrom;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.selectedItems;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.simulatePostUpgradeTransaction;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.streamMustIncludeNoFailuresFrom;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcingContextual;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsdWithin;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.visibleItems;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.writeToNodeWorkingDirs;
 import static com.hedera.services.bdd.spec.utilops.grouping.GroupingVerbs.getSystemFiles;
+import static com.hedera.services.bdd.spec.utilops.streams.assertions.SelectedItemsAssertion.SELECTED_ITEMS_KEY;
+import static com.hedera.services.bdd.suites.HapiSuite.APP_PROPERTIES;
+import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PAYER;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
+import static com.hedera.services.bdd.suites.utils.sysfiles.serdes.StandardSerdes.SYS_FILE_SERDES;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileUpdate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.NodeStakeUpdate;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BATCH_SIZE_LIMIT_EXCEEDED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNAUTHORIZED;
 import static com.swirlds.common.utility.CommonUtils.unhex;
 import static java.util.Objects.requireNonNull;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
+import com.google.protobuf.ByteString;
+import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.base.NodeAddressBook;
 import com.hedera.hapi.node.base.ServiceEndpoint;
+import com.hedera.node.app.hapi.utils.forensics.RecordStreamEntry;
 import com.hedera.pbj.runtime.ParseException;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.services.bdd.junit.GenesisHapiTest;
@@ -56,9 +83,14 @@ import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.utilops.grouping.SysFileLookups;
 import com.hedera.services.bdd.spec.utilops.streams.assertions.VisibleItems;
 import com.hedera.services.bdd.spec.utilops.streams.assertions.VisibleItemsValidator;
+import com.hedera.services.stream.proto.RecordStreamItem;
+import com.hederahashgraph.api.proto.java.CurrentAndNextFeeSchedule;
+import com.hederahashgraph.api.proto.java.ServicesConfigurationList;
+import com.hederahashgraph.api.proto.java.ThrottleDefinitions;
 import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.math.BigInteger;
 import java.security.cert.CertificateEncodingException;
 import java.security.cert.X509Certificate;
 import java.util.List;
@@ -86,14 +118,14 @@ public class SystemFileExportsTest {
     private static final String DESCRIPTION_PREFIX = "Revision #";
 
     @GenesisHapiTest
-    final Stream<DynamicTest> syntheticFileUpdatesHappenAtUpgradeBoundary() {
+    final Stream<DynamicTest> syntheticNodeDetailsUpdateHappensAtUpgradeBoundary() {
         final var grpcCertHashes = new byte[][] {
             randomUtf8Bytes(48), randomUtf8Bytes(48), randomUtf8Bytes(48), randomUtf8Bytes(48),
         };
         final AtomicReference<Map<Long, X509Certificate>> gossipCertificates = new AtomicReference<>();
         return hapiTest(
-                streamMustIncludeNoFailuresFrom(visibleItems(
-                        addressBookExportValidator(grpcCertHashes, gossipCertificates), "addressBookExport")),
+                recordStreamMustIncludePassFrom(selectedItems(
+                        addressBookExportValidator(grpcCertHashes, gossipCertificates), 1, this::isSysFileUpdate)),
                 given(() -> gossipCertificates.set(generateCertificates(CLASSIC_HAPI_TEST_NETWORK_SIZE))),
                 // This is the genesis transaction
                 cryptoCreate("firstUser"),
@@ -103,17 +135,219 @@ public class SystemFileExportsTest {
                         .description(DESCRIPTION_PREFIX + i)
                         .serviceEndpoint(endpointsFor(i))
                         .grpcCertificateHash(grpcCertHashes[i])
-                        .gossipCaCertificate(derEncoded(gossipCertificates.get().get(Long.valueOf(i))))))),
+                        .gossipCaCertificate(derEncoded(gossipCertificates.get().get((long) i)))))),
                 // And now simulate an upgrade boundary
                 simulatePostUpgradeTransaction(),
                 cryptoCreate("secondUser").via("addressBookExport"));
     }
 
     @GenesisHapiTest
+    final Stream<DynamicTest> syntheticFeeSchedulesUpdateHappensAtUpgradeBoundary()
+            throws InvalidProtocolBufferException {
+        final var feeSchedulesJson = resourceAsString("scheduled-contract-fees.json");
+        final var upgradeFeeSchedules =
+                CurrentAndNextFeeSchedule.parseFrom(SYS_FILE_SERDES.get(111L).toRawFile(feeSchedulesJson, null));
+        return hapiTest(
+                recordStreamMustIncludePassFrom(selectedItems(
+                        sysFileExportValidator(
+                                "files.feeSchedules", upgradeFeeSchedules, SystemFileExportsTest::parseFeeSchedule),
+                        2,
+                        this::isSysFileUpdate)),
+                // This is the genesis transaction
+                sourcingContextual(spec -> overridingTwo(
+                        "networkAdmin.upgradeSysFilesLoc",
+                        spec.getNetworkNodes()
+                                .getFirst()
+                                .metadata()
+                                .workingDirOrThrow()
+                                .toString(),
+                        "scheduling.whitelist",
+                        "ContractCall")),
+                // Write the upgrade file to the node's working dirs
+                doWithStartupConfig(
+                        "networkAdmin.upgradeFeeSchedulesFile",
+                        feeSchedulesFile -> writeToNodeWorkingDirs(feeSchedulesJson, feeSchedulesFile)),
+                // And now simulate an upgrade boundary
+                simulatePostUpgradeTransaction(),
+                // Verify the new fee schedules (which include a subtype for scheduled contract fees) are in effect
+                uploadInitCode("SimpleUpdate"),
+                withOpContext((spec, opLog) -> spec.tryReinitializingFees()),
+                contractCreate("SimpleUpdate").gas(300_000L),
+                cryptoCreate("civilian"),
+                scheduleCreate(
+                                "contractCall",
+                                contractCall("SimpleUpdate", "set", BigInteger.valueOf(5), BigInteger.valueOf(42))
+                                        .gas(24_000)
+                                        .memo("")
+                                        .fee(ONE_HBAR))
+                        .payingWith("civilian")
+                        .via("contractCall"),
+                validateChargedUsdWithin("contractCall", 0.1, 3.0));
+    }
+
+    @GenesisHapiTest
+    final Stream<DynamicTest> syntheticThrottlesUpdateHappensAtUpgradeBoundary() throws InvalidProtocolBufferException {
+        final var throttlesJson = resourceAsString("testSystemFiles/one-tps-nft-mint.json");
+        final var upgradeThrottleDefs =
+                ThrottleDefinitions.parseFrom(SYS_FILE_SERDES.get(123L).toRawFile(throttlesJson, null));
+        return hapiTest(
+                recordStreamMustIncludePassFrom(selectedItems(
+                        sysFileExportValidator(
+                                "files.throttleDefinitions",
+                                upgradeThrottleDefs,
+                                SystemFileExportsTest::parseThrottleDefs),
+                        2,
+                        this::isSysFileUpdate)),
+                // This is the genesis transaction
+                sourcingContextual(spec -> overridingTwo(
+                        "networkAdmin.upgradeSysFilesLoc",
+                        spec.getNetworkNodes()
+                                .getFirst()
+                                .metadata()
+                                .workingDirOrThrow()
+                                .toString(),
+                        "tokens.nfts.mintThrottleScaleFactor",
+                        "1:1")),
+                // Now write the upgrade file to the node's working dirs
+                doWithStartupConfig(
+                        "networkAdmin.upgradeThrottlesFile",
+                        throttleDefsFile -> writeToNodeWorkingDirs(throttlesJson, throttleDefsFile)),
+                // And now simulate an upgrade boundary
+                simulatePostUpgradeTransaction(),
+                // Then verify the new throttles are in effect
+                cryptoCreate("civilian"),
+                tokenCreate("nft").supplyKey("civilian"),
+                mintToken("nft", List.of(ByteString.copyFromUtf8("YES")))
+                        .payingWith("civilian")
+                        .deferStatusResolution(),
+                mintToken("nft", List.of(ByteString.copyFromUtf8("NO")))
+                        .payingWith("civilian")
+                        .hasPrecheck(BUSY));
+    }
+
+    @GenesisHapiTest
+    final Stream<DynamicTest> syntheticPropertyOverridesUpdateHappensAtUpgradeBoundary()
+            throws InvalidProtocolBufferException {
+        final var overrideProperties = "tokens.nfts.maxBatchSizeMint=2";
+        final var upgradePropOverrides =
+                ServicesConfigurationList.parseFrom(SYS_FILE_SERDES.get(121L).toRawFile(overrideProperties, null));
+        return hapiTest(
+                recordStreamMustIncludePassFrom(selectedItems(
+                        sysFileExportValidator(
+                                "files.networkProperties",
+                                upgradePropOverrides,
+                                SystemFileExportsTest::parseConfigList),
+                        2,
+                        this::isSysFileUpdate)),
+                // This is the genesis transaction
+                sourcingContextual(spec -> overriding(
+                        "networkAdmin.upgradeSysFilesLoc",
+                        spec.getNetworkNodes()
+                                .getFirst()
+                                .metadata()
+                                .workingDirOrThrow()
+                                .toString())),
+                // Now write the upgrade file to the node's working dirs
+                doWithStartupConfig(
+                        "networkAdmin.upgradePropertyOverridesFile",
+                        propOverridesFile -> writeToNodeWorkingDirs(overrideProperties, propOverridesFile)),
+                // And now simulate an upgrade boundary
+                simulatePostUpgradeTransaction(),
+                // Then verify the new properties are in effect
+                tokenCreate("nft").supplyKey(DEFAULT_PAYER),
+                mintToken(
+                                "nft",
+                                List.of(
+                                        ByteString.copyFromUtf8("ONE"),
+                                        ByteString.copyFromUtf8("TOO"),
+                                        ByteString.copyFromUtf8("MANY")))
+                        .hasKnownStatus(BATCH_SIZE_LIMIT_EXCEEDED));
+    }
+
+    @GenesisHapiTest
+    final Stream<DynamicTest> syntheticPropertyOverridesUpdateCanBeEmptyFile() {
+        return hapiTest(
+                recordStreamMustIncludePassFrom(selectedItems(
+                        sysFileExportValidator(
+                                "files.networkProperties",
+                                ServicesConfigurationList.getDefaultInstance(),
+                                SystemFileExportsTest::parseConfigList),
+                        2,
+                        this::isSysFileUpdate)),
+                // This is the genesis transaction
+                sourcingContextual(spec -> overridingTwo(
+                        "networkAdmin.upgradeSysFilesLoc",
+                        spec.getNetworkNodes()
+                                .getFirst()
+                                .metadata()
+                                .workingDirOrThrow()
+                                .toString(),
+                        "tokens.nfts.maxBatchSizeMint",
+                        "2")),
+                // Now write the upgrade file to the node's working dirs
+                doWithStartupConfig(
+                        "networkAdmin.upgradePropertyOverridesFile",
+                        propOverridesFile -> writeToNodeWorkingDirs("", propOverridesFile)),
+                // And now simulate an upgrade boundary
+                simulatePostUpgradeTransaction(),
+                // Then verify the previous override properties are cleared
+                tokenCreate("nft").supplyKey(DEFAULT_PAYER),
+                mintToken(
+                        "nft",
+                        List.of(
+                                ByteString.copyFromUtf8("ONCE"),
+                                ByteString.copyFromUtf8("AGAIN"),
+                                ByteString.copyFromUtf8("OK"))),
+                getFileContents(APP_PROPERTIES).hasContents(ignore -> new byte[0]));
+    }
+
+    @GenesisHapiTest
+    final Stream<DynamicTest> syntheticPermissionOverridesUpdateHappensAtUpgradeBoundary()
+            throws InvalidProtocolBufferException {
+        final var overridePermissions = "tokenMint=0-1";
+        final var upgradePermissionOverrides =
+                ServicesConfigurationList.parseFrom(SYS_FILE_SERDES.get(122L).toRawFile(overridePermissions, null));
+        return hapiTest(
+                recordStreamMustIncludePassFrom(selectedItems(
+                        sysFileExportValidator(
+                                "files.hapiPermissions",
+                                upgradePermissionOverrides,
+                                SystemFileExportsTest::parseConfigList),
+                        2,
+                        this::isSysFileUpdate)),
+                // This is the genesis transaction
+                sourcingContextual(spec -> overriding(
+                        "networkAdmin.upgradeSysFilesLoc",
+                        spec.getNetworkNodes()
+                                .getFirst()
+                                .metadata()
+                                .workingDirOrThrow()
+                                .toString())),
+                // Now write the upgrade file to the node's working dirs
+                doWithStartupConfig(
+                        "networkAdmin.upgradePermissionOverridesFile",
+                        permissionOverridesFile ->
+                                writeToNodeWorkingDirs(overridePermissions, permissionOverridesFile)),
+                // And now simulate an upgrade boundary
+                simulatePostUpgradeTransaction(),
+                // Then verify the new permissions are in effect
+                cryptoCreate("civilian"),
+                tokenCreate("nft").supplyKey("civilian"),
+                mintToken(
+                                "nft",
+                                List.of(
+                                        ByteString.copyFromUtf8("NOT"),
+                                        ByteString.copyFromUtf8("TO"),
+                                        ByteString.copyFromUtf8("BE")))
+                        .payingWith("civilian")
+                        .hasKnownStatus(UNAUTHORIZED));
+    }
+
+    @GenesisHapiTest
     final Stream<DynamicTest> syntheticFileCreationsMatchQueries() {
         final AtomicReference<Map<FileID, Bytes>> preGenesisContents = new AtomicReference<>();
         return hapiTest(
-                streamMustIncludeNoFailuresFrom(visibleItems(validatorFor(preGenesisContents), "genesisTxn")),
+                recordStreamMustIncludeNoFailuresFrom(visibleItems(validatorFor(preGenesisContents), "genesisTxn")),
                 getSystemFiles(preGenesisContents::set),
                 cryptoCreate("firstUser").via("genesisTxn"),
                 // Assert the first created entity still has the expected number
@@ -123,11 +357,55 @@ public class SystemFileExportsTest {
                         "First user entity num doesn't match config")));
     }
 
+    private static CurrentAndNextFeeSchedule parseFeeSchedule(final byte[] bytes)
+            throws InvalidProtocolBufferException {
+        return CurrentAndNextFeeSchedule.parseFrom(bytes);
+    }
+
+    private static ThrottleDefinitions parseThrottleDefs(final byte[] bytes) throws InvalidProtocolBufferException {
+        return ThrottleDefinitions.parseFrom(bytes);
+    }
+
+    private static ServicesConfigurationList parseConfigList(final byte[] bytes) throws InvalidProtocolBufferException {
+        return ServicesConfigurationList.parseFrom(bytes);
+    }
+
+    private interface ParseFunction<T> {
+        T parse(@NonNull byte[] bytes) throws InvalidProtocolBufferException;
+    }
+
+    private static <T> VisibleItemsValidator sysFileExportValidator(
+            @NonNull final String fileNumProperty,
+            @NonNull final T expectedValue,
+            @NonNull final ParseFunction<T> parser) {
+        return (spec, records) -> {
+            final var items = records.get(SELECTED_ITEMS_KEY);
+            assertNotNull(items, "No post-upgrade txn found");
+            final var targetId =
+                    new FileID(0, 0, Long.parseLong(spec.startupProperties().get(fileNumProperty)));
+            final var updateItem = items.entries().stream()
+                    .filter(item -> item.function() == FileUpdate)
+                    .filter(item ->
+                            toPbj(item.body().getFileUpdate().getFileID()).equals(targetId))
+                    .findFirst()
+                    .orElse(null);
+            assertNotNull(updateItem, "No update for " + fileNumProperty + " found in post-upgrade txn");
+            final var synthOp = updateItem.body().getFileUpdate();
+            final T actual;
+            try {
+                actual = parser.parse(synthOp.getContents().toByteArray());
+            } catch (InvalidProtocolBufferException e) {
+                throw new IllegalStateException(fileNumProperty + " update was not parseable", e);
+            }
+            assertEquals(expectedValue, actual);
+        };
+    }
+
     private static VisibleItemsValidator addressBookExportValidator(
             @NonNull final byte[][] grpcCertHashes,
             @NonNull final AtomicReference<Map<Long, X509Certificate>> gossipCertificates) {
         return (spec, records) -> {
-            final var items = requireNonNull(records.get("addressBookExport"));
+            final var items = requireNonNull(records.get(SELECTED_ITEMS_KEY));
             final var histogram = statusHistograms(items.entries());
             assertEquals(Map.of(SUCCESS, 1), histogram.get(FileUpdate));
             final var updateItem = items.entries().stream()
@@ -227,6 +505,19 @@ public class SystemFileExportsTest {
             return List.of(asServiceEndpoint("127.0.0." + (i * 2 + 1) + ":" + (80 + i)));
         } else {
             return List.of(asDnsServiceEndpoint("host" + i + ":" + (80 + i)));
+        }
+    }
+
+    private boolean isSysFileUpdate(@NonNull final HapiSpec spec, @NonNull final RecordStreamItem item) {
+        final var txnId = item.getRecord().getTransactionID();
+        final var sysAdminNum = spec.startupProperties().getLong("accounts.systemAdmin");
+        final var firstUserNum = spec.startupProperties().getLong("hedera.firstUserEntity");
+        if (txnId.getAccountID().getAccountNum() != sysAdminNum) {
+            return false;
+        } else {
+            final var entry = RecordStreamEntry.from(item);
+            return entry.function() == FileUpdate
+                    && entry.body().getFileUpdate().getFileID().getFileNum() < firstUserNum;
         }
     }
 }

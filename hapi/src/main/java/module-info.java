@@ -46,6 +46,7 @@ module com.hedera.node.hapi {
     exports com.hedera.hapi.node.state.blockrecords;
     exports com.hedera.hapi.node.state.blockrecords.codec;
     exports com.hedera.hapi.node.state.blockrecords.schema;
+    exports com.hedera.hapi.node.state.blockstream;
     exports com.hedera.hapi.node.state.schedule;
     exports com.hedera.hapi.node.state.primitives;
     exports com.hedera.hapi.node.state.throttles;
@@ -55,6 +56,12 @@ module com.hedera.node.hapi {
     exports com.hederahashgraph.api.proto.java;
     exports com.hederahashgraph.service.proto.java;
     exports com.hedera.hapi.util;
+    exports com.hedera.hapi.block.stream;
+    exports com.hedera.hapi.block.stream.input;
+    exports com.hedera.hapi.block.stream.output;
+    exports com.hedera.hapi.platform.state;
+    exports com.hedera.hapi.node.state.roster;
+    exports com.hedera.hapi.block.stream.schema;
 
     requires transitive com.google.common;
     requires transitive com.google.protobuf;
@@ -64,5 +71,4 @@ module com.hedera.node.hapi {
     requires io.grpc.protobuf;
     requires org.antlr.antlr4.runtime;
     requires static com.github.spotbugs.annotations;
-    requires static java.annotation;
 }

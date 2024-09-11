@@ -18,15 +18,10 @@ package com.hedera.services.bdd.suites.regression;
 
 import static com.hedera.services.bdd.junit.TestTags.NOT_REPEATABLE;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.runWithProvider;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
-import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
-import static com.hedera.services.bdd.suites.HapiSuite.THROTTLE_DEFS;
 import static com.hedera.services.bdd.suites.regression.factories.RegressionProviderFactory.factoryFrom;
-import static com.hedera.services.bdd.suites.utils.sysfiles.serdes.ThrottleDefsLoader.protoDefsFromResource;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 import com.hedera.services.bdd.junit.HapiTest;
@@ -55,18 +50,15 @@ public class UmbrellaRedux {
     @HapiTest
     @Tag(NOT_REPEATABLE)
     final Stream<DynamicTest> umbrellaRedux() {
-        var defaultThrottles = protoDefsFromResource("testSystemFiles/throttles-dev.json");
         return defaultHapiSpec("UmbrellaRedux")
-                .given(
-                        withOpContext((spec, opLog) -> {
-                            configureFromCi(spec);
-                            // use ci property statusTimeoutSecs to overwrite default value
-                            // of status.wait.timeout.ms
-                            spec.addOverrideProperties(Map.of(
-                                    "status.wait.timeout.ms", Integer.toString(1_000 * statusTimeoutSecs.get())));
-                        }),
-                        fileUpdate(THROTTLE_DEFS).payingWith(GENESIS).contents(defaultThrottles.toByteArray()))
-                .when(sleepFor(2000))
+                .given(withOpContext((spec, opLog) -> {
+                    configureFromCi(spec);
+                    // use ci property statusTimeoutSecs to overwrite default value
+                    // of status.wait.timeout.ms
+                    spec.addOverrideProperties(
+                            Map.of("status.wait.timeout.ms", Integer.toString(1_000 * statusTimeoutSecs.get())));
+                }))
+                .when()
                 .then(sourcing(() -> runWithProvider(factoryFrom(props::get))
                         .lasting(duration::get, unit::get)
                         .maxOpsPerSec(maxOpsPerSec::get)

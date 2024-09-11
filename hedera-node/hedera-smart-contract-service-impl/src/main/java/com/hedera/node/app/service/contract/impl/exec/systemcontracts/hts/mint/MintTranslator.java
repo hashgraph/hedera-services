@@ -29,7 +29,6 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.Dispat
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.Arrays;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -52,8 +51,7 @@ public class MintTranslator extends AbstractCallTranslator<HtsCallAttempt> {
      */
     @Override
     public boolean matches(@NonNull final HtsCallAttempt attempt) {
-        return Arrays.equals(attempt.selector(), MintTranslator.MINT.selector())
-                || Arrays.equals(attempt.selector(), MintTranslator.MINT_V2.selector());
+        return attempt.isSelector(MINT, MINT_V2);
     }
 
     @Override
@@ -84,7 +82,7 @@ public class MintTranslator extends AbstractCallTranslator<HtsCallAttempt> {
     }
 
     private TransactionBody bodyForClassic(@NonNull final HtsCallAttempt attempt) {
-        if (Arrays.equals(attempt.selector(), MintTranslator.MINT.selector())) {
+        if (attempt.isSelector(MINT)) {
             return decoder.decodeMint(attempt);
         } else {
             return decoder.decodeMintV2(attempt);

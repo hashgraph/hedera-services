@@ -51,7 +51,7 @@ class CryptoTransferHandlerPureChecksTest extends CryptoTransferHandlerTestBase 
     void pureChecksHasNoCryptoTransfer() {
         final var nonTransferTxnBody = TokenAssociateTransactionBody.newBuilder();
         final var txn = TransactionBody.newBuilder()
-                .transactionID(TransactionID.newBuilder().accountID(ACCOUNT_3333))
+                .transactionID(TransactionID.newBuilder().accountID(ACCOUNT_ID_3333))
                 .tokenAssociate(nonTransferTxnBody)
                 .build();
 

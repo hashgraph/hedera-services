@@ -26,7 +26,6 @@ import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.stream.proto.RecordStreamItem;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -40,8 +39,6 @@ public class VisibleItemsAssertion implements RecordStreamAssertion {
     private static final long FIRST_USER_NUM = 1001L;
 
     private static final Logger log = LogManager.getLogger(VisibleItemsAssertion.class);
-
-    public static final Duration TIMEOUT_TO_VISIBLE = Duration.ofSeconds(16);
 
     private final HapiSpec spec;
     private final Set<String> unseenIds;

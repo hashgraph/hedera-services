@@ -102,6 +102,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSO
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_SYMBOL_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_HAS_UNKNOWN_FIELDS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN;
+import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 import static java.lang.Integer.parseInt;
 
@@ -420,6 +421,7 @@ public class TokenCreateSpecs {
                 .when(
                         tokenCreate(commonNoFees)
                                 .blankMemo()
+                                .entityMemo("")
                                 .name(NAME)
                                 .symbol("ABCD")
                                 .payingWith(civilian)
@@ -430,6 +432,7 @@ public class TokenCreateSpecs {
                                 .via(txnFor(commonNoFees)),
                         tokenCreate(commonWithFees)
                                 .blankMemo()
+                                .entityMemo("")
                                 .name(NAME)
                                 .symbol("ABCD")
                                 .payingWith(civilian)
@@ -443,6 +446,7 @@ public class TokenCreateSpecs {
                         tokenCreate(uniqueNoFees)
                                 .payingWith(civilian)
                                 .blankMemo()
+                                .entityMemo("")
                                 .name(NAME)
                                 .symbol("ABCD")
                                 .initialSupply(0L)
@@ -456,6 +460,7 @@ public class TokenCreateSpecs {
                         tokenCreate(uniqueWithFees)
                                 .payingWith(civilian)
                                 .blankMemo()
+                                .entityMemo("")
                                 .name(NAME)
                                 .symbol("ABCD")
                                 .initialSupply(0L)
@@ -1162,6 +1167,20 @@ public class TokenCreateSpecs {
                         cryptoTransfer(moving(10, A_TOKEN).from(TOKEN_TREASURY))
                                 .hasPrecheck(TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN),
                         cryptoTransfer(moving(10, A_TOKEN).empty()).hasPrecheck(EMPTY_TOKEN_TRANSFER_ACCOUNT_AMOUNTS));
+    }
+
+    @HapiTest
+    final Stream<DynamicTest> deletedAccountCannotBeFeeCollector() {
+        final var account = "account";
+        return hapiTest(
+                cryptoCreate(account),
+                cryptoDelete(account),
+                tokenCreate("anyToken")
+                        .treasury(DEFAULT_PAYER)
+                        .tokenType(FUNGIBLE_COMMON)
+                        .initialSupply(1000L)
+                        .withCustom(fixedHbarFee(1, account))
+                        .hasKnownStatus(INVALID_CUSTOM_FEE_COLLECTOR));
     }
 
     private final long hbarAmount = 1_234L;

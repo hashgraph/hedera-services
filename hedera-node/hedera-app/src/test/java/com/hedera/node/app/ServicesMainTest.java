@@ -24,7 +24,7 @@ import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mockStatic;
 
-import com.hedera.node.app.version.HederaSoftwareVersion;
+import com.hedera.node.app.version.ServicesSoftwareVersion;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.config.legacy.ConfigurationException;
 import com.swirlds.platform.config.legacy.LegacyConfigProperties;
@@ -96,7 +96,7 @@ final class ServicesMainTest {
 
     @Test
     void returnsSerializableVersion() {
-        assertInstanceOf(HederaSoftwareVersion.class, subject.getSoftwareVersion());
+        assertInstanceOf(ServicesSoftwareVersion.class, subject.getSoftwareVersion());
     }
 
     @Test

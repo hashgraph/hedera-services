@@ -64,7 +64,7 @@ public class DefaultFreezeStatusCall extends AbstractNonRevertibleTokenViewCall 
 
     private @NonNull FullResult fullResultsFor(
             @NonNull final ResponseCodeEnum status, final long gasRequirement, final boolean freezeStatus) {
-        // @Future remove to revert #9067 after modularization is completed
+        // For backwards compatibility, we need to revert here per issue #8746.
         if (isStaticCall && status != SUCCESS) {
             return revertResult(status, 0);
         }

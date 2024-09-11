@@ -202,11 +202,11 @@ public class TokenHandlers {
         this.tokenUpdateNftsHandler =
                 Objects.requireNonNull(tokenUpdateNftsHandler, "tokenUpdateNftsHandler must not be null");
         this.tokenRejectHandler = Objects.requireNonNull(tokenRejectHandler, "tokenRejectHandler must not be null");
+        this.tokenAirdropHandler = Objects.requireNonNull(tokenAirdropHandler, "tokenAirdropsHandler must not be null");
         this.tokenCancelAirdropHandler =
                 Objects.requireNonNull(tokenCancelAirdropHandler, "tokenCancelAirdropHandler must not be null");
         this.tokenClaimAirdropHandler =
                 Objects.requireNonNull(tokenClaimAirdropHandler, "tokenClaimAirdropHandler must not be null");
-        this.tokenAirdropHandler = Objects.requireNonNull(tokenAirdropHandler, "tokenAirdropsHandler must not be null");
     }
 
     /**
@@ -514,7 +514,6 @@ public class TokenHandlers {
     public TokenRejectHandler tokenRejectHandler() {
         return tokenRejectHandler;
     }
-
     /**
      * Gets the tokenCancelAirdropHandler.
      *
@@ -523,7 +522,6 @@ public class TokenHandlers {
     public TokenCancelAirdropHandler tokenCancelAirdropHandler() {
         return tokenCancelAirdropHandler;
     }
-
     /**
      * Gets the tokenClaimAirdropHandler.
      * @return the tokenClaimAirdropHandler

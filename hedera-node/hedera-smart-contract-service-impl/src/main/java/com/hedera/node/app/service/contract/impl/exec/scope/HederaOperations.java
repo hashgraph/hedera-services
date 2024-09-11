@@ -95,6 +95,13 @@ public interface HederaOperations {
     long contractCreationLimit();
 
     /**
+     * Returns the maximum number of accounts that we should allow in this operation scope.
+     *
+     * @return the maximum number of accounts
+     */
+    long accountCreationLimit();
+
+    /**
      * Returns the entropy available in this scope. See <a href="https://hips.hedera.com/hip/hip-351">HIP-351</a>
      * for details on how the Hedera node implements this.
      *

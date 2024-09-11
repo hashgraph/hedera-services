@@ -43,7 +43,7 @@ import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.RandomUtils;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.state.MerkleRoot;
-import com.swirlds.platform.state.PlatformState;
+import com.swirlds.platform.state.PlatformStateAccessor;
 import com.swirlds.platform.state.signed.SigSet;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.snapshot.SavedStateMetadata;
@@ -207,13 +207,13 @@ class SavedStateMetadataTests {
         final SigSet sigSet = mock(SigSet.class);
         final MerkleRoot state = mock(MerkleRoot.class);
         when(state.getHash()).thenReturn(randomHash(random));
-        final PlatformState platformState = mock(PlatformState.class);
+        final PlatformStateAccessor platformState = mock(PlatformStateAccessor.class);
         when(platformState.getLegacyRunningEventHash()).thenReturn(randomHash(random));
         when(platformState.getSnapshot()).thenReturn(mock(ConsensusSnapshot.class));
         final AddressBook addressBook = mock(AddressBook.class);
 
         when(signedState.getState()).thenReturn(state);
-        when(state.getPlatformState()).thenReturn(platformState);
+        when(state.getReadablePlatformState()).thenReturn(platformState);
         when(platformState.getAddressBook()).thenReturn(addressBook);
         when(signedState.getSigSet()).thenReturn(sigSet);
         when(sigSet.getSigningNodes())

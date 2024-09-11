@@ -19,6 +19,8 @@ package com.hedera.node.app.signature.impl;
 import static com.hedera.node.app.fixtures.signature.ExpandedSignaturePairFactory.ecdsaPair;
 import static com.hedera.node.app.fixtures.signature.ExpandedSignaturePairFactory.ed25519Pair;
 import static com.hedera.node.app.fixtures.signature.ExpandedSignaturePairFactory.hollowPair;
+import static com.hedera.node.app.spi.signatures.SignatureVerifier.MessageType.KECCAK_256_HASH;
+import static com.hedera.node.app.spi.signatures.SignatureVerifier.MessageType.RAW;
 import static java.util.Collections.emptySet;
 import static java.util.concurrent.CompletableFuture.completedFuture;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -44,6 +46,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
@@ -68,7 +72,7 @@ final class SignatureVerifierImplTest extends AppTestBase implements Scenarios {
 
     @BeforeEach
     void setUp() {
-        signedBytes = randomBytes(123);
+        signedBytes = randomBytes(32);
         verifier = new SignatureVerifierImpl(cryptoEngine);
     }
 
@@ -87,6 +91,14 @@ final class SignatureVerifierImplTest extends AppTestBase implements Scenarios {
         assertThatThrownBy(() -> verifier.verify(null, signatures)).isInstanceOf(NullPointerException.class);
         //noinspection DataFlowIssue
         assertThatThrownBy(() -> verifier.verify(signedBytes, null)).isInstanceOf(NullPointerException.class);
+    }
+
+    @Test
+    @DisplayName("Requires 32 bytes with KECCAK_256_HASH message type")
+    void requires32BytesWithKeccak256HashMessageType() {
+        final Set<ExpandedSignaturePair> signatures = emptySet();
+        assertThatThrownBy(() -> verifier.verify(Bytes.wrap(new byte[31]), signatures, KECCAK_256_HASH))
+                .isInstanceOf(IllegalArgumentException.class);
     }
 
     /**
@@ -137,9 +149,10 @@ final class SignatureVerifierImplTest extends AppTestBase implements Scenarios {
                 .isEqualTo(true);
     }
 
-    @Test
+    @ParameterizedTest
+    @CsvSource({"RAW", "KECCAK_256_HASH"})
     @DisplayName("Crypto Engine is given array with all the required data")
-    void cryptoEngineIsGivenAllTheData() {
+    void cryptoEngineIsGivenAllTheData(com.hedera.node.app.spi.signatures.SignatureVerifier.MessageType messageType) {
         // Given some different kinds of signatures
         final var sigs = new LinkedHashSet<ExpandedSignaturePair>(); // for predictable iteration for the test
         sigs.add(ecdsaPair(ALICE.keyInfo().publicKey()));
@@ -152,7 +165,7 @@ final class SignatureVerifierImplTest extends AppTestBase implements Scenarios {
         final var keccakSignedBytes = Bytes.wrap(MiscCryptoUtils.keccak256DigestOf(signedBytesArray));
 
         // When we verify them
-        verifier.verify(signedBytes, sigs);
+        verifier.verify(signedBytes, sigs, messageType);
 
         // Then we find the crypto engine was given an array with all the data
         verify(cryptoEngine, times(3)).verifySync(sigsCaptor.capture());
@@ -163,9 +176,16 @@ final class SignatureVerifierImplTest extends AppTestBase implements Scenarios {
             final var expandedSigPair = itr.next();
             final var txSig = txSigs.get(i);
             final var contents = Bytes.wrap(txSig.getContents());
-            assertThat(contents.slice(txSig.getMessageOffset(), txSig.getMessageLength())
-                            .matchesPrefix(i == 1 ? signedBytes : keccakSignedBytes)) // index 1 is ed25519
-                    .isTrue();
+            if (messageType == RAW) {
+                assertThat(contents.slice(txSig.getMessageOffset(), txSig.getMessageLength())
+                                .matchesPrefix(i == 1 ? signedBytes : keccakSignedBytes)) // index 1 is ed25519
+                        .isTrue();
+            } else {
+                // For a KECCAK_256_HASH message type, the signed bytes are always the given hash
+                assertThat(contents.slice(txSig.getMessageOffset(), txSig.getMessageLength())
+                                .matchesPrefix(signedBytes))
+                        .isTrue();
+            }
 
             assertThat(contents.slice(txSig.getSignatureOffset(), txSig.getSignatureLength())
                             .matchesPrefix(expandedSigPair.signature()))

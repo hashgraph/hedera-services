@@ -24,7 +24,8 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Set;
 
 /**
- * The Addressbook Service provides the ability for Hedera Hashgraph to facilitate changes to the nodes used across the Hedera network.
+ * The Addressbook Service provides the ability for Hedera Hashgraph to facilitate changes to the nodes used
+ * across the Hedera network.
  */
 @SuppressWarnings("java:S6548")
 public final class AddressBookServiceDefinition implements RpcServiceDefinition {

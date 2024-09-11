@@ -22,7 +22,7 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 
 /**
- * Class to hold all the addressbook handlers
+ * Class to hold all the addressbook handlers.
  */
 @Singleton
 public class AddressBookHandlers {
@@ -34,7 +34,7 @@ public class AddressBookHandlers {
     private final NodeUpdateHandler nodeUpdateHandler;
 
     /**
-     * Constructor for AddressBookHandlers
+     * Constructor for AddressBookHandlers.
      */
     @Inject
     public AddressBookHandlers(
@@ -47,7 +47,7 @@ public class AddressBookHandlers {
     }
 
     /**
-     * Get the nodeCreateHandler
+     * Get the nodeCreateHandler.
      *
      * @return the nodeCreateHandler
      */
@@ -56,7 +56,7 @@ public class AddressBookHandlers {
     }
 
     /**
-     * Get the nodeDeleteHandler
+     * Get the nodeDeleteHandler.
      *
      * @return the nodeDeleteHandler
      */
@@ -65,7 +65,7 @@ public class AddressBookHandlers {
     }
 
     /**
-     * Get the nodeUpdateHandler
+     * Get the nodeUpdateHandler.
      *
      * @return the nodeUpdateHandler
      */

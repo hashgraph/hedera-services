@@ -21,8 +21,8 @@ import static com.hedera.node.app.service.token.impl.schemas.V0490TokenSchema.AC
 import static com.hedera.services.bdd.junit.SharedNetworkLauncherSessionListener.repeatableModeRequested;
 import static com.hedera.services.bdd.junit.extensions.NetworkTargetingExtension.REPEATABLE_KEY_GENERATOR;
 import static com.hedera.services.bdd.junit.extensions.NetworkTargetingExtension.SHARED_NETWORK;
-import static com.hedera.services.bdd.junit.hedera.ExternalPath.STREAMS_DIR;
-import static com.hedera.services.bdd.junit.support.RecordStreamAccess.RECORD_STREAM_ACCESS;
+import static com.hedera.services.bdd.junit.hedera.ExternalPath.RECORD_STREAMS_DIR;
+import static com.hedera.services.bdd.junit.support.StreamFileAccess.STREAM_FILE_ACCESS;
 import static com.hedera.services.bdd.spec.HapiSpec.SpecStatus.ERROR;
 import static com.hedera.services.bdd.spec.HapiSpec.SpecStatus.FAILED;
 import static com.hedera.services.bdd.spec.HapiSpec.SpecStatus.FAILED_AS_EXPECTED;
@@ -37,10 +37,12 @@ import static com.hedera.services.bdd.spec.keys.DefaultKeyGen.DEFAULT_KEY_GEN;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getScheduleInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.doIfNotInterrupted;
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.resourceAsString;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.triggerAndCloseAtLeastOneFileIfNotInterrupted;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.turnLoggingOff;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleSign;
+import static com.hedera.services.bdd.spec.utilops.SysFileOverrideOp.Target.*;
 import static com.hedera.services.bdd.spec.utilops.UtilStateChange.createEthereumAccountForSpec;
 import static com.hedera.services.bdd.spec.utilops.UtilStateChange.isEthereumAccountCreatedForSpec;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.blockingOrder;
@@ -73,6 +75,7 @@ import com.hedera.services.bdd.junit.extensions.NetworkTargetingExtension;
 import com.hedera.services.bdd.junit.hedera.HederaNetwork;
 import com.hedera.services.bdd.junit.hedera.HederaNode;
 import com.hedera.services.bdd.junit.hedera.NodeSelector;
+import com.hedera.services.bdd.junit.hedera.embedded.EmbeddedHedera;
 import com.hedera.services.bdd.junit.hedera.embedded.EmbeddedNetwork;
 import com.hedera.services.bdd.junit.hedera.remote.RemoteNetwork;
 import com.hedera.services.bdd.junit.support.TestLifecycle;
@@ -86,11 +89,12 @@ import com.hedera.services.bdd.spec.props.MapPropertySource;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hedera.services.bdd.spec.transactions.TxnFactory;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
+import com.hedera.services.bdd.spec.utilops.SysFileOverrideOp;
 import com.hedera.services.bdd.spec.utilops.UtilOp;
 import com.hedera.services.bdd.spec.utilops.records.AutoSnapshotModeOp;
 import com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode;
 import com.hedera.services.bdd.spec.utilops.records.SnapshotModeOp;
-import com.hedera.services.bdd.spec.utilops.streams.assertions.EventualRecordStreamAssertion;
+import com.hedera.services.bdd.spec.utilops.streams.assertions.AbstractEventualStreamAssertion;
 import com.hedera.services.bdd.spec.verification.traceability.SidecarWatcher;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -114,6 +118,7 @@ import java.util.Optional;
 import java.util.SplittableRandom;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Future;
 import java.util.concurrent.PriorityBlockingQueue;
 import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -154,10 +159,22 @@ public class HapiSpec implements Runnable, Executable {
     public static final ThreadLocal<HederaNetwork> TARGET_NETWORK = new ThreadLocal<>();
     /**
      * If set, a list of properties to preserve in construction of this thread's next {@link HapiSpec} instance.
-     * In general the {@link NetworkTargetingExtension} will bind this value to the thread prior to executing a
+     * Typically the {@link NetworkTargetingExtension} will bind this value to the thread prior to executing a
      * test factory based on its {@link LeakyHapiTest#overrides()} attribute.
      */
     public static final ThreadLocal<List<String>> PROPERTIES_TO_PRESERVE = new ThreadLocal<>();
+    /**
+     * If set, a resource to load throttles from for this thread's next {@link HapiSpec} instance. Typically the
+     * {@link NetworkTargetingExtension} will bind this value to the thread prior to executing a test factory based
+     * on its {@link LeakyHapiTest#throttles()} attribute.
+     */
+    public static final ThreadLocal<String> THROTTLES_OVERRIDE = new ThreadLocal<>();
+    /**
+     * If set, a resource to load fee schedules from for this thread's next {@link HapiSpec} instance. Typically the
+     * {@link NetworkTargetingExtension} will bind this value to the thread prior to executing a test factory based
+     * on its {@link LeakyHapiTest#fees()} ()} attribute.
+     */
+    public static final ThreadLocal<String> FEES_OVERRIDE = new ThreadLocal<>();
 
     public static final ThreadLocal<TestLifecycle> TEST_LIFECYCLE = new ThreadLocal<>();
     public static final ThreadLocal<String> SPEC_NAME = new ThreadLocal<>();
@@ -189,7 +206,7 @@ public class HapiSpec implements Runnable, Executable {
         TRUE
     }
 
-    private record Failure(Throwable cause, String opDescription) {
+    public record Failure(Throwable cause, String opDescription) {
         private static final String LOG_TPL = "%s when executing %s";
 
         @Override
@@ -251,6 +268,18 @@ public class HapiSpec implements Runnable, Executable {
      */
     @Nullable
     private Supplier<Timestamp> nextValidStart;
+    /**
+     * If non-null, a resource to load override throttles from for this spec, restoring the previous
+     * contents of the 0.0.123 system file after the spec completes.
+     */
+    @Nullable
+    private String throttleResource;
+    /**
+     * If non-null, a resource to load override fees from for this spec, restoring the previous
+     * contents of the 0.0.111 system file after the spec completes.
+     */
+    @Nullable
+    private String feeResource;
 
     boolean quietMode;
 
@@ -355,11 +384,6 @@ public class HapiSpec implements Runnable, Executable {
         return name;
     }
 
-    public HapiSpec appendToName(String postfix) {
-        this.name = this.name + postfix;
-        return this;
-    }
-
     public String getSuitePrefix() {
         return suitePrefix;
     }
@@ -403,7 +427,7 @@ public class HapiSpec implements Runnable, Executable {
      */
     public @NonNull Path streamsLoc(@NonNull final NodeSelector selector) {
         requireNonNull(selector);
-        return targetNetworkOrThrow().getRequiredNode(selector).getExternalPath(STREAMS_DIR);
+        return targetNetworkOrThrow().getRequiredNode(selector).getExternalPath(RECORD_STREAMS_DIR);
     }
 
     /**
@@ -417,6 +441,7 @@ public class HapiSpec implements Runnable, Executable {
 
     /**
      * Returns the best-effort representation of the properties in effect on startup of the target network.
+     *
      * @return the startup properties
      */
     public @NonNull HapiPropertySource startupProperties() {
@@ -434,6 +459,15 @@ public class HapiSpec implements Runnable, Executable {
         } else {
             return Instant.now();
         }
+    }
+
+    /**
+     * Returns the {@link EmbeddedHedera} for a spec in embedded mode, or throws if the spec is not in embedded mode.
+     * @return the embedded Hedera
+     * @throws IllegalStateException if the spec is not in embedded mode
+     */
+    public EmbeddedHedera embeddedHederaOrThrow() {
+        return embeddedNetworkOrThrow().embeddedHederaOrThrow();
     }
 
     /**
@@ -688,14 +722,21 @@ public class HapiSpec implements Runnable, Executable {
         final var shouldPreserveProps = !propertiesToPreserve.isEmpty();
         final Map<String, String> preservedProperties = shouldPreserveProps ? new HashMap<>() : Collections.emptyMap();
         if (shouldPreserveProps) {
-            ops = new ArrayList<>(ops);
-            ops.add(0, remembering(preservedProperties, propertiesToPreserve));
+            ops.addFirst(remembering(preservedProperties, propertiesToPreserve));
+        }
+        if (throttleResource != null) {
+            ops.addFirst(new SysFileOverrideOp(
+                    THROTTLES, () -> throttleResource.isBlank() ? null : resourceAsString(throttleResource)));
+        }
+        if (feeResource != null) {
+            ops.addFirst(
+                    new SysFileOverrideOp(FEES, () -> feeResource.isBlank() ? null : resourceAsString(feeResource)));
         }
         final var autoScheduled = setup().txnTypesToSchedule();
         if (!autoScheduled.isEmpty()) {
             log.info("Auto-scheduling {}", autoScheduled);
         }
-        @Nullable List<EventualRecordStreamAssertion> assertions = null;
+        @Nullable List<AbstractEventualStreamAssertion> streamAssertions = null;
         var snapshotOp = AutoSnapshotModeOp.from(this);
         if (snapshotOp != null) {
             // Ensure a mutable list
@@ -706,11 +747,11 @@ public class HapiSpec implements Runnable, Executable {
             if (!autoScheduled.isEmpty() && op.shouldSkipWhenAutoScheduling(autoScheduled)) {
                 continue;
             }
-            if (op instanceof EventualRecordStreamAssertion recordStreamAssertion) {
-                if (assertions == null) {
-                    assertions = new ArrayList<>();
+            if (op instanceof AbstractEventualStreamAssertion streamAssertion) {
+                if (streamAssertions == null) {
+                    streamAssertions = new ArrayList<>();
                 }
-                assertions.add(recordStreamAssertion);
+                streamAssertions.add(streamAssertion);
             } else if (op instanceof HapiTxnOp txn && autoScheduled.contains(txn.type())) {
                 op = autoScheduledSequenceFor(txn);
             } else if (op instanceof SnapshotModeOp snapshotModeOp) {
@@ -753,6 +794,11 @@ public class HapiSpec implements Runnable, Executable {
                 failure = new Failure(t, restoration.toString());
             });
         }
+        for (final var op : ops) {
+            if (op instanceof SysFileOverrideOp sysFileOverrideOp && sysFileOverrideOp.isAutoRestoring()) {
+                sysFileOverrideOp.restoreContentsIfNeeded(this);
+            }
+        }
         if (status == PASSED) {
             if (snapshotOp != null && snapshotOp.hasWorkToDo()) {
                 triggerAndCloseAtLeastOneFileIfNotInterrupted(this);
@@ -764,10 +810,10 @@ public class HapiSpec implements Runnable, Executable {
                     failure = new Failure(t, "Record snapshot fuzzy-match");
                 }
             }
-            final var maybeRecordStreamError = checkRecordStream(assertions);
-            if (maybeRecordStreamError.isPresent()) {
+            final var maybeStreamFileError = checkStream(streamAssertions);
+            if (maybeStreamFileError.isPresent()) {
                 status = FAILED;
-                failure = maybeRecordStreamError.get();
+                failure = maybeStreamFileError.get();
             }
             if (sidecarWatcher != null) {
                 try {
@@ -778,9 +824,9 @@ public class HapiSpec implements Runnable, Executable {
                     failure = new Failure(t, "Sidecar assertion");
                 }
             }
-        } else if (assertions != null) {
-            assertions.forEach(EventualRecordStreamAssertion::unsubscribe);
-            RECORD_STREAM_ACCESS.stopMonitorIfNoSubscribers();
+        } else if (streamAssertions != null) {
+            streamAssertions.forEach(AbstractEventualStreamAssertion::unsubscribe);
+            STREAM_FILE_ACCESS.stopMonitorIfNoSubscribers();
         }
 
         tearDown();
@@ -915,30 +961,34 @@ public class HapiSpec implements Runnable, Executable {
         return endIndices;
     }
 
-    private Optional<Failure> checkRecordStream(@Nullable final List<EventualRecordStreamAssertion> assertions) {
-        if (assertions == null) {
+    private Optional<Failure> checkStream(@Nullable final List<AbstractEventualStreamAssertion> streamAssertions) {
+        if (streamAssertions == null) {
             return Optional.empty();
         }
         if (!quietMode) {
-            log.info("Checking record stream for {} assertions", assertions.size());
+            log.info("Checking stream files for {} assertions", streamAssertions.size());
         }
+        final var needsTraffic =
+                streamAssertions.stream().anyMatch(AbstractEventualStreamAssertion::needsBackgroundTraffic);
         Optional<Failure> answer = Optional.empty();
-        // Keep submitting transactions to close record files (in almost every case, just
+        // Keep submitting transactions to close stream files (in almost every case, just
         // one file will need to be closed, since it's very rare to have a long-running spec)
-        final var backgroundTraffic = THREAD_POOL.submit(() -> {
-            while (true) {
-                try {
-                    TxnUtils.triggerAndCloseAtLeastOneFile(this);
-                    if (!quietMode) {
-                        log.info("Closed at least one record file via background traffic");
+        final Future<?> backgroundTraffic = needsTraffic
+                ? THREAD_POOL.submit(() -> {
+                    while (true) {
+                        try {
+                            TxnUtils.triggerAndCloseAtLeastOneFile(this);
+                            if (!quietMode) {
+                                log.info("Closed at least one record file via background traffic");
+                            }
+                        } catch (final InterruptedException ignore) {
+                            Thread.currentThread().interrupt();
+                            return;
+                        }
                     }
-                } catch (final InterruptedException ignore) {
-                    Thread.currentThread().interrupt();
-                    return;
-                }
-            }
-        });
-        for (final var assertion : assertions) {
+                })
+                : null;
+        for (final var assertion : streamAssertions) {
             if (!quietMode) {
                 log.info("Checking record stream for {}", assertion);
             }
@@ -952,8 +1002,10 @@ public class HapiSpec implements Runnable, Executable {
             }
         }
 
-        backgroundTraffic.cancel(true);
-        RECORD_STREAM_ACCESS.stopMonitorIfNoSubscribers();
+        if (backgroundTraffic != null) {
+            backgroundTraffic.cancel(true);
+        }
+        STREAM_FILE_ACCESS.stopMonitorIfNoSubscribers();
         return answer;
     }
 
@@ -1145,6 +1197,7 @@ public class HapiSpec implements Runnable, Executable {
     /**
      * Creates dynamic tests derived from with the given operations, preserving any properties bound to the thread
      * by a {@link LeakyHapiTest} test factory.
+     *
      * @param ops the operations
      * @return a {@link Stream} of {@link DynamicTest}s
      */
@@ -1156,6 +1209,7 @@ public class HapiSpec implements Runnable, Executable {
     /**
      * Creates dynamic tests derived from with the given operations, ensuring the listed properties are
      * restored to their original values after running the tests.
+     *
      * @param propertiesToPreserve the properties to preserve
      * @param ops the operations
      * @return a {@link Stream} of {@link DynamicTest}s
@@ -1197,6 +1251,8 @@ public class HapiSpec implements Runnable, Executable {
         Optional.ofNullable(TEST_LIFECYCLE.get())
                 .map(TestLifecycle::getSharedStates)
                 .ifPresent(spec::setSharedStates);
+        spec.throttleResource = THROTTLES_OVERRIDE.get();
+        spec.feeResource = FEES_OVERRIDE.get();
         return spec;
     }
 
@@ -1267,7 +1323,7 @@ public class HapiSpec implements Runnable, Executable {
         this.quietMode = "true".equalsIgnoreCase(quiet) || (!"false".equalsIgnoreCase(quiet) && isCiCheck);
     }
 
-    interface Def {
+    public interface Def {
         @FunctionalInterface
         interface Sourced {
             Given withProperties(Object... sources);
@@ -1315,5 +1371,12 @@ public class HapiSpec implements Runnable, Executable {
         feeCalculator = null;
         ratesProvider = null;
         hapiRegistry = null;
+    }
+
+    private EmbeddedNetwork embeddedNetworkOrThrow() {
+        if (!(targetNetworkOrThrow() instanceof EmbeddedNetwork network)) {
+            throw new IllegalStateException("Target network is not embedded");
+        }
+        return network;
     }
 }

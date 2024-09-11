@@ -18,6 +18,7 @@ package com.hedera.node.app.service.contract.impl.exec.systemcontracts.common;
 
 import static java.util.Objects.requireNonNull;
 
+import com.esaulpaugh.headlong.abi.Function;
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
@@ -38,7 +39,7 @@ import org.hyperledger.besu.datatypes.Address;
 /**
  * Base class for HTS and HAS system contract call attempts.
  */
-public class AbstractCallAttempt {
+public abstract class AbstractCallAttempt<T extends AbstractCallAttempt<T>> {
     private final byte[] selector;
     protected Bytes input;
     private final Address authorizingAddress;
@@ -51,7 +52,7 @@ public class AbstractCallAttempt {
     private final AddressIdConverter addressIdConverter;
     private final VerificationStrategies verificationStrategies;
     private final SystemContractGasCalculator gasCalculator;
-    private final List<CallTranslator> callTranslators;
+    private final List<CallTranslator<T>> callTranslators;
     private final boolean isStaticCall;
 
     // If non-null, the address of a non-contract entity (e.g., account or token) whose
@@ -71,7 +72,7 @@ public class AbstractCallAttempt {
             @NonNull final AddressIdConverter addressIdConverter,
             @NonNull final VerificationStrategies verificationStrategies,
             @NonNull final SystemContractGasCalculator gasCalculator,
-            @NonNull final List<CallTranslator> callTranslators,
+            @NonNull final List<CallTranslator<T>> callTranslators,
             final boolean isStaticCall,
             @NonNull final com.esaulpaugh.headlong.abi.Function redirectFunction) {
         requireNonNull(input);
@@ -110,6 +111,8 @@ public class AbstractCallAttempt {
         this.senderId = addressIdConverter.convertSender(senderAddress);
         this.isStaticCall = isStaticCall;
     }
+
+    protected abstract T self();
 
     /**
      * Returns the default verification strategy for this call (i.e., the strategy that treats only
@@ -155,8 +158,9 @@ public class AbstractCallAttempt {
      * @return the executable call, or null if this attempt can't be translated to one
      */
     public @Nullable Call asExecutableCall() {
+        final var self = self();
         for (final var translator : callTranslators) {
-            final var call = translator.translateCallAttempt(this);
+            final var call = translator.translateCallAttempt(self);
             if (call != null) {
                 return call;
             }
@@ -239,6 +243,20 @@ public class AbstractCallAttempt {
 
     public boolean isRedirect() {
         return redirectAddress != null;
+    }
+
+    /**
+     * Returns whether this call attempt is a selector for any of the given functions.
+     * @param functions selectors to match against
+     * @return boolean result
+     */
+    public boolean isSelector(@NonNull final Function... functions) {
+        for (final var function : functions) {
+            if (Arrays.equals(function.selector(), this.selector())) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private boolean isRedirectSelector(@NonNull final byte[] functionSelector, @NonNull final byte[] input) {

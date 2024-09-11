@@ -17,8 +17,6 @@
 package com.hedera.node.app.workflows.handle.dispatch;
 
 import static com.hedera.hapi.node.base.HederaFunctionality.CONTRACT_CALL;
-import static com.hedera.node.app.workflows.handle.steps.HollowAccountCompletionsTest.asTxn;
-import static com.hedera.node.app.workflows.handle.steps.HollowAccountCompletionsTest.consensusTime;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -43,19 +41,17 @@ import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.hapi.util.UnknownHederaFunctionality;
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.fees.FeeManager;
-import com.hedera.node.app.records.BlockRecordManager;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.services.ServiceScopeLookup;
 import com.hedera.node.app.spi.authorization.Authorizer;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
-import com.hedera.node.app.spi.records.RecordCache;
+import com.hedera.node.app.spi.records.BlockRecordInfo;
 import com.hedera.node.app.spi.signatures.VerificationAssistant;
 import com.hedera.node.app.spi.throttle.ThrottleAdviser;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer;
 import com.hedera.node.app.spi.workflows.record.StreamBuilder;
 import com.hedera.node.app.store.ReadableStoreFactory;
-import com.hedera.node.app.throttle.NetworkUtilizationManager;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.app.workflows.handle.Dispatch;
 import com.hedera.node.app.workflows.handle.DispatchProcessor;
@@ -64,7 +60,6 @@ import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.platform.state.PlatformState;
 import com.swirlds.state.spi.info.NetworkInfo;
 import com.swirlds.state.spi.info.NodeInfo;
 import java.time.Instant;
@@ -113,11 +108,9 @@ class ChildDispatchFactoryTest {
     private NodeInfo creatorInfo;
 
     @Mock(strictness = LENIENT)
-    private PlatformState platformState;
-
-    @Mock(strictness = LENIENT)
     private SavepointStackImpl savepointStack;
 
+    @Mock
     private ThrottleAdviser throttleAdviser;
 
     @Mock
@@ -130,13 +123,10 @@ class ChildDispatchFactoryTest {
     private FeeManager feeManager;
 
     @Mock
-    private RecordCache recordCache;
+    private BlockRecordInfo blockRecordInfo;
 
     @Mock
     private DispatchProcessor dispatchProcessor;
-
-    @Mock
-    private BlockRecordManager blockRecordManager;
 
     @Mock
     private ServiceScopeLookup serviceScopeLookup;
@@ -146,9 +136,6 @@ class ChildDispatchFactoryTest {
 
     @Mock
     private ExchangeRateManager exchangeRateManager;
-
-    @Mock
-    private NetworkUtilizationManager networkUtilizationManager;
 
     private ChildDispatchFactory subject;
 
@@ -164,11 +151,9 @@ class ChildDispatchFactoryTest {
                             .build())
                     .build())
             .build();
-    private static final TransactionBody txBody = asTxn(transferBody, payerId, consensusTime);
     private final Configuration configuration = HederaTestConfigBuilder.createConfig();
 
     private final Predicate<Key> callback = key -> true;
-    private final HandleContext.TransactionCategory category = HandleContext.TransactionCategory.CHILD;
     private final ExternalizedRecordCustomizer customizer = recordBuilder -> recordBuilder;
     private final RecordStreamBuilder.ReversingBehavior reversingBehavior = StreamBuilder.ReversingBehavior.REMOVABLE;
 
@@ -179,9 +164,7 @@ class ChildDispatchFactoryTest {
                 authorizer,
                 networkInfo,
                 feeManager,
-                recordCache,
                 dispatchProcessor,
-                blockRecordManager,
                 serviceScopeLookup,
                 storeMetricsService,
                 exchangeRateManager);
@@ -254,10 +237,11 @@ class ChildDispatchFactoryTest {
                         savepointStack,
                         readableStoreFactory,
                         creatorInfo,
-                        platformState,
                         CONTRACT_CALL,
                         throttleAdviser,
-                        Instant.ofEpochSecond(12345L)));
+                        Instant.ofEpochSecond(12345L),
+                        blockRecordInfo,
+                        HandleContext.ConsensusThrottling.ON));
         assertTrue(exception.getCause() instanceof UnknownHederaFunctionality);
         assertEquals("Unknown Hedera Functionality", exception.getMessage());
     }

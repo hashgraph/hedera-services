@@ -86,7 +86,7 @@ public class CryptoTransferValidator {
         }
         validateFalsePreCheck(uniqueAcctIds.size() < acctAmounts.size(), ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS);
 
-        validateTokenTransfers(op.tokenTransfers());
+        validateTokenTransfers(op.tokenTransfers(), AllowanceStrategy.ALLOWANCES_ALLOWED);
     }
 
     /**
@@ -166,7 +166,9 @@ public class CryptoTransferValidator {
         return false;
     }
 
-    public static void validateTokenTransfers(List<TokenTransferList> tokenTransfers) throws PreCheckException {
+    public static void validateTokenTransfers(
+            final List<TokenTransferList> tokenTransfers, final AllowanceStrategy allowanceStrategy)
+            throws PreCheckException {
         // Validate token transfers
         final var tokenIds = new HashSet<TokenID>();
         for (final TokenTransferList tokenTransfer : tokenTransfers) {
@@ -176,11 +178,11 @@ public class CryptoTransferValidator {
 
             // Validate the fungible transfers
             final var uniqueTokenAcctIds = new HashSet<Pair<AccountID, Boolean>>();
-            validateFungibleTransfers(tokenTransfer.transfers(), uniqueTokenAcctIds);
+            validateFungibleTransfers(tokenTransfer.transfers(), uniqueTokenAcctIds, allowanceStrategy);
 
             // Validate the nft transfers
             final var nftIds = new HashSet<Long>();
-            validateNftTransfers(tokenTransfer.nftTransfers(), nftIds);
+            validateNftTransfers(tokenTransfer.nftTransfers(), nftIds, allowanceStrategy);
 
             // Verify that one and only one of the two types of transfers (fungible or non-fungible) is present
             validateFalsePreCheck(
@@ -190,11 +192,16 @@ public class CryptoTransferValidator {
     }
 
     public static void validateFungibleTransfers(
-            final List<AccountAmount> fungibleTransfers, final Set<Pair<AccountID, Boolean>> uniqueTokenAcctIds)
+            final List<AccountAmount> fungibleTransfers,
+            final Set<Pair<AccountID, Boolean>> uniqueTokenAcctIds,
+            final AllowanceStrategy allowanceStrategy)
             throws PreCheckException {
         validateTruePreCheck(isNetZeroAdjustment(fungibleTransfers), TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN);
         boolean nonZeroFungibleValueFound = false;
         for (final AccountAmount acctAmount : fungibleTransfers) {
+            if (allowanceStrategy.equals(AllowanceStrategy.ALLOWANCES_REJECTED)) {
+                validateFalsePreCheck(acctAmount.isApproval(), NOT_SUPPORTED);
+            }
             validateTruePreCheck(acctAmount.hasAccountID(), INVALID_TRANSFER_ACCOUNT_ID);
             uniqueTokenAcctIds.add(Pair.of(acctAmount.accountIDOrThrow(), acctAmount.isApproval()));
             if (!nonZeroFungibleValueFound && acctAmount.amount() != 0) {
@@ -205,9 +212,13 @@ public class CryptoTransferValidator {
                 uniqueTokenAcctIds.size() < fungibleTransfers.size(), ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS);
     }
 
-    public static void validateNftTransfers(final List<NftTransfer> nftTransfers, final Set<Long> nftIds)
+    public static void validateNftTransfers(
+            final List<NftTransfer> nftTransfers, final Set<Long> nftIds, final AllowanceStrategy allowanceStrategy)
             throws PreCheckException {
         for (final NftTransfer nftTransfer : nftTransfers) {
+            if (allowanceStrategy.equals(AllowanceStrategy.ALLOWANCES_REJECTED)) {
+                validateFalsePreCheck(nftTransfer.isApproval(), NOT_SUPPORTED);
+            }
             validateTruePreCheck(nftTransfer.serialNumber() > 0, INVALID_TOKEN_NFT_SERIAL_NUMBER);
             validateTruePreCheck(nftTransfer.hasSenderAccountID(), INVALID_TRANSFER_ACCOUNT_ID);
             validateTruePreCheck(nftTransfer.hasReceiverAccountID(), INVALID_TRANSFER_ACCOUNT_ID);
@@ -226,5 +237,14 @@ public class CryptoTransferValidator {
             net = net.add(BigInteger.valueOf(adjust.amount()));
         }
         return net.equals(ZERO);
+    }
+
+    /**
+     * Enum to specify the strategy for handling allowances. For airdrops, currently we don't support allowances.
+     * For crypto transfer the allowances should be supported.
+     */
+    public enum AllowanceStrategy {
+        ALLOWANCES_ALLOWED,
+        ALLOWANCES_REJECTED
     }
 }

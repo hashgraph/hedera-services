@@ -29,7 +29,6 @@ import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.network.Connection;
-import com.swirlds.platform.test.fixtures.event.IndexedEvent;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -129,10 +128,10 @@ public class SyncValidator {
             @NonNull final AncientMode ancientMode) {
         // Determine the unique events for the caller and listener, since they could have added some of the
         // same events from step 2.
-        final Collection<IndexedEvent> expectedCallerSendList = new ArrayList<>(caller.getGeneratedEvents());
+        final Collection<EventImpl> expectedCallerSendList = new ArrayList<>(caller.getGeneratedEvents());
         expectedCallerSendList.removeAll(listener.getGeneratedEvents());
 
-        final Collection<IndexedEvent> expectedListenerSendList = new ArrayList<>(listener.getGeneratedEvents());
+        final Collection<EventImpl> expectedListenerSendList = new ArrayList<>(listener.getGeneratedEvents());
         expectedListenerSendList.removeAll(caller.getGeneratedEvents());
 
         // Remove expired events
@@ -170,7 +169,7 @@ public class SyncValidator {
 
     private static void compareEventLists(
             final String node,
-            final Collection<IndexedEvent> expectedList,
+            final Collection<EventImpl> expectedList,
             final SyncNode receiver,
             final boolean strictCompare,
             @NonNull final AncientMode ancientMode) {
@@ -186,7 +185,7 @@ public class SyncValidator {
                     "Expected and actual mismatch for %s. Expected = %s, Actual = %s", node, expectedList, actualList));
         }
 
-        LinkedList<IndexedEvent> expectedAndNotFound = new LinkedList<>();
+        LinkedList<EventImpl> expectedAndNotFound = new LinkedList<>();
 
         if (enableLogging) {
             printEvents(format("%s's expected received list", node), expectedList);
@@ -194,7 +193,7 @@ public class SyncValidator {
         }
 
         // Compare the two lists to see if there is a matching event in the actual list for each expected event
-        for (final IndexedEvent expected : expectedList) {
+        for (final EventImpl expected : expectedList) {
             boolean foundMatch = false;
 
             for (final PlatformEvent actual : actualList) {

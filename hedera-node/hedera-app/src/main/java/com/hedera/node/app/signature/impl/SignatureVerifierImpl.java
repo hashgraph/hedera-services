@@ -18,6 +18,7 @@ package com.hedera.node.app.signature.impl;
 
 import static com.hedera.hapi.node.base.SignaturePair.SignatureOneOfType.ECDSA_SECP256K1;
 import static com.hedera.hapi.node.base.SignaturePair.SignatureOneOfType.ED25519;
+import static com.hedera.node.app.spi.signatures.SignatureVerifier.MessageType.KECCAK_256_HASH;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.Key;
@@ -25,6 +26,7 @@ import com.hedera.node.app.hapi.utils.MiscCryptoUtils;
 import com.hedera.node.app.signature.ExpandedSignaturePair;
 import com.hedera.node.app.signature.SignatureVerificationFuture;
 import com.hedera.node.app.signature.SignatureVerifier;
+import com.hedera.node.app.spi.signatures.SignatureVerifier.MessageType;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.crypto.SignatureType;
@@ -55,9 +57,16 @@ public final class SignatureVerifierImpl implements SignatureVerifier {
     @NonNull
     @Override
     public Map<Key, SignatureVerificationFuture> verify(
-            @NonNull final Bytes signedBytes, @NonNull final Set<ExpandedSignaturePair> sigs) {
+            @NonNull final Bytes signedBytes,
+            @NonNull final Set<ExpandedSignaturePair> sigs,
+            @NonNull final MessageType messageType) {
         requireNonNull(signedBytes);
         requireNonNull(sigs);
+        requireNonNull(messageType);
+        if (messageType == KECCAK_256_HASH && signedBytes.length() != 32) {
+            throw new IllegalArgumentException(
+                    "Message type " + KECCAK_256_HASH + " must be 32 bytes long, got '" + signedBytes.toHex() + "'");
+        }
 
         Preparer edPreparer = null;
         final var hasEDSignature =
@@ -70,7 +79,7 @@ public final class SignatureVerifierImpl implements SignatureVerifier {
         final var hasECSignature =
                 sigs.stream().anyMatch(sigPair -> sigPair.sigPair().signature().kind() == ECDSA_SECP256K1);
         if (hasECSignature) {
-            ecPreparer = createPreparerForEC(signedBytes);
+            ecPreparer = createPreparerForEC(signedBytes, messageType);
         }
 
         // Gather each TransactionSignature to send to the platform and the resulting SignatureVerificationFutures
@@ -104,10 +113,16 @@ public final class SignatureVerifierImpl implements SignatureVerifier {
         return new Preparer(signedBytes, SignatureType.ED25519);
     }
 
-    private static Preparer createPreparerForEC(@NonNull final Bytes signedBytes) {
-        final var bytes = new byte[(int) signedBytes.length()];
-        signedBytes.getBytes(0, bytes, 0, bytes.length);
-        return new Preparer(Bytes.wrap(MiscCryptoUtils.keccak256DigestOf(bytes)), SignatureType.ECDSA_SECP256K1);
+    private static Preparer createPreparerForEC(
+            @NonNull final Bytes signedBytes, @NonNull final MessageType messageType) {
+        return switch (messageType) {
+            case RAW -> {
+                final var bytes = new byte[(int) signedBytes.length()];
+                signedBytes.getBytes(0, bytes, 0, bytes.length);
+                yield new Preparer(Bytes.wrap(MiscCryptoUtils.keccak256DigestOf(bytes)), SignatureType.ECDSA_SECP256K1);
+            }
+            case KECCAK_256_HASH -> new Preparer(signedBytes, SignatureType.ECDSA_SECP256K1);
+        };
     }
 
     // The Hashgraph Platform crypto engine takes a list of TransactionSignature objects to verify. Each of these

@@ -42,7 +42,6 @@ import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.log.Log;
 
-// @Future remove to revert #9214 after modularization is completed
 public class SetApprovalForAllCall extends AbstractCall {
 
     private final VerificationStrategy verificationStrategy;
