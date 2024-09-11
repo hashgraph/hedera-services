@@ -199,7 +199,7 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
             writeFuture.join();
             final var inputHash = inputTreeHasher.rootHash().join();
             final var blockStartStateHash = MOCK_START_STATE_ROOT_HASH_FUTURE.join();
-            final var outputTreeStatus = outputTreeHasher.status().join();
+            final var outputTreeStatus = outputTreeHasher.status();
 
             // Put this block hash context in state via the block stream info
             final var writableState = state.getWritableStates(BlockStreamService.NAME);

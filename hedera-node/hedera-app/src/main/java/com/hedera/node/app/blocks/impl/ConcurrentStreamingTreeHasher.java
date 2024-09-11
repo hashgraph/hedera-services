@@ -98,17 +98,18 @@ public class ConcurrentStreamingTreeHasher implements StreamingTreeHasher {
     }
 
     @Override
-    public CompletableFuture<Status> status() {
+    public Status status() {
         if (numLeaves == 0) {
-            return CompletableFuture.completedFuture(Status.EMPTY);
+            return Status.EMPTY;
         } else {
             schedulePendingWork();
             final var n = numLeaves;
             return hashed.thenApply(ignore -> {
-                final var rightmostHashes = new ArrayList<Bytes>();
-                combiner.flushAvailable(rightmostHashes);
-                return new Status(n, rightmostHashes);
-            });
+                        final var rightmostHashes = new ArrayList<Bytes>();
+                        combiner.flushAvailable(rightmostHashes);
+                        return new Status(n, rightmostHashes);
+                    })
+                    .join();
         }
     }
 
@@ -160,7 +161,7 @@ public class ConcurrentStreamingTreeHasher implements StreamingTreeHasher {
          * of scheduled hashes to combine can be padded with appropriately nested combination of hashes
          * whose descendants are all empty leaves.
          */
-        private static final int COMBINATION_CHUNK_SIZE = 32;
+        private static final int COMBINATION_CHUNK_SIZE = 2;
 
         private static final byte[][] EMPTY_HASHES = new byte[MAX_DEPTH][];
 
@@ -184,23 +185,6 @@ public class ConcurrentStreamingTreeHasher implements StreamingTreeHasher {
             this.depth = depth;
         }
 
-        public void flushAvailable(@NonNull final List<Bytes> rightmostHashes) {
-            if (!pendingHashes.isEmpty()) {
-                final var newPendingHash = pendingHashes.size() % 2 == 0 ? null : pendingHashes.removeLast();
-                schedulePendingWork();
-                combination.join();
-                if (newPendingHash != null) {
-                    pendingHashes.add(newPendingHash);
-                    rightmostHashes.add(Bytes.wrap(newPendingHash));
-                } else {
-                    rightmostHashes.add(Bytes.EMPTY);
-                }
-            }
-            if (delegate != null) {
-                delegate.flushAvailable(rightmostHashes);
-            }
-        }
-
         public void combine(@NonNull final byte[] hash) {
             pendingHashes.add(hash);
             if (pendingHashes.size() == COMBINATION_CHUNK_SIZE) {
@@ -217,6 +201,23 @@ public class ConcurrentStreamingTreeHasher implements StreamingTreeHasher {
                     schedulePendingWork();
                 }
                 return combination.thenCompose(ignore -> delegate.finalCombination());
+            }
+        }
+
+        public void flushAvailable(@NonNull final List<Bytes> rightmostHashes) {
+            if (!pendingHashes.isEmpty()) {
+                final var newPendingHash = pendingHashes.size() % 2 == 0 ? null : pendingHashes.removeLast();
+                schedulePendingWork();
+                combination.join();
+                if (newPendingHash != null) {
+                    pendingHashes.add(newPendingHash);
+                    rightmostHashes.add(Bytes.wrap(newPendingHash));
+                } else {
+                    rightmostHashes.add(Bytes.EMPTY);
+                }
+            }
+            if (delegate != null) {
+                delegate.flushAvailable(rightmostHashes);
             }
         }
 

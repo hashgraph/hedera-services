@@ -55,11 +55,12 @@ public interface StreamingTreeHasher {
     CompletableFuture<Bytes> rootHash();
 
     /**
-     * If supported, returns a future that completes with the status of the tree hash computation.
-     * @return a future that completes with the status of the tree hash computation
+     * If supported, blocks until this hasher can give a deterministic summary of the status of the
+     * tree hash computation.
+     * @return the status of the tree hash computation
      * @throws UnsupportedOperationException if the implementation does not support status reporting
      */
-    default CompletableFuture<Status> status() {
+    default Status status() {
         throw new UnsupportedOperationException();
     }
 }
