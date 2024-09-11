@@ -50,7 +50,7 @@ public class ConcurrentStreamingTreeHasher implements StreamingTreeHasher {
     private final ExecutorService executorService;
 
     /**
-     * Tracks the number of leaves added to the tree.
+     * The number of leaves added to the tree.
      */
     private int numLeaves;
     /**
@@ -93,9 +93,46 @@ public class ConcurrentStreamingTreeHasher implements StreamingTreeHasher {
         if (!pendingLeaves.isEmpty()) {
             schedulePendingWork();
         }
-        final var numPerfectLeaves = containingPowerOfTwo(numLeaves);
-        maxDepth = numPerfectLeaves == 0 ? 0 : Integer.numberOfTrailingZeros(numPerfectLeaves);
+        maxDepth = maxDepthFor(numLeaves);
         return hashed.thenCompose(ignore -> combiner.finalCombination());
+    }
+
+    @Override
+    public CompletableFuture<Status> status() {
+        if (numLeaves == 0) {
+            return CompletableFuture.completedFuture(Status.EMPTY);
+        } else {
+            schedulePendingWork();
+            final var n = numLeaves;
+            return hashed.thenApply(ignore -> {
+                final var rightmostHashes = new ArrayList<Bytes>();
+                combiner.flushAvailable(rightmostHashes);
+                return new Status(n, rightmostHashes);
+            });
+        }
+    }
+
+    /**
+     * Computes the root hash of a perfect binary Merkle tree of {@link Bytes} leaves (padded on the right with
+     * empty leaves to reach a power of two), given the penultimate status of the tree and the last leaf added to
+     * the tree.
+     * @param penultimateStatus the penultimate status of the tree
+     * @param lastLeaf the last leaf added to the tree
+     * @return the root hash of the tree
+     */
+    public static Bytes rootHashFrom(@NonNull final Status penultimateStatus, @NonNull final Bytes lastLeaf) {
+        requireNonNull(lastLeaf);
+        var hash = noThrowSha384HashOf(lastLeaf.toByteArray());
+        final var maxDepth = maxDepthFor(penultimateStatus.numLeaves() + 1);
+        for (int i = 0; i < maxDepth; i++) {
+            final var rightmostHash = penultimateStatus.rightmostHashes().get(i);
+            if (rightmostHash == Bytes.EMPTY) {
+                hash = BlockImplUtils.combine(hash, HashCombiner.EMPTY_HASHES[i]);
+            } else {
+                hash = BlockImplUtils.combine(rightmostHash.toByteArray(), hash);
+            }
+        }
+        return Bytes.wrap(hash);
     }
 
     private void schedulePendingWork() {
@@ -118,7 +155,13 @@ public class ConcurrentStreamingTreeHasher implements StreamingTreeHasher {
 
     private class HashCombiner {
         private static final int MAX_DEPTH = 24;
+        /**
+         * <b>IMPORTANT</b> - This must be an even number so we can safely assume that any odd number
+         * of scheduled hashes to combine can be padded with appropriately nested combination of hashes
+         * whose descendants are all empty leaves.
+         */
         private static final int COMBINATION_CHUNK_SIZE = 32;
+
         private static final byte[][] EMPTY_HASHES = new byte[MAX_DEPTH][];
 
         static {
@@ -139,6 +182,23 @@ public class ConcurrentStreamingTreeHasher implements StreamingTreeHasher {
                 throw new IllegalArgumentException("Cannot combine hashes at depth " + depth);
             }
             this.depth = depth;
+        }
+
+        public void flushAvailable(@NonNull final List<Bytes> rightmostHashes) {
+            if (!pendingHashes.isEmpty()) {
+                final var newPendingHash = pendingHashes.size() % 2 == 0 ? null : pendingHashes.removeLast();
+                schedulePendingWork();
+                combination.join();
+                if (newPendingHash != null) {
+                    pendingHashes.add(newPendingHash);
+                    rightmostHashes.add(Bytes.wrap(newPendingHash));
+                } else {
+                    rightmostHashes.add(Bytes.EMPTY);
+                }
+            }
+            if (delegate != null) {
+                delegate.flushAvailable(rightmostHashes);
+            }
         }
 
         public void combine(@NonNull final byte[] hash) {
@@ -182,6 +242,11 @@ public class ConcurrentStreamingTreeHasher implements StreamingTreeHasher {
             });
             pendingHashes = new ArrayList<>();
         }
+    }
+
+    private static int maxDepthFor(final int numLeaves) {
+        final var numPerfectLeaves = containingPowerOfTwo(numLeaves);
+        return numPerfectLeaves == 0 ? 0 : Integer.numberOfTrailingZeros(numPerfectLeaves);
     }
 
     private static int containingPowerOfTwo(final int n) {

@@ -168,7 +168,7 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
         if (writer == null) {
             writer = writerSupplier.get();
             blockTimestamp = round.getConsensusTimestamp();
-            boundaryStateChangeListener.setLastUsedConsensusTime(blockTimestamp);
+            boundaryStateChangeListener.setBoundaryTimestamp(blockTimestamp);
 
             final var blockStreamInfo = blockStreamInfoFrom(state);
             blockHashManager.startBlock(blockStreamInfo, lastBlockHash);
@@ -195,24 +195,33 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
     @Override
     public void endRound(@NonNull final State state, final long roundNum) {
         if (shouldCloseBlock(roundNum, roundsPerBlock)) {
-            final var writableState = state.getWritableStates(BlockStreamService.NAME);
-            final var blockStreamInfoState = writableState.<BlockStreamInfo>getSingleton(BLOCK_STREAM_INFO_KEY);
-            // Ensure runningHashManager futures include all result items and are completed
-            schedulePendingWork();
-            writeFuture.join();
-            // Commit the block stream info to state before flushing the boundary state changes
-            blockStreamInfoState.put(new BlockStreamInfo(
-                    blockNumber, blockTimestamp(), runningHashManager.latestHashes(), blockHashManager.blockHashes()));
-            ((CommittableWritableStates) writableState).commit();
-
-            // Flush the boundary state changes as our final hashable block item
+            // Flush all boundary state changes besides the BlockStreamInfo
             pendingItems.add(boundaryStateChangeListener.flushChanges());
             schedulePendingWork();
             writeFuture.join();
-
             final var inputHash = inputTreeHasher.rootHash().join();
-            final var outputHash = outputTreeHasher.rootHash().join();
             final var blockStartStateHash = MOCK_START_STATE_ROOT_HASH_FUTURE.join();
+            final var outputTreeStatus = outputTreeHasher.status().join();
+
+            // Put this block hash context in state via the block stream info
+            final var writableState = state.getWritableStates(BlockStreamService.NAME);
+            final var blockStreamInfoState = writableState.<BlockStreamInfo>getSingleton(BLOCK_STREAM_INFO_KEY);
+            blockStreamInfoState.put(new BlockStreamInfo(
+                    blockNumber,
+                    blockTimestamp(),
+                    runningHashManager.latestHashes(),
+                    blockHashManager.blockHashes(),
+                    inputHash,
+                    blockStartStateHash,
+                    outputTreeStatus.numLeaves(),
+                    outputTreeStatus.concatenatedHashes()));
+            ((CommittableWritableStates) writableState).commit();
+
+            // Flush the block stream info change
+            pendingItems.add(boundaryStateChangeListener.flushChanges());
+            schedulePendingWork();
+            writeFuture.join();
+            final var outputHash = outputTreeHasher.rootHash().join();
             final var leftParent = combine(lastBlockHash, inputHash);
             final var rightParent = combine(outputHash, blockStartStateHash);
             final var blockHash = combine(leftParent, rightParent);

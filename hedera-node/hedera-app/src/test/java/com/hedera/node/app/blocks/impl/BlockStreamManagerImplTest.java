@@ -161,7 +161,7 @@ class BlockStreamManagerImplTest {
         subject.startRound(round, state);
 
         // Assert the internal state of the subject has changed as expected and the writer has been opened
-        verify(boundaryStateChangeListener).setLastUsedConsensusTime(CONSENSUS_NOW);
+        verify(boundaryStateChangeListener).setBoundaryTimestamp(CONSENSUS_NOW);
         verify(aWriter).openBlock(N_BLOCK_NO);
         assertEquals(N_MINUS_2_BLOCK_HASH, subject.blockHashByBlockNumber(N_MINUS_2_BLOCK_NO));
         assertEquals(FAKE_RESTART_BLOCK_HASH, subject.blockHashByBlockNumber(N_MINUS_1_BLOCK_NO));
@@ -215,7 +215,7 @@ class BlockStreamManagerImplTest {
         subject.startRound(round, state);
 
         // Assert the internal state of the subject has changed as expected and the writer has been opened
-        verify(boundaryStateChangeListener).setLastUsedConsensusTime(CONSENSUS_NOW);
+        verify(boundaryStateChangeListener).setBoundaryTimestamp(CONSENSUS_NOW);
         verify(aWriter).openBlock(N_BLOCK_NO);
         assertEquals(N_MINUS_2_BLOCK_HASH, subject.blockHashByBlockNumber(N_MINUS_2_BLOCK_NO));
         assertEquals(FAKE_RESTART_BLOCK_HASH, subject.blockHashByBlockNumber(N_MINUS_1_BLOCK_NO));
@@ -252,7 +252,7 @@ class BlockStreamManagerImplTest {
         subject.startRound(round, state);
 
         // Assert the internal state of the subject has changed as expected and the writer has been opened
-        verify(boundaryStateChangeListener).setLastUsedConsensusTime(CONSENSUS_NOW);
+        verify(boundaryStateChangeListener).setBoundaryTimestamp(CONSENSUS_NOW);
         verify(aWriter).openBlock(N_BLOCK_NO);
         assertEquals(N_MINUS_2_BLOCK_HASH, subject.blockHashByBlockNumber(N_MINUS_2_BLOCK_NO));
         assertEquals(FAKE_RESTART_BLOCK_HASH, subject.blockHashByBlockNumber(N_MINUS_1_BLOCK_NO));

@@ -16,63 +16,63 @@
 
 package com.hedera.node.app.blocks.impl;
 
+import static com.hedera.node.app.blocks.impl.ConcurrentStreamingTreeHasher.rootHashFrom;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import com.hedera.node.app.blocks.NaiveStreamingTreeHasher;
+import com.hedera.node.app.blocks.StreamingTreeHasher.Status;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
+import java.util.Optional;
+import java.util.SplittableRandom;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Executors;
-import org.junit.jupiter.api.BeforeEach;
+import java.util.concurrent.ForkJoinPool;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
 class ConcurrentStreamingTreeHasherTest {
-    private ConcurrentStreamingTreeHasher treeHasher;
+    private static final int LEAF_SIZE = 48;
+    private static final SplittableRandom RANDOM = new SplittableRandom();
 
-    @BeforeEach
-    void setUp() {
-        treeHasher = new ConcurrentStreamingTreeHasher(Executors.newFixedThreadPool(4));
-    }
+    private final NaiveStreamingTreeHasher comparison = new NaiveStreamingTreeHasher();
+    private final ConcurrentStreamingTreeHasher subject = new ConcurrentStreamingTreeHasher(ForkJoinPool.commonPool());
 
     @ParameterizedTest
-    @ValueSource(ints = {1, 3, 32})
-    void testAddLeafAndRootHash(int numLeaves) throws NoSuchAlgorithmException {
+    @ValueSource(ints = {0, 1, 3, 32, 69, 100, 123, 234})
+    void testAddLeafAndRootHash(final int numLeaves) {
+        Bytes lastLeaf = null;
+        CompletableFuture<Status> statusFuture = null;
         for (int i = 1; i <= numLeaves; i++) {
-            byte[] leaf = createLeaf("leaf" + i);
-            treeHasher.addLeaf(Bytes.wrap(leaf));
+            final var contents = new byte[LEAF_SIZE];
+            RANDOM.nextBytes(contents);
+            final var leaf = Bytes.wrap(contents);
+            subject.addLeaf(leaf);
+            comparison.addLeaf(leaf);
+            if (i == numLeaves - 1) {
+                statusFuture = subject.status();
+            } else if (i == numLeaves) {
+                lastLeaf = leaf;
+            }
         }
 
-        CompletableFuture<Bytes> rootHashFuture = treeHasher.rootHash();
-        Bytes rootHash = rootHashFuture.join();
-
-        assertNotNull(rootHash);
-        assertEquals(48, rootHash.length()); // SHA-384 produces 48-byte hash
+        final var actual = subject.rootHash().join();
+        final var expected = comparison.rootHash().join();
+        assertEquals(expected, actual);
+        if (lastLeaf != null) {
+            final var status = Optional.ofNullable(statusFuture)
+                    .map(CompletableFuture::join)
+                    .orElse(Status.EMPTY);
+            System.out.println(status);
+            final var recalculated = rootHashFrom(status, lastLeaf);
+            assertEquals(expected, recalculated);
+        }
     }
 
     @Test
     void testAddLeafAfterRootHashRequested() {
-        byte[] leaf = new byte[48];
-
-        treeHasher.addLeaf(Bytes.wrap(leaf));
-        treeHasher.rootHash();
-
-        assertThrows(IllegalStateException.class, () -> treeHasher.addLeaf(Bytes.wrap(leaf)));
-    }
-
-    @Test
-    void testRootHashWithNoLeaves() {
-        CompletableFuture<Bytes> rootHashFuture = treeHasher.rootHash();
-        Bytes rootHash = rootHashFuture.join();
-
-        assertNotNull(rootHash);
-        assertEquals(48, rootHash.length()); // SHA-384 produces 48-byte hash
-    }
-
-    private byte[] createLeaf(String data) throws NoSuchAlgorithmException {
-        return MessageDigest.getInstance("SHA-384").digest(data.getBytes());
+        subject.addLeaf(Bytes.wrap(new byte[48]));
+        subject.rootHash();
+        assertThrows(IllegalStateException.class, () -> subject.addLeaf(Bytes.EMPTY));
     }
 }

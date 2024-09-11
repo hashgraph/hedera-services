@@ -34,7 +34,7 @@ public class NaiveStreamingTreeHasher implements StreamingTreeHasher {
     private boolean rootHashRequested = false;
 
     public static Bytes hashNaively(@NonNull final List<Bytes> leaves) {
-        final var hasher = new NaiveStreamingTreeHasher();
+        final var hasher = new com.hedera.node.app.blocks.NaiveStreamingTreeHasher();
         for (final var item : leaves) {
             hasher.addLeaf(item);
         }

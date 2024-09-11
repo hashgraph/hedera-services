@@ -16,8 +16,11 @@
 
 package com.hedera.node.app;
 
-import static com.hedera.node.app.blocks.BlockStreamService.FAKE_RESTART_BLOCK_HASH;
+import static com.hedera.node.app.blocks.impl.BlockImplUtils.combine;
+import static com.hedera.node.app.blocks.impl.ConcurrentStreamingTreeHasher.rootHashFrom;
+import static com.hedera.node.app.blocks.schemas.V0540BlockStreamSchema.BLOCK_STREAM_INFO_KEY;
 import static com.hedera.node.app.info.UnavailableNetworkInfo.UNAVAILABLE_NETWORK_INFO;
+import static com.hedera.node.app.records.impl.BlockRecordInfoUtils.blockHashByBlockNumber;
 import static com.hedera.node.app.records.schemas.V0490BlockRecordSchema.BLOCK_INFO_STATE_KEY;
 import static com.hedera.node.app.state.merkle.VersionUtils.isSoOrdered;
 import static com.hedera.node.app.statedumpers.DumpCheckpoint.MOD_POST_EVENT_STREAM_REPLAY;
@@ -33,12 +36,16 @@ import static com.swirlds.platform.system.status.PlatformStatus.STARTING_UP;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.block.stream.BlockItem;
 import com.hedera.hapi.block.stream.output.StateChanges;
 import com.hedera.hapi.node.base.SemanticVersion;
+import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.state.blockrecords.BlockInfo;
+import com.hedera.hapi.node.state.blockstream.BlockStreamInfo;
 import com.hedera.hapi.util.HapiUtils;
 import com.hedera.node.app.blocks.BlockStreamManager;
 import com.hedera.node.app.blocks.BlockStreamService;
+import com.hedera.node.app.blocks.StreamingTreeHasher;
 import com.hedera.node.app.blocks.impl.BoundaryStateChangeListener;
 import com.hedera.node.app.blocks.impl.KVStateChangeListener;
 import com.hedera.node.app.config.BootstrapConfigProviderImpl;
@@ -82,6 +89,7 @@ import com.hedera.node.config.Utils;
 import com.hedera.node.config.data.BlockStreamConfig;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.data.VersionConfig;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
@@ -843,13 +851,33 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener {
                                     // FUTURE - get the actual last block hash from e.g. a reconnect teacher or disk
                                 default -> blockStreamService
                                         .migratedLastBlockHash()
-                                        .orElse(FAKE_RESTART_BLOCK_HASH);
+                                        .orElse(startBlockHashFor(state));
                             });
             daggerApp.tssBaseService().registerLedgerSignatureConsumer(daggerApp.blockStreamManager());
             if (daggerApp.tssBaseService() instanceof PlaceholderTssBaseService placeholderTssBaseService) {
                 daggerApp.inject(placeholderTssBaseService);
             }
         }
+    }
+
+    private Bytes startBlockHashFor(@NonNull final State state) {
+        final var blockStreamInfo = state.getReadableStates(BlockStreamService.NAME)
+                .<BlockStreamInfo>getSingleton(BLOCK_STREAM_INFO_KEY)
+                .get();
+        requireNonNull(blockStreamInfo);
+        final var prevBlockHash = blockHashByBlockNumber(
+                blockStreamInfo.trailingBlockHashes(),
+                blockStreamInfo.blockNumber() - 1,
+                blockStreamInfo.blockNumber() - 1);
+        final var leftParent = combine(requireNonNull(prevBlockHash), blockStreamInfo.inputTreeRootHash());
+        final var lastStateChange = BlockItem.PROTOBUF.toBytes(BlockItem.newBuilder()
+                .stateChanges(new StateChanges(Timestamp.DEFAULT, List.of()))
+                .build());
+        final var penultimateOutputTreeStatus = StreamingTreeHasher.Status.from(
+                blockStreamInfo.numPrecedingOutputItems(), blockStreamInfo.rightmostPrecedingOutputTreeHashes());
+        final var outputTreeRootHash = rootHashFrom(penultimateOutputTreeStatus, lastStateChange);
+        final var rightParent = combine(outputTreeRootHash, blockStreamInfo.startOfBlockStateHash());
+        return combine(leftParent, rightParent);
     }
 
     private boolean isBlockStreamEnabled() {

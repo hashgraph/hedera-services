@@ -16,8 +16,14 @@
 
 package com.hedera.node.app.blocks;
 
+import static com.hedera.node.app.blocks.impl.BlockImplUtils.appendHash;
+import static com.hedera.node.app.records.impl.BlockRecordInfoUtils.HASH_SIZE;
+import static java.util.Objects.requireNonNull;
+
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 /**
@@ -26,6 +32,38 @@ import java.util.concurrent.CompletableFuture;
  * a perfect binary tree.
  */
 public interface StreamingTreeHasher {
+    /**
+     * Describes the status of the tree hash computation.
+     * @param numLeaves the number of leaves added to the tree
+     * @param rightmostHashes the rightmost hashes of the tree at each depth
+     */
+    record Status(int numLeaves, List<Bytes> rightmostHashes) {
+        public static Status EMPTY = new Status(0, List.of());
+
+        public boolean isEmpty() {
+            return numLeaves == 0;
+        }
+
+        public static Status from(final int numLeaves, @NonNull final Bytes concatenatedHashes) {
+            requireNonNull(concatenatedHashes);
+            final var depth = (int) concatenatedHashes.length() / HASH_SIZE;
+            final var rightmostHashes = new ArrayList<Bytes>(depth);
+            long start = 0;
+            for (int i = 0; i < depth; i++, start += HASH_SIZE) {
+                rightmostHashes.add(concatenatedHashes.slice(start, HASH_SIZE));
+            }
+            return new Status(numLeaves, rightmostHashes);
+        }
+
+        public Bytes concatenatedHashes() {
+            var hashes = Bytes.EMPTY;
+            for (var hash : rightmostHashes) {
+                hashes = appendHash(hash, hashes, rightmostHashes.size());
+            }
+            return hashes;
+        }
+    }
+
     /**
      * Adds a leaf to the implicit tree of items.
      * @param leaf the leaf to add
@@ -39,4 +77,13 @@ public interface StreamingTreeHasher {
      * @return a future that completes with the root hash of the tree of items
      */
     CompletableFuture<Bytes> rootHash();
+
+    /**
+     * If supported, returns a future that completes with the status of the tree hash computation.
+     * @return a future that completes with the status of the tree hash computation
+     * @throws UnsupportedOperationException if the implementation does not support status reporting
+     */
+    default CompletableFuture<Status> status() {
+        throw new UnsupportedOperationException();
+    }
 }
