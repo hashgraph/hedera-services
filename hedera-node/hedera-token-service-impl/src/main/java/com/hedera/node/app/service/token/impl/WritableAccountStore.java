@@ -224,7 +224,9 @@ public class WritableAccountStore extends ReadableAccountStoreImpl {
             final var newAccount = accountState().get(accountId);
             if (newAccount != null && newAccount.smartContract()) {
                 final var oldAccount = accountState().getOriginalValue(accountId);
-                if (oldAccount == null || oldAccount.ethereumNonce() != newAccount.ethereumNonce()) {
+                if (oldAccount == null
+                        || !oldAccount.smartContract()
+                        || oldAccount.ethereumNonce() != newAccount.ethereumNonce()) {
                     final var contractId = ContractID.newBuilder()
                             .contractNum(accountId.accountNumOrThrow())
                             .build();
@@ -232,7 +234,7 @@ public class WritableAccountStore extends ReadableAccountStoreImpl {
                     if (!newAccount.deleted()) {
                         updates.add(new ContractNonceInfo(contractId, newAccount.ethereumNonce()));
                     }
-                    if (oldAccount == null) {
+                    if (oldAccount == null || !oldAccount.smartContract()) {
                         newContractIds.add(contractId);
                     }
                 }

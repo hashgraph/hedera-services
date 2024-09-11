@@ -153,7 +153,7 @@ public final class EventRecoveryWorkflow {
                         platformContext, signedStateFile, SignedStateFileUtils::readState)
                 .reservedSignedState()) {
             StaticSoftwareVersion.setSoftwareVersion(
-                    initialState.get().getState().getPlatformState().getCreationSoftwareVersion());
+                    initialState.get().getState().getReadablePlatformState().getCreationSoftwareVersion());
 
             logger.info(
                     STARTUP.getMarker(),
@@ -314,7 +314,7 @@ public final class EventRecoveryWorkflow {
                 .init(
                         platform,
                         InitTrigger.EVENT_STREAM_RECOVERY,
-                        initialState.get().getState().getPlatformState().getCreationSoftwareVersion());
+                        initialState.get().getState().getReadablePlatformState().getCreationSoftwareVersion());
 
         appMain.init(platform, platform.getSelfId());
 
@@ -379,32 +379,33 @@ public final class EventRecoveryWorkflow {
         final PlatformEvent lastEvent = ((CesEvent) getLastEvent(round)).getPlatformEvent();
         new DefaultEventHasher().hashEvent(lastEvent);
 
-        final PlatformStateAccessor platformState = newState.getPlatformState();
+        final PlatformStateAccessor newReadablePlatformState = newState.getReadablePlatformState();
+        final PlatformStateAccessor newWritablePlatformState = newState.getWritablePlatformState();
+        final PlatformStateAccessor previousReadablePlatformState =
+                previousState.get().getState().getReadablePlatformState();
 
-        platformState.bulkUpdate(v -> {
+        newWritablePlatformState.bulkUpdate(v -> {
             v.setRound(round.getRoundNum());
-            v.setLegacyRunningEventHash(getHashEventsCons(
-                    previousState.get().getState().getPlatformState().getLegacyRunningEventHash(), round));
+            v.setLegacyRunningEventHash(
+                    getHashEventsCons(previousReadablePlatformState.getLegacyRunningEventHash(), round));
             v.setConsensusTimestamp(currentRoundTimestamp);
             v.setSnapshot(SyntheticSnapshot.generateSyntheticSnapshot(
                     round.getRoundNum(), lastEvent.getConsensusOrder(), currentRoundTimestamp, config, lastEvent));
-            v.setCreationSoftwareVersion(
-                    previousState.get().getState().getPlatformState().getCreationSoftwareVersion());
+            v.setCreationSoftwareVersion(previousReadablePlatformState.getCreationSoftwareVersion());
         });
 
         applyTransactions(
                 previousState.get().getSwirldState().cast(),
                 newState.getSwirldState().cast(),
-                newState.getPlatformState(),
+                newState.getWritablePlatformState(),
                 round);
 
         final boolean isFreezeState = isFreezeState(
                 previousState.get().getConsensusTimestamp(),
                 currentRoundTimestamp,
-                newState.getPlatformState().getFreezeTime());
+                newReadablePlatformState.getFreezeTime());
         if (isFreezeState) {
-            newState.getPlatformState()
-                    .setLastFrozenTime(newState.getPlatformState().getFreezeTime());
+            newWritablePlatformState.setLastFrozenTime(newReadablePlatformState.getFreezeTime());
         }
 
         final ReservedSignedState signedState = new SignedState(

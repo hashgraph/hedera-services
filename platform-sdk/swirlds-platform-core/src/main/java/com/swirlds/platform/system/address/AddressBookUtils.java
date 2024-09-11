@@ -16,12 +16,20 @@
 
 package com.swirlds.platform.system.address;
 
+import static com.swirlds.platform.util.BootstrapUtils.detectSoftwareUpgrade;
+
 import com.hedera.hapi.node.base.ServiceEndpoint;
 import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.hapi.node.state.roster.RosterEntry;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.formatting.TextTable;
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.platform.state.MerkleRoot;
+import com.swirlds.platform.state.PlatformStateAccessor;
+import com.swirlds.platform.state.address.AddressBookInitializer;
+import com.swirlds.platform.state.signed.ReservedSignedState;
+import com.swirlds.platform.system.SoftwareVersion;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.net.InetAddress;
@@ -371,5 +379,50 @@ public class AddressBookUtils {
                 .gossipCaCertificate(signingCertificateBytes)
                 .gossipEndpoint(serviceEndpoints)
                 .build();
+    }
+    /**
+     * Initializes the address book from the configuration and platform saved state.
+     * @param selfId the node ID of the current node
+     * @param version the software version of the current node
+     * @param initialState the initial state of the platform
+     * @param bootstrapAddressBook the bootstrap address book
+     * @param platformContext the platform context
+     * @return the initialized address book
+     */
+    public static @NonNull AddressBook initializeAddressBook(
+            @NonNull final NodeId selfId,
+            @NonNull final SoftwareVersion version,
+            @NonNull final ReservedSignedState initialState,
+            @NonNull final AddressBook bootstrapAddressBook,
+            @NonNull final PlatformContext platformContext) {
+        final boolean softwareUpgrade = detectSoftwareUpgrade(version, initialState.get());
+        // Initialize the address book from the configuration and platform saved state.
+        final AddressBookInitializer addressBookInitializer = new AddressBookInitializer(
+                selfId, version, softwareUpgrade, initialState.get(), bootstrapAddressBook.copy(), platformContext);
+
+        if (addressBookInitializer.hasAddressBookChanged()) {
+            final MerkleRoot state = initialState.get().getState();
+            // Update the address book with the current address book read from config.txt.
+            // Eventually we will not do this, and only transactions will be capable of
+            // modifying the address book.
+            final PlatformStateAccessor platformState = state.getWritablePlatformState();
+            platformState.bulkUpdate(v -> {
+                v.setAddressBook(addressBookInitializer.getCurrentAddressBook().copy());
+                v.setPreviousAddressBook(
+                        addressBookInitializer.getPreviousAddressBook() == null
+                                ? null
+                                : addressBookInitializer
+                                        .getPreviousAddressBook()
+                                        .copy());
+            });
+        }
+
+        // At this point the initial state must have the current address book set.  If not, something is wrong.
+        final AddressBook addressBook =
+                initialState.get().getState().getReadablePlatformState().getAddressBook();
+        if (addressBook == null) {
+            throw new IllegalStateException("The current address book of the initial state is null.");
+        }
+        return addressBook;
     }
 }

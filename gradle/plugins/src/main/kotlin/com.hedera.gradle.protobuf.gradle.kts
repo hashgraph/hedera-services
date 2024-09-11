@@ -31,7 +31,9 @@ protobuf {
             artifact = "io.grpc:protoc-gen-grpc-java:" + libs.findVersion("grpc-proto").get()
         }
     }
-    generateProtoTasks { ofSourceSet("main").forEach { it.plugins { id("grpc") } } }
+    generateProtoTasks {
+        all().configureEach { plugins { id("grpc") { option("@generated=omit") } } }
+    }
 }
 
 sourceSets.all {

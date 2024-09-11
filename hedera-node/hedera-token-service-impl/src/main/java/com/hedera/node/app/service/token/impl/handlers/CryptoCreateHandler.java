@@ -107,21 +107,15 @@ public class CryptoCreateHandler extends BaseCryptoHandler implements Transactio
             .build();
 
     private final CryptoCreateValidator cryptoCreateValidator;
-    private final StakingValidator stakingValidator;
 
     /**
      * Constructs a {@link CryptoCreateHandler} with the given {@link CryptoCreateValidator} and {@link StakingValidator}.
      * @param cryptoCreateValidator the validator for the crypto create transaction
-     * @param stakingValidator the validator for the staking information in the crypto create transaction
      */
     @Inject
-    public CryptoCreateHandler(
-            @NonNull final CryptoCreateValidator cryptoCreateValidator,
-            @NonNull final StakingValidator stakingValidator) {
+    public CryptoCreateHandler(@NonNull final CryptoCreateValidator cryptoCreateValidator) {
         this.cryptoCreateValidator =
                 requireNonNull(cryptoCreateValidator, "The supplied argument 'cryptoCreateValidator' must not be null");
-        this.stakingValidator =
-                requireNonNull(stakingValidator, "The supplied argument 'stakingValidator' must not be null");
     }
 
     @Override

@@ -38,6 +38,7 @@ option java_multiple_files = true;
 import "stream/output/schedule_service.proto";
 import "stream/output/util_service.proto";
 import "stream/output/crypto_service.proto";
+import "stream/output/token_service.proto";
 import "stream/output/smart_contract_service.proto";
 
 /**
@@ -149,5 +150,10 @@ message TransactionOutput {
          * executing the scheduled transaction.
          */
         SignScheduleOutput sign_schedule = 7;
+
+        /**
+         * Output from a token airdrop transaction.
+         */
+        TokenAirdropOutput token_airdrop = 8;
     }
 }

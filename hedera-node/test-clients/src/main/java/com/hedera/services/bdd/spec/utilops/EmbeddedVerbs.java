@@ -71,23 +71,23 @@ public final class EmbeddedVerbs {
     }
 
     /**
-     * Returns an operation that allows the test author to directly mutate a node.
+     * Returns an operation that allows the test author to view a node.
      *
-     * @param name the name of the node to mutate
-     * @param observer the mutation to apply to the node
-     * @return the operation that will mutate the node
+     * @param name the name of the node to view
+     * @param observer the mutation to receive the node
+     * @return the operation that will expose the node to the observer
      */
     public static ViewNodeOp viewNode(@NonNull final String name, @NonNull final Consumer<Node> observer) {
         return new ViewNodeOp(name, observer);
     }
 
     /***
-     * `ViewPendingAirdropOp` is an operation that allows the test author to view the pending airdrop of an account.
-     * @param tokenName
-     * @param senderName
-     * @param receiverName
-     * @param observer
-     * @return
+     * Returns an operation that allows the test author to view the pending airdrop of an account.
+     * @param tokenName the name of the token
+     * @param senderName the name of the sender
+     * @param receiverName the name of the receiver
+     * @param observer the observer to apply to the account
+     * @return the operation that will expose the pending airdrop of the account
      */
     public static ViewPendingAirdropOp viewAccountPendingAirdrop(
             @NonNull final String tokenName,
