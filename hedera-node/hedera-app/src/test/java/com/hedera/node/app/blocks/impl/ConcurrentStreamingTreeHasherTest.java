@@ -20,7 +20,6 @@ import static com.hedera.node.app.blocks.impl.ConcurrentStreamingTreeHasher.root
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import com.hedera.node.app.blocks.NaiveStreamingTreeHasher;
 import com.hedera.node.app.blocks.StreamingTreeHasher.Status;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import java.util.Optional;

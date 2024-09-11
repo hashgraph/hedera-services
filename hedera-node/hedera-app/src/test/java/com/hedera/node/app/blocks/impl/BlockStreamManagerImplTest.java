@@ -155,6 +155,7 @@ class BlockStreamManagerImplTest {
                 aWriter);
         givenEndOfRoundSetup();
         final ArgumentCaptor<byte[]> blockHashCaptor = ArgumentCaptor.forClass(byte[].class);
+        given(boundaryStateChangeListener.boundaryTimestampOrThrow()).willReturn(Timestamp.DEFAULT);
 
         // Initialize the last (N-1) block hash
         subject.initLastBlockHash(FAKE_RESTART_BLOCK_HASH);
@@ -185,10 +186,15 @@ class BlockStreamManagerImplTest {
                 asTimestamp(CONSENSUS_NOW),
                 appendHash(combine(ZERO_BLOCK_HASH, FAKE_RESULT_HASH), appendHash(ZERO_BLOCK_HASH, Bytes.EMPTY, 4), 4),
                 appendHash(FAKE_RESTART_BLOCK_HASH, appendHash(N_MINUS_2_BLOCK_HASH, Bytes.EMPTY, 256), 256),
-                Bytes.EMPTY,
-                Bytes.EMPTY,
-                0,
-                List.of(),
+                Bytes.fromHex(
+                        "edde6b2beddb2fda438665bbe6df0a639c518e6d5352e7276944b70777d437d28d1b22813ed70f5b8a3a3cbaf08aa9a8"),
+                ZERO_BLOCK_HASH,
+                3,
+                List.of(
+                        Bytes.fromHex(
+                                "be03f18885e3fb5e26dae1ad95d6559b62092d2162342f376712fd00fa045aaedda06811a1548a916a26878752900473"),
+                        Bytes.fromHex(
+                                "84910d7e7710b482680de1e81865de39396de9c536ab265cf3253bf378bc50ed2f6c5a3ec19a25c51ee170347f13b28d")),
                 Timestamp.DEFAULT);
         final var actualBlockInfo = infoRef.get();
         assertEquals(expectedBlockInfo, actualBlockInfo);
@@ -250,6 +256,7 @@ class BlockStreamManagerImplTest {
                 aWriter);
         givenEndOfRoundSetup();
         given(round.getRoundNum()).willReturn(ROUND_NO);
+        given(boundaryStateChangeListener.boundaryTimestampOrThrow()).willReturn(Timestamp.DEFAULT);
         final ArgumentCaptor<byte[]> blockHashCaptor = ArgumentCaptor.forClass(byte[].class);
 
         // Initialize the last (N-1) block hash
@@ -284,10 +291,15 @@ class BlockStreamManagerImplTest {
                 asTimestamp(CONSENSUS_NOW),
                 appendHash(combine(Bytes.fromHex("dd".repeat(48)), FAKE_RESULT_HASH), resultHashes, 4),
                 appendHash(FAKE_RESTART_BLOCK_HASH, appendHash(N_MINUS_2_BLOCK_HASH, Bytes.EMPTY, 256), 256),
-                Bytes.EMPTY,
-                Bytes.EMPTY,
-                0,
-                List.of(),
+                Bytes.fromHex(
+                        "edde6b2beddb2fda438665bbe6df0a639c518e6d5352e7276944b70777d437d28d1b22813ed70f5b8a3a3cbaf08aa9a8"),
+                ZERO_BLOCK_HASH,
+                3,
+                List.of(
+                        Bytes.fromHex(
+                                "be03f18885e3fb5e26dae1ad95d6559b62092d2162342f376712fd00fa045aaedda06811a1548a916a26878752900473"),
+                        Bytes.fromHex(
+                                "84910d7e7710b482680de1e81865de39396de9c536ab265cf3253bf378bc50ed2f6c5a3ec19a25c51ee170347f13b28d")),
                 Timestamp.DEFAULT);
         final var actualBlockInfo = infoRef.get();
         assertEquals(expectedBlockInfo, actualBlockInfo);
@@ -391,7 +403,6 @@ class BlockStreamManagerImplTest {
                 configProvider,
                 tssBaseService,
                 boundaryStateChangeListener);
-        subject.appendRealHashes();
         given(state.getReadableStates(BlockStreamService.NAME)).willReturn(readableStates);
         given(state.getReadableStates(PlatformStateService.NAME)).willReturn(readableStates);
         infoRef.set(blockStreamInfo);

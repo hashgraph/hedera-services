@@ -14,11 +14,12 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.blocks;
+package com.hedera.node.app.blocks.impl;
 
 import static com.hedera.node.app.hapi.utils.CommonUtils.noThrowSha384HashOf;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.node.app.blocks.StreamingTreeHasher;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
@@ -34,7 +35,7 @@ public class NaiveStreamingTreeHasher implements StreamingTreeHasher {
     private boolean rootHashRequested = false;
 
     public static Bytes hashNaively(@NonNull final List<Bytes> leaves) {
-        final var hasher = new com.hedera.node.app.blocks.NaiveStreamingTreeHasher();
+        final var hasher = new NaiveStreamingTreeHasher();
         for (final var item : leaves) {
             hasher.addLeaf(item);
         }

@@ -74,6 +74,7 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
     private static final Logger log = LogManager.getLogger(BlockStreamManagerImpl.class);
 
     private static final int CHUNK_SIZE = 8;
+
     private static final CompletableFuture<Bytes> MOCK_START_STATE_ROOT_HASH_FUTURE =
             completedFuture(Bytes.wrap(new byte[48]));
 
@@ -217,23 +218,12 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
 
             // Flush the block stream info change
             pendingItems.add(boundaryStateChangeListener.flushChanges());
-            log.info(
-                    "Closing block {} with info [inputHash={},startHash={},numLeaves={},rightmostHashes={},endTime={}] using item hash {}",
-                    blockNumber,
-                    blockStreamInfoState.get().inputTreeRootHash(),
-                    blockStreamInfoState.get().startOfBlockStateHash(),
-                    blockStreamInfoState.get().numPrecedingOutputItems(),
-                    blockStreamInfoState.get().rightmostPrecedingOutputTreeHashes(),
-                    blockStreamInfoState.get().blockEndTime(),
-                    noThrowSha384HashOf(
-                            BlockItem.PROTOBUF.toBytes(pendingItems.getFirst()).toByteArray()));
             schedulePendingWork();
             writeFuture.join();
             final var outputHash = outputTreeHasher.rootHash().join();
             final var leftParent = combine(lastBlockHash, inputHash);
             final var rightParent = combine(outputHash, blockStartStateHash);
             final var blockHash = combine(leftParent, rightParent);
-            log.info(" - L: {}\n - R: {}\n - B: {}", leftParent, rightParent, blockHash);
             final var pendingProof = BlockProof.newBuilder()
                     .block(blockNumber)
                     .previousBlockRootHash(lastBlockHash)
@@ -331,11 +321,6 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
             }
         }
     }
-
-    /**
-     * (FUTURE) Remove this after reconnect protocol also transmits the last block hash.
-     */
-    public void appendRealHashes() {}
 
     private void schedulePendingWork() {
         final var scheduledWork = new ScheduledWork(pendingItems);

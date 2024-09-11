@@ -60,8 +60,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import javax.inject.Singleton;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 /**
  * A state change listener that tracks an entire sequence of changes, even if this sequence
@@ -69,8 +67,6 @@ import org.apache.logging.log4j.Logger;
  */
 @Singleton
 public class KVStateChangeListener implements StateChangeListener {
-    private static final Logger log = LogManager.getLogger(KVStateChangeListener.class);
-
     private static final Set<StateType> TARGET_DATA_TYPES = EnumSet.of(MAP);
 
     private final List<StateChange> stateChanges = new ArrayList<>();
@@ -79,7 +75,6 @@ public class KVStateChangeListener implements StateChangeListener {
      * Resets the state changes.
      */
     public void reset() {
-        log.info("Clearing state changes (K: {})", stateChanges);
         stateChanges.clear();
     }
 

@@ -307,11 +307,6 @@ public class HandleWorkflow {
         // Because synthetic account creation records are only externalized on the first user transaction, we
         // also postpone externalizing migration state changes until that same transactional unit
         if (blockStreamConfig.streamBlocks() && !migrationStateChanges.isEmpty()) {
-            logger.info(
-                    "Externalizing migration state changes {}",
-                    migrationStateChanges.stream()
-                            .map(StateChanges.Builder::build)
-                            .toList());
             migrationStateChanges.forEach(builder -> blockStreamManager.writeItem(BlockItem.newBuilder()
                     .stateChanges(builder.consensusTimestamp(blockStreamManager.blockTimestamp())
                             .build())

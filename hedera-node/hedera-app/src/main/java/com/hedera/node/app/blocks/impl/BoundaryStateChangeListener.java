@@ -53,8 +53,6 @@ import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
 import javax.inject.Singleton;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 /**
  * A state change listener that accumulates state changes that are only reported at a block boundary; either
@@ -63,8 +61,6 @@ import org.apache.logging.log4j.Logger;
  */
 @Singleton
 public class BoundaryStateChangeListener implements StateChangeListener {
-    private static final Logger log = LogManager.getLogger(BoundaryStateChangeListener.class);
-
     private static final Set<StateType> TARGET_DATA_TYPES = EnumSet.of(SINGLETON, QUEUE);
 
     private final SortedMap<Integer, StateChange> singletonUpdates = new TreeMap<>();
@@ -86,7 +82,6 @@ public class BoundaryStateChangeListener implements StateChangeListener {
      */
     public void reset() {
         boundaryTimestamp = null;
-        log.info("Clearing state changes (Q: {}, S: {})", queueUpdates, singletonUpdates);
         singletonUpdates.clear();
         queueUpdates.clear();
     }
