@@ -113,11 +113,10 @@ on:
         type: string
         required: false
         default: "Compiles"
-      ref-object:
-        description: "Git Ref Object to checkout"
-        type: string
+      ref:
+        description: "The branch, tag or SHA to checkout."
         required: false
-        default: ""
+        type: string
 
     secrets:
       access-token:
@@ -154,9 +153,7 @@ permissions:
 env:
   GRADLE_CACHE_USERNAME: ${{ secrets.gradle-cache-username }}
   GRADLE_CACHE_PASSWORD: ${{ secrets.gradle-cache-password }}
-  #GRADLE_EXEC: cgexec -g cpu,memory:gradle-${{ github.run_id }} --sticky ionice -c 2 -n 2 nice -n 19 ./gradlew
   GRADLE_EXEC: ionice -c 2 -n 2 nice -n 19 ./gradlew
-  #CG_EXEC: cgexec -g cpu,memory:gradle-${{ github.run_id }} --sticky ionice -c 2 -n 2 nice -n 19
   CG_EXEC: ionice -c 2 -n 2 nice -n 19
 
 jobs:
@@ -166,18 +163,10 @@ jobs:
     steps:
 
       # check if the ref object was passed in for checkout
-      - name: Checkout Code with Ref
-        id: checkout-with-ref
-        continue-on-error: true
-        if: ${{ inputs.ref-object != '' }} # some ref object was past in
+      - name: Checkout Code
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
         with:
-          ref: ${{ inputs.ref-object }}
-
-      # default checkout action
-      - name: Checkout Code
-        if: ${{ inputs.ref-object == '' || steps.checkout-with-ref.outcome == 'failure' }}
-        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+          ref: ${{ inputs.ref || '' }}
 
       - name: Expand Shallow Clone for and Spotless
         if: ${{ (inputs.enable-unit-tests || inputs.enable-spotless-check) && !cancelled() }}
@@ -198,43 +187,6 @@ jobs:
         uses: actions/setup-node@60edb5dd545a775178f52524783378180af0d1f8 # v4.0.2
         with:
           node-version: ${{ inputs.node-version }}
-
-      #      - name: Setup Control Groups
-      #        run: |
-      #          echo "::group::Get System Configuration"
-      #            USR_ID="$(id -un)"
-      #            GRP_ID="$(id -gn)"
-      #            GRADLE_MEM_LIMIT="30064771072"
-      #            AGENT_MEM_LIMIT="2147483648"
-      #            GRADLE_GROUP_NAME="gradle-${{ github.run_id }}"
-      #            AGENT_GROUP_NAME="agent-${{ github.run_id }}"
-      #          echo "::endgroup::"
-      #
-      #          echo "::group::Install Control Group Tools"
-      #            if ! command -v cgcreate >/dev/null 2>&1; then
-      #              sudo apt-get update
-      #              sudo apt-get install -y cgroup-tools
-      #            fi
-      #          echo "::endgroup::"
-      #
-      #          echo "::group::Create Control Groups"
-      #            sudo cgcreate -g cpu,memory:${GRADLE_GROUP_NAME} -a ${USR_ID}:${GRP_ID} -t ${USR_ID}:${GRP_ID}
-      #            sudo cgcreate -g cpu,memory:${AGENT_GROUP_NAME} -a ${USR_ID}:${GRP_ID} -t ${USR_ID}:${GRP_ID}
-      #          echo "::endgroup::"
-      #
-      #          echo "::group::Set Control Group Limits"
-      #            cgset -r cpu.shares=768 ${GRADLE_GROUP_NAME}
-      #            cgset -r cpu.shares=500 ${AGENT_GROUP_NAME}
-      #            cgset -r memory.limit_in_bytes=${GRADLE_MEM_LIMIT} ${GRADLE_GROUP_NAME}
-      #            cgset -r memory.limit_in_bytes=${AGENT_MEM_LIMIT} ${AGENT_GROUP_NAME}
-      #            cgset -r memory.memsw.limit_in_bytes=${GRADLE_MEM_LIMIT} ${GRADLE_GROUP_NAME}
-      #            cgset -r memory.memsw.limit_in_bytes=${AGENT_MEM_LIMIT} ${AGENT_GROUP_NAME}
-      #          echo "::endgroup::"
-      #
-      #          echo "::group::Move Runner Processes to Control Groups"
-      #            sudo cgclassify --sticky -g cpu,memory:${AGENT_GROUP_NAME} $(pgrep 'Runner.Listener' | tr '\n' ' ')
-      #            sudo cgclassify -g cpu,memory:${AGENT_GROUP_NAME} $(pgrep 'Runner.Worker' | tr '\n' ' ')
-      #          echo "::endgroup::"
 
       - name: Compile
         id: gradle-build

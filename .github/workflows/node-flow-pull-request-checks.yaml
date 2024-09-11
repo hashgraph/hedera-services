@@ -181,14 +181,17 @@ jobs:
       gradle-cache-username: ${{ secrets.GRADLE_CACHE_USERNAME }}
       gradle-cache-password: ${{ secrets.GRADLE_CACHE_PASSWORD }}
 
-  # Would like to move into XTS execution (takes > 20 minutes)
+  # No longer executed on pull requests. May be executed when manually
+  # running the workflow on a given branch or commit. Added to the extended
+  # test suites and will be executed on at least 1 commit every 3 hours.
+  # (takes > 20 minutes)
   hapi-tests-time-consuming:
     name: HAPI Tests (Time Consuming)
     uses: ./.github/workflows/node-zxc-compile-application-code.yaml
     needs:
       - dependency-check
       - spotless
-    if: ${{ github.event.pull_request.base.ref != github.event.repository.default_branch && (github.event_name != 'pull_request' || (github.actor != 'dependabot[bot]' && github.event.pull_request.head.repo.full_name == github.repository)) }}
+    if: ${{ github.event_name == 'workflow_dispatch' }}
     with:
       custom-job-label: Standard
       enable-unit-tests: false
@@ -199,14 +202,17 @@ jobs:
       gradle-cache-username: ${{ secrets.GRADLE_CACHE_USERNAME }}
       gradle-cache-password: ${{ secrets.GRADLE_CACHE_PASSWORD }}
 
-  # Would like to move into XTS execution (takes > 50 minutes)
+  # No longer executed on pull requests. May be executed when manually
+  # running the workflow on a given branch or commit. Added to the extended
+  # test suites and will be executed on at least 1 commit every 3 hours.
+  # (takes > 50 minutes)
   abbreviated-panel:
     name: JRS Panel
     uses: ./.github/workflows/zxc-jrs-regression.yaml
     needs:
       - dependency-check
       - spotless
-    if: ${{ github.event.pull_request.base.ref != github.event.repository.default_branch && (github.event_name != 'pull_request' || (github.actor != 'dependabot[bot]' && github.event.pull_request.head.repo.full_name == github.repository)) }}
+    if: ${{ github.event_name == 'workflow_dispatch' }}
     with:
       custom-job-name: "Platform SDK"
       panel-config: "configs/suites/GCP-PRCheck-Abbrev-4N.json"
@@ -227,14 +233,17 @@ jobs:
       grafana-agent-username: ${{ secrets.GRAFANA_AGENT_USERNAME }}
       grafana-agent-password: ${{ secrets.GRAFANA_AGENT_PASSWORD }}
 
-  # Would like to move into XTS execution (takes > 1 hour)
+  # No longer executed on pull requests. May be executed when manually
+  # running the workflow on a given branch or commit. Added to the extended
+  # test suites and will be executed on at least 1 commit every 3 hours.
+  # (takes > 1 hour)
   hedera-node-jrs-panel:
     name: Hedera Node JRS Panel
     uses: ./.github/workflows/zxc-jrs-regression.yaml
     needs:
       - dependency-check
       - spotless
-    if: ${{ github.event.pull_request.base.ref != github.event.repository.default_branch && (github.event_name != 'pull_request' || (github.actor != 'dependabot[bot]' && github.event.pull_request.head.repo.full_name == github.repository)) }}
+    if: ${{ github.event_name == 'workflow_dispatch' }}
     with:
       custom-job-name: "Abbrev Update Test"
       branch-name: ${{ github.head_ref || github.ref_name }}

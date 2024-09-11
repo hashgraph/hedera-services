@@ -16,8 +16,6 @@
 
 name: "Node: Deploy Adhoc Release"
 on:
-  schedule:
-    - cron: '0 3 * * *' # use this schedule for the extended release check 0300 UTC
   workflow_dispatch:
     inputs:
       dry-run-enabled:
@@ -47,7 +45,7 @@ defaults:
 
 jobs:
   release-adhoc:
-    name: Release [Adhoc] (workflow_dispatch)
+    name: Release [Adhoc]
     if: ${{ github.event_name == 'workflow_dispatch' }}
     uses: ./.github/workflows/node-zxc-build-release-artifact.yaml
     with:
@@ -58,50 +56,6 @@ jobs:
       java-version: ${{ github.event.inputs.java-version || '21' }}
       java-distribution: ${{ github.event.inputs.java-distribution || 'temurin' }}
       gradle-version: ${{ github.event.inputs.gradle-version || 'wrapper' }}
-
-    secrets:
-      access-token: ${{ secrets.GITHUB_TOKEN }}
-      bucket-name: ${{ secrets.RELEASE_ARTIFACT_BUCKET_NAME }}
-      cdn-bucket-name: ${{ secrets.CDN_ARTIFACT_BUCKET_NAME }}
-      svcs-ossrh-username: ${{ secrets.SVCS_OSSRH_USERNAME }}
-      svcs-ossrh-password: ${{ secrets.SVCS_OSSRH_PASSWORD }}
-      svcs-gpg-key-contents: ${{ secrets.SVCS_GPG_KEY_CONTENTS }}
-      svcs-gpg-key-passphrase: ${{ secrets.SVCS_GPG_KEY_PASSPHRASE }}
-      sdk-ossrh-username: ${{ secrets.PLATFORM_OSSRH_USERNAME }}
-      sdk-ossrh-password: ${{ secrets.PLATFORM_OSSRH_PASSWORD }}
-      sdk-gpg-key-contents: ${{ secrets.PLATFORM_GPG_KEY_CONTENTS }}
-      sdk-gpg-key-passphrase: ${{ secrets.PLATFORM_GPG_KEY_PASSPHRASE }}
-      slack-webhook-url: ${{ secrets.PLATFORM_SLACK_RELEASE_WEBHOOK }}
-      jf-url: ${{ vars.JF_URL }}
-      jf-docker-registry: ${{ vars.JF_DOCKER_REGISTRY }}
-      jf-user-name: ${{ vars.JF_USER_NAME }}
-      jf-access-token: ${{ secrets.JF_ACCESS_TOKEN }}
-
-  fetch-release-candidate:
-    # get a promotion tagged release candidate as the reference
-    # pass the reference to node-zxc-build-release-artifact
-    name: Fetch Release Candidate
-    if: ${{ github.event_name != 'workflow_dispatch' && github.event.schedule == '0 3 * * *' }}
-    runs-on: network-node-linux-medium
-
-    # uses: callable workflow?
-    steps:
-      - name: Fetch Tagged Candidate
-        id: candidate
-        run: echo "Need to fetch the latest release candidate"
-
-  release-adhoc-cron:
-    name: Release [Adhoc] (Nightly)
-    if: ${{ github.event_name != 'workflow_dispatch' && github.event.schedule == '0 3 * * *' }}
-    uses: ./.github/workflows/node-zxc-build-release-artifact.yaml
-    with:
-      version-policy: branch-commit
-      trigger-env-deploy: none
-      release-profile: AdhocCommit
-      dry-run-enabled: false
-      java-version: '21.0.1'
-      java-distribution: 'temurin'
-      gradle-version: 'wrapper'
 
     secrets:
       access-token: ${{ secrets.GITHUB_TOKEN }}
