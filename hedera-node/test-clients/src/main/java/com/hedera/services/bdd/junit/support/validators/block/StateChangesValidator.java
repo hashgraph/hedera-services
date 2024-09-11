@@ -265,7 +265,7 @@ public class StateChangesValidator implements BlockStreamValidator {
             // get the state hash before applying the state changes from current block
             //            CRYPTO.digestTreeSync(state);
             // (FUTURE) use `state.getHash()` instead of an empty byte array
-            final var startOfBlockStateHash = Bytes.wrap(new byte[48]); 
+            final var startOfBlockStateHash = Bytes.wrap(new byte[48]);
 
             final StreamingTreeHasher inputTreeHasher = new NaiveStreamingTreeHasher();
             final StreamingTreeHasher outputTreeHasher = new NaiveStreamingTreeHasher();
