@@ -159,7 +159,7 @@ public class SignedStateHolder implements AutoCloseableNonThrowing {
             rss = SignedStateFileReader.readStateFile(platformContext, swhPath, SignedStateFileUtils::readState)
                     .reservedSignedState();
             StaticSoftwareVersion.setSoftwareVersion(
-                    rss.get().getState().getPlatformState().getCreationSoftwareVersion());
+                    rss.get().getState().getReadablePlatformState().getCreationSoftwareVersion());
         } catch (final IOException ex) {
             throw new UncheckedIOException(ex);
         }
