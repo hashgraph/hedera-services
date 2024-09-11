@@ -166,11 +166,14 @@ public class TinybarValues {
     }
 
     /**
+     * Note: this part of the javadoc will be removed after {@code isGasPrecisionLossFixEnabled} flag is removed.
      * Returns the tinybar-denominated price of a RAM-byte-hour (rbh) for the current operation based on the current
-     * exchange rate, the current congestion multiplier, and the tinycent-denominated price of a rbh in the
-     * {@code service} fee component.
+     * exchange rate, the current congestion multiplier.
      *
-     * @return the tinybar-denominated price of a rbh for the current operation
+     * Or return the tinycent-denominated price of a RAM-byte-hour (rbh) in the {@code service} fee component
+     * with the current congestion multiplier.
+     *
+     * @return the tinybar/tinycent-denominated price of a rbh for the current operation
      */
     public long topLevelTinycentRbhPrice() {
         if (!isGasPrecisionLossFixEnabled) {

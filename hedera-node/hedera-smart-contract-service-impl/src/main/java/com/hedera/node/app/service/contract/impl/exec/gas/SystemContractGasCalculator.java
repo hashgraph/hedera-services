@@ -31,7 +31,8 @@ public class SystemContractGasCalculator {
     private static final long FIXED_VIEW_GAS_COST = 100L;
 
     // This represents the predefined gas price which is $0.000_000_0852 per unit of gas.
-    // 852_000 = $0.000_000_0852 * 100(cents in dollars) * 100_000_000 (tiny cents in cents) * 1000 (Fee schedule units
+    // 852_000 = $0.000_000_0852 * 100(cents per dollars) * 100_000_000 (tiny cents per cents) * 1000 (Fee schedule
+    // units
     // per tiny cents). For more info -> https://hedera.com/blog/rolling-smart-contract-hedera-api-fees-into-gas-fees
     private static final long FIXED_TINY_CENT_GAS_PRICE_COST = 852_000L;
 
