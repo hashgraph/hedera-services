@@ -27,6 +27,7 @@ import static com.hedera.node.config.types.EntityType.FILE;
 import static com.hedera.node.config.types.EntityType.SCHEDULE;
 import static com.hedera.node.config.types.EntityType.TOKEN;
 import static com.hedera.node.config.types.EntityType.TOPIC;
+import static com.hedera.services.bdd.junit.support.translators.impl.FileUpdateTranslator.EXCHANGE_RATES_FILE_NUM;
 import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNull;
 
@@ -76,8 +77,6 @@ import org.apache.logging.log4j.Logger;
  */
 public class BaseTranslator {
     private static final Logger log = LogManager.getLogger(BaseTranslator.class);
-
-    private static final long EXCHANGE_RATES_FILE_NUM = 112L;
 
     /**
      * These fields are context maintained for the full lifetime of the translator.
@@ -330,7 +329,7 @@ public class BaseTranslator {
         if (followsUserRecord && !parts.transactionIdOrThrow().scheduled()) {
             recordBuilder.parentConsensusTimestamp(asTimestamp(userTimestamp));
         }
-        if (!followsUserRecord) {
+        if (!followsUserRecord || parts.transactionIdOrThrow().scheduled()) {
             // Only preceding and user transactions get exchange rates in their receipts; note that
             // auto-account creations are always preceding dispatches and so get exchange rates
             receiptBuilder.exchangeRate(activeRates);
@@ -348,6 +347,29 @@ public class BaseTranslator {
                 recordBuilder.receipt(receiptBuilder.build()).build(),
                 sidecarRecords,
                 new SingleTransactionRecord.TransactionOutputs(null));
+    }
+
+    /**
+     * Updates the active exchange rates with the contents of the given state change.
+     * @param change the state change to update from
+     */
+    public void updateActiveRates(@NonNull final StateChange change) {
+        final var contents =
+                change.mapUpdateOrThrow().valueOrThrow().fileValueOrThrow().contents();
+        try {
+            activeRates = ExchangeRateSet.PROTOBUF.parse(contents);
+            log.info("Updated active exchange rates to {}", activeRates);
+        } catch (ParseException e) {
+            throw new IllegalStateException("Rates file updated with unparseable contents", e);
+        }
+    }
+
+    /**
+     * Returns the active exchange rates.
+     * @return the active exchange rates
+     */
+    public ExchangeRateSet activeRates() {
+        return activeRates;
     }
 
     /**
@@ -389,8 +411,6 @@ public class BaseTranslator {
                         nextCreatedNums
                                 .computeIfAbsent(FILE, ignore -> new LinkedList<>())
                                 .add(num);
-                    } else if (num == EXCHANGE_RATES_FILE_NUM) {
-                        updateActiveRates(stateChange);
                     }
                 } else if (key.hasScheduleIdKey()) {
                     final var num = key.scheduleIdKeyOrThrow().scheduleNum();
@@ -446,16 +466,6 @@ public class BaseTranslator {
                         .ifPresent(sidecarRecords::addAll);
             }
         });
-    }
-
-    private void updateActiveRates(@NonNull final StateChange change) {
-        final var contents =
-                change.mapUpdateOrThrow().valueOrThrow().fileValueOrThrow().contents();
-        try {
-            activeRates = ExchangeRateSet.PROTOBUF.parse(contents);
-        } catch (ParseException e) {
-            throw new IllegalStateException("Rates file updated with unparseable contents", e);
-        }
     }
 
     private static boolean isContractOp(@NonNull final BlockTransactionParts parts) {

@@ -379,7 +379,7 @@ class AddressBookInitializerTest {
         when(platformState.getAddressBook()).thenReturn(currentAddressBook);
         when(platformState.getPreviousAddressBook()).thenReturn(previousAddressBook);
         final MerkleRoot state = mock(MerkleRoot.class);
-        when(state.getPlatformState()).thenReturn(platformState);
+        when(state.getReadablePlatformState()).thenReturn(platformState);
         when(signedState.getState()).thenReturn(state);
         when(signedState.isGenesisState()).thenReturn(fromGenesis);
         when(signedState.getAddressBook()).thenReturn(currentAddressBook);

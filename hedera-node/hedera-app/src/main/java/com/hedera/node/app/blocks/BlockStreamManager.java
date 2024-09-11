@@ -22,6 +22,7 @@ import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.platform.system.Round;
 import com.swirlds.state.State;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.function.BiConsumer;
 
 /**
  * Maintains the state and process objects needed to produce the block stream.
@@ -34,11 +35,22 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  * Items written to the stream will be produced in the order they are written. The leaves of the input and output item
  * Merkle trees will be in the order they are written.
  */
-public interface BlockStreamManager extends BlockRecordInfo {
+public interface BlockStreamManager extends BlockRecordInfo, BiConsumer<byte[], byte[]> {
+    Bytes ZERO_BLOCK_HASH = Bytes.wrap(new byte[48]);
+
+    /**
+     * Initializes the block stream manager after a restart with the hash of the last block incorporated
+     * in the state used in the restart. If the restart was from genesis, this hash should be the
+     * {@link #ZERO_BLOCK_HASH}.
+     * @param blockHash the hash of the last block
+     */
+    void initLastBlockHash(@NonNull Bytes blockHash);
+
     /**
      * Updates the internal state of the block stream manager to reflect the start of a new round.
      * @param round the round that has just started
      * @param state the state of the network at the beginning of the round
+     * @throws IllegalStateException if the last block hash was not explicitly initialized
      */
     void startRound(@NonNull Round round, @NonNull State state);
 
@@ -57,11 +69,4 @@ public interface BlockStreamManager extends BlockRecordInfo {
      * @throws IllegalStateException if the stream is closed
      */
     void writeItem(@NonNull BlockItem item);
-
-    /**
-     * Completes the block proof for the given block with the given signature.
-     * @param blockNumber the number of the block to finish
-     * @param signature the signature to use in the block proof
-     */
-    void finishBlockProof(long blockNumber, @NonNull Bytes signature);
 }

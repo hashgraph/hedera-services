@@ -17,6 +17,8 @@
 package com.hedera.node.app.blocks.impl;
 
 import static com.hedera.hapi.node.base.BlockHashAlgorithm.SHA2_384;
+import static com.hedera.hapi.util.HapiUtils.asInstant;
+import static com.hedera.node.app.blocks.impl.BlockImplUtils.appendHash;
 import static com.hedera.node.app.blocks.impl.BlockImplUtils.combine;
 import static com.hedera.node.app.blocks.schemas.V0540BlockStreamSchema.BLOCK_STREAM_INFO_KEY;
 import static com.hedera.node.app.hapi.utils.CommonUtils.noThrowSha384HashOf;
@@ -28,25 +30,27 @@ import static java.util.concurrent.CompletableFuture.supplyAsync;
 
 import com.hedera.hapi.block.stream.BlockItem;
 import com.hedera.hapi.block.stream.BlockProof;
+import com.hedera.hapi.block.stream.MerkleSiblingHash;
 import com.hedera.hapi.block.stream.output.BlockHeader;
 import com.hedera.hapi.block.stream.output.TransactionResult;
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.state.blockstream.BlockStreamInfo;
+import com.hedera.hapi.platform.state.PlatformState;
 import com.hedera.node.app.blocks.BlockItemWriter;
 import com.hedera.node.app.blocks.BlockStreamManager;
 import com.hedera.node.app.blocks.BlockStreamService;
 import com.hedera.node.app.blocks.StreamingTreeHasher;
 import com.hedera.node.app.records.impl.BlockRecordInfoUtils;
+import com.hedera.node.app.tss.TssBaseService;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.BlockRecordStreamConfig;
 import com.hedera.node.config.data.BlockStreamConfig;
-import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.data.VersionConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.state.service.PlatformStateService;
-import com.swirlds.platform.state.service.ReadablePlatformStateStore;
+import com.swirlds.platform.state.service.schemas.V0540PlatformStateSchema;
 import com.swirlds.platform.system.Round;
 import com.swirlds.state.State;
 import com.swirlds.state.spi.CommittableWritableStates;
@@ -69,26 +73,25 @@ import org.apache.logging.log4j.Logger;
 public class BlockStreamManagerImpl implements BlockStreamManager {
     private static final Logger log = LogManager.getLogger(BlockStreamManagerImpl.class);
 
-    private static final Bytes MOCK_HASH = Bytes.wrap(new byte[48]);
     private static final int CHUNK_SIZE = 8;
     private static final CompletableFuture<Bytes> MOCK_START_STATE_ROOT_HASH_FUTURE =
             completedFuture(Bytes.wrap(new byte[48]));
 
     private final int roundsPerBlock;
+    private final TssBaseService tssBaseService;
     private final SemanticVersion hapiVersion;
-    private final SemanticVersion nodeVersion;
     private final ExecutorService executor;
-    private final BlockHashManager blockHashManager;
-    private final RunningHashManager runningHashManager;
     private final Supplier<BlockItemWriter> writerSupplier;
     private final BoundaryStateChangeListener boundaryStateChangeListener;
 
-    // All this state is scoped to producing the block for the last-started round
+    private final BlockHashManager blockHashManager;
+    private final RunningHashManager runningHashManager;
+
+    // All this state is scoped to producing the current block
     private long blockNumber;
     // Set to the round number of the last round handled before entering a freeze period
     private long freezeRoundNumber = -1;
-    // FUTURE - initialize to the actual last block hash (this is only correct at genesis)
-    private Bytes lastBlockHash = Bytes.wrap(new byte[48]);
+    private Bytes lastBlockHash;
     private Instant blockTimestamp;
     private BlockItemWriter writer;
     private List<BlockItem> pendingItems;
@@ -101,15 +104,24 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
      */
     private CompletableFuture<Void> writeFuture = completedFuture(null);
 
+    // (FUTURE) Remove this once reconnect protocol also transmits the last block hash
+    private boolean appendRealHashes = false;
+
     /**
      * Represents a block pending completion by the block hash signature needed for its block proof.
      *
-     * @param blockNumber the block number
+     * @param number the block number
+     * @param blockHash the block hash
      * @param proofBuilder the block proof builder
      * @param writer the block item writer
+     * @param siblingHashes the sibling hashes needed for an indirect block proof of an earlier block
      */
     private record PendingBlock(
-            long blockNumber, @NonNull BlockProof.Builder proofBuilder, @NonNull BlockItemWriter writer) {}
+            long number,
+            @NonNull Bytes blockHash,
+            @NonNull BlockProof.Builder proofBuilder,
+            @NonNull BlockItemWriter writer,
+            @NonNull MerkleSiblingHash... siblingHashes) {}
 
     /**
      * A queue of blocks pending completion by the block hash signature needed for their block proofs.
@@ -121,23 +133,36 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
             @NonNull final Supplier<BlockItemWriter> writerSupplier,
             @NonNull final ExecutorService executor,
             @NonNull final ConfigProvider configProvider,
+            @NonNull final TssBaseService tssBaseService,
             @NonNull final BoundaryStateChangeListener boundaryStateChangeListener) {
         this.writerSupplier = requireNonNull(writerSupplier);
         this.executor = requireNonNull(executor);
+        this.tssBaseService = requireNonNull(tssBaseService);
         this.boundaryStateChangeListener = requireNonNull(boundaryStateChangeListener);
-        final var config = requireNonNull(configProvider).getConfiguration();
+        requireNonNull(configProvider);
+        final var config = configProvider.getConfiguration();
         this.hapiVersion = hapiVersionFrom(config);
-        this.nodeVersion = nodeVersionFrom(config);
         this.roundsPerBlock = config.getConfigData(BlockStreamConfig.class).roundsPerBlock();
         this.blockHashManager = new BlockHashManager(config);
         this.runningHashManager = new RunningHashManager();
     }
 
     @Override
+    public void initLastBlockHash(@NonNull final Bytes blockHash) {
+        lastBlockHash = requireNonNull(blockHash);
+    }
+
+    @Override
     public void startRound(@NonNull final Round round, @NonNull final State state) {
-        // We will always close the block at the end of the freeze round, even if
-        // its number would not otherwise trigger a block closing
-        if (isFreezeRound(state, round)) {
+        if (lastBlockHash == null) {
+            throw new IllegalStateException("Last block hash must be initialized before starting a round");
+        }
+        final var platformState = state.getReadableStates(PlatformStateService.NAME)
+                .<PlatformState>getSingleton(V0540PlatformStateSchema.PLATFORM_STATE_KEY)
+                .get();
+        requireNonNull(platformState);
+        if (isFreezeRound(platformState, round)) {
+            // Track freeze round numbers because they always end a block
             freezeRoundNumber = round.getRoundNum();
         }
         if (writer == null) {
@@ -159,7 +184,7 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
                             .number(blockNumber)
                             .previousBlockHash(lastBlockHash)
                             .hashAlgorithm(SHA2_384)
-                            .softwareVersion(nodeVersion)
+                            .softwareVersion(platformState.creationSoftwareVersionOrThrow())
                             .hapiProtoVersion(hapiVersion))
                     .build());
 
@@ -172,7 +197,8 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
         if (shouldCloseBlock(roundNum, roundsPerBlock)) {
             final var writableState = state.getWritableStates(BlockStreamService.NAME);
             final var blockStreamInfoState = writableState.<BlockStreamInfo>getSingleton(BLOCK_STREAM_INFO_KEY);
-            // Ensure all runningHashManager futures are complete
+            // Ensure runningHashManager futures include all result items and are completed
+            schedulePendingWork();
             writeFuture.join();
             // Commit the block stream info to state before flushing the boundary state changes
             blockStreamInfoState.put(new BlockStreamInfo(
@@ -184,53 +210,28 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
             schedulePendingWork();
             writeFuture.join();
 
-            final var inputRootHash = inputTreeHasher.rootHash().join();
-            final var outputRootHash = outputTreeHasher.rootHash().join();
+            final var inputHash = inputTreeHasher.rootHash().join();
+            final var outputHash = outputTreeHasher.rootHash().join();
             final var blockStartStateHash = MOCK_START_STATE_ROOT_HASH_FUTURE.join();
-            final var blockHash = computeBlockHash(lastBlockHash, inputRootHash, outputRootHash, blockStartStateHash);
-            // FUTURE: sign the block hash and gossip our signature
-
-            final var blockProofBuilder = BlockProof.newBuilder()
+            final var leftParent = combine(lastBlockHash, inputHash);
+            final var rightParent = combine(outputHash, blockStartStateHash);
+            final var blockHash = combine(leftParent, rightParent);
+            final var pendingProof = BlockProof.newBuilder()
                     .block(blockNumber)
                     .previousBlockRootHash(lastBlockHash)
                     .startOfBlockStateRootHash(blockStartStateHash);
-            pendingBlocks.add(new PendingBlock(blockNumber, blockProofBuilder, writer));
+            pendingBlocks.add(new PendingBlock(
+                    blockNumber,
+                    blockHash,
+                    pendingProof,
+                    writer,
+                    new MerkleSiblingHash(false, inputHash),
+                    new MerkleSiblingHash(false, rightParent)));
             // Update in-memory state to prepare for the next block
             lastBlockHash = blockHash;
             writer = null;
 
-            // Simulate the completion of the block proof
-            final long blockNumberToComplete = this.blockNumber;
-            CompletableFuture.runAsync(
-                    () -> {
-                        try {
-                            finishBlockProof(blockNumberToComplete, Bytes.wrap(new byte[48]));
-                        } catch (Exception e) {
-                            log.error("Failed to finish proof for block {}", blockNumberToComplete, e);
-                        }
-                    },
-                    executor);
-        }
-    }
-
-    /**
-     * {@inheritDoc}
-     * Synchronized to ensure that block proofs are always written in order, even in edge cases where multiple
-     * pending block proofs become available at the same time.
-     * @param blockNumber the number of the block to finish
-     * @param signature the signature to use in the block proof
-     */
-    @Override
-    public synchronized void finishBlockProof(final long blockNumber, @NonNull final Bytes signature) {
-        requireNonNull(signature);
-        while (!pendingBlocks.isEmpty() && pendingBlocks.peek().blockNumber() <= blockNumber) {
-            final var block = pendingBlocks.poll();
-            // Note the actual proof for an earlier block number awaiting proof will be more complicated than this
-            final var proof = block.proofBuilder().blockSignature(signature).build();
-            block.writer()
-                    .writeItem(BlockItem.PROTOBUF.toBytes(
-                            BlockItem.newBuilder().blockProof(proof).build()))
-                    .closeBlock();
+            tssBaseService.requestLedgerSignature(blockHash.toByteArray());
         }
     }
 
@@ -244,6 +245,10 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
 
     @Override
     public @Nullable Bytes prngSeed() {
+        // Incorporate all pending results before returning the seed to guarantee
+        // no two consecutive transactions ever get the same seed
+        schedulePendingWork();
+        writeFuture.join();
         final var seed = runningHashManager.nMinus3HashFuture.join();
         return seed == null ? null : Bytes.wrap(seed);
     }
@@ -263,21 +268,64 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
         return blockHashManager.hashOfBlock(blockNo);
     }
 
+    /**
+     * Synchronized to ensure that block proofs are always written in order, even in edge cases where multiple
+     * pending block proofs become available at the same time.
+     *
+     * @param message the number of the block to finish
+     * @param signature the signature to use in the block proof
+     */
+    @Override
+    public synchronized void accept(@NonNull final byte[] message, @NonNull final byte[] signature) {
+        // Find the block whose hash as the signed message, tracking any sibling hashes
+        // needed for indirect proofs of earlier blocks along the way
+        long blockNumber = Long.MIN_VALUE;
+        boolean impliesIndirectProof = false;
+        final List<List<MerkleSiblingHash>> siblingHashes = new ArrayList<>();
+        final var blockHash = Bytes.wrap(message);
+        for (final var block : pendingBlocks) {
+            if (impliesIndirectProof) {
+                siblingHashes.add(List.of(block.siblingHashes()));
+            }
+            if (block.blockHash().equals(blockHash)) {
+                blockNumber = block.number();
+                break;
+            }
+            impliesIndirectProof = true;
+        }
+        if (blockNumber == Long.MIN_VALUE) {
+            log.info("Ignoring signature on already proven block hash '{}'", blockHash);
+            return;
+        }
+        // Write proofs for all pending blocks up to and including the signed block number
+        final var blockSignature = Bytes.wrap(signature);
+        while (!pendingBlocks.isEmpty() && pendingBlocks.peek().number() <= blockNumber) {
+            final var block = pendingBlocks.poll();
+            final var proof = block.proofBuilder()
+                    .blockSignature(blockSignature)
+                    .siblingHashes(siblingHashes.stream().flatMap(List::stream).toList());
+            block.writer()
+                    .writeItem(BlockItem.PROTOBUF.toBytes(
+                            BlockItem.newBuilder().blockProof(proof).build()))
+                    .closeBlock();
+            if (block.number() != blockNumber) {
+                siblingHashes.removeFirst();
+            }
+        }
+    }
+
+    /**
+     * (FUTURE) Remove this after reconnect protocol also transmits the last block hash.
+     */
+    public void appendRealHashes() {
+        this.appendRealHashes = true;
+    }
+
     private void schedulePendingWork() {
         final var scheduledWork = new ScheduledWork(pendingItems);
         final var pendingSerialization = CompletableFuture.supplyAsync(scheduledWork::serializeItems, executor);
         writeFuture = writeFuture.thenCombine(pendingSerialization, scheduledWork::combineSerializedItems);
         pendingItems = new ArrayList<>();
-    }
-
-    private Bytes computeBlockHash(
-            @NonNull final Bytes prevBlockHash,
-            @NonNull final Bytes inputRootHash,
-            @NonNull final Bytes outputRootHash,
-            @NonNull final Bytes stateRootHash) {
-        final var leftParent = combine(prevBlockHash.toByteArray(), inputRootHash.toByteArray());
-        final var rightParent = combine(outputRootHash.toByteArray(), stateRootHash.toByteArray());
-        return Bytes.wrap(combine(leftParent, rightParent));
     }
 
     private @NonNull BlockStreamInfo blockStreamInfoFrom(@NonNull final State state) {
@@ -290,10 +338,11 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
         return roundNumber % roundsPerBlock == 0 || roundNumber == freezeRoundNumber;
     }
 
-    private boolean isFreezeRound(@NonNull final State state, @NonNull final Round round) {
-        final var platformState = new ReadablePlatformStateStore(state.getReadableStates(PlatformStateService.NAME));
+    private boolean isFreezeRound(@NonNull final PlatformState platformState, @NonNull final Round round) {
         return isInFreezePeriod(
-                round.getConsensusTimestamp(), platformState.getFreezeTime(), platformState.getLastFrozenTime());
+                round.getConsensusTimestamp(),
+                platformState.freezeTime() == null ? null : asInstant(platformState.freezeTime()),
+                platformState.lastFrozenTime() == null ? null : asInstant(platformState.lastFrozenTime()));
     }
 
     /**
@@ -361,18 +410,6 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
         }
     }
 
-    private SemanticVersion nodeVersionFrom(@NonNull final Configuration config) {
-        final var hederaConfig = config.getConfigData(HederaConfig.class);
-        final var versionConfig = config.getConfigData(VersionConfig.class);
-        return (hederaConfig.configVersion() == 0)
-                ? versionConfig.servicesVersion()
-                : versionConfig
-                        .servicesVersion()
-                        .copyBuilder()
-                        .build("" + hederaConfig.configVersion())
-                        .build();
-    }
-
     private SemanticVersion hapiVersionFrom(@NonNull final Configuration config) {
         return config.getConfigData(VersionConfig.class).hapiVersion();
     }
@@ -403,8 +440,8 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
          *
          * @param blockStreamInfo the trailing block hashes at the start of the round
          */
-        void startBlock(@Nullable final BlockStreamInfo blockStreamInfo) {
-            final var hashes = blockStreamInfo == null ? Bytes.EMPTY : blockStreamInfo.trailingBlockHashes();
+        void startBlock(@NonNull final BlockStreamInfo blockStreamInfo) {
+            final var hashes = blockStreamInfo.trailingOutputHashes();
             final var n = (int) (hashes.length() / HASH_SIZE);
             nMinus3HashFuture = completedFuture(n < 4 ? null : hashes.toByteArray(0, HASH_SIZE));
             nMinus2HashFuture = completedFuture(n < 3 ? null : hashes.toByteArray((n - 3) * HASH_SIZE, HASH_SIZE));
@@ -446,21 +483,21 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
          * @param blockStreamInfo the trailing block hashes at the start of the round
          */
         void startBlock(@NonNull final BlockStreamInfo blockStreamInfo, @NonNull Bytes prevBlockHash) {
-            blockHashes = blockStreamInfo.trailingBlockHashes();
-            appendHash(prevBlockHash);
+            if (appendRealHashes) {
+                blockHashes = appendHash(prevBlockHash, blockStreamInfo.trailingBlockHashes(), numTrailingBlocks);
+            } else {
+                // (FUTURE) Remove this after reconnect protocol also transmits the last block hash
+                blockHashes = appendHash(ZERO_BLOCK_HASH, blockStreamInfo.trailingBlockHashes(), numTrailingBlocks);
+            }
         }
 
         /**
-         * Appends the given block hash to the trailing block hashes.
-         *
-         * @param blockHash the block hash to append
-         */
-        void appendHash(@NonNull final Bytes blockHash) {
-            BlockImplUtils.appendHash(blockHash, blockHashes, numTrailingBlocks);
-        }
-
-        /**
-         * Returns the hash of the block with the given number, or null if it is not available.
+         * Returns the hash of the block with the given number, or null if it is not available. Note that,
+         * <ul>
+         *     <li>We never know the hash of the {@code N+1} block currently being created.</li>
+         *     <li>We start every block {@code N} by concatenating the {@code N-1} block hash to the trailing
+         *     hashes up to block {@code N-2} that were in state at the end of block {@code N-1}.
+         * </ul>
          *
          * @param blockNo the block number
          * @return the hash of the block with the given number, or null if it is not available

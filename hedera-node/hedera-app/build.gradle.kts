@@ -165,7 +165,10 @@ val cleanRun =
 
 tasks.clean { dependsOn(cleanRun) }
 
-tasks.register("showHapiVersion") { doLast { println(libs.versions.hapi.proto.get()) } }
+tasks.register("showHapiVersion") {
+    inputs.property("version", project.version)
+    doLast { println(inputs.properties["version"]) }
+}
 
 var updateDockerEnvTask =
     tasks.register<Exec>("updateDockerEnv") {
