@@ -16,9 +16,11 @@
 
 package com.hedera.node.app;
 
+import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_BLOCK_STREAM_INFO;
 import static com.hedera.node.app.blocks.impl.BlockImplUtils.combine;
 import static com.hedera.node.app.blocks.impl.ConcurrentStreamingTreeHasher.rootHashFrom;
 import static com.hedera.node.app.blocks.schemas.V0540BlockStreamSchema.BLOCK_STREAM_INFO_KEY;
+import static com.hedera.node.app.hapi.utils.CommonUtils.noThrowSha384HashOf;
 import static com.hedera.node.app.info.UnavailableNetworkInfo.UNAVAILABLE_NETWORK_INFO;
 import static com.hedera.node.app.records.impl.BlockRecordInfoUtils.blockHashByBlockNumber;
 import static com.hedera.node.app.records.schemas.V0490BlockRecordSchema.BLOCK_INFO_STATE_KEY;
@@ -37,9 +39,10 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.block.stream.BlockItem;
+import com.hedera.hapi.block.stream.output.SingletonUpdateChange;
+import com.hedera.hapi.block.stream.output.StateChange;
 import com.hedera.hapi.block.stream.output.StateChanges;
 import com.hedera.hapi.node.base.SemanticVersion;
-import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.state.blockrecords.BlockInfo;
 import com.hedera.hapi.node.state.blockstream.BlockStreamInfo;
 import com.hedera.hapi.util.HapiUtils;
@@ -455,6 +458,10 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener {
             @NonNull final Platform platform,
             @NonNull final InitTrigger trigger,
             @Nullable final SoftwareVersion previousVersion) {
+        if (trigger != GENESIS) {
+            kvStateChangeListener.reset();
+            boundaryStateChangeListener.reset();
+        }
         // A Hedera object can receive multiple onStateInitialized() calls throughout its lifetime if
         // the platform needs to initialize a learned state after reconnect; however, it cannot be
         // used by multiple platform instances
@@ -851,7 +858,7 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener {
                                     // FUTURE - get the actual last block hash from e.g. a reconnect teacher or disk
                                 default -> blockStreamService
                                         .migratedLastBlockHash()
-                                        .orElse(startBlockHashFor(state));
+                                        .orElse(startBlockHashFrom(state));
                             });
             daggerApp.tssBaseService().registerLedgerSignatureConsumer(daggerApp.blockStreamManager());
             if (daggerApp.tssBaseService() instanceof PlaceholderTssBaseService placeholderTssBaseService) {
@@ -860,7 +867,7 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener {
         }
     }
 
-    private Bytes startBlockHashFor(@NonNull final State state) {
+    private Bytes startBlockHashFrom(@NonNull final State state) {
         final var blockStreamInfo = state.getReadableStates(BlockStreamService.NAME)
                 .<BlockStreamInfo>getSingleton(BLOCK_STREAM_INFO_KEY)
                 .get();
@@ -869,15 +876,36 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener {
                 blockStreamInfo.trailingBlockHashes(),
                 blockStreamInfo.blockNumber() - 1,
                 blockStreamInfo.blockNumber() - 1);
-        final var leftParent = combine(requireNonNull(prevBlockHash), blockStreamInfo.inputTreeRootHash());
-        final var lastStateChange = BlockItem.PROTOBUF.toBytes(BlockItem.newBuilder()
-                .stateChanges(new StateChanges(Timestamp.DEFAULT, List.of()))
-                .build());
-        final var penultimateOutputTreeStatus = StreamingTreeHasher.Status.from(
-                blockStreamInfo.numPrecedingOutputItems(), blockStreamInfo.rightmostPrecedingOutputTreeHashes());
-        final var outputTreeRootHash = rootHashFrom(penultimateOutputTreeStatus, lastStateChange);
+        requireNonNull(prevBlockHash);
+        final var leftParent = combine(prevBlockHash, blockStreamInfo.inputTreeRootHash());
+        final var outputTreeRootHash = outputTreeRootHashFrom(blockStreamInfo);
         final var rightParent = combine(outputTreeRootHash, blockStreamInfo.startOfBlockStateHash());
+        logger.info(" - L: {}\n - R: {}\n - B: {}", leftParent, rightParent, combine(leftParent, rightParent));
         return combine(leftParent, rightParent);
+    }
+
+    private @NonNull Bytes outputTreeRootHashFrom(@NonNull final BlockStreamInfo blockStreamInfo) {
+        final var blockStreamInfoChange = StateChange.newBuilder()
+                .stateId(STATE_ID_BLOCK_STREAM_INFO.protoOrdinal())
+                .singletonUpdate(SingletonUpdateChange.newBuilder()
+                        .blockStreamInfoValue(blockStreamInfo)
+                        .build())
+                .build();
+        final var lastStateChanges = BlockItem.newBuilder()
+                .stateChanges(new StateChanges(blockStreamInfo.blockEndTime(), List.of(blockStreamInfoChange)))
+                .build();
+        final var penultimateOutputTreeStatus = new StreamingTreeHasher.Status(
+                blockStreamInfo.numPrecedingOutputItems(), blockStreamInfo.rightmostPrecedingOutputTreeHashes());
+        logger.info(
+                "Reconstructing block {} with info [inputHash={},startHash={},numLeaves={},rightmostHashes={},endTime={}] using item hash {}",
+                blockStreamInfo.blockNumber(),
+                blockStreamInfo.inputTreeRootHash(),
+                blockStreamInfo.startOfBlockStateHash(),
+                blockStreamInfo.numPrecedingOutputItems(),
+                blockStreamInfo.rightmostPrecedingOutputTreeHashes(),
+                blockStreamInfo.blockEndTime(),
+                noThrowSha384HashOf(BlockItem.PROTOBUF.toBytes(lastStateChanges).toByteArray()));
+        return rootHashFrom(penultimateOutputTreeStatus, BlockItem.PROTOBUF.toBytes(lastStateChanges));
     }
 
     private boolean isBlockStreamEnabled() {

@@ -104,9 +104,6 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
      */
     private CompletableFuture<Void> writeFuture = completedFuture(null);
 
-    // (FUTURE) Remove this once reconnect protocol also transmits the last block hash
-    private boolean appendRealHashes = false;
-
     /**
      * Represents a block pending completion by the block hash signature needed for its block proof.
      *
@@ -214,17 +211,29 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
                     inputHash,
                     blockStartStateHash,
                     outputTreeStatus.numLeaves(),
-                    outputTreeStatus.concatenatedHashes()));
+                    outputTreeStatus.rightmostHashes(),
+                    boundaryStateChangeListener.boundaryTimestampOrThrow()));
             ((CommittableWritableStates) writableState).commit();
 
             // Flush the block stream info change
             pendingItems.add(boundaryStateChangeListener.flushChanges());
+            log.info(
+                    "Closing block {} with info [inputHash={},startHash={},numLeaves={},rightmostHashes={},endTime={}] using item hash {}",
+                    blockNumber,
+                    blockStreamInfoState.get().inputTreeRootHash(),
+                    blockStreamInfoState.get().startOfBlockStateHash(),
+                    blockStreamInfoState.get().numPrecedingOutputItems(),
+                    blockStreamInfoState.get().rightmostPrecedingOutputTreeHashes(),
+                    blockStreamInfoState.get().blockEndTime(),
+                    noThrowSha384HashOf(
+                            BlockItem.PROTOBUF.toBytes(pendingItems.getFirst()).toByteArray()));
             schedulePendingWork();
             writeFuture.join();
             final var outputHash = outputTreeHasher.rootHash().join();
             final var leftParent = combine(lastBlockHash, inputHash);
             final var rightParent = combine(outputHash, blockStartStateHash);
             final var blockHash = combine(leftParent, rightParent);
+            log.info(" - L: {}\n - R: {}\n - B: {}", leftParent, rightParent, blockHash);
             final var pendingProof = BlockProof.newBuilder()
                     .block(blockNumber)
                     .previousBlockRootHash(lastBlockHash)
@@ -326,9 +335,7 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
     /**
      * (FUTURE) Remove this after reconnect protocol also transmits the last block hash.
      */
-    public void appendRealHashes() {
-        this.appendRealHashes = true;
-    }
+    public void appendRealHashes() {}
 
     private void schedulePendingWork() {
         final var scheduledWork = new ScheduledWork(pendingItems);
@@ -492,12 +499,7 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
          * @param blockStreamInfo the trailing block hashes at the start of the round
          */
         void startBlock(@NonNull final BlockStreamInfo blockStreamInfo, @NonNull Bytes prevBlockHash) {
-            if (appendRealHashes) {
-                blockHashes = appendHash(prevBlockHash, blockStreamInfo.trailingBlockHashes(), numTrailingBlocks);
-            } else {
-                // (FUTURE) Remove this after reconnect protocol also transmits the last block hash
-                blockHashes = appendHash(ZERO_BLOCK_HASH, blockStreamInfo.trailingBlockHashes(), numTrailingBlocks);
-            }
+            blockHashes = appendHash(prevBlockHash, blockStreamInfo.trailingBlockHashes(), numTrailingBlocks);
         }
 
         /**

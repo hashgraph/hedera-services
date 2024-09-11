@@ -114,5 +114,10 @@ message BlockStreamInfo {
      * is constructed from all output items preceding the state change updating this
      * singleton (which MUST be the last output block item in the block)
      */
-    bytes rightmost_preceding_output_tree_hashes = 8;
+    repeated bytes rightmost_preceding_output_tree_hashes = 8;
+
+    /**
+     * The last-used consensus time for the current block.<br/>
+     */
+    proto.Timestamp block_end_time = 9;
 }

@@ -33,6 +33,7 @@ import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.state.spi.MigrationContext;
 import com.swirlds.state.spi.WritableSingletonState;
 import com.swirlds.state.spi.WritableStates;
+import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 import org.junit.jupiter.api.BeforeEach;
@@ -118,7 +119,12 @@ public class V0540BlockStreamSchemaTest {
                 blockInfo.lastBlockNumber(),
                 blockInfo.firstConsTimeOfLastBlock(),
                 Bytes.fromHex("dd".repeat(48) + "cc".repeat(48) + "bb".repeat(48) + "aa".repeat(48)),
-                Bytes.fromHex("abcd".repeat(24 * 255)));
+                Bytes.fromHex("abcd".repeat(24 * 255)),
+                Bytes.EMPTY,
+                Bytes.EMPTY,
+                0,
+                List.of(),
+                Timestamp.DEFAULT);
         verify(state).put(expectedInfo);
     }
 

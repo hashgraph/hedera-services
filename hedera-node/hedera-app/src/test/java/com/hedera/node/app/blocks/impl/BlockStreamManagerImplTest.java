@@ -44,6 +44,7 @@ import com.hedera.hapi.block.stream.RecordFileItem;
 import com.hedera.hapi.block.stream.output.StateChanges;
 import com.hedera.hapi.block.stream.output.TransactionResult;
 import com.hedera.hapi.node.base.SemanticVersion;
+import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.state.blockstream.BlockStreamInfo;
 import com.hedera.hapi.platform.event.EventTransaction;
 import com.hedera.hapi.platform.state.PlatformState;
@@ -65,6 +66,7 @@ import com.swirlds.state.spi.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
+import java.util.List;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -182,7 +184,12 @@ class BlockStreamManagerImplTest {
                 N_BLOCK_NO,
                 asTimestamp(CONSENSUS_NOW),
                 appendHash(combine(ZERO_BLOCK_HASH, FAKE_RESULT_HASH), appendHash(ZERO_BLOCK_HASH, Bytes.EMPTY, 4), 4),
-                appendHash(FAKE_RESTART_BLOCK_HASH, appendHash(N_MINUS_2_BLOCK_HASH, Bytes.EMPTY, 256), 256));
+                appendHash(FAKE_RESTART_BLOCK_HASH, appendHash(N_MINUS_2_BLOCK_HASH, Bytes.EMPTY, 256), 256),
+                Bytes.EMPTY,
+                Bytes.EMPTY,
+                0,
+                List.of(),
+                Timestamp.DEFAULT);
         final var actualBlockInfo = infoRef.get();
         assertEquals(expectedBlockInfo, actualBlockInfo);
         verify(tssBaseService).requestLedgerSignature(blockHashCaptor.capture());
@@ -276,7 +283,12 @@ class BlockStreamManagerImplTest {
                 N_BLOCK_NO,
                 asTimestamp(CONSENSUS_NOW),
                 appendHash(combine(Bytes.fromHex("dd".repeat(48)), FAKE_RESULT_HASH), resultHashes, 4),
-                appendHash(FAKE_RESTART_BLOCK_HASH, appendHash(N_MINUS_2_BLOCK_HASH, Bytes.EMPTY, 256), 256));
+                appendHash(FAKE_RESTART_BLOCK_HASH, appendHash(N_MINUS_2_BLOCK_HASH, Bytes.EMPTY, 256), 256),
+                Bytes.EMPTY,
+                Bytes.EMPTY,
+                0,
+                List.of(),
+                Timestamp.DEFAULT);
         final var actualBlockInfo = infoRef.get();
         assertEquals(expectedBlockInfo, actualBlockInfo);
         verify(tssBaseService).requestLedgerSignature(blockHashCaptor.capture());

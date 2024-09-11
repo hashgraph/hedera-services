@@ -18,11 +18,19 @@ package com.hedera.node.app.service.token.impl.handlers.staking;
 
 import static com.hedera.node.app.service.token.impl.handlers.staking.StakingUtilities.roundedToHbar;
 import static com.hedera.node.app.service.token.impl.handlers.staking.StakingUtilities.totalStake;
+import static java.util.Collections.nCopies;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.state.token.Account;
+import com.hedera.hapi.node.state.token.StakingNodeInfo;
 import com.hedera.node.app.service.token.impl.WritableStakingInfoStore;
+import com.hedera.node.config.data.LedgerConfig;
+import com.hedera.node.config.data.StakingConfig;
+import com.swirlds.config.api.Configuration;
+import com.swirlds.state.spi.info.NetworkInfo;
+import com.swirlds.state.spi.info.NodeInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.List;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;
@@ -41,6 +49,38 @@ public class StakeInfoHelper {
     @Inject
     public StakeInfoHelper() {
         // Needed for Dagger injection
+    }
+
+    /**
+     * Adjusts the stakes of the nodes after an upgrade based on the given {@link NodeInfo} list from the current
+     * address book and the given {@link Configuration}.
+     * .
+     *
+     * @param writableStore the writable store for the staking info
+     * @param networkInfo the list of node infos from the address book
+     * @param config the configuration for the node
+     */
+    public void adjustPostUpgradeStakes(
+            @NonNull final WritableStakingInfoStore writableStore,
+            @NonNull final NetworkInfo networkInfo,
+            @NonNull final Configuration config) {
+
+        final var allNodeIds = writableStore.getAll();
+        if (!allNodeIds.isEmpty()) {
+            allNodeIds.stream().sorted().forEach(nodeId -> {
+                final var stakingInfo = requireNonNull(writableStore.getForModify(nodeId));
+                if (!networkInfo.containsNode(nodeId) && !stakingInfo.deleted()) {
+                    writableStore.put(
+                            nodeId,
+                            stakingInfo.copyBuilder().weight(0).deleted(true).build());
+                    log.info("Marked node{} as deleted since it has been removed from the address book", nodeId);
+                }
+            });
+        }
+        // Validate if any new nodes are added in addressBook and not in staking info.
+        // If so, add them to staking info/ with weight 0. Also update maxStake and
+        // minStake for the new nodes.
+        completeUpdateFromNewAddressBook(writableStore, networkInfo.addressBook(), config);
     }
 
     /**
@@ -78,6 +118,7 @@ public class StakeInfoHelper {
     /**
      * Awards the stake to the node's stakeToReward or stakeToNotReward depending on the account's decline reward.
      * If declineReward is true, the stake is awarded to stakeToNotReward, otherwise it is awarded to stakeToReward.
+     *
      * @param nodeId the node's numeric ID
      * @param account the account stake to be awarded to the node
      * @param stakingInfoStore the store for the staking info
@@ -113,6 +154,7 @@ public class StakeInfoHelper {
      * Withdraws the stake from the node's stakeToReward or stakeToNotReward depending on the account's decline reward.
      * If declineReward is true, the stake is withdrawn from stakeToNotReward, otherwise it is withdrawn from
      * stakeToReward.
+     *
      * @param nodeId the node's numeric ID
      * @param account the account 's stake to be withdrawn from node
      * @param stakingInfoStore the store for the staking info
@@ -154,5 +196,36 @@ public class StakeInfoHelper {
             copy.stakeToReward(Math.max(0, stakeToReward));
         }
         stakingInfoStore.put(nodeId, copy.build());
+    }
+
+    private void completeUpdateFromNewAddressBook(
+            @NonNull final WritableStakingInfoStore store,
+            @NonNull final List<NodeInfo> nodeInfos,
+            @NonNull final Configuration config) {
+        final var numberOfNodesInAddressBook = nodeInfos.size();
+        final long maxStakePerNode =
+                config.getConfigData(LedgerConfig.class).totalTinyBarFloat() / numberOfNodesInAddressBook;
+        final var numRewardHistoryStoredPeriods =
+                config.getConfigData(StakingConfig.class).rewardHistoryNumStoredPeriods();
+        for (final var nodeId : nodeInfos) {
+            final var stakingInfo = store.get(nodeId.nodeId());
+            if (stakingInfo != null) {
+                if (stakingInfo.maxStake() != maxStakePerNode) {
+                    store.put(
+                            nodeId.nodeId(),
+                            stakingInfo.copyBuilder().maxStake(maxStakePerNode).build());
+                }
+            } else {
+                final var newNodeStakingInfo = StakingNodeInfo.newBuilder()
+                        .nodeNumber(nodeId.nodeId())
+                        .maxStake(maxStakePerNode)
+                        .minStake(0L)
+                        .rewardSumHistory(
+                                nCopies(numRewardHistoryStoredPeriods + 1, 0L).toArray(Long[]::new))
+                        .weight(0)
+                        .build();
+                store.put(nodeId.nodeId(), newNodeStakingInfo);
+            }
+        }
     }
 }
