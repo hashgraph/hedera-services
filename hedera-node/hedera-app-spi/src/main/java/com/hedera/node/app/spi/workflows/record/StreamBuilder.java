@@ -196,7 +196,7 @@ public interface StreamBuilder {
      * @param exchangeRate the exchange rate
      * @return this builder
      */
-    StreamBuilder exchangeRate(@NonNull ExchangeRateSet exchangeRate);
+    StreamBuilder exchangeRate(@Nullable ExchangeRateSet exchangeRate);
 
     /**
      * Returns the number of automatic token associations

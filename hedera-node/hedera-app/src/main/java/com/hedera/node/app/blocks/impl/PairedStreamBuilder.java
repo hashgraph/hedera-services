@@ -259,7 +259,7 @@ public class PairedStreamBuilder
     }
 
     @Override
-    public StreamBuilder exchangeRate(@NonNull ExchangeRateSet exchangeRate) {
+    public StreamBuilder exchangeRate(@Nullable final ExchangeRateSet exchangeRate) {
         recordStreamBuilder.exchangeRate(exchangeRate);
         blockStreamBuilder.exchangeRate(exchangeRate);
         return this;
