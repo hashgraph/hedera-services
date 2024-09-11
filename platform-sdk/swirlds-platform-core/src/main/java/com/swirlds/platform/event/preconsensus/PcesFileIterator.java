@@ -17,7 +17,6 @@
 package com.swirlds.platform.event.preconsensus;
 
 import com.hedera.hapi.platform.event.GossipEvent;
-import com.hedera.pbj.runtime.ParseException;
 import com.swirlds.common.io.IOIterator;
 import com.swirlds.common.io.extendable.ExtendableInputStream;
 import com.swirlds.common.io.extendable.extensions.CountingStreamExtension;
@@ -30,7 +29,6 @@ import java.io.BufferedInputStream;
 import java.io.EOFException;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.nio.BufferOverflowException;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 
@@ -95,9 +93,9 @@ public class PcesFileIterator implements IOIterator<PlatformEvent> {
                             case ORIGINAL -> EventSerializationUtils.deserializePlatformEvent(stream, true);
                             case PROTOBUF_EVENTS -> {
                                 final GossipEvent gossipEvent = stream.readPbjRecord(GossipEvent.PROTOBUF);
-                                try{
+                                try {
                                     yield new PlatformEvent(gossipEvent);
-                                } catch (final NullPointerException e){
+                                } catch (final NullPointerException e) {
                                     throw new IOException("GossipEvent read from the file is malformed", e);
                                 }
                             }
