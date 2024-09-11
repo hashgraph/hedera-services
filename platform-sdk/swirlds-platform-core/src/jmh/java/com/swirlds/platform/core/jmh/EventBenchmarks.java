@@ -17,7 +17,6 @@
 package com.swirlds.platform.core.jmh;
 
 import com.hedera.hapi.platform.event.GossipEvent;
-import com.hedera.pbj.runtime.ParseException;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.io.streams.MerkleDataInputStream;
