@@ -227,6 +227,7 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
                     roundHashes.computeIfAbsent(roundNum - 1, (k) -> new AtomicReference<>());
             final CompletableFuture<Bytes> blockStartStateFuture = new CompletableFuture<>();
             blockStartStateHashRef.compareAndSet(null, blockStartStateFuture);
+            log.info("Requesting hash of round {} for block {}", roundNum - 1, blockNumber);
             final var blockStartStateHash = blockStartStateHashRef.get().join();
 
             final var rightParent = combine(outputHash, blockStartStateHash);
