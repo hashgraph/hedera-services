@@ -20,13 +20,21 @@ import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTopicInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createTopic;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedConsensusHbarFee;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedConsensusHtsFee;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeTests.expectedConsensusFixedHTSFee;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeTests.expectedConsensusFixedHbarFee;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
 import static com.hedera.services.bdd.suites.HapiSuite.flattened;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_MUST_BE_POSITIVE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FMKL_CONTAINS_DUPLICATED_KEYS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CUSTOM_FEE_SCHEDULE_KEY;
 
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestLifecycle;
@@ -59,24 +67,22 @@ public class TopicCustomFeeTest extends TopicCustomFeeBase {
 
             @HapiTest
             @DisplayName("Create topic with all keys")
+            // TOPIC_FEE_001
             final Stream<DynamicTest> createTopicWithAllKeys() {
                 return hapiTest(flattened(
-                        newNamedKeysForFMKL(5),
-                        cryptoCreate("collector"),
                         createTopic(TOPIC)
                                 .adminKeyName(ADMIN_KEY)
                                 .submitKeyName(SUBMIT_KEY)
-                                .feeScheduleKeyName(FEE_SCHEDULE_KEY)
-                                .freeMessagesKeys(freeMsgKeyNames(5)),
+                                .feeScheduleKeyName(FEE_SCHEDULE_KEY),
                         getTopicInfo(TOPIC)
                                 .hasAdminKey(ADMIN_KEY)
                                 .hasSubmitKey(SUBMIT_KEY)
-                                .hasFeeScheduleKey(FEE_SCHEDULE_KEY)
-                                .hasFreeMessagesKeys(List.of(freeMsgKeyNames(5)))));
+                                .hasFeeScheduleKey(FEE_SCHEDULE_KEY)));
             }
 
             @HapiTest
             @DisplayName("Create topic with submitKey and feeScheduleKey")
+            // TOPIC_FEE_002
             final Stream<DynamicTest> createTopicWithSubmitKeyAndFeeScheduleKey() {
                 return hapiTest(
                         createTopic(TOPIC).submitKeyName(SUBMIT_KEY).feeScheduleKeyName(FEE_SCHEDULE_KEY),
@@ -85,6 +91,7 @@ public class TopicCustomFeeTest extends TopicCustomFeeBase {
 
             @HapiTest
             @DisplayName("Create topic with only feeScheduleKey")
+            // TOPIC_FEE_003
             final Stream<DynamicTest> createTopicWithOnlyFeeScheduleKey() {
                 return hapiTest(
                         createTopic(TOPIC).feeScheduleKeyName(FEE_SCHEDULE_KEY),
@@ -93,6 +100,7 @@ public class TopicCustomFeeTest extends TopicCustomFeeBase {
 
             @HapiTest
             @DisplayName("Create topic with 1 Hbar fixed fee")
+            // TOPIC_FEE_004
             final Stream<DynamicTest> createTopicWithOneHbarFixedFee() {
                 final var collector = "collector";
                 return hapiTest(
@@ -101,17 +109,17 @@ public class TopicCustomFeeTest extends TopicCustomFeeBase {
                                 .adminKeyName(ADMIN_KEY)
                                 .submitKeyName(SUBMIT_KEY)
                                 .feeScheduleKeyName(FEE_SCHEDULE_KEY)
-                                .withConsensusCustomFee(fixedConsensusHbarFee(1, collector)),
-                        // todo check if we need to sign with feeScheduleKey on create?
+                                .withConsensusCustomFee(fixedConsensusHbarFee(ONE_HBAR, collector)),
                         getTopicInfo(TOPIC)
                                 .hasAdminKey(ADMIN_KEY)
                                 .hasSubmitKey(SUBMIT_KEY)
                                 .hasFeeScheduleKey(FEE_SCHEDULE_KEY)
-                                .hasCustom(expectedConsensusFixedHbarFee(1, collector)));
+                                .hasCustom(expectedConsensusFixedHbarFee(ONE_HBAR, collector)));
             }
 
             @HapiTest
             @DisplayName("Create topic with 1 HTS fixed fee")
+            // TOPIC_FEE_005
             final Stream<DynamicTest> createTopicWithOneHTSFixedFee() {
                 final var collector = "collector";
                 return hapiTest(
@@ -130,6 +138,116 @@ public class TopicCustomFeeTest extends TopicCustomFeeBase {
                                 .hasSubmitKey(SUBMIT_KEY)
                                 .hasFeeScheduleKey(FEE_SCHEDULE_KEY)
                                 .hasCustom(expectedConsensusFixedHTSFee(1, "testToken", collector)));
+            }
+
+            @HapiTest
+            @DisplayName("Create topic with all keys")
+            // TOPIC_FEE_020
+            final Stream<DynamicTest> createTopicWithFMLK() {
+                return hapiTest(flattened(
+                        // create 10 keys
+                        newNamedKeysForFMKL(10),
+                        createTopic(TOPIC)
+                                .adminKeyName(ADMIN_KEY)
+                                .submitKeyName(SUBMIT_KEY)
+                                .feeScheduleKeyName(FEE_SCHEDULE_KEY)
+                                // set list of 10 keys
+                                .freeMessagesKeys(freeMsgKeyNames(10)),
+                        getTopicInfo(TOPIC)
+                                .hasAdminKey(ADMIN_KEY)
+                                .hasSubmitKey(SUBMIT_KEY)
+                                .hasFeeScheduleKey(FEE_SCHEDULE_KEY)
+                                // assert the list
+                                .hasFreeMessagesKeys(List.of(freeMsgKeyNames(10)))));
+            }
+        }
+
+        @Nested
+        @DisplayName("Negative scenarios")
+        class TopicCreateNegativeScenarios {
+
+            @BeforeAll
+            static void beforeAll(@NonNull final TestLifecycle lifecycle) {
+                lifecycle.doAdhoc(setupBaseKeys());
+            }
+
+            @HapiTest
+            @DisplayName("Create topic with duplicated signatures in FMKL")
+            // TOPIC_FEE_023
+            final Stream<DynamicTest> createTopicWithDuplicateSignatures() {
+                final var testKey = "testKey";
+                return hapiTest(flattened(
+                        newKeyNamed(testKey),
+                        createTopic(TOPIC)
+                                .adminKeyName(ADMIN_KEY)
+                                .submitKeyName(SUBMIT_KEY)
+                                .feeScheduleKeyName(FEE_SCHEDULE_KEY)
+                                .freeMessagesKeys(testKey, testKey)
+                                .hasPrecheck(FMKL_CONTAINS_DUPLICATED_KEYS)));
+            }
+
+            @HapiTest
+            @DisplayName("Create topic with 0 Hbar fixed fee")
+            // TOPIC_FEE_024
+            final Stream<DynamicTest> createTopicWithZeroHbarFixedFee() {
+                final var collector = "collector";
+                return hapiTest(
+                        cryptoCreate(collector),
+                        createTopic(TOPIC)
+                                .adminKeyName(ADMIN_KEY)
+                                .submitKeyName(SUBMIT_KEY)
+                                .feeScheduleKeyName(FEE_SCHEDULE_KEY)
+                                .withConsensusCustomFee(fixedConsensusHbarFee(0, collector))
+                                .hasKnownStatus(CUSTOM_FEE_MUST_BE_POSITIVE));
+            }
+
+            @HapiTest
+            @DisplayName("Create topic with 0 HTS fixed fee")
+            // TOPIC_FEE_025
+            final Stream<DynamicTest> createTopicWithZeroHTSFixedFee() {
+                final var collector = "collector";
+                return hapiTest(
+                        cryptoCreate(collector),
+                        tokenCreate("testToken")
+                                .tokenType(TokenType.FUNGIBLE_COMMON)
+                                .initialSupply(500),
+                        tokenAssociate(collector, "testToken"),
+                        createTopic(TOPIC)
+                                .adminKeyName(ADMIN_KEY)
+                                .submitKeyName(SUBMIT_KEY)
+                                .feeScheduleKeyName(FEE_SCHEDULE_KEY)
+                                .withConsensusCustomFee(fixedConsensusHtsFee(0, "testToken", collector))
+                                .hasKnownStatus(CUSTOM_FEE_MUST_BE_POSITIVE));
+            }
+
+            @HapiTest
+            @DisplayName("Create topic with invalid fee schedule key")
+            // TOPIC_FEE_026
+            final Stream<DynamicTest> createTopicWithInvalidFeeScheduleKey() {
+                final var invalidKey = "invalidKey";
+                return hapiTest(
+                        withOpContext((spec, opLog) -> spec.registry().saveKey(invalidKey, STRUCTURALLY_INVALID_KEY)),
+                        createTopic(TOPIC)
+                                .adminKeyName(ADMIN_KEY)
+                                .submitKeyName(SUBMIT_KEY)
+                                .feeScheduleKeyName(invalidKey)
+                                .hasKnownStatus(INVALID_CUSTOM_FEE_SCHEDULE_KEY));
+            }
+
+            @HapiTest
+            @DisplayName("Create topic with custom fee and deleted collector")
+            // TOPIC_FEE_028
+            final Stream<DynamicTest> createTopicWithCustomFeeAndDeletedCollector() {
+                final var collector = "collector";
+                return hapiTest(
+                        cryptoCreate(collector),
+                        cryptoDelete(collector),
+                        createTopic(TOPIC)
+                                .adminKeyName(ADMIN_KEY)
+                                .submitKeyName(SUBMIT_KEY)
+                                .feeScheduleKeyName(FEE_SCHEDULE_KEY)
+                                .withConsensusCustomFee(fixedConsensusHbarFee(ONE_HBAR, collector))
+                                .hasKnownStatus(ACCOUNT_DELETED));
             }
         }
     }

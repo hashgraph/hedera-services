@@ -18,7 +18,9 @@ package com.hedera.services.bdd.suites.hip991;
 
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.SpecOperation;
+import com.hederahashgraph.api.proto.java.Key;
 import java.util.ArrayList;
 
 public class TopicCustomFeeBase {
@@ -27,6 +29,10 @@ public class TopicCustomFeeBase {
     protected static final String SUBMIT_KEY = "submitKey";
     protected static final String FEE_SCHEDULE_KEY = "feeScheduleKey";
     protected static final String FREE_MSG_KEY_PREFIX = "freeMessageKey_";
+
+    // This key is truly invalid, as all Ed25519 public keys must be 32 bytes long
+    protected static final Key STRUCTURALLY_INVALID_KEY =
+            Key.newBuilder().setEd25519(ByteString.fromHex("ff")).build();
 
     protected static SpecOperation[] setupBaseKeys() {
         return new SpecOperation[] {newKeyNamed(ADMIN_KEY), newKeyNamed(SUBMIT_KEY), newKeyNamed(FEE_SCHEDULE_KEY)};
