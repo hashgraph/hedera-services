@@ -47,16 +47,21 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
-import java.util.Random;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 class NetworkPeerIdentifierTest {
+    private static final Pattern NODE_NAME_PATTERN = Pattern.compile("^node(\\d+)$");
+
     final PlatformContext platformContext = mock(PlatformContext.class);
     List<PeerInfo> peerInfoList = null;
     PublicStores publicStores = null;
+
 
     @BeforeEach
     void setUp() throws URISyntaxException, KeyLoadingException, KeyStoreException {
@@ -74,15 +79,17 @@ class NetworkPeerIdentifierTest {
         publicStores = PublicStores.fromAllPublic(publicKeys, names.stream().toList());
 
         peerInfoList = new ArrayList<>();
-        final Random random = new Random();
         names.forEach(name -> {
-            final int id = random.nextInt(names.size());
+            final Matcher nameMatcher = NODE_NAME_PATTERN.matcher(name);
+            if (!nameMatcher.matches()) {
+                throw new RuntimeException("Invalid node name " + name);
+            }
+            final int id = Integer.parseInt(nameMatcher.group(1));
             final NodeId node = new NodeId(id);
             final PeerInfo peer;
             try {
                 peer = new PeerInfo(
                         node,
-                        name,
                         "127.0.0.1",
                         Objects.requireNonNull(publicStores.getCertificate(KeyCertPurpose.SIGNING, name)));
             } catch (final KeyLoadingException e) {
