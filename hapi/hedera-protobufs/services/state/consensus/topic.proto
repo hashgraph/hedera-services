@@ -117,11 +117,11 @@ message Topic {
      * <p>
      * If a submit transaction is signed by _any_ key from this list,
      * custom fees SHALL NOT be charged for that transaction.<br/>
-     * If free_messages_key_list is unset, it SHALL _implicitly_ contain
+     * If fee_exempt_key_list is unset, it SHALL _implicitly_ contain
      * the key `admin_key`, the key `submit_key`, and the key
      * `fee_schedule_key`, if any of those keys are set.
      */
-    repeated Key free_messages_key_list = 12;
+    repeated Key fee_exempt_key_list = 12;
 
     /**
      * A set of custom fee definitions.<br/>

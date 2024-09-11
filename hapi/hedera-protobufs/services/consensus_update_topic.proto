@@ -100,18 +100,25 @@ message ConsensusUpdateTopicTransactionBody {
     Key fee_schedule_key = 10;
 
     /**
-     * A set of keys that are allowed to submit messages to the topic without
+     * A wrapper of a set of keys that are allowed to submit messages to the topic without
      * paying the topic's custom fees.
      * <p>
-     * If this list is empty, the current set of keys is unchanged.
+     * If the wrapper is not set, the current set of keys is unchanged.<br/>
+     * If the wrapper is set, but contains an empty list, the list will be updated to an empty list.
      */
-    repeated Key free_messages_key_list = 11;
+    FeeExemptKeyList fee_exempt_key_list = 11;
 
     /**
-     * A set of custom fee definitions.<br/>
+     * A wrapper of a set of custom fee definitions.<br/>
      * These are fees to be assessed for each submit to this topic.
      * <p>
-     * If this list is empty, the current set of fees is unchanged.
+     * If the wrapper is not set, the current set of keys is unchanged.<br/>
+     * If the wrapper is set, but contains an empty list, the list will be updated to an empty list.
      */
-    repeated ConsensusCustomFee custom_fees = 12;
+    ConsensusCustomFeeList custom_fees = 12;
+
+    /**
+     * Determines whether the system should check the validity of the passed keys for update.
+     */
+    TokenKeyValidation key_verification_mode = 13;
 }

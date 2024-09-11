@@ -176,7 +176,7 @@ message AssessedCustomFee {
 
 /**
  * A custom fee definition for a consensus topic.
- * <p>
+ *
  * This fee definition is specific to an Hedera Consensus Service (HCS) topic
  * and SHOULD NOT be used in any other context.<br/>
  * All fields for this message are REQUIRED.<br/>
@@ -185,12 +185,12 @@ message AssessedCustomFee {
  */
 message ConsensusCustomFee {
   /**
-     * A fixed custom fee.
-     * <p>
-     * The amount of HBAR or other token described by this `FixedFee` SHALL
-     * be charged to the transction payer for each message submitted to a
-     * topic that assigns this consensus custom fee.
-    */
+   * A fixed custom fee.
+   * <p>
+   * The amount of HBAR or other token described by this `FixedFee` SHALL
+   * be charged to the transction payer for each message submitted to a
+   * topic that assigns this consensus custom fee.
+   */
   FixedFee fixed_fee = 1;
 
   /**
@@ -200,4 +200,32 @@ message ConsensusCustomFee {
    * to the account identified by this field.
    */
   AccountID fee_collector_account_id = 2;
+}
+
+/**
+ * A wrapper for consensus custom fee list.
+ * <p>
+ * It is used in consensus_update_topic and it helps to differentiate between
+ * setting an empty list and not updating the list.
+ */
+message ConsensusCustomFeeList {
+  /**
+   * A set of custom fee definitions.<br/>
+   * These are fees to be assessed for each submit to this topic.
+   */
+  repeated ConsensusCustomFee fees = 1;
+}
+
+/**
+ * A wrapper for fee exempt key list.
+ * <p>
+ * It is used in consensus_update_topic and it helps to differentiate between
+ * setting an empty list and not updating the list.
+ */
+message FeeExemptKeyList {
+  /**
+   * A set of keys that are allowed to submit messages to the topic without
+   * paying the topic's custom fees.
+   */
+   repeated Key keys = 1;
 }

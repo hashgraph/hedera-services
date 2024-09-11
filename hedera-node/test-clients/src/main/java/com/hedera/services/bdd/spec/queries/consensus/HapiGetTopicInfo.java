@@ -230,7 +230,7 @@ public class HapiGetTopicInfo extends HapiQueryOp<HapiGetTopicInfo> {
         for (var expectedFee : expectedFees) {
             expectedFee.accept(spec, actualFees);
         }
-        var actualFreeMessagesKeys = info.getFreeMessagesKeyListList();
+        var actualFreeMessagesKeys = info.getFeeExemptKeyListList();
         for (var expectedKey : expectedFreeMessagesKeyList) {
             assertTrue(
                     actualFreeMessagesKeys.contains(spec.registry().getKey(expectedKey)),
