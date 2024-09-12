@@ -39,7 +39,9 @@ import java.util.Objects;
  * completely different from each other.
  *
  * <p>The Services version is the version of the node software itself.
+ * This will be removed once we stop supporting 0.53.0 and earlier versions.
  */
+@Deprecated(forRemoval = true)
 public class HederaSoftwareVersion implements SoftwareVersion {
 
     public static final long CLASS_ID = 0x6f2b1bc2df8cbd0cL;
