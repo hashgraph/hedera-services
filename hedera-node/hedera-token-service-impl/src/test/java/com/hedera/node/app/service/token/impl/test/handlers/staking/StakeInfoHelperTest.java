@@ -16,27 +16,48 @@
 
 package com.hedera.node.app.service.token.impl.test.handlers.staking;
 
+import static com.hedera.node.app.service.token.impl.schemas.V0490TokenSchema.STAKING_INFO_KEY;
+import static com.hedera.node.app.service.token.impl.schemas.V0490TokenSchema.STAKING_NETWORK_REWARDS_KEY;
 import static com.hedera.node.app.service.token.impl.test.WritableStakingInfoStoreImplTest.NODE_ID_1;
+import static com.hedera.node.app.service.token.impl.test.handlers.staking.EndOfStakingPeriodUpdaterTest.NODE_NUM_1;
+import static com.hedera.node.app.service.token.impl.test.handlers.staking.EndOfStakingPeriodUpdaterTest.NODE_NUM_2;
+import static com.hedera.node.app.service.token.impl.test.handlers.staking.EndOfStakingPeriodUpdaterTest.NODE_NUM_3;
+import static com.hedera.node.app.service.token.impl.test.handlers.staking.EndOfStakingPeriodUpdaterTest.NODE_NUM_4;
+import static com.hedera.node.app.service.token.impl.test.handlers.staking.EndOfStakingPeriodUpdaterTest.NODE_NUM_8;
+import static com.hedera.node.app.service.token.impl.test.handlers.staking.EndOfStakingPeriodUpdaterTest.STAKING_INFO_1;
+import static com.hedera.node.app.service.token.impl.test.handlers.staking.EndOfStakingPeriodUpdaterTest.STAKING_INFO_2;
+import static com.hedera.node.app.service.token.impl.test.handlers.staking.EndOfStakingPeriodUpdaterTest.STAKING_INFO_3;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.token.StakingNodeInfo;
 import com.hedera.node.app.service.token.impl.WritableStakingInfoStore;
 import com.hedera.node.app.service.token.impl.handlers.staking.StakeInfoHelper;
 import com.hedera.node.app.service.token.impl.schemas.V0490TokenSchema;
+import com.hedera.node.app.spi.fixtures.info.FakeNetworkInfo;
 import com.hedera.node.app.spi.fixtures.state.MapWritableStates;
+import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
+import com.swirlds.config.api.Configuration;
+import com.swirlds.state.spi.WritableSingletonStateBase;
 import com.swirlds.state.test.fixtures.MapWritableKVState;
 import java.util.Map;
 import org.assertj.core.api.Assertions;
-import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 
 class StakeInfoHelperTest {
-    private StakeInfoHelper subject;
+    private static final Configuration DEFAULT_CONFIG = HederaTestConfigBuilder.createConfig();
+
     private WritableStakingInfoStore store;
 
-    @BeforeEach
-    void setUp() {
+    private final StakeInfoHelper subject = new StakeInfoHelper();
+
+    @ParameterizedTest
+    @CsvSource({
+        "20, 15", "9, 14", "10, 15",
+    })
+    void increaseUnclaimedStartToLargerThanCurrentStakeReward(int amount, int expectedResult) {
         final var state = MapWritableKVState.<EntityNumber, StakingNodeInfo>builder(V0490TokenSchema.STAKING_INFO_KEY)
                 .value(
                         NODE_ID_1,
@@ -48,14 +69,6 @@ class StakeInfoHelperTest {
                                 .build())
                 .build();
         store = new WritableStakingInfoStore(new MapWritableStates(Map.of(V0490TokenSchema.STAKING_INFO_KEY, state)));
-        subject = new StakeInfoHelper();
-    }
-
-    @ParameterizedTest
-    @CsvSource({
-        "20, 15", "9, 14", "10, 15",
-    })
-    void increaseUnclaimedStartToLargerThanCurrentStakeReward(int amount, int expectedResult) {
         assertUnclaimedStakeRewardStartPrecondition();
 
         subject.increaseUnclaimedStakeRewards(NODE_ID_1.number(), amount, store);
@@ -67,6 +80,46 @@ class StakeInfoHelperTest {
         // Case 2: The result should be the stake reward start + the unclaimed stake reward start, 5 + 9 = 14
         // Case 3: Stake reward start + unclaimed stake reward start, 5 + 10 = 15
         Assertions.assertThat(savedStakeInfo.unclaimedStakeRewardStart()).isEqualTo(expectedResult);
+    }
+
+    @Test
+    void marksNonExistingNodesToDeletedInStateAndAddsNewNodesToState() {
+        // State has nodeIds 1, 2, 3
+        final var stakingInfosState = new MapWritableKVState.Builder<EntityNumber, StakingNodeInfo>(STAKING_INFO_KEY)
+                .value(NODE_NUM_1, STAKING_INFO_1)
+                .value(NODE_NUM_2, STAKING_INFO_2)
+                .value(NODE_NUM_3, STAKING_INFO_3)
+                .build();
+        final var newStates = newStatesInstance(stakingInfosState);
+        store = new WritableStakingInfoStore(newStates);
+        // Platform address book has node Ids 2, 4, 8
+        final var networkInfo = new FakeNetworkInfo();
+
+        // Should update the state to mark node 1 and 3 as deleted
+        subject.adjustPostUpgradeStakes(store, networkInfo, DEFAULT_CONFIG);
+        final var updatedStates = newStates.get(STAKING_INFO_KEY);
+        // marks nodes 1, 2 as deleted
+        assertThat(((StakingNodeInfo) updatedStates.get(NODE_NUM_1)).deleted()).isTrue();
+        assertThat(((StakingNodeInfo) updatedStates.get(NODE_NUM_2)).deleted()).isFalse();
+        assertThat(((StakingNodeInfo) updatedStates.get(NODE_NUM_3)).deleted()).isTrue();
+        // Also adds node 4 to the state
+        assertThat(((StakingNodeInfo) updatedStates.get(NODE_NUM_4)).deleted()).isFalse();
+        assertThat(((StakingNodeInfo) updatedStates.get(NODE_NUM_4)).weight()).isZero();
+        assertThat(((StakingNodeInfo) updatedStates.get(NODE_NUM_4)).minStake()).isZero();
+        assertThat(((StakingNodeInfo) updatedStates.get(NODE_NUM_4)).maxStake()).isEqualTo(1666666666666666666L);
+        // Also adds node 8 to the state
+        assertThat(((StakingNodeInfo) updatedStates.get(NODE_NUM_8)).deleted()).isFalse();
+        assertThat(((StakingNodeInfo) updatedStates.get(NODE_NUM_8)).weight()).isZero();
+        assertThat(((StakingNodeInfo) updatedStates.get(NODE_NUM_8)).minStake()).isZero();
+        assertThat(((StakingNodeInfo) updatedStates.get(NODE_NUM_8)).maxStake()).isEqualTo(1666666666666666666L);
+    }
+
+    private MapWritableStates newStatesInstance(final MapWritableKVState<EntityNumber, StakingNodeInfo> stakingInfo) {
+        //noinspection ReturnOfNull
+        return MapWritableStates.builder()
+                .state(stakingInfo)
+                .state(new WritableSingletonStateBase<>(STAKING_NETWORK_REWARDS_KEY, () -> null, c -> {}))
+                .build();
     }
 
     private void assertUnclaimedStakeRewardStartPrecondition() {
