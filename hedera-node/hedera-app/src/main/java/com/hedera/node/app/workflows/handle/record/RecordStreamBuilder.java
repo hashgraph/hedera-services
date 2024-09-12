@@ -852,8 +852,7 @@ public class RecordStreamBuilder
     /**{@inheritDoc}*/
     @NonNull
     @Override
-    public RecordStreamBuilder exchangeRate(@NonNull final ExchangeRateSet exchangeRate) {
-        requireNonNull(exchangeRate, "exchangeRate must not be null");
+    public RecordStreamBuilder exchangeRate(@Nullable final ExchangeRateSet exchangeRate) {
         this.exchangeRate = exchangeRate;
         return this;
     }

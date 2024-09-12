@@ -363,7 +363,8 @@ public class HandleWorkflow {
                 dispatchProcessor.processDispatch(dispatch);
                 updateWorkflowMetrics(userTxn);
             }
-            final var handleOutput = userTxn.stack().buildHandleOutput(userTxn.consensusNow());
+            final var handleOutput =
+                    userTxn.stack().buildHandleOutput(userTxn.consensusNow(), exchangeRateManager.exchangeRates());
             // Note that we don't yet support producing ONLY blocks, because we haven't integrated
             // translators from block items to records for answering queries
             if (blockStreamConfig.streamRecords()) {

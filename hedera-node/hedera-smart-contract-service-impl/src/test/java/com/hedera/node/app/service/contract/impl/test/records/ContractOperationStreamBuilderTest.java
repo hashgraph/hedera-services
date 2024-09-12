@@ -96,7 +96,7 @@ class ContractOperationStreamBuilderTest {
             }
 
             @Override
-            public StreamBuilder exchangeRate(@NonNull ExchangeRateSet exchangeRate) {
+            public StreamBuilder exchangeRate(@Nullable ExchangeRateSet exchangeRate) {
                 return this;
             }
 
