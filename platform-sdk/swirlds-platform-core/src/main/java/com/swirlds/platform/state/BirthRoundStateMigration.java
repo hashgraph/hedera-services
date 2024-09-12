@@ -53,7 +53,7 @@ public final class BirthRoundStateMigration {
             @NonNull final SoftwareVersion appVersion) {
 
         if (ancientMode == AncientMode.GENERATION_THRESHOLD) {
-            if (initialState.getState().getPlatformState().getFirstVersionInBirthRoundMode() != null) {
+            if (initialState.getState().getReadablePlatformState().getFirstVersionInBirthRoundMode() != null) {
                 throw new IllegalStateException(
                         "Cannot revert to generation mode after birth round migration has been completed.");
             }
@@ -64,18 +64,18 @@ public final class BirthRoundStateMigration {
         }
 
         final MerkleRoot state = initialState.getState();
-        final PlatformStateAccessor platformState = state.getPlatformState();
+        final PlatformStateAccessor writablePlatformState = state.getWritablePlatformState();
 
-        final boolean alreadyMigrated = platformState.getFirstVersionInBirthRoundMode() != null;
+        final boolean alreadyMigrated = writablePlatformState.getFirstVersionInBirthRoundMode() != null;
         if (alreadyMigrated) {
             // Birth round migration was completed at a prior time, no action needed.
             logger.info(STARTUP.getMarker(), "Birth round state migration has already been completed.");
             return;
         }
 
-        final long lastRoundBeforeMigration = platformState.getRound();
+        final long lastRoundBeforeMigration = writablePlatformState.getRound();
 
-        final ConsensusSnapshot consensusSnapshot = Objects.requireNonNull(platformState.getSnapshot());
+        final ConsensusSnapshot consensusSnapshot = Objects.requireNonNull(writablePlatformState.getSnapshot());
         final List<MinimumJudgeInfo> judgeInfoList = consensusSnapshot.getMinimumJudgeInfoList();
         final long lowestJudgeGenerationBeforeMigration =
                 judgeInfoList.getLast().minimumJudgeAncientThreshold();
@@ -88,9 +88,9 @@ public final class BirthRoundStateMigration {
                 lastRoundBeforeMigration,
                 lowestJudgeGenerationBeforeMigration);
 
-        platformState.setFirstVersionInBirthRoundMode(appVersion);
-        platformState.setLastRoundBeforeBirthRoundMode(lastRoundBeforeMigration);
-        platformState.setLowestJudgeGenerationBeforeBirthRoundMode(lowestJudgeGenerationBeforeMigration);
+        writablePlatformState.setFirstVersionInBirthRoundMode(appVersion);
+        writablePlatformState.setLastRoundBeforeBirthRoundMode(lastRoundBeforeMigration);
+        writablePlatformState.setLowestJudgeGenerationBeforeBirthRoundMode(lowestJudgeGenerationBeforeMigration);
 
         final List<MinimumJudgeInfo> modifiedJudgeInfoList = new ArrayList<>(judgeInfoList.size());
         for (final MinimumJudgeInfo judgeInfo : judgeInfoList) {
@@ -102,7 +102,7 @@ public final class BirthRoundStateMigration {
                 modifiedJudgeInfoList,
                 consensusSnapshot.nextConsensusNumber(),
                 consensusSnapshot.consensusTimestamp());
-        platformState.setSnapshot(modifiedConsensusSnapshot);
+        writablePlatformState.setSnapshot(modifiedConsensusSnapshot);
 
         state.invalidateHash();
         MerkleCryptoFactory.getInstance().digestTreeSync(state);

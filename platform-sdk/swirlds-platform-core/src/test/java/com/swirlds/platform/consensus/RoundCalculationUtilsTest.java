@@ -72,7 +72,7 @@ class RoundCalculationUtilsTest {
         final MerkleRoot state = mock(MerkleRoot.class);
         final PlatformStateAccessor platformState = mock(PlatformStateAccessor.class);
         when(signedState.getState()).thenReturn(state);
-        when(state.getPlatformState()).thenReturn(platformState);
+        when(state.getReadablePlatformState()).thenReturn(platformState);
 
         final AtomicLong lastRoundDecided = new AtomicLong();
         when(signedState.getRound()).thenAnswer(a -> lastRoundDecided.get());
