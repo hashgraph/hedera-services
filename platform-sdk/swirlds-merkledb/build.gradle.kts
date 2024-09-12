@@ -72,5 +72,6 @@ hammerModuleInfo {
     requires("org.apache.logging.log4j.core")
     requires("org.junit.jupiter.api")
     requires("org.junit.jupiter.params")
+    runtimeOnly("com.swirlds.common.test.fixtures")
     runtimeOnly("com.swirlds.config.impl")
 }

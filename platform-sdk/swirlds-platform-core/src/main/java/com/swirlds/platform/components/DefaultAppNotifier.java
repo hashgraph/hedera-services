@@ -27,6 +27,8 @@ import com.swirlds.platform.listeners.StateWriteToDiskCompleteNotification;
 import com.swirlds.platform.system.state.notifications.IssListener;
 import com.swirlds.platform.system.state.notifications.IssNotification;
 import com.swirlds.platform.system.state.notifications.NewSignedStateListener;
+import com.swirlds.platform.system.state.notifications.StateHashedListener;
+import com.swirlds.platform.system.state.notifications.StateHashedNotification;
 import com.swirlds.platform.system.status.PlatformStatus;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
@@ -40,6 +42,11 @@ public record DefaultAppNotifier(@NonNull NotificationEngine notificationEngine)
     @Override
     public void sendStateWrittenToDiskNotification(@NonNull final StateWriteToDiskCompleteNotification notification) {
         notificationEngine.dispatch(StateWriteToDiskCompleteListener.class, notification);
+    }
+
+    @Override
+    public void sendStateHashedNotification(@NonNull final StateHashedNotification notification) {
+        notificationEngine.dispatch(StateHashedListener.class, notification);
     }
 
     /**

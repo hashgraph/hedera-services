@@ -16,6 +16,7 @@
 
 package com.hedera.node.app;
 
+import static com.hedera.node.app.blocks.BlockStreamService.FAKE_RESTART_BLOCK_HASH;
 import static com.hedera.node.app.info.UnavailableNetworkInfo.UNAVAILABLE_NETWORK_INFO;
 import static com.hedera.node.app.records.schemas.V0490BlockRecordSchema.BLOCK_INFO_STATE_KEY;
 import static com.hedera.node.app.state.merkle.VersionUtils.isSoOrdered;
@@ -36,6 +37,7 @@ import com.hedera.hapi.block.stream.output.StateChanges;
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.state.blockrecords.BlockInfo;
 import com.hedera.hapi.util.HapiUtils;
+import com.hedera.node.app.blocks.BlockStreamManager;
 import com.hedera.node.app.blocks.BlockStreamService;
 import com.hedera.node.app.blocks.impl.BoundaryStateChangeListener;
 import com.hedera.node.app.blocks.impl.KVStateChangeListener;
@@ -69,6 +71,8 @@ import com.hedera.node.app.statedumpers.DumpCheckpoint;
 import com.hedera.node.app.statedumpers.MerkleStateChild;
 import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.app.throttle.CongestionThrottleService;
+import com.hedera.node.app.tss.TssBaseService;
+import com.hedera.node.app.tss.impl.PlaceholderTssBaseService;
 import com.hedera.node.app.version.HederaSoftwareVersion;
 import com.hedera.node.app.version.ServicesSoftwareVersion;
 import com.hedera.node.app.workflows.handle.HandleWorkflow;
@@ -191,6 +195,11 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener {
     private final InstantSource instantSource;
 
     /**
+     * The supplier for the TSS base service.
+     */
+    private final Supplier<TssBaseService> tssBaseServiceSupplier;
+
+    /**
      * The contract service singleton, kept as a field here to avoid constructing twice
      * (once in constructor to register schemas, again inside Dagger component).
      */
@@ -201,6 +210,12 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener {
      * (once in constructor to register schemas, again inside Dagger component).
      */
     private final FileServiceImpl fileServiceImpl;
+
+    /**
+     * The block stream service singleton, kept as a field here to reuse information learned
+     * during the state migration phase in the later initialization phase.
+     */
+    private final BlockStreamService blockStreamService;
 
     /**
      * The bootstrap configuration provider for the network.
@@ -268,14 +283,17 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener {
      * @param constructableRegistry the registry to register {@link RuntimeConstructable} factories with
      * @param registryFactory the factory to use for creating the services registry
      * @param migrator the migrator to use with the services
+     * @param tssBaseServiceSupplier the supplier for the TSS base service
      */
     public Hedera(
             @NonNull final ConstructableRegistry constructableRegistry,
             @NonNull final ServicesRegistry.Factory registryFactory,
             @NonNull final ServiceMigrator migrator,
-            @NonNull final InstantSource instantSource) {
+            @NonNull final InstantSource instantSource,
+            @NonNull final Supplier<TssBaseService> tssBaseServiceSupplier) {
         requireNonNull(registryFactory);
         requireNonNull(constructableRegistry);
+        this.tssBaseServiceSupplier = requireNonNull(tssBaseServiceSupplier);
         this.serviceMigrator = requireNonNull(migrator);
         this.instantSource = requireNonNull(instantSource);
         logger.info(
@@ -306,6 +324,7 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener {
                         new SignatureExpanderImpl(),
                         new SignatureVerifierImpl(CryptographyHolder.get())));
         contractServiceImpl = new ContractServiceImpl(appContext);
+        blockStreamService = new BlockStreamService(bootstrapConfig);
         // Register all service schema RuntimeConstructable factories before platform init
         Set.of(
                         new EntityIdService(),
@@ -318,7 +337,7 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener {
                         new UtilServiceImpl(),
                         new RecordCacheService(),
                         new BlockRecordService(),
-                        new BlockStreamService(bootstrapConfig),
+                        blockStreamService,
                         new FeeService(),
                         new CongestionThrottleService(),
                         new NetworkServiceImpl(),
@@ -775,6 +794,7 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener {
             @NonNull final InitTrigger trigger,
             @NonNull final List<StateChanges.Builder> migrationStateChanges) {
         final var notifications = platform.getNotificationEngine();
+        final var blockStreamEnabled = isBlockStreamEnabled();
         // The Dagger component should be constructed every time we reach this point, even if
         // it exists (this avoids any problems with mutable singleton state by reconstructing
         // everything); but we must ensure the gRPC server in the old component is fully stopped,
@@ -784,6 +804,9 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener {
             notifications.unregister(PlatformStatusChangeListener.class, this);
             notifications.unregister(ReconnectCompleteListener.class, daggerApp.reconnectListener());
             notifications.unregister(StateWriteToDiskCompleteListener.class, daggerApp.stateWriteToDiskListener());
+            if (blockStreamEnabled) {
+                daggerApp.tssBaseService().unregisterLedgerSignatureConsumer(daggerApp.blockStreamManager());
+            }
         }
         // Fully qualified so as to not confuse javadoc
         daggerApp = com.hedera.node.app.DaggerHederaInjectionComponent.builder()
@@ -804,12 +827,36 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener {
                 .kvStateChangeListener(kvStateChangeListener)
                 .boundaryStateChangeListener(boundaryStateChangeListener)
                 .migrationStateChanges(migrationStateChanges)
+                .tssBaseService(tssBaseServiceSupplier.get())
                 .build();
         // Initialize infrastructure for fees, exchange rates, and throttles from the working state
         daggerApp.initializer().accept(state);
         notifications.register(PlatformStatusChangeListener.class, this);
         notifications.register(ReconnectCompleteListener.class, daggerApp.reconnectListener());
         notifications.register(StateWriteToDiskCompleteListener.class, daggerApp.stateWriteToDiskListener());
+        if (blockStreamEnabled) {
+            daggerApp
+                    .blockStreamManager()
+                    .initLastBlockHash(
+                            switch (trigger) {
+                                case GENESIS -> BlockStreamManager.ZERO_BLOCK_HASH;
+                                    // FUTURE - get the actual last block hash from e.g. a reconnect teacher or disk
+                                default -> blockStreamService
+                                        .migratedLastBlockHash()
+                                        .orElse(FAKE_RESTART_BLOCK_HASH);
+                            });
+            daggerApp.tssBaseService().registerLedgerSignatureConsumer(daggerApp.blockStreamManager());
+            if (daggerApp.tssBaseService() instanceof PlaceholderTssBaseService placeholderTssBaseService) {
+                daggerApp.inject(placeholderTssBaseService);
+            }
+        }
+    }
+
+    private boolean isBlockStreamEnabled() {
+        return bootstrapConfigProvider
+                .getConfiguration()
+                .getConfigData(BlockStreamConfig.class)
+                .streamBlocks();
     }
 
     private static ServicesSoftwareVersion getNodeStartupVersion(@NonNull final Configuration config) {

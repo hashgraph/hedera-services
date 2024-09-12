@@ -18,6 +18,7 @@ package com.hedera.services.bdd.suites.staking;
 
 import static com.hedera.services.bdd.junit.RepeatableReason.NEEDS_VIRTUAL_TIME_FOR_FAST_EXECUTION;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
@@ -32,20 +33,26 @@ import static com.hedera.services.bdd.suites.HapiSuite.ONE_MILLION_HBARS;
 import static com.hedera.services.bdd.suites.HapiSuite.STAKING_REWARD;
 
 import com.hedera.services.bdd.junit.RepeatableHapiTest;
+import java.util.List;
 import java.util.stream.Stream;
+import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.DynamicTest;
 
+/**
+ * Validates that staking metadata stays up-to-date even when returning to a staked account
+ * after a long period of inactivity.
+ */
 public class RepeatableStakingTests {
     @RepeatableHapiTest(NEEDS_VIRTUAL_TIME_FOR_FAST_EXECUTION)
     Stream<DynamicTest> noStakingInteractionsForExtendedPeriodIsFine() {
-        final var numPeriodsToElapse = 367;
+        final var numPeriodsToElapse = 366;
         return hapiTest(
                 overridingThree(
                         "staking.startThreshold", "" + 10 * ONE_HBAR,
                         "staking.perHbarRewardRate", "1",
                         "staking.rewardBalanceThreshold", "0"),
                 cryptoTransfer(tinyBarsFromTo(GENESIS, STAKING_REWARD, ONE_MILLION_HBARS)),
-                cryptoCreate("forgottenStaker").stakedNodeId(0).balance(ONE_MILLION_HBARS),
+                cryptoCreate("forgottenStaker").stakedNodeId(0).balance(ONE_HBAR),
                 withOpContext((spec, opLog) -> {
                     for (int i = 0; i < numPeriodsToElapse; i++) {
                         allRunFor(
@@ -54,6 +61,7 @@ public class RepeatableStakingTests {
                                 cryptoTransfer(tinyBarsFromTo(GENESIS, FUNDING, 1L)));
                     }
                 }),
-                cryptoTransfer(tinyBarsFromTo(GENESIS, "forgottenStaker", 1L)));
+                cryptoTransfer(tinyBarsFromTo(GENESIS, "forgottenStaker", 1L)).via("collection"),
+                getTxnRecord("collection").hasPaidStakingRewards(List.of(Pair.of("forgottenStaker", 365L))));
     }
 }

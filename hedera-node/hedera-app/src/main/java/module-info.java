@@ -41,6 +41,7 @@ module com.hedera.node.app {
     requires com.swirlds.merkledb;
     requires com.swirlds.virtualmap;
     requires com.google.common;
+    requires com.google.errorprone.annotations;
     requires com.google.protobuf;
     requires io.grpc.netty;
     requires io.grpc;
@@ -48,6 +49,7 @@ module com.hedera.node.app {
     requires io.netty.transport.classes.epoll;
     requires io.netty.transport;
     requires org.apache.commons.lang3;
+    requires org.hyperledger.besu.datatypes;
     requires static com.github.spotbugs.annotations;
     requires static com.google.auto.service;
     requires static java.compiler;
@@ -106,6 +108,8 @@ module com.hedera.node.app {
     exports com.hedera.node.app.blocks.impl;
     exports com.hedera.node.app.workflows.handle.metric;
     exports com.hedera.node.app.roster;
+    exports com.hedera.node.app.tss;
+    exports com.hedera.node.app.tss.impl;
 
     provides ConfigurationExtension with
             ServicesConfigExtension;
