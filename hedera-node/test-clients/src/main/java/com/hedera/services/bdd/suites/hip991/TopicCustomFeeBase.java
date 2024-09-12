@@ -28,7 +28,7 @@ public class TopicCustomFeeBase {
     protected static final String ADMIN_KEY = "adminKey";
     protected static final String SUBMIT_KEY = "submitKey";
     protected static final String FEE_SCHEDULE_KEY = "feeScheduleKey";
-    protected static final String FREE_MSG_KEY_PREFIX = "freeMessageKey_";
+    protected static final String FEE_EXEMPT_KEY_PREFIX = "feeExemptKey_";
 
     // This key is truly invalid, as all Ed25519 public keys must be 32 bytes long
     protected static final Key STRUCTURALLY_INVALID_KEY =
@@ -38,18 +38,18 @@ public class TopicCustomFeeBase {
         return new SpecOperation[] {newKeyNamed(ADMIN_KEY), newKeyNamed(SUBMIT_KEY), newKeyNamed(FEE_SCHEDULE_KEY)};
     }
 
-    protected static SpecOperation[] newNamedKeysForFMKL(int count) {
+    protected static SpecOperation[] newNamedKeysForFEKL(int count) {
         final var list = new ArrayList<SpecOperation>();
         for (int i = 0; i < count; i++) {
-            list.add(newKeyNamed(FREE_MSG_KEY_PREFIX + i));
+            list.add(newKeyNamed(FEE_EXEMPT_KEY_PREFIX + i));
         }
         return list.toArray(new SpecOperation[0]);
     }
 
-    protected static String[] freeMsgKeyNames(int count) {
+    protected static String[] feeExemptKeyNames(int count) {
         final var list = new ArrayList<String>();
         for (int i = 0; i < count; i++) {
-            list.add(FREE_MSG_KEY_PREFIX + i);
+            list.add(FEE_EXEMPT_KEY_PREFIX + i);
         }
         return list.toArray(new String[0]);
     }

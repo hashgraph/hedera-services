@@ -20,13 +20,13 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.AUTORENEW_ACCOUNT_NOT_A
 import static com.hedera.hapi.node.base.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.BAD_ENCODING;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.CUSTOM_FEES_LIST_TOO_LONG;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.FMKL_CONTAINS_DUPLICATED_KEYS;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.FEKL_CONTAINS_DUPLICATED_KEYS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_CUSTOM_FEE_SCHEDULE_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_KEY_IN_FMKL;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_KEY_IN_FEKL;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_ENTRIES_FOR_FMKL_EXCEEDED;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_ENTRIES_FOR_FEKL_EXCEEDED;
 import static com.hedera.node.app.hapi.utils.fee.ConsensusServiceFeeBuilder.getConsensusCreateTopicFee;
 import static com.hedera.node.app.service.consensus.impl.ConsensusServiceImpl.RUNNING_HASH_BYTE_ARRAY_SIZE;
 import static com.hedera.node.app.spi.validation.AttributeValidator.isImmutableKey;
@@ -85,8 +85,8 @@ public class ConsensusCreateTopicHandler implements TransactionHandler {
     @Override
     public void pureChecks(@NonNull final TransactionBody txn) throws PreCheckException {
         final var op = txn.consensusCreateTopicOrThrow();
-        final var uniqueKeysCount = op.freeMessagesKeyList().stream().distinct().count();
-        validateTruePreCheck(uniqueKeysCount == op.freeMessagesKeyList().size(), FMKL_CONTAINS_DUPLICATED_KEYS);
+        final var uniqueKeysCount = op.feeExemptKeyList().stream().distinct().count();
+        validateTruePreCheck(uniqueKeysCount == op.feeExemptKeyList().size(), FEKL_CONTAINS_DUPLICATED_KEYS);
     }
 
     @Override
@@ -201,13 +201,13 @@ public class ConsensusCreateTopicHandler implements TransactionHandler {
         }
 
         // validate size of the list and the keys
-        if (!op.freeMessagesKeyList().isEmpty()) {
+        if (!op.feeExemptKeyList().isEmpty()) {
             validateTrue(
-                    op.freeMessagesKeyList().size() <= topicConfig.maxEntriesForFreeMessagesKeyList(),
-                    MAX_ENTRIES_FOR_FMKL_EXCEEDED);
-            op.freeMessagesKeyList()
-                    .forEach(key -> handleContext.attributeValidator().validateKey(key, INVALID_KEY_IN_FMKL));
-            builder.freeMessagesKeyList(op.freeMessagesKeyList());
+                    op.feeExemptKeyList().size() <= topicConfig.maxEntriesForFeeExemptKeyList(),
+                    MAX_ENTRIES_FOR_FEKL_EXCEEDED);
+            op.feeExemptKeyList()
+                    .forEach(key -> handleContext.attributeValidator().validateKey(key, INVALID_KEY_IN_FEKL));
+            builder.feeExemptKeyList(op.feeExemptKeyList());
         }
 
         // validate custom fees

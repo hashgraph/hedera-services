@@ -33,7 +33,7 @@ import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
 import static com.hedera.services.bdd.suites.HapiSuite.flattened;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_MUST_BE_POSITIVE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FMKL_CONTAINS_DUPLICATED_KEYS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FEKL_CONTAINS_DUPLICATED_KEYS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CUSTOM_FEE_SCHEDULE_KEY;
 
 import com.hedera.services.bdd.junit.HapiTest;
@@ -141,24 +141,24 @@ public class TopicCustomFeeTest extends TopicCustomFeeBase {
             }
 
             @HapiTest
-            @DisplayName("Create topic with all keys")
+            @DisplayName("Create topic with 10 keys in FEKL")
             // TOPIC_FEE_020
-            final Stream<DynamicTest> createTopicWithFMLK() {
+            final Stream<DynamicTest> createTopicWithFEKL() {
                 return hapiTest(flattened(
                         // create 10 keys
-                        newNamedKeysForFMKL(10),
+                        newNamedKeysForFEKL(10),
                         createTopic(TOPIC)
                                 .adminKeyName(ADMIN_KEY)
                                 .submitKeyName(SUBMIT_KEY)
                                 .feeScheduleKeyName(FEE_SCHEDULE_KEY)
                                 // set list of 10 keys
-                                .freeMessagesKeys(freeMsgKeyNames(10)),
+                                .feeExemptKeys(feeExemptKeyNames(10)),
                         getTopicInfo(TOPIC)
                                 .hasAdminKey(ADMIN_KEY)
                                 .hasSubmitKey(SUBMIT_KEY)
                                 .hasFeeScheduleKey(FEE_SCHEDULE_KEY)
                                 // assert the list
-                                .hasFreeMessagesKeys(List.of(freeMsgKeyNames(10)))));
+                                .hasFeeExemptKeys(List.of(feeExemptKeyNames(10)))));
             }
         }
 
@@ -172,7 +172,7 @@ public class TopicCustomFeeTest extends TopicCustomFeeBase {
             }
 
             @HapiTest
-            @DisplayName("Create topic with duplicated signatures in FMKL")
+            @DisplayName("Create topic with duplicated signatures in FEKL")
             // TOPIC_FEE_023
             final Stream<DynamicTest> createTopicWithDuplicateSignatures() {
                 final var testKey = "testKey";
@@ -182,8 +182,8 @@ public class TopicCustomFeeTest extends TopicCustomFeeBase {
                                 .adminKeyName(ADMIN_KEY)
                                 .submitKeyName(SUBMIT_KEY)
                                 .feeScheduleKeyName(FEE_SCHEDULE_KEY)
-                                .freeMessagesKeys(testKey, testKey)
-                                .hasPrecheck(FMKL_CONTAINS_DUPLICATED_KEYS)));
+                                .feeExemptKeys(testKey, testKey)
+                                .hasPrecheck(FEKL_CONTAINS_DUPLICATED_KEYS)));
             }
 
             @HapiTest

@@ -1595,17 +1595,17 @@ enum ResponseCodeEnum {
     INVALID_TOKEN_IN_PENDING_AIRDROP = 369;
 
     /**
-    * The number of entries in the free messages key list exceed the maximum.
+    * The number of entries in the fee exempt key list exceed the maximum.
     */
-    MAX_ENTRIES_FOR_FMKL_EXCEEDED = 370;
+    MAX_ENTRIES_FOR_FEKL_EXCEEDED = 370;
 
     /**
-    * There is a duplicate key in the free messages key list.
+    * There is a duplicate key in the fee exempt key list.
     */
-    FMKL_CONTAINS_DUPLICATED_KEYS = 371;
+    FEKL_CONTAINS_DUPLICATED_KEYS = 371;
 
     /**
-    * There is an invalid key in the free messages key list.
+    * There is an invalid key in the fee exempt key list.
     */
-    INVALID_KEY_IN_FMKL = 372;
+    INVALID_KEY_IN_FEKL = 372;
 }
