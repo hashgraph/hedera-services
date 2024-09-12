@@ -39,6 +39,7 @@ import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.BufferOverflowException;
+import java.nio.BufferUnderflowException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -593,10 +594,14 @@ public class SerializableDataInputStream extends AugmentedDataInputStream {
         final int size = readInt();
         readableSequentialData.limit(readableSequentialData.position() + size);
         try {
-            return codec.parse(readableSequentialData);
+            final T parsed = codec.parse(readableSequentialData);
+            if (readableSequentialData.position() != readableSequentialData.limit()) {
+                throw new EOFException("PBJ record was not fully read");
+            }
+            return parsed;
         } catch (final ParseException e) {
-            if (e.getCause() instanceof BufferOverflowException) {
-                // PBJ Codec will throw a BufferOverflowException if it does not read enough bytes
+            if (e.getCause() instanceof BufferOverflowException || e.getCause() instanceof BufferUnderflowException) {
+                // PBJ Codec can throw these exceptions if it does not read enough bytes
                 final EOFException eofException = new EOFException("Buffer underflow while reading PBJ record");
                 eofException.addSuppressed(e);
                 throw eofException;
