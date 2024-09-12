@@ -14,27 +14,26 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.network;
+package com.swirlds.platform.roster;
 
-import com.swirlds.common.platform.NodeId;
-import com.swirlds.platform.roster.RosterUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.security.cert.Certificate;
 
 /**
- * A record representing a peer's network information.
- *
- * @param nodeId             the ID of the peer
- * @param hostname           the hostname (or IP address) of the peer
- * @param signingCertificate the certificate used to validate the peer's TLS certificate
+ * A utility class to help use Rooster and RosterEntry instances.
  */
-public record PeerInfo(@NonNull NodeId nodeId, @NonNull String hostname, @NonNull Certificate signingCertificate) {
+public final class RosterUtils {
+    private RosterUtils() {}
+
     /**
-     * Return a "node name" for the peer, e.g. "node1" for a peer with NodeId == 0.
+     * Formats a "node name" for a given node id, e.g. "node1" for nodeId == 0.
+     * This name can be used for logging purposes, or to support code that
+     * uses strings to identify nodes.
+     *
+     * @param nodeId a node id
      * @return a "node name"
      */
     @NonNull
-    public String nodeName() {
-        return RosterUtils.formatNodeName(nodeId.id());
+    public static String formatNodeName(final long nodeId) {
+        return "node" + (nodeId + 1);
     }
 }
