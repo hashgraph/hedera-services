@@ -27,6 +27,6 @@ public record NodesConfig(
         @ConfigProperty(defaultValue = "10") @NetworkProperty int maxGossipEndpoint,
         @ConfigProperty(defaultValue = "8") @NetworkProperty int maxServiceEndpoint,
         @ConfigProperty(defaultValue = "true") @NetworkProperty boolean gossipFqdnRestricted,
-        @ConfigProperty(defaultValue = "true") @NetworkProperty boolean enableDAB,
+        @ConfigProperty(defaultValue = "false") @NetworkProperty boolean enableDAB,
         @ConfigProperty(defaultValue = "253") @NetworkProperty int maxFqdnSize,
         @ConfigProperty(defaultValue = "false") @NetworkProperty boolean updateAccountIdAllowed) {}
