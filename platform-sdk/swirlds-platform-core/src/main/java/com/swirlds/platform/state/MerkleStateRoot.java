@@ -332,6 +332,7 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
     @Override
     @NonNull
     public WritableStates getWritableStates(@NonNull final String serviceName) {
+        logger.info(STARTUP.getMarker(), "Getting writable states for service {}", serviceName);
         throwIfImmutable();
         return writableStatesMap.computeIfAbsent(serviceName, s -> {
             final var stateMetadata = services.getOrDefault(s, Map.of());
