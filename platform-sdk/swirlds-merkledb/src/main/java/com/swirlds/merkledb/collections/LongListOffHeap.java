@@ -65,7 +65,7 @@ public final class LongListOffHeap extends AbstractLongList<ByteBuffer> implemen
      * @param reservedBufferLength the number of indices before the minimal index to keep reserved
      */
     LongListOffHeap(final int numLongsPerChunk, final long maxLongs, final long reservedBufferLength) {
-        super(numLongsPerChunk, maxLongs, reservedBufferLength);
+        super(numLongsPerChunk, maxLongs, reservedBufferLength, null);
     }
 
     /**
@@ -81,7 +81,7 @@ public final class LongListOffHeap extends AbstractLongList<ByteBuffer> implemen
      * @throws IOException If there was a problem reading the file
      */
     public LongListOffHeap(final Path file) throws IOException {
-        super.init(file, DEFAULT_RESERVED_BUFFER_LENGTH);
+        super(file, DEFAULT_RESERVED_BUFFER_LENGTH, null);
     }
 
     /** {@inheritDoc} */

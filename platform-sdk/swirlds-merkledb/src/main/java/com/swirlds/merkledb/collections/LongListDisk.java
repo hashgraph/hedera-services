@@ -92,10 +92,10 @@ public class LongListDisk extends AbstractLongList<Long> {
             final long maxLongs,
             final long reservedBufferLength,
             FileSystemManager fileSystemManager) {
-        super(numLongsPerChunk, maxLongs, reservedBufferLength);
+        super(numLongsPerChunk, maxLongs, reservedBufferLength, fileSystemManager);
         try {
             currentFileChannel = FileChannel.open(
-                    createTempFile(DEFAULT_FILE_NAME, fileSystemManager),
+                    createTempFile(DEFAULT_FILE_NAME, this.fileSystemManager),
                     StandardOpenOption.CREATE,
                     StandardOpenOption.READ,
                     StandardOpenOption.WRITE);
@@ -118,8 +118,7 @@ public class LongListDisk extends AbstractLongList<Long> {
 
     LongListDisk(final Path file, final long reservedBufferLength, FileSystemManager fileSystemManager)
             throws IOException {
-        tempFile = createTempFile(file.toFile().getName(), fileSystemManager);
-        super.init(file, reservedBufferLength);
+        super(file, reservedBufferLength, fileSystemManager);
         freeChunks = new ConcurrentLinkedDeque<>();
         // IDE complains that the tempFile is not initialized, but it's initialized in readBodyFromFileChannelOnInit
         // which is called from the constructor of the parent class
@@ -131,11 +130,21 @@ public class LongListDisk extends AbstractLongList<Long> {
                 tempFile, StandardOpenOption.CREATE, StandardOpenOption.READ, StandardOpenOption.WRITE);
     }
 
+    /**
+     * Initializes the file channel to a temporary file.
+     * @param path the path to the source file
+     */
+    @Override
+    protected void onEmptyOrAbsentSourceFile(final Path path) throws IOException {
+        tempFile = createTempFile(path.toFile().getName(), fileSystemManager);
+    }
+
     /** {@inheritDoc} */
     @Override
     protected void readBodyFromFileChannelOnInit(final String sourceFileName, final FileChannel fileChannel)
             throws IOException {
         // create temporary file for writing
+        tempFile = createTempFile(sourceFileName, fileSystemManager);
         // the warning is suppressed because the file is not supposed to be closed
         // as this implementation uses a file channel from it.
         try (final RandomAccessFile rf = new RandomAccessFile(tempFile.toFile(), "rw")) {

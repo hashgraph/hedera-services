@@ -71,7 +71,7 @@ public final class LongListHeap extends AbstractLongList<AtomicLongArray> {
      * @param maxLongs the maximum number of longs permissible for this LongList
      */
     LongListHeap(final int numLongsPerChunk, final long maxLongs, final long reservedBufferLength) {
-        super(numLongsPerChunk, maxLongs, reservedBufferLength);
+        super(numLongsPerChunk, maxLongs, reservedBufferLength, null);
     }
 
     /**
@@ -81,7 +81,7 @@ public final class LongListHeap extends AbstractLongList<AtomicLongArray> {
      * @throws IOException If there was a problem reading the file
      */
     public LongListHeap(final Path file) throws IOException {
-        super.init(file, 0);
+        super(file, 0, null);
     }
 
     /** {@inheritDoc} */

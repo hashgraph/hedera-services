@@ -22,6 +22,7 @@ import static java.lang.Math.max;
 import static java.lang.Math.min;
 import static java.lang.Math.toIntExact;
 
+import com.swirlds.common.io.filesystem.FileSystemManager;
 import com.swirlds.merkledb.utilities.MerkleDbFileUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.File;
@@ -91,16 +92,16 @@ public abstract class AbstractLongList<C> implements LongList {
     /** The number for bytes to read for file header, v2 */
     protected static final int FILE_HEADER_SIZE_V2 = VERSION_METADATA_SIZE + FORMAT_METADATA_SIZE_V2;
     /** File header size for the latest format */
-    protected int currentFileHeaderSize;
+    protected final int currentFileHeaderSize;
 
     /**
      * The number of longs to store in each allocated buffer. Must be a positive integer. If the
      * value is small, then we will end up allocating a very large number of buffers. If the value
      * is large, then we will waste a lot of memory in the unfilled buffer.
      */
-    protected int numLongsPerChunk;
+    protected final int numLongsPerChunk;
     /** Size in bytes for each memory chunk to allocate */
-    protected int memoryChunkSize;
+    protected final int memoryChunkSize;
     /** The number of longs that this list would contain if it was not optimized by {@link LongList#updateValidRange}.
      * Practically speaking, it defines the list's right boundary. */
     protected final AtomicLong size = new AtomicLong(0);
@@ -109,7 +110,7 @@ public abstract class AbstractLongList<C> implements LongList {
      * measure to make sure no bug causes an out of memory issue by causing us to allocate more
      * buffers than the system can handle.
      */
-    protected long maxLongs;
+    protected final long maxLongs;
 
     /** Min valid index of the list. All indices to the left of this index have {@code IMPERMISSIBLE_VALUE}-s */
     protected final AtomicLong minValidIndex = new AtomicLong(-1);
@@ -118,15 +119,15 @@ public abstract class AbstractLongList<C> implements LongList {
     protected final AtomicLong maxValidIndex = new AtomicLong(-1);
 
     /** Atomic reference array of our memory chunks */
-    protected AtomicReferenceArray<C> chunkList;
+    protected final AtomicReferenceArray<C> chunkList;
 
     /**
      * A length of a buffer that is reserved to remain intact after memory optimization that is
      * happening in {@link LongList#updateValidRange}
      */
-    protected long reservedBufferLength;
+    protected final long reservedBufferLength;
 
-    protected AbstractLongList() {}
+    protected final FileSystemManager fileSystemManager;
 
     /**
      * Construct a new LongList with the specified number of longs per chunk and maximum number of
@@ -136,7 +137,12 @@ public abstract class AbstractLongList<C> implements LongList {
      * @param maxLongs the maximum number of longs permissible for this LongList
      * @param reservedBufferLength reserved buffer length that the list should have before minimal index in the list
      */
-    protected AbstractLongList(final int numLongsPerChunk, final long maxLongs, final long reservedBufferLength) {
+    protected AbstractLongList(
+            final int numLongsPerChunk,
+            final long maxLongs,
+            final long reservedBufferLength,
+            FileSystemManager fileSystemManager) {
+        this.fileSystemManager = fileSystemManager;
         if (maxLongs < 0) {
             throw new IllegalArgumentException("The maximum number of longs must be non-negative, not " + maxLongs);
         }
@@ -167,7 +173,9 @@ public abstract class AbstractLongList<C> implements LongList {
      * @param path File to read header from
      * @throws IOException If there was a problem reading the file
      */
-    protected void init(final Path path, final long reservedBufferLength) throws IOException {
+    protected AbstractLongList(final Path path, final long reservedBufferLength, FileSystemManager fileSystemManager)
+            throws IOException {
+        this.fileSystemManager = fileSystemManager;
         final File file = path.toFile();
         this.reservedBufferLength = reservedBufferLength;
         if (!file.exists() || file.length() == 0) {
@@ -177,6 +185,7 @@ public abstract class AbstractLongList<C> implements LongList {
             maxLongs = DEFAULT_MAX_LONGS_TO_STORE;
             currentFileHeaderSize = FILE_HEADER_SIZE_V2;
             chunkList = new AtomicReferenceArray<>(calculateNumberOfChunks(maxLongs));
+            onEmptyOrAbsentSourceFile(path);
         } else {
             try (final FileChannel fileChannel = FileChannel.open(path, StandardOpenOption.READ)) {
                 // read header from existing file
