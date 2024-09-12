@@ -16,12 +16,17 @@
 
 package com.swirlds.platform.roster;
 
+import com.hedera.hapi.node.state.roster.Roster;
+import com.swirlds.common.crypto.Hash;
+import com.swirlds.platform.util.PbjRecordHasher;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
  * A utility class to help use Rooster and RosterEntry instances.
  */
 public final class RosterUtils {
+    private static final PbjRecordHasher<Roster> ROSTER_HASHER = new PbjRecordHasher<>();
+
     private RosterUtils() {}
 
     /**
@@ -35,5 +40,15 @@ public final class RosterUtils {
     @NonNull
     public static String formatNodeName(final long nodeId) {
         return "node" + (nodeId + 1);
+    }
+
+    /**
+     * Create a Hash object for a given Roster instance.
+     *
+     * @param roster a roster
+     * @return its Hash
+     */
+    public static Hash hash(@NonNull final Roster roster) {
+        return ROSTER_HASHER.hash(roster, Roster.PROTOBUF);
     }
 }
