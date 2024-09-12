@@ -35,6 +35,9 @@ import java.util.List;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
+/**
+ * Decoder class of burn calls.
+ */
 @Singleton
 public class BurnDecoder {
     private static final TupleType BURN_RESULT_ENCODER = TupleType.parse(INT64_INT64);
@@ -42,17 +45,28 @@ public class BurnDecoder {
             recordBuilder -> BURN_RESULT_ENCODER.encodeElements(
                     (long) recordBuilder.status().protoOrdinal(), recordBuilder.getNewTotalSupply());
 
+    /**
+     * Default constructor for injection.
+     */
     @Inject
     public BurnDecoder() {
         // Dagger2
     }
 
+    /**
+     * @param attempt the HTS call attempt
+     * @return the synthetic transaction body for burn v1
+     */
     public TransactionBody decodeBurn(@NonNull final HtsCallAttempt attempt) {
         final var call = BurnTranslator.BURN_TOKEN_V1.decodeCall(attempt.inputBytes());
         return synthBurnBody(
                 call.get(0), ((BigInteger) call.get(1)).longValueExact(), Longs.asList(call.get(2)), attempt);
     }
 
+    /**
+     * @param attempt the HTS call attempt
+     * @return the synthetic transaction body for burn v2
+     */
     public TransactionBody decodeBurnV2(@NonNull final HtsCallAttempt attempt) {
         final var call = BurnTranslator.BURN_TOKEN_V2.decodeCall(attempt.inputBytes());
         return synthBurnBody(call.get(0), call.get(1), Longs.asList(call.get(2)), attempt);

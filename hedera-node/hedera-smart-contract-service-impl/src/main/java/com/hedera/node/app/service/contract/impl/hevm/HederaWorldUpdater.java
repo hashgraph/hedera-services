@@ -58,6 +58,11 @@ public interface HederaWorldUpdater extends WorldUpdater {
             @NonNull HederaOperations operations,
             @NonNull HederaNativeOperations nativeOperations,
             @NonNull SystemContractOperations systemOperations) {
+        /**
+         * @param operations the enhanced operations
+         * @param nativeOperations the enhanced native operations
+         * @param systemOperations the enhanced system operations
+         */
         public Enhancement {
             requireNonNull(operations);
             requireNonNull(nativeOperations);
@@ -275,7 +280,8 @@ public interface HederaWorldUpdater extends WorldUpdater {
 
     /**
      * Externalizes the results of a system contract call into a record
-     * @param result    The result of the system contract call
+     * @param result            the result of the system contract call
+     * @param responseStatus    the response code of the system contract call
      */
     void externalizeSystemContractResults(
             @NonNull final ContractFunctionResult result, @NonNull ResponseCodeEnum responseStatus);

@@ -33,11 +33,21 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
 
 public class BurnTranslator extends AbstractCallTranslator<HtsCallAttempt> {
+    /**
+     * Selector for burnToken(address,uint64,int64[]) method.
+     */
     public static final Function BURN_TOKEN_V1 = new Function("burnToken(address,uint64,int64[])", INT64_INT64);
+    /**
+     * Selector for burnToken(address,int64,int64[]) method.
+     */
     public static final Function BURN_TOKEN_V2 = new Function("burnToken(address,int64,int64[])", INT64_INT64);
 
     BurnDecoder decoder;
 
+    /**
+     * Constructor for injection.
+     * @param decoder the decoder to use for decoding burn calls
+     */
     @Inject
     public BurnTranslator(@NonNull final BurnDecoder decoder) {
         this.decoder = decoder;

@@ -1,3 +1,6 @@
+/**
+ * Module that provides the implementation of the Hedera Smart Contract Service.
+ */
 module com.hedera.node.app.service.contract.impl {
     requires transitive com.hedera.node.app.hapi.fees;
     requires transitive com.hedera.node.app.hapi.utils;
