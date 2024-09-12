@@ -81,7 +81,7 @@ public interface Call {
                 @NonNull final ContractID contractId,
                 @NonNull final Bytes functionParameters,
                 final long remainingGas) {
-            final var errorMessage = responseCode == SUCCESS ? null : responseCode.protoName();
+            final var errorMessage = responseCode == SUCCESS ? "" : responseCode.protoName();
             return ContractFunctionResult.newBuilder()
                     .contractID(contractId)
                     .amount(nonGasCost)

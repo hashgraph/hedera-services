@@ -32,6 +32,7 @@ import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -46,6 +47,27 @@ class WritableAccountStoreTest extends CryptoHandlerTestBase {
     public void setUp() {
         super.setUp();
         resetStores();
+    }
+
+    @Test
+    void finalizingAccountAsContractCountsAsNewContract() {
+        final var hollowAccountId = AccountID.newBuilder().accountNum(666).build();
+        writableAccounts.put(
+                hollowAccountId, Account.newBuilder().accountId(hollowAccountId).build());
+        writableAccounts.commit();
+
+        final var finalizedContract = requireNonNull(writableStore.getForModify(hollowAccountId))
+                .copyBuilder()
+                .ethereumNonce(1)
+                .smartContract(true)
+                .build();
+        writableStore.put(finalizedContract);
+
+        final List<ContractID> expectedCreationIds =
+                List.of(ContractID.newBuilder().contractNum(666).build());
+        final var actualCreationIds = writableStore.summarizeContractChanges().newContractIds();
+
+        assertEquals(expectedCreationIds, actualCreationIds);
     }
 
     @Test

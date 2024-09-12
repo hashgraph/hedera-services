@@ -51,9 +51,9 @@ import org.apache.commons.lang3.tuple.Pair;
  */
 public class AssessmentResult {
     /**
-     * The default token ID for representing hbar changes
+     * The default token ID for representing hbar changes.
      */
-    public static TokenID HBAR_TOKEN_ID = TokenID.DEFAULT;
+    public static final TokenID HBAR_TOKEN_ID = TokenID.DEFAULT;
 
     private final Map<TokenID, Map<AccountID, Long>> htsAdjustments;
     // two maps to aggregate all custom fee balance changes. These two maps are used
@@ -74,7 +74,8 @@ public class AssessmentResult {
     private final List<AssessedCustomFee> assessedCustomFees;
 
     /**
-     * Constructs an AssessmentResult object with the input token transfers and hbar transfers from the transaction body.
+     * Constructs an AssessmentResult object with the input token transfers and hbar transfers
+     * from the transaction body.
      * @param tokenTransfers the token transfers
      * @param hbarTransfers the hbar transfers
      */

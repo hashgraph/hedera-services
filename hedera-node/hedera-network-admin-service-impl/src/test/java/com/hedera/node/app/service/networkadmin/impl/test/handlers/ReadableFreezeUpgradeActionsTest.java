@@ -55,7 +55,9 @@ import com.hedera.node.app.spi.fixtures.util.LogCaptureExtension;
 import com.hedera.node.app.spi.fixtures.util.LoggingSubject;
 import com.hedera.node.app.spi.fixtures.util.LoggingTarget;
 import com.hedera.node.config.data.NetworkAdminConfig;
+import com.hedera.node.config.data.NodesConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.state.service.ReadablePlatformStateStore;
 import com.swirlds.state.spi.ReadableStates;
 import com.swirlds.state.test.fixtures.MapReadableKVState;
@@ -124,6 +126,9 @@ class ReadableFreezeUpgradeActionsTest {
     @TempDir
     private File zipOutputDir; // temp directory to place marker files and output of zip extraction
 
+    @TempDir
+    private File keysDir;
+
     @Mock
     private WritableFreezeStore writableFreezeStore;
 
@@ -145,6 +150,12 @@ class ReadableFreezeUpgradeActionsTest {
     @Mock
     protected ReadableStates readableStates;
 
+    @Mock
+    private Configuration configuration;
+
+    @Mock
+    private NodesConfig nodesConfig;
+
     private ReadableNodeStore nodeStore;
 
     private Executor freezeExecutor;
@@ -153,6 +164,9 @@ class ReadableFreezeUpgradeActionsTest {
 
     @BeforeEach
     void setUp() throws IOException {
+        given(configuration.getConfigData(NetworkAdminConfig.class)).willReturn(adminServiceConfig);
+        given(configuration.getConfigData(NodesConfig.class)).willReturn(nodesConfig);
+
         noiseFileLoc = zipOutputDir.toPath().resolve("forgotten.cfg");
         noiseSubFileLoc = zipOutputDir.toPath().resolve("edargpu");
 
@@ -164,7 +178,7 @@ class ReadableFreezeUpgradeActionsTest {
         freezeExecutor = new ForkJoinPool(
                 1, ForkJoinPool.defaultForkJoinWorkerThreadFactory, Thread.getDefaultUncaughtExceptionHandler(), true);
         subject = new FreezeUpgradeActions(
-                adminServiceConfig, writableFreezeStore, freezeExecutor, upgradeFileStore, nodeStore, stakingInfoStore);
+                configuration, writableFreezeStore, freezeExecutor, upgradeFileStore, nodeStore, stakingInfoStore);
 
         // set up test zip
         zipSourceDir = Files.createTempDirectory("zipSourceDir");
@@ -185,6 +199,7 @@ class ReadableFreezeUpgradeActionsTest {
         rmIfPresent(EXEC_IMMEDIATE_MARKER);
 
         given(adminServiceConfig.upgradeArtifactsPath()).willReturn(zipOutputDir.toString());
+        given(adminServiceConfig.keysPath()).willReturn(keysDir.toString());
 
         final Bytes invalidArchive = Bytes.wrap("Not a valid zip archive".getBytes(StandardCharsets.UTF_8));
         subject.extractSoftwareUpgrade(invalidArchive).join();
@@ -203,6 +218,8 @@ class ReadableFreezeUpgradeActionsTest {
         rmIfPresent(EXEC_IMMEDIATE_MARKER);
 
         given(adminServiceConfig.upgradeArtifactsPath()).willReturn(zipOutputDir.toString());
+        given(adminServiceConfig.keysPath()).willReturn(keysDir.toString());
+        given(nodesConfig.enableDAB()).willReturn(true);
 
         final Bytes realArchive = Bytes.wrap(Files.readAllBytes(zipArchivePath));
         subject.extractSoftwareUpgrade(realArchive).join();
@@ -218,11 +235,13 @@ class ReadableFreezeUpgradeActionsTest {
         setupNodes();
 
         given(adminServiceConfig.upgradeArtifactsPath()).willReturn(zipOutputDir.toString());
+        given(adminServiceConfig.keysPath()).willReturn(keysDir.toString());
+        given(nodesConfig.enableDAB()).willReturn(true);
 
         final Bytes realArchive = Bytes.wrap(Files.readAllBytes(zipArchivePath));
         subject.extractSoftwareUpgrade(realArchive).join();
 
-        assertDABFilesCreated(EXEC_IMMEDIATE_MARKER, zipOutputDir.toPath());
+        assertDABFilesCreated(EXEC_IMMEDIATE_MARKER, zipOutputDir.toPath(), keysDir.toPath());
         assertMarkerCreated(EXEC_IMMEDIATE_MARKER, null);
     }
 
@@ -233,11 +252,13 @@ class ReadableFreezeUpgradeActionsTest {
         setupNodes2();
 
         given(adminServiceConfig.upgradeArtifactsPath()).willReturn(zipOutputDir.toString());
+        given(adminServiceConfig.keysPath()).willReturn(keysDir.toString());
+        given(nodesConfig.enableDAB()).willReturn(true);
 
         final Bytes realArchive = Bytes.wrap(Files.readAllBytes(zipArchivePath));
         subject.extractSoftwareUpgrade(realArchive).join();
 
-        assertDABFilesCreated2(EXEC_IMMEDIATE_MARKER, zipOutputDir.toPath());
+        assertDABFilesCreated2(EXEC_IMMEDIATE_MARKER, zipOutputDir.toPath(), keysDir.toPath());
         assertMarkerCreated(EXEC_IMMEDIATE_MARKER, null);
     }
 
@@ -246,6 +267,7 @@ class ReadableFreezeUpgradeActionsTest {
         rmIfPresent(EXEC_TELEMETRY_MARKER);
 
         given(adminServiceConfig.upgradeArtifactsPath()).willReturn(zipOutputDir.toString());
+        given(adminServiceConfig.keysPath()).willReturn(keysDir.toString());
 
         final Bytes realArchive = Bytes.wrap(Files.readAllBytes(zipArchivePath));
         subject.extractTelemetryUpgrade(realArchive, then).join();
@@ -455,7 +477,7 @@ class ReadableFreezeUpgradeActionsTest {
         given(readableStates.<EntityNumber, Node>get(NODES_KEY)).willReturn(readableNodeState);
         nodeStore = new ReadableNodeStoreImpl(readableStates);
         subject = new FreezeUpgradeActions(
-                adminServiceConfig, writableFreezeStore, freezeExecutor, upgradeFileStore, nodeStore, stakingInfoStore);
+                configuration, writableFreezeStore, freezeExecutor, upgradeFileStore, nodeStore, stakingInfoStore);
         var stakingNodeInfo1 = mock(StakingNodeInfo.class);
         var stakingNodeInfo2 = mock(StakingNodeInfo.class);
         var stakingNodeInfo4 = mock(StakingNodeInfo.class);
@@ -467,19 +489,20 @@ class ReadableFreezeUpgradeActionsTest {
         given(stakingInfoStore.get(4)).willReturn(stakingNodeInfo4);
     }
 
-    private void assertDABFilesCreated(final String file, final Path baseDir) throws IOException, CertificateException {
+    private void assertDABFilesCreated(final String file, final Path baseDir, final Path keyDir)
+            throws IOException, CertificateException {
         final Path filePath = baseDir.resolve(file);
         final Path configFilePath = baseDir.resolve("config.txt");
         assertTrue(configFilePath.toFile().exists());
         final var configFile = Files.readString(configFilePath);
 
-        final Path pemFilePath1 = baseDir.resolve("s-public-node2.pem");
+        final Path pemFilePath1 = keyDir.resolve("s-public-node2.pem");
         assertTrue(pemFilePath1.toFile().exists());
-        final Path pemFilePath2 = baseDir.resolve("s-public-node3.pem");
+        final Path pemFilePath2 = keyDir.resolve("s-public-node3.pem");
         assertTrue(pemFilePath2.toFile().exists());
-        final Path pemFilePath3 = baseDir.resolve("s-public-node4.pem");
+        final Path pemFilePath3 = keyDir.resolve("s-public-node4.pem");
         assertFalse(pemFilePath3.toFile().exists());
-        final Path pemFilePath4 = baseDir.resolve("s-public-node5.pem");
+        final Path pemFilePath4 = keyDir.resolve("s-public-node5.pem");
         assertTrue(pemFilePath4.toFile().exists());
         final var pemFile1 = readCertificatePemFile(pemFilePath1);
         final var pemFile2 = readCertificatePemFile(pemFilePath2);
@@ -579,7 +602,7 @@ class ReadableFreezeUpgradeActionsTest {
         given(readableStates.<EntityNumber, Node>get(NODES_KEY)).willReturn(readableNodeState);
         nodeStore = new ReadableNodeStoreImpl(readableStates);
         subject = new FreezeUpgradeActions(
-                adminServiceConfig, writableFreezeStore, freezeExecutor, upgradeFileStore, nodeStore, stakingInfoStore);
+                configuration, writableFreezeStore, freezeExecutor, upgradeFileStore, nodeStore, stakingInfoStore);
         var stakingNodeInfo1 = mock(StakingNodeInfo.class);
         var stakingNodeInfo2 = mock(StakingNodeInfo.class);
         var stakingNodeInfo3 = mock(StakingNodeInfo.class);
@@ -591,20 +614,20 @@ class ReadableFreezeUpgradeActionsTest {
         given(stakingInfoStore.get(2)).willReturn(stakingNodeInfo3);
     }
 
-    private void assertDABFilesCreated2(final String file, final Path baseDir)
+    private void assertDABFilesCreated2(final String file, final Path baseDir, final Path keyDir)
             throws IOException, CertificateException {
         final Path filePath = baseDir.resolve(file);
         final Path configFilePath = baseDir.resolve("config.txt");
         assertTrue(configFilePath.toFile().exists());
         final var configFile = Files.readString(configFilePath);
 
-        final Path pemFilePath1 = baseDir.resolve("s-public-node1.pem");
+        final Path pemFilePath1 = keyDir.resolve("s-public-node1.pem");
         assertTrue(pemFilePath1.toFile().exists());
-        final Path pemFilePath2 = baseDir.resolve("s-public-node2.pem");
+        final Path pemFilePath2 = keyDir.resolve("s-public-node2.pem");
         assertTrue(pemFilePath2.toFile().exists());
-        final Path pemFilePath3 = baseDir.resolve("s-public-node3.pem");
+        final Path pemFilePath3 = keyDir.resolve("s-public-node3.pem");
         assertTrue(pemFilePath3.toFile().exists());
-        final Path pemFilePath4 = baseDir.resolve("s-public-node4.pem");
+        final Path pemFilePath4 = keyDir.resolve("s-public-node4.pem");
         assertFalse(pemFilePath4.toFile().exists());
         final var pemFile1 = readCertificatePemFile(pemFilePath1);
         final var pemFile2 = readCertificatePemFile(pemFilePath2);

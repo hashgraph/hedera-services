@@ -31,7 +31,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
- * This class manages calculations of staking rewards
+ * This class manages calculations of staking rewards.
  */
 @Singleton
 public class StakeRewardCalculatorImpl implements StakeRewardCalculator {
@@ -56,7 +56,7 @@ public class StakeRewardCalculatorImpl implements StakeRewardCalculator {
             @NonNull final ReadableNetworkStakingRewardsStore rewardsStore,
             @NonNull final Instant consensusNow) {
         final var effectiveStart = stakePeriodManager.effectivePeriod(account.stakePeriodStart());
-        if (!stakePeriodManager.isRewardable(effectiveStart, rewardsStore, consensusNow)) {
+        if (!stakePeriodManager.isRewardable(effectiveStart, rewardsStore)) {
             return 0;
         }
 
@@ -67,8 +67,8 @@ public class StakeRewardCalculatorImpl implements StakeRewardCalculator {
         if (stakingInfo != null && stakingInfo.deleted()) {
             return 0;
         }
-        final var rewardOffered = computeRewardFromDetails(
-                account, stakingInfo, stakePeriodManager.currentStakePeriod(consensusNow), effectiveStart);
+        final var rewardOffered =
+                computeRewardFromDetails(account, stakingInfo, stakePeriodManager.currentStakePeriod(), effectiveStart);
         return account.declineReward() ? 0 : rewardOffered;
     }
 

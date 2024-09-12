@@ -23,9 +23,13 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
 import com.hedera.hapi.node.base.SemanticVersion;
+import com.hedera.node.app.blocks.BlockStreamManager;
+import com.hedera.node.app.blocks.impl.BoundaryStateChangeListener;
+import com.hedera.node.app.blocks.impl.KVStateChangeListener;
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.fees.FeeManager;
 import com.hedera.node.app.records.BlockRecordManager;
+import com.hedera.node.app.service.token.impl.handlers.staking.StakePeriodManager;
 import com.hedera.node.app.services.ServiceScopeLookup;
 import com.hedera.node.app.spi.authorization.Authorizer;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
@@ -89,6 +93,9 @@ class HandleWorkflowTest {
     private NetworkUtilizationManager networkUtilizationManager;
 
     @Mock
+    private StakePeriodManager stakePeriodManager;
+
+    @Mock
     private ConfigProvider configProvider;
 
     @Mock
@@ -96,6 +103,9 @@ class HandleWorkflowTest {
 
     @Mock
     private BlockRecordManager blockRecordManager;
+
+    @Mock
+    private BlockStreamManager blockStreamManager;
 
     @Mock
     private CacheWarmer cacheWarmer;
@@ -133,6 +143,12 @@ class HandleWorkflowTest {
     @Mock
     private Round round;
 
+    @Mock
+    private KVStateChangeListener kvStateChangeListener;
+
+    @Mock
+    private BoundaryStateChangeListener boundaryStateChangeListener;
+
     private HandleWorkflow subject;
 
     @BeforeEach
@@ -151,6 +167,7 @@ class HandleWorkflowTest {
                 configProvider,
                 storeMetricsService,
                 blockRecordManager,
+                blockStreamManager,
                 cacheWarmer,
                 handleWorkflowMetrics,
                 throttleServiceManager,
@@ -160,7 +177,11 @@ class HandleWorkflowTest {
                 systemSetup,
                 recordCache,
                 exchangeRateManager,
-                preHandleWorkflow);
+                preHandleWorkflow,
+                stakePeriodManager,
+                kvStateChangeListener,
+                boundaryStateChangeListener,
+                List.of());
     }
 
     @Test

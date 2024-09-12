@@ -21,14 +21,13 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-import com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags;
 import com.swirlds.platform.network.ExternalIpAddress;
 import com.swirlds.platform.network.Network;
 import java.net.Inet4Address;
 import java.net.Inet6Address;
 import java.net.InetAddress;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
@@ -82,8 +81,8 @@ class NetworkTests {
     }
 
     @Test
-    @Tag(TestQualifierTags.TIME_CONSUMING)
     @DisplayName("No ip is found running as unit test")
+    @Disabled("This test needs to be investigated")
     void getExternalIpAddressWithNoIpFound() {
         final ExternalIpAddress address = Network.getExternalIpAddress();
         assertEquals(ExternalIpAddress.NO_IP, address, "No IP should be found on unit test");

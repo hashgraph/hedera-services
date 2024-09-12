@@ -22,7 +22,7 @@ import static com.hedera.services.bdd.junit.SharedNetworkLauncherSessionListener
 import static com.hedera.services.bdd.junit.extensions.NetworkTargetingExtension.REPEATABLE_KEY_GENERATOR;
 import static com.hedera.services.bdd.junit.extensions.NetworkTargetingExtension.SHARED_NETWORK;
 import static com.hedera.services.bdd.junit.hedera.ExternalPath.RECORD_STREAMS_DIR;
-import static com.hedera.services.bdd.junit.support.RecordStreamAccess.RECORD_STREAM_ACCESS;
+import static com.hedera.services.bdd.junit.support.StreamFileAccess.STREAM_FILE_ACCESS;
 import static com.hedera.services.bdd.spec.HapiSpec.SpecStatus.ERROR;
 import static com.hedera.services.bdd.spec.HapiSpec.SpecStatus.FAILED;
 import static com.hedera.services.bdd.spec.HapiSpec.SpecStatus.FAILED_AS_EXPECTED;
@@ -75,6 +75,7 @@ import com.hedera.services.bdd.junit.extensions.NetworkTargetingExtension;
 import com.hedera.services.bdd.junit.hedera.HederaNetwork;
 import com.hedera.services.bdd.junit.hedera.HederaNode;
 import com.hedera.services.bdd.junit.hedera.NodeSelector;
+import com.hedera.services.bdd.junit.hedera.embedded.EmbeddedHedera;
 import com.hedera.services.bdd.junit.hedera.embedded.EmbeddedNetwork;
 import com.hedera.services.bdd.junit.hedera.remote.RemoteNetwork;
 import com.hedera.services.bdd.junit.support.TestLifecycle;
@@ -93,7 +94,7 @@ import com.hedera.services.bdd.spec.utilops.UtilOp;
 import com.hedera.services.bdd.spec.utilops.records.AutoSnapshotModeOp;
 import com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode;
 import com.hedera.services.bdd.spec.utilops.records.SnapshotModeOp;
-import com.hedera.services.bdd.spec.utilops.streams.assertions.EventualRecordStreamAssertion;
+import com.hedera.services.bdd.spec.utilops.streams.assertions.AbstractEventualStreamAssertion;
 import com.hedera.services.bdd.spec.verification.traceability.SidecarWatcher;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -117,6 +118,7 @@ import java.util.Optional;
 import java.util.SplittableRandom;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Future;
 import java.util.concurrent.PriorityBlockingQueue;
 import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -460,6 +462,15 @@ public class HapiSpec implements Runnable, Executable {
     }
 
     /**
+     * Returns the {@link EmbeddedHedera} for a spec in embedded mode, or throws if the spec is not in embedded mode.
+     * @return the embedded Hedera
+     * @throws IllegalStateException if the spec is not in embedded mode
+     */
+    public EmbeddedHedera embeddedHederaOrThrow() {
+        return embeddedNetworkOrThrow().embeddedHederaOrThrow();
+    }
+
+    /**
      * Sleeps for the approximate wall clock time it will take for the spec's target
      * network to advance consensus time by the given duration.
      *
@@ -725,7 +736,7 @@ public class HapiSpec implements Runnable, Executable {
         if (!autoScheduled.isEmpty()) {
             log.info("Auto-scheduling {}", autoScheduled);
         }
-        @Nullable List<EventualRecordStreamAssertion> assertions = null;
+        @Nullable List<AbstractEventualStreamAssertion> streamAssertions = null;
         var snapshotOp = AutoSnapshotModeOp.from(this);
         if (snapshotOp != null) {
             // Ensure a mutable list
@@ -736,11 +747,11 @@ public class HapiSpec implements Runnable, Executable {
             if (!autoScheduled.isEmpty() && op.shouldSkipWhenAutoScheduling(autoScheduled)) {
                 continue;
             }
-            if (op instanceof EventualRecordStreamAssertion recordStreamAssertion) {
-                if (assertions == null) {
-                    assertions = new ArrayList<>();
+            if (op instanceof AbstractEventualStreamAssertion streamAssertion) {
+                if (streamAssertions == null) {
+                    streamAssertions = new ArrayList<>();
                 }
-                assertions.add(recordStreamAssertion);
+                streamAssertions.add(streamAssertion);
             } else if (op instanceof HapiTxnOp txn && autoScheduled.contains(txn.type())) {
                 op = autoScheduledSequenceFor(txn);
             } else if (op instanceof SnapshotModeOp snapshotModeOp) {
@@ -799,10 +810,10 @@ public class HapiSpec implements Runnable, Executable {
                     failure = new Failure(t, "Record snapshot fuzzy-match");
                 }
             }
-            final var maybeRecordStreamError = checkRecordStream(assertions);
-            if (maybeRecordStreamError.isPresent()) {
+            final var maybeStreamFileError = checkStream(streamAssertions);
+            if (maybeStreamFileError.isPresent()) {
                 status = FAILED;
-                failure = maybeRecordStreamError.get();
+                failure = maybeStreamFileError.get();
             }
             if (sidecarWatcher != null) {
                 try {
@@ -813,9 +824,9 @@ public class HapiSpec implements Runnable, Executable {
                     failure = new Failure(t, "Sidecar assertion");
                 }
             }
-        } else if (assertions != null) {
-            assertions.forEach(EventualRecordStreamAssertion::unsubscribe);
-            RECORD_STREAM_ACCESS.stopMonitorIfNoSubscribers();
+        } else if (streamAssertions != null) {
+            streamAssertions.forEach(AbstractEventualStreamAssertion::unsubscribe);
+            STREAM_FILE_ACCESS.stopMonitorIfNoSubscribers();
         }
 
         tearDown();
@@ -950,30 +961,34 @@ public class HapiSpec implements Runnable, Executable {
         return endIndices;
     }
 
-    private Optional<Failure> checkRecordStream(@Nullable final List<EventualRecordStreamAssertion> assertions) {
-        if (assertions == null) {
+    private Optional<Failure> checkStream(@Nullable final List<AbstractEventualStreamAssertion> streamAssertions) {
+        if (streamAssertions == null) {
             return Optional.empty();
         }
         if (!quietMode) {
-            log.info("Checking record stream for {} assertions", assertions.size());
+            log.info("Checking stream files for {} assertions", streamAssertions.size());
         }
+        final var needsTraffic =
+                streamAssertions.stream().anyMatch(AbstractEventualStreamAssertion::needsBackgroundTraffic);
         Optional<Failure> answer = Optional.empty();
-        // Keep submitting transactions to close record files (in almost every case, just
+        // Keep submitting transactions to close stream files (in almost every case, just
         // one file will need to be closed, since it's very rare to have a long-running spec)
-        final var backgroundTraffic = THREAD_POOL.submit(() -> {
-            while (true) {
-                try {
-                    TxnUtils.triggerAndCloseAtLeastOneFile(this);
-                    if (!quietMode) {
-                        log.info("Closed at least one record file via background traffic");
+        final Future<?> backgroundTraffic = needsTraffic
+                ? THREAD_POOL.submit(() -> {
+                    while (true) {
+                        try {
+                            TxnUtils.triggerAndCloseAtLeastOneFile(this);
+                            if (!quietMode) {
+                                log.info("Closed at least one record file via background traffic");
+                            }
+                        } catch (final InterruptedException ignore) {
+                            Thread.currentThread().interrupt();
+                            return;
+                        }
                     }
-                } catch (final InterruptedException ignore) {
-                    Thread.currentThread().interrupt();
-                    return;
-                }
-            }
-        });
-        for (final var assertion : assertions) {
+                })
+                : null;
+        for (final var assertion : streamAssertions) {
             if (!quietMode) {
                 log.info("Checking record stream for {}", assertion);
             }
@@ -987,8 +1002,10 @@ public class HapiSpec implements Runnable, Executable {
             }
         }
 
-        backgroundTraffic.cancel(true);
-        RECORD_STREAM_ACCESS.stopMonitorIfNoSubscribers();
+        if (backgroundTraffic != null) {
+            backgroundTraffic.cancel(true);
+        }
+        STREAM_FILE_ACCESS.stopMonitorIfNoSubscribers();
         return answer;
     }
 
@@ -1354,5 +1371,12 @@ public class HapiSpec implements Runnable, Executable {
         feeCalculator = null;
         ratesProvider = null;
         hapiRegistry = null;
+    }
+
+    private EmbeddedNetwork embeddedNetworkOrThrow() {
+        if (!(targetNetworkOrThrow() instanceof EmbeddedNetwork network)) {
+            throw new IllegalStateException("Target network is not embedded");
+        }
+        return network;
     }
 }

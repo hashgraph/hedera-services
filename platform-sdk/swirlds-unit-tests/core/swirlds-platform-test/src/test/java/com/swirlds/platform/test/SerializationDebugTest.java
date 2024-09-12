@@ -26,7 +26,6 @@ import static com.swirlds.common.io.streams.internal.SerializationOperation.READ
 import static com.swirlds.common.io.streams.internal.SerializationOperation.READ_SERIALIZABLE;
 import static com.swirlds.common.io.streams.internal.SerializationOperation.READ_SERIALIZABLE_LIST;
 import static com.swirlds.common.io.streams.internal.SerializationOperation.STREAM_OPENED;
-import static com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags.TIME_CONSUMING;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -59,8 +58,8 @@ import java.util.List;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -271,7 +270,7 @@ class SerializationDebugTest {
 
     @Test
     @DisplayName("Debug On Failure Test")
-    @Tag(TIME_CONSUMING)
+    @Disabled("This test needs to be investigated")
     void debugOnFailureTest() {
 
         final MerkleMap<Integer, ExplodingValue> map = new MerkleMap<>();

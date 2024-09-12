@@ -25,6 +25,8 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.node.app.DaggerHederaInjectionComponent;
 import com.hedera.node.app.HederaInjectionComponent;
+import com.hedera.node.app.blocks.impl.BoundaryStateChangeListener;
+import com.hedera.node.app.blocks.impl.KVStateChangeListener;
 import com.hedera.node.app.config.BootstrapConfigProviderImpl;
 import com.hedera.node.app.config.ConfigProviderImpl;
 import com.hedera.node.app.fixtures.state.FakeState;
@@ -37,7 +39,7 @@ import com.hedera.node.app.signature.AppSignatureVerifier;
 import com.hedera.node.app.signature.impl.SignatureExpanderImpl;
 import com.hedera.node.app.signature.impl.SignatureVerifierImpl;
 import com.hedera.node.app.state.recordcache.RecordCacheService;
-import com.hedera.node.app.version.HederaSoftwareVersion;
+import com.hedera.node.app.tss.TssBaseService;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -51,6 +53,7 @@ import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.status.PlatformStatus;
 import java.time.InstantSource;
 import java.util.ArrayDeque;
+import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -63,6 +66,9 @@ class IngestComponentTest {
 
     @Mock
     private Platform platform;
+
+    @Mock
+    private TssBaseService tssBaseService;
 
     private HederaInjectionComponent app;
 
@@ -84,10 +90,7 @@ class IngestComponentTest {
                 "0123456789012345678901234567890123456789012345678901234567890123",
                 "Node7",
                 Bytes.wrap("cert7"),
-                new HederaSoftwareVersion(
-                        SemanticVersion.newBuilder().major(1).build(),
-                        SemanticVersion.newBuilder().major(2).build(),
-                        0),
+                SemanticVersion.newBuilder().major(1).build(),
                 "Node7");
 
         final var configProvider = new ConfigProviderImpl(false);
@@ -112,6 +115,10 @@ class IngestComponentTest {
                 .instantSource(InstantSource.system())
                 .softwareVersion(mock(SemanticVersion.class))
                 .metrics(metrics)
+                .kvStateChangeListener(new KVStateChangeListener())
+                .boundaryStateChangeListener(new BoundaryStateChangeListener())
+                .migrationStateChanges(List.of())
+                .tssBaseService(tssBaseService)
                 .build();
 
         final var state = new FakeState();

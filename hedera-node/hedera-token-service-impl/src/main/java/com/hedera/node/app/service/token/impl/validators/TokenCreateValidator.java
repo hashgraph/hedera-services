@@ -54,14 +54,14 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 
 /**
- * Provides validations for TokenCreateTransactionBody
+ * Provides validations for TokenCreateTransactionBody.
  */
 @Singleton
 public class TokenCreateValidator {
     private final TokenAttributesValidator tokenAttributesValidator;
 
     /**
-     * Default constructor for injection
+     * Default constructor for injection.
      * @param tokenAttributesValidator token attributes validator
      */
     @Inject
@@ -70,7 +70,7 @@ public class TokenCreateValidator {
     }
 
     /**
-     * Validations needed in pre-handle for {@link TokenCreateTransactionBody} are done here
+     * Validations needed in pre-handle for {@link TokenCreateTransactionBody} are done here.
      * @param op token create transaction body
      * @throws PreCheckException if any of the validations fail
      */
@@ -97,7 +97,7 @@ public class TokenCreateValidator {
     }
 
     /**
-     * All validations in handle needed for {@link TokenCreateTransactionBody} are done here
+     * All validations in handle needed for {@link TokenCreateTransactionBody} are done here.
      * @param context context
      * @param accountStore account store
      * @param op token create transaction body
@@ -140,7 +140,7 @@ public class TokenCreateValidator {
     }
 
     /**
-     * Validates initial supply and decimals based on token type
+     * Validates initial supply and decimals based on token type.
      * @param type token type
      * @param initialSupply initial supply
      * @param decimals decimals
@@ -159,7 +159,7 @@ public class TokenCreateValidator {
     }
 
     /**
-     * Validates supply type and max supply
+     * Validates supply type and max supply.
      * @param supplyType supply type
      * @param maxSupply max supply
      * @throws PreCheckException if validation fails

@@ -17,6 +17,7 @@
 package com.hedera.services.bdd.junit.support.translators.impl;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
+import static com.hedera.hapi.node.base.TokenType.NON_FUNGIBLE_UNIQUE;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.block.stream.output.StateChange;
@@ -43,13 +44,14 @@ public class TokenMintTranslator implements BlockTransactionPartsTranslator {
         requireNonNull(parts);
         requireNonNull(baseTranslator);
         requireNonNull(remainingStateChanges);
-        return baseTranslator.recordFrom(parts, (receiptBuilder, recordBuilder, sidecarRecords, involvedTokenId) -> {
+        return baseTranslator.recordFrom(parts, (receiptBuilder, recordBuilder) -> {
             if (parts.status() == SUCCESS) {
                 final var op = parts.body().tokenMintOrThrow();
+                final var tokenId = op.tokenOrThrow();
                 final var numMints = op.metadata().size();
-                if (numMints > 0) {
-                    final var tokenId = op.tokenOrThrow();
+                if (numMints > 0 && baseTranslator.tokenTypeOrThrow(tokenId) == NON_FUNGIBLE_UNIQUE) {
                     final var mintedSerialNos = baseTranslator.nextNMints(tokenId, numMints);
+                    receiptBuilder.serialNumbers(List.copyOf(mintedSerialNos));
                     final var iter = remainingStateChanges.listIterator();
                     while (iter.hasNext()) {
                         final var stateChange = iter.next();
@@ -64,6 +66,8 @@ public class TokenMintTranslator implements BlockTransactionPartsTranslator {
                             if (mintedSerialNos.remove(serialNo)) {
                                 iter.remove();
                                 if (mintedSerialNos.isEmpty()) {
+                                    final var newTotalSupply = baseTranslator.newTotalSupply(tokenId, numMints);
+                                    receiptBuilder.newTotalSupply(newTotalSupply);
                                     return;
                                 }
                             }
@@ -72,6 +76,10 @@ public class TokenMintTranslator implements BlockTransactionPartsTranslator {
                     log.error(
                             "Not all mints had matching state changes found for successful mint with id {}",
                             parts.transactionIdOrThrow());
+                } else {
+                    final var amountMinted = op.amount();
+                    final var newTotalSupply = baseTranslator.newTotalSupply(tokenId, amountMinted);
+                    receiptBuilder.newTotalSupply(newTotalSupply);
                 }
             }
         });
