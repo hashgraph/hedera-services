@@ -16,6 +16,8 @@
 
 package com.swirlds.platform.builder;
 
+import static java.util.Objects.requireNonNull;
+
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.platform.NodeId;
@@ -121,6 +123,32 @@ public record PlatformBuildingBlocks(
         @NonNull AtomicReference<Consumer<SignedState>> loadReconnectStateReference,
         @NonNull AtomicReference<Runnable> clearAllPipelinesForReconnectReference,
         boolean firstPlatform) {
+
+    public PlatformBuildingBlocks {
+        requireNonNull(platformContext);
+        requireNonNull(model);
+        requireNonNull(keysAndCerts);
+        requireNonNull(selfId);
+        requireNonNull(mainClassName);
+        requireNonNull(swirldName);
+        requireNonNull(appVersion);
+        requireNonNull(initialState);
+        requireNonNull(applicationCallbacks);
+        requireNonNull(intakeEventCounter);
+        requireNonNull(randomBuilder);
+        requireNonNull(transactionPoolNexus);
+        requireNonNull(intakeQueueSizeSupplierSupplier);
+        requireNonNull(isInFreezePeriodReference);
+        requireNonNull(latestImmutableStateProviderReference);
+        requireNonNull(initialPcesFiles);
+        requireNonNull(issScratchpad);
+        requireNonNull(notificationEngine);
+        requireNonNull(statusActionSubmitterReference);
+        requireNonNull(swirldStateManager);
+        requireNonNull(getLatestCompleteStateReference);
+        requireNonNull(loadReconnectStateReference);
+        requireNonNull(clearAllPipelinesForReconnectReference);
+    }
 
     /**
      * Get the address book from the initial state.

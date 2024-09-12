@@ -379,7 +379,6 @@ public final class Utilities {
                 .filter(address -> !address.getNodeId().equals(selfId))
                 .map(address -> new PeerInfo(
                         address.getNodeId(),
-                        address.getSelfName(),
                         Objects.requireNonNull(address.getHostnameExternal()),
                         Objects.requireNonNull(address.getSigCert())))
                 .toList();

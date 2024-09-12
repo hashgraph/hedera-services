@@ -87,8 +87,8 @@ public record ContractsConfig(
                 boolean evmVersionDynamic,
         @ConfigProperty(value = "evm.allowCallsToNonContractAccounts", defaultValue = "true") @NetworkProperty
                 boolean evmAllowCallsToNonContractAccounts,
-        @ConfigProperty(value = "evm.chargeGasOnPreEvmException", defaultValue = "true") @NetworkProperty
-                boolean chargeGasOnPreEvmException,
+        @ConfigProperty(value = "evm.chargeGasOnEvmHandleException", defaultValue = "true") @NetworkProperty
+                boolean chargeGasOnEvmHandleException,
         @ConfigProperty(value = "evm.nonExtantContractsFail", defaultValue = "0") @NetworkProperty
                 Set<Long> evmNonExtantContractsFail,
         @ConfigProperty(value = "evm.version", defaultValue = "v0.50") @NetworkProperty String evmVersion) {}
