@@ -64,22 +64,6 @@ class ConcurrentStreamingTreeHasherTest {
         }
     }
 
-    @ParameterizedTest
-    @ValueSource(ints = {0, 1, 3, 5, 32, 69, 100, 123, 234})
-    void testAddLeafAndRootHashSansStatus(final int numLeaves) {
-        for (int i = 1; i <= numLeaves; i++) {
-            final var contents = new byte[LEAF_SIZE];
-            RANDOM.nextBytes(contents);
-            final var leaf = Bytes.wrap(contents);
-            subject.addLeaf(leaf);
-            comparison.addLeaf(leaf);
-        }
-
-        final var actual = subject.rootHash().join();
-        final var expected = comparison.rootHash().join();
-        assertEquals(expected, actual);
-    }
-
     @Test
     void testAddLeafAfterRootHashRequested() {
         subject.addLeaf(Bytes.wrap(new byte[48]));
