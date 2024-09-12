@@ -84,6 +84,7 @@ import com.hedera.services.bdd.junit.support.BlockStreamValidator;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.context.PlatformContext;
+import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.common.merkle.crypto.MerkleCryptography;
 import com.swirlds.common.merkle.utility.MerkleTreeVisualizer;
@@ -149,6 +150,7 @@ public class StateChangesValidator implements BlockStreamValidator {
 
     private Timestamp genesisMigrationTimestamp = null;
     private MerkleStateRoot state;
+    private Hash genesisStateHash;
 
     public static void main(String[] args) {
         final var node0Dir = Paths.get("hedera-node/test-clients")
@@ -241,7 +243,11 @@ public class StateChangesValidator implements BlockStreamValidator {
                 bootstrapConfig.getConfigData(HederaConfig.class).configVersion();
         final var currentVersion = new ServicesSoftwareVersion(servicesVersion, configVersion);
         final var lifecycles = newPlatformInitLifecycle(bootstrapConfig, currentVersion, migrator, servicesRegistry);
-        state = new MerkleStateRoot(lifecycles, version -> new ServicesSoftwareVersion(version, configVersion));
+        final var state =
+                new MerkleStateRoot(lifecycles, version -> new ServicesSoftwareVersion(version, configVersion));
+        this.state = state.copy();
+        // get the state hash before applying the state changes from current block
+        this.genesisStateHash = CRYPTO.digestTreeSync(state);
         // initialize the platform state
         state.getWritablePlatformState();
         migrator.doMigrations(
@@ -261,11 +267,6 @@ public class StateChangesValidator implements BlockStreamValidator {
         var previousBlockHash = INITIAL_BLOCK_HASH;
 
         for (final var block : blocks) {
-            StateChanges lastStateChanges = null;
-            // get the state hash before applying the state changes from current block
-            CRYPTO.digestTreeSync(state);
-            final var startOfBlockStateHash = state.getHash();
-
             final StreamingTreeHasher inputTreeHasher = new NaiveStreamingTreeHasher();
             final StreamingTreeHasher outputTreeHasher = new NaiveStreamingTreeHasher();
 
@@ -289,13 +290,13 @@ public class StateChangesValidator implements BlockStreamValidator {
             }
             final var lastBlockItem = block.items().getLast();
             Assertions.assertTrue(lastBlockItem.hasBlockProof());
-            Assertions.assertEquals(lastBlockItem.blockProofOrThrow().previousBlockRootHash(), previousBlockHash);
+            Assertions.assertEquals(
+                    lastBlockItem.blockProofOrThrow().previousBlockRootHash(),
+                    previousBlockHash,
+                    "Previous block hash mismatch for block ");
 
             final var currentBlockHash = getBlockHash(
-                    requireNonNull(startOfBlockStateHash).getBytes(),
-                    previousBlockHash,
-                    inputTreeHasher,
-                    outputTreeHasher);
+                    requireNonNull(genesisStateHash).getBytes(), previousBlockHash, inputTreeHasher, outputTreeHasher);
             validateBlockProof(lastBlockItem.blockProofOrThrow(), currentBlockHash);
             previousBlockHash = currentBlockHash;
         }
@@ -363,7 +364,7 @@ public class StateChangesValidator implements BlockStreamValidator {
             }
         }
         final var computedSignature = Bytes.wrap(CommonUtils.noThrowSha384HashOf(blockHash.toByteArray()));
-        Assertions.assertEquals(computedSignature, actualSignature);
+        Assertions.assertEquals(computedSignature, actualSignature, "Block proof signature mismatch for " + blockProof);
     }
 
     private Map<String, String> hashesFor(@NonNull final MerkleStateRoot state) {

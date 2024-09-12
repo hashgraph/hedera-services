@@ -22,6 +22,7 @@ import com.hedera.node.app.annotations.MaxSignedTxnSize;
 import com.hedera.node.app.authorization.AuthorizerInjectionModule;
 import com.hedera.node.app.blocks.BlockStreamManager;
 import com.hedera.node.app.blocks.BlockStreamModule;
+import com.hedera.node.app.blocks.StartStateHashInfo;
 import com.hedera.node.app.blocks.impl.BoundaryStateChangeListener;
 import com.hedera.node.app.blocks.impl.KVStateChangeListener;
 import com.hedera.node.app.components.IngestInjectionComponent;
@@ -193,6 +194,9 @@ public interface HederaInjectionComponent {
 
         @BindsInstance
         Builder tssBaseService(TssBaseService tssBaseService);
+
+        @BindsInstance
+        Builder stateHashInfo(StartStateHashInfo stateHashInfo);
 
         HederaInjectionComponent build();
     }

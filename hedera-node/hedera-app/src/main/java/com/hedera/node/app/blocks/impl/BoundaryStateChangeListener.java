@@ -55,10 +55,9 @@ import java.util.TreeMap;
 import javax.inject.Singleton;
 
 /**
- * A state change listener that accumulates state changes that are only reported at a block boundary (either
- * at the beginning or end of the block); either because all that affects the root hash is the latest value in
- * state, or it is simply more efficient to report them in bulk. In the current system, these are the singleton
- * and queue updates.
+ * A state change listener that accumulates state changes that are only reported at a block boundary; either
+ * because all that affects the root hash is the latest value in state, or it is simply more efficient to report
+ * them in bulk. In the current system, these are the singleton and queue updates.
  */
 @Singleton
 public class BoundaryStateChangeListener implements StateChangeListener {
@@ -68,18 +67,32 @@ public class BoundaryStateChangeListener implements StateChangeListener {
     private final SortedMap<Integer, List<StateChange>> queueUpdates = new TreeMap<>();
 
     @Nullable
-    private Instant lastUsedConsensusTime;
+    private Timestamp boundaryTimestamp;
+
+    /**
+     * Returns the boundary timestamp.
+     * @return the boundary timestamp
+     */
+    public @NonNull Timestamp boundaryTimestampOrThrow() {
+        return requireNonNull(boundaryTimestamp);
+    }
+
+    /**
+     * Resets the state of the listener.
+     */
+    public void reset() {
+        boundaryTimestamp = null;
+        singletonUpdates.clear();
+        queueUpdates.clear();
+    }
 
     /**
      * Returns a {@link BlockItem} containing all the state changes that have been accumulated.
      * @return the block item
      */
     public BlockItem flushChanges() {
-        final var stateChanges = StateChanges.newBuilder()
-                .stateChanges(allStateChanges())
-                .consensusTimestamp(endOfBlockTimestamp())
-                .build();
-        lastUsedConsensusTime = null;
+        requireNonNull(boundaryTimestamp);
+        final var stateChanges = new StateChanges(boundaryTimestamp, allStateChanges());
         singletonUpdates.clear();
         queueUpdates.clear();
         return BlockItem.newBuilder().stateChanges(stateChanges).build();
@@ -101,19 +114,11 @@ public class BoundaryStateChangeListener implements StateChangeListener {
     }
 
     /**
-     * Returns the consensus timestamp at the end of the block.
-     * @return the consensus timestamp
-     */
-    public @NonNull Timestamp endOfBlockTimestamp() {
-        return asTimestamp(lastUsedConsensusTime.plusNanos(1));
-    }
-
-    /**
      * Sets the last used consensus time in the round.
      * @param lastUsedConsensusTime the last used consensus time
      */
-    public void setLastUsedConsensusTime(@NonNull final Instant lastUsedConsensusTime) {
-        this.lastUsedConsensusTime = requireNonNull(lastUsedConsensusTime);
+    public void setBoundaryTimestamp(@NonNull final Instant lastUsedConsensusTime) {
+        boundaryTimestamp = asTimestamp(requireNonNull(lastUsedConsensusTime).plusNanos(1));
     }
 
     @Override
@@ -219,5 +224,9 @@ public class BoundaryStateChangeListener implements StateChangeListener {
             default -> throw new IllegalArgumentException(
                     "Unknown value type " + value.getClass().getName());
         }
+    }
+
+    private static BlockItem itemWith(@NonNull final StateChanges stateChanges) {
+        return BlockItem.newBuilder().stateChanges(stateChanges).build();
     }
 }

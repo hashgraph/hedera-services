@@ -29,6 +29,7 @@ import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.streams.MerkleDataInputStream;
 import com.swirlds.common.io.utility.RecycleBin;
+import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.logging.legacy.payload.SavedStateLoadedPayload;
 import com.swirlds.platform.config.StateConfig;
@@ -64,20 +65,20 @@ public final class StartupStateUtils {
      * Get the initial state to be used by this node. May return a state loaded from disk, or may return a genesis state
      * if no valid state is found on disk.
      *
-     * @param platformContext         the platform context
-     * @param softwareVersion         the software version of the app
-     * @param genesisStateBuilder     a supplier that can build a genesis state
-     * @param snapshotStateReader     a function to read an existing state snapshot
-     * @param mainClassName           the name of the app's SwirldMain class
-     * @param swirldName              the name of this swirld
-     * @param selfId                  the node id of this node
-     * @param configAddressBook       the address book from config.txt
+     * @param platformContext     the platform context
+     * @param softwareVersion     the software version of the app
+     * @param genesisStateBuilder a supplier that can build a genesis state
+     * @param snapshotStateReader a function to read an existing state snapshot
+     * @param mainClassName       the name of the app's SwirldMain class
+     * @param swirldName          the name of this swirld
+     * @param selfId              the node id of this node
+     * @param configAddressBook   the address book from config.txt
      * @return the initial state to be used by this node
      * @throws SignedStateLoadingException if there was a problem parsing states on disk and we are not configured to
      *                                     delete malformed states
      */
     @NonNull
-    public static ReservedSignedState getInitialState(
+    public static ReservedState getInitialState(
             @NonNull final PlatformContext platformContext,
             @NonNull final SoftwareVersion softwareVersion,
             @NonNull final Supplier<MerkleRoot> genesisStateBuilder,
@@ -165,7 +166,7 @@ public final class StartupStateUtils {
      * @param initialSignedState the initial signed state
      * @return a copy of the initial signed state
      */
-    public static @NonNull ReservedSignedState copyInitialSignedState(
+    public static @NonNull ReservedState copyInitialSignedState(
             @NonNull final PlatformContext platformContext, @NonNull final SignedState initialSignedState) {
         Objects.requireNonNull(platformContext);
         Objects.requireNonNull(initialSignedState);
@@ -181,7 +182,8 @@ public final class StartupStateUtils {
                 false);
         signedStateCopy.setSigSet(initialSignedState.getSigSet());
 
-        return signedStateCopy.reserve("Copied initial state");
+        final var hash = MerkleCryptoFactory.getInstance().digestTreeSync(initialSignedState.getState());
+        return new ReservedState(signedStateCopy.reserve("Copied initial state"), hash);
     }
 
     /**
@@ -313,4 +315,6 @@ public final class StartupStateUtils {
             throw new UncheckedIOException("unable to recycle state", e);
         }
     }
+
+    public record ReservedState(ReservedSignedState state, Hash stateHash) {}
 }

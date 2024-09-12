@@ -92,4 +92,32 @@ message BlockStreamInfo {
      * The maximum length of this field SHALL be 8192 bytes.
      */
     bytes trailing_block_hashes = 4;
+
+    /**
+     * The root hash of the input item tree for this block.
+     */
+    bytes input_tree_root_hash = 5;
+
+    /**
+     * The state hash at the start of this block.
+     */
+    bytes start_of_block_state_hash = 6;
+
+    /**
+     * The number of output block items preceding the state change that updates this
+     * singleton (which MUST be the last output block item in the block)
+     */
+    uint32 num_preceding_output_items = 7;
+
+    /**
+     * The concatenation of the rightmost hashes at each level of the output tree as it
+     * is constructed from all output items preceding the state change updating this
+     * singleton (which MUST be the last output block item in the block)
+     */
+    repeated bytes rightmost_preceding_output_tree_hashes = 8;
+
+    /**
+     * The last-used consensus time for the current block.<br/>
+     */
+    proto.Timestamp block_end_time = 9;
 }

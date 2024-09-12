@@ -40,6 +40,7 @@ import com.hedera.hapi.platform.state.PlatformState;
 import com.hedera.node.app.blocks.BlockItemWriter;
 import com.hedera.node.app.blocks.BlockStreamManager;
 import com.hedera.node.app.blocks.BlockStreamService;
+import com.hedera.node.app.blocks.StartStateHashInfo;
 import com.hedera.node.app.blocks.StreamingTreeHasher;
 import com.hedera.node.app.records.impl.BlockRecordInfoUtils;
 import com.hedera.node.app.tss.TssBaseService;
@@ -66,7 +67,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -78,6 +78,9 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
     private static final Logger log = LogManager.getLogger(BlockStreamManagerImpl.class);
 
     private static final int CHUNK_SIZE = 8;
+
+    private static final CompletableFuture<Bytes> MOCK_START_STATE_ROOT_HASH_FUTURE =
+            completedFuture(Bytes.wrap(new byte[48]));
 
     private final int roundsPerBlock;
     private final TssBaseService tssBaseService;
@@ -106,9 +109,6 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
      */
     private CompletableFuture<Void> writeFuture = completedFuture(null);
 
-    // (FUTURE) Remove this once reconnect protocol also transmits the last block hash
-    private boolean appendRealHashes = false;
-
     /**
      * Represents a block pending completion by the block hash signature needed for its block proof.
      *
@@ -133,7 +133,7 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
     /**
      * A map of round numbers to the hash of the round state.
      */
-    private final Map<Long, AtomicReference<CompletableFuture<Bytes>>> roundHashes = new ConcurrentHashMap<>();
+    private final Map<Long, CompletableFuture<Bytes>> roundHashes = new ConcurrentHashMap<>();
 
     @Inject
     public BlockStreamManagerImpl(
@@ -141,7 +141,8 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
             @NonNull final ExecutorService executor,
             @NonNull final ConfigProvider configProvider,
             @NonNull final TssBaseService tssBaseService,
-            @NonNull final BoundaryStateChangeListener boundaryStateChangeListener) {
+            @NonNull final BoundaryStateChangeListener boundaryStateChangeListener,
+            @NonNull final StartStateHashInfo stateHashInfo) {
         this.writerSupplier = requireNonNull(writerSupplier);
         this.executor = requireNonNull(executor);
         this.tssBaseService = requireNonNull(tssBaseService);
@@ -152,7 +153,8 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
         this.roundsPerBlock = config.getConfigData(BlockStreamConfig.class).roundsPerBlock();
         this.blockHashManager = new BlockHashManager(config);
         this.runningHashManager = new RunningHashManager();
-        roundHashes.put(0L, new AtomicReference<>(completedFuture(Bytes.wrap(new byte[HASH_SIZE]))));
+        roundHashes.put(stateHashInfo.roundNum(), completedFuture(stateHashInfo.stateHash()));
+        log.info("BlockStreamManager roundhashes put {} with {}", stateHashInfo.roundNum(), stateHashInfo.stateHash());
     }
 
     @Override
@@ -165,6 +167,9 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
         if (lastBlockHash == null) {
             throw new IllegalStateException("Last block hash must be initialized before starting a round");
         }
+        roundHashes.put(round.getRoundNum(), new CompletableFuture<>());
+        roundHashes.remove(round.getRoundNum() - 2);
+
         final var platformState = state.getReadableStates(PlatformStateService.NAME)
                 .<PlatformState>getSingleton(V0540PlatformStateSchema.PLATFORM_STATE_KEY)
                 .get();
@@ -176,7 +181,7 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
         if (writer == null) {
             writer = writerSupplier.get();
             blockTimestamp = round.getConsensusTimestamp();
-            boundaryStateChangeListener.setLastUsedConsensusTime(blockTimestamp);
+            boundaryStateChangeListener.setBoundaryTimestamp(blockTimestamp);
 
             final var blockStreamInfo = blockStreamInfoFrom(state);
             blockHashManager.startBlock(blockStreamInfo, lastBlockHash);
@@ -203,33 +208,36 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
     @Override
     public void endRound(@NonNull final State state, final long roundNum) {
         if (shouldCloseBlock(roundNum, roundsPerBlock)) {
-            final var writableState = state.getWritableStates(BlockStreamService.NAME);
-            final var blockStreamInfoState = writableState.<BlockStreamInfo>getSingleton(BLOCK_STREAM_INFO_KEY);
-            // Ensure runningHashManager futures include all result items and are completed
-            schedulePendingWork();
-            writeFuture.join();
-            // Commit the block stream info to state before flushing the boundary state changes
-            blockStreamInfoState.put(new BlockStreamInfo(
-                    blockNumber, blockTimestamp(), runningHashManager.latestHashes(), blockHashManager.blockHashes()));
-            ((CommittableWritableStates) writableState).commit();
-
-            // Flush the boundary state changes as our final hashable block item
+            // Flush all boundary state changes besides the BlockStreamInfo
             pendingItems.add(boundaryStateChangeListener.flushChanges());
             schedulePendingWork();
             writeFuture.join();
-
             final var inputHash = inputTreeHasher.rootHash().join();
+            log.info("Requesting block state hash for {}", roundNum - 1);
+            final var blockStartStateHash = roundHashes.get(roundNum - 1).join();
+            final var outputTreeStatus = outputTreeHasher.status();
+
+            // Put this block hash context in state via the block stream info
+            final var writableState = state.getWritableStates(BlockStreamService.NAME);
+            final var blockStreamInfoState = writableState.<BlockStreamInfo>getSingleton(BLOCK_STREAM_INFO_KEY);
+            blockStreamInfoState.put(new BlockStreamInfo(
+                    blockNumber,
+                    blockTimestamp(),
+                    runningHashManager.latestHashes(),
+                    blockHashManager.blockHashes(),
+                    inputHash,
+                    blockStartStateHash,
+                    outputTreeStatus.numLeaves(),
+                    outputTreeStatus.rightmostHashes(),
+                    boundaryStateChangeListener.boundaryTimestampOrThrow()));
+            ((CommittableWritableStates) writableState).commit();
+
+            // Flush the block stream info change
+            pendingItems.add(boundaryStateChangeListener.flushChanges());
+            schedulePendingWork();
+            writeFuture.join();
             final var outputHash = outputTreeHasher.rootHash().join();
-
             final var leftParent = combine(lastBlockHash, inputHash);
-
-            final var blockStartStateHashRef =
-                    roundHashes.computeIfAbsent(roundNum - 1, (k) -> new AtomicReference<>());
-            final CompletableFuture<Bytes> blockStartStateFuture = new CompletableFuture<>();
-            blockStartStateHashRef.compareAndSet(null, blockStartStateFuture);
-            log.info("Requesting hash of round {} for block {}", roundNum - 1, blockNumber);
-            final var blockStartStateHash = blockStartStateHashRef.get().join();
-
             final var rightParent = combine(outputHash, blockStartStateHash);
             final var blockHash = combine(leftParent, rightParent);
             final var pendingProof = BlockProof.newBuilder()
@@ -328,13 +336,6 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
                 siblingHashes.removeFirst();
             }
         }
-    }
-
-    /**
-     * (FUTURE) Remove this after reconnect protocol also transmits the last block hash.
-     */
-    public void appendRealHashes() {
-        this.appendRealHashes = true;
     }
 
     private void schedulePendingWork() {
@@ -499,12 +500,7 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
          * @param blockStreamInfo the trailing block hashes at the start of the round
          */
         void startBlock(@NonNull final BlockStreamInfo blockStreamInfo, @NonNull Bytes prevBlockHash) {
-            if (appendRealHashes) {
-                blockHashes = appendHash(prevBlockHash, blockStreamInfo.trailingBlockHashes(), numTrailingBlocks);
-            } else {
-                // (FUTURE) Remove this after reconnect protocol also transmits the last block hash
-                blockHashes = appendHash(ZERO_BLOCK_HASH, blockStreamInfo.trailingBlockHashes(), numTrailingBlocks);
-            }
+            blockHashes = appendHash(prevBlockHash, blockStreamInfo.trailingBlockHashes(), numTrailingBlocks);
         }
 
         /**
@@ -539,8 +535,6 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
                 "StateHashedNotification Received : hash: {}, roundNumber: {}",
                 notification.hash(),
                 notification.round());
-        final var ref = roundHashes.computeIfAbsent(notification.round(), k -> new AtomicReference<>());
-        ref.compareAndSet(null, completedFuture(notification.hash().getBytes()));
-        ref.get().complete(notification.hash().getBytes());
+        roundHashes.get(notification.round()).complete(notification.hash().getBytes());
     }
 }

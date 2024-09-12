@@ -71,6 +71,13 @@ public class KVStateChangeListener implements StateChangeListener {
 
     private final List<StateChange> stateChanges = new ArrayList<>();
 
+    /**
+     * Resets the state changes.
+     */
+    public void reset() {
+        stateChanges.clear();
+    }
+
     @Override
     public Set<StateType> stateTypes() {
         return TARGET_DATA_TYPES;

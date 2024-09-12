@@ -49,6 +49,9 @@ import com.hedera.node.app.fees.FeeManager;
 import com.hedera.node.app.records.BlockRecordManager;
 import com.hedera.node.app.service.schedule.ScheduleService;
 import com.hedera.node.app.service.schedule.WritableScheduleStore;
+import com.hedera.node.app.service.token.TokenService;
+import com.hedera.node.app.service.token.impl.WritableStakingInfoStore;
+import com.hedera.node.app.service.token.impl.handlers.staking.StakeInfoHelper;
 import com.hedera.node.app.service.token.impl.handlers.staking.StakePeriodManager;
 import com.hedera.node.app.services.ServiceScopeLookup;
 import com.hedera.node.app.spi.authorization.Authorizer;
@@ -118,6 +121,7 @@ public class HandleWorkflow {
     private final InitTrigger initTrigger;
     private final HollowAccountCompletions hollowAccountCompletions;
     private final SystemSetup systemSetup;
+    private final StakeInfoHelper stakeInfoHelper;
     private final HederaRecordCache recordCache;
     private final ExchangeRateManager exchangeRateManager;
     private final PreHandleWorkflow preHandleWorkflow;
@@ -148,6 +152,7 @@ public class HandleWorkflow {
             @NonNull final InitTrigger initTrigger,
             @NonNull final HollowAccountCompletions hollowAccountCompletions,
             @NonNull final SystemSetup systemSetup,
+            @NonNull final StakeInfoHelper stakeInfoHelper,
             @NonNull final HederaRecordCache recordCache,
             @NonNull final ExchangeRateManager exchangeRateManager,
             @NonNull final PreHandleWorkflow preHandleWorkflow,
@@ -175,6 +180,7 @@ public class HandleWorkflow {
         this.initTrigger = requireNonNull(initTrigger);
         this.hollowAccountCompletions = requireNonNull(hollowAccountCompletions);
         this.systemSetup = requireNonNull(systemSetup);
+        this.stakeInfoHelper = requireNonNull(stakeInfoHelper);
         this.recordCache = requireNonNull(recordCache);
         this.exchangeRateManager = requireNonNull(exchangeRateManager);
         this.preHandleWorkflow = requireNonNull(preHandleWorkflow);
@@ -346,6 +352,12 @@ public class HandleWorkflow {
                     // (FUTURE) Once all genesis setup is done via dispatch, remove this method
                     systemSetup.externalizeInitSideEffects(
                             userTxn.tokenContextImpl(), exchangeRateManager.exchangeRates());
+                } else if (userTxn.type() == POST_UPGRADE_TRANSACTION) {
+                    stakeInfoHelper.adjustPostUpgradeStakes(
+                            new WritableStakingInfoStore(userTxn.stack().getWritableStates(TokenService.NAME)),
+                            networkInfo,
+                            userTxn.config());
+                    userTxn.stack().commitSystemStateChanges();
                 }
                 updateNodeStakes(userTxn);
                 if (blockStreamConfig.streamRecords()) {
