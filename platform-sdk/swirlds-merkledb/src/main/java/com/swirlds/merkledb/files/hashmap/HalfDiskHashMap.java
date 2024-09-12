@@ -149,8 +149,8 @@ public class HalfDiskHashMap implements AutoCloseable, Snapshotable, FileStatist
     private final AtomicInteger storeBucketTasksCreated = new AtomicInteger();
 
     /**
-     * A latch used in {@link #endWriting()} to wait for all submitted tasks to complete. It
-     * is set in the last store task.
+     * A task used in {@link #endWriting()} to wait for all submitted tasks to complete. It
+     * is set as a "next" dependency for the last created "store bucket" task.
      */
     private final AtomicReference<AbstractTask> notifyTaskRef = new AtomicReference<>();
 
