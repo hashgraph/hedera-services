@@ -31,7 +31,7 @@ import javax.inject.Singleton;
 @Singleton
 public class BalanceOfTranslator extends AbstractCallTranslator<HtsCallAttempt> {
     /**
-     * Selector for balanceOf() method.
+     * Selector for balanceOf(address) method.
      */
     public static final Function BALANCE_OF = new Function("balanceOf(address)", ReturnTypes.INT);
 

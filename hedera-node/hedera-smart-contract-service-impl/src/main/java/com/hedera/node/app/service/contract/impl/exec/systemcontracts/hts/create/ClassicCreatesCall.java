@@ -67,6 +67,9 @@ import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 
+/**
+ * Implements the token redirect {@code createToken()} call of the HTS system contract.
+ */
 public class ClassicCreatesCall extends AbstractCall {
     /**
      * The mono-service stipulated gas cost for a token creation (remaining fee is collected by sent value)

@@ -59,6 +59,13 @@ public class UpdateKeysTranslator extends AbstractCallTranslator<HtsCallAttempt>
                 FAILURE_CUSTOMIZER);
     }
 
+    /**
+     * @param body                          the transaction body to be dispatched
+     * @param systemContractGasCalculator   the gas calculator for the system contract
+     * @param enhancement                   the enhancement to use
+     * @param payerId                       the payer of the transaction
+     * @return the required gas
+     */
     public static long gasRequirement(
             @NonNull final TransactionBody body,
             @NonNull final SystemContractGasCalculator systemContractGasCalculator,

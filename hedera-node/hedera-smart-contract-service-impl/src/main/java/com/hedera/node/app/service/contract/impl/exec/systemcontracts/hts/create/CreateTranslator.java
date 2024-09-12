@@ -142,6 +142,10 @@ public class CreateTranslator extends AbstractCallTranslator<HtsCallAttempt> {
 
     private final CreateDecoder decoder;
 
+    /**
+     * Constructor for injection.
+     * @param decoder the decoder used to decode create calls
+     */
     @Inject
     public CreateTranslator(CreateDecoder decoder) {
         // Dagger2

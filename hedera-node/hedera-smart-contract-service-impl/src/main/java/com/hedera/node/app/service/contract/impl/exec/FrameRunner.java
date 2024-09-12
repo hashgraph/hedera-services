@@ -56,6 +56,9 @@ import org.hyperledger.besu.evm.processor.ContractCreationProcessor;
 public class FrameRunner {
     private final CustomGasCalculator gasCalculator;
 
+    /**
+     * @param gasCalculator the gas calculator to be used
+     */
     @Inject
     public FrameRunner(@NonNull final CustomGasCalculator gasCalculator) {
         this.gasCalculator = gasCalculator;

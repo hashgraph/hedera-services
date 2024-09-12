@@ -36,11 +36,14 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 
 /**
- * Decoder class of burn calls.
+ * Provides help in decoding an {@link HtsCallAttempt} representing a burn call into a synthetic {@link TransactionBody}.
  */
 @Singleton
 public class BurnDecoder {
     private static final TupleType BURN_RESULT_ENCODER = TupleType.parse(INT64_INT64);
+    /**
+     * Dispatch for burn calls output.
+     */
     public static final DispatchForResponseCodeHtsCall.OutputFn BURN_OUTPUT_FN =
             recordBuilder -> BURN_RESULT_ENCODER.encodeElements(
                     (long) recordBuilder.status().protoOrdinal(), recordBuilder.getNewTotalSupply());

@@ -83,6 +83,9 @@ import org.hyperledger.besu.evm.frame.MessageFrame;
  * TODO - get a little further to clarify DI strategy, then bring back a code cache.
  */
 public class DispatchingEvmFrameState implements EvmFrameState {
+    /**
+     * Default value for the key of hollow accounts
+     */
     public static final Key HOLLOW_ACCOUNT_KEY =
             Key.newBuilder().keyList(KeyList.DEFAULT).build();
     private static final String ADDRESS_BYTECODE_PATTERN = "fefefefefefefefefefefefefefefefefefefefe";

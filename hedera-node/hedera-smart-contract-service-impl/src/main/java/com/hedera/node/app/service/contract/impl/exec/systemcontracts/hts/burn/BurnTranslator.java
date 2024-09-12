@@ -32,6 +32,9 @@ import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
 
+/**
+ * Translator class for burn calls
+ */
 public class BurnTranslator extends AbstractCallTranslator<HtsCallAttempt> {
     /**
      * Selector for burnToken(address,uint64,int64[]) method.
@@ -77,6 +80,13 @@ public class BurnTranslator extends AbstractCallTranslator<HtsCallAttempt> {
         }
     }
 
+    /**
+     * @param body                          the transaction body to be dispatched
+     * @param systemContractGasCalculator   the gas calculator for the system contract
+     * @param enhancement                   the enhancement to use
+     * @param payerId                       the payer of the transaction
+     * @return                              the gas requirement
+     */
     public static long fungibleBurnGasRequirement(
             @NonNull final TransactionBody body,
             @NonNull final SystemContractGasCalculator systemContractGasCalculator,
@@ -85,6 +95,13 @@ public class BurnTranslator extends AbstractCallTranslator<HtsCallAttempt> {
         return systemContractGasCalculator.gasRequirement(body, DispatchType.BURN_FUNGIBLE, payerId);
     }
 
+    /**
+     * @param body                          the transaction body to be dispatched
+     * @param systemContractGasCalculator   the gas calculator for the system contract
+     * @param enhancement                   the enhancement to use
+     * @param payerId                       the payer of the transaction
+     * @return                              the gas requirement
+     */
     public static long nftBurnGasRequirement(
             @NonNull final TransactionBody body,
             @NonNull final SystemContractGasCalculator systemContractGasCalculator,

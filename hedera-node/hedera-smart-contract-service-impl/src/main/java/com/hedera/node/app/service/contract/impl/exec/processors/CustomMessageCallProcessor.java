@@ -81,6 +81,14 @@ public class CustomMessageCallProcessor extends MessageCallProcessor {
         NO,
     }
 
+    /**
+     * Constructor.
+     * @param evm the evm to use in this call
+     * @param featureFlags current evm module feature flags
+     * @param precompiles the present precompiles
+     * @param addressChecks checks against addresses reserved for Hedera
+     * @param systemContracts the Hedera system contracts
+     */
     public CustomMessageCallProcessor(
             @NonNull final EVM evm,
             @NonNull final FeatureFlags featureFlags,
@@ -190,6 +198,10 @@ public class CustomMessageCallProcessor extends MessageCallProcessor {
         return CREATE_FUNCTIONS.stream().anyMatch(s -> Arrays.equals(s.selector(), selector));
     }
 
+    /**
+     * @param config the current configuration
+     * @return whether the implicit creation is currently enabled
+     */
     public boolean isImplicitCreationEnabled(@NonNull Configuration config) {
         return featureFlags.isImplicitCreationEnabled(config);
     }

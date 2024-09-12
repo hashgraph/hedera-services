@@ -36,25 +36,53 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class ClassicTransfersTranslator extends AbstractCallTranslator<HtsCallAttempt> {
+    /**
+     * Selector for cryptoTransfer((address,(address,int64)[],(address,address,int64)[])[]) method.
+     */
     public static final Function CRYPTO_TRANSFER =
             new Function("cryptoTransfer((address,(address,int64)[],(address,address,int64)[])[])", ReturnTypes.INT_64);
+    /**
+     * Selector for cryptoTransfer(((address,int64,bool)[]),(address,(address,int64,bool)[],(address,address,int64,bool)[])[]) method.
+     */
     public static final Function CRYPTO_TRANSFER_V2 = new Function(
             "cryptoTransfer(((address,int64,bool)[]),(address,(address,int64,bool)[],(address,address,int64,bool)[])[])",
             ReturnTypes.INT_64);
+    /**
+     * Selector for transferTokens(address,address[],int64[]) method.
+     */
     public static final Function TRANSFER_TOKENS =
             new Function("transferTokens(address,address[],int64[])", ReturnTypes.INT_64);
+    /**
+     * Selector for transferToken(address,address,address,int64) method.
+     */
     public static final Function TRANSFER_TOKEN =
             new Function("transferToken(address,address,address,int64)", ReturnTypes.INT_64);
+    /**
+     * Selector for transferNFTs(address,address[],address[],int64[]) method.
+     */
     public static final Function TRANSFER_NFTS =
             new Function("transferNFTs(address,address[],address[],int64[])", ReturnTypes.INT_64);
+    /**
+     * Selector for transferNFT(address,address,address,int64) method.
+     */
     public static final Function TRANSFER_NFT =
             new Function("transferNFT(address,address,address,int64)", ReturnTypes.INT_64);
+    /**
+     * Selector for transferFrom(address,address,address,uint256) method.
+     */
     public static final Function TRANSFER_FROM =
             new Function("transferFrom(address,address,address,uint256)", ReturnTypes.INT_64);
+    /**
+     * Selector for transferFromNFT(address,address,address,uint256) method.
+     */
     public static final Function TRANSFER_NFT_FROM =
             new Function("transferFromNFT(address,address,address,uint256)", ReturnTypes.INT_64);
     private final ClassicTransfersDecoder decoder;
 
+    /**
+     * Constructor for injection.
+     * @param decoder the decoder used to decode transfer calls
+     */
     @Inject
     public ClassicTransfersTranslator(ClassicTransfersDecoder decoder) {
         this.decoder = decoder;
