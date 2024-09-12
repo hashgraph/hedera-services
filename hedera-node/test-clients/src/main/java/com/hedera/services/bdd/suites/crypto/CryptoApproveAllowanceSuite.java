@@ -290,6 +290,8 @@ public class CryptoApproveAllowanceSuite {
     @HapiTest
     final Stream<DynamicTest> transferringMissingNftViaApprovalFailsWithInvalidNftId() {
         return hapiTest(
+
+                
                 newKeyNamed(SUPPLY_KEY),
                 cryptoCreate(OWNER).balance(ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(10),
                 cryptoCreate(RECEIVER).balance(ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(10),
