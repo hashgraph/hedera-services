@@ -18,4 +18,11 @@ package com.hedera.node.app.blocks;
 
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 
-public record StartStateHashInfo(Bytes stateHash, long roundNum) {}
+/**
+ * A simple record to hold the starting state info when node start at Genesis, Restart or Reconnect.
+ * This is needed because the stateHash is needed to construct {@link com.hedera.hapi.block.stream.BlockProof}
+ * for first round after node started.
+ * @param stateHash the stateHash after genesis or restart or reconnect
+ * @param roundNum the round number of the state
+ */
+public record StartingStateInfo(Bytes stateHash, long roundNum) {}

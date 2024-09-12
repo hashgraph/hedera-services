@@ -47,7 +47,7 @@ import com.hedera.hapi.node.state.blockstream.BlockStreamInfo;
 import com.hedera.hapi.util.HapiUtils;
 import com.hedera.node.app.blocks.BlockStreamManager;
 import com.hedera.node.app.blocks.BlockStreamService;
-import com.hedera.node.app.blocks.StartStateHashInfo;
+import com.hedera.node.app.blocks.StartingStateInfo;
 import com.hedera.node.app.blocks.StreamingTreeHasher;
 import com.hedera.node.app.blocks.impl.BoundaryStateChangeListener;
 import com.hedera.node.app.blocks.impl.KVStateChangeListener;
@@ -279,7 +279,10 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener {
      * The action to take, if any, when a consensus round is sealed.
      */
     private final BiConsumer<Round, State> onSealConsensusRound;
-
+    /**
+     * The hash of the state when the node started with genesis or restart or reconnect trigger. This is needed to construct
+     * {@link com.hedera.hapi.block.stream.BlockProof} for the first round after node started.
+     */
     private Hash startingStateHash;
 
     /*==================================================================================================================
@@ -832,14 +835,14 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener {
                 daggerApp.tssBaseService().unregisterLedgerSignatureConsumer(daggerApp.blockStreamManager());
             }
         }
-        final StartStateHashInfo stateHashInfo;
+        final StartingStateInfo stateHashInfo;
         if (trigger == RECONNECT) {
             // TODO : get stateHash from notificatin
-            stateHashInfo = new StartStateHashInfo(startingStateHash.getBytes(), 0);
+            stateHashInfo = new StartingStateInfo(startingStateHash.getBytes(), 0);
         } else if (trigger == GENESIS) {
-            stateHashInfo = new StartStateHashInfo(startingStateHash.getBytes(), 0);
+            stateHashInfo = new StartingStateInfo(startingStateHash.getBytes(), 0);
         } else {
-            stateHashInfo = new StartStateHashInfo(startingStateHash.getBytes(), 0);
+            stateHashInfo = new StartingStateInfo(startingStateHash.getBytes(), 0);
         }
         // Fully qualified so as to not confuse javadoc
         daggerApp = com.hedera.node.app.DaggerHederaInjectionComponent.builder()

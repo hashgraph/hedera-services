@@ -159,7 +159,7 @@ public class StateChangesValidator implements BlockStreamValidator {
                 .normalize();
         final var validator = new StateChangesValidator(
                 Bytes.fromHex(
-                        "8fcceb3f724d5b765d96c9e27cbf20ac6a158eb5f06b8c5f71c3369ef5a0f1a6a01f6500dc3c464795cfa9fd5837dec8"),
+                        "54d21201cac0641ce7f998f22a4c07077cfad690fd3961a8f3cbcb44d2498f481b6355897d94f6c7d620a2e50d29a48b"),
                 node0Dir.resolve("output/swirlds.log"),
                 node0Dir.resolve("config.txt"),
                 node0Dir.resolve("data/config/application.properties"));
@@ -243,13 +243,13 @@ public class StateChangesValidator implements BlockStreamValidator {
                 bootstrapConfig.getConfigData(HederaConfig.class).configVersion();
         final var currentVersion = new ServicesSoftwareVersion(servicesVersion, configVersion);
         final var lifecycles = newPlatformInitLifecycle(bootstrapConfig, currentVersion, migrator, servicesRegistry);
-        final var state =
+        final var stateToBeCopied =
                 new MerkleStateRoot(lifecycles, version -> new ServicesSoftwareVersion(version, configVersion));
-        this.state = state.copy();
+        this.state = stateToBeCopied.copy();
         // get the state hash before applying the state changes from current block
         this.genesisStateHash = CRYPTO.digestTreeSync(state);
         // initialize the platform state
-        state.getWritablePlatformState();
+        this.state.getWritablePlatformState();
         migrator.doMigrations(
                 state,
                 servicesRegistry,

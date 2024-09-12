@@ -50,7 +50,7 @@ import com.hedera.hapi.platform.event.EventTransaction;
 import com.hedera.hapi.platform.state.PlatformState;
 import com.hedera.node.app.blocks.BlockItemWriter;
 import com.hedera.node.app.blocks.BlockStreamService;
-import com.hedera.node.app.blocks.StartStateHashInfo;
+import com.hedera.node.app.blocks.StartingStateInfo;
 import com.hedera.node.app.tss.TssBaseService;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.VersionedConfigImpl;
@@ -98,7 +98,7 @@ class BlockStreamManagerImplTest {
             BlockItem.newBuilder().stateChanges(StateChanges.DEFAULT).build();
     private static final BlockItem FAKE_RECORD_FILE_ITEM =
             BlockItem.newBuilder().recordFile(RecordFileItem.DEFAULT).build();
-    private final StartStateHashInfo hashInfo = new StartStateHashInfo(Bytes.EMPTY, 0);
+    private final StartingStateInfo hashInfo = new StartingStateInfo(Bytes.EMPTY, 0);
 
     @Mock
     private TssBaseService tssBaseService;

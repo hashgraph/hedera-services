@@ -40,7 +40,7 @@ import com.hedera.hapi.platform.state.PlatformState;
 import com.hedera.node.app.blocks.BlockItemWriter;
 import com.hedera.node.app.blocks.BlockStreamManager;
 import com.hedera.node.app.blocks.BlockStreamService;
-import com.hedera.node.app.blocks.StartStateHashInfo;
+import com.hedera.node.app.blocks.StartingStateInfo;
 import com.hedera.node.app.blocks.StreamingTreeHasher;
 import com.hedera.node.app.records.impl.BlockRecordInfoUtils;
 import com.hedera.node.app.tss.TssBaseService;
@@ -142,7 +142,7 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
             @NonNull final ConfigProvider configProvider,
             @NonNull final TssBaseService tssBaseService,
             @NonNull final BoundaryStateChangeListener boundaryStateChangeListener,
-            @NonNull final StartStateHashInfo stateHashInfo) {
+            @NonNull final StartingStateInfo stateHashInfo) {
         this.writerSupplier = requireNonNull(writerSupplier);
         this.executor = requireNonNull(executor);
         this.tssBaseService = requireNonNull(tssBaseService);
@@ -320,6 +320,9 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
         if (blockNumber == Long.MIN_VALUE) {
             log.info("Ignoring signature on already proven block hash '{}'", blockHash);
             return;
+        }
+        if(blockNumber == 1){
+            log.info("Pending Block {} Signature {}", pendingBlocks.peek(), signature);
         }
         // Write proofs for all pending blocks up to and including the signed block number
         final var blockSignature = Bytes.wrap(signature);
