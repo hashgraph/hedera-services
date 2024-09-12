@@ -33,4 +33,8 @@ public enum RepeatableReason {
      * The test needs the handle workflow to be synchronous.
      */
     NEEDS_SYNCHRONOUS_HANDLE_WORKFLOW,
+    /**
+     * The test needs to control behavior of the TSS subsystem.
+     */
+    NEEDS_TSS_CONTROL,
 }

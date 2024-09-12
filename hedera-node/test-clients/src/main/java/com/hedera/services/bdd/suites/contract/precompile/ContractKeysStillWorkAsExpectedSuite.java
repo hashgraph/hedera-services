@@ -44,9 +44,9 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.blockingOrder;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.noOp;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.recordStreamMustIncludePassFrom;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.recordedChildBodyWithId;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.streamMustInclude;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_FUNCTION_PARAMETERS;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_NONCE;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
@@ -85,21 +85,22 @@ public class ContractKeysStillWorkAsExpectedSuite {
         final AtomicReference<Address> bReceiverAddr = new AtomicReference<>();
 
         return hapiTest(
-                streamMustInclude(recordedChildBodyWithId(TOKEN_UNIT_FROM_TO_OTHERS_TXN, 1, (spec, txn) -> {
-                    if (txn.hasNodeStakeUpdate()) {
-                        // Avoid asserting something about an end-of-staking-period NodeStakeUpdate in CI
-                        return;
-                    }
-                    final var tokenTransfers = txn.getCryptoTransfer().getTokenTransfersList();
-                    assertEquals(1, tokenTransfers.size());
-                    final var tokenTransfer = tokenTransfers.getFirst();
-                    for (final var adjust : tokenTransfer.getTransfersList()) {
-                        if (adjust.getAmount() < 0) {
-                            // The debit should have been automatically converted to an approval
-                            assertTrue(adjust.getIsApproval());
-                        }
-                    }
-                })),
+                recordStreamMustIncludePassFrom(
+                        recordedChildBodyWithId(TOKEN_UNIT_FROM_TO_OTHERS_TXN, 1, (spec, txn) -> {
+                            if (txn.hasNodeStakeUpdate()) {
+                                // Avoid asserting something about an end-of-staking-period NodeStakeUpdate in CI
+                                return;
+                            }
+                            final var tokenTransfers = txn.getCryptoTransfer().getTokenTransfersList();
+                            assertEquals(1, tokenTransfers.size());
+                            final var tokenTransfer = tokenTransfers.getFirst();
+                            for (final var adjust : tokenTransfer.getTransfersList()) {
+                                if (adjust.getAmount() < 0) {
+                                    // The debit should have been automatically converted to an approval
+                                    assertTrue(adjust.getIsApproval());
+                                }
+                            }
+                        })),
                 someWellKnownTokensAndAccounts(
                         fungibleTokenMirrorAddr,
                         nonFungibleTokenMirrorAddr,
