@@ -30,6 +30,7 @@ import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.MerkleInternal;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig_;
+import com.swirlds.common.test.fixtures.TestFileSystemManager;
 import com.swirlds.common.test.fixtures.merkle.dummy.DummyMerkleInternal;
 import com.swirlds.common.test.fixtures.merkle.dummy.DummyMerkleLeaf;
 import com.swirlds.common.test.fixtures.merkle.util.MerkleTestUtils;
@@ -53,6 +54,8 @@ import java.util.Objects;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.io.CleanupMode;
+import org.junit.jupiter.api.io.TempDir;
 
 public abstract class VirtualMapReconnectTestBase {
 
@@ -95,6 +98,11 @@ public abstract class VirtualMapReconnectTestBase {
             .getOrCreateConfig()
             .getConfigData(ReconnectConfig.class);
 
+    @TempDir(cleanup = CleanupMode.NEVER)
+    private Path tempDir;
+
+    protected TestFileSystemManager testFileSystemManager;
+
     protected abstract VirtualDataSourceBuilder createBuilder() throws IOException;
 
     @BeforeEach
@@ -102,6 +110,7 @@ public abstract class VirtualMapReconnectTestBase {
         // Some tests set custom default VirtualMap settings, e.g. StreamEventParserTest calls
         // Browser.populateSettingsCommon(). These custom settings can't be used to run VM reconnect
         // tests. As a workaround, set default settings here explicitly
+        testFileSystemManager = new TestFileSystemManager(tempDir);
         final VirtualDataSourceBuilder dataSourceBuilder = createBuilder();
         teacherBuilder = new BrokenBuilder(dataSourceBuilder);
         learnerBuilder = new BrokenBuilder(dataSourceBuilder);

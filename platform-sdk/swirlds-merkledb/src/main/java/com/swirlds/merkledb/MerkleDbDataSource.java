@@ -333,7 +333,7 @@ public final class MerkleDbDataSource implements VirtualDataSource {
                 dbPaths.keyToPathDirectory,
                 keyToPathStoreName,
                 tableName + ":objectKeyToPath",
-                tableConfig.isPreferDiskBasedIndices());
+                fileSystemManager);
         keyToPathFileCompactor = new DataFileCompactor(
                 database.getConfig(),
                 keyToPathStoreName,

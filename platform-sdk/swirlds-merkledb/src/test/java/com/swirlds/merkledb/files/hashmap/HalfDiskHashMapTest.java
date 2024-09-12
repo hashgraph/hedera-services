@@ -49,7 +49,7 @@ class HalfDiskHashMapTest {
     private HalfDiskHashMap createNewTempMap(FilesTestType testType, int count) throws IOException {
         // create map
         HalfDiskHashMap map = new HalfDiskHashMap(
-                dbConfig, count, tempDirPath.resolve(testType.name()), "HalfDiskHashMapTest", null, false);
+                dbConfig, count, tempDirPath.resolve(testType.name()), "HalfDiskHashMapTest", null, null);
         map.printStats();
         return map;
     }
@@ -112,7 +112,7 @@ class HalfDiskHashMapTest {
                 tempSnapshotDir,
                 "HalfDiskHashMapTest",
                 null,
-                false);
+                null);
         mapFromSnapshot.printStats();
         checkData(testType, mapFromSnapshot, 1, count, 1);
         // check deletion

@@ -160,10 +160,10 @@ public class HalfDiskHashMap implements AutoCloseable, Snapshotable, FileStatist
      * @param legacyStoreName                Base name for the data store. If not null, the store will process
      *                                       files with this prefix at startup. New files in the store will be prefixed with {@code
      *                                       storeName}
-     * @param preferDiskBasedIndex           When true we will use disk based index rather than ram where
-     *                                       possible. This will come with a significant performance cost, especially for writing. It
-     *                                       is possible to load a data source that was written with memory index with disk based
-     *                                       index and vice versa.
+     * @param fileSystemManager              When non-null the file system manager to use for disk based index rather than ram where
+     *                                             possible. This will come with a significant performance cost, especially for writing. It
+     *                                            is possible to load a data source that was written with memory index with disk based
+     *                                             index and vice versa.
      * @throws IOException If there was a problem creating or opening a set of data files.
      */
     public HalfDiskHashMap(
@@ -172,7 +172,7 @@ public class HalfDiskHashMap implements AutoCloseable, Snapshotable, FileStatist
             final Path storeDir,
             final String storeName,
             final String legacyStoreName,
-            final boolean preferDiskBasedIndex)
+            final FileSystemManager fileSystemManager)
             throws IOException {
         this.mapSize = mapSize;
         this.storeName = storeName;
@@ -218,18 +218,15 @@ public class HalfDiskHashMap implements AutoCloseable, Snapshotable, FileStatist
             // load or rebuild index
             final boolean forceIndexRebuilding = config.indexRebuildingEnforced();
             if (Files.exists(indexFile) && !forceIndexRebuilding) {
-                final FileSystemManager fileSystemManager = FileSystemManager.create(
-                        ConfigurationHolder.getInstance().get());
-                bucketIndexToBucketLocation = preferDiskBasedIndex
+                bucketIndexToBucketLocation = fileSystemManager != null
                         ? new LongListDisk(indexFile, fileSystemManager)
                         : new LongListOffHeap(indexFile);
                 loadedDataCallback = null;
             } else {
-                final FileSystemManager fileSystemManager = FileSystemManager.create(
-                        ConfigurationHolder.getInstance().get());
                 // create new index and setup call back to rebuild
-                bucketIndexToBucketLocation =
-                        preferDiskBasedIndex ? new LongListDisk(indexFile, fileSystemManager) : new LongListOffHeap();
+                bucketIndexToBucketLocation = fileSystemManager != null
+                        ? new LongListDisk(indexFile, fileSystemManager)
+                        : new LongListOffHeap();
                 loadedDataCallback = (dataLocation, bucketData) -> {
                     final Bucket bucket = bucketPool.getBucket();
                     bucket.readFrom(bucketData);
@@ -237,15 +234,12 @@ public class HalfDiskHashMap implements AutoCloseable, Snapshotable, FileStatist
                 };
             }
         } else {
-            final FileSystemManager fileSystemManager =
-                    FileSystemManager.create(ConfigurationHolder.getInstance().get());
-
             // create store dir
             Files.createDirectories(storeDir);
 
             // create new index
             bucketIndexToBucketLocation =
-                    preferDiskBasedIndex ? new LongListDisk(indexFile, fileSystemManager) : new LongListOffHeap();
+                    fileSystemManager != null ? new LongListDisk(indexFile, fileSystemManager) : new LongListOffHeap();
             // calculate number of entries we can store in a disk page
             final int minimumBuckets = (int) (mapSize / GOOD_AVERAGE_BUCKET_ENTRY_COUNT);
             // numOfBuckets is the nearest power of two greater than minimumBuckets with a min of 2
