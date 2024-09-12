@@ -165,6 +165,9 @@ public final class MerkleDbDataSource implements VirtualDataSource {
     /** Flag for if a snapshot is in progress */
     private final AtomicBoolean snapshotInProgress = new AtomicBoolean(false);
 
+    /** File system manager for disk-based indices */
+    private FileSystemManager fileSystemManager;
+
     /** The range of valid leaf paths for data currently stored by this data source. */
     private volatile KeyRange validLeafPathRange = INVALID_KEY_RANGE;
 
@@ -189,6 +192,11 @@ public final class MerkleDbDataSource implements VirtualDataSource {
         this.tableName = tableName;
         this.tableId = tableId;
         this.tableConfig = tableConfig;
+
+        if (tableConfig.isPreferDiskBasedIndices()) {
+            this.fileSystemManager =
+                    FileSystemManager.create(ConfigurationHolder.getInstance().get());
+        }
 
         // create thread group with label
         final ThreadGroup threadGroup = new ThreadGroup("MerkleDb-" + tableName);
@@ -240,9 +248,8 @@ public final class MerkleDbDataSource implements VirtualDataSource {
 
         // create path to disk location index
         final boolean forceIndexRebuilding = database.getConfig().indexRebuildingEnforced();
+
         if (tableConfig.isPreferDiskBasedIndices()) {
-            final FileSystemManager fileSystemManager =
-                    FileSystemManager.create(ConfigurationHolder.getInstance().get());
             pathToDiskLocationInternalNodes =
                     new LongListDisk(dbPaths.pathToDiskLocationInternalNodesFile, fileSystemManager);
         } else if (Files.exists(dbPaths.pathToDiskLocationInternalNodesFile) && !forceIndexRebuilding) {
@@ -252,8 +259,6 @@ public final class MerkleDbDataSource implements VirtualDataSource {
         }
         // path to disk location index, leaf nodes
         if (tableConfig.isPreferDiskBasedIndices()) {
-            final FileSystemManager fileSystemManager =
-                    FileSystemManager.create(ConfigurationHolder.getInstance().get());
             pathToDiskLocationLeafNodes = new LongListDisk(dbPaths.pathToDiskLocationLeafNodesFile, fileSystemManager);
         } else if (Files.exists(dbPaths.pathToDiskLocationLeafNodesFile) && !forceIndexRebuilding) {
             pathToDiskLocationLeafNodes = new LongListOffHeap(dbPaths.pathToDiskLocationLeafNodesFile);
