@@ -30,7 +30,7 @@ import com.hedera.node.app.hapi.utils.forensics.TransactionParts;
 import com.hedera.node.app.state.SingleTransactionRecord;
 import com.hedera.services.bdd.junit.support.BlockStreamAccess;
 import com.hedera.services.bdd.junit.support.BlockStreamValidator;
-import com.hedera.services.bdd.junit.support.RecordStreamAccess;
+import com.hedera.services.bdd.junit.support.StreamFileAccess;
 import com.hedera.services.bdd.junit.support.translators.BlockTransactionalUnitTranslator;
 import com.hedera.services.bdd.junit.support.translators.BlockUnitSplit;
 import com.hedera.services.bdd.spec.HapiSpec;
@@ -87,15 +87,15 @@ public class TransactionRecordParityValidator implements BlockStreamValidator {
         final var blocks = BlockStreamAccess.BLOCK_STREAM_ACCESS.readBlocks(blocksLoc);
         final var recordsLoc =
                 node0Data.resolve("recordStreams/record0.0.3").toAbsolutePath().normalize();
-        final var records =
-                RecordStreamAccess.RECORD_STREAM_ACCESS.readStreamDataFrom(recordsLoc.toString(), "sidecar");
+        final var records = StreamFileAccess.STREAM_FILE_ACCESS.readStreamDataFrom(recordsLoc.toString(), "sidecar");
 
         final var validator = new TransactionRecordParityValidator();
         validator.validateBlockVsRecords(blocks, records);
     }
 
     @Override
-    public void validateBlockVsRecords(@NonNull final List<Block> blocks, @NonNull final RecordStreamAccess.Data data) {
+    public void validateBlockVsRecords(
+            @NonNull final List<Block> blocks, @NonNull final StreamFileAccess.RecordStreamData data) {
         requireNonNull(blocks);
         requireNonNull(data);
 
