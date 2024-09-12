@@ -1,7 +1,7 @@
 import com.hedera.node.app.service.consensus.impl.ConsensusServiceImpl;
 
 /**
- * Module that provides the implementation of the Hedera Token Service.
+ * Module that provides the implementation of the Hedera Consensus Service.
  */
 module com.hedera.node.app.service.consensus.impl {
     requires transitive com.hedera.node.app.service.consensus;
