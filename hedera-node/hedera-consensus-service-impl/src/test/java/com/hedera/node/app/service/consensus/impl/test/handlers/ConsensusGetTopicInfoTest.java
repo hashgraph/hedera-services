@@ -229,7 +229,7 @@ class ConsensusGetTopicInfoTest extends ConsensusTestBase {
                 .autoRenewPeriod(WELL_KNOWN_AUTO_RENEW_PERIOD)
                 .ledgerId(new BytesConverter().convert("0x03"))
                 .feeScheduleKey(feeScheduleKey)
-                .freeMessagesKeyList(key, anotherKey)
+                .feeExemptKeyList(key, anotherKey)
                 .customFees(customFees)
                 .build();
     }

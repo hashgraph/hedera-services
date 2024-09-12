@@ -94,24 +94,52 @@ message ConsensusUpdateTopicTransactionBody {
      * <p>
      * If unset in state, this field MUST NOT be set.<br/>
      * If unset in this transaction and set in state, the current value SHALL
-     *  be removed.<br/>
-     * If set in this transaction, the existing key MUST sign this transaction.
+     * be removed.<br/>
+     * If this field is set, the existing key MUST sign this transaction.
      */
     Key fee_schedule_key = 10;
 
     /**
-     * A set of keys that are allowed to submit messages to the topic without
+     * A wrapper of a set of keys.<br/>
+     * These keys are permitted to submit messages to the topic without
      * paying the topic's custom fees.
      * <p>
-     * If this list is empty, the current set of keys is unchanged.
+     * If this field is not set, the current set of keys SHALL NOT change.<br/>
+     * If this field is set, but contains an empty list, any existing fee-exempt
+     * keys SHALL be removed.
      */
-    repeated Key free_messages_key_list = 11;
+    FeeExemptKeyList fee_exempt_key_list = 11;
 
     /**
-     * A set of custom fee definitions.<br/>
+     * A wrapper of a set of custom fee definitions.<br/>
      * These are fees to be assessed for each submit to this topic.
      * <p>
-     * If this list is empty, the current set of fees is unchanged.
+     * If this field is not set, the current set of custom fees
+     * SHALL NOT change.<br/>
+     * If this field is set, but contains an empty list, all current custom fees
+     * SHALL be removed.
      */
-    repeated ConsensusCustomFee custom_fees = 12;
+    ConsensusCustomFeeList custom_fees = 12;
+
+    /**
+     * A key validation mode.<br/>
+     * Any key may be updated by a transaction signed by the topic `admin_key`.
+     * Each role key may _also_ sign a transaction to update that key.
+     * If a role key signs an update to change that role key both old
+     * and new key must sign the transaction, _unless_ this field is set
+     * to `NO_VALIDATION`, in which case the _new_ key is not required to
+     * sign the transaction (the existing key is still required).<br/>
+     * The primary intent for this field is to allow a role key (e.g. a
+     * `fee_schedule_key`) holder to "remove" that key from the token by signing
+     * a transaction to set that role key to an empty `KeyList`.
+     * <p>
+     * If set to `FULL_VALIDATION`, either the `admin_key` or _both_ current
+     * and new key MUST sign this transaction to update a "key" field for the
+     * identified token.<br/>
+     * If set to `NO_VALIDATION`, either the `admin_key` or the current
+     * key MUST sign this transaction to update a "key" field for the
+     * identified token.<br/>
+     * This field SHALL be treated as `FULL_VALIDATION` if not set.
+     */
+    TokenKeyValidation key_verification_mode = 13;
 }
