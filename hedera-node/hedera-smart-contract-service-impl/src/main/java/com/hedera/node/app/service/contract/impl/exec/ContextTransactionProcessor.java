@@ -19,11 +19,11 @@ package com.hedera.node.app.service.contract.impl.exec;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_CONTRACT_ID;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.streams.ContractBytecode;
 import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
 import com.hedera.node.app.service.contract.impl.annotations.TransactionScope;
-import com.hedera.node.app.service.contract.impl.exec.failure.AbortException;
 import com.hedera.node.app.service.contract.impl.exec.gas.CustomGasCharging;
 import com.hedera.node.app.service.contract.impl.exec.tracers.AddOnEvmActionTracer;
 import com.hedera.node.app.service.contract.impl.exec.tracers.EvmActionTracer;
@@ -33,6 +33,7 @@ import com.hedera.node.app.service.contract.impl.hevm.HederaEvmTransactionResult
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import com.hedera.node.app.service.contract.impl.hevm.HydratedEthTxData;
 import com.hedera.node.app.service.contract.impl.infra.HevmTransactionFactory;
+import com.hedera.node.app.service.contract.impl.state.HederaEvmAccount;
 import com.hedera.node.app.service.contract.impl.state.RootProxyWorldUpdater;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
@@ -109,8 +110,12 @@ public class ContextTransactionProcessor implements Callable<CallOutcome> {
         // if an exception occurs during a ContractCall, charge fees to the sender and return a CallOutcome reflecting
         // the error.
         final var hevmTransaction = safeCreateHevmTransaction();
-        if (hevmTransaction.isException() && contractsConfig.chargeGasOnPreEvmException()) {
-            return chargeFeesAndReturnOutcome(hevmTransaction);
+        if (hevmTransaction.isException()) {
+            return maybeChargeFeesAndReturnOutcome(
+                    hevmTransaction,
+                    context.body().transactionIDOrThrow().accountIDOrThrow(),
+                    null,
+                    contractsConfig.chargeGasOnEvmHandleException());
         }
 
         // Process the transaction and return its outcome
@@ -135,30 +140,15 @@ public class ContextTransactionProcessor implements Callable<CallOutcome> {
             }
             return CallOutcome.fromResultsWithMaybeSidecars(
                     result.asProtoResultOf(ethTxDataIfApplicable(), rootProxyWorldUpdater), result);
-        } catch (AbortException e) {
-            if (e.isChargeable() && contractsConfig.chargeGasOnPreEvmException()) {
-                gasCharging.chargeGasForAbortedTransaction(
-                        requireNonNull(e.senderId()), hederaEvmContext, rootProxyWorldUpdater, hevmTransaction);
-            }
-            // Commit any HAPI fees that were charged before aborting
-            rootProxyWorldUpdater.commit();
+        } catch (HandleException e) {
+            final var sender = rootProxyWorldUpdater.getHederaAccount(hevmTransaction.senderId());
+            final var senderId = sender != null ? sender.hederaId() : hevmTransaction.senderId();
 
-            ContractID recipientId = null;
-            if (!INVALID_CONTRACT_ID.equals(e.getStatus())) {
-                recipientId = hevmTransaction.contractId();
-            }
-
-            var result = HederaEvmTransactionResult.fromAborted(e.senderId(), recipientId, e.getStatus());
-
-            if (context.body().hasEthereumTransaction()) {
-                final var sender = rootProxyWorldUpdater.getHederaAccount(e.senderId());
-                if (sender != null) {
-                    result = result.withSignerNonce(sender.getNonce());
-                }
-            }
-
-            return CallOutcome.fromResultsWithoutSidecars(
-                    result.asProtoResultOf(ethTxDataIfApplicable(), rootProxyWorldUpdater), result);
+            return maybeChargeFeesAndReturnOutcome(
+                    hevmTransaction.withException(e),
+                    senderId,
+                    sender,
+                    hevmTransaction.isContractCall() && contractsConfig.chargeGasOnEvmHandleException());
         }
     }
 
@@ -171,16 +161,28 @@ public class ContextTransactionProcessor implements Callable<CallOutcome> {
         }
     }
 
-    private CallOutcome chargeFeesAndReturnOutcome(@NonNull final HederaEvmTransaction hevmTransaction) {
-        // If there was an exception while creating the HederaEvmTransaction and the transaction is a ContractCall
-        // charge fees to the sender and return a CallOutcome reflecting the error.
-        final var senderId = context.body().transactionIDOrThrow().accountIDOrThrow();
-        gasCharging.chargeGasForAbortedTransaction(senderId, hederaEvmContext, rootProxyWorldUpdater, hevmTransaction);
+    private CallOutcome maybeChargeFeesAndReturnOutcome(
+            @NonNull final HederaEvmTransaction hevmTransaction,
+            @NonNull final AccountID senderId,
+            @Nullable final HederaEvmAccount sender,
+            final boolean chargeGas) {
+        final var status = requireNonNull(hevmTransaction.exception()).getStatus();
+        if (chargeGas) {
+            gasCharging.chargeGasForAbortedTransaction(
+                    senderId, hederaEvmContext, rootProxyWorldUpdater, hevmTransaction);
+        }
         rootProxyWorldUpdater.commit();
-        final var result = HederaEvmTransactionResult.fromAborted(
-                senderId,
-                hevmTransaction.contractId(),
-                hevmTransaction.exception().getStatus());
+        ContractID recipientId = null;
+        if (!INVALID_CONTRACT_ID.equals(status)) {
+            recipientId = hevmTransaction.contractId();
+        }
+
+        var result = HederaEvmTransactionResult.fromAborted(senderId, recipientId, status);
+
+        if (context.body().hasEthereumTransaction() && sender != null) {
+            result = result.withSignerNonce(sender.getNonce());
+        }
+
         return CallOutcome.fromResultsWithoutSidecars(
                 result.asProtoResultOf(ethTxDataIfApplicable(), rootProxyWorldUpdater), result);
     }
