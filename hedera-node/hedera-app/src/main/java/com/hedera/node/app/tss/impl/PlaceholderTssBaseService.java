@@ -19,7 +19,9 @@ package com.hedera.node.app.tss.impl;
 import static com.hedera.node.app.hapi.utils.CommonUtils.noThrowSha384HashOf;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.node.app.tss.TssBaseService;
+import com.swirlds.common.exceptions.NotImplementedException;
 import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.state.spi.SchemaRegistry;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -90,5 +92,10 @@ public class PlaceholderTssBaseService implements TssBaseService {
     public void unregisterLedgerSignatureConsumer(@NonNull final BiConsumer<byte[], byte[]> consumer) {
         requireNonNull(consumer);
         consumers.remove(consumer);
+    }
+
+    @Override
+    public void setCandidateRoster(@NonNull final Roster candidateRoster) {
+        throw new NotImplementedException();
     }
 }
