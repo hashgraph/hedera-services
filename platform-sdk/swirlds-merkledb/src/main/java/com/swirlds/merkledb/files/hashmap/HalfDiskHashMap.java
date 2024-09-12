@@ -87,7 +87,7 @@ public class HalfDiskHashMap implements AutoCloseable, Snapshotable, FileStatist
     private static final long GOOD_AVERAGE_BUCKET_ENTRY_COUNT = 32;
 
     /** The limit on the number of concurrent read tasks in {@code endWriting()} */
-    private static final int MAX_IN_FLIGHT = 64;
+    private static final int MAX_IN_FLIGHT = 1024;
 
     /**
      * Long list used for mapping bucketIndex(index into list) to disk location for latest copy of
@@ -123,8 +123,16 @@ public class HalfDiskHashMap implements AutoCloseable, Snapshotable, FileStatist
      */
     private Thread writingThread;
 
+    private final AtomicReference<SubmitTask> currentSubmitTask = new AtomicReference<>();
+
     /** Number of buckets updated during flush */
     private final AtomicInteger numBuckets = new AtomicInteger();
+
+    /**
+     * Number of bucket tasks that can be scheduled at the moment, i.e. MAX_IN_FLIGHT minus
+     * the number of buckets currently being processed
+     */
+    private final AtomicInteger bucketPermits = new AtomicInteger(MAX_IN_FLIGHT);
 
     /**
      * The last created "store bucket" task, or null if no such tasks have been created yet in
@@ -135,7 +143,7 @@ public class HalfDiskHashMap implements AutoCloseable, Snapshotable, FileStatist
 
     /**
      * Number of "store bucket" tasks created so far in the current flush. This counter is
-     * compared against {@link #numBuckets} to manage the first and the last "sture bucket"
+     * compared against {@link #numBuckets} to manage the first and the last "store bucket"
      * task dependencies
      */
     private final AtomicInteger storeBucketTasksCreated = new AtomicInteger();
@@ -432,6 +440,7 @@ public class HalfDiskHashMap implements AutoCloseable, Snapshotable, FileStatist
     private void resetEndWriting(final ForkJoinPool pool, final int size) {
         exceptionOccurred.set(null);
         numBuckets.set(size);
+        bucketPermits.set(MAX_IN_FLIGHT);
         lastStoreTask.set(null);
         storeBucketTasksCreated.set(0);
         notifyTaskRef.set(new NotifyTask(pool));
@@ -464,19 +473,13 @@ public class HalfDiskHashMap implements AutoCloseable, Snapshotable, FileStatist
                 fileCollection.startWriting();
                 final ForkJoinPool pool = getFlushingPool();
                 resetEndWriting(pool, size);
-                // Create all the tasks and submit them to the fork-join pool. Number of tasks
-                // running in parallel is limited by the size of the pool. Total number of
-                // tasks created is limited by the size of oneTransactionsData, which is not
-                // expected to be huge, since data flushes are limited
-                while (it.hasNext()) {
-                    IntObjectPair<BucketMutation> keyValue = it.next();
-                    final int bucketIndex = keyValue.getOne();
-                    final BucketMutation bucketMap = keyValue.getTwo();
-                    // Create a "read bucket" task
-                    final ReadUpdateBucketTask readBucketTask = new ReadUpdateBucketTask(pool, bucketIndex, bucketMap);
-                    // Execute it rightaway
-                    readBucketTask.send();
-                }
+                // Create a task to submit bucket processing tasks. This initial submit task
+                // is scheduled to run right away. Subsequent submit tasks will be run only
+                // after some buckets are completely processed to make sure no more than
+                // MAX_IN_FLIGHT buckets are handled in parallel (to limit resource usage)
+                final SubmitTask submitTask = new SubmitTask(pool, it, 1);
+                currentSubmitTask.set(submitTask);
+                submitTask.send();
                 // Wait until all tasks are completed by waiting for the notify task to join. This
                 // task depends on the last "store bucket" task
                 notifyTaskRef.get().join();
@@ -496,6 +499,55 @@ public class HalfDiskHashMap implements AutoCloseable, Snapshotable, FileStatist
         // clear put cache
         oneTransactionsData = null;
         return dataFileReader;
+    }
+
+    /**
+     * A task to submit "read bucket" tasks. Tasks are submitted till the number of buckets
+     * in progress exceeds MAX_IN_FLIGHT. After that, if there are still unprocessed buckets,
+     * a new "submit task" is scheduled. This new task is run after at least one bucket is
+     * fully processed, i.e. its "store" task is complete.
+     */
+    private class SubmitTask extends AbstractTask {
+
+        private final Iterator<IntObjectPair<BucketMutation>> it;
+
+        SubmitTask(final ForkJoinPool pool, final Iterator<IntObjectPair<BucketMutation>> it, final int depCount) {
+            super(pool, depCount);
+            this.it = it;
+        }
+
+        // Notifies that some bucket is fully processed. It sets one of this task's dependencies.
+        // The other one is set in the end of the previous submit task
+        void notifyBucketProcessed() {
+            send();
+        }
+
+        @Override
+        protected boolean exec() {
+            // The next submit task to run after the current one. It will only be run, if
+            // this task doesn't schedule tasks for all remaining buckets, and at least one
+            // bucket is completely processed while this method is running
+            final SubmitTask nextSubmitTask = new SubmitTask(getPool(), it, 2);
+            final boolean newSubmitTaskSet = currentSubmitTask.compareAndSet(this, nextSubmitTask);
+            assert newSubmitTaskSet;
+            int maxToSubmit = bucketPermits.getAndSet(0);
+            assert maxToSubmit > 0;
+            while (it.hasNext() && (maxToSubmit-- > 0)) {
+                final IntObjectPair<BucketMutation> keyValue = it.next();
+                final int bucketIndex = keyValue.getOne();
+                final BucketMutation bucketMap = keyValue.getTwo();
+                // Create a "read bucket" task
+                final ReadUpdateBucketTask readBucketTask = new ReadUpdateBucketTask(getPool(), bucketIndex, bucketMap);
+                // Execute it right away
+                readBucketTask.send();
+            }
+            if (it.hasNext()) {
+                // There are more buckets to process. Let the next submit task run. One of the next task's
+                // dependencies is set here, the other one is set in the end of StoreBucketTask
+                nextSubmitTask.send();
+            }
+            return true;
+        }
     }
 
     /**
@@ -542,17 +594,20 @@ public class HalfDiskHashMap implements AutoCloseable, Snapshotable, FileStatist
         @Override
         protected boolean exec() {
             try {
-                // The bucket will be closed by WriteBucketTask
-                // Read / create bucket
                 BufferedData bucketData =
                         fileCollection.readDataItemUsingIndex(bucketIndexToBucketLocation, bucketIndex);
+                // The bucket will be closed by WriteBucketTask
                 final Bucket bucket = bucketPool.getBucket();
                 if (bucketData == null) {
-                    // Create an empty bucket
+                    // An empty bucket
                     bucket.setBucketIndex(bucketIndex);
                 } else {
                     // Read from bytes
                     bucket.readFrom(bucketData);
+                    if (bucketIndex != bucket.getBucketIndex()) {
+                        throw new RuntimeException(
+                                "Bucket index integrity check " + bucketIndex + " != " + bucket.getBucketIndex());
+                    }
                 }
                 // Apply all updates
                 keyUpdates.forEachKeyValue(bucket::putValue);
@@ -616,6 +671,16 @@ public class HalfDiskHashMap implements AutoCloseable, Snapshotable, FileStatist
                 // Make sure the writing thread is resumed
                 notifyTaskRef.get().completeExceptionally(z);
                 return false;
+            } finally {
+                // Let the current submit task know that a bucket is fully processed, and
+                // the task can be run
+                if (bucketPermits.getAndIncrement() == 0) {
+                    // If a submit task is currently running in parallel, it must have already created
+                    // a new "current" submit task and permits have been set to 0, otherwise the
+                    // getAndIncrement() above couldn't return 0. It means, notifyBucketProcessed()
+                    // will be called on a different submit task than the one currently running
+                    currentSubmitTask.get().notifyBucketProcessed();
+                }
             }
         }
     }
