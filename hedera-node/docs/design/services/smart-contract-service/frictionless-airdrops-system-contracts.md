@@ -3,7 +3,7 @@
 ## Purpose
 
 [HIP-904](https://hips.hedera.com/hip/hip-904) introduced the Frictionless Airdrops feature for fungible and non-fungible tokens.
-This document will define the architecture and implementation of the `airdropToken`, `claimAirdrops`, `cancelAirdrops` and `rejectTokens` smart contract functions
+This document will define the architecture and implementation of the `airdropToken`, `claimAirdrops`, `cancelAirdrops`, `rejectTokens` and `getPendingAirdrops` smart contract functions
 and their respective redirect function calls (`cancelAirdropFT`, `cancleAirdropNFT`, `claimAirdropFT`, `claimAirdropNFT`, `rejectTokenFT`, `rejectTokensNFT`, `setAutomaticAssociations`) that will extend the capabilities of the Hedera Smart Contract Service (HSCS) to support frictionless airdrops.
 
 ## References
@@ -12,7 +12,7 @@ and their respective redirect function calls (`cancelAirdropFT`, `cancleAirdropN
 
 ## Goals
 
-- Expose `airdropToken`, `claimAirdrops`, `cancelAirdrops` and `rejectTokens` as new functions in the Hedera Token Service Smart Contract.
+- Expose `airdropToken`, `claimAirdrops`, `cancelAirdrops`, `rejectTokens` and `getPendingAirdrops` as new functions in the Hedera Token Service Smart Contract.
 - Expose `cancelAirdropFT`, `cancleAirdropNFT`, `claimAirdropFT`, `claimAirdropNFT`, `rejectTokenFt`, `rejectTokensNFT`, `setAutomaticAssociations` as new functions in the proxy redirect token facade contract IHRC.
 - Implement the needed HTS system contract classes to support the new functions.
 
@@ -133,6 +133,7 @@ We will apply the `TokenReject`, `TokenAirdrop`, `TokenClaimAirdrop`, `TokenCanc
 - Verify that the `airdropTokens` function fails when the sender does not have enough balance.
 - Verify that the `airdropTokens` function fails when the receiver does not have a valid account.
 - Verify that the `airdropTokens` function fails when the token does not exist.
+- Verify that the `airdropTokens` function fails when the airdrop amounts are out of bounds.
 - Verify that the `cancelAirdrops` function fails when the sender does not have any pending airdrops.
 - Verify that the `cancelAirdrops` function fails when the sender does not have a valid account.
 - Verify that the `cancelAirdrops` function fails when the receiver does not have a valid account.
