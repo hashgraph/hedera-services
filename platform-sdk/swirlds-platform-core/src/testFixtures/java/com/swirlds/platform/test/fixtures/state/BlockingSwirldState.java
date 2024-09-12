@@ -102,8 +102,8 @@ public class BlockingSwirldState extends MerkleStateRoot {
             return false;
         }
         return Objects.equals(
-                this.getPlatformState().getAddressBook(),
-                that.getPlatformState().getAddressBook());
+                this.getReadablePlatformState().getAddressBook(),
+                that.getReadablePlatformState().getAddressBook());
     }
 
     /**

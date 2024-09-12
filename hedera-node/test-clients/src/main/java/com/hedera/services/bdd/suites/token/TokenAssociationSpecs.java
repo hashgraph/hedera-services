@@ -71,6 +71,7 @@ import static com.hederahashgraph.api.proto.java.TokenFreezeStatus.FreezeNotAppl
 import static com.hederahashgraph.api.proto.java.TokenFreezeStatus.Unfrozen;
 import static com.hederahashgraph.api.proto.java.TokenKycStatus.Granted;
 import static com.hederahashgraph.api.proto.java.TokenKycStatus.KycNotApplicable;
+import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
 import com.google.protobuf.ByteString;
@@ -582,5 +583,23 @@ public class TokenAssociationSpecs {
             tokenCreate(KNOWABLE_TOKEN).treasury(TOKEN_TREASURY).kycKey(KYC_KEY),
             tokenCreate(VANILLA_TOKEN).treasury(TOKEN_TREASURY)
         };
+    }
+
+    @HapiTest
+    final Stream<DynamicTest> deletedAccountCannotBeAssociatedToToken() {
+        final var accountToDelete = "accountToDelete";
+        final var token = "anyToken";
+        final var supplyKey = "supplyKey";
+        return hapiTest(
+                newKeyNamed(supplyKey),
+                cryptoCreate(accountToDelete),
+                cryptoDelete(accountToDelete),
+                tokenCreate(token)
+                        .treasury(DEFAULT_PAYER)
+                        .tokenType(FUNGIBLE_COMMON)
+                        .initialSupply(1000L)
+                        .supplyKey(supplyKey)
+                        .hasKnownStatus(SUCCESS),
+                tokenAssociate(accountToDelete, token).hasKnownStatus(ACCOUNT_DELETED));
     }
 }

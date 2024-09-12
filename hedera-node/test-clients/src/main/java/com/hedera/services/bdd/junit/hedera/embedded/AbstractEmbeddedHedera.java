@@ -36,6 +36,7 @@ import com.hedera.node.app.version.ServicesSoftwareVersion;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.services.bdd.junit.hedera.embedded.fakes.AbstractFakePlatform;
+import com.hedera.services.bdd.junit.hedera.embedded.fakes.FakeTssBaseService;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;
@@ -93,6 +94,7 @@ public abstract class AbstractEmbeddedHedera implements EmbeddedHedera {
     protected final AtomicInteger nextNano = new AtomicInteger(0);
     protected final Hedera hedera;
     protected final ServicesSoftwareVersion version;
+    protected final FakeTssBaseService tssBaseService;
     protected final ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor();
 
     protected AbstractEmbeddedHedera(@NonNull final EmbeddedNode node) {
@@ -104,11 +106,13 @@ public abstract class AbstractEmbeddedHedera implements EmbeddedHedera {
                 .collect(toMap(Address::getNodeId, address -> parseAccount(address.getMemo())));
         defaultNodeId = addressBook.getNodeId(0);
         defaultNodeAccountId = fromPbj(accountIds.get(defaultNodeId));
+        tssBaseService = new FakeTssBaseService();
         hedera = new Hedera(
                 ConstructableRegistry.getInstance(),
                 FakeServicesRegistry.FACTORY,
                 new FakeServiceMigrator(),
-                this::now);
+                this::now,
+                () -> tssBaseService);
         version = (ServicesSoftwareVersion) hedera.getSoftwareVersion();
         Runtime.getRuntime().addShutdownHook(new Thread(executorService::shutdownNow));
     }
@@ -131,6 +135,11 @@ public abstract class AbstractEmbeddedHedera implements EmbeddedHedera {
     @Override
     public FakeState state() {
         return state;
+    }
+
+    @Override
+    public FakeTssBaseService tssBaseService() {
+        return tssBaseService;
     }
 
     @Override

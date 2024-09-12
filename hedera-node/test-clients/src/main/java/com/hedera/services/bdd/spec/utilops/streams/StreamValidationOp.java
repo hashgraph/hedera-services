@@ -19,7 +19,7 @@ package com.hedera.services.bdd.spec.utilops.streams;
 import static com.hedera.services.bdd.junit.hedera.ExternalPath.BLOCK_STREAMS_DIR;
 import static com.hedera.services.bdd.junit.hedera.ExternalPath.RECORD_STREAMS_DIR;
 import static com.hedera.services.bdd.junit.support.BlockStreamAccess.BLOCK_STREAM_ACCESS;
-import static com.hedera.services.bdd.junit.support.RecordStreamAccess.RECORD_STREAM_ACCESS;
+import static com.hedera.services.bdd.junit.support.StreamFileAccess.STREAM_FILE_ACCESS;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.freezeOnly;
@@ -30,8 +30,8 @@ import static java.util.stream.Collectors.joining;
 
 import com.hedera.hapi.block.stream.Block;
 import com.hedera.services.bdd.junit.support.BlockStreamValidator;
-import com.hedera.services.bdd.junit.support.RecordStreamAccess;
 import com.hedera.services.bdd.junit.support.RecordStreamValidator;
+import com.hedera.services.bdd.junit.support.StreamFileAccess;
 import com.hedera.services.bdd.junit.support.validators.BalanceReconciliationValidator;
 import com.hedera.services.bdd.junit.support.validators.BlockNoValidator;
 import com.hedera.services.bdd.junit.support.validators.ExpiryRecordsValidator;
@@ -88,7 +88,7 @@ public class StreamValidationOp extends UtilOp {
                 // Wait for the final record file to be created
                 sleepFor(2 * BUFFER_MS));
         // Validate the record streams
-        final AtomicReference<RecordStreamAccess.Data> dataRef = new AtomicReference<>();
+        final AtomicReference<StreamFileAccess.RecordStreamData> dataRef = new AtomicReference<>();
         readMaybeRecordStreamDataFor(spec)
                 .ifPresentOrElse(
                         data -> {
@@ -154,8 +154,9 @@ public class StreamValidationOp extends UtilOp {
         return Optional.ofNullable(blocks);
     }
 
-    private static Optional<RecordStreamAccess.Data> readMaybeRecordStreamDataFor(@NonNull final HapiSpec spec) {
-        RecordStreamAccess.Data data = null;
+    private static Optional<StreamFileAccess.RecordStreamData> readMaybeRecordStreamDataFor(
+            @NonNull final HapiSpec spec) {
+        StreamFileAccess.RecordStreamData data = null;
         final var streamLocs = spec.getNetworkNodes().stream()
                 .map(node -> node.getExternalPath(RECORD_STREAMS_DIR))
                 .map(Path::toAbsolutePath)
@@ -164,7 +165,7 @@ public class StreamValidationOp extends UtilOp {
         for (final var loc : streamLocs) {
             try {
                 log.info("Trying to read record files from {}", loc);
-                data = RECORD_STREAM_ACCESS.readStreamDataFrom(
+                data = STREAM_FILE_ACCESS.readStreamDataFrom(
                         loc, "sidecar", f -> new File(f).length() > MIN_GZIP_SIZE_IN_BYTES);
                 log.info("Read {} record files from {}", data.records().size(), loc);
             } catch (Exception ignore) {
