@@ -149,6 +149,7 @@ public class CryptoApproveAllowanceSuite {
 
     @HapiTest
     final Stream<DynamicTest> transferErc20TokenFromContractWithApproval() {
+        
         final var transferFromOtherContractWithSignaturesTxn = "transferFromOtherContractWithSignaturesTxn";
         final var nestedContract = "NestedERC20Contract";
 
