@@ -152,7 +152,6 @@ public class CryptoApproveAllowanceSuite {
 
         final var transferFromOtherContractWithSignaturesTxn = "transferFromOtherContractWithSignaturesTxn";
         final var nestedContract = "NestedERC20Contract";
-
         return hapiTest(
                 newKeyNamed(MULTI_KEY),
                 cryptoCreate(ACCOUNT).balance(10 * ONE_MILLION_HBARS),
