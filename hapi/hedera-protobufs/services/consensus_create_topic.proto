@@ -77,7 +77,7 @@ message ConsensusCreateTopicTransactionBody {
      * <p>
      * If unset, custom fees CANNOT be set for this topic.<br/>
      * If not set when the topic is created, this field CANNOT be set via update.
-     * If set when the topic is created, this field CAN be changed via update.
+     * If set when the topic is created, this field MAY be changed via update.
      */
     Key fee_schedule_key = 8;
 

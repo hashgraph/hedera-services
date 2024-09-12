@@ -203,29 +203,42 @@ message ConsensusCustomFee {
 }
 
 /**
- * A wrapper for consensus custom fee list.
- * <p>
- * It is used in consensus_update_topic and it helps to differentiate between
- * setting an empty list and not updating the list.
+ * A wrapper around a consensus custom fee list.<br/>
+ * This wrapper exists to enable an update transaction to differentiate between
+ * a field that is not set and an empty list of custom fees.
+ *
+ * An _unset_ field of this type SHALL NOT modify existing values.<br/>
+ * A _set_ field of this type with an empty `fees` list SHALL remove any
+ * existing values.
  */
 message ConsensusCustomFeeList {
   /**
    * A set of custom fee definitions.<br/>
-   * These are fees to be assessed for each submit to this topic.
+   * These are fees to be assessed for each submit to a topic.
    */
   repeated ConsensusCustomFee fees = 1;
 }
 
 /**
- * A wrapper for fee exempt key list.
- * <p>
- * It is used in consensus_update_topic and it helps to differentiate between
- * setting an empty list and not updating the list.
+ * A wrapper for fee exempt key list.<br/>
+ * This wrapper exists to enable an update transaction to differentiate between
+ * a field that is not set and an empty list of keys.
+ *
+ * An _unset_ field of this type SHALL NOT modify existing values.<br/>
+ * A _set_ field of this type with an empty `keys` list SHALL remove any
+ * existing values.
  */
 message FeeExemptKeyList {
   /**
-   * A set of keys that are allowed to submit messages to the topic without
-   * paying the topic's custom fees.
+   * A set of keys.
+   * The keys in this list are permitted to submit messages to the
+   * topic without paying the topic's custom fees.
+   * <p>
+   * If a submit transaction is signed by _any_ key included in this set,
+   *  custom fees SHALL NOT be charged for that transaction.
+   * <p>
+   * This list SHALL _implicitly_ include the following keys
+   * `adminKey`, `submitKey`, `fee_schedule_key`.
    */
    repeated Key keys = 1;
 }
