@@ -17,6 +17,7 @@
 package com.swirlds.merkledb.collections;
 
 import static java.lang.Math.toIntExact;
+import static java.nio.file.Files.exists;
 
 import com.swirlds.common.io.filesystem.FileSystemManager;
 import com.swirlds.merkledb.utilities.MerkleDbFileUtils;
@@ -27,6 +28,7 @@ import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.channels.FileChannel;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.Arrays;
@@ -116,7 +118,6 @@ public class LongListDisk extends AbstractLongList<Long> {
 
     LongListDisk(final Path file, final long reservedBufferLength, FileSystemManager fileSystemManager)
             throws IOException {
-        super();
         tempFile = createTempFile(file.toFile().getName(), fileSystemManager);
         super.init(file, reservedBufferLength);
         freeChunks = new ConcurrentLinkedDeque<>();
@@ -194,7 +195,11 @@ public class LongListDisk extends AbstractLongList<Long> {
     }
 
     static Path createTempFile(final String sourceFileName, FileSystemManager fileSystemManager) throws IOException {
-        return fileSystemManager.resolveNewTemp(sourceFileName);
+        final Path directory = fileSystemManager.resolveNewTemp(STORE_POSTFIX);
+        if (!exists(directory)) {
+            Files.createDirectories(directory);
+        }
+        return directory.resolve(sourceFileName);
     }
 
     /** {@inheritDoc} */

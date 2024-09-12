@@ -81,7 +81,6 @@ public final class LongListHeap extends AbstractLongList<AtomicLongArray> {
      * @throws IOException If there was a problem reading the file
      */
     public LongListHeap(final Path file) throws IOException {
-        super();
         super.init(file, 0);
     }
 
