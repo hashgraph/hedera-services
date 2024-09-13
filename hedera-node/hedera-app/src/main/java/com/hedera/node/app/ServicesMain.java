@@ -50,6 +50,7 @@ import com.swirlds.common.io.utility.FileUtils;
 import com.swirlds.common.io.utility.RecycleBin;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.common.merkle.crypto.MerkleCryptographyFactory;
+import com.swirlds.common.merkle.utility.MerkleTreeVisualizer;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
@@ -73,8 +74,11 @@ import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.util.BootstrapUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.InstantSource;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.regex.Pattern;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -233,6 +237,7 @@ public class ServicesMain implements SwirldMain {
                 Hedera.SWIRLD_NAME,
                 selfId,
                 bootstrapAddressBook);
+        System.out.println();
         final var initialState = reservedState.state();
         final var stateHash = reservedState.stateHash();
 
@@ -250,6 +255,11 @@ public class ServicesMain implements SwirldMain {
                 .withKeysAndCerts(keysAndCerts);
 
         hedera.setStartingStateHash(stateHash);
+
+        final var sb = new StringBuilder();
+        new MerkleTreeVisualizer(initialState.get().getState()).setDepth(5).render(sb);
+        System.out.println("State has the following SM:" + sb.toString());
+        System.out.println("Hashes By Name SM " + hashesByName(sb.toString()));
         // IMPORTANT: A surface-level reading of this method will undersell the centrality
         // of the Hedera instance. It is actually omnipresent throughout both the startup
         // and runtime phases of the application.
@@ -277,6 +287,27 @@ public class ServicesMain implements SwirldMain {
         hedera.init(platform, selfId);
         platform.start();
         hedera.run();
+    }
+
+    private static Map<String, String> hashesByName(@NonNull final String visualization) {
+        final Pattern STATE_ROOT_PATTERN = Pattern.compile(".*MerkleStateRoot.*/.*\\s+(.+)");
+        final Pattern CHILD_STATE_PATTERN = Pattern.compile("\\s+\\d+ \\w+\\s+(\\S+)\\s+.+\\s+(.+)");
+        final var lines = visualization.split("\\n");
+        final Map<String, String> hashes = new LinkedHashMap<>();
+        for (final var line : lines) {
+            final var stateRootMatcher = STATE_ROOT_PATTERN.matcher(line);
+            if (stateRootMatcher.matches()) {
+                hashes.put("MerkleStateRoot", stateRootMatcher.group(1));
+            } else {
+                final var childStateMatcher = CHILD_STATE_PATTERN.matcher(line);
+                if (childStateMatcher.matches()) {
+                    hashes.put(childStateMatcher.group(1), childStateMatcher.group(2));
+                } else {
+                    logger.warn("Ignoring visualization line '{}'", line);
+                }
+            }
+        }
+        return hashes;
     }
 
     /**

@@ -1034,6 +1034,7 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener {
     }
 
     public void setStartingStateHash(final Hash stateHash) {
+        System.out.println("Setting starting state hash to " + stateHash);
         startingStateHash = stateHash;
     }
 }

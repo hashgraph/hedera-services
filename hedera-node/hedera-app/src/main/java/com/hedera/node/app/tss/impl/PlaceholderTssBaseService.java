@@ -63,8 +63,10 @@ public class PlaceholderTssBaseService implements TssBaseService {
         requireNonNull(executor);
         // The "signature" is a hash of the message hash
         final var mockSignature = noThrowSha384HashOf(messageHash);
-        log.info("Requesting ledger signature for message {} with mock signature {}",
-                CommonUtils.hex(messageHash), CommonUtils.hex(mockSignature));
+        log.info(
+                "Requesting ledger signature for message {} with mock signature {}",
+                CommonUtils.hex(messageHash),
+                CommonUtils.hex(mockSignature));
         // Simulate asynchronous completion of the ledger signature
         CompletableFuture.runAsync(
                 () -> consumers.forEach(consumer -> {

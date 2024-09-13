@@ -321,7 +321,7 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
             log.info("Ignoring signature on already proven block hash '{}'", blockHash);
             return;
         }
-        if(blockNumber == 1){
+        if (blockNumber == 1) {
             log.info("Pending Block {} Signature {}", pendingBlocks.peek(), signature);
         }
         // Write proofs for all pending blocks up to and including the signed block number

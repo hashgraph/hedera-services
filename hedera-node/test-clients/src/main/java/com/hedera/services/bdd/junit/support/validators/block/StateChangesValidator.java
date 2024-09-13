@@ -27,6 +27,7 @@ import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.STATE_M
 import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.loadAddressBookWithDeterministicCerts;
 import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.workingDirFor;
 import static com.hedera.services.bdd.spec.TargetNetworkType.SUBPROCESS_NETWORK;
+import static com.swirlds.platform.state.GenesisStateBuilder.initGenesisPlatformState;
 import static com.swirlds.platform.state.service.PlatformStateService.PLATFORM_STATE_SERVICE;
 import static java.util.Objects.requireNonNull;
 
@@ -47,6 +48,7 @@ import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.hapi.node.state.primitives.ProtoLong;
 import com.hedera.hapi.node.state.primitives.ProtoString;
+import com.hedera.node.app.blocks.BlockStreamManager;
 import com.hedera.node.app.blocks.BlockStreamService;
 import com.hedera.node.app.blocks.StreamingTreeHasher;
 import com.hedera.node.app.config.BootstrapConfigProviderImpl;
@@ -78,6 +80,7 @@ import com.hedera.node.config.VersionedConfiguration;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.data.VersionConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.hedera.services.bdd.junit.hedera.embedded.fakes.FakePlatformContext;
 import com.hedera.services.bdd.junit.hedera.subprocess.SubProcessNetwork;
 import com.hedera.services.bdd.junit.support.BlockStreamAccess;
 import com.hedera.services.bdd.junit.support.BlockStreamValidator;
@@ -121,6 +124,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.concurrent.Executors;
 import java.util.function.Function;
 import java.util.regex.Pattern;
 import java.util.stream.StreamSupport;
@@ -159,7 +163,7 @@ public class StateChangesValidator implements BlockStreamValidator {
                 .normalize();
         final var validator = new StateChangesValidator(
                 Bytes.fromHex(
-                        "54d21201cac0641ce7f998f22a4c07077cfad690fd3961a8f3cbcb44d2498f481b6355897d94f6c7d620a2e50d29a48b"),
+                        "e00891e6efa91c70c124bbf6d03767612803d4fd48cb4abf9c18de80850bf248b80562cc3c3a014181f4e6969602f0a0"),
                 node0Dir.resolve("output/swirlds.log"),
                 node0Dir.resolve("config.txt"),
                 node0Dir.resolve("data/config/application.properties"));
@@ -243,13 +247,20 @@ public class StateChangesValidator implements BlockStreamValidator {
                 bootstrapConfig.getConfigData(HederaConfig.class).configVersion();
         final var currentVersion = new ServicesSoftwareVersion(servicesVersion, configVersion);
         final var lifecycles = newPlatformInitLifecycle(bootstrapConfig, currentVersion, migrator, servicesRegistry);
-        final var stateToBeCopied =
-                new MerkleStateRoot(lifecycles, version -> new ServicesSoftwareVersion(version, configVersion));
-        this.state = stateToBeCopied.copy();
+        this.state = new MerkleStateRoot(lifecycles, version -> new ServicesSoftwareVersion(version, configVersion));
+        initGenesisPlatformState(
+                new FakePlatformContext(new NodeId(0), Executors.newSingleThreadScheduledExecutor()),
+                this.state.getWritablePlatformState(),
+                addressBook,
+                currentVersion);
+
+        final var stateToBeCopied = state;
+        state = state.copy();
         // get the state hash before applying the state changes from current block
-        this.genesisStateHash = CRYPTO.digestTreeSync(state);
-        // initialize the platform state
-        this.state.getWritablePlatformState();
+        this.genesisStateHash = CRYPTO.digestTreeSync(stateToBeCopied);
+        logger.info("Genesis state hash: {}", genesisStateHash);
+        logger.info("Hashes By Name {}", hashesFor(stateToBeCopied));
+
         migrator.doMigrations(
                 state,
                 servicesRegistry,
@@ -258,18 +269,27 @@ public class StateChangesValidator implements BlockStreamValidator {
                 new ConfigProviderImpl().getConfiguration(),
                 networkInfo,
                 new NoOpMetrics());
+
         logger.info("Registered all Service and migrated state definitions to version {}", servicesVersion);
     }
 
     @Override
     public void validateBlocks(@NonNull final List<Block> blocks) {
         logger.info("Beginning validation of expected root hash {}", expectedRootHash);
-        var previousBlockHash = INITIAL_BLOCK_HASH;
+        var previousBlockHash = BlockStreamManager.ZERO_BLOCK_HASH;
+        var startOfStateHash = requireNonNull(genesisStateHash).getBytes();
+        var isFirstBlock = true;
 
         for (final var block : blocks) {
             final StreamingTreeHasher inputTreeHasher = new NaiveStreamingTreeHasher();
             final StreamingTreeHasher outputTreeHasher = new NaiveStreamingTreeHasher();
-
+            if (!isFirstBlock) {
+                final var stateToBeCopied = state;
+                this.state = stateToBeCopied.copy();
+                startOfStateHash = CRYPTO.digestTreeSync(stateToBeCopied).getBytes();
+            } else {
+                isFirstBlock = false;
+            }
             for (final var item : block.items()) {
                 servicesWritten.clear();
 
@@ -295,8 +315,10 @@ public class StateChangesValidator implements BlockStreamValidator {
                     previousBlockHash,
                     "Previous block hash mismatch for block ");
 
-            final var currentBlockHash = getBlockHash(
-                    requireNonNull(genesisStateHash).getBytes(), previousBlockHash, inputTreeHasher, outputTreeHasher);
+            final var currentBlockHash =
+                    getBlockHash(startOfStateHash, previousBlockHash, inputTreeHasher, outputTreeHasher);
+            logger.info(
+                    "getBlockHash: startOfStateHash {}, previousBlockHash : {}", startOfStateHash, previousBlockHash);
             validateBlockProof(lastBlockItem.blockProofOrThrow(), currentBlockHash);
             previousBlockHash = currentBlockHash;
         }
