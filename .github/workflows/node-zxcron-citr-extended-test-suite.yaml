@@ -141,6 +141,11 @@ jobs:
       - hedera-node-jrs-panel
     if: ${{ needs.extended-test-suite.result == 'success' }}
     steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@f086349bfa2bd1361f7909c78558e816508cdc10 # v2.8.0
+        with:
+          egress-policy: audit
+
       - name: Checkout Tagged Code
         id: checkout_tagged_code
         if: ${{ needs.fetch-xts-candidate.outputs.xts_tag_exists == 'true' }}
@@ -171,6 +176,11 @@ jobs:
             needs.hedera-node-jrs-panel.result != 'success' ||
             needs.tag-for-promotion.result != 'success' }}
     steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@f086349bfa2bd1361f7909c78558e816508cdc10 # v2.8.0
+        with:
+          egress-policy: audit
+
       - name: Report failure
         run: |
           echo "Failure encountered. Report on slack/pager duty"

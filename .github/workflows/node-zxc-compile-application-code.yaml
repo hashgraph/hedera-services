@@ -161,8 +161,11 @@ jobs:
     name: ${{ inputs.custom-job-label || 'Compiles' }}
     runs-on: network-node-linux-large
     steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@f086349bfa2bd1361f7909c78558e816508cdc10 # v2.8.0
+        with:
+          egress-policy: audit
 
-      # check if the ref object was passed in for checkout
       - name: Checkout Code
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
         with:
