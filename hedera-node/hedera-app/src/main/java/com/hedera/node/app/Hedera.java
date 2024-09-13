@@ -44,6 +44,7 @@ import com.hedera.hapi.block.stream.output.StateChanges;
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.state.blockrecords.BlockInfo;
 import com.hedera.hapi.node.state.blockstream.BlockStreamInfo;
+import com.hedera.hapi.platform.state.PlatformState;
 import com.hedera.hapi.util.HapiUtils;
 import com.hedera.node.app.blocks.BlockStreamManager;
 import com.hedera.node.app.blocks.BlockStreamService;
@@ -110,6 +111,7 @@ import com.swirlds.platform.state.MerkleRoot;
 import com.swirlds.platform.state.MerkleStateRoot;
 import com.swirlds.platform.state.service.PlatformStateService;
 import com.swirlds.platform.state.service.ReadablePlatformStateStore;
+import com.swirlds.platform.state.service.schemas.V0540PlatformStateSchema;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.Round;
@@ -841,7 +843,10 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener {
         } else if (trigger == GENESIS) {
             stateHashInfo = new StartingStateInfo(startingStateHash.getBytes(), 0);
         } else {
-            stateHashInfo = new StartingStateInfo(startingStateHash.getBytes(), 0);
+            final var platformState = state.getReadableStates(PlatformStateService.NAME)
+                    .<PlatformState>getSingleton(V0540PlatformStateSchema.PLATFORM_STATE_KEY).get();
+            stateHashInfo = new StartingStateInfo(startingStateHash.getBytes(),
+                    platformState.consensusSnapshot().round());
         }
         // Fully qualified so as to not confuse javadoc
         daggerApp = com.hedera.node.app.DaggerHederaInjectionComponent.builder()
