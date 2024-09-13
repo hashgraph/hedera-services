@@ -148,15 +148,15 @@ public class AsyncInputStream {
         logger.info(RECONNECT.getMarker(), this.toString() + " start run()");
         try {
             while (!Thread.currentThread().isInterrupted()) {
-                final int viewId = readInt();
+                final int viewId = inputStream.readInt();
                 if (viewId < 0) {
                     logger.info(RECONNECT.getMarker(), "Async input stream is done");
                     alive.set(false);
                     break;
                 }
-                final int len = readInt();
+                final int len = inputStream.readInt();
                 final byte[] messageBytes = new byte[len];
-                readBytes(messageBytes);
+                inputStream.readNBytes(messageBytes, 0, len);
 
                 if (useSharedQueue.contains(viewId)) {
                     assert !viewQueues.containsKey(viewId);
