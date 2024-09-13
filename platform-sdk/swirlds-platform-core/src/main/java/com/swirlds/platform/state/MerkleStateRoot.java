@@ -335,6 +335,25 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
     }
 
     /**
+     * Sets the metrics instance for this state root.
+     * @param metrics the metrics instance
+     * @return this instance
+     */
+    public MerkleStateRoot withMetrics(Metrics metrics) {
+        this.metrics = metrics;
+        return this;
+    }
+
+    /**
+     * returns this state's metrics instance
+     * @return the metrics instance
+     */
+    public Metrics getMetrics() {
+        return metrics;
+    }
+
+
+    /**
      * {@inheritDoc}
      */
     @Override

@@ -35,6 +35,7 @@ import com.swirlds.platform.config.StateConfig;
 import com.swirlds.platform.crypto.CryptoStatic;
 import com.swirlds.platform.internal.SignedStateLoadingException;
 import com.swirlds.platform.state.MerkleRoot;
+import com.swirlds.platform.state.MerkleStateRoot;
 import com.swirlds.platform.state.snapshot.DeserializedSignedState;
 import com.swirlds.platform.state.snapshot.SavedStateInfo;
 import com.swirlds.platform.state.snapshot.SignedStateFilePath;
@@ -109,7 +110,8 @@ public final class StartupStateUtils {
         }
 
         final ReservedSignedState genesisState =
-                buildGenesisState(platformContext, configAddressBook, softwareVersion, genesisStateBuilder.get());
+                buildGenesisState(platformContext, configAddressBook, softwareVersion,
+                        (MerkleStateRoot) genesisStateBuilder.get());
 
         try (genesisState) {
             return copyInitialSignedState(platformContext, genesisState.get());
