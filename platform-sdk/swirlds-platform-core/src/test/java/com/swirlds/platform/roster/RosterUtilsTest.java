@@ -36,5 +36,10 @@ public class RosterUtilsTest {
         assertEquals(
                 "5d693ce2c5d445194faee6054b4d8fe4a4adc1225cf0afc2ecd7866ea895a0093ea3037951b75ab7340b75699aa1db1d",
                 anotherHash.toString());
+
+        final Hash validRosterHash = RosterUtils.hash(RosterValidatorTests.buildValidRoster());
+        assertEquals(
+                "1b8414aa690d96ce79e972abfc58c7ca04052996f89c5e6789b25b9051ee85fccb7c8ed3fc6ebacef177adfdcbbb5709",
+                validRosterHash.toString());
     }
 }
