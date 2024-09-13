@@ -36,6 +36,7 @@ import static com.swirlds.platform.system.InitTrigger.RECONNECT;
 import static com.swirlds.platform.system.status.PlatformStatus.STARTING_UP;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Objects.requireNonNull;
+import static java.util.concurrent.CompletableFuture.completedFuture;
 
 import com.hedera.hapi.block.stream.BlockItem;
 import com.hedera.hapi.block.stream.output.SingletonUpdateChange;
@@ -106,6 +107,7 @@ import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.listeners.PlatformStatusChangeListener;
 import com.swirlds.platform.listeners.PlatformStatusChangeNotification;
 import com.swirlds.platform.listeners.ReconnectCompleteListener;
+import com.swirlds.platform.listeners.ReconnectCompleteNotification;
 import com.swirlds.platform.listeners.StateWriteToDiskCompleteListener;
 import com.swirlds.platform.state.MerkleRoot;
 import com.swirlds.platform.state.MerkleStateRoot;
@@ -136,6 +138,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.function.BiConsumer;
 import java.util.function.Supplier;
 import org.apache.logging.log4j.LogManager;
@@ -286,6 +289,9 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener {
      * {@link com.hedera.hapi.block.stream.BlockProof} for the first round after node started.
      */
     private Hash startingStateHash;
+
+    @Nullable
+    private CompletableFuture<Bytes> reconnectStartingStateHash;
 
     /*==================================================================================================================
     *
@@ -837,16 +843,17 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener {
             }
         }
         final StartingStateInfo stateHashInfo;
+        final var roundNum = state.getReadableStates(PlatformStateService.NAME)
+                .<PlatformState>getSingleton(V0540PlatformStateSchema.PLATFORM_STATE_KEY)
+                .get()
+                .consensusSnapshot()
+                .round();
         if (trigger == RECONNECT) {
-            // TODO : get stateHash from notificatin
-            stateHashInfo = new StartingStateInfo(startingStateHash.getBytes(), 0);
-        } else if (trigger == GENESIS) {
-            stateHashInfo = new StartingStateInfo(startingStateHash.getBytes(), 0);
+            reconnectStartingStateHash = new CompletableFuture<>();
+            notifications.register(ReconnectCompleteListener.class, new ReadReconnectStartingStateHash());
+            stateHashInfo = new StartingStateInfo(reconnectStartingStateHash, roundNum);
         } else {
-            final var platformState = state.getReadableStates(PlatformStateService.NAME)
-                    .<PlatformState>getSingleton(V0540PlatformStateSchema.PLATFORM_STATE_KEY).get();
-            stateHashInfo = new StartingStateInfo(startingStateHash.getBytes(),
-                    platformState.consensusSnapshot().round());
+            stateHashInfo = new StartingStateInfo(completedFuture(startingStateHash.getBytes()), roundNum);
         }
         // Fully qualified so as to not confuse javadoc
         daggerApp = com.hedera.node.app.DaggerHederaInjectionComponent.builder()
@@ -1040,5 +1047,13 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener {
     public void setStartingStateHash(final Hash stateHash) {
         System.out.println("Setting starting state hash to " + stateHash);
         startingStateHash = stateHash;
+    }
+
+    private class ReadReconnectStartingStateHash implements ReconnectCompleteListener {
+        @Override
+        public void notify(final ReconnectCompleteNotification notification) {
+            reconnectStartingStateHash.complete(
+                    notification.getState().getHash().getBytes());
+        }
     }
 }

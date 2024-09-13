@@ -153,7 +153,7 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
         this.roundsPerBlock = config.getConfigData(BlockStreamConfig.class).roundsPerBlock();
         this.blockHashManager = new BlockHashManager(config);
         this.runningHashManager = new RunningHashManager();
-        roundHashes.put(stateHashInfo.roundNum(), completedFuture(stateHashInfo.stateHash()));
+        roundHashes.put(stateHashInfo.roundNum(), stateHashInfo.stateHash());
         log.info("BlockStreamManager roundhashes put {} with {}", stateHashInfo.roundNum(), stateHashInfo.stateHash());
     }
 

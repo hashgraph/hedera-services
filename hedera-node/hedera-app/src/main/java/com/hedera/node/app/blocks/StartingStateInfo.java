@@ -17,6 +17,7 @@
 package com.hedera.node.app.blocks;
 
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import java.util.concurrent.CompletableFuture;
 
 /**
  * A simple record to hold the starting state info when node start at Genesis, Restart or Reconnect.
@@ -25,4 +26,4 @@ import com.hedera.pbj.runtime.io.buffer.Bytes;
  * @param stateHash the stateHash after genesis or restart or reconnect
  * @param roundNum the round number of the state
  */
-public record StartingStateInfo(Bytes stateHash, long roundNum) {}
+public record StartingStateInfo(CompletableFuture<Bytes> stateHash, long roundNum) {}
