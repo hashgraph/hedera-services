@@ -89,7 +89,7 @@ Compare performance from executing rust code directly and through JNI → it can
 
 ## Signatures Library
 
-Library Producing EC Private-Public Keys and Signatures.and possible encrypting/decrypting?
+Library Producing EC Private-Public Keys and Signatures
 
 ### Technical Tests
 
