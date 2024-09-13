@@ -64,7 +64,8 @@ public class PbjRecordHasher<T extends Record> {
         } catch (final IOException e) {
             throw new RuntimeException("An exception occurred while trying to hash a record!", e);
         }
-
+        // Reminder, MessageDigest.digest resets the digest, so subsequent writes
+        // will calculate an independent hash value.
         return new Hash(digest.digest(), DIGEST_TYPE);
     }
 }
