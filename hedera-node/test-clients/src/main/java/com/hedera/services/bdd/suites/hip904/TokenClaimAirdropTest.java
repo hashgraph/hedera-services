@@ -16,7 +16,7 @@
 
 package com.hedera.services.bdd.suites.hip904;
 
-import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
+import static com.hedera.node.app.hapi.utils.EthSigsUtils.recoverAddressFromPubKey;
 import static com.hedera.services.bdd.junit.TestTags.CRYPTO;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
@@ -52,6 +52,7 @@ import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movi
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.blockingOrder;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.createHollow;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.logIt;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
@@ -729,6 +730,34 @@ public class TokenClaimAirdropTest extends TokenAirdropBase {
     }
 
     @HapiTest
+    @DisplayName("both associated and not associated FTs and receiver sig required")
+    final Stream<DynamicTest> withTwoTokensAndReceiverSigReq() {
+        final String ALICE = "ALICE";
+        final String BOB = "BOB";
+        return hapiTest(flattened(
+                cryptoCreate(ALICE).balance(ONE_HUNDRED_HBARS),
+                cryptoCreate(BOB)
+                        .balance(ONE_HUNDRED_HBARS)
+                        .maxAutomaticTokenAssociations(0)
+                        .receiverSigRequired(true),
+                createFT(FUNGIBLE_TOKEN_1, ALICE, 1000L),
+                createFT(FUNGIBLE_TOKEN_2, ALICE, 1000L),
+                tokenAssociate(BOB, FUNGIBLE_TOKEN_1),
+                tokenAirdrop(
+                                moving(10, FUNGIBLE_TOKEN_1).between(ALICE, BOB),
+                                moving(10, FUNGIBLE_TOKEN_2).between(ALICE, BOB))
+                        .payingWith(ALICE),
+                getAccountBalance(BOB).hasTokenBalance(FUNGIBLE_TOKEN_1, 0),
+                getAccountBalance(BOB).hasTokenBalance(FUNGIBLE_TOKEN_2, 0),
+                tokenClaimAirdrop(
+                                pendingAirdrop(ALICE, BOB, FUNGIBLE_TOKEN_1),
+                                pendingAirdrop(ALICE, BOB, FUNGIBLE_TOKEN_2))
+                        .payingWith(BOB),
+                getAccountBalance(BOB).hasTokenBalance(FUNGIBLE_TOKEN_1, 10),
+                getAccountBalance(BOB).hasTokenBalance(FUNGIBLE_TOKEN_2, 10)));
+    }
+
+    @HapiTest
     @DisplayName("multiple FT airdrops to same receiver")
     final Stream<DynamicTest> multipleFtAirdropsSameReceiver() {
         final String BOB = "BOB";
@@ -742,6 +771,25 @@ public class TokenClaimAirdropTest extends TokenAirdropBase {
                         .signedBy(BOB)
                         .payingWith(BOB),
                 getAccountBalance(BOB).hasTokenBalance(FUNGIBLE_TOKEN, 30)));
+    }
+
+    @HapiTest
+    @DisplayName("not associated FT and receiver sig required")
+    final Stream<DynamicTest> notAssociatedFTAndReceiverSigRequired() {
+        final String BOB = "BOB";
+        final String ALICE = "ALICE";
+        return hapiTest(flattened(
+                cryptoCreate(ALICE).balance(ONE_HUNDRED_HBARS),
+                cryptoCreate(BOB)
+                        .balance(ONE_HUNDRED_HBARS)
+                        .maxAutomaticTokenAssociations(5)
+                        .receiverSigRequired(true),
+                createFT(FUNGIBLE_TOKEN_1, ALICE, 1000L),
+                tokenAirdrop(moving(10, FUNGIBLE_TOKEN_1).between(ALICE, BOB)).payingWith(ALICE),
+                tokenClaimAirdrop(pendingAirdrop(ALICE, BOB, FUNGIBLE_TOKEN_1))
+                        .signedBy(BOB)
+                        .payingWith(BOB),
+                getAccountBalance(BOB).hasTokenBalance(FUNGIBLE_TOKEN_1, 10)));
     }
 
     @HapiTest
@@ -1217,6 +1265,50 @@ public class TokenClaimAirdropTest extends TokenAirdropBase {
                         .payingWith(OWNER)
                         .signedBy(OWNER)
                         .hasKnownStatus(INVALID_SIGNATURE)));
+    }
+
+    @HapiTest
+    @DisplayName("a hollow account with maxAutoAssociation 1 as receiver should be successful")
+    final Stream<DynamicTest> hollowNoMaxAutoAssociationSuccess() {
+        final String ALICE = "ALICE";
+        final String BOB = "BOB";
+        return hapiTest(
+                cryptoCreate(ALICE).balance(ONE_HUNDRED_HBARS),
+                createFT(FUNGIBLE_TOKEN_1, ALICE, 1000L),
+                createHollow(1, i -> BOB),
+                getAliasedAccountInfo(BOB)
+                        .has(accountWith().maxAutoAssociations(-1).hasEmptyKey().noAlias()),
+                tokenAirdrop(moving(1, FUNGIBLE_TOKEN_1).between(ALICE, BOB))
+                        .signedBy(BOB, ALICE)
+                        .sigMapPrefixes(uniqueWithFullPrefixesFor(BOB))
+                        .payingWith(BOB),
+                // Bob account is finalized with the token airdrop transaction
+                getAliasedAccountInfo(BOB).has(accountWith().hasNonEmptyKey()),
+                // no tokenClaimAirdrop needed here
+                getAccountBalance(BOB).hasTokenBalance(FUNGIBLE_TOKEN_1, 1));
+    }
+
+    @HapiTest
+    @DisplayName("Hollow account should be created before implementation of HIP-904")
+    final Stream<DynamicTest> hollowAccountBehavior() {
+        final String ALICE = "ALICE";
+        final String BOB = "BOB";
+        final String CAROL = "CAROL";
+        return hapiTest(
+                cryptoCreate(ALICE).balance(ONE_HUNDRED_HBARS),
+                createFT(FUNGIBLE_TOKEN_1, ALICE, 1000L),
+                createHollow(1, i -> BOB),
+                createHollow(1, i -> CAROL),
+                cryptoUpdate(BOB).sigMapPrefixes(uniqueWithFullPrefixesFor(BOB)).maxAutomaticAssociations(0),
+                cryptoUpdate(CAROL)
+                        .sigMapPrefixes(uniqueWithFullPrefixesFor(CAROL))
+                        .maxAutomaticAssociations(0),
+                tokenAssociate(CAROL, FUNGIBLE_TOKEN_1).sigMapPrefixes(uniqueWithFullPrefixesFor(CAROL)),
+                tokenAirdrop(moving(1, FUNGIBLE_TOKEN_1).between(ALICE, BOB)).payingWith(ALICE),
+                tokenAirdrop(moving(1, FUNGIBLE_TOKEN_1).between(ALICE, CAROL)).payingWith(ALICE),
+                tokenClaimAirdrop(pendingAirdrop(ALICE, BOB, FUNGIBLE_TOKEN_1)).payingWith(BOB),
+                getAccountBalance(BOB).hasTokenBalance(FUNGIBLE_TOKEN_1, 1),
+                getAccountBalance(CAROL).hasTokenBalance(FUNGIBLE_TOKEN_1, 1));
     }
 
     private HapiTokenCreate createFT(String tokenName, String treasury, long amount) {

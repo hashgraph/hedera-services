@@ -94,7 +94,7 @@ public class CryptoTransferHandler extends TransferExecutor implements Transacti
     }
 
     /**
-     * Constructor for injection with the option to enforce mono-service restrictions on auto-creation custom fee
+     * Constructor for injection with the option to enforce mono-service restrictions on auto-creation custom fee.
      * @param validator the validator to use to validate the transaction
      * @param enforceMonoServiceRestrictionsOnAutoCreationCustomFeePayments whether to enforce mono-service restrictions
      */

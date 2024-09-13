@@ -24,5 +24,4 @@ module com.hedera.node.app.service.token {
     requires com.hedera.node.app.hapi.utils;
     requires com.swirlds.common;
     requires com.github.spotbugs.annotations;
-    requires com.hedera.evm;
 }

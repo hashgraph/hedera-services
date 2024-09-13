@@ -21,7 +21,6 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.SemanticVersion;
-import com.hedera.node.app.version.HederaSoftwareVersion;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.platform.system.address.Address;
@@ -41,21 +40,23 @@ public record SelfNodeInfoImpl(
         @NonNull String hexEncodedPublicKey,
         @NonNull String memo,
         @Nullable Bytes sigCertBytes,
-        @NonNull HederaSoftwareVersion version,
+        @NonNull SemanticVersion hapiVersion,
         @NonNull String selfName)
         implements SelfNodeInfo {
 
     public SelfNodeInfoImpl {
         requireNonNull(accountId);
         requireNonNull(memo);
-        requireNonNull(version);
+        requireNonNull(hapiVersion);
         if (nodeId < 0) {
             throw new IllegalArgumentException("node ID cannot be less than 0");
         }
     }
 
     @NonNull
-    public static SelfNodeInfo of(@NonNull final Address address, @NonNull final HederaSoftwareVersion version) {
+    public static SelfNodeInfo of(@NonNull final Address address, @NonNull final SemanticVersion hapiVersion) {
+        requireNonNull(address);
+        requireNonNull(hapiVersion);
         final var sigCert = address.getSigCert();
         Bytes sigCertBytes;
         try {
@@ -74,19 +75,7 @@ public record SelfNodeInfoImpl(
                 CommonUtils.hex(requireNonNull(address.getSigPublicKey()).getEncoded()),
                 address.getMemo(),
                 sigCertBytes,
-                version,
+                hapiVersion,
                 address.getSelfName());
-    }
-
-    @NonNull
-    @Override
-    public SemanticVersion hapiVersion() {
-        return version.getHapiVersion();
-    }
-
-    @NonNull
-    @Override
-    public SemanticVersion appVersion() {
-        return version.getPbjSemanticVersion();
     }
 }

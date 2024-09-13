@@ -33,7 +33,7 @@ public interface FreezeService extends RpcService {
     String NAME = "FreezeService";
 
     /**
-     * Returns the service name
+     * Returns the service name.
      * @return the service name
      */
     @NonNull
@@ -43,7 +43,7 @@ public interface FreezeService extends RpcService {
     }
 
     /**
-     * Returns the RPC definitions for the service
+     * Returns the RPC definitions for the service.
      * @return the RPC definitions
      */
     @NonNull
@@ -53,7 +53,7 @@ public interface FreezeService extends RpcService {
     }
 
     /**
-     * Returns the concrete implementation instance of the service
+     * Returns the concrete implementation instance of the service.
      *
      * @return the implementation instance
      */

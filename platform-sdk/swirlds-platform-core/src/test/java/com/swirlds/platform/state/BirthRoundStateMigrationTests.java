@@ -31,6 +31,7 @@ import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.SoftwareVersion;
+import com.swirlds.platform.test.fixtures.state.RandomSignedStateGenerator;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -83,7 +84,7 @@ class BirthRoundStateMigrationTests {
         final Hash originalHash = signedState.getState().getHash();
 
         final SoftwareVersion previousSoftwareVersion =
-                signedState.getState().getPlatformState().getCreationSoftwareVersion();
+                signedState.getState().getWritablePlatformState().getCreationSoftwareVersion();
 
         final SoftwareVersion newSoftwareVersion = createNextVersion(previousSoftwareVersion);
 
@@ -107,14 +108,17 @@ class BirthRoundStateMigrationTests {
         final SignedState signedState = generateSignedState(random, platformContext);
 
         final SoftwareVersion previousSoftwareVersion =
-                signedState.getState().getPlatformState().getCreationSoftwareVersion();
+                signedState.getState().getReadablePlatformState().getCreationSoftwareVersion();
 
         ;
         final SoftwareVersion newSoftwareVersion = createNextVersion(previousSoftwareVersion);
 
-        signedState.getState().getPlatformState().setLastRoundBeforeBirthRoundMode(signedState.getRound() - 100);
-        signedState.getState().getPlatformState().setFirstVersionInBirthRoundMode(previousSoftwareVersion);
-        signedState.getState().getPlatformState().setLowestJudgeGenerationBeforeBirthRoundMode(100);
+        signedState
+                .getState()
+                .getWritablePlatformState()
+                .setLastRoundBeforeBirthRoundMode(signedState.getRound() - 100);
+        signedState.getState().getWritablePlatformState().setFirstVersionInBirthRoundMode(previousSoftwareVersion);
+        signedState.getState().getWritablePlatformState().setLowestJudgeGenerationBeforeBirthRoundMode(100);
         rehashTree(signedState.getState());
         final Hash originalHash = signedState.getState().getHash();
 
@@ -144,13 +148,13 @@ class BirthRoundStateMigrationTests {
         final Hash originalHash = signedState.getState().getHash();
 
         final SoftwareVersion previousSoftwareVersion =
-                signedState.getState().getPlatformState().getCreationSoftwareVersion();
+                signedState.getState().getReadablePlatformState().getCreationSoftwareVersion();
 
         final SoftwareVersion newSoftwareVersion = createNextVersion(previousSoftwareVersion);
 
         final long lastRoundMinimumJudgeGeneration = signedState
                 .getState()
-                .getPlatformState()
+                .getReadablePlatformState()
                 .getSnapshot()
                 .getMinimumJudgeInfoList()
                 .getLast()
@@ -166,19 +170,19 @@ class BirthRoundStateMigrationTests {
                 newSoftwareVersion.getPbjSemanticVersion(),
                 signedState
                         .getState()
-                        .getPlatformState()
+                        .getReadablePlatformState()
                         .getFirstVersionInBirthRoundMode()
                         .getPbjSemanticVersion());
         assertEquals(
                 lastRoundMinimumJudgeGeneration,
-                signedState.getState().getPlatformState().getLowestJudgeGenerationBeforeBirthRoundMode());
+                signedState.getState().getReadablePlatformState().getLowestJudgeGenerationBeforeBirthRoundMode());
         assertEquals(
                 signedState.getRound(),
-                signedState.getState().getPlatformState().getLastRoundBeforeBirthRoundMode());
+                signedState.getState().getReadablePlatformState().getLastRoundBeforeBirthRoundMode());
 
         // All of the judge info objects should now be using a birth round equal to the round of the state
         for (final MinimumJudgeInfo minimumJudgeInfo :
-                signedState.getState().getPlatformState().getSnapshot().getMinimumJudgeInfoList()) {
+                signedState.getState().getReadablePlatformState().getSnapshot().getMinimumJudgeInfoList()) {
             assertEquals(signedState.getRound(), minimumJudgeInfo.minimumJudgeAncientThreshold());
         }
     }

@@ -66,49 +66,49 @@ public interface ReadableTokenStore {
             int decimals) {
         /**
          * Returns whether the token has an admin key.
-         * @return whether the token has an admin key.
+         * @return whether the token has an admin key
          */
         public boolean hasAdminKey() {
             return adminKey != null && !adminKey.key().kind().equals(KeyOneOfType.UNSET);
         }
         /**
          * Returns whether the token has a kyc key.
-         * @return whether the token has a kyc key.
+         * @return whether the token has a kyc key
          */
         public boolean hasKycKey() {
             return kycKey != null && !kycKey.key().kind().equals(KeyOneOfType.UNSET);
         }
         /**
          * Returns whether the token has a wipe key.
-         * @return whether the token has a wipe key.
+         * @return whether the token has a wipe key
          */
         public boolean hasWipeKey() {
             return wipeKey != null && !wipeKey.key().kind().equals(KeyOneOfType.UNSET);
         }
         /**
          * Returns whether the token has a freeze key.
-         * @return whether the token has a freeze key.
+         * @return whether the token has a freeze key
          */
         public boolean hasFreezeKey() {
             return freezeKey != null && !freezeKey.key().kind().equals(KeyOneOfType.UNSET);
         }
         /**
          * Returns whether the token has a supply key.
-         * @return whether the token has a supply key.
+         * @return whether the token has a supply key
          */
         public boolean hasSupplyKey() {
             return supplyKey != null && !supplyKey.key().kind().equals(KeyOneOfType.UNSET);
         }
         /**
          * Returns whether the token has a fee schedule key.
-         * @return whether the token has a fee schedule key.
+         * @return whether the token has a fee schedule key
          */
         public boolean hasFeeScheduleKey() {
             return feeScheduleKey != null && !feeScheduleKey.key().kind().equals(KeyOneOfType.UNSET);
         }
         /**
          * Returns whether the token has a pause key.
-         * @return whether the token has a pause key.
+         * @return whether the token has a pause key
          */
         public boolean hasPauseKey() {
             return pauseKey != null && !pauseKey.key().kind().equals(KeyOneOfType.UNSET);
@@ -116,7 +116,7 @@ public interface ReadableTokenStore {
     }
 
     /**
-     * Returns all the data for a token
+     * Returns all the data for a token.
      *
      * @param id the token id to look up
      * @return the token
@@ -126,7 +126,7 @@ public interface ReadableTokenStore {
 
     /**
      * Returns the number of tokens in the state.
-     * @return the number of tokens in the state.
+     * @return the number of tokens in the state
      */
     long sizeOfState();
 

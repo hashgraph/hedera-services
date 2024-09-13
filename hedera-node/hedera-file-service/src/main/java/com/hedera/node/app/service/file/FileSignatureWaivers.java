@@ -20,7 +20,9 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.spi.SigWaivers;
 
-/** Signature waivers needed for transactions in {@link FileService} */
+/**
+ * Signature waivers needed for transactions in {@link FileService}.
+ * */
 public interface FileSignatureWaivers extends SigWaivers {
     /**
      * Advises if the target file's key must sign a given file update.

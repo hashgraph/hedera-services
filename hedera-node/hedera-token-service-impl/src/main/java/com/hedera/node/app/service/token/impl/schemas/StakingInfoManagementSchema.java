@@ -39,10 +39,10 @@ import org.apache.logging.log4j.Logger;
  * IMPORTANT: Every TokenSchema version should extend this interface
  */
 public class StakingInfoManagementSchema extends Schema {
-    Logger log = LogManager.getLogger(StakingInfoManagementSchema.class);
+    private final Logger log = LogManager.getLogger(StakingInfoManagementSchema.class);
 
     /**
-     * Create a new instance
+     * Create a new instance.
      *
      * @param version The version of this schema
      */

@@ -25,15 +25,11 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.hedera.hapi.block.stream.BlockItem;
 import com.hedera.hapi.node.base.AccountAmount;
-import com.hedera.hapi.node.base.AccountID;
-import com.hedera.hapi.node.base.ContractID;
-import com.hedera.hapi.node.base.FileID;
+import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.ScheduleID;
 import com.hedera.hapi.node.base.TokenAssociation;
-import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenTransferList;
-import com.hedera.hapi.node.base.TopicID;
 import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.base.TransferList;
@@ -43,8 +39,6 @@ import com.hedera.hapi.node.transaction.AssessedCustomFee;
 import com.hedera.hapi.node.transaction.ExchangeRateSet;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.hapi.node.transaction.TransactionRecord;
-import com.hedera.hapi.streams.ContractActions;
-import com.hedera.hapi.streams.ContractBytecode;
 import com.hedera.hapi.streams.ContractStateChanges;
 import com.hedera.node.app.blocks.impl.BlockStreamBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -72,34 +66,22 @@ public class BlockStreamBuilderTest {
     private @Mock TransactionID transactionID;
     private final Bytes transactionBytes = Bytes.wrap("Hello Tester");
     private @Mock ContractFunctionResult contractCallResult;
-    private @Mock ContractFunctionResult contractCreateResult;
     private @Mock TransferList transferList;
     private @Mock TokenTransferList tokenTransfer;
     private @Mock ScheduleID scheduleRef;
     private @Mock AssessedCustomFee assessedCustomFee;
     private @Mock TokenAssociation tokenAssociation;
-    private @Mock Bytes alias;
-    private @Mock Bytes ethereumHash;
     private @Mock Bytes prngBytes;
     private @Mock AccountAmount accountAmount;
-    private @Mock Bytes evmAddress;
     private @Mock ResponseCodeEnum status;
-    private @Mock AccountID accountID;
-    private @Mock FileID fileID;
-    private @Mock ContractID contractID;
     private @Mock ExchangeRateSet exchangeRate;
-    private @Mock TopicID topicID;
-    private @Mock Bytes topicRunningHash;
-    private @Mock TokenID tokenID;
-    private @Mock ScheduleID scheduleID;
-    private @Mock TransactionID scheduledTransactionID;
     private @Mock ContractStateChanges contractStateChanges;
-    private @Mock ContractActions contractActions;
-    private @Mock ContractBytecode contractBytecode;
 
     @Test
     void testBlockItemsWithCryptoTransferOutput() {
-        final var itemsBuilder = createBaseBuilder().assessedCustomFees(List.of(assessedCustomFee));
+        final var itemsBuilder = createBaseBuilder()
+                .assessedCustomFees(List.of(assessedCustomFee))
+                .functionality(HederaFunctionality.CRYPTO_TRANSFER);
 
         List<BlockItem> blockItems = itemsBuilder.build();
         validateTransactionBlockItems(blockItems);

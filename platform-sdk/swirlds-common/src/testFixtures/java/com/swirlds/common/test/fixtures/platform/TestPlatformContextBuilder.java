@@ -27,6 +27,7 @@ import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.io.filesystem.FileSystemManager;
 import com.swirlds.common.io.utility.NoOpRecycleBin;
 import com.swirlds.common.io.utility.RecycleBin;
+import com.swirlds.common.merkle.crypto.MerkleCryptography;
 import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.common.test.fixtures.TestFileSystemManager;
 import com.swirlds.config.api.Configuration;
@@ -54,6 +55,7 @@ public final class TestPlatformContextBuilder {
     private Time time = Time.getCurrent();
     private FileSystemManager fileSystemManager;
     private RecycleBin recycleBin;
+    private MerkleCryptography merkleCryptography;
 
     private TestPlatformContextBuilder() {}
 
@@ -130,6 +132,12 @@ public final class TestPlatformContextBuilder {
         return this;
     }
 
+    @NonNull
+    public TestPlatformContextBuilder withMerkleCryptography(@NonNull final MerkleCryptography merkleCryptography) {
+        this.merkleCryptography = merkleCryptography;
+        return this;
+    }
+
     /**
      * Returns a new {@link PlatformContext} based on this builder
      *
@@ -201,6 +209,12 @@ public final class TestPlatformContextBuilder {
             @Override
             public RecycleBin getRecycleBin() {
                 return recycleBin;
+            }
+
+            @NonNull
+            @Override
+            public MerkleCryptography getMerkleCryptography() {
+                return merkleCryptography;
             }
         };
     }

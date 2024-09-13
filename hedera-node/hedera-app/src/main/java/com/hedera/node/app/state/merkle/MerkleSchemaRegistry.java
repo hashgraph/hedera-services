@@ -19,6 +19,7 @@ package com.hedera.node.app.state.merkle;
 import static com.hedera.node.app.state.merkle.SchemaApplicationType.MIGRATION;
 import static com.hedera.node.app.state.merkle.SchemaApplicationType.RESTART;
 import static com.hedera.node.app.state.merkle.SchemaApplicationType.STATE_DEFINITIONS;
+import static com.hedera.node.app.state.merkle.VersionUtils.alreadyIncludesStateDefs;
 import static com.hedera.node.app.state.merkle.VersionUtils.isSoOrdered;
 import static java.util.Objects.requireNonNull;
 
@@ -242,11 +243,13 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
             final WritableStates writableStates;
             final WritableStates newStates;
             if (applications.contains(STATE_DEFINITIONS)) {
-                final var followingSchemas = schemas.tailSet(schema).stream()
-                        .filter(s -> s != schema && !isSoOrdered(previousVersion, s.getVersion()))
+                final var schemasAlreadyInState = schemas.tailSet(schema).stream()
+                        .filter(s -> s != schema
+                                && previousVersion != null
+                                && alreadyIncludesStateDefs(previousVersion, s.getVersion()))
                         .toList();
                 final var redefinedWritableStates =
-                        applyStateDefinitions(schema, followingSchemas, config, metrics, stateRoot);
+                        applyStateDefinitions(schema, schemasAlreadyInState, config, metrics, stateRoot);
                 writableStates = redefinedWritableStates.beforeStates();
                 newStates = redefinedWritableStates.afterStates();
             } else {
@@ -273,7 +276,7 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
 
     private RedefinedWritableStates applyStateDefinitions(
             @NonNull final Schema schema,
-            @NonNull final List<Schema> followingSchemas,
+            @NonNull final List<Schema> schemasAlreadyInState,
             @NonNull final Configuration configuration,
             @NonNull final Metrics metrics,
             @NonNull final MerkleStateRoot stateRoot) {
@@ -283,7 +286,7 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
                 .sorted(Comparator.comparing(StateDefinition::stateKey))
                 .forEach(def -> {
                     final var stateKey = def.stateKey();
-                    if (followingSchemas.stream()
+                    if (schemasAlreadyInState.stream()
                             .anyMatch(s -> s.statesToRemove().contains(stateKey))) {
                         logger.info("  Skipping {} as it is removed by a later schema", stateKey);
                         return;
@@ -320,27 +323,25 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
                         stateRoot.putServiceStateIfAbsent(
                                 md,
                                 () -> {
+                                    final var keySerializer = new OnDiskKeySerializer<>(
+                                            md.onDiskKeySerializerClassId(),
+                                            md.onDiskKeyClassId(),
+                                            md.stateDefinition().keyCodec());
+                                    final var valueSerializer = new OnDiskValueSerializer<>(
+                                            md.onDiskValueSerializerClassId(),
+                                            md.onDiskValueClassId(),
+                                            md.stateDefinition().valueCodec());
                                     // MAX_IN_MEMORY_HASHES (ramToDiskThreshold) = 8388608
                                     // PREFER_DISK_BASED_INDICES = false
-                                    final var tableConfig = new MerkleDbTableConfig<>(
-                                                    (short) 1,
-                                                    DigestType.SHA_384,
-                                                    (short) 1,
-                                                    new OnDiskKeySerializer<>(
-                                                            md.onDiskKeySerializerClassId(),
-                                                            md.onDiskKeyClassId(),
-                                                            md.stateDefinition().keyCodec()),
-                                                    (short) 1,
-                                                    new OnDiskValueSerializer<>(
-                                                            md.onDiskValueSerializerClassId(),
-                                                            md.onDiskValueClassId(),
-                                                            md.stateDefinition().valueCodec()))
+                                    final var tableConfig = new MerkleDbTableConfig((short) 1, DigestType.SHA_384)
                                             .maxNumberOfKeys(def.maxKeysHint());
                                     final var label = StateUtils.computeLabel(serviceName, stateKey);
-                                    final var dsBuilder = new MerkleDbDataSourceBuilder<>(tableConfig);
-                                    return new VirtualMap<>(label, dsBuilder);
+                                    final var dsBuilder = new MerkleDbDataSourceBuilder(tableConfig);
+                                    final var virtualMap =
+                                            new VirtualMap<>(label, keySerializer, valueSerializer, dsBuilder);
+                                    return virtualMap;
                                 },
-                                (VirtualMap<?, ?> virtualMap) -> virtualMap.registerMetrics(metrics));
+                                virtualMap -> virtualMap.registerMetrics(metrics));
                     }
                 });
 

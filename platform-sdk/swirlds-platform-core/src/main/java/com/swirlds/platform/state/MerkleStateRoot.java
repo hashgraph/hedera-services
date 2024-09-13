@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.state;
 
+import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 import static com.swirlds.platform.state.MerkleStateUtils.createInfoString;
 import static com.swirlds.platform.state.service.PbjConverter.toPbjPlatformState;
@@ -26,11 +27,13 @@ import static com.swirlds.state.StateChangeListener.StateType.SINGLETON;
 import static com.swirlds.state.merkle.StateUtils.computeLabel;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.block.stream.output.StateChanges;
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.swirlds.common.constructable.ConstructableIgnored;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.merkle.MerkleInternal;
 import com.swirlds.common.merkle.MerkleNode;
+import com.swirlds.common.merkle.crypto.MerkleCryptography;
 import com.swirlds.common.merkle.impl.PartialNaryMerkleInternal;
 import com.swirlds.common.utility.Labeled;
 import com.swirlds.common.utility.RuntimeObjectRecord;
@@ -89,6 +92,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -139,6 +143,7 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
     private final MerkleStateLifecycles lifecycles;
 
     private final Function<SemanticVersion, SoftwareVersion> versionFactory;
+    private MerkleCryptography merkleCryptography;
 
     public Map<String, Map<String, StateMetadata<?, ?>>> getServices() {
         return services;
@@ -165,6 +170,13 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
      * Listeners to be notified of state changes on {@link MerkleWritableStates#commit()} calls for any service.
      */
     private final List<StateChangeListener> listeners = new ArrayList<>();
+
+    /**
+     * Once set, the possibly empty list of builders for state changes that occurred when initializing
+     * the platform state.
+     */
+    @Nullable
+    private List<StateChanges.Builder> platformStateInitChanges;
 
     /**
      * Used to track the lifespan of this state.
@@ -204,6 +216,15 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
     }
 
     /**
+     * Returns the list of builders for state changes that occurred during the initialization of the platform state.
+     * Must only be called after platform state is initialized.
+     * @throws NullPointerException if the platform state initialization changes have not been set
+     */
+    public @NonNull List<StateChanges.Builder> platformStateInitChangesOrThrow() {
+        return requireNonNull(platformStateInitChanges);
+    }
+
+    /**
      * {@inheritDoc}
      * <p>
      * Called by the platform whenever the state should be initialized. This can happen at genesis startup,
@@ -215,6 +236,7 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
             @NonNull final InitTrigger trigger,
             @Nullable final SoftwareVersion deserializedVersion) {
         metrics = platform.getContext().getMetrics();
+        merkleCryptography = platform.getContext().getMerkleCryptography();
 
         // If we are initialized for event stream recovery, we have to register an
         // extra listener to make sure we call all the required Hedera lifecycles
@@ -255,6 +277,8 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
         this.registryRecord = RuntimeObjectRegistry.createRecord(getClass());
         this.versionFactory = from.versionFactory;
         this.preV054PlatformState = from.preV054PlatformState;
+        this.platformStateInitChanges = from.platformStateInitChanges;
+        this.listeners.addAll(from.listeners);
 
         // Copy over the metadata
         for (final var entry : from.services.entrySet()) {
@@ -346,6 +370,11 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
         listeners.add(listener);
     }
 
+    @Override
+    public void unregisterCommitListener(@NonNull final StateChangeListener listener) {
+        requireNonNull(listener);
+        listeners.remove(listener);
+    }
     /**
      * {@inheritDoc}
      */
@@ -387,16 +416,30 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
      */
     @Override
     public MerkleNode migrate(final int version) {
+
         if (version < CURRENT_VERSION) {
-            final var zerothChild = getChild(0);
-            if (!(zerothChild instanceof PlatformState platformState)) {
-                throw new IllegalStateException("Expected a PlatformState as the first child");
+            PlatformState platformState = null;
+            int platformStateIndex = -1;
+            for (int i = 0; i < getNumberOfChildren(); i++) {
+                if (getChild(i) instanceof PlatformState ps) {
+                    platformState = ps;
+                    platformStateIndex = i;
+                    break;
+                }
             }
+            if (platformState == null) {
+                throw new IllegalStateException("Expected MerkleStateRoot to have PlatformState as a child");
+            }
+
             preV054PlatformState = platformState;
             logger.info(STARTUP.getMarker(), "Found pre-0.54 PlatformState, will migrate to State API singleton");
             INDEX_LOOKUP.clear();
             final List<MerkleNode> newChildren = new ArrayList<>();
-            for (int i = 1, n = getNumberOfChildren(); i < n; i++) {
+            for (int i = 0, n = getNumberOfChildren(); i < n; i++) {
+                // Skip the platform state, it will be added later
+                if (i == platformStateIndex) {
+                    continue;
+                }
                 final var child = getChild(i);
                 if (child != null) {
                     newChildren.add(child.copy());
@@ -897,40 +940,40 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
                 @NonNull final String serviceName,
                 @NonNull final WritableSingletonStateBase<V> singletonState,
                 @NonNull final StateChangeListener listener) {
-            final var stateName = computeLabel(serviceName, singletonState.getStateKey());
-            singletonState.registerListener(value -> listener.singletonUpdateChange(stateName, value));
+            final var stateId = listener.stateIdFor(serviceName, singletonState.getStateKey());
+            singletonState.registerListener(value -> listener.singletonUpdateChange(stateId, value));
         }
 
         private <V> void registerQueueListener(
                 @NonNull final String serviceName,
                 @NonNull final WritableQueueStateBase<V> queueState,
                 @NonNull final StateChangeListener listener) {
-            final var stateName = computeLabel(serviceName, queueState.getStateKey());
+            final var stateId = listener.stateIdFor(serviceName, queueState.getStateKey());
             queueState.registerListener(new QueueChangeListener<>() {
                 @Override
                 public void queuePushChange(@NonNull final V value) {
-                    listener.queuePushChange(stateName, value);
+                    listener.queuePushChange(stateId, value);
                 }
 
                 @Override
                 public void queuePopChange() {
-                    listener.queuePopChange(stateName);
+                    listener.queuePopChange(stateId);
                 }
             });
         }
 
         private <K, V> void registerKVListener(
                 @NonNull final String serviceName, WritableKVStateBase<K, V> state, StateChangeListener listener) {
-            final var stateName = computeLabel(serviceName, state.getStateKey());
+            final var stateId = listener.stateIdFor(serviceName, state.getStateKey());
             state.registerListener(new KVChangeListener<>() {
                 @Override
-                public void mapUpdateChange(@NonNull K key, @NonNull V value) {
-                    listener.mapUpdateChange(stateName, key, value);
+                public void mapUpdateChange(@NonNull final K key, @NonNull final V value) {
+                    listener.mapUpdateChange(stateId, key, value);
                 }
 
                 @Override
-                public void mapDeleteChange(@NonNull K key) {
-                    listener.mapDeleteChange(stateName, key);
+                public void mapDeleteChange(@NonNull final K key) {
+                    listener.mapDeleteChange(stateId, key);
                 }
             });
         }
@@ -963,8 +1006,20 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
      */
     @NonNull
     @Override
-    public PlatformStateAccessor getPlatformState() {
-        return !isImmutable() ? writablePlatformStateStore() : readablePlatformStateStore();
+    public PlatformStateAccessor getReadablePlatformState() {
+        return readablePlatformStateStore();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @NonNull
+    @Override
+    public PlatformStateAccessor getWritablePlatformState() {
+        if (isImmutable()) {
+            throw new IllegalStateException("Cannot get writable platform state when state is immutable");
+        }
+        return writablePlatformStateStore();
     }
 
     /**
@@ -983,7 +1038,7 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
     @NonNull
     @Override
     public String getInfoString(final int hashDepth) {
-        return createInfoString(hashDepth, getPlatformState(), getHash(), this);
+        return createInfoString(hashDepth, readablePlatformStateStore(), getHash(), this);
     }
 
     private ReadablePlatformStateStore readablePlatformStateStore() {
@@ -992,7 +1047,7 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
 
     private WritablePlatformStateStore writablePlatformStateStore() {
         if (!services.containsKey(PlatformStateService.NAME)) {
-            lifecycles.initPlatformState(this);
+            platformStateInitChanges = lifecycles.initPlatformState(this);
         }
         final var store = new WritablePlatformStateStore(getWritableStates(PlatformStateService.NAME), versionFactory);
         if (preV054PlatformState != null) {
@@ -1004,5 +1059,28 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
             preV054PlatformState = null;
         }
         return store;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void computeHash() {
+        requireNonNull(
+                merkleCryptography,
+                "MerkleStateRoot has to be initialized before hashing. merkleCryptography is not set.");
+        throwIfMutable("Hashing should only be done on immutable states");
+        throwIfDestroyed("Hashing should not be done on destroyed states");
+        if (getHash() != null) {
+            return;
+        }
+        try {
+            merkleCryptography.digestTreeAsync(this).get();
+        } catch (final ExecutionException e) {
+            logger.error(EXCEPTION.getMarker(), "Exception occurred during hashing", e);
+        } catch (final InterruptedException e) {
+            logger.error(EXCEPTION.getMarker(), "Interrupted while hashing state. Expect buggy behavior.");
+            Thread.currentThread().interrupt();
+        }
     }
 }

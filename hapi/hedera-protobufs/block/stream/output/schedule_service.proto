@@ -65,6 +65,17 @@ import "basic_types.proto";
  */
 message CreateScheduleOutput {
     /**
+     * A schedule identifier.
+     * <p>
+     * If the status of the transaction is `SUCCESS`, this value SHALL be
+     * set to the identifier of the schedule that was created. If the
+     * transaction status is `IDENTICAL_SCHEDULE_ALREADY_CREATED`, this
+     * value SHALL be set to the identifier of the existing schedule that
+     * is identical to the one that was attempted to be created. For any
+     * other status, this value SHALL NOT be set.
+     */
+    proto.ScheduleID schedule_id = 1;
+    /**
      * A scheduled transaction identifier.
      * <p>
      * This value SHALL be the transaction identifier for the _scheduled_

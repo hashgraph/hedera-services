@@ -28,7 +28,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 
 /**
- * Default implementation of {@link ReadableAirdropStore}
+ * Default implementation of {@link ReadableAirdropStore}.
  */
 public class ReadableAirdropStoreImpl implements ReadableAirdropStore {
     /** The underlying data storage class that holds the airdrop data. */

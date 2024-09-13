@@ -125,7 +125,7 @@ public class TokenCancelAirdropHandler extends BaseTokenHandler implements Trans
     }
 
     /**
-     * Using the configuration to validate if the body valid
+     * Using the configuration to validate if the body valid.
      */
     private void configValidation(
             @NonNull final Configuration configuration, @NonNull final TokenCancelAirdropTransactionBody op) {

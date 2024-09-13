@@ -31,12 +31,4 @@ public interface SelfNodeInfo extends NodeInfo {
      */
     @NonNull
     SemanticVersion hapiVersion();
-
-    /**
-     * The version of the application running on this operating node.
-     *
-     * @return The version of the application
-     */
-    @NonNull
-    SemanticVersion appVersion();
 }

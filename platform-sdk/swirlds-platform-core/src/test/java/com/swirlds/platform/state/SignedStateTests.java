@@ -35,6 +35,7 @@ import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.address.AddressBook;
+import com.swirlds.platform.test.fixtures.state.RandomSignedStateGenerator;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
@@ -65,7 +66,7 @@ class SignedStateTests {
 
         final PlatformStateAccessor platformState = new PlatformState();
         platformState.setAddressBook(mock(AddressBook.class));
-        when(state.getPlatformState()).thenReturn(platformState);
+        when(state.getWritablePlatformState()).thenReturn(platformState);
         if (reserveCallback != null) {
             doAnswer(invocation -> {
                         reserveCallback.run();
@@ -208,7 +209,9 @@ class SignedStateTests {
         final MerkleRoot state = spy(new MerkleStateRoot(
                 FAKE_MERKLE_STATE_LIFECYCLES, version -> new BasicSoftwareVersion(version.major())));
         final PlatformStateAccessor platformState = mock(PlatformStateAccessor.class);
-        when(state.getPlatformState()).thenReturn(platformState);
+        // init state first
+        state.getWritablePlatformState();
+        when(state.getReadablePlatformState()).thenReturn(platformState);
         when(platformState.getRound()).thenReturn(0L);
         final SignedState signedState = new SignedState(
                 TestPlatformContextBuilder.create().build(),

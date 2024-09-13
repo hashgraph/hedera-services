@@ -26,7 +26,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 public interface CreateFileStreamBuilder extends StreamBuilder {
 
     /**
-     * Tracks creation of a new file by {@link FileID}
+     * Tracks creation of a new file by {@link FileID}.
      *
      * @param fileID the {@link FileID} of the new file
      * @return this builder

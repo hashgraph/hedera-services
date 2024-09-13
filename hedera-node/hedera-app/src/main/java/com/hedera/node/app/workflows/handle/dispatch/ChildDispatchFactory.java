@@ -474,6 +474,7 @@ public class ChildDispatchFactory {
     private StreamBuilder initializedForChild(
             @NonNull final StreamBuilder builder, @NonNull final TransactionInfo txnInfo) {
         builder.transaction(txnInfo.transaction())
+                .functionality(txnInfo.functionality())
                 .transactionBytes(txnInfo.signedBytes())
                 .memo(txnInfo.txBody().memo());
         final var transactionID = txnInfo.txBody().transactionID();

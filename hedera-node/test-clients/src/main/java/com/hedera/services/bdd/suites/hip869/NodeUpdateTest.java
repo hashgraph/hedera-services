@@ -47,6 +47,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_IPV4_A
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NODE_DESCRIPTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NODE_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.KEY_REQUIRED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SERVICE_ENDPOINTS_EXCEEDED_LIMIT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UPDATE_NODE_ACCOUNT_NOT_ALLOWED;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -343,5 +344,20 @@ public class NodeUpdateTest {
                         .adminKey("adminKey")
                         .description("toolarge")
                         .hasKnownStatus(INVALID_NODE_DESCRIPTION));
+    }
+
+    @LeakyHapiTest(overrides = {"nodes.enableDAB"})
+    @DisplayName("DAB enable test")
+    final Stream<DynamicTest> checkDABEnable() throws CertificateEncodingException {
+        return hapiTest(
+                newKeyNamed("adminKey"),
+                nodeCreate("testNode")
+                        .adminKey("adminKey")
+                        .gossipCaCertificate(gossipCertificates.getFirst().getEncoded()),
+                overriding("nodes.enableDAB", "false"),
+                nodeUpdate("testNode")
+                        .adminKey("adminKey")
+                        .serviceEndpoint(List.of(asServiceEndpoint("127.0.0.2:60"), invalidServiceEndpoint()))
+                        .hasPrecheck(NOT_SUPPORTED));
     }
 }

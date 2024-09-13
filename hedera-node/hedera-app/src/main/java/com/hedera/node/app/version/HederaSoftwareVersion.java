@@ -16,7 +16,6 @@
 
 package com.hedera.node.app.version;
 
-import static com.hedera.hapi.util.HapiUtils.alphaNumberOrMaxValue;
 import static com.swirlds.state.spi.HapiUtils.SEMANTIC_VERSION_COMPARATOR;
 import static com.swirlds.state.spi.HapiUtils.deserializeSemVer;
 import static com.swirlds.state.spi.HapiUtils.serializeSemVer;
@@ -30,7 +29,6 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.util.Objects;
-import org.apache.commons.lang3.StringUtils;
 
 /**
  * An implementation of {@link SoftwareVersion} which can be saved in state and holds information about the HAPI and
@@ -41,7 +39,9 @@ import org.apache.commons.lang3.StringUtils;
  * completely different from each other.
  *
  * <p>The Services version is the version of the node software itself.
+ * This will be removed once we stop supporting 0.53.0 and earlier versions.
  */
+@Deprecated(forRemoval = true)
 public class HederaSoftwareVersion implements SoftwareVersion {
 
     public static final long CLASS_ID = 0x6f2b1bc2df8cbd0cL;
@@ -77,17 +77,12 @@ public class HederaSoftwareVersion implements SoftwareVersion {
         this.servicesVersion = Objects.requireNonNull(servicesVersion, "servicesVersion must not be null");
     }
 
-    /**
-     * Constructs a new instance with the given versions. This constructor derives config version from {@code build} parameter of {@code servicesVersion}.
-     * @param hapiVersion HAPI version
-     * @param servicesVersion services version
-     */
-    public HederaSoftwareVersion(final SemanticVersion hapiVersion, @NonNull final SemanticVersion servicesVersion) {
-        this.hapiVersion = hapiVersion;
-        this.servicesVersion = Objects.requireNonNull(servicesVersion, "servicesVersion must not be null");
-        if (!StringUtils.isEmpty(servicesVersion.build())) {
-            this.configVersion = Integer.parseInt(servicesVersion.build());
-        }
+    public SemanticVersion servicesVersion() {
+        return servicesVersion;
+    }
+
+    public int configVersion() {
+        return configVersion;
     }
 
     @Override
@@ -152,13 +147,6 @@ public class HederaSoftwareVersion implements SoftwareVersion {
         }
     }
 
-    public boolean isBefore(@Nullable final SoftwareVersion deserializedVersion) {
-        if (deserializedVersion == null) {
-            return false;
-        }
-        return compareTo(deserializedVersion) < 0;
-    }
-
     @Override
     public String toString() {
         // This is called by the platform when printing information on saved states to logs
@@ -194,5 +182,22 @@ public class HederaSoftwareVersion implements SoftwareVersion {
             builder.build("");
         }
         return builder.build();
+    }
+
+    /**
+     * Given a pre-release version, returns the numeric part of the version or {@link Integer#MAX_VALUE} if the
+     * pre-release version is not a number. (Which implies the version is not an alpha version, and comes after
+     * any alpha version.)
+     *
+     * @param pre the pre-release version
+     * @return the numeric part of the pre-release version or {@link Integer#MAX_VALUE}
+     */
+    private static int alphaNumberOrMaxValue(@Nullable final String pre) {
+        if (pre == null) {
+            return Integer.MAX_VALUE;
+        }
+        final var alphaMatch = HapiUtils.ALPHA_PRE_PATTERN.matcher(pre);
+        // alpha versions come before everything else
+        return alphaMatch.matches() ? Integer.parseInt(alphaMatch.group(1)) : Integer.MAX_VALUE;
     }
 }

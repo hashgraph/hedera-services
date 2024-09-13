@@ -16,6 +16,8 @@
 
 package com.swirlds.virtualmap.datasource;
 
+import com.hedera.pbj.runtime.io.buffer.BufferedData;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.base.utility.ToStringBuilder;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
@@ -24,6 +26,8 @@ import com.swirlds.virtualmap.VirtualKey;
 import com.swirlds.virtualmap.VirtualValue;
 import com.swirlds.virtualmap.internal.Path;
 import com.swirlds.virtualmap.internal.cache.VirtualNodeCache;
+import com.swirlds.virtualmap.serialize.KeySerializer;
+import com.swirlds.virtualmap.serialize.ValueSerializer;
 import java.io.IOException;
 import java.util.Objects;
 
@@ -121,6 +125,23 @@ public final class VirtualLeafRecord<K extends VirtualKey, V extends VirtualValu
         if (this.value != value) {
             this.value = value;
         }
+    }
+
+    public VirtualLeafBytes toBytes(final KeySerializer<K> keySerializer, final ValueSerializer<V> valueSerializer) {
+        if (key == null) {
+            throw new IllegalStateException("Leaf records with null keys should not be serialized");
+        }
+        final byte[] keyBytes = new byte[keySerializer.getSerializedSize(key)];
+        keySerializer.serialize(key, BufferedData.wrap(keyBytes));
+        final byte[] valueBytes;
+        if (value != null) {
+            valueBytes = new byte[valueSerializer.getSerializedSize(value)];
+            valueSerializer.serialize(value, BufferedData.wrap(valueBytes));
+        } else {
+            valueBytes = null;
+        }
+        return new VirtualLeafBytes(
+                path, Bytes.wrap(keyBytes), key.hashCode(), valueBytes != null ? Bytes.wrap(valueBytes) : null);
     }
 
     /**

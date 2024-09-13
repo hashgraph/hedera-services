@@ -24,6 +24,7 @@ import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategor
 import com.hedera.hapi.block.stream.output.StateChange;
 import com.hedera.hapi.node.base.AccountAmount;
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.base.TransactionID;
@@ -58,6 +59,13 @@ public interface StreamBuilder {
      * @return this builder
      */
     StreamBuilder transaction(@NonNull Transaction transaction);
+
+    /**
+     * Sets the functionality for this stream item builder.
+     * @param functionality the functionality
+     * @return this builder
+     */
+    StreamBuilder functionality(@NonNull HederaFunctionality functionality);
 
     /**
      * Sets the serialized bytes for the transaction; if known, we can avoid re-serializing the transaction.
@@ -196,7 +204,7 @@ public interface StreamBuilder {
      * @param exchangeRate the exchange rate
      * @return this builder
      */
-    StreamBuilder exchangeRate(@NonNull ExchangeRateSet exchangeRate);
+    StreamBuilder exchangeRate(@Nullable ExchangeRateSet exchangeRate);
 
     /**
      * Returns the number of automatic token associations

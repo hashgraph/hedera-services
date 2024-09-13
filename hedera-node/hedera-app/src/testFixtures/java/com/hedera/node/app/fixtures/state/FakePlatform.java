@@ -26,6 +26,7 @@ import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.io.filesystem.FileSystemManager;
 import com.swirlds.common.io.utility.NoOpRecycleBin;
+import com.swirlds.common.merkle.crypto.MerkleCryptographyFactory;
 import com.swirlds.common.metrics.config.MetricsConfig;
 import com.swirlds.common.metrics.platform.DefaultPlatformMetrics;
 import com.swirlds.common.metrics.platform.MetricKeyRegistry;
@@ -97,7 +98,8 @@ public final class FakePlatform implements Platform {
                 metrics,
                 CryptographyHolder.get(),
                 FileSystemManager.create(configuration),
-                new NoOpRecycleBin());
+                new NoOpRecycleBin(),
+                MerkleCryptographyFactory.create(configuration, CryptographyHolder.get()));
     }
 
     @Override

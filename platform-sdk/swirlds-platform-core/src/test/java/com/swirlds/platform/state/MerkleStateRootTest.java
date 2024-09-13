@@ -29,6 +29,7 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -39,12 +40,20 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
+import com.hedera.hapi.block.stream.output.StateChanges;
 import com.hedera.hapi.platform.state.PlatformState;
 import com.swirlds.base.state.MutabilityException;
 import com.swirlds.common.context.PlatformContext;
+import com.swirlds.common.crypto.CryptographyFactory;
+import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.crypto.config.CryptoConfig;
 import com.swirlds.common.merkle.MerkleNode;
+import com.swirlds.common.merkle.crypto.MerkleCryptography;
+import com.swirlds.common.merkle.crypto.MerkleCryptographyFactory;
+import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.platform.state.service.PlatformStateService;
+import com.swirlds.platform.state.service.ReadablePlatformStateStore;
 import com.swirlds.platform.state.service.WritablePlatformStateStore;
 import com.swirlds.platform.state.service.schemas.V0540PlatformStateSchema;
 import com.swirlds.platform.system.InitTrigger;
@@ -98,8 +107,8 @@ class MerkleStateRootTest extends MerkleTestBase {
 
     private final MerkleStateLifecycles lifecycles = new MerkleStateLifecycles() {
         @Override
-        public void initPlatformState(@NonNull final State state) {
-            FAKE_MERKLE_STATE_LIFECYCLES.initPlatformState(state);
+        public List<StateChanges.Builder> initPlatformState(@NonNull final State state) {
+            return FAKE_MERKLE_STATE_LIFECYCLES.initPlatformState(state);
         }
 
         @Override
@@ -856,6 +865,10 @@ class MerkleStateRootTest extends MerkleTestBase {
         void setUp() {
             given(kvListener.stateTypes()).willReturn(EnumSet.of(MAP));
             given(nonKvListener.stateTypes()).willReturn(EnumSet.of(QUEUE, SINGLETON));
+            given(kvListener.stateIdFor(FIRST_SERVICE, FRUIT_STATE_KEY)).willReturn(FRUIT_STATE_ID);
+            given(kvListener.stateIdFor(FIRST_SERVICE, ANIMAL_STATE_KEY)).willReturn(ANIMAL_STATE_ID);
+            given(nonKvListener.stateIdFor(FIRST_SERVICE, COUNTRY_STATE_KEY)).willReturn(COUNTRY_STATE_ID);
+            given(nonKvListener.stateIdFor(FIRST_SERVICE, STEAM_STATE_KEY)).willReturn(STEAM_STATE_ID);
 
             setupAnimalMerkleMap();
             setupFruitVirtualMap();
@@ -894,13 +907,13 @@ class MerkleStateRootTest extends MerkleTestBase {
 
             ((CommittableWritableStates) states).commit();
 
-            verify(kvListener).mapUpdateChange(computeLabel(FIRST_SERVICE, FRUIT_STATE_KEY), E_KEY, EGGPLANT);
-            verify(kvListener).mapDeleteChange(computeLabel(FIRST_SERVICE, FRUIT_STATE_KEY), C_KEY);
-            verify(kvListener).mapUpdateChange(computeLabel(FIRST_SERVICE, ANIMAL_STATE_KEY), A_KEY, AARDVARK);
-            verify(kvListener).mapDeleteChange(computeLabel(FIRST_SERVICE, ANIMAL_STATE_KEY), C_KEY);
-            verify(nonKvListener).singletonUpdateChange(computeLabel(FIRST_SERVICE, COUNTRY_STATE_KEY), ESTONIA);
-            verify(nonKvListener).queuePushChange(computeLabel(FIRST_SERVICE, STEAM_STATE_KEY), BIOLOGY);
-            verify(nonKvListener).queuePopChange(computeLabel(FIRST_SERVICE, STEAM_STATE_KEY));
+            verify(kvListener).mapUpdateChange(FRUIT_STATE_ID, E_KEY, EGGPLANT);
+            verify(kvListener).mapDeleteChange(FRUIT_STATE_ID, C_KEY);
+            verify(kvListener).mapUpdateChange(ANIMAL_STATE_ID, A_KEY, AARDVARK);
+            verify(kvListener).mapDeleteChange(ANIMAL_STATE_ID, C_KEY);
+            verify(nonKvListener).singletonUpdateChange(COUNTRY_STATE_ID, ESTONIA);
+            verify(nonKvListener).queuePushChange(STEAM_STATE_ID, BIOLOGY);
+            verify(nonKvListener).queuePopChange(STEAM_STATE_ID);
 
             verifyNoMoreInteractions(kvListener);
             verifyNoMoreInteractions(nonKvListener);
@@ -914,13 +927,13 @@ class MerkleStateRootTest extends MerkleTestBase {
         @Test
         @DisplayName("Platform state should be registered by default")
         void platformStateIsRegisteredByDefault() {
-            assertThat(stateRoot.getPlatformState()).isNotNull();
+            assertThat(stateRoot.getWritablePlatformState()).isNotNull();
         }
 
         @Test
         @DisplayName("Test access to the platform state")
         void testAccessToPlatformStateData() {
-            PlatformStateAccessor randomPlatformState = randomPlatformState(stateRoot.getPlatformState());
+            PlatformStateAccessor randomPlatformState = randomPlatformState(stateRoot.getWritablePlatformState());
             stateRoot.updatePlatformState(randomPlatformState);
             ReadableSingletonState<PlatformState> readableSingletonState = stateRoot
                     .getReadableStates(PlatformStateService.NAME)
@@ -936,16 +949,16 @@ class MerkleStateRootTest extends MerkleTestBase {
         @Test
         @DisplayName("Test update of the platform state")
         void testUpdatePlatformStateData() {
-            PlatformStateAccessor randomPlatformState = randomPlatformState(stateRoot.getPlatformState());
+            PlatformStateAccessor randomPlatformState = randomPlatformState(stateRoot.getWritablePlatformState());
             stateRoot.updatePlatformState(randomPlatformState);
             WritableStates writableStates = stateRoot.getWritableStates(PlatformStateService.NAME);
             WritableSingletonState<PlatformState> writableSingletonState =
                     writableStates.getSingleton(V0540PlatformStateSchema.PLATFORM_STATE_KEY);
-            PlatformStateAccessor newPlatformState = randomPlatformState(stateRoot.getPlatformState());
+            PlatformStateAccessor newPlatformState = randomPlatformState(stateRoot.getWritablePlatformState());
             writableSingletonState.put(toPbjPlatformState(newPlatformState));
             ((CommittableWritableStates) writableStates).commit();
 
-            PlatformStateAccessor stateAccessor = stateRoot.getPlatformState();
+            PlatformStateAccessor stateAccessor = stateRoot.getReadablePlatformState();
             assertThat(stateAccessor.getAddressBook()).isEqualTo(newPlatformState.getAddressBook());
             assertThat(stateAccessor.getRound())
                     .isEqualTo(newPlatformState.getSnapshot().round());
@@ -975,8 +988,8 @@ class MerkleStateRootTest extends MerkleTestBase {
         }
 
         @Test
-        @DisplayName("Migrate from the previous version")
-        void migrate() {
+        @DisplayName("Migrate from the previous version (the platform state is the zeroth child)")
+        void migrate_platform_state_zeroth_child() {
             com.swirlds.platform.state.PlatformState platformState = (com.swirlds.platform.state.PlatformState)
                     randomPlatformState(new com.swirlds.platform.state.PlatformState());
             stateRoot.setChild(0, platformState);
@@ -1008,8 +1021,138 @@ class MerkleStateRootTest extends MerkleTestBase {
             assertFalse(stateRoot.isImmutable());
 
             // MerkleStateRoot registers the platform state as a singleton upon the first request to it
-            assertInstanceOf(WritablePlatformStateStore.class, stateRoot.getPlatformState());
-            assertEquals(toPbjPlatformState(platformState), toPbjPlatformState(stateRoot.getPlatformState()));
+            assertInstanceOf(WritablePlatformStateStore.class, stateRoot.getWritablePlatformState());
+            assertInstanceOf(ReadablePlatformStateStore.class, stateRoot.getReadablePlatformState());
+            assertEquals(toPbjPlatformState(platformState), toPbjPlatformState(stateRoot.getWritablePlatformState()));
+            assertEquals(toPbjPlatformState(platformState), toPbjPlatformState(stateRoot.getReadablePlatformState()));
+        }
+
+        @Test
+        @DisplayName("Migrate from the previous version (platform state is the last child)")
+        void migrate_platform_state_last_child() {
+            com.swirlds.platform.state.PlatformState platformState = (com.swirlds.platform.state.PlatformState)
+                    randomPlatformState(new com.swirlds.platform.state.PlatformState());
+
+            var node1 = mock(MerkleNode.class);
+            var node1Copy = mock(MerkleNode.class);
+            when(node1.copy()).thenReturn(node1Copy);
+            stateRoot.setChild(0, node1);
+
+            var node2 = mock(MerkleNode.class);
+            var node2Copy = mock(MerkleNode.class);
+            when(node2.copy()).thenReturn(node2Copy);
+            stateRoot.setChild(1, node2);
+
+            stateRoot.setChild(2, platformState);
+            assertNull(stateRoot.getPreV054PlatformState());
+
+            assertSame(stateRoot, stateRoot.migrate(CURRENT_VERSION - 1));
+
+            // Platform state is not a part of the tree temporarily
+            assertEquals(2, stateRoot.getNumberOfChildren());
+            verify(node1).release();
+            verify(node2).release();
+
+            assertEquals(node1Copy, stateRoot.getChild(0));
+            assertEquals(node2Copy, stateRoot.getChild(1));
+
+            // Platform state is temporarily stored in a separate field
+            assertEquals(platformState, stateRoot.getPreV054PlatformState());
+
+            assertFalse(stateRoot.isImmutable());
+
+            // MerkleStateRoot registers the platform state as a singleton upon the first request to it
+            assertInstanceOf(WritablePlatformStateStore.class, stateRoot.getWritablePlatformState());
+            assertEquals(toPbjPlatformState(platformState), toPbjPlatformState(stateRoot.getWritablePlatformState()));
+        }
+
+        @Test
+        @DisplayName("Migrate fails if the platform state is absent")
+        void migrate_platform_absent() {
+            var node1 = mock(MerkleNode.class);
+            stateRoot.setChild(0, node1);
+            var node2 = mock(MerkleNode.class);
+            stateRoot.setChild(1, node2);
+
+            assertThrows(IllegalStateException.class, () -> stateRoot.migrate(CURRENT_VERSION - 1));
+        }
+    }
+
+    @Nested
+    @DisplayName("Hashing test")
+    class HashingTest {
+
+        private MerkleCryptography merkleCryptography;
+
+        @BeforeEach
+        void setUp() {
+            setupAnimalMerkleMap();
+            setupSingletonCountry();
+            setupSteamQueue();
+            setupFruitMerkleMap();
+
+            add(fruitMerkleMap, fruitMetadata, A_KEY, APPLE);
+            add(fruitMerkleMap, fruitMetadata, B_KEY, BANANA);
+            add(animalMerkleMap, animalMetadata, C_KEY, CUTTLEFISH);
+            add(animalMerkleMap, animalMetadata, D_KEY, DOG);
+            add(animalMerkleMap, animalMetadata, F_KEY, FOX);
+            countrySingleton.setValue(GHANA);
+            steamQueue.add(ART);
+
+            // Given a State with the fruit and animal and country states
+            stateRoot.putServiceStateIfAbsent(fruitMetadata, () -> fruitMerkleMap);
+            stateRoot.putServiceStateIfAbsent(animalMetadata, () -> animalMerkleMap);
+            stateRoot.putServiceStateIfAbsent(countryMetadata, () -> countrySingleton);
+            stateRoot.putServiceStateIfAbsent(steamMetadata, () -> steamQueue);
+
+            final Platform platform = mock(Platform.class);
+            merkleCryptography = MerkleCryptographyFactory.create(
+                    ConfigurationBuilder.create()
+                            .withConfigDataType(CryptoConfig.class)
+                            .build(),
+                    CryptographyFactory.create());
+            final PlatformContext platformContext = mock(PlatformContext.class);
+            when(platform.getContext()).thenReturn(platformContext);
+            when(platformContext.getMerkleCryptography()).thenReturn(merkleCryptography);
+            stateRoot.init(platform, InitTrigger.GENESIS, mock(SoftwareVersion.class));
+        }
+
+        @Test
+        @DisplayName("No hash by default")
+        void noHashByDefault() {
+            assertNull(stateRoot.getHash());
+        }
+
+        @Test
+        @DisplayName("computeHash is doesn't work on mutable states")
+        void calculateHashOnMutable() {
+            assertThrows(IllegalStateException.class, stateRoot::computeHash);
+        }
+
+        @Test
+        @DisplayName("computeHash is doesn't work on destroyed states")
+        void calculateHashOnDestroyed() {
+            stateRoot.destroyNode();
+            assertThrows(IllegalStateException.class, stateRoot::computeHash);
+        }
+
+        @Test
+        @DisplayName("Hash is computed after computeHash invocation")
+        void calculateHash() {
+            stateRoot.copy();
+            stateRoot.computeHash();
+            assertNotNull(stateRoot.getHash());
+        }
+
+        @Test
+        @DisplayName("computeHash is idempotent")
+        void calculateHash_idempotent() {
+            stateRoot.copy();
+            stateRoot.computeHash();
+            Hash hash1 = stateRoot.getHash();
+            stateRoot.computeHash();
+            Hash hash2 = stateRoot.getHash();
+            assertSame(hash1, hash2);
         }
     }
 }

@@ -273,7 +273,7 @@ public final class StartupStateUtils {
         final Hash oldHash = deserializedSignedState.originalHash();
         final Hash newHash = rehashTree(state);
 
-        final SoftwareVersion loadedVersion = state.getPlatformState().getCreationSoftwareVersion();
+        final SoftwareVersion loadedVersion = state.getReadablePlatformState().getCreationSoftwareVersion();
 
         if (oldHash.equals(newHash)) {
             logger.info(STARTUP.getMarker(), "Loaded state's hash is the same as when it was saved.");

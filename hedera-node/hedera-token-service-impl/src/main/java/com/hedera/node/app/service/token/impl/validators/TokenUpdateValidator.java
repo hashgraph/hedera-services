@@ -58,7 +58,7 @@ public class TokenUpdateValidator {
      * Validate the semantics of a token update transaction.
      * @param context The context to use.
      * @param op The token update transaction body.
-     * @return The result of the validation.
+     * @return The result of the validation
      */
     @NonNull
     public ValidationResult validateSemantics(

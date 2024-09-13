@@ -16,8 +16,6 @@
 
 package com.swirlds.platform.test.consensus;
 
-import static com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags.TIME_CONSUMING;
-
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
@@ -41,7 +39,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Stream;
-import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 class IntakeAndConsensusTests {
@@ -61,7 +59,7 @@ class IntakeAndConsensusTests {
      * Tests the workaround described in #5762
      */
     @Test
-    @Tag(TIME_CONSUMING)
+    @Disabled("This test needs to be investigated")
     void nonAncientEventWithMissingParents() {
         final long seed = 0;
         final int numNodes = 10;

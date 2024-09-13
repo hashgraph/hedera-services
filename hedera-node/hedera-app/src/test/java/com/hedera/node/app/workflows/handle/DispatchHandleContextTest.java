@@ -644,7 +644,7 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
                     .isThrownBy(() -> context.dispatchPrecedingTransaction(
                             txBody, StreamBuilder.class, VERIFIER_CALLBACK, AccountID.DEFAULT));
             verify(dispatcher, never()).dispatchHandle(any());
-            verify(stack).commitFullStack();
+            verify(stack).commitTransaction(any());
         }
 
         @Test
@@ -671,7 +671,7 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
             context.dispatchPrecedingTransaction(txBody, StreamBuilder.class, VERIFIER_CALLBACK, ALICE.accountID());
 
             verify(dispatchProcessor).processDispatch(childDispatch);
-            verify(stack).commitFullStack();
+            verify(stack).commitTransaction(any());
         }
 
         @Test

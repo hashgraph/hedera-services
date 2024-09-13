@@ -33,6 +33,7 @@ import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.NetworkStakingRewards;
 import com.hedera.hapi.node.state.token.StakingNodeInfo;
+import com.hedera.hapi.node.transaction.ExchangeRateSet;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableNetworkStakingRewardsStore;
 import com.hedera.node.app.service.token.impl.WritableStakingInfoStore;
@@ -41,12 +42,12 @@ import com.hedera.node.app.service.token.impl.handlers.staking.StakingRewardsHel
 import com.hedera.node.app.service.token.impl.test.handlers.util.TestStoreFactory;
 import com.hedera.node.app.service.token.records.NodeStakeUpdateStreamBuilder;
 import com.hedera.node.app.service.token.records.TokenContext;
-import com.hedera.node.app.spi.fixtures.numbers.FakeHederaNumbers;
 import com.hedera.node.app.spi.fixtures.state.MapWritableStates;
 import com.hedera.node.app.spi.fixtures.util.LogCaptor;
 import com.hedera.node.app.spi.fixtures.util.LogCaptureExtension;
 import com.hedera.node.app.spi.fixtures.util.LoggingSubject;
 import com.hedera.node.app.spi.fixtures.util.LoggingTarget;
+import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.StakingConfig;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
@@ -89,13 +90,15 @@ public class EndOfStakingPeriodUpdaterTest {
     private WritableStakingInfoStore stakingInfoStore;
     private WritableNetworkStakingRewardsStore stakingRewardsStore;
 
+    private static final ConfigProvider DEFAULT_CONFIG_PROVIDER = HederaTestConfigBuilder.createConfigProvider();
+
     @BeforeEach
     void setup() {
         accountStore = TestStoreFactory.newReadableStoreWithAccounts(Account.newBuilder()
                 .accountId(asAccount(800))
                 .tinybarBalance(100_000_000_000L)
                 .build());
-        subject = new EndOfStakingPeriodUpdater(new FakeHederaNumbers(), new StakingRewardsHelper());
+        subject = new EndOfStakingPeriodUpdater(new StakingRewardsHelper(), DEFAULT_CONFIG_PROVIDER);
     }
 
     @Test
@@ -109,7 +112,7 @@ public class EndOfStakingPeriodUpdaterTest {
         final var stakingInfoStore = mock(WritableStakingInfoStore.class);
         final var stakingRewardsStore = mock(WritableNetworkStakingRewardsStore.class);
 
-        subject.updateNodes(context);
+        subject.updateNodes(context, ExchangeRateSet.DEFAULT);
 
         verifyNoInteractions(stakingInfoStore, stakingRewardsStore);
     }
@@ -206,8 +209,10 @@ public class EndOfStakingPeriodUpdaterTest {
         assertThat(STAKING_INFO_3.pendingRewards()).isZero();
         given(nodeStakeUpdateRecordBuilder.transaction(any())).willReturn(nodeStakeUpdateRecordBuilder);
         given(nodeStakeUpdateRecordBuilder.memo(any())).willReturn(nodeStakeUpdateRecordBuilder);
+        given(nodeStakeUpdateRecordBuilder.exchangeRate(ExchangeRateSet.DEFAULT))
+                .willReturn(nodeStakeUpdateRecordBuilder);
 
-        subject.updateNodes(context);
+        subject.updateNodes(context, ExchangeRateSet.DEFAULT);
 
         assertThat(stakingRewardsStore.totalStakeRewardStart())
                 .isEqualTo(STAKE_TO_REWARD_1 + STAKE_TO_REWARD_2 + STAKE_TO_REWARD_3);
@@ -247,7 +252,7 @@ public class EndOfStakingPeriodUpdaterTest {
         final var stakingInfoStore = mock(WritableStakingInfoStore.class);
         final var stakingRewardsStore = mock(WritableNetworkStakingRewardsStore.class);
 
-        subject.updateNodes(context);
+        subject.updateNodes(context, ExchangeRateSet.DEFAULT);
 
         verifyNoInteractions(stakingInfoStore, stakingRewardsStore);
         assertThat(logCaptor.infoLogs()).contains("Staking not enabled, nothing to do");
@@ -266,8 +271,10 @@ public class EndOfStakingPeriodUpdaterTest {
         assertThat(STAKING_INFO_3.pendingRewards()).isZero();
         given(nodeStakeUpdateRecordBuilder.transaction(any())).willReturn(nodeStakeUpdateRecordBuilder);
         given(nodeStakeUpdateRecordBuilder.memo(any())).willReturn(nodeStakeUpdateRecordBuilder);
+        given(nodeStakeUpdateRecordBuilder.exchangeRate(ExchangeRateSet.DEFAULT))
+                .willReturn(nodeStakeUpdateRecordBuilder);
 
-        subject.updateNodes(context);
+        subject.updateNodes(context, ExchangeRateSet.DEFAULT);
 
         assertThat(stakingRewardsStore.totalStakeRewardStart())
                 .isEqualTo(STAKE_TO_REWARD_1 + STAKE_TO_REWARD_2 + STAKE_TO_REWARD_3);
@@ -304,8 +311,10 @@ public class EndOfStakingPeriodUpdaterTest {
                         .getOrCreateConfig());
         given(nodeStakeUpdateRecordBuilder.transaction(any())).willReturn(nodeStakeUpdateRecordBuilder);
         given(nodeStakeUpdateRecordBuilder.memo(any())).willReturn(nodeStakeUpdateRecordBuilder);
+        given(nodeStakeUpdateRecordBuilder.exchangeRate(ExchangeRateSet.DEFAULT))
+                .willReturn(nodeStakeUpdateRecordBuilder);
 
-        subject.updateNodes(context);
+        subject.updateNodes(context, ExchangeRateSet.DEFAULT);
 
         assertThat(stakingRewardsStore.totalStakeRewardStart())
                 .isEqualTo(STAKE_TO_REWARD_1 + STAKE_TO_REWARD_2 + STAKE_TO_REWARD_3);
@@ -343,8 +352,10 @@ public class EndOfStakingPeriodUpdaterTest {
         assertThat(stakingRewardsStore.totalStakeRewardStart()).isZero();
         given(nodeStakeUpdateRecordBuilder.transaction(any())).willReturn(nodeStakeUpdateRecordBuilder);
         given(nodeStakeUpdateRecordBuilder.memo(any())).willReturn(nodeStakeUpdateRecordBuilder);
+        given(nodeStakeUpdateRecordBuilder.exchangeRate(ExchangeRateSet.DEFAULT))
+                .willReturn(nodeStakeUpdateRecordBuilder);
 
-        subject.updateNodes(context);
+        subject.updateNodes(context, ExchangeRateSet.DEFAULT);
 
         assertThat(stakingRewardsStore.totalStakeRewardStart())
                 .isEqualTo(STAKE_TO_REWARD_1 + STAKE_TO_REWARD_2 + STAKE_TO_REWARD_3);

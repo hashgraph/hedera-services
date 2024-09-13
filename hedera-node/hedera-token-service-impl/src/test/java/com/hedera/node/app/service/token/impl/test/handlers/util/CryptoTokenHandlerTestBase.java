@@ -26,8 +26,12 @@ import static com.hedera.node.app.service.token.impl.test.handlers.util.CryptoHa
 import static java.util.Collections.emptyList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.mock;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
@@ -37,6 +41,7 @@ import com.hedera.hapi.node.base.KeyList;
 import com.hedera.hapi.node.base.NftID;
 import com.hedera.hapi.node.base.PendingAirdropId;
 import com.hedera.hapi.node.base.PendingAirdropValue;
+import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenSupplyType;
@@ -86,6 +91,7 @@ import com.hedera.node.app.service.token.records.FinalizeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.store.StoreFactory;
+import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.config.VersionedConfigImpl;
@@ -1173,7 +1179,13 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
                 .willReturn(readableRewardsStore);
         given(storeFactory.writableStore(WritableNetworkStakingRewardsStore.class))
                 .willReturn(writableRewardsStore);
-        given(context.dispatchComputeFees(any(), any(), any())).willReturn(new Fees(1l, 2l, 3l));
+        given(context.dispatchComputeFees(any(), any(), any())).willReturn(new Fees(1L, 2L, 3L));
+
+        final var expiryValidator = mock(ExpiryValidator.class);
+        lenient().when(context.expiryValidator()).thenReturn(expiryValidator);
+        lenient()
+                .when(expiryValidator.expirationStatus(any(), anyBoolean(), anyLong()))
+                .thenReturn(ResponseCodeEnum.OK);
     }
 
     protected void givenStoresAndConfig(final FinalizeContext context) {

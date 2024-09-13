@@ -19,6 +19,7 @@ package com.hedera.node.app.service.networkadmin.impl.test.handlers;
 import static com.hedera.hapi.util.HapiUtils.asTimestamp;
 import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.asAccount;
 import static com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler.asToken;
+import static com.hedera.node.app.state.recordcache.RecordCacheService.NAME;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.lenient;
 
@@ -57,6 +58,7 @@ import com.hedera.node.app.state.WorkingStateAccessor;
 import com.hedera.node.app.state.recordcache.DeduplicationCacheImpl;
 import com.hedera.node.app.state.recordcache.RecordCacheImpl;
 import com.hedera.node.app.state.recordcache.RecordCacheService;
+import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.VersionedConfiguration;
 import com.hedera.node.config.data.HederaConfig;
@@ -161,6 +163,9 @@ public class NetworkAdminHandlerTestBase {
     private DeduplicationCache dedupeCache;
 
     @Mock
+    protected SavepointStackImpl stack;
+
+    @Mock
     private WorkingStateAccessor wsa;
 
     @Mock
@@ -219,6 +224,7 @@ public class NetworkAdminHandlerTestBase {
         svc.registerSchemas(registry);
         registry.migrate(svc.getServiceName(), state, networkInfo);
         lenient().when(wsa.getState()).thenReturn(state);
+        lenient().when(stack.getWritableStates(NAME)).thenReturn(state.getWritableStates(NAME));
         lenient().when(props.getConfiguration()).thenReturn(versionedConfig);
         lenient().when(versionedConfig.getConfigData(HederaConfig.class)).thenReturn(hederaConfig);
         lenient().when(hederaConfig.transactionMaxValidDuration()).thenReturn(123456789999L);

@@ -29,7 +29,6 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  * Not exposed outside `hedera-app`.
  */
 public class RosterServiceImpl implements Service {
-
     /** The name of this service */
     public static final String NAME = "RosterService";
 
