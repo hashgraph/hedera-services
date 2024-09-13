@@ -24,6 +24,7 @@ import static com.hedera.node.app.service.contract.impl.test.TestHelpers.A_SECP2
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.DEFAULT_CONTRACTS_CONFIG;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.DEFAULT_HEDERA_CONFIG;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.ETH_DATA_WITH_CALL_DATA;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.FEE_SCHEDULE_UNITS_PER_TINYCENT;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
@@ -222,8 +223,10 @@ class TransactionModuleTest {
                 TransactionModule.maybeProvideHydratedEthTxData(context, hydration, DEFAULT_HEDERA_CONFIG, fileStore));
     }
 
+    // This test uses deprecated logic for calculation of gas price.
+    // Conversion of tinyCents to tinyBars is not needed for canonical gas prices.
     @Test
-    void providesSystemGasContractCalculator() {
+    void providesSystemGasContractCalculatorLegacy() {
         // Given a transaction-specific dispatch cost of 6 tinycent...
         given(context.dispatchComputeFees(TransactionBody.DEFAULT, AccountID.DEFAULT, ComputeDispatchFeesAsTopLevel.NO))
                 .willReturn(new Fees(1, 2, 3));
@@ -240,6 +243,30 @@ class TransactionModuleTest {
         final var result = calculator.gasRequirement(TransactionBody.DEFAULT, DispatchType.APPROVE, AccountID.DEFAULT);
         // Expect the result to be ceil(7 tinybar / 2 tinybar per gas) = 4 gas.
         assertEquals(4L, result);
+    }
+
+    @Test
+    void providesSystemGasContractCalculator() {
+        // Fix is enabled, no precision should be lost
+        given(tinybarValues.isGasPrecisionLossFixEnabled()).willReturn(true);
+
+        // Given a transaction-specific dispatch cost of 6 tinyBars which will be 12000 tinyCents...
+        given(context.dispatchComputeFees(TransactionBody.DEFAULT, AccountID.DEFAULT, ComputeDispatchFeesAsTopLevel.NO))
+                .willReturn(new Fees(1, 2, 3));
+        // The 6 tinyBars = 12000 tinyCents
+        given(tinybarValues.asTinycents(6L)).willReturn(12000L);
+
+        // But a canonical price of 66000 tinyCents for an approve call (which, being
+        // greater than the above 12000 tinyCents, is the effective price)...
+        given(canonicalDispatchPrices.canonicalPriceInTinycents(DispatchType.APPROVE))
+                .willReturn(66000L);
+
+        // With each gas costing 2000 tinyCents...
+        given(tinybarValues.childTransactionTinycentGasPrice()).willReturn(2000L * FEE_SCHEDULE_UNITS_PER_TINYCENT);
+        final var calculator =
+                TransactionModule.provideSystemContractGasCalculator(context, canonicalDispatchPrices, tinybarValues);
+        final var result = calculator.gasRequirement(TransactionBody.DEFAULT, DispatchType.APPROVE, AccountID.DEFAULT);
+        assertEquals(1238L, result);
     }
 
     @Test

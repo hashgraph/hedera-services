@@ -58,6 +58,7 @@ public enum DispatchType {
     UPDATE(HederaFunctionality.TOKEN_UPDATE, DEFAULT),
     TOKEN_UPDATE_NFTS(HederaFunctionality.TOKEN_UPDATE_NFTS, DEFAULT),
     UTIL_PRNG(HederaFunctionality.UTIL_PRNG, DEFAULT),
+    TOKEN_INFO(HederaFunctionality.TOKEN_GET_INFO, DEFAULT),
     UPDATE_TOKEN_CUSTOM_FEES(HederaFunctionality.TOKEN_FEE_SCHEDULE_UPDATE, DEFAULT);
 
     private final HederaFunctionality functionality;
