@@ -14,56 +14,19 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.system.state.notifications;
+package com.hedera.services.bdd.junit.support.validators.block;
 
-import static java.util.Objects.requireNonNull;
-
-import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.merkle.utility.MerkleTreeVisualizer;
-import com.swirlds.common.notification.AbstractNotification;
-import com.swirlds.common.notification.Notification;
 import com.swirlds.platform.state.MerkleRoot;
-import com.swirlds.platform.wiring.components.StateAndRound;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.regex.Pattern;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
-/**
- * A {@link Notification} that a state hash has been computed.
- */
-public class StateHashedNotification extends AbstractNotification {
-    private final long roundNumber;
-    private final Hash hash;
-
-    /**
-     * Create a notification for a newly hashed state.
-     * @param stateAndRound the state and round that is now hashed
-     * @return a new notification
-     */
-    public static StateHashedNotification from(@NonNull final StateAndRound stateAndRound) {
-        try (final var state = stateAndRound.reservedSignedState()) {
-            if (stateAndRound.round().getRoundNum() == 2) {
-                visualizeTreeHashesByName(state.get().getState());
-            }
-            return new StateHashedNotification(
-                    stateAndRound.round().getRoundNum(),
-                    requireNonNull(state.get().getState().getHash()));
-        }
-    }
-
-    public StateHashedNotification(final long roundNumber, @NonNull final Hash hash) {
-        this.roundNumber = roundNumber;
-        this.hash = requireNonNull(hash);
-    }
-
-    public long round() {
-        return roundNumber;
-    }
-
-    public @NonNull Hash hash() {
-        return hash;
-    }
+public class StateVisualizer {
+    private static final Logger logger = LogManager.getLogger(StateVisualizer.class);
 
     private static final Pattern STATE_ROOT_PATTERN = Pattern.compile(".*MerkleStateRoot.*/.*\\s+(.+)");
     private static final Pattern CHILD_STATE_PATTERN = Pattern.compile("\\s+\\d+ \\w+\\s+(\\S+)\\s+.+\\s+(.+)");
@@ -71,14 +34,14 @@ public class StateHashedNotification extends AbstractNotification {
     public static StringBuilder visualizeTree(@NonNull final MerkleRoot state) {
         final var sb = new StringBuilder();
         new MerkleTreeVisualizer(state).setDepth(5).render(sb);
-        System.out.println("NODE : Visualising State Tree:" + sb);
+        logger.info("Visualising State Tree: {}", sb);
         return sb;
     }
 
     public static void visualizeTreeHashesByName(@NonNull final MerkleRoot state) {
         final var builder = visualizeTree(state);
         final var map = hashesByName(builder.toString());
-        System.out.println("NODE : Visualising State Hashes by Name: " + map);
+        logger.info("Visualising State Hashes by Name: {}", map);
     }
 
     public static Map<String, String> hashesByName(@NonNull final String visualization) {
@@ -93,7 +56,7 @@ public class StateHashedNotification extends AbstractNotification {
                 if (childStateMatcher.matches()) {
                     hashes.put(childStateMatcher.group(1), childStateMatcher.group(2));
                 } else {
-                    System.out.println("Ignoring visualization line " + line);
+                    logger.warn("Ignoring visualization line '{}'", line);
                 }
             }
         }

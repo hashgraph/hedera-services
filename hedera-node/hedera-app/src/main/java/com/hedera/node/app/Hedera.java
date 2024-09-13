@@ -465,13 +465,6 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener {
             @NonNull final Platform platform,
             @NonNull final InitTrigger trigger,
             @Nullable final SoftwareVersion previousVersion) {
-        // These listeners are singletons and might be reused with multiple init triggers
-        // during a genesis reconnect (i.e., first GENESIS then RECONNECT); we ensure here
-        // they are always reset before doing migration for any non-GENESIS trigger
-        if (trigger != GENESIS) {
-            kvStateChangeListener.reset();
-            boundaryStateChangeListener.reset();
-        }
         // A Hedera object can receive multiple onStateInitialized() calls throughout its lifetime if
         // the platform needs to initialize a learned state after reconnect; however, it cannot be
         // used by multiple platform instances
@@ -519,10 +512,16 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener {
         }
         try {
             migrateAndInitialize(state, deserializedVersion, trigger, metrics);
+            resetListeners();
         } catch (final Throwable t) {
             logger.fatal("Critical failure during initialization", t);
             throw new IllegalStateException("Critical failure during initialization", t);
         }
+    }
+
+    private void resetListeners() {
+        kvStateChangeListener.reset();
+        boundaryStateChangeListener.reset();
     }
 
     /**

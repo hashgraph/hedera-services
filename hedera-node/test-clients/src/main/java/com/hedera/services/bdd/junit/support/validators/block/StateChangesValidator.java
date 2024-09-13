@@ -17,6 +17,7 @@
 package com.hedera.services.bdd.junit.support.validators.block;
 
 import static com.hedera.node.app.blocks.impl.BlockImplUtils.combine;
+import static com.hedera.node.app.hapi.utils.CommonUtils.noThrowSha384HashOf;
 import static com.hedera.node.app.info.UnavailableNetworkInfo.UNAVAILABLE_NETWORK_INFO;
 import static com.hedera.node.app.workflows.handle.metric.UnavailableMetrics.UNAVAILABLE_METRICS;
 import static com.hedera.services.bdd.junit.hedera.ExternalPath.APPLICATION_PROPERTIES;
@@ -26,6 +27,8 @@ import static com.hedera.services.bdd.junit.hedera.NodeSelector.byNodeId;
 import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.STATE_METADATA_FILE;
 import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.loadAddressBookWithDeterministicCerts;
 import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.workingDirFor;
+import static com.hedera.services.bdd.junit.support.validators.block.StateVisualizer.hashesByName;
+import static com.hedera.services.bdd.junit.support.validators.block.StateVisualizer.visualizeTree;
 import static com.hedera.services.bdd.spec.TargetNetworkType.SUBPROCESS_NETWORK;
 import static com.swirlds.platform.state.GenesisStateBuilder.initGenesisPlatformState;
 import static com.swirlds.platform.state.service.PlatformStateService.PLATFORM_STATE_SERVICE;
@@ -54,7 +57,6 @@ import com.hedera.node.app.blocks.StreamingTreeHasher;
 import com.hedera.node.app.config.BootstrapConfigProviderImpl;
 import com.hedera.node.app.config.ConfigProviderImpl;
 import com.hedera.node.app.fees.FeeService;
-import com.hedera.node.app.hapi.utils.CommonUtils;
 import com.hedera.node.app.ids.EntityIdService;
 import com.hedera.node.app.info.NodeInfoImpl;
 import com.hedera.node.app.records.BlockRecordService;
@@ -118,7 +120,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.InstantSource;
 import java.util.HashSet;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -163,7 +164,7 @@ public class StateChangesValidator implements BlockStreamValidator {
                 .normalize();
         final var validator = new StateChangesValidator(
                 Bytes.fromHex(
-                        "e00891e6efa91c70c124bbf6d03767612803d4fd48cb4abf9c18de80850bf248b80562cc3c3a014181f4e6969602f0a0"),
+                        "49d9954a2e5462432e2190cdf0bcb7ca07c137c81371a66b4d9165730c33cc14dfcb53ab79914bfc0fdf6d7423569663"),
                 node0Dir.resolve("output/swirlds.log"),
                 node0Dir.resolve("config.txt"),
                 node0Dir.resolve("data/config/application.properties"));
@@ -278,21 +279,22 @@ public class StateChangesValidator implements BlockStreamValidator {
         logger.info("Beginning validation of expected root hash {}", expectedRootHash);
         var previousBlockHash = BlockStreamManager.ZERO_BLOCK_HASH;
         var startOfStateHash = requireNonNull(genesisStateHash).getBytes();
-        var isFirstBlock = true;
 
-        for (final var block : blocks) {
-            final StreamingTreeHasher inputTreeHasher = new NaiveStreamingTreeHasher();
-            final StreamingTreeHasher outputTreeHasher = new NaiveStreamingTreeHasher();
-            if (!isFirstBlock) {
+        for (int i = 0; i < blocks.size(); i++) {
+            final var block = blocks.get(i);
+            if (i != 0) {
                 final var stateToBeCopied = state;
                 this.state = stateToBeCopied.copy();
                 startOfStateHash = CRYPTO.digestTreeSync(stateToBeCopied).getBytes();
-            } else {
-                isFirstBlock = false;
+                if (i == 1) {
+                    logger.info("Visualizing state tree for block = {}", block);
+                    visualizeTree(stateToBeCopied);
+                }
             }
+            final StreamingTreeHasher inputTreeHasher = new NaiveStreamingTreeHasher();
+            final StreamingTreeHasher outputTreeHasher = new NaiveStreamingTreeHasher();
             for (final var item : block.items()) {
                 servicesWritten.clear();
-
                 hashInputOutputTree(item, inputTreeHasher, outputTreeHasher);
 
                 if (item.hasStateChanges()) {
@@ -300,11 +302,10 @@ public class StateChangesValidator implements BlockStreamValidator {
                     if (genesisMigrationTimestamp == null) {
                         genesisMigrationTimestamp = stateChanges.consensusTimestamp();
                     }
-                    if (!isGenesisMigrationChange(stateChanges)) {
-                        applyStateChanges(stateChanges);
-                    } else {
-                        logger.info("Skipping genesis migration state changes");
+                    if (isGenesisMigrationChange(stateChanges)) {
+                        logger.info("Migration State changes being skipped {}", stateChanges);
                     }
+                    applyStateChanges(stateChanges);
                 }
                 servicesWritten.forEach(name -> ((CommittableWritableStates) state.getWritableStates(name)).commit());
             }
@@ -317,9 +318,10 @@ public class StateChangesValidator implements BlockStreamValidator {
 
             final var currentBlockHash =
                     getBlockHash(startOfStateHash, previousBlockHash, inputTreeHasher, outputTreeHasher);
-            logger.info(
-                    "getBlockHash: startOfStateHash {}, previousBlockHash : {}", startOfStateHash, previousBlockHash);
-            validateBlockProof(lastBlockItem.blockProofOrThrow(), currentBlockHash);
+            final var expectedBlockProofBuilder = BlockProof.newBuilder()
+                    .previousBlockRootHash(previousBlockHash)
+                    .startOfBlockStateRootHash(startOfStateHash);
+            validateBlockProof(lastBlockItem.blockProofOrThrow(), currentBlockHash, expectedBlockProofBuilder);
             previousBlockHash = currentBlockHash;
         }
         logger.info("Summary of changes by service:\n{}", stateChangesSummary);
@@ -374,7 +376,10 @@ public class StateChangesValidator implements BlockStreamValidator {
         return combine(leftHash, rightHash);
     }
 
-    private void validateBlockProof(final BlockProof blockProof, final Bytes currentBlockHash) {
+    private void validateBlockProof(
+            final BlockProof blockProof,
+            final Bytes currentBlockHash,
+            final BlockProof.Builder expectedBlockProofBuilder) {
         // validate the signature of the block proof is the expected
         final var actualSignature = blockProof.blockSignature();
         var blockHash = currentBlockHash;
@@ -385,7 +390,12 @@ public class StateChangesValidator implements BlockStreamValidator {
                 blockHash = combine(blockHash, siblingHash.siblingHash());
             }
         }
-        final var computedSignature = Bytes.wrap(CommonUtils.noThrowSha384HashOf(blockHash.toByteArray()));
+        final var computedSignature = Bytes.wrap(noThrowSha384HashOf(blockHash.toByteArray()));
+        expectedBlockProofBuilder
+                .blockSignature(computedSignature)
+                .siblingHashes(siblingHashes)
+                .block(blockProof.block());
+        //        logger.info("BlockProof ACTUAL : {}, EXPECTED: {} ", blockProof, expectedBlockProofBuilder.build());
         Assertions.assertEquals(computedSignature, actualSignature, "Block proof signature mismatch for " + blockProof);
     }
 
@@ -689,25 +699,6 @@ public class StateChangesValidator implements BlockStreamValidator {
         }
         logger.info("Read hashes:\n{}", sb);
         return sb == null ? null : hashesByName(sb.toString());
-    }
-
-    private static Map<String, String> hashesByName(@NonNull final String visualization) {
-        final var lines = visualization.split("\\n");
-        final Map<String, String> hashes = new LinkedHashMap<>();
-        for (final var line : lines) {
-            final var stateRootMatcher = STATE_ROOT_PATTERN.matcher(line);
-            if (stateRootMatcher.matches()) {
-                hashes.put("MerkleStateRoot", stateRootMatcher.group(1));
-            } else {
-                final var childStateMatcher = CHILD_STATE_PATTERN.matcher(line);
-                if (childStateMatcher.matches()) {
-                    hashes.put(childStateMatcher.group(1), childStateMatcher.group(2));
-                } else {
-                    logger.warn("Ignoring visualization line '{}'", line);
-                }
-            }
-        }
-        return hashes;
     }
 
     private static MerkleStateLifecycles newPlatformInitLifecycle(

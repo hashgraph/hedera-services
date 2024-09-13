@@ -251,6 +251,7 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
                     writer,
                     new MerkleSiblingHash(false, inputHash),
                     new MerkleSiblingHash(false, rightParent)));
+            log.info("Pending Block", pendingBlocks.peek());
             // Update in-memory state to prepare for the next block
             lastBlockHash = blockHash;
             writer = null;

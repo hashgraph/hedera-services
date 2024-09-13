@@ -248,7 +248,7 @@ public class SavepointStackImpl implements HandleContext.SavepointStack, State {
      */
     private void commitFullStack(@NonNull final StreamBuilder builder) {
         if (streamMode != RECORDS && kvStateChangeListener != null) {
-            kvStateChangeListener.resetStateChanges();
+            kvStateChangeListener.reset();
         }
         while (!stack.isEmpty()) {
             stack.pop().commit();
