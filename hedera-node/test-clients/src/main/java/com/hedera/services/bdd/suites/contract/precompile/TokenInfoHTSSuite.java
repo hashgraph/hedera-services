@@ -1579,6 +1579,7 @@ public class TokenInfoHTSSuite {
                                         HapiParserUtil.asHeadlongAddress(
                                                 asAddress(spec.registry().getContractId(TOKEN_INFO_CONTRACT))))
                                 .via(UPDATE_AND_GET_TOKEN_KEYS_INFO_TXN)
+                                .gas(117000L)
                                 .alsoSigningWithFullPrefix(MULTI_KEY))))
                 .then(withOpContext((spec, opLog) -> allRunFor(
                         spec,
