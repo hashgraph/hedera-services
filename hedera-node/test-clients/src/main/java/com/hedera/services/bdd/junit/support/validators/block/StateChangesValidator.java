@@ -200,7 +200,7 @@ public class StateChangesValidator implements BlockStreamValidator {
             genesisConfigTxt.toFile().deleteOnExit();
             final var node0 = subProcessNetwork.getRequiredNode(byNodeId(0));
             return new StateChangesValidator(
-                    rootHash,
+                    Bytes.wrap(new byte[48]),
                     node0.getExternalPath(SWIRLDS_LOG),
                     genesisConfigTxt,
                     node0.getExternalPath(APPLICATION_PROPERTIES));
