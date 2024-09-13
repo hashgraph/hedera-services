@@ -108,7 +108,7 @@ public class RosterRetrieverTests {
             .build();
 
     private static final Roster ROSTER_FROM_ADDRESS_BOOK = Roster.newBuilder()
-            .rosters(List.of(
+            .rosterEntries(List.of(
                     RosterEntry.newBuilder()
                             .nodeId(1L)
                             .weight(1L)

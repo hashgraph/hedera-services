@@ -343,7 +343,7 @@ public class AddressBookUtils {
             final RosterEntry rosterEntry = AddressBookUtils.toRosterEntry(address, nodeId);
             rosterEntries.add(rosterEntry);
         }
-        return Roster.newBuilder().rosters(rosterEntries).build();
+        return Roster.newBuilder().rosterEntries(rosterEntries).build();
     }
 
     /**
