@@ -57,7 +57,7 @@ class RosterUtilsTest {
     @Test
     void testHashOfEmptyRoster() {
         final Roster emptyRoster =
-                Roster.newBuilder().rosters(new ArrayList<>()).build();
+                Roster.newBuilder().rosterEntries(new ArrayList<>()).build();
         assertNotNull(RosterUtils.hashOf(emptyRoster));
     }
 
@@ -69,7 +69,7 @@ class RosterUtilsTest {
                 .weight(1)
                 .gossipCaCertificate(Bytes.EMPTY)
                 .build());
-        final Roster roster = Roster.newBuilder().rosters(entries).build();
+        final Roster roster = Roster.newBuilder().rosterEntries(entries).build();
         assertNotNull(RosterUtils.hashOf(roster));
     }
 
@@ -77,7 +77,8 @@ class RosterUtilsTest {
     void testHashOfRosterNoSuchAlgorithmException() {
         try (final MockedStatic<MessageDigest> mocked = mockStatic(MessageDigest.class)) {
             mocked.when(() -> MessageDigest.getInstance(anyString())).thenThrow(new NoSuchAlgorithmException());
-            final Roster roster = Roster.newBuilder().rosters(new ArrayList<>()).build();
+            final Roster roster =
+                    Roster.newBuilder().rosterEntries(new ArrayList<>()).build();
             assertThrows(IllegalStateException.class, () -> RosterUtils.hashOf(roster));
         }
     }

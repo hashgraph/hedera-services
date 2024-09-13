@@ -135,6 +135,6 @@ class WritableRosterStoreTest {
                             .build())
                     .build());
         }
-        return Roster.newBuilder().rosters(entriesList).build();
+        return Roster.newBuilder().rosterEntries(entriesList).build();
     }
 }

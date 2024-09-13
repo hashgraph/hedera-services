@@ -80,7 +80,7 @@ public class RosterUtils {
             throw new IllegalStateException(e);
         }
         hashBuilder.reset();
-        roster.rosters().forEach(entry -> {
+        roster.rosterEntries().forEach(entry -> {
             hashBuilder
                     .update(entry.nodeId())
                     .update(entry.weight())
@@ -138,7 +138,7 @@ public class RosterUtils {
             final RosterEntry rosterEntry = RosterUtils.toRosterEntry(address, nodeId);
             rosterEntries.add(rosterEntry);
         }
-        return Roster.newBuilder().rosters(rosterEntries).build();
+        return Roster.newBuilder().rosterEntries(rosterEntries).build();
     }
 
     /**
