@@ -17,16 +17,13 @@
 package com.hedera.services.bdd.suites.contract.precompile;
 
 import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
-import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.*;
 import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.asHeadlongAddress;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.*;
-import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_CONTRACT_CALL_RESULTS;
-import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_FUNCTION_PARAMETERS;
-import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
 import static com.hedera.services.bdd.suites.HapiSuite.TOKEN_TREASURY;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
@@ -54,21 +51,19 @@ public class RedirectPrecompileSuite {
     @HapiTest
     final Stream<DynamicTest> balanceOf() {
         final var totalSupply = 50;
-        return defaultHapiSpec(
-                        "balanceOf", NONDETERMINISTIC_CONTRACT_CALL_RESULTS, NONDETERMINISTIC_FUNCTION_PARAMETERS)
-                .given(
-                        newKeyNamed(MULTI_KEY),
-                        cryptoCreate(ACCOUNT).balance(100 * ONE_HUNDRED_HBARS),
-                        cryptoCreate(TOKEN_TREASURY),
-                        tokenCreate(FUNGIBLE_TOKEN)
-                                .tokenType(TokenType.FUNGIBLE_COMMON)
-                                .initialSupply(totalSupply)
-                                .treasury(TOKEN_TREASURY)
-                                .adminKey(MULTI_KEY)
-                                .supplyKey(MULTI_KEY),
-                        uploadInitCode(CONTRACT),
-                        contractCreate(CONTRACT))
-                .when(withOpContext((spec, opLog) -> allRunFor(
+        return hapiTest(
+                newKeyNamed(MULTI_KEY),
+                cryptoCreate(ACCOUNT).balance(100 * ONE_HUNDRED_HBARS),
+                cryptoCreate(TOKEN_TREASURY),
+                tokenCreate(FUNGIBLE_TOKEN)
+                        .tokenType(TokenType.FUNGIBLE_COMMON)
+                        .initialSupply(totalSupply)
+                        .treasury(TOKEN_TREASURY)
+                        .adminKey(MULTI_KEY)
+                        .supplyKey(MULTI_KEY),
+                uploadInitCode(CONTRACT),
+                contractCreate(CONTRACT),
+                withOpContext((spec, opLog) -> allRunFor(
                         spec,
                         contractCall(
                                         CONTRACT,
@@ -80,8 +75,8 @@ public class RedirectPrecompileSuite {
                                 .payingWith(ACCOUNT)
                                 .via(TXN)
                                 .hasKnownStatus(SUCCESS)
-                                .gas(1_000_000))))
-                .then(childRecordsCheck(
+                                .gas(1_000_000))),
+                childRecordsCheck(
                         TXN,
                         SUCCESS,
                         recordWith()
@@ -95,18 +90,13 @@ public class RedirectPrecompileSuite {
 
     @HapiTest
     final Stream<DynamicTest> redirectToInvalidToken() {
-        return defaultHapiSpec(
-                        "redirectToInvalidToken",
-                        NONDETERMINISTIC_TRANSACTION_FEES,
-                        NONDETERMINISTIC_CONTRACT_CALL_RESULTS,
-                        NONDETERMINISTIC_FUNCTION_PARAMETERS)
-                .given(
-                        newKeyNamed(MULTI_KEY),
-                        cryptoCreate(ACCOUNT).balance(100 * ONE_HUNDRED_HBARS),
-                        cryptoCreate(TOKEN_TREASURY).balance(100 * ONE_HUNDRED_HBARS),
-                        uploadInitCode(CONTRACT),
-                        contractCreate(CONTRACT))
-                .when(withOpContext((spec, opLog) -> allRunFor(
+        return hapiTest(
+                newKeyNamed(MULTI_KEY),
+                cryptoCreate(ACCOUNT).balance(100 * ONE_HUNDRED_HBARS),
+                cryptoCreate(TOKEN_TREASURY).balance(100 * ONE_HUNDRED_HBARS),
+                uploadInitCode(CONTRACT),
+                contractCreate(CONTRACT),
+                withOpContext((spec, opLog) -> allRunFor(
                         spec,
                         contractCall(
                                         CONTRACT,
@@ -122,8 +112,8 @@ public class RedirectPrecompileSuite {
                                 .payingWith(ACCOUNT)
                                 .via(TXN)
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
-                                .gas(1_000_000))))
-                .then(childRecordsCheck(
+                                .gas(1_000_000))),
+                childRecordsCheck(
                         TXN,
                         CONTRACT_REVERT_EXECUTED,
                         recordWith()
@@ -133,18 +123,13 @@ public class RedirectPrecompileSuite {
 
     @HapiTest
     final Stream<DynamicTest> redirectToNullSelector() {
-        return defaultHapiSpec(
-                        "redirectToNullSelector",
-                        NONDETERMINISTIC_TRANSACTION_FEES,
-                        NONDETERMINISTIC_CONTRACT_CALL_RESULTS,
-                        NONDETERMINISTIC_FUNCTION_PARAMETERS)
-                .given(
-                        newKeyNamed(MULTI_KEY),
-                        cryptoCreate(ACCOUNT).balance(100 * ONE_HUNDRED_HBARS),
-                        cryptoCreate(TOKEN_TREASURY).balance(100 * ONE_HUNDRED_HBARS),
-                        uploadInitCode(NULL_CONTRACT),
-                        contractCreate(NULL_CONTRACT))
-                .when(withOpContext((spec, opLog) -> allRunFor(
+        return hapiTest(
+                newKeyNamed(MULTI_KEY),
+                cryptoCreate(ACCOUNT).balance(100 * ONE_HUNDRED_HBARS),
+                cryptoCreate(TOKEN_TREASURY).balance(100 * ONE_HUNDRED_HBARS),
+                uploadInitCode(NULL_CONTRACT),
+                contractCreate(NULL_CONTRACT),
+                withOpContext((spec, opLog) -> allRunFor(
                         spec,
                         contractCall(
                                         NULL_CONTRACT,
@@ -158,7 +143,6 @@ public class RedirectPrecompileSuite {
                                 .payingWith(ACCOUNT)
                                 .via(TXN)
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
-                                .gas(1_000_000))))
-                .then();
+                                .gas(1_000_000))));
     }
 }

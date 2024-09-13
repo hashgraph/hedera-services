@@ -19,6 +19,7 @@ package com.hedera.services.bdd.suites.contract.precompile;
 import static com.google.protobuf.ByteString.copyFromUtf8;
 import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
@@ -32,8 +33,6 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.emptyChildRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
-import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_FUNCTION_PARAMETERS;
-import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_BURN_AMOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
@@ -72,106 +71,87 @@ public class ContractBurnHTSSuite {
     @HapiTest
     final Stream<DynamicTest> burnFungibleV1andV2WithZeroAndNegativeValues() {
         final AtomicReference<Address> tokenAddress = new AtomicReference<>();
-        return defaultHapiSpec("burnFungibleV1andV2WithZeroAndNegativeValues", NONDETERMINISTIC_FUNCTION_PARAMETERS)
-                .given(
-                        newKeyNamed(MULTI_KEY),
-                        cryptoCreate(TOKEN_TREASURY),
-                        tokenCreate(TOKEN)
-                                .tokenType(TokenType.FUNGIBLE_COMMON)
-                                .initialSupply(50L)
-                                .supplyKey(MULTI_KEY)
-                                .adminKey(MULTI_KEY)
-                                .treasury(TOKEN_TREASURY)
-                                .exposingAddressTo(tokenAddress::set),
-                        uploadInitCode(MULTIVERSION_BURN_CONTRACT),
-                        contractCreate(MULTIVERSION_BURN_CONTRACT)
-                                .gas(GAS_TO_OFFER)
-                                .hasKnownStatus(SUCCESS))
-                .when(
-                        // Burning 0 amount for Fungible tokens should fail
-                        sourcing(() -> contractCall(
-                                        MULTIVERSION_BURN_CONTRACT,
-                                        BURN_TOKEN_V_1,
-                                        tokenAddress.get(),
-                                        BigInteger.ZERO,
-                                        new long[0])
-                                .alsoSigningWithFullPrefix(MULTI_KEY)
-                                .gas(GAS_TO_OFFER)
-                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED)),
-                        sourcing(() -> contractCall(
-                                        MULTIVERSION_BURN_CONTRACT, BURN_TOKEN_V_2, tokenAddress.get(), 0L, new long[0])
-                                .alsoSigningWithFullPrefix(MULTI_KEY)
-                                .gas(GAS_TO_OFFER)
-                                .logged()
-                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED)),
-                        // Burning negative amount for Fungible tokens should fail
-                        sourcing(() -> contractCall(
-                                        MULTIVERSION_BURN_CONTRACT,
-                                        BURN_TOKEN_V_1,
-                                        tokenAddress.get(),
-                                        new BigInteger("FFFFFFFFFFFFFF00", 16),
-                                        new long[0])
-                                .alsoSigningWithFullPrefix(MULTI_KEY)
-                                .gas(GAS_TO_OFFER)
-                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED)),
-                        sourcing(() -> contractCall(
-                                        MULTIVERSION_BURN_CONTRACT,
-                                        BURN_TOKEN_V_2,
-                                        tokenAddress.get(),
-                                        -1L,
-                                        new long[0])
-                                .alsoSigningWithFullPrefix(MULTI_KEY)
-                                .gas(GAS_TO_OFFER)
-                                .logged()
-                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED)))
-                .then(getAccountBalance(TOKEN_TREASURY).hasTokenBalance(TOKEN, 50));
+        return hapiTest(
+                newKeyNamed(MULTI_KEY),
+                cryptoCreate(TOKEN_TREASURY),
+                tokenCreate(TOKEN)
+                        .tokenType(TokenType.FUNGIBLE_COMMON)
+                        .initialSupply(50L)
+                        .supplyKey(MULTI_KEY)
+                        .adminKey(MULTI_KEY)
+                        .treasury(TOKEN_TREASURY)
+                        .exposingAddressTo(tokenAddress::set),
+                uploadInitCode(MULTIVERSION_BURN_CONTRACT),
+                contractCreate(MULTIVERSION_BURN_CONTRACT).gas(GAS_TO_OFFER),
+                // Burning 0 amount for Fungible tokens should fail
+                sourcing(() -> contractCall(
+                                MULTIVERSION_BURN_CONTRACT,
+                                BURN_TOKEN_V_1,
+                                tokenAddress.get(),
+                                BigInteger.ZERO,
+                                new long[0])
+                        .alsoSigningWithFullPrefix(MULTI_KEY)
+                        .gas(GAS_TO_OFFER)
+                        .hasKnownStatus(CONTRACT_REVERT_EXECUTED)),
+                sourcing(() -> contractCall(
+                                MULTIVERSION_BURN_CONTRACT, BURN_TOKEN_V_2, tokenAddress.get(), 0L, new long[0])
+                        .alsoSigningWithFullPrefix(MULTI_KEY)
+                        .gas(GAS_TO_OFFER)
+                        .logged()
+                        .hasKnownStatus(CONTRACT_REVERT_EXECUTED)),
+                // Burning negative amount for Fungible tokens should fail
+                sourcing(() -> contractCall(
+                                MULTIVERSION_BURN_CONTRACT,
+                                BURN_TOKEN_V_1,
+                                tokenAddress.get(),
+                                new BigInteger("FFFFFFFFFFFFFF00", 16),
+                                new long[0])
+                        .alsoSigningWithFullPrefix(MULTI_KEY)
+                        .gas(GAS_TO_OFFER)
+                        .hasKnownStatus(CONTRACT_REVERT_EXECUTED)),
+                sourcing(() -> contractCall(
+                                MULTIVERSION_BURN_CONTRACT, BURN_TOKEN_V_2, tokenAddress.get(), -1L, new long[0])
+                        .alsoSigningWithFullPrefix(MULTI_KEY)
+                        .gas(GAS_TO_OFFER)
+                        .logged()
+                        .hasKnownStatus(CONTRACT_REVERT_EXECUTED)),
+                getAccountBalance(TOKEN_TREASURY).hasTokenBalance(TOKEN, 50));
     }
 
     @HapiTest
     final Stream<DynamicTest> burnNonFungibleV1andV2WithNegativeValues() {
         final AtomicReference<Address> tokenAddress = new AtomicReference<>();
-        return defaultHapiSpec(
-                        "burnNonFungibleV1andV2WithNegativeValues",
-                        NONDETERMINISTIC_FUNCTION_PARAMETERS,
-                        NONDETERMINISTIC_TRANSACTION_FEES)
-                .given(
-                        newKeyNamed(MULTI_KEY),
-                        cryptoCreate(TOKEN_TREASURY),
-                        tokenCreate(TOKEN)
-                                .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
-                                .supplyKey(MULTI_KEY)
-                                .adminKey(MULTI_KEY)
-                                .treasury(TOKEN_TREASURY)
-                                .initialSupply(0L)
-                                .exposingAddressTo(tokenAddress::set),
-                        mintToken(TOKEN, List.of(copyFromUtf8(FIRST))),
-                        mintToken(TOKEN, List.of(copyFromUtf8(SECOND))),
-                        uploadInitCode(MULTIVERSION_BURN_CONTRACT),
-                        contractCreate(MULTIVERSION_BURN_CONTRACT)
-                                .gas(GAS_TO_OFFER)
-                                .hasKnownStatus(SUCCESS))
-                .when(
-                        // Burning negative amount for Fungible tokens should fail
-                        sourcing(() -> contractCall(
-                                        MULTIVERSION_BURN_CONTRACT,
-                                        BURN_TOKEN_V_1,
-                                        tokenAddress.get(),
-                                        new BigInteger("FFFFFFFFFFFFFF00", 16),
-                                        new long[] {1L})
-                                .alsoSigningWithFullPrefix(MULTI_KEY)
-                                .gas(GAS_TO_OFFER)
-                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED)),
-                        sourcing(() -> contractCall(
-                                        MULTIVERSION_BURN_CONTRACT,
-                                        BURN_TOKEN_V_2,
-                                        tokenAddress.get(),
-                                        -1L,
-                                        new long[] {1L})
-                                .alsoSigningWithFullPrefix(MULTI_KEY)
-                                .gas(GAS_TO_OFFER)
-                                .logged()
-                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED)))
-                .then(getAccountBalance(TOKEN_TREASURY).hasTokenBalance(TOKEN, 2));
+        return hapiTest(
+                newKeyNamed(MULTI_KEY),
+                cryptoCreate(TOKEN_TREASURY),
+                tokenCreate(TOKEN)
+                        .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
+                        .supplyKey(MULTI_KEY)
+                        .adminKey(MULTI_KEY)
+                        .treasury(TOKEN_TREASURY)
+                        .initialSupply(0L)
+                        .exposingAddressTo(tokenAddress::set),
+                mintToken(TOKEN, List.of(copyFromUtf8(FIRST))),
+                mintToken(TOKEN, List.of(copyFromUtf8(SECOND))),
+                uploadInitCode(MULTIVERSION_BURN_CONTRACT),
+                contractCreate(MULTIVERSION_BURN_CONTRACT).gas(GAS_TO_OFFER),
+                // Burning negative amount for Fungible tokens should fail
+                sourcing(() -> contractCall(
+                                MULTIVERSION_BURN_CONTRACT,
+                                BURN_TOKEN_V_1,
+                                tokenAddress.get(),
+                                new BigInteger("FFFFFFFFFFFFFF00", 16),
+                                new long[] {1L})
+                        .alsoSigningWithFullPrefix(MULTI_KEY)
+                        .gas(GAS_TO_OFFER)
+                        .hasKnownStatus(CONTRACT_REVERT_EXECUTED)),
+                sourcing(() -> contractCall(
+                                MULTIVERSION_BURN_CONTRACT, BURN_TOKEN_V_2, tokenAddress.get(), -1L, new long[] {1L})
+                        .alsoSigningWithFullPrefix(MULTI_KEY)
+                        .gas(GAS_TO_OFFER)
+                        .logged()
+                        .hasKnownStatus(CONTRACT_REVERT_EXECUTED)),
+                getAccountBalance(TOKEN_TREASURY).hasTokenBalance(TOKEN, 2));
     }
 
     @HapiTest

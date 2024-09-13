@@ -65,7 +65,6 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsdWithin;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
-import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.EXPECT_STREAMLINED_INGEST_RECORDS;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
 import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PAYER;
 import static com.hedera.services.bdd.suites.HapiSuite.FUNDING;
@@ -278,16 +277,14 @@ public class CryptoApproveAllowanceSuite {
         final var cryptoAdminKey = "cryptoAdminKey";
         final var contractNum = new AtomicLong();
         final var contract = "PayableConstructor";
-        return defaultHapiSpec("cannotPayForAnyTransactionWithContractAccount", EXPECT_STREAMLINED_INGEST_RECORDS)
-                .given(
-                        newKeyNamed(cryptoAdminKey),
-                        uploadInitCode(contract),
-                        contractCreate(contract)
-                                .adminKey(cryptoAdminKey)
-                                .balance(ONE_HUNDRED_HBARS)
-                                .exposingNumTo(contractNum::set))
-                .when()
-                .then(sourcing(() -> cryptoTransfer(tinyBarsFromTo(contract, FUNDING, 1))
+        return hapiTest(
+                newKeyNamed(cryptoAdminKey),
+                uploadInitCode(contract),
+                contractCreate(contract)
+                        .adminKey(cryptoAdminKey)
+                        .balance(ONE_HUNDRED_HBARS)
+                        .exposingNumTo(contractNum::set),
+                sourcing(() -> cryptoTransfer(tinyBarsFromTo(contract, FUNDING, 1))
                         .fee(ONE_HBAR)
                         .payingWith("0.0." + contractNum.longValue())
                         .signedBy(cryptoAdminKey)
@@ -336,99 +333,94 @@ public class CryptoApproveAllowanceSuite {
 
     @HapiTest
     final Stream<DynamicTest> canDeleteAllowanceFromDeletedSpender() {
-        return defaultHapiSpec("canDeleteAllowanceFromDeletedSpender", NONDETERMINISTIC_TRANSACTION_FEES)
-                .given(
-                        newKeyNamed(SUPPLY_KEY),
-                        cryptoCreate(OWNER).balance(ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(10),
-                        cryptoCreate(SPENDER).balance(ONE_HUNDRED_HBARS),
-                        cryptoCreate(TOKEN_TREASURY)
-                                .balance(100 * ONE_HUNDRED_HBARS)
-                                .maxAutomaticTokenAssociations(10),
-                        tokenCreate(FUNGIBLE_TOKEN)
-                                .tokenType(TokenType.FUNGIBLE_COMMON)
-                                .supplyType(TokenSupplyType.FINITE)
-                                .supplyKey(SUPPLY_KEY)
-                                .maxSupply(1000L)
-                                .initialSupply(10L)
-                                .treasury(TOKEN_TREASURY),
-                        tokenCreate(NON_FUNGIBLE_TOKEN)
-                                .maxSupply(10L)
-                                .initialSupply(0)
-                                .supplyType(TokenSupplyType.FINITE)
-                                .tokenType(NON_FUNGIBLE_UNIQUE)
-                                .supplyKey(SUPPLY_KEY)
-                                .treasury(TOKEN_TREASURY),
-                        tokenAssociate(OWNER, FUNGIBLE_TOKEN),
-                        tokenAssociate(OWNER, NON_FUNGIBLE_TOKEN),
-                        mintToken(FUNGIBLE_TOKEN, 500L).via(FUNGIBLE_TOKEN_MINT_TXN),
-                        mintToken(
-                                NON_FUNGIBLE_TOKEN,
-                                List.of(
-                                        ByteString.copyFromUtf8("a"),
-                                        ByteString.copyFromUtf8("b"),
-                                        ByteString.copyFromUtf8("c"))))
-                .when(
-                        cryptoApproveAllowance()
-                                .payingWith(OWNER)
-                                .addCryptoAllowance(OWNER, SPENDER, 100L)
-                                .addTokenAllowance(OWNER, FUNGIBLE_TOKEN, SPENDER, 1)
-                                .addNftAllowance(OWNER, NON_FUNGIBLE_TOKEN, SPENDER, true, List.of()),
-                        getAccountDetails(OWNER)
-                                .payingWith(GENESIS)
-                                .has(accountDetailsWith()
-                                        .cryptoAllowancesCount(1)
-                                        .tokenAllowancesCount(1)
-                                        .nftApprovedForAllAllowancesCount(1)
-                                        .cryptoAllowancesContaining(SPENDER, 100L)
-                                        .tokenAllowancesContaining(FUNGIBLE_TOKEN, SPENDER, 1)),
-                        cryptoDelete(SPENDER),
-                        // removing fungible allowances should be possible even if the
-                        // spender is deleted
-                        cryptoApproveAllowance()
-                                .payingWith(OWNER)
-                                .addCryptoAllowance(OWNER, SPENDER, 0)
-                                .blankMemo(),
-                        getAccountDetails(OWNER)
-                                .payingWith(GENESIS)
-                                .has(accountDetailsWith()
-                                        .cryptoAllowancesCount(0)
-                                        .tokenAllowancesCount(1)
-                                        .nftApprovedForAllAllowancesCount(1)
-                                        .tokenAllowancesContaining(FUNGIBLE_TOKEN, SPENDER, 1)),
-                        cryptoApproveAllowance()
-                                .payingWith(OWNER)
-                                .addTokenAllowance(OWNER, FUNGIBLE_TOKEN, SPENDER, 0)
-                                .blankMemo(),
-                        getAccountDetails(OWNER)
-                                .payingWith(GENESIS)
-                                .has(accountDetailsWith()
-                                        .cryptoAllowancesCount(0)
-                                        .tokenAllowancesCount(0)
-                                        .nftApprovedForAllAllowancesCount(1)),
-                        // It should not be possible to remove approveForAllNftAllowance
-                        // and also add allowance to serials
-                        cryptoApproveAllowance()
-                                .payingWith(OWNER)
-                                .addNftAllowance(OWNER, NON_FUNGIBLE_TOKEN, SPENDER, false, List.of(1L, 2L))
-                                .hasKnownStatus(INVALID_ALLOWANCE_SPENDER_ID),
-                        getAccountDetails(OWNER)
-                                .payingWith(GENESIS)
-                                .has(accountDetailsWith()
-                                        .cryptoAllowancesCount(0)
-                                        .tokenAllowancesCount(0)
-                                        .nftApprovedForAllAllowancesCount(1)),
-                        getTokenNftInfo(NON_FUNGIBLE_TOKEN, 1L).hasNoSpender(),
-                        getTokenNftInfo(NON_FUNGIBLE_TOKEN, 2L).hasNoSpender(),
-                        cryptoApproveAllowance()
-                                .payingWith(OWNER)
-                                .addNftAllowance(OWNER, NON_FUNGIBLE_TOKEN, SPENDER, false, List.of()),
-                        getAccountDetails(OWNER)
-                                .payingWith(GENESIS)
-                                .has(accountDetailsWith()
-                                        .cryptoAllowancesCount(0)
-                                        .tokenAllowancesCount(0)
-                                        .nftApprovedForAllAllowancesCount(0)))
-                .then();
+        return hapiTest(
+                newKeyNamed(SUPPLY_KEY),
+                cryptoCreate(OWNER).balance(ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(10),
+                cryptoCreate(SPENDER).balance(ONE_HUNDRED_HBARS),
+                cryptoCreate(TOKEN_TREASURY).balance(100 * ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(10),
+                tokenCreate(FUNGIBLE_TOKEN)
+                        .tokenType(TokenType.FUNGIBLE_COMMON)
+                        .supplyType(TokenSupplyType.FINITE)
+                        .supplyKey(SUPPLY_KEY)
+                        .maxSupply(1000L)
+                        .initialSupply(10L)
+                        .treasury(TOKEN_TREASURY),
+                tokenCreate(NON_FUNGIBLE_TOKEN)
+                        .maxSupply(10L)
+                        .initialSupply(0)
+                        .supplyType(TokenSupplyType.FINITE)
+                        .tokenType(NON_FUNGIBLE_UNIQUE)
+                        .supplyKey(SUPPLY_KEY)
+                        .treasury(TOKEN_TREASURY),
+                tokenAssociate(OWNER, FUNGIBLE_TOKEN),
+                tokenAssociate(OWNER, NON_FUNGIBLE_TOKEN),
+                mintToken(FUNGIBLE_TOKEN, 500L).via(FUNGIBLE_TOKEN_MINT_TXN),
+                mintToken(
+                        NON_FUNGIBLE_TOKEN,
+                        List.of(
+                                ByteString.copyFromUtf8("a"),
+                                ByteString.copyFromUtf8("b"),
+                                ByteString.copyFromUtf8("c"))),
+                cryptoApproveAllowance()
+                        .payingWith(OWNER)
+                        .addCryptoAllowance(OWNER, SPENDER, 100L)
+                        .addTokenAllowance(OWNER, FUNGIBLE_TOKEN, SPENDER, 1)
+                        .addNftAllowance(OWNER, NON_FUNGIBLE_TOKEN, SPENDER, true, List.of()),
+                getAccountDetails(OWNER)
+                        .payingWith(GENESIS)
+                        .has(accountDetailsWith()
+                                .cryptoAllowancesCount(1)
+                                .tokenAllowancesCount(1)
+                                .nftApprovedForAllAllowancesCount(1)
+                                .cryptoAllowancesContaining(SPENDER, 100L)
+                                .tokenAllowancesContaining(FUNGIBLE_TOKEN, SPENDER, 1)),
+                cryptoDelete(SPENDER),
+                // removing fungible allowances should be possible even if the
+                // spender is deleted
+                cryptoApproveAllowance()
+                        .payingWith(OWNER)
+                        .addCryptoAllowance(OWNER, SPENDER, 0)
+                        .blankMemo(),
+                getAccountDetails(OWNER)
+                        .payingWith(GENESIS)
+                        .has(accountDetailsWith()
+                                .cryptoAllowancesCount(0)
+                                .tokenAllowancesCount(1)
+                                .nftApprovedForAllAllowancesCount(1)
+                                .tokenAllowancesContaining(FUNGIBLE_TOKEN, SPENDER, 1)),
+                cryptoApproveAllowance()
+                        .payingWith(OWNER)
+                        .addTokenAllowance(OWNER, FUNGIBLE_TOKEN, SPENDER, 0)
+                        .blankMemo(),
+                getAccountDetails(OWNER)
+                        .payingWith(GENESIS)
+                        .has(accountDetailsWith()
+                                .cryptoAllowancesCount(0)
+                                .tokenAllowancesCount(0)
+                                .nftApprovedForAllAllowancesCount(1)),
+                // It should not be possible to remove approveForAllNftAllowance
+                // and also add allowance to serials
+                cryptoApproveAllowance()
+                        .payingWith(OWNER)
+                        .addNftAllowance(OWNER, NON_FUNGIBLE_TOKEN, SPENDER, false, List.of(1L, 2L))
+                        .hasKnownStatus(INVALID_ALLOWANCE_SPENDER_ID),
+                getAccountDetails(OWNER)
+                        .payingWith(GENESIS)
+                        .has(accountDetailsWith()
+                                .cryptoAllowancesCount(0)
+                                .tokenAllowancesCount(0)
+                                .nftApprovedForAllAllowancesCount(1)),
+                getTokenNftInfo(NON_FUNGIBLE_TOKEN, 1L).hasNoSpender(),
+                getTokenNftInfo(NON_FUNGIBLE_TOKEN, 2L).hasNoSpender(),
+                cryptoApproveAllowance()
+                        .payingWith(OWNER)
+                        .addNftAllowance(OWNER, NON_FUNGIBLE_TOKEN, SPENDER, false, List.of()),
+                getAccountDetails(OWNER)
+                        .payingWith(GENESIS)
+                        .has(accountDetailsWith()
+                                .cryptoAllowancesCount(0)
+                                .tokenAllowancesCount(0)
+                                .nftApprovedForAllAllowancesCount(0)));
     }
 
     @HapiTest

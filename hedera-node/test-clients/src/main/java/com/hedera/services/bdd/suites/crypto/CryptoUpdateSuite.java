@@ -49,7 +49,6 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.submitModified;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsd;
 import static com.hedera.services.bdd.spec.utilops.mod.ModificationUtils.withSuccessivelyVariedBodyIds;
-import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.EXPECT_STREAMLINED_INGEST_RECORDS;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
 import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PAYER;
 import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
@@ -177,56 +176,45 @@ public class CryptoUpdateSuite {
 
     @HapiTest
     final Stream<DynamicTest> updateStakingFieldsWorks() {
-        return defaultHapiSpec("updateStakingFieldsWorks", NONDETERMINISTIC_TRANSACTION_FEES)
-                .given(
-                        newKeyNamed(ADMIN_KEY),
-                        cryptoCreate("user")
-                                .key(ADMIN_KEY)
+        return hapiTest(
+                newKeyNamed(ADMIN_KEY),
+                cryptoCreate("user").key(ADMIN_KEY).stakedAccountId("0.0.20").declinedReward(true),
+                getAccountInfo("user")
+                        .has(AccountInfoAsserts.accountWith()
                                 .stakedAccountId("0.0.20")
-                                .declinedReward(true),
-                        getAccountInfo("user")
-                                .has(AccountInfoAsserts.accountWith()
-                                        .stakedAccountId("0.0.20")
-                                        .noStakingNodeId()
-                                        .isDeclinedReward(true)))
-                .when(
-                        cryptoUpdate("user").newStakedNodeId(0L).newDeclinedReward(false),
-                        getAccountInfo("user")
-                                .has(AccountInfoAsserts.accountWith()
-                                        .noStakedAccountId()
-                                        .stakedNodeId(0L)
-                                        .isDeclinedReward(false)),
-                        cryptoUpdate("user").newStakedNodeId(-1L),
-                        cryptoUpdate("user").newStakedNodeId(-25L).hasKnownStatus(INVALID_STAKING_ID),
-                        getAccountInfo("user")
-                                .has(AccountInfoAsserts.accountWith()
-                                        .noStakedAccountId()
-                                        .noStakingNodeId()
-                                        .isDeclinedReward(false)))
-                .then(
-                        cryptoUpdate("user")
-                                .key(ADMIN_KEY)
-                                .newStakedAccountId("0.0.20")
-                                .newDeclinedReward(true),
-                        getAccountInfo("user")
-                                .has(AccountInfoAsserts.accountWith()
-                                        .stakedAccountId("0.0.20")
-                                        .noStakingNodeId()
-                                        .isDeclinedReward(true))
-                                .logged(),
-                        cryptoUpdate("user").key(ADMIN_KEY).newStakedAccountId("0.0.0"),
-                        getAccountInfo("user")
-                                .has(AccountInfoAsserts.accountWith()
-                                        .noStakedAccountId()
-                                        .noStakingNodeId()
-                                        .isDeclinedReward(true))
-                                .logged(),
-                        // For completeness stake back to a node
-                        cryptoUpdate("user").key(ADMIN_KEY).newStakedNodeId(1),
-                        getAccountInfo("user")
-                                .has(AccountInfoAsserts.accountWith()
-                                        .stakedNodeId(1L)
-                                        .isDeclinedReward(true)));
+                                .noStakingNodeId()
+                                .isDeclinedReward(true)),
+                cryptoUpdate("user").newStakedNodeId(0L).newDeclinedReward(false),
+                getAccountInfo("user")
+                        .has(AccountInfoAsserts.accountWith()
+                                .noStakedAccountId()
+                                .stakedNodeId(0L)
+                                .isDeclinedReward(false)),
+                cryptoUpdate("user").newStakedNodeId(-1L),
+                cryptoUpdate("user").newStakedNodeId(-25L).hasKnownStatus(INVALID_STAKING_ID),
+                getAccountInfo("user")
+                        .has(AccountInfoAsserts.accountWith()
+                                .noStakedAccountId()
+                                .noStakingNodeId()
+                                .isDeclinedReward(false)),
+                cryptoUpdate("user").key(ADMIN_KEY).newStakedAccountId("0.0.20").newDeclinedReward(true),
+                getAccountInfo("user")
+                        .has(AccountInfoAsserts.accountWith()
+                                .stakedAccountId("0.0.20")
+                                .noStakingNodeId()
+                                .isDeclinedReward(true))
+                        .logged(),
+                cryptoUpdate("user").key(ADMIN_KEY).newStakedAccountId("0.0.0"),
+                getAccountInfo("user")
+                        .has(AccountInfoAsserts.accountWith()
+                                .noStakedAccountId()
+                                .noStakingNodeId()
+                                .isDeclinedReward(true))
+                        .logged(),
+                // For completeness stake back to a node
+                cryptoUpdate("user").key(ADMIN_KEY).newStakedNodeId(1),
+                getAccountInfo("user")
+                        .has(AccountInfoAsserts.accountWith().stakedNodeId(1L).isDeclinedReward(true)));
     }
 
     @LeakyHapiTest(overrides = {"entities.maxLifetime", "ledger.maxAutoAssociations"})
@@ -426,16 +414,11 @@ public class CryptoUpdateSuite {
     final Stream<DynamicTest> updateFailsWithContractKey() {
         AtomicLong id = new AtomicLong();
         final var CONTRACT = "Multipurpose";
-        return defaultHapiSpec(
-                        "UpdateFailsWithContractKey",
-                        NONDETERMINISTIC_TRANSACTION_FEES,
-                        EXPECT_STREAMLINED_INGEST_RECORDS)
-                .given(
-                        cryptoCreate(TARGET_ACCOUNT),
-                        uploadInitCode(CONTRACT),
-                        contractCreate(CONTRACT).exposingNumTo(id::set))
-                .when()
-                .then(sourcing(() -> cryptoUpdate(TARGET_ACCOUNT)
+        return hapiTest(
+                cryptoCreate(TARGET_ACCOUNT),
+                uploadInitCode(CONTRACT),
+                contractCreate(CONTRACT).exposingNumTo(id::set),
+                sourcing(() -> cryptoUpdate(TARGET_ACCOUNT)
                         .protoKey(Key.newBuilder()
                                 .setContractID(ContractID.newBuilder()
                                         .setContractNum(id.get())
@@ -446,12 +429,10 @@ public class CryptoUpdateSuite {
 
     @HapiTest
     final Stream<DynamicTest> updateFailsWithInsufficientSigs() {
-        return defaultHapiSpec("UpdateFailsWithInsufficientSigs", NONDETERMINISTIC_TRANSACTION_FEES)
-                .given(
-                        newKeyNamed(TARGET_KEY).shape(twoLevelThresh).labels(overlappingKeys),
-                        cryptoCreate(TARGET_ACCOUNT).key(TARGET_KEY))
-                .when()
-                .then(cryptoUpdate(TARGET_ACCOUNT)
+        return hapiTest(
+                newKeyNamed(TARGET_KEY).shape(twoLevelThresh).labels(overlappingKeys),
+                cryptoCreate(TARGET_ACCOUNT).key(TARGET_KEY),
+                cryptoUpdate(TARGET_ACCOUNT)
                         .sigControl(forKey(TARGET_KEY, NOT_ENOUGH_UNIQUE_SIGS))
                         .receiverSigRequired(true)
                         .hasKnownStatus(INVALID_SIGNATURE));

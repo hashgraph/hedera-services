@@ -18,6 +18,7 @@ package com.hedera.services.bdd.suites.contract.records;
 
 import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.assertions.AssertUtils.inOrder;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.ContractLogAsserts.logWith;
@@ -46,12 +47,13 @@ public class LogsSuite {
 
     @HapiTest
     final Stream<DynamicTest> log0Works() {
-        return defaultHapiSpec("log0Works", NONDETERMINISTIC_TRANSACTION_FEES)
-                .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT))
-                .when(contractCall(CONTRACT, "log0", BigInteger.valueOf(15))
+        return hapiTest(
+                uploadInitCode(CONTRACT),
+                contractCreate(CONTRACT),
+                contractCall(CONTRACT, "log0", BigInteger.valueOf(15))
                         .via("log0")
-                        .gas(GAS_TO_OFFER))
-                .then(getTxnRecord("log0")
+                        .gas(GAS_TO_OFFER),
+                getTxnRecord("log0")
                         .hasPriority(recordWith()
                                 .contractCallResult(resultWith()
                                         .logs(inOrder(logWith().noTopics().longValue(15)))

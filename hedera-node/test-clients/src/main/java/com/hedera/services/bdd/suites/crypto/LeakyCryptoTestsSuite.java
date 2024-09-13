@@ -77,7 +77,6 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsd;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
-import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.FULLY_NONDETERMINISTIC;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
 import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PAYER;
 import static com.hedera.services.bdd.suites.HapiSuite.EMPTY_KEY;
@@ -226,54 +225,48 @@ public class LeakyCryptoTestsSuite {
         final AtomicLong nodeAndNetworkFee = new AtomicLong();
         final AtomicLong maxSendable = new AtomicLong();
 
-        return defaultHapiSpec(
-                        "GetsInsufficientPayerBalanceIfSendingAccountCanPayEverythingButServiceFee",
-                        NONDETERMINISTIC_TRANSACTION_FEES)
-                .given(cryptoCreate(civilian).balance(civilianStartBalance), uploadInitCode(EMPTY_CONSTRUCTOR_CONTRACT))
-                .when(
-                        contractCreate(EMPTY_CONSTRUCTOR_CONTRACT)
-                                .gas(gasToOffer)
-                                .payingWith(civilian)
-                                .balance(0L)
-                                .via(creation),
-                        withOpContext((spec, opLog) -> {
-                            final var lookup = getTxnRecord(creation).logged();
-                            allRunFor(spec, lookup);
-                            final var creationRecord = lookup.getResponseRecord();
-                            final var gasUsed =
-                                    creationRecord.getContractCreateResult().getGasUsed();
-                            gasFee.set(tinybarCostOfGas(spec, ContractCreate, gasUsed));
-                            offeredGasFee.set(tinybarCostOfGas(spec, ContractCreate, gasToOffer));
-                            nodeAndNetworkFee.set(creationRecord.getTransactionFee() - gasFee.get());
-                            log.info(
-                                    "Network + node fees were {}, gas fee was {} (sum to" + " {}, compare with {})",
-                                    nodeAndNetworkFee::get,
-                                    gasFee::get,
-                                    () -> nodeAndNetworkFee.get() + gasFee.get(),
-                                    creationRecord::getTransactionFee);
-                            maxSendable.set(civilianStartBalance
-                                    - 2 * nodeAndNetworkFee.get()
-                                    - gasFee.get()
-                                    - offeredGasFee.get());
-                            log.info("Maximum amount send-able in precheck should be {}", maxSendable::get);
-                        }))
-                .then(
-                        sourcing(() -> getAccountBalance(civilian)
-                                .hasTinyBars(civilianStartBalance - nodeAndNetworkFee.get() - gasFee.get())),
-                        // Fire-and-forget a txn that will leave the civilian payer with 1 too few
-                        // tinybars at consensus
-                        cryptoTransfer(tinyBarsFromTo(civilian, FUNDING, 1))
-                                .payingWith(GENESIS)
-                                .deferStatusResolution(),
-                        sourcing(() -> contractCustomCreate(EMPTY_CONSTRUCTOR_CONTRACT, "Clone")
-                                .gas(gasToOffer)
-                                .payingWith(civilian)
-                                .balance(maxSendable.get())
-                                // because this fails depending on the previous operation reaching
-                                // consensus before the current operation or after, since we have added
-                                // deferStatusResolution
-                                .hasPrecheckFrom(OK, INSUFFICIENT_PAYER_BALANCE, INSUFFICIENT_ACCOUNT_BALANCE)
-                                .hasKnownStatusFrom(INSUFFICIENT_PAYER_BALANCE, INSUFFICIENT_ACCOUNT_BALANCE)));
+        return hapiTest(
+                cryptoCreate(civilian).balance(civilianStartBalance),
+                uploadInitCode(EMPTY_CONSTRUCTOR_CONTRACT),
+                contractCreate(EMPTY_CONSTRUCTOR_CONTRACT)
+                        .gas(gasToOffer)
+                        .payingWith(civilian)
+                        .balance(0L)
+                        .via(creation),
+                withOpContext((spec, opLog) -> {
+                    final var lookup = getTxnRecord(creation).logged();
+                    allRunFor(spec, lookup);
+                    final var creationRecord = lookup.getResponseRecord();
+                    final var gasUsed = creationRecord.getContractCreateResult().getGasUsed();
+                    gasFee.set(tinybarCostOfGas(spec, ContractCreate, gasUsed));
+                    offeredGasFee.set(tinybarCostOfGas(spec, ContractCreate, gasToOffer));
+                    nodeAndNetworkFee.set(creationRecord.getTransactionFee() - gasFee.get());
+                    log.info(
+                            "Network + node fees were {}, gas fee was {} (sum to" + " {}, compare with {})",
+                            nodeAndNetworkFee::get,
+                            gasFee::get,
+                            () -> nodeAndNetworkFee.get() + gasFee.get(),
+                            creationRecord::getTransactionFee);
+                    maxSendable.set(
+                            civilianStartBalance - 2 * nodeAndNetworkFee.get() - gasFee.get() - offeredGasFee.get());
+                    log.info("Maximum amount send-able in precheck should be {}", maxSendable::get);
+                }),
+                sourcing(() -> getAccountBalance(civilian)
+                        .hasTinyBars(civilianStartBalance - nodeAndNetworkFee.get() - gasFee.get())),
+                // Fire-and-forget a txn that will leave the civilian payer with 1 too few
+                // tinybars at consensus
+                cryptoTransfer(tinyBarsFromTo(civilian, FUNDING, 1))
+                        .payingWith(GENESIS)
+                        .deferStatusResolution(),
+                sourcing(() -> contractCustomCreate(EMPTY_CONSTRUCTOR_CONTRACT, "Clone")
+                        .gas(gasToOffer)
+                        .payingWith(civilian)
+                        .balance(maxSendable.get())
+                        // because this fails depending on the previous operation reaching
+                        // consensus before the current operation or after, since we have added
+                        // deferStatusResolution
+                        .hasPrecheckFrom(OK, INSUFFICIENT_PAYER_BALANCE, INSUFFICIENT_ACCOUNT_BALANCE)
+                        .hasKnownStatusFrom(INSUFFICIENT_PAYER_BALANCE, INSUFFICIENT_ACCOUNT_BALANCE)));
     }
 
     @Order(1)
@@ -920,61 +913,52 @@ public class LeakyCryptoTestsSuite {
         final var otherCollector = "otherCollector";
         final var finalTxn = "finalTxn";
 
-        return defaultHapiSpec("CustomFeesHaveExpectedAutoCreateInteractions", FULLY_NONDETERMINISTIC)
-                .given(
-                        wellKnownTokenEntities(),
-                        cryptoCreate(otherCollector),
-                        cryptoCreate(CIVILIAN).maxAutomaticTokenAssociations(42),
-                        inParallel(
-                                createWellKnownFungibleToken(
-                                        ftWithNetOfTransfersFractional,
-                                        creation -> creation.withCustom(fractionalFeeNetOfTransfers(
-                                                1L, 100L, 1L, OptionalLong.of(5L), TOKEN_TREASURY))),
-                                createWellKnownFungibleToken(
-                                        ftWithNonNetOfTransfersFractional,
-                                        creation -> creation.withCustom(
-                                                fractionalFee(1L, 100L, 1L, OptionalLong.of(5L), TOKEN_TREASURY))),
-                                createWellKnownNonFungibleToken(
-                                        nftWithRoyaltyNoFallback,
-                                        1,
-                                        creation ->
-                                                creation.withCustom(royaltyFeeNoFallback(1L, 100L, TOKEN_TREASURY))),
-                                createWellKnownNonFungibleToken(
-                                        nftWithRoyaltyPlusHbarFallback,
-                                        1,
-                                        creation -> creation.withCustom(royaltyFeeWithFallback(
-                                                1L,
-                                                100L,
-                                                fixedHbarFeeInheritingRoyaltyCollector(ONE_HBAR),
-                                                TOKEN_TREASURY)))),
-                        tokenAssociate(otherCollector, ftWithNonNetOfTransfersFractional),
+        return hapiTest(
+                wellKnownTokenEntities(),
+                cryptoCreate(otherCollector),
+                cryptoCreate(CIVILIAN).maxAutomaticTokenAssociations(42),
+                inParallel(
+                        createWellKnownFungibleToken(
+                                ftWithNetOfTransfersFractional,
+                                creation -> creation.withCustom(fractionalFeeNetOfTransfers(
+                                        1L, 100L, 1L, OptionalLong.of(5L), TOKEN_TREASURY))),
+                        createWellKnownFungibleToken(
+                                ftWithNonNetOfTransfersFractional,
+                                creation -> creation.withCustom(
+                                        fractionalFee(1L, 100L, 1L, OptionalLong.of(5L), TOKEN_TREASURY))),
                         createWellKnownNonFungibleToken(
-                                nftWithRoyaltyPlusHtsFallback,
+                                nftWithRoyaltyNoFallback,
+                                1,
+                                creation -> creation.withCustom(royaltyFeeNoFallback(1L, 100L, TOKEN_TREASURY))),
+                        createWellKnownNonFungibleToken(
+                                nftWithRoyaltyPlusHbarFallback,
                                 1,
                                 creation -> creation.withCustom(royaltyFeeWithFallback(
-                                        1L,
-                                        100L,
-                                        fixedHtsFeeInheritingRoyaltyCollector(666, ftWithNonNetOfTransfersFractional),
-                                        otherCollector))))
-                .when(
-                        autoCreateWithFungible(ftWithNetOfTransfersFractional),
-                        autoCreateWithFungible(ftWithNonNetOfTransfersFractional),
-                        autoCreateWithNonFungible(nftWithRoyaltyNoFallback, SUCCESS),
-                        autoCreateWithNonFungible(
-                                nftWithRoyaltyPlusHbarFallback, INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE))
-                .then(
-                        newKeyNamed(finalReceiverKey),
-                        cryptoTransfer(
-                                moving(100_000, ftWithNonNetOfTransfersFractional)
-                                        .between(TOKEN_TREASURY, CIVILIAN),
-                                movingUnique(nftWithRoyaltyPlusHtsFallback, 1L).between(TOKEN_TREASURY, CIVILIAN)),
-                        cryptoTransfer(
-                                        moving(10_000, ftWithNonNetOfTransfersFractional)
-                                                .between(CIVILIAN, finalReceiverKey),
-                                        movingUnique(nftWithRoyaltyPlusHtsFallback, 1L)
-                                                .between(CIVILIAN, finalReceiverKey))
-                                .hasKnownStatus(INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE)
-                                .via(finalTxn));
+                                        1L, 100L, fixedHbarFeeInheritingRoyaltyCollector(ONE_HBAR), TOKEN_TREASURY)))),
+                tokenAssociate(otherCollector, ftWithNonNetOfTransfersFractional),
+                createWellKnownNonFungibleToken(
+                        nftWithRoyaltyPlusHtsFallback,
+                        1,
+                        creation -> creation.withCustom(royaltyFeeWithFallback(
+                                1L,
+                                100L,
+                                fixedHtsFeeInheritingRoyaltyCollector(666, ftWithNonNetOfTransfersFractional),
+                                otherCollector))),
+                autoCreateWithFungible(ftWithNetOfTransfersFractional),
+                autoCreateWithFungible(ftWithNonNetOfTransfersFractional),
+                autoCreateWithNonFungible(nftWithRoyaltyNoFallback, SUCCESS),
+                autoCreateWithNonFungible(
+                        nftWithRoyaltyPlusHbarFallback, INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE),
+                newKeyNamed(finalReceiverKey),
+                cryptoTransfer(
+                        moving(100_000, ftWithNonNetOfTransfersFractional).between(TOKEN_TREASURY, CIVILIAN),
+                        movingUnique(nftWithRoyaltyPlusHtsFallback, 1L).between(TOKEN_TREASURY, CIVILIAN)),
+                cryptoTransfer(
+                                moving(10_000, ftWithNonNetOfTransfersFractional)
+                                        .between(CIVILIAN, finalReceiverKey),
+                                movingUnique(nftWithRoyaltyPlusHtsFallback, 1L).between(CIVILIAN, finalReceiverKey))
+                        .hasKnownStatus(INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE)
+                        .via(finalTxn));
     }
 
     @LeakyHapiTest(overrides = {"accounts.releaseAliasAfterDeletion"})

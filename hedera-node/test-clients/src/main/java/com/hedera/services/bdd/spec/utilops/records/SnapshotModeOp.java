@@ -21,20 +21,6 @@ import static com.hedera.services.bdd.junit.support.StreamFileAccess.STREAM_FILE
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
-import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.ACCEPTED_MONO_GAS_CALCULATION_DIFFERENCE;
-import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.ALLOW_SKIPPED_ENTITY_IDS;
-import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.EXPECT_STREAMLINED_INGEST_RECORDS;
-import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.FULLY_DETERMINISTIC;
-import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.FULLY_NONDETERMINISTIC;
-import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.HIGHLY_NON_DETERMINISTIC_FEES;
-import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_CONSTRUCTOR_PARAMETERS;
-import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_CONTRACT_CALL_RESULTS;
-import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_ETHEREUM_DATA;
-import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_FUNCTION_PARAMETERS;
-import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_LOG_DATA;
-import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_NONCE;
-import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TOKEN_NAMES;
-import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
 import static com.hedera.services.bdd.suites.contract.Utils.asInstant;
 import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toSet;
@@ -220,7 +206,7 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
      */
     @Override
     protected boolean submitOp(@NonNull final HapiSpec spec) throws Throwable {
-        final var isDeterministic = !matchModes.contains(FULLY_NONDETERMINISTIC);
+        final var isDeterministic = false;
         if (isDeterministic && mode.targetNetworkType() == spec.targetNetworkType()) {
             this.snapshotFileMeta = SnapshotFileMeta.from(spec);
             switch (mode) {
@@ -286,9 +272,8 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
             // For statuses that only mono-service rejects at ingest, we need to skip fuzzy-matching;
             // unless there is some special case in the spec where mono-service will still use them
             // (primarily because they appear in a contract operation's child records)
-            final Set<ResponseCodeEnum> statusesToIgnore = !matchModes.contains(EXPECT_STREAMLINED_INGEST_RECORDS)
-                    ? spec.setup().streamlinedIngestChecks()
-                    : EnumSet.noneOf(ResponseCodeEnum.class);
+            final Set<ResponseCodeEnum> statusesToIgnore =
+                    false ? spec.setup().streamlinedIngestChecks() : EnumSet.noneOf(ResponseCodeEnum.class);
             for (final var item : allItems) {
                 final var parsedItem = ParsedItem.parse(item);
                 if (parsedItem.isSpecialFileChange()) {
@@ -397,7 +382,7 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
                 actualMessage,
                 Long.MAX_VALUE,
                 mismatchContext,
-                EnumSet.of(FULLY_DETERMINISTIC));
+                EnumSet.allOf(SnapshotMatchMode.class));
     }
 
     /**
@@ -616,12 +601,11 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
                         "Amount '" + expected + "' and '" + actual
                                 + "' varied by more than " + maxVariation + " tinybar - "
                                 + mismatchContext.get());
-            } else if (("accountNum".equals(fieldName) || "contractNum".equals(fieldName))
-                    && matchModes.contains(ALLOW_SKIPPED_ENTITY_IDS)) {
+            } else if (("accountNum".equals(fieldName) || "contractNum".equals(fieldName))) {
                 Assertions.assertTrue(
                         (long) expected - (long) actual >= 0,
                         "AccountNum '" + expected + "' was not greater than '" + actual + mismatchContext.get());
-            } else if ("name".equals(fieldName) && matchModes.contains(NONDETERMINISTIC_TOKEN_NAMES)) {
+            } else if ("name".equals(fieldName)) {
                 Assertions.assertTrue(expected != null && actual != null, "Token name is null");
             } else {
                 Assertions.assertEquals(
@@ -634,12 +618,7 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
     }
 
     private static long feeVariation(@NonNull final Set<SnapshotMatchMode> matchModes) {
-        if (matchModes.contains(HIGHLY_NON_DETERMINISTIC_FEES)) {
-            return CUSTOM_FEE_ASSESSMENT_VARIATION_IN_TINYBAR;
-        } else if (matchModes.contains(NONDETERMINISTIC_TRANSACTION_FEES)) {
-            return MAX_COMPLEX_KEY_FEE_VARIATION_IN_TINYBAR;
-        }
-        return MAX_NORMAL_FEE_VARIATION_IN_TINYBARS;
+        return 0;
     }
 
     /**
@@ -788,30 +767,7 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
         requireNonNull(expectedName);
         requireNonNull(expectedType);
         requireNonNull(matchModes);
-        if (matchModes.contains(FULLY_DETERMINISTIC)) {
-            return false;
-        }
-        if ("contractCallResult".equals(expectedName) /* && ByteString.class.isAssignableFrom(expectedType)*/) {
-            return matchModes.contains(NONDETERMINISTIC_CONTRACT_CALL_RESULTS);
-        } else if ("functionParameters".equals(expectedName)) {
-            return matchModes.contains(NONDETERMINISTIC_FUNCTION_PARAMETERS);
-        } else if ("topic".equals(expectedName)) {
-            // It is unlikely we have _any_ tests with nondeterministic logs but deterministic
-            // call results, so we just use the same match mode for both
-            return matchModes.contains(NONDETERMINISTIC_CONTRACT_CALL_RESULTS);
-        } else if ("constructorParameters".equals(expectedName)) {
-            return matchModes.contains(NONDETERMINISTIC_CONSTRUCTOR_PARAMETERS);
-        } else if ("nonce".equals(expectedName)) {
-            return matchModes.contains(NONDETERMINISTIC_NONCE);
-        } else if ("gas".equals(expectedName) || "gasUsed".equals(expectedName)) {
-            return matchModes.contains(ACCEPTED_MONO_GAS_CALCULATION_DIFFERENCE);
-        } else if ("logInfo".equals(expectedName)) {
-            return matchModes.contains(NONDETERMINISTIC_LOG_DATA);
-        } else if ("ethereum_data".equals(expectedName) || "ethereum_hash".equals(expectedName)) {
-            return matchModes.contains(NONDETERMINISTIC_ETHEREUM_DATA);
-        } else {
-            return FIELDS_TO_SKIP_IN_FUZZY_MATCH.contains(expectedName);
-        }
+        return false;
     }
 
     private static void writeReadableItemsToTxt(@NonNull final String name, @NonNull final List<ParsedItem> items) {
@@ -831,12 +787,7 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
 
     private Set<SnapshotMatchMode> computeMatchModesIncluding(@NonNull final SnapshotMatchMode... specialMatchModes) {
         final Set<SnapshotMatchMode> modes = new HashSet<>(Arrays.asList(specialMatchModes));
-        if (System.getenv("CI") != null) {
-            // In CI the presence of end-of-staking-period records makes all
-            // nonces non-deterministic (as any transaction may or may not
-            // trigger an end-of-period record, which consumes a nonce)
-            modes.add(NONDETERMINISTIC_NONCE);
-        }
+        if (System.getenv("CI") != null) {}
         return modes.isEmpty() ? EnumSet.noneOf(SnapshotMatchMode.class) : EnumSet.copyOf(modes);
     }
 }

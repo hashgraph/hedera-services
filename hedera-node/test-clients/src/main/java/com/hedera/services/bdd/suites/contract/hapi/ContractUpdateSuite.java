@@ -45,8 +45,6 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.submitModified;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.spec.utilops.mod.ModificationUtils.withSuccessivelyVariedBodyIds;
-import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.FULLY_NONDETERMINISTIC;
-import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_CONTRACT_CALL_RESULTS;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
 import static com.hedera.services.bdd.suites.HapiSuite.CIVILIAN_PAYER;
 import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_CONTRACT_SENDER;
@@ -134,60 +132,49 @@ public class ContractUpdateSuite {
 
     @HapiTest
     final Stream<DynamicTest> updateStakingFieldsWorks() {
-        return defaultHapiSpec("updateStakingFieldsWorks", FULLY_NONDETERMINISTIC)
-                .given(
-                        uploadInitCode(CONTRACT),
-                        // refuse eth conversion because ethereum transaction is missing staking fields to map
-                        // (isDeclinedReward)
-                        contractCreate(CONTRACT)
-                                .declinedReward(true)
-                                .stakedNodeId(0)
-                                .refusingEthConversion(),
-                        getContractInfo(CONTRACT)
-                                .has(contractWith()
-                                        .isDeclinedReward(true)
-                                        .noStakedAccountId()
-                                        .stakedNodeId(0))
-                                .logged())
-                .when(
-                        contractUpdate(CONTRACT).newDeclinedReward(false).newStakedAccountId("0.0.10"),
-                        getContractInfo(CONTRACT)
-                                .has(contractWith()
-                                        .isDeclinedReward(false)
-                                        .noStakingNodeId()
-                                        .stakedAccountId("0.0.10"))
-                                .logged(),
+        return hapiTest(
+                uploadInitCode(CONTRACT),
+                // refuse eth conversion because ethereum transaction is missing staking fields to map
+                // (isDeclinedReward)
+                contractCreate(CONTRACT).declinedReward(true).stakedNodeId(0).refusingEthConversion(),
+                getContractInfo(CONTRACT)
+                        .has(contractWith()
+                                .isDeclinedReward(true)
+                                .noStakedAccountId()
+                                .stakedNodeId(0)),
+                contractUpdate(CONTRACT).newDeclinedReward(false).newStakedAccountId("0.0.10"),
+                getContractInfo(CONTRACT)
+                        .has(contractWith()
+                                .isDeclinedReward(false)
+                                .noStakingNodeId()
+                                .stakedAccountId("0.0.10"))
+                        .logged(),
 
-                        /* --- reset the staking account */
-                        contractUpdate(CONTRACT).newDeclinedReward(false).newStakedAccountId("0.0.0"),
-                        getContractInfo(CONTRACT)
-                                .has(contractWith()
-                                        .isDeclinedReward(false)
-                                        .noStakingNodeId()
-                                        .noStakedAccountId())
-                                .logged(),
-                        // refuse eth conversion because ethereum transaction is missing staking fields to map
-                        // (isDeclinedReward)
-                        contractCreate(CONTRACT)
-                                .declinedReward(true)
-                                .stakedNodeId(0)
-                                .refusingEthConversion(),
-                        getContractInfo(CONTRACT)
-                                .has(contractWith()
-                                        .isDeclinedReward(true)
-                                        .noStakedAccountId()
-                                        .stakedNodeId(0))
-                                .logged(),
+                /* --- reset the staking account */
+                contractUpdate(CONTRACT).newDeclinedReward(false).newStakedAccountId("0.0.0"),
+                getContractInfo(CONTRACT)
+                        .has(contractWith()
+                                .isDeclinedReward(false)
+                                .noStakingNodeId()
+                                .noStakedAccountId())
+                        .logged(),
+                // refuse eth conversion because ethereum transaction is missing staking fields to map
+                // (isDeclinedReward)
+                contractCreate(CONTRACT).declinedReward(true).stakedNodeId(0).refusingEthConversion(),
+                getContractInfo(CONTRACT)
+                        .has(contractWith()
+                                .isDeclinedReward(true)
+                                .noStakedAccountId()
+                                .stakedNodeId(0))
+                        .logged(),
 
-                        /* --- reset the staking account */
-                        contractUpdate(CONTRACT).newDeclinedReward(false).newStakedNodeId(-1L),
-                        getContractInfo(CONTRACT)
-                                .has(contractWith()
-                                        .isDeclinedReward(false)
-                                        .noStakingNodeId()
-                                        .noStakedAccountId())
-                                .logged())
-                .then();
+                /* --- reset the staking account */
+                contractUpdate(CONTRACT).newDeclinedReward(false).newStakedNodeId(-1L),
+                getContractInfo(CONTRACT)
+                        .has(contractWith()
+                                .isDeclinedReward(false)
+                                .noStakingNodeId()
+                                .noStakedAccountId()));
     }
 
     // https://github.com/hashgraph/hedera-services/issues/2877
@@ -203,53 +190,46 @@ public class ContractUpdateSuite {
         final AtomicReference<String> childMirror = new AtomicReference<>();
         final AtomicReference<String> childEip1014 = new AtomicReference<>();
 
-        return defaultHapiSpec(
-                        "Eip1014AddressAlwaysHasPriority",
-                        NONDETERMINISTIC_CONTRACT_CALL_RESULTS,
-                        NONDETERMINISTIC_TRANSACTION_FEES)
-                .given(uploadInitCode(contract), contractCreate(contract).via(creationTxn))
-                .when(captureChildCreate2MetaFor(2, 0, "setup", creationTxn, childMirror, childEip1014))
-                .then(
-                        contractCall(contract, "makeNormalCall").via(callTxn),
-                        sourcing(() -> getTxnRecord(callTxn)
-                                .logged()
-                                .hasPriority(recordWith()
-                                        .contractCallResult(resultWith()
-                                                .resultThruAbi(
-                                                        getABIFor(FUNCTION, "makeNormalCall", contract),
-                                                        isLiteralResult(
-                                                                new Object[] {asHeadlongAddress(childEip1014.get())
-                                                                }))))),
-                        contractCall(contract, "makeStaticCall").via(staticcallTxn),
-                        sourcing(() -> getTxnRecord(staticcallTxn)
-                                .logged()
-                                .hasPriority(recordWith()
-                                        .contractCallResult(resultWith()
-                                                .resultThruAbi(
-                                                        getABIFor(FUNCTION, "makeStaticCall", contract),
-                                                        isLiteralResult(
-                                                                new Object[] {asHeadlongAddress(childEip1014.get())
-                                                                }))))),
-                        contractCall(contract, "makeDelegateCall").via(delegatecallTxn),
-                        sourcing(() -> getTxnRecord(delegatecallTxn)
-                                .logged()
-                                .hasPriority(recordWith()
-                                        .contractCallResult(resultWith()
-                                                .resultThruAbi(
-                                                        getABIFor(FUNCTION, "makeDelegateCall", contract),
-                                                        isLiteralResult(
-                                                                new Object[] {asHeadlongAddress(childEip1014.get())
-                                                                }))))),
-                        contractCall(contract, "makeCallCode").via(callcodeTxn),
-                        sourcing(() -> getTxnRecord(callcodeTxn)
-                                .logged()
-                                .hasPriority(recordWith()
-                                        .contractCallResult(resultWith()
-                                                .resultThruAbi(
-                                                        getABIFor(FUNCTION, "makeCallCode", contract),
-                                                        isLiteralResult(
-                                                                new Object[] {asHeadlongAddress(childEip1014.get())
-                                                                }))))));
+        return hapiTest(
+                uploadInitCode(contract),
+                contractCreate(contract).via(creationTxn),
+                captureChildCreate2MetaFor(2, 0, "setup", creationTxn, childMirror, childEip1014),
+                contractCall(contract, "makeNormalCall").via(callTxn),
+                sourcing(() -> getTxnRecord(callTxn)
+                        .logged()
+                        .hasPriority(recordWith()
+                                .contractCallResult(resultWith()
+                                        .resultThruAbi(
+                                                getABIFor(FUNCTION, "makeNormalCall", contract),
+                                                isLiteralResult(
+                                                        new Object[] {asHeadlongAddress(childEip1014.get())}))))),
+                contractCall(contract, "makeStaticCall").via(staticcallTxn),
+                sourcing(() -> getTxnRecord(staticcallTxn)
+                        .logged()
+                        .hasPriority(recordWith()
+                                .contractCallResult(resultWith()
+                                        .resultThruAbi(
+                                                getABIFor(FUNCTION, "makeStaticCall", contract),
+                                                isLiteralResult(
+                                                        new Object[] {asHeadlongAddress(childEip1014.get())}))))),
+                contractCall(contract, "makeDelegateCall").via(delegatecallTxn),
+                sourcing(() -> getTxnRecord(delegatecallTxn)
+                        .logged()
+                        .hasPriority(recordWith()
+                                .contractCallResult(resultWith()
+                                        .resultThruAbi(
+                                                getABIFor(FUNCTION, "makeDelegateCall", contract),
+                                                isLiteralResult(
+                                                        new Object[] {asHeadlongAddress(childEip1014.get())}))))),
+                contractCall(contract, "makeCallCode").via(callcodeTxn),
+                sourcing(() -> getTxnRecord(callcodeTxn)
+                        .logged()
+                        .hasPriority(recordWith()
+                                .contractCallResult(resultWith()
+                                        .resultThruAbi(
+                                                getABIFor(FUNCTION, "makeCallCode", contract),
+                                                isLiteralResult(
+                                                        new Object[] {asHeadlongAddress(childEip1014.get())}))))));
     }
 
     @HapiTest
@@ -258,38 +238,33 @@ public class ContractUpdateSuite {
         final var secondMemo = "Second";
         final var thirdMemo = "Third";
 
-        return defaultHapiSpec("UpdateWithBothMemoSettersWorks", NONDETERMINISTIC_TRANSACTION_FEES)
-                .given(
-                        newKeyNamed(ADMIN_KEY),
-                        uploadInitCode(CONTRACT),
-                        contractCreate(CONTRACT)
-                                // Refusing ethereum create conversion, because we get INVALID_SIGNATURE upon
-                                // tokenAssociate,
-                                // since we have CONTRACT_ID key
-                                .refusingEthConversion()
-                                .adminKey(ADMIN_KEY)
-                                .entityMemo(firstMemo))
-                .when(
-                        contractUpdate(CONTRACT).newMemo(secondMemo),
-                        contractUpdate(CONTRACT).newMemo(ZERO_BYTE_MEMO).hasPrecheck(INVALID_ZERO_BYTE_IN_STRING),
-                        getContractInfo(CONTRACT).has(contractWith().memo(secondMemo)))
-                .then(
-                        contractUpdate(CONTRACT).useDeprecatedMemoField().newMemo(thirdMemo),
-                        getContractInfo(CONTRACT).has(contractWith().memo(thirdMemo)));
+        return hapiTest(
+                newKeyNamed(ADMIN_KEY),
+                uploadInitCode(CONTRACT),
+                contractCreate(CONTRACT)
+                        // Refusing ethereum create conversion, because we get INVALID_SIGNATURE upon
+                        // tokenAssociate,
+                        // since we have CONTRACT_ID key
+                        .refusingEthConversion()
+                        .adminKey(ADMIN_KEY)
+                        .entityMemo(firstMemo),
+                contractUpdate(CONTRACT).newMemo(secondMemo),
+                contractUpdate(CONTRACT).newMemo(ZERO_BYTE_MEMO).hasPrecheck(INVALID_ZERO_BYTE_IN_STRING),
+                getContractInfo(CONTRACT).has(contractWith().memo(secondMemo)),
+                contractUpdate(CONTRACT).useDeprecatedMemoField().newMemo(thirdMemo),
+                getContractInfo(CONTRACT).has(contractWith().memo(thirdMemo)));
     }
 
     @HapiTest
     final Stream<DynamicTest> updatingExpiryWorks() {
         final var someValidExpiry = new AtomicLong();
-        return defaultHapiSpec("UpdatingExpiryWorks", NONDETERMINISTIC_TRANSACTION_FEES)
-                .given(
-                        new RunnableOp(() ->
-                                someValidExpiry.set(Instant.now().getEpochSecond() + THREE_MONTHS_IN_SECONDS + 123L)),
-                        uploadInitCode(CONTRACT),
-                        contractCreate(CONTRACT))
-                .when(sourcing(() -> contractUpdate(CONTRACT).newExpirySecs(someValidExpiry.get())))
-                .then(sourcing(
-                        () -> getContractInfo(CONTRACT).has(contractWith().expiry(someValidExpiry.get()))));
+        return hapiTest(
+                new RunnableOp(
+                        () -> someValidExpiry.set(Instant.now().getEpochSecond() + THREE_MONTHS_IN_SECONDS + 123L)),
+                uploadInitCode(CONTRACT),
+                contractCreate(CONTRACT),
+                sourcing(() -> contractUpdate(CONTRACT).newExpirySecs(someValidExpiry.get())),
+                sourcing(() -> getContractInfo(CONTRACT).has(contractWith().expiry(someValidExpiry.get()))));
     }
 
     @HapiTest
@@ -418,83 +393,80 @@ public class ContractUpdateSuite {
         final var newKeyShape = listOf(3);
         final var payer = "payer";
 
-        return defaultHapiSpec("FridayThe13thSpec", FULLY_NONDETERMINISTIC)
-                .given(
-                        newKeyNamed(INITIAL_ADMIN_KEY).shape(initialKeyShape),
-                        newKeyNamed(NEW_ADMIN_KEY).shape(newKeyShape),
-                        cryptoCreate(payer).balance(10 * ONE_HUNDRED_HBARS),
-                        uploadInitCode(contract))
-                .when(
-                        contractCreate(contract).payingWith(payer).omitAdminKey(),
-                        // refuse eth conversion because ethereum transaction is missing admin key and memo is same as
-                        // parent
-                        contractCustomCreate(contract, suffix)
-                                .payingWith(payer)
-                                .adminKey(INITIAL_ADMIN_KEY)
-                                .entityMemo(INITIAL_MEMO)
-                                .refusingEthConversion(),
-                        getContractInfo(contract + suffix)
-                                .payingWith(payer)
-                                .logged()
-                                .has(contractWith().memo(INITIAL_MEMO).adminKey(INITIAL_ADMIN_KEY)))
-                .then(
-                        contractUpdate(contract + suffix)
-                                .payingWith(payer)
-                                .newKey(NEW_ADMIN_KEY)
-                                .signedBy(payer, INITIAL_ADMIN_KEY)
-                                .hasKnownStatus(INVALID_SIGNATURE),
-                        contractUpdate(contract + suffix)
-                                .payingWith(payer)
-                                .newKey(NEW_ADMIN_KEY)
-                                .signedBy(payer, NEW_ADMIN_KEY)
-                                .hasKnownStatus(INVALID_SIGNATURE),
-                        contractUpdate(contract + suffix).payingWith(payer).newKey(NEW_ADMIN_KEY),
-                        contractUpdate(contract + suffix)
-                                .payingWith(payer)
-                                .newExpirySecs(newExpiry)
-                                .newMemo(NEW_MEMO),
-                        getContractInfo(contract + suffix)
-                                .payingWith(payer)
-                                .logged()
-                                .has(contractWith()
-                                        .solidityAddress(contract + suffix)
-                                        .memo(NEW_MEMO)
-                                        .expiry(newExpiry)),
-                        contractUpdate(contract + suffix).payingWith(payer).newMemo(BETTER_MEMO),
-                        getContractInfo(contract + suffix)
-                                .payingWith(payer)
-                                .logged()
-                                .has(contractWith().memo(BETTER_MEMO).expiry(newExpiry)),
-                        contractUpdate(contract + suffix).payingWith(payer).newExpirySecs(betterExpiry),
-                        getContractInfo(contract + suffix)
-                                .payingWith(payer)
-                                .logged()
-                                .has(contractWith().memo(BETTER_MEMO).expiry(betterExpiry)),
-                        contractUpdate(contract + suffix)
-                                .payingWith(payer)
-                                .signedBy(payer)
-                                .newExpirySecs(newExpiry)
-                                .hasKnownStatus(EXPIRATION_REDUCTION_NOT_ALLOWED),
-                        contractUpdate(contract + suffix)
-                                .payingWith(payer)
-                                .signedBy(payer)
-                                .newMemo(NEW_MEMO)
-                                .hasKnownStatus(INVALID_SIGNATURE),
-                        contractUpdate(contract)
-                                .payingWith(payer)
-                                .newMemo(BETTER_MEMO)
-                                .hasKnownStatus(MODIFYING_IMMUTABLE_CONTRACT),
-                        contractDelete(contract).payingWith(payer).hasKnownStatus(MODIFYING_IMMUTABLE_CONTRACT),
-                        contractUpdate(contract).payingWith(payer).newExpirySecs(betterExpiry),
-                        contractDelete(contract + suffix)
-                                .payingWith(payer)
-                                .signedBy(payer, INITIAL_ADMIN_KEY)
-                                .hasKnownStatus(INVALID_SIGNATURE),
-                        contractDelete(contract + suffix)
-                                .payingWith(payer)
-                                .signedBy(payer)
-                                .hasKnownStatus(INVALID_SIGNATURE),
-                        contractDelete(contract + suffix).payingWith(payer).hasKnownStatus(SUCCESS));
+        return hapiTest(
+                newKeyNamed(INITIAL_ADMIN_KEY).shape(initialKeyShape),
+                newKeyNamed(NEW_ADMIN_KEY).shape(newKeyShape),
+                cryptoCreate(payer).balance(10 * ONE_HUNDRED_HBARS),
+                uploadInitCode(contract),
+                contractCreate(contract).payingWith(payer).omitAdminKey(),
+                // refuse eth conversion because ethereum transaction is missing admin key and memo is same as
+                // parent
+                contractCustomCreate(contract, suffix)
+                        .payingWith(payer)
+                        .adminKey(INITIAL_ADMIN_KEY)
+                        .entityMemo(INITIAL_MEMO)
+                        .refusingEthConversion(),
+                getContractInfo(contract + suffix)
+                        .payingWith(payer)
+                        .logged()
+                        .has(contractWith().memo(INITIAL_MEMO).adminKey(INITIAL_ADMIN_KEY)),
+                contractUpdate(contract + suffix)
+                        .payingWith(payer)
+                        .newKey(NEW_ADMIN_KEY)
+                        .signedBy(payer, INITIAL_ADMIN_KEY)
+                        .hasKnownStatus(INVALID_SIGNATURE),
+                contractUpdate(contract + suffix)
+                        .payingWith(payer)
+                        .newKey(NEW_ADMIN_KEY)
+                        .signedBy(payer, NEW_ADMIN_KEY)
+                        .hasKnownStatus(INVALID_SIGNATURE),
+                contractUpdate(contract + suffix).payingWith(payer).newKey(NEW_ADMIN_KEY),
+                contractUpdate(contract + suffix)
+                        .payingWith(payer)
+                        .newExpirySecs(newExpiry)
+                        .newMemo(NEW_MEMO),
+                getContractInfo(contract + suffix)
+                        .payingWith(payer)
+                        .logged()
+                        .has(contractWith()
+                                .solidityAddress(contract + suffix)
+                                .memo(NEW_MEMO)
+                                .expiry(newExpiry)),
+                contractUpdate(contract + suffix).payingWith(payer).newMemo(BETTER_MEMO),
+                getContractInfo(contract + suffix)
+                        .payingWith(payer)
+                        .logged()
+                        .has(contractWith().memo(BETTER_MEMO).expiry(newExpiry)),
+                contractUpdate(contract + suffix).payingWith(payer).newExpirySecs(betterExpiry),
+                getContractInfo(contract + suffix)
+                        .payingWith(payer)
+                        .logged()
+                        .has(contractWith().memo(BETTER_MEMO).expiry(betterExpiry)),
+                contractUpdate(contract + suffix)
+                        .payingWith(payer)
+                        .signedBy(payer)
+                        .newExpirySecs(newExpiry)
+                        .hasKnownStatus(EXPIRATION_REDUCTION_NOT_ALLOWED),
+                contractUpdate(contract + suffix)
+                        .payingWith(payer)
+                        .signedBy(payer)
+                        .newMemo(NEW_MEMO)
+                        .hasKnownStatus(INVALID_SIGNATURE),
+                contractUpdate(contract)
+                        .payingWith(payer)
+                        .newMemo(BETTER_MEMO)
+                        .hasKnownStatus(MODIFYING_IMMUTABLE_CONTRACT),
+                contractDelete(contract).payingWith(payer).hasKnownStatus(MODIFYING_IMMUTABLE_CONTRACT),
+                contractUpdate(contract).payingWith(payer).newExpirySecs(betterExpiry),
+                contractDelete(contract + suffix)
+                        .payingWith(payer)
+                        .signedBy(payer, INITIAL_ADMIN_KEY)
+                        .hasKnownStatus(INVALID_SIGNATURE),
+                contractDelete(contract + suffix)
+                        .payingWith(payer)
+                        .signedBy(payer)
+                        .hasKnownStatus(INVALID_SIGNATURE),
+                contractDelete(contract + suffix).payingWith(payer).hasKnownStatus(SUCCESS));
     }
 
     @HapiTest
