@@ -26,7 +26,7 @@ import org.junit.jupiter.api.Test;
 public class PbjRecordHasherTest {
     @Test
     void testHash() {
-        final PbjRecordHasher<Roster> hasher = new PbjRecordHasher();
+        final PbjRecordHasher hasher = new PbjRecordHasher();
 
         final Hash hash = hasher.hash(Roster.DEFAULT, Roster.PROTOBUF);
         assertEquals(

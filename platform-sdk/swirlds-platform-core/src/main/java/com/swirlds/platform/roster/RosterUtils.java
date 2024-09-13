@@ -25,7 +25,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  * A utility class to help use Rooster and RosterEntry instances.
  */
 public final class RosterUtils {
-    private static final PbjRecordHasher<Roster> ROSTER_HASHER = new PbjRecordHasher<>();
+    private static final PbjRecordHasher PBJ_RECORD_HASHER = new PbjRecordHasher();
 
     private RosterUtils() {}
 
@@ -48,7 +48,8 @@ public final class RosterUtils {
      * @param roster a roster
      * @return its Hash
      */
+    @NonNull
     public static Hash hash(@NonNull final Roster roster) {
-        return ROSTER_HASHER.hash(roster, Roster.PROTOBUF);
+        return PBJ_RECORD_HASHER.hash(roster, Roster.PROTOBUF);
     }
 }
