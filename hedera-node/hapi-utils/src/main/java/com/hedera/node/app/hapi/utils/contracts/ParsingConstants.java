@@ -60,6 +60,8 @@ public final class ParsingConstants {
             "(" + "string,string,address,string,bool,int64,bool," + TOKEN_KEY + ARRAY_BRACKETS + "," + EXPIRY + ")";
     public static final String HEDERA_TOKEN_V3 =
             "(" + "string,string,address,string,bool,int64,bool," + TOKEN_KEY + ARRAY_BRACKETS + "," + EXPIRY_V2 + ")";
+    public static final String HEDERA_TOKEN_V4 = "(" + "string,string,address,string,bool,uint32,bool," + TOKEN_KEY
+            + ARRAY_BRACKETS + "," + EXPIRY + ",bytes" + ")";
     public static final String TOKEN_INFO = "("
             + HEDERA_TOKEN_V2
             + ",int64,bool,bool,bool,"
@@ -135,8 +137,11 @@ public final class ParsingConstants {
         HAPI_TRANSFER_FROM_NFT,
         HAPI_GET_APPROVED,
         HAPI_GET_FUNGIBLE_TOKEN_INFO,
+        HAPI_GET_FUNGIBLE_TOKEN_INFO_V2,
         HAPI_GET_TOKEN_INFO,
+        HAPI_GET_TOKEN_INFO_V2,
         HAPI_GET_NON_FUNGIBLE_TOKEN_INFO,
+        HAPI_GET_NON_FUNGIBLE_TOKEN_INFO_V2,
         HAPI_IS_APPROVED_FOR_ALL,
         HAPI_IS_KYC,
         GET_TOKEN_DEFAULT_FREEZE_STATUS,
