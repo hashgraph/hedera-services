@@ -27,6 +27,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_EXPIRATION_TIME
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_KEY_IN_FEKL;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_ENTRIES_FOR_FEKL_EXCEEDED;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.MISSING_CUSTOM_FEES;
 import static com.hedera.node.app.hapi.utils.fee.ConsensusServiceFeeBuilder.getConsensusCreateTopicFee;
 import static com.hedera.node.app.service.consensus.impl.ConsensusServiceImpl.RUNNING_HASH_BYTE_ARRAY_SIZE;
 import static com.hedera.node.app.spi.validation.AttributeValidator.isImmutableKey;
@@ -205,6 +206,7 @@ public class ConsensusCreateTopicHandler implements TransactionHandler {
             validateTrue(
                     op.feeExemptKeyList().size() <= topicConfig.maxEntriesForFeeExemptKeyList(),
                     MAX_ENTRIES_FOR_FEKL_EXCEEDED);
+            validateTrue(!op.customFees().isEmpty(), MISSING_CUSTOM_FEES);
             op.feeExemptKeyList()
                     .forEach(key -> handleContext.attributeValidator().validateKey(key, INVALID_KEY_IN_FEKL));
             builder.feeExemptKeyList(op.feeExemptKeyList());

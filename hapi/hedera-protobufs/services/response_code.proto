@@ -1595,17 +1595,24 @@ enum ResponseCodeEnum {
     INVALID_TOKEN_IN_PENDING_AIRDROP = 369;
 
     /**
-    * The number of entries in the fee exempt key list exceed the maximum.
+    * The provided fee exempt key list size exceeded the limit.
     */
     MAX_ENTRIES_FOR_FEKL_EXCEEDED = 370;
 
     /**
-    * There is a duplicate key in the fee exempt key list.
+    * The provided fee exempt key list contains duplicated keys.
     */
     FEKL_CONTAINS_DUPLICATED_KEYS = 371;
 
     /**
-    * There is an invalid key in the fee exempt key list.
+    * The provided fee exempt key list contains an invalid key.
     */
     INVALID_KEY_IN_FEKL = 372;
+
+    /**
+     * Custom fee list is missing.
+     * <p>
+     * Fee exempt key list MAY be set only if custom fee list is set.
+     */
+    MISSING_CUSTOM_FEES = 373;
 }

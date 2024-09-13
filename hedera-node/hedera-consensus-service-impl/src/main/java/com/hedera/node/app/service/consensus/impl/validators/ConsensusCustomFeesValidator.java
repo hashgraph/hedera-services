@@ -16,14 +16,16 @@
 
 package com.hedera.node.app.service.consensus.impl.validators;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.AMOUNT_EXCEEDS_TOKEN_MAX_SUPPLY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.CUSTOM_FEE_DENOMINATION_MUST_BE_FUNGIBLE_COMMON;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.CUSTOM_FEE_MUST_BE_POSITIVE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.CUSTOM_FEE_NOT_FULLY_SPECIFIED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_CUSTOM_FEE_COLLECTOR;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID_IN_CUSTOM_FEES;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_FEE_COLLECTOR;
+import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.TokenValidations.REQUIRE_NOT_PAUSED;
+import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.getIfUsable;
 import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.getIfUsableForAliasedId;
-import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static java.util.Objects.requireNonNull;
 
@@ -91,7 +93,11 @@ public class ConsensusCustomFeesValidator {
         validateTrue(fixedFee.amount() > 0, CUSTOM_FEE_MUST_BE_POSITIVE);
         if (fixedFee.hasDenominatingTokenId()) {
             validateExplicitTokenDenomination(
-                    fee.feeCollectorAccountId(), fixedFee.denominatingTokenId(), tokenRelationStore, tokenStore);
+                    fee.feeCollectorAccountId(),
+                    fixedFee.denominatingTokenId(),
+                    fixedFee.amount(),
+                    tokenRelationStore,
+                    tokenStore);
         }
     }
 
@@ -100,17 +106,18 @@ public class ConsensusCustomFeesValidator {
      *
      * @param feeCollectorNum The fee collector account number.
      * @param tokenNum The token number used for token denomination.
+     * @param feeAmount The fee amount.
      * @param tokenRelationStore The token relation store.
      * @param tokenStore The token store.
      */
     private void validateExplicitTokenDenomination(
             @NonNull final AccountID feeCollectorNum,
             @NonNull final TokenID tokenNum,
+            @NonNull final long feeAmount,
             @NonNull final ReadableTokenRelationStore tokenRelationStore,
             @NonNull final ReadableTokenStore tokenStore) {
-        final var denomToken = tokenStore.get(tokenNum);
-        validateTrue(denomToken != null, INVALID_TOKEN_ID_IN_CUSTOM_FEES);
-        validateFalse(denomToken.paused(), INVALID_TOKEN_ID_IN_CUSTOM_FEES);
+        final var denomToken = getIfUsable(tokenNum, tokenStore, REQUIRE_NOT_PAUSED, INVALID_TOKEN_ID_IN_CUSTOM_FEES);
+        validateTrue(feeAmount <= denomToken.maxSupply(), AMOUNT_EXCEEDS_TOKEN_MAX_SUPPLY);
         validateTrue(isFungibleCommon(denomToken.tokenType()), CUSTOM_FEE_DENOMINATION_MUST_BE_FUNGIBLE_COMMON);
         validateTrue(tokenRelationStore.get(feeCollectorNum, tokenNum) != null, TOKEN_NOT_ASSOCIATED_TO_FEE_COLLECTOR);
     }
