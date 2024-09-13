@@ -202,6 +202,13 @@ public class HandleWorkflow {
         cacheWarmer.warm(state, round);
         final var blockStreamConfig = configProvider.getConfiguration().getConfigData(BlockStreamConfig.class);
         if (blockStreamConfig.streamBlocks()) {
+            if (!migrationStateChanges.isEmpty()) {
+                migrationStateChanges.forEach(builder -> blockStreamManager.writeItem(BlockItem.newBuilder()
+                        .stateChanges(builder.consensusTimestamp(blockStreamManager.blockTimestamp())
+                                .build())
+                        .build()));
+                migrationStateChanges.clear();
+            }
             blockStreamManager.startRound(round, state);
         }
         recordCache.resetRoundReceipts();
@@ -303,15 +310,6 @@ public class HandleWorkflow {
 
         if (blockStreamConfig.streamRecords()) {
             blockRecordManager.startUserTransaction(consensusNow, state);
-        }
-        // Because synthetic account creation records are only externalized on the first user transaction, we
-        // also postpone externalizing migration state changes until that same transactional unit
-        if (blockStreamConfig.streamBlocks() && !migrationStateChanges.isEmpty()) {
-            migrationStateChanges.forEach(builder -> blockStreamManager.writeItem(BlockItem.newBuilder()
-                    .stateChanges(builder.consensusTimestamp(blockStreamManager.blockTimestamp())
-                            .build())
-                    .build()));
-            migrationStateChanges.clear();
         }
         final var handleOutput = execute(userTxn);
         if (blockStreamConfig.streamRecords()) {

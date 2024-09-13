@@ -25,6 +25,7 @@ import static com.hedera.node.app.blocks.schemas.V0540BlockStreamSchema.BLOCK_ST
 import static com.hedera.node.app.fixtures.AppTestBase.DEFAULT_CONFIG;
 import static com.hedera.node.app.hapi.utils.CommonUtils.noThrowSha384HashOf;
 import static com.swirlds.platform.state.service.schemas.V0540PlatformStateSchema.PLATFORM_STATE_KEY;
+import static java.util.concurrent.CompletableFuture.completedFuture;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -98,7 +99,7 @@ class BlockStreamManagerImplTest {
             BlockItem.newBuilder().stateChanges(StateChanges.DEFAULT).build();
     private static final BlockItem FAKE_RECORD_FILE_ITEM =
             BlockItem.newBuilder().recordFile(RecordFileItem.DEFAULT).build();
-    private final StartingStateInfo hashInfo = new StartingStateInfo(Bytes.EMPTY, 0);
+    private final StartingStateInfo hashInfo = new StartingStateInfo(completedFuture(Bytes.EMPTY), 0);
 
     @Mock
     private TssBaseService tssBaseService;

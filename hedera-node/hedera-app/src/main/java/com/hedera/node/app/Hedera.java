@@ -561,6 +561,7 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener {
                         .orElse(null)),
                 () -> HapiUtils.toString(version.getPbjSemanticVersion()),
                 () -> trigger);
+        logger.info("StartingStateHash : {}", startingStateHash);
         final var selfNodeInfo = extractSelfNodeInfo(platform);
         final var networkInfo = new UnavailableLedgerIdNetworkInfo(selfNodeInfo, platform);
         final List<StateChanges.Builder> migrationStateChanges = new ArrayList<>();
@@ -809,6 +810,7 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener {
         // state definitions for those children. (And note services may even require migrations for
         // those children to be usable with the current version of the software.)
         final var migrationStateChanges = onMigrate(state, deserializedVersion, trigger, metrics);
+        logger.info("MigrationStateChanges {}", migrationStateChanges.stream().map(StateChanges.Builder::build).toList());
         // With the States API grounded in the working state, we can create the object graph from it
         initializeDagger(state, trigger, migrationStateChanges);
         // Log the active configuration

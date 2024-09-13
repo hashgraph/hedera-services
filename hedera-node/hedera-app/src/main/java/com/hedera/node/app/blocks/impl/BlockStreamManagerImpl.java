@@ -251,7 +251,6 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
                     writer,
                     new MerkleSiblingHash(false, inputHash),
                     new MerkleSiblingHash(false, rightParent)));
-            log.info("Pending Block", pendingBlocks.peek());
             // Update in-memory state to prepare for the next block
             lastBlockHash = blockHash;
             writer = null;
@@ -536,9 +535,8 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
     @Override
     public void notify(final StateHashedNotification notification) {
         log.info(
-                "StateHashedNotification Received : hash: {}, roundNumber: {}",
-                notification.hash(),
-                notification.round());
+                "StateHashedNotification Received : roundNumber: {}, hash: {} ",
+                notification.round(), notification.hash());
         roundHashes.get(notification.round()).complete(notification.hash().getBytes());
     }
 }
