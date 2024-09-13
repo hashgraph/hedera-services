@@ -159,6 +159,7 @@ class SystemSetupTest {
     void successfulAutoUpdatesAreDispatchedWithFilesAvailable() throws IOException {
         final var config = HederaTestConfigBuilder.create()
                 .withValue("networkAdmin.upgradeSysFilesLoc", tempDir.toString())
+                .withValue("nodes.enableDAB", true)
                 .getOrCreateConfig();
         final var adminConfig = config.getConfigData(NetworkAdminConfig.class);
         Files.writeString(tempDir.resolve(adminConfig.upgradePropertyOverridesFile()), validPropertyOverrides());
@@ -169,10 +170,10 @@ class SystemSetupTest {
         given(dispatch.config()).willReturn(config);
         given(dispatch.consensusNow()).willReturn(CONSENSUS_NOW);
         given(dispatch.handleContext()).willReturn(handleContext);
-        given(handleContext.storeFactory()).willReturn(storeFactory);
-        given(storeFactory.readableStore(ReadableNodeStore.class)).willReturn(readableNodeStore);
         given(handleContext.dispatchPrecedingTransaction(any(), any(), any(), any()))
                 .willReturn(streamBuilder);
+        given(handleContext.storeFactory()).willReturn(storeFactory);
+        given(storeFactory.readableStore(ReadableNodeStore.class)).willReturn(readableNodeStore);
 
         subject.doPostUpgradeSetup(dispatch);
 
@@ -189,6 +190,7 @@ class SystemSetupTest {
     void onlyAddressBookAndNodeDetailsAutoUpdateIsDispatchedWithNoFilesAvailable() {
         final var config = HederaTestConfigBuilder.create()
                 .withValue("networkAdmin.upgradeSysFilesLoc", tempDir.toString())
+                .withValue("nodes.enableDAB", true)
                 .getOrCreateConfig();
         given(dispatch.stack()).willReturn(stack);
         given(dispatch.config()).willReturn(config);
@@ -213,6 +215,7 @@ class SystemSetupTest {
     void onlyAddressBookAndNodeDetailsAutoUpdateIsDispatchedWithInvalidFilesAvailable() throws IOException {
         final var config = HederaTestConfigBuilder.create()
                 .withValue("networkAdmin.upgradeSysFilesLoc", tempDir.toString())
+                .withValue("nodes.enableDAB", true)
                 .getOrCreateConfig();
         final var adminConfig = config.getConfigData(NetworkAdminConfig.class);
         Files.writeString(tempDir.resolve(adminConfig.upgradePropertyOverridesFile()), invalidPropertyOverrides());
