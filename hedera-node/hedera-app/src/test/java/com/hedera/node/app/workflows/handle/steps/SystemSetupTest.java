@@ -53,7 +53,6 @@ import com.hedera.node.app.spi.fixtures.util.LoggingSubject;
 import com.hedera.node.app.spi.fixtures.util.LoggingTarget;
 import com.hedera.node.app.spi.store.StoreFactory;
 import com.hedera.node.app.spi.workflows.HandleContext;
-import com.hedera.node.app.spi.workflows.SystemContext;
 import com.hedera.node.app.spi.workflows.record.StreamBuilder;
 import com.hedera.node.app.workflows.handle.Dispatch;
 import com.hedera.node.app.workflows.handle.record.SystemSetup;
@@ -169,20 +168,17 @@ class SystemSetupTest {
         given(dispatch.config()).willReturn(config);
         given(dispatch.consensusNow()).willReturn(CONSENSUS_NOW);
         given(dispatch.handleContext()).willReturn(handleContext);
-        given(handleContext.storeFactory()).willReturn(storeFactory);
-        given(storeFactory.readableStore(ReadableNodeStore.class)).willReturn(readableNodeStore);
         given(handleContext.dispatchPrecedingTransaction(any(), any(), any(), any()))
                 .willReturn(streamBuilder);
 
         subject.doPostUpgradeSetup(dispatch);
 
         final var filesConfig = config.getConfigData(FilesConfig.class);
-        verify(fileService).updateNodeDetailsAfterFreeze(any(SystemContext.class), eq(readableNodeStore));
         verifyUpdateDispatch(filesConfig.networkProperties(), serializedPropertyOverrides());
         verifyUpdateDispatch(filesConfig.hapiPermissions(), serializedPermissionOverrides());
         verifyUpdateDispatch(filesConfig.throttleDefinitions(), serializedThrottleOverrides());
         verifyUpdateDispatch(filesConfig.feeSchedules(), serializedFeeSchedules());
-        verify(stack, times(5)).commitFullStack();
+        verify(stack, times(4)).commitFullStack();
     }
 
     @Test
@@ -190,16 +186,11 @@ class SystemSetupTest {
         final var config = HederaTestConfigBuilder.create()
                 .withValue("networkAdmin.upgradeSysFilesLoc", tempDir.toString())
                 .getOrCreateConfig();
-        given(dispatch.stack()).willReturn(stack);
         given(dispatch.config()).willReturn(config);
-        given(dispatch.handleContext()).willReturn(handleContext);
-        given(handleContext.storeFactory()).willReturn(storeFactory);
-        given(storeFactory.readableStore(ReadableNodeStore.class)).willReturn(readableNodeStore);
 
         subject.doPostUpgradeSetup(dispatch);
 
-        verify(fileService).updateNodeDetailsAfterFreeze(any(SystemContext.class), eq(readableNodeStore));
-        verify(stack, times(1)).commitFullStack();
+        verify(stack, times(0)).commitFullStack();
 
         final var infoLogs = logCaptor.infoLogs();
         assertThat(infoLogs.size()).isEqualTo(4);
@@ -207,36 +198,6 @@ class SystemSetupTest {
         assertThat(infoLogs.get(1)).startsWith("No post-upgrade file for throttles.json");
         assertThat(infoLogs.get(2)).startsWith("No post-upgrade file for application-override.properties");
         assertThat(infoLogs.getLast()).startsWith("No post-upgrade file for api-permission-override.properties");
-    }
-
-    @Test
-    void onlyNodeDetailsAutoUpdateIsDispatchedWithInvalidFilesAvailable() throws IOException {
-        final var config = HederaTestConfigBuilder.create()
-                .withValue("networkAdmin.upgradeSysFilesLoc", tempDir.toString())
-                .getOrCreateConfig();
-        final var adminConfig = config.getConfigData(NetworkAdminConfig.class);
-        Files.writeString(tempDir.resolve(adminConfig.upgradePropertyOverridesFile()), invalidPropertyOverrides());
-        Files.writeString(tempDir.resolve(adminConfig.upgradePermissionOverridesFile()), invalidPermissionOverrides());
-        Files.writeString(tempDir.resolve(adminConfig.upgradeThrottlesFile()), invalidThrottleOverrides());
-        Files.writeString(tempDir.resolve(adminConfig.upgradeFeeSchedulesFile()), invalidFeeScheduleOverrides());
-        given(dispatch.stack()).willReturn(stack);
-        given(dispatch.config()).willReturn(config);
-        given(dispatch.handleContext()).willReturn(handleContext);
-        given(handleContext.storeFactory()).willReturn(storeFactory);
-        given(storeFactory.readableStore(ReadableNodeStore.class)).willReturn(readableNodeStore);
-
-        subject.doPostUpgradeSetup(dispatch);
-
-        verify(fileService).updateNodeDetailsAfterFreeze(any(SystemContext.class), eq(readableNodeStore));
-        verify(stack, times(1)).commitFullStack();
-
-        final var errorLogs = logCaptor.errorLogs();
-        assertThat(errorLogs.size()).isEqualTo(4);
-        assertThat(errorLogs.getFirst()).startsWith("Failed to parse upgrade file for feeSchedules.json");
-        assertThat(errorLogs.get(1)).startsWith("Failed to parse upgrade file for throttles.json");
-        assertThat(errorLogs.get(2)).startsWith("Failed to parse upgrade file for application-override.properties");
-        assertThat(errorLogs.getLast())
-                .startsWith("Failed to parse upgrade file for api-permission-override.properties");
     }
 
     @Test
