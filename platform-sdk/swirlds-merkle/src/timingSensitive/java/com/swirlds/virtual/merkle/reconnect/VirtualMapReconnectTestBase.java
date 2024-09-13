@@ -57,6 +57,7 @@ import java.nio.file.Path;
 import java.util.function.Function;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.io.CleanupMode;
 import org.junit.jupiter.api.io.TempDir;
 
 public class VirtualMapReconnectTestBase {
@@ -97,7 +98,7 @@ public class VirtualMapReconnectTestBase {
     protected BrokenBuilder teacherBuilder;
     protected BrokenBuilder learnerBuilder;
 
-    @TempDir
+    @TempDir(cleanup = CleanupMode.NEVER)
     private static Path tempDirectory;
 
     private static TestFileSystemManager testFileSystemManager;
