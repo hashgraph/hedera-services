@@ -96,6 +96,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -357,11 +358,24 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
     @NonNull
     public WritableStates getWritableStates(@NonNull final String serviceName) {
         logger.info(STARTUP.getMarker(), "Getting writable states for service {}", serviceName);
+        logLimitedStackTrace();
         throwIfImmutable();
         return writableStatesMap.computeIfAbsent(serviceName, s -> {
             final var stateMetadata = services.getOrDefault(s, Map.of());
             return new MerkleWritableStates(serviceName, stateMetadata);
         });
+    }
+
+    private void logLimitedStackTrace() {
+        int maxFrames = 10;
+
+        String stackTraceString = StackWalker.getInstance()
+                .walk(stream -> stream.skip(1) // Skip the current method (logLimitedStackTrace)
+                        .limit(maxFrames)
+                        .map(frame -> "\tat " + frame.toString())
+                        .collect(Collectors.joining("\n")));
+
+        logger.info("Limited stack trace:\n{}", stackTraceString);
     }
 
     @Override
