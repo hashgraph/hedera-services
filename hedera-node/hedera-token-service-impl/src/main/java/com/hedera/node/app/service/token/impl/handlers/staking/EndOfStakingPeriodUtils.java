@@ -34,7 +34,7 @@ public final class EndOfStakingPeriodUtils {
     }
 
     /**
-     * Creates a human-readable string summary of the given reward sums history, omitting any trailing zeros
+     * Creates a human-readable string summary of the given reward sums history, omitting any trailing zeros.
      *
      * @param rewardSumHistory the rewards sum history to summarize
      * @return the summary
@@ -57,7 +57,7 @@ public final class EndOfStakingPeriodUtils {
     }
 
     /**
-     * Stores both the new reward sum history and the new per-hbar reward rate for a node
+     * Stores both the new reward sum history and the new per-hbar reward rate for a node.
      */
     public record RewardSumHistory(List<Long> rewardSumHistory, long pendingRewardRate) {}
 
@@ -69,7 +69,8 @@ public final class EndOfStakingPeriodUtils {
      * @param currentInfo the node's current staking info
      * @param perHbarRate the current per-hbar reward rate for this node
      * @param maxPerHbarRate the maximum per-hbar reward rate for this node
-     * @param requireMinStakeToReward if true, will require the node's stake to meet a certain threshold in order to receive rewards
+     * @param requireMinStakeToReward if true, will require the node's stake to meet a threshold
+     *                                in order to receive rewards
      * @return the calculated {@link RewardSumHistory}
      */
     public static RewardSumHistory calculateRewardSumHistory(
@@ -79,11 +80,11 @@ public final class EndOfStakingPeriodUtils {
             final boolean requireMinStakeToReward) {
         final var currRewardSumHistory = currentInfo.rewardSumHistory();
         final var newRewardSumHistory = new ArrayList<>(currRewardSumHistory);
-        final var droppedRewardSum = currRewardSumHistory.get(currRewardSumHistory.size() - 1);
+        final var droppedRewardSum = currRewardSumHistory.getLast();
         for (int i = currRewardSumHistory.size() - 1; i > 0; i--) {
             newRewardSumHistory.set(i, currRewardSumHistory.get(i - 1) - droppedRewardSum);
         }
-        newRewardSumHistory.set(0, currRewardSumHistory.get(0) - droppedRewardSum);
+        newRewardSumHistory.set(0, currRewardSumHistory.getFirst() - droppedRewardSum);
 
         long perHbarRateThisNode = 0;
         // If this node was "active"---i.e., node.numRoundsWithJudge / numRoundsInPeriod >= activeThreshold---and it had
@@ -107,13 +108,13 @@ public final class EndOfStakingPeriodUtils {
             }
         }
         perHbarRateThisNode = Math.min(perHbarRateThisNode, maxPerHbarRate);
-        newRewardSumHistory.set(0, newRewardSumHistory.get(0) + perHbarRateThisNode);
+        newRewardSumHistory.set(0, newRewardSumHistory.getFirst() + perHbarRateThisNode);
 
         return new RewardSumHistory(newRewardSumHistory, perHbarRateThisNode);
     }
 
     /**
-     * Stores both the new stake and the new stakeRewardStart for a node
+     * Stores both the new stake and the new stakeRewardStart for a node.
      */
     public record StakeResult(long stake, long stakeRewardStart) {}
 

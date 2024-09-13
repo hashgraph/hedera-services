@@ -774,6 +774,25 @@ public class TokenClaimAirdropTest extends TokenAirdropBase {
     }
 
     @HapiTest
+    @DisplayName("not associated FT and receiver sig required")
+    final Stream<DynamicTest> notAssociatedFTAndReceiverSigRequired() {
+        final String BOB = "BOB";
+        final String ALICE = "ALICE";
+        return hapiTest(flattened(
+                cryptoCreate(ALICE).balance(ONE_HUNDRED_HBARS),
+                cryptoCreate(BOB)
+                        .balance(ONE_HUNDRED_HBARS)
+                        .maxAutomaticTokenAssociations(5)
+                        .receiverSigRequired(true),
+                createFT(FUNGIBLE_TOKEN_1, ALICE, 1000L),
+                tokenAirdrop(moving(10, FUNGIBLE_TOKEN_1).between(ALICE, BOB)).payingWith(ALICE),
+                tokenClaimAirdrop(pendingAirdrop(ALICE, BOB, FUNGIBLE_TOKEN_1))
+                        .signedBy(BOB)
+                        .payingWith(BOB),
+                getAccountBalance(BOB).hasTokenBalance(FUNGIBLE_TOKEN_1, 10)));
+    }
+
+    @HapiTest
     @DisplayName("multiple pending transfers in one airdrop same token different receivers")
     final Stream<DynamicTest> multiplePendingInOneAirdropDifferentReceivers() {
         final String ALICE = "ALICE";

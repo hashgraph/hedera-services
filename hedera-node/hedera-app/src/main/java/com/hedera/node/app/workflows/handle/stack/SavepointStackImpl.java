@@ -29,6 +29,7 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.block.stream.BlockItem;
 import com.hedera.hapi.node.base.TransactionID;
+import com.hedera.hapi.node.transaction.ExchangeRateSet;
 import com.hedera.node.app.blocks.impl.BoundaryStateChangeListener;
 import com.hedera.node.app.blocks.impl.KVStateChangeListener;
 import com.hedera.node.app.blocks.impl.PairedStreamBuilder;
@@ -59,8 +60,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 /**
  * A stack of savepoints scoped to a dispatch. Each savepoint captures the state of the {@link State} at the time
@@ -68,7 +67,6 @@ import org.apache.logging.log4j.Logger;
  * the stream builders created in the savepoint.
  */
 public class SavepointStackImpl implements HandleContext.SavepointStack, State {
-    private static final Logger log = LogManager.getLogger(SavepointStackImpl.class);
     private final State state;
     private final Deque<Savepoint> stack = new ArrayDeque<>();
     private final Map<String, WritableStatesStack> writableStatesMap = new HashMap<>();
@@ -444,9 +442,11 @@ public class SavepointStackImpl implements HandleContext.SavepointStack, State {
      * Builds all the records for the user transaction.
      *
      * @param consensusTime consensus time of the transaction
+     * @param exchangeRates the active exchange rates
      * @return the stream of records
      */
-    public HandleOutput buildHandleOutput(@NonNull final Instant consensusTime) {
+    public HandleOutput buildHandleOutput(
+            @NonNull final Instant consensusTime, @NonNull final ExchangeRateSet exchangeRates) {
         final List<BlockItem> blockItems;
         Instant lastAssignedConsenusTime = consensusTime;
         if (streamMode == RECORDS) {
@@ -481,8 +481,16 @@ public class SavepointStackImpl implements HandleContext.SavepointStack, State {
             final var consensusNow = consensusTime.plusNanos((long) i - indexOfUserRecord);
             lastAssignedConsenusTime = consensusNow;
             builder.consensusTimestamp(consensusNow);
-            if (i > indexOfUserRecord && builder.category() != SCHEDULED) {
-                builder.parentConsensus(consensusTime);
+            if (i > indexOfUserRecord) {
+                if (builder.category() != SCHEDULED) {
+                    // Only set exchange rates on transactions preceding the user transaction, since
+                    // no subsequent child can change the exchange rate
+                    builder.parentConsensus(consensusTime).exchangeRate(null);
+                } else {
+                    // But for backward compatibility keep setting rates on scheduled receipts, c.f.
+                    // https://github.com/hashgraph/hedera-services/issues/15393
+                    builder.exchangeRate(exchangeRates);
+                }
             }
             switch (streamMode) {
                 case RECORDS -> records.add(((RecordStreamBuilder) builder).build());

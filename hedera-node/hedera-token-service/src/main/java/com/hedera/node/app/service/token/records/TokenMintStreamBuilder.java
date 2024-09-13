@@ -36,14 +36,14 @@ public interface TokenMintStreamBuilder extends TokenBaseStreamBuilder {
     TokenMintStreamBuilder serialNumbers(@NonNull List<Long> serialNumbers);
 
     /**
-     * Sets the new total supply of a token
+     * Sets the new total supply of a token.
      * @param newTotalSupply the new total supply of a token
      * @return this builder
      */
-    TokenMintStreamBuilder newTotalSupply(final long newTotalSupply);
+    TokenMintStreamBuilder newTotalSupply(long newTotalSupply);
 
     /**
-     * Gets the new total supply of a token
+     * Gets the new total supply of a token.
      * @return new total supply of a token
      */
     long getNewTotalSupply();

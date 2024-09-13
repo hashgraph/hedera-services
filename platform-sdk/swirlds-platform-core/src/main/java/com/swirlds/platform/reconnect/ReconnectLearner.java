@@ -104,7 +104,7 @@ public class ReconnectLearner {
         this.statistics = Objects.requireNonNull(statistics);
 
         // Save some of the current state data for validation
-        this.stateValidationData = new SignedStateValidationData(currentState.getPlatformState(), addressBook);
+        this.stateValidationData = new SignedStateValidationData(currentState.getReadablePlatformState(), addressBook);
     }
 
     /**

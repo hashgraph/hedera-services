@@ -27,6 +27,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_STAKING_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MEMO_TOO_LONG;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.PROXY_ACCOUNT_ID_FIELD_IS_DEPRECATED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.STAKING_NOT_ENABLED;
@@ -45,6 +46,7 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.inOrder;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.when;
@@ -65,7 +67,7 @@ import com.hedera.node.app.service.token.impl.ReadableAccountStoreImpl;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.handlers.CryptoUpdateHandler;
 import com.hedera.node.app.service.token.impl.test.handlers.util.CryptoHandlerTestBase;
-import com.hedera.node.app.service.token.impl.validators.StakingValidator;
+import com.hedera.node.app.service.token.records.CryptoUpdateStreamBuilder;
 import com.hedera.node.app.spi.fees.FeeCalculator;
 import com.hedera.node.app.spi.fees.FeeCalculatorFactory;
 import com.hedera.node.app.spi.fees.FeeContext;
@@ -121,7 +123,12 @@ class CryptoUpdateHandlerTest extends CryptoHandlerTestBase {
     @Mock
     private ExpiryValidator expiryValidator;
 
-    private StakingValidator stakingValidator;
+    @Mock
+    private HandleContext.SavepointStack stack;
+
+    @Mock
+    private CryptoUpdateStreamBuilder streamBuilder;
+
     private final long updateAccountNum = 32132L;
     private final AccountID updateAccountId =
             AccountID.newBuilder().accountNum(updateAccountNum).build();
@@ -138,9 +145,13 @@ class CryptoUpdateHandlerTest extends CryptoHandlerTestBase {
                 givenValidAccount(updateAccountNum).copyBuilder().key(otherKey).build();
         updateWritableAccountStore(Map.of(updateAccountId.accountNum(), updateAccount, accountNum, account));
         updateReadableAccountStore(Map.of(updateAccountId.accountNum(), updateAccount, accountNum, account));
+        lenient().when(handleContext.savepointStack()).thenReturn(stack);
+        lenient().when(stack.getBaseBuilder(CryptoUpdateStreamBuilder.class)).thenReturn(streamBuilder);
+        lenient()
+                .when(expiryValidator.expirationStatus(any(), anyBoolean(), anyLong()))
+                .thenReturn(OK);
 
-        stakingValidator = new StakingValidator();
-        subject = new CryptoUpdateHandler(waivers, stakingValidator);
+        subject = new CryptoUpdateHandler(waivers);
     }
 
     @Test

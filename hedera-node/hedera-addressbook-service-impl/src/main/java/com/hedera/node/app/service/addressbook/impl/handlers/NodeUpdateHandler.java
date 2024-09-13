@@ -119,10 +119,12 @@ public class NodeUpdateHandler implements TransactionHandler {
             validateTrue(accountStore.contains(accountId), INVALID_NODE_ACCOUNT_ID);
         }
         if (op.hasDescription()) addressBookValidator.validateDescription(op.description(), nodeConfig);
-        if (!op.gossipEndpoint().isEmpty())
+        if (!op.gossipEndpoint().isEmpty()) {
             addressBookValidator.validateGossipEndpoint(op.gossipEndpoint(), nodeConfig);
-        if (!op.serviceEndpoint().isEmpty())
+        }
+        if (!op.serviceEndpoint().isEmpty()) {
             addressBookValidator.validateServiceEndpoint(op.serviceEndpoint(), nodeConfig);
+        }
 
         final var nodeBuilder = updateNode(op, existingNode);
         nodeStore.put(nodeBuilder.build());

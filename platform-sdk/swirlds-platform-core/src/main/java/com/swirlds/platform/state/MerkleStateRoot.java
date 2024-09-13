@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.state;
 
+import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 import static com.swirlds.platform.state.MerkleStateUtils.createInfoString;
 import static com.swirlds.platform.state.service.PbjConverter.toPbjPlatformState;
@@ -32,6 +33,7 @@ import com.swirlds.common.constructable.ConstructableIgnored;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.merkle.MerkleInternal;
 import com.swirlds.common.merkle.MerkleNode;
+import com.swirlds.common.merkle.crypto.MerkleCryptography;
 import com.swirlds.common.merkle.impl.PartialNaryMerkleInternal;
 import com.swirlds.common.utility.Labeled;
 import com.swirlds.common.utility.RuntimeObjectRecord;
@@ -90,6 +92,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -140,6 +143,7 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
     private final MerkleStateLifecycles lifecycles;
 
     private final Function<SemanticVersion, SoftwareVersion> versionFactory;
+    private MerkleCryptography merkleCryptography;
 
     public Map<String, Map<String, StateMetadata<?, ?>>> getServices() {
         return services;
@@ -232,6 +236,7 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
             @NonNull final InitTrigger trigger,
             @Nullable final SoftwareVersion deserializedVersion) {
         metrics = platform.getContext().getMetrics();
+        merkleCryptography = platform.getContext().getMerkleCryptography();
 
         // If we are initialized for event stream recovery, we have to register an
         // extra listener to make sure we call all the required Hedera lifecycles
@@ -1000,8 +1005,20 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
      */
     @NonNull
     @Override
-    public PlatformStateAccessor getPlatformState() {
-        return !isImmutable() ? writablePlatformStateStore() : readablePlatformStateStore();
+    public PlatformStateAccessor getReadablePlatformState() {
+        return readablePlatformStateStore();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @NonNull
+    @Override
+    public PlatformStateAccessor getWritablePlatformState() {
+        if (isImmutable()) {
+            throw new IllegalStateException("Cannot get writable platform state when state is immutable");
+        }
+        return writablePlatformStateStore();
     }
 
     /**
@@ -1020,7 +1037,7 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
     @NonNull
     @Override
     public String getInfoString(final int hashDepth) {
-        return createInfoString(hashDepth, getPlatformState(), getHash(), this);
+        return createInfoString(hashDepth, readablePlatformStateStore(), getHash(), this);
     }
 
     private ReadablePlatformStateStore readablePlatformStateStore() {
@@ -1041,5 +1058,28 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
             preV054PlatformState = null;
         }
         return store;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void computeHash() {
+        requireNonNull(
+                merkleCryptography,
+                "MerkleStateRoot has to be initialized before hashing. merkleCryptography is not set.");
+        throwIfMutable("Hashing should only be done on immutable states");
+        throwIfDestroyed("Hashing should not be done on destroyed states");
+        if (getHash() != null) {
+            return;
+        }
+        try {
+            merkleCryptography.digestTreeAsync(this).get();
+        } catch (final ExecutionException e) {
+            logger.error(EXCEPTION.getMarker(), "Exception occurred during hashing", e);
+        } catch (final InterruptedException e) {
+            logger.error(EXCEPTION.getMarker(), "Interrupted while hashing state. Expect buggy behavior.");
+            Thread.currentThread().interrupt();
+        }
     }
 }

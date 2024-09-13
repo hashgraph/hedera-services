@@ -36,7 +36,6 @@ import com.hedera.hapi.block.stream.output.QueuePushChange;
 import com.hedera.hapi.block.stream.output.SingletonUpdateChange;
 import com.hedera.hapi.block.stream.output.StateChanges;
 import com.hedera.hapi.node.base.Key;
-import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.base.SignatureMap;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.TokenAssociation;
@@ -69,8 +68,9 @@ import com.hedera.node.app.services.ServicesRegistryImpl;
 import com.hedera.node.app.spi.signatures.SignatureVerifier;
 import com.hedera.node.app.state.recordcache.RecordCacheService;
 import com.hedera.node.app.throttle.CongestionThrottleService;
-import com.hedera.node.app.version.HederaSoftwareVersion;
+import com.hedera.node.app.version.ServicesSoftwareVersion;
 import com.hedera.node.config.VersionedConfiguration;
+import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.data.VersionConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.services.bdd.junit.hedera.subprocess.SubProcessNetwork;
@@ -226,25 +226,28 @@ public class StateChangesValidator implements BlockStreamValidator {
         final var servicesRegistry = new ServicesRegistryImpl(ConstructableRegistry.getInstance(), bootstrapConfig);
         registerServices(InstantSource.system(), servicesRegistry, bootstrapConfig);
         final var versionConfig = bootstrapConfig.getConfigData(VersionConfig.class);
-        final var currentVersion = versionConfig.servicesVersion();
+        final var servicesVersion = versionConfig.servicesVersion();
         final var addressBook = loadAddressBookWithDeterministicCerts(pathToAddressBook);
         final var networkInfo = fakeNetworkInfoFrom(addressBook);
 
         final var migrator = new OrderedServiceMigrator();
+        final var configVersion =
+                bootstrapConfig.getConfigData(HederaConfig.class).configVersion();
+        final var currentVersion = new ServicesSoftwareVersion(servicesVersion, configVersion);
         final var lifecycles = newPlatformInitLifecycle(bootstrapConfig, currentVersion, migrator, servicesRegistry);
-        state = new MerkleStateRoot(
-                lifecycles, version -> new HederaSoftwareVersion(versionConfig.hapiVersion(), version));
-        state.getPlatformState();
+        state = new MerkleStateRoot(lifecycles, version -> new ServicesSoftwareVersion(version, configVersion));
+        // initialize the platform state
+        state.getWritablePlatformState();
         migrator.doMigrations(
                 state,
                 servicesRegistry,
                 null,
-                currentVersion,
+                new ServicesSoftwareVersion(servicesVersion, configVersion),
                 new ConfigProviderImpl().getConfiguration(),
                 networkInfo,
                 new NoOpMetrics());
 
-        logger.info("Registered all Service and migrated state definitions to version {}", currentVersion);
+        logger.info("Registered all Service and migrated state definitions to version {}", servicesVersion);
     }
 
     @Override
@@ -615,16 +618,17 @@ public class StateChangesValidator implements BlockStreamValidator {
 
     private static MerkleStateLifecycles newPlatformInitLifecycle(
             @NonNull final Configuration bootstrapConfig,
-            @NonNull final SemanticVersion currentVersion,
+            @NonNull final SoftwareVersion currentVersion,
             @NonNull final OrderedServiceMigrator serviceMigrator,
             @NonNull final ServicesRegistryImpl servicesRegistry) {
         return new MerkleStateLifecycles() {
             @Override
             public List<StateChanges.Builder> initPlatformState(@NonNull final State state) {
+                final var deserializedVersion = serviceMigrator.creationVersionOf(state);
                 return serviceMigrator.doMigrations(
                         state,
                         servicesRegistry.subRegistryFor(EntityIdService.NAME, PlatformStateService.NAME),
-                        serviceMigrator.creationVersionOf(state),
+                        deserializedVersion == null ? null : new ServicesSoftwareVersion(deserializedVersion),
                         currentVersion,
                         bootstrapConfig,
                         UNAVAILABLE_NETWORK_INFO,

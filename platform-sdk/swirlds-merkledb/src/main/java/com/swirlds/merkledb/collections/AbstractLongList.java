@@ -26,7 +26,6 @@ import com.swirlds.merkledb.utilities.MerkleDbFileUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.File;
 import java.io.IOException;
-import java.lang.reflect.Field;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.file.Path;
@@ -37,7 +36,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 import java.util.stream.LongStream;
 import java.util.stream.StreamSupport;
-import sun.misc.Unsafe;
 
 /**
  * Common parent class for long list implementations. It takes care of loading a snapshot from disk,
@@ -47,24 +45,11 @@ import sun.misc.Unsafe;
  */
 public abstract class AbstractLongList<C> implements LongList {
 
-    /** Access to sun.misc.Unsafe required for operations on direct bytebuffers*/
-    protected static final Unsafe UNSAFE;
-
     public static final String MAX_CHUNKS_EXCEEDED_MSG = "The maximum number of memory chunks should not exceed %s. "
             + "Either increase numLongsPerChunk or decrease maxLongs";
     public static final String CHUNK_SIZE_EXCEEDED_MSG = "Cannot store %d per chunk (max is %d)";
     public static final String INVALID_RANGE_MSG = "Invalid range %d - %d";
     public static final String MAX_VALID_INDEX_LIMIT = "Max valid index %d must be less than max capacity %d";
-
-    static {
-        try {
-            final Field f = Unsafe.class.getDeclaredField("theUnsafe");
-            f.setAccessible(true);
-            UNSAFE = (Unsafe) f.get(null);
-        } catch (final NoSuchFieldException | SecurityException | IllegalArgumentException | IllegalAccessException e) {
-            throw new InternalError(e);
-        }
-    }
 
     /** A suitable default for the maximum number of longs that may be stored (32GB of longs). */
     protected static final long DEFAULT_MAX_LONGS_TO_STORE = 4_000_000_000L;
@@ -511,7 +496,7 @@ public abstract class AbstractLongList<C> implements LongList {
             if (oldChunk == null) {
                 return newChunk;
             } else {
-                releaseChunk(newChunk);
+                closeChunk(newChunk);
                 return oldChunk;
             }
         } else {
@@ -530,7 +515,7 @@ public abstract class AbstractLongList<C> implements LongList {
         for (int i = firstChunkIndexToDelete; i >= 0; i--) {
             final C chunk = chunkList.get(i);
             if (chunk != null && chunkList.compareAndSet(i, chunk, null)) {
-                releaseChunk(chunk);
+                closeChunk(chunk);
             }
         }
 
@@ -567,7 +552,7 @@ public abstract class AbstractLongList<C> implements LongList {
         for (int i = firstChunkIndexToDelete; i < numberOfChunks; i++) {
             final C chunk = chunkList.get(i);
             if (chunk != null && chunkList.compareAndSet(i, chunk, null)) {
-                releaseChunk(chunk);
+                closeChunk(chunk);
             }
         }
 
@@ -589,12 +574,6 @@ public abstract class AbstractLongList<C> implements LongList {
     }
 
     /**
-     * Releases a chunk that is no longer in use. Some implementation may preserve the chunk for further use.
-     * @param chunk chunk to release
-     */
-    protected abstract void releaseChunk(@NonNull final C chunk);
-
-    /**
      * Zeroes out a part of a chunk.
      * @param chunk index of the chunk to clean up
      * @param leftSide         if true, cleans up {@code entriesToCleanUp} on the left side of the chunk,
@@ -605,9 +584,22 @@ public abstract class AbstractLongList<C> implements LongList {
             @NonNull final C chunk, final boolean leftSide, final long entriesToCleanUp);
 
     /**
+     * Allocates a new chunk of data.
+     *
      * @return a new chunk
      */
     protected abstract C createChunk();
+
+    /**
+     * Releases a chunk. This method is called for every chunk when this list is closed. It's
+     * also used to delete chunks, when they are no longer in use because of min/max valid
+     * index updated.
+     *
+     * @param chunk the chunk to clean up
+     */
+    protected void closeChunk(@NonNull final C chunk) {
+        // to be overridden
+    }
 
     /**
      * @param totalNumberOfElements total number of elements in the list
@@ -681,15 +673,5 @@ public abstract class AbstractLongList<C> implements LongList {
                 closeChunk(chunk);
             }
         }
-    }
-
-    /**
-     * Chunk cleanup code, to be overridden in subclasses, if needed. This method is called for
-     * every chunk one by one, when this list is closed.
-     *
-     * @param chunk the chunk to clean up
-     */
-    protected void closeChunk(@NonNull final C chunk) {
-        // to be overridden
     }
 }

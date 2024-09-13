@@ -186,7 +186,7 @@ public class RandomSignedStateGenerator {
             consensusSnapshotInstance = consensusSnapshot;
         }
 
-        final PlatformStateAccessor platformState = stateInstance.getPlatformState();
+        final PlatformStateAccessor platformState = stateInstance.getWritablePlatformState();
 
         platformState.bulkUpdate(v -> {
             v.setSnapshot(consensusSnapshotInstance);

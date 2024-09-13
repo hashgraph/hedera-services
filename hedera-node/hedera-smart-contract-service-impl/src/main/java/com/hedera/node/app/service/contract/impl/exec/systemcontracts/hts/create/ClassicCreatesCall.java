@@ -186,7 +186,7 @@ public class ClassicCreatesCall extends AbstractCall {
                 ? new EitherOrVerificationStrategy(
                         verificationStrategy, new SpecificCryptoVerificationStrategy(op.adminKeyOrThrow()))
                 : verificationStrategy;
-        // And our final dispatch verification strategy must very depending on if
+        // And our final dispatch verification strategy must vary depending on if
         // a legacy activation address is active (somewhere on the stack)
         return stackIncludesActiveAddress(frame, legacyActivation.besuAddress())
                 ? new EitherOrVerificationStrategy(

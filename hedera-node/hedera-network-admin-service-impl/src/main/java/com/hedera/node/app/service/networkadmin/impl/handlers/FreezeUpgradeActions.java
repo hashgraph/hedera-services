@@ -30,14 +30,14 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
- * Provides actions that take place during network upgrade
+ * Provides actions that take place during network upgrade.
  */
 public class FreezeUpgradeActions extends ReadableFreezeUpgradeActions {
     private static final Logger log = LogManager.getLogger(FreezeUpgradeActions.class);
     private final WritableFreezeStore freezeStore;
 
     /**
-     * Constructs a {@link FreezeUpgradeActions} instance
+     * Constructs a {@link FreezeUpgradeActions} instance.
      *
      * @param configuration the configuration
      * @param freezeStore the freeze store

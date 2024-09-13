@@ -19,6 +19,7 @@ package com.hedera.node.app.state.merkle;
 import static com.hedera.node.app.state.merkle.SchemaApplicationType.MIGRATION;
 import static com.hedera.node.app.state.merkle.SchemaApplicationType.RESTART;
 import static com.hedera.node.app.state.merkle.SchemaApplicationType.STATE_DEFINITIONS;
+import static com.hedera.node.app.state.merkle.VersionUtils.alreadyIncludesStateDefs;
 import static com.hedera.node.app.state.merkle.VersionUtils.isSoOrdered;
 import static java.util.Objects.requireNonNull;
 
@@ -242,11 +243,13 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
             final WritableStates writableStates;
             final WritableStates newStates;
             if (applications.contains(STATE_DEFINITIONS)) {
-                final var followingSchemas = schemas.tailSet(schema).stream()
-                        .filter(s -> s != schema && !isSoOrdered(previousVersion, s.getVersion()))
+                final var schemasAlreadyInState = schemas.tailSet(schema).stream()
+                        .filter(s -> s != schema
+                                && previousVersion != null
+                                && alreadyIncludesStateDefs(previousVersion, s.getVersion()))
                         .toList();
                 final var redefinedWritableStates =
-                        applyStateDefinitions(schema, followingSchemas, config, metrics, stateRoot);
+                        applyStateDefinitions(schema, schemasAlreadyInState, config, metrics, stateRoot);
                 writableStates = redefinedWritableStates.beforeStates();
                 newStates = redefinedWritableStates.afterStates();
             } else {
@@ -273,7 +276,7 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
 
     private RedefinedWritableStates applyStateDefinitions(
             @NonNull final Schema schema,
-            @NonNull final List<Schema> followingSchemas,
+            @NonNull final List<Schema> schemasAlreadyInState,
             @NonNull final Configuration configuration,
             @NonNull final Metrics metrics,
             @NonNull final MerkleStateRoot stateRoot) {
@@ -283,7 +286,7 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
                 .sorted(Comparator.comparing(StateDefinition::stateKey))
                 .forEach(def -> {
                     final var stateKey = def.stateKey();
-                    if (followingSchemas.stream()
+                    if (schemasAlreadyInState.stream()
                             .anyMatch(s -> s.statesToRemove().contains(stateKey))) {
                         logger.info("  Skipping {} as it is removed by a later schema", stateKey);
                         return;

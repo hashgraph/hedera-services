@@ -40,8 +40,9 @@ import com.hedera.node.app.service.token.impl.WritableNetworkStakingRewardsStore
 import com.hedera.node.app.service.token.impl.WritableStakingInfoStore;
 import com.hedera.node.app.service.token.records.NodeStakeUpdateStreamBuilder;
 import com.hedera.node.app.service.token.records.TokenContext;
-import com.hedera.node.app.spi.numbers.HederaAccountNumbers;
 import com.hedera.node.app.spi.workflows.record.StreamBuilder;
+import com.hedera.node.config.ConfigProvider;
+import com.hedera.node.config.data.AccountsConfig;
 import com.hedera.node.config.data.StakingConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -72,21 +73,21 @@ public class EndOfStakingPeriodUpdater {
     // The exact choice of precision will not have a large effect on the per-hbar reward rate
     private static final MathContext MATH_CONTEXT = new MathContext(8, RoundingMode.DOWN);
 
-    private final HederaAccountNumbers accountNumbers;
     private final StakingRewardsHelper stakeRewardsHelper;
+
+    private AccountsConfig accountsConfig;
 
     /**
      * Constructs an {@link EndOfStakingPeriodUpdater} instance.
      *
-     * @param accountNumbers the account numbers
      * @param stakeRewardsHelper the staking rewards helper
      */
     @Inject
     public EndOfStakingPeriodUpdater(
-            @NonNull final HederaAccountNumbers accountNumbers,
-            @NonNull final StakingRewardsHelper stakeRewardsHelper) {
-        this.accountNumbers = accountNumbers;
+            @NonNull final StakingRewardsHelper stakeRewardsHelper, @NonNull final ConfigProvider configProvider) {
         this.stakeRewardsHelper = stakeRewardsHelper;
+        final var config = configProvider.getConfiguration();
+        this.accountsConfig = config.getConfigData(AccountsConfig.class);
     }
 
     /**
@@ -124,7 +125,8 @@ public class EndOfStakingPeriodUpdater {
         // plus a boundary-case check for zero whole hbars staked
         final var perHbarRate = totalStakedRewardStart < HBARS_TO_TINYBARS ? 0 : rewardRate;
         log.info(
-                "The reward rate for the period was {} tb ({} tb/hbar for nodes with in-range stake, given {} total stake reward start)",
+                "The reward rate for the period was {} tb ({} tb/hbar for nodes with in-range stake, "
+                        + "given {} total stake reward start)",
                 rewardRate,
                 perHbarRate,
                 totalStakedRewardStart);
@@ -272,7 +274,8 @@ public class EndOfStakingPeriodUpdater {
     }
 
     /**
-     * Scales up the weight of the node to the range [minStake, maxStakeOfAllNodes] from the consensus weight range [0, sumOfConsensusWeights].
+     * Scales up the weight of the node to the range [minStake, maxStakeOfAllNodes]
+     * from the consensus weight range [0, sumOfConsensusWeights].
      *
      * @param weight weight of the node
      * @param newMinStake min stake of the node
@@ -296,7 +299,8 @@ public class EndOfStakingPeriodUpdater {
         if (totalStakeOfAllNodes == 0) {
             // This should never happen, but if it does, return zero
             log.warn(
-                    "Total stake of all nodes is 0, which shouldn't happen (weight={}, minStake={}, maxStake={}, sumOfConsensusWeights={})",
+                    "Total stake of all nodes is 0, which shouldn't happen "
+                            + "(weight={}, minStake={}, maxStake={}, sumOfConsensusWeights={})",
                     weight,
                     newMinStake,
                     newMaxStake,
@@ -325,9 +329,9 @@ public class EndOfStakingPeriodUpdater {
      * Calculates consensus weight of the node. The network normalizes the weights of nodes above minStake so that the
      * total sum of weight is approximately as described by {@code StakingConfig#sumOfConsensusWeights}.
      * The stake field in {@code StakingNodeInfo} is already clamped to [minStake, maxStake].
-     * If stake is less than minStake the weight of a node A will be 0. If stake is greater than minStake, the weight of a node A
-     * will be computed so that every node above minStake has weight at least 1; but any node that has staked at least 1
-     * out of every 250 whole hbars staked will have weight >= 2.
+     * If stake is less than minStake the weight of a node A will be 0. If stake is greater than minStake,
+     * the weight of a node A will be computed so that every node above minStake has weight at least 1;
+     * but any node that has staked at least 1 out of every 250 whole hbars staked will have weight >= 2.
      *
      * @param stake the stake of current node, includes stake rewarded and non-rewarded
      * @param totalStakeOfAllNodes the total stake of all nodes at the start of new period
@@ -439,7 +443,7 @@ public class EndOfStakingPeriodUpdater {
     }
 
     private long getRewardsBalance(@NonNull final ReadableAccountStore accountStore) {
-        return requireNonNull(accountStore.getAccountById(asAccount(accountNumbers.stakingRewardAccount())))
+        return requireNonNull(accountStore.getAccountById(asAccount(accountsConfig.stakingRewardAccount())))
                 .tinybarBalance();
     }
 

@@ -73,7 +73,7 @@ public class WritableAirdropStore extends ReadableAirdropStoreImpl {
     }
 
     /**
-     * Removes a {@link PendingAirdropId} from the state
+     * Removes a {@link PendingAirdropId} from the state.
      *
      * @param airdropId the {@code PendingAirdropId} to be removed
      */
