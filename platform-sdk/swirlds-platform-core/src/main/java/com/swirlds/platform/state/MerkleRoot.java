@@ -17,6 +17,7 @@
 package com.swirlds.platform.state;
 
 import com.swirlds.common.merkle.MerkleInternal;
+import com.swirlds.platform.state.service.WritableRosterStore;
 import com.swirlds.platform.system.SwirldState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
@@ -49,6 +50,13 @@ public interface MerkleRoot extends MerkleInternal {
      */
     @NonNull
     PlatformStateAccessor getWritablePlatformState();
+
+    /**
+     * Gets the writable Roster store.
+     *
+     * @return the writable Roster store
+     */
+    WritableRosterStore getWritableRosterStore();
 
     /**
      * Set the platform state.
