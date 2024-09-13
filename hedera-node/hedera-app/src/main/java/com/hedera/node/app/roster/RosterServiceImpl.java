@@ -18,7 +18,7 @@ package com.hedera.node.app.roster;
 
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.node.app.roster.schemas.V0540RosterSchema;
+import com.swirlds.platform.state.service.schemas.V0540RosterSchema;
 import com.swirlds.common.RosterStateId;
 import com.swirlds.state.spi.SchemaRegistry;
 import com.swirlds.state.spi.Service;
