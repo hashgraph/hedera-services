@@ -83,6 +83,8 @@ public record ContractsConfig(
                 boolean systemContractAccountServiceIsAuthorizedRawEnabled,
         @ConfigProperty(value = "systemContract.updateCustomFees.enabled", defaultValue = "true") @NetworkProperty
                 boolean systemContractUpdateCustomFeesEnabled,
+        @ConfigProperty(value = "systemContract.tokenInfo.v2.enabled", defaultValue = "false") @NetworkProperty
+                boolean systemContractTokenInfoV2Enabled,
         @ConfigProperty(value = "systemContract.updateNFTsMetadata.enabled", defaultValue = "false") @NetworkProperty
                 boolean systemContractUpdateNFTsMetadataEnabled,
         @ConfigProperty(value = "evm.version.dynamic", defaultValue = "false") @NetworkProperty
