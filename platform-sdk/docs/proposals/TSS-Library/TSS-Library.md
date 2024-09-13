@@ -17,11 +17,11 @@ A threshold signature scheme (TSS) aims to enable a threshold number of particip
 
 In that scheme, a static public key is produced that doesn't change even when the number of participants in the scheme varies. Such property is important for producing proofs that are easily consumable and verifiable by external entities.
 
-Our implementation will be based on Groth21 \[link\]. This algorithm generates a public key and a private key for each participant. The private key is distributed as key-splits (or shares of shares), and no single party knows the complete aggregated private key. Only a threshold number of key-splits can produce a valid signature that the aggregated public key can later verify. To achieve that goal, it uses BLS signatures, Shamir's secret sharing, ElGamal, and Zero-Knowledge Proofs.
+Our implementation will be based on [Groth21](https://eprint.iacr.org/2021/339) . This algorithm generates a public key and a private key for each participant. The private key is distributed as key-splits (or shares of shares), and no single party knows the complete aggregated private key. Only a threshold number of key-splits can produce a valid signature that the aggregated public key can later verify. To achieve that goal, it uses BLS signatures, Shamir's secret sharing, ElGamal, and Zero-Knowledge Proofs.
 
 This document covers the implementation of all necessary components to provide a generic library with the functionality to sign and verify information using a Threshold Signature Scheme (TSS) and EC Cryptography.
 
-This proposal assumes no relation with the platform and defines a generic component that any consumer can integrate. It only assumes that a channel exists to connect participants where the message sender's identity has been previously validated. The process of sending messages through that channel and receiving the responses is also outside the scope of this proposal. Additionally, participants will need access to each other's public key. While the generation of the public/private keys is included in this proposal, the distribution aspect, the loading, and the in-memory interpretation from each participant are outside the scope of this proposal. The related proposal, TSS-Ledger-Id, provides an overview of the process and background for TSS and how it impacts the platform’s functionality.
+This proposal assumes no relation with the platform and defines a generic component that any consumer can integrate. It only assumes a channel exists to connect participants where the message sender's identity has been previously validated. The process of sending messages through that channel and receiving the responses is also outside the scope of this proposal. Additionally, participants will need access to each other's public key. While the generation of the public/private keys is included in this proposal, the distribution aspect, the loading, and the in-memory interpretation from each participant are outside the scope of this proposal. The related proposal, TSS-Ledger-Id, provides an overview of the process and background for TSS and how it impacts the platform’s functionality.
 
 ### Glossary
 
@@ -38,9 +38,9 @@ This proposal assumes no relation with the platform and defines a generic compon
 - **Fields**: Fields are mathematical structures where addition, subtraction, multiplication, and division are defined and behave as expected (excluding division by zero). Finite fields are especially important for EC-cryptography, where all the operations are performed modulo a big prime number.
 - **Groups**: Groups are sets equipped with an operation (like addition or multiplication) that satisfies certain conditions (closure, associativity, identity element, and inverses).
 - **Share**: Represents a piece of the necessary public/private elements to create signatures. Each share is in itself a valid Ec-Key.
-- **Polynomial Commitment**: A process that enables evaluations of a polynomial at specific points to be verified without revealing the entire polynomial.
-- **Participant**: Also share-holder, is any party involved in the distributed key generation protocol.
-- **Participant Directory**: An address book of participants of the distributed key generation protocol.
+- **Polynomial Commitment**: It’s a process that enables evaluations of a polynomial at specific points to be verified without revealing the entire polynomial.
+- **Participant**: Is any party involved in the distributed key generation protocol.
+- **Participant Directory**: An address book of participants of the distributed key generation protocol that holds information of the participant executing the protocol and all the others.
 
 ### Goals
 
@@ -74,18 +74,18 @@ Each participant brings their own BLS key private and public pair _(we will call
 Each participant generates portions of a secret share and distributes them among the other participants using the following process:
 
 1. A random share is created and mathematically split (Using Shamir's Secret Sharing and interpolation polynomials) into a known number of key-splits (or shares of shares).
-2. Each portion is encrypted with the share owner's public key, ensuring only the intended recipient can read it.
+2. Each portion is encrypted with the share owner's tss encryption public key, ensuring only the intended recipient can read it.
 3. A message includes all encrypted values so only the intended recipients can decrypt their respective portions of the secret share.
 
-(e.g., for a directory of 10 participants and 10 shares distributing 1 share each with a threshold value of 6, `Participant 1` will generate a message out of a random key that will contain 10 portions of that key, each one encrypted under each participant' public key) This setup allows participants to share secret information securely. The message also contains additional information necessary for validation (Such as a polynomial commitment and a NIZK proof).
+(e.g., for a directory of 10 participants and 10 shares distributing 1 share each with a threshold value of 6, `participant1` will generate a message out of a random key that will contain 10 portions of that key, each one encrypted under each participant' public key) This setup allows participants to share secret information securely. The message also contains additional information necessary for validation (Such as a polynomial commitment and a NIZK proof).
 
 Upon receiving a threshold number of messages, each participant:
 
-1. Validates the message and decrypts the information encrypted with their public key.
+1. Validates the message and decrypts the information encrypted with their tss encryption private key.
 2. Aggregates the decrypted information to generate a private key for each owned share.
 3. Retrieves a public key for each share in the system to validate signatures.
 
-(e.g., for a directory of 5 participants and 10 shares with a threshold value of 6 where Participant 1 has 2 shares; `Participant 1` will collect at least 6 valid messages from all participants, take the first and second portions of each message, decrypt with it's BLS private key and aggregate them, so they become the first and second owned secret share)
+(e.g., for a directory of 5 participants and 10 shares with a threshold value of 6 where `participant1` has 2 shares, `participant1` will collect at least 6 valid messages from all participants, take the first and second portions of each message, decrypt with its tss encryption private key and aggregate them, so they become the first and second owned secret share)
 
 Individual signing can then begin. Participants use their private shares to sign messages.
 
@@ -131,7 +131,7 @@ There are two possible ways of loading libraries and accessing them through JNI:
 1) Libraries are installed on the system as shared object(SO) libraries and found via the classpath and system library path.
 2) Distributed with the application jars, unpacked, and loaded at runtime.
 
-We want to ensure that dependent software does not require the installation of any additional dependencies other than those distributed in the jars, so we are choosing option 2\. We will provide a library `hedera-common-nativesupport` that will help load and use binary libraries and binding with JNI. The low-level details of the build logic for this to work are outside the scope of this proposal. A high overview is mentioned for the benefit of readers.
+We want to ensure that dependent software does not require the installation of any additional dependencies other than those distributed in the jars, so we are choosing option 2\. We will provide a library `hedera-common-nativesupport` to help load and use binary libraries and binding with JNI. The low-level details of the build logic for this to work are outside the scope of this proposal. A high overview is mentioned for the benefit of readers.
 
 In multilanguage projects, Rust code will be placed in a structure such as:
 
@@ -211,7 +211,7 @@ A scalar value that is a member of `Field`. In an elliptic curve, these values c
 - Subtraction
 - Power
 - Multiplication
-- Aerialization
+- Serialization/Deserialization
 - Inversion
 
 ###### *`Group`*
@@ -258,7 +258,7 @@ Supports the following operations:
 
 ##### Overview
 
-Implementation module of the parings API for `alt-bn128` (also known as `bn254`) pairings friendly curve. That curve has been chosen due to the existence of EVM precompiles that allow this verification in a cheap way for smart contract users. The underlying elliptic curve and fields algebra operations and primitives will be implemented using `arkwrorks` library, accessed through a JNI interface. The module will include Java and Rust code.
+Implementation module of the parings API for `alt-bn128` (`bn254`) pairings-friendly curve. That curve has been chosen due to the existence of EVM precompiles that allow this verification in a cheap way for smart contract users. The underlying elliptic curve and fields algebra operations and primitives will be implemented using `arkwrorks` library, accessed through a JNI interface. The module will include Java and Rust code.
 
 ##### Implementation details
 
@@ -276,7 +276,7 @@ This library will not have a public API as it is intended to be used only as a r
 
 ###### *Encoding:*
 
-`FieldElements` scalars are encoded as 32-byte little-endian numbers. Curve points are encoded as two components (x, y) that differ in size for each group of the curve. Group 1 `GroupElements` have the form (X, Y) for each 32 little-endian bytes number. Group 2 `GroupElements` have the form (X₁, X₂, Y₁, Y₂) each 32 little-endian bytes numbers.
+`FieldElements` scalars are encoded as 32-byte little-endian numbers. Curve points are encoded as two components (x, y) that differ in size for each curve group. Group 1 `GroupElements` have the form (X, Y) for each 32 little-endian bytes number. Group 2 `GroupElements` have the form (X₁, X₂, Y₁, Y₂) each 32 little-endian bytes numbers.
 
 The point at infinity in all cases is stored at 32-byte 0 value for each component.
 
@@ -303,30 +303,35 @@ hedera-cryptography-altbn128
 
 ##### Overview
 
-This provides public keys, private keys, and signatures, as well as operations to produce each other.
+This provides public keys, private keys, signatures, and operations to produce each other.
 
 ##### Public API
 
+![img.png](img.png)
+
 ###### *`SignatureSchema`*
 
-A pairings signature scheme can be implemented with different types of curves and group assignment configurations. For example, two different configurations might consist of the `ALT_BN_128` curve using short signatures or short public keys (which translates to choosing `Group1` to generate public key elements or `Group2` for the same purpose). This class allows to specify those parameters internally, so users of the library don't need to keep track of the specific parameters that were used to produce the keys or signatures.
+A pairings signature scheme can be implemented with different curves and group assignment configurations. For example, two different configurations might consist of the `ALT_BN_128` curve using short signatures or short public keys (which translates to choosing `Group1` to generate public key elements or `Group2` for the same purpose). This class allows those parameters to be specified internally, so library users don't need to keep track of the specific parameters used to produce the keys or signatures.
 
 ###### *`PairingsPrivateKey`*
 
-A private key is generated using the pairings API. It is a Random `FieldElement` out of a 32-byte seed. This class provides the following operations:
+A private key is generated using the pairings API. It is a Random `FieldElement` out of a 32-byte seed.
+This class provides the following operations:
 
-- Create a public key: It is the scalar multiplication of the private key and the `generator` `GroupElement` of the `Group` configured in the `SignatureSchema` for public keys.
-- Sign a message: It is the scalar multiplication of the private key element, and the `hashToGroup` `GroupElement` from the message, of the `Group` configured in the `SignatureSchema` for signatures.
+- Create a public key: The scalar multiplication of the private key and the `generator` `GroupElement` of the `Group` configured in the `SignatureSchema` for public keys.
+- Sign a message: It is the scalar multiplication of the private key element and the `hashToGroup` `GroupElement` from the message of the `Group` configured in the `SignatureSchema` for signatures.
 
 ###### *`PairingsPublicKey`*
 
-A public key is generated using the pairings API. Under the hood, it is a `GroupElement,` meaning that is a point in the selected curve. This class provides the following operations:
+A public key is generated using the pairings API. Under the hood is a point in the selected curve (`GroupElement`).
+This class provides the following operations:
 
 - Verify a signed message against a signature relies on the verification executed by the signature class.
 
 ###### *`PairingsSignature`*
 
-A signature is generated with the private key that can be verified with the public key. Under the hood, it is a `GroupElement,` meaning that is a point in the selected curve.
+A signature is generated with the private key that can be verified with the public key. Under the hood, it is also a point in the curve (`GroupElement)`.
+This class provides the following operations:
 
 - Verify against a public key and the original signed message: This operation uses the pairings operation and verifies that:
 
@@ -354,19 +359,19 @@ return { c1, c2 }
 
 It will be the general case that consumers of this library don’t need to understand the elements as points on the curve to operate algebraically with them, so it is sufficient for them to interact with an opaque representation. There are two strategies for getting that representation:
 
-1. **Use arkworks-based serialization mechanism** This serialization mechanism uses the encoding defined for the `parings-api` and its ability to produce byte arrays from its components. Given that we have the guarantee to be canonical, and that we do not plan for internal java consumers to need to operate with the individual values. Pros:
+1. **Use arkworks-based serialization mechanism** This serialization mechanism uses the encoding defined for the `parings-api` and its ability to produce byte arrays from its components. Given that we have the guarantee to be canonical and that we do not plan for internal Java consumers to need to operate with individual values. Pros:
 
-- decouples the serialization mechanism from the pairings internal structure and allows to switch curves with 0 impact on the consumers
+- Decouples the serialization mechanism from the pairing internal structure and allows switch curves with 0 impact on the consumers
 - It allows consumers that have no access or cannot use serialization libraries such as protobuf
 - Simple and reduced effort, low infra support needed. Cons:
-- It is coupled to arkworks serialization mechanism
-- The communication needs to happen verbally or through documents and there is no technical interface we can share.
+- It is coupled to the arkworks serialization mechanism
+- The communication needs to happen verbally or through documents, and there is no technical interface we can share.
 
-2. **Use Protobuf serialization** This serialization mechanism consist on generating a structure that represents the internal representation of PublicKey, PrivateKey, Signature in a defined protobuf schema. We would need to extract the information from the pairings api implementation and produce a protobuf object to expose. Pros:
+2. **Use protobuf serialization.** This serialization mechanism consists of generating a structure that represents the internal representation of PublicKey, PrivateKey, and Signature in a defined protobuf schema. We would need to extract the information from the pairings API implementation and produce a protobuf object to expose. Pros:
    - Allows to share a schema to know how to interpret the curve
    - Any client that can use protobuf can interpret our elements Cons:
-   - Only clients that can use protobuf can interpret signatures, and public keys
-   - By producing a structure for the internals of the pairings api, new curves would need new structures.
+   - Only clients that can use protobuf can interpret signatures and public keys
+   - By producing a structure for the internals of the pairings API, new curves would need new structures.
 
 We decided that we would leave keys and signatures as opaque byte arrays in little-endian form when recorded in the state and published to the block stream.
 We will publish a byte layout of the data format for people who need to parse the byte array.
@@ -382,7 +387,7 @@ This library implements the Groth21 TSS-specific operations.
 
 ###### *`TssMessage`*
 
-A data structure for distributing encrypted shares of a secret among all participants in a way that only the intended participant can see its part of the share. It includes auxiliary information used to validate its correctness and assemble an aggregate public key, i.e., a commitment to a secret share polynomial and a NIZK proof.
+A data structure for distributing encrypted shares of a secret among all participants in a way that only the intended participant can see part of the share. It includes auxiliary information used to validate its correctness and assemble an aggregate public key, i.e., a commitment to a secret share polynomial and a NIZK proof.
 
 ###### *`TssShareId`*
 
@@ -390,11 +395,11 @@ A deterministic unique, contiguous starting from 1 identifier for each existent 
 
 ###### *`TssPrivateShare`*
 
-Represents a share owned by the executor of the scheme. Contains a secret value used for signing. It is also a ECPrivateKey.
+Represents a share owned by the executor of the scheme. Contains a secret value used for signing. It is also an ECPrivateKey.
 
 ###### *`TssPublicShare`*
 
-Represents a share in the system. It contains public information that can be used to validate each signature. It is also a ECPublicKey
+Represents a share in the system. It contains public information that can be used to validate each signature. It is also an ECPublicKey.
 
 ###### *`TssShareSignature`*
 
@@ -402,11 +407,11 @@ Represents a signature created from a TSSPrivateShare.
 
 ###### *`TssParticipantDirectory`*
 
-This class holds all information about the participants in the scheme. Including: participants' EC public keys, public shares, private shares, number of shares.
+This class contains all the information about the participants in the scheme. This includes participants' EC public keys, total shares, and owned shares.
 
 ###### *`TssService`*
 
-Class that implements all the TSS operations allowing:
+A class that implements all the TSS operations allowing:
 
 * Generate TSSMessages out of a random PrivateShare
 * Generate TSSMessages out of a list of PrivateShares
@@ -482,19 +487,19 @@ P₁  	P₁  	P₁  	P₁  	P₁  	P₂  	P₂  	P₃  	P₄  	P₄
 TssMessage message = service.generateTssMessage(participantDirectory);
 ```
 
-**Implementation details** Internally the process of creating a TssMessage consist of
+**Implementation details** Internally, the process of creating a TssMessage consists of
 
-a. Generation of the shares In this operation for the bootstrap process, a random  `TssPrivateShare` `k` is created. It is the same process as creating a random ECPrivateKey. After that, the key is split into `n` (n=total number of shares) values `Xₛ` by evaluating a polynomial Xₖ at each `ShareId`: `sidᵢ` in the ownership map. The polynomial `Xₖ` is a polynomial with degree `t-1` (t=threshold) with the form: `Xₖ = k + a₁x + ...aₜ₋₁xᵗ⁻¹`\[ having: `a₁...aₜ₋₁`: random coefficients from `SignatureScheme.publicKeyGroup` and `k`'s EC field element. x is a field element, thus allowing the polynomial to be evaluated for each share id\] Each `sᵢ = Xₖ(sidᵢ)` constitutes a point on the polynomial. Once the `sᵢ` value has been calculated for each `ShareId`: `sidᵢ`, the value: `Cᵢ` will be produced by encrypting the `sᵢ` using the `sidᵢ` owner's public key. The TssMessage will contain all the encrypted values for all shares.
+a. Generation of the shares: In this operation for the bootstrap process, a random  `TssPrivateShare` `k` is created. It is the same process as creating a random ECPrivateKey. After that, the key is split into `n` (n=total number of shares) values `Xₛ` by evaluating a polynomial Xₖ at each `ShareId`: `sidᵢ` in the ownership map. The polynomial `Xₖ` is a polynomial with degree `t-1` (t=threshold) with the form: `Xₖ = k + a₁x + … + aₜ₋₁xᵗ⁻¹`\[ having: `a₁,…,aₜ₋₁`: random coefficients from `SignatureScheme.publicKeyGroup` and `k`'s EC field element. x is a field element, thus allowing the polynomial to be evaluated for each share id\] Each `sᵢ = Xₖ(sidᵢ)` constitutes a point on the polynomial. Once the `sᵢ` value has been calculated for each `ShareId`: `sidᵢ`, the value: `Cᵢ` will be produced by encrypting the `sᵢ` using the `sidᵢ` owner's public key. The TssMessage will contain all the encrypted values for all shares. img.svg
 
 ![img.svg](img.svg)
 
-b. Generation of the Polynomial Commitment We include a Feldman commitment to the polynomial as a mechanism to detect forms of bad dealing. For each coefficient in the polynomial `Xₖ` `a₍ₒ₎` to `a₍ₜ₋₁₎`, compute a commitment value by calculating: `gᵢ * aᵢ`  (g multiplied by polynomial coefficient `a₍ᵢ₎` )
+b. Generation of the Polynomial Commitment: We include a Feldman commitment to the polynomial to detect forms of bad dealing. For each coefficient in the polynomial `Xₖ` `a₍ₒ₎` to `a₍ₜ₋₁₎`, compute a commitment value by calculating: `gᵢ * aᵢ`  (g multiplied by polynomial coefficient `a₍ᵢ₎` )
 
-c. Generation of the NIZKs proofs Generate a NIZK proof that these commitments and the encrypted shares correspond to a valid sharing of the secret according to the polynomial.
+c. Generation of the NIZKs proofs: Generate a NIZKs proof that these commitments and the encrypted shares correspond to a valid secret sharing according to the polynomial.
 
 ###### *Acting as dealers of `TssMessage`s (outside the scope of the library)*
 
-Using an established channel, each participant will broadcast a single message to be received by all participants while waiting to receive other participants' messages. This functionality is critical for the protocol to work but needs to be handled outside the library. Each participant will validate the received message against the commitment and the NIZKs proof. Invalid messages need to be discarded. `TssMessage`s can be serialized to bytes.
+Using an established channel, each participant will broadcast a single message to be received by all participants while waiting to receive other participants' messages. This functionality is critical for the protocol to work but needs to be handled outside the library. Each participant will validate the received message against the commitment and the NIZK proof. Invalid messages need to be discarded. `TssMessage`s can be serialized to bytes.
 
 ###### *2\. Validation of TssMessage*
 
@@ -513,9 +518,9 @@ static {
 The validation is produced over the content of the message and does not include the sender's identity, which is assumed to be provided by the external channel. Each message can be validated against the commitment and the proof by:
 
 * Checking that the encrypted shares correspond to the commitments.
-* and, that the commitments are consistent with the public values and the generated proof.
+* Commitments are consistent with the public values and the generated proof.
 
-###### *3\. Generating Participant's Private Shares & Ledger Id*
+###### *3\. Generating Participant's Private Shares & Ledger ID*
 
 ```java
 // Given some previously agreed upon same set of valid messages for all participants
@@ -526,9 +531,9 @@ List<TssPrivateShare> privateShares = service.decryptPrivateShares(participantDi
 List<TssPublicShare> publicShares = service.computePublicShare(participantDirectory, agreedValidMessages);
 ```
 
-Given Participant's `TssEncryptionPrivateKey` and precisely `t` number of validated messages (t=threshold) The participant will decrypt all `Cᵢ` to generate an aggregated value `sᵢ` that will become a  `SecretShare(sidᵢ, sᵢ)` for each `ShareId`: `sidᵢ` owned.
+Given the Participant's `TssEncryptionPrivateKey` and precisely `t` number of validated messages (t=threshold), The participant will decrypt all `Cᵢ` to generate an aggregated value `sᵢ` that will become a  `SecretShare(sidᵢ, sᵢ)` for each `ShareId`: `sidᵢ` owned.
 
-**Note:** All participants must choose the same set of valid `TssMessages` and have a threshold number of them.
+**Note:** All participants must choose the same threshold number of valid `TssMessages`.
 
 ![img_1.svg](img_1.svg)
 
@@ -536,7 +541,8 @@ Also, we will extract a `PublicShare` for each `ShareId`: `sidᵢ` in the direct
 
 ###### *4\. Sign and aggregate/validate signatures*
 
-At this point, the participant executing the scheme can start signing, sharing signatures, and validating individual signatures produced by other parties in the scheme. Using each `privateShares` owned by the participant, a message can be signed, producing a `TssShareSignature` a. Perform signing
+At this point, the participant executing the scheme can start signing, sharing signatures, and validating individual signatures produced by other parties in the scheme. Using each `privateShares` owned by the participant, a message can be signed, producing a `TssShareSignature.`
+a. Perform signing:
 
 ```java
 //Given
@@ -545,7 +551,7 @@ byte[] message = getMessageToSign();
 List<TssShareSignature> signatures = service.sign(privateShares, message);
 ```
 
-Again, it is outside the scope of this library the action of distributing or collecting other's participants signatures.
+Again, it is outside the scope of this library to distribute or collect other participants' signatures.
 
 Multiple `TssShareSignature` can be aggregated to create an aggregate `EcSignature`. An aggregate `PairingSignature` can be validated against the LedgerId (public key)  if `t` (t=threshold) valid signatures are aggregated. If the threshold is met and the signature is valid, the library will respond with true; if not, it will respond with false.
 
@@ -569,7 +575,7 @@ static {
 
 ###### *5\. Rekey Stage*
 
-The rekey process should be executed each time some of the scheme’s parameters change, such as the number of participants or the number of shares assigned to each participant. This rekeying process may also be conducted for reasons other than parameter changes; to rotate shares, for example.
+The rekey process should be executed each time some of the scheme’s parameters change, such as the number of participants or the number of shares assigned to each participant. This rekeying process may also be conducted for reasons other than parameter changes, such as rotating shares.
 
 ```java
 //Given
@@ -597,15 +603,15 @@ TssParticipantDirectory newParticipantDirectory =
 TssMessage message = service.generateTssMessages(participantDirectory, privateShares);
 ```
 
-The rekeying process is similar to the bootstrap process, but it starts with the previous list of owned private `SecretShare`. The main difference with the genesis stage is that every participant generates a `TssMessage` out of each previously owned `SecretShare`.
+The rekeying process is similar to bootstrap. However, given that the goal is to produce a new set of keys that can still produce signatures that once aggregated, can be validated with the already established PublicKey, it starts with the list of `privateShares` owned. The main difference with the genesis stage is that every participant generates a `TssMessage` from each previously owned `PrivateShare`.
 
 ![img_4.svg](img_4.svg)
 
-Once finished, the list of `SecretShare`s will be updated but the previously generated aggregate public key remains the same.
+Once finished, the list of `public/private shares` will be updated, but the previously generated aggregate public key will remain the same.
 
 ##### Security Considerations
 
-As long as an adversary Participant knows fewer than a threshold number of decryption keys, they cannot recover enough information to start forging threshold signatures. Adversarial participants may learn the shares of the participants whose keys they have compromised, but more is needed to recover the secret. For security, adversarial parties might choose low or zero entropy values for protocol inputs such as shareIds, but here will still be sufficient entropy in the overall protocol from honest nodes.
+If an adversary participant knows fewer than a threshold number of decryption keys, they cannot recover enough information to start forging threshold signatures. Adversarial participants may learn the shares of the participants whose keys they have compromised, but more is needed to recover the secret. Adversarial parties might choose low or zero entropy values for protocol inputs such as shares; however, assuring the right threshold value and share numbers per participant will still guarantee sufficient entropy from honest nodes to maintain security in the overall protocol.
 
 #### Hedera Common Native Support
 
@@ -643,21 +649,21 @@ Refer to: [TSS-Library-Test-Plan.md](./TSS-Library-Test-Plan.md)
 
 JMH benchmarks should be provided for signature generation and aggregation. TssMessage validation, and public key aggregation.
 
-We should know that variance (min, max, average, median) time it takes to do the following:
+We should know the variance (min, max, average, median) time it takes to do the following:
 
-Genesis for a 4, 10, 20, 40, and 100 participants. Rekeying for a 4, 10, 20, 40, and 100 participants. Shares Amounts distributed randomly: 200, 500, 1000, 2000, 5000 we need to test each configuration 100 times to get confident mins, maxes, and a good average and median
+Genesis for 4, 10, 20, 40, and 100 participants. Rekeying for 4, 10, 20, 40, and 100 participants. Shares Amounts distributed randomly: 200, 500, 1000, 2000, 5000 we need to test each configuration 100 times to get confident mins, maxes, and a good average and median
 
 ## Security Audit
 
-After this proposal is accepted we will invite security team to define the necessary steps for auditing the code.
+After this proposal is accepted, we will invite the security team to define the necessary steps for auditing the code.
 
 ## Alternatives Considered
 
-- As mentioned before, Java Foreign Function Interface is still immature so it was not considered for this proposal.
-- JRA was discarded given the possibility of eventually moving to JFF.
-- Using JSA through Bouncy Castle implementation was analyzed. BC provides support for EC-Curves, but it does not support Pairings which are required for BLS signatures. [beacon-chain](https://github.com/harmony-dev/beacon-chain-java/tree/master) implemented the support using bouncy castle \+ [Milagro](https://incubator.apache.org/projects/milagro.html) but Milagro project is reported to have little coverage, not audited. Milagro podling has been retired on 2024-03-21.
+- As mentioned before, Java Foreign Function Interface is still immature, so it was not considered for this proposal.
+- JRA was discarded, given the possibility of eventually moving to JFF.
+- Using JSA through Bouncy Castle implementation was analyzed. BC provides support for EC-Curves, but it does not support Pairings which are required for BLS signatures. [beacon-chain](https://github.com/harmony-dev/beacon-chain-java/tree/master) implemented the support using bouncy castle \+ [Milagro](https://incubator.apache.org/projects/milagro.html), but Milagro project is reported to have little coverage and is not audited. Milagro podling has been retired on 2024-03-21.
 
-## Delivery Plan by stages
+## Delivery Plan by Stages
 
 **Stage 1**
 
@@ -683,7 +689,7 @@ Preconditions:  hedera-cryptography CI/CD publishes artifacts and they can be re
 Implementation of the public interface for the TSS library.
 
 * Implementation of TSS library.
-* Performance test and optimizations.
+* Performance tests and optimizations.
 * Execute Test Plan and validation.
 * Execute Security Audits.
 
