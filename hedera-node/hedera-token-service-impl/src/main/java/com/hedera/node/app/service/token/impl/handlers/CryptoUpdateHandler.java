@@ -55,6 +55,7 @@ import com.hedera.node.app.hapi.utils.CommonPbjConverters;
 import com.hedera.node.app.service.token.CryptoSignatureWaivers;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
+import com.hedera.node.app.service.token.impl.util.TokenHandlerHelper;
 import com.hedera.node.app.service.token.impl.validators.StakingValidator;
 import com.hedera.node.app.service.token.records.CryptoUpdateStreamBuilder;
 import com.hedera.node.app.spi.fees.FeeCalculator;
@@ -147,8 +148,8 @@ public class CryptoUpdateHandler extends BaseCryptoHandler implements Transactio
 
         // validate update account exists
         final var accountStore = context.storeFactory().writableStore(WritableAccountStore.class);
-        final var targetAccount = accountStore.get(target);
-        validateTrue(targetAccount != null, INVALID_ACCOUNT_ID);
+        final var targetAccount =
+                TokenHandlerHelper.getIfUsable(target, accountStore, context.expiryValidator(), INVALID_ACCOUNT_ID);
         context.attributeValidator().validateMemo(op.memo());
 
         // Customize the account based on fields set in transaction body
