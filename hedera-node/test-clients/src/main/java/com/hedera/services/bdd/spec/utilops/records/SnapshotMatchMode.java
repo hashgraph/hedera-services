@@ -16,12 +16,4 @@
 
 package com.hedera.services.bdd.spec.utilops.records;
 
-/**
- * Enumerates non-default matching modes in which {@link SnapshotModeOp} fuzzy-matching can be run.
- */
-public enum SnapshotMatchMode {
-    /**
-     * Allows for non-deterministic amounts.
-     */
-    NONDETERMINISTIC_TRANSACTION_FEES,
-}
+public enum SnapshotMatchMode {}

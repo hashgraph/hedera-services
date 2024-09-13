@@ -39,7 +39,6 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.balanceSnapshot;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.submitModified;
 import static com.hedera.services.bdd.spec.utilops.mod.ModificationUtils.withSuccessivelyVariedBodyIds;
-import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
 import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PAYER;
 import static com.hedera.services.bdd.suites.HapiSuite.FUNDING;
 import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
@@ -199,11 +198,12 @@ public class CryptoDeleteSuite {
 
     @HapiTest
     final Stream<DynamicTest> cannotDeleteTreasuryAccount() {
-        return defaultHapiSpec("CannotDeleteTreasuryAccount", NONDETERMINISTIC_TRANSACTION_FEES)
-                .given(cryptoCreate(TREASURY), cryptoCreate(TRANSFER_ACCOUNT))
-                .when(tokenCreate("toBeTransferred")
+        return hapiTest(
+                cryptoCreate(TREASURY),
+                cryptoCreate(TRANSFER_ACCOUNT),
+                tokenCreate("toBeTransferred")
                         .initialSupply(TOKEN_INITIAL_SUPPLY)
-                        .treasury(TREASURY))
-                .then(cryptoDelete(TREASURY).transfer(TRANSFER_ACCOUNT).hasKnownStatus(ACCOUNT_IS_TREASURY));
+                        .treasury(TREASURY),
+                cryptoDelete(TREASURY).transfer(TRANSFER_ACCOUNT).hasKnownStatus(ACCOUNT_IS_TREASURY));
     }
 }

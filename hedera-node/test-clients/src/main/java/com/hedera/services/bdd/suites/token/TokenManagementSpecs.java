@@ -64,7 +64,6 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.submitModified;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.spec.utilops.mod.ModificationUtils.withSuccessivelyVariedBodyIds;
 import static com.hedera.services.bdd.spec.utilops.mod.ModificationUtils.withSuccessivelyVariedQueryIds;
-import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
 import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PAYER;
 import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
@@ -356,23 +355,21 @@ public class TokenManagementSpecs {
 
     @HapiTest
     final Stream<DynamicTest> frozenTreasuryCannotBeMintedOrBurned() {
-        return defaultHapiSpec("FrozenTreasuryCannotBeMintedOrBurned", NONDETERMINISTIC_TRANSACTION_FEES)
-                .given(
-                        newKeyNamed(SUPPLY_KEY),
-                        newKeyNamed("freezeKey"),
-                        cryptoCreate(TOKEN_TREASURY).balance(0L))
-                .when(tokenCreate(SUPPLE)
+        return hapiTest(
+                newKeyNamed(SUPPLY_KEY),
+                newKeyNamed("freezeKey"),
+                cryptoCreate(TOKEN_TREASURY).balance(0L),
+                tokenCreate(SUPPLE)
                         .freezeKey("freezeKey")
                         .supplyKey(SUPPLY_KEY)
                         .initialSupply(1)
-                        .treasury(TOKEN_TREASURY))
-                .then(
-                        tokenFreeze(SUPPLE, TOKEN_TREASURY),
-                        mintToken(SUPPLE, 1).hasKnownStatus(ACCOUNT_FROZEN_FOR_TOKEN),
-                        burnToken(SUPPLE, 1).hasKnownStatus(ACCOUNT_FROZEN_FOR_TOKEN),
-                        getTokenInfo(SUPPLE).hasTotalSupply(1),
-                        getAccountInfo(TOKEN_TREASURY)
-                                .hasToken(relationshipWith(SUPPLE).balance(1).freeze(Frozen)));
+                        .treasury(TOKEN_TREASURY),
+                tokenFreeze(SUPPLE, TOKEN_TREASURY),
+                mintToken(SUPPLE, 1).hasKnownStatus(ACCOUNT_FROZEN_FOR_TOKEN),
+                burnToken(SUPPLE, 1).hasKnownStatus(ACCOUNT_FROZEN_FOR_TOKEN),
+                getTokenInfo(SUPPLE).hasTotalSupply(1),
+                getAccountInfo(TOKEN_TREASURY)
+                        .hasToken(relationshipWith(SUPPLE).balance(1).freeze(Frozen)));
     }
 
     @HapiTest

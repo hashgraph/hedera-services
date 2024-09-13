@@ -69,7 +69,6 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.submitModified;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.spec.utilops.mod.ModificationUtils.withSuccessivelyVariedBodyIds;
-import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
 import static com.hedera.services.bdd.suites.HapiSuite.CHAIN_ID;
 import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PAYER;
 import static com.hedera.services.bdd.suites.HapiSuite.FUNDING;
@@ -275,10 +274,10 @@ public class ContractCreateSuite {
         final var contract = "Multipurpose";
         Object[] donationArgs = new Object[] {666666L, "Hey, Ma!"};
 
-        return defaultHapiSpec("CannotSendToNonExistentAccount", NONDETERMINISTIC_TRANSACTION_FEES)
-                .given(uploadInitCode(contract))
-                .when(contractCreate(contract).balance(666))
-                .then(contractCall(contract, "donate", donationArgs).hasKnownStatus(CONTRACT_REVERT_EXECUTED));
+        return hapiTest(
+                uploadInitCode(contract),
+                contractCreate(contract).balance(666),
+                contractCall(contract, "donate", donationArgs).hasKnownStatus(CONTRACT_REVERT_EXECUTED));
     }
 
     @HapiTest
@@ -423,10 +422,7 @@ public class ContractCreateSuite {
 
     @HapiTest
     final Stream<DynamicTest> createEmptyConstructor() {
-        return defaultHapiSpec("createEmptyConstructor", NONDETERMINISTIC_TRANSACTION_FEES)
-                .given(uploadInitCode(EMPTY_CONSTRUCTOR_CONTRACT))
-                .when()
-                .then(contractCreate(EMPTY_CONSTRUCTOR_CONTRACT).hasKnownStatus(SUCCESS));
+        return hapiTest(uploadInitCode(EMPTY_CONSTRUCTOR_CONTRACT), contractCreate(EMPTY_CONSTRUCTOR_CONTRACT));
     }
 
     @HapiTest
@@ -538,10 +534,10 @@ public class ContractCreateSuite {
 
     @HapiTest
     final Stream<DynamicTest> rejectsInsufficientFee() {
-        return defaultHapiSpec("RejectsInsufficientFee", NONDETERMINISTIC_TRANSACTION_FEES)
-                .given(cryptoCreate(PAYER), uploadInitCode(EMPTY_CONSTRUCTOR_CONTRACT))
-                .when()
-                .then(contractCreate(EMPTY_CONSTRUCTOR_CONTRACT)
+        return hapiTest(
+                cryptoCreate(PAYER),
+                uploadInitCode(EMPTY_CONSTRUCTOR_CONTRACT),
+                contractCreate(EMPTY_CONSTRUCTOR_CONTRACT)
                         .payingWith(PAYER)
                         .fee(1L)
                         .hasPrecheck(INSUFFICIENT_TX_FEE));
@@ -628,20 +624,17 @@ public class ContractCreateSuite {
         final var FILE_KEY = "fileKey";
         final var KEY_LIST = "keyList";
         final var ACCOUNT = "acc";
-        return defaultHapiSpec("cannotCreateTooLargeContract", NONDETERMINISTIC_TRANSACTION_FEES)
-                .given(
-                        newKeyNamed(FILE_KEY),
-                        newKeyListNamed(KEY_LIST, List.of(FILE_KEY)),
-                        cryptoCreate(ACCOUNT).balance(ONE_HUNDRED_HBARS * 10).key(FILE_KEY),
-                        fileCreate("bytecode")
-                                .path(bytecodePath("CryptoKitties"))
-                                .hasPrecheck(TRANSACTION_OVERSIZE)
-                                // Modularized code will not allow a message larger than 6144 bytes at all
-                                .orUnavailableStatus())
-                .when(
-                        fileCreate("bytecode").contents("").key(KEY_LIST),
-                        UtilVerbs.updateLargeFile(ACCOUNT, "bytecode", contents))
-                .then(contractCreate("contract")
+        return hapiTest(
+                newKeyNamed(FILE_KEY),
+                newKeyListNamed(KEY_LIST, List.of(FILE_KEY)),
+                cryptoCreate(ACCOUNT).balance(ONE_HUNDRED_HBARS * 10).key(FILE_KEY),
+                fileCreate("bytecode")
+                        .path(bytecodePath("CryptoKitties"))
+                        .hasPrecheck(TRANSACTION_OVERSIZE)
+                        .orUnavailableStatus(),
+                fileCreate("bytecode").contents("").key(KEY_LIST),
+                UtilVerbs.updateLargeFile(ACCOUNT, "bytecode", contents),
+                contractCreate("contract")
                         .bytecode("bytecode")
                         .payingWith(ACCOUNT)
                         .hasKnownStatus(INSUFFICIENT_GAS)
@@ -828,13 +821,11 @@ public class ContractCreateSuite {
     final Stream<DynamicTest> newAccountsCanUsePureContractIdKey() {
         final var contract = "CreateTrivial";
         final var contractControlled = "contractControlled";
-        return defaultHapiSpec("NewAccountsCanUsePureContractIdKey", NONDETERMINISTIC_TRANSACTION_FEES)
-                .given(
-                        uploadInitCode(contract),
-                        contractCreate(contract),
-                        cryptoCreate(contractControlled).keyShape(CONTRACT.signedWith(contract)))
-                .when()
-                .then(withOpContext((spec, opLog) -> {
+        return hapiTest(
+                uploadInitCode(contract),
+                contractCreate(contract),
+                cryptoCreate(contractControlled).keyShape(CONTRACT.signedWith(contract)),
+                withOpContext((spec, opLog) -> {
                     final var registry = spec.registry();
                     final var contractIdKey = Key.newBuilder()
                             .setContractID(registry.getContractId(contract))

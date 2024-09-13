@@ -61,7 +61,6 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.submitModified;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.spec.utilops.mod.ModificationUtils.withSuccessivelyVariedBodyIds;
-import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
 import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PAYER;
 import static com.hedera.services.bdd.suites.HapiSuite.ETH_HASH_KEY;
 import static com.hedera.services.bdd.suites.HapiSuite.ETH_SENDER_ADDRESS;
@@ -606,28 +605,26 @@ public class HelloWorldEthereumSuite {
         final var receiverSigAccount = "receiverSigAccount";
         final AtomicReference<byte[]> receiverMirrorAddr = new AtomicReference<>();
         final var preCallBalance = "preCallBalance";
-        return defaultHapiSpec("topLevelSendToReceiverSigRequiredAccountReverts", NONDETERMINISTIC_TRANSACTION_FEES)
-                .given(
-                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
-                        cryptoCreate(RELAYER).balance(123 * ONE_HUNDRED_HBARS),
-                        cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS)),
-                        cryptoCreate(receiverSigAccount)
-                                .receiverSigRequired(true)
-                                .exposingCreatedIdTo(id -> receiverMirrorAddr.set(asSolidityAddress(id))),
-                        uploadInitCode(JUST_SEND_CONTRACT),
-                        contractCreate(JUST_SEND_CONTRACT))
-                .when(
-                        balanceSnapshot(preCallBalance, receiverSigAccount),
-                        sourcing(() -> ethereumCryptoTransferToExplicit(receiverMirrorAddr.get(), 123)
-                                .type(EthTxData.EthTransactionType.EIP1559)
-                                .signingWith(SECP_256K1_SOURCE_KEY)
-                                .payingWith(RELAYER)
-                                .nonce(0)
-                                .maxFeePerGas(50L)
-                                .maxPriorityGas(2L)
-                                .gasLimit(1_000_000L)
-                                .hasPrecheck(INVALID_SIGNATURE)))
-                .then(getAccountBalance(receiverSigAccount).hasTinyBars(changeFromSnapshot(preCallBalance, 0L)));
+        return hapiTest(
+                newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
+                cryptoCreate(RELAYER).balance(123 * ONE_HUNDRED_HBARS),
+                cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS)),
+                cryptoCreate(receiverSigAccount)
+                        .receiverSigRequired(true)
+                        .exposingCreatedIdTo(id -> receiverMirrorAddr.set(asSolidityAddress(id))),
+                uploadInitCode(JUST_SEND_CONTRACT),
+                contractCreate(JUST_SEND_CONTRACT),
+                balanceSnapshot(preCallBalance, receiverSigAccount),
+                sourcing(() -> ethereumCryptoTransferToExplicit(receiverMirrorAddr.get(), 123)
+                        .type(EthTxData.EthTransactionType.EIP1559)
+                        .signingWith(SECP_256K1_SOURCE_KEY)
+                        .payingWith(RELAYER)
+                        .nonce(0)
+                        .maxFeePerGas(50L)
+                        .maxPriorityGas(2L)
+                        .gasLimit(1_000_000L)
+                        .hasPrecheck(INVALID_SIGNATURE)),
+                getAccountBalance(receiverSigAccount).hasTinyBars(changeFromSnapshot(preCallBalance, 0L)));
     }
 
     @HapiTest

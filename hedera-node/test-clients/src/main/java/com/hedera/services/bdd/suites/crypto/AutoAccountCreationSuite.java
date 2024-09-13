@@ -65,7 +65,6 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.logIt;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
-import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
 import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PAYER;
 import static com.hedera.services.bdd.suites.HapiSuite.FUNDING;
 import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
@@ -339,91 +338,79 @@ public class AutoAccountCreationSuite {
     @HapiTest
     final Stream<DynamicTest> canAutoCreateWithNftTransfersToAlias() {
         final var civilianBal = 10 * ONE_HBAR;
-        // The expected fee to transfer four serial numbers of two token types to a receiver with
-        // no auto-creation; note it is approximate because the fee will vary slightly with the
-        // size of the sig map, depending on the lengths of the public key prefixes required
-        final var approxTransferFee = 0.44012644 * ONE_HBAR;
         final var multiNftTransfer = "multiNftTransfer";
 
-        return defaultHapiSpec("canAutoCreateWithNftTransfersToAlias", NONDETERMINISTIC_TRANSACTION_FEES)
-                .given(
-                        newKeyNamed(VALID_ALIAS),
-                        newKeyNamed(MULTI_KEY),
-                        newKeyNamed(VALID_ALIAS),
-                        cryptoCreate(TOKEN_TREASURY).balance(ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(2),
-                        tokenCreate(NFT_INFINITE_SUPPLY_TOKEN)
-                                .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
-                                .adminKey(MULTI_KEY)
-                                .supplyKey(MULTI_KEY)
-                                .supplyType(TokenSupplyType.INFINITE)
-                                .initialSupply(0)
-                                .treasury(TOKEN_TREASURY)
-                                .via(NFT_CREATE),
-                        tokenCreate(NFT_FINITE_SUPPLY_TOKEN)
-                                .supplyType(FINITE)
-                                .tokenType(NON_FUNGIBLE_UNIQUE)
-                                .treasury(TOKEN_TREASURY)
-                                .maxSupply(12L)
-                                .supplyKey(MULTI_KEY)
-                                .adminKey(MULTI_KEY)
-                                .initialSupply(0L),
-                        mintToken(
-                                NFT_INFINITE_SUPPLY_TOKEN,
-                                List.of(
-                                        ByteString.copyFromUtf8("a"),
-                                        ByteString.copyFromUtf8("b"),
-                                        ByteString.copyFromUtf8("c"),
-                                        ByteString.copyFromUtf8("d"),
-                                        ByteString.copyFromUtf8("e"))),
-                        mintToken(
-                                NFT_FINITE_SUPPLY_TOKEN,
-                                List.of(
-                                        ByteString.copyFromUtf8("a"),
-                                        ByteString.copyFromUtf8("b"),
-                                        ByteString.copyFromUtf8("c"),
-                                        ByteString.copyFromUtf8("d"),
-                                        ByteString.copyFromUtf8("e"))),
-                        cryptoCreate(CIVILIAN).balance(civilianBal))
-                .when(
-                        tokenAssociate(CIVILIAN, NFT_FINITE_SUPPLY_TOKEN, NFT_INFINITE_SUPPLY_TOKEN),
-                        cryptoTransfer(
-                                movingUnique(NFT_FINITE_SUPPLY_TOKEN, 3L, 4L).between(TOKEN_TREASURY, CIVILIAN),
-                                movingUnique(NFT_INFINITE_SUPPLY_TOKEN, 1L, 2L).between(TOKEN_TREASURY, CIVILIAN)),
-                        getAccountInfo(CIVILIAN)
-                                .hasToken(relationshipWith(NFT_FINITE_SUPPLY_TOKEN))
-                                .hasToken(relationshipWith(NFT_INFINITE_SUPPLY_TOKEN))
-                                .has(accountWith().balance(civilianBal)),
-                        cryptoTransfer(
-                                        movingUnique(NFT_FINITE_SUPPLY_TOKEN, 3, 4)
-                                                .between(CIVILIAN, VALID_ALIAS),
-                                        movingUnique(NFT_INFINITE_SUPPLY_TOKEN, 1, 2)
-                                                .between(CIVILIAN, VALID_ALIAS))
-                                .via(multiNftTransfer)
-                                .payingWith(CIVILIAN)
-                                .signedBy(CIVILIAN, VALID_ALIAS),
-                        getTxnRecord(multiNftTransfer)
-                                .andAllChildRecords()
-                                .hasPriority(recordWith().autoAssociationCount(2))
-                                .hasNonStakingChildRecordCount(1)
-                                .logged(),
-                        childRecordsCheck(
-                                multiNftTransfer,
-                                SUCCESS,
-                                recordWith().status(SUCCESS).fee(EXPECTED_MULTI_TOKEN_TRANSFER_AUTO_CREATION_FEE)),
-                        getAliasedAccountInfo(VALID_ALIAS)
-                                .has(accountWith()
-                                        .balance(0)
-                                        .maxAutoAssociations(-1)
-                                        .ownedNfts(4))
-                                .logged()
-                        // A single extra byte in the signature map will cost just ~130 tinybar more, so allowing
-                        // a delta of 2600 tinybar will stabilize this test indefinitely (the spec would have to
-                        // randomly choose two public keys with a shared prefix of length 10, which is...unlikely)
-                        //                        getAccountInfo(CIVILIAN)
-                        //                                .has(accountWith().approxBalance((long) (civilianBal -
-                        // approxTransferFee), 2600))
-                        )
-                .then();
+        return hapiTest(
+                newKeyNamed(VALID_ALIAS),
+                newKeyNamed(MULTI_KEY),
+                newKeyNamed(VALID_ALIAS),
+                cryptoCreate(TOKEN_TREASURY).balance(ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(2),
+                tokenCreate(NFT_INFINITE_SUPPLY_TOKEN)
+                        .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
+                        .adminKey(MULTI_KEY)
+                        .supplyKey(MULTI_KEY)
+                        .supplyType(TokenSupplyType.INFINITE)
+                        .initialSupply(0)
+                        .treasury(TOKEN_TREASURY)
+                        .via(NFT_CREATE),
+                tokenCreate(NFT_FINITE_SUPPLY_TOKEN)
+                        .supplyType(FINITE)
+                        .tokenType(NON_FUNGIBLE_UNIQUE)
+                        .treasury(TOKEN_TREASURY)
+                        .maxSupply(12L)
+                        .supplyKey(MULTI_KEY)
+                        .adminKey(MULTI_KEY)
+                        .initialSupply(0L),
+                mintToken(
+                        NFT_INFINITE_SUPPLY_TOKEN,
+                        List.of(
+                                ByteString.copyFromUtf8("a"),
+                                ByteString.copyFromUtf8("b"),
+                                ByteString.copyFromUtf8("c"),
+                                ByteString.copyFromUtf8("d"),
+                                ByteString.copyFromUtf8("e"))),
+                mintToken(
+                        NFT_FINITE_SUPPLY_TOKEN,
+                        List.of(
+                                ByteString.copyFromUtf8("a"),
+                                ByteString.copyFromUtf8("b"),
+                                ByteString.copyFromUtf8("c"),
+                                ByteString.copyFromUtf8("d"),
+                                ByteString.copyFromUtf8("e"))),
+                cryptoCreate(CIVILIAN).balance(civilianBal),
+                tokenAssociate(CIVILIAN, NFT_FINITE_SUPPLY_TOKEN, NFT_INFINITE_SUPPLY_TOKEN),
+                cryptoTransfer(
+                        movingUnique(NFT_FINITE_SUPPLY_TOKEN, 3L, 4L).between(TOKEN_TREASURY, CIVILIAN),
+                        movingUnique(NFT_INFINITE_SUPPLY_TOKEN, 1L, 2L).between(TOKEN_TREASURY, CIVILIAN)),
+                getAccountInfo(CIVILIAN)
+                        .hasToken(relationshipWith(NFT_FINITE_SUPPLY_TOKEN))
+                        .hasToken(relationshipWith(NFT_INFINITE_SUPPLY_TOKEN))
+                        .has(accountWith().balance(civilianBal)),
+                cryptoTransfer(
+                                movingUnique(NFT_FINITE_SUPPLY_TOKEN, 3, 4).between(CIVILIAN, VALID_ALIAS),
+                                movingUnique(NFT_INFINITE_SUPPLY_TOKEN, 1, 2).between(CIVILIAN, VALID_ALIAS))
+                        .via(multiNftTransfer)
+                        .payingWith(CIVILIAN)
+                        .signedBy(CIVILIAN, VALID_ALIAS),
+                getTxnRecord(multiNftTransfer)
+                        .andAllChildRecords()
+                        .hasPriority(recordWith().autoAssociationCount(2))
+                        .hasNonStakingChildRecordCount(1)
+                        .logged(),
+                childRecordsCheck(
+                        multiNftTransfer,
+                        SUCCESS,
+                        recordWith().status(SUCCESS).fee(EXPECTED_MULTI_TOKEN_TRANSFER_AUTO_CREATION_FEE)),
+                getAliasedAccountInfo(VALID_ALIAS)
+                        .has(accountWith().balance(0).maxAutoAssociations(-1).ownedNfts(4))
+                        .logged()
+                // A single extra byte in the signature map will cost just ~130 tinybar more, so allowing
+                // a delta of 2600 tinybar will stabilize this test indefinitely (the spec would have to
+                // randomly choose two public keys with a shared prefix of length 10, which is...unlikely)
+                //                        getAccountInfo(CIVILIAN)
+                //                                .has(accountWith().approxBalance((long) (civilianBal -
+                // approxTransferFee), 2600))
+                );
     }
 
     @HapiTest
@@ -705,19 +692,16 @@ public class AutoAccountCreationSuite {
     final Stream<DynamicTest> noStakePeriodStartIfNotStakingToNode() {
         final var user = "user";
         final var contract = "contract";
-        return defaultHapiSpec("noStakePeriodStartIfNotStakingToNode", NONDETERMINISTIC_TRANSACTION_FEES)
-                .given(
-                        newKeyNamed(ADMIN_KEY),
-                        cryptoCreate(user).key(ADMIN_KEY).stakedNodeId(0L),
-                        createDefaultContract(contract).adminKey(ADMIN_KEY).stakedNodeId(0L),
-                        getAccountInfo(user).has(accountWith().someStakePeriodStart()),
-                        getContractInfo(contract).has(contractWith().someStakePeriodStart()))
-                .when(
-                        cryptoUpdate(user).newStakedAccountId(contract),
-                        contractUpdate(contract).newStakedAccountId(user))
-                .then(
-                        getAccountInfo(user).has(accountWith().noStakePeriodStart()),
-                        getContractInfo(contract).has(contractWith().noStakePeriodStart()));
+        return hapiTest(
+                newKeyNamed(ADMIN_KEY),
+                cryptoCreate(user).key(ADMIN_KEY).stakedNodeId(0L),
+                createDefaultContract(contract).adminKey(ADMIN_KEY).stakedNodeId(0L),
+                getAccountInfo(user).has(accountWith().someStakePeriodStart()),
+                getContractInfo(contract).has(contractWith().someStakePeriodStart()),
+                cryptoUpdate(user).newStakedAccountId(contract),
+                contractUpdate(contract).newStakedAccountId(user),
+                getAccountInfo(user).has(accountWith().noStakePeriodStart()),
+                getContractInfo(contract).has(contractWith().noStakePeriodStart()));
     }
 
     @HapiTest
@@ -728,50 +712,47 @@ public class AutoAccountCreationSuite {
         final AtomicReference<AccountID> civilianId = new AtomicReference<>();
         final AtomicReference<ByteString> civilianAlias = new AtomicReference<>();
         final AtomicReference<ByteString> evmAddress = new AtomicReference<>();
-        return defaultHapiSpec("hollowAccountCreationWithCryptoTransfer", NONDETERMINISTIC_TRANSACTION_FEES)
-                .given(
-                        newKeyNamed(MULTI_KEY),
-                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
-                        cryptoCreate(LAZY_CREATE_SPONSOR).balance(INITIAL_BALANCE * ONE_HBAR),
-                        cryptoCreate(TOKEN_TREASURY).balance(10 * ONE_HUNDRED_HBARS),
-                        tokenCreate(A_TOKEN)
-                                .tokenType(FUNGIBLE_COMMON)
-                                .supplyType(FINITE)
-                                .initialSupply(initialTokenSupply)
-                                .maxSupply(10L * initialTokenSupply)
-                                .treasury(TOKEN_TREASURY)
-                                .via(TOKEN_A_CREATE),
-                        tokenCreate(NFT_INFINITE_SUPPLY_TOKEN)
-                                .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
-                                .adminKey(MULTI_KEY)
-                                .supplyKey(MULTI_KEY)
-                                .supplyType(TokenSupplyType.INFINITE)
-                                .initialSupply(0)
-                                .treasury(TOKEN_TREASURY)
-                                .via(NFT_CREATE),
-                        mintToken(
-                                NFT_INFINITE_SUPPLY_TOKEN,
-                                List.of(ByteString.copyFromUtf8("a"), ByteString.copyFromUtf8("b"))),
-                        cryptoCreate(CIVILIAN).balance(ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(2),
-                        tokenAssociate(CIVILIAN, A_TOKEN, NFT_INFINITE_SUPPLY_TOKEN),
-                        cryptoTransfer(
-                                moving(10, A_TOKEN).between(TOKEN_TREASURY, CIVILIAN),
-                                movingUnique(NFT_INFINITE_SUPPLY_TOKEN, 1L, 2L).between(TOKEN_TREASURY, CIVILIAN)),
-                        withOpContext((spec, opLog) -> {
-                            final var registry = spec.registry();
-                            final var ecdsaKey = spec.registry()
-                                    .getKey(SECP_256K1_SOURCE_KEY)
-                                    .getECDSASecp256K1()
-                                    .toByteArray();
-                            final var evmAddressBytes = ByteString.copyFrom(recoverAddressFromPubKey(ecdsaKey));
-                            ftId.set(registry.getTokenID(A_TOKEN));
-                            nftId.set(registry.getTokenID(NFT_INFINITE_SUPPLY_TOKEN));
-                            civilianId.set(registry.getAccountID(CIVILIAN));
-                            civilianAlias.set(ByteString.copyFrom(asSolidityAddress(civilianId.get())));
-                            evmAddress.set(evmAddressBytes);
-                        }))
-                .when()
-                .then(withOpContext((spec, opLog) -> {
+        return hapiTest(
+                newKeyNamed(MULTI_KEY),
+                newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
+                cryptoCreate(LAZY_CREATE_SPONSOR).balance(INITIAL_BALANCE * ONE_HBAR),
+                cryptoCreate(TOKEN_TREASURY).balance(10 * ONE_HUNDRED_HBARS),
+                tokenCreate(A_TOKEN)
+                        .tokenType(FUNGIBLE_COMMON)
+                        .supplyType(FINITE)
+                        .initialSupply(initialTokenSupply)
+                        .maxSupply(10L * initialTokenSupply)
+                        .treasury(TOKEN_TREASURY)
+                        .via(TOKEN_A_CREATE),
+                tokenCreate(NFT_INFINITE_SUPPLY_TOKEN)
+                        .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
+                        .adminKey(MULTI_KEY)
+                        .supplyKey(MULTI_KEY)
+                        .supplyType(TokenSupplyType.INFINITE)
+                        .initialSupply(0)
+                        .treasury(TOKEN_TREASURY)
+                        .via(NFT_CREATE),
+                mintToken(
+                        NFT_INFINITE_SUPPLY_TOKEN, List.of(ByteString.copyFromUtf8("a"), ByteString.copyFromUtf8("b"))),
+                cryptoCreate(CIVILIAN).balance(ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(2),
+                tokenAssociate(CIVILIAN, A_TOKEN, NFT_INFINITE_SUPPLY_TOKEN),
+                cryptoTransfer(
+                        moving(10, A_TOKEN).between(TOKEN_TREASURY, CIVILIAN),
+                        movingUnique(NFT_INFINITE_SUPPLY_TOKEN, 1L, 2L).between(TOKEN_TREASURY, CIVILIAN)),
+                withOpContext((spec, opLog) -> {
+                    final var registry = spec.registry();
+                    final var ecdsaKey = spec.registry()
+                            .getKey(SECP_256K1_SOURCE_KEY)
+                            .getECDSASecp256K1()
+                            .toByteArray();
+                    final var evmAddressBytes = ByteString.copyFrom(recoverAddressFromPubKey(ecdsaKey));
+                    ftId.set(registry.getTokenID(A_TOKEN));
+                    nftId.set(registry.getTokenID(NFT_INFINITE_SUPPLY_TOKEN));
+                    civilianId.set(registry.getAccountID(CIVILIAN));
+                    civilianAlias.set(ByteString.copyFrom(asSolidityAddress(civilianId.get())));
+                    evmAddress.set(evmAddressBytes);
+                }),
+                withOpContext((spec, opLog) -> {
                     /* hollow account created with transfer as expected */
                     final var cryptoTransferWithLazyCreate = cryptoTransfer(
                                     movingHbar(ONE_HUNDRED_HBARS).between(LAZY_CREATE_SPONSOR, evmAddress.get()),
@@ -1178,56 +1159,54 @@ public class AutoAccountCreationSuite {
     final Stream<DynamicTest> autoAccountCreationsHappyPath() {
         final var creationTime = new AtomicLong();
         final long transferFee = 188608L;
-        return defaultHapiSpec("autoAccountCreationsHappyPath", NONDETERMINISTIC_TRANSACTION_FEES)
-                .given(
-                        newKeyNamed(VALID_ALIAS),
-                        cryptoCreate(CIVILIAN).balance(10 * ONE_HBAR),
-                        cryptoCreate(PAYER).balance(10 * ONE_HBAR),
-                        cryptoCreate(SPONSOR).balance(INITIAL_BALANCE * ONE_HBAR))
-                .when(cryptoTransfer(
+        return hapiTest(
+                newKeyNamed(VALID_ALIAS),
+                cryptoCreate(CIVILIAN).balance(10 * ONE_HBAR),
+                cryptoCreate(PAYER).balance(10 * ONE_HBAR),
+                cryptoCreate(SPONSOR).balance(INITIAL_BALANCE * ONE_HBAR),
+                cryptoTransfer(
                                 tinyBarsFromToWithAlias(SPONSOR, VALID_ALIAS, ONE_HUNDRED_HBARS),
                                 tinyBarsFromToWithAlias(CIVILIAN, VALID_ALIAS, ONE_HBAR))
                         .via(TRANSFER_TXN)
-                        .payingWith(PAYER))
-                .then(
-                        getReceipt(TRANSFER_TXN).andAnyChildReceipts().hasChildAutoAccountCreations(1),
-                        getTxnRecord(TRANSFER_TXN).andAllChildRecords().logged(),
-                        getAccountInfo(SPONSOR)
-                                .has(accountWith()
-                                        .balance((INITIAL_BALANCE * ONE_HBAR) - ONE_HUNDRED_HBARS)
-                                        .noAlias()),
-                        childRecordsCheck(
-                                TRANSFER_TXN,
-                                SUCCESS,
-                                recordWith().status(SUCCESS).fee(EXPECTED_HBAR_TRANSFER_AUTO_CREATION_FEE)),
-                        assertionsHold((spec, opLog) -> {
-                            final var lookup = getTxnRecord(TRANSFER_TXN)
-                                    .andAllChildRecords()
-                                    .hasNonStakingChildRecordCount(1)
-                                    .hasNoAliasInChildRecord(0)
-                                    .logged();
-                            allRunFor(spec, lookup);
-                            final var sponsor = spec.registry().getAccountID(SPONSOR);
-                            final var payer = spec.registry().getAccountID(PAYER);
-                            final var parent = lookup.getResponseRecord();
-                            var child = lookup.getChildRecord(0);
-                            if (isEndOfStakingPeriodRecord(child)) {
-                                child = lookup.getChildRecord(1);
-                            }
-                            assertAliasBalanceAndFeeInChildRecord(
-                                    parent, child, sponsor, payer, ONE_HUNDRED_HBARS + ONE_HBAR, transferFee, 0);
-                            creationTime.set(child.getConsensusTimestamp().getSeconds());
-                        }),
-                        sourcing(() -> getAliasedAccountInfo(VALID_ALIAS)
-                                .has(accountWith()
-                                        .key(VALID_ALIAS)
-                                        .expectedBalanceWithChargedUsd(ONE_HUNDRED_HBARS + ONE_HBAR, 0, 0)
-                                        .alias(VALID_ALIAS)
-                                        .autoRenew(THREE_MONTHS_IN_SECONDS)
-                                        .receiverSigReq(false)
-                                        .expiry(creationTime.get() + THREE_MONTHS_IN_SECONDS, 0)
-                                        .memo(AUTO_MEMO))
-                                .logged()));
+                        .payingWith(PAYER),
+                getReceipt(TRANSFER_TXN).andAnyChildReceipts().hasChildAutoAccountCreations(1),
+                getTxnRecord(TRANSFER_TXN).andAllChildRecords().logged(),
+                getAccountInfo(SPONSOR)
+                        .has(accountWith()
+                                .balance((INITIAL_BALANCE * ONE_HBAR) - ONE_HUNDRED_HBARS)
+                                .noAlias()),
+                childRecordsCheck(
+                        TRANSFER_TXN,
+                        SUCCESS,
+                        recordWith().status(SUCCESS).fee(EXPECTED_HBAR_TRANSFER_AUTO_CREATION_FEE)),
+                assertionsHold((spec, opLog) -> {
+                    final var lookup = getTxnRecord(TRANSFER_TXN)
+                            .andAllChildRecords()
+                            .hasNonStakingChildRecordCount(1)
+                            .hasNoAliasInChildRecord(0)
+                            .logged();
+                    allRunFor(spec, lookup);
+                    final var sponsor = spec.registry().getAccountID(SPONSOR);
+                    final var payer = spec.registry().getAccountID(PAYER);
+                    final var parent = lookup.getResponseRecord();
+                    var child = lookup.getChildRecord(0);
+                    if (isEndOfStakingPeriodRecord(child)) {
+                        child = lookup.getChildRecord(1);
+                    }
+                    assertAliasBalanceAndFeeInChildRecord(
+                            parent, child, sponsor, payer, ONE_HUNDRED_HBARS + ONE_HBAR, transferFee, 0);
+                    creationTime.set(child.getConsensusTimestamp().getSeconds());
+                }),
+                sourcing(() -> getAliasedAccountInfo(VALID_ALIAS)
+                        .has(accountWith()
+                                .key(VALID_ALIAS)
+                                .expectedBalanceWithChargedUsd(ONE_HUNDRED_HBARS + ONE_HBAR, 0, 0)
+                                .alias(VALID_ALIAS)
+                                .autoRenew(THREE_MONTHS_IN_SECONDS)
+                                .receiverSigReq(false)
+                                .expiry(creationTime.get() + THREE_MONTHS_IN_SECONDS, 0)
+                                .memo(AUTO_MEMO))
+                        .logged()));
     }
 
     @SuppressWarnings("java:S5960")
@@ -1369,19 +1348,18 @@ public class AutoAccountCreationSuite {
         final AtomicReference<ByteString> evmAddress = new AtomicReference<>();
         final var transferToECDSA = "transferToЕCDSA";
 
-        return defaultHapiSpec("transferHbarsToECDSAKey", NONDETERMINISTIC_TRANSACTION_FEES)
-                .given(
-                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
-                        cryptoCreate(PAYER).balance(10 * ONE_HBAR),
-                        withOpContext((spec, opLog) -> {
-                            final var registry = spec.registry();
-                            final var ecdsaKey = registry.getKey(SECP_256K1_SOURCE_KEY);
-                            final var tmp = ecdsaKey.getECDSASecp256K1().toByteArray();
-                            final var addressBytes = recoverAddressFromPubKey(tmp);
-                            final var evmAddressBytes = ByteString.copyFrom(addressBytes);
-                            evmAddress.set(evmAddressBytes);
-                        }))
-                .when(withOpContext((spec, opLog) -> {
+        return hapiTest(
+                newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
+                cryptoCreate(PAYER).balance(10 * ONE_HBAR),
+                withOpContext((spec, opLog) -> {
+                    final var registry = spec.registry();
+                    final var ecdsaKey = registry.getKey(SECP_256K1_SOURCE_KEY);
+                    final var tmp = ecdsaKey.getECDSASecp256K1().toByteArray();
+                    final var addressBytes = recoverAddressFromPubKey(tmp);
+                    final var evmAddressBytes = ByteString.copyFrom(addressBytes);
+                    evmAddress.set(evmAddressBytes);
+                }),
+                withOpContext((spec, opLog) -> {
                     final var hbarCreateTransfer = cryptoTransfer(
                                     tinyBarsFromAccountToAlias(PAYER, SECP_256K1_SOURCE_KEY, ONE_HBAR))
                             .via(transferToECDSA);
@@ -1406,8 +1384,8 @@ public class AutoAccountCreationSuite {
                                     .status(SUCCESS));
 
                     allRunFor(spec, hbarCreateTransfer, op1, op2, op3);
-                }))
-                .then(getTxnRecord(transferToECDSA).andAllChildRecords().logged());
+                }),
+                getTxnRecord(transferToECDSA).andAllChildRecords());
     }
 
     @HapiTest
@@ -1419,24 +1397,23 @@ public class AutoAccountCreationSuite {
         final AtomicReference<ByteString> partyAlias = new AtomicReference<>();
         final AtomicReference<ByteString> counterAlias = new AtomicReference<>();
 
-        return defaultHapiSpec("transferFungibleToEVMAddressAlias", NONDETERMINISTIC_TRANSACTION_FEES)
-                .given(
-                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
-                        cryptoCreate(PARTY).balance(INITIAL_BALANCE * ONE_HBAR).maxAutomaticTokenAssociations(2),
-                        tokenCreate(fungibleToken).treasury(PARTY).initialSupply(1_000_000),
-                        withOpContext((spec, opLog) -> {
-                            final var registry = spec.registry();
-                            final var ecdsaKey = registry.getKey(SECP_256K1_SOURCE_KEY);
-                            final var tmp = ecdsaKey.getECDSASecp256K1().toByteArray();
-                            final var addressBytes = recoverAddressFromPubKey(tmp);
-                            assert addressBytes != null;
-                            final var evmAddressBytes = ByteString.copyFrom(addressBytes);
-                            ftId.set(registry.getTokenID(fungibleToken));
-                            partyId.set(registry.getAccountID(PARTY));
-                            partyAlias.set(ByteString.copyFrom(asSolidityAddress(partyId.get())));
-                            counterAlias.set(evmAddressBytes);
-                        }))
-                .when(withOpContext((spec, opLog) -> {
+        return hapiTest(
+                newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
+                cryptoCreate(PARTY).balance(INITIAL_BALANCE * ONE_HBAR).maxAutomaticTokenAssociations(2),
+                tokenCreate(fungibleToken).treasury(PARTY).initialSupply(1_000_000),
+                withOpContext((spec, opLog) -> {
+                    final var registry = spec.registry();
+                    final var ecdsaKey = registry.getKey(SECP_256K1_SOURCE_KEY);
+                    final var tmp = ecdsaKey.getECDSASecp256K1().toByteArray();
+                    final var addressBytes = recoverAddressFromPubKey(tmp);
+                    assert addressBytes != null;
+                    final var evmAddressBytes = ByteString.copyFrom(addressBytes);
+                    ftId.set(registry.getTokenID(fungibleToken));
+                    partyId.set(registry.getAccountID(PARTY));
+                    partyAlias.set(ByteString.copyFrom(asSolidityAddress(partyId.get())));
+                    counterAlias.set(evmAddressBytes);
+                }),
+                withOpContext((spec, opLog) -> {
                     opLog.warn("Creating hollow account with alias "
                             + Arrays.toString(counterAlias.get().toByteArray()));
                     opLog.warn("From party with alias "
@@ -1500,8 +1477,8 @@ public class AutoAccountCreationSuite {
                             fungibleTokenTransfer,
                             fungibleTokenTransferToECDSAKeyAlias,
                             getHollowAccountInfoAfterTransfers);
-                }))
-                .then(getTxnRecord(FT_XFER)
+                }),
+                getTxnRecord(FT_XFER)
                         .hasNonStakingChildRecordCount(1)
                         .hasChildRecords(recordWith().status(SUCCESS).memo(LAZY_MEMO))
                         .hasPriority(recordWith().autoAssociationCount(1)));

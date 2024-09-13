@@ -365,27 +365,6 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
     }
 
     /**
-     * Given an expected and actual message, recursively asserts that they are exactly equal.
-     *
-     * @param expectedMessage the expected message
-     * @param actualMessage the actual message
-     * @param mismatchContext a supplier of a string that describes the context of the mismatch
-     */
-    public static void exactMatch(
-            @NonNull GeneratedMessageV3 expectedMessage,
-            @NonNull GeneratedMessageV3 actualMessage,
-            @NonNull final Supplier<String> mismatchContext) {
-        // Long.MAX_VALUE placeholder nums to make normalization a no-op
-        fuzzyMatch(
-                expectedMessage,
-                Long.MAX_VALUE,
-                actualMessage,
-                Long.MAX_VALUE,
-                mismatchContext,
-                EnumSet.allOf(SnapshotMatchMode.class));
-    }
-
-    /**
      * Given two messages, recursively asserts that they are equal up to certain "fuzziness" in values like timestamps,
      * hashes, and entity ids; since these quantities will vary based on the number of entities in the system and the
      * time at which the test is run.
@@ -400,7 +379,7 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
      * @param actualPlaceholderNum the placeholder number for the actual message
      * @param mismatchContext a supplier of a string that describes the context of the mismatch
      */
-    private static void fuzzyMatch(
+    public static void fuzzyMatch(
             @NonNull GeneratedMessageV3 expectedMessage,
             final long expectedPlaceholderNum,
             @NonNull GeneratedMessageV3 actualMessage,

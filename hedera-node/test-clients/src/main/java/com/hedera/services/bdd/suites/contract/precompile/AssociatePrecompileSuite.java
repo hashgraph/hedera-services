@@ -43,7 +43,6 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.emptyChildRecordsCh
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
-import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
 import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hedera.services.bdd.suites.contract.Utils.asToken;
@@ -128,17 +127,17 @@ public class AssociatePrecompileSuite {
     /* -- HSCS-PREC-26 from HTS Precompile Test Plan -- */
     @HapiTest
     final Stream<DynamicTest> nonSupportedAbiCallGracefullyFailsWithinSingleContractCall() {
-        return defaultHapiSpec(
-                        "nonSupportedAbiCallGracefullyFailsWithinSingleContractCall", NONDETERMINISTIC_TRANSACTION_FEES)
-                .given(uploadInitCode(THE_GRACEFULLY_FAILING_CONTRACT), contractCreate(THE_GRACEFULLY_FAILING_CONTRACT))
-                .when(contractCall(
+        return hapiTest(
+                uploadInitCode(THE_GRACEFULLY_FAILING_CONTRACT),
+                contractCreate(THE_GRACEFULLY_FAILING_CONTRACT),
+                contractCall(
                                 THE_GRACEFULLY_FAILING_CONTRACT,
                                 "performNonExistingServiceFunctionCall",
                                 HapiParserUtil.asHeadlongAddress(ACCOUNT_ADDRESS),
                                 HapiParserUtil.asHeadlongAddress(TOKEN_ADDRESS))
                         .notTryingAsHexedliteral()
-                        .via("nonExistingFunctionCallTxn"))
-                .then(childRecordsCheck("nonExistingFunctionCallTxn", SUCCESS));
+                        .via("nonExistingFunctionCallTxn"),
+                childRecordsCheck("nonExistingFunctionCallTxn", SUCCESS));
     }
 
     /* -- HSCS-PREC-26 from HTS Precompile Test Plan -- */

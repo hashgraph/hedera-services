@@ -23,11 +23,13 @@ import static com.hedera.node.app.hapi.utils.forensics.DifferingEntries.FirstEnc
 import static com.hedera.node.app.hapi.utils.forensics.DifferingEntries.FirstEncounteredDifference.TRANSACTION_RECORD_MISMATCH;
 import static com.hedera.node.app.hapi.utils.forensics.OrderedComparison.findDifferencesBetweenV6;
 import static com.hedera.node.app.hapi.utils.forensics.RecordParsers.parseV6RecordStreamEntriesIn;
-import static com.hedera.services.bdd.spec.utilops.records.SnapshotModeOp.exactMatch;
 
+import com.google.protobuf.GeneratedMessageV3;
 import com.hedera.node.app.hapi.utils.forensics.DifferingEntries;
 import com.hedera.node.app.hapi.utils.forensics.OrderedComparison;
 import com.hedera.node.app.hapi.utils.forensics.RecordStreamEntry;
+import com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode;
+import com.hedera.services.bdd.spec.utilops.records.SnapshotModeOp;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
@@ -38,10 +40,12 @@ import java.nio.file.Paths;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.Callable;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 
 public class RcDiff implements Callable<Integer> {
     private static final OrderedComparison.RecordDiffSummarizer DEFAULT_SUMMARIZER = (a, b) -> {
@@ -149,6 +153,27 @@ public class RcDiff implements Callable<Integer> {
         }
 
         throwOnInvalidInput();
+    }
+
+    /**
+     * Given an expected and actual message, recursively asserts that they are exactly equal.
+     *
+     * @param expectedMessage the expected message
+     * @param actualMessage the actual message
+     * @param mismatchContext a supplier of a string that describes the context of the mismatch
+     */
+    public static void exactMatch(
+            @NonNull GeneratedMessageV3 expectedMessage,
+            @NonNull GeneratedMessageV3 actualMessage,
+            @NonNull final Supplier<String> mismatchContext) {
+        // Long.MAX_VALUE placeholder nums to make normalization a no-op
+        SnapshotModeOp.fuzzyMatch(
+                expectedMessage,
+                Long.MAX_VALUE,
+                actualMessage,
+                Long.MAX_VALUE,
+                mismatchContext,
+                EnumSet.allOf(SnapshotMatchMode.class));
     }
 
     /**

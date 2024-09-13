@@ -31,7 +31,6 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUpdate;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
-import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
 import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PAYER;
 import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
@@ -110,10 +109,11 @@ public class TokenMetadataSpecs {
 
     @HapiTest
     final Stream<DynamicTest> creationRequiresAppropriateSigsHappyPath() {
-        return defaultHapiSpec("CreationRequiresAppropriateSigsHappyPath", NONDETERMINISTIC_TRANSACTION_FEES)
-                .given(cryptoCreate(PAYER), cryptoCreate(TOKEN_TREASURY).balance(0L), newKeyNamed(ADMIN_KEY))
-                .when()
-                .then(tokenCreate("shouldWork")
+        return hapiTest(
+                cryptoCreate(PAYER),
+                cryptoCreate(TOKEN_TREASURY).balance(0L),
+                newKeyNamed(ADMIN_KEY),
+                tokenCreate("shouldWork")
                         .treasury(TOKEN_TREASURY)
                         .payingWith(PAYER)
                         .adminKey(ADMIN_KEY)

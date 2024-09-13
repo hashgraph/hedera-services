@@ -45,7 +45,6 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.submitModified;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.spec.utilops.mod.ModificationUtils.withSuccessivelyVariedBodyIds;
-import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
 import static com.hedera.services.bdd.suites.HapiSuite.CIVILIAN_PAYER;
 import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_CONTRACT_SENDER;
 import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PAYER;
@@ -269,112 +268,104 @@ public class ContractUpdateSuite {
 
     @HapiTest
     final Stream<DynamicTest> rejectsExpiryTooFarInTheFuture() {
-        return defaultHapiSpec("RejectsExpiryTooFarInTheFuture", NONDETERMINISTIC_TRANSACTION_FEES)
-                .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT))
-                .when()
-                .then(doWithStartupConfigNow("entities.maxLifetime", (value, now) -> contractUpdate(CONTRACT)
+        return hapiTest(
+                uploadInitCode(CONTRACT),
+                contractCreate(CONTRACT),
+                doWithStartupConfigNow("entities.maxLifetime", (value, now) -> contractUpdate(CONTRACT)
                         .newExpirySecs(now.getEpochSecond() + Long.parseLong(value) + 12345L)
                         .hasKnownStatus(INVALID_EXPIRATION_TIME)));
     }
 
     @HapiTest
     final Stream<DynamicTest> updateAutoRenewWorks() {
-        return defaultHapiSpec("UpdateAutoRenewWorks", NONDETERMINISTIC_TRANSACTION_FEES)
-                .given(
-                        newKeyNamed(ADMIN_KEY),
-                        uploadInitCode(CONTRACT),
-                        contractCreate(CONTRACT)
-                                // Refusing ethereum create conversion, because we get INVALID_SIGNATURE upon
-                                // tokenAssociate,
-                                // since we have CONTRACT_ID key
-                                .refusingEthConversion()
-                                .adminKey(ADMIN_KEY)
-                                .autoRenewSecs(THREE_MONTHS_IN_SECONDS))
-                .when(contractUpdate(CONTRACT).newAutoRenew(THREE_MONTHS_IN_SECONDS + ONE_DAY))
-                .then(getContractInfo(CONTRACT).has(contractWith().autoRenew(THREE_MONTHS_IN_SECONDS + ONE_DAY)));
+        return hapiTest(
+                newKeyNamed(ADMIN_KEY),
+                uploadInitCode(CONTRACT),
+                contractCreate(CONTRACT)
+                        // Refusing ethereum create conversion, because we get INVALID_SIGNATURE upon
+                        // tokenAssociate,
+                        // since we have CONTRACT_ID key
+                        .refusingEthConversion()
+                        .adminKey(ADMIN_KEY)
+                        .autoRenewSecs(THREE_MONTHS_IN_SECONDS),
+                contractUpdate(CONTRACT).newAutoRenew(THREE_MONTHS_IN_SECONDS + ONE_DAY),
+                getContractInfo(CONTRACT).has(contractWith().autoRenew(THREE_MONTHS_IN_SECONDS + ONE_DAY)));
     }
 
     @HapiTest
     final Stream<DynamicTest> updateAutoRenewAccountWorks() {
         final var newAutoRenewAccount = "newAutoRenewAccount";
-        return defaultHapiSpec("UpdateAutoRenewAccountWorks", NONDETERMINISTIC_TRANSACTION_FEES)
-                .given(
-                        newKeyNamed(ADMIN_KEY),
-                        cryptoCreate(AUTO_RENEW_ACCOUNT),
-                        cryptoCreate(newAutoRenewAccount),
-                        uploadInitCode(CONTRACT),
-                        // refuse eth conversion because ethereum transaction is missing admin key and autoRenewAccount
-                        contractCreate(CONTRACT)
-                                .adminKey(ADMIN_KEY)
-                                .autoRenewAccountId(AUTO_RENEW_ACCOUNT)
-                                .refusingEthConversion(),
-                        getContractInfo(CONTRACT)
-                                .has(ContractInfoAsserts.contractWith().autoRenewAccountId(AUTO_RENEW_ACCOUNT))
-                                .logged())
-                .when(
-                        contractUpdate(CONTRACT)
-                                .newAutoRenewAccount(newAutoRenewAccount)
-                                .signedBy(DEFAULT_PAYER, ADMIN_KEY)
-                                .hasKnownStatus(INVALID_SIGNATURE),
-                        contractUpdate(CONTRACT)
-                                .newAutoRenewAccount(newAutoRenewAccount)
-                                .signedBy(DEFAULT_PAYER, ADMIN_KEY, newAutoRenewAccount))
-                .then(getContractInfo(CONTRACT)
-                        .has(ContractInfoAsserts.contractWith().autoRenewAccountId(newAutoRenewAccount))
-                        .logged());
+        return hapiTest(
+                newKeyNamed(ADMIN_KEY),
+                cryptoCreate(AUTO_RENEW_ACCOUNT),
+                cryptoCreate(newAutoRenewAccount),
+                uploadInitCode(CONTRACT),
+                // refuse eth conversion because ethereum transaction is missing admin key and autoRenewAccount
+                contractCreate(CONTRACT)
+                        .adminKey(ADMIN_KEY)
+                        .autoRenewAccountId(AUTO_RENEW_ACCOUNT)
+                        .refusingEthConversion(),
+                getContractInfo(CONTRACT)
+                        .has(ContractInfoAsserts.contractWith().autoRenewAccountId(AUTO_RENEW_ACCOUNT)),
+                contractUpdate(CONTRACT)
+                        .newAutoRenewAccount(newAutoRenewAccount)
+                        .signedBy(DEFAULT_PAYER, ADMIN_KEY)
+                        .hasKnownStatus(INVALID_SIGNATURE),
+                contractUpdate(CONTRACT)
+                        .newAutoRenewAccount(newAutoRenewAccount)
+                        .signedBy(DEFAULT_PAYER, ADMIN_KEY, newAutoRenewAccount),
+                getContractInfo(CONTRACT)
+                        .has(ContractInfoAsserts.contractWith().autoRenewAccountId(newAutoRenewAccount)));
     }
 
     @HapiTest
     final Stream<DynamicTest> updateAdminKeyWorks() {
-        return defaultHapiSpec("UpdateAdminKeyWorks", NONDETERMINISTIC_TRANSACTION_FEES)
-                .given(
-                        newKeyNamed(ADMIN_KEY),
-                        newKeyNamed(NEW_ADMIN_KEY),
-                        uploadInitCode(CONTRACT),
-                        // Refusing ethereum create conversion, because we get INVALID_SIGNATURE upon tokenAssociate,
-                        // since we have CONTRACT_ID key
-                        contractCreate(CONTRACT).refusingEthConversion().adminKey(ADMIN_KEY))
-                .when(contractUpdate(CONTRACT).newKey(NEW_ADMIN_KEY))
-                .then(
-                        contractUpdate(CONTRACT).newMemo("some new memo"),
-                        getContractInfo(CONTRACT)
-                                .has(contractWith().adminKey(NEW_ADMIN_KEY).memo("some new memo")));
+        return hapiTest(
+                newKeyNamed(ADMIN_KEY),
+                newKeyNamed(NEW_ADMIN_KEY),
+                uploadInitCode(CONTRACT),
+                // Refusing ethereum create conversion, because we get INVALID_SIGNATURE upon tokenAssociate,
+                // since we have CONTRACT_ID key
+                contractCreate(CONTRACT).refusingEthConversion().adminKey(ADMIN_KEY),
+                contractUpdate(CONTRACT).newKey(NEW_ADMIN_KEY),
+                contractUpdate(CONTRACT).newMemo("some new memo"),
+                getContractInfo(CONTRACT)
+                        .has(contractWith().adminKey(NEW_ADMIN_KEY).memo("some new memo")));
     }
 
     // https://github.com/hashgraph/hedera-services/issues/3037
     @HapiTest
     final Stream<DynamicTest> immutableContractKeyFormIsStandard() {
-        return defaultHapiSpec("ImmutableContractKeyFormIsStandard", NONDETERMINISTIC_TRANSACTION_FEES)
-                .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT).immutable())
-                .when()
-                .then(getContractInfo(CONTRACT).has(contractWith().immutableContractKey(CONTRACT)));
+        return hapiTest(
+                uploadInitCode(CONTRACT),
+                contractCreate(CONTRACT).immutable(),
+                getContractInfo(CONTRACT).has(contractWith().immutableContractKey(CONTRACT)));
     }
 
     @HapiTest
     final Stream<DynamicTest> canMakeContractImmutableWithEmptyKeyList() {
-        return defaultHapiSpec("CanMakeContractImmutableWithEmptyKeyList", NONDETERMINISTIC_TRANSACTION_FEES)
-                .given(
-                        newKeyNamed(ADMIN_KEY),
-                        newKeyNamed(NEW_ADMIN_KEY),
-                        uploadInitCode(CONTRACT),
-                        // Refusing ethereum create conversion, because we get INVALID_SIGNATURE upon tokenAssociate,
-                        // since we have CONTRACT_ID key
-                        contractCreate(CONTRACT).refusingEthConversion().adminKey(ADMIN_KEY))
-                .when(
-                        contractUpdate(CONTRACT).improperlyEmptyingAdminKey().hasPrecheck(INVALID_ADMIN_KEY),
-                        contractUpdate(CONTRACT).properlyEmptyingAdminKey())
-                .then(contractUpdate(CONTRACT).newKey(NEW_ADMIN_KEY).hasKnownStatus(MODIFYING_IMMUTABLE_CONTRACT));
+        return hapiTest(
+                newKeyNamed(ADMIN_KEY),
+                newKeyNamed(NEW_ADMIN_KEY),
+                uploadInitCode(CONTRACT),
+                // Refusing ethereum create conversion, because we get INVALID_SIGNATURE upon tokenAssociate,
+                // since we have CONTRACT_ID key
+                contractCreate(CONTRACT).refusingEthConversion().adminKey(ADMIN_KEY),
+                contractUpdate(CONTRACT).improperlyEmptyingAdminKey().hasPrecheck(INVALID_ADMIN_KEY),
+                contractUpdate(CONTRACT).properlyEmptyingAdminKey(),
+                contractUpdate(CONTRACT).newKey(NEW_ADMIN_KEY).hasKnownStatus(MODIFYING_IMMUTABLE_CONTRACT));
     }
 
     @HapiTest
     final Stream<DynamicTest> givenAdminKeyMustBeValid() {
         final var contract = "BalanceLookup";
-        return defaultHapiSpec("GivenAdminKeyMustBeValid", NONDETERMINISTIC_TRANSACTION_FEES)
+        return hapiTest(
                 // Refusing ethereum create conversion, because we get INVALID_SIGNATURE upon tokenAssociate,
                 // since we have CONTRACT_ID key
-                .given(uploadInitCode(contract), contractCreate(contract).refusingEthConversion())
-                .when(getContractInfo(contract).logged())
-                .then(contractUpdate(contract)
+                uploadInitCode(contract),
+                contractCreate(contract).refusingEthConversion(),
+                getContractInfo(contract),
+                contractUpdate(contract)
                         .useDeprecatedAdminKey()
                         .signedBy(GENESIS, contract)
                         .hasPrecheck(INVALID_ADMIN_KEY));
@@ -474,15 +465,14 @@ public class ContractUpdateSuite {
         // HSCS-DCPR-001
         final var simpleStorageContract = "SimpleStorage";
         final var emptyConstructorContract = "EmptyConstructor";
-        return defaultHapiSpec("updateDoesNotChangeBytecode", NONDETERMINISTIC_TRANSACTION_FEES)
-                .given(
-                        uploadInitCode(simpleStorageContract, emptyConstructorContract),
-                        // Refusing ethereum create conversion, because we get INVALID_SIGNATURE upon tokenAssociate,
-                        // since we have CONTRACT_ID key
-                        contractCreate(simpleStorageContract).refusingEthConversion(),
-                        getContractBytecode(simpleStorageContract).saveResultTo("initialBytecode"))
-                .when(contractUpdate(simpleStorageContract).bytecode(emptyConstructorContract))
-                .then(withOpContext((spec, log) -> {
+        return hapiTest(
+                uploadInitCode(simpleStorageContract, emptyConstructorContract),
+                // Refusing ethereum create conversion, because we get INVALID_SIGNATURE upon tokenAssociate,
+                // since we have CONTRACT_ID key
+                contractCreate(simpleStorageContract).refusingEthConversion(),
+                getContractBytecode(simpleStorageContract).saveResultTo("initialBytecode"),
+                contractUpdate(simpleStorageContract).bytecode(emptyConstructorContract),
+                withOpContext((spec, log) -> {
                     final var op = getContractBytecode(simpleStorageContract)
                             .hasBytecode(spec.registry().getBytes("initialBytecode"));
                     allRunFor(spec, op);

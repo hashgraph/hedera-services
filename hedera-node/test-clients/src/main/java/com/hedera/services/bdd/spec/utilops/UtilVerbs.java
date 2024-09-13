@@ -153,9 +153,6 @@ import com.hedera.services.bdd.spec.utilops.mod.SubmitModificationsOp;
 import com.hedera.services.bdd.spec.utilops.mod.TxnModification;
 import com.hedera.services.bdd.spec.utilops.pauses.HapiSpecSleep;
 import com.hedera.services.bdd.spec.utilops.pauses.HapiSpecWaitUntil;
-import com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode;
-import com.hedera.services.bdd.spec.utilops.records.SnapshotMode;
-import com.hedera.services.bdd.spec.utilops.records.SnapshotModeOp;
 import com.hedera.services.bdd.spec.utilops.streams.LogContainmentOp;
 import com.hedera.services.bdd.spec.utilops.streams.LogValidationOp;
 import com.hedera.services.bdd.spec.utilops.streams.StreamValidationOp;
@@ -1590,21 +1587,6 @@ public class UtilVerbs {
             burstLatch.await();
             burstNo.getAndIncrement();
         }
-    }
-
-    /**
-     * Returns a {@link SnapshotModeOp} that either takes or fuzzy-matches a snapshot of generated records
-     * from the current spec.
-     *
-     * <p><b>IMPORTANT:</b> If multiple {@link SnapshotModeOp} operations are used in a single spec, all
-     * but the last will be a no-op.
-     *
-     * @param mode the snapshot mode to use
-     * @return a {@link SnapshotModeOp} that either takes or fuzzy-matches a snapshot of generated records
-     */
-    public static SnapshotModeOp snapshotMode(
-            @NonNull final SnapshotMode mode, @NonNull final SnapshotMatchMode... matchModes) {
-        return new SnapshotModeOp(mode, matchModes);
     }
 
     public static HapiSpecOperation updateLargeFile(

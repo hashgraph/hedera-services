@@ -78,7 +78,6 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.submitModified;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.spec.utilops.mod.ModificationUtils.withSuccessivelyVariedBodyIds;
-import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
 import static com.hedera.services.bdd.suites.HapiSuite.CIVILIAN_PAYER;
 import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_CONTRACT_RECEIVER;
 import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_CONTRACT_SENDER;
@@ -544,12 +543,11 @@ public class ContractCallSuite {
 
     @HapiTest
     final Stream<DynamicTest> depositMoreThanBalanceFailsGracefully() {
-        return defaultHapiSpec("depositMoreThanBalanceFailsGracefully", NONDETERMINISTIC_TRANSACTION_FEES)
-                .given(
-                        uploadInitCode(PAY_RECEIVABLE_CONTRACT),
-                        cryptoCreate(ACCOUNT).balance(ONE_HBAR - 1))
-                .when(contractCreate(PAY_RECEIVABLE_CONTRACT).adminKey(THRESHOLD))
-                .then(contractCall(PAY_RECEIVABLE_CONTRACT, DEPOSIT, BigInteger.valueOf(ONE_HBAR))
+        return hapiTest(
+                uploadInitCode(PAY_RECEIVABLE_CONTRACT),
+                cryptoCreate(ACCOUNT).balance(ONE_HBAR - 1),
+                contractCreate(PAY_RECEIVABLE_CONTRACT).adminKey(THRESHOLD),
+                contractCall(PAY_RECEIVABLE_CONTRACT, DEPOSIT, BigInteger.valueOf(ONE_HBAR))
                         .via(PAY_TXN)
                         .payingWith(ACCOUNT)
                         .sending(ONE_HBAR)
@@ -786,48 +784,45 @@ public class ContractCallSuite {
         final var minPriceToAccessGatedMethod = 666L;
         final var minValueToAccessGatedMethodAtCurrentRate = new AtomicLong();
 
-        return defaultHapiSpec("ExchangeRatePrecompileWorks", NONDETERMINISTIC_TRANSACTION_FEES)
-                .given(
-                        uploadInitCode(rateAware),
-                        contractCreate(rateAware, BigInteger.valueOf(minPriceToAccessGatedMethod)),
-                        withOpContext((spec, opLog) -> {
-                            final var rates = spec.ratesProvider().rates();
-                            minValueToAccessGatedMethodAtCurrentRate.set(minPriceToAccessGatedMethod
-                                    * TINY_PARTS_PER_WHOLE
-                                    * rates.getHbarEquiv()
-                                    / rates.getCentEquiv());
-                            LOG.info(
-                                    "Requires {} tinybar of value to access the method",
-                                    minValueToAccessGatedMethodAtCurrentRate::get);
-                        }))
-                .when(
-                        sourcing(() -> contractCall(rateAware, "gatedAccess")
-                                .sending(minValueToAccessGatedMethodAtCurrentRate.get() - 1)
-                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED)),
-                        sourcing(() -> contractCall(rateAware, "gatedAccess")
-                                .sending(minValueToAccessGatedMethodAtCurrentRate.get())))
-                .then(
-                        sourcing(() -> contractCall(rateAware, "approxUsdValue")
-                                .sending(minValueToAccessGatedMethodAtCurrentRate.get())
-                                .via(valueToTinycentCall)),
-                        getTxnRecord(valueToTinycentCall)
-                                .hasPriority(recordWith()
-                                        .contractCallResult(resultWith()
-                                                .resultViaFunctionName(
-                                                        "approxUsdValue", rateAware, isLiteralResult(new Object[] {
-                                                            BigInteger.valueOf(
-                                                                    minPriceToAccessGatedMethod * TINY_PARTS_PER_WHOLE)
-                                                        }))))
-                                .logged(),
-                        sourcing(() -> contractCall(rateAware, "invalidCall")
-                                .sending(minValueToAccessGatedMethodAtCurrentRate.get())
-                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED)),
-                        sourcing(() -> contractCall(
-                                        rateAware,
-                                        "callWithValue",
-                                        BigInteger.valueOf(minValueToAccessGatedMethodAtCurrentRate.get()))
-                                .sending(minValueToAccessGatedMethodAtCurrentRate.get())
-                                .hasKnownStatus(INVALID_CONTRACT_ID)));
+        return hapiTest(
+                uploadInitCode(rateAware),
+                contractCreate(rateAware, BigInteger.valueOf(minPriceToAccessGatedMethod)),
+                withOpContext((spec, opLog) -> {
+                    final var rates = spec.ratesProvider().rates();
+                    minValueToAccessGatedMethodAtCurrentRate.set(minPriceToAccessGatedMethod
+                            * TINY_PARTS_PER_WHOLE
+                            * rates.getHbarEquiv()
+                            / rates.getCentEquiv());
+                    LOG.info(
+                            "Requires {} tinybar of value to access the method",
+                            minValueToAccessGatedMethodAtCurrentRate::get);
+                }),
+                sourcing(() -> contractCall(rateAware, "gatedAccess")
+                        .sending(minValueToAccessGatedMethodAtCurrentRate.get() - 1)
+                        .hasKnownStatus(CONTRACT_REVERT_EXECUTED)),
+                sourcing(() ->
+                        contractCall(rateAware, "gatedAccess").sending(minValueToAccessGatedMethodAtCurrentRate.get())),
+                sourcing(() -> contractCall(rateAware, "approxUsdValue")
+                        .sending(minValueToAccessGatedMethodAtCurrentRate.get())
+                        .via(valueToTinycentCall)),
+                getTxnRecord(valueToTinycentCall)
+                        .hasPriority(recordWith()
+                                .contractCallResult(resultWith()
+                                        .resultViaFunctionName(
+                                                "approxUsdValue", rateAware, isLiteralResult(new Object[] {
+                                                    BigInteger.valueOf(
+                                                            minPriceToAccessGatedMethod * TINY_PARTS_PER_WHOLE)
+                                                }))))
+                        .logged(),
+                sourcing(() -> contractCall(rateAware, "invalidCall")
+                        .sending(minValueToAccessGatedMethodAtCurrentRate.get())
+                        .hasKnownStatus(CONTRACT_REVERT_EXECUTED)),
+                sourcing(() -> contractCall(
+                                rateAware,
+                                "callWithValue",
+                                BigInteger.valueOf(minValueToAccessGatedMethodAtCurrentRate.get()))
+                        .sending(minValueToAccessGatedMethodAtCurrentRate.get())
+                        .hasKnownStatus(INVALID_CONTRACT_ID)));
     }
 
     /**
@@ -953,115 +948,110 @@ public class ContractCallSuite {
         final AtomicReference<byte[]> erc721IsOperatorOutput = new AtomicReference<>();
         final var supplyKey = "supplyKey";
         final var ercUserKey = "ercUserKey";
-        return defaultHapiSpec("SpecialQueriesXTest", NONDETERMINISTIC_TRANSACTION_FEES)
-                .given(
-                        newKeyNamed(supplyKey),
-                        newKeyNamed(ercUserKey).shape(SECP_256K1_SHAPE),
-                        cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, ercUserKey, ONE_HUNDRED_HBARS)),
-                        withOpContext((spec, opLog) -> {
-                            final AtomicReference<AccountID> ercUserId = new AtomicReference<>();
-                            final var lookup = getAliasedAccountInfo(ercUserKey)
-                                    .logged()
-                                    .exposingContractAccountIdTo(evmAddress ->
-                                            ercUserAddress.set(asHeadlongAddress(CommonUtils.unhex(evmAddress))))
-                                    .exposingIdTo(ercUserId::set);
-                            allRunFor(spec, lookup);
-                            System.out.println("ERC user is " + ercUserAddress.get() + " (" + ercUserId.get() + ")");
-                            spec.registry().saveAccountId(ercUser, ercUserId.get());
-                            spec.registry().saveKey(ercUser, spec.registry().getKey(ercUserKey));
-                        }),
-                        cryptoCreate(ercOperator)
-                                .exposingCreatedIdTo(id -> ercOperatorAddress.set(idAsHeadlongAddress(id)))
-                                .advertisingCreation(),
-                        cryptoCreate(TOKEN_TREASURY).advertisingCreation(),
-                        tokenCreate(erc20Name)
-                                .entityMemo(erc20Memo)
-                                .name(erc20Name)
-                                .symbol(erc20Symbol)
-                                .decimals(erc20Decimals)
-                                .treasury(TOKEN_TREASURY)
-                                .initialSupply(erc20TotalSupply)
-                                .exposingAddressTo(erc20Address::set)
-                                .advertisingCreation(),
-                        tokenAssociate(ercUser, erc20Name),
-                        cryptoTransfer(moving(erc20UserBalance, erc20Name).between(TOKEN_TREASURY, ercUser)),
-                        tokenCreate(erc721Name)
-                                .entityMemo(erc721Memo)
-                                .name(erc721Name)
-                                .symbol(erc721Symbol)
-                                .tokenType(NON_FUNGIBLE_UNIQUE)
-                                .initialSupply(0L)
-                                .exposingAddressTo(erc721Address::set)
-                                .supplyKey(supplyKey)
-                                .treasury(TOKEN_TREASURY)
-                                .advertisingCreation(),
-                        mintToken(
-                                erc721Name,
-                                IntStream.range(0, erc721UserBalance + 1)
-                                        .mapToObj(i -> ByteString.copyFromUtf8("https://example.com/721/" + (i + 1)))
-                                        .toList()),
-                        tokenAssociate(ercUser, erc721Name),
-                        cryptoApproveAllowance()
-                                .addNftAllowance(ercUser, erc721Name, ercOperator, true, List.of())
-                                .signedBy(DEFAULT_PAYER, ercUser),
-                        cryptoTransfer(LongStream.rangeClosed(1, erc721UserBalance)
-                                .mapToObj(i -> movingUnique(erc721Name, i).between(TOKEN_TREASURY, ercUser))
-                                .toArray(TokenMovement[]::new)),
-                        uploadInitCode(contract),
-                        contractCreate(contract, secret).gas(250_000L))
-                .when(
-                        contractCallLocalWithFunctionAbi(contract, secretAbi)
-                                .exposingTypedResultsTo(results -> LOG.info("Secret is {}", results[0]))
-                                .exposingRawResultsTo(secretOutput::set),
-                        contractCallLocal(contract, "getTinycentsEquiv", tinybars)
-                                .exposingTypedResultsTo(results -> LOG.info("Equiv tinycents is {}", results[0]))
-                                .exposingRawResultsTo(tinycentEquivOutput::set),
-                        contractCallLocal(contract, "getPrngSeed")
-                                .exposingTypedResultsTo(results -> LOG.info("PRNG seed is {}", results[0]))
-                                .exposingRawResultsTo(prngOutput::set),
-                        sourcing(() -> contractCallLocal(
-                                        contract, "getErc20Balance", erc20Address.get(), ercUserAddress.get())
-                                .exposingTypedResultsTo(results -> LOG.info("ERC-20 user balance is {}", results[0]))
-                                .exposingRawResultsTo(erc20BalanceOutput::set)),
-                        sourcing(() -> contractCallLocal(contract, "getErc20Supply", erc20Address.get())
-                                .exposingTypedResultsTo(results -> LOG.info("ERC-20 supply is {}", results[0]))
-                                .exposingRawResultsTo(erc20SupplyOutput::set)),
-                        sourcing(() -> contractCallLocal(contract, "getErc20Name", erc20Address.get())
-                                .exposingTypedResultsTo(results -> LOG.info("ERC-20 name is {}", results[0]))
-                                .exposingRawResultsTo(erc20NameOutput::set)),
-                        sourcing(() -> contractCallLocal(contract, "getErc20Symbol", erc20Address.get())
-                                .exposingTypedResultsTo(results -> LOG.info("ERC-20 symbol is {}", results[0]))
-                                .exposingRawResultsTo(erc20SymbolOutput::set)),
-                        sourcing(() -> contractCallLocal(contract, "getErc20Decimals", erc20Address.get())
-                                .exposingTypedResultsTo(results -> LOG.info("ERC-20 decimals is {}", results[0]))
-                                .exposingRawResultsTo(erc20DecimalsOutput::set)),
-                        sourcing(() -> contractCallLocal(contract, "getErc721Name", erc721Address.get())
-                                .exposingTypedResultsTo(results -> LOG.info("ERC-721 name is {}", results[0]))
-                                .exposingRawResultsTo(erc721NameOutput::set)),
-                        sourcing(() -> contractCallLocal(contract, "getErc721Symbol", erc721Address.get())
-                                .exposingTypedResultsTo(results -> LOG.info("ERC-721 symbol is {}", results[0]))
-                                .exposingRawResultsTo(erc721SymbolOutput::set)),
-                        sourcing(() -> contractCallLocal(
-                                        contract, "getErc721TokenUri", erc721Address.get(), BigInteger.TWO)
-                                .exposingTypedResultsTo(results -> LOG.info("SN#2 token URI is {}", results[0]))
-                                .exposingRawResultsTo(erc721TokenUriOutput::set)),
-                        sourcing(() -> contractCallLocal(
-                                        contract, "getErc721Balance", erc721Address.get(), ercUserAddress.get())
+        return hapiTest(
+                newKeyNamed(supplyKey),
+                newKeyNamed(ercUserKey).shape(SECP_256K1_SHAPE),
+                cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, ercUserKey, ONE_HUNDRED_HBARS)),
+                withOpContext((spec, opLog) -> {
+                    final AtomicReference<AccountID> ercUserId = new AtomicReference<>();
+                    final var lookup = getAliasedAccountInfo(ercUserKey)
+                            .logged()
+                            .exposingContractAccountIdTo(
+                                    evmAddress -> ercUserAddress.set(asHeadlongAddress(CommonUtils.unhex(evmAddress))))
+                            .exposingIdTo(ercUserId::set);
+                    allRunFor(spec, lookup);
+                    System.out.println("ERC user is " + ercUserAddress.get() + " (" + ercUserId.get() + ")");
+                    spec.registry().saveAccountId(ercUser, ercUserId.get());
+                    spec.registry().saveKey(ercUser, spec.registry().getKey(ercUserKey));
+                }),
+                cryptoCreate(ercOperator)
+                        .exposingCreatedIdTo(id -> ercOperatorAddress.set(idAsHeadlongAddress(id)))
+                        .advertisingCreation(),
+                cryptoCreate(TOKEN_TREASURY).advertisingCreation(),
+                tokenCreate(erc20Name)
+                        .entityMemo(erc20Memo)
+                        .name(erc20Name)
+                        .symbol(erc20Symbol)
+                        .decimals(erc20Decimals)
+                        .treasury(TOKEN_TREASURY)
+                        .initialSupply(erc20TotalSupply)
+                        .exposingAddressTo(erc20Address::set)
+                        .advertisingCreation(),
+                tokenAssociate(ercUser, erc20Name),
+                cryptoTransfer(moving(erc20UserBalance, erc20Name).between(TOKEN_TREASURY, ercUser)),
+                tokenCreate(erc721Name)
+                        .entityMemo(erc721Memo)
+                        .name(erc721Name)
+                        .symbol(erc721Symbol)
+                        .tokenType(NON_FUNGIBLE_UNIQUE)
+                        .initialSupply(0L)
+                        .exposingAddressTo(erc721Address::set)
+                        .supplyKey(supplyKey)
+                        .treasury(TOKEN_TREASURY)
+                        .advertisingCreation(),
+                mintToken(
+                        erc721Name,
+                        IntStream.range(0, erc721UserBalance + 1)
+                                .mapToObj(i -> ByteString.copyFromUtf8("https://example.com/721/" + (i + 1)))
+                                .toList()),
+                tokenAssociate(ercUser, erc721Name),
+                cryptoApproveAllowance()
+                        .addNftAllowance(ercUser, erc721Name, ercOperator, true, List.of())
+                        .signedBy(DEFAULT_PAYER, ercUser),
+                cryptoTransfer(LongStream.rangeClosed(1, erc721UserBalance)
+                        .mapToObj(i -> movingUnique(erc721Name, i).between(TOKEN_TREASURY, ercUser))
+                        .toArray(TokenMovement[]::new)),
+                uploadInitCode(contract),
+                contractCreate(contract, secret).gas(250_000L),
+                contractCallLocalWithFunctionAbi(contract, secretAbi)
+                        .exposingTypedResultsTo(results -> LOG.info("Secret is {}", results[0]))
+                        .exposingRawResultsTo(secretOutput::set),
+                contractCallLocal(contract, "getTinycentsEquiv", tinybars)
+                        .exposingTypedResultsTo(results -> LOG.info("Equiv tinycents is {}", results[0]))
+                        .exposingRawResultsTo(tinycentEquivOutput::set),
+                contractCallLocal(contract, "getPrngSeed")
+                        .exposingTypedResultsTo(results -> LOG.info("PRNG seed is {}", results[0]))
+                        .exposingRawResultsTo(prngOutput::set),
+                sourcing(() -> contractCallLocal(contract, "getErc20Balance", erc20Address.get(), ercUserAddress.get())
+                        .exposingTypedResultsTo(results -> LOG.info("ERC-20 user balance is {}", results[0]))
+                        .exposingRawResultsTo(erc20BalanceOutput::set)),
+                sourcing(() -> contractCallLocal(contract, "getErc20Supply", erc20Address.get())
+                        .exposingTypedResultsTo(results -> LOG.info("ERC-20 supply is {}", results[0]))
+                        .exposingRawResultsTo(erc20SupplyOutput::set)),
+                sourcing(() -> contractCallLocal(contract, "getErc20Name", erc20Address.get())
+                        .exposingTypedResultsTo(results -> LOG.info("ERC-20 name is {}", results[0]))
+                        .exposingRawResultsTo(erc20NameOutput::set)),
+                sourcing(() -> contractCallLocal(contract, "getErc20Symbol", erc20Address.get())
+                        .exposingTypedResultsTo(results -> LOG.info("ERC-20 symbol is {}", results[0]))
+                        .exposingRawResultsTo(erc20SymbolOutput::set)),
+                sourcing(() -> contractCallLocal(contract, "getErc20Decimals", erc20Address.get())
+                        .exposingTypedResultsTo(results -> LOG.info("ERC-20 decimals is {}", results[0]))
+                        .exposingRawResultsTo(erc20DecimalsOutput::set)),
+                sourcing(() -> contractCallLocal(contract, "getErc721Name", erc721Address.get())
+                        .exposingTypedResultsTo(results -> LOG.info("ERC-721 name is {}", results[0]))
+                        .exposingRawResultsTo(erc721NameOutput::set)),
+                sourcing(() -> contractCallLocal(contract, "getErc721Symbol", erc721Address.get())
+                        .exposingTypedResultsTo(results -> LOG.info("ERC-721 symbol is {}", results[0]))
+                        .exposingRawResultsTo(erc721SymbolOutput::set)),
+                sourcing(() -> contractCallLocal(contract, "getErc721TokenUri", erc721Address.get(), BigInteger.TWO)
+                        .exposingTypedResultsTo(results -> LOG.info("SN#2 token URI is {}", results[0]))
+                        .exposingRawResultsTo(erc721TokenUriOutput::set)),
+                sourcing(
+                        () -> contractCallLocal(contract, "getErc721Balance", erc721Address.get(), ercUserAddress.get())
                                 .exposingTypedResultsTo(results -> LOG.info("ERC-721 user balance is {}", results[0]))
                                 .exposingRawResultsTo(erc721BalanceOutput::set)),
-                        sourcing(
-                                () -> contractCallLocal(contract, "getErc721Owner", erc721Address.get(), BigInteger.ONE)
-                                        .exposingTypedResultsTo(results -> LOG.info("SN#1 owner is {}", results[0]))
-                                        .exposingRawResultsTo(erc721OwnerOutput::set)),
-                        sourcing(() -> contractCallLocal(
-                                        contract,
-                                        "getErc721IsOperator",
-                                        erc721Address.get(),
-                                        ercUserAddress.get(),
-                                        ercOperatorAddress.get())
-                                .exposingTypedResultsTo(results -> LOG.info("Is operator? {}", results[0]))
-                                .exposingRawResultsTo(erc721IsOperatorOutput::set)))
-                .then(withOpContext((spec, opLog) -> {
+                sourcing(() -> contractCallLocal(contract, "getErc721Owner", erc721Address.get(), BigInteger.ONE)
+                        .exposingTypedResultsTo(results -> LOG.info("SN#1 owner is {}", results[0]))
+                        .exposingRawResultsTo(erc721OwnerOutput::set)),
+                sourcing(() -> contractCallLocal(
+                                contract,
+                                "getErc721IsOperator",
+                                erc721Address.get(),
+                                ercUserAddress.get(),
+                                ercOperatorAddress.get())
+                        .exposingTypedResultsTo(results -> LOG.info("Is operator? {}", results[0]))
+                        .exposingRawResultsTo(erc721IsOperatorOutput::set)),
+                withOpContext((spec, opLog) -> {
                     LOG.info("Explicit secret is {}", CommonUtils.hex(secretOutput.get()));
                     LOG.info("Explicit PRNG seed is {}", CommonUtils.hex(prngOutput.get()));
                     LOG.info("Explicit equiv tinycents is {}", CommonUtils.hex(tinycentEquivOutput.get()));
@@ -1375,34 +1365,32 @@ public class ContractCallSuite {
     @HapiTest
     final Stream<DynamicTest> multipleSelfDestructsAreSafe() {
         final var contract = "Fuse";
-        return defaultHapiSpec("MultipleSelfDestructsAreSafe", NONDETERMINISTIC_TRANSACTION_FEES)
-                .given(uploadInitCode(contract), contractCreate(contract).gas(600_000))
-                .when(contractCall(contract, "light").via("lightTxn").withTxnTransform(tx -> tx))
-                .then(getTxnRecord("lightTxn").logged());
+        return hapiTest(
+                uploadInitCode(contract),
+                contractCreate(contract).gas(600_000),
+                contractCall(contract, "light").via("lightTxn").withTxnTransform(tx -> tx),
+                getTxnRecord("lightTxn"));
     }
 
     @HapiTest
     final Stream<DynamicTest> depositSuccess() {
-        return defaultHapiSpec("DepositSuccess", NONDETERMINISTIC_TRANSACTION_FEES)
-                .given(
-                        uploadInitCode(PAY_RECEIVABLE_CONTRACT),
-                        contractCreate(PAY_RECEIVABLE_CONTRACT).adminKey(THRESHOLD))
-                .when(contractCall(PAY_RECEIVABLE_CONTRACT, DEPOSIT, BigInteger.valueOf(DEPOSIT_AMOUNT))
+        return hapiTest(
+                uploadInitCode(PAY_RECEIVABLE_CONTRACT),
+                contractCreate(PAY_RECEIVABLE_CONTRACT).adminKey(THRESHOLD),
+                contractCall(PAY_RECEIVABLE_CONTRACT, DEPOSIT, BigInteger.valueOf(DEPOSIT_AMOUNT))
                         .via(PAY_TXN)
-                        .sending(DEPOSIT_AMOUNT))
-                .then(getTxnRecord(PAY_TXN)
+                        .sending(DEPOSIT_AMOUNT),
+                getTxnRecord(PAY_TXN)
                         .hasPriority(
                                 recordWith().contractCallResult(resultWith().logs(inOrder()))));
     }
 
     @HapiTest
     final Stream<DynamicTest> multipleDepositSuccess() {
-        return defaultHapiSpec("MultipleDepositSuccess", NONDETERMINISTIC_TRANSACTION_FEES)
-                .given(
-                        uploadInitCode(PAY_RECEIVABLE_CONTRACT),
-                        contractCreate(PAY_RECEIVABLE_CONTRACT).adminKey(THRESHOLD))
-                .when()
-                .then(withOpContext((spec, opLog) -> {
+        return hapiTest(
+                uploadInitCode(PAY_RECEIVABLE_CONTRACT),
+                contractCreate(PAY_RECEIVABLE_CONTRACT).adminKey(THRESHOLD),
+                withOpContext((spec, opLog) -> {
                     for (int i = 0; i < 10; i++) {
                         final var subOp1 = balanceSnapshot("payerBefore", PAY_RECEIVABLE_CONTRACT);
                         final var subOp2 = contractCall(
@@ -1455,14 +1443,11 @@ public class ContractCallSuite {
 
     @HapiTest
     final Stream<DynamicTest> payableSuccess() {
-        return defaultHapiSpec("PayableSuccess", NONDETERMINISTIC_TRANSACTION_FEES)
-                .given(
-                        uploadInitCode(PAY_RECEIVABLE_CONTRACT),
-                        contractCreate(PAY_RECEIVABLE_CONTRACT)
-                                .adminKey(THRESHOLD)
-                                .gas(1_000_000))
-                .when(contractCall(PAY_RECEIVABLE_CONTRACT).via(PAY_TXN).sending(DEPOSIT_AMOUNT))
-                .then(getTxnRecord(PAY_TXN)
+        return hapiTest(
+                uploadInitCode(PAY_RECEIVABLE_CONTRACT),
+                contractCreate(PAY_RECEIVABLE_CONTRACT).adminKey(THRESHOLD).gas(1_000_000),
+                contractCall(PAY_RECEIVABLE_CONTRACT).via(PAY_TXN).sending(DEPOSIT_AMOUNT),
+                getTxnRecord(PAY_TXN)
                         .hasPriority(recordWith()
                                 .contractCallResult(
                                         resultWith().logs(inOrder(logWith().longAtBytes(DEPOSIT_AMOUNT, 24))))));
@@ -1498,26 +1483,25 @@ public class ContractCallSuite {
 
         // FUTURE: Once we add the check again that compares the estimated gas with the maximum transaction fee,
         // this test will need to be updated and expect INSUFFICIENT_TX_FEE.
-        return defaultHapiSpec("InsufficientFee", NONDETERMINISTIC_TRANSACTION_FEES)
-                .given(cryptoCreate("accountToPay"), uploadInitCode(contract), contractCreate(contract))
-                .when()
-                .then(contractCall(contract, "create")
-                        .fee(0L)
-                        .payingWith("accountToPay")
-                        .hasPrecheck(OK));
+        return hapiTest(
+                cryptoCreate("accountToPay"),
+                uploadInitCode(contract),
+                contractCreate(contract),
+                contractCall(contract, "create").fee(0L).payingWith("accountToPay"));
     }
 
     @HapiTest
     final Stream<DynamicTest> nonPayable() {
         final var contract = CREATE_TRIVIAL;
 
-        return defaultHapiSpec("NonPayable", NONDETERMINISTIC_TRANSACTION_FEES)
-                .given(uploadInitCode(contract), contractCreate(contract))
-                .when(contractCall(contract, "create")
+        return hapiTest(
+                uploadInitCode(contract),
+                contractCreate(contract),
+                contractCall(contract, "create")
                         .via("callTxn")
                         .sending(DEPOSIT_AMOUNT)
-                        .hasKnownStatus(CONTRACT_REVERT_EXECUTED))
-                .then(getTxnRecord("callTxn")
+                        .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
+                getTxnRecord("callTxn")
                         .hasPriority(
                                 recordWith().contractCallResult(resultWith().logs(inOrder()))));
     }
@@ -1707,14 +1691,13 @@ public class ContractCallSuite {
 
     @HapiTest
     final Stream<DynamicTest> minChargeIsTXGasUsedByContractCall() {
-        return defaultHapiSpec("MinChargeIsTXGasUsedByContractCall", NONDETERMINISTIC_TRANSACTION_FEES)
-                .given(uploadInitCode(SIMPLE_UPDATE_CONTRACT))
-                .when(
-                        contractCreate(SIMPLE_UPDATE_CONTRACT).gas(300_000L),
-                        contractCall(SIMPLE_UPDATE_CONTRACT, "set", BigInteger.valueOf(5), BigInteger.valueOf(42))
-                                .gas(300_000L)
-                                .via(CALL_TX))
-                .then(withOpContext((spec, ignore) -> {
+        return hapiTest(
+                uploadInitCode(SIMPLE_UPDATE_CONTRACT),
+                contractCreate(SIMPLE_UPDATE_CONTRACT).gas(300_000L),
+                contractCall(SIMPLE_UPDATE_CONTRACT, "set", BigInteger.valueOf(5), BigInteger.valueOf(42))
+                        .gas(300_000L)
+                        .via(CALL_TX),
+                withOpContext((spec, ignore) -> {
                     final var subop01 = getTxnRecord(CALL_TX).saveTxnRecordToRegistry(CALL_TX_REC);
                     allRunFor(spec, subop01);
 

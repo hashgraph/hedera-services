@@ -42,7 +42,6 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sendModified;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.spec.utilops.mod.ModificationUtils.withSuccessivelyVariedQueryIds;
-import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
 import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
@@ -171,120 +170,107 @@ public class ContractCallLocalSuite {
 
     @HapiTest
     final Stream<DynamicTest> vanillaSuccess() {
-        return defaultHapiSpec("vanillaSuccess", NONDETERMINISTIC_TRANSACTION_FEES)
-                .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT).adminKey(THRESHOLD))
-                .when(contractCall(CONTRACT, "create").gas(785_000))
-                .then(
-                        sleepFor(3_000L),
-                        contractCallLocal(CONTRACT, "getIndirect")
-                                .has(resultWith()
-                                        .resultViaFunctionName("getIndirect", CONTRACT, isLiteralResult(new Object[] {
-                                            BigInteger.valueOf(7L)
-                                        }))));
+        return hapiTest(
+                uploadInitCode(CONTRACT),
+                contractCreate(CONTRACT).adminKey(THRESHOLD),
+                contractCall(CONTRACT, "create").gas(785_000),
+                sleepFor(3_000L),
+                contractCallLocal(CONTRACT, "getIndirect")
+                        .has(resultWith().resultViaFunctionName("getIndirect", CONTRACT, isLiteralResult(new Object[] {
+                            BigInteger.valueOf(7L)
+                        }))));
     }
 
     @HapiTest
     final Stream<DynamicTest> gasBelowIntrinsicGasFails() {
-        return defaultHapiSpec("gasBelowIntrinsicGasFails", NONDETERMINISTIC_TRANSACTION_FEES)
-                .given(cryptoCreate("payer"), uploadInitCode(CONTRACT), contractCreate(CONTRACT))
-                .when(contractCall(CONTRACT, "create").gas(785_000))
-                .then(
-                        sleepFor(3_000L),
-                        contractCallLocal(CONTRACT, "getIndirect")
-                                .nodePayment(1_234_567)
-                                .gas(2_000L)
-                                .hasAnswerOnlyPrecheck(INSUFFICIENT_GAS));
+        return hapiTest(
+                cryptoCreate("payer"),
+                uploadInitCode(CONTRACT),
+                contractCreate(CONTRACT),
+                contractCall(CONTRACT, "create").gas(785_000),
+                sleepFor(3_000L),
+                contractCallLocal(CONTRACT, "getIndirect")
+                        .nodePayment(1_234_567)
+                        .gas(2_000L)
+                        .hasAnswerOnlyPrecheck(INSUFFICIENT_GAS));
     }
 
     @HapiTest
     final Stream<DynamicTest> insufficientGasFails() {
-        return defaultHapiSpec("insufficientGasFails", NONDETERMINISTIC_TRANSACTION_FEES)
-                .given(cryptoCreate("payer"), uploadInitCode(CONTRACT), contractCreate(CONTRACT))
-                .when(contractCall(CONTRACT, "create").gas(785_000))
-                .then(
-                        sleepFor(3_000L),
-                        contractCallLocal(CONTRACT, "getIndirect")
-                                .gas(22_000L)
-                                .hasAnswerOnlyPrecheck(INSUFFICIENT_GAS));
+        return hapiTest(
+                cryptoCreate("payer"),
+                uploadInitCode(CONTRACT),
+                contractCreate(CONTRACT),
+                contractCall(CONTRACT, "create").gas(785_000),
+                contractCallLocal(CONTRACT, "getIndirect").gas(22_000L).hasAnswerOnlyPrecheck(INSUFFICIENT_GAS));
     }
 
     @HapiTest
     final Stream<DynamicTest> impureCallFails() {
-        return defaultHapiSpec("impureCallFails", NONDETERMINISTIC_TRANSACTION_FEES)
-                .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT).adminKey(THRESHOLD))
-                .when()
-                .then(
-                        sleepFor(3_000L),
-                        contractCallLocal(CONTRACT, "create")
-                                .nodePayment(1_234_567)
-                                .hasAnswerOnlyPrecheck(ResponseCodeEnum.LOCAL_CALL_MODIFICATION_EXCEPTION));
+        return hapiTest(
+                uploadInitCode(CONTRACT),
+                contractCreate(CONTRACT).adminKey(THRESHOLD),
+                contractCallLocal(CONTRACT, "create")
+                        .nodePayment(1_234_567)
+                        .hasAnswerOnlyPrecheck(ResponseCodeEnum.LOCAL_CALL_MODIFICATION_EXCEPTION));
     }
 
     @HapiTest
     final Stream<DynamicTest> successOnDeletedContract() {
-        return defaultHapiSpec("SuccessOnDeletedContract", NONDETERMINISTIC_TRANSACTION_FEES)
+        return hapiTest(
                 // Refusing ethereum create conversion, because we get INVALID_SIGNATURE upon tokenAssociate,
                 // since we have CONTRACT_ID key
-                .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT).refusingEthConversion())
-                .when(contractDelete(CONTRACT))
-                .then(contractCallLocal(CONTRACT, "create")
-                        .nodePayment(1_234_567)
-                        .hasAnswerOnlyPrecheck(OK));
+                uploadInitCode(CONTRACT),
+                contractCreate(CONTRACT).refusingEthConversion(),
+                contractDelete(CONTRACT),
+                contractCallLocal(CONTRACT, "create").nodePayment(1_234_567).hasAnswerOnlyPrecheck(OK));
     }
 
     @HapiTest
     final Stream<DynamicTest> invalidContractID() {
         final var invalidContract = HapiSpecSetup.getDefaultInstance().invalidContractName();
         final var functionAbi = getABIFor(FUNCTION, "getIndirect", "CreateTrivial");
-        return defaultHapiSpec("InvalidContractID", NONDETERMINISTIC_TRANSACTION_FEES)
-                .given()
-                .when()
-                .then(
-                        contractCallLocalWithFunctionAbi(invalidContract, functionAbi)
-                                .nodePayment(1_234_567)
-                                .hasAnswerOnlyPrecheck(INVALID_CONTRACT_ID),
-                        contractCallLocalWithFunctionAbi("0.0.0", functionAbi)
-                                .nodePayment(1_234_567)
-                                .hasAnswerOnlyPrecheck(INVALID_CONTRACT_ID));
+        return hapiTest(
+                contractCallLocalWithFunctionAbi(invalidContract, functionAbi)
+                        .nodePayment(1_234_567)
+                        .hasAnswerOnlyPrecheck(INVALID_CONTRACT_ID),
+                contractCallLocalWithFunctionAbi("0.0.0", functionAbi)
+                        .nodePayment(1_234_567)
+                        .hasAnswerOnlyPrecheck(INVALID_CONTRACT_ID));
     }
 
     @HapiTest
     final Stream<DynamicTest> insufficientFeeFails() {
         final long adequateQueryPayment = 500_000L;
 
-        return defaultHapiSpec("insufficientFeeFails", NONDETERMINISTIC_TRANSACTION_FEES)
-                .given(cryptoCreate("payer"), uploadInitCode(CONTRACT), contractCreate(CONTRACT))
-                .when(contractCall(CONTRACT, "create").gas(785_000))
-                .then(
-                        sleepFor(3_000L),
-                        contractCallLocal(CONTRACT, "getIndirect")
-                                .nodePayment(adequateQueryPayment)
-                                .fee(0L)
-                                .payingWith("payer")
-                                .hasAnswerOnlyPrecheck(INSUFFICIENT_TX_FEE));
+        return hapiTest(
+                cryptoCreate("payer"),
+                uploadInitCode(CONTRACT),
+                contractCreate(CONTRACT),
+                contractCall(CONTRACT, "create").gas(785_000),
+                contractCallLocal(CONTRACT, "getIndirect")
+                        .nodePayment(adequateQueryPayment)
+                        .fee(0L)
+                        .payingWith("payer")
+                        .hasAnswerOnlyPrecheck(INSUFFICIENT_TX_FEE));
     }
 
     @HapiTest
     final Stream<DynamicTest> lowBalanceFails() {
         final long adequateQueryPayment = 500_000_000L;
 
-        return defaultHapiSpec("lowBalanceFails", NONDETERMINISTIC_TRANSACTION_FEES)
-                .given(
-                        cryptoCreate("payer"),
-                        cryptoCreate("payer").balance(adequateQueryPayment),
-                        uploadInitCode(CONTRACT),
-                        contractCreate(CONTRACT))
-                .when(contractCall(CONTRACT, "create").gas(785_000))
-                .then(
-                        sleepFor(3_000L),
-                        contractCallLocal(CONTRACT, "getIndirect")
-                                .logged()
-                                .payingWith("payer")
-                                .nodePayment(adequateQueryPayment)
-                                .hasAnswerOnlyPrecheck(INSUFFICIENT_PAYER_BALANCE),
-                        getAccountBalance("payer").logged(),
-                        sleepFor(1_000L),
-                        getAccountBalance("payer").logged());
+        return hapiTest(
+                cryptoCreate("payer"),
+                cryptoCreate("payer").balance(adequateQueryPayment),
+                uploadInitCode(CONTRACT),
+                contractCreate(CONTRACT),
+                contractCall(CONTRACT, "create").gas(785_000),
+                contractCallLocal(CONTRACT, "getIndirect")
+                        .logged()
+                        .payingWith("payer")
+                        .nodePayment(adequateQueryPayment)
+                        .hasAnswerOnlyPrecheck(INSUFFICIENT_PAYER_BALANCE),
+                getAccountBalance("payer"));
     }
 
     @HapiTest
@@ -293,20 +279,20 @@ public class ContractCallLocalSuite {
                 + "\"outputs\": [{\"name\": \"\",\"type\": \"uint8\"}],\"payable\": false,"
                 + "\"type\": \"function\"}";
 
-        return defaultHapiSpec("erc20Query", NONDETERMINISTIC_TRANSACTION_FEES)
-                .given(tokenCreate(TOKEN).decimals(DECIMALS).symbol(SYMBOL).asCallableContract())
-                .when()
-                .then(contractCallLocalWithFunctionAbi(TOKEN, decimalsABI)
+        return hapiTest(
+                tokenCreate(TOKEN).decimals(DECIMALS).symbol(SYMBOL).asCallableContract(),
+                contractCallLocalWithFunctionAbi(TOKEN, decimalsABI)
                         .has(resultWith().resultThruAbi(decimalsABI, isLiteralResult(new Object[] {DECIMALS}))));
     }
 
     // https://github.com/hashgraph/hedera-services/pull/5485
     @HapiTest
     final Stream<DynamicTest> callLocalDoesNotCheckSignaturesNorPayer() {
-        return defaultHapiSpec("callLocalDoesNotCheckSignaturesNorPayer", NONDETERMINISTIC_TRANSACTION_FEES)
-                .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT).adminKey(THRESHOLD))
-                .when(contractCall(CONTRACT, "create").gas(785_000))
-                .then(withOpContext((spec, opLog) -> IntStream.range(0, 2000).forEach(i -> {
+        return hapiTest(
+                uploadInitCode(CONTRACT),
+                contractCreate(CONTRACT).adminKey(THRESHOLD),
+                contractCall(CONTRACT, "create").gas(785_000),
+                withOpContext((spec, opLog) -> IntStream.range(0, 2000).forEach(i -> {
                     final var create = cryptoCreate("account #" + i).deferStatusResolution();
                     final var callLocal = contractCallLocal(CONTRACT, "getIndirect")
                             .nodePayment(ONE_HBAR)

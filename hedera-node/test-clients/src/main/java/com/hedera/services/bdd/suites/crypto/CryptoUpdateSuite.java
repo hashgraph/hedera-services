@@ -49,7 +49,6 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.submitModified;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsd;
 import static com.hedera.services.bdd.spec.utilops.mod.ModificationUtils.withSuccessivelyVariedBodyIds;
-import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
 import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PAYER;
 import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
@@ -367,12 +366,10 @@ public class CryptoUpdateSuite {
 
     @HapiTest
     final Stream<DynamicTest> updateWithUniqueSigs() {
-        return defaultHapiSpec("UpdateWithUniqueSigs", NONDETERMINISTIC_TRANSACTION_FEES)
-                .given(
-                        newKeyNamed(TARGET_KEY).shape(twoLevelThresh).labels(overlappingKeys),
-                        cryptoCreate(TARGET_ACCOUNT).key(TARGET_KEY))
-                .when()
-                .then(cryptoUpdate(TARGET_ACCOUNT)
+        return hapiTest(
+                newKeyNamed(TARGET_KEY).shape(twoLevelThresh).labels(overlappingKeys),
+                cryptoCreate(TARGET_ACCOUNT).key(TARGET_KEY),
+                cryptoUpdate(TARGET_ACCOUNT)
                         .sigControl(forKey(TARGET_KEY, ENOUGH_UNIQUE_SIGS))
                         .receiverSigRequired(true));
     }
@@ -386,12 +383,10 @@ public class CryptoUpdateSuite {
                 SigControl.threshSigs(1, OFF, OFF, OFF, OFF, OFF, OFF, OFF),
                 SigControl.threshSigs(3, OFF, OFF, OFF, ON, OFF, OFF, OFF));
 
-        return defaultHapiSpec("UpdateWithOneEffectiveSig", NONDETERMINISTIC_TRANSACTION_FEES)
-                .given(
-                        newKeyNamed(REPEATING_KEY).shape(twoLevelThresh).labels(oneUniqueKey),
-                        cryptoCreate(TARGET_ACCOUNT).key(REPEATING_KEY).balance(1_000_000_000L))
-                .when()
-                .then(cryptoUpdate(TARGET_ACCOUNT)
+        return hapiTest(
+                newKeyNamed(REPEATING_KEY).shape(twoLevelThresh).labels(oneUniqueKey),
+                cryptoCreate(TARGET_ACCOUNT).key(REPEATING_KEY).balance(1_000_000_000L),
+                cryptoUpdate(TARGET_ACCOUNT)
                         .sigControl(forKey(REPEATING_KEY, singleSig))
                         .receiverSigRequired(true)
                         .hasKnownStatus(SUCCESS));
@@ -399,12 +394,10 @@ public class CryptoUpdateSuite {
 
     @HapiTest
     final Stream<DynamicTest> updateWithOverlappingSigs() {
-        return defaultHapiSpec("UpdateWithOverlappingSigs", NONDETERMINISTIC_TRANSACTION_FEES)
-                .given(
-                        newKeyNamed(TARGET_KEY).shape(twoLevelThresh).labels(overlappingKeys),
-                        cryptoCreate(TARGET_ACCOUNT).key(TARGET_KEY))
-                .when()
-                .then(cryptoUpdate(TARGET_ACCOUNT)
+        return hapiTest(
+                newKeyNamed(TARGET_KEY).shape(twoLevelThresh).labels(overlappingKeys),
+                cryptoCreate(TARGET_ACCOUNT).key(TARGET_KEY),
+                cryptoUpdate(TARGET_ACCOUNT)
                         .sigControl(forKey(TARGET_KEY, ENOUGH_OVERLAPPING_SIGS))
                         .receiverSigRequired(true)
                         .hasKnownStatus(SUCCESS));
@@ -440,10 +433,7 @@ public class CryptoUpdateSuite {
 
     @HapiTest
     final Stream<DynamicTest> cannotSetThresholdNegative() {
-        return defaultHapiSpec("CannotSetThresholdNegative", NONDETERMINISTIC_TRANSACTION_FEES)
-                .given(cryptoCreate(TEST_ACCOUNT))
-                .when()
-                .then(cryptoUpdate(TEST_ACCOUNT).sendThreshold(-1L));
+        return hapiTest(cryptoCreate(TEST_ACCOUNT), cryptoUpdate(TEST_ACCOUNT).sendThreshold(-1L));
     }
 
     @HapiTest
@@ -451,15 +441,14 @@ public class CryptoUpdateSuite {
         SigControl origKeySigs = SigControl.threshSigs(3, ON, ON, SigControl.threshSigs(1, OFF, ON));
         SigControl updKeySigs = SigControl.listSigs(ON, OFF, SigControl.threshSigs(1, ON, OFF, OFF, OFF));
 
-        return defaultHapiSpec("UpdateFailsIfMissingSigs", NONDETERMINISTIC_TRANSACTION_FEES)
-                .given(
-                        newKeyNamed(ORIG_KEY).shape(origKeySigs),
-                        newKeyNamed(UPD_KEY).shape(updKeySigs))
-                .when(cryptoCreate(TEST_ACCOUNT)
+        return hapiTest(
+                newKeyNamed(ORIG_KEY).shape(origKeySigs),
+                newKeyNamed(UPD_KEY).shape(updKeySigs),
+                cryptoCreate(TEST_ACCOUNT)
                         .receiverSigRequired(true)
                         .key(ORIG_KEY)
-                        .sigControl(forKey(ORIG_KEY, origKeySigs)))
-                .then(cryptoUpdate(TEST_ACCOUNT)
+                        .sigControl(forKey(ORIG_KEY, origKeySigs)),
+                cryptoUpdate(TEST_ACCOUNT)
                         .key(UPD_KEY)
                         .sigControl(forKey(TEST_ACCOUNT, origKeySigs), forKey(UPD_KEY, updKeySigs))
                         .hasKnownStatus(INVALID_SIGNATURE));
@@ -469,12 +458,11 @@ public class CryptoUpdateSuite {
     final Stream<DynamicTest> updateWithEmptyKeyFails() {
         SigControl updKeySigs = threshOf(0, 0);
 
-        return defaultHapiSpec("updateWithEmptyKeyFails", NONDETERMINISTIC_TRANSACTION_FEES)
-                .given(
-                        newKeyNamed(ORIG_KEY).shape(KeyShape.SIMPLE),
-                        newKeyNamed(UPD_KEY).shape(updKeySigs))
-                .when(cryptoCreate(TEST_ACCOUNT).key(ORIG_KEY))
-                .then(cryptoUpdate(TEST_ACCOUNT).key(UPD_KEY).hasPrecheck(INVALID_ADMIN_KEY));
+        return hapiTest(
+                newKeyNamed(ORIG_KEY).shape(KeyShape.SIMPLE),
+                newKeyNamed(UPD_KEY).shape(updKeySigs),
+                cryptoCreate(TEST_ACCOUNT).key(ORIG_KEY),
+                cryptoUpdate(TEST_ACCOUNT).key(UPD_KEY).hasPrecheck(INVALID_ADMIN_KEY));
     }
 
     @HapiTest

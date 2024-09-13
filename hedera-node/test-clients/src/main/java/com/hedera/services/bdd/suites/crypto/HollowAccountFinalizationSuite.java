@@ -50,7 +50,6 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.emptyChildRecordsCh
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.tokenTransferList;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
-import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
 import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PAYER;
 import static com.hedera.services.bdd.suites.HapiSuite.EMPTY_KEY;
 import static com.hedera.services.bdd.suites.HapiSuite.FIVE_HBARS;
@@ -638,17 +637,15 @@ public class HollowAccountFinalizationSuite {
         final var ECDSA_KEY_4 = "ECDSA_KEY_4";
         final var RECIPIENT_KEY = "ECDSA_KEY_5";
         final AtomicInteger numHollow = new AtomicInteger(0);
-        return defaultHapiSpec("tooManyHollowAccountFinalizationsShouldFail", NONDETERMINISTIC_TRANSACTION_FEES)
-                .given(
-                        newKeyNamed(ECDSA_KEY_1).shape(SECP_256K1_SHAPE),
-                        newKeyNamed(ECDSA_KEY_2).shape(SECP_256K1_SHAPE),
-                        newKeyNamed(ECDSA_KEY_3).shape(SECP_256K1_SHAPE),
-                        newKeyNamed(ECDSA_KEY_4).shape(SECP_256K1_SHAPE),
-                        newKeyNamed(RECIPIENT_KEY).shape(SECP_256K1_SHAPE),
-                        cryptoCreate(LAZY_CREATE_SPONSOR).balance(INITIAL_BALANCE * ONE_HBAR),
-                        newKeyNamed(ADMIN_KEY))
-                .when()
-                .then(withOpContext((spec, opLog) -> {
+        return hapiTest(
+                newKeyNamed(ECDSA_KEY_1).shape(SECP_256K1_SHAPE),
+                newKeyNamed(ECDSA_KEY_2).shape(SECP_256K1_SHAPE),
+                newKeyNamed(ECDSA_KEY_3).shape(SECP_256K1_SHAPE),
+                newKeyNamed(ECDSA_KEY_4).shape(SECP_256K1_SHAPE),
+                newKeyNamed(RECIPIENT_KEY).shape(SECP_256K1_SHAPE),
+                cryptoCreate(LAZY_CREATE_SPONSOR).balance(INITIAL_BALANCE * ONE_HBAR),
+                newKeyNamed(ADMIN_KEY),
+                withOpContext((spec, opLog) -> {
                     // create hollow accounts
                     allRunFor(
                             spec,
@@ -859,16 +856,13 @@ public class HollowAccountFinalizationSuite {
     final Stream<DynamicTest> hollowPayerAndOtherReqSignerBothGetCompletedInASingleTransaction() {
         final var ecdsaKey2 = "ecdsaKey2";
         final var recipientKey = "recipient";
-        return defaultHapiSpec(
-                        "hollowPayerAndOtherReqSignerBothGetCompletedInASingleTransaction",
-                        NONDETERMINISTIC_TRANSACTION_FEES)
-                .given(
-                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
-                        newKeyNamed(ecdsaKey2).shape(SECP_256K1_SHAPE),
-                        newKeyNamed(recipientKey).shape(SECP_256K1_SHAPE),
-                        cryptoCreate(LAZY_CREATE_SPONSOR).balance(INITIAL_BALANCE * ONE_HBAR),
-                        cryptoCreate(CRYPTO_TRANSFER_RECEIVER).balance(INITIAL_BALANCE * ONE_HBAR))
-                .when(withOpContext((spec, opLog) -> {
+        return hapiTest(
+                newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
+                newKeyNamed(ecdsaKey2).shape(SECP_256K1_SHAPE),
+                newKeyNamed(recipientKey).shape(SECP_256K1_SHAPE),
+                cryptoCreate(LAZY_CREATE_SPONSOR).balance(INITIAL_BALANCE * ONE_HBAR),
+                cryptoCreate(CRYPTO_TRANSFER_RECEIVER).balance(INITIAL_BALANCE * ONE_HBAR),
+                withOpContext((spec, opLog) -> {
                     final var op1 = sendToEvmAddressFromECDSAKey(spec, SECP_256K1_SOURCE_KEY, TRANSFER_TXN);
                     final var op2 = sendToEvmAddressFromECDSAKey(spec, ecdsaKey2, "randomTxn");
                     final var hapiGetTxnRecord =
@@ -879,8 +873,8 @@ public class HollowAccountFinalizationSuite {
                             .getReceipt()
                             .getAccountID();
                     spec.registry().saveAccountId(SECP_256K1_SOURCE_KEY, newAccountID);
-                }))
-                .then(withOpContext((spec, opLog) -> {
+                }),
+                withOpContext((spec, opLog) -> {
                     final var op = assumingNoStakingChildRecordCausesMaxChildRecordsExceeded(
                             // send a crypto transfer from the hollow payer
                             // also sending hbars from the other hollow account

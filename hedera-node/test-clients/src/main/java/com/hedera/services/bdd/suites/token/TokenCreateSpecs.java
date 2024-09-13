@@ -61,7 +61,6 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsdW
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.spec.utilops.mod.ModificationUtils.withSuccessivelyVariedBodyIds;
 import static com.hedera.services.bdd.spec.utilops.mod.ModificationUtils.withSuccessivelyVariedQueryIds;
-import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
 import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PAYER;
 import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
@@ -225,73 +224,65 @@ public class TokenCreateSpecs {
         final String creationTxn = "creationTxn";
         final String failedCreationTxn = "failedCreationTxn";
 
-        return defaultHapiSpec("ValidateNewTokenAssociations", NONDETERMINISTIC_TRANSACTION_FEES)
-                .given(
-                        cryptoCreate(tbd),
-                        cryptoDelete(tbd),
-                        cryptoCreate(hbarCollector),
-                        cryptoCreate(fractionalCollector),
-                        cryptoCreate(selfDenominatedFixedCollector),
-                        cryptoCreate(otherSelfDenominatedFixedCollector),
-                        cryptoCreate(treasury).maxAutomaticTokenAssociations(10).balance(ONE_HUNDRED_HBARS))
-                .when(
-                        getAccountInfo(treasury).savingSnapshot(treasury),
-                        getAccountInfo(hbarCollector).savingSnapshot(hbarCollector),
-                        getAccountInfo(fractionalCollector).savingSnapshot(fractionalCollector),
-                        getAccountInfo(selfDenominatedFixedCollector).savingSnapshot(selfDenominatedFixedCollector),
-                        getAccountInfo(otherSelfDenominatedFixedCollector)
-                                .savingSnapshot(otherSelfDenominatedFixedCollector),
-                        tokenCreate(A_TOKEN)
-                                .tokenType(TokenType.FUNGIBLE_COMMON)
-                                .initialSupply(Long.MAX_VALUE)
-                                .treasury(treasury)
-                                .withCustom(fixedHbarFee(20L, hbarCollector))
-                                .withCustom(fractionalFee(1L, 100L, 1L, OptionalLong.of(5L), fractionalCollector))
-                                .withCustom(fixedHtsFee(2L, SENTINEL_VALUE, selfDenominatedFixedCollector))
-                                .withCustom(fixedHtsFee(3L, SENTINEL_VALUE, otherSelfDenominatedFixedCollector))
-                                .signedBy(
-                                        DEFAULT_PAYER,
-                                        treasury,
-                                        fractionalCollector,
-                                        selfDenominatedFixedCollector,
-                                        otherSelfDenominatedFixedCollector)
-                                .via(creationTxn),
-                        tokenCreate(notToBeToken)
-                                .treasury(tbd)
-                                .hasKnownStatus(INVALID_TREASURY_ACCOUNT_FOR_TOKEN)
-                                .via(failedCreationTxn))
-                .then(
-                        /* Validate records */
-                        getTxnRecord(creationTxn)
-                                .hasPriority(recordWith()
-                                        .autoAssociated(accountTokenPairs(List.of(
-                                                Pair.of(fractionalCollector, A_TOKEN),
-                                                Pair.of(selfDenominatedFixedCollector, A_TOKEN),
-                                                Pair.of(otherSelfDenominatedFixedCollector, A_TOKEN),
-                                                Pair.of(treasury, A_TOKEN))))),
-                        getTxnRecord(failedCreationTxn)
-                                .hasPriority(recordWith().autoAssociated(accountTokenPairs(List.of()))),
-                        /* Validate state */
-                        getAccountInfo(hbarCollector).has(accountWith().noChangesFromSnapshot(hbarCollector)),
-                        getAccountInfo(treasury)
-                                .hasMaxAutomaticAssociations(10)
-                                /* TokenCreate auto-associations aren't part of the HIP-23 paradigm */
-                                .hasAlreadyUsedAutomaticAssociations(0)
-                                .has(accountWith()
-                                        .newAssociationsFromSnapshot(treasury, List.of(relationshipWith(A_TOKEN)))),
-                        getAccountInfo(fractionalCollector)
-                                .has(accountWith()
-                                        .newAssociationsFromSnapshot(
-                                                fractionalCollector, List.of(relationshipWith(A_TOKEN)))),
-                        getAccountInfo(selfDenominatedFixedCollector)
-                                .has(accountWith()
-                                        .newAssociationsFromSnapshot(
-                                                selfDenominatedFixedCollector, List.of(relationshipWith(A_TOKEN)))),
-                        getAccountInfo(otherSelfDenominatedFixedCollector)
-                                .has(accountWith()
-                                        .newAssociationsFromSnapshot(
-                                                otherSelfDenominatedFixedCollector,
-                                                List.of(relationshipWith(A_TOKEN)))));
+        return hapiTest(
+                cryptoCreate(tbd),
+                cryptoDelete(tbd),
+                cryptoCreate(hbarCollector),
+                cryptoCreate(fractionalCollector),
+                cryptoCreate(selfDenominatedFixedCollector),
+                cryptoCreate(otherSelfDenominatedFixedCollector),
+                cryptoCreate(treasury).maxAutomaticTokenAssociations(10).balance(ONE_HUNDRED_HBARS),
+                getAccountInfo(treasury).savingSnapshot(treasury),
+                getAccountInfo(hbarCollector).savingSnapshot(hbarCollector),
+                getAccountInfo(fractionalCollector).savingSnapshot(fractionalCollector),
+                getAccountInfo(selfDenominatedFixedCollector).savingSnapshot(selfDenominatedFixedCollector),
+                getAccountInfo(otherSelfDenominatedFixedCollector).savingSnapshot(otherSelfDenominatedFixedCollector),
+                tokenCreate(A_TOKEN)
+                        .tokenType(TokenType.FUNGIBLE_COMMON)
+                        .initialSupply(Long.MAX_VALUE)
+                        .treasury(treasury)
+                        .withCustom(fixedHbarFee(20L, hbarCollector))
+                        .withCustom(fractionalFee(1L, 100L, 1L, OptionalLong.of(5L), fractionalCollector))
+                        .withCustom(fixedHtsFee(2L, SENTINEL_VALUE, selfDenominatedFixedCollector))
+                        .withCustom(fixedHtsFee(3L, SENTINEL_VALUE, otherSelfDenominatedFixedCollector))
+                        .signedBy(
+                                DEFAULT_PAYER,
+                                treasury,
+                                fractionalCollector,
+                                selfDenominatedFixedCollector,
+                                otherSelfDenominatedFixedCollector)
+                        .via(creationTxn),
+                tokenCreate(notToBeToken)
+                        .treasury(tbd)
+                        .hasKnownStatus(INVALID_TREASURY_ACCOUNT_FOR_TOKEN)
+                        .via(failedCreationTxn),
+                /* Validate records */
+                getTxnRecord(creationTxn)
+                        .hasPriority(recordWith()
+                                .autoAssociated(accountTokenPairs(List.of(
+                                        Pair.of(fractionalCollector, A_TOKEN),
+                                        Pair.of(selfDenominatedFixedCollector, A_TOKEN),
+                                        Pair.of(otherSelfDenominatedFixedCollector, A_TOKEN),
+                                        Pair.of(treasury, A_TOKEN))))),
+                getTxnRecord(failedCreationTxn).hasPriority(recordWith().autoAssociated(accountTokenPairs(List.of()))),
+                /* Validate state */
+                getAccountInfo(hbarCollector).has(accountWith().noChangesFromSnapshot(hbarCollector)),
+                getAccountInfo(treasury)
+                        .hasMaxAutomaticAssociations(10)
+                        /* TokenCreate auto-associations aren't part of the HIP-23 paradigm */
+                        .hasAlreadyUsedAutomaticAssociations(0)
+                        .has(accountWith().newAssociationsFromSnapshot(treasury, List.of(relationshipWith(A_TOKEN)))),
+                getAccountInfo(fractionalCollector)
+                        .has(accountWith()
+                                .newAssociationsFromSnapshot(fractionalCollector, List.of(relationshipWith(A_TOKEN)))),
+                getAccountInfo(selfDenominatedFixedCollector)
+                        .has(accountWith()
+                                .newAssociationsFromSnapshot(
+                                        selfDenominatedFixedCollector, List.of(relationshipWith(A_TOKEN)))),
+                getAccountInfo(otherSelfDenominatedFixedCollector)
+                        .has(accountWith()
+                                .newAssociationsFromSnapshot(
+                                        otherSelfDenominatedFixedCollector, List.of(relationshipWith(A_TOKEN)))));
     }
 
     /**
@@ -929,62 +920,55 @@ public class TokenCreateSpecs {
 
     @HapiTest
     final Stream<DynamicTest> feeCollectorSigningReqsWorkForTokenCreate() {
-        return defaultHapiSpec("feeCollectorSigningReqsWorkForTokenCreate", NONDETERMINISTIC_TRANSACTION_FEES)
-                .given(
-                        newKeyNamed(customFeesKey),
-                        cryptoCreate(htsCollector).receiverSigRequired(true),
-                        cryptoCreate(hbarCollector),
-                        cryptoCreate(tokenCollector),
-                        cryptoCreate(TOKEN_TREASURY),
-                        tokenCreate(feeDenom).treasury(htsCollector))
-                .when(
-                        tokenCreate(token)
-                                .treasury(TOKEN_TREASURY)
-                                .withCustom(fractionalFee(
-                                        numerator,
-                                        0,
-                                        minimumToCollect,
-                                        OptionalLong.of(maximumToCollect),
-                                        tokenCollector))
-                                .hasKnownStatus(INVALID_SIGNATURE),
-                        tokenCreate(token)
-                                .treasury(TOKEN_TREASURY)
-                                .withCustom(fixedHtsFee(htsAmount, feeDenom, htsCollector))
-                                .hasKnownStatus(INVALID_SIGNATURE),
-                        tokenCreate(token)
-                                .treasury(TOKEN_TREASURY)
-                                .withCustom(fractionalFee(
-                                        numerator,
-                                        -denominator,
-                                        minimumToCollect,
-                                        OptionalLong.of(maximumToCollect),
-                                        tokenCollector))
-                                .hasKnownStatus(INVALID_SIGNATURE),
-                        tokenCreate(token)
-                                .treasury(TOKEN_TREASURY)
-                                .withCustom(fixedHbarFee(hbarAmount, hbarCollector))
-                                .withCustom(fixedHtsFee(htsAmount, feeDenom, htsCollector))
-                                .withCustom(fractionalFee(
-                                        numerator,
-                                        denominator,
-                                        minimumToCollect,
-                                        OptionalLong.of(maximumToCollect),
-                                        tokenCollector))
-                                .signedBy(DEFAULT_PAYER, TOKEN_TREASURY, htsCollector, tokenCollector))
-                .then(
-                        getTokenInfo(token)
-                                .hasCustom(fixedHbarFeeInSchedule(hbarAmount, hbarCollector))
-                                .hasCustom(fixedHtsFeeInSchedule(htsAmount, feeDenom, htsCollector))
-                                .hasCustom(fractionalFeeInSchedule(
-                                        numerator,
-                                        denominator,
-                                        minimumToCollect,
-                                        OptionalLong.of(maximumToCollect),
-                                        false,
-                                        tokenCollector)),
-                        getAccountInfo(tokenCollector).hasToken(relationshipWith(token)),
-                        getAccountInfo(hbarCollector).hasNoTokenRelationship(token),
-                        getAccountInfo(htsCollector).hasNoTokenRelationship(token));
+        return hapiTest(
+                newKeyNamed(customFeesKey),
+                cryptoCreate(htsCollector).receiverSigRequired(true),
+                cryptoCreate(hbarCollector),
+                cryptoCreate(tokenCollector),
+                cryptoCreate(TOKEN_TREASURY),
+                tokenCreate(feeDenom).treasury(htsCollector),
+                tokenCreate(token)
+                        .treasury(TOKEN_TREASURY)
+                        .withCustom(fractionalFee(
+                                numerator, 0, minimumToCollect, OptionalLong.of(maximumToCollect), tokenCollector))
+                        .hasKnownStatus(INVALID_SIGNATURE),
+                tokenCreate(token)
+                        .treasury(TOKEN_TREASURY)
+                        .withCustom(fixedHtsFee(htsAmount, feeDenom, htsCollector))
+                        .hasKnownStatus(INVALID_SIGNATURE),
+                tokenCreate(token)
+                        .treasury(TOKEN_TREASURY)
+                        .withCustom(fractionalFee(
+                                numerator,
+                                -denominator,
+                                minimumToCollect,
+                                OptionalLong.of(maximumToCollect),
+                                tokenCollector))
+                        .hasKnownStatus(INVALID_SIGNATURE),
+                tokenCreate(token)
+                        .treasury(TOKEN_TREASURY)
+                        .withCustom(fixedHbarFee(hbarAmount, hbarCollector))
+                        .withCustom(fixedHtsFee(htsAmount, feeDenom, htsCollector))
+                        .withCustom(fractionalFee(
+                                numerator,
+                                denominator,
+                                minimumToCollect,
+                                OptionalLong.of(maximumToCollect),
+                                tokenCollector))
+                        .signedBy(DEFAULT_PAYER, TOKEN_TREASURY, htsCollector, tokenCollector),
+                getTokenInfo(token)
+                        .hasCustom(fixedHbarFeeInSchedule(hbarAmount, hbarCollector))
+                        .hasCustom(fixedHtsFeeInSchedule(htsAmount, feeDenom, htsCollector))
+                        .hasCustom(fractionalFeeInSchedule(
+                                numerator,
+                                denominator,
+                                minimumToCollect,
+                                OptionalLong.of(maximumToCollect),
+                                false,
+                                tokenCollector)),
+                getAccountInfo(tokenCollector).hasToken(relationshipWith(token)),
+                getAccountInfo(hbarCollector).hasNoTokenRelationship(token),
+                getAccountInfo(htsCollector).hasNoTokenRelationship(token));
     }
 
     @HapiTest
@@ -1053,15 +1037,15 @@ public class TokenCreateSpecs {
 
     @HapiTest
     final Stream<DynamicTest> creationRequiresAppropriateSigsHappyPath() {
-        return defaultHapiSpec("CreationRequiresAppropriateSigsHappyPath", NONDETERMINISTIC_TRANSACTION_FEES)
-                .given(cryptoCreate(PAYER), cryptoCreate(TOKEN_TREASURY).balance(0L), newKeyNamed(ADMIN_KEY))
-                .when()
-                .then(tokenCreate("shouldWork")
+        return hapiTest(
+                cryptoCreate(PAYER),
+                cryptoCreate(TOKEN_TREASURY).balance(0L),
+                newKeyNamed(ADMIN_KEY),
+                tokenCreate("shouldWork")
                         .treasury(TOKEN_TREASURY)
                         .payingWith(PAYER)
                         .adminKey(ADMIN_KEY)
-                        .signedBy(TOKEN_TREASURY, PAYER, ADMIN_KEY)
-                        .hasKnownStatus(SUCCESS));
+                        .signedBy(TOKEN_TREASURY, PAYER, ADMIN_KEY));
     }
 
     @HapiTest

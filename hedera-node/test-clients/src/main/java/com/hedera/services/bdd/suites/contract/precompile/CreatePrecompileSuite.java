@@ -47,7 +47,6 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.emptyChildRecordsCh
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
-import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
 import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_CONTRACT_SENDER;
 import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
@@ -801,49 +800,48 @@ public class CreatePrecompileSuite {
     // Should fail on insufficient value sent
     @HapiTest
     final Stream<DynamicTest> createTokenWithEmptyTokenStruct() {
-        return defaultHapiSpec("createTokenWithEmptyTokenStruct", NONDETERMINISTIC_TRANSACTION_FEES)
-                .given(cryptoCreate(ACCOUNT).balance(ONE_MILLION_HBARS), uploadInitCode(TOKEN_CREATE_CONTRACT))
-                .when(withOpContext((spec, opLog) ->
-                        allRunFor(spec, contractCreate(TOKEN_CREATE_CONTRACT).gas(GAS_TO_OFFER))))
-                .then(
-                        withOpContext((spec, ignore) -> {
-                            final var accountSnapshot = spec.isUsingEthCalls()
-                                    ? balanceSnapshot(ACCOUNT_BALANCE, DEFAULT_CONTRACT_SENDER)
-                                    : balanceSnapshot(ACCOUNT_BALANCE, ACCOUNT);
-                            final var contractCall = contractCall(
-                                            TOKEN_CREATE_CONTRACT, "createTokenWithEmptyTokenStruct")
-                                    .via(FIRST_CREATE_TXN)
-                                    .gas(GAS_TO_OFFER)
-                                    .payingWith(ACCOUNT)
-                                    .sending(DEFAULT_AMOUNT_TO_SEND)
-                                    .hasKnownStatus(CONTRACT_REVERT_EXECUTED);
-                            final var txnRecord = getTxnRecord(FIRST_CREATE_TXN);
-                            allRunFor(
-                                    spec,
-                                    accountSnapshot,
-                                    contractCall,
-                                    txnRecord,
-                                    childRecordsCheck(
-                                            FIRST_CREATE_TXN,
-                                            CONTRACT_REVERT_EXECUTED,
-                                            TransactionRecordAsserts.recordWith()
-                                                    .status(MISSING_TOKEN_SYMBOL)
-                                                    .contractCallResult(ContractFnResultAsserts.resultWith()
-                                                            .error(MISSING_TOKEN_SYMBOL.name()))));
-                            final var delta = spec.isUsingEthCalls()
-                                    ? GAS_TO_OFFER * HapiEthereumCall.DEFAULT_GAS_PRICE_TINYBARS
-                                    : txnRecord.getResponseRecord().getTransactionFee();
-                            final var effectivePayer = spec.isUsingEthCalls() ? DEFAULT_CONTRACT_SENDER : ACCOUNT;
-                            final var accountBalance = getAccountBalance(effectivePayer)
-                                    .hasTinyBars(changeFromSnapshot(ACCOUNT_BALANCE, -(delta)));
-                            allRunFor(
-                                    spec,
-                                    accountBalance,
-                                    getAccountBalance(TOKEN_CREATE_CONTRACT).hasTinyBars(0L));
-                        }),
-                        getTxnRecord(FIRST_CREATE_TXN).andAllChildRecords().logged(),
-                        getAccountBalance(ACCOUNT).logged(),
-                        getAccountBalance(TOKEN_CREATE_CONTRACT).logged());
+        return hapiTest(
+                cryptoCreate(ACCOUNT).balance(ONE_MILLION_HBARS),
+                uploadInitCode(TOKEN_CREATE_CONTRACT),
+                withOpContext((spec, opLog) ->
+                        allRunFor(spec, contractCreate(TOKEN_CREATE_CONTRACT).gas(GAS_TO_OFFER))),
+                withOpContext((spec, ignore) -> {
+                    final var accountSnapshot = spec.isUsingEthCalls()
+                            ? balanceSnapshot(ACCOUNT_BALANCE, DEFAULT_CONTRACT_SENDER)
+                            : balanceSnapshot(ACCOUNT_BALANCE, ACCOUNT);
+                    final var contractCall = contractCall(TOKEN_CREATE_CONTRACT, "createTokenWithEmptyTokenStruct")
+                            .via(FIRST_CREATE_TXN)
+                            .gas(GAS_TO_OFFER)
+                            .payingWith(ACCOUNT)
+                            .sending(DEFAULT_AMOUNT_TO_SEND)
+                            .hasKnownStatus(CONTRACT_REVERT_EXECUTED);
+                    final var txnRecord = getTxnRecord(FIRST_CREATE_TXN);
+                    allRunFor(
+                            spec,
+                            accountSnapshot,
+                            contractCall,
+                            txnRecord,
+                            childRecordsCheck(
+                                    FIRST_CREATE_TXN,
+                                    CONTRACT_REVERT_EXECUTED,
+                                    TransactionRecordAsserts.recordWith()
+                                            .status(MISSING_TOKEN_SYMBOL)
+                                            .contractCallResult(ContractFnResultAsserts.resultWith()
+                                                    .error(MISSING_TOKEN_SYMBOL.name()))));
+                    final var delta = spec.isUsingEthCalls()
+                            ? GAS_TO_OFFER * HapiEthereumCall.DEFAULT_GAS_PRICE_TINYBARS
+                            : txnRecord.getResponseRecord().getTransactionFee();
+                    final var effectivePayer = spec.isUsingEthCalls() ? DEFAULT_CONTRACT_SENDER : ACCOUNT;
+                    final var accountBalance = getAccountBalance(effectivePayer)
+                            .hasTinyBars(changeFromSnapshot(ACCOUNT_BALANCE, -(delta)));
+                    allRunFor(
+                            spec,
+                            accountBalance,
+                            getAccountBalance(TOKEN_CREATE_CONTRACT).hasTinyBars(0L));
+                }),
+                getTxnRecord(FIRST_CREATE_TXN).andAllChildRecords().logged(),
+                getAccountBalance(ACCOUNT).logged(),
+                getAccountBalance(TOKEN_CREATE_CONTRACT).logged());
     }
 
     // TEST-011

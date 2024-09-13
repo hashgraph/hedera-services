@@ -53,7 +53,6 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
-import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
 import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PAYER;
 import static com.hedera.services.bdd.suites.HapiSuite.EMPTY_KEY;
 import static com.hedera.services.bdd.suites.HapiSuite.FIVE_HBARS;
@@ -4457,30 +4456,28 @@ public class TraceabilitySuite {
         final var contract = "CreateTrivial";
         final String trivialCreate = "vanillaBytecodeSidecar2";
         final var firstTxn = "firstTxn";
-        return defaultHapiSpec(trivialCreate, NONDETERMINISTIC_TRANSACTION_FEES)
-                .given(uploadInitCode(contract))
-                .when(contractCreate(contract).via(firstTxn))
-                .then(
-                        withOpContext((spec, opLog) -> {
-                            final HapiGetTxnRecord txnRecord = getTxnRecord(firstTxn);
-                            allRunFor(
-                                    spec,
-                                    txnRecord,
-                                    expectContractActionSidecarFor(
-                                            firstTxn,
-                                            List.of(ContractAction.newBuilder()
-                                                    .setCallType(CREATE)
-                                                    .setCallOperationType(CallOperationType.OP_CREATE)
-                                                    .setCallingAccount(
-                                                            spec.registry().getAccountID(GENESIS))
-                                                    .setRecipientContract(
-                                                            spec.registry().getContractId(contract))
-                                                    .setGas(184672)
-                                                    .setGasUsed(214)
-                                                    .setOutput(EMPTY)
-                                                    .build())));
-                        }),
-                        expectContractBytecodeSidecarFor(firstTxn, contract, contract));
+        return hapiTest(
+                uploadInitCode(contract),
+                contractCreate(contract).via(firstTxn),
+                withOpContext((spec, opLog) -> {
+                    final HapiGetTxnRecord txnRecord = getTxnRecord(firstTxn);
+                    allRunFor(
+                            spec,
+                            txnRecord,
+                            expectContractActionSidecarFor(
+                                    firstTxn,
+                                    List.of(ContractAction.newBuilder()
+                                            .setCallType(CREATE)
+                                            .setCallOperationType(CallOperationType.OP_CREATE)
+                                            .setCallingAccount(spec.registry().getAccountID(GENESIS))
+                                            .setRecipientContract(
+                                                    spec.registry().getContractId(contract))
+                                            .setGas(184672)
+                                            .setGasUsed(214)
+                                            .setOutput(EMPTY)
+                                            .build())));
+                }),
+                expectContractBytecodeSidecarFor(firstTxn, contract, contract));
     }
 
     @Order(24)
