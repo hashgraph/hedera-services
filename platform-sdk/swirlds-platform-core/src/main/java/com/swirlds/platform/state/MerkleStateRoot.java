@@ -1005,8 +1005,20 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
      */
     @NonNull
     @Override
-    public PlatformStateAccessor getPlatformState() {
-        return !isImmutable() ? writablePlatformStateStore() : readablePlatformStateStore();
+    public PlatformStateAccessor getReadablePlatformState() {
+        return readablePlatformStateStore();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @NonNull
+    @Override
+    public PlatformStateAccessor getWritablePlatformState() {
+        if (isImmutable()) {
+            throw new IllegalStateException("Cannot get writable platform state when state is immutable");
+        }
+        return writablePlatformStateStore();
     }
 
     /**
@@ -1025,7 +1037,7 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
     @NonNull
     @Override
     public String getInfoString(final int hashDepth) {
-        return createInfoString(hashDepth, getPlatformState(), getHash(), this);
+        return createInfoString(hashDepth, readablePlatformStateStore(), getHash(), this);
     }
 
     private ReadablePlatformStateStore readablePlatformStateStore() {

@@ -18,11 +18,11 @@ package com.hedera.services.bdd.junit.support;
 
 import static com.hedera.node.app.hapi.utils.exports.recordstreaming.RecordStreamingUtils.isRecordFile;
 import static com.hedera.node.app.hapi.utils.exports.recordstreaming.RecordStreamingUtils.isSidecarFile;
+import static com.hedera.services.bdd.junit.support.BlockStreamAccess.isBlockFile;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.File;
-import java.io.UncheckedIOException;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Consumer;
@@ -34,8 +34,8 @@ import org.apache.logging.log4j.Logger;
  * A small utility class that listens for record stream files and provides them to any subscribed
  * listeners.
  */
-public class BroadcastingRecordStreamListener extends FileAlterationListenerAdaptor {
-    private static final Logger log = LogManager.getLogger(BroadcastingRecordStreamListener.class);
+public class StreamFileAlterationListener extends FileAlterationListenerAdaptor {
+    private static final Logger log = LogManager.getLogger(StreamFileAlterationListener.class);
 
     private static final int NUM_RETRIES = 32;
     private static final long RETRY_BACKOFF_MS = 500L;
@@ -60,6 +60,7 @@ public class BroadcastingRecordStreamListener extends FileAlterationListenerAdap
     enum FileType {
         RECORD_STREAM_FILE,
         SIDE_CAR_FILE,
+        BLOCK_FILE,
         OTHER
     }
 
@@ -68,6 +69,7 @@ public class BroadcastingRecordStreamListener extends FileAlterationListenerAdap
         switch (typeOf(file)) {
             case RECORD_STREAM_FILE -> retryExposingVia(this::exposeItems, "record", file);
             case SIDE_CAR_FILE -> retryExposingVia(this::exposeSidecars, "sidecar", file);
+            case BLOCK_FILE -> retryExposingVia(this::exposeBlock, "block", file);
             case OTHER -> {
                 // Nothing to expose
             }
@@ -87,7 +89,7 @@ public class BroadcastingRecordStreamListener extends FileAlterationListenerAdap
                         fileType,
                         f.getAbsolutePath());
                 return;
-            } catch (UncheckedIOException e) {
+            } catch (Exception e) {
                 if (retryCount < NUM_RETRIES) {
                     try {
                         MILLISECONDS.sleep(RETRY_BACKOFF_MS);
@@ -103,13 +105,19 @@ public class BroadcastingRecordStreamListener extends FileAlterationListenerAdap
         }
     }
 
+    private void exposeBlock(@NonNull final File file) {
+        final var block =
+                BlockStreamAccess.BLOCK_STREAM_ACCESS.readBlocks(file.toPath()).getFirst();
+        listeners.forEach(l -> l.onNewBlock(block));
+    }
+
     private void exposeSidecars(final File file) {
-        final var contents = RecordStreamAccess.ensurePresentSidecarFile(file.getAbsolutePath());
+        final var contents = StreamFileAccess.ensurePresentSidecarFile(file.getAbsolutePath());
         contents.getSidecarRecordsList().forEach(sidecar -> listeners.forEach(l -> l.onNewSidecar(sidecar)));
     }
 
     private void exposeItems(final File file) {
-        final var contents = RecordStreamAccess.ensurePresentRecordFile(file.getAbsolutePath());
+        final var contents = StreamFileAccess.ensurePresentRecordFile(file.getAbsolutePath());
         contents.getRecordStreamItemsList().forEach(item -> listeners.forEach(l -> l.onNewItem(item)));
     }
 
@@ -122,6 +130,8 @@ public class BroadcastingRecordStreamListener extends FileAlterationListenerAdap
             return FileType.RECORD_STREAM_FILE;
         } else if (isSidecarFile(file.getName())) {
             return FileType.SIDE_CAR_FILE;
+        } else if (isBlockFile(file)) {
+            return FileType.BLOCK_FILE;
         } else {
             return FileType.OTHER;
         }

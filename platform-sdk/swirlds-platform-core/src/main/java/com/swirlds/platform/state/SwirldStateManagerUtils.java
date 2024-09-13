@@ -52,7 +52,7 @@ public final class SwirldStateManagerUtils {
 
         // Create a fast copy
         final MerkleRoot copy = state.copy();
-        final var platformState = copy.getPlatformState();
+        final var platformState = copy.getWritablePlatformState();
         platformState.setCreationSoftwareVersion(softwareVersion);
 
         // Increment the reference count because this reference becomes the new value
