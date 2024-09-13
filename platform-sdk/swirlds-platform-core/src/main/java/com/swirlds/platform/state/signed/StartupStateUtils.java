@@ -109,9 +109,8 @@ public final class StartupStateUtils {
             }
         }
 
-        final ReservedSignedState genesisState =
-                buildGenesisState(platformContext, configAddressBook, softwareVersion,
-                        (MerkleStateRoot) genesisStateBuilder.get());
+        final ReservedSignedState genesisState = buildGenesisState(
+                platformContext, configAddressBook, softwareVersion, (MerkleStateRoot) genesisStateBuilder.get());
 
         try (genesisState) {
             return copyInitialSignedState(platformContext, genesisState.get());

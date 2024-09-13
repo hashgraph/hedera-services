@@ -352,7 +352,6 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
         return metrics;
     }
 
-
     /**
      * {@inheritDoc}
      */

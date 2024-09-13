@@ -341,7 +341,8 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
                                             new VirtualMap<>(label, keySerializer, valueSerializer, dsBuilder);
                                     return virtualMap;
                                 },
-                                virtualMap -> virtualMap.registerMetrics(stateRoot.getMetrics() != null ? stateRoot.getMetrics() :  metrics));
+                                virtualMap -> virtualMap.registerMetrics(
+                                        stateRoot.getMetrics() != null ? stateRoot.getMetrics() : metrics));
                     }
                 });
 

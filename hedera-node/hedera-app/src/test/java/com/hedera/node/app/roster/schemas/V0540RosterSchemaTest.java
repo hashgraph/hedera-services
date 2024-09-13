@@ -69,8 +69,7 @@ class V0540RosterSchemaTest {
     @DisplayName("For this version, migrate from existing state version returns default.")
     void testMigrateFromNullRosterStateReturnsDefault() {
         when(migrationContext.newStates()).thenReturn(mock(WritableStates.class));
-        when(migrationContext.newStates().getSingleton(ROSTER_STATES_KEY))
-                .thenReturn(rosterState);
+        when(migrationContext.newStates().getSingleton(ROSTER_STATES_KEY)).thenReturn(rosterState);
 
         subject.migrate(migrationContext);
         verify(rosterState, times(1)).put(RosterState.DEFAULT);
@@ -80,8 +79,7 @@ class V0540RosterSchemaTest {
     @DisplayName("Migrate from older state version returns default.")
     void testMigrateFromPreviousStateVersion() {
         when(migrationContext.newStates()).thenReturn(mock(WritableStates.class));
-        when(migrationContext.newStates().getSingleton(ROSTER_STATES_KEY))
-                .thenReturn(rosterState);
+        when(migrationContext.newStates().getSingleton(ROSTER_STATES_KEY)).thenReturn(rosterState);
         when(migrationContext.previousVersion())
                 .thenReturn(
                         SemanticVersion.newBuilder().major(0).minor(53).patch(0).build());

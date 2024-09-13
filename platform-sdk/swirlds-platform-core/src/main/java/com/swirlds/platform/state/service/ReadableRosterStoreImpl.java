@@ -48,6 +48,7 @@ public class ReadableRosterStoreImpl implements ReadableRosterStore {
      * The key-value map of roster hashes and rosters.
      */
     private final ReadableKVState<ProtoBytes, Roster> rosterMap;
+
     public static final String READ_ONLY = "Roster state is read-only";
     /**
      * Create a new {@link ReadableRosterStoreImpl} instance.

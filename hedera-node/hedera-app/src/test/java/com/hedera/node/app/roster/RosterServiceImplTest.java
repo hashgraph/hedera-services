@@ -21,8 +21,8 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
-import com.swirlds.platform.state.service.schemas.V0540RosterSchema;
 import com.swirlds.common.RosterStateId;
+import com.swirlds.platform.state.service.schemas.V0540RosterSchema;
 import com.swirlds.state.spi.Schema;
 import com.swirlds.state.spi.SchemaRegistry;
 import org.assertj.core.api.Assertions;
