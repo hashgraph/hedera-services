@@ -32,7 +32,7 @@ public class RosterUtilsTest {
                 hash.toString());
 
         final Hash anotherHash = RosterUtils.hash(
-                Roster.DEFAULT.copyBuilder().rosters(RosterEntry.DEFAULT).build());
+                Roster.DEFAULT.copyBuilder().rosterEntries(RosterEntry.DEFAULT).build());
         assertEquals(
                 "5d693ce2c5d445194faee6054b4d8fe4a4adc1225cf0afc2ecd7866ea895a0093ea3037951b75ab7340b75699aa1db1d",
                 anotherHash.toString());
