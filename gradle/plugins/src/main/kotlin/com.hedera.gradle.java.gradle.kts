@@ -27,6 +27,7 @@ plugins {
     id("checkstyle")
     id("com.adarshr.test-logger")
     id("com.autonomousapps.dependency-analysis")
+    id("org.gradlex.reproducible-builds")
     id("com.hedera.gradle.lifecycle")
     id("com.hedera.gradle.jpms-modules")
     id("com.hedera.gradle.repositories")
@@ -118,13 +119,6 @@ tasks.processResources { from(writeGitProperties) }
 // ignore the content of 'git.properties' when using a classpath as task input
 normalization.runtimeClasspath { ignore("git.properties") }
 
-tasks.withType<AbstractArchiveTask>().configureEach {
-    isPreserveFileTimestamps = false
-    isReproducibleFileOrder = true
-    filePermissions { unix("0664") }
-    dirPermissions { unix("0775") }
-}
-
 tasks.jar { exclude("**/classpath.index") }
 
 val deactivatedCompileLintOptions =
@@ -157,7 +151,6 @@ tasks.withType<JavaCompile>().configureEach {
     // it otherwise leads to wrong build cache hits.
     inputs.property("fullJavaVersion", currentJavaVersion)
 
-    options.encoding = "UTF-8"
     options.isFork = true // run compiler in separate JVM process (independent of toolchain setup)
     options.compilerArgs.add("-implicit:none")
     options.compilerArgs.add("-Werror")
@@ -188,7 +181,6 @@ tasks.withType<JavaCompile>().configureEach {
 tasks.withType<Javadoc>().configureEach {
     options {
         this as StandardJavadocDocletOptions
-        encoding = "UTF-8"
         tags(
             "apiNote:a:API Note:",
             "implSpec:a:Implementation Requirements:",

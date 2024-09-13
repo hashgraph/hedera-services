@@ -38,4 +38,5 @@ dependencies {
     implementation("org.gradlex:extra-java-module-info:1.8")
     implementation("org.gradlex:jvm-dependency-conflict-resolution:2.1.2")
     implementation("org.gradlex:java-module-dependencies:1.7")
+    implementation("org.gradlex:reproducible-builds:1.0")
 }
