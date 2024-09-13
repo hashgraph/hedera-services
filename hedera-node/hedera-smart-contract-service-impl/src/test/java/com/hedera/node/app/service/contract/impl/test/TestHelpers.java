@@ -313,6 +313,9 @@ public class TestHelpers {
     public static final Key PAUSE_KEY = Key.newBuilder()
             .ed25519(Bytes.fromHex("0505050505050505050505050505050505050505050505050505050505050505"))
             .build();
+    public static final Key METADATA_KEY = Key.newBuilder()
+            .ed25519(Bytes.fromHex("0606060606060606060606060606060606060606060606060606060606060606"))
+            .build();
     public static final Token FUNGIBLE_EVERYTHING_TOKEN = Token.newBuilder()
             .tokenId(FUNGIBLE_TOKEN_ID)
             .name("Fungible Everything Token")
@@ -339,6 +342,35 @@ public class TestHelpers {
             .feeScheduleKey(FEE_SCHEDULE_KEY)
             .pauseKey(PAUSE_KEY)
             .build();
+
+    public static final Token FUNGIBLE_EVERYTHING_TOKEN_V2 = Token.newBuilder()
+            .tokenId(FUNGIBLE_TOKEN_ID)
+            .name("Fungible Everything Token")
+            .symbol("FET")
+            .memo("The memo")
+            .treasuryAccountId(SENDER_ID)
+            .decimals(6)
+            .totalSupply(7777777L)
+            .maxSupply(88888888L)
+            .supplyType(TokenSupplyType.FINITE)
+            .tokenType(TokenType.FUNGIBLE_COMMON)
+            .accountsFrozenByDefault(true)
+            .accountsKycGrantedByDefault(true)
+            .paused(true)
+            .expirationSecond(100)
+            .autoRenewAccountId(SENDER_ID)
+            .autoRenewSeconds(200)
+            .metadata(Bytes.wrap("SOLD"))
+            .customFees(CUSTOM_FEES)
+            .adminKey(ADMIN_KEY)
+            .kycKey(KYC_KEY)
+            .freezeKey(FREEZE_KEY)
+            .wipeKey(WIPE_KEY)
+            .supplyKey(SUPPLY_KEY)
+            .feeScheduleKey(FEE_SCHEDULE_KEY)
+            .pauseKey(PAUSE_KEY)
+            .metadataKey(METADATA_KEY)
+            .build();
     public static final List<Tuple> EXPECTED_FIXED_CUSTOM_FEES = List.of(
             Tuple.of(2L, headlongAddressOf(ZERO_TOKEN_ID), true, false, headlongAddressOf(SENDER_ID)),
             Tuple.of(3L, headlongAddressOf(FUNGIBLE_TOKEN_ID), false, false, headlongAddressOf(SENDER_ID)));
@@ -356,6 +388,16 @@ public class TestHelpers {
             typedKeyTupleFor(TokenKeyType.SUPPLY_KEY.bigIntegerValue(), SUPPLY_KEY),
             typedKeyTupleFor(TokenKeyType.FEE_SCHEDULE_KEY.bigIntegerValue(), FEE_SCHEDULE_KEY),
             typedKeyTupleFor(TokenKeyType.PAUSE_KEY.bigIntegerValue(), PAUSE_KEY));
+
+    public static final List<Tuple> EXPECTED_KEYLIST_V2 = List.of(
+            typedKeyTupleFor(TokenKeyType.ADMIN_KEY.bigIntegerValue(), ADMIN_KEY),
+            typedKeyTupleFor(TokenKeyType.KYC_KEY.bigIntegerValue(), KYC_KEY),
+            typedKeyTupleFor(TokenKeyType.FREEZE_KEY.bigIntegerValue(), FREEZE_KEY),
+            typedKeyTupleFor(TokenKeyType.WIPE_KEY.bigIntegerValue(), WIPE_KEY),
+            typedKeyTupleFor(TokenKeyType.SUPPLY_KEY.bigIntegerValue(), SUPPLY_KEY),
+            typedKeyTupleFor(TokenKeyType.FEE_SCHEDULE_KEY.bigIntegerValue(), FEE_SCHEDULE_KEY),
+            typedKeyTupleFor(TokenKeyType.PAUSE_KEY.bigIntegerValue(), PAUSE_KEY),
+            typedKeyTupleFor(TokenKeyType.METADATA_KEY.bigIntegerValue(), METADATA_KEY));
 
     public static final List<Tuple> EXPECTE_DEFAULT_KEYLIST = List.of(
             typedKeyTupleFor(TokenKeyType.ADMIN_KEY.bigIntegerValue(), Key.DEFAULT),
