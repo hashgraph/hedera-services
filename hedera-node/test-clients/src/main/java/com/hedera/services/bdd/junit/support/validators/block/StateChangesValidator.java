@@ -33,6 +33,8 @@ import static com.hedera.services.bdd.spec.TargetNetworkType.SUBPROCESS_NETWORK;
 import static com.swirlds.platform.state.GenesisStateBuilder.initGenesisPlatformState;
 import static com.swirlds.platform.state.service.PlatformStateService.PLATFORM_STATE_SERVICE;
 import static java.util.Objects.requireNonNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.hedera.hapi.block.stream.Block;
 import com.hedera.hapi.block.stream.BlockItem;
@@ -51,6 +53,7 @@ import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.hapi.node.state.primitives.ProtoLong;
 import com.hedera.hapi.node.state.primitives.ProtoString;
+import com.hedera.hapi.platform.state.PlatformState;
 import com.hedera.node.app.blocks.BlockStreamManager;
 import com.hedera.node.app.blocks.BlockStreamService;
 import com.hedera.node.app.blocks.StreamingTreeHasher;
@@ -146,7 +149,6 @@ public class StateChangesValidator implements BlockStreamValidator {
     private static final Pattern NUMBER_PATTERN = Pattern.compile("\\d+");
     private static final Pattern STATE_ROOT_PATTERN = Pattern.compile(".*MerkleStateRoot.*/.*\\s+(.+)");
     private static final Pattern CHILD_STATE_PATTERN = Pattern.compile("\\s+\\d+ \\w+\\s+(\\S+)\\s+.+\\s+(.+)");
-    private static final Bytes INITIAL_BLOCK_HASH = Bytes.wrap(new byte[HASH_SIZE]);
 
     private final Path pathToNode0SwirldsLog;
     private final Bytes expectedRootHash;
@@ -166,11 +168,40 @@ public class StateChangesValidator implements BlockStreamValidator {
                 Bytes.fromHex(
                         "49d9954a2e5462432e2190cdf0bcb7ca07c137c81371a66b4d9165730c33cc14dfcb53ab79914bfc0fdf6d7423569663"),
                 node0Dir.resolve("output/swirlds.log"),
-                node0Dir.resolve("config.txt"),
+                node0Dir.resolve("genesis-config.txt"),
                 node0Dir.resolve("data/config/application.properties"));
         final var blocks =
                 BlockStreamAccess.BLOCK_STREAM_ACCESS.readBlocks(node0Dir.resolve("data/block-streams/block-0.0.3"));
-        validator.validateBlocks(blocks);
+        //                validator.validateBlocks(blocks);
+        final var num = 1802L;
+        for (final var block : blocks) {
+            if (block.items().getFirst().blockHeaderOrThrow().number() == num) {
+                System.out.println("--- Block " + num + " State Changes ---");
+                for (final var item : block.items()) {
+                    if (item.hasStateChanges()) {
+                        System.out.println(item.stateChangesOrThrow());
+                        final var changes = item.stateChangesOrThrow();
+                        if (changes.stateChanges().getLast().hasSingletonUpdate()) {
+                            if (changes.stateChanges()
+                                    .getLast()
+                                    .singletonUpdateOrThrow()
+                                    .hasBlockStreamInfoValue()) {
+                                final var info = changes.stateChanges()
+                                        .getFirst()
+                                        .singletonUpdateOrThrow()
+                                        .blockStreamInfoValueOrThrow();
+                                System.out.println("Start of state hash  :: " + info.startOfBlockStateHash());
+                                System.out.println("Num output leaves    :: " + info.numPrecedingOutputItems());
+                                System.out.println("Input tree root hash :: " + info.inputTreeRootHash());
+                            }
+                        }
+                    } else if (item.hasBlockProof()) {
+                        System.out.println("Previous block hash  :: "
+                                + item.blockProofOrThrow().previousBlockRootHash());
+                    }
+                }
+            }
+        }
     }
 
     public static final Factory FACTORY = new Factory() {
@@ -208,10 +239,9 @@ public class StateChangesValidator implements BlockStreamValidator {
             throw new IllegalArgumentException("Cannot validate state changes for an embedded network");
         }
         try {
-            final var genesisConfigTxt = Files.createTempFile(Paths.get("."), "config", ".txt");
-            Files.writeString(genesisConfigTxt, subProcessNetwork.genesisConfigTxt());
-            genesisConfigTxt.toFile().deleteOnExit();
             final var node0 = subProcessNetwork.getRequiredNode(byNodeId(0));
+            final var genesisConfigTxt = node0.metadata().workingDirOrThrow().resolve("genesis-config.txt");
+            Files.writeString(genesisConfigTxt, subProcessNetwork.genesisConfigTxt());
             return new StateChangesValidator(
                     rootHash,
                     node0.getExternalPath(SWIRLDS_LOG),
@@ -254,13 +284,17 @@ public class StateChangesValidator implements BlockStreamValidator {
                 this.state.getWritablePlatformState(),
                 addressBook,
                 currentVersion);
-
         final var stateToBeCopied = state;
         state = state.copy();
         // get the state hash before applying the state changes from current block
         this.genesisStateHash = CRYPTO.digestTreeSync(stateToBeCopied);
         logger.info("Genesis state hash: {}", genesisStateHash);
         logger.info("Hashes By Name {}", hashesFor(stateToBeCopied));
+        logger.info(
+                "Platform state {}",
+                state.getReadableStates(PlatformStateService.NAME)
+                        .<PlatformState>getSingleton("PLATFORM_STATE")
+                        .get());
 
         migrator.doMigrations(
                 state,
@@ -293,10 +327,14 @@ public class StateChangesValidator implements BlockStreamValidator {
             }
             final StreamingTreeHasher inputTreeHasher = new NaiveStreamingTreeHasher();
             final StreamingTreeHasher outputTreeHasher = new NaiveStreamingTreeHasher();
+            int numOutputLeaves = 0;
             for (final var item : block.items()) {
                 servicesWritten.clear();
                 hashInputOutputTree(item, inputTreeHasher, outputTreeHasher);
 
+                if (item.hasTransactionResult() || item.hasTransactionOutput() || item.hasStateChanges()) {
+                    numOutputLeaves++;
+                }
                 if (item.hasStateChanges()) {
                     final var stateChanges = item.stateChangesOrThrow();
                     if (genesisMigrationTimestamp == null) {
@@ -310,19 +348,25 @@ public class StateChangesValidator implements BlockStreamValidator {
                 servicesWritten.forEach(name -> ((CommittableWritableStates) state.getWritableStates(name)).commit());
             }
             final var lastBlockItem = block.items().getLast();
-            Assertions.assertTrue(lastBlockItem.hasBlockProof());
-            Assertions.assertEquals(
-                    lastBlockItem.blockProofOrThrow().previousBlockRootHash(),
+            assertTrue(lastBlockItem.hasBlockProof());
+            final var blockProof = lastBlockItem.blockProofOrThrow();
+            assertEquals(
                     previousBlockHash,
-                    "Previous block hash mismatch for block ");
+                    blockProof.previousBlockRootHash(),
+                    "Previous block hash mismatch for block " + blockProof.block());
 
-            final var currentBlockHash =
-                    getBlockHash(startOfStateHash, previousBlockHash, inputTreeHasher, outputTreeHasher);
-            final var expectedBlockProofBuilder = BlockProof.newBuilder()
-                    .previousBlockRootHash(previousBlockHash)
-                    .startOfBlockStateRootHash(startOfStateHash);
-            validateBlockProof(lastBlockItem.blockProofOrThrow(), currentBlockHash, expectedBlockProofBuilder);
-            previousBlockHash = currentBlockHash;
+            final var expectedBlockHash =
+                    computeBlockHash(startOfStateHash, previousBlockHash, inputTreeHasher, outputTreeHasher);
+            //            if (true || blockProof.block() == 246) {
+            if (true) {
+                System.out.println("Start of state hash  :: " + startOfStateHash);
+                System.out.println("Num output leaves    :: " + (numOutputLeaves - 1));
+                System.out.println(
+                        "Input tree root hash :: " + inputTreeHasher.rootHash().join());
+                System.out.println("Previous block hash  :: " + previousBlockHash);
+            }
+            validateBlockProof(blockProof, expectedBlockHash);
+            previousBlockHash = expectedBlockHash;
         }
         logger.info("Summary of changes by service:\n{}", stateChangesSummary);
         CRYPTO.digestTreeSync(state);
@@ -363,7 +407,7 @@ public class StateChangesValidator implements BlockStreamValidator {
         }
     }
 
-    private Bytes getBlockHash(
+    private Bytes computeBlockHash(
             final Bytes startOfBlockStateHash,
             final Bytes previousBlockHash,
             final StreamingTreeHasher inputTreeHasher,
@@ -376,27 +420,17 @@ public class StateChangesValidator implements BlockStreamValidator {
         return combine(leftHash, rightHash);
     }
 
-    private void validateBlockProof(
-            final BlockProof blockProof,
-            final Bytes currentBlockHash,
-            final BlockProof.Builder expectedBlockProofBuilder) {
-        // validate the signature of the block proof is the expected
-        final var actualSignature = blockProof.blockSignature();
-        var blockHash = currentBlockHash;
-
-        final var siblingHashes = blockProof.siblingHashes();
+    private void validateBlockProof(@NonNull final BlockProof proof, @NonNull final Bytes blockHash) {
+        var provenHash = blockHash;
+        final var siblingHashes = proof.siblingHashes();
         if (!siblingHashes.isEmpty()) {
             for (final var siblingHash : siblingHashes) {
-                blockHash = combine(blockHash, siblingHash.siblingHash());
+                // Our indirect proofs always provide right sibling hashes
+                provenHash = combine(provenHash, siblingHash.siblingHash());
             }
         }
-        final var computedSignature = Bytes.wrap(noThrowSha384HashOf(blockHash.toByteArray()));
-        expectedBlockProofBuilder
-                .blockSignature(computedSignature)
-                .siblingHashes(siblingHashes)
-                .block(blockProof.block());
-        //        logger.info("BlockProof ACTUAL : {}, EXPECTED: {} ", blockProof, expectedBlockProofBuilder.build());
-        Assertions.assertEquals(computedSignature, actualSignature, "Block proof signature mismatch for " + blockProof);
+        final var expectedSignature = Bytes.wrap(noThrowSha384HashOf(provenHash.toByteArray()));
+        assertEquals(expectedSignature, proof.blockSignature(), "Signature mismatch for " + proof);
     }
 
     private Map<String, String> hashesFor(@NonNull final MerkleStateRoot state) {

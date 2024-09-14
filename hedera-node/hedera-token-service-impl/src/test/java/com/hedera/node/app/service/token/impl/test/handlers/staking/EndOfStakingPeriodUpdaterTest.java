@@ -38,6 +38,7 @@ import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableNetworkStakingRewardsStore;
 import com.hedera.node.app.service.token.impl.WritableStakingInfoStore;
 import com.hedera.node.app.service.token.impl.handlers.staking.EndOfStakingPeriodUpdater;
+import com.hedera.node.app.service.token.impl.handlers.staking.EndOfStakingPeriodUtils;
 import com.hedera.node.app.service.token.impl.handlers.staking.StakingRewardsHelper;
 import com.hedera.node.app.service.token.impl.test.handlers.util.TestStoreFactory;
 import com.hedera.node.app.service.token.records.NodeStakeUpdateStreamBuilder;
@@ -394,7 +395,8 @@ public class EndOfStakingPeriodUpdaterTest {
         final var expectedMidnightTime =
                 Timestamp.newBuilder().seconds(1653609599L).nanos(expectedNanos).build();
 
-        assertThat(subject.lastInstantOfPreviousPeriodFor(consensusTime)).isEqualTo(expectedMidnightTime);
+        assertThat(EndOfStakingPeriodUtils.lastInstantOfPreviousPeriodFor(consensusTime))
+                .isEqualTo(expectedMidnightTime);
     }
 
     private void commonSetup(

@@ -50,6 +50,7 @@ import com.hedera.node.app.records.BlockRecordManager;
 import com.hedera.node.app.service.schedule.ScheduleService;
 import com.hedera.node.app.service.schedule.WritableScheduleStore;
 import com.hedera.node.app.service.token.TokenService;
+import com.hedera.node.app.service.token.impl.WritableNetworkStakingRewardsStore;
 import com.hedera.node.app.service.token.impl.WritableStakingInfoStore;
 import com.hedera.node.app.service.token.impl.handlers.staking.StakeInfoHelper;
 import com.hedera.node.app.service.token.impl.handlers.staking.StakePeriodManager;
@@ -351,11 +352,15 @@ public class HandleWorkflow {
                     systemSetup.externalizeInitSideEffects(
                             userTxn.tokenContextImpl(), exchangeRateManager.exchangeRates());
                 } else if (userTxn.type() == POST_UPGRADE_TRANSACTION) {
-                    stakeInfoHelper.adjustPostUpgradeStakes(
-                            new WritableStakingInfoStore(userTxn.stack().getWritableStates(TokenService.NAME)),
+                    final var streamBuilder = stakeInfoHelper.adjustPostUpgradeStakes(
+                            userTxn.tokenContextImpl(),
                             networkInfo,
-                            userTxn.config());
-                    userTxn.stack().commitSystemStateChanges();
+                            userTxn.config(),
+                            new WritableStakingInfoStore(userTxn.stack().getWritableStates(TokenService.NAME)),
+                            new WritableNetworkStakingRewardsStore(
+                                    userTxn.stack().getWritableStates(TokenService.NAME)));
+                    streamBuilder.exchangeRate(exchangeRateManager.exchangeRates());
+                    userTxn.stack().commitTransaction(streamBuilder);
                 }
                 updateNodeStakes(userTxn);
                 if (blockStreamConfig.streamRecords()) {

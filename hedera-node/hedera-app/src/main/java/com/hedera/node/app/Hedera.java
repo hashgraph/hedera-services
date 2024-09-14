@@ -30,10 +30,10 @@ import static com.hedera.node.app.statedumpers.StateDumper.dumpModChildrenFrom;
 import static com.hedera.node.app.util.HederaAsciiArt.HEDERA;
 import static com.hedera.node.app.workflows.handle.metric.UnavailableMetrics.UNAVAILABLE_METRICS;
 import static com.swirlds.platform.state.service.PlatformStateService.PLATFORM_STATE_SERVICE;
+import static com.swirlds.platform.state.service.schemas.V0540PlatformStateSchema.PLATFORM_STATE_KEY;
 import static com.swirlds.platform.system.InitTrigger.EVENT_STREAM_RECOVERY;
 import static com.swirlds.platform.system.InitTrigger.GENESIS;
 import static com.swirlds.platform.system.InitTrigger.RECONNECT;
-import static com.swirlds.platform.system.status.PlatformStatus.STARTING_UP;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.CompletableFuture.completedFuture;
@@ -49,8 +49,9 @@ import com.hedera.hapi.platform.state.PlatformState;
 import com.hedera.hapi.util.HapiUtils;
 import com.hedera.node.app.blocks.BlockStreamManager;
 import com.hedera.node.app.blocks.BlockStreamService;
-import com.hedera.node.app.blocks.StartingStateInfo;
+import com.hedera.node.app.blocks.InitialStateHash;
 import com.hedera.node.app.blocks.StreamingTreeHasher;
+import com.hedera.node.app.blocks.impl.BlockStreamManagerImpl;
 import com.hedera.node.app.blocks.impl.BoundaryStateChangeListener;
 import com.hedera.node.app.blocks.impl.KVStateChangeListener;
 import com.hedera.node.app.config.BootstrapConfigProviderImpl;
@@ -113,7 +114,6 @@ import com.swirlds.platform.state.MerkleRoot;
 import com.swirlds.platform.state.MerkleStateRoot;
 import com.swirlds.platform.state.service.PlatformStateService;
 import com.swirlds.platform.state.service.ReadablePlatformStateStore;
-import com.swirlds.platform.state.service.schemas.V0540PlatformStateSchema;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.Round;
@@ -121,7 +121,6 @@ import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.SwirldMain;
 import com.swirlds.platform.system.events.Event;
 import com.swirlds.platform.system.state.notifications.StateHashedListener;
-import com.swirlds.platform.system.status.PlatformStatus;
 import com.swirlds.platform.system.transaction.Transaction;
 import com.swirlds.state.State;
 import com.swirlds.state.StateChangeListener;
@@ -255,10 +254,6 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener {
      * basis for applying consensus transactions.
      */
     private HederaInjectionComponent daggerApp;
-    /**
-     * The latest platform status we have received via notification.
-     */
-    private PlatformStatus platformStatus = STARTING_UP;
 
     private Metrics metrics;
 
@@ -285,13 +280,12 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener {
      */
     private final BiConsumer<Round, State> onSealConsensusRound;
     /**
-     * The hash of the state when the node started with genesis or restart or reconnect trigger. This is needed to construct
-     * {@link com.hedera.hapi.block.stream.BlockProof} for the first round after node started.
+     * Once set, a future that resolves to the hash of the state used to initialize the application. This is known
+     * immediately at genesis or on restart from a saved state; during reconnect, it is known when reconnect
+     * completes. Used to inject the start-of-state hash to the {@link BlockStreamManagerImpl}.
      */
-    private Hash startingStateHash;
-
     @Nullable
-    private CompletableFuture<Bytes> reconnectStartingStateHash;
+    private CompletableFuture<Bytes> initialStateHashFuture;
 
     /*==================================================================================================================
     *
@@ -422,7 +416,7 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener {
 
     @Override
     public void notify(@NonNull final PlatformStatusChangeNotification notification) {
-        platformStatus = notification.getNewStatus();
+        final var platformStatus = notification.getNewStatus();
         logger.info("HederaNode#{} is {}", platform.getSelfId(), platformStatus.name());
         switch (platformStatus) {
             case ACTIVE -> startGrpcServer();
@@ -446,6 +440,7 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener {
 
     /**
      * Invoked by {@link MerkleStateRoot} when it needs to ensure the {@link PlatformStateService} is initialized.
+     *
      * @param state the root state to be initialized
      * @return the state changes after initialization
      */
@@ -520,16 +515,10 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener {
         }
         try {
             migrateAndInitialize(state, deserializedVersion, trigger, metrics);
-            resetListeners();
         } catch (final Throwable t) {
             logger.fatal("Critical failure during initialization", t);
             throw new IllegalStateException("Critical failure during initialization", t);
         }
-    }
-
-    private void resetListeners() {
-        kvStateChangeListener.reset();
-        boundaryStateChangeListener.reset();
     }
 
     /**
@@ -561,7 +550,6 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener {
                         .orElse(null)),
                 () -> HapiUtils.toString(version.getPbjSemanticVersion()),
                 () -> trigger);
-        logger.info("StartingStateHash : {}", startingStateHash);
         final var selfNodeInfo = extractSelfNodeInfo(platform);
         final var networkInfo = new UnavailableLedgerIdNetworkInfo(selfNodeInfo, platform);
         final List<StateChanges.Builder> migrationStateChanges = new ArrayList<>();
@@ -571,7 +559,6 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener {
             }
             migrationStateChanges.addAll(merkleStateRoot.platformStateInitChangesOrThrow());
         }
-
         // (FUTURE) In principle, the FileService could actually change the active configuration during a
         // migration, which implies we should be passing the config provider and not a static configuration
         // here; but this is a currently unneeded affordance
@@ -583,8 +570,13 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener {
                 configProvider.getConfiguration(),
                 networkInfo,
                 metrics));
+        kvStateChangeListener.reset();
+        boundaryStateChangeListener.reset();
         if (isUpgrade && !trigger.equals(RECONNECT)) {
             unmarkMigrationRecordsStreamed(state);
+            migrationStateChanges.add(
+                    StateChanges.newBuilder().stateChanges(boundaryStateChangeListener.allStateChanges()));
+            boundaryStateChangeListener.reset();
         }
         logger.info("Migration complete");
         return migrationStateChanges;
@@ -774,6 +766,15 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener {
         }
     }
 
+    /**
+     * Called to set the starting state hash after genesis or restart.
+     * @param stateHash the starting state hash
+     */
+    public void setInitialStateHash(@NonNull final Hash stateHash) {
+        requireNonNull(stateHash);
+        initialStateHashFuture = completedFuture(stateHash.getBytes());
+    }
+
     /*==================================================================================================================
     *
     * Workflows for use by embedded Hedera
@@ -841,24 +842,24 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener {
             notifications.unregister(ReconnectCompleteListener.class, daggerApp.reconnectListener());
             notifications.unregister(StateWriteToDiskCompleteListener.class, daggerApp.stateWriteToDiskListener());
             if (blockStreamEnabled) {
-                logger.info("Unregistering block stream manager");
                 notifications.unregister(StateHashedListener.class, daggerApp.blockStreamManager());
                 daggerApp.tssBaseService().unregisterLedgerSignatureConsumer(daggerApp.blockStreamManager());
             }
         }
-        final StartingStateInfo stateHashInfo;
-        final var roundNum = state.getReadableStates(PlatformStateService.NAME)
-                .<PlatformState>getSingleton(V0540PlatformStateSchema.PLATFORM_STATE_KEY)
-                .get()
-                .consensusSnapshot()
-                .round();
         if (trigger == RECONNECT) {
-            reconnectStartingStateHash = new CompletableFuture<>();
+            // During a reconnect, we wait for reconnect to complete successfully and then set the initial hash
+            // from the immutable state in the ReconnectCompleteNotification
+            initialStateHashFuture = new CompletableFuture<>();
             notifications.register(ReconnectCompleteListener.class, new ReadReconnectStartingStateHash());
-            stateHashInfo = new StartingStateInfo(reconnectStartingStateHash, roundNum);
-        } else {
-            stateHashInfo = new StartingStateInfo(completedFuture(startingStateHash.getBytes()), roundNum);
         }
+        // For other triggers the initial state hash must have been set already
+        requireNonNull(initialStateHashFuture);
+        final var roundNum = requireNonNull(state.getReadableStates(PlatformStateService.NAME)
+                        .<PlatformState>getSingleton(PLATFORM_STATE_KEY)
+                        .get())
+                .consensusSnapshotOrThrow()
+                .round();
+        final var initialStateHash = new InitialStateHash(initialStateHashFuture, roundNum);
         // Fully qualified so as to not confuse javadoc
         daggerApp = com.hedera.node.app.DaggerHederaInjectionComponent.builder()
                 .configProviderImpl(configProvider)
@@ -879,8 +880,7 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener {
                 .boundaryStateChangeListener(boundaryStateChangeListener)
                 .migrationStateChanges(migrationStateChanges)
                 .tssBaseService(tssBaseServiceSupplier.get())
-                // TODO: Do it for Restart and Reconnect triggers
-                .stateHashInfo(stateHashInfo)
+                .initialStateHash(initialStateHash)
                 .build();
         // Initialize infrastructure for fees, exchange rates, and throttles from the working state
         daggerApp.initializer().accept(state);
@@ -888,7 +888,6 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener {
         notifications.register(ReconnectCompleteListener.class, daggerApp.reconnectListener());
         notifications.register(StateWriteToDiskCompleteListener.class, daggerApp.stateWriteToDiskListener());
         if (blockStreamEnabled) {
-            logger.info("Registering block stream manager");
             notifications.register(StateHashedListener.class, daggerApp.blockStreamManager());
             daggerApp
                     .blockStreamManager()
@@ -910,6 +909,7 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener {
     /**
      * Given the {@link BlockStreamInfo} context from a {@link State}, infers the block hash of the
      * last block that was incorporated in this state.
+     *
      * @param state the state to use
      * @return the inferred block hash
      */
@@ -938,6 +938,7 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener {
      * Given a {@link BlockStreamInfo} context, computes the output tree root hash that must have been
      * computed at the end of the block that the context describes, assuming the final output block item
      * was the state change that put the context into the state.
+     *
      * @param blockStreamInfo the context to use
      * @return the inferred output tree root hash
      */
@@ -1048,16 +1049,11 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener {
         return instantSource == InstantSource.system();
     }
 
-    public void setStartingStateHash(final Hash stateHash) {
-        System.out.println("Setting starting state hash to " + stateHash);
-        startingStateHash = stateHash;
-    }
-
     private class ReadReconnectStartingStateHash implements ReconnectCompleteListener {
         @Override
         public void notify(final ReconnectCompleteNotification notification) {
-            reconnectStartingStateHash.complete(
-                    notification.getState().getHash().getBytes());
+            requireNonNull(initialStateHashFuture)
+                    .complete(requireNonNull(notification.getState().getHash()).getBytes());
         }
     }
 }

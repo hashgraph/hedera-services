@@ -40,7 +40,7 @@ import com.hedera.hapi.platform.state.PlatformState;
 import com.hedera.node.app.blocks.BlockItemWriter;
 import com.hedera.node.app.blocks.BlockStreamManager;
 import com.hedera.node.app.blocks.BlockStreamService;
-import com.hedera.node.app.blocks.StartingStateInfo;
+import com.hedera.node.app.blocks.InitialStateHash;
 import com.hedera.node.app.blocks.StreamingTreeHasher;
 import com.hedera.node.app.records.impl.BlockRecordInfoUtils;
 import com.hedera.node.app.tss.TssBaseService;
@@ -142,7 +142,7 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
             @NonNull final ConfigProvider configProvider,
             @NonNull final TssBaseService tssBaseService,
             @NonNull final BoundaryStateChangeListener boundaryStateChangeListener,
-            @NonNull final StartingStateInfo stateHashInfo) {
+            @NonNull final InitialStateHash stateHashInfo) {
         this.writerSupplier = requireNonNull(writerSupplier);
         this.executor = requireNonNull(executor);
         this.tssBaseService = requireNonNull(tssBaseService);
@@ -153,8 +153,8 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
         this.roundsPerBlock = config.getConfigData(BlockStreamConfig.class).roundsPerBlock();
         this.blockHashManager = new BlockHashManager(config);
         this.runningHashManager = new RunningHashManager();
-        roundHashes.put(stateHashInfo.roundNum(), stateHashInfo.stateHash());
-        log.info("BlockStreamManager roundhashes put {} with {}", stateHashInfo.roundNum(), stateHashInfo.stateHash());
+        roundHashes.put(stateHashInfo.roundNum(), stateHashInfo.hashFuture());
+        log.info("Initialized BlockStreamManager from round {}", stateHashInfo.roundNum());
     }
 
     @Override

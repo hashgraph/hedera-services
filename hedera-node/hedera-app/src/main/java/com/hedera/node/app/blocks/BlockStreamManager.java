@@ -40,9 +40,9 @@ public interface BlockStreamManager extends BlockRecordInfo, BiConsumer<byte[], 
     Bytes ZERO_BLOCK_HASH = Bytes.wrap(new byte[48]);
 
     /**
-     * Initializes the block stream manager after a restart with the hash of the last block incorporated
-     * in the state used in the restart. If the restart was from genesis, this hash should be the
-     * {@link #ZERO_BLOCK_HASH}.
+     * Initializes the block stream manager after a restart or during reconnect with the hash of the last block
+     * incorporated in the state used in the restart or reconnect. (At genesis, this hash should be the
+     * {@link #ZERO_BLOCK_HASH}.)
      * @param blockHash the hash of the last block
      */
     void initLastBlockHash(@NonNull Bytes blockHash);

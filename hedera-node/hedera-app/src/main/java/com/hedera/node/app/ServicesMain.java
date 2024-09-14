@@ -250,7 +250,7 @@ public class ServicesMain implements SwirldMain {
                 .withRoster(createRoster(addressBook))
                 .withKeysAndCerts(keysAndCerts);
 
-        hedera.setStartingStateHash(stateHash);
+        hedera.setInitialStateHash(stateHash);
         // IMPORTANT: A surface-level reading of this method will undersell the centrality
         // of the Hedera instance. It is actually omnipresent throughout both the startup
         // and runtime phases of the application.
