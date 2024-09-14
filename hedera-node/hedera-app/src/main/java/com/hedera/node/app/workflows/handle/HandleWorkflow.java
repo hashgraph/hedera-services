@@ -202,6 +202,7 @@ public class HandleWorkflow {
         cacheWarmer.warm(state, round);
         final var blockStreamConfig = configProvider.getConfiguration().getConfigData(BlockStreamConfig.class);
         if (blockStreamConfig.streamBlocks()) {
+            blockStreamManager.startRound(round, state);
             if (!migrationStateChanges.isEmpty()) {
                 migrationStateChanges.forEach(builder -> blockStreamManager.writeItem(BlockItem.newBuilder()
                         .stateChanges(builder.consensusTimestamp(blockStreamManager.blockTimestamp())
@@ -209,7 +210,6 @@ public class HandleWorkflow {
                         .build()));
                 migrationStateChanges.clear();
             }
-            blockStreamManager.startRound(round, state);
         }
         recordCache.resetRoundReceipts();
         try {

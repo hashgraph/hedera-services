@@ -536,7 +536,8 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
     public void notify(final StateHashedNotification notification) {
         log.info(
                 "StateHashedNotification Received : roundNumber: {}, hash: {} ",
-                notification.round(), notification.hash());
+                notification.round(),
+                notification.hash());
         roundHashes.get(notification.round()).complete(notification.hash().getBytes());
     }
 }
