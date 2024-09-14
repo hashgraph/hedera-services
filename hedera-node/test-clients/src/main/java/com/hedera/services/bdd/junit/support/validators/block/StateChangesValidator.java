@@ -166,42 +166,13 @@ public class StateChangesValidator implements BlockStreamValidator {
                 .normalize();
         final var validator = new StateChangesValidator(
                 Bytes.fromHex(
-                        "49d9954a2e5462432e2190cdf0bcb7ca07c137c81371a66b4d9165730c33cc14dfcb53ab79914bfc0fdf6d7423569663"),
+                        "f31a2b563cbe3fef1242bd94bc610fc5134267faa7f3fefc5de176cc1f4032f28d5b27f084bbc388c5a766e4d057acdd"),
                 node0Dir.resolve("output/swirlds.log"),
                 node0Dir.resolve("genesis-config.txt"),
                 node0Dir.resolve("data/config/application.properties"));
         final var blocks =
                 BlockStreamAccess.BLOCK_STREAM_ACCESS.readBlocks(node0Dir.resolve("data/block-streams/block-0.0.3"));
-        //                validator.validateBlocks(blocks);
-        final var num = 1802L;
-        for (final var block : blocks) {
-            if (block.items().getFirst().blockHeaderOrThrow().number() == num) {
-                System.out.println("--- Block " + num + " State Changes ---");
-                for (final var item : block.items()) {
-                    if (item.hasStateChanges()) {
-                        System.out.println(item.stateChangesOrThrow());
-                        final var changes = item.stateChangesOrThrow();
-                        if (changes.stateChanges().getLast().hasSingletonUpdate()) {
-                            if (changes.stateChanges()
-                                    .getLast()
-                                    .singletonUpdateOrThrow()
-                                    .hasBlockStreamInfoValue()) {
-                                final var info = changes.stateChanges()
-                                        .getFirst()
-                                        .singletonUpdateOrThrow()
-                                        .blockStreamInfoValueOrThrow();
-                                System.out.println("Start of state hash  :: " + info.startOfBlockStateHash());
-                                System.out.println("Num output leaves    :: " + info.numPrecedingOutputItems());
-                                System.out.println("Input tree root hash :: " + info.inputTreeRootHash());
-                            }
-                        }
-                    } else if (item.hasBlockProof()) {
-                        System.out.println("Previous block hash  :: "
-                                + item.blockProofOrThrow().previousBlockRootHash());
-                    }
-                }
-            }
-        }
+        validator.validateBlocks(blocks);
     }
 
     public static final Factory FACTORY = new Factory() {
@@ -357,14 +328,6 @@ public class StateChangesValidator implements BlockStreamValidator {
 
             final var expectedBlockHash =
                     computeBlockHash(startOfStateHash, previousBlockHash, inputTreeHasher, outputTreeHasher);
-            //            if (true || blockProof.block() == 246) {
-            if (true) {
-                System.out.println("Start of state hash  :: " + startOfStateHash);
-                System.out.println("Num output leaves    :: " + (numOutputLeaves - 1));
-                System.out.println(
-                        "Input tree root hash :: " + inputTreeHasher.rootHash().join());
-                System.out.println("Previous block hash  :: " + previousBlockHash);
-            }
             validateBlockProof(blockProof, expectedBlockHash);
             previousBlockHash = expectedBlockHash;
         }
