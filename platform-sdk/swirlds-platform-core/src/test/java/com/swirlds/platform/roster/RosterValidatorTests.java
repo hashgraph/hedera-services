@@ -43,7 +43,7 @@ public class RosterValidatorTests {
         final Exception ex = assertThrows(
                 InvalidRosterException.class,
                 () -> RosterValidator.validate(Roster.newBuilder()
-                        .rosters(
+                        .rosterEntries(
                                 RosterEntry.newBuilder()
                                         .nodeId(1)
                                         .weight(0)
@@ -83,7 +83,7 @@ public class RosterValidatorTests {
         final Exception ex = assertThrows(
                 InvalidRosterException.class,
                 () -> RosterValidator.validate(Roster.newBuilder()
-                        .rosters(
+                        .rosterEntries(
                                 RosterEntry.newBuilder()
                                         .nodeId(1)
                                         .weight(0)
@@ -123,7 +123,7 @@ public class RosterValidatorTests {
         final Exception ex = assertThrows(
                 InvalidRosterException.class,
                 () -> RosterValidator.validate(Roster.newBuilder()
-                        .rosters(
+                        .rosterEntries(
                                 RosterEntry.newBuilder()
                                         .nodeId(1)
                                         .weight(1)
@@ -163,7 +163,7 @@ public class RosterValidatorTests {
         final Exception ex = assertThrows(
                 InvalidRosterException.class,
                 () -> RosterValidator.validate(Roster.newBuilder()
-                        .rosters(
+                        .rosterEntries(
                                 RosterEntry.newBuilder()
                                         .nodeId(1)
                                         .weight(1)
@@ -203,7 +203,7 @@ public class RosterValidatorTests {
         final Exception ex = assertThrows(
                 InvalidRosterException.class,
                 () -> RosterValidator.validate(Roster.newBuilder()
-                        .rosters(
+                        .rosterEntries(
                                 RosterEntry.newBuilder()
                                         .nodeId(1)
                                         .weight(1)
@@ -239,7 +239,7 @@ public class RosterValidatorTests {
         final Exception ex = assertThrows(
                 InvalidRosterException.class,
                 () -> RosterValidator.validate(Roster.newBuilder()
-                        .rosters(
+                        .rosterEntries(
                                 RosterEntry.newBuilder()
                                         .nodeId(1)
                                         .weight(1)
@@ -281,7 +281,7 @@ public class RosterValidatorTests {
         final Exception ex = assertThrows(
                 InvalidRosterException.class,
                 () -> RosterValidator.validate(Roster.newBuilder()
-                        .rosters(
+                        .rosterEntries(
                                 RosterEntry.newBuilder()
                                         .nodeId(1)
                                         .weight(1)
@@ -324,7 +324,7 @@ public class RosterValidatorTests {
         final Exception ex = assertThrows(
                 InvalidRosterException.class,
                 () -> RosterValidator.validate(Roster.newBuilder()
-                        .rosters(
+                        .rosterEntries(
                                 RosterEntry.newBuilder()
                                         .nodeId(1)
                                         .weight(1)
@@ -364,7 +364,7 @@ public class RosterValidatorTests {
         final Exception ex = assertThrows(
                 InvalidRosterException.class,
                 () -> RosterValidator.validate(Roster.newBuilder()
-                        .rosters(
+                        .rosterEntries(
                                 RosterEntry.newBuilder()
                                         .nodeId(1)
                                         .weight(1)
@@ -401,10 +401,9 @@ public class RosterValidatorTests {
                 ex.getMessage());
     }
 
-    @Test
-    void validTest() {
-        RosterValidator.validate(Roster.newBuilder()
-                .rosters(
+    static Roster buildValidRoster() {
+        return Roster.newBuilder()
+                .rosterEntries(
                         RosterEntry.newBuilder()
                                 .nodeId(1)
                                 .weight(1)
@@ -435,6 +434,11 @@ public class RosterValidatorTests {
                                         .port(666)
                                         .build())
                                 .build())
-                .build());
+                .build();
+    }
+
+    @Test
+    void validTest() {
+        RosterValidator.validate(buildValidRoster());
     }
 }
