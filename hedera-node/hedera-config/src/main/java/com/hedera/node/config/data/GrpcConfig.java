@@ -37,9 +37,34 @@ public record GrpcConfig(
         @ConfigProperty(defaultValue = "50211") @Min(0) @Max(65535) @NodeProperty int port,
         @ConfigProperty(defaultValue = "50212") @Min(0) @Max(65535) @NodeProperty int tlsPort,
         @ConfigProperty(defaultValue = "60211") @Min(0) @Max(65535) @NodeProperty int workflowsPort,
-        @ConfigProperty(defaultValue = "60212") @Min(0) @Max(65535) @NodeProperty int workflowsTlsPort) {
+        @ConfigProperty(defaultValue = "60212") @Min(0) @Max(65535) @NodeProperty int workflowsTlsPort,
+        @ConfigProperty(defaultValue = "4194304") @Min(0) int maxMessageSize,
+        @ConfigProperty(defaultValue = "4194304") @Min(0) int maxResponseSize,
+        @ConfigProperty(defaultValue = "4194304") @Min(0) int noopMarshallerMaxMessageSize
+        ) {
 
     public GrpcConfig {
+        if (port > 65535 || port < 0) {
+            throw new IllegalArgumentException("grpc.port must be between 0 and 65535");
+        }
+        if (tlsPort > 65535 || tlsPort < 0) {
+            throw new IllegalArgumentException("grpc.tlsPort must be between 0 and 65535");
+        }
+        if (workflowsPort > 65535 || workflowsPort < 0) {
+            throw new IllegalArgumentException("grpc.workflowsPort must be between 0 and 65535");
+        }
+        if (workflowsTlsPort > 65535 || workflowsTlsPort < 0) {
+            throw new IllegalArgumentException("grpc.workflowsTlsPort must be between 0 and 65535");
+        }
+        if (maxMessageSize > 4194304 || maxMessageSize < 0) {
+            throw new IllegalArgumentException("grpc.maxMessageSize must be between 0 and 4194304");
+        }
+        if (maxResponseSize > 4194304 || maxResponseSize < 0) {
+            throw new IllegalArgumentException("grpc.maxResponseSize must be between 0 and 4194304");
+        }
+        if (noopMarshallerMaxMessageSize > 4194304 || noopMarshallerMaxMessageSize < 0) {
+            throw new IllegalArgumentException("grpc.noopMarshallerMaxMessageSize must be between 0 and 4194304");
+        }
         if (port == tlsPort && port != 0) {
             throw new IllegalArgumentException("grpc.port and grpc.tlsPort must be different");
         }
