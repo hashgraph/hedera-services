@@ -359,8 +359,11 @@ public class HandleWorkflow {
                             new WritableStakingInfoStore(userTxn.stack().getWritableStates(TokenService.NAME)),
                             new WritableNetworkStakingRewardsStore(
                                     userTxn.stack().getWritableStates(TokenService.NAME)));
-                    streamBuilder.exchangeRate(exchangeRateManager.exchangeRates());
-                    userTxn.stack().commitTransaction(streamBuilder);
+                    if (blockStreamConfig.streamBlocks()) {
+                        // There is need to externalize this synthetic transaction if not using block streams
+                        streamBuilder.exchangeRate(exchangeRateManager.exchangeRates());
+                        userTxn.stack().commitTransaction(streamBuilder);
+                    }
                 }
                 updateNodeStakes(userTxn);
                 if (blockStreamConfig.streamRecords()) {

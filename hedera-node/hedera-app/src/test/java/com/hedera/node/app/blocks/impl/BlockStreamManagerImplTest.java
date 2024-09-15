@@ -58,8 +58,10 @@ import com.hedera.node.config.VersionedConfigImpl;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.ParseException;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.common.crypto.Hash;
 import com.swirlds.platform.state.service.PlatformStateService;
 import com.swirlds.platform.system.Round;
+import com.swirlds.platform.system.state.notifications.StateHashedNotification;
 import com.swirlds.state.State;
 import com.swirlds.state.spi.CommittableWritableStates;
 import com.swirlds.state.spi.ReadableStates;
@@ -87,6 +89,7 @@ class BlockStreamManagerImplTest {
     private static final long N_MINUS_1_BLOCK_NO = 665L;
     private static final long N_BLOCK_NO = 666L;
     private static final Instant CONSENSUS_NOW = Instant.ofEpochSecond(1_234_567L);
+    private static final Hash FAKE_START_OF_BLOCK_STATE_HASH = new Hash(new byte[48]);
     private static final Bytes N_MINUS_2_BLOCK_HASH = Bytes.wrap(noThrowSha384HashOf(new byte[] {(byte) 0xAA}));
     private static final Bytes FIRST_FAKE_SIGNATURE = Bytes.fromHex("ff".repeat(48));
     private static final Bytes SECOND_FAKE_SIGNATURE = Bytes.fromHex("ee".repeat(48));
@@ -99,10 +102,13 @@ class BlockStreamManagerImplTest {
             BlockItem.newBuilder().stateChanges(StateChanges.DEFAULT).build();
     private static final BlockItem FAKE_RECORD_FILE_ITEM =
             BlockItem.newBuilder().recordFile(RecordFileItem.DEFAULT).build();
-    private final InitialStateHash hashInfo = new InitialStateHash(completedFuture(Bytes.EMPTY), 0);
+    private final InitialStateHash hashInfo = new InitialStateHash(completedFuture(ZERO_BLOCK_HASH), 0);
 
     @Mock
     private TssBaseService tssBaseService;
+
+    @Mock
+    private StateHashedNotification notification;
 
     @Mock
     private ConfigProvider configProvider;
@@ -164,6 +170,7 @@ class BlockStreamManagerImplTest {
         givenEndOfRoundSetup();
         final ArgumentCaptor<byte[]> blockHashCaptor = ArgumentCaptor.forClass(byte[].class);
         given(boundaryStateChangeListener.boundaryTimestampOrThrow()).willReturn(Timestamp.DEFAULT);
+        given(round.getRoundNum()).willReturn(ROUND_NO);
 
         // Initialize the last (N-1) block hash
         subject.initLastBlockHash(FAKE_RESTART_BLOCK_HASH);
@@ -342,6 +349,7 @@ class BlockStreamManagerImplTest {
                 .when(bWriter)
                 .writeItem(any());
         final ArgumentCaptor<byte[]> blockHashCaptor = ArgumentCaptor.forClass(byte[].class);
+        given(round.getRoundNum()).willReturn(ROUND_NO);
 
         // Initialize the last (N-1) block hash
         subject.initLastBlockHash(FAKE_RESTART_BLOCK_HASH);
@@ -357,6 +365,11 @@ class BlockStreamManagerImplTest {
         subject.endRound(state, ROUND_NO);
 
         // Start the round that will be block N+1
+        given(round.getRoundNum()).willReturn(ROUND_NO + 1);
+        given(notification.round()).willReturn(ROUND_NO);
+        given(notification.hash()).willReturn(FAKE_START_OF_BLOCK_STATE_HASH);
+        // Notify the subject of the required start-of-state hash
+        subject.notify(notification);
         subject.startRound(round, state);
         // Write some items to the block
         subject.writeItem(FAKE_EVENT_TRANSACTION);

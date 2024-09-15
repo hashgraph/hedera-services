@@ -79,9 +79,6 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
 
     private static final int CHUNK_SIZE = 8;
 
-    private static final CompletableFuture<Bytes> MOCK_START_STATE_ROOT_HASH_FUTURE =
-            completedFuture(Bytes.wrap(new byte[48]));
-
     private final int roundsPerBlock;
     private final TssBaseService tssBaseService;
     private final SemanticVersion hapiVersion;
@@ -215,10 +212,6 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
             schedulePendingWork();
             writeFuture.join();
             final var inputHash = inputTreeHasher.rootHash().join();
-            log.info(
-                    "Ending round {}, requesting start-of-state hash for last non-empty round round {}",
-                    roundNum,
-                    lastNonEmptyRoundNumber);
             final var blockStartStateHash = requireNonNull(endRoundStateHashes.get(lastNonEmptyRoundNumber))
                     .join();
             endRoundStateHashes.remove(lastNonEmptyRoundNumber);
@@ -328,9 +321,6 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
         if (blockNumber == Long.MIN_VALUE) {
             log.info("Ignoring signature on already proven block hash '{}'", blockHash);
             return;
-        }
-        if (blockNumber == 1) {
-            log.info("Pending Block {} Signature {}", pendingBlocks.peek(), signature);
         }
         // Write proofs for all pending blocks up to and including the signed block number
         final var blockSignature = Bytes.wrap(signature);
@@ -541,11 +531,7 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
     }
 
     @Override
-    public void notify(final StateHashedNotification notification) {
-        log.info(
-                "StateHashedNotification Received : roundNumber: {}, hash: {} ",
-                notification.round(),
-                notification.hash());
+    public void notify(@NonNull final StateHashedNotification notification) {
         endRoundStateHashes
                 .get(notification.round())
                 .complete(notification.hash().getBytes());
