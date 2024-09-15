@@ -144,13 +144,16 @@ public class TopicCustomFeeTest extends TopicCustomFeeBase {
             @DisplayName("Create topic with 10 keys in FEKL")
             // TOPIC_FEE_020
             final Stream<DynamicTest> createTopicWithFEKL() {
+                final var collector = "collector";
                 return hapiTest(flattened(
                         // create 10 keys
                         newNamedKeysForFEKL(10),
+                        cryptoCreate(collector),
                         createTopic(TOPIC)
                                 .adminKeyName(ADMIN_KEY)
                                 .submitKeyName(SUBMIT_KEY)
                                 .feeScheduleKeyName(FEE_SCHEDULE_KEY)
+                                .withConsensusCustomFee(fixedConsensusHbarFee(5, collector))
                                 // set list of 10 keys
                                 .feeExemptKeys(feeExemptKeyNames(10)),
                         getTopicInfo(TOPIC)

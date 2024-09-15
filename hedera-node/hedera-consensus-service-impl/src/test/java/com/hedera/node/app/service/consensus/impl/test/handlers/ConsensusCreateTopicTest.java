@@ -43,6 +43,7 @@ import com.hedera.hapi.node.consensus.ConsensusCreateTopicTransactionBody;
 import com.hedera.hapi.node.state.consensus.Topic;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.service.consensus.ReadableTopicStore;
 import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
 import com.hedera.node.app.service.consensus.impl.handlers.ConsensusCreateTopicHandler;
 import com.hedera.node.app.service.consensus.impl.records.ConsensusCreateTopicStreamBuilder;
@@ -124,6 +125,7 @@ class ConsensusCreateTopicTest extends ConsensusTestBase {
                 .getOrCreateConfig();
         topicStore = new WritableTopicStore(writableStates, config, storeMetricsService);
         given(handleContext.configuration()).willReturn(config);
+        given(handleContext.storeFactory().readableStore(ReadableTopicStore.class)).willReturn(topicStore);
         given(storeFactory.writableStore(WritableTopicStore.class)).willReturn(topicStore);
         given(handleContext.savepointStack()).willReturn(stack);
         given(stack.getBaseBuilder(ConsensusCreateTopicStreamBuilder.class)).willReturn(recordBuilder);
@@ -393,6 +395,7 @@ class ConsensusCreateTopicTest extends ConsensusTestBase {
         final var adminKey = SIMPLE_KEY_A;
         final var submitKey = SIMPLE_KEY_B;
         final var txnBody = newCreateTxn(adminKey, submitKey, true);
+        final var op = txnBody.consensusCreateTopic();
         given(handleContext.body()).willReturn(txnBody);
         final var writableState = writableTopicStateWithOneKey();
 
@@ -400,7 +403,8 @@ class ConsensusCreateTopicTest extends ConsensusTestBase {
         final var topicStore = new WritableTopicStore(writableStates, config, storeMetricsService);
         assertEquals(1, topicStore.sizeOfState());
         given(storeFactory.writableStore(WritableTopicStore.class)).willReturn(topicStore);
-
+        given(storeFactory.readableStore(ReadableTopicStore.class)).willReturn(topicStore);
+        given(handleContext.expiryValidator()).willReturn(expiryValidator);
         given(handleContext.attributeValidator()).willReturn(validator);
         final var config = HederaTestConfigBuilder.create()
                 .withValue("topics.maxNumber", 1L)
