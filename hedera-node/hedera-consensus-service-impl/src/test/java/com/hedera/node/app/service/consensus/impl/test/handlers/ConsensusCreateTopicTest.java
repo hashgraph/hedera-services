@@ -125,7 +125,8 @@ class ConsensusCreateTopicTest extends ConsensusTestBase {
                 .getOrCreateConfig();
         topicStore = new WritableTopicStore(writableStates, config, storeMetricsService);
         given(handleContext.configuration()).willReturn(config);
-        given(handleContext.storeFactory().readableStore(ReadableTopicStore.class)).willReturn(topicStore);
+        given(handleContext.storeFactory().readableStore(ReadableTopicStore.class))
+                .willReturn(topicStore);
         given(storeFactory.writableStore(WritableTopicStore.class)).willReturn(topicStore);
         given(handleContext.savepointStack()).willReturn(stack);
         given(stack.getBaseBuilder(ConsensusCreateTopicStreamBuilder.class)).willReturn(recordBuilder);
