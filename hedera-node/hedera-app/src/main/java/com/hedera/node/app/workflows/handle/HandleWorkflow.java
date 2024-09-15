@@ -50,6 +50,7 @@ import com.hedera.node.app.records.BlockRecordManager;
 import com.hedera.node.app.service.schedule.ScheduleService;
 import com.hedera.node.app.service.schedule.WritableScheduleStore;
 import com.hedera.node.app.service.token.TokenService;
+import com.hedera.node.app.service.token.impl.WritableNetworkStakingRewardsStore;
 import com.hedera.node.app.service.token.impl.WritableStakingInfoStore;
 import com.hedera.node.app.service.token.impl.handlers.staking.StakeInfoHelper;
 import com.hedera.node.app.service.token.impl.handlers.staking.StakePeriodManager;
@@ -203,6 +204,13 @@ public class HandleWorkflow {
         final var blockStreamConfig = configProvider.getConfiguration().getConfigData(BlockStreamConfig.class);
         if (blockStreamConfig.streamBlocks()) {
             blockStreamManager.startRound(round, state);
+            if (!migrationStateChanges.isEmpty()) {
+                migrationStateChanges.forEach(builder -> blockStreamManager.writeItem(BlockItem.newBuilder()
+                        .stateChanges(builder.consensusTimestamp(blockStreamManager.blockTimestamp())
+                                .build())
+                        .build()));
+                migrationStateChanges.clear();
+            }
         }
         recordCache.resetRoundReceipts();
         try {
@@ -304,15 +312,6 @@ public class HandleWorkflow {
         if (blockStreamConfig.streamRecords()) {
             blockRecordManager.startUserTransaction(consensusNow, state);
         }
-        // Because synthetic account creation records are only externalized on the first user transaction, we
-        // also postpone externalizing migration state changes until that same transactional unit
-        if (blockStreamConfig.streamBlocks() && !migrationStateChanges.isEmpty()) {
-            migrationStateChanges.forEach(builder -> blockStreamManager.writeItem(BlockItem.newBuilder()
-                    .stateChanges(builder.consensusTimestamp(blockStreamManager.blockTimestamp())
-                            .build())
-                    .build()));
-            migrationStateChanges.clear();
-        }
         final var handleOutput = execute(userTxn);
         if (blockStreamConfig.streamRecords()) {
             blockRecordManager.endUserTransaction(handleOutput.recordsOrThrow().stream(), state);
@@ -353,11 +352,18 @@ public class HandleWorkflow {
                     systemSetup.externalizeInitSideEffects(
                             userTxn.tokenContextImpl(), exchangeRateManager.exchangeRates());
                 } else if (userTxn.type() == POST_UPGRADE_TRANSACTION) {
-                    stakeInfoHelper.adjustPostUpgradeStakes(
-                            new WritableStakingInfoStore(userTxn.stack().getWritableStates(TokenService.NAME)),
+                    final var streamBuilder = stakeInfoHelper.adjustPostUpgradeStakes(
+                            userTxn.tokenContextImpl(),
                             networkInfo,
-                            userTxn.config());
-                    userTxn.stack().commitSystemStateChanges();
+                            userTxn.config(),
+                            new WritableStakingInfoStore(userTxn.stack().getWritableStates(TokenService.NAME)),
+                            new WritableNetworkStakingRewardsStore(
+                                    userTxn.stack().getWritableStates(TokenService.NAME)));
+                    if (blockStreamConfig.streamBlocks()) {
+                        // There is no need to externalize this synthetic transaction if not using block streams
+                        streamBuilder.exchangeRate(exchangeRateManager.exchangeRates());
+                        userTxn.stack().commitTransaction(streamBuilder);
+                    }
                 }
                 updateNodeStakes(userTxn);
                 if (blockStreamConfig.streamRecords()) {

@@ -52,14 +52,12 @@ import java.util.List;
 import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
-import javax.inject.Singleton;
 
 /**
  * A state change listener that accumulates state changes that are only reported at a block boundary; either
  * because all that affects the root hash is the latest value in state, or it is simply more efficient to report
  * them in bulk. In the current system, these are the singleton and queue updates.
  */
-@Singleton
 public class BoundaryStateChangeListener implements StateChangeListener {
     private static final Set<StateType> TARGET_DATA_TYPES = EnumSet.of(SINGLETON, QUEUE);
 

@@ -28,28 +28,47 @@ import static com.hedera.node.app.service.token.impl.test.handlers.staking.EndOf
 import static com.hedera.node.app.service.token.impl.test.handlers.staking.EndOfStakingPeriodUpdaterTest.STAKING_INFO_2;
 import static com.hedera.node.app.service.token.impl.test.handlers.staking.EndOfStakingPeriodUpdaterTest.STAKING_INFO_3;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.BDDMockito.given;
 
 import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.token.StakingNodeInfo;
+import com.hedera.node.app.service.token.impl.WritableNetworkStakingRewardsStore;
 import com.hedera.node.app.service.token.impl.WritableStakingInfoStore;
 import com.hedera.node.app.service.token.impl.handlers.staking.StakeInfoHelper;
 import com.hedera.node.app.service.token.impl.schemas.V0490TokenSchema;
+import com.hedera.node.app.service.token.records.NodeStakeUpdateStreamBuilder;
+import com.hedera.node.app.service.token.records.TokenContext;
 import com.hedera.node.app.spi.fixtures.info.FakeNetworkInfo;
 import com.hedera.node.app.spi.fixtures.state.MapWritableStates;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.state.spi.WritableSingletonStateBase;
 import com.swirlds.state.test.fixtures.MapWritableKVState;
+import java.time.Instant;
 import java.util.Map;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
+@ExtendWith(MockitoExtension.class)
 class StakeInfoHelperTest {
     private static final Configuration DEFAULT_CONFIG = HederaTestConfigBuilder.createConfig();
 
-    private WritableStakingInfoStore store;
+    private WritableStakingInfoStore infoStore;
+
+    @Mock
+    private TokenContext tokenContext;
+
+    @Mock
+    private NodeStakeUpdateStreamBuilder streamBuilder;
+
+    @Mock
+    private WritableNetworkStakingRewardsStore rewardsStore;
 
     private final StakeInfoHelper subject = new StakeInfoHelper();
 
@@ -68,12 +87,13 @@ class StakeInfoHelperTest {
                                 .unclaimedStakeRewardStart(5)
                                 .build())
                 .build();
-        store = new WritableStakingInfoStore(new MapWritableStates(Map.of(V0490TokenSchema.STAKING_INFO_KEY, state)));
+        infoStore =
+                new WritableStakingInfoStore(new MapWritableStates(Map.of(V0490TokenSchema.STAKING_INFO_KEY, state)));
         assertUnclaimedStakeRewardStartPrecondition();
 
-        subject.increaseUnclaimedStakeRewards(NODE_ID_1.number(), amount, store);
+        subject.increaseUnclaimedStakeRewards(NODE_ID_1.number(), amount, infoStore);
 
-        final var savedStakeInfo = store.get(NODE_ID_1.number());
+        final var savedStakeInfo = infoStore.get(NODE_ID_1.number());
         Assertions.assertThat(savedStakeInfo).isNotNull();
         // Case 1: The passed in amount, 20, is greater than the stake reward start, 15, so the unclaimed stake reward
         // value should be the current stake reward start value
@@ -91,12 +111,17 @@ class StakeInfoHelperTest {
                 .value(NODE_NUM_3, STAKING_INFO_3)
                 .build();
         final var newStates = newStatesInstance(stakingInfosState);
-        store = new WritableStakingInfoStore(newStates);
+        infoStore = new WritableStakingInfoStore(newStates);
         // Platform address book has node Ids 2, 4, 8
         final var networkInfo = new FakeNetworkInfo();
+        given(tokenContext.consensusTime()).willReturn(Instant.EPOCH);
+        given(tokenContext.addPrecedingChildRecordBuilder(NodeStakeUpdateStreamBuilder.class))
+                .willReturn(streamBuilder);
+        given(streamBuilder.transaction(any())).willReturn(streamBuilder);
+        given(streamBuilder.memo(any())).willReturn(streamBuilder);
 
         // Should update the state to mark node 1 and 3 as deleted
-        subject.adjustPostUpgradeStakes(store, networkInfo, DEFAULT_CONFIG);
+        subject.adjustPostUpgradeStakes(tokenContext, networkInfo, DEFAULT_CONFIG, infoStore, rewardsStore);
         final var updatedStates = newStates.get(STAKING_INFO_KEY);
         // marks nodes 1, 2 as deleted
         assertThat(((StakingNodeInfo) updatedStates.get(NODE_NUM_1)).deleted()).isTrue();
@@ -123,7 +148,7 @@ class StakeInfoHelperTest {
     }
 
     private void assertUnclaimedStakeRewardStartPrecondition() {
-        final var existingStakeInfo = store.get(NODE_ID_1.number());
+        final var existingStakeInfo = infoStore.get(NODE_ID_1.number());
         Assertions.assertThat(existingStakeInfo).isNotNull();
         Assertions.assertThat(existingStakeInfo.unclaimedStakeRewardStart()).isEqualTo(5);
     }

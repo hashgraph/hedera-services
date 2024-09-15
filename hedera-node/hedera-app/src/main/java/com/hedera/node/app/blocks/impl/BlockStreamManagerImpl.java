@@ -40,6 +40,7 @@ import com.hedera.hapi.platform.state.PlatformState;
 import com.hedera.node.app.blocks.BlockItemWriter;
 import com.hedera.node.app.blocks.BlockStreamManager;
 import com.hedera.node.app.blocks.BlockStreamService;
+import com.hedera.node.app.blocks.InitialStateHash;
 import com.hedera.node.app.blocks.StreamingTreeHasher;
 import com.hedera.node.app.records.impl.BlockRecordInfoUtils;
 import com.hedera.node.app.tss.TssBaseService;
@@ -52,6 +53,7 @@ import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.state.service.PlatformStateService;
 import com.swirlds.platform.state.service.schemas.V0540PlatformStateSchema;
 import com.swirlds.platform.system.Round;
+import com.swirlds.platform.system.state.notifications.StateHashedNotification;
 import com.swirlds.state.State;
 import com.swirlds.state.spi.CommittableWritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -59,8 +61,10 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Supplier;
@@ -74,9 +78,6 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
     private static final Logger log = LogManager.getLogger(BlockStreamManagerImpl.class);
 
     private static final int CHUNK_SIZE = 8;
-
-    private static final CompletableFuture<Bytes> MOCK_START_STATE_ROOT_HASH_FUTURE =
-            completedFuture(Bytes.wrap(new byte[48]));
 
     private final int roundsPerBlock;
     private final TssBaseService tssBaseService;
@@ -92,6 +93,8 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
     private long blockNumber;
     // Set to the round number of the last round handled before entering a freeze period
     private long freezeRoundNumber = -1;
+    // The last non-empty (i.e., not skipped) round number that will eventually get a start-of-state hash
+    private long lastNonEmptyRoundNumber;
     private Bytes lastBlockHash;
     private Instant blockTimestamp;
     private BlockItemWriter writer;
@@ -122,9 +125,13 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
             @NonNull MerkleSiblingHash... siblingHashes) {}
 
     /**
-     * A queue of blocks pending completion by the block hash signature needed for their block proofs.
+     * Blocks awaiting proof via ledger signature on their block hash (or a subsequent block hash).
      */
     private final Queue<PendingBlock> pendingBlocks = new ConcurrentLinkedQueue<>();
+    /**
+     * Futures that resolve when the end-of-round state hash is available for a given round number.
+     */
+    private final Map<Long, CompletableFuture<Bytes>> endRoundStateHashes = new ConcurrentHashMap<>();
 
     @Inject
     public BlockStreamManagerImpl(
@@ -132,7 +139,8 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
             @NonNull final ExecutorService executor,
             @NonNull final ConfigProvider configProvider,
             @NonNull final TssBaseService tssBaseService,
-            @NonNull final BoundaryStateChangeListener boundaryStateChangeListener) {
+            @NonNull final BoundaryStateChangeListener boundaryStateChangeListener,
+            @NonNull final InitialStateHash initialStateHash) {
         this.writerSupplier = requireNonNull(writerSupplier);
         this.executor = requireNonNull(executor);
         this.tssBaseService = requireNonNull(tssBaseService);
@@ -143,6 +151,9 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
         this.roundsPerBlock = config.getConfigData(BlockStreamConfig.class).roundsPerBlock();
         this.blockHashManager = new BlockHashManager(config);
         this.runningHashManager = new RunningHashManager();
+        this.lastNonEmptyRoundNumber = initialStateHash.roundNum();
+        endRoundStateHashes.put(lastNonEmptyRoundNumber, initialStateHash.hashFuture());
+        log.info("Initialized BlockStreamManager from round {}", lastNonEmptyRoundNumber);
     }
 
     @Override
@@ -155,6 +166,9 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
         if (lastBlockHash == null) {
             throw new IllegalStateException("Last block hash must be initialized before starting a round");
         }
+        // If the platform handled this round, it must eventually hash its end state
+        endRoundStateHashes.put(round.getRoundNum(), new CompletableFuture<>());
+
         final var platformState = state.getReadableStates(PlatformStateService.NAME)
                 .<PlatformState>getSingleton(V0540PlatformStateSchema.PLATFORM_STATE_KEY)
                 .get();
@@ -198,7 +212,13 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
             schedulePendingWork();
             writeFuture.join();
             final var inputHash = inputTreeHasher.rootHash().join();
-            final var blockStartStateHash = MOCK_START_STATE_ROOT_HASH_FUTURE.join();
+            // This block's starting state hash is the end state hash of the last non-empty round
+            final var blockStartStateHash = requireNonNull(endRoundStateHashes.get(lastNonEmptyRoundNumber))
+                    .join();
+            // Now forget that hash, since it's been used
+            endRoundStateHashes.remove(lastNonEmptyRoundNumber);
+            // And update the last non-empty round number to this round
+            lastNonEmptyRoundNumber = roundNum;
             final var outputTreeStatus = outputTreeHasher.status();
 
             // Put this block hash context in state via the block stream info
@@ -511,5 +531,12 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
         Bytes blockHashes() {
             return blockHashes;
         }
+    }
+
+    @Override
+    public void notify(@NonNull final StateHashedNotification notification) {
+        endRoundStateHashes
+                .get(notification.round())
+                .complete(notification.hash().getBytes());
     }
 }
