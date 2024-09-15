@@ -144,10 +144,11 @@ public class ContractDeleteSuite {
                                             asHeadlongAddress(treasuryMirrorAddr.get()),
                                             BigInteger.valueOf(illegalNumChildren))
                                     .via(precompileViolation)
+                                    .gas(215_000L)
                                     .hasKnownStatus(MAX_CHILD_RECORDS_EXCEEDED),
                             contractCall(contract, "createThingsRepeatedly", BigInteger.valueOf(illegalNumChildren))
                                     .via(internalCreateViolation)
-                                    .gas(15_000_000)
+                                    .gas(15_000_000L)
                                     .hasKnownStatus(MAX_CHILD_RECORDS_EXCEEDED));
                 }),
                 getTxnRecord(precompileViolation)

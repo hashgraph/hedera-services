@@ -76,7 +76,7 @@ import org.junit.jupiter.api.Tag;
 public class NonceSuite {
     private static final long LOW_GAS_PRICE = 1L;
     private static final long ENOUGH_GAS_PRICE = 75L;
-    private static final long ENOUGH_GAS_LIMIT = 150_000L;
+    private static final long ENOUGH_GAS_LIMIT = 215_000L;
     private static final String RECEIVER = "receiver";
     private static final String INTERNAL_CALLEE_CONTRACT = "InternalCallee";
     private static final String INTERNAL_CALLER_CONTRACT = "InternalCaller";
