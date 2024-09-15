@@ -793,6 +793,10 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener {
         return daggerApp.handleWorkflow();
     }
 
+    public BlockStreamManager blockStreamManager() {
+        return daggerApp.blockStreamManager();
+    }
+
     /*==================================================================================================================
     *
     * Genesis Initialization

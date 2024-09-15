@@ -28,6 +28,8 @@ import static com.hedera.node.app.service.token.impl.test.handlers.staking.EndOf
 import static com.hedera.node.app.service.token.impl.test.handlers.staking.EndOfStakingPeriodUpdaterTest.STAKING_INFO_2;
 import static com.hedera.node.app.service.token.impl.test.handlers.staking.EndOfStakingPeriodUpdaterTest.STAKING_INFO_3;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.BDDMockito.given;
 
 import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.token.StakingNodeInfo;
@@ -35,6 +37,7 @@ import com.hedera.node.app.service.token.impl.WritableNetworkStakingRewardsStore
 import com.hedera.node.app.service.token.impl.WritableStakingInfoStore;
 import com.hedera.node.app.service.token.impl.handlers.staking.StakeInfoHelper;
 import com.hedera.node.app.service.token.impl.schemas.V0490TokenSchema;
+import com.hedera.node.app.service.token.records.NodeStakeUpdateStreamBuilder;
 import com.hedera.node.app.service.token.records.TokenContext;
 import com.hedera.node.app.spi.fixtures.info.FakeNetworkInfo;
 import com.hedera.node.app.spi.fixtures.state.MapWritableStates;
@@ -42,6 +45,7 @@ import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.state.spi.WritableSingletonStateBase;
 import com.swirlds.state.test.fixtures.MapWritableKVState;
+import java.time.Instant;
 import java.util.Map;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -59,6 +63,9 @@ class StakeInfoHelperTest {
 
     @Mock
     private TokenContext tokenContext;
+
+    @Mock
+    private NodeStakeUpdateStreamBuilder streamBuilder;
 
     @Mock
     private WritableNetworkStakingRewardsStore rewardsStore;
@@ -107,6 +114,11 @@ class StakeInfoHelperTest {
         infoStore = new WritableStakingInfoStore(newStates);
         // Platform address book has node Ids 2, 4, 8
         final var networkInfo = new FakeNetworkInfo();
+        given(tokenContext.consensusTime()).willReturn(Instant.EPOCH);
+        given(tokenContext.addPrecedingChildRecordBuilder(NodeStakeUpdateStreamBuilder.class))
+                .willReturn(streamBuilder);
+        given(streamBuilder.transaction(any())).willReturn(streamBuilder);
+        given(streamBuilder.memo(any())).willReturn(streamBuilder);
 
         // Should update the state to mark node 1 and 3 as deleted
         subject.adjustPostUpgradeStakes(tokenContext, networkInfo, DEFAULT_CONFIG, infoStore, rewardsStore);
