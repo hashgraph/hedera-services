@@ -40,8 +40,7 @@ public record GrpcConfig(
         @ConfigProperty(defaultValue = "60212") @Min(0) @Max(65535) @NodeProperty int workflowsTlsPort,
         @ConfigProperty(defaultValue = "4194304") @Min(0) int maxMessageSize,
         @ConfigProperty(defaultValue = "4194304") @Min(0) int maxResponseSize,
-        @ConfigProperty(defaultValue = "4194304") @Min(0) int noopMarshallerMaxMessageSize
-        ) {
+        @ConfigProperty(defaultValue = "4194304") @Min(0) int noopMarshallerMaxMessageSize) {
 
     public GrpcConfig {
         if (port > 65535 || port < 0) {
