@@ -21,6 +21,8 @@ import static com.hedera.node.app.service.token.impl.TokenServiceImpl.HBARS_TO_T
 import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.asAccount;
 import static com.hedera.node.app.service.token.impl.handlers.staking.EndOfStakingPeriodUtils.calculateRewardSumHistory;
 import static com.hedera.node.app.service.token.impl.handlers.staking.EndOfStakingPeriodUtils.computeNextStake;
+import static com.hedera.node.app.service.token.impl.handlers.staking.EndOfStakingPeriodUtils.copyBuilderFrom;
+import static com.hedera.node.app.service.token.impl.handlers.staking.EndOfStakingPeriodUtils.lastInstantOfPreviousPeriodFor;
 import static com.hedera.node.app.service.token.impl.handlers.staking.EndOfStakingPeriodUtils.newNodeStakeUpdateBuilder;
 import static com.hedera.node.app.service.token.impl.handlers.staking.EndOfStakingPeriodUtils.readableNonZeroHistory;
 import static com.hedera.node.app.spi.workflows.record.StreamBuilder.transactionWith;
@@ -230,7 +232,7 @@ public class EndOfStakingPeriodUpdater {
         }
 
         // Update the staking reward values for the network
-        final var newNetworkStakingRewards = EndOfStakingPeriodUtils.copyBuilderFrom(stakingRewardsStore)
+        final var newNetworkStakingRewards = copyBuilderFrom(stakingRewardsStore)
                 .totalStakedRewardStart(newTotalStakedRewardStart)
                 .totalStakedStart(newTotalStakedStart);
         stakingRewardsStore.put(newNetworkStakingRewards.build());
@@ -246,7 +248,7 @@ public class EndOfStakingPeriodUpdater {
         final long reservedStakingRewards = stakingRewardsStore.pendingRewards();
         final long unreservedStakingRewardBalance = rewardAccountBalance - reservedStakingRewards;
         final var syntheticNodeStakeUpdateTxn = newNodeStakeUpdateBuilder(
-                EndOfStakingPeriodUtils.lastInstantOfPreviousPeriodFor(consensusTime),
+                lastInstantOfPreviousPeriodFor(consensusTime),
                 finalNodeStakes,
                 stakingConfig,
                 totalStakedRewardStart,

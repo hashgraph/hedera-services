@@ -22,6 +22,7 @@ import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 import static com.swirlds.platform.state.GenesisStateBuilder.buildGenesisState;
 import static com.swirlds.platform.state.signed.ReservedSignedState.createNullReservation;
 import static com.swirlds.platform.state.snapshot.SignedStateFileReader.readStateFile;
+import static java.util.Objects.requireNonNull;
 
 import com.swirlds.base.function.CheckedBiFunction;
 import com.swirlds.common.config.StateCommonConfig;
@@ -47,7 +48,6 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Path;
 import java.util.List;
-import java.util.Objects;
 import java.util.function.Supplier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -78,7 +78,7 @@ public final class StartupStateUtils {
      *                                     delete malformed states
      */
     @NonNull
-    public static ReservedState getInitialState(
+    public static HashedReservedSignedState getInitialState(
             @NonNull final PlatformContext platformContext,
             @NonNull final SoftwareVersion softwareVersion,
             @NonNull final Supplier<MerkleRoot> genesisStateBuilder,
@@ -89,11 +89,11 @@ public final class StartupStateUtils {
             @NonNull final AddressBook configAddressBook)
             throws SignedStateLoadingException {
 
-        Objects.requireNonNull(platformContext);
-        Objects.requireNonNull(mainClassName);
-        Objects.requireNonNull(swirldName);
-        Objects.requireNonNull(selfId);
-        Objects.requireNonNull(configAddressBook);
+        requireNonNull(platformContext);
+        requireNonNull(mainClassName);
+        requireNonNull(swirldName);
+        requireNonNull(selfId);
+        requireNonNull(configAddressBook);
 
         final ReservedSignedState loadedState = StartupStateUtils.loadStateFile(
                 platformContext, selfId, mainClassName, swirldName, softwareVersion, snapshotStateReader);
@@ -166,10 +166,10 @@ public final class StartupStateUtils {
      * @param initialSignedState the initial signed state
      * @return a copy of the initial signed state
      */
-    public static @NonNull ReservedState copyInitialSignedState(
+    public static @NonNull HashedReservedSignedState copyInitialSignedState(
             @NonNull final PlatformContext platformContext, @NonNull final SignedState initialSignedState) {
-        Objects.requireNonNull(platformContext);
-        Objects.requireNonNull(initialSignedState);
+        requireNonNull(platformContext);
+        requireNonNull(initialSignedState);
 
         final MerkleRoot stateCopy = initialSignedState.getState().copy();
         final SignedState signedStateCopy = new SignedState(
@@ -183,7 +183,7 @@ public final class StartupStateUtils {
         signedStateCopy.setSigSet(initialSignedState.getSigSet());
 
         final var hash = MerkleCryptoFactory.getInstance().digestTreeSync(initialSignedState.getState());
-        return new ReservedState(signedStateCopy.reserve("Copied initial state"), hash);
+        return new HashedReservedSignedState(signedStateCopy.reserve("Copied initial state"), hash);
     }
 
     /**
@@ -315,6 +315,4 @@ public final class StartupStateUtils {
             throw new UncheckedIOException("unable to recycle state", e);
         }
     }
-
-    public record ReservedState(ReservedSignedState state, Hash stateHash) {}
 }

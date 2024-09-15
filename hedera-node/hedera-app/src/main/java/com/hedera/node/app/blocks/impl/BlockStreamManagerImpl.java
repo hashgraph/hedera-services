@@ -125,12 +125,11 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
             @NonNull MerkleSiblingHash... siblingHashes) {}
 
     /**
-     * A queue of blocks pending completion by the block hash signature needed for their block proofs.
+     * Blocks awaiting proof via ledger signature on their block hash (or a subsequent block hash).
      */
     private final Queue<PendingBlock> pendingBlocks = new ConcurrentLinkedQueue<>();
-
     /**
-     * A map of round numbers to the hash of the round state.
+     * Futures that resolve when the end-of-round state hash is available for a given round number.
      */
     private final Map<Long, CompletableFuture<Bytes>> endRoundStateHashes = new ConcurrentHashMap<>();
 
@@ -167,6 +166,7 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
         if (lastBlockHash == null) {
             throw new IllegalStateException("Last block hash must be initialized before starting a round");
         }
+        // If the platform handled this round, it must eventually hash its end state
         endRoundStateHashes.put(round.getRoundNum(), new CompletableFuture<>());
 
         final var platformState = state.getReadableStates(PlatformStateService.NAME)
@@ -212,9 +212,12 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
             schedulePendingWork();
             writeFuture.join();
             final var inputHash = inputTreeHasher.rootHash().join();
+            // This block's starting state hash is the end state hash of the last non-empty round
             final var blockStartStateHash = requireNonNull(endRoundStateHashes.get(lastNonEmptyRoundNumber))
                     .join();
+            // Now forget that hash, since it's been used
             endRoundStateHashes.remove(lastNonEmptyRoundNumber);
+            // And update the last non-empty round number to this round
             lastNonEmptyRoundNumber = roundNum;
             final var outputTreeStatus = outputTreeHasher.status();
 

@@ -19,15 +19,10 @@ package com.swirlds.platform.system.state.notifications;
 import static java.util.Objects.requireNonNull;
 
 import com.swirlds.common.crypto.Hash;
-import com.swirlds.common.merkle.utility.MerkleTreeVisualizer;
 import com.swirlds.common.notification.AbstractNotification;
 import com.swirlds.common.notification.Notification;
-import com.swirlds.platform.state.MerkleRoot;
 import com.swirlds.platform.wiring.components.StateAndRound;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.regex.Pattern;
 
 /**
  * A {@link Notification} that a state hash has been computed.
@@ -43,9 +38,6 @@ public class StateHashedNotification extends AbstractNotification {
      */
     public static StateHashedNotification from(@NonNull final StateAndRound stateAndRound) {
         try (final var state = stateAndRound.reservedSignedState()) {
-            if (stateAndRound.round().getRoundNum() == 2) {
-                visualizeTreeHashesByName(state.get().getState());
-            }
             return new StateHashedNotification(
                     stateAndRound.round().getRoundNum(),
                     requireNonNull(state.get().getState().getHash()));
@@ -63,40 +55,5 @@ public class StateHashedNotification extends AbstractNotification {
 
     public @NonNull Hash hash() {
         return hash;
-    }
-
-    private static final Pattern STATE_ROOT_PATTERN = Pattern.compile(".*MerkleStateRoot.*/.*\\s+(.+)");
-    private static final Pattern CHILD_STATE_PATTERN = Pattern.compile("\\s+\\d+ \\w+\\s+(\\S+)\\s+.+\\s+(.+)");
-
-    public static StringBuilder visualizeTree(@NonNull final MerkleRoot state) {
-        final var sb = new StringBuilder();
-        new MerkleTreeVisualizer(state).setDepth(5).render(sb);
-        System.out.println("NODE : Visualising State Tree:" + sb);
-        return sb;
-    }
-
-    public static void visualizeTreeHashesByName(@NonNull final MerkleRoot state) {
-        final var builder = visualizeTree(state);
-        final var map = hashesByName(builder.toString());
-        System.out.println("NODE : Visualising State Hashes by Name: " + map);
-    }
-
-    public static Map<String, String> hashesByName(@NonNull final String visualization) {
-        final var lines = visualization.split("\\n");
-        final Map<String, String> hashes = new LinkedHashMap<>();
-        for (final var line : lines) {
-            final var stateRootMatcher = STATE_ROOT_PATTERN.matcher(line);
-            if (stateRootMatcher.matches()) {
-                hashes.put("MerkleStateRoot", stateRootMatcher.group(1));
-            } else {
-                final var childStateMatcher = CHILD_STATE_PATTERN.matcher(line);
-                if (childStateMatcher.matches()) {
-                    hashes.put(childStateMatcher.group(1), childStateMatcher.group(2));
-                } else {
-                    System.out.println("Ignoring visualization line " + line);
-                }
-            }
-        }
-        return hashes;
     }
 }

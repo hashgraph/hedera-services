@@ -360,7 +360,7 @@ public class HandleWorkflow {
                             new WritableNetworkStakingRewardsStore(
                                     userTxn.stack().getWritableStates(TokenService.NAME)));
                     if (blockStreamConfig.streamBlocks()) {
-                        // There is need to externalize this synthetic transaction if not using block streams
+                        // There is no need to externalize this synthetic transaction if not using block streams
                         streamBuilder.exchangeRate(exchangeRateManager.exchangeRates());
                         userTxn.stack().commitTransaction(streamBuilder);
                     }

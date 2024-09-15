@@ -233,9 +233,8 @@ public class ServicesMain implements SwirldMain {
                 Hedera.SWIRLD_NAME,
                 selfId,
                 bootstrapAddressBook);
-        System.out.println();
         final var initialState = reservedState.state();
-        final var stateHash = reservedState.stateHash();
+        final var stateHash = reservedState.hash();
 
         // Initialize the address book and set on platform builder
         final var addressBook =

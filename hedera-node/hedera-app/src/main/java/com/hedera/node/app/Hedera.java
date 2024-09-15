@@ -102,6 +102,7 @@ import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.constructable.RuntimeConstructable;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.metrics.api.Metrics;
@@ -847,7 +848,7 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener {
             // During a reconnect, we wait for reconnect to complete successfully and then set the initial hash
             // from the immutable state in the ReconnectCompleteNotification
             initialStateHashFuture = new CompletableFuture<>();
-            notifications.register(ReconnectCompleteListener.class, new ReadReconnectStartingStateHash());
+            notifications.register(ReconnectCompleteListener.class, new ReadReconnectStartingStateHash(notifications));
         }
         // For other triggers the initial state hash must have been set already
         requireNonNull(initialStateHashFuture);
@@ -1047,10 +1048,18 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener {
     }
 
     private class ReadReconnectStartingStateHash implements ReconnectCompleteListener {
+        private final NotificationEngine notifications;
+
+        private ReadReconnectStartingStateHash(@NonNull final NotificationEngine notifications) {
+            this.notifications = requireNonNull(notifications);
+        }
+
         @Override
-        public void notify(final ReconnectCompleteNotification notification) {
+        public void notify(@NonNull final ReconnectCompleteNotification notification) {
+            requireNonNull(notification);
             requireNonNull(initialStateHashFuture)
                     .complete(requireNonNull(notification.getState().getHash()).getBytes());
+            notifications.unregister(ReconnectCompleteListener.class, this);
         }
     }
 }

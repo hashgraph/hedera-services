@@ -27,8 +27,7 @@ import static com.hedera.services.bdd.junit.hedera.NodeSelector.byNodeId;
 import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.STATE_METADATA_FILE;
 import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.loadAddressBookWithDeterministicCerts;
 import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.workingDirFor;
-import static com.hedera.services.bdd.junit.support.validators.block.StateVisualizer.hashesByName;
-import static com.hedera.services.bdd.junit.support.validators.block.StateVisualizer.visualizeTree;
+import static com.hedera.services.bdd.junit.support.validators.block.ChildHashUtils.hashesByName;
 import static com.hedera.services.bdd.spec.TargetNetworkType.SUBPROCESS_NETWORK;
 import static com.swirlds.platform.state.GenesisStateBuilder.initGenesisPlatformState;
 import static com.swirlds.platform.state.service.PlatformStateService.PLATFORM_STATE_SERVICE;
@@ -46,17 +45,16 @@ import com.hedera.hapi.block.stream.output.SingletonUpdateChange;
 import com.hedera.hapi.block.stream.output.StateChanges;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.SignatureMap;
-import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.TokenAssociation;
 import com.hedera.hapi.node.state.common.EntityIDPair;
 import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.hapi.node.state.primitives.ProtoLong;
 import com.hedera.hapi.node.state.primitives.ProtoString;
-import com.hedera.hapi.platform.state.PlatformState;
 import com.hedera.node.app.blocks.BlockStreamManager;
 import com.hedera.node.app.blocks.BlockStreamService;
 import com.hedera.node.app.blocks.StreamingTreeHasher;
+import com.hedera.node.app.blocks.impl.NaiveStreamingTreeHasher;
 import com.hedera.node.app.config.BootstrapConfigProviderImpl;
 import com.hedera.node.app.config.ConfigProviderImpl;
 import com.hedera.node.app.fees.FeeService;
@@ -125,7 +123,6 @@ import java.time.InstantSource;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.Executors;
@@ -147,7 +144,6 @@ public class StateChangesValidator implements BlockStreamValidator {
     private static final int HASH_SIZE = 48;
     private static final int VISUALIZATION_HASH_DEPTH = 5;
     private static final Pattern NUMBER_PATTERN = Pattern.compile("\\d+");
-    private static final Pattern STATE_ROOT_PATTERN = Pattern.compile(".*MerkleStateRoot.*/.*\\s+(.+)");
     private static final Pattern CHILD_STATE_PATTERN = Pattern.compile("\\s+\\d+ \\w+\\s+(\\S+)\\s+.+\\s+(.+)");
 
     private final Path pathToNode0SwirldsLog;
@@ -155,7 +151,6 @@ public class StateChangesValidator implements BlockStreamValidator {
     private final Set<String> servicesWritten = new HashSet<>();
     private final StateChangesSummary stateChangesSummary = new StateChangesSummary(new TreeMap<>());
 
-    private Timestamp genesisMigrationTimestamp = null;
     private MerkleStateRoot state;
     private Hash genesisStateHash;
 
@@ -259,13 +254,6 @@ public class StateChangesValidator implements BlockStreamValidator {
         state = state.copy();
         // get the state hash before applying the state changes from current block
         this.genesisStateHash = CRYPTO.digestTreeSync(stateToBeCopied);
-        logger.info("Genesis state hash: {}", genesisStateHash);
-        logger.info("Hashes By Name {}", hashesFor(stateToBeCopied));
-        logger.info(
-                "Platform state {}",
-                state.getReadableStates(PlatformStateService.NAME)
-                        .<PlatformState>getSingleton("PLATFORM_STATE")
-                        .get());
 
         migrator.doMigrations(
                 state,
@@ -291,30 +279,14 @@ public class StateChangesValidator implements BlockStreamValidator {
                 final var stateToBeCopied = state;
                 this.state = stateToBeCopied.copy();
                 startOfStateHash = CRYPTO.digestTreeSync(stateToBeCopied).getBytes();
-                if (i == 1) {
-                    logger.info("Visualizing state tree for block = {}", block);
-                    visualizeTree(stateToBeCopied);
-                }
             }
             final StreamingTreeHasher inputTreeHasher = new NaiveStreamingTreeHasher();
             final StreamingTreeHasher outputTreeHasher = new NaiveStreamingTreeHasher();
-            int numOutputLeaves = 0;
             for (final var item : block.items()) {
                 servicesWritten.clear();
                 hashInputOutputTree(item, inputTreeHasher, outputTreeHasher);
-
-                if (item.hasTransactionResult() || item.hasTransactionOutput() || item.hasStateChanges()) {
-                    numOutputLeaves++;
-                }
                 if (item.hasStateChanges()) {
-                    final var stateChanges = item.stateChangesOrThrow();
-                    if (genesisMigrationTimestamp == null) {
-                        genesisMigrationTimestamp = stateChanges.consensusTimestamp();
-                    }
-                    if (isGenesisMigrationChange(stateChanges)) {
-                        logger.info("Migration State changes being skipped {}", stateChanges);
-                    }
-                    applyStateChanges(stateChanges);
+                    applyStateChanges(item.stateChangesOrThrow());
                 }
                 servicesWritten.forEach(name -> ((CommittableWritableStates) state.getWritableStates(name)).commit());
             }
@@ -401,10 +373,6 @@ public class StateChangesValidator implements BlockStreamValidator {
         new MerkleTreeVisualizer(state).setDepth(VISUALIZATION_HASH_DEPTH).render(sb);
         logger.info("Replayed hashes:\n{}", sb);
         return hashesByName(sb.toString());
-    }
-
-    private boolean isGenesisMigrationChange(@NonNull final StateChanges stateChanges) {
-        return Objects.equals(stateChanges.consensusTimestamp(), genesisMigrationTimestamp);
     }
 
     private void applyStateChanges(@NonNull final StateChanges stateChanges) {
