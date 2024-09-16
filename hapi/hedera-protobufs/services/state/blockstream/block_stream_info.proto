@@ -48,7 +48,9 @@ option java_multiple_files = true;
  * This value MUST be transmitted in the "state changes" section of
  * _each_ block, but MUST be updated at the beginning of the _next_ block.<br/>
  * This value SHALL contain the block hash up to, and including, the
- * immediately prior completed block.
+ * immediately prior completed block.<br/>
+ * The state change to update this singleton MUST be the last "output"
+ * block item in this block.
  */
 message BlockStreamInfo {
     /**
