@@ -147,7 +147,7 @@ public final class RosterRetriever {
     @NonNull
     public static Roster buildRoster(@NonNull final AddressBook addressBook) {
         return Roster.newBuilder()
-                .rosters(addressBook.getNodeIdSet().stream()
+                .rosterEntries(addressBook.getNodeIdSet().stream()
                         .map(addressBook::getAddress)
                         .map(address -> {
                             try {

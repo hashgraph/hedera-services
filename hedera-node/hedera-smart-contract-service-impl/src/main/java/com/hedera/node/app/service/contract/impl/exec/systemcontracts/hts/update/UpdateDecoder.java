@@ -25,11 +25,13 @@ import static com.hedera.node.app.spi.key.KeyUtils.IMMUTABILITY_SENTINEL_KEY;
 
 import com.esaulpaugh.headlong.abi.Address;
 import com.esaulpaugh.headlong.abi.Tuple;
+import com.google.common.primitives.Longs;
 import com.hedera.hapi.node.base.Duration;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.state.token.Token;
+import com.hedera.hapi.node.token.TokenUpdateNftsTransactionBody;
 import com.hedera.hapi.node.token.TokenUpdateTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AddressIdConverter;
@@ -39,6 +41,7 @@ import com.hedera.node.app.service.contract.impl.exec.utils.KeyValueWrapper;
 import com.hedera.node.app.service.contract.impl.exec.utils.TokenExpiryWrapper;
 import com.hedera.node.app.service.contract.impl.exec.utils.TokenKeyWrapper;
 import com.hedera.node.app.service.contract.impl.utils.ConversionUtils;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.math.BigInteger;
@@ -82,6 +85,8 @@ public class UpdateDecoder {
 
     private static final int KEY_TYPE = 0;
     private static final int KEY_VALUE = 1;
+    private static final int SERIAL_NUMBERS = 1;
+    private static final int METADATA = 2;
 
     private static final int INHERIT_ACCOUNT_KEY = 0;
     private static final int CONTRACT_ID = 1;
@@ -220,6 +225,22 @@ public class UpdateDecoder {
         } catch (IllegalArgumentException ignore) {
             return null;
         }
+    }
+
+    public TransactionBody decodeUpdateNFTsMetadata(@NonNull final HtsCallAttempt attempt) {
+        final var call = UpdateNFTsMetadataTranslator.UPDATE_NFTs_METADATA.decodeCall(
+                attempt.input().toArrayUnsafe());
+
+        final var tokenId = ConversionUtils.asTokenId(call.get(TOKEN_ADDRESS));
+        final List<Long> serialNumbers = Longs.asList(call.get(SERIAL_NUMBERS));
+        final byte[] metadata = call.get(METADATA);
+
+        final var txnBodyBuilder = TokenUpdateNftsTransactionBody.newBuilder()
+                .token(tokenId)
+                .serialNumbers(serialNumbers)
+                .metadata(Bytes.wrap(metadata));
+
+        return TransactionBody.newBuilder().tokenUpdateNfts(txnBodyBuilder).build();
     }
 
     private TransactionBody bodyWith(

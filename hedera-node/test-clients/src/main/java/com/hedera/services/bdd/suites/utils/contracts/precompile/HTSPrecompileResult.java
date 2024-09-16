@@ -23,6 +23,7 @@ import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.EXPIRY;
 import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.FIXED_FEE;
 import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.FRACTIONAL_FEE;
 import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.HEDERA_TOKEN_V1;
+import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.HEDERA_TOKEN_V4;
 import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.KEY_VALUE;
 import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.RESPONSE_STATUS_AT_BEGINNING;
 import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.ROYALTY_FEE;
@@ -81,19 +82,40 @@ public class HTSPrecompileResult implements ContractCallResult {
             + ARRAY_BRACKETS
             + ",string"
             + ")";
+    public static final String TOKEN_INFO_V2 = "("
+            + HEDERA_TOKEN_V4.replace(removeBrackets(ADDRESS), removeBrackets(BYTES32))
+            + ",int64,bool,bool,bool,"
+            + FIXED_FEE_REPLACED_ADDRESS
+            + ARRAY_BRACKETS
+            + ","
+            + FRACTIONAL_FEE_REPLACED_ADDRESS
+            + ARRAY_BRACKETS
+            + ","
+            + ROYALTY_FEE_REPLACED_ADDRESS
+            + ARRAY_BRACKETS
+            + ",string"
+            + ")";
     public static final String FUNGIBLE_TOKEN_INFO_REPLACED_ADDRESS =
             "(" + TOKEN_INFO_REPLACED_ADDRESS + ",int32" + ")";
+    public static final String FUNGIBLE_TOKEN_INFO_V2 = "(" + TOKEN_INFO_V2 + ",int32" + ")";
     public static final String NON_FUNGIBLE_TOKEN_INFO_REPLACED_ADDRESS =
             "(" + TOKEN_INFO_REPLACED_ADDRESS + ",int64,bytes32,int64,bytes,bytes32" + ")";
+    public static final String NON_FUNGIBLE_TOKEN_INFO_V2 =
+            "(" + TOKEN_INFO_V2 + ",int64,bytes32,int64,bytes,bytes32" + ")";
 
     public static final String KEY_VALUE_REPLACED_ADDRESS = KEY_VALUE.replace(ADDRESS_TYPE, BYTES_32_TYPE);
 
     public static final TupleType getTokenInfoTypeReplacedAddress =
             TupleType.parse(RESPONSE_STATUS_AT_BEGINNING + TOKEN_INFO_REPLACED_ADDRESS + ")");
+    public static final TupleType getTokenInfoV2 = TupleType.parse(RESPONSE_STATUS_AT_BEGINNING + TOKEN_INFO_V2 + ")");
     public static final TupleType getFungibleTokenInfoTypeReplacedAddress =
             TupleType.parse(RESPONSE_STATUS_AT_BEGINNING + FUNGIBLE_TOKEN_INFO_REPLACED_ADDRESS + ")");
+    public static final TupleType getFungibleTokenInfoV2 =
+            TupleType.parse(RESPONSE_STATUS_AT_BEGINNING + FUNGIBLE_TOKEN_INFO_V2 + ")");
     public static final TupleType getNonFungibleTokenInfoTypeReplacedAddress =
             TupleType.parse(RESPONSE_STATUS_AT_BEGINNING + NON_FUNGIBLE_TOKEN_INFO_REPLACED_ADDRESS + ")");
+    public static final TupleType getNonFungibleTokenInfoV2 =
+            TupleType.parse(RESPONSE_STATUS_AT_BEGINNING + NON_FUNGIBLE_TOKEN_INFO_V2 + ")");
     public static final TupleType tokenGetCustomFeesReplacedAddress = TupleType.parse(RESPONSE_STATUS_AT_BEGINNING
             + FIXED_FEE_REPLACED_ADDRESS
             + ARRAY_BRACKETS
@@ -160,8 +182,11 @@ public class HTSPrecompileResult implements ContractCallResult {
                     GET_TOKEN_DEFAULT_FREEZE_STATUS,
                     HAPI_IS_KYC -> intBoolTuple;
             case HAPI_GET_TOKEN_INFO -> getTokenInfoTypeReplacedAddress;
+            case HAPI_GET_TOKEN_INFO_V2 -> getTokenInfoV2;
             case HAPI_GET_FUNGIBLE_TOKEN_INFO -> getFungibleTokenInfoTypeReplacedAddress;
+            case HAPI_GET_FUNGIBLE_TOKEN_INFO_V2 -> getFungibleTokenInfoV2;
             case HAPI_GET_NON_FUNGIBLE_TOKEN_INFO -> getNonFungibleTokenInfoTypeReplacedAddress;
+            case HAPI_GET_NON_FUNGIBLE_TOKEN_INFO_V2 -> getNonFungibleTokenInfoV2;
             case HAPI_GET_TOKEN_CUSTOM_FEES -> tokenGetCustomFeesReplacedAddress;
             case HAPI_GET_TOKEN_KEY -> getTokenKeyReplacedAddress;
             case HAPI_GET_TOKEN_TYPE -> intPairTuple;
@@ -333,8 +358,11 @@ public class HTSPrecompileResult implements ContractCallResult {
                     case HAPI_ALLOWANCE -> Tuple.of(status.getNumber(), BigInteger.valueOf(allowance));
                     case HAPI_GET_APPROVED -> Tuple.of(status.getNumber(), expandByteArrayTo32Length(approved));
                     case HAPI_GET_TOKEN_INFO -> getTupleForGetTokenInfo();
+                    case HAPI_GET_TOKEN_INFO_V2 -> getTupleForGetTokenInfoV2();
                     case HAPI_GET_FUNGIBLE_TOKEN_INFO -> getTupleForGetFungibleTokenInfo();
+                    case HAPI_GET_FUNGIBLE_TOKEN_INFO_V2 -> getTupleForGetFungibleTokenInfoV2();
                     case HAPI_GET_NON_FUNGIBLE_TOKEN_INFO -> getTupleForGetNonFungibleTokenInfo();
+                    case HAPI_GET_NON_FUNGIBLE_TOKEN_INFO_V2 -> getTupleForGetNonFungibleTokenInfoV2();
                     case HAPI_IS_KYC -> Tuple.of(status.getNumber(), isKyc);
                     case GET_TOKEN_DEFAULT_FREEZE_STATUS -> Tuple.of(status.getNumber(), tokenDefaultFreezeStatus);
                     case GET_TOKEN_DEFAULT_KYC_STATUS -> Tuple.of(status.getNumber(), tokenDefaultKycStatus);
@@ -354,8 +382,16 @@ public class HTSPrecompileResult implements ContractCallResult {
         return Tuple.of(status.getNumber(), getTupleForTokenInfo());
     }
 
+    private Tuple getTupleForGetTokenInfoV2() {
+        return Tuple.of(status.getNumber(), getTupleForTokenInfoV2());
+    }
+
     private Tuple getTupleForGetFungibleTokenInfo() {
         return Tuple.of(status.getNumber(), Tuple.of(getTupleForTokenInfo(), decimals));
+    }
+
+    private Tuple getTupleForGetFungibleTokenInfoV2() {
+        return Tuple.of(status.getNumber(), Tuple.of(getTupleForTokenInfoV2(), decimals));
     }
 
     private Tuple getTupleForGetNonFungibleTokenInfo() {
@@ -363,6 +399,18 @@ public class HTSPrecompileResult implements ContractCallResult {
                 status.getNumber(),
                 Tuple.of(
                         getTupleForTokenInfo(),
+                        nonFungibleTokenInfo.getNftID().getSerialNumber(),
+                        expandByteArrayTo32Length(Utils.asAddress(nonFungibleTokenInfo.getAccountID())),
+                        nonFungibleTokenInfo.getCreationTime().getSeconds(),
+                        nonFungibleTokenInfo.getMetadata().toByteArray(),
+                        expandByteArrayTo32Length(Utils.asAddress(nonFungibleTokenInfo.getSpenderId()))));
+    }
+
+    private Tuple getTupleForGetNonFungibleTokenInfoV2() {
+        return Tuple.of(
+                status.getNumber(),
+                Tuple.of(
+                        getTupleForTokenInfoV2(),
                         nonFungibleTokenInfo.getNftID().getSerialNumber(),
                         expandByteArrayTo32Length(Utils.asAddress(nonFungibleTokenInfo.getAccountID())),
                         nonFungibleTokenInfo.getCreationTime().getSeconds(),
@@ -435,6 +483,26 @@ public class HTSPrecompileResult implements ContractCallResult {
                 Bytes.wrap(tokenInfo.getLedgerId().toByteArray()).toString());
     }
 
+    private Tuple getTupleForTokenInfoV2() {
+        final var fixedFees = new ArrayList<Tuple>();
+        final var fractionalFees = new ArrayList<Tuple>();
+        final var royaltyFees = new ArrayList<Tuple>();
+
+        for (final var customFee : tokenInfo.getCustomFeesList()) {
+            extractFees(fixedFees, fractionalFees, royaltyFees, customFee);
+        }
+        return Tuple.of(
+                getHederaTokenTupleV2(),
+                tokenInfo.getTotalSupply(),
+                tokenInfo.getDeleted(),
+                tokenInfo.getDefaultKycStatus().getNumber() == 1,
+                tokenInfo.getPauseStatus().getNumber() == 1,
+                fixedFees.toArray(new Tuple[fixedFees.size()]),
+                fractionalFees.toArray(new Tuple[fractionalFees.size()]),
+                royaltyFees.toArray(new Tuple[royaltyFees.size()]),
+                Bytes.wrap(tokenInfo.getLedgerId().toByteArray()).toString());
+    }
+
     private Tuple getFixedFeeTuple(final FixedFee fixedFee, final byte[] feeCollector) {
         return Tuple.of(
                 fixedFee.getAmount(),
@@ -483,23 +551,52 @@ public class HTSPrecompileResult implements ContractCallResult {
                 expiryTuple);
     }
 
-    private Tuple[] getTokenKeysTuples() {
-        final var adminKeyToConvert = tokenInfo.getAdminKey();
-        final var kycKeyToConvert = tokenInfo.getKycKey();
-        final var freezeKeyToConvert = tokenInfo.getFreezeKey();
-        final var wipeKeyToConvert = tokenInfo.getWipeKey();
-        final var supplyKeyToConvert = tokenInfo.getSupplyKey();
-        final var feeScheduleKeyToConvert = tokenInfo.getFeeScheduleKey();
-        final var pauseKeyToConvert = tokenInfo.getPauseKey();
+    private Tuple getHederaTokenTupleV2() {
+        expiry = tokenInfo.getExpiry().getSeconds();
+        autoRenewPeriod = tokenInfo.getAutoRenewPeriod().getSeconds();
+        final var expiryTuple = Tuple.of(
+                expiry, expandByteArrayTo32Length(Utils.asAddress(tokenInfo.getAutoRenewAccount())), autoRenewPeriod);
 
-        final Tuple[] tokenKeys = new Tuple[TokenKeyType.values().length - 1];
-        tokenKeys[0] = getKeyTuple(BigInteger.valueOf(TokenKeyType.ADMIN_KEY.value()), adminKeyToConvert);
-        tokenKeys[1] = getKeyTuple(BigInteger.valueOf(TokenKeyType.KYC_KEY.value()), kycKeyToConvert);
-        tokenKeys[2] = getKeyTuple(BigInteger.valueOf(TokenKeyType.FREEZE_KEY.value()), freezeKeyToConvert);
-        tokenKeys[3] = getKeyTuple(BigInteger.valueOf(TokenKeyType.WIPE_KEY.value()), wipeKeyToConvert);
-        tokenKeys[4] = getKeyTuple(BigInteger.valueOf(TokenKeyType.SUPPLY_KEY.value()), supplyKeyToConvert);
-        tokenKeys[5] = getKeyTuple(BigInteger.valueOf(TokenKeyType.FEE_SCHEDULE_KEY.value()), feeScheduleKeyToConvert);
-        tokenKeys[6] = getKeyTuple(BigInteger.valueOf(TokenKeyType.PAUSE_KEY.value()), pauseKeyToConvert);
+        return Tuple.of(
+                tokenInfo.getName(),
+                tokenInfo.getSymbol(),
+                expandByteArrayTo32Length(Utils.asAddress(tokenInfo.getTreasury())),
+                tokenInfo.getMemo(),
+                tokenInfo.getSupplyType().getNumber() == 1,
+                tokenInfo.getMaxSupply(),
+                tokenInfo.getDefaultFreezeStatus().getNumber() == 1,
+                getTokenKeysTuplesV2(),
+                expiryTuple,
+                tokenInfo.getMetadata().toByteArray());
+    }
+
+    private Tuple[] getTokenKeysTuples() {
+        return buildTokenKeysTuples();
+    }
+
+    private Tuple[] getTokenKeysTuplesV2() {
+        return buildTokenKeysTuples(
+                getKeyTuple(BigInteger.valueOf(TokenKeyType.METADATA_KEY.value()), tokenInfo.getMetadataKey()));
+    }
+
+    private Tuple[] buildTokenKeysTuples(final Tuple... additionalKeys) {
+        // -1 for the additional key for METADATA
+        final int existingKeysLength = TokenKeyType.values().length - 1;
+        final int additionalKeysLength = additionalKeys.length;
+        final Tuple[] tokenKeys = new Tuple[existingKeysLength + additionalKeysLength];
+
+        tokenKeys[0] = getKeyTuple(BigInteger.valueOf(TokenKeyType.ADMIN_KEY.value()), tokenInfo.getAdminKey());
+        tokenKeys[1] = getKeyTuple(BigInteger.valueOf(TokenKeyType.KYC_KEY.value()), tokenInfo.getKycKey());
+        tokenKeys[2] = getKeyTuple(BigInteger.valueOf(TokenKeyType.FREEZE_KEY.value()), tokenInfo.getFreezeKey());
+        tokenKeys[3] = getKeyTuple(BigInteger.valueOf(TokenKeyType.WIPE_KEY.value()), tokenInfo.getWipeKey());
+        tokenKeys[4] = getKeyTuple(BigInteger.valueOf(TokenKeyType.SUPPLY_KEY.value()), tokenInfo.getSupplyKey());
+        tokenKeys[5] =
+                getKeyTuple(BigInteger.valueOf(TokenKeyType.FEE_SCHEDULE_KEY.value()), tokenInfo.getFeeScheduleKey());
+        tokenKeys[6] = getKeyTuple(BigInteger.valueOf(TokenKeyType.PAUSE_KEY.value()), tokenInfo.getPauseKey());
+
+        if (additionalKeys.length > 0) {
+            System.arraycopy(additionalKeys, 0, tokenKeys, existingKeysLength, additionalKeysLength);
+        }
 
         return tokenKeys;
     }
