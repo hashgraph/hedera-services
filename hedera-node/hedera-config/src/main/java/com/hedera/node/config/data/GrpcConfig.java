@@ -31,6 +31,9 @@ import com.swirlds.config.api.validation.annotation.Min;
  *                unless both are 0. Must be a value between 0 and 65535, inclusive.
  * @param workflowsPort Deprecated
  * @param workflowsTlsPort Deprecated
+ * @param maxMessageSize The maximum message size in bytes that the server can receive. Must be non-negative. Defaults to 4MB.
+ * @param maxResponseSize The maximum message size in bytes that the server can send in the response. Must be non-negative. Defaults to 4MB.
+ * @param noopMarshallerMaxMessageSize The maximum message size in bytes that the server can receive when using a no-op serialization strategy. Must be non-negative. Defaults to 4MB.
  */
 @ConfigData("grpc")
 public record GrpcConfig(
@@ -38,9 +41,9 @@ public record GrpcConfig(
         @ConfigProperty(defaultValue = "50212") @Min(0) @Max(65535) @NodeProperty int tlsPort,
         @ConfigProperty(defaultValue = "60211") @Min(0) @Max(65535) @NodeProperty int workflowsPort,
         @ConfigProperty(defaultValue = "60212") @Min(0) @Max(65535) @NodeProperty int workflowsTlsPort,
-        @ConfigProperty(defaultValue = "4194304") @Min(0) int maxMessageSize,
-        @ConfigProperty(defaultValue = "4194304") @Min(0) int maxResponseSize,
-        @ConfigProperty(defaultValue = "4194304") @Min(0) int noopMarshallerMaxMessageSize) {
+        @ConfigProperty(defaultValue = "4194304") @Max(4194304) @Min(0) int maxMessageSize,
+        @ConfigProperty(defaultValue = "4194304") @Max(4194304) @Min(0) int maxResponseSize,
+        @ConfigProperty(defaultValue = "4194304") @Max(4194304) @Min(0) int noopMarshallerMaxMessageSize) {
 
     public GrpcConfig {
         validateFieldRange(port, 0, 65535, "port");
