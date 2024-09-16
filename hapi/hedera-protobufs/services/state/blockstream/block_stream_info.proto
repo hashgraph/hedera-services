@@ -116,9 +116,11 @@ message BlockStreamInfo {
     uint32 num_preceding_output_items = 7;
 
     /**
-     * The concatenation of the rightmost hashes at each level of the output tree as it
-     * is constructed from all output items preceding the state change updating this
-     * singleton (which MUST be the last output block item in the block)
+     * A concatenation of SHA2-384 hash values.<br/>
+     * This is the "rightmost" values of the "output" subtree.
+     * <p>
+     * The subtree containing these hashes SHALL be constructed from all "output"
+     * `BlockItem`s in this block that _precede_ the update to this singleton.
      */
     repeated bytes rightmost_preceding_output_tree_hashes = 8;
 
