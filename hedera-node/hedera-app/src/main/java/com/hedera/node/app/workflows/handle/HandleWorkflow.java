@@ -40,6 +40,8 @@ import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.transaction.ExchangeRateSet;
+import com.hedera.hapi.platform.event.TssMessageTransaction;
+import com.hedera.hapi.platform.event.TssVoteTransaction;
 import com.hedera.node.app.blocks.BlockStreamManager;
 import com.hedera.node.app.blocks.impl.BlockStreamBuilder;
 import com.hedera.node.app.blocks.impl.BoundaryStateChangeListener;
@@ -58,6 +60,7 @@ import com.hedera.node.app.state.HederaRecordCache;
 import com.hedera.node.app.store.WritableStoreFactory;
 import com.hedera.node.app.throttle.NetworkUtilizationManager;
 import com.hedera.node.app.throttle.ThrottleServiceManager;
+import com.hedera.node.app.tss.impl.TssStateManager;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.app.workflows.handle.cache.CacheWarmer;
@@ -76,6 +79,7 @@ import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.events.ConsensusEvent;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
+import com.swirlds.platform.util.TransactionUtils;
 import com.swirlds.state.State;
 import com.swirlds.state.spi.info.NetworkInfo;
 import com.swirlds.state.spi.info.NodeInfo;
@@ -125,6 +129,8 @@ public class HandleWorkflow {
     private final KVStateChangeListener kvStateChangeListener;
     private final BoundaryStateChangeListener boundaryStateChangeListener;
     private final List<StateChanges.Builder> migrationStateChanges;
+    private final TssStateManager tssStateManager;
+
 
     @Inject
     public HandleWorkflow(
@@ -154,7 +160,8 @@ public class HandleWorkflow {
             @NonNull final StakePeriodManager stakePeriodManager,
             @NonNull final KVStateChangeListener kvStateChangeListener,
             @NonNull final BoundaryStateChangeListener boundaryStateChangeListener,
-            @NonNull final List<StateChanges.Builder> migrationStateChanges) {
+            @NonNull final List<StateChanges.Builder> migrationStateChanges,
+            @NonNull final TssStateManager tssStateManager) {
         this.networkInfo = requireNonNull(networkInfo);
         this.nodeStakeUpdates = requireNonNull(nodeStakeUpdates);
         this.authorizer = requireNonNull(authorizer);
@@ -182,6 +189,7 @@ public class HandleWorkflow {
         this.kvStateChangeListener = requireNonNull(kvStateChangeListener);
         this.boundaryStateChangeListener = requireNonNull(boundaryStateChangeListener);
         this.migrationStateChanges = new ArrayList<>(migrationStateChanges);
+        this.tssStateManager = requireNonNull(tssStateManager);
     }
 
     /**
@@ -200,6 +208,8 @@ public class HandleWorkflow {
         }
         recordCache.resetRoundReceipts();
         try {
+            // Initialize TSS state manager at the start of the round
+            tssStateManager.handleStartup();
             handleEvents(state, round);
         } finally {
             // Even if there is an exception somewhere, we need to commit the receipts of any handled transactions
@@ -238,6 +248,17 @@ public class HandleWorkflow {
             for (final var it = event.consensusTransactionIterator(); it.hasNext(); ) {
                 final var platformTxn = it.next();
                 try {
+                    boolean isTssMessage = TransactionUtils.isTssMessageTransaction(platformTxn.getTransaction());
+                    boolean isTssVoteMessage = TransactionUtils.isTssVoteTransaction(platformTxn.getTransaction());
+
+                    // Handle TSS transactions
+                    if (isTssMessage) {
+                        var tssMessageTransaction = platformTxn.getTransaction().tssMessageTransaction();
+                        tssStateManager.handleTssMessageTransaction(tssMessageTransaction);
+                    } else if (isTssVoteMessage) {
+                        var tssVoteTransaction = platformTxn.getTransaction().tssVoteTransaction();
+                        tssStateManager.handleTssVoteTransaction(tssVoteTransaction);
+                    }
                     // skip system transactions
                     if (!platformTxn.isSystem()) {
                         userTransactionsHandled.set(true);

@@ -22,6 +22,7 @@ import com.hedera.hapi.platform.event.TssMessageTransaction;
 import com.hedera.hapi.platform.event.TssVoteTransaction;
 import com.hedera.hapi.platform.tss.TssMessageMapKey;
 import com.hedera.hapi.platform.tss.TssVoteMapKey;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.exceptions.NotImplementedException;
 import java.util.HashMap;
 import java.util.Map;
@@ -102,7 +103,17 @@ public class TssStateManager {
         throw new NotImplementedException();
     }
 
+    public void handleTssMessageTransaction(Bytes transaction) {
+        // Process the TssMessageTransaction
+        throw new NotImplementedException();
+    }
+
     public void handleTssVoteTransaction(TssVoteTransaction transaction) {
+        // Process the TssVoteTransaction
+        throw new NotImplementedException();
+    }
+
+    public void handleTssVoteTransaction(Bytes transaction) {
         // Process the TssVoteTransaction
         throw new NotImplementedException();
     }

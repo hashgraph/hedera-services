@@ -51,7 +51,8 @@ class PlaceholderTssBaseServiceTest {
     @Mock
     private SchemaRegistry registry;
 
-    private final PlaceholderTssBaseService subject = new PlaceholderTssBaseService();
+    TssCryptographyManager tssCryptographyManager = new TssCryptographyManager(com.hedera.hapi.platform.state.NodeId.DEFAULT, 5, true);
+    private final PlaceholderTssBaseService subject = new PlaceholderTssBaseService(new TssStateManager(tssCryptographyManager));
 
     @BeforeEach
     void setUp() {

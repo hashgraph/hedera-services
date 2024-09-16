@@ -36,6 +36,7 @@ import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.state.HederaRecordCache;
 import com.hedera.node.app.throttle.NetworkUtilizationManager;
 import com.hedera.node.app.throttle.ThrottleServiceManager;
+import com.hedera.node.app.tss.impl.TssStateManager;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.app.workflows.handle.cache.CacheWarmer;
 import com.hedera.node.app.workflows.handle.dispatch.ChildDispatchFactory;
@@ -151,6 +152,10 @@ class HandleWorkflowTest {
 
     private HandleWorkflow subject;
 
+    @Mock
+    private TssStateManager tssStateManager;
+
+
     @BeforeEach
     void setUp() {
         given(configProvider.getConfiguration()).willReturn(new VersionedConfigImpl(DEFAULT_CONFIG, 1L));
@@ -181,7 +186,8 @@ class HandleWorkflowTest {
                 stakePeriodManager,
                 kvStateChangeListener,
                 boundaryStateChangeListener,
-                List.of());
+                List.of(),
+                tssStateManager);
     }
 
     @Test

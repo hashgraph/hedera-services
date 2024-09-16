@@ -36,9 +36,12 @@ import static com.swirlds.platform.util.BootstrapUtils.checkNodesToRun;
 import static com.swirlds.platform.util.BootstrapUtils.getNodesToRun;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.node.app.services.OrderedServiceMigrator;
 import com.hedera.node.app.services.ServicesRegistryImpl;
 import com.hedera.node.app.tss.impl.PlaceholderTssBaseService;
+import com.hedera.node.app.tss.impl.TssCryptographyManager;
+import com.hedera.node.app.tss.impl.TssStateManager;
 import com.swirlds.base.time.Time;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.RuntimeConstructable;
@@ -355,11 +358,12 @@ public class ServicesMain implements SwirldMain {
     }
 
     private static Hedera newHedera() {
+        TssCryptographyManager tssCryptographyManager = new TssCryptographyManager(com.hedera.hapi.platform.state.NodeId.DEFAULT, 5, true);
         return new Hedera(
                 ConstructableRegistry.getInstance(),
                 ServicesRegistryImpl::new,
                 new OrderedServiceMigrator(),
                 InstantSource.system(),
-                PlaceholderTssBaseService::new);
+                () -> new PlaceholderTssBaseService(new TssStateManager(tssCryptographyManager)));
     }
 }

@@ -114,4 +114,46 @@ public final class TransactionUtils {
     public static boolean isSystemTransaction(@NonNull final OneOf<TransactionOneOfType> transaction) {
         return !TransactionOneOfType.APPLICATION_TRANSACTION.equals(transaction.kind());
     }
+
+    /**
+     * Check if a transaction is a TssMessageTransaction.<br>
+     * This is a convenience method that delegates to {@link #isTssMessageTransaction(OneOf)}.
+     *
+     * @param transaction the transaction to check
+     * @return {@code true} if the transaction is a TssMessageTransaction, {@code false} otherwise
+     */
+    public static boolean isTssMessageTransaction(@NonNull final EventTransaction transaction) {
+        return isTssMessageTransaction(transaction.transaction());
+    }
+
+    /**
+     * Check if a transaction is a TssMessageTransaction.
+     *
+     * @param transaction the transaction to check
+     * @return {@code true} if the transaction is a TssMessageTransaction, {@code false} otherwise
+     */
+    public static boolean isTssMessageTransaction(@NonNull final OneOf<TransactionOneOfType> transaction) {
+        return transaction.kind().equals(TransactionOneOfType.TSS_MESSAGE_TRANSACTION);
+    }
+
+    /**
+     * Check if a transaction is a TssVoteTransaction.<br>
+     * This is a convenience method that delegates to {@link #isTssVoteTransaction(OneOf)}.
+     *
+     * @param transaction the transaction to check
+     * @return {@code true} if the transaction is a TssVoteTransaction, {@code false} otherwise
+     */
+    public static boolean isTssVoteTransaction(@NonNull final EventTransaction transaction) {
+        return isTssVoteTransaction(transaction.transaction());
+    }
+
+    /**
+     * Check if a transaction is a TssVoteTransaction.
+     *
+     * @param transaction the transaction to check
+     * @return {@code true} if the transaction is a TssVoteTransaction, {@code false} otherwise
+     */
+    public static boolean isTssVoteTransaction(@NonNull final OneOf<TransactionOneOfType> transaction) {
+        return transaction.kind().equals(TransactionOneOfType.TSS_VOTE_TRANSACTION);
+    }
 }

@@ -60,6 +60,18 @@ message EventTransaction {
        * This transaction SHALL be a valid state signature for a state snapshot.
        */
       StateSignatureTransaction state_signature_transaction = 2;
+      /**
+       * A TSS message.
+       * <p>
+       * This transaction SHALL be a valid TSS message.
+       */
+      bytes tss_message_transaction = 3;
+      /**
+       * A TSS vote.
+       * <p>
+       * This transaction SHALL be a valid TSS vote.
+       */
+      bytes tss_vote_transaction = 4;
   }
 
 }

@@ -44,9 +44,9 @@ public class PlaceholderTssBaseService implements TssBaseService {
     private TssCryptographyManager tssCryptographyManager;
     private Roster candidateRoster;
 
-    public PlaceholderTssBaseService(TssStateManager tssStateManager, TssCryptographyManager tssCryptographyManager) {
+    public PlaceholderTssBaseService(TssStateManager tssStateManager) {
         this.tssStateManager = tssStateManager;
-        this.tssCryptographyManager = tssCryptographyManager;
+//        this.tssCryptographyManager = tssCryptographyManager;
     }
 
     /**
@@ -112,6 +112,6 @@ public class PlaceholderTssBaseService implements TssBaseService {
         // Set the candidate roster
         this.candidateRoster = candidateRoster;
         tssStateManager.setCandidateRoster(candidateRoster);
-        tssCryptographyManager.keyCandidateRoster(candidateRoster);
+//        tssCryptographyManager.keyCandidateRoster(candidateRoster);
     }
 }
