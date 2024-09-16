@@ -125,7 +125,10 @@ message BlockStreamInfo {
     repeated bytes rightmost_preceding_output_tree_hashes = 8;
 
     /**
-     * The last-used consensus time for the current block.<br/>
+     * A block-end consensus time stamp.
+     * <p>
+     * This field SHALL hold the last-used consensus time for
+     * the current block.
      */
     proto.Timestamp block_end_time = 9;
 }
