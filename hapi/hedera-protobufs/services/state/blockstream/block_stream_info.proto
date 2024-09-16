@@ -94,7 +94,8 @@ message BlockStreamInfo {
     bytes trailing_block_hashes = 4;
 
     /**
-     * The root hash of the input item tree for this block.
+     * A SHA2-384 hash value.<br/>
+     * This is the hash of the "input" subtree for this block.
      */
     bytes input_tree_root_hash = 5;
 
