@@ -100,7 +100,8 @@ message BlockStreamInfo {
     bytes input_tree_root_hash = 5;
 
     /**
-     * The state hash at the start of this block.
+     * A SHA2-384 has value.<br/>
+     * This is the hash of consensus state at the _start_ of this block.
      */
     bytes start_of_block_state_hash = 6;
 
