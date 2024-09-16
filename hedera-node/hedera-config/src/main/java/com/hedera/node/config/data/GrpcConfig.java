@@ -31,9 +31,11 @@ import com.swirlds.config.api.validation.annotation.Min;
  *                unless both are 0. Must be a value between 0 and 65535, inclusive.
  * @param workflowsPort Deprecated
  * @param workflowsTlsPort Deprecated
- * @param maxMessageSize The maximum message size in bytes that the server can receive. Must be non-negative. Defaults to 4MB.
- * @param maxResponseSize The maximum message size in bytes that the server can send in the response. Must be non-negative. Defaults to 4MB.
- * @param noopMarshallerMaxMessageSize The maximum message size in bytes that the server can receive when using a no-op serialization strategy. Must be non-negative. Defaults to 4MB.
+ * @param maxMessageSize The maximum message size in bytes that the server can receive. Must be non-negative.
+ * @param maxResponseSize The maximum message size in bytes that the server can send in the response.
+ *             Must be non-negative. Defaults to 4MB.
+ * @param noopMarshallerMaxMessageSize The maximum message size in bytes that the server can receive when using a no-op
+ *             serialization strategy. Must be non-negative. Defaults to 4MB.
  */
 @ConfigData("grpc")
 public record GrpcConfig(
