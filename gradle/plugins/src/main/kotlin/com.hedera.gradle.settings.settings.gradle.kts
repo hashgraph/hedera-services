@@ -14,6 +14,9 @@
  * limitations under the License.
  */
 
+import org.gradlex.javamodule.dependencies.initialization.JavaModulesExtension
+import org.gradlex.javamodule.dependencies.initialization.RootPluginsExtension
+
 pluginManagement {
     repositories {
         gradlePluginPortal()
@@ -26,6 +29,10 @@ plugins {
     id("com.gradle.develocity")
     id("org.gradlex.java-module-dependencies")
 }
+
+// Plugins that are global, but are applied to the "root project" instead of settings.
+// by having this block here, we  do not require a "build.gradle.kts" in the repository roots.
+configure<RootPluginsExtension> { id("com.hedera.gradle.root") }
 
 // Enable Gradle Build Scan
 develocity {
@@ -63,3 +70,11 @@ buildCache {
 // https://docs.gradle.org/current/userguide/composite_builds.html#included_build_declaring_substitutions
 // Some functionality of the 'java-module-dependencies' plugin relies on this.
 includeBuild(".")
+
+configure<JavaModulesExtension> {
+    // Project to aggregate code coverage data for the whole repository into one report
+    module("gradle/reports")
+
+    // "BOM" with versions of 3rd party dependencies
+    versions("hedera-dependency-versions")
+}
