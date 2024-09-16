@@ -5,14 +5,13 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *        http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
  */
 
 package com.hedera.node.app.tss.impl;
@@ -52,14 +51,12 @@ public class TssCryptographyManager {
     private final Map<byte[], List<TssVoteTransaction>> tssVotes;
     private final Set<byte[]> votingClosed;
 
-    public TssCryptographyManager(NodeId nodeId,
-            int maxSharesPerNode,
-            boolean keyActiveRoster) {
+    public TssCryptographyManager(NodeId nodeId, int maxSharesPerNode, boolean keyActiveRoster) {
         this.nodeId = nodeId;
         this.tssEncryptionKey = getTssEncryptionKey(nodeId.id());
         this.maxSharesPerNode = maxSharesPerNode;
         this.keyActiveRoster = keyActiveRoster;
-        this.createNewLedgerId = false;  // Default to false as per proposal
+        this.createNewLedgerId = false; // Default to false as per proposal
 
         this.rosters = new HashMap<>();
         this.shareCounts = new HashMap<>();
@@ -80,6 +77,7 @@ public class TssCryptographyManager {
         }
         return rosterHash;
     }
+
     private byte[] computeRosterHash(Roster roster) {
         try {
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
@@ -89,7 +87,6 @@ public class TssCryptographyManager {
             throw new RuntimeException("SHA-256 algorithm not found", e);
         }
     }
-
 
     public byte[] getTssEncryptionKey(long nodeId) {
         return tssEncryptionKeys.get(nodeId);
@@ -116,19 +113,19 @@ public class TssCryptographyManager {
             generateKeyMaterialForRoster(rosterHash, roster);
         }
 
-        this.createNewLedgerId = true;  // We are generating a new Ledger ID
+        this.createNewLedgerId = true; // We are generating a new Ledger ID
     }
 
     /**
      * Set the candidate roster and begin the key generation process for it.
      * @param roster The candidate roster to be set.
      */
-    public void setCandidateRoster(Roster roster) {
+    public void keyCandidateRoster(Roster roster) {
         byte[] newCandidateRosterHash = loadRoster(roster);
 
         // Check if there is already a candidate roster and replace it if necessary
-        if (this.candidateRosterHash != null &&
-                !java.util.Arrays.equals(this.candidateRosterHash, newCandidateRosterHash)) {
+        if (this.candidateRosterHash != null
+                && !java.util.Arrays.equals(this.candidateRosterHash, newCandidateRosterHash)) {
 
             // Clear old candidate roster data
             clearCandidateRosterData(this.candidateRosterHash);
@@ -145,7 +142,7 @@ public class TssCryptographyManager {
             generateKeyMaterialForRoster(newCandidateRosterHash, roster);
         }
 
-        this.createNewLedgerId = true;  // We are generating a new Ledger ID
+        this.createNewLedgerId = true; // We are generating a new Ledger ID
     }
 
     private void computeShareCounts(byte[] rosterHash, Roster roster) {
@@ -153,7 +150,7 @@ public class TssCryptographyManager {
         Map<NodeId, Integer> sharesForRoster = new HashMap<>();
         for (RosterEntry entry : roster.rosterEntries()) {
             long nodeId = entry.nodeId();
-            sharesForRoster.put(new NodeId(nodeId), 0);  // Initially, no shares for any node
+            sharesForRoster.put(new NodeId(nodeId), 0); // Initially, no shares for any node
         }
         this.shareCounts.put(rosterHash, sharesForRoster);
     }
@@ -180,7 +177,6 @@ public class TssCryptographyManager {
         // Placeholder logic for generating public shares from private shares
         return List.of(); // Return empty list for now
     }
-
 
     private void submitTssMessageTransactions(byte[] rosterHash, List<PublicShare> publicShares) {
         // Placeholder logic for submitting TSS message transactions to the network

@@ -21,7 +21,6 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.node.app.tss.TssBaseService;
-import com.swirlds.common.exceptions.NotImplementedException;
 import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.state.spi.SchemaRegistry;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -106,8 +105,8 @@ public class PlaceholderTssBaseService implements TssBaseService {
     @Override
     public void setCandidateRoster(@NonNull final Roster candidateRoster) {
         // If there is already a candidate roster, clean up related data
-        if(this.candidateRoster != null) {
-           tssStateManager.clearCandidateRosterData(this.candidateRoster);
+        if (this.candidateRoster != null) {
+            tssStateManager.clearCandidateRosterData(this.candidateRoster);
         }
 
         // Set the candidate roster

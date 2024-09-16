@@ -1,3 +1,19 @@
+/*
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.hedera.node.app.tss.impl;
 
 import com.hedera.hapi.node.state.roster.LedgerId;
@@ -6,10 +22,9 @@ import com.hedera.hapi.platform.event.TssMessageTransaction;
 import com.hedera.hapi.platform.event.TssVoteTransaction;
 import com.hedera.hapi.platform.tss.TssMessageMapKey;
 import com.hedera.hapi.platform.tss.TssVoteMapKey;
+import com.swirlds.common.exceptions.NotImplementedException;
 import java.util.HashMap;
 import java.util.Map;
-import com.swirlds.common.exceptions.NotImplementedException;
-
 
 public class TssStateManager {
 
@@ -77,7 +92,8 @@ public class TssStateManager {
     }
 
     private void sendDataToTssCryptographyManager() {
-        // Send active roster, candidate roster, TssMessageTransactions, and TssVoteTransactions to TssCryptographyManager
+        // Send active roster, candidate roster, TssMessageTransactions, and TssVoteTransactions to
+        // TssCryptographyManager
         throw new NotImplementedException();
     }
 
@@ -99,7 +115,7 @@ public class TssStateManager {
         this.activeRoster = candidateRoster;
 
         // Send the candidate roster to TssCryptographyManager
-        tssCryptographyManager.setCandidateRoster(candidateRoster);
+        tssCryptographyManager.keyCandidateRoster(candidateRoster);
     }
 
     public void clearCandidateRosterData(Roster roster) {
