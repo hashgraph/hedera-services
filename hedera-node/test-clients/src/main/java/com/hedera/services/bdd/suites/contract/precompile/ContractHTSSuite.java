@@ -41,9 +41,6 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.emptyChildRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
-import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_CONSTRUCTOR_PARAMETERS;
-import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_FUNCTION_PARAMETERS;
-import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
 import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PAYER;
 import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
@@ -289,41 +286,35 @@ public class ContractHTSSuite {
     @HapiTest
     final Stream<DynamicTest> nonZeroTransfersFail() {
         final var theSecondReceiver = "somebody2";
-        return defaultHapiSpec(
-                        "NonZeroTransfersFail",
-                        NONDETERMINISTIC_CONSTRUCTOR_PARAMETERS,
-                        NONDETERMINISTIC_FUNCTION_PARAMETERS,
-                        NONDETERMINISTIC_TRANSACTION_FEES)
-                .given(
-                        newKeyNamed(UNIVERSAL_KEY),
-                        cryptoCreate(ACCOUNT).balance(10 * ONE_HUNDRED_HBARS),
-                        cryptoCreate(RECEIVER),
-                        cryptoCreate(theSecondReceiver),
-                        cryptoCreate(TOKEN_TREASURY),
-                        tokenCreate(A_TOKEN)
-                                .tokenType(TokenType.FUNGIBLE_COMMON)
-                                .initialSupply(TOTAL_SUPPLY)
-                                .treasury(TOKEN_TREASURY),
-                        uploadInitCode(VERSATILE_TRANSFERS_CONTRACT, FEE_DISTRIBUTOR_CONTRACT),
-                        // Refusing ethereum create conversion, because we get INVALID_SIGNATURE upon tokenAssociate,
-                        // since we have CONTRACT_ID key
-                        contractCreate(FEE_DISTRIBUTOR_CONTRACT).refusingEthConversion(),
-                        withOpContext((spec, opLog) -> allRunFor(
-                                spec,
-                                contractCreate(
-                                                VERSATILE_TRANSFERS_CONTRACT,
-                                                asHeadlongAddress(
-                                                        getNestedContractAddress(FEE_DISTRIBUTOR_CONTRACT, spec)))
-                                        // Refusing ethereum create conversion, because we get INVALID_SIGNATURE upon
-                                        // tokenAssociate,
-                                        // since we have CONTRACT_ID key
-                                        .refusingEthConversion())),
-                        tokenAssociate(ACCOUNT, List.of(A_TOKEN)),
-                        tokenAssociate(VERSATILE_TRANSFERS_CONTRACT, List.of(A_TOKEN)),
-                        tokenAssociate(RECEIVER, List.of(A_TOKEN)),
-                        tokenAssociate(theSecondReceiver, List.of(A_TOKEN)),
-                        cryptoTransfer(moving(200, A_TOKEN).between(TOKEN_TREASURY, ACCOUNT)))
-                .when(withOpContext((spec, opLog) -> {
+        return hapiTest(
+                newKeyNamed(UNIVERSAL_KEY),
+                cryptoCreate(ACCOUNT).balance(10 * ONE_HUNDRED_HBARS),
+                cryptoCreate(RECEIVER),
+                cryptoCreate(theSecondReceiver),
+                cryptoCreate(TOKEN_TREASURY),
+                tokenCreate(A_TOKEN)
+                        .tokenType(TokenType.FUNGIBLE_COMMON)
+                        .initialSupply(TOTAL_SUPPLY)
+                        .treasury(TOKEN_TREASURY),
+                uploadInitCode(VERSATILE_TRANSFERS_CONTRACT, FEE_DISTRIBUTOR_CONTRACT),
+                // Refusing ethereum create conversion, because we get INVALID_SIGNATURE upon tokenAssociate,
+                // since we have CONTRACT_ID key
+                contractCreate(FEE_DISTRIBUTOR_CONTRACT).refusingEthConversion(),
+                withOpContext((spec, opLog) -> allRunFor(
+                        spec,
+                        contractCreate(
+                                        VERSATILE_TRANSFERS_CONTRACT,
+                                        asHeadlongAddress(getNestedContractAddress(FEE_DISTRIBUTOR_CONTRACT, spec)))
+                                // Refusing ethereum create conversion, because we get INVALID_SIGNATURE upon
+                                // tokenAssociate,
+                                // since we have CONTRACT_ID key
+                                .refusingEthConversion())),
+                tokenAssociate(ACCOUNT, List.of(A_TOKEN)),
+                tokenAssociate(VERSATILE_TRANSFERS_CONTRACT, List.of(A_TOKEN)),
+                tokenAssociate(RECEIVER, List.of(A_TOKEN)),
+                tokenAssociate(theSecondReceiver, List.of(A_TOKEN)),
+                cryptoTransfer(moving(200, A_TOKEN).between(TOKEN_TREASURY, ACCOUNT)),
+                withOpContext((spec, opLog) -> {
                     final var receiver1 = asAddress(spec.registry().getAccountID(RECEIVER));
                     final var receiver2 = asAddress(spec.registry().getAccountID(theSecondReceiver));
 
@@ -345,8 +336,8 @@ public class ContractHTSSuite {
                                     .gas(GAS_TO_OFFER)
                                     .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
                                     .via("distributeTx"));
-                }))
-                .then(childRecordsCheck(
+                }),
+                childRecordsCheck(
                         "distributeTx",
                         CONTRACT_REVERT_EXECUTED,
                         recordWith()
