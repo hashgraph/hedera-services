@@ -56,7 +56,8 @@ public record GrpcConfig(
 
     private void validateFieldRange(int value, int minValue, int maxValue, String fieldName) {
         if (value < minValue || value > maxValue) {
-            throw new IllegalArgumentException("grpc." + fieldName + " must be between " + minValue + " and " + maxValue);
+            throw new IllegalArgumentException(
+                    "grpc." + fieldName + " must be between " + minValue + " and " + maxValue);
         }
     }
 
