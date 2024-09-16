@@ -235,10 +235,7 @@ message FeeExemptKeyList {
    * topic without paying the topic's custom fees.
    * <p>
    * If a submit transaction is signed by _any_ key included in this set,
-   *  custom fees SHALL NOT be charged for that transaction.
-   * <p>
-   * This list SHALL _implicitly_ include the following keys
-   * `adminKey`, `submitKey`, `fee_schedule_key`.
+   * custom fees SHALL NOT be charged for that transaction.
    */
    repeated Key keys = 1;
 }

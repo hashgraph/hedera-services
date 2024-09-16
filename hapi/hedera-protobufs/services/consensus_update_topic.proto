@@ -120,26 +120,4 @@ message ConsensusUpdateTopicTransactionBody {
      * SHALL be removed.
      */
     ConsensusCustomFeeList custom_fees = 12;
-
-    /**
-     * A key validation mode.<br/>
-     * Any key may be updated by a transaction signed by the topic `admin_key`.
-     * Each role key may _also_ sign a transaction to update that key.
-     * If a role key signs an update to change that role key both old
-     * and new key must sign the transaction, _unless_ this field is set
-     * to `NO_VALIDATION`, in which case the _new_ key is not required to
-     * sign the transaction (the existing key is still required).<br/>
-     * The primary intent for this field is to allow a role key (e.g. a
-     * `fee_schedule_key`) holder to "remove" that key from the token by signing
-     * a transaction to set that role key to an empty `KeyList`.
-     * <p>
-     * If set to `FULL_VALIDATION`, either the `admin_key` or _both_ current
-     * and new key MUST sign this transaction to update a "key" field for the
-     * identified token.<br/>
-     * If set to `NO_VALIDATION`, either the `admin_key` or the current
-     * key MUST sign this transaction to update a "key" field for the
-     * identified token.<br/>
-     * This field SHALL be treated as `FULL_VALIDATION` if not set.
-     */
-    TokenKeyValidation key_verification_mode = 13;
 }
