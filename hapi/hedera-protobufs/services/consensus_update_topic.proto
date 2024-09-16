@@ -104,32 +104,12 @@ message ConsensusUpdateTopicTransactionBody {
      * <br/>
      * If not set, the current key SHALL NOT change.<br/>
      * <br/>
-     * If unset in state, this field MUST NOT be set in this transaction. If
-     *  not set when the topic is created, this field CANNOT be set via update.
+     * If unset in state, this field MUST NOT be set in this transaction.
+     * <br/>
+     * If not set when the topic is created, this field CANNOT be set via update.
      * <br/>
      */
     Key fee_schedule_key = 10;
-
-    /**
-     * A set of keys that are allowed to submit messages to the topic without
-     * paying the topic's custom fees.
-     * <br/>
-     * If a submit transaction is signed by _any_ key included in this set,
-     *  custom fees SHALL NOT be charged for that transaction.
-     * <p>
-     * fee_exempt_key_list SHALL NOT contain more than
-     *  MAX_ENTRIES_FOR_FEE_EXEMPT_KEY_LIST keys.
-     * <br/>
-     * fee_exempt_key_list SHALL NOT contain any duplicate keys.
-     * <br/>
-     * fee_exempt_key_list MAY contain keys for accounts that are inactive,
-     *  deleted, or non-existent.
-     * If fee_exempt_key_list is unset in this transaction, there SHALL NOT be
-     *  any fee-exempt keys.  In particular, the following keys SHALL NOT be
-     *  implicitly or automatically added to this list:
-     *  `adminKey`, `submitKey`, `fee_schedule_key`.
-     */
-
 
     /**
      * A set of keys that are allowed to submit messages to the topic without
@@ -144,7 +124,7 @@ message ConsensusUpdateTopicTransactionBody {
      * keys SHALL be removed.
      * <br/>
      * fee_exempt_key_list SHALL NOT contain more than
-     *  MAX_ENTRIES_FOR_FEE_EXEMPT_KEY_LIST keys.
+     *  `MAX_ENTRIES_FOR_FEE_EXEMPT_KEY_LIST` keys.
      * <br/>
      * fee_exempt_key_list SHALL NOT contain any duplicate keys.
      * <br/>
@@ -152,22 +132,6 @@ message ConsensusUpdateTopicTransactionBody {
      *  deleted, or non-existent.
      */
     FeeExemptKeyList fee_exempt_key_list = 11;
-
-    /**
-     * A set of custom fee definitions.
-     * <br/>
-     * These are fees to be assessed for each submit to this topic.
-     * <p>
-     * Each fee defined in this set SHALL be evaluated for
-     * each message submitted to this topic, and the resultant
-     * total assessed fees SHALL be charged.
-     * <br/>
-     * Custom fees defined here SHALL be assessed in addition to the base
-     * network and node fees.
-     * <br/>
-     * custom_fees list SHALL NOT contain more than
-     *  MAX_CUSTOM_FEE_ENTRIES_FOR_TOPICS entries.
-     */
 
     /**
      * A set of custom fee definitions.

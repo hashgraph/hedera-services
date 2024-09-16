@@ -91,9 +91,9 @@ message ConsensusTopicInfo {
 
     /**
      * Access control for update/delete of custom fees.
-     * <br/>
-     * If unset, custom fees CANNOT be set for this topic.<br/>
      * <p>
+     * If unset, custom fees CANNOT be set for this topic.<br/>
+     * <br/>
      * If not set when the topic is created, this field CANNOT be set via update.
      * <br/>
      * If set when the topic is created, this field MAY be changed via update.

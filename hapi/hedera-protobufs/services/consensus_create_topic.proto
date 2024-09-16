@@ -74,11 +74,11 @@ message ConsensusCreateTopicTransactionBody {
 
     /**
      * Access control for update or delete of custom fees.
-     * <p>
+      * <br/>
      * If set, subsequent consensus_update_topic transactions signed with this
      *  key MAY update or delete the custom fees for this topic. If not set,
      *  the custom fees for this topic are immutable.
-      * <br/>
+     * <p>
      * If not set when the topic is created, this field CANNOT be set via update.
      * <br/>
      * If set when the topic is created, this field MAY be changed via update.
@@ -92,8 +92,8 @@ message ConsensusCreateTopicTransactionBody {
      * If a submit transaction is signed by _any_ key included in this set,
      *  custom fees SHALL NOT be charged for that transaction.
      * <p>
-     * fee_exempt_key_list SHALL NOT contain more than
-     *  MAX_ENTRIES_FOR_FEE_EXEMPT_KEY_LIST keys.
+     * This field SHALL NOT contain more than
+     *  `MAX_ENTRIES_FOR_FEE_EXEMPT_KEY_LIST` keys.
      * <br/>
      * fee_exempt_key_list SHALL NOT contain any duplicate keys.
      * <br/>
@@ -119,7 +119,7 @@ message ConsensusCreateTopicTransactionBody {
      * network and node fees.
      * <br/>
      * custom_fees list SHALL NOT contain more than
-     *  MAX_CUSTOM_FEE_ENTRIES_FOR_TOPICS entries.
+     *  `MAX_CUSTOM_FEE_ENTRIES_FOR_TOPICS` entries.
      */
     repeated ConsensusCustomFee custom_fees = 10;
 }
