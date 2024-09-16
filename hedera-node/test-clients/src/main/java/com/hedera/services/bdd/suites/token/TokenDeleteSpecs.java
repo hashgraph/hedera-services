@@ -18,6 +18,7 @@ package com.hedera.services.bdd.suites.token;
 
 import static com.hedera.services.bdd.junit.TestTags.TOKEN;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.burnToken;
@@ -37,7 +38,6 @@ import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movi
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.submitModified;
 import static com.hedera.services.bdd.spec.utilops.mod.ModificationUtils.withSuccessivelyVariedBodyIds;
-import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.HIGHLY_NON_DETERMINISTIC_FEES;
 import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
 import static com.hedera.services.bdd.suites.HapiSuite.TOKEN_TREASURY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_IS_TREASURY;
@@ -113,42 +113,39 @@ public class TokenDeleteSpecs {
 
     @HapiTest
     final Stream<DynamicTest> deletionWorksAsExpected() {
-        return defaultHapiSpec("DeletionWorksAsExpected", HIGHLY_NON_DETERMINISTIC_FEES)
-                .given(
-                        newKeyNamed(MULTI_KEY),
-                        cryptoCreate(TOKEN_TREASURY).balance(0L),
-                        cryptoCreate(PAYER),
-                        tokenCreate("tbd")
-                                .adminKey(MULTI_KEY)
-                                .freezeKey(MULTI_KEY)
-                                .kycKey(MULTI_KEY)
-                                .wipeKey(MULTI_KEY)
-                                .supplyKey(MULTI_KEY)
-                                .freezeDefault(false)
-                                .treasury(TOKEN_TREASURY)
-                                .payingWith(PAYER),
-                        tokenAssociate(GENESIS, "tbd"))
-                .when(
-                        getAccountInfo(TOKEN_TREASURY).logged(),
-                        mintToken("tbd", 1),
-                        burnToken("tbd", 1),
-                        revokeTokenKyc("tbd", GENESIS),
-                        grantTokenKyc("tbd", GENESIS),
-                        tokenFreeze("tbd", GENESIS),
-                        tokenUnfreeze("tbd", GENESIS),
-                        cryptoTransfer(moving(1, "tbd").between(TOKEN_TREASURY, GENESIS)),
-                        tokenDelete("tbd").payingWith(PAYER))
-                .then(
-                        getTokenInfo("tbd").logged(),
-                        getAccountInfo(TOKEN_TREASURY).logged(),
-                        cryptoTransfer(moving(1, "tbd").between(TOKEN_TREASURY, GENESIS))
-                                .hasKnownStatus(TOKEN_WAS_DELETED),
-                        mintToken("tbd", 1).hasKnownStatus(TOKEN_WAS_DELETED),
-                        burnToken("tbd", 1).hasKnownStatus(TOKEN_WAS_DELETED),
-                        revokeTokenKyc("tbd", GENESIS).hasKnownStatus(TOKEN_WAS_DELETED),
-                        grantTokenKyc("tbd", GENESIS).hasKnownStatus(TOKEN_WAS_DELETED),
-                        tokenFreeze("tbd", GENESIS).hasKnownStatus(TOKEN_WAS_DELETED),
-                        tokenUnfreeze("tbd", GENESIS).hasKnownStatus(TOKEN_WAS_DELETED));
+        return hapiTest(
+                newKeyNamed(MULTI_KEY),
+                cryptoCreate(TOKEN_TREASURY).balance(0L),
+                cryptoCreate(PAYER),
+                tokenCreate("tbd")
+                        .adminKey(MULTI_KEY)
+                        .freezeKey(MULTI_KEY)
+                        .kycKey(MULTI_KEY)
+                        .wipeKey(MULTI_KEY)
+                        .supplyKey(MULTI_KEY)
+                        .freezeDefault(false)
+                        .treasury(TOKEN_TREASURY)
+                        .payingWith(PAYER),
+                tokenAssociate(GENESIS, "tbd"),
+                getAccountInfo(TOKEN_TREASURY).logged(),
+                mintToken("tbd", 1),
+                burnToken("tbd", 1),
+                revokeTokenKyc("tbd", GENESIS),
+                grantTokenKyc("tbd", GENESIS),
+                tokenFreeze("tbd", GENESIS),
+                tokenUnfreeze("tbd", GENESIS),
+                cryptoTransfer(moving(1, "tbd").between(TOKEN_TREASURY, GENESIS)),
+                tokenDelete("tbd").payingWith(PAYER),
+                getTokenInfo("tbd").logged(),
+                getAccountInfo(TOKEN_TREASURY).logged(),
+                cryptoTransfer(moving(1, "tbd").between(TOKEN_TREASURY, GENESIS))
+                        .hasKnownStatus(TOKEN_WAS_DELETED),
+                mintToken("tbd", 1).hasKnownStatus(TOKEN_WAS_DELETED),
+                burnToken("tbd", 1).hasKnownStatus(TOKEN_WAS_DELETED),
+                revokeTokenKyc("tbd", GENESIS).hasKnownStatus(TOKEN_WAS_DELETED),
+                grantTokenKyc("tbd", GENESIS).hasKnownStatus(TOKEN_WAS_DELETED),
+                tokenFreeze("tbd", GENESIS).hasKnownStatus(TOKEN_WAS_DELETED),
+                tokenUnfreeze("tbd", GENESIS).hasKnownStatus(TOKEN_WAS_DELETED));
     }
 
     @HapiTest
