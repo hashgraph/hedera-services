@@ -106,8 +106,10 @@ message BlockStreamInfo {
     bytes start_of_block_state_hash = 6;
 
     /**
-     * The number of output block items preceding the state change that updates this
-     * singleton (which MUST be the last output block item in the block)
+     * A count of "output" block items in this block.
+     * <p>
+     * This SHALL count the number of output block items that _precede_
+     * the state change that updates this singleton.
      */
     uint32 num_preceding_output_items = 7;
 
