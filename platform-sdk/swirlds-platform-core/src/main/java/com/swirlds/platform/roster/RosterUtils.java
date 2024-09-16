@@ -16,6 +16,9 @@
 
 package com.swirlds.platform.roster;
 
+import com.hedera.hapi.node.state.roster.Roster;
+import com.swirlds.common.crypto.Hash;
+import com.swirlds.platform.util.PbjRecordHasher;
 import static com.swirlds.platform.system.address.AddressBookUtils.endpointFor;
 import static com.swirlds.platform.util.BootstrapUtils.detectSoftwareUpgrade;
 
@@ -44,7 +47,9 @@ import java.util.Objects;
 /**
  * A utility class to help use Rooster and RosterEntry instances.
  */
-public class RosterUtils {
+public final class RosterUtils {
+
+    private static final PbjRecordHasher PBJ_RECORD_HASHER = new PbjRecordHasher();
 
     /**
      * Prevents instantiation of this utility class.
@@ -65,34 +70,14 @@ public class RosterUtils {
     }
 
     /**
-     * Hashes the given {@link Roster} object.
+     * Create a Hash object for a given Roster instance.
      *
-     * @param roster the roster to hash
-     * @return the hash of the roster
+     * @param roster a roster
+     * @return its Hash
      */
     @NonNull
     public static Hash hashOf(@NonNull final Roster roster) {
-        Objects.requireNonNull(roster);
-        final HashBuilder hashBuilder;
-        try {
-            hashBuilder = new HashBuilder(MessageDigest.getInstance(DigestType.SHA_384.algorithmName()));
-        } catch (final NoSuchAlgorithmException e) {
-            throw new IllegalStateException(e);
-        }
-        hashBuilder.reset();
-        roster.rosterEntries().forEach(entry -> {
-            hashBuilder
-                    .update(entry.nodeId())
-                    .update(entry.weight())
-                    .update(entry.gossipCaCertificate().toByteArray())
-                    .update(entry.tssEncryptionKey().toByteArray());
-            entry.gossipEndpoint().forEach(endpoint -> {
-                final byte[] bytes = ServiceEndpoint.PROTOBUF.toBytes(endpoint).toByteArray();
-                hashBuilder.update(bytes.length);
-                hashBuilder.update(bytes);
-            });
-        });
-        return hashBuilder.build();
+        return PBJ_RECORD_HASHER.hash(roster, Roster.PROTOBUF);
     }
 
     /**

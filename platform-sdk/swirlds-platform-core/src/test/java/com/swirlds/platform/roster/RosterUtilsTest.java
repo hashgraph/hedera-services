@@ -20,14 +20,13 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.Mockito.anyString;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.when;
 
 import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.hapi.node.state.roster.RosterEntry;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.state.MerkleRoot;
 import com.swirlds.platform.state.PlatformStateAccessor;
@@ -37,15 +36,10 @@ import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.security.cert.CertificateEncodingException;
 import java.security.cert.X509Certificate;
-import java.util.ArrayList;
-import java.util.List;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.mockito.MockedStatic;
 
 class RosterUtilsTest {
 
@@ -55,32 +49,22 @@ class RosterUtilsTest {
     private final X509Certificate certificate = mock(X509Certificate.class);
 
     @Test
-    void testHashOfEmptyRoster() {
-        final Roster emptyRoster =
-                Roster.newBuilder().rosterEntries(new ArrayList<>()).build();
-        assertNotNull(RosterUtils.hashOf(emptyRoster));
-    }
+    void tesetHash() {
+        final Hash hash = RosterUtils.hashOf(Roster.DEFAULT);
+        assertEquals(
+                "38b060a751ac96384cd9327eb1b1e36a21fdb71114be07434c0cc7bf63f6e1da274edebfe76f65fbd51ad2f14898b95b",
+                hash.toString());
 
-    @Test
-    void testHashOfRosterWithEntries() {
-        final List<RosterEntry> entries = new ArrayList<>();
-        entries.add(RosterEntry.newBuilder()
-                .nodeId(1)
-                .weight(1)
-                .gossipCaCertificate(Bytes.EMPTY)
-                .build());
-        final Roster roster = Roster.newBuilder().rosterEntries(entries).build();
-        assertNotNull(RosterUtils.hashOf(roster));
-    }
+        final Hash anotherHash = RosterUtils.hashOf(
+                Roster.DEFAULT.copyBuilder().rosterEntries(RosterEntry.DEFAULT).build());
+        assertEquals(
+                "5d693ce2c5d445194faee6054b4d8fe4a4adc1225cf0afc2ecd7866ea895a0093ea3037951b75ab7340b75699aa1db1d",
+                anotherHash.toString());
 
-    @Test
-    void testHashOfRosterNoSuchAlgorithmException() {
-        try (final MockedStatic<MessageDigest> mocked = mockStatic(MessageDigest.class)) {
-            mocked.when(() -> MessageDigest.getInstance(anyString())).thenThrow(new NoSuchAlgorithmException());
-            final Roster roster =
-                    Roster.newBuilder().rosterEntries(new ArrayList<>()).build();
-            assertThrows(IllegalStateException.class, () -> RosterUtils.hashOf(roster));
-        }
+        final Hash validRosterHash = RosterUtils.hashOf(RosterValidatorTests.buildValidRoster());
+        assertEquals(
+                "1b8414aa690d96ce79e972abfc58c7ca04052996f89c5e6789b25b9051ee85fccb7c8ed3fc6ebacef177adfdcbbb5709",
+                validRosterHash.toString());
     }
 
     @Test

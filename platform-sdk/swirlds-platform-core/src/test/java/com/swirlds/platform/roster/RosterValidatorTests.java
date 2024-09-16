@@ -401,9 +401,8 @@ public class RosterValidatorTests {
                 ex.getMessage());
     }
 
-    @Test
-    void validTest() {
-        RosterValidator.validate(Roster.newBuilder()
+    static Roster buildValidRoster() {
+        return Roster.newBuilder()
                 .rosterEntries(
                         RosterEntry.newBuilder()
                                 .nodeId(1)
@@ -435,6 +434,11 @@ public class RosterValidatorTests {
                                         .port(666)
                                         .build())
                                 .build())
-                .build());
+                .build();
+    }
+
+    @Test
+    void validTest() {
+        RosterValidator.validate(buildValidRoster());
     }
 }
