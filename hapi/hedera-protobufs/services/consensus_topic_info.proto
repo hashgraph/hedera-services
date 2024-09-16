@@ -93,23 +93,20 @@ message ConsensusTopicInfo {
      * Access control for update/delete of custom fees.
      * <p>
      * If unset, custom fees CANNOT be set for this topic.<br/>
-     * <br/>
-     * If not set when the topic is created, this field CANNOT be set via update.
-     * <br/>
+     * If not set when the topic is created, this field CANNOT be set via
+     *  update.<br/>
      * If set when the topic is created, this field MAY be changed via update.
      */
     Key fee_schedule_key = 10;
 
     /**
      * A set of keys that are allowed to submit messages to the topic without
-     * paying the topic's custom fees.
-     * <br/>
+     * paying the topic's custom fees.<br/>
      * If a submit transaction is signed by _any_ key included in this set,
      *  custom fees SHALL NOT be charged for that transaction.
      * <p>
      * fee_exempt_key_list MAY contain keys for accounts that are inactive,
-     *  deleted, or non-existent.
-     * <br/>
+     *  deleted, or non-existent.<br/>
      * If not set, there SHALL NOT be any fee-exempt keys.  In particular, the
      *  following keys SHALL NOT be implicitly or automatically added to this
      *  list: `adminKey`, `submitKey`, `fee_schedule_key`.
@@ -117,14 +114,12 @@ message ConsensusTopicInfo {
     repeated Key fee_exempt_key_list = 11;
 
     /**
-     * A set of custom fee definitions.
-     * <br/>
+     * A set of custom fee definitions.<br/>
      * These are fees to be assessed for each submit to this topic.
      * <p>
      * Each fee defined in this set SHALL be evaluated for
      * each message submitted to this topic, and the resultant
-     * total assessed fees SHALL be charged.
-     * <br/>
+     * total assessed fees SHALL be charged.<br/>
      * Custom fees defined here SHALL be assessed in addition to the base
      * network and node fees.
      */
