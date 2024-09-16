@@ -159,7 +159,7 @@ public class RecordCacheImpl implements HederaRecordCache {
      * reconnect. The amount of time it takes to rebuild this data structure is not dependent on the size of state, but
      * rather, the number of transactions in the queue (which is capped by configuration at 3 minutes by default).
      */
-    public void rebuild(@NonNull final WorkingStateAccessor workingStateAccessor) {
+    private void rebuild(@NonNull final WorkingStateAccessor workingStateAccessor) {
         requireNonNull(workingStateAccessor);
         histories.clear();
         payerToTransactionIndex.clear();
@@ -237,7 +237,7 @@ public class RecordCacheImpl implements HederaRecordCache {
 
     @NonNull
     @Override
-    public DuplicateCheckResult hasDuplicate(@NonNull TransactionID transactionID, long nodeId) {
+    public DuplicateCheckResult hasDuplicate(@NonNull final TransactionID transactionID, final long nodeId) {
         final var history = histories.get(transactionID);
         // If there is no history for this transaction id; or all its history consists of
         // unclassifiable records, return that it is effectively a unique id

@@ -18,7 +18,6 @@ package com.hedera.node.app.spi.records;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NODE_ACCOUNT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_PAYER_SIGNATURE;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.UNKNOWN;
 import static com.hedera.hapi.util.HapiUtils.TIMESTAMP_COMPARATOR;
 import static java.util.Collections.emptyList;
 
@@ -93,13 +92,6 @@ public interface RecordCache {
             @NonNull List<TransactionRecord> childRecords) {
 
         /**
-         * This receipt is returned whenever we know there is a transaction pending (i.e. we have a history for a
-         * transaction ID), but we do not yet have a record for it.
-         */
-        private static final TransactionReceipt PENDING_RECEIPT =
-                TransactionReceipt.newBuilder().status(UNKNOWN).build();
-
-        /**
          * Create a new {@link History} instance with empty lists.
          */
         public History() {
@@ -126,7 +118,7 @@ public interface RecordCache {
         @Nullable
         public TransactionReceipt userTransactionReceipt() {
             return records.isEmpty()
-                    ? PENDING_RECEIPT
+                    ? RecordSource.PENDING_RECEIPT
                     : sortedRecords().getFirst().receipt();
         }
 
@@ -190,4 +182,5 @@ public interface RecordCache {
      */
     @NonNull
     List<TransactionRecord> getRecords(@NonNull AccountID accountID);
+
 }
