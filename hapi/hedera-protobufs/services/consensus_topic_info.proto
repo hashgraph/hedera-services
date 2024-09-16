@@ -104,9 +104,6 @@ message ConsensusTopicInfo {
      * <p>
      * If a submit transaction is signed by _any_ key included in this set,
      *  custom fees SHALL NOT be charged for that transaction.
-     * <p>
-     * If fee_exempt_key_list is unset, the following keys are exempt
-     *  from custom fees: adminKey, submitKey, fee_schedule_key.
      */
     repeated Key fee_exempt_key_list = 11;
 
