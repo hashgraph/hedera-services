@@ -375,7 +375,7 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
                         .map(frame -> "\tat " + frame.toString())
                         .collect(Collectors.joining("\n")));
 
-        logger.info("Limited stack trace:\n{}", stackTraceString);
+        logger.info(STARTUP.getMarker(), "Limited stack trace:\n{}", stackTraceString);
     }
 
     @Override
