@@ -82,6 +82,16 @@ public class ReadableRosterStoreImpl implements ReadableRosterStore {
         throw new MutabilityException(READ_ONLY);
     }
 
+    /**
+     * Gets the active roster.
+     * Returns the active roster iff:
+     *      the roster state singleton is not null
+     *      the list of round roster pairs is not empty
+     *      the first round roster pair is not null
+     *      the active roster hash is present in the roster map
+     * otherwise returns null.
+     * @return the active roster
+     */
     @Nullable
     @Override
     public Roster getActiveRoster() {

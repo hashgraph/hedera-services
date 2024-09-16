@@ -16,9 +16,6 @@
 
 package com.swirlds.platform.roster;
 
-import com.hedera.hapi.node.state.roster.Roster;
-import com.swirlds.common.crypto.Hash;
-import com.swirlds.platform.util.PbjRecordHasher;
 import static com.swirlds.platform.system.address.AddressBookUtils.endpointFor;
 import static com.swirlds.platform.util.BootstrapUtils.detectSoftwareUpgrade;
 
@@ -26,9 +23,7 @@ import com.hedera.hapi.node.base.ServiceEndpoint;
 import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.hapi.node.state.roster.RosterEntry;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
-import com.swirlds.common.crypto.HashBuilder;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.state.MerkleRoot;
 import com.swirlds.platform.state.service.WritableRosterStore;
@@ -36,9 +31,8 @@ import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
+import com.swirlds.platform.util.PbjRecordHasher;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.security.cert.CertificateEncodingException;
 import java.util.ArrayList;
 import java.util.List;
