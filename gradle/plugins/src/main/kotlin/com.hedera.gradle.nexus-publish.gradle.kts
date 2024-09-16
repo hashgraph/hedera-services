@@ -19,16 +19,15 @@ plugins {
     id("io.github.gradle-nexus.publish-plugin")
 }
 
-val publishingPackageGroup = providers.gradleProperty("publishingPackageGroup").getOrElse("")
-val isPlatformPublish = publishingPackageGroup == "com.swirlds"
-
 nexusPublishing {
-    packageGroup = publishingPackageGroup
+    val s01SonatypeHost = providers.gradleProperty("s01SonatypeHost").getOrElse("false").toBoolean()
+    packageGroup = providers.gradleProperty("publishingPackageGroup").getOrElse("")
+
     repositories {
         sonatype {
             username = System.getenv("NEXUS_USERNAME")
             password = System.getenv("NEXUS_PASSWORD")
-            if (isPlatformPublish) {
+            if (s01SonatypeHost) {
                 nexusUrl = uri("https://s01.oss.sonatype.org/service/local/")
                 snapshotRepositoryUrl =
                     uri("https://s01.oss.sonatype.org/content/repositories/snapshots/")

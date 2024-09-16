@@ -14,10 +14,19 @@
  * limitations under the License.
  */
 
+import java.util.Properties
+
 plugins {
     id("java")
     id("maven-publish")
     id("signing")
+}
+
+tasks.withType<PublishToMavenRepository>().configureEach {
+    // Publishing tasks are only enabled if we publish to the matching group.
+    // Otherwise, Nexus configuration and credentials do not fit.
+    val publishingPackageGroup = providers.gradleProperty("publishingPackageGroup").orNull
+    enabled = publishingPackageGroup == project.group
 }
 
 java {
@@ -42,32 +51,69 @@ val maven =
             allVariants { fromResolutionResult() }
         }
 
-        pom {
-            packaging = findProperty("maven.project.packaging")?.toString() ?: "jar"
-            name.set(project.name)
-            url.set("https://www.swirlds.com/")
-            inceptionYear.set("2016")
+        suppressAllPomMetadataWarnings()
 
-            description.set(provider(project::getDescription))
+        pom {
+            val devGroups = Properties()
+            val developerProperties = layout.projectDirectory.file("../developers.properties")
+            devGroups.load(
+                providers
+                    .fileContents(developerProperties)
+                    .asText
+                    .orElse(
+                        provider {
+                            throw RuntimeException("${developerProperties.asFile} does not exist")
+                        }
+                    )
+                    .get()
+                    .reader()
+            )
+
+            url = "https://www.hashgraph.com/"
+            inceptionYear = "2016"
+
+            description =
+                providers
+                    .fileContents(layout.projectDirectory.file("../description.txt"))
+                    .asText
+                    .orElse(provider { project.description })
+                    .map { it.replace("\n", " ").trim() }
+                    .orNull
 
             organization {
-                name.set("Hedera Hashgraph, LLC")
-                url.set("https://www.hedera.com")
+                name = "Hedera Hashgraph, LLC"
+                url = "https://www.hedera.com"
+            }
+
+            val repoName = isolated.rootProject.name
+
+            issueManagement {
+                system = "GitHub"
+                url = "https://github.com/hashgraph/$repoName/issues"
             }
 
             licenses {
                 license {
-                    name.set("Apache License, Version 2.0")
-                    url.set(
-                        "https://raw.githubusercontent.com/hashgraph/hedera-services/main/LICENSE"
-                    )
+                    name = "Apache License, Version 2.0"
+                    url = "https://raw.githubusercontent.com/hashgraph/$repoName/main/LICENSE"
                 }
             }
 
             scm {
-                connection.set("scm:git:git://github.com/hashgraph/hedera-services.git")
-                developerConnection.set("scm:git:ssh://github.com:hashgraph/hedera-services.git")
-                url.set("https://github.com/hashgraph/hedera-services")
+                connection = "scm:git:git://github.com/hashgraph/$repoName.git"
+                developerConnection = "scm:git:ssh://github.com:hashgraph/$repoName.git"
+                url = "https://github.com/hashgraph/$repoName"
+            }
+
+            developers {
+                devGroups.forEach { mail, team ->
+                    developer {
+                        name = team as String
+                        email = mail as String
+                        organization = "Hedera Hashgraph"
+                        organizationUrl = "https://www.hedera.com"
+                    }
+                }
             }
         }
     }
