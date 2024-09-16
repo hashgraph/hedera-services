@@ -43,32 +43,31 @@ public record GrpcConfig(
         @ConfigProperty(defaultValue = "4194304") @Min(0) int noopMarshallerMaxMessageSize) {
 
     public GrpcConfig {
-        if (port > 65535 || port < 0) {
-            throw new IllegalArgumentException("grpc.port must be between 0 and 65535");
+        validateFieldRange(port, 0, 65535, "port");
+        validateFieldRange(tlsPort, 0, 65535, "tlsPort");
+        validateFieldRange(workflowsPort, 0, 65535, "workflowsPort");
+        validateFieldRange(workflowsTlsPort, 0, 65535, "workflowsTlsPort");
+        validateFieldRange(maxMessageSize, 0, 4194304, "maxMessageSize");
+        validateFieldRange(maxResponseSize, 0, 4194304, "maxResponseSize");
+        validateFieldRange(noopMarshallerMaxMessageSize, 0, 4194304, "noopMarshallerMaxMessageSize");
+        validateUniquePorts(port, tlsPort);
+        validateUniqueWorkflowsPorts(workflowsPort, workflowsTlsPort);
+    }
+
+    private void validateFieldRange(int value, int minValue, int maxValue, String fieldName) {
+        if (value < minValue || value > maxValue) {
+            throw new IllegalArgumentException("grpc." + fieldName + " must be between " + minValue + " and " + maxValue);
         }
-        if (tlsPort > 65535 || tlsPort < 0) {
-            throw new IllegalArgumentException("grpc.tlsPort must be between 0 and 65535");
-        }
-        if (workflowsPort > 65535 || workflowsPort < 0) {
-            throw new IllegalArgumentException("grpc.workflowsPort must be between 0 and 65535");
-        }
-        if (workflowsTlsPort > 65535 || workflowsTlsPort < 0) {
-            throw new IllegalArgumentException("grpc.workflowsTlsPort must be between 0 and 65535");
-        }
-        if (maxMessageSize > 4194304 || maxMessageSize < 0) {
-            throw new IllegalArgumentException("grpc.maxMessageSize must be between 0 and 4194304");
-        }
-        if (maxResponseSize > 4194304 || maxResponseSize < 0) {
-            throw new IllegalArgumentException("grpc.maxResponseSize must be between 0 and 4194304");
-        }
-        if (noopMarshallerMaxMessageSize > 4194304 || noopMarshallerMaxMessageSize < 0) {
-            throw new IllegalArgumentException("grpc.noopMarshallerMaxMessageSize must be between 0 and 4194304");
-        }
-        if (port == tlsPort && port != 0) {
+    }
+
+    private void validateUniquePorts(int port1, int port2) {
+        if (port1 == port2 && port1 != 0) {
             throw new IllegalArgumentException("grpc.port and grpc.tlsPort must be different");
         }
+    }
 
-        if (workflowsPort == workflowsTlsPort && workflowsPort != 0) {
+    private void validateUniqueWorkflowsPorts(int port1, int port2) {
+        if (port1 == port2 && port1 != 0) {
             throw new IllegalArgumentException("grpc.workflowsPort and grpc.workflowsTlsPort must be different");
         }
     }
