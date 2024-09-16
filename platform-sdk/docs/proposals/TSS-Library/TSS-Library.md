@@ -37,7 +37,7 @@ This proposal assumes no relation with the platform and defines a generic compon
 - **Bilinear Pairings**: These are mathematical functions used in cryptography to map two elements of different groups of an elliptic curve to a single value in another group in a way that preserves specific algebraic properties.
 - **Fields**: Fields are mathematical structures where addition, subtraction, multiplication, and division are defined and behave as expected (excluding division by zero). Finite fields are especially important for EC-cryptography, where all the operations are performed modulo a big prime number.
 - **Groups**: Groups are sets equipped with an operation (like addition or multiplication) that satisfies certain conditions (closure, associativity, identity element, and inverses).
-- **Share**: Represents a piece of the necessary public/private elements to create signatures. Each share is in itself a valid Ec-Key.
+- **Share**: Represents a piece of the necessary public/private elements to create signatures. Each share is in itself a valid Pairings-Key.
 - **Polynomial Commitment**: It’s a process that enables evaluations of a polynomial at specific points to be verified without revealing the entire polynomial.
 - **Participant**: Is any party involved in the distributed key generation protocol.
 - **Participant Directory**: An address book of participants of the distributed key generation protocol that holds information of the participant executing the protocol and all the others.
@@ -360,13 +360,11 @@ return { c1, c2 }
 It will be the general case that consumers of this library don’t need to understand the elements as points on the curve to operate algebraically with them, so it is sufficient for them to interact with an opaque representation. There are two strategies for getting that representation:
 
 1. **Use arkworks-based serialization mechanism** This serialization mechanism uses the encoding defined for the `parings-api` and its ability to produce byte arrays from its components. Given that we have the guarantee to be canonical and that we do not plan for internal Java consumers to need to operate with individual values. Pros:
-
-- Decouples the serialization mechanism from the pairing internal structure and allows switch curves with 0 impact on the consumers
-- It allows consumers that have no access or cannot use serialization libraries such as protobuf
-- Simple and reduced effort, low infra support needed. Cons:
-- It is coupled to the arkworks serialization mechanism
-- The communication needs to happen verbally or through documents, and there is no technical interface we can share.
-
+   - Decouples the serialization mechanism from the pairing internal structure and allows switch curves with 0 impact on the consumers
+   - It allows consumers that have no access or cannot use serialization libraries such as protobuf
+   - Simple and reduced effort, low infra support needed. Cons:
+   - It is coupled to the arkworks serialization mechanism
+   - The communication needs to happen verbally or through documents, and there is no technical interface we can share.
 2. **Use protobuf serialization.** This serialization mechanism consists of generating a structure that represents the internal representation of PublicKey, PrivateKey, and Signature in a defined protobuf schema. We would need to extract the information from the pairings API implementation and produce a protobuf object to expose. Pros:
    - Allows to share a schema to know how to interpret the curve
    - Any client that can use protobuf can interpret our elements Cons:
@@ -388,6 +386,7 @@ This library implements the Groth21 TSS-specific operations.
 ###### *`TssMessage`*
 
 A data structure for distributing encrypted shares of a secret among all participants in a way that only the intended participant can see part of the share. It includes auxiliary information used to validate its correctness and assemble an aggregate public key, i.e., a commitment to a secret share polynomial and a NIZK proof.
+Besides their construction, another operation is to retrieve a deterministic byte representation of an instance and retrieve the corresponding instance back from a byte array representation.
 
 ###### *`TssShareId`*
 
@@ -395,11 +394,11 @@ A deterministic unique, contiguous starting from 1 identifier for each existent 
 
 ###### *`TssPrivateShare`*
 
-Represents a share owned by the executor of the scheme. Contains a secret value used for signing. It is also an ECPrivateKey.
+Represents a share owned by the executor of the scheme. Contains a secret value used for signing. It is also an PairingsPrivateKey.
 
 ###### *`TssPublicShare`*
 
-Represents a share in the system. It contains public information that can be used to validate each signature. It is also an ECPublicKey.
+Represents a share in the system. It contains public information that can be used to validate each signature. It is also an PairingsPublicKey.
 
 ###### *`TssShareSignature`*
 
@@ -407,7 +406,7 @@ Represents a signature created from a TSSPrivateShare.
 
 ###### *`TssParticipantDirectory`*
 
-This class contains all the information about the participants in the scheme. This includes participants' EC public keys, total shares, and owned shares.
+This class contains all the information about the participants in the scheme. This includes participants' `tssEncryptionPublicKeys`, total shares, and owned shares.
 
 ###### *`TssService`*
 
@@ -417,7 +416,6 @@ A class that implements all the TSS operations allowing:
 * Generate TSSMessages out of a list of PrivateShares
 * Verify TSSMessages out of a ParticipantDirectory
 * Obtain PrivateShares out of TssMessages for each owned share
-* Aggregate PrivateShares
 * Obtain PublicShares out of TssMessages for each share
 * Aggregate PublicShares
 * Sign Messages
@@ -428,11 +426,11 @@ A class that implements all the TSS operations allowing:
 
 ###### *Input*
 
-* Participant's persistent EC Private key (Private to each participant)
+* Participant's persistent `tssDecryptionPrivateKey` (Private to each participant)
 * Number of participants (Public)
 * Number of shares per participant (Public)
 * A threshold value externally provided:`e.g: t = 5`
-* All participants' persistent EC public keys (Public)
+* All participants' `tssEncryptionPublicKey`
 * A predefined `SignatureSchema` (Public / Constant for all the network)
 
 ###### *0\. Bootstrap*
@@ -440,12 +438,12 @@ A class that implements all the TSS operations allowing:
 Given a participants directory, e.g:
 
 ```
-P   #   TssEncryptionPublicKey
+P   #   tssEncryptionPublicKey
 -----------------------------
-P₁  5   P₁_TssEncryptionPublicKey
-P₂  2   P₂_TssEncryptionPublicKey
-P₃  1   P₃_TssEncryptionPublicKey
-P₄  2   P₄_TssEncryptionPublicKey
+P₁  5   P₁tssEncryptionPublicKey
+P₂  2   P₂tssEncryptionPublicKey
+P₃  1   P₃tssEncryptionPublicKey
+P₄  2   P₄tssEncryptionPublicKey
 
 ```
 
@@ -488,18 +486,30 @@ TssMessage message = service.generateTssMessage(participantDirectory);
 ```
 
 **Implementation details** Internally, the process of creating a TssMessage consists of
-
-a. Generation of the shares: In this operation for the bootstrap process, a random  `TssPrivateShare` `k` is created. It is the same process as creating a random ECPrivateKey. After that, the key is split into `n` (n=total number of shares) values `Xₛ` by evaluating a polynomial Xₖ at each `ShareId`: `sidᵢ` in the ownership map. The polynomial `Xₖ` is a polynomial with degree `t-1` (t=threshold) with the form: `Xₖ = k + a₁x + … + aₜ₋₁xᵗ⁻¹`\[ having: `a₁,…,aₜ₋₁`: random coefficients from `SignatureScheme.publicKeyGroup` and `k`'s EC field element. x is a field element, thus allowing the polynomial to be evaluated for each share id\] Each `sᵢ = Xₖ(sidᵢ)` constitutes a point on the polynomial. Once the `sᵢ` value has been calculated for each `ShareId`: `sidᵢ`, the value: `Cᵢ` will be produced by encrypting the `sᵢ` using the `sidᵢ` owner's public key. The TssMessage will contain all the encrypted values for all shares. img.svg
-
 ![img.svg](img.svg)
 
-b. Generation of the Polynomial Commitment: We include a Feldman commitment to the polynomial to detect forms of bad dealing. For each coefficient in the polynomial `Xₖ` `a₍ₒ₎` to `a₍ₜ₋₁₎`, compute a commitment value by calculating: `gᵢ * aᵢ`  (g multiplied by polynomial coefficient `a₍ᵢ₎` )
+a. Generation of the shares: In this operation for the bootstrap process, a random  `TssPrivateShare` `k` is created. It is the same process as creating a random PairingsPrivateKey.
 
-c. Generation of the NIZKs proofs: Generate a NIZKs proof that these commitments and the encrypted shares correspond to a valid secret sharing according to the polynomial.
+b. After that, the key is split into `n` (n=total number of shares) values `Xₛ` by evaluating a polynomial Xₖ at each `ShareId`: `sidᵢ` in the ownership map. The polynomial `Xₖ` is a polynomial with degree `t-1` (t=threshold) with the form: `Xₖ = k + a₁x + … + aₜ₋₁xᵗ⁻¹`\
+[ having: `a₁,…,aₜ₋₁`: random coefficients from `SignatureScheme.publicKeyGroup` and `k`'s EC field element.
+x is a field element, thus allowing the polynomial to be evaluated for each share id\] Each `sᵢ = Xₖ(sidᵢ)` constitutes a point on the polynomial.
+
+c. Once the `sᵢ` value has been calculated for each `ShareId`: `sidᵢ`, the value: `Cᵢ` will be produced by encrypting the `sᵢ` using the `sidᵢ` owner's `tssEncryptionPublicKey`.
+The TssMessage will contain all the encrypted values for all shares.
+
+d. Generation of the Polynomial Commitment: We include a Feldman commitment to the polynomial to detect forms of bad dealing.
+For each coefficient in the polynomial `Xₖ` `a₍ₒ₎` to `a₍ₜ₋₁₎`, compute a commitment value by calculating: `gᵢ * aᵢ`  (g multiplied by polynomial coefficient `a₍ᵢ₎` )
+
+e. Generation of the NIZKs proofs: Generate a NIZKs proof that these commitments and the encrypted shares correspond to a valid secret sharing according to the polynomial.
 
 ###### *Acting as dealers of `TssMessage`s (outside the scope of the library)*
 
-Using an established channel, each participant will broadcast a single message to be received by all participants while waiting to receive other participants' messages. This functionality is critical for the protocol to work but needs to be handled outside the library. Each participant will validate the received message against the commitment and the NIZK proof. Invalid messages need to be discarded. `TssMessage`s can be serialized to bytes.
+Using an established channel, each participant will broadcast a single message to be received by all participants while waiting to receive other participants' messages. This functionality is critical for the protocol to work but needs to be handled outside the library. Each participant will validate the received message against the commitment and the NIZK proof.
+Invalid messages need to be discarded.
+
+###### *Note about serialization / deserialization of `TssMessage`s*
+
+`TssMessage`s need to be serialized to bytes in a deterministic manner. We will include a protobuf serialization mechanism hidden in the library that will allow instances of `TssMessage` to create a protobuf representation of themselves and serialize to byte arrays, additionally it will allow to construct instances from the byte array representation back to a valid instance.
 
 ###### *2\. Validation of TssMessage*
 
@@ -553,7 +563,7 @@ List<TssShareSignature> signatures = service.sign(privateShares, message);
 
 Again, it is outside the scope of this library to distribute or collect other participants' signatures.
 
-Multiple `TssShareSignature` can be aggregated to create an aggregate `EcSignature`. An aggregate `PairingSignature` can be validated against the LedgerId (public key)  if `t` (t=threshold) valid signatures are aggregated. If the threshold is met and the signature is valid, the library will respond with true; if not, it will respond with false.
+Multiple `TssShareSignature` can be aggregated to create an aggregate `PairingSignature`. An aggregate `PairingSignature` can be validated against the LedgerId (public key)  if `t` (t=threshold) valid signatures are aggregated. If the threshold is met and the signature is valid, the library will respond with true; if not, it will respond with false.
 
 ```java
 static {
