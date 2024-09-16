@@ -144,7 +144,14 @@ public class WritableRosterStore extends ReadableRosterStoreImpl {
         rosterMap.remove(ProtoBytes.newBuilder().value(candidateRosterHash).build());
     }
 
-    private @NonNull RosterState rosterStateOrThrow() {
+    /**
+     * returns the roster state or throws an exception if the state is null.
+     * @return the roster state
+     * @throws NullPointerException if the roster state is null
+     * @implNote this method is package-private for testing purposes
+     */
+    @NonNull
+    RosterState rosterStateOrThrow() {
         return requireNonNull(rosterState.get());
     }
 

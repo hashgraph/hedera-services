@@ -17,7 +17,9 @@
 package com.swirlds.platform.state.service;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -113,6 +115,26 @@ class WritableRosterStoreTest {
     @Test
     void testSetCandidateRosterWhenRosterIsNull() {
         assertThrows(NullPointerException.class, () -> writableRosterStore.setCandidateRoster(null));
+    }
+
+    @Test
+    void testAdoptCandidateRosterWhenCandidateRosterNotFound() {
+        assertThrows(IllegalStateException.class, () -> writableRosterStore.adoptCandidateRoster(1L));
+    }
+
+    @Test
+    void testAdoptCandidateRosterWithValidCandidateRoster() {
+        final Roster candidateRoster = createValidRoster(1);
+        writableRosterStore.setCandidateRoster(candidateRoster);
+        assertEquals(writableRosterStore.getCandidateRoster(), candidateRoster);
+        assertNull(writableRosterStore.getActiveRoster());
+        assertNotEquals(Bytes.EMPTY, writableRosterStore.rosterStateOrThrow().candidateRosterHash());
+
+        writableRosterStore.adoptCandidateRoster(1L);
+        // This should be asserting the active roster is the (previous) candidate roster,
+        // but the state is uncommitted for testing, so we just assert the candidate roster should now be removed.
+        // In turn, this test doubles as both adoptCandidateRoster and removeCandidateRoster tests.
+        assertEquals(Bytes.EMPTY, writableRosterStore.rosterStateOrThrow().candidateRosterHash());
     }
 
     /**
