@@ -69,11 +69,6 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.submitModified;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.spec.utilops.mod.ModificationUtils.withSuccessivelyVariedBodyIds;
-import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.HIGHLY_NON_DETERMINISTIC_FEES;
-import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_CONTRACT_CALL_RESULTS;
-import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_FUNCTION_PARAMETERS;
-import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_NONCE;
-import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
 import static com.hedera.services.bdd.suites.HapiSuite.CHAIN_ID;
 import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PAYER;
 import static com.hedera.services.bdd.suites.HapiSuite.FUNDING;
@@ -186,77 +181,72 @@ public class ContractCreateSuite {
     @HapiTest
     final Stream<DynamicTest> createContractWithStakingFields() {
         final var contract = "CreateTrivial";
-        return defaultHapiSpec("createContractWithStakingFields", HIGHLY_NON_DETERMINISTIC_FEES)
-                .given(
-                        uploadInitCode(contract),
-                        // refuse eth conversion because ethereum transaction is missing staking fields to map
-                        contractCreate(contract)
-                                .adminKey(THRESHOLD)
-                                .declinedReward(true)
-                                .stakedNodeId(0)
-                                .refusingEthConversion(),
-                        getContractInfo(contract)
-                                .has(contractWith()
-                                        .isDeclinedReward(true)
-                                        .noStakedAccountId()
-                                        .stakedNodeId(0))
-                                .logged())
-                .when(
-                        contractCreate(contract)
-                                .adminKey(THRESHOLD)
-                                .declinedReward(true)
-                                .stakedAccountId("0.0.10")
-                                .refusingEthConversion(),
-                        getContractInfo(contract)
-                                .has(contractWith()
-                                        .isDeclinedReward(true)
-                                        .noStakingNodeId()
-                                        .stakedAccountId("0.0.10"))
-                                .logged())
-                .then(
-                        contractCreate(contract)
-                                .adminKey(THRESHOLD)
-                                .declinedReward(false)
-                                .stakedNodeId(0)
-                                .refusingEthConversion(),
-                        getContractInfo(contract)
-                                .has(contractWith()
-                                        .isDeclinedReward(false)
-                                        .noStakedAccountId()
-                                        .stakedNodeId(0))
-                                .logged(),
-                        contractCreate(contract)
-                                .adminKey(THRESHOLD)
-                                .declinedReward(false)
-                                .stakedAccountId("0.0.10")
-                                .refusingEthConversion(),
-                        getContractInfo(contract)
-                                .has(contractWith()
-                                        .isDeclinedReward(false)
-                                        .noStakingNodeId()
-                                        .stakedAccountId("0.0.10"))
-                                .logged(),
-                        /* sentinel values throw */
-                        contractCreate(contract)
-                                .adminKey(THRESHOLD)
-                                .declinedReward(false)
-                                .stakedAccountId("0.0.0")
-                                .hasPrecheck(INVALID_STAKING_ID)
-                                .refusingEthConversion(),
-                        contractCreate(contract)
-                                .adminKey(THRESHOLD)
-                                .declinedReward(false)
-                                .stakedNodeId(-1L)
-                                .hasPrecheck(INVALID_STAKING_ID)
-                                .refusingEthConversion());
+        return hapiTest(
+                uploadInitCode(contract),
+                // refuse eth conversion because ethereum transaction is missing staking fields to map
+                contractCreate(contract)
+                        .adminKey(THRESHOLD)
+                        .declinedReward(true)
+                        .stakedNodeId(0)
+                        .refusingEthConversion(),
+                getContractInfo(contract)
+                        .has(contractWith()
+                                .isDeclinedReward(true)
+                                .noStakedAccountId()
+                                .stakedNodeId(0)),
+                contractCreate(contract)
+                        .adminKey(THRESHOLD)
+                        .declinedReward(true)
+                        .stakedAccountId("0.0.10")
+                        .refusingEthConversion(),
+                getContractInfo(contract)
+                        .has(contractWith()
+                                .isDeclinedReward(true)
+                                .noStakingNodeId()
+                                .stakedAccountId("0.0.10")),
+                contractCreate(contract)
+                        .adminKey(THRESHOLD)
+                        .declinedReward(false)
+                        .stakedNodeId(0)
+                        .refusingEthConversion(),
+                getContractInfo(contract)
+                        .has(contractWith()
+                                .isDeclinedReward(false)
+                                .noStakedAccountId()
+                                .stakedNodeId(0))
+                        .logged(),
+                contractCreate(contract)
+                        .adminKey(THRESHOLD)
+                        .declinedReward(false)
+                        .stakedAccountId("0.0.10")
+                        .refusingEthConversion(),
+                getContractInfo(contract)
+                        .has(contractWith()
+                                .isDeclinedReward(false)
+                                .noStakingNodeId()
+                                .stakedAccountId("0.0.10"))
+                        .logged(),
+                /* sentinel values throw */
+                contractCreate(contract)
+                        .adminKey(THRESHOLD)
+                        .declinedReward(false)
+                        .stakedAccountId("0.0.0")
+                        .hasPrecheck(INVALID_STAKING_ID)
+                        .refusingEthConversion(),
+                contractCreate(contract)
+                        .adminKey(THRESHOLD)
+                        .declinedReward(false)
+                        .stakedNodeId(-1L)
+                        .hasPrecheck(INVALID_STAKING_ID)
+                        .refusingEthConversion());
     }
 
     @HapiTest
     final Stream<DynamicTest> insufficientPayerBalanceUponCreation() {
-        return defaultHapiSpec("InsufficientPayerBalanceUponCreation", NONDETERMINISTIC_TRANSACTION_FEES)
-                .given(cryptoCreate("bankrupt").balance(0L), uploadInitCode(EMPTY_CONSTRUCTOR_CONTRACT))
-                .when()
-                .then(contractCreate(EMPTY_CONSTRUCTOR_CONTRACT)
+        return hapiTest(
+                cryptoCreate("bankrupt").balance(0L),
+                uploadInitCode(EMPTY_CONSTRUCTOR_CONTRACT),
+                contractCreate(EMPTY_CONSTRUCTOR_CONTRACT)
                         .payingWith("bankrupt")
                         .hasPrecheck(INSUFFICIENT_PAYER_BALANCE));
     }
@@ -284,10 +274,10 @@ public class ContractCreateSuite {
         final var contract = "Multipurpose";
         Object[] donationArgs = new Object[] {666666L, "Hey, Ma!"};
 
-        return defaultHapiSpec("CannotSendToNonExistentAccount", NONDETERMINISTIC_TRANSACTION_FEES)
-                .given(uploadInitCode(contract))
-                .when(contractCreate(contract).balance(666))
-                .then(contractCall(contract, "donate", donationArgs).hasKnownStatus(CONTRACT_REVERT_EXECUTED));
+        return hapiTest(
+                uploadInitCode(contract),
+                contractCreate(contract).balance(666),
+                contractCall(contract, "donate", donationArgs).hasKnownStatus(CONTRACT_REVERT_EXECUTED));
     }
 
     @HapiTest
@@ -432,10 +422,7 @@ public class ContractCreateSuite {
 
     @HapiTest
     final Stream<DynamicTest> createEmptyConstructor() {
-        return defaultHapiSpec("createEmptyConstructor", NONDETERMINISTIC_TRANSACTION_FEES)
-                .given(uploadInitCode(EMPTY_CONSTRUCTOR_CONTRACT))
-                .when()
-                .then(contractCreate(EMPTY_CONSTRUCTOR_CONTRACT).hasKnownStatus(SUCCESS));
+        return hapiTest(uploadInitCode(EMPTY_CONSTRUCTOR_CONTRACT), contractCreate(EMPTY_CONSTRUCTOR_CONTRACT));
     }
 
     @HapiTest
@@ -469,13 +456,12 @@ public class ContractCreateSuite {
         final var bBeneficiary = "bBeneficiary";
         final var txn = "txn";
 
-        return defaultHapiSpec("RevertedTryExtCallHasNoSideEffects", NONDETERMINISTIC_FUNCTION_PARAMETERS)
-                .given(
-                        uploadInitCode(contract),
-                        contractCreate(contract).balance(balance),
-                        cryptoCreate(aBeneficiary).balance(0L),
-                        cryptoCreate(bBeneficiary).balance(0L))
-                .when(withOpContext((spec, opLog) -> {
+        return hapiTest(
+                uploadInitCode(contract),
+                contractCreate(contract).balance(balance),
+                cryptoCreate(aBeneficiary).balance(0L),
+                cryptoCreate(bBeneficiary).balance(0L),
+                withOpContext((spec, opLog) -> {
                     final var registry = spec.registry();
                     final var aNum = (int) registry.getAccountID(aBeneficiary).getAccountNum();
                     final var bNum = (int) registry.getAccountID(bBeneficiary).getAccountNum();
@@ -486,11 +472,10 @@ public class ContractCreateSuite {
                             .gas(110_000)
                             .via(txn);
                     allRunFor(spec, op);
-                }))
-                .then(
-                        getTxnRecord(txn).logged(),
-                        getAccountBalance(aBeneficiary).logged(),
-                        getAccountBalance(bBeneficiary).logged());
+                }),
+                getTxnRecord(txn),
+                getAccountBalance(aBeneficiary),
+                getAccountBalance(bBeneficiary));
     }
 
     @HapiTest
@@ -499,26 +484,24 @@ public class ContractCreateSuite {
         final var validSig = shape.signedWith(sigs(ON, sigs(ON, ON, OFF), sigs(OFF, OFF, ON)));
         final var invalidSig = shape.signedWith(sigs(OFF, sigs(ON, ON, OFF), sigs(OFF, OFF, ON)));
 
-        return defaultHapiSpec("CreateFailsIfMissingSigs", HIGHLY_NON_DETERMINISTIC_FEES)
-                .given(uploadInitCode(EMPTY_CONSTRUCTOR_CONTRACT))
-                .when()
-                .then(
-                        contractCreate(EMPTY_CONSTRUCTOR_CONTRACT)
-                                .adminKeyShape(shape)
-                                .sigControl(forKey(EMPTY_CONSTRUCTOR_CONTRACT, invalidSig))
-                                .hasKnownStatus(INVALID_SIGNATURE)
-                                // Refusing ethereum create conversion, because we get INVALID_SIGNATURE upon
-                                // tokenAssociate,
-                                // since we have CONTRACT_ID key
-                                .refusingEthConversion(),
-                        contractCreate(EMPTY_CONSTRUCTOR_CONTRACT)
-                                .adminKeyShape(shape)
-                                .sigControl(forKey(EMPTY_CONSTRUCTOR_CONTRACT, validSig))
-                                .hasKnownStatus(SUCCESS)
-                                // Refusing ethereum create conversion, because we get INVALID_SIGNATURE upon
-                                // tokenAssociate,
-                                // since we have CONTRACT_ID key
-                                .refusingEthConversion());
+        return hapiTest(
+                uploadInitCode(EMPTY_CONSTRUCTOR_CONTRACT),
+                contractCreate(EMPTY_CONSTRUCTOR_CONTRACT)
+                        .adminKeyShape(shape)
+                        .sigControl(forKey(EMPTY_CONSTRUCTOR_CONTRACT, invalidSig))
+                        .hasKnownStatus(INVALID_SIGNATURE)
+                        // Refusing ethereum create conversion, because we get INVALID_SIGNATURE upon
+                        // tokenAssociate,
+                        // since we have CONTRACT_ID key
+                        .refusingEthConversion(),
+                contractCreate(EMPTY_CONSTRUCTOR_CONTRACT)
+                        .adminKeyShape(shape)
+                        .sigControl(forKey(EMPTY_CONSTRUCTOR_CONTRACT, validSig))
+                        .hasKnownStatus(SUCCESS)
+                        // Refusing ethereum create conversion, because we get INVALID_SIGNATURE upon
+                        // tokenAssociate,
+                        // since we have CONTRACT_ID key
+                        .refusingEthConversion());
     }
 
     @HapiTest
@@ -551,10 +534,10 @@ public class ContractCreateSuite {
 
     @HapiTest
     final Stream<DynamicTest> rejectsInsufficientFee() {
-        return defaultHapiSpec("RejectsInsufficientFee", NONDETERMINISTIC_TRANSACTION_FEES)
-                .given(cryptoCreate(PAYER), uploadInitCode(EMPTY_CONSTRUCTOR_CONTRACT))
-                .when()
-                .then(contractCreate(EMPTY_CONSTRUCTOR_CONTRACT)
+        return hapiTest(
+                cryptoCreate(PAYER),
+                uploadInitCode(EMPTY_CONSTRUCTOR_CONTRACT),
+                contractCreate(EMPTY_CONSTRUCTOR_CONTRACT)
                         .payingWith(PAYER)
                         .fee(1L)
                         .hasPrecheck(INSUFFICIENT_TX_FEE));
@@ -574,10 +557,9 @@ public class ContractCreateSuite {
 
     @HapiTest
     final Stream<DynamicTest> revertsNonzeroBalance() {
-        return defaultHapiSpec("RevertsNonzeroBalance", HIGHLY_NON_DETERMINISTIC_FEES)
-                .given(uploadInitCode(EMPTY_CONSTRUCTOR_CONTRACT))
-                .when()
-                .then(contractCreate(EMPTY_CONSTRUCTOR_CONTRACT).balance(1L).hasKnownStatus(CONTRACT_REVERT_EXECUTED));
+        return hapiTest(
+                uploadInitCode(EMPTY_CONSTRUCTOR_CONTRACT),
+                contractCreate(EMPTY_CONSTRUCTOR_CONTRACT).balance(1L).hasKnownStatus(CONTRACT_REVERT_EXECUTED));
     }
 
     @HapiTest
@@ -594,49 +576,41 @@ public class ContractCreateSuite {
         final AtomicLong justSendContractNum = new AtomicLong();
         final AtomicLong beneficiaryAccountNum = new AtomicLong();
 
-        return defaultHapiSpec(
-                        "DelegateContractIdRequiredForTransferInDelegateCall",
-                        NONDETERMINISTIC_TRANSACTION_FEES,
-                        NONDETERMINISTIC_CONTRACT_CALL_RESULTS,
-                        NONDETERMINISTIC_FUNCTION_PARAMETERS)
-                .given(
-                        uploadInitCode(justSendContract, sendInternalAndDelegateContract),
-                        // refuse eth conversion because we can't delegate call contract by contract num
-                        // when it has EVM address alias (isNotPriority check fails)
-                        contractCreate(justSendContract)
-                                .gas(300_000L)
-                                .exposingNumTo(justSendContractNum::set)
-                                .refusingEthConversion(),
-                        contractCreate(sendInternalAndDelegateContract)
-                                .gas(300_000L)
-                                .balance(2 * totalToSend))
-                .when(cryptoCreate(beneficiary)
+        return hapiTest(
+                uploadInitCode(justSendContract, sendInternalAndDelegateContract),
+                // refuse eth conversion because we can't delegate call contract by contract num
+                // when it has EVM address alias (isNotPriority check fails)
+                contractCreate(justSendContract)
+                        .gas(300_000L)
+                        .exposingNumTo(justSendContractNum::set)
+                        .refusingEthConversion(),
+                contractCreate(sendInternalAndDelegateContract).gas(300_000L).balance(2 * totalToSend),
+                cryptoCreate(beneficiary)
                         .balance(0L)
                         .keyShape(origKey.signedWith(sigs(ON, sendInternalAndDelegateContract)))
                         .receiverSigRequired(true)
-                        .exposingCreatedIdTo(id -> beneficiaryAccountNum.set(id.getAccountNum())))
-                .then(
-                        /* Without delegateContractId permissions, the second send via delegate call will
-                         * fail, so only half of totalToSend will make it to the beneficiary. (Note the entire
-                         * call doesn't fail because exceptional halts in "raw calls" don't automatically
-                         * propagate up the stack like a Solidity revert does.) */
-                        sourcing(() -> contractCall(
-                                sendInternalAndDelegateContract,
-                                "sendRepeatedlyTo",
-                                BigInteger.valueOf(justSendContractNum.get()),
-                                BigInteger.valueOf(beneficiaryAccountNum.get()),
-                                BigInteger.valueOf(totalToSend / 2))),
-                        getAccountBalance(beneficiary).hasTinyBars(totalToSend / 2),
-                        /* But now we update the beneficiary to have a delegateContractId */
-                        newKeyNamed(newKey).shape(revisedKey.signedWith(sigs(ON, sendInternalAndDelegateContract))),
-                        cryptoUpdate(beneficiary).key(newKey),
-                        sourcing(() -> contractCall(
-                                sendInternalAndDelegateContract,
-                                "sendRepeatedlyTo",
-                                BigInteger.valueOf(justSendContractNum.get()),
-                                BigInteger.valueOf(beneficiaryAccountNum.get()),
-                                BigInteger.valueOf(totalToSend / 2))),
-                        getAccountBalance(beneficiary).hasTinyBars(3 * (totalToSend / 2)));
+                        .exposingCreatedIdTo(id -> beneficiaryAccountNum.set(id.getAccountNum())),
+                /* Without delegateContractId permissions, the second send via delegate call will
+                 * fail, so only half of totalToSend will make it to the beneficiary. (Note the entire
+                 * call doesn't fail because exceptional halts in "raw calls" don't automatically
+                 * propagate up the stack like a Solidity revert does.) */
+                sourcing(() -> contractCall(
+                        sendInternalAndDelegateContract,
+                        "sendRepeatedlyTo",
+                        BigInteger.valueOf(justSendContractNum.get()),
+                        BigInteger.valueOf(beneficiaryAccountNum.get()),
+                        BigInteger.valueOf(totalToSend / 2))),
+                getAccountBalance(beneficiary).hasTinyBars(totalToSend / 2),
+                /* But now we update the beneficiary to have a delegateContractId */
+                newKeyNamed(newKey).shape(revisedKey.signedWith(sigs(ON, sendInternalAndDelegateContract))),
+                cryptoUpdate(beneficiary).key(newKey),
+                sourcing(() -> contractCall(
+                        sendInternalAndDelegateContract,
+                        "sendRepeatedlyTo",
+                        BigInteger.valueOf(justSendContractNum.get()),
+                        BigInteger.valueOf(beneficiaryAccountNum.get()),
+                        BigInteger.valueOf(totalToSend / 2))),
+                getAccountBalance(beneficiary).hasTinyBars(3 * (totalToSend / 2)));
     }
 
     @HapiTest
@@ -650,20 +624,17 @@ public class ContractCreateSuite {
         final var FILE_KEY = "fileKey";
         final var KEY_LIST = "keyList";
         final var ACCOUNT = "acc";
-        return defaultHapiSpec("cannotCreateTooLargeContract", NONDETERMINISTIC_TRANSACTION_FEES)
-                .given(
-                        newKeyNamed(FILE_KEY),
-                        newKeyListNamed(KEY_LIST, List.of(FILE_KEY)),
-                        cryptoCreate(ACCOUNT).balance(ONE_HUNDRED_HBARS * 10).key(FILE_KEY),
-                        fileCreate("bytecode")
-                                .path(bytecodePath("CryptoKitties"))
-                                .hasPrecheck(TRANSACTION_OVERSIZE)
-                                // Modularized code will not allow a message larger than 6144 bytes at all
-                                .orUnavailableStatus())
-                .when(
-                        fileCreate("bytecode").contents("").key(KEY_LIST),
-                        UtilVerbs.updateLargeFile(ACCOUNT, "bytecode", contents))
-                .then(contractCreate("contract")
+        return hapiTest(
+                newKeyNamed(FILE_KEY),
+                newKeyListNamed(KEY_LIST, List.of(FILE_KEY)),
+                cryptoCreate(ACCOUNT).balance(ONE_HUNDRED_HBARS * 10).key(FILE_KEY),
+                fileCreate("bytecode")
+                        .path(bytecodePath("CryptoKitties"))
+                        .hasPrecheck(TRANSACTION_OVERSIZE)
+                        .orUnavailableStatus(),
+                fileCreate("bytecode").contents("").key(KEY_LIST),
+                UtilVerbs.updateLargeFile(ACCOUNT, "bytecode", contents),
+                contractCreate("contract")
                         .bytecode("bytecode")
                         .payingWith(ACCOUNT)
                         .hasKnownStatus(INSUFFICIENT_GAS)
@@ -678,62 +649,55 @@ public class ContractCreateSuite {
         final var firstBlock = "firstBlock";
         final var timeLoggingTxn = "timeLoggingTxn";
 
-        return defaultHapiSpec(
-                        "blockTimestampChangesWithinFewSeconds",
-                        NONDETERMINISTIC_CONTRACT_CALL_RESULTS,
-                        NONDETERMINISTIC_TRANSACTION_FEES)
-                .given(uploadInitCode(contract), contractCreate(contract))
-                .when(
-                        contractCall(contract, "logNow").via(firstBlock),
-                        cryptoTransfer(HapiCryptoTransfer.tinyBarsFromTo(GENESIS, FUNDING, 1)),
-                        sleepFor(3_000),
-                        contractCall(contract, "logNow").via(timeLoggingTxn))
-                .then(
-                        withOpContext((spec, opLog) -> {
-                            final var firstBlockOp = getTxnRecord(firstBlock);
-                            final var recordOp = getTxnRecord(timeLoggingTxn);
-                            allRunFor(spec, firstBlockOp, recordOp);
+        return hapiTest(
+                uploadInitCode(contract),
+                contractCreate(contract),
+                contractCall(contract, "logNow").via(firstBlock),
+                cryptoTransfer(HapiCryptoTransfer.tinyBarsFromTo(GENESIS, FUNDING, 1)),
+                sleepFor(3_000),
+                contractCall(contract, "logNow").via(timeLoggingTxn),
+                withOpContext((spec, opLog) -> {
+                    final var firstBlockOp = getTxnRecord(firstBlock);
+                    final var recordOp = getTxnRecord(timeLoggingTxn);
+                    allRunFor(spec, firstBlockOp, recordOp);
 
-                            // First block info
-                            final var firstBlockRecord = firstBlockOp.getResponseRecord();
-                            final var firstBlockLogs =
-                                    firstBlockRecord.getContractCallResult().getLogInfoList();
-                            final var firstBlockTimeLogData =
-                                    firstBlockLogs.get(0).getData().toByteArray();
-                            final var firstBlockTimestamp =
-                                    Longs.fromByteArray(Arrays.copyOfRange(firstBlockTimeLogData, 24, 32));
-                            final var firstBlockHashLogData =
-                                    firstBlockLogs.get(1).getData().toByteArray();
-                            final var firstBlockNumber =
-                                    Longs.fromByteArray(Arrays.copyOfRange(firstBlockHashLogData, 24, 32));
-                            final var firstBlockHash = Bytes32.wrap(Arrays.copyOfRange(firstBlockHashLogData, 32, 64));
-                            assertEquals(Bytes32.ZERO, firstBlockHash);
+                    // First block info
+                    final var firstBlockRecord = firstBlockOp.getResponseRecord();
+                    final var firstBlockLogs =
+                            firstBlockRecord.getContractCallResult().getLogInfoList();
+                    final var firstBlockTimeLogData =
+                            firstBlockLogs.get(0).getData().toByteArray();
+                    final var firstBlockTimestamp =
+                            Longs.fromByteArray(Arrays.copyOfRange(firstBlockTimeLogData, 24, 32));
+                    final var firstBlockHashLogData =
+                            firstBlockLogs.get(1).getData().toByteArray();
+                    final var firstBlockNumber = Longs.fromByteArray(Arrays.copyOfRange(firstBlockHashLogData, 24, 32));
+                    final var firstBlockHash = Bytes32.wrap(Arrays.copyOfRange(firstBlockHashLogData, 32, 64));
+                    assertEquals(Bytes32.ZERO, firstBlockHash);
 
-                            // Second block info
-                            final var secondBlockRecord = recordOp.getResponseRecord();
-                            final var secondBlockLogs =
-                                    secondBlockRecord.getContractCallResult().getLogInfoList();
-                            assertEquals(2, secondBlockLogs.size());
-                            final var secondBlockTimeLogData =
-                                    secondBlockLogs.get(0).getData().toByteArray();
-                            final var secondBlockTimestamp =
-                                    Longs.fromByteArray(Arrays.copyOfRange(secondBlockTimeLogData, 24, 32));
-                            assertNotEquals(
-                                    firstBlockTimestamp, secondBlockTimestamp, "Block timestamps should change");
+                    // Second block info
+                    final var secondBlockRecord = recordOp.getResponseRecord();
+                    final var secondBlockLogs =
+                            secondBlockRecord.getContractCallResult().getLogInfoList();
+                    assertEquals(2, secondBlockLogs.size());
+                    final var secondBlockTimeLogData =
+                            secondBlockLogs.get(0).getData().toByteArray();
+                    final var secondBlockTimestamp =
+                            Longs.fromByteArray(Arrays.copyOfRange(secondBlockTimeLogData, 24, 32));
+                    assertNotEquals(firstBlockTimestamp, secondBlockTimestamp, "Block timestamps should change");
 
-                            final var secondBlockHashLogData =
-                                    secondBlockLogs.get(1).getData().toByteArray();
-                            final var secondBlockNumber =
-                                    Longs.fromByteArray(Arrays.copyOfRange(secondBlockHashLogData, 24, 32));
-                            assertNotEquals(firstBlockNumber, secondBlockNumber, "Wrong previous block number");
-                            final var secondBlockHash =
-                                    Bytes32.wrap(Arrays.copyOfRange(secondBlockHashLogData, 32, 64));
+                    final var secondBlockHashLogData =
+                            secondBlockLogs.get(1).getData().toByteArray();
+                    final var secondBlockNumber =
+                            Longs.fromByteArray(Arrays.copyOfRange(secondBlockHashLogData, 24, 32));
+                    assertNotEquals(firstBlockNumber, secondBlockNumber, "Wrong previous block number");
+                    final var secondBlockHash = Bytes32.wrap(Arrays.copyOfRange(secondBlockHashLogData, 32, 64));
 
-                            assertEquals(Bytes32.ZERO, secondBlockHash);
-                        }),
-                        contractCallLocal(contract, "getLastBlockHash")
-                                .exposingTypedResultsTo(
-                                        results -> log.info("Results were {}", CommonUtils.hex((byte[]) results[0]))));
+                    assertEquals(Bytes32.ZERO, secondBlockHash);
+                }),
+                contractCallLocal(contract, "getLastBlockHash")
+                        .exposingTypedResultsTo(
+                                results -> log.info("Results were {}", CommonUtils.hex((byte[]) results[0]))));
     }
 
     @HapiTest
@@ -824,53 +788,44 @@ public class ContractCreateSuite {
     @HapiTest
     final Stream<DynamicTest> vanillaSuccess() {
         final var contract = "CreateTrivial";
-        return defaultHapiSpec(
-                        "VanillaSuccess",
-                        NONDETERMINISTIC_CONTRACT_CALL_RESULTS,
-                        NONDETERMINISTIC_TRANSACTION_FEES,
-                        NONDETERMINISTIC_NONCE)
-                .given(
-                        uploadInitCode(contract),
-                        // refuse eth conversion because ethereum transaction is missing admin key
-                        contractCreate(contract).adminKey(THRESHOLD).refusingEthConversion(),
-                        getContractInfo(contract).saveToRegistry(PARENT_INFO))
-                .when(
-                        contractCall(contract, "create").gas(1_000_000L).via("createChildTxn"),
-                        contractCall(contract, "getIndirect").gas(1_000_000L).via("getChildResultTxn"),
-                        contractCall(contract, "getAddress").gas(1_000_000L).via("getChildAddressTxn"))
-                .then(
-                        getTxnRecord("createChildTxn")
-                                .saveCreatedContractListToRegistry("createChild")
-                                .logged(),
-                        getTxnRecord("getChildResultTxn")
-                                .hasPriority(recordWith()
-                                        .contractCallResult(resultWith()
-                                                .resultThruAbi(
-                                                        getABIFor(FUNCTION, "getIndirect", contract),
-                                                        isLiteralResult(new Object[] {BigInteger.valueOf(7L)})))),
-                        getTxnRecord("getChildAddressTxn")
-                                .hasPriority(recordWith()
-                                        .contractCallResult(resultWith()
-                                                .resultThruAbi(
-                                                        getABIFor(FUNCTION, "getAddress", contract),
-                                                        isContractWith(contractWith()
-                                                                .nonNullContractId()
-                                                                .propertiesInheritedFrom(PARENT_INFO)))
-                                                .logs(inOrder()))),
-                        contractListWithPropertiesInheritedFrom("createChildCallResult", 1, PARENT_INFO));
+        return hapiTest(
+                uploadInitCode(contract),
+                // refuse eth conversion because ethereum transaction is missing admin key
+                contractCreate(contract).adminKey(THRESHOLD).refusingEthConversion(),
+                getContractInfo(contract).saveToRegistry(PARENT_INFO),
+                contractCall(contract, "create").gas(1_000_000L).via("createChildTxn"),
+                contractCall(contract, "getIndirect").gas(1_000_000L).via("getChildResultTxn"),
+                contractCall(contract, "getAddress").gas(1_000_000L).via("getChildAddressTxn"),
+                getTxnRecord("createChildTxn")
+                        .saveCreatedContractListToRegistry("createChild")
+                        .logged(),
+                getTxnRecord("getChildResultTxn")
+                        .hasPriority(recordWith()
+                                .contractCallResult(resultWith()
+                                        .resultThruAbi(
+                                                getABIFor(FUNCTION, "getIndirect", contract),
+                                                isLiteralResult(new Object[] {BigInteger.valueOf(7L)})))),
+                getTxnRecord("getChildAddressTxn")
+                        .hasPriority(recordWith()
+                                .contractCallResult(resultWith()
+                                        .resultThruAbi(
+                                                getABIFor(FUNCTION, "getAddress", contract),
+                                                isContractWith(contractWith()
+                                                        .nonNullContractId()
+                                                        .propertiesInheritedFrom(PARENT_INFO)))
+                                        .logs(inOrder()))),
+                contractListWithPropertiesInheritedFrom("createChildCallResult", 1, PARENT_INFO));
     }
 
     @HapiTest
     final Stream<DynamicTest> newAccountsCanUsePureContractIdKey() {
         final var contract = "CreateTrivial";
         final var contractControlled = "contractControlled";
-        return defaultHapiSpec("NewAccountsCanUsePureContractIdKey", NONDETERMINISTIC_TRANSACTION_FEES)
-                .given(
-                        uploadInitCode(contract),
-                        contractCreate(contract),
-                        cryptoCreate(contractControlled).keyShape(CONTRACT.signedWith(contract)))
-                .when()
-                .then(withOpContext((spec, opLog) -> {
+        return hapiTest(
+                uploadInitCode(contract),
+                contractCreate(contract),
+                cryptoCreate(contractControlled).keyShape(CONTRACT.signedWith(contract)),
+                withOpContext((spec, opLog) -> {
                     final var registry = spec.registry();
                     final var contractIdKey = Key.newBuilder()
                             .setContractID(registry.getContractId(contract))
@@ -899,29 +854,24 @@ public class ContractCreateSuite {
     final Stream<DynamicTest> contractWithAutoRenewNeedSignatures() {
         final var contract = "CreateTrivial";
         final var autoRenewAccount = "autoRenewAccount";
-        return defaultHapiSpec("contractWithAutoRenewNeedSignatures", HIGHLY_NON_DETERMINISTIC_FEES)
-                .given(
-                        newKeyNamed(ADMIN_KEY),
-                        uploadInitCode(contract),
-                        cryptoCreate(autoRenewAccount).balance(ONE_HUNDRED_HBARS),
-                        // refuse eth conversion because ethereum transaction is missing autoRenewAccountId field to map
-                        contractCreate(contract)
-                                .adminKey(ADMIN_KEY)
-                                .autoRenewAccountId(autoRenewAccount)
-                                .signedBy(DEFAULT_PAYER, ADMIN_KEY)
-                                .hasKnownStatus(INVALID_SIGNATURE)
-                                .refusingEthConversion(),
-                        contractCreate(contract)
-                                .adminKey(ADMIN_KEY)
-                                .autoRenewAccountId(autoRenewAccount)
-                                .signedBy(DEFAULT_PAYER, ADMIN_KEY, autoRenewAccount)
-                                .refusingEthConversion()
-                                .logged(),
-                        getContractInfo(contract)
-                                .has(ContractInfoAsserts.contractWith().maxAutoAssociations(0))
-                                .logged())
-                .when()
-                .then();
+        return hapiTest(
+                newKeyNamed(ADMIN_KEY),
+                uploadInitCode(contract),
+                cryptoCreate(autoRenewAccount).balance(ONE_HUNDRED_HBARS),
+                // refuse eth conversion because ethereum transaction is missing autoRenewAccountId field to map
+                contractCreate(contract)
+                        .adminKey(ADMIN_KEY)
+                        .autoRenewAccountId(autoRenewAccount)
+                        .signedBy(DEFAULT_PAYER, ADMIN_KEY)
+                        .hasKnownStatus(INVALID_SIGNATURE)
+                        .refusingEthConversion(),
+                contractCreate(contract)
+                        .adminKey(ADMIN_KEY)
+                        .autoRenewAccountId(autoRenewAccount)
+                        .signedBy(DEFAULT_PAYER, ADMIN_KEY, autoRenewAccount)
+                        .refusingEthConversion()
+                        .logged(),
+                getContractInfo(contract).has(ContractInfoAsserts.contractWith().maxAutoAssociations(0)));
     }
 
     private EthTxData placeholderEthTx() {

@@ -18,6 +18,7 @@ package com.hedera.services.bdd.suites.contract.opcodes;
 
 import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.assertions.AssertUtils.inOrder;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.ContractLogAsserts.logWith;
@@ -33,12 +34,6 @@ import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.assertionsHold;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.contractListWithPropertiesInheritedFrom;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
-import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.ACCEPTED_MONO_GAS_CALCULATION_DIFFERENCE;
-import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.FULLY_NONDETERMINISTIC;
-import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.HIGHLY_NON_DETERMINISTIC_FEES;
-import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_FUNCTION_PARAMETERS;
-import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_LOG_DATA;
-import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
 import static com.hedera.services.bdd.suites.contract.Utils.eventSignatureOf;
@@ -72,19 +67,15 @@ public class CreateOperationSuite {
     final Stream<DynamicTest> factoryQuickSelfDestructContract() {
         final var contract = "FactoryQuickSelfDestruct";
         final var sender = "sender";
-        return defaultHapiSpec(
-                        "FactoryQuickSelfDestructContract",
-                        NONDETERMINISTIC_TRANSACTION_FEES,
-                        NONDETERMINISTIC_LOG_DATA)
-                .given(
-                        uploadInitCode(contract),
-                        contractCreate(contract),
-                        cryptoCreate(sender).balance(ONE_HUNDRED_HBARS))
-                .when(contractCall(contract, "createAndDeleteChild")
+        return hapiTest(
+                uploadInitCode(contract),
+                contractCreate(contract),
+                cryptoCreate(sender).balance(ONE_HUNDRED_HBARS),
+                contractCall(contract, "createAndDeleteChild")
                         .gas(4_000_000)
                         .via(CALL_RECORD_TRANSACTION_NAME)
-                        .payingWith(sender))
-                .then(getTxnRecord(CALL_RECORD_TRANSACTION_NAME)
+                        .payingWith(sender),
+                getTxnRecord(CALL_RECORD_TRANSACTION_NAME)
                         .hasPriority(recordWith()
                                 .contractCallResult(resultWith()
                                         .logs(inOrder(
@@ -99,29 +90,26 @@ public class CreateOperationSuite {
     @HapiTest
     final Stream<DynamicTest> inheritanceOfNestedCreatedContracts() {
         final var contract = "NestedChildren";
-        return defaultHapiSpec("InheritanceOfNestedCreatedContracts", FULLY_NONDETERMINISTIC)
-                .given(
-                        uploadInitCode(contract),
-                        // refuse eth conversion because ethereum transaction is missing admin key and memo is same as
-                        // parent
-                        contractCreate(contract).logged().via("createRecord").refusingEthConversion(),
-                        getContractInfo(contract).logged().saveToRegistry(PARENT_INFO))
-                .when(contractCall(contract, "callCreate").gas(780_000).via(CALL_RECORD_TRANSACTION_NAME))
-                .then(
-                        getTxnRecord("createRecord").saveCreatedContractListToRegistry("ctorChild"),
-                        getTxnRecord(CALL_RECORD_TRANSACTION_NAME).saveCreatedContractListToRegistry("callChild"),
-                        contractListWithPropertiesInheritedFrom("callChildCallResult", 2, PARENT_INFO),
-                        contractListWithPropertiesInheritedFrom("ctorChildCreateResult", 3, PARENT_INFO));
+        return hapiTest(
+                uploadInitCode(contract),
+                // refuse eth conversion because ethereum transaction is missing admin key and memo is same as
+                // parent
+                contractCreate(contract).logged().via("createRecord").refusingEthConversion(),
+                getContractInfo(contract).logged().saveToRegistry(PARENT_INFO),
+                contractCall(contract, "callCreate").gas(780_000).via(CALL_RECORD_TRANSACTION_NAME),
+                getTxnRecord("createRecord").saveCreatedContractListToRegistry("ctorChild"),
+                getTxnRecord(CALL_RECORD_TRANSACTION_NAME).saveCreatedContractListToRegistry("callChild"),
+                contractListWithPropertiesInheritedFrom("callChildCallResult", 2, PARENT_INFO),
+                contractListWithPropertiesInheritedFrom("ctorChildCreateResult", 3, PARENT_INFO));
     }
 
     @HapiTest
     final Stream<DynamicTest> simpleFactoryWorks() {
-        return defaultHapiSpec("simpleFactoryWorks", NONDETERMINISTIC_TRANSACTION_FEES)
-                .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT))
-                .when(contractCall(CONTRACT, DEPLOYMENT_SUCCESS_FUNCTION)
-                        .gas(780_000)
-                        .via(DEPLOYMENT_SUCCESS_TXN))
-                .then(withOpContext((spec, opLog) -> {
+        return hapiTest(
+                uploadInitCode(CONTRACT),
+                contractCreate(CONTRACT),
+                contractCall(CONTRACT, DEPLOYMENT_SUCCESS_FUNCTION).gas(780_000).via(DEPLOYMENT_SUCCESS_TXN),
+                withOpContext((spec, opLog) -> {
                     final var successTxn = getTxnRecord(DEPLOYMENT_SUCCESS_TXN);
                     final var parentContract = getContractInfo(CONTRACT).saveToRegistry(CONTRACT_INFO);
                     allRunFor(spec, successTxn, parentContract);
@@ -137,12 +125,13 @@ public class CreateOperationSuite {
 
     @HapiTest
     final Stream<DynamicTest> stackedFactoryWorks() {
-        return defaultHapiSpec("StackedFactoryWorks", FULLY_NONDETERMINISTIC)
-                .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT))
-                .when(contractCall(CONTRACT, "stackedDeploymentSuccess")
+        return hapiTest(
+                uploadInitCode(CONTRACT),
+                contractCreate(CONTRACT),
+                contractCall(CONTRACT, "stackedDeploymentSuccess")
                         .gas(1_000_000)
-                        .via("stackedDeploymentSuccessTxn"))
-                .then(withOpContext((spec, opLog) -> {
+                        .via("stackedDeploymentSuccessTxn"),
+                withOpContext((spec, opLog) -> {
                     final var successTxn = getTxnRecord("stackedDeploymentSuccessTxn");
                     final var parentContract = getContractInfo(CONTRACT).saveToRegistry(CONTRACT_INFO);
                     allRunFor(spec, successTxn, parentContract);
@@ -255,26 +244,19 @@ public class CreateOperationSuite {
     @HapiTest
     final Stream<DynamicTest> contractCreateWithNewOpInConstructorAbandoningParent() {
         final var contract = "AbandoningParent";
-        return defaultHapiSpec(
-                        "contractCreateWithNewOpInConstructorAbandoningParent",
-                        NONDETERMINISTIC_FUNCTION_PARAMETERS,
-                        HIGHLY_NON_DETERMINISTIC_FEES,
-                        ACCEPTED_MONO_GAS_CALCULATION_DIFFERENCE)
+        return hapiTest(
                 // refuse eth conversion because ethereum transaction is missing admin key (the new contract has own key
                 // - isSelfAdmin(parent))
-                .given(
-                        uploadInitCode(contract),
-                        contractCreate(contract).via("AbandoningParentTxn").refusingEthConversion())
-                .when()
-                .then(
-                        getContractInfo(contract)
-                                .saveToRegistry("AbandoningParentParentInfo")
-                                .logged(),
-                        getTxnRecord("AbandoningParentTxn")
-                                .saveCreatedContractListToRegistry(contract)
-                                .logged(),
-                        UtilVerbs.contractListWithPropertiesInheritedFrom(
-                                "AbandoningParentCreateResult", 6, "AbandoningParentParentInfo"));
+                uploadInitCode(contract),
+                contractCreate(contract).via("AbandoningParentTxn").refusingEthConversion(),
+                getContractInfo(contract)
+                        .saveToRegistry("AbandoningParentParentInfo")
+                        .logged(),
+                getTxnRecord("AbandoningParentTxn")
+                        .saveCreatedContractListToRegistry(contract)
+                        .logged(),
+                UtilVerbs.contractListWithPropertiesInheritedFrom(
+                        "AbandoningParentCreateResult", 6, "AbandoningParentParentInfo"));
     }
 
     @HapiTest
