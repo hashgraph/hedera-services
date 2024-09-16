@@ -41,6 +41,15 @@ import org.apache.logging.log4j.Logger;
 public class PlaceholderTssBaseService implements TssBaseService {
     private static final Logger log = LogManager.getLogger(PlaceholderTssBaseService.class);
 
+    private TssStateManager tssStateManager;
+    private TssCryptographyManager tssCryptographyManager;
+    private Roster candidateRoster;
+
+    public PlaceholderTssBaseService(TssStateManager tssStateManager, TssCryptographyManager tssCryptographyManager) {
+        this.tssStateManager = tssStateManager;
+        this.tssCryptographyManager = tssCryptographyManager;
+    }
+
     /**
      * Copy-on-write list to avoid concurrent modification exceptions if a consumer unregisters
      * itself in its callback.
@@ -96,6 +105,14 @@ public class PlaceholderTssBaseService implements TssBaseService {
 
     @Override
     public void setCandidateRoster(@NonNull final Roster candidateRoster) {
-        throw new NotImplementedException();
+        // If there is already a candidate roster, clean up related data
+        if(this.candidateRoster != null) {
+           tssStateManager.clearCandidateRosterData(this.candidateRoster);
+        }
+
+        // Set the candidate roster
+        this.candidateRoster = candidateRoster;
+        tssStateManager.setCandidateRoster(candidateRoster);
+        tssCryptographyManager.keyCandidateRoster(candidateRoster);
     }
 }
