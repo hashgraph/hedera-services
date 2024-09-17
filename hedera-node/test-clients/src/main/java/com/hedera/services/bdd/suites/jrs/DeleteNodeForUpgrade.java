@@ -29,7 +29,7 @@ public class DeleteNodeForUpgrade extends HapiSuite {
         return defaultHapiSpec("DeleteNodeForUpgrade")
                 .given(initializeSettings())
                 .when(overriding("nodes.enableDAB", "true"),
-                        nodeDelete("2").payingWith(GENESIS).signedBy(GENESIS).logged())
+                        nodeDelete("2").payingWith(GENESIS).signedBy(GENESIS))
                 .then();
     }
 
