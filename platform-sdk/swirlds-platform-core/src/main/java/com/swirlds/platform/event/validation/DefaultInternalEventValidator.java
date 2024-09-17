@@ -177,8 +177,7 @@ public class DefaultInternalEventValidator implements InternalEventValidator {
                 || eventCore.timeCreated() == null
                 || eventCore.version() == null
                 || eventCore.parents().stream().anyMatch(Objects::isNull)
-                || gossipEvent.eventTransaction().stream().anyMatch(DefaultInternalEventValidator::isTransactionNull)
-        ) {
+                || gossipEvent.eventTransaction().stream().anyMatch(DefaultInternalEventValidator::isTransactionNull)) {
             nullFieldLogger.error(EXCEPTION.getMarker(), "Event has null field {}", gossipEvent);
             nullFieldAccumulator.update(1);
             return false;
@@ -192,7 +191,7 @@ public class DefaultInternalEventValidator implements InternalEventValidator {
      * @param transaction the transaction to check
      * @return true if the transaction is null, otherwise false
      */
-    private static boolean isTransactionNull(@Nullable final EventTransaction transaction){
+    private static boolean isTransactionNull(@Nullable final EventTransaction transaction) {
         return transaction != null && transaction.transaction() != null;
     }
 
@@ -210,9 +209,13 @@ public class DefaultInternalEventValidator implements InternalEventValidator {
             fieldLengthAccumulator.update(1);
             return false;
         }
-        if (eventCore.parents().stream().map(EventDescriptor::hash)
+        if (eventCore.parents().stream()
+                .map(EventDescriptor::hash)
                 .anyMatch(hash -> hash.length() != DigestType.SHA_384.digestLength())) {
-            fieldLengthLogger.error(EXCEPTION.getMarker(), "Event parent descriptor has a hash that is the wrong length {}", gossipEvent);
+            fieldLengthLogger.error(
+                    EXCEPTION.getMarker(),
+                    "Event parent descriptor has a hash that is the wrong length {}",
+                    gossipEvent);
             fieldLengthAccumulator.update(1);
             return false;
         }
