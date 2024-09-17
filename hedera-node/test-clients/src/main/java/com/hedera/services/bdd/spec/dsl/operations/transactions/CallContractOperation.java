@@ -40,6 +40,7 @@ public class CallContractOperation extends AbstractSpecTransaction<CallContractO
     private final Object[] parameters;
     private long gas = DEFAULT_GAS;
     private long sendValue;
+    private String txnName;
     private Consumer<Object[]> resultObserver;
 
     public CallContractOperation(
@@ -56,6 +57,7 @@ public class CallContractOperation extends AbstractSpecTransaction<CallContractO
         final var op = contractCall(
                         target.name(), function, withSubstitutedTypes(spec.targetNetworkOrThrow(), parameters))
                 .sending(sendValue)
+                .via(txnName)
                 .exposingResultTo(resultObserver)
                 .gas(gas);
         maybeAssertions().ifPresent(a -> a.accept(op));
@@ -79,6 +81,11 @@ public class CallContractOperation extends AbstractSpecTransaction<CallContractO
      */
     public CallContractOperation sending(final long value) {
         this.sendValue = value;
+        return this;
+    }
+
+    public CallContractOperation via(final String txnName) {
+        this.txnName = txnName;
         return this;
     }
 

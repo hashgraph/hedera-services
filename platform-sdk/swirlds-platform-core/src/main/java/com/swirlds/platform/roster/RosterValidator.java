@@ -41,7 +41,7 @@ public final class RosterValidator {
             throw new InvalidRosterException("roster is null");
         }
 
-        final List<RosterEntry> rosterEntries = roster.rosters();
+        final List<RosterEntry> rosterEntries = roster.rosterEntries();
 
         if (rosterEntries.isEmpty()) {
             throw new InvalidRosterException("roster is empty");
