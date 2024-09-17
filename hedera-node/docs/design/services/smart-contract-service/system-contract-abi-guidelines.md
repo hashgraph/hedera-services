@@ -12,7 +12,7 @@ This document contains design guidelines for system contract ABIs.
     - security.
 - API design shouldn’t be *ad hoc* - there should be consistency that supports the goals above
   (and avoids mistakes)
-- System contracts are *contracts*, and are to be used by smart contract *developers*: Therefore 
+- System contracts are *contract* interfaces that  expose HAPI logic in the equivalent manner of an EVM precompile. System contracts preserve the behaviour of an EVM smart contract but capitalize of the power of native services. System contracts are intended to be used by smart contract *developers* in accordance with solidity development best practices: Therefore 
   the APIs should be designed with those developer’s common expectations and practices in mind.
 
 ## Related
