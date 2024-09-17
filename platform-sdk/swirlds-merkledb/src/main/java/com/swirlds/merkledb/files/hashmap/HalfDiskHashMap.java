@@ -596,7 +596,7 @@ public class HalfDiskHashMap implements AutoCloseable, Snapshotable, FileStatist
             try {
                 BufferedData bucketData =
                         fileCollection.readDataItemUsingIndex(bucketIndexToBucketLocation, bucketIndex);
-                // The bucket will be closed by WriteBucketTask
+                // The bucket will be closed by StoreBucketTask
                 final Bucket bucket = bucketPool.getBucket();
                 if (bucketData == null) {
                     // An empty bucket
