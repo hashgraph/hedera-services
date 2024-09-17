@@ -22,6 +22,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnUtils.isIdLiteral;
 
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
+import com.hederahashgraph.api.proto.java.ConsensusCustomFee;
 import com.hederahashgraph.api.proto.java.CustomFee;
 import com.hederahashgraph.api.proto.java.FixedFee;
 import com.hederahashgraph.api.proto.java.Fraction;
@@ -126,6 +127,10 @@ public class CustomFeeSpecs {
         return baseFixedBuilder(amount, collector, allCollectorsExempt, spec).build();
     }
 
+    static ConsensusCustomFee builtFixedTopicHbar(long amount, String collector, HapiSpec spec) {
+        return baseFixedTopicBuilder(amount, collector, spec).build();
+    }
+
     static FixedFee builtFixedHbarSansCollector(long amount) {
         return FixedFee.newBuilder().setAmount(amount).build();
     }
@@ -212,5 +217,12 @@ public class CustomFeeSpecs {
                 .setAllCollectorsAreExempt(allCollectorsExempt)
                 .setFixedFee(fixedBuilder)
                 .setFeeCollectorAccountId(collectorId);
+    }
+
+    static ConsensusCustomFee.Builder baseFixedTopicBuilder(long amount, String collector, HapiSpec spec) {
+        final var collectorId =
+                isIdLiteral(collector) ? asAccount(collector) : spec.registry().getAccountID(collector);
+        final var fixedBuilder = FixedFee.newBuilder().setAmount(amount);
+        return ConsensusCustomFee.newBuilder().setFixedFee(fixedBuilder).setFeeCollectorAccountId(collectorId);
     }
 }

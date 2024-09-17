@@ -27,6 +27,8 @@ import com.hedera.hapi.node.base.KeyList;
 import com.hedera.hapi.node.base.ThresholdKey;
 import com.hedera.hapi.node.base.TopicID;
 import com.hedera.hapi.node.state.consensus.Topic;
+import com.hedera.hapi.node.transaction.ConsensusCustomFee;
+import com.hedera.hapi.node.transaction.FixedFee;
 import com.hedera.node.app.service.consensus.ReadableTopicStore;
 import com.hedera.node.app.service.consensus.impl.ReadableTopicStoreImpl;
 import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
@@ -41,6 +43,7 @@ import com.swirlds.state.test.fixtures.MapReadableKVState;
 import com.swirlds.state.test.fixtures.MapWritableKVState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
+import java.util.List;
 import java.util.function.Function;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -52,6 +55,7 @@ public class ConsensusTestBase {
     private static final String A_NAME = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
     private static final String B_NAME = "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
     private static final String C_NAME = "cccccccccccccccccccccccccccccccc";
+    private static final String SCHEDULE_KEY = "scheduleKey";
     private static final Function<String, Key.Builder> KEY_BUILDER =
             value -> Key.newBuilder().ed25519(Bytes.wrap(value.getBytes()));
     public static final Key A_THRESHOLD_KEY = Key.newBuilder()
@@ -82,8 +86,12 @@ public class ConsensusTestBase {
                                     KEY_BUILDER.apply(B_NAME).build(),
                                     A_COMPLEX_KEY)))
             .build();
+    public static final Key SHEDULE_KEY = Key.newBuilder()
+            .keyList(KeyList.newBuilder().keys(KEY_BUILDER.apply(SCHEDULE_KEY).build()))
+            .build();
     protected final Key key = A_COMPLEX_KEY;
     protected final Key anotherKey = B_COMPLEX_KEY;
+    protected final Key feeScheduleKey = SHEDULE_KEY;
     protected final AccountID payerId = AccountID.newBuilder().accountNum(3).build();
     public static final AccountID anotherPayer =
             AccountID.newBuilder().accountNum(13257).build();
@@ -102,6 +110,10 @@ public class ConsensusTestBase {
     protected final long sequenceNumber = 1L;
     protected final long autoRenewSecs = 100L;
     protected final Instant consensusTimestamp = Instant.ofEpochSecond(1_234_567L);
+    protected final List<ConsensusCustomFee> customFees = List.of(ConsensusCustomFee.newBuilder()
+            .fixedFee(FixedFee.newBuilder().amount(1).build())
+            .feeCollectorAccountId(anotherPayer)
+            .build());
 
     protected Topic topic;
 
@@ -209,7 +221,10 @@ public class ConsensusTestBase {
                 Bytes.wrap(runningHash),
                 memo,
                 withAdminKey ? key : null,
-                withSubmitKey ? key : null);
+                withSubmitKey ? key : null,
+                feeScheduleKey,
+                List.of(key, anotherKey),
+                customFees);
         topicNoKeys = new Topic(
                 topicId,
                 sequenceNumber,
@@ -220,7 +235,10 @@ public class ConsensusTestBase {
                 Bytes.wrap(runningHash),
                 memo,
                 null,
-                null);
+                null,
+                feeScheduleKey,
+                List.of(key, anotherKey),
+                customFees);
     }
 
     protected Topic createTopic() {
