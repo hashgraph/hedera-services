@@ -65,7 +65,7 @@ public class ReturnTypes {
             + ")[],";
     protected static final String EXPIRY_FIELDS =
             // second, autoRenewAccount, autoRenewPeriod
-            "(uint32,address,uint32)";
+            "(int64,address,int64)";
     protected static final String CUSTOM_FEES =
             // FixedFee array
             // amount, tokenId, useHbarsForPayment, useCurrentTokenForPayment, feeCollector
