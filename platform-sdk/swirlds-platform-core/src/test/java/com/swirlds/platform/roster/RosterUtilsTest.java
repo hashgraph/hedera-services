@@ -68,8 +68,8 @@ class RosterUtilsTest {
     }
 
     @Test
-    @DisplayName("Test construct initial roster with software upgrade")
-    void testConstructInitialRosterWithSoftwareUpgrade() {
+    @DisplayName("Test generate active roster with software upgrade")
+    void testGenerateActiveRosterWithSoftwareUpgrade() {
         final SoftwareVersion version = mock(SoftwareVersion.class);
         final ReservedSignedState initialState = mock(ReservedSignedState.class);
         final SignedState state = mock(SignedState.class);
@@ -85,12 +85,12 @@ class RosterUtilsTest {
         when(state.getState().getWritablePlatformState()).thenReturn(platformState);
         when(rosterStore.getCandidateRoster()).thenReturn(candidateRoster);
 
-        assertNotNull(RosterUtils.constructInitialRoster(version, initialState, addressBook));
+        assertSame(candidateRoster, RosterUtils.generateActiveRoster(version, initialState, addressBook));
     }
 
     @Test
-    @DisplayName("Test construct initial roster without software upgrade")
-    void testConstructInitialRosterWithoutSoftwareUpgrade() {
+    @DisplayName("Test generate active roster without software upgrade")
+    void testGenerateActiveRosterWithoutSoftwareUpgrade() {
         final SoftwareVersion version = mock(SoftwareVersion.class);
         final ReservedSignedState initialState = mock(ReservedSignedState.class);
         final SignedState state = mock(SignedState.class);
@@ -105,14 +105,14 @@ class RosterUtilsTest {
         when(stateMerkleRoot.getReadablePlatformState()).thenReturn(platformState);
         when(state.getState().getWritablePlatformState()).thenReturn(platformState);
         when(rosterStore.getCandidateRoster()).thenReturn(null);
-
-        assertNotNull(RosterUtils.constructInitialRoster(version, initialState, addressBook));
+        assertEquals(
+                RosterUtils.generateActiveRoster(version, initialState, addressBook),
+                RosterUtils.createRoster(addressBook));
     }
 
     @Test
-    @DisplayName(
-            "Test construct initial roster without software upgrade but with an active roster present in the state")
-    void testConstructInitialRosterWithoutSoftwareUpgradeWithActiveRoster() {
+    @DisplayName("Test generate active roster without software upgrade but with an active roster present in the state")
+    void testGenerateActiveRosterWithoutSoftwareUpgrade2() {
         final SoftwareVersion version = mock(SoftwareVersion.class);
         final ReservedSignedState initialState = mock(ReservedSignedState.class);
         final SignedState state = mock(SignedState.class);
@@ -130,7 +130,7 @@ class RosterUtilsTest {
         when(stateMerkleRoot.getReadablePlatformState()).thenReturn(platformState);
         when(state.getState().getWritablePlatformState()).thenReturn(platformState);
 
-        assertSame(activeRoster, RosterUtils.constructInitialRoster(version, initialState, addressBook));
+        assertSame(activeRoster, RosterUtils.generateActiveRoster(version, initialState, addressBook));
     }
 
     @Test
@@ -139,7 +139,10 @@ class RosterUtilsTest {
         when(addressBook.getNodeId(0)).thenReturn(nodeId);
         when(addressBook.getAddress(nodeId)).thenReturn(address);
 
-        assertNotNull(RosterUtils.createRoster(addressBook));
+        final Roster roster = RosterUtils.createRoster(addressBook);
+        assertNotNull(roster);
+        assertNotNull(roster.rosterEntries());
+        assertEquals(1, roster.rosterEntries().size());
     }
 
     @Test
@@ -148,23 +151,15 @@ class RosterUtilsTest {
     }
 
     @Test
-    void testToRosterEntry() throws CertificateEncodingException {
-        when(address.getSigCert()).thenReturn(certificate);
-        when(certificate.getEncoded()).thenReturn(new byte[] {1, 2, 3});
-        when(address.getHostnameInternal()).thenReturn("internalhostname");
-        when(address.getPortInternal()).thenReturn(8080);
-        when(address.getHostnameExternal()).thenReturn("externalhostname");
-        when(address.getPortExternal()).thenReturn(9090);
-
-        assertNotNull(RosterUtils.toRosterEntry(address, nodeId));
-    }
-
-    @Test
     void testToRosterEntryWithCertificateEncodingException() throws CertificateEncodingException {
         when(address.getSigCert()).thenReturn(certificate);
         when(certificate.getEncoded()).thenThrow(new CertificateEncodingException());
+        when(addressBook.getSize()).thenReturn(1);
+        when(addressBook.getNodeId(0)).thenReturn(nodeId);
+        when(addressBook.getAddress(nodeId)).thenReturn(address);
 
-        final RosterEntry entry = RosterUtils.toRosterEntry(address, nodeId);
-        assertEquals(Bytes.EMPTY, entry.gossipCaCertificate());
+        assertEquals(
+                Bytes.EMPTY,
+                RosterUtils.createRoster(addressBook).rosterEntries().getFirst().gossipCaCertificate());
     }
 }

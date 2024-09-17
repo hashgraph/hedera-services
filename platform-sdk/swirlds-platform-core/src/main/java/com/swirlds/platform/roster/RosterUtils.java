@@ -75,16 +75,16 @@ public final class RosterUtils {
     }
 
     /**
-     * Constructs the initial roster based on the given software version and initial state.
-     * The initial roster is constructed by adopting the candidate roster if a software upgrade is detected.
-     * Otherwise, the initial roster is created from the address book.
+     * Generates the initial active roster based on the given software version and initial state.
+     * The active roster is obtained by adopting the candidate roster if a software upgrade is detected.
+     * Otherwise, the active roster is created from the address book.
      *
-     * @param version      the software version
-     * @param initialState the initial state
-     * @param addressBook  the address book
-     * @return the initial roster
+     * @param version the software version of the current node
+     * @param initialState the initial state of the platform
+     * @param addressBook  the address book being used by the network
+     * @return the active roster which will be used by the platform
      */
-    public static @NonNull Roster constructInitialRoster(
+    public static @NonNull Roster generateActiveRoster(
             @NonNull final SoftwareVersion version,
             @NonNull final ReservedSignedState initialState,
             @NonNull final AddressBook addressBook) {
@@ -93,7 +93,7 @@ public final class RosterUtils {
         final WritableRosterStore rosterStore = merkleRoot.getWritableRosterStore();
         final Roster candidateRoster = rosterStore.getCandidateRoster();
 
-        return constructRoster(
+        return determineRoster(
                 rosterStore,
                 softwareUpgrade,
                 candidateRoster,
@@ -102,7 +102,7 @@ public final class RosterUtils {
     }
 
     /**
-     * Creates a new roster from the bootstrap address book.
+     * Creates a new roster from the address book.
      * @param addressBook the address book
      * @return a new roster
      */
@@ -125,9 +125,9 @@ public final class RosterUtils {
      *
      * @param address the address to convert
      * @param nodeId  the node ID to use for the roster entry
-     * @return the roster entry
+     * @return the equivalent roster entry
      */
-    static RosterEntry toRosterEntry(@NonNull final Address address, @NonNull final NodeId nodeId) {
+    private static RosterEntry toRosterEntry(@NonNull final Address address, @NonNull final NodeId nodeId) {
         Objects.requireNonNull(address);
         Objects.requireNonNull(nodeId);
         final var signingCertificate = address.getSigCert();
@@ -156,17 +156,18 @@ public final class RosterUtils {
     }
 
     /**
-     * Constructs a roster based on the given software upgrade flag and candidate roster.
+     * Returns a roster based on the given software upgrade flag,
+     *  the candidate roster, or the active roster from the state.
      *
-     * @param rosterStore   the roster store
+     * @param rosterStore   the roster store to use
      * @param softwareUpgrade the software upgrade flag
-     * @param candidateRoster the candidate roster
-     * @param addressBook     the address book
+     * @param candidateRoster the candidate roster stored in the state
+     * @param addressBook     the address book used by the network
      * @param latestConsensusRound the latest consensus round
      * @return the roster
      */
     @NonNull
-    private static Roster constructRoster(
+    private static Roster determineRoster(
             final WritableRosterStore rosterStore,
             final boolean softwareUpgrade,
             final Roster candidateRoster,

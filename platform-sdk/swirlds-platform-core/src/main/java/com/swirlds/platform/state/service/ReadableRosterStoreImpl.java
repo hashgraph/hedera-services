@@ -110,6 +110,7 @@ public class ReadableRosterStoreImpl implements ReadableRosterStore {
         return rosterMap.get(ProtoBytes.newBuilder().value(activeRosterHash).build());
     }
 
+    @Override
     public void adoptCandidateRoster(final long roundNumber) {
         throw new MutabilityException(READ_ONLY);
     }
