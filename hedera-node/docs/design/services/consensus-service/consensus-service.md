@@ -51,7 +51,7 @@ HCS is designed to handle high transaction throughput, making it suitable for ap
 
 ### Native fee system
 
-HCS is offering optional fixed fee system for the submission of topic messages.
+HCS is offering optional fee system for the submission of topic messages.
 
 ## How Consensus Service Works
 
@@ -123,7 +123,7 @@ The `ConsensusCreateTopicTransactionBody` message includes the following fields:
   The extension duration is limited to the autoRenewPeriod or the amount that can be covered by the account's funds, whichever is smaller.
   An adminKey must be specified if an autoRenewAccount is provided, and the autoRenewAccount must sign the transaction.
 - `feeScheduleKey`: If specified, only this key will have access control for update/delete of custom fees.
-- `freeMessagesKeyList`: Optional set of keys that are allowed to submit messages to the topic without paying the topic's custom fees.
+- `feeExemptKeyList`: Optional set of keys that are exempt from the topic's custom fees.
 - `customFees`: Optional set of custom fee definitions.
 
 #### ConsensusUpdateTopicTransactionBody
@@ -145,8 +145,7 @@ Auto-renew functionality is dependent on server-side configuration, limited to s
 The extension duration is limited to the autoRenewPeriod or the amount that can be covered by the account's funds, whichever is smaller.
 An adminKey must be specified if an autoRenewAccount is provided, and the autoRenewAccount must sign the transaction.
 - `feeScheduleKey`: If specified, only this key will have access control for update/delete of custom fees.
-- `keyVerificationMode`: Determines whether the system should check the validity of the passed keys for update.
-- `freeMessagesKeyList`: Optional set of keys that are allowed to submit messages to the topic without paying the topic's custom fees.
+- `feeExemptKeyList`: Optional set of keys that are exempt from the topic's custom fees.
 - `customFees`: Optional set of custom fee definitions.
 
 #### ConsensusDeleteTopicTransactionBody
@@ -170,7 +169,7 @@ The `ConsensusGetInfoQuery` message includes the following fields:
 
 #### ConsensusApproveAllowanceTransactionBody
 
-`ConsensusApproveAllowanceTransactionBody` is used in a transaction, that sets an account's fund limits, that users are willing to spend on given topic.
+`ConsensusApproveAllowanceTransactionBody` is used in a transaction, that sets an account's fund limits, that users are willing to spend on а given topic.
 This transaction is applicable only for topics with custom fees. Without such allowance, accounts will be not able to submit messages to topics with custom fees.
 
 The `ConsensusApproveAllowanceTransactionBody` message includes the following fields:
@@ -273,7 +272,7 @@ Service are:
 - ```INVALID_TRANSACTION;```: The transaction specified is invalid
 - ```MESSAGE_SIZE_TOO_LARGE;```: The message size specified is too large
 - ```INVALID_TOPIC_ID;```: The topic ID specified is invalid
-  todo add more responses here
+  todo add the new custom fee related response codes
 
 ## Consensus Service Schema Implementation
 

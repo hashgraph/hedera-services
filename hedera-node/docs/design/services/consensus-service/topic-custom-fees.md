@@ -269,6 +269,7 @@ rpc approveAllowance (Transaction) returns (TransactionResponse);
     - Store the values of the new fields into the state.
 
 #### ConsensusUpdateTopic
+
 - Update `ConsensusUpdateTopicHandler`
   - Pure-check:
     - Check if all keys in FEKL are unique.
@@ -310,6 +311,7 @@ rpc approveAllowance (Transaction) returns (TransactionResponse);
   - Add this new operation type to the `ThroughputLimits` throttle bucket group, so that it's included in the throttling mechanism
 
 #### ConsensusSubmitMessage
+
 - Update `ConsensusSubmitMessageHandler`
   - Handle: 
     - Check if the topic has custom fees:
