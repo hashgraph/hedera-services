@@ -10,6 +10,7 @@ import java.util.stream.Stream;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.nodeDelete;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.suites.freeze.CommonUpgradeResources.initializeSettings;
 
 public class DeleteNodeForUpgrade extends HapiSuite {
@@ -27,7 +28,8 @@ public class DeleteNodeForUpgrade extends HapiSuite {
     final Stream<DynamicTest> doDelete() {
         return defaultHapiSpec("DeleteNodeForUpgrade")
                 .given(initializeSettings())
-                .when(nodeDelete("2").signedBy(GENESIS).logged())
+                .when(overriding("nodes.enableDAB", "true"),
+                        nodeDelete("2").signedBy(GENESIS).logged())
                 .then();
     }
 
