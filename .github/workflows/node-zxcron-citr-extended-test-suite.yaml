@@ -181,44 +181,49 @@ jobs:
         with:
           egress-policy: audit
 
+# slack app CITRbot needs approval before I can add in this step
 #      - name: Report failure (slack)
 #        uses: slackapi/slack-github-action@6c661ce58804a1a20f6dc5fbee7f0381b469e001 # v1.25.0
 #        env:
 #          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
-#          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_RELEASE_WEBHOOK }}
+#          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_CITR_WEBHOOK }}
 #        with:
 #          payload: |
 #            {
 #              "attachments": [
 #                  {
 #                    "color": "#7647cd",
+#####################
 #                    "blocks": [
 #                      {
 #                        "type": "header",
 #                        "text": {
 #                          "type": "plain_text",
-#                          "text": ":evergreen_tree: Hedera Services - eXtended Test Suite Report",
+#                          "text": ":grey_exclamation: Hedera Services - eXtended Test Suite Error Report",
 #                          "emoji": true
 #                        }
+#                      },
+#                      {
+#                        "type": "divider"
 #                      },
 #                      {
 #                        "type": "section",
 #                        "fields": [
 #                          {
 #                            "type": "mrkdwn",
-#                            "text": "*Branch Name:*"
+#                            "text": "*Job*"
 #                          },
 #                          {
 #                            "type": "mrkdwn",
-#                            "text": "*Source Branch:*"
+#                            "text": "*Reason*"
 #                          },
 #                          {
-#                            "type": "mrkdwn",
-#                            "text": "<${{ github.server_url }}/${{ github.repository }}/tree/${{ needs.check-branch.outputs.branch-name }}|${{ needs.check-branch.outputs.branch-name }}>"
+#                            "type": "plain_text",
+#                            "text": "Use the github job name to show which job has failed"
 #                          },
 #                          {
-#                            "type": "mrkdwn",
-#                            "text": "<${{ github.server_url }}/${{ github.repository }}/tree/${{ github.ref_name }}|${{ github.ref_name }}>"
+#                            "type": "plain_text",
+#                            "text": "Use the github step to determine which step failed/why"
 #                          }
 #                        ]
 #                      },
@@ -228,20 +233,9 @@ jobs:
 #                          "type": "mrkdwn",
 #                          "text": "*Source Commit*: \n<${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}|${{ steps.commit.outputs.short-id }}>"
 #                        }
-#                      },
-#                      {
-#                        "type": "divider"
-#                      },
-#                      {
-#                        "type": "context",
-#                        "elements": [
-#                          {
-#                            "type": "mrkdwn",
-#                            "text": ":watch: Initiated by scheduled repository event at date & time: `${{ needs.check-branch.outputs.schedule-trigger }} UTC`"
-#                          }
-#                        ]
 #                      }
 #                    ]
+#####################
 #                  }
 #                ]
 #              }
