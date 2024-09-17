@@ -92,6 +92,8 @@ New system contract functions must be added to a new `IHRC904` interface to supp
 - `ClaimAirdropsDecoder` - This class provides methods and constants for decoding the given `HtsCallAttempt` into a `PendingAirdropId` list for `TokenClaimAirdrop` call.
 - `RejectTokensTranslator` - This class will be responsible for handling the `rejectTokens`, `rejectTokenFT` and `rejectTokenNFT` selectors and dispatching them to the corresponding HAPI calls.
 - `RejectTokensDecoder` - This class provides methods and constants for decoding the given `HtsCallAttempt` into `TokenReference` list for `TokenReject` call.
+- `SetAutomaticAssociationsTranslator` - This class will be responsible for handling the `setAutomaticAssociations` selector and dispatching it to the corresponding HAPI calls.
+- `SetAutomaticAssociationsCall` - This class provides methods for preparing and executing the given `HasCallAttempt`.
 
 ## Security Implications
 
