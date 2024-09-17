@@ -16,6 +16,7 @@
 
 package com.swirlds.common.wiring.model.internal.deterministic;
 
+import static com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType.DIRECT;
 import static com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType.DIRECT_THREADSAFE;
 import static com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType.NO_OP;
 
@@ -67,11 +68,11 @@ public class DeterministicTaskSchedulerBuilder<OUT> extends AbstractTaskSchedule
      * <p>If the scheduler type is {@link TaskSchedulerType#DIRECT} or {@link TaskSchedulerType#DIRECT_THREADSAFE}
      * and the unhandled task capacity is not 1, an {@link IllegalArgumentException} is thrown.
      *
-     * @throws IllegalArgumentException if the type is direct or direct threadsafe and the unhandled task capacity is not 1
+     * @throws IllegalArgumentException if the type is direct or direct threadsafe and the unhandled task capacity is
+     * not 1
      */
     private void validateConfiguration() {
-        if ((type == TaskSchedulerType.DIRECT || type == TaskSchedulerType.DIRECT_THREADSAFE)
-                && unhandledTaskCapacity != 1) {
+        if ((type == DIRECT || type == DIRECT_THREADSAFE) && unhandledTaskCapacity != 1) {
             throw new IllegalArgumentException("Direct schedulers cannot have an unhandled task capacity.");
         }
     }

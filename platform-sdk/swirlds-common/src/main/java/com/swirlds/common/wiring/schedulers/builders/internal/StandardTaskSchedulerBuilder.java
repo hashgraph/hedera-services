@@ -16,6 +16,7 @@
 
 package com.swirlds.common.wiring.schedulers.builders.internal;
 
+import static com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType.DIRECT;
 import static com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType.DIRECT_THREADSAFE;
 import static com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType.NO_OP;
 
@@ -122,8 +123,7 @@ public class StandardTaskSchedulerBuilder<OUT> extends AbstractTaskSchedulerBuil
      * @throws IllegalArgumentException if the type is direct or direct threadsafe and the unhandled task capacity is not 1
      */
     private void validateConfiguration() {
-        if ((type == TaskSchedulerType.DIRECT || type == TaskSchedulerType.DIRECT_THREADSAFE)
-                && unhandledTaskCapacity != 1) {
+        if ((type == DIRECT || type == DIRECT_THREADSAFE) && unhandledTaskCapacity != 1) {
             throw new IllegalArgumentException("Direct schedulers cannot have an unhandled task capacity.");
         }
     }
