@@ -127,10 +127,6 @@ public class CustomFeeSpecs {
         return baseFixedBuilder(amount, collector, allCollectorsExempt, spec).build();
     }
 
-    static ConsensusCustomFee builtFixedTopicHbar(long amount, String collector, HapiSpec spec) {
-        return baseFixedTopicBuilder(amount, collector, spec).build();
-    }
-
     static FixedFee builtFixedHbarSansCollector(long amount) {
         return FixedFee.newBuilder().setAmount(amount).build();
     }
