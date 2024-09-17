@@ -98,6 +98,7 @@ message Topic {
      * A topic without an admin key is immutable.
      */
     Key admin_key = 9;
+
     /**
      * If present, enforces access control for message submission to the topic.
      */
@@ -109,7 +110,7 @@ message Topic {
      * If this field is unset, the current custom fees CANNOT be changed.<br/>
      * If this field is set, that `Key` MUST sign any transaction to update
      * the custom fee schedule for this topic.
-     */
+    */
     Key fee_schedule_key = 11;
 
     /**

@@ -176,7 +176,7 @@ message AssessedCustomFee {
 
 /**
  * A custom fee definition for a consensus topic.
- *
+ * <p>
  * This fee definition is specific to an Hedera Consensus Service (HCS) topic
  * and SHOULD NOT be used in any other context.<br/>
  * All fields for this message are REQUIRED.<br/>
@@ -206,7 +206,7 @@ message ConsensusCustomFee {
  * A wrapper around a consensus custom fee list.<br/>
  * This wrapper exists to enable an update transaction to differentiate between
  * a field that is not set and an empty list of custom fees.
- *
+ * <p>
  * An _unset_ field of this type SHALL NOT modify existing values.<br/>
  * A _set_ field of this type with an empty `fees` list SHALL remove any
  * existing values.
@@ -223,22 +223,19 @@ message ConsensusCustomFeeList {
  * A wrapper for fee exempt key list.<br/>
  * This wrapper exists to enable an update transaction to differentiate between
  * a field that is not set and an empty list of keys.
- *
+ * <p>
  * An _unset_ field of this type SHALL NOT modify existing values.<br/>
  * A _set_ field of this type with an empty `keys` list SHALL remove any
  * existing values.
  */
 message FeeExemptKeyList {
   /**
-   * A set of keys.
+   * A set of keys.<br/>
    * The keys in this list are permitted to submit messages to the
    * topic without paying the topic's custom fees.
    * <p>
    * If a submit transaction is signed by _any_ key included in this set,
-   *  custom fees SHALL NOT be charged for that transaction.
-   * <p>
-   * This list SHALL _implicitly_ include the following keys
-   * `adminKey`, `submitKey`, `fee_schedule_key`.
+   * custom fees SHALL NOT be charged for that transaction.
    */
    repeated Key keys = 1;
 }
