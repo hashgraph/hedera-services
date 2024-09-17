@@ -98,8 +98,7 @@ repeated Key fee_exempt_key_list = 9;
 ```
 
 Note:
-In consensus_update_topic, custom_fees and fee_exempt_key_list are wrapped in order to differentiate between setting an empty list and not updating the list.
-[see consensus_update_topic](../../../../../hapi/hedera-protobufs/services/consensus_update_topic.proto)
+In `consensus_update_topic`, `custom_fees` and `fee_exempt_key_list` are wrapped in order to differentiate between setting an empty list and not updating the list.
 
 Create new transaction type as defined in the HIP:
 
@@ -193,7 +192,7 @@ rpc approveAllowance (Transaction) returns (TransactionResponse);
 - Topics may have fees for submitting messages.
 - Fees are defined as a list of custom fee.
 - The list of custom fees can contain a maximum of `MAX_CUSTOM_FEE_ENTRIES_FOR_TOPICS` entries.
-- A custom fee is defined leveraging the HTS’s FixedFee data structure (see [ConsensusCustomFee]()).
+- A custom fee is defined leveraging the HTS’s FixedFee data structure.
 - A custom fee can be set in HBAR or HTS fungible tokens and must have an accountID as collector.
 - Fees can be set at topic creation time.
 - Fees can be changed (updated or removed) in a topic with an update topic transaction signed by the Fee Schedule Key.
@@ -265,12 +264,26 @@ rpc approveAllowance (Transaction) returns (TransactionResponse);
       - Check if the fee type is `fixed`.
       - If the fee has denominating token:
         - Check if the token is usable ()
-        - Validate fee amount - TBD
+        - Validate fee amount - TBD MAX_FEE is not defined in the HIP, and it is used in the context of SDK only
         - Check if the collector is associated with the token
+    - Store the values of the new fields into the state.
 
 #### ConsensusUpdateTopic
-
-- todo
+- Update `ConsensusUpdateTopicHandler`
+  - Pure-check:
+    - Check if all keys in FEKL are unique.
+  - Pre-handle:
+    - Check for `Fee Schedule Key` signature, in case of fees updates.
+  - Handle:
+    - Add validation on keys - `Fee Schedule Key` and all keys from the `Fee Exempt Key List`.
+    - Add validation on custom fees:
+      - Check if fee collector account is usable (not deleted/expired).
+      - Check if the fee type is `fixed`.
+      - If the fee has denominating token:
+        - Check if the token is usable ()
+        - Validate fee amount - TBD- MAX_FEE is not defined in the HIP, and it is used in the context of SDK only
+        - Check if the collector is associated with the token
+    - Update the values of the new fields into the state.
 
 #### ConsensusApproveAllowance
 
@@ -297,9 +310,19 @@ rpc approveAllowance (Transaction) returns (TransactionResponse);
   - Add this new operation type to the `ThroughputLimits` throttle bucket group, so that it's included in the throttling mechanism
 
 #### ConsensusSubmitMessage
-
-- todo
+- Update `ConsensusSubmitMessageHandler`
+  - Handle: 
+    - Check if the topic has custom fees:
+      - Check if the sender has needed allowance set.
+      - Dispatch crypto transfer to pay the fees.
 
 ## Acceptance Tests
 
-- todo
+- Topic create
+  - todo
+- Topic update
+  - todo
+- Approve allowance
+  - todo
+- Submit message
+  - todo
