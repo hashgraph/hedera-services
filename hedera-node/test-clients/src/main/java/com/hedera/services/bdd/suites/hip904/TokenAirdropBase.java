@@ -248,8 +248,8 @@ public class TokenAirdropBase {
 
                 // all collectors exempt setup
                 cryptoCreate(NFT_ALL_COLLECTORS_EXEMPT_OWNER),
-                cryptoCreate(NFT_ALL_COLLECTORS_EXEMPT_RECEIVER),
-                cryptoCreate(NFT_ALL_COLLECTORS_EXEMPT_COLLECTOR),
+                cryptoCreate(NFT_ALL_COLLECTORS_EXEMPT_RECEIVER).balance(ONE_HUNDRED_HBARS),
+                cryptoCreate(NFT_ALL_COLLECTORS_EXEMPT_COLLECTOR).balance(ONE_HUNDRED_HBARS),
                 newKeyNamed(NFT_ALL_COLLECTORS_EXEMPT_KEY),
                 tokenCreate(NFT_ALL_COLLECTORS_EXEMPT_TOKEN)
                         .maxSupply(100L)
@@ -269,8 +269,9 @@ public class TokenAirdropBase {
                         .withCustom(royaltyFeeWithFallback(
                                 1, 2, fixedHbarFeeInheritingRoyaltyCollector(1), NFT_ALL_COLLECTORS_EXEMPT_RECEIVER)),
                 tokenAssociate(NFT_ALL_COLLECTORS_EXEMPT_OWNER, NFT_ALL_COLLECTORS_EXEMPT_TOKEN),
+                tokenAssociate(NFT_ALL_COLLECTORS_EXEMPT_RECEIVER, NFT_ALL_COLLECTORS_EXEMPT_TOKEN),
                 cryptoCreate(FT_ALL_COLLECTORS_EXEMPT_OWNER),
-                cryptoCreate(FT_ALL_COLLECTORS_EXEMPT_RECEIVER),
+                cryptoCreate(FT_ALL_COLLECTORS_EXEMPT_RECEIVER).balance(ONE_HUNDRED_HBARS),
                 cryptoCreate(FT_ALL_COLLECTORS_EXEMPT_COLLECTOR).balance(0L),
                 tokenCreate(FT_ALL_COLLECTORS_EXEMPT_TOKEN)
                         .initialSupply(100L)
@@ -280,7 +281,8 @@ public class TokenAirdropBase {
                         .withCustom(fixedHbarFee(100, FT_ALL_COLLECTORS_EXEMPT_COLLECTOR, true))
                         // set the receiver as a custom fee collector
                         .withCustom(fixedHbarFee(100, FT_ALL_COLLECTORS_EXEMPT_RECEIVER)),
-                tokenAssociate(FT_ALL_COLLECTORS_EXEMPT_OWNER, FT_ALL_COLLECTORS_EXEMPT_TOKEN)));
+                tokenAssociate(FT_ALL_COLLECTORS_EXEMPT_OWNER, FT_ALL_COLLECTORS_EXEMPT_TOKEN),
+                tokenAssociate(FT_ALL_COLLECTORS_EXEMPT_RECEIVER, FT_ALL_COLLECTORS_EXEMPT_TOKEN)));
 
         // mint 99 NFTs
         for (int i = 0; i < 99; i++) {
