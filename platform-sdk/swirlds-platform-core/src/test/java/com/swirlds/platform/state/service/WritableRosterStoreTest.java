@@ -18,7 +18,6 @@ package com.swirlds.platform.state.service;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
@@ -87,11 +86,6 @@ class WritableRosterStoreTest {
 
         assertEquals(writableRosterStore.getCandidateRoster(), roster1);
         assertEquals(writableRosterStore.getActiveRoster(), roster2);
-    }
-
-    @Test
-    void testConstructorWithValidStates() {
-        assertNotNull(writableRosterStore);
     }
 
     @Test

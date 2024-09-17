@@ -92,23 +92,24 @@ public class WritableRosterStore extends ReadableRosterStoreImpl {
     }
 
     /**
-     * {@inheritDoc}
+     * Set the candidate roster.
+     *
+     * @param candidateRoster a candidate roster to set
      */
-    @Override
-    public void setCandidateRoster(@NonNull final Roster roster) {
-        Objects.requireNonNull(roster);
-        RosterValidator.validate(roster);
+    public void setCandidateRoster(@NonNull final Roster candidateRoster) {
+        Objects.requireNonNull(candidateRoster);
+        RosterValidator.validate(candidateRoster);
 
         // update the roster state
         final RosterState previousRosterState = rosterStateOrThrow();
-        final Bytes candidateRosterHash = RosterUtils.hashOf(roster).getBytes();
+        final Bytes candidateRosterHash = RosterUtils.hashOf(candidateRoster).getBytes();
         final Builder rosterStateBuilder = RosterState.newBuilder()
                 .candidateRosterHash(candidateRosterHash)
                 .roundRosterPairs(previousRosterState.roundRosterPairs());
         update(rosterStateBuilder);
 
         // update the roster map
-        update(ProtoBytes.newBuilder().value(candidateRosterHash).build(), roster);
+        update(ProtoBytes.newBuilder().value(candidateRosterHash).build(), candidateRoster);
     }
 
     /**

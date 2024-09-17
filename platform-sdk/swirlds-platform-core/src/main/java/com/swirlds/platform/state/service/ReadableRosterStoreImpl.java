@@ -61,11 +61,6 @@ public class ReadableRosterStoreImpl implements ReadableRosterStore {
         this.rosterMap = requireNonNull(readableStates).get(RosterStateId.ROSTER_KEY);
     }
 
-    @Override
-    public void setCandidateRoster(@NonNull final Roster candidateRoster) {
-        throw new MutabilityException(READ_ONLY);
-    }
-
     @Nullable
     @Override
     public Roster getCandidateRoster() {

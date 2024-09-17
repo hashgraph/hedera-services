@@ -56,6 +56,7 @@ public interface MerkleRoot extends MerkleInternal {
      *
      * @return the writable Roster store
      */
+    @NonNull
     WritableRosterStore getWritableRosterStore();
 
     /**

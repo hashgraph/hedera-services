@@ -39,7 +39,7 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * A utility class to help use Rooster and RosterEntry instances.
+ * A utility class to help use Roster and RosterEntry instances.
  */
 public final class RosterUtils {
 
@@ -84,7 +84,8 @@ public final class RosterUtils {
      * @param addressBook  the address book being used by the network
      * @return the active roster which will be used by the platform
      */
-    public static @NonNull Roster generateActiveRoster(
+    @NonNull
+    public static Roster generateActiveRoster(
             @NonNull final SoftwareVersion version,
             @NonNull final ReservedSignedState initialState,
             @NonNull final AddressBook addressBook) {
@@ -93,12 +94,16 @@ public final class RosterUtils {
         final WritableRosterStore rosterStore = merkleRoot.getWritableRosterStore();
         final Roster candidateRoster = rosterStore.getCandidateRoster();
 
-        return determineRoster(
-                rosterStore,
-                softwareUpgrade,
-                candidateRoster,
-                addressBook,
-                initialState.get().getRound());
+        if (!softwareUpgrade || candidateRoster == null) {
+            final Roster previousActiveRoster = rosterStore.getActiveRoster();
+            // not in software upgrade mode, return the previous active roster if available
+            // otherwise, create a new roster from the address book
+            return Objects.requireNonNullElseGet(previousActiveRoster, () -> createRoster(addressBook));
+        }
+
+        // software upgrade is detected, we adopt the candidate roster
+        rosterStore.adoptCandidateRoster(initialState.get().getRound() + 1);
+        return candidateRoster;
     }
 
     /**
@@ -114,7 +119,7 @@ public final class RosterUtils {
             final NodeId nodeId = addressBook.getNodeId(i);
             final Address address = addressBook.getAddress(nodeId);
 
-            final RosterEntry rosterEntry = RosterUtils.toRosterEntry(address, nodeId);
+            final RosterEntry rosterEntry = RosterUtils.toRosterEntry(address);
             rosterEntries.add(rosterEntry);
         }
         return Roster.newBuilder().rosterEntries(rosterEntries).build();
@@ -124,12 +129,11 @@ public final class RosterUtils {
      * Converts an address to a roster entry.
      *
      * @param address the address to convert
-     * @param nodeId  the node ID to use for the roster entry
      * @return the equivalent roster entry
      */
-    private static RosterEntry toRosterEntry(@NonNull final Address address, @NonNull final NodeId nodeId) {
+    @NonNull
+    private static RosterEntry toRosterEntry(@NonNull final Address address) {
         Objects.requireNonNull(address);
-        Objects.requireNonNull(nodeId);
         final var signingCertificate = address.getSigCert();
         Bytes signingCertificateBytes;
         try {
@@ -148,40 +152,10 @@ public final class RosterUtils {
         }
 
         return RosterEntry.newBuilder()
-                .nodeId(nodeId.id())
+                .nodeId(address.getNodeId().id())
                 .weight(address.getWeight())
                 .gossipCaCertificate(signingCertificateBytes)
                 .gossipEndpoint(serviceEndpoints)
                 .build();
-    }
-
-    /**
-     * Returns a roster based on the given software upgrade flag,
-     *  the candidate roster, or the active roster from the state.
-     *
-     * @param rosterStore   the roster store to use
-     * @param softwareUpgrade the software upgrade flag
-     * @param candidateRoster the candidate roster stored in the state
-     * @param addressBook     the address book used by the network
-     * @param latestConsensusRound the latest consensus round
-     * @return the roster
-     */
-    @NonNull
-    private static Roster determineRoster(
-            final WritableRosterStore rosterStore,
-            final boolean softwareUpgrade,
-            final Roster candidateRoster,
-            final AddressBook addressBook,
-            final long latestConsensusRound) {
-        if (!softwareUpgrade || candidateRoster == null) {
-            final Roster previousActiveRoster = rosterStore.getActiveRoster();
-            // not in software upgrade mode, return the previous active roster if available
-            // otherwise, create a new roster from the address book
-            return Objects.requireNonNullElseGet(previousActiveRoster, () -> createRoster(addressBook));
-        }
-
-        // software upgrade is detected, we adopt the candidate roster
-        rosterStore.adoptCandidateRoster(latestConsensusRound + 1);
-        return candidateRoster;
     }
 }

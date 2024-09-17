@@ -26,13 +26,6 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 public interface ReadableRosterStore {
 
     /**
-     * Set the candidate roster.
-     *
-     * @param candidateRoster a candidate roster to set
-     */
-    void setCandidateRoster(@NonNull final Roster candidateRoster);
-
-    /**
      * Get the candidate roster.
      *
      * @return the candidate roster

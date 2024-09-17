@@ -339,7 +339,9 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
      * @param metrics the metrics instance
      * @return this instance
      */
-    public MerkleStateRoot withMetrics(Metrics metrics) {
+    @NonNull
+    public MerkleStateRoot withMetrics(@NonNull final Metrics metrics) {
+        Objects.requireNonNull(metrics);
         this.metrics = metrics;
         return this;
     }
@@ -348,6 +350,7 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
      * returns this state's metrics instance
      * @return the metrics instance
      */
+    @NonNull
     public Metrics getMetrics() {
         return metrics;
     }
@@ -1043,6 +1046,7 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
         return writablePlatformStateStore();
     }
 
+    @NonNull
     @Override
     public WritableRosterStore getWritableRosterStore() {
         if (writableRosterStore == null) {
