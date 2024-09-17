@@ -17,9 +17,7 @@
 package com.hedera.node.app.tss.impl;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 import com.swirlds.state.spi.SchemaRegistry;
 import java.util.ArrayList;
@@ -27,6 +25,7 @@ import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -44,9 +43,8 @@ class PlaceholderTssBaseServiceTest {
         receivedSignatures.add(b);
         latch.countDown();
     };
-
-    @Mock
-    private BiConsumer<byte[], byte[]> mockConsumer;
+    private final AtomicInteger numCalls = new AtomicInteger();
+    private final BiConsumer<byte[], byte[]> secondConsumer = (a, b) -> numCalls.incrementAndGet();
 
     @Mock
     private SchemaRegistry registry;
@@ -65,11 +63,11 @@ class PlaceholderTssBaseServiceTest {
         latch = new CountDownLatch(1);
 
         subject.registerLedgerSignatureConsumer(trackingConsumer);
-        subject.registerLedgerSignatureConsumer(mockConsumer);
+        subject.registerLedgerSignatureConsumer(secondConsumer);
 
         subject.requestLedgerSignature(firstMessage);
         assertTrue(latch.await(1, TimeUnit.SECONDS));
-        subject.unregisterLedgerSignatureConsumer(mockConsumer);
+        subject.unregisterLedgerSignatureConsumer(secondConsumer);
         latch = new CountDownLatch(1);
         subject.requestLedgerSignature(secondMessage);
         assertTrue(latch.await(1, TimeUnit.SECONDS));
@@ -78,8 +76,7 @@ class PlaceholderTssBaseServiceTest {
         assertEquals(2, receivedSignatures.size());
         assertArrayEquals(firstMessage, receivedMessageHashes.getFirst());
         assertArrayEquals(secondMessage, receivedMessageHashes.getLast());
-        verify(mockConsumer).accept(firstMessage, receivedSignatures.getFirst());
-        verifyNoMoreInteractions(mockConsumer);
+        assertEquals(1, numCalls.get());
     }
 
     @Test

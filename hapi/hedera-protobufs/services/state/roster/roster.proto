@@ -37,7 +37,7 @@ message Roster {
    * This list SHALL contain roster entries in natural order of ascending node ids.
    * This list SHALL NOT be empty.<br/>
    */
-  repeated RosterEntry rosters = 1;
+  repeated RosterEntry roster_entries = 1;
 }
 
 /**
