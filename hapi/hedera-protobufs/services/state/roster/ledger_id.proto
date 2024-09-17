@@ -1,0 +1,96 @@
+syntax = "proto3";
+
+package com.hedera.hapi.node.state.roster;
+
+/*
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+option java_package = "com.hederahashgraph.api.proto.java";
+// <<<pbj.java_package = "com.hedera.hapi.node.state.roster">>> This comment is special code for setting PBJ Compiler java package
+option java_multiple_files = true;
+
+/**
+ * A public key that identifies the ledger and can be used to verify ledger signatures.
+ */
+message LedgerId {
+
+  /**
+   * A public key.
+   * This key both identifies the ledger and can be used to verify ledger signatures.
+   * <p>
+   * This value MUST be set.
+   * This value MUST NOT be empty.
+   * This value MUST contain a valid public key.
+   */
+  bytes ledger_id = 1;
+
+  /**
+   * A round number.
+   * This identifies when this ledger id becomes active.
+   * <p>
+   * This value is REQUIRED.
+   */
+  uint64 round = 2;
+
+  /**
+   * A signature from the prior ledger key.
+   * This signature is the _previous_ ledger ID signing _this_ ledger ID.
+   * <p>
+   * This value MAY be unset, if there is no prior ledger ID.
+   * This value SHOULD be set if a prior ledger ID exists
+   * to generate the signature.
+   */
+  bytes ledger_signature = 3;
+
+  /**
+   * The signatures from nodes in the active roster signing the new ledger id.
+   * These signatures establish a chain of trust from the network to the new ledger id.
+   * <p>
+   * This value MUST be present when the ledger signature of a previous ledger id is absent.
+   */
+  RosterSignatures roster_signatures = 4;
+}
+
+/**
+ * A collection of signatures from nodes in a roster.
+ */
+message RosterSignatures {
+  /**
+   * A roster hash for the roster that the node signatures are from.
+   */
+  bytes roster_hash = 1;
+
+  /**
+   * A list of node signatures on the same message where all node ids in the NodeSignature objects are from the
+   * roster that the roster_hash represents.
+   */
+  repeated NodeSignature node_signatures = 2;
+}
+
+/**
+ * A pair of a _RSA_ signature and the node id of the node that created the signature.
+ */
+message NodeSignature {
+  /**
+   * The node id of the node that created the _RSA_ signature.
+   */
+  uint64 node_id = 1;
+
+  /**
+   * The bytes of an _RSA_ signature.
+   */
+  bytes node_signature = 2;
+}

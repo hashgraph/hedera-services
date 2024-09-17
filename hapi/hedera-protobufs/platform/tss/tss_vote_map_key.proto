@@ -1,0 +1,49 @@
+/**
+ * # Tss Vote Map Key
+ *
+ * ### Keywords
+ * The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT",
+ * "SHOULD", "SHOULD NOT", "RECOMMENDED", "MAY", and "OPTIONAL" in this
+ * document are to be interpreted as described in [RFC2119](https://www.ietf.org/rfc/rfc2119).
+ */
+syntax = "proto3";
+
+package com.hedera.hapi.platform.tss;
+
+/*
+ * Hedera Network Services Protobuf
+ *
+ * Copyright (C) 2018 - 2024 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+option java_package = "com.hedera.hapi.platform.tss.legacy";
+// <<<pbj.java_package = "com.hedera.hapi.platform.tss">>> This comment is special code for setting PBJ Compiler java package
+option java_multiple_files = true;
+
+/**
+  * A key for use in the TssVoteMaps.
+  */
+message TssVoteMapKey {
+
+  /**
+   * A hash of the target roster for the associated value in the map.
+   */
+  bytes roster_hash = 1;
+
+  /**
+   * The node id of the node that created the TssVote.
+   */
+  uint64 node_id = 2;
+}
