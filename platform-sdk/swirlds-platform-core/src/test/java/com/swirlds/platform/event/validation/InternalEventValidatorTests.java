@@ -19,18 +19,28 @@ package com.swirlds.platform.event.validation;
 import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
 import static com.swirlds.platform.system.events.EventConstants.GENERATION_UNDEFINED;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import com.hedera.hapi.node.base.SemanticVersion;
+import com.hedera.hapi.node.base.Timestamp;
+import com.hedera.hapi.platform.event.EventCore;
+import com.hedera.hapi.platform.event.EventTransaction;
+import com.hedera.hapi.platform.event.EventTransaction.TransactionOneOfType;
+import com.hedera.hapi.platform.event.GossipEvent;
+import com.hedera.pbj.runtime.OneOf;
 import com.swirlds.base.test.fixtures.time.FakeTime;
 import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.platform.event.PlatformEvent;
@@ -40,6 +50,7 @@ import com.swirlds.platform.test.fixtures.event.TestingEventBuilder;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -83,15 +94,70 @@ class InternalEventValidatorTests {
     }
 
     @Test
-    @DisplayName("An event with null signature is invalid")
-    void nullSignatureData() {
-        final PlatformEvent event = Mockito.spy(new TestingEventBuilder(random).build());
-        when(event.getSignature()).thenReturn(null);
+    @DisplayName("An event with null fields is invalid")
+    void nullFields() {
+        final PlatformEvent platformEvent = Mockito.mock(PlatformEvent.class);
 
-        assertNull(multinodeValidator.validateEvent(event));
-        assertNull(singleNodeValidator.validateEvent(event));
+        final Randotron r = Randotron.create();
+        final GossipEvent wholeEvent = new TestingEventBuilder(r)
+                .setSystemTransactionCount(1)
+                .setAppTransactionCount(2)
+                .setSelfParent(new TestingEventBuilder(r).build())
+                .setOtherParent(new TestingEventBuilder(r).build())
+                .build()
+                .getGossipEvent();
 
+        final GossipEvent noEventCore = GossipEvent
+                .newBuilder()
+                .eventCore((EventCore) null)
+                .signature(wholeEvent.signature())
+                .eventTransaction(wholeEvent.eventTransaction())
+                .build();
+        when(platformEvent.getGossipEvent()).thenReturn(noEventCore);
+        assertNull(multinodeValidator.validateEvent(platformEvent));
+        assertNull(singleNodeValidator.validateEvent(platformEvent));
         assertEquals(2, exitedIntakePipelineCount.get());
+
+        final GossipEvent noTimeCreated = GossipEvent
+                .newBuilder()
+                .eventCore(EventCore.newBuilder()
+                        .timeCreated((Timestamp) null)
+                        .version(wholeEvent.eventCore().version())
+                        .build())
+                .signature(wholeEvent.signature())
+                .eventTransaction(wholeEvent.eventTransaction())
+                .build();
+        when(platformEvent.getGossipEvent()).thenReturn(noTimeCreated);
+        assertNull(multinodeValidator.validateEvent(platformEvent));
+        assertNull(singleNodeValidator.validateEvent(platformEvent));
+        assertEquals(4, exitedIntakePipelineCount.get());
+
+        final GossipEvent noVersion = GossipEvent
+                .newBuilder()
+                .eventCore(EventCore.newBuilder()
+                        .timeCreated(wholeEvent.eventCore().timeCreated())
+                        .version((SemanticVersion) null)
+                        .build())
+                .signature(wholeEvent.signature())
+                .eventTransaction(wholeEvent.eventTransaction())
+                .build();
+        when(platformEvent.getGossipEvent()).thenReturn(noVersion);
+        assertNull(multinodeValidator.validateEvent(platformEvent));
+        assertNull(singleNodeValidator.validateEvent(platformEvent));
+        assertEquals(6, exitedIntakePipelineCount.get());
+
+        final GossipEvent nullTransaction = GossipEvent
+                .newBuilder()
+                .eventCore(wholeEvent.eventCore())
+                .signature(wholeEvent.signature())
+                .eventTransaction(
+                        List.of(new EventTransaction(new OneOf<>(TransactionOneOfType.APPLICATION_TRANSACTION, null))))
+                .build();
+        when(platformEvent.getGossipEvent()).thenReturn(nullTransaction);
+
+        assertNull(multinodeValidator.validateEvent(platformEvent));
+        assertNull(singleNodeValidator.validateEvent(platformEvent));
+        assertEquals(8, exitedIntakePipelineCount.get());
     }
 
     @Test

@@ -192,7 +192,7 @@ public class DefaultInternalEventValidator implements InternalEventValidator {
      * @return true if the transaction is null, otherwise false
      */
     private static boolean isTransactionNull(@Nullable final EventTransaction transaction) {
-        return transaction != null && transaction.transaction() != null;
+        return transaction == null || transaction.transaction() == null || transaction.transaction().value() == null;
     }
 
     /**
