@@ -29,7 +29,6 @@ import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.i
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocal;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountDetails;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAliasedAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAliasedAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAutoCreatedAccountBalance;
@@ -1039,10 +1038,12 @@ public class TokenAirdropTest extends TokenAirdropBase {
                         allRunFor(spec, ownerBalance);
                     }),
                     // set new collector balance variable
-                    getAccountBalance(HTS_COLLECTOR).exposingBalanceTo(newCollectorBalance::set)
+                    getAccountBalance(HTS_COLLECTOR)
+                            .exposingBalanceTo(newCollectorBalance::set)
                             .hasTokenBalance(NFT_WITH_ROYALTY_FEE, 1),
                     // assert collector balance is not changed
-                    withOpContext((spec, log) -> Assertions.assertEquals(currentCollectorBalance.get(), newCollectorBalance.get())),
+                    withOpContext((spec, log) ->
+                            Assertions.assertEquals(currentCollectorBalance.get(), newCollectorBalance.get())),
                     validateChargedUsd("NFT with royalty fee airdrop to collector", 0.001, 20));
         }
 
@@ -1077,10 +1078,12 @@ public class TokenAirdropTest extends TokenAirdropBase {
                         allRunFor(spec, ownerBalance);
                     }),
                     // set new collector balance variable
-                    getAccountBalance(HTS_COLLECTOR).exposingBalanceTo(newCollectorBalance::set)
+                    getAccountBalance(HTS_COLLECTOR)
+                            .exposingBalanceTo(newCollectorBalance::set)
                             .hasTokenBalance(FT_WITH_HTS_FIXED_FEE, HTS_FEE + 50)
                             .hasTokenBalance(DENOM_TOKEN, 3 * HTS_FEE),
-                    withOpContext((spec, log) -> Assertions.assertEquals(currentCollectorBalance.get(), newCollectorBalance.get())),
+                    withOpContext((spec, log) ->
+                            Assertions.assertEquals(currentCollectorBalance.get(), newCollectorBalance.get())),
                     validateChargedUsd("FT with HTS fee airdrop to collector", 0.002, 20));
         }
 
@@ -1102,7 +1105,8 @@ public class TokenAirdropTest extends TokenAirdropBase {
                             .payingWith(OWNER)
                             .via("NFT with royalty fee airdrop to treasury"),
                     // set new treasury balance variable
-                    getAccountBalance(TREASURY_FOR_CUSTOM_FEE_TOKENS).exposingBalanceTo(newTreasuryBalance::set)
+                    getAccountBalance(TREASURY_FOR_CUSTOM_FEE_TOKENS)
+                            .exposingBalanceTo(newTreasuryBalance::set)
                             .hasTokenBalance(NFT_WITH_ROYALTY_FEE, 99),
                     // assert owner balance
                     withOpContext((spec, log) -> {
@@ -1116,7 +1120,8 @@ public class TokenAirdropTest extends TokenAirdropBase {
                         allRunFor(spec, ownerBalance);
                     }),
                     // assert treasury balance is not changed
-                    withOpContext((spec, log) -> Assertions.assertEquals(currentTreasuryBalance.get(), newTreasuryBalance.get())),
+                    withOpContext((spec, log) ->
+                            Assertions.assertEquals(currentTreasuryBalance.get(), newTreasuryBalance.get())),
                     validateChargedUsd("NFT with royalty fee airdrop to treasury", 0.001, 20));
         }
 
@@ -1151,10 +1156,12 @@ public class TokenAirdropTest extends TokenAirdropBase {
                         allRunFor(spec, ownerBalance);
                     }),
                     // set new treasury balance variable
-                    getAccountBalance(TREASURY_FOR_CUSTOM_FEE_TOKENS).exposingBalanceTo(newTreasuryBalance::set)
+                    getAccountBalance(TREASURY_FOR_CUSTOM_FEE_TOKENS)
+                            .exposingBalanceTo(newTreasuryBalance::set)
                             .hasTokenBalance(FT_WITH_HTS_FIXED_FEE, TOKEN_TOTAL - 2 * HTS_FEE + 50),
                     // assert treasury balance is not changed
-            withOpContext((spec, log) -> Assertions.assertEquals(currentTreasuryBalance.get(), newTreasuryBalance.get())),
+                    withOpContext((spec, log) ->
+                            Assertions.assertEquals(currentTreasuryBalance.get(), newTreasuryBalance.get())),
                     validateChargedUsd("FT with HTS fee airdrop to treasury", 0.002, 20));
         }
 
@@ -1176,10 +1183,8 @@ public class TokenAirdropTest extends TokenAirdropBase {
                             .hasTokenBalance(NFT_ALL_COLLECTORS_EXEMPT_TOKEN, 0),
                     getAccountBalance(NFT_ALL_COLLECTORS_EXEMPT_RECEIVER)
                             .hasTokenBalance(NFT_ALL_COLLECTORS_EXEMPT_TOKEN, 1),
-                    getAccountBalance(NFT_ALL_COLLECTORS_EXEMPT_COLLECTOR)
-                            .hasTinyBars(ONE_HUNDRED_HBARS),
-                    getAccountBalance(NFT_ALL_COLLECTORS_EXEMPT_RECEIVER)
-                            .hasTinyBars(ONE_HUNDRED_HBARS));
+                    getAccountBalance(NFT_ALL_COLLECTORS_EXEMPT_COLLECTOR).hasTinyBars(ONE_HUNDRED_HBARS),
+                    getAccountBalance(NFT_ALL_COLLECTORS_EXEMPT_RECEIVER).hasTinyBars(ONE_HUNDRED_HBARS));
         }
 
         // When a receiver is a custom fee collector it should be exempt from the custom fee
@@ -1198,10 +1203,8 @@ public class TokenAirdropTest extends TokenAirdropBase {
                             .hasTokenBalance(FT_ALL_COLLECTORS_EXEMPT_TOKEN, 0),
                     getAccountBalance(FT_ALL_COLLECTORS_EXEMPT_RECEIVER)
                             .hasTokenBalance(FT_ALL_COLLECTORS_EXEMPT_TOKEN, 50),
-                    getAccountBalance(FT_ALL_COLLECTORS_EXEMPT_COLLECTOR)
-                            .hasTinyBars(100),
-                    getAccountBalance(FT_ALL_COLLECTORS_EXEMPT_RECEIVER)
-                            .hasTinyBars(ONE_HUNDRED_HBARS + 100));
+                    getAccountBalance(FT_ALL_COLLECTORS_EXEMPT_COLLECTOR).hasTinyBars(100),
+                    getAccountBalance(FT_ALL_COLLECTORS_EXEMPT_RECEIVER).hasTinyBars(ONE_HUNDRED_HBARS + 100));
         }
     }
 
