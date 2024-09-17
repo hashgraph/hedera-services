@@ -394,13 +394,13 @@ public class UpdateTokenFeeScheduleTest {
                 overriding("tokens.maxCustomFeesAllowed", "10"),
                 updateTokenFeeSchedules
                         .call("updateFungibleFixedHbarFees", fungibleToken, 11, 10L, feeCollector)
-                        .andAssert(txn -> txn.hasKnownStatuses(CONTRACT_REVERT_EXECUTED, CUSTOM_FEES_LIST_TOO_LONG)),
+                        .andAssert(txn -> txn.hasKnownStatus(CONTRACT_REVERT_EXECUTED)),
                 updateTokenFeeSchedules
                         .call("updateFungibleFractionalFees", feeToken, 11, 1L, 10L, false, feeCollector)
-                        .andAssert(txn -> txn.hasKnownStatuses(CONTRACT_REVERT_EXECUTED, CUSTOM_FEES_LIST_TOO_LONG)),
+                        .andAssert(txn -> txn.hasKnownStatus(CONTRACT_REVERT_EXECUTED)),
                 updateTokenFeeSchedules
                         .call("updateNonFungibleRoyaltyFees", nonFungibleToken, 11, 1L, 10L, feeCollector)
-                        .andAssert(txn -> txn.hasKnownStatuses(CONTRACT_REVERT_EXECUTED, CUSTOM_FEES_LIST_TOO_LONG)));
+                        .andAssert(txn -> txn.hasKnownStatus(CONTRACT_REVERT_EXECUTED)));
     }
 
     @Order(21)
