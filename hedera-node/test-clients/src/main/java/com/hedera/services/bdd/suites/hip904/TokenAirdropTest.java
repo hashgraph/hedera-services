@@ -1118,10 +1118,9 @@ public class TokenAirdropTest extends TokenAirdropBase {
                                 .hasTinyBars(initialBalance - txFee)
                                 .hasTokenBalance(NFT_WITH_ROYALTY_FEE, 0);
                         allRunFor(spec, ownerBalance);
+                        // assert treasury balance is not changed
+                        Assertions.assertEquals(currentTreasuryBalance.get(), newTreasuryBalance.get());
                     }),
-                    // assert treasury balance is not changed
-                    withOpContext((spec, log) ->
-                            Assertions.assertEquals(currentTreasuryBalance.get(), newTreasuryBalance.get())),
                     validateChargedUsd("NFT with royalty fee airdrop to treasury", 0.001, 20));
         }
 
@@ -1144,6 +1143,10 @@ public class TokenAirdropTest extends TokenAirdropBase {
                             .signedByPayerAnd(TREASURY_FOR_CUSTOM_FEE_TOKENS, OWNER)
                             .payingWith(OWNER)
                             .via("FT with HTS fee airdrop to treasury"),
+                    // set new treasury balance variable
+                    getAccountBalance(TREASURY_FOR_CUSTOM_FEE_TOKENS)
+                            .exposingBalanceTo(newTreasuryBalance::set)
+                            .hasTokenBalance(FT_WITH_HTS_FIXED_FEE, TOKEN_TOTAL - 2 * HTS_FEE + 50),
                     // assert owner balance
                     withOpContext((spec, log) -> {
                         final var record = getTxnRecord("FT with HTS fee airdrop to treasury");
@@ -1154,14 +1157,9 @@ public class TokenAirdropTest extends TokenAirdropBase {
                                 .hasTinyBars(initialBalance - txFee)
                                 .hasTokenBalance(FT_WITH_HTS_FIXED_FEE, HTS_FEE - 50);
                         allRunFor(spec, ownerBalance);
+                        // assert treasury balance is not changed
+                        Assertions.assertEquals(currentTreasuryBalance.get(), newTreasuryBalance.get());
                     }),
-                    // set new treasury balance variable
-                    getAccountBalance(TREASURY_FOR_CUSTOM_FEE_TOKENS)
-                            .exposingBalanceTo(newTreasuryBalance::set)
-                            .hasTokenBalance(FT_WITH_HTS_FIXED_FEE, TOKEN_TOTAL - 2 * HTS_FEE + 50),
-                    // assert treasury balance is not changed
-                    withOpContext((spec, log) ->
-                            Assertions.assertEquals(currentTreasuryBalance.get(), newTreasuryBalance.get())),
                     validateChargedUsd("FT with HTS fee airdrop to treasury", 0.002, 20));
         }
 
