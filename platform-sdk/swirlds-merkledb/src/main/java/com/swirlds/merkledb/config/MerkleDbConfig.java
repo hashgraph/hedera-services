@@ -81,7 +81,7 @@ public record MerkleDbConfig(
         @Positive @ConfigProperty(defaultValue = "16777216") int iteratorInputBufferBytes,
         @ConfigProperty(defaultValue = "false") boolean reconnectKeyLeakMitigationEnabled,
         @ConfigProperty(defaultValue = "false") boolean indexRebuildingEnforced,
-        @ConfigProperty(defaultValue = "50.0") double percentHalfDiskHashMapFlushThreads,
+        @ConfigProperty(defaultValue = "75.0") double percentHalfDiskHashMapFlushThreads,
         @ConfigProperty(defaultValue = "-1") int numHalfDiskHashMapFlushThreads,
         @ConfigProperty(defaultValue = "262144") int reservedBufferLengthForLeafList,
         @ConfigProperty(defaultValue = "1048576") int leafRecordCacheSize,
