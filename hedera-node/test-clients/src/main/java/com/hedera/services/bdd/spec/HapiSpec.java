@@ -38,7 +38,6 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getScheduleInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.doIfNotInterrupted;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.resourceAsString;
-import static com.hedera.services.bdd.spec.transactions.TxnUtils.triggerAndCloseAtLeastOneFileIfNotInterrupted;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.turnLoggingOff;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleSign;
@@ -90,10 +89,6 @@ import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hedera.services.bdd.spec.transactions.TxnFactory;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.spec.utilops.SysFileOverrideOp;
-import com.hedera.services.bdd.spec.utilops.UtilOp;
-import com.hedera.services.bdd.spec.utilops.records.AutoSnapshotModeOp;
-import com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode;
-import com.hedera.services.bdd.spec.utilops.records.SnapshotModeOp;
 import com.hedera.services.bdd.spec.utilops.streams.assertions.AbstractEventualStreamAssertion;
 import com.hedera.services.bdd.spec.verification.traceability.SidecarWatcher;
 import com.hederahashgraph.api.proto.java.Key;
@@ -187,10 +182,6 @@ public class HapiSpec implements Runnable, Executable {
 
     static final Logger log = LogManager.getLogger(HapiSpec.class);
 
-    public SnapshotMatchMode[] getSnapshotMatchModes() {
-        return snapshotMatchModes;
-    }
-
     public enum SpecStatus {
         PENDING,
         RUNNING,
@@ -282,8 +273,6 @@ public class HapiSpec implements Runnable, Executable {
     private String feeResource;
 
     boolean quietMode;
-
-    private final SnapshotMatchMode[] snapshotMatchModes;
 
     /**
      * When this spec's final status is {@code FAILED}, contains the information on the failed
@@ -737,12 +726,6 @@ public class HapiSpec implements Runnable, Executable {
             log.info("Auto-scheduling {}", autoScheduled);
         }
         @Nullable List<AbstractEventualStreamAssertion> streamAssertions = null;
-        var snapshotOp = AutoSnapshotModeOp.from(this);
-        if (snapshotOp != null) {
-            // Ensure a mutable list
-            ops = new ArrayList<>(ops);
-            ops.add(0, (UtilOp) snapshotOp);
-        }
         for (var op : ops) {
             if (!autoScheduled.isEmpty() && op.shouldSkipWhenAutoScheduling(autoScheduled)) {
                 continue;
@@ -754,11 +737,6 @@ public class HapiSpec implements Runnable, Executable {
                 streamAssertions.add(streamAssertion);
             } else if (op instanceof HapiTxnOp txn && autoScheduled.contains(txn.type())) {
                 op = autoScheduledSequenceFor(txn);
-            } else if (op instanceof SnapshotModeOp snapshotModeOp) {
-                if (snapshotOp != null) {
-                    log.warn("Repeated record snapshot op, all but last are no-ops");
-                }
-                snapshotOp = snapshotModeOp;
             }
             if (quietMode) {
                 turnLoggingOff(op);
@@ -800,16 +778,6 @@ public class HapiSpec implements Runnable, Executable {
             }
         }
         if (status == PASSED) {
-            if (snapshotOp != null && snapshotOp.hasWorkToDo()) {
-                triggerAndCloseAtLeastOneFileIfNotInterrupted(this);
-                try {
-                    snapshotOp.finishLifecycle(this);
-                } catch (Throwable t) {
-                    log.error("Record snapshot fuzzy-match failed", t);
-                    status = FAILED;
-                    failure = new Failure(t, "Record snapshot fuzzy-match");
-                }
-            }
             final var maybeStreamFileError = checkStream(streamAssertions);
             if (maybeStreamFileError.isPresent()) {
                 status = FAILED;
@@ -1118,17 +1086,13 @@ public class HapiSpec implements Runnable, Executable {
         ciPropsSource = null;
     }
 
-    public static Def.Given defaultHapiSpec(String name, @NonNull final SnapshotMatchMode... snapshotMatchModes) {
-        return internalDefaultHapiSpec(name, emptyList(), snapshotMatchModes);
+    public static Def.Given defaultHapiSpec(String name) {
+        return internalDefaultHapiSpec(name, emptyList());
     }
 
-    private static Def.Given internalDefaultHapiSpec(
-            final String name,
-            final List<String> propertiesToPreserve,
-            @NonNull final SnapshotMatchMode... snapshotMatchModes) {
+    private static Def.Given internalDefaultHapiSpec(final String name, final List<String> propertiesToPreserve) {
         final Stream<Map<String, String>> prioritySource = runningInCi ? Stream.of(ciPropOverrides()) : Stream.empty();
-        return customizedHapiSpec(name, prioritySource, propertiesToPreserve, snapshotMatchModes)
-                .withProperties();
+        return customizedHapiSpec(name, prioritySource, propertiesToPreserve).withProperties();
     }
 
     public static Map<String, String> ciPropOverrides() {
@@ -1162,36 +1126,30 @@ public class HapiSpec implements Runnable, Executable {
         return ciPropsSource;
     }
 
-    public static Def.Sourced customHapiSpec(String name, @NonNull final SnapshotMatchMode... snapshotMatchModes) {
+    public static Def.Sourced customHapiSpec(String name) {
         final Stream<Map<String, String>> prioritySource = runningInCi ? Stream.of(ciPropOverrides()) : Stream.empty();
-        return customizedHapiSpec(name, prioritySource, snapshotMatchModes);
+        return customizedHapiSpec(name, prioritySource);
+    }
+
+    private static <T> Def.Sourced customizedHapiSpec(final String name, final Stream<T> prioritySource) {
+        return customizedHapiSpec(name, prioritySource, emptyList());
     }
 
     private static <T> Def.Sourced customizedHapiSpec(
-            final String name, final Stream<T> prioritySource, @NonNull final SnapshotMatchMode... snapshotMatchModes) {
-        return customizedHapiSpec(name, prioritySource, emptyList(), snapshotMatchModes);
-    }
-
-    private static <T> Def.Sourced customizedHapiSpec(
-            final String name,
-            final Stream<T> prioritySource,
-            final List<String> propertiesToPreserve,
-            @NonNull final SnapshotMatchMode... snapshotMatchModes) {
+            final String name, final Stream<T> prioritySource, final List<String> propertiesToPreserve) {
         return (Object... sources) -> {
             Object[] allSources = Stream.of(
                             prioritySource, Stream.of(sources), Stream.of(HapiSpecSetup.getDefaultPropertySource()))
                     .flatMap(Function.identity())
                     .toArray();
-            return hapiSpec(name, propertiesToPreserve, snapshotMatchModes)
-                    .withSetup(HapiSpecSetup.setupFrom(allSources));
+            return hapiSpec(name, propertiesToPreserve).withSetup(HapiSpecSetup.setupFrom(allSources));
         };
     }
 
-    public static Def.Setup hapiSpec(
-            String name, List<String> propertiesToPreserve, @NonNull final SnapshotMatchMode... snapshotMatchModes) {
+    public static Def.Setup hapiSpec(String name, List<String> propertiesToPreserve) {
         return setup -> given -> when -> then -> Stream.of(DynamicTest.dynamicTest(
                 name + " " + AS_WRITTEN_DISPLAY_NAME,
-                targeted(new HapiSpec(name, setup, given, when, then, propertiesToPreserve, snapshotMatchModes))));
+                targeted(new HapiSpec(name, setup, given, when, then, propertiesToPreserve))));
     }
 
     /**
@@ -1225,8 +1183,7 @@ public class HapiSpec implements Runnable, Executable {
                         new SpecOperation[0],
                         new SpecOperation[0],
                         ops,
-                        propertiesToPreserve,
-                        new SnapshotMatchMode[0]))));
+                        propertiesToPreserve))));
     }
 
     public static DynamicTest namedHapiTest(String name, @NonNull final SpecOperation... ops) {
@@ -1238,8 +1195,7 @@ public class HapiSpec implements Runnable, Executable {
                         new SpecOperation[0],
                         new SpecOperation[0],
                         ops,
-                        List.of(),
-                        new SnapshotMatchMode[0])));
+                        List.of())));
     }
 
     private static HapiSpec targeted(@NonNull final HapiSpec spec) {
@@ -1296,8 +1252,7 @@ public class HapiSpec implements Runnable, Executable {
                 new SpecOperation[0],
                 new SpecOperation[0],
                 ops,
-                List.of(),
-                new SnapshotMatchMode[0]);
+                List.of());
     }
 
     // too many parameters
@@ -1308,9 +1263,7 @@ public class HapiSpec implements Runnable, Executable {
             SpecOperation[] given,
             SpecOperation[] when,
             SpecOperation[] then,
-            List<String> propertiesToPreserve,
-            SnapshotMatchMode[] snapshotMatchModes) {
-        this.snapshotMatchModes = snapshotMatchModes;
+            List<String> propertiesToPreserve) {
         status = PENDING;
         this.name = name;
         this.hapiSetup = hapiSetup;

@@ -19,6 +19,7 @@ package com.hedera.services.bdd.suites.contract.hapi;
 import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asHexedSolidityAddress;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.ContractInfoAsserts.contractWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
@@ -49,8 +50,6 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.specOps;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.submitModified;
 import static com.hedera.services.bdd.spec.utilops.mod.ModificationUtils.withSuccessivelyVariedBodyIds;
-import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.HIGHLY_NON_DETERMINISTIC_FEES;
-import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_FUNCTION_PARAMETERS;
 import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
@@ -123,50 +122,44 @@ public class ContractDeleteSuite {
         final var internalCreateViolation = "internalCreateViolation";
         final AtomicReference<String> treasuryMirrorAddr = new AtomicReference<>();
         final AtomicReference<String> tokenMirrorAddr = new AtomicReference<>();
-        return defaultHapiSpec("CannotUseMoreThanChildContractLimit", NONDETERMINISTIC_FUNCTION_PARAMETERS)
-                .given(
-                        cryptoCreate(TOKEN_TREASURY)
-                                .exposingCreatedIdTo(id -> treasuryMirrorAddr.set(asHexedSolidityAddress(id))),
-                        tokenCreate(fungible).treasury(TOKEN_TREASURY),
-                        tokenCreate(fungible)
-                                .tokenType(FUNGIBLE_COMMON)
-                                .treasury(TOKEN_TREASURY)
-                                .initialSupply(1234567)
-                                .exposingCreatedIdTo(idLit ->
-                                        tokenMirrorAddr.set(asHexedSolidityAddress(HapiPropertySource.asToken(idLit)))))
-                .when(
-                        uploadInitCode(contract),
-                        contractCreate(contract),
-                        doSeveralWithStartupConfig("consensus.handle.maxFollowingRecords", value -> {
-                            final var illegalNumChildren = Integer.parseInt(value) + 1;
-                            return specOps(
-                                    contractCall(
-                                                    contract,
-                                                    "checkBalanceRepeatedly",
-                                                    asHeadlongAddress(tokenMirrorAddr.get()),
-                                                    asHeadlongAddress(treasuryMirrorAddr.get()),
-                                                    BigInteger.valueOf(illegalNumChildren))
-                                            .via(precompileViolation)
-                                            .gas(215_000L)
-                                            .hasKnownStatus(MAX_CHILD_RECORDS_EXCEEDED),
-                                    contractCall(
-                                                    contract,
-                                                    "createThingsRepeatedly",
-                                                    BigInteger.valueOf(illegalNumChildren))
-                                            .via(internalCreateViolation)
-                                            .gas(15_000_000L)
-                                            .hasKnownStatus(MAX_CHILD_RECORDS_EXCEEDED));
-                        }))
-                .then(
-                        getTxnRecord(precompileViolation)
-                                .andAllChildRecords()
-                                .hasChildRecords(IntStream.range(0, 50)
-                                        .mapToObj(i -> recordWith().status(REVERTED_SUCCESS))
-                                        .toArray(TransactionRecordAsserts[]::new)),
-                        getTxnRecord(internalCreateViolation)
-                                .andAllChildRecords()
-                                // Reverted internal CONTRACT_CREATION messages are not externalized
-                                .hasChildRecords());
+        return hapiTest(
+                cryptoCreate(TOKEN_TREASURY)
+                        .exposingCreatedIdTo(id -> treasuryMirrorAddr.set(asHexedSolidityAddress(id))),
+                tokenCreate(fungible).treasury(TOKEN_TREASURY),
+                tokenCreate(fungible)
+                        .tokenType(FUNGIBLE_COMMON)
+                        .treasury(TOKEN_TREASURY)
+                        .initialSupply(1234567)
+                        .exposingCreatedIdTo(idLit ->
+                                tokenMirrorAddr.set(asHexedSolidityAddress(HapiPropertySource.asToken(idLit)))),
+                uploadInitCode(contract),
+                contractCreate(contract),
+                doSeveralWithStartupConfig("consensus.handle.maxFollowingRecords", value -> {
+                    final var illegalNumChildren = Integer.parseInt(value) + 1;
+                    return specOps(
+                            contractCall(
+                                            contract,
+                                            "checkBalanceRepeatedly",
+                                            asHeadlongAddress(tokenMirrorAddr.get()),
+                                            asHeadlongAddress(treasuryMirrorAddr.get()),
+                                            BigInteger.valueOf(illegalNumChildren))
+                                    .via(precompileViolation)
+                                    .gas(215_000L)
+                                    .hasKnownStatus(MAX_CHILD_RECORDS_EXCEEDED),
+                            contractCall(contract, "createThingsRepeatedly", BigInteger.valueOf(illegalNumChildren))
+                                    .via(internalCreateViolation)
+                                    .gas(15_000_000L)
+                                    .hasKnownStatus(MAX_CHILD_RECORDS_EXCEEDED));
+                }),
+                getTxnRecord(precompileViolation)
+                        .andAllChildRecords()
+                        .hasChildRecords(IntStream.range(0, 50)
+                                .mapToObj(i -> recordWith().status(REVERTED_SUCCESS))
+                                .toArray(TransactionRecordAsserts[]::new)),
+                getTxnRecord(internalCreateViolation)
+                        .andAllChildRecords()
+                        // Reverted internal CONTRACT_CREATION messages are not externalized
+                        .hasChildRecords());
     }
 
     @HapiTest
@@ -177,36 +170,32 @@ public class ContractDeleteSuite {
         final var internalViolation = "internal";
         final var externalViolation = "external";
         final AtomicReference<String> tokenMirrorAddr = new AtomicReference<>();
-        return defaultHapiSpec("CannotSendValueToTokenAccount", NONDETERMINISTIC_FUNCTION_PARAMETERS)
-                .given(
-                        newKeyNamed(multiKey),
-                        cryptoCreate(TOKEN_TREASURY).balance(ONE_HUNDRED_HBARS),
-                        tokenCreate(nonFungibleToken)
-                                .supplyType(TokenSupplyType.INFINITE)
-                                .tokenType(NON_FUNGIBLE_UNIQUE)
-                                .treasury(TOKEN_TREASURY)
-                                .initialSupply(0)
-                                .supplyKey(multiKey)
-                                .exposingCreatedIdTo(idLit ->
-                                        tokenMirrorAddr.set(asHexedSolidityAddress(HapiPropertySource.asToken(idLit)))))
-                .when(
-                        uploadInitCode(contract),
-                        contractCreate(contract),
-                        sourcing(() -> contractCall(
-                                        contract, "sendSomeValueTo", asHeadlongAddress(tokenMirrorAddr.get()))
-                                .sending(ONE_HBAR)
-                                .payingWith(TOKEN_TREASURY)
-                                .via(internalViolation)
-                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED)),
-                        sourcing((() -> contractCall(tokenMirrorAddr.get())
-                                .sending(1L)
-                                .payingWith(TOKEN_TREASURY)
-                                .refusingEthConversion()
-                                .via(externalViolation)
-                                .hasKnownStatus(LOCAL_CALL_MODIFICATION_EXCEPTION))))
-                .then(
-                        getTxnRecord(internalViolation).hasPriority(recordWith().feeGreaterThan(0L)),
-                        getTxnRecord(externalViolation).hasPriority(recordWith().feeGreaterThan(0L)));
+        return hapiTest(
+                newKeyNamed(multiKey),
+                cryptoCreate(TOKEN_TREASURY).balance(ONE_HUNDRED_HBARS),
+                tokenCreate(nonFungibleToken)
+                        .supplyType(TokenSupplyType.INFINITE)
+                        .tokenType(NON_FUNGIBLE_UNIQUE)
+                        .treasury(TOKEN_TREASURY)
+                        .initialSupply(0)
+                        .supplyKey(multiKey)
+                        .exposingCreatedIdTo(idLit ->
+                                tokenMirrorAddr.set(asHexedSolidityAddress(HapiPropertySource.asToken(idLit)))),
+                uploadInitCode(contract),
+                contractCreate(contract),
+                sourcing(() -> contractCall(contract, "sendSomeValueTo", asHeadlongAddress(tokenMirrorAddr.get()))
+                        .sending(ONE_HBAR)
+                        .payingWith(TOKEN_TREASURY)
+                        .via(internalViolation)
+                        .hasKnownStatus(CONTRACT_REVERT_EXECUTED)),
+                sourcing((() -> contractCall(tokenMirrorAddr.get())
+                        .sending(1L)
+                        .payingWith(TOKEN_TREASURY)
+                        .refusingEthConversion()
+                        .via(externalViolation)
+                        .hasKnownStatus(LOCAL_CALL_MODIFICATION_EXCEPTION))),
+                getTxnRecord(internalViolation).hasPriority(recordWith().feeGreaterThan(0L)),
+                getTxnRecord(externalViolation).hasPriority(recordWith().feeGreaterThan(0L)));
     }
 
     @HapiTest
@@ -260,39 +249,36 @@ public class ContractDeleteSuite {
         final var otherMiscContract = "PayReceivable";
         final var beneficiary = "beneficiary";
 
-        return defaultHapiSpec("CannotDeleteOrSelfDestructContractWithNonZeroBalance", HIGHLY_NON_DETERMINISTIC_FEES)
-                .given(
-                        cryptoCreate(beneficiary).balance(ONE_HUNDRED_HBARS),
-                        newKeyNamed(multiKey),
-                        uploadInitCode(selfDestructableContract),
-                        contractCreate(selfDestructableContract)
-                                .adminKey(multiKey)
-                                .balance(123)
-                                // Refusing ethereum create conversion, because we get INVALID_SIGNATURE upon
-                                // tokenAssociate,
-                                // since we have CONTRACT_ID key
-                                .refusingEthConversion(),
-                        uploadInitCode(otherMiscContract),
-                        // Refusing ethereum create conversion, because we get INVALID_SIGNATURE upon tokenAssociate,
+        return hapiTest(
+                cryptoCreate(beneficiary).balance(ONE_HUNDRED_HBARS),
+                newKeyNamed(multiKey),
+                uploadInitCode(selfDestructableContract),
+                contractCreate(selfDestructableContract)
+                        .adminKey(multiKey)
+                        .balance(123)
+                        // Refusing ethereum create conversion, because we get INVALID_SIGNATURE upon
+                        // tokenAssociate,
                         // since we have CONTRACT_ID key
-                        contractCreate(otherMiscContract).refusingEthConversion(),
-                        tokenCreate(someToken)
-                                .initialSupply(0L)
-                                .adminKey(multiKey)
-                                .supplyKey(multiKey)
-                                .treasury(selfDestructableContract)
-                                .supplyType(TokenSupplyType.INFINITE)
-                                .tokenType(NON_FUNGIBLE_UNIQUE))
-                .when(
-                        mintToken(someToken, List.of(ByteString.copyFromUtf8("somemetadata"))),
-                        tokenAssociate(otherMiscContract, someToken),
-                        cryptoTransfer(TokenMovement.movingUnique(someToken, 1)
-                                .between(selfDestructableContract, otherMiscContract)))
-                .then(
-                        contractDelete(otherMiscContract).hasKnownStatus(TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES),
-                        contractCall(selfDestructableContract, CONTRACT_DESTROY)
-                                .hasKnownStatus(CONTRACT_EXECUTION_EXCEPTION)
-                                .payingWith(beneficiary));
+                        .refusingEthConversion(),
+                uploadInitCode(otherMiscContract),
+                // Refusing ethereum create conversion, because we get INVALID_SIGNATURE upon tokenAssociate,
+                // since we have CONTRACT_ID key
+                contractCreate(otherMiscContract).refusingEthConversion(),
+                tokenCreate(someToken)
+                        .initialSupply(0L)
+                        .adminKey(multiKey)
+                        .supplyKey(multiKey)
+                        .treasury(selfDestructableContract)
+                        .supplyType(TokenSupplyType.INFINITE)
+                        .tokenType(NON_FUNGIBLE_UNIQUE),
+                mintToken(someToken, List.of(ByteString.copyFromUtf8("somemetadata"))),
+                tokenAssociate(otherMiscContract, someToken),
+                cryptoTransfer(
+                        TokenMovement.movingUnique(someToken, 1).between(selfDestructableContract, otherMiscContract)),
+                contractDelete(otherMiscContract).hasKnownStatus(TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES),
+                contractCall(selfDestructableContract, CONTRACT_DESTROY)
+                        .hasKnownStatus(CONTRACT_EXECUTION_EXCEPTION)
+                        .payingWith(beneficiary));
     }
 
     @HapiTest

@@ -16,12 +16,8 @@
 
 package com.hedera.services.bdd.spec;
 
-import com.hedera.services.bdd.spec.utilops.records.SnapshotModeOp;
-
 /**
- * Enumerates the different types of network that can be targeted by a test suite. There are some
- * operations (currently just {@link SnapshotModeOp}) that only make sense when running against
- * a certain type of network.
+ * Enumerates the different types of network that can be targeted by a test suite.
  */
 public enum TargetNetworkType {
     /**

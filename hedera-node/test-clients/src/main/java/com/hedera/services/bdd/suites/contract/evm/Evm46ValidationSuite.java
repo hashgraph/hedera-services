@@ -23,6 +23,7 @@ import static com.hedera.services.bdd.spec.HapiPropertySource.asContract;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asContractIdWithEvmAddress;
 import static com.hedera.services.bdd.spec.HapiPropertySource.idAsHeadlongAddress;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.changeFromSnapshot;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
@@ -48,8 +49,6 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.balanceSnapshot;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
-import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_CONTRACT_CALL_RESULTS;
-import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
 import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
@@ -1197,54 +1196,42 @@ public class Evm46ValidationSuite {
     @HapiTest
     final Stream<DynamicTest> internalCallsAgainstSystemAccountsWithValue() {
         final var withAmount = "makeCallWithAmount";
-        return defaultHapiSpec(
-                        "internalCallsAgainstSystemAccountsWithValue",
-                        NONDETERMINISTIC_TRANSACTION_FEES,
-                        NONDETERMINISTIC_CONTRACT_CALL_RESULTS)
-                .given(
-                        uploadInitCode(MAKE_CALLS_CONTRACT),
-                        contractCreate(MAKE_CALLS_CONTRACT).gas(GAS_LIMIT_FOR_CALL * 4))
-                .when(
-                        balanceSnapshot("initialBalance", MAKE_CALLS_CONTRACT),
-                        contractCall(
-                                        MAKE_CALLS_CONTRACT,
-                                        withAmount,
-                                        idAsHeadlongAddress(AccountID.newBuilder()
-                                                .setAccountNum(357)
-                                                .build()),
-                                        new byte[] {"system account".getBytes()[0]})
-                                .gas(GAS_LIMIT_FOR_CALL * 4)
-                                .sending(2L)
-                                .via(INNER_TXN)
-                                .hasKnownStatus(INVALID_CONTRACT_ID))
-                .then(getAccountBalance(MAKE_CALLS_CONTRACT).hasTinyBars(changeFromSnapshot("initialBalance", 0)));
+        return hapiTest(
+                uploadInitCode(MAKE_CALLS_CONTRACT),
+                contractCreate(MAKE_CALLS_CONTRACT).gas(GAS_LIMIT_FOR_CALL * 4),
+                balanceSnapshot("initialBalance", MAKE_CALLS_CONTRACT),
+                contractCall(
+                                MAKE_CALLS_CONTRACT,
+                                withAmount,
+                                idAsHeadlongAddress(AccountID.newBuilder()
+                                        .setAccountNum(357)
+                                        .build()),
+                                new byte[] {"system account".getBytes()[0]})
+                        .gas(GAS_LIMIT_FOR_CALL * 4)
+                        .sending(2L)
+                        .via(INNER_TXN)
+                        .hasKnownStatus(INVALID_CONTRACT_ID),
+                getAccountBalance(MAKE_CALLS_CONTRACT).hasTinyBars(changeFromSnapshot("initialBalance", 0)));
     }
 
     @HapiTest
     final Stream<DynamicTest> internalCallsAgainstSystemAccountsWithoutValue() {
         final var withoutAmount = "makeCallWithoutAmount";
-        return defaultHapiSpec(
-                        "internalCallsAgainstSystemAccountsWithoutValue",
-                        NONDETERMINISTIC_TRANSACTION_FEES,
-                        NONDETERMINISTIC_CONTRACT_CALL_RESULTS)
-                .given(
-                        uploadInitCode(MAKE_CALLS_CONTRACT),
-                        contractCreate(MAKE_CALLS_CONTRACT).gas(GAS_LIMIT_FOR_CALL * 4))
-                .when(
-                        balanceSnapshot("initialBalance", MAKE_CALLS_CONTRACT),
-                        contractCall(
-                                        MAKE_CALLS_CONTRACT,
-                                        withoutAmount,
-                                        idAsHeadlongAddress(AccountID.newBuilder()
-                                                .setAccountNum(357)
-                                                .build()),
-                                        new byte[] {"system account".getBytes()[0]})
-                                .gas(GAS_LIMIT_FOR_CALL * 4)
-                                .via(INNER_TXN)
-                                .hasKnownStatus(SUCCESS))
-                .then(
-                        getTxnRecord(INNER_TXN).hasPriority(recordWith().status(SUCCESS)),
-                        getAccountBalance(MAKE_CALLS_CONTRACT).hasTinyBars(changeFromSnapshot("initialBalance", 0)));
+        return hapiTest(
+                uploadInitCode(MAKE_CALLS_CONTRACT),
+                contractCreate(MAKE_CALLS_CONTRACT).gas(GAS_LIMIT_FOR_CALL * 4),
+                balanceSnapshot("initialBalance", MAKE_CALLS_CONTRACT),
+                contractCall(
+                                MAKE_CALLS_CONTRACT,
+                                withoutAmount,
+                                idAsHeadlongAddress(AccountID.newBuilder()
+                                        .setAccountNum(357)
+                                        .build()),
+                                new byte[] {"system account".getBytes()[0]})
+                        .gas(GAS_LIMIT_FOR_CALL * 4)
+                        .via(INNER_TXN),
+                getTxnRecord(INNER_TXN).hasPriority(recordWith().status(SUCCESS)),
+                getAccountBalance(MAKE_CALLS_CONTRACT).hasTinyBars(changeFromSnapshot("initialBalance", 0)));
     }
 
     @HapiTest
