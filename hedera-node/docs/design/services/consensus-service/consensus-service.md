@@ -51,14 +51,14 @@ HCS is designed to handle high transaction throughput, making it suitable for ap
 
 ### Native fee system
 
-HCS is offering optional fee system for the submission of topic messages.
+HCS is offering an optional fee system for the submission of topic messages.
 
 ## How Consensus Service Works
 
 ### Message Submission
 
 Applications submit messages to the Hedera network. These messages can represent various types of transactions or events.
-If given topic has a custom fee set, then the fee is paid on message submission. (see [Topic custom fees](topic-custom-fees.md))
+If a given topic has a custom fee set, then the fee is paid on message submission. (see [Topic custom fees](topic-custom-fees.md))
 
 ### Consensus Process
 
@@ -174,7 +174,7 @@ This transaction is applicable only for topics with custom fees. Without such al
 
 The `ConsensusApproveAllowanceTransactionBody` message includes the following fields:
 
-- `consensusCryptoFeeScheduleAllowances`: List of hbar allowances approved by the account owner. It contains limit per message and total limit of hbar, that owner is willing to pay.
+- `consensusCryptoFeeScheduleAllowances`: List of hbar allowances approved by the account owner. It contains a limit per message and a total limit of hbar that the owner is willing to pay.
 - `consensusTokenFeeScheduleAllowances`: List of fungible token allowances approved by the account owner. It contains limit per message and total limit of fungible tokens, that owner is willing to pay.
 
 #### ConsensusSubmitMessageTransactionBody
@@ -244,7 +244,7 @@ todo check what will be validated here
 
 ### consensusApproveAllowanceHandler
 
-The `consensusApproveAllowanceHandler` is responsible for handling the alliance of funds spending on submissions of messages to a topic with custom fees. It validates the transaction and calculate the transaction fees.
+The `consensusApproveAllowanceHandler` is responsible for handling the alliance of funds spent on submissions of messages to a topic with custom fees. It validates the transaction and calculates the transaction fees.
 
 ### consensusSubmitMessageHandler
 

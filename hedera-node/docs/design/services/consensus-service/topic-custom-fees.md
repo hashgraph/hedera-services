@@ -2,7 +2,7 @@
 
 ## Purpose
 
-The implementation of a native fixed fee system for the submission of topic messages on the Hedera network, will add the possibility to add custom fees to a given topic.
+The implementation of a native fixed fee system for the submission of topic messages on the Hedera network, will add the possibility of adding custom fees to a given topic.
 
 ## Prerequisite reading
 
@@ -11,14 +11,14 @@ The implementation of a native fixed fee system for the submission of topic mess
 ## Goals
 
 1. Update existing `ConsensusCreateTopic`, `ConsensusUpdateTopic` and `ConsensusTopicInfo` to support custom fees.
-2. Introduce new `ConsensusApproveAllowance` operation.
+2. Introduce a new `ConsensusApproveAllowance` operation.
 3. Update existing `ConsensusSubmitMessage` to validate and charge custom fees, if needed.
 
 ## Architecture
 
 ### HAPI Updates
 
-Topics have now a new Fee Schedule Key.
+Topics now have a new Fee Schedule Key.
 
 ```protobuf
 /**
@@ -190,7 +190,7 @@ rpc approveAllowance (Transaction) returns (TransactionResponse);
 ### Fees
 
 - Topics may have fees for submitting messages.
-- Fees are defined as a list of custom fee.
+- Fees are defined as a list of custom fees.
 - The list of custom fees can contain a maximum of `MAX_CUSTOM_FEE_ENTRIES_FOR_TOPICS` entries.
 - A custom fee is defined leveraging the HTS’s FixedFee data structure.
 - A custom fee can be set in HBAR or HTS fungible tokens and must have an accountID as collector.
@@ -248,7 +248,7 @@ rpc approveAllowance (Transaction) returns (TransactionResponse);
 ```
 
 - Update `ConsensusTopicInfoHandler` class.
-  - Add information about the new fields `feeScheduleKey()`, `feeExemptKeyList()`, `customFees()` in to the query response.
+  - Add information about the new fields `feeScheduleKey()`, `feeExemptKeyList()`, `customFees()` to the query response.
   - Add needed fields and methods in `HapiCetTopicInfo` to support the new fields.
 
 #### ConsensusCreateTopic
@@ -266,7 +266,7 @@ rpc approveAllowance (Transaction) returns (TransactionResponse);
         - Check if the token is usable ()
         - Validate fee amount - TBD MAX_FEE is not defined in the HIP, and it is used in the context of SDK only
         - Check if the collector is associated with the token
-    - Store the values of the new fields into the state.
+    - Store the values of the new fields in the state.
 
 #### ConsensusUpdateTopic
 
@@ -278,26 +278,26 @@ rpc approveAllowance (Transaction) returns (TransactionResponse);
   - Handle:
     - Add validation on keys - `Fee Schedule Key` and all keys from the `Fee Exempt Key List`.
     - Add validation on custom fees:
-      - Check if fee collector account is usable (not deleted/expired).
+      - Check if the fee collector account is usable (not deleted/expired).
       - Check if the fee type is `fixed`.
       - If the fee has denominating token:
         - Check if the token is usable ()
         - Validate fee amount - TBD- MAX_FEE is not defined in the HIP, and it is used in the context of SDK only
         - Check if the collector is associated with the token
-    - Update the values of the new fields into the state.
+    - Update the values of the new fields in the state.
 
 #### ConsensusApproveAllowance
 
 - Update `ApiPermissionConfig` class to include a `0-* PermissionedAccountsRange` for the new `ConsensusApproveAllowance` transaction type
 - Update `ConsensusServiceDefinition` class to include the new RPC method definition for approve allowance.
-- Implement new `ConsensusApproveAllowanceHandler` class which should be invoked when the gRPC server handles `ConsensusApproveAllowanceTransaction` transactions. The class should be responsible for:
+- Implement new `ConsensusApproveAllowanceHandler` class that should be invoked when the gRPC server handles `ConsensusApproveAllowanceTransaction` transactions. The class should be responsible for:
   - Verify that the amounts are set and positive values.
   - Pre-handle:
     - The transaction must be signed by the sender.
     - TBD - more validations ?
   - Handle:
-    - Any additional validation depending on config or state i.e. semantics checks
-    - Check that the sender account is a valid account. That is an existing account, which is not deleted or expired.
+    - Any additional validation depending on config or state, i.e. semantics checks
+    - Check that the sender account is a valid one. That is an existing account, and it is not deleted or expired.
     - Add approved allowance:
       - Set `ConsensusCryptoFeeScheduleAllowance` to the account.
       - Set `ConsensusTokenFeeScheduleAllowance` to the account
@@ -313,18 +313,18 @@ rpc approveAllowance (Transaction) returns (TransactionResponse);
 #### ConsensusSubmitMessage
 
 - Update `ConsensusSubmitMessageHandler`
-  - Handle: 
+  - Handle:
     - Check if the topic has custom fees:
-      - Check if the sender has needed allowance set.
-      - Dispatch crypto transfer to pay the fees.
+      - Check if the sender has the needed allowance set.
+      - Dispatch a crypto transfer transaction to pay the fees.
 
 ## Acceptance Tests
 
-- Topic create
-  - todo
-- Topic update
-  - todo
-- Approve allowance
-  - todo
-- Submit message
-  - todo
+### Topic create acceptance tests
+  * todo
+### Topic update acceptance tests
+  * todo
+### Approve allowance acceptance tests
+  * todo
+### Submit message acceptance tests
+  * todo
