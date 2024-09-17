@@ -68,7 +68,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class TokenServiceApiImplTest {
     private static final Key STANDIN_CONTRACT_KEY =
             Key.newBuilder().contractID(ContractID.newBuilder().contractNum(0)).build();
-    private static final Configuration DEFAULT_CONFIG = HederaTestConfigBuilder.createConfig();
+    public static final Configuration DEFAULT_CONFIG = HederaTestConfigBuilder.createConfig();
     private static final Bytes EVM_ADDRESS =
             com.hedera.pbj.runtime.io.buffer.Bytes.fromHex("89abcdef89abcdef89abcdef89abcdef89abcdef");
     private static final Bytes OTHER_EVM_ADDRESS = Bytes.fromHex("29abcde089abcde089abcde089abcde089abcde0");
