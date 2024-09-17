@@ -28,7 +28,7 @@ This document contains design guidelines for system contract ABIs.
     - Unsigned integral types are not supported in Java and the interface (Besu) EVM↔Java of these types
       has been buggy in the past (including leading to security problems)
 - All non-view methods and *most* view methods should return a `ResponseCode` as their first output 
-  value (and that should be an `int64`).  View methods that don’t return a response code return no 
+  value (and that should be an `int64`).  This ensures any network level response code types can be exposed to developers for greater insights during troubleshooting. View methods that don’t return a response code return no 
   output (0 bytes returned) on failure.
     - The view methods that don’t return a response code should be only those for which invalid 
       input arguments or invalid processing are easy - trivial! - for the developer to figure out 
