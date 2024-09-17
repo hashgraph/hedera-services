@@ -101,10 +101,10 @@ message ConsensusTopicInfo {
 
     /**
      * A set of keys that are allowed to submit messages to the topic without
-     * paying the topic's custom fees.<br/>
-     * If a submit transaction is signed by _any_ key included in this set,
-     *  custom fees SHALL NOT be charged for that transaction.
+     * paying the topic's custom fees.
      * <p>
+     * If a submit transaction is signed by _any_ key included in this set,
+     *  custom fees SHALL NOT be charged for that transaction.<br/>
      * fee_exempt_key_list MAY contain keys for accounts that are inactive,
      *  deleted, or non-existent.<br/>
      * If not set, there SHALL NOT be any fee-exempt keys.  In particular, the
