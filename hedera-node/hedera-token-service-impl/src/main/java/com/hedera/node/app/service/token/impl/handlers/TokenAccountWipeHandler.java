@@ -19,7 +19,6 @@ package com.hedera.node.app.service.token.impl.handlers;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_DOES_NOT_OWN_WIPED_NFT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NFT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_WIPING_AMOUNT;
 import static com.hedera.node.app.hapi.fees.usage.SingletonUsageProperties.USAGE_PROPERTIES;
@@ -169,8 +168,11 @@ public final class TokenAccountWipeHandler implements TransactionHandler {
 
             // Load and validate the nfts
             for (final Long nftSerial : nftSerialNums) {
-                final var nft = nftStore.get(tokenId, nftSerial);
-                validateTrue(nft != null, INVALID_NFT_ID);
+                final var nftId = NftID.newBuilder()
+                        .serialNumber(nftSerial)
+                        .tokenId(tokenId)
+                        .build();
+                final var nft = TokenHandlerHelper.getIfUsable(nftId, nftStore);
 
                 final var nftOwner = nft.ownerId();
                 validateTrue(Objects.equals(nftOwner, unaliasedId), ACCOUNT_DOES_NOT_OWN_WIPED_NFT);

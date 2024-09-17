@@ -20,21 +20,36 @@ import static com.swirlds.platform.system.SystemExitCode.NODE_ADDRESS_MISMATCH;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mock.Strictness.LENIENT;
 import static org.mockito.Mockito.mockStatic;
 
 import com.hedera.node.app.version.ServicesSoftwareVersion;
+import com.swirlds.common.context.PlatformContext;
+import com.swirlds.common.crypto.Cryptography;
+import com.swirlds.common.io.filesystem.FileSystemManager;
+import com.swirlds.common.io.utility.RecycleBin;
+import com.swirlds.common.merkle.crypto.MerkleCryptography;
+import com.swirlds.common.metrics.platform.DefaultMetricsProvider;
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.config.api.Configuration;
+import com.swirlds.metrics.api.Metrics;
+import com.swirlds.platform.builder.PlatformBuilder;
 import com.swirlds.platform.config.legacy.ConfigurationException;
 import com.swirlds.platform.config.legacy.LegacyConfigProperties;
 import com.swirlds.platform.config.legacy.LegacyConfigPropertiesLoader;
 import com.swirlds.platform.state.MerkleStateRoot;
+import com.swirlds.platform.state.signed.ReservedSignedState;
+import com.swirlds.platform.state.signed.SignedState;
+import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.SystemExitUtils;
+import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.util.BootstrapUtils;
 import java.util.ArrayList;
 import java.util.List;
-import org.junit.jupiter.api.Assertions;
+import java.util.function.BiFunction;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -47,8 +62,47 @@ final class ServicesMainTest {
             mockStatic(LegacyConfigPropertiesLoader.class);
     private static final MockedStatic<BootstrapUtils> bootstrapUtilsMockedStatic = mockStatic(BootstrapUtils.class);
 
-    @Mock
+    @Mock(strictness = LENIENT)
     private LegacyConfigProperties legacyConfigProperties;
+
+    @Mock(strictness = LENIENT)
+    private AddressBook addressBook;
+
+    @Mock(strictness = LENIENT)
+    private DefaultMetricsProvider metricsProvider;
+
+    @Mock(strictness = LENIENT)
+    private Metrics metrics;
+
+    @Mock(strictness = LENIENT)
+    private FileSystemManager fileSystemManager;
+
+    @Mock(strictness = LENIENT)
+    private RecycleBin recycleBin;
+
+    @Mock(strictness = LENIENT)
+    private MerkleCryptography merkleCryptography;
+
+    @Mock(strictness = LENIENT)
+    BiFunction<Configuration, Cryptography, MerkleCryptography> merkleCryptographyFn;
+
+    @Mock(strictness = LENIENT)
+    private PlatformContext platformContext;
+
+    @Mock(strictness = LENIENT)
+    private PlatformBuilder platformBuilder;
+
+    @Mock(strictness = LENIENT)
+    private ReservedSignedState reservedSignedState;
+
+    @Mock(strictness = LENIENT)
+    private SignedState signedState;
+
+    @Mock(strictness = LENIENT)
+    private Platform platform;
+
+    @Mock(strictness = LENIENT)
+    private Hedera hedera;
 
     private final ServicesMain subject = new ServicesMain();
 
@@ -102,7 +156,7 @@ final class ServicesMainTest {
     @Test
     void noopsAsExpected() {
         // expect:
-        Assertions.assertDoesNotThrow(subject::run);
+        assertDoesNotThrow(subject::run);
     }
 
     @Test
