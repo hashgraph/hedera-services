@@ -114,13 +114,28 @@ public class StandardTaskSchedulerBuilder<OUT> extends AbstractTaskSchedulerBuil
     }
 
     /**
+     * Ensures that direct schedulers do not have an unhandled task capacity set.
+     *
+     * <p>If the scheduler type is {@link TaskSchedulerType#DIRECT} or {@link TaskSchedulerType#DIRECT_THREADSAFE}
+     * and the unhandled task capacity is not 1, an {@link IllegalArgumentException} is thrown.
+     *
+     * @throws IllegalArgumentException if the type is direct or direct threadsafe and the unhandled task capacity is not 1
+     */
+    private void validateConfiguration() {
+        if ((type == TaskSchedulerType.DIRECT || type == TaskSchedulerType.DIRECT_THREADSAFE)
+                && unhandledTaskCapacity != 1) {
+            throw new IllegalArgumentException("Direct schedulers cannot have an unhandled task capacity.");
+        }
+    }
+
+    /**
      * {@inheritDoc}
      */
     @Override
     @NonNull
     public TaskScheduler<OUT> build() {
         // Check to ensure unhandled task capacity is not set for direct schedulers
-        validateDirectScheduler(type, unhandledTaskCapacity);
+        validateConfiguration();
         final Counters counters = buildCounters();
         final FractionalTimer busyFractionTimer = buildBusyTimer();
 
