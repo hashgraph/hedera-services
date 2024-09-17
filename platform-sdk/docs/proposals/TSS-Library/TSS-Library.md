@@ -13,15 +13,17 @@ Provide necessary components for signing messages using a TSS scheme.
 
 ## Purpose and Context
 
+This document covers the implementation of all necessary components for building a set of generic libraries that provides the operations to sign and verify information using a Threshold Signature Scheme (TSS) and EC Cryptography.
+
 A threshold signature scheme (TSS) aims to enable a threshold number of participants (shareholders) to securely and efficiently generate succinct aggregate signatures to cryptographically sign and verify signatures in the presence of some corruption threshold in a decentralized network.
 
 In that scheme, a static public key is produced that doesn't change even when the number of participants in the scheme varies. Such property is important for producing proofs that are easily consumable and verifiable by external entities.
 
-Our implementation will be based on [Groth21](https://eprint.iacr.org/2021/339) . This algorithm generates a public key and a private key for each participant. The private key is distributed as key-splits (or shares of shares), and no single party knows the complete aggregated private key. Only a threshold number of key-splits can produce a valid signature that the aggregated public key can later verify. To achieve that goal, it uses BLS signatures, Shamir's secret sharing, ElGamal, and Zero-Knowledge Proofs.
+Our implementation will be based on [Groth21](https://eprint.iacr.org/2021/339) . This algorithm generates a public key and a private key for each participant. The private key is distributed as key-splits (or shares of shares), and no single party knows the complete aggregated private key.
+Only a threshold number of key-splits can produce a valid signature that the aggregated public key can later verify. To achieve that goal, it uses BLS signatures, Shamir's secret sharing, ElGamal, and Zero-Knowledge Proofs.
 
-This document covers the implementation of all necessary components to provide a generic library with the functionality to sign and verify information using a Threshold Signature Scheme (TSS) and EC Cryptography.
-
-This proposal assumes no relation with the platform and defines a generic component that any consumer can integrate. It only assumes a channel exists to connect participants where the message sender's identity has been previously validated. The process of sending messages through that channel and receiving the responses is also outside the scope of this proposal. Additionally, participants will need access to each other's public key. While the generation of the public/private keys is included in this proposal, the distribution aspect, the loading, and the in-memory interpretation from each participant are outside the scope of this proposal. The related proposal, TSS-Ledger-Id, provides an overview of the process and background for TSS and how it impacts the platform’s functionality.
+This proposal assumes no relation with the platform and defines a generic component that any consumer can integrate. It only assumes a channel exists to connect participants where the message sender's identity has been previously validated. The process of sending messages through that channel and receiving the responses is also outside the scope of this proposal.
+Additionally, participants will need access to each other's public key. While the generation of the public/private keys is included in this proposal, the distribution aspect, the loading, and the in-memory interpretation from each participant are outside the scope of this proposal. The related proposal, TSS-Ledger-Id, provides an overview of the process and background for TSS and how it impacts the platform’s functionality.
 
 ### Glossary
 
@@ -52,7 +54,7 @@ This proposal assumes no relation with the platform and defines a generic compon
 
 ### Non-Goals
 
-- Implement support for elliptic curve arithmetics in Java.
+- Implement support for elliptic curve arithmetic in Java.
 - Support any system/architecture other than Windows amd64, Linux amd64 and arm64, and MacOS amd64 and arm64.
 - Creation of the building artifacts and plugins for rust code.
 - This proposal covers the implementation of a tool similar to ssh-keygen to generate those keys. Still, the generation, persistence, distribution, and loading of those keys are outside the scope of this proposal.
@@ -69,7 +71,10 @@ Groth21 is a non-interactive, publicly verifiable secret-sharing scheme where a 
 
 Participants can hold one or more shares, each of which can be used to sign a message. The goal is to generate an aggregate signature valid if a threshold number of individual signatures are combined.
 
-Each participant brings their own BLS key private and public pair _(we will call them TssEncryptionKeys as every key created is a valid bls key but serving different purposes)_. They share their public keys with all other participants while securing their private keys. Before the protocol begins, all participants agree on the cryptographic parameters (type of curve and what pairing group will be used for public keys and signatures). When the protocol is initialized, a participant directory is built. This directory includes the number of participants, each participant’s BLS public key, and the shares they own.
+Each participant brings their own BLS key private and public pair _(we will call them TssEncryptionKeys as every key created is a valid bls key but serving different purposes)_.
+They share their public TssEncryptionKeys with all other participants while securing their private keys.
+Before the protocol begins, all participants agree on the cryptographic parameters (type of curve and what pairing group will be used for public keys and signatures).
+When the protocol is initialized, a participant directory is built. This directory includes the number of participants, all participant’s public TssEncryptionKeys, and the shares they own.
 
 Each participant generates portions of a secret share and distributes them among the other participants using the following process:
 
@@ -120,7 +125,7 @@ Although the library is designed for agnostic ally from the client, this section
 
 ### Using arkworks
 
-Given that it is outside the scope of this project the creation and support of elliptic curve arithmetics and the mathematical operations that allow resolving a pairings operation and that there is no library implemented in Java with production-grade security that can help us with this goal, we decided to include the wrapping of arkworks bn254 module and delegate the operations to that library. We will wrap the invocations with a Java abstraction layer that will facilitate switching curves and other parameters when and if necessary.
+Given that it is outside the scope of this project the creation and support of elliptic curve arithmetic and the mathematical operations that allow resolving a pairings operation and that there is no library implemented in Java with production-grade security that can help us with this goal, we decided to include the wrapping of arkworks bn254 module and delegate the operations to that library. We will wrap the invocations with a Java abstraction layer that will facilitate switching curves and other parameters when and if necessary.
 
 ### Handling of multilanguage modules and native code distribution
 
@@ -359,21 +364,45 @@ return { c1, c2 }
 
 It will be the general case that consumers of this library don’t need to understand the elements as points on the curve to operate algebraically with them, so it is sufficient for them to interact with an opaque representation. There are two strategies for getting that representation:
 
-1. **Use arkworks-based serialization mechanism** This serialization mechanism uses the encoding defined for the `parings-api` and its ability to produce byte arrays from its components. Given that we have the guarantee to be canonical and that we do not plan for internal Java consumers to need to operate with individual values. Pros:
-   - Decouples the serialization mechanism from the pairing internal structure and allows switch curves with 0 impact on the consumers
-   - It allows consumers that have no access or cannot use serialization libraries such as protobuf
-   - Simple and reduced effort, low infra support needed. Cons:
-   - It is coupled to the arkworks serialization mechanism
-   - The communication needs to happen verbally or through documents, and there is no technical interface we can share.
-2. **Use protobuf serialization.** This serialization mechanism consists of generating a structure that represents the internal representation of PublicKey, PrivateKey, and Signature in a defined protobuf schema. We would need to extract the information from the pairings API implementation and produce a protobuf object to expose. Pros:
-   - Allows to share a schema to know how to interpret the curve
-   - Any client that can use protobuf can interpret our elements Cons:
-   - Only clients that can use protobuf can interpret signatures and public keys
-   - By producing a structure for the internals of the pairings API, new curves would need new structures.
+1. **Use arkworks-based serialization mechanism** This serialization mechanism uses the encoding defined for the `parings-api` and its ability to produce byte arrays from its components.
 
-We decided that we would leave keys and signatures as opaque byte arrays in little-endian form when recorded in the state and published to the block stream.
-We will publish a byte layout of the data format for people who need to parse the byte array.
+   **Pros:**
+   - Serialization is guaranteed to be canonical.
+   - Given that internal consumers don't need to operate with values and an opaque representation is enough, the approach decouples the serialization mechanism
+   from the pairing internal structure and allows to switch curves with 0 impact on the consumers.
+   - Simple and reduced effort, low infra support needed.
+
+   **Cons:**
+   - Coupled to the arkworks serialization mechanism
+   - There is nothing formal to share the specification of the format. It should be through technical documentation as there is no technical interface we can share.
+
+2. **Use protobuf serialization.** This serialization mechanism consists of generating a structure that represents the internal representation of PublicKey, PrivateKey, and Signature in a defined protobuf schema.
+   We would need to extract the information from the pairings API implementation and produce a protobuf object to expose.
+
+   **Pros:**
+   - Allows to share a schema to know how to interpret the curve
+   - Any client that can use protobuf can interpret our elements
+
+   **Cons:**
+   - Consumers needs to be able to operate with protobuf schemas.
+   - By producing a structure for the internals of the pairings API, switching curves impacts our code.
+
+It was decided that keys and signatures would be represented as opaque byte arrays in little-endian form when recorded in the state and published to the block stream.
+We will publish a byte layout of the data format for external consumers.
 The code that sets up smart contracts for execution will be responsible for parsing the byte array and translating the little-endian data into the big-endian form that is used in the EVM.
+
+**_Serialized form of a `PairingsPrivateKey`_**
+
+![img_8.svg](img_8.svg)
+*_This example corresponds to AltBN128, other curves might have different lengths._
+
+**_Serialized form of a `PairingsPublicKey` or `PairingsSignature`_**
+
+![img_8.svg](img_9.svg)
+*_This example corresponds to AltBN128, other curves might have different lengths._
+
+Curve ID value `1` is `ALT_BN_128`, other curves implementations might choose a different id for their curves but it is up to the implementation to select the id.
+The idea of using the id is to be able to determine if a particular key or signature can be interpreted and it is compatible with the plugged implementation of `pairings-api`
 
 #### Hedera Cryptography TSS Library
 
