@@ -113,7 +113,7 @@ class CryptographyTests {
             signatures[i] = ed25519SignaturePool.next();
             final SignatureComponents components = extractComponents(signatures[i]);
             assertTrue(cryptography.verifySync(
-                    components.data(), components.publicKey(), components.signatureBytes(), SignatureType.ED25519));
+                    components.data(), components.signatureBytes(), components.publicKey(), SignatureType.ED25519));
         }
     }
 
@@ -129,8 +129,8 @@ class CryptographyTests {
             assertTrue(
                     cryptography.verifySync(
                             components.data(),
-                            components.publicKey(),
                             components.signatureBytes(),
+                            components.publicKey(),
                             SignatureType.ECDSA_SECP256K1),
                     "Signature should be valid");
         }
@@ -145,8 +145,8 @@ class CryptographyTests {
         assertFalse(
                 cryptography.verifySync(
                         components.data(),
-                        Arrays.copyOfRange(components.publicKey(), 0, components.publicKey().length - 1),
                         components.signatureBytes(),
+                        Arrays.copyOfRange(components.publicKey(), 0, components.publicKey().length - 1),
                         SignatureType.ECDSA_SECP256K1),
                 "Fails for invalid signature");
     }
@@ -160,8 +160,8 @@ class CryptographyTests {
         assertFalse(
                 cryptography.verifySync(
                         components.data(),
-                        Arrays.copyOfRange(components.publicKey(), 0, components.publicKey().length - 1),
                         components.signatureBytes(),
+                        Arrays.copyOfRange(components.publicKey(), 0, components.publicKey().length - 1),
                         SignatureType.ED25519),
                 "Fails for invalid signature");
     }
@@ -195,7 +195,7 @@ class CryptographyTests {
                 .position(signature.getSignatureOffset())
                 .get(signatureBytes);
 
-        return new SignatureComponents(data, signatureBytes, publicKey);
+        return new SignatureComponents(data, publicKey, signatureBytes);
     }
 
     private void checkMessages(final Message... messages) throws ExecutionException, InterruptedException {
