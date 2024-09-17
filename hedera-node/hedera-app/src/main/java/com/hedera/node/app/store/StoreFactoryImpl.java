@@ -20,7 +20,6 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.spi.store.StoreFactory;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import javax.inject.Inject;
 
 /**
  * Factory for creating stores and service APIs. Default implementation of {@link StoreFactory}.
@@ -31,7 +30,6 @@ public class StoreFactoryImpl implements StoreFactory {
     private final WritableStoreFactory writableStoreFactory;
     private final ServiceApiFactory serviceApiFactory;
 
-    @Inject
     public StoreFactoryImpl(
             @NonNull final ReadableStoreFactory readableStoreFactory,
             @NonNull final WritableStoreFactory writableStoreFactory,

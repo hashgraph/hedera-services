@@ -36,6 +36,7 @@ import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.events.ConsensusEvent;
+import com.swirlds.platform.system.state.notifications.StateHashedNotification;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
 import java.time.Instant;
@@ -98,6 +99,9 @@ class RepeatableEmbeddedHedera extends AbstractEmbeddedHedera implements Embedde
             // Handle each transaction in own round
             hedera.handleWorkflow().handleRound(state, round);
             hedera.onSealConsensusRound(round, state);
+            // Immediately notify the block stream manager of the "hash" at the end of this round
+            hedera.blockStreamManager()
+                    .notify(new StateHashedNotification(round.getRoundNum(), FAKE_START_OF_STATE_HASH));
         }
         return response;
     }
