@@ -19,7 +19,6 @@ package com.hedera.node.app.service.token.impl.handlers;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_DOES_NOT_OWN_WIPED_NFT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NFT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_WIPING_AMOUNT;
 import static com.hedera.node.app.hapi.fees.usage.SingletonUsageProperties.USAGE_PROPERTIES;
@@ -52,7 +51,7 @@ import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
 import com.hedera.node.app.service.token.impl.util.TokenHandlerHelper;
 import com.hedera.node.app.service.token.impl.validators.TokenSupplyChangeOpsValidator;
-import com.hedera.node.app.service.token.records.TokenAccountWipeRecordBuilder;
+import com.hedera.node.app.service.token.records.TokenAccountWipeStreamBuilder;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
@@ -169,8 +168,11 @@ public final class TokenAccountWipeHandler implements TransactionHandler {
 
             // Load and validate the nfts
             for (final Long nftSerial : nftSerialNums) {
-                final var nft = nftStore.get(tokenId, nftSerial);
-                validateTrue(nft != null, INVALID_NFT_ID);
+                final var nftId = NftID.newBuilder()
+                        .serialNumber(nftSerial)
+                        .tokenId(tokenId)
+                        .build();
+                final var nft = TokenHandlerHelper.getIfUsable(nftId, nftStore);
 
                 final var nftOwner = nft.ownerId();
                 validateTrue(Objects.equals(nftOwner, unaliasedId), ACCOUNT_DOES_NOT_OWN_WIPED_NFT);
@@ -213,7 +215,7 @@ public final class TokenAccountWipeHandler implements TransactionHandler {
                 .build());
         // Note: record(s) for this operation will be built in a token finalization method so that we keep track of all
         // changes for records
-        final var record = context.recordBuilders().getOrCreate(TokenAccountWipeRecordBuilder.class);
+        final var record = context.savepointStack().getBaseBuilder(TokenAccountWipeStreamBuilder.class);
         // Set newTotalSupply in record
         record.newTotalSupply(newTotalSupply);
         record.tokenType(token.tokenType());

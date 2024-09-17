@@ -26,7 +26,9 @@ import com.google.common.base.MoreObjects;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.BytesValue;
 import com.google.protobuf.StringValue;
+import com.hedera.hapi.node.base.ServiceEndpoint;
 import com.hedera.node.app.hapi.fees.usage.state.UsageAccumulator;
+import com.hedera.node.app.hapi.utils.CommonPbjConverters;
 import com.hedera.node.app.hapi.utils.CommonUtils;
 import com.hedera.node.app.hapi.utils.fee.SigValueObj;
 import com.hedera.services.bdd.spec.HapiSpec;
@@ -37,10 +39,10 @@ import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.NodeUpdateTransactionBody;
-import com.hederahashgraph.api.proto.java.ServiceEndpoint;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -60,8 +62,13 @@ public class HapiNodeUpdate extends HapiTxnOp<HapiNodeUpdate> {
     private Optional<String> newDescription = Optional.empty();
     private List<ServiceEndpoint> newGossipEndpoints = Collections.emptyList();
     private List<ServiceEndpoint> newServiceEndpoints = Collections.emptyList();
-    private Optional<String> newGossipCaCertificate = Optional.empty();
-    private Optional<String> newGrpcCertificateHash = Optional.empty();
+
+    @Nullable
+    private byte[] newGossipCaCertificate;
+
+    @Nullable
+    private byte[] newGrpcCertificateHash;
+
     private Optional<Key> newAdminKey = Optional.empty();
     private Optional<String> newAdminKeyName = Optional.empty();
 
@@ -95,13 +102,13 @@ public class HapiNodeUpdate extends HapiTxnOp<HapiNodeUpdate> {
         return this;
     }
 
-    public HapiNodeUpdate gossipCaCertificate(@NonNull final String gossipCaCertificate) {
-        this.newGossipCaCertificate = Optional.of(gossipCaCertificate);
+    public HapiNodeUpdate gossipCaCertificate(@NonNull final byte[] gossipCaCertificate) {
+        this.newGossipCaCertificate = gossipCaCertificate;
         return this;
     }
 
-    public HapiNodeUpdate grpcCertificateHash(@NonNull final String grpcCertificateHash) {
-        this.newGrpcCertificateHash = Optional.of(grpcCertificateHash);
+    public HapiNodeUpdate grpcCertificateHash(@NonNull final byte[] grpcCertificateHash) {
+        this.newGrpcCertificateHash = grpcCertificateHash;
         return this;
     }
 
@@ -156,10 +163,6 @@ public class HapiNodeUpdate extends HapiTxnOp<HapiNodeUpdate> {
         } else builder.setAccountId(asId(accountIdStr, spec));
     }
 
-    private BytesValue getBytesValueFromString(@NonNull String s) {
-        return BytesValue.newBuilder().setValue(ByteString.copyFromUtf8(s)).build();
-    }
-
     @Override
     protected Consumer<TransactionBody.Builder> opBodyDef(@NonNull final HapiSpec spec) throws Throwable {
         newAdminKeyName.ifPresent(
@@ -172,12 +175,20 @@ public class HapiNodeUpdate extends HapiTxnOp<HapiNodeUpdate> {
                             newAccountAlias.ifPresent(builder::setAccountId);
                             newDescription.ifPresent(s -> builder.setDescription(StringValue.of(s)));
                             newAdminKey.ifPresent(builder::setAdminKey);
-                            builder.addAllGossipEndpoint(newGossipEndpoints);
-                            builder.addAllServiceEndpoint(newServiceEndpoints);
-                            newGossipCaCertificate.ifPresent(
-                                    s -> builder.setGossipCaCertificate(getBytesValueFromString(s)));
-                            newGrpcCertificateHash.ifPresent(
-                                    s -> builder.setGrpcCertificateHash(getBytesValueFromString(s)));
+                            builder.addAllGossipEndpoint(newGossipEndpoints.stream()
+                                    .map(CommonPbjConverters::fromPbj)
+                                    .toList());
+                            builder.addAllServiceEndpoint(newServiceEndpoints.stream()
+                                    .map(CommonPbjConverters::fromPbj)
+                                    .toList());
+                            if (newGossipCaCertificate != null) {
+                                builder.setGossipCaCertificate(
+                                        BytesValue.of(ByteString.copyFrom(newGossipCaCertificate)));
+                            }
+                            if (newGrpcCertificateHash != null) {
+                                builder.setGrpcCertificateHash(
+                                        BytesValue.of(ByteString.copyFrom(newGrpcCertificateHash)));
+                            }
                         });
         return builder -> builder.setNodeUpdate(opBody);
     }
@@ -217,5 +228,9 @@ public class HapiNodeUpdate extends HapiTxnOp<HapiNodeUpdate> {
         newAccountId.ifPresent(a -> helper.add("newAccountId", a));
         newDescription.ifPresent(d -> helper.add("description", d));
         return helper;
+    }
+
+    public Key getAdminKey() {
+        return newAdminKey.orElse(null);
     }
 }

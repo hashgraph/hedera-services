@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.test;
 
+import static com.swirlds.platform.test.fixtures.state.FakeMerkleStateLifecycles.FAKE_MERKLE_STATE_LIFECYCLES;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
@@ -23,8 +24,16 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
+import com.swirlds.common.test.fixtures.RandomUtils;
 import com.swirlds.common.test.fixtures.junit.tags.TestComponentTags;
+import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
+import com.swirlds.platform.crypto.CryptoStatic;
 import com.swirlds.platform.state.MerkleRoot;
+import com.swirlds.platform.state.MerkleStateRoot;
+import com.swirlds.platform.state.State;
+import com.swirlds.platform.state.signed.SignedState;
+import com.swirlds.platform.system.BasicSoftwareVersion;
+import java.util.Random;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -37,7 +46,7 @@ class StateTest {
     @DisplayName("Test Copy")
     void testCopy() {
 
-        final MerkleRoot state = SignedStateUtils.randomSignedState(0).getState();
+        final MerkleRoot state = randomSignedState().getState();
         final MerkleRoot copy = state.copy();
 
         assertNotSame(state, copy, "copy should not return the same object");
@@ -59,7 +68,7 @@ class StateTest {
     @Tag(TestComponentTags.MERKLE)
     @DisplayName("Test Try Reserve")
     void tryReserveTest() {
-        final MerkleRoot state = SignedStateUtils.randomSignedState(0).getState();
+        final MerkleRoot state = randomSignedState().getState();
         assertEquals(
                 1,
                 state.getReservationCount(),
@@ -73,5 +82,23 @@ class StateTest {
 
         assertTrue(state.isDestroyed(), "state should be destroyed when fully released.");
         assertFalse(state.tryReserve(), "tryReserve() should fail when the state is destroyed");
+    }
+
+    private static SignedState randomSignedState() {
+        Random random = new Random(0);
+        State root = new State();
+        root.setSwirldState(new MerkleStateRoot(
+                FAKE_MERKLE_STATE_LIFECYCLES, version -> new BasicSoftwareVersion(version.major())));
+        boolean shouldSaveToDisk = random.nextBoolean();
+        SignedState signedState = new SignedState(
+                TestPlatformContextBuilder.create().build(),
+                CryptoStatic::verifySignature,
+                root,
+                "test",
+                shouldSaveToDisk,
+                false,
+                false);
+        signedState.getState().setHash(RandomUtils.randomHash(random));
+        return signedState;
     }
 }

@@ -33,6 +33,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mock.Strictness.LENIENT;
+import static org.mockito.Mockito.mock;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.FileID;
@@ -59,6 +60,7 @@ import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
 import java.io.IOException;
+import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.ForkJoinPool;
 import org.junit.jupiter.api.BeforeEach;
@@ -252,7 +254,7 @@ class FreezeHandlerTest {
     }
 
     @Test
-    void rejectIfFileHashNotSetForCertainFreezeTypes() throws IOException {
+    void rejectIfFileHashNotSetForCertainFreezeTypes() {
         // when using these freeze types, it is required to set an update file
         FreezeType[] freezeTypes = {PREPARE_UPGRADE, FREEZE_UPGRADE, TELEMETRY_UPGRADE};
 
@@ -309,7 +311,7 @@ class FreezeHandlerTest {
     }
 
     @Test
-    void rejectInvalidFileId() throws IOException {
+    void rejectInvalidFileId() {
         // these freeze types require a valid update file to have been set via FileService
         FreezeType[] freezeTypes = {PREPARE_UPGRADE, TELEMETRY_UPGRADE};
 
@@ -354,6 +356,7 @@ class FreezeHandlerTest {
     }
 
     @Test
+    @SuppressWarnings("unchecked")
     void happyPathFreezeUpgradeOrTelemetryUpgrade() throws IOException {
         // when using these freeze types, it is required to set an update file and file hash and they must match
         // also must set start time to a time after the effective consensus time
@@ -363,6 +366,7 @@ class FreezeHandlerTest {
         given(upgradeFileStore.peek(fileUpgradeFileId))
                 .willReturn(File.newBuilder().build());
         given(upgradeFileStore.getFull(fileUpgradeFileId)).willReturn(Bytes.wrap("Upgrade file bytes"));
+        given(nodeStore.keys()).willReturn(mock(Iterator.class));
 
         for (FreezeType freezeType : freezeTypes) {
             TransactionID txnId = TransactionID.newBuilder()
@@ -395,6 +399,7 @@ class FreezeHandlerTest {
                 .willReturn(File.newBuilder().build());
         given(upgradeFileStore.getFull(fileUpgradeFileId)).willReturn(Bytes.wrap("Upgrade file bytes"));
         given(nodeStore.keys()).willReturn(List.of(new EntityNumber(0)).iterator());
+        given(nodeStore.sizeOfState()).willReturn(1L);
 
         TransactionID txnId = TransactionID.newBuilder()
                 .accountID(nonAdminAccount)
@@ -424,6 +429,7 @@ class FreezeHandlerTest {
                 .willReturn(File.newBuilder().build());
         given(upgradeFileStore.getFull(anotherFileUpgradeFileId)).willReturn(Bytes.wrap("Upgrade file bytes"));
         given(nodeStore.keys()).willReturn(List.of(new EntityNumber(0)).iterator());
+        given(nodeStore.sizeOfState()).willReturn(1L);
 
         TransactionID txnId = TransactionID.newBuilder()
                 .accountID(nonAdminAccount)

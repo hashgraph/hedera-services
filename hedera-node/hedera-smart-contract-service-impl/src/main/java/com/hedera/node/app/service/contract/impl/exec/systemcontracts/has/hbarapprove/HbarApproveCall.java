@@ -27,7 +27,7 @@ import com.hedera.node.app.service.contract.impl.exec.gas.DispatchType;
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.AbstractCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.has.HasCallAttempt;
-import com.hedera.node.app.service.contract.impl.records.ContractCallRecordBuilder;
+import com.hedera.node.app.service.contract.impl.records.ContractCallStreamBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 
@@ -49,7 +49,7 @@ public class HbarApproveCall extends AbstractCall {
     public PricedResult execute(@NonNull final MessageFrame frame) {
         requireNonNull(frame);
         final var recordBuilder = systemContractOperations()
-                .dispatch(transactionBody, verificationStrategy, sender, ContractCallRecordBuilder.class);
+                .dispatch(transactionBody, verificationStrategy, sender, ContractCallStreamBuilder.class);
 
         final var gasRequirement = gasCalculator.gasRequirement(transactionBody, DispatchType.APPROVE, sender);
 

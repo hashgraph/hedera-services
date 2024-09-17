@@ -30,7 +30,7 @@ import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
-import com.hedera.node.app.service.token.records.TokenBaseRecordBuilder;
+import com.hedera.node.app.service.token.records.TokenBaseStreamBuilder;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -89,7 +89,7 @@ public class TokenPauseHandler implements TransactionHandler {
         final var copyBuilder = token.copyBuilder();
         copyBuilder.paused(true);
         tokenStore.put(copyBuilder.build());
-        final var recordBuilder = context.recordBuilders().getOrCreate(TokenBaseRecordBuilder.class);
+        final var recordBuilder = context.savepointStack().getBaseBuilder(TokenBaseStreamBuilder.class);
         recordBuilder.tokenType(token.tokenType());
     }
 

@@ -32,7 +32,7 @@ on:
         description: "Java JDK Version:"
         type: string
         required: false
-        default: "21.0.1"
+        default: "21"
 
     secrets:
       gradle-cache-username:
@@ -63,7 +63,7 @@ env:
 jobs:
   generate-baseline:
     name: Generate Baseline
-    runs-on: [self-hosted, Linux, medium, ephemeral]
+    runs-on: network-node-linux-medium
     outputs:
       sha: ${{ steps.commit.outputs.sha }}
       sha-abbrev: ${{ steps.commit.outputs.sha-abbrev }}
@@ -130,66 +130,75 @@ jobs:
           sudo apt-get update
           sudo apt-get install --yes --no-install-recommends skopeo jq
 
-      - name: Install KillAll
-        if: ${{ steps.baseline.outputs.exists == 'false' && !failure() && !cancelled() }}
-        run: sudo apt-get install --yes --no-install-recommends psmisc
+#      - name: Install KillAll
+#        if: ${{ steps.baseline.outputs.exists == 'false' && !failure() && !cancelled() }}
+#        run: sudo apt-get install --yes --no-install-recommends psmisc
 
-      - name: Create Docker Working Directory
-        if: ${{ steps.baseline.outputs.exists == 'false' && !failure() && !cancelled() }}
-        run: |
-          USER="$(id -un)"
-          GROUP="$(id -gn)"
-          sudo mkdir -p /x
-          sudo chown -vR ${USER}:${GROUP} /x
-          sudo ls -lah /x
+#      - name: Create Docker Working Directory
+#        if: ${{ steps.baseline.outputs.exists == 'false' && !failure() && !cancelled() }}
+#        run: |
+#          USER="$(id -un)"
+#          GROUP="$(id -gn)"
+#          sudo mkdir -p /x
+#          sudo chown -vR ${USER}:${GROUP} /x
+#          sudo ls -lah /x
 
-      - name: Remove Docker from Self Hosted Runners
-        if: ${{ steps.baseline.outputs.exists == 'false' && !failure() && !cancelled() }}
-        run: |
-          set -x
-          sudo killall dockerd || true
-          sudo killall containerd || true
-          sudo rm -rvf /usr/bin/*containerd* || true
-          sudo rm -rvf /usr/bin/docker* || true
-          sudo rm -rvf /usr/local/bin/docker* || true
-          sudo rm -rvf /usr/local/bin/*lima* || true
+#      - name: Remove Docker from Self Hosted Runners
+#        if: ${{ steps.baseline.outputs.exists == 'false' && !failure() && !cancelled() }}
+#        run: |
+#          set -x
+#          sudo killall dockerd || true
+#          sudo killall containerd || true
+#          sudo rm -rvf /usr/bin/*containerd* || true
+#          sudo rm -rvf /usr/bin/docker* || true
+#          sudo rm -rvf /usr/local/bin/docker* || true
+#          sudo rm -rvf /usr/local/bin/*lima* || true
 
-      - name: Setup Containerd Support
-        uses: crazy-max/ghaction-setup-containerd@60acbf31e6572da7b83a4ed6b428ed92a35ff4d7 # v3.0.0
-        if: ${{ steps.baseline.outputs.exists == 'false' && !failure() && !cancelled() }}
-        with:
-          containerd-version: v1.7.2
+#      - name: Setup Containerd Support
+#        uses: crazy-max/ghaction-setup-containerd@60acbf31e6572da7b83a4ed6b428ed92a35ff4d7 # v3.0.0
+#        if: ${{ steps.baseline.outputs.exists == 'false' && !failure() && !cancelled() }}
+#        with:
+#          containerd-version: v1.7.2
 
-      - name: Setup Docker Support
-        uses: crazy-max/ghaction-setup-docker@d9be6cade441568ba10037bce5221b8f564981f1 # v3.0.0
-        if: ${{ steps.baseline.outputs.exists == 'false' && !failure() && !cancelled() }}
-        env:
-          HOME: /x
-        with:
-          version: v24.0.7
+#      - name: Setup Docker Support
+#        uses: step-security/ghaction-setup-docker@42e219a378b907a83f1b323a1458fbf352af3ffd # v3.3.0
+#        if: ${{ steps.baseline.outputs.exists == 'false' && !failure() && !cancelled() }}
+#        env:
+#          HOME: /x
+#        with:
+#          version: v25.0.5
+#          daemon-config: |
+#            {
+#              "registry-mirrors": [
+#                "https://hub.mirror.docker.lat.ope.eng.hashgraph.io"
+#              ]
+#            }
 
-      - name: Configure Default Docker Context
-        if: ${{ steps.baseline.outputs.exists == 'false' && !failure() && !cancelled() }}
-        run: |
-          set -x
-          if grep setup-docker-action < <(docker context ls --format '{{ .Name }}') >/dev/null; then
-            docker context rm -f setup-docker-action
-          fi
-
-          DOCKER_CONTEXT_PATH="$(sudo find /x -name docker.sock | tr -d '[:space:]')"
-          docker context create setup-docker-action --docker "host=unix://${DOCKER_CONTEXT_PATH}"
-          docker context use setup-docker-action
+#      - name: Configure Default Docker Context
+#        if: ${{ steps.baseline.outputs.exists == 'false' && !failure() && !cancelled() }}
+#        run: |
+#          set -x
+#          if grep setup-docker-action < <(docker context ls --format '{{ .Name }}') >/dev/null; then
+#            docker context rm -f setup-docker-action
+#          fi
+#
+#          DOCKER_CONTEXT_PATH="$(sudo find /x -name docker.sock | tr -d '[:space:]')"
+#          docker context create setup-docker-action --docker "host=unix://${DOCKER_CONTEXT_PATH}"
+#          docker context use setup-docker-action
 
       - name: Setup QEmu Support
         uses: docker/setup-qemu-action@68827325e0b33c7199eb31dd4e31fbe9023e06e3 # v3.0.0
         if: ${{ steps.baseline.outputs.exists == 'false' && !failure() && !cancelled() }}
 
       - name: Setup Docker Buildx Support
-        uses: docker/setup-buildx-action@4fd812986e6c8c2a69e18311145f9371337f27d4 # v3.4.0
+        uses: docker/setup-buildx-action@988b5a0280414f521da01fcc63a27aeeb4b104db # v3.6.1
         if: ${{ steps.baseline.outputs.exists == 'false' && !failure() && !cancelled() }}
         with:
-          version: v0.12.0
+          version: v0.16.2
           driver-opts: network=host
+          buildkitd-config-inline: |
+            [registry."docker.io"]
+              mirrors = ["https://hub.mirror.docker.lat.ope.eng.hashgraph.io"]
 
       - name: Setup Local Docker Registry
         if: ${{ steps.baseline.outputs.exists == 'false' && !failure() && !cancelled() }}
@@ -270,8 +279,8 @@ jobs:
           #- ubuntu-20.04
           #- macos-12
           #- macos-11
-          - [self-hosted, Linux, medium, ephemeral]
-          - [self-hosted, Linux, large, ephemeral]
+          - network-node-linux-medium
+          - network-node-linux-large
     steps:
       - name: Standardize Git Line Endings
         run: |
@@ -302,9 +311,9 @@ jobs:
             sudo apt-get install --yes --no-install-recommends skopeo
           fi
 
-      - name: Install KillAll (Linux)
-        if: ${{ runner.os == 'Linux' }}
-        run: sudo apt-get install --yes --no-install-recommends psmisc
+#      - name: Install KillAll (Linux)
+#        if: ${{ runner.os == 'Linux' }}
+#        run: sudo apt-get install --yes --no-install-recommends psmisc
 
       - name: Install Skopeo and JQ (macOS)
         if: ${{ runner.os == 'macOS' }}
@@ -336,17 +345,17 @@ jobs:
           tar -xzf "${{ needs.generate-baseline.outputs.name }}"
           mv "sdk" "${{ github.workspace }}/${{ env.DOCKER_CONTEXT_PATH }}/"
 
-      - name: Create Docker Working Directory
-        if: ${{ runner.os == 'Linux' }}
-        run: |
-          USER="$(id -un)"
-          GROUP="$(id -gn)"
-          sudo mkdir -p /x
-          sudo chown -vR ${USER}:${GROUP} /x
-          sudo ls -lah /x
+#      - name: Create Docker Working Directory
+#        if: ${{ runner.os == 'Linux' }}
+#        run: |
+#          USER="$(id -un)"
+#          GROUP="$(id -gn)"
+#          sudo mkdir -p /x
+#          sudo chown -vR ${USER}:${GROUP} /x
+#          sudo ls -lah /x
 
       - name: Remove Preinstalled Docker
-        if: ${{ contains(matrix.os, 'self-hosted') || runner.os == 'macOS' }}
+        if: ${{ runner.os == 'macOS' }}
         run: |
           set -x
           sudo killall dockerd || true
@@ -366,40 +375,49 @@ jobs:
         id: home
         run: echo "directory=$(tr -d '[:space:]' < <(cd ~ && pwd))" >> "${GITHUB_OUTPUT}"
 
-      - name: Setup Containerd Support
-        uses: crazy-max/ghaction-setup-containerd@60acbf31e6572da7b83a4ed6b428ed92a35ff4d7 # v3.0.0
-        if: ${{ runner.os == 'Linux' }}
-        with:
-          containerd-version: v1.7.2
-
-      - name: Setup Docker Support
-        uses: crazy-max/ghaction-setup-docker@d9be6cade441568ba10037bce5221b8f564981f1 # v3.0.0
-        env:
-          HOME: ${{ runner.os == 'Linux' && '/x' || steps.home.outputs.directory }}
-        with:
-          version: v24.0.7
-
-      - name: Configure Default Docker Context
-        env:
-          SEARCH_PATH: ${{ runner.os == 'Linux' && '/x' || steps.home.outputs.directory }}
-        run: |
-          set -x
-          if grep setup-docker-action < <(docker context ls --format '{{ .Name }}') >/dev/null; then
-            docker context rm -f setup-docker-action
-          fi
-
-          DOCKER_CONTEXT_PATH="$(sudo find "${SEARCH_PATH}" -name docker.sock | tr -d '[:space:]')"
-          docker context create setup-docker-action --docker "host=unix://${DOCKER_CONTEXT_PATH}"
-          docker context use setup-docker-action
+#      - name: Setup Containerd Support
+#        uses: crazy-max/ghaction-setup-containerd@60acbf31e6572da7b83a4ed6b428ed92a35ff4d7 # v3.0.0
+#        if: ${{ runner.os == 'Linux' }}
+#        with:
+#          containerd-version: v1.7.2
+#
+#      - name: Setup Docker Support
+#        uses: step-security/ghaction-setup-docker@42e219a378b907a83f1b323a1458fbf352af3ffd # v3.3.0
+#        env:
+#          HOME: ${{ runner.os == 'Linux' && '/x' || steps.home.outputs.directory }}
+#        with:
+#          version: v25.0.5
+#          daemon-config: |
+#            {
+#              "registry-mirrors": [
+#                "https://hub.mirror.docker.lat.ope.eng.hashgraph.io"
+#              ]
+#            }
+#
+#      - name: Configure Default Docker Context
+#        env:
+#          SEARCH_PATH: ${{ runner.os == 'Linux' && '/x' || steps.home.outputs.directory }}
+#        run: |
+#          set -x
+#          if grep setup-docker-action < <(docker context ls --format '{{ .Name }}') >/dev/null; then
+#            docker context rm -f setup-docker-action
+#          fi
+#
+#          DOCKER_CONTEXT_PATH="$(sudo find "${SEARCH_PATH}" -name docker.sock | tr -d '[:space:]')"
+#          docker context create setup-docker-action --docker "host=unix://${DOCKER_CONTEXT_PATH}"
+#          docker context use setup-docker-action
 
       - name: Setup QEmu Support
         uses: docker/setup-qemu-action@68827325e0b33c7199eb31dd4e31fbe9023e06e3 # v3.0.0
 
       - name: Setup Docker Buildx Support
-        uses: docker/setup-buildx-action@4fd812986e6c8c2a69e18311145f9371337f27d4 # v3.4.0
+        uses: docker/setup-buildx-action@988b5a0280414f521da01fcc63a27aeeb4b104db # v3.6.1
         with:
-          version: v0.12.0
+          version: v0.16.2
           driver-opts: network=host
+          buildkitd-config-inline: |
+            [registry."docker.io"]
+              mirrors = ["https://hub.mirror.docker.lat.ope.eng.hashgraph.io"]
 
       - name: Setup Local Docker Registry
         run: docker run -d -p 5000:5000 --restart=always --name registry registry:latest

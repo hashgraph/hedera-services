@@ -26,9 +26,9 @@ import static com.hedera.hapi.node.base.HederaFunctionality.TOKEN_ASSOCIATE_TO_A
 import static com.hedera.hapi.util.HapiUtils.functionOf;
 import static com.hedera.node.app.hapi.utils.ethereum.EthTxData.populateEthTxData;
 import static com.hedera.node.app.hapi.utils.sysfiles.domain.throttling.ScaleFactor.ONE_TO_ONE;
-import static com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases.isMirror;
 import static com.hedera.node.app.service.schedule.impl.handlers.HandlerUtility.childAsOrdinary;
 import static com.hedera.node.app.service.token.AliasUtils.isAlias;
+import static com.hedera.node.app.service.token.AliasUtils.isEntityNumAlias;
 import static com.hedera.node.app.service.token.AliasUtils.isOfEvmAddressSize;
 import static com.hedera.node.app.service.token.AliasUtils.isSerializedProtoKey;
 import static com.hedera.node.app.throttle.ThrottleAccumulator.ThrottleType.FRONTEND_THROTTLE;
@@ -46,7 +46,6 @@ import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.base.TransferList;
 import com.hedera.hapi.node.contract.ContractCallLocalQuery;
 import com.hedera.hapi.node.state.schedule.Schedule;
-import com.hedera.hapi.node.state.throttles.ThrottleUsageSnapshot;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.hapi.node.token.TokenMintTransactionBody;
 import com.hedera.hapi.node.transaction.Query;
@@ -74,7 +73,7 @@ import com.hedera.node.config.data.SchedulingConfig;
 import com.hedera.node.config.data.TokensConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.state.HederaState;
+import com.swirlds.state.State;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.math.BigInteger;
@@ -146,15 +145,16 @@ public class ThrottleAccumulator {
     }
 
     /**
-     * Updates the throttle requirements for the given transaction and returns whether the transaction should be throttled.
+     * Tries to claim throttle capacity for the given transaction and returns whether the transaction
+     * should be throttled if there is no capacity.
      *
      * @param txnInfo the transaction to update the throttle requirements for
      * @param now the instant of time the transaction throttling should be checked for
      * @param state the current state of the node
      * @return whether the transaction should be throttled
      */
-    public boolean shouldThrottle(
-            @NonNull final TransactionInfo txnInfo, @NonNull final Instant now, @NonNull final HederaState state) {
+    public boolean checkAndEnforceThrottle(
+            @NonNull final TransactionInfo txnInfo, @NonNull final Instant now, @NonNull final State state) {
         resetLastAllowedUse();
         lastTxnWasGasThrottled = false;
         if (shouldThrottleTxn(false, txnInfo, now, state)) {
@@ -174,7 +174,7 @@ public class ThrottleAccumulator {
      * @param queryPayerId the payer id of the query
      * @return whether the query should be throttled
      */
-    public boolean shouldThrottle(
+    public boolean checkAndEnforceThrottle(
             @NonNull final HederaFunctionality queryFunction,
             @NonNull final Instant now,
             @NonNull final Query query,
@@ -243,7 +243,6 @@ public class ThrottleAccumulator {
      *
      * @param txnInfo the transaction to leak the gas for
      * @param value the amount of gas to leak
-     *
      */
     public void leakUnusedGasPreviouslyReserved(@NonNull final TransactionInfo txnInfo, final long value) {
         final var configuration = configProvider.getConfiguration();
@@ -317,16 +316,6 @@ public class ThrottleAccumulator {
     }
 
     /**
-     * Resets the usage for all snapshots.
-     */
-    public void resetUsageThrottlesTo(@NonNull final List<ThrottleUsageSnapshot> snapshots) {
-        requireNonNull(snapshots);
-        for (int i = 0, n = activeThrottles.size(); i < n; i++) {
-            activeThrottles.get(i).resetUsageTo(snapshots.get(i));
-        }
-    }
-
-    /**
      * Updates all metrics for the active throttles and the gas throttle
      */
     public void updateAllMetrics() {
@@ -337,7 +326,7 @@ public class ThrottleAccumulator {
             final boolean isScheduled,
             @NonNull final TransactionInfo txnInfo,
             @NonNull final Instant now,
-            @NonNull final HederaState state) {
+            @NonNull final State state) {
         final var function = txnInfo.functionality();
         final var configuration = configProvider.getConfiguration();
 
@@ -399,10 +388,7 @@ public class ThrottleAccumulator {
     }
 
     private boolean shouldThrottleScheduleCreate(
-            final ThrottleReqsManager manager,
-            final TransactionInfo txnInfo,
-            final Instant now,
-            final HederaState state) {
+            final ThrottleReqsManager manager, final TransactionInfo txnInfo, final Instant now, final State state) {
         final var txnBody = txnInfo.txBody();
         final var scheduleCreate = txnBody.scheduleCreateOrThrow();
         final var scheduled = scheduleCreate.scheduledTransactionBodyOrThrow();
@@ -467,7 +453,8 @@ public class ThrottleAccumulator {
                         effectivePayer,
                         SignatureMap.DEFAULT,
                         Bytes.EMPTY,
-                        scheduledFunction);
+                        scheduledFunction,
+                        null);
 
                 return shouldThrottleTxn(true, innerTxnInfo, now, state);
             }
@@ -477,7 +464,7 @@ public class ThrottleAccumulator {
     }
 
     private boolean shouldThrottleScheduleSign(
-            ThrottleReqsManager manager, TransactionInfo txnInfo, Instant now, HederaState state) {
+            ThrottleReqsManager manager, TransactionInfo txnInfo, Instant now, State state) {
         final var txnBody = txnInfo.txBody();
         if (!manager.allReqsMetAt(now)) {
             return true;
@@ -530,7 +517,8 @@ public class ThrottleAccumulator {
                     effectivePayer,
                     SignatureMap.DEFAULT,
                     Bytes.EMPTY,
-                    scheduledFunction);
+                    scheduledFunction,
+                    null);
 
             return shouldThrottleTxn(true, innerTxnInfo, now, state);
         }
@@ -761,11 +749,8 @@ public class ThrottleAccumulator {
             @NonNull final AccountID idOrAlias, @NonNull final ReadableAccountStore accountStore) {
         if (isAlias(idOrAlias)) {
             final var alias = idOrAlias.aliasOrElse(Bytes.EMPTY);
-            if (isOfEvmAddressSize(alias)) {
-                final var evmAddress = alias.toByteArray();
-                if (isMirror(evmAddress)) {
-                    return false;
-                }
+            if (isOfEvmAddressSize(alias) && isEntityNumAlias(alias)) {
+                return false;
             }
             return accountStore.getAccountIDByAlias(alias) == null;
         }

@@ -94,12 +94,14 @@ public class SubProcessNetwork extends AbstractGrpcNetwork implements HederaNetw
 
     private long maxNodeId;
     private String configTxt;
+    private final String genesisConfigTxt;
 
     private SubProcessNetwork(@NonNull final String networkName, @NonNull final List<SubProcessNode> nodes) {
         super(networkName, nodes.stream().map(node -> (HederaNode) node).toList());
         this.maxNodeId =
                 Collections.max(nodes.stream().map(SubProcessNode::getNodeId).toList());
         this.configTxt = configTxtForLocal(name(), nodes(), nextGossipPort, nextGossipTlsPort);
+        this.genesisConfigTxt = configTxt;
     }
 
     /**
@@ -188,6 +190,14 @@ public class SubProcessNetwork extends AbstractGrpcNetwork implements HederaNetw
             }
         }
         ready.get().join();
+    }
+
+    /**
+     * Returns the genesis <i>config.txt</i> file for the network.
+     * @return the genesis <i>config.txt</i> file
+     */
+    public String genesisConfigTxt() {
+        return genesisConfigTxt;
     }
 
     /**

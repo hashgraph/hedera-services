@@ -17,7 +17,8 @@
 package com.hedera.services.bdd.suites.crypto;
 
 import static com.google.protobuf.ByteString.copyFromUtf8;
-import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
+import static com.hedera.node.app.hapi.utils.EthSigsUtils.recoverAddressFromPubKey;
+import static com.hedera.services.bdd.junit.TestTags.ADHOC;
 import static com.hedera.services.bdd.junit.TestTags.CRYPTO;
 import static com.hedera.services.bdd.spec.HapiPropertySource.accountIdFromHexedMirrorAddress;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asAccountString;
@@ -126,7 +127,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AMOUNT_EXCEEDS_ALLOWANCE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TOKEN_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_AMOUNTS;
@@ -172,14 +172,12 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import org.apache.commons.lang3.tuple.Pair;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
 @Tag(CRYPTO)
+@Tag(ADHOC)
 public class CryptoTransferSuite {
-    private static final Logger LOG = LogManager.getLogger(CryptoTransferSuite.class);
     private static final String OWNER = "owner";
     private static final String OTHER_OWNER = "otherOwner";
     private static final String SPENDER = "spender";
@@ -223,7 +221,7 @@ public class CryptoTransferSuite {
                                                               6 account adjustments: {} tb, ${} (~{}x pure crypto)
                                                             3 tokens involved,
                                                               6 account adjustments: {} tb, ${} (~{}x pure crypto)
-                                                                                                                      """;
+                                                                                                                     \s""";
     public static final String HODL_XFER = "hodlXfer";
     public static final String PAYEE_NO_SIG_REQ = "payeeNoSigReq";
     private static final String HBAR_XFER = "hbarXfer";
@@ -2056,21 +2054,21 @@ public class CryptoTransferSuite {
                     .payingWith(SENDER)
                     .sending(ONE_HBAR * 10)
                     .gas(100000)
-                    .hasKnownStatus(CONTRACT_REVERT_EXECUTED);
+                    .hasKnownStatus(INVALID_CONTRACT_ID);
 
             opsArray[systemAccounts.size() + i] = contractCall(
                             contract, "sendViaSend", mirrorAddrWith(systemAccounts.get(i)))
                     .payingWith(SENDER)
                     .sending(ONE_HBAR * 10)
                     .gas(100000)
-                    .hasKnownStatus(CONTRACT_REVERT_EXECUTED);
+                    .hasKnownStatus(INVALID_CONTRACT_ID);
 
             opsArray[systemAccounts.size() * 2 + i] = contractCall(
                             contract, "sendViaCall", mirrorAddrWith(systemAccounts.get(i)))
                     .payingWith(SENDER)
                     .sending(ONE_HBAR * 10)
                     .gas(100000)
-                    .hasKnownStatus(CONTRACT_REVERT_EXECUTED);
+                    .hasKnownStatus(INVALID_CONTRACT_ID);
         }
 
         return defaultHapiSpec("testTransferToSystemAccounts", EXPECT_STREAMLINED_INGEST_RECORDS)
@@ -2174,7 +2172,7 @@ public class CryptoTransferSuite {
                                 mirrorAddrWith(359L),
                                 BigInteger.valueOf(15L))
                         .payingWith(senderAccount)
-                        .hasKnownStatus(CONTRACT_REVERT_EXECUTED))
+                        .hasKnownStatus(INVALID_CONTRACT_ID))
                 .then(getAccountBalance(transferContract, true).hasTinyBars(ONE_HBAR));
     }
 

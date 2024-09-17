@@ -23,22 +23,14 @@ plugins {
 
 description = "Hedera Services Test Clients for End to End Tests (EET)"
 
-// Remove the following line to enable all 'javac' lint checks that we have turned on by default
-// and then fix the reported issues.
-tasks.withType<JavaCompile>().configureEach {
-    options.compilerArgs.add("-Xlint:-exports,-lossy-conversions,-text-blocks,-varargs,-static")
-}
-
 mainModuleInfo {
     runtimeOnly("org.junit.jupiter.engine")
     runtimeOnly("org.junit.platform.launcher")
 }
 
-sourceSets {
-    // Needed because "resource" directory is misnamed. See
-    // https://github.com/hashgraph/hedera-services/issues/3361
-    main { resources { srcDir("src/main/resource") } }
+testModuleInfo { runtimeOnly("org.junit.jupiter.api") }
 
+sourceSets {
     create("rcdiff")
     create("yahcli")
 }
@@ -53,17 +45,18 @@ tasks.register<JavaExec>("runTestClient") {
 
 val prCheckTags =
     mapOf(
+        "hapiTestAdhoc" to "ADHOC",
         "hapiTestCrypto" to "CRYPTO",
         "hapiTestToken" to "TOKEN",
         "hapiTestRestart" to "RESTART|UPGRADE",
         "hapiTestSmartContract" to "SMART_CONTRACT",
         "hapiTestNDReconnect" to "ND_RECONNECT",
         "hapiTestTimeConsuming" to "LONG_RUNNING",
-        "hapiTestMisc" to
-            "!(CRYPTO|TOKEN|SMART_CONTRACT|LONG_RUNNING|RESTART|ND_RECONNECT|EMBEDDED|UPGRADE)"
+        "hapiTestMisc" to "!(CRYPTO|TOKEN|RESTART|UPGRADE|SMART_CONTRACT|ND_RECONNECT|LONG_RUNNING)"
     )
 val prCheckStartPorts =
     mapOf(
+        "hapiTestAdhoc" to "25000",
         "hapiTestCrypto" to "26000",
         "hapiTestToken" to "27000",
         "hapiTestRestart" to "28000",
@@ -88,8 +81,8 @@ tasks.test {
             .joinToString("|")
     useJUnitPlatform {
         includeTags(
-            if (ciTagExpression.isBlank()) "none()|!(EMBEDDED)"
-            else "(${ciTagExpression}|STREAM_VALIDATION|LOG_VALIDATION)&!(EMBEDDED)"
+            if (ciTagExpression.isBlank()) "none()|!(EMBEDDED|REPEATABLE)"
+            else "(${ciTagExpression}|STREAM_VALIDATION|LOG_VALIDATION)&!(EMBEDDED|REPEATABLE)"
         )
     }
 
@@ -156,7 +149,7 @@ tasks.register<Test>("testEmbedded") {
             .joinToString("|")
     useJUnitPlatform {
         includeTags(
-            if (ciTagExpression.isBlank()) "none()|!(RESTART|ND_RECONNECT|UPGRADE|NOT_EMBEDDED)"
+            if (ciTagExpression.isBlank()) "none()|!(RESTART|ND_RECONNECT|UPGRADE|REPEATABLE)"
             else "(${ciTagExpression}|STREAM_VALIDATION|LOG_VALIDATION)"
         )
     }
@@ -186,16 +179,36 @@ tasks.register<Test>("testEmbedded") {
     modularity.inferModulePath.set(false)
 }
 
+val prRepeatableCheckTags =
+    mapOf(
+        "hapiRepeatableMisc" to "REPEATABLE",
+    )
+
+tasks {
+    prRepeatableCheckTags.forEach { (taskName, _) ->
+        register(taskName) { dependsOn("testRepeatable") }
+    }
+}
+
 // Runs tests against an embedded network that achieves repeatable results by running tests in a
 // single thread
 tasks.register<Test>("testRepeatable") {
     testClassesDirs = sourceSets.main.get().output.classesDirs
     classpath = sourceSets.main.get().runtimeClasspath
 
+    val ciTagExpression =
+        gradle.startParameter.taskNames
+            .stream()
+            .map { prRepeatableCheckTags[it] ?: "" }
+            .filter { it.isNotBlank() }
+            .toList()
+            .joinToString("|")
     useJUnitPlatform {
-        // Exclude tests that start and stop nodes, or explicitly preclude embedded or repeatable
-        // mode
-        excludeTags("RESTART|ND_RECONNECT|UPGRADE|NOT_EMBEDDED|NOT_REPEATABLE")
+        includeTags(
+            if (ciTagExpression.isBlank())
+                "none()|!(RESTART|ND_RECONNECT|UPGRADE|EMBEDDED|NOT_REPEATABLE)"
+            else "(${ciTagExpression}|STREAM_VALIDATION|LOG_VALIDATION)"
+        )
     }
 
     // Disable all parallelism
@@ -207,7 +220,7 @@ tasks.register<Test>("testRepeatable") {
     // Tell our launcher to target a repeatable embedded network
     systemProperty("hapi.spec.repeatable.mode", true)
     // Configure log4j2.xml for the embedded node
-    systemProperty("log4j.configurationFile", "embedded-node0-log4j2.xml")
+    systemProperty("log4j.configurationFile", "repeatable-node0-log4j2.xml")
 
     // Limit heap and number of processors
     maxHeapSize = "8g"
@@ -215,18 +228,6 @@ tasks.register<Test>("testRepeatable") {
 
     // Do not yet run things on the '--module-path'
     modularity.inferModulePath.set(false)
-}
-
-tasks.itest {
-    systemProperty("itests", System.getProperty("itests"))
-    systemProperty("junit.jupiter.execution.parallel.enabled", false)
-    systemProperty("TAG", "services-node:" + project.version)
-    systemProperty("networkWorkspaceDir", layout.buildDirectory.dir("network/itest").get().asFile)
-}
-
-tasks.eet {
-    systemProperty("TAG", "services-node:" + project.version)
-    systemProperty("networkWorkspaceDir", layout.buildDirectory.dir("network/itest").get().asFile)
 }
 
 tasks.shadowJar {
@@ -258,6 +259,7 @@ val yahCliJar =
 val rcdiffJar =
     tasks.register<ShadowJar>("rcdiffJar") {
         exclude(listOf("META-INF/*.DSA", "META-INF/*.RSA", "META-INF/*.SF", "META-INF/INDEX.LIST"))
+        from(sourceSets["main"].output)
         from(sourceSets["rcdiff"].output)
         destinationDirectory.set(project.file("rcdiff"))
         archiveFileName.set("rcdiff.jar")
@@ -265,7 +267,7 @@ val rcdiffJar =
 
         manifest {
             attributes(
-                "Main-Class" to "com.hedera.services.rcdiff.RcDiff",
+                "Main-Class" to "com.hedera.services.rcdiff.RcDiffCmdWrapper",
                 "Multi-Release" to "true"
             )
         }

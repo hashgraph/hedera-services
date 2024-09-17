@@ -17,12 +17,10 @@
 package com.hedera.node.app.throttle;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
-import com.hedera.hapi.node.state.throttles.ThrottleUsageSnapshot;
 import com.hedera.node.app.workflows.TransactionInfo;
-import com.swirlds.state.HederaState;
+import com.swirlds.state.State;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
-import java.util.List;
 
 /**
  * Interface which purpose is to do the work of tracking network utilization (and its impact on
@@ -33,14 +31,13 @@ public interface NetworkUtilizationManager {
     /**
      * Updates the throttle usage and congestion pricing using the given transaction.
      *
-     * @param txnInfo - the transaction to use for updating the network utilization.
+     * @param txnInfo       - the transaction to use for updating the network utilization.
      * @param consensusTime - the consensus time of the transaction.
-     * @param state - the state of the node.
+     * @param state         - the state of the node.
+     * @return
      */
-    void trackTxn(
-            @NonNull final TransactionInfo txnInfo,
-            @NonNull final Instant consensusTime,
-            @NonNull final HederaState state);
+    boolean trackTxn(
+            @NonNull final TransactionInfo txnInfo, @NonNull final Instant consensusTime, @NonNull final State state);
 
     /**
      * Updates the throttle usage and congestion pricing for cases where the transaction is not valid, but we want to track the fee payments related to it.
@@ -48,7 +45,7 @@ public interface NetworkUtilizationManager {
      * @param consensusNow - the consensus time of the transaction.
      * @param state - the state of the node.
      */
-    void trackFeePayments(@NonNull final Instant consensusNow, @NonNull final HederaState state);
+    void trackFeePayments(@NonNull final Instant consensusNow, @NonNull final State state);
 
     /**
      * Indicates whether the last transaction was throttled by gas.
@@ -75,9 +72,7 @@ public interface NetworkUtilizationManager {
      * @return whether the transaction should be throttled
      */
     boolean shouldThrottle(
-            @NonNull final TransactionInfo txnInfo,
-            @NonNull final HederaState state,
-            @NonNull final Instant consensusTime);
+            @NonNull final TransactionInfo txnInfo, @NonNull final State state, @NonNull final Instant consensusTime);
 
     /**
      * Verifies if the throttle in this operation context has enough capacity to handle the given number of the
@@ -90,17 +85,4 @@ public interface NetworkUtilizationManager {
      * at the instant for which throttling should be calculated
      */
     boolean shouldThrottleNOfUnscaled(int n, @NonNull HederaFunctionality function, @NonNull Instant consensusTime);
-
-    /**
-     * Returns a list of snapshots of the current usage of all active throttles.
-     * @return the active snapshots
-     */
-    List<ThrottleUsageSnapshot> getUsageSnapshots();
-
-    /**
-     * Resets the current usage of all active throttles to the given snapshots.
-     *
-     * @param snapshots the snapshots to reset to
-     */
-    void resetUsageThrottlesTo(List<ThrottleUsageSnapshot> snapshots);
 }

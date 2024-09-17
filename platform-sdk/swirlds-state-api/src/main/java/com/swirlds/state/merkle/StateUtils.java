@@ -33,6 +33,7 @@ import java.util.Objects;
 
 /** Utility class for working with states. */
 public final class StateUtils {
+
     /** Prevent instantiation */
     private StateUtils() {}
 

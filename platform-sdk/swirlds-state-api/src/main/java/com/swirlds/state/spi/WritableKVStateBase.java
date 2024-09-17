@@ -16,6 +16,8 @@
 
 package com.swirlds.state.spi;
 
+import static java.util.Objects.requireNonNull;
+
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.*;
@@ -29,6 +31,10 @@ import java.util.*;
 public abstract class WritableKVStateBase<K, V> extends ReadableKVStateBase<K, V> implements WritableKVState<K, V> {
     /** A map of all modified values buffered in this mutable state */
     private final Map<K, V> modifications = new LinkedHashMap<>();
+    /**
+     * A list of listeners to be notified of changes to the state.
+     */
+    private final List<KVChangeListener<K, V>> listeners = new ArrayList<>();
 
     /**
      * Create a new StateBase.
@@ -37,6 +43,17 @@ public abstract class WritableKVStateBase<K, V> extends ReadableKVStateBase<K, V
      */
     protected WritableKVStateBase(@NonNull final String stateKey) {
         super(stateKey);
+    }
+
+    /**
+     * Register a listener to be notified of changes to the state on {@link #commit()}. We do not support unregistering
+     * a listener, as the lifecycle of a {@link WritableKVState} is scoped to the set of mutations made to a state in a
+     * round; and there is no use case where an application would only want to be notified of a subset of those changes.
+     * @param listener the listener to register
+     */
+    public void registerListener(@NonNull final KVChangeListener<K, V> listener) {
+        requireNonNull(listener);
+        listeners.add(listener);
     }
 
     /**
@@ -50,8 +67,10 @@ public abstract class WritableKVStateBase<K, V> extends ReadableKVStateBase<K, V
             final var value = entry.getValue();
             if (value == null) {
                 removeFromDataSource(key);
+                listeners.forEach(listener -> listener.mapDeleteChange(key));
             } else {
                 putIntoDataSource(key, value);
+                listeners.forEach(listener -> listener.mapUpdateChange(key, value));
             }
         }
         reset();

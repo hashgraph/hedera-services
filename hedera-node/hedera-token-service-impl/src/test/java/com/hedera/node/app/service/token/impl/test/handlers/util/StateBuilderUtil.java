@@ -18,10 +18,12 @@ package com.hedera.node.app.service.token.impl.test.handlers.util;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.NftID;
+import com.hedera.hapi.node.base.PendingAirdropId;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.state.common.EntityIDPair;
 import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.hapi.node.state.token.Account;
+import com.hedera.hapi.node.state.token.AccountPendingAirdrop;
 import com.hedera.hapi.node.state.token.Nft;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.state.token.TokenRelation;
@@ -38,6 +40,10 @@ public class StateBuilderUtil {
      * The state key for accounts.
      */
     public static final String ACCOUNTS = "ACCOUNTS";
+    /**
+     * The state key for pending airdrops.
+     */
+    public static final String AIRDROPS = "PENDING_AIRDROPS";
     /**
      * The state key for aliases.
      */
@@ -71,6 +77,16 @@ public class StateBuilderUtil {
     @NonNull
     protected MapWritableKVState.Builder<AccountID, Account> emptyWritableAccountStateBuilder() {
         return MapWritableKVState.builder(ACCOUNTS);
+    }
+
+    @NonNull
+    protected MapReadableKVState.Builder<PendingAirdropId, AccountPendingAirdrop> emptyReadableAirdropStateBuilder() {
+        return MapReadableKVState.builder(AIRDROPS);
+    }
+
+    @NonNull
+    protected MapWritableKVState.Builder<PendingAirdropId, AccountPendingAirdrop> emptyWritableAirdropStateBuilder() {
+        return MapWritableKVState.builder(AIRDROPS);
     }
 
     @NonNull

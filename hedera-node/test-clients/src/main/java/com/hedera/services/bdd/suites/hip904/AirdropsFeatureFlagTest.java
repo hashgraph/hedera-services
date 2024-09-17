@@ -16,7 +16,7 @@
 
 package com.hedera.services.bdd.suites.hip904;
 
-import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
+import static com.hedera.node.app.hapi.utils.EthSigsUtils.recoverAddressFromPubKey;
 import static com.hedera.services.bdd.junit.ContextRequirement.PROPERTY_OVERRIDES;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asSolidityAddress;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
@@ -35,7 +35,6 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
-import static com.hedera.services.bdd.suites.HapiSuite.ONE_MILLION_HBARS;
 import static com.hedera.services.bdd.suites.HapiSuite.SECP_256K1_SHAPE;
 import static com.hedera.services.bdd.suites.contract.Utils.aaWith;
 import static com.hedera.services.bdd.suites.crypto.CryptoDeleteSuite.TREASURY;
@@ -69,7 +68,7 @@ public class AirdropsFeatureFlagTest {
         return hapiTest(
                 overriding("entities.unlimitedAutoAssociationsEnabled", "false"),
                 newKeyNamed(hollowAccountKey).shape(SECP_256K1_SHAPE),
-                cryptoCreate(TREASURY).balance(10_000 * ONE_MILLION_HBARS),
+                cryptoCreate(TREASURY).balance(10_000 * ONE_HBAR),
                 withOpContext((spec, opLog) -> {
                     final var registry = spec.registry();
                     final var treasuryAccountId = registry.getAccountID(TREASURY);
@@ -161,7 +160,7 @@ public class AirdropsFeatureFlagTest {
         return hapiTest(
                 overriding("entities.unlimitedAutoAssociationsEnabled", "false"),
                 newKeyNamed(hollowAccountKey).shape(SECP_256K1_SHAPE),
-                cryptoCreate(TREASURY).balance(10_000 * ONE_MILLION_HBARS),
+                cryptoCreate(TREASURY).balance(10_000 * ONE_HBAR),
                 tokenCreate(FUNGIBLE_TOKEN)
                         .tokenType(FUNGIBLE_COMMON)
                         .initialSupply(10L)

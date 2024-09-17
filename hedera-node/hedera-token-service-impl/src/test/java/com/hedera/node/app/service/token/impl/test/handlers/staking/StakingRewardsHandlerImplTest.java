@@ -39,10 +39,10 @@ import com.hedera.node.app.service.token.impl.handlers.staking.StakingRewardsHan
 import com.hedera.node.app.service.token.impl.handlers.staking.StakingRewardsHelper;
 import com.hedera.node.app.service.token.impl.handlers.staking.StakingUtilities;
 import com.hedera.node.app.service.token.impl.test.handlers.util.CryptoTokenHandlerTestBase;
-import com.hedera.node.app.service.token.records.CryptoDeleteRecordBuilder;
+import com.hedera.node.app.service.token.records.CryptoDeleteStreamBuilder;
 import com.hedera.node.app.service.token.records.FinalizeContext;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
-import com.hedera.node.app.spi.workflows.record.DeleteCapableTransactionRecordBuilder;
+import com.hedera.node.app.spi.workflows.record.DeleteCapableTransactionStreamBuilder;
 import com.hedera.node.config.ConfigProvider;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
@@ -68,7 +68,7 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
     private FinalizeContext context;
 
     @Mock
-    private CryptoDeleteRecordBuilder recordBuilder;
+    private CryptoDeleteStreamBuilder recordBuilder;
 
     private final InstantSource instantSource = InstantSource.system();
 
@@ -146,9 +146,9 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
     void rewardsWhenStakingFieldsModified() {
         final var stakedToMeBefore = account.stakedToMe();
         final var stakePeriodStartBefore = account.stakePeriodStart();
-        final var balanceBefore = account.tinybarBalance();
 
         randomStakeNodeChanges();
+        stakePeriodManager.setCurrentStakePeriodFor(context.consensusTime());
 
         final var rewards = subject.applyStakingRewards(context, Collections.emptySet(), emptyMap());
 
@@ -163,7 +163,8 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
         final var stakePeriodStartAfter = modifiedAccount.stakePeriodStart();
         final var stakeAtStartOfLastRewardedPeriodAfter = modifiedAccount.stakeAtStartOfLastRewardedPeriod();
 
-        final var expectedStakePeriodStart = stakePeriodManager.currentStakePeriod(consensusInstant);
+        stakePeriodManager.setCurrentStakePeriodFor(consensusInstant);
+        final var expectedStakePeriodStart = stakePeriodManager.currentStakePeriod();
         assertThat(stakedToMeAfter).isEqualTo(stakedToMeBefore);
         assertThat(stakePeriodStartAfter).isNotEqualTo(stakePeriodStartBefore).isEqualTo(expectedStakePeriodStart);
         // staking metadata is updated, so stakeAtStartOfLastRewardedPeriod will be set to -1
@@ -198,6 +199,7 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
 
         given(context.consensusTime()).willReturn(nextDayInstant);
         given(context.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
+        stakePeriodManager.setCurrentStakePeriodFor(context.consensusTime());
 
         subject.applyStakingRewards(context, Collections.emptySet(), emptyMap());
 
@@ -230,6 +232,7 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
         Instant nextDayInstant = originalInstant.plus(2, ChronoUnit.DAYS);
 
         given(context.consensusTime()).willReturn(nextDayInstant);
+        stakePeriodManager.setCurrentStakePeriodFor(nextDayInstant);
 
         subject.applyStakingRewards(context, Collections.emptySet(), emptyMap());
 
@@ -262,6 +265,7 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
                 .willReturn(LocalDate.ofEpochDay(stakePeriodStart + 1)
                         .atStartOfDay(ZoneOffset.UTC)
                         .toInstant());
+        stakePeriodManager.setCurrentStakePeriodFor(context.consensusTime());
 
         subject.applyStakingRewards(context, Collections.emptySet(), emptyMap());
 
@@ -342,8 +346,7 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
     void earningZeroRewardsWithStartBeforeLastNonRewardableStillUpdatesSASOLARP() {
         final var account = mock(Account.class);
         final var manager = mock(StakePeriodManager.class);
-        given(manager.firstNonRewardableStakePeriod(readableRewardsStore, consensusInstant))
-                .willReturn(3L);
+        given(manager.firstNonRewardableStakePeriod(readableRewardsStore)).willReturn(3L);
         given(account.stakePeriodStart()).willReturn(2L);
 
         final StakingRewardsHandlerImpl impl = new StakingRewardsHandlerImpl(rewardsPayer, manager, stakeInfoHelper);
@@ -428,6 +431,7 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
                         .atStartOfDay(ZoneOffset.UTC)
                         .toInstant());
         given(context.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
+        stakePeriodManager.setCurrentStakePeriodFor(context.consensusTime());
 
         final var rewards = subject.applyStakingRewards(context, Collections.emptySet(), emptyMap());
 
@@ -492,10 +496,11 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
                         .atStartOfDay(ZoneOffset.UTC)
                         .toInstant());
         given(context.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
-        given(context.userTransactionRecordBuilder(DeleteCapableTransactionRecordBuilder.class))
+        given(context.userTransactionRecordBuilder(DeleteCapableTransactionStreamBuilder.class))
                 .willReturn(recordBuilder);
         given(recordBuilder.getNumberOfDeletedAccounts()).willReturn(1);
         given(recordBuilder.getDeletedAccountBeneficiaryFor(payerId)).willReturn(ownerId);
+        stakePeriodManager.setCurrentStakePeriodFor(context.consensusTime());
 
         final var rewards = subject.applyStakingRewards(context, Collections.emptySet(), emptyMap());
         assertThat(rewards).hasSize(1);
@@ -529,6 +534,7 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
                         .atStartOfDay(ZoneOffset.UTC)
                         .toInstant());
 
+        stakePeriodManager.setCurrentStakePeriodFor(context.consensusTime());
         final var rewards = subject.applyStakingRewards(context, Collections.emptySet(), emptyMap());
 
         final var node1InfoAfter = writableStakingInfoState.get(node1Id);
@@ -616,6 +622,7 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
                 .willReturn(LocalDate.ofEpochDay(stakePeriodStart + 1)
                         .atStartOfDay(ZoneOffset.UTC)
                         .toInstant());
+        stakePeriodManager.setCurrentStakePeriodFor(context.consensusTime());
 
         // No rewards rewarded
         final var rewards = subject.applyStakingRewards(context, Collections.emptySet(), emptyMap());
@@ -673,6 +680,7 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
                 .willReturn(LocalDate.ofEpochDay(stakePeriodStart + 2)
                         .atStartOfDay(ZoneOffset.UTC)
                         .toInstant());
+        stakePeriodManager.setCurrentStakePeriodFor(context.consensusTime());
 
         final var rewards = subject.applyStakingRewards(context, Collections.emptySet(), emptyMap());
 
@@ -734,10 +742,11 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
                         .atStartOfDay(ZoneOffset.UTC)
                         .toInstant());
         given(context.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
-        given(context.userTransactionRecordBuilder(DeleteCapableTransactionRecordBuilder.class))
+        given(context.userTransactionRecordBuilder(DeleteCapableTransactionStreamBuilder.class))
                 .willReturn(recordBuilder);
         given(recordBuilder.getNumberOfDeletedAccounts()).willReturn(1);
         given(recordBuilder.getDeletedAccountBeneficiaryFor(payerId)).willReturn(ownerId);
+        stakePeriodManager.setCurrentStakePeriodFor(context.consensusTime());
 
         final var rewards = subject.applyStakingRewards(context, Collections.emptySet(), emptyMap());
         assertThat(rewards).hasSize(1);
@@ -786,10 +795,11 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
                         .atStartOfDay(ZoneOffset.UTC)
                         .toInstant());
         given(context.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
-        given(context.userTransactionRecordBuilder(DeleteCapableTransactionRecordBuilder.class))
+        given(context.userTransactionRecordBuilder(DeleteCapableTransactionStreamBuilder.class))
                 .willReturn(recordBuilder);
         given(recordBuilder.getNumberOfDeletedAccounts()).willReturn(1);
         given(recordBuilder.getDeletedAccountBeneficiaryFor(payerId)).willReturn(ownerId);
+        stakePeriodManager.setCurrentStakePeriodFor(context.consensusTime());
 
         final var rewards = subject.applyStakingRewards(context, Collections.emptySet(), emptyMap());
         // because the transferId is owner and it declined reward
@@ -842,8 +852,9 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
                         .atStartOfDay(ZoneOffset.UTC)
                         .toInstant());
         given(context.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
-        given(context.userTransactionRecordBuilder(DeleteCapableTransactionRecordBuilder.class))
+        given(context.userTransactionRecordBuilder(DeleteCapableTransactionStreamBuilder.class))
                 .willReturn(recordBuilder);
+        stakePeriodManager.setCurrentStakePeriodFor(context.consensusTime());
 
         given(recordBuilder.getNumberOfDeletedAccounts()).willReturn(2);
         given(recordBuilder.getDeletedAccountBeneficiaryFor(payerId)).willReturn(ownerId);
@@ -891,6 +902,7 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
                         .atStartOfDay(ZoneOffset.UTC)
                         .toInstant());
         given(context.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
+        stakePeriodManager.setCurrentStakePeriodFor(context.consensusTime());
 
         final var originalPayer = writableAccountStore.get(payerId);
         final var rewards = subject.applyStakingRewards(context, Collections.emptySet(), emptyMap());
@@ -1012,6 +1024,7 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
                         .atStartOfDay(ZoneOffset.UTC)
                         .toInstant());
         given(context.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
+        stakePeriodManager.setCurrentStakePeriodFor(context.consensusTime());
 
         final var originalPayer = writableAccountStore.get(payerId);
         final var rewards = subject.applyStakingRewards(context, Collections.emptySet(), emptyMap());

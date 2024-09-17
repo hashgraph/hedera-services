@@ -18,11 +18,11 @@ package com.swirlds.platform.state.manager;
 
 import static com.swirlds.common.test.fixtures.AssertionUtils.assertEventuallyDoesNotThrow;
 import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
-import static com.swirlds.platform.state.manager.SignatureVerificationTestUtils.buildFakeSignatureBytes;
+import static com.swirlds.platform.test.fixtures.state.manager.SignatureVerificationTestUtils.buildFakeSignatureBytes;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 
-import com.hedera.hapi.platform.event.StateSignaturePayload;
+import com.hedera.hapi.platform.event.StateSignatureTransaction;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.config.api.Configuration;
@@ -97,7 +97,7 @@ public class AbstractStateSignatureCollectorTest {
         final AddressBook addressBook = signedState.getAddressBook();
         final Hash hash = signedState.getState().getHash();
 
-        final StateSignaturePayload transaction = StateSignaturePayload.newBuilder()
+        final StateSignatureTransaction transaction = StateSignatureTransaction.newBuilder()
                 .round(round)
                 .signature(
                         buildFakeSignatureBytes(addressBook.getAddress(nodeId).getSigPublicKey(), hash))

@@ -71,7 +71,7 @@ import com.hedera.node.app.service.token.impl.handlers.CryptoCreateHandler;
 import com.hedera.node.app.service.token.impl.test.handlers.util.CryptoHandlerTestBase;
 import com.hedera.node.app.service.token.impl.validators.CryptoCreateValidator;
 import com.hedera.node.app.service.token.impl.validators.StakingValidator;
-import com.hedera.node.app.service.token.records.CryptoCreateRecordBuilder;
+import com.hedera.node.app.service.token.records.CryptoCreateStreamBuilder;
 import com.hedera.node.app.spi.fees.FeeCalculatorFactory;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
@@ -79,7 +79,6 @@ import com.hedera.node.app.spi.fixtures.fees.FakeFeeCalculator;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
 import com.hedera.node.app.spi.ids.EntityNumGenerator;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
-import com.hedera.node.app.spi.records.RecordBuilders;
 import com.hedera.node.app.spi.store.StoreFactory;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
@@ -114,10 +113,10 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
     private FeeContext feeContext;
 
     @Mock
-    private CryptoCreateRecordBuilder recordBuilder;
+    private CryptoCreateStreamBuilder recordBuilder;
 
     @Mock
-    private RecordBuilders recordBuilders;
+    private HandleContext.SavepointStack stack;
 
     @Mock
     private NetworkInfo networkInfo;
@@ -154,8 +153,8 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
         refreshStoresWithCurrentTokenInWritable();
         txn = new CryptoCreateBuilder().build();
         given(handleContext.body()).willReturn(txn);
-        given(handleContext.recordBuilders()).willReturn(recordBuilders);
-        lenient().when(recordBuilders.getOrCreate(any())).thenReturn(recordBuilder);
+        given(handleContext.savepointStack()).willReturn(stack);
+        lenient().when(stack.getBaseBuilder(any())).thenReturn(recordBuilder);
         given(handleContext.storeFactory()).willReturn(storeFactory);
         given(storeFactory.writableStore(WritableAccountStore.class)).willReturn(writableStore);
 
@@ -165,7 +164,7 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
         cryptoCreateValidator = new CryptoCreateValidator();
         stakingValidator = new StakingValidator();
         given(handleContext.networkInfo()).willReturn(networkInfo);
-        subject = new CryptoCreateHandler(cryptoCreateValidator, stakingValidator);
+        subject = new CryptoCreateHandler(cryptoCreateValidator);
     }
 
     @Test

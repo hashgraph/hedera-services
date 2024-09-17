@@ -17,7 +17,7 @@
 package com.hedera.node.app.service.addressbook.impl.test.handlers;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NODE_ID;
-import static com.hedera.node.app.service.addressbook.impl.AddressBookServiceImpl.NODES_KEY;
+import static com.hedera.node.app.service.addressbook.AddressBookHelper.NODES_KEY;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
@@ -126,6 +126,10 @@ class NodeDeleteHandlerTest extends AddressBookTestBase {
         final var feeCalc = mock(FeeCalculator.class);
         given(feeCtx.feeCalculatorFactory()).willReturn(feeCalcFact);
         given(feeCalcFact.feeCalculator(any())).willReturn(feeCalc);
+        final var config = HederaTestConfigBuilder.create()
+                .withValue("nodes.enableDAB", true)
+                .getOrCreateConfig();
+        given(feeCtx.configuration()).willReturn(config);
 
         given(feeCalc.addVerificationsPerTransaction(anyLong())).willReturn(feeCalc);
         given(feeCalc.calculate()).willReturn(new Fees(1, 0, 0));

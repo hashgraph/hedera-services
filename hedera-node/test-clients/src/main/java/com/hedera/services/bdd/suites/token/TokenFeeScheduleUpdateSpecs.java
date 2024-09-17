@@ -25,9 +25,12 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenFeeScheduleUpdate;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHbarFee;
+import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHbarFeeInheritingRoyaltyCollector;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHtsFee;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fractionalFee;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.incompleteCustomFee;
+import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.royaltyFeeNoFallback;
+import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.royaltyFeeWithFallback;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeTests.fixedHbarFeeInSchedule;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeTests.fixedHtsFeeInSchedule;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeTests.fractionalFeeInSchedule;
@@ -42,14 +45,17 @@ import static com.hedera.services.bdd.suites.HapiSuite.THREE_MONTHS_IN_SECONDS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEES_LIST_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_MUST_BE_POSITIVE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_NOT_FULLY_SPECIFIED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_SCHEDULE_ALREADY_HAS_NO_FEES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FRACTION_DIVIDES_BY_ZERO;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CUSTOM_FEE_COLLECTOR;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID_IN_CUSTOM_FEES;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ROYALTY_FRACTION_CANNOT_EXCEED_ONE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_FEE_SCHEDULE_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_FEE_COLLECTOR;
 
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode;
+import com.hederahashgraph.api.proto.java.TokenType;
 import java.time.Instant;
 import java.util.Map;
 import java.util.OptionalLong;
@@ -98,6 +104,59 @@ public class TokenFeeScheduleUpdateSpecs {
                 .then(submitModified(withSuccessivelyVariedBodyIds(), () -> tokenFeeScheduleUpdate("t")
                         .withCustom(fixedHbarFee(1, "feeCollector"))
                         .fee(ONE_HBAR)));
+    }
+
+    @HapiTest
+    final Stream<DynamicTest> failsUpdatingToEmptyFees() {
+        return defaultHapiSpec("idVariantsTreatedAsExpected")
+                .given(
+                        newKeyNamed("feeScheduleKey"),
+                        cryptoCreate("feeCollector"),
+                        tokenCreate("t").feeScheduleKey("feeScheduleKey"),
+                        tokenAssociate("feeCollector", "t"))
+                .when()
+                .then(submitModified(withSuccessivelyVariedBodyIds(), () -> tokenFeeScheduleUpdate("t")
+                        .hasKnownStatus(CUSTOM_SCHEDULE_ALREADY_HAS_NO_FEES)
+                        .fee(ONE_HBAR)));
+    }
+
+    @HapiTest
+    final Stream<DynamicTest> validatesRoyaltyFee() {
+        return defaultHapiSpec("validatesRoyaltyFee")
+                .given(
+                        newKeyNamed("feeScheduleKey"),
+                        newKeyNamed("supplyKey"),
+                        cryptoCreate("feeCollector"),
+                        tokenCreate("t")
+                                .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
+                                .feeScheduleKey("feeScheduleKey")
+                                .initialSupply(0)
+                                .supplyKey("supplyKey"),
+                        tokenAssociate("feeCollector", "t"))
+                .when(
+                        tokenFeeScheduleUpdate("t")
+                                .withCustom(royaltyFeeNoFallback(1, 0, "feeCollector"))
+                                .hasKnownStatus(FRACTION_DIVIDES_BY_ZERO)
+                                .fee(ONE_HBAR),
+                        tokenFeeScheduleUpdate("t")
+                                .withCustom(royaltyFeeNoFallback(2, 1, "feeCollector"))
+                                .hasKnownStatus(ROYALTY_FRACTION_CANNOT_EXCEED_ONE)
+                                .fee(ONE_HBAR),
+                        tokenFeeScheduleUpdate("t")
+                                .withCustom(royaltyFeeNoFallback(0, 1, "feeCollector"))
+                                .hasKnownStatus(CUSTOM_FEE_MUST_BE_POSITIVE)
+                                .fee(ONE_HBAR))
+                .then(
+                        tokenFeeScheduleUpdate("t")
+                                .withCustom(royaltyFeeWithFallback(
+                                        1, 2, fixedHbarFeeInheritingRoyaltyCollector(0), "feeCollector"))
+                                .hasKnownStatus(CUSTOM_FEE_MUST_BE_POSITIVE)
+                                .fee(ONE_HBAR),
+                        tokenFeeScheduleUpdate("t")
+                                .withCustom(royaltyFeeWithFallback(
+                                        1, 2, fixedHbarFeeInheritingRoyaltyCollector(-1), "feeCollector"))
+                                .hasKnownStatus(CUSTOM_FEE_MUST_BE_POSITIVE)
+                                .fee(ONE_HBAR));
     }
 
     @HapiTest

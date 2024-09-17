@@ -26,6 +26,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TREASURY_ACCOUNT_FOR_TOKEN;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_HAS_NO_SUPPLY_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_IS_PAUSED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
@@ -37,8 +38,14 @@ import static com.hedera.node.app.service.token.impl.test.handlers.util.TestStor
 import static com.hedera.node.app.service.token.impl.test.handlers.util.TestStoreFactory.newWritableStoreWithTokens;
 import static com.hedera.node.app.service.token.impl.test.keys.KeysAndIds.TOKEN_SUPPLY_KT;
 import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
+import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.USER;
+import static com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer.NOOP_RECORD_CUSTOMIZER;
+import static com.hedera.node.app.spi.workflows.record.StreamBuilder.ReversingBehavior.REVERSIBLE;
 import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
@@ -65,19 +72,18 @@ import com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler;
 import com.hedera.node.app.service.token.impl.handlers.TokenBurnHandler;
 import com.hedera.node.app.service.token.impl.test.handlers.util.ParityTestBase;
 import com.hedera.node.app.service.token.impl.validators.TokenSupplyChangeOpsValidator;
-import com.hedera.node.app.service.token.records.TokenBurnRecordBuilder;
+import com.hedera.node.app.service.token.records.TokenBurnStreamBuilder;
 import com.hedera.node.app.spi.fixtures.state.MapWritableStates;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
-import com.hedera.node.app.spi.records.RecordBuilders;
 import com.hedera.node.app.spi.store.StoreFactory;
+import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
-import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
+import com.hedera.node.app.workflows.handle.record.RecordStreamBuilder;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.state.test.fixtures.MapWritableKVState;
-import java.time.Instant;
 import java.util.Map;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -90,7 +96,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class TokenBurnHandlerTest extends ParityTestBase {
     private static final AccountID ACCOUNT_1339 = BaseCryptoHandler.asAccount(1339);
     private static final TokenID TOKEN_123 = BaseTokenHandler.asToken(123);
-    private static final Instant SOMETIME = Instant.ofEpochSecond(1_234_567, 890);
     private TokenSupplyChangeOpsValidator validator = new TokenSupplyChangeOpsValidator();
     private final TokenBurnHandler subject = new TokenBurnHandler(validator);
     private Configuration configuration;
@@ -388,8 +393,8 @@ class TokenBurnHandlerTest extends ParityTestBase {
                     .build());
             final var txn = newBurnTxn(TOKEN_123, 8);
             final var context = mockContext(txn);
-            final var recordBuilder = new SingleTransactionRecordBuilderImpl(SOMETIME);
-            given(context.recordBuilders().getOrCreate(TokenBurnRecordBuilder.class))
+            final var recordBuilder = new RecordStreamBuilder(REVERSIBLE, NOOP_RECORD_CUSTOMIZER, USER);
+            given(context.savepointStack().getBaseBuilder(TokenBurnStreamBuilder.class))
                     .willReturn(recordBuilder);
 
             subject.handle(context);
@@ -428,8 +433,8 @@ class TokenBurnHandlerTest extends ParityTestBase {
                     .build());
             final var txn = newBurnTxn(TOKEN_123, 8);
             final var context = mockContext(txn);
-            final var recordBuilder = new SingleTransactionRecordBuilderImpl(SOMETIME);
-            given(context.recordBuilders().getOrCreate(TokenBurnRecordBuilder.class))
+            final var recordBuilder = new RecordStreamBuilder(REVERSIBLE, NOOP_RECORD_CUSTOMIZER, USER);
+            given(context.savepointStack().getBaseBuilder(TokenBurnStreamBuilder.class))
                     .willReturn(recordBuilder);
 
             subject.handle(context);
@@ -709,8 +714,8 @@ class TokenBurnHandlerTest extends ParityTestBase {
                             .build());
             final var txn = newBurnTxn(TOKEN_123, 0, 1L, 2L);
             final var context = mockContext(txn);
-            final var recordBuilder = new SingleTransactionRecordBuilderImpl(SOMETIME);
-            given(context.recordBuilders().getOrCreate(TokenBurnRecordBuilder.class))
+            final var recordBuilder = new RecordStreamBuilder(REVERSIBLE, NOOP_RECORD_CUSTOMIZER, USER);
+            given(context.savepointStack().getBaseBuilder(TokenBurnStreamBuilder.class))
                     .willReturn(recordBuilder);
 
             subject.handle(context);
@@ -772,8 +777,8 @@ class TokenBurnHandlerTest extends ParityTestBase {
                             .build());
             final var txn = newBurnTxn(TOKEN_123, 0, 1L, 2L, 3L);
             final var context = mockContext(txn);
-            final var recordBuilder = new SingleTransactionRecordBuilderImpl(SOMETIME);
-            given(context.recordBuilders().getOrCreate(TokenBurnRecordBuilder.class))
+            final var recordBuilder = new RecordStreamBuilder(REVERSIBLE, NOOP_RECORD_CUSTOMIZER, USER);
+            given(context.savepointStack().getBaseBuilder(TokenBurnStreamBuilder.class))
                     .willReturn(recordBuilder);
 
             subject.handle(context);
@@ -836,8 +841,8 @@ class TokenBurnHandlerTest extends ParityTestBase {
                             .build());
             final var txn = newBurnTxn(TOKEN_123, 0, 1L, 2L, 3L, 1L, 2L, 3L, 3L, 1L, 1L, 2L);
             final var context = mockContext(txn);
-            final var recordBuilder = new SingleTransactionRecordBuilderImpl(SOMETIME);
-            given(context.recordBuilders().getOrCreate(TokenBurnRecordBuilder.class))
+            final var recordBuilder = new RecordStreamBuilder(REVERSIBLE, NOOP_RECORD_CUSTOMIZER, USER);
+            given(context.savepointStack().getBaseBuilder(TokenBurnStreamBuilder.class))
                     .willReturn(recordBuilder);
 
             subject.handle(context);
@@ -856,7 +861,7 @@ class TokenBurnHandlerTest extends ParityTestBase {
 
         private HandleContext mockContext(TransactionBody txn) {
             final var context = mock(HandleContext.class);
-            final var recordBuilders = mock(RecordBuilders.class);
+            final var stack = mock(HandleContext.SavepointStack.class);
 
             given(context.body()).willReturn(txn);
 
@@ -867,7 +872,12 @@ class TokenBurnHandlerTest extends ParityTestBase {
             given(storeFactory.writableStore(WritableTokenRelationStore.class)).willReturn(writableTokenRelStore);
             given(storeFactory.writableStore(WritableNftStore.class)).willReturn(writableNftStore);
             given(context.configuration()).willReturn(configuration);
-            lenient().when(context.recordBuilders()).thenReturn(recordBuilders);
+            lenient().when(context.savepointStack()).thenReturn(stack);
+            final var expiryValidator = mock(ExpiryValidator.class);
+            lenient().when(context.expiryValidator()).thenReturn(expiryValidator);
+            lenient()
+                    .when(expiryValidator.expirationStatus(any(), anyBoolean(), anyLong()))
+                    .thenReturn(OK);
 
             return context;
         }

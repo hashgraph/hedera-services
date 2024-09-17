@@ -30,7 +30,6 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCal
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.Arrays;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -56,9 +55,7 @@ public class WipeTranslator extends AbstractCallTranslator<HtsCallAttempt> {
      */
     @Override
     public boolean matches(@NonNull final HtsCallAttempt attempt) {
-        return selectorMatches(attempt, WIPE_FUNGIBLE_V1)
-                || selectorMatches(attempt, WIPE_FUNGIBLE_V2)
-                || selectorMatches(attempt, WIPE_NFT);
+        return attempt.isSelector(WIPE_FUNGIBLE_V1, WIPE_FUNGIBLE_V2, WIPE_NFT);
     }
 
     /**
@@ -92,16 +89,12 @@ public class WipeTranslator extends AbstractCallTranslator<HtsCallAttempt> {
     }
 
     private TransactionBody bodyForClassic(@NonNull final HtsCallAttempt attempt) {
-        if (selectorMatches(attempt, WIPE_FUNGIBLE_V1)) {
+        if (attempt.isSelector(WIPE_FUNGIBLE_V1)) {
             return decoder.decodeWipeFungibleV1(attempt);
-        } else if (selectorMatches(attempt, WIPE_FUNGIBLE_V2)) {
+        } else if (attempt.isSelector(WIPE_FUNGIBLE_V2)) {
             return decoder.decodeWipeFungibleV2(attempt);
         } else {
             return decoder.decodeWipeNonFungible(attempt);
         }
-    }
-
-    private boolean selectorMatches(final HtsCallAttempt attempt, final Function function) {
-        return Arrays.equals(attempt.selector(), function.selector());
     }
 }

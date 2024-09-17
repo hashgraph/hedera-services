@@ -26,7 +26,6 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.Cal
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.math.BigInteger;
-import java.util.Arrays;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -47,7 +46,7 @@ public class Erc721TransferFromTranslator extends AbstractCallTranslator<HtsCall
     public boolean matches(@NonNull final HtsCallAttempt attempt) {
         // We only match calls to existing tokens (i.e., with known token type)
         return attempt.isTokenRedirect()
-                && Arrays.equals(attempt.selector(), Erc721TransferFromTranslator.ERC_721_TRANSFER_FROM.selector())
+                && attempt.isSelector(ERC_721_TRANSFER_FROM)
                 && attempt.redirectTokenType() == NON_FUNGIBLE_UNIQUE;
     }
 

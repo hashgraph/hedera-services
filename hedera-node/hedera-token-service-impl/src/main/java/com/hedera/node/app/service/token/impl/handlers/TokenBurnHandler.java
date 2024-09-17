@@ -47,7 +47,7 @@ import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
 import com.hedera.node.app.service.token.impl.util.TokenHandlerHelper;
 import com.hedera.node.app.service.token.impl.validators.TokenSupplyChangeOpsValidator;
-import com.hedera.node.app.service.token.records.TokenBurnRecordBuilder;
+import com.hedera.node.app.service.token.records.TokenBurnStreamBuilder;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -126,7 +126,7 @@ public final class TokenBurnHandler extends BaseTokenHandler implements Transact
             validateTrue(treasuryRel.kycGranted(), ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN);
         }
 
-        TokenBurnRecordBuilder record = context.recordBuilders().getOrCreate(TokenBurnRecordBuilder.class);
+        TokenBurnStreamBuilder record = context.savepointStack().getBaseBuilder(TokenBurnStreamBuilder.class);
         if (token.tokenType() == TokenType.FUNGIBLE_COMMON) {
             validateTrue(fungibleBurnCount >= 0, INVALID_TOKEN_BURN_AMOUNT);
             final var newTotalSupply = changeSupply(
@@ -136,7 +136,8 @@ public final class TokenBurnHandler extends BaseTokenHandler implements Transact
                     INVALID_TOKEN_BURN_AMOUNT,
                     accountStore,
                     tokenStore,
-                    tokenRelStore);
+                    tokenRelStore,
+                    context.expiryValidator());
             record.newTotalSupply(newTotalSupply);
         } else {
             validateTrue(!nftSerialNums.isEmpty(), INVALID_TOKEN_BURN_METADATA);
@@ -152,7 +153,14 @@ public final class TokenBurnHandler extends BaseTokenHandler implements Transact
 
             // Update counts for accounts and token rels
             final var newTotalSupply = changeSupply(
-                    token, treasuryRel, -nftSerialNums.size(), FAIL_INVALID, accountStore, tokenStore, tokenRelStore);
+                    token,
+                    treasuryRel,
+                    -nftSerialNums.size(),
+                    FAIL_INVALID,
+                    accountStore,
+                    tokenStore,
+                    tokenRelStore,
+                    context.expiryValidator());
 
             // Update treasury's NFT count
             final var treasuryAcct = accountStore.get(token.treasuryAccountIdOrThrow());

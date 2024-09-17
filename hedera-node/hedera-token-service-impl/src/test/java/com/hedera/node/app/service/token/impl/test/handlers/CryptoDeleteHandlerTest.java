@@ -54,10 +54,9 @@ import com.hedera.node.app.service.token.impl.api.TokenServiceApiImpl;
 import com.hedera.node.app.service.token.impl.handlers.CryptoDeleteHandler;
 import com.hedera.node.app.service.token.impl.test.handlers.util.CryptoHandlerTestBase;
 import com.hedera.node.app.service.token.impl.validators.StakingValidator;
-import com.hedera.node.app.service.token.records.CryptoDeleteRecordBuilder;
+import com.hedera.node.app.service.token.records.CryptoDeleteStreamBuilder;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
-import com.hedera.node.app.spi.records.RecordBuilders;
 import com.hedera.node.app.spi.store.StoreFactory;
 import com.hedera.node.app.spi.validation.EntityType;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
@@ -93,10 +92,10 @@ class CryptoDeleteHandlerTest extends CryptoHandlerTestBase {
     private WritableStates writableStates;
 
     @Mock
-    private CryptoDeleteRecordBuilder recordBuilder;
+    private CryptoDeleteStreamBuilder recordBuilder;
 
     @Mock
-    private RecordBuilders recordBuilders;
+    private HandleContext.SavepointStack stack;
 
     @Mock
     private StoreMetricsService storeMetricsService;
@@ -117,7 +116,7 @@ class CryptoDeleteHandlerTest extends CryptoHandlerTestBase {
         lenient().when(handleContext.configuration()).thenReturn(configuration);
         lenient().when(handleContext.storeFactory()).thenReturn(storeFactory);
         lenient().when(storeFactory.writableStore(WritableAccountStore.class)).thenReturn(writableStore);
-        lenient().when(handleContext.recordBuilders()).thenReturn(recordBuilders);
+        lenient().when(handleContext.savepointStack()).thenReturn(stack);
     }
 
     @Test
@@ -294,7 +293,7 @@ class CryptoDeleteHandlerTest extends CryptoHandlerTestBase {
         givenTxnWith(deleteAccountId, transferAccountId);
         given(expiryValidator.isDetached(eq(EntityType.ACCOUNT), anyBoolean(), anyLong()))
                 .willReturn(false);
-        given(recordBuilders.getOrCreate(CryptoDeleteRecordBuilder.class)).willReturn(recordBuilder);
+        given(stack.getBaseBuilder(CryptoDeleteStreamBuilder.class)).willReturn(recordBuilder);
 
         subject.handle(handleContext);
 

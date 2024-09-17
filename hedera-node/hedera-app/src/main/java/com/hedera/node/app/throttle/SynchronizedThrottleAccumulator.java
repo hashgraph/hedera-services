@@ -23,7 +23,7 @@ import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.transaction.Query;
 import com.hedera.node.app.throttle.annotations.IngestThrottle;
 import com.hedera.node.app.workflows.TransactionInfo;
-import com.swirlds.state.HederaState;
+import com.swirlds.state.State;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
@@ -61,9 +61,9 @@ public class SynchronizedThrottleAccumulator {
      * @param state the current state of the node
      * @return whether the transaction should be throttled
      */
-    public synchronized boolean shouldThrottle(@NonNull TransactionInfo txnInfo, HederaState state) {
+    public synchronized boolean shouldThrottle(@NonNull TransactionInfo txnInfo, State state) {
         setDecisionTime(instantSource.instant());
-        return frontendThrottle.shouldThrottle(txnInfo, lastDecisionTime, state);
+        return frontendThrottle.checkAndEnforceThrottle(txnInfo, lastDecisionTime, state);
     }
 
     /**
@@ -82,7 +82,7 @@ public class SynchronizedThrottleAccumulator {
         requireNonNull(query);
         requireNonNull(queryFunction);
         setDecisionTime(instantSource.instant());
-        return frontendThrottle.shouldThrottle(queryFunction, lastDecisionTime, query, queryPayerId);
+        return frontendThrottle.checkAndEnforceThrottle(queryFunction, lastDecisionTime, query, queryPayerId);
     }
 
     private void setDecisionTime(@NonNull final Instant time) {

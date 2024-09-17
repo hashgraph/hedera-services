@@ -29,7 +29,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
- * Helper class for mutating staking info in the {@link WritableStakingInfoStore}
+ * Helper class for mutating staking info in the {@link WritableStakingInfoStore}.
  */
 @Singleton
 public class StakeInfoHelper {
@@ -44,7 +44,7 @@ public class StakeInfoHelper {
     }
 
     /**
-     * Increases the unclaimed stake reward start for the given node by the given amount
+     * Increases the unclaimed stake reward start for the given node by the given amount.
      *
      * @param nodeId the node's numeric ID
      * @param amount the amount to increase the unclaimed stake reward start by

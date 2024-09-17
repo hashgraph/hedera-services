@@ -31,7 +31,7 @@ import com.hedera.node.app.hapi.fees.usage.SigUsage;
 import com.hedera.node.app.hapi.fees.usage.schedule.ScheduleOpsUsage;
 import com.hedera.node.app.hapi.utils.fee.SigValueObj;
 import com.hedera.node.app.service.schedule.ReadableScheduleStore;
-import com.hedera.node.app.service.schedule.ScheduleRecordBuilder;
+import com.hedera.node.app.service.schedule.ScheduleStreamBuilder;
 import com.hedera.node.app.service.schedule.WritableScheduleStore;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
@@ -58,9 +58,7 @@ public class ScheduleDeleteHandler extends AbstractScheduleHandler implements Tr
     private final ScheduleOpsUsage scheduleOpsUsage = new ScheduleOpsUsage();
 
     @Inject
-    public ScheduleDeleteHandler() {
-        super();
-    }
+    public ScheduleDeleteHandler() {}
 
     @Override
     public void pureChecks(@Nullable final TransactionBody currentTransaction) throws PreCheckException {
@@ -125,8 +123,8 @@ public class ScheduleDeleteHandler extends AbstractScheduleHandler implements Tr
                             context.keyVerifier().verificationFor(scheduleData.adminKeyOrThrow());
                     if (verificationResult.passed()) {
                         scheduleStore.delete(idToDelete, context.consensusNow());
-                        final ScheduleRecordBuilder scheduleRecords =
-                                context.recordBuilders().getOrCreate(ScheduleRecordBuilder.class);
+                        final ScheduleStreamBuilder scheduleRecords =
+                                context.savepointStack().getBaseBuilder(ScheduleStreamBuilder.class);
                         scheduleRecords.scheduleID(idToDelete);
                     } else {
                         throw new HandleException(ResponseCodeEnum.UNAUTHORIZED);
@@ -150,7 +148,7 @@ public class ScheduleDeleteHandler extends AbstractScheduleHandler implements Tr
      * @param scheduleStore a Readable source of Schedule data from state
      * @param isLongTermEnabled a flag indicating if long term scheduling is enabled in configuration.
      * @param idToDelete the Schedule ID of the item to mark as deleted.
-     * @return a schedule metadata read from state for the ID given, if all validation checks pass.
+     * @return a schedule metadata read from state for the ID given, if all validation checks pass
      * @throws HandleException if any validation check fails.
      */
     @NonNull

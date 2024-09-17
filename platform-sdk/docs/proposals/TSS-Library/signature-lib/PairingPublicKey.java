@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-package com.swirlds.signaturescheme.api;
+package com.hedera.cryptography.signaturescheme.api;
 
-import com.swirlds.pairings.api.GroupElement;
+import com.hedera.cryptography.pairings.api.GroupElement;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**

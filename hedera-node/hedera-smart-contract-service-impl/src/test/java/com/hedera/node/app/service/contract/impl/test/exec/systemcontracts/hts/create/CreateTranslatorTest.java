@@ -16,12 +16,30 @@
 
 package com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.hts.create;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.BDDMockito.given;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.burn.BurnTranslator.BURN_TOKEN_V2;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.create.CreateTranslator.CREATE_FUNGIBLE_TOKEN_V1;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.create.CreateTranslator.CREATE_FUNGIBLE_TOKEN_V2;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.create.CreateTranslator.CREATE_FUNGIBLE_TOKEN_V3;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.create.CreateTranslator.CREATE_FUNGIBLE_WITH_CUSTOM_FEES_V1;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.create.CreateTranslator.CREATE_FUNGIBLE_WITH_CUSTOM_FEES_V2;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.create.CreateTranslator.CREATE_FUNGIBLE_WITH_CUSTOM_FEES_V3;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.create.CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN_V1;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.create.CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN_V2;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.create.CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN_V3;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.create.CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES_V1;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.create.CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES_V2;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.create.CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES_V3;
+import static com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.CallAttemptHelpers.prepareHtsAttemptWithSelector;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
+import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategies;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AddressIdConverter;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.create.CreateDecoder;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.create.CreateTranslator;
+import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -34,6 +52,18 @@ public class CreateTranslatorTest {
     @Mock
     private HtsCallAttempt attempt;
 
+    @Mock
+    private SystemContractGasCalculator gasCalculator;
+
+    @Mock
+    private AddressIdConverter addressIdConverter;
+
+    @Mock
+    private HederaWorldUpdater.Enhancement enhancement;
+
+    @Mock
+    private VerificationStrategies verificationStrategies;
+
     private CreateDecoder decoder = new CreateDecoder();
 
     private CreateTranslator subject;
@@ -45,85 +75,152 @@ public class CreateTranslatorTest {
 
     @Test
     void matchesCreateFungibleTokenV1() {
-        given(attempt.selector()).willReturn(CreateTranslator.CREATE_FUNGIBLE_TOKEN_V1.selector());
-        final var matches = subject.matches(attempt);
-        assertThat(matches).isTrue();
+        attempt = prepareHtsAttemptWithSelector(
+                CREATE_FUNGIBLE_TOKEN_V1,
+                subject,
+                enhancement,
+                addressIdConverter,
+                verificationStrategies,
+                gasCalculator);
+        assertTrue(subject.matches(attempt));
     }
 
     @Test
     void matchesCreateFungibleTokenV2() {
-        given(attempt.selector()).willReturn(CreateTranslator.CREATE_FUNGIBLE_TOKEN_V2.selector());
-        final var matches = subject.matches(attempt);
-        assertThat(matches).isTrue();
+        attempt = prepareHtsAttemptWithSelector(
+                CREATE_FUNGIBLE_TOKEN_V2,
+                subject,
+                enhancement,
+                addressIdConverter,
+                verificationStrategies,
+                gasCalculator);
+        assertTrue(subject.matches(attempt));
     }
 
     @Test
     void matchesCreateFungibleTokenV3() {
-        given(attempt.selector()).willReturn(CreateTranslator.CREATE_FUNGIBLE_TOKEN_V3.selector());
-        final var matches = subject.matches(attempt);
-        assertThat(matches).isTrue();
+        attempt = prepareHtsAttemptWithSelector(
+                CREATE_FUNGIBLE_TOKEN_V3,
+                subject,
+                enhancement,
+                addressIdConverter,
+                verificationStrategies,
+                gasCalculator);
+        assertTrue(subject.matches(attempt));
     }
 
     @Test
     void matchesCreateFungibleTokenWithCustomFeesV1() {
-        given(attempt.selector()).willReturn(CreateTranslator.CREATE_FUNGIBLE_WITH_CUSTOM_FEES_V1.selector());
-        final var matches = subject.matches(attempt);
-        assertThat(matches).isTrue();
+        attempt = prepareHtsAttemptWithSelector(
+                CREATE_FUNGIBLE_WITH_CUSTOM_FEES_V1,
+                subject,
+                enhancement,
+                addressIdConverter,
+                verificationStrategies,
+                gasCalculator);
+        assertTrue(subject.matches(attempt));
     }
 
     @Test
     void matchesCreateFungibleTokenWithCustomFeesV2() {
-        given(attempt.selector()).willReturn(CreateTranslator.CREATE_FUNGIBLE_WITH_CUSTOM_FEES_V2.selector());
-        final var matches = subject.matches(attempt);
-        assertThat(matches).isTrue();
+        attempt = prepareHtsAttemptWithSelector(
+                CREATE_FUNGIBLE_WITH_CUSTOM_FEES_V2,
+                subject,
+                enhancement,
+                addressIdConverter,
+                verificationStrategies,
+                gasCalculator);
+        assertTrue(subject.matches(attempt));
     }
 
     @Test
     void matchesCreateFungibleTokenWithCustomFeesV3() {
-        given(attempt.selector()).willReturn(CreateTranslator.CREATE_FUNGIBLE_WITH_CUSTOM_FEES_V3.selector());
-        final var matches = subject.matches(attempt);
-        assertThat(matches).isTrue();
+        attempt = prepareHtsAttemptWithSelector(
+                CREATE_FUNGIBLE_WITH_CUSTOM_FEES_V3,
+                subject,
+                enhancement,
+                addressIdConverter,
+                verificationStrategies,
+                gasCalculator);
+        assertTrue(subject.matches(attempt));
     }
 
     @Test
     void matchesCreateNonFungibleTokenV1() {
-        given(attempt.selector()).willReturn(CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN_V1.selector());
-        final var matches = subject.matches(attempt);
-        assertThat(matches).isTrue();
+        attempt = prepareHtsAttemptWithSelector(
+                CREATE_NON_FUNGIBLE_TOKEN_V1,
+                subject,
+                enhancement,
+                addressIdConverter,
+                verificationStrategies,
+                gasCalculator);
+        assertTrue(subject.matches(attempt));
     }
 
     @Test
     void matchesCreateNonFungibleTokenV2() {
-        given(attempt.selector()).willReturn(CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN_V2.selector());
-        final var matches = subject.matches(attempt);
-        assertThat(matches).isTrue();
+        attempt = prepareHtsAttemptWithSelector(
+                CREATE_NON_FUNGIBLE_TOKEN_V2,
+                subject,
+                enhancement,
+                addressIdConverter,
+                verificationStrategies,
+                gasCalculator);
+        assertTrue(subject.matches(attempt));
     }
 
     @Test
     void matchesCreateNonFungibleTokenV3() {
-        given(attempt.selector()).willReturn(CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN_V3.selector());
-        final var matches = subject.matches(attempt);
-        assertThat(matches).isTrue();
+        attempt = prepareHtsAttemptWithSelector(
+                CREATE_NON_FUNGIBLE_TOKEN_V3,
+                subject,
+                enhancement,
+                addressIdConverter,
+                verificationStrategies,
+                gasCalculator);
+        assertTrue(subject.matches(attempt));
     }
 
     @Test
     void matchesCreateNonFungibleTokenWithCustomFeesV1() {
-        given(attempt.selector()).willReturn(CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES_V1.selector());
-        final var matches = subject.matches(attempt);
-        assertThat(matches).isTrue();
+        attempt = prepareHtsAttemptWithSelector(
+                CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES_V1,
+                subject,
+                enhancement,
+                addressIdConverter,
+                verificationStrategies,
+                gasCalculator);
+        assertTrue(subject.matches(attempt));
     }
 
     @Test
     void matchesCreateNonFungibleTokenWithCustomFeesV2() {
-        given(attempt.selector()).willReturn(CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES_V2.selector());
-        final var matches = subject.matches(attempt);
-        assertThat(matches).isTrue();
+        attempt = prepareHtsAttemptWithSelector(
+                CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES_V2,
+                subject,
+                enhancement,
+                addressIdConverter,
+                verificationStrategies,
+                gasCalculator);
+        assertTrue(subject.matches(attempt));
     }
 
     @Test
     void matchesCreateNonFungibleTokenWithCustomFeesV3() {
-        given(attempt.selector()).willReturn(CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES_V3.selector());
-        final var matches = subject.matches(attempt);
-        assertThat(matches).isTrue();
+        attempt = prepareHtsAttemptWithSelector(
+                CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES_V3,
+                subject,
+                enhancement,
+                addressIdConverter,
+                verificationStrategies,
+                gasCalculator);
+        assertTrue(subject.matches(attempt));
+    }
+
+    @Test
+    void falseOnInvalidSelector() {
+        attempt = prepareHtsAttemptWithSelector(
+                BURN_TOKEN_V2, subject, enhancement, addressIdConverter, verificationStrategies, gasCalculator);
+        assertFalse(subject.matches(attempt));
     }
 }

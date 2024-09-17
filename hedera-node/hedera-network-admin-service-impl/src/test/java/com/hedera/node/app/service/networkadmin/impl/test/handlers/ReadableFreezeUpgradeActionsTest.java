@@ -16,6 +16,9 @@
 
 package com.hedera.node.app.service.networkadmin.impl.test.handlers;
 
+import static com.hedera.node.app.service.addressbook.AddressBookHelper.NODES_KEY;
+import static com.hedera.node.app.service.addressbook.AddressBookHelper.loadResourceFile;
+import static com.hedera.node.app.service.addressbook.AddressBookHelper.readCertificatePemFile;
 import static com.hedera.node.app.service.networkadmin.impl.handlers.FreezeUpgradeActions.EXEC_IMMEDIATE_MARKER;
 import static com.hedera.node.app.service.networkadmin.impl.handlers.FreezeUpgradeActions.EXEC_TELEMETRY_MARKER;
 import static com.hedera.node.app.service.networkadmin.impl.handlers.FreezeUpgradeActions.NOW_FROZEN_MARKER;
@@ -40,6 +43,7 @@ import com.hedera.hapi.node.state.addressbook.Node;
 import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.token.StakingNodeInfo;
 import com.hedera.node.app.service.addressbook.ReadableNodeStore;
+import com.hedera.node.app.service.addressbook.impl.ReadableNodeStoreImpl;
 import com.hedera.node.app.service.addressbook.impl.schemas.V053AddressBookSchema;
 import com.hedera.node.app.service.file.impl.WritableUpgradeFileStore;
 import com.hedera.node.app.service.networkadmin.impl.WritableFreezeStore;
@@ -51,9 +55,11 @@ import com.hedera.node.app.spi.fixtures.util.LogCaptureExtension;
 import com.hedera.node.app.spi.fixtures.util.LoggingSubject;
 import com.hedera.node.app.spi.fixtures.util.LoggingTarget;
 import com.hedera.node.config.data.NetworkAdminConfig;
+import com.hedera.node.config.data.NodesConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.swirlds.platform.state.PlatformState;
-import com.swirlds.platform.system.address.AddressBook;
+import com.swirlds.config.api.Configuration;
+import com.swirlds.platform.state.service.ReadablePlatformStateStore;
+import com.swirlds.state.spi.ReadableStates;
 import com.swirlds.state.test.fixtures.MapReadableKVState;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.File;
@@ -63,10 +69,11 @@ import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.security.cert.CertificateException;
+import java.security.cert.X509Certificate;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
-import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ForkJoinPool;
@@ -119,6 +126,9 @@ class ReadableFreezeUpgradeActionsTest {
     @TempDir
     private File zipOutputDir; // temp directory to place marker files and output of zip extraction
 
+    @TempDir
+    private File keysDir;
+
     @Mock
     private WritableFreezeStore writableFreezeStore;
 
@@ -135,20 +145,40 @@ class ReadableFreezeUpgradeActionsTest {
     private WritableUpgradeFileStore upgradeFileStore;
 
     @Mock
-    private ReadableNodeStore nodeStore;
+    private ReadableStakingInfoStore stakingInfoStore;
 
     @Mock
-    private ReadableStakingInfoStore stakingInfoStore;
+    protected ReadableStates readableStates;
+
+    @Mock
+    private Configuration configuration;
+
+    @Mock
+    private NodesConfig nodesConfig;
+
+    private ReadableNodeStore nodeStore;
+
+    private Executor freezeExecutor;
+
+    private X509Certificate certificate;
 
     @BeforeEach
     void setUp() throws IOException {
+        given(configuration.getConfigData(NetworkAdminConfig.class)).willReturn(adminServiceConfig);
+        given(configuration.getConfigData(NodesConfig.class)).willReturn(nodesConfig);
+
         noiseFileLoc = zipOutputDir.toPath().resolve("forgotten.cfg");
         noiseSubFileLoc = zipOutputDir.toPath().resolve("edargpu");
 
-        final Executor freezeExecutor = new ForkJoinPool(
+        final var readableNodeState =
+                MapReadableKVState.<EntityNumber, Node>builder(NODES_KEY).build();
+        given(readableStates.<EntityNumber, Node>get(NODES_KEY)).willReturn(readableNodeState);
+        nodeStore = new ReadableNodeStoreImpl(readableStates);
+
+        freezeExecutor = new ForkJoinPool(
                 1, ForkJoinPool.defaultForkJoinWorkerThreadFactory, Thread.getDefaultUncaughtExceptionHandler(), true);
         subject = new FreezeUpgradeActions(
-                adminServiceConfig, writableFreezeStore, freezeExecutor, upgradeFileStore, nodeStore, stakingInfoStore);
+                configuration, writableFreezeStore, freezeExecutor, upgradeFileStore, nodeStore, stakingInfoStore);
 
         // set up test zip
         zipSourceDir = Files.createTempDirectory("zipSourceDir");
@@ -169,7 +199,7 @@ class ReadableFreezeUpgradeActionsTest {
         rmIfPresent(EXEC_IMMEDIATE_MARKER);
 
         given(adminServiceConfig.upgradeArtifactsPath()).willReturn(zipOutputDir.toString());
-        given(nodeStore.keys()).willReturn(Collections.emptyIterator());
+        given(adminServiceConfig.keysPath()).willReturn(keysDir.toString());
 
         final Bytes invalidArchive = Bytes.wrap("Not a valid zip archive".getBytes(StandardCharsets.UTF_8));
         subject.extractSoftwareUpgrade(invalidArchive).join();
@@ -185,10 +215,11 @@ class ReadableFreezeUpgradeActionsTest {
     @Test
     void preparesForUpgrade() throws IOException {
         setupNoiseFiles();
-        given(nodeStore.keys()).willReturn(Collections.emptyIterator());
         rmIfPresent(EXEC_IMMEDIATE_MARKER);
 
         given(adminServiceConfig.upgradeArtifactsPath()).willReturn(zipOutputDir.toString());
+        given(adminServiceConfig.keysPath()).willReturn(keysDir.toString());
+        given(nodesConfig.enableDAB()).willReturn(true);
 
         final Bytes realArchive = Bytes.wrap(Files.readAllBytes(zipArchivePath));
         subject.extractSoftwareUpgrade(realArchive).join();
@@ -198,17 +229,36 @@ class ReadableFreezeUpgradeActionsTest {
     }
 
     @Test
-    void preparesForUpgradeWithDAB() throws IOException {
+    void preparesForUpgradeWithDAB() throws IOException, CertificateException {
         setupNoiseFiles();
         rmIfPresent(EXEC_IMMEDIATE_MARKER);
         setupNodes();
 
         given(adminServiceConfig.upgradeArtifactsPath()).willReturn(zipOutputDir.toString());
+        given(adminServiceConfig.keysPath()).willReturn(keysDir.toString());
+        given(nodesConfig.enableDAB()).willReturn(true);
 
         final Bytes realArchive = Bytes.wrap(Files.readAllBytes(zipArchivePath));
         subject.extractSoftwareUpgrade(realArchive).join();
 
-        assertDABFilesCreated(EXEC_IMMEDIATE_MARKER, zipOutputDir.toPath());
+        assertDABFilesCreated(EXEC_IMMEDIATE_MARKER, zipOutputDir.toPath(), keysDir.toPath());
+        assertMarkerCreated(EXEC_IMMEDIATE_MARKER, null);
+    }
+
+    @Test
+    void preparesForUpgradeWithDAB2() throws IOException, CertificateException {
+        setupNoiseFiles();
+        rmIfPresent(EXEC_IMMEDIATE_MARKER);
+        setupNodes2();
+
+        given(adminServiceConfig.upgradeArtifactsPath()).willReturn(zipOutputDir.toString());
+        given(adminServiceConfig.keysPath()).willReturn(keysDir.toString());
+        given(nodesConfig.enableDAB()).willReturn(true);
+
+        final Bytes realArchive = Bytes.wrap(Files.readAllBytes(zipArchivePath));
+        subject.extractSoftwareUpgrade(realArchive).join();
+
+        assertDABFilesCreated2(EXEC_IMMEDIATE_MARKER, zipOutputDir.toPath(), keysDir.toPath());
         assertMarkerCreated(EXEC_IMMEDIATE_MARKER, null);
     }
 
@@ -217,6 +267,7 @@ class ReadableFreezeUpgradeActionsTest {
         rmIfPresent(EXEC_TELEMETRY_MARKER);
 
         given(adminServiceConfig.upgradeArtifactsPath()).willReturn(zipOutputDir.toString());
+        given(adminServiceConfig.keysPath()).willReturn(keysDir.toString());
 
         final Bytes realArchive = Bytes.wrap(Files.readAllBytes(zipArchivePath));
         subject.extractTelemetryUpgrade(realArchive, then).join();
@@ -238,32 +289,32 @@ class ReadableFreezeUpgradeActionsTest {
 
     @Test
     void testCatchUpOnMissedSideEffects() throws IOException {
-        PlatformState platformState = createMockPlatformState();
+        final var store = mock(ReadablePlatformStateStore.class);
         LocalDateTime localDateTime = LocalDateTime.of(2024, 1, 1, 0, 0);
         Instant checkpoint = localDateTime.atZone(ZoneId.of("UTC")).toInstant();
-        platformState.setFreezeTime(checkpoint);
-        platformState.setLastFrozenTime(checkpoint.minusMillis(10000));
+        given(store.getFreezeTime()).willReturn(checkpoint);
+        given(store.getLastFrozenTime()).willReturn(checkpoint.minusMillis(10000));
         given(writableFreezeStore.updateFileHash()).willReturn(Bytes.wrap("fake hash"));
 
-        assertThatNoException().isThrownBy(() -> subject.isFreezeScheduled(platformState));
-        assertThat(subject.isFreezeScheduled(platformState)).isTrue();
+        assertThatNoException().isThrownBy(() -> subject.isFreezeScheduled(store));
+        assertThat(subject.isFreezeScheduled(store)).isTrue();
 
         rmIfPresent(NOW_FROZEN_MARKER);
         given(adminServiceConfig.upgradeArtifactsPath()).willReturn(zipOutputDir.toString());
 
         Bytes expectedContent = Bytes.wrap("expected");
         given(upgradeFileStore.getFull(any())).willReturn(expectedContent);
-        assertThatNoException().isThrownBy(() -> subject.catchUpOnMissedSideEffects(platformState));
+        assertThatNoException().isThrownBy(() -> subject.catchUpOnMissedSideEffects(store));
     }
 
     @Test
     void invokeMissedUpgradePrepException() {
-        PlatformState platformState = createMockPlatformState();
+        final var store = mock(ReadablePlatformStateStore.class);
         given(writableFreezeStore.updateFileHash()).willReturn(Bytes.wrap("fake hash"));
         subject.isPreparedFileHashValidGiven(null, null);
-        assertThatNullPointerException().isThrownBy(() -> subject.catchUpOnMissedSideEffects(platformState));
+        assertThatNullPointerException().isThrownBy(() -> subject.catchUpOnMissedSideEffects(store));
         given(writableFreezeStore.updateFileHash()).willReturn(null);
-        assertThatNoException().isThrownBy(() -> subject.catchUpOnMissedSideEffects(platformState));
+        assertThatNoException().isThrownBy(() -> subject.catchUpOnMissedSideEffects(store));
     }
 
     @Test
@@ -278,28 +329,22 @@ class ReadableFreezeUpgradeActionsTest {
 
     @Test
     void testIfFreezeIsScheduled() {
-        PlatformState platformState = createMockPlatformState();
+        final var store = mock(ReadablePlatformStateStore.class);
         LocalDateTime localDateTime = LocalDateTime.of(2024, 1, 1, 0, 0);
         Instant checkpoint = localDateTime.atZone(ZoneId.of("UTC")).toInstant();
 
-        platformState.setFreezeTime(checkpoint);
-        platformState.setLastFrozenTime(checkpoint.minusMillis(10000));
-        assertThatNoException().isThrownBy(() -> subject.isFreezeScheduled(platformState));
-        assertThat(subject.isFreezeScheduled(platformState)).isTrue();
+        given(store.getFreezeTime()).willReturn(checkpoint);
+        given(store.getLastFrozenTime()).willReturn(checkpoint.minusMillis(10000));
+        assertThatNoException().isThrownBy(() -> subject.isFreezeScheduled(store));
+        assertThat(subject.isFreezeScheduled(store)).isTrue();
 
-        platformState.setFreezeTime(null);
-        platformState.setLastFrozenTime(checkpoint.plusSeconds(2));
-        assertThat(subject.isFreezeScheduled(platformState)).isFalse();
+        given(store.getFreezeTime()).willReturn(null);
+        given(store.getLastFrozenTime()).willReturn(checkpoint.plusSeconds(2));
+        assertThat(subject.isFreezeScheduled(store)).isFalse();
 
-        platformState.setFreezeTime(checkpoint);
-        platformState.setLastFrozenTime(checkpoint);
-        assertThat(subject.isFreezeScheduled(platformState)).isFalse();
-    }
-
-    private PlatformState createMockPlatformState() {
-        final PlatformState platformState = new PlatformState();
-        platformState.setAddressBook(mock(AddressBook.class));
-        return platformState;
+        given(store.getFreezeTime()).willReturn(checkpoint);
+        given(store.getLastFrozenTime()).willReturn(checkpoint);
+        assertThat(subject.isFreezeScheduled(store)).isFalse();
     }
 
     private void rmIfPresent(final String file) {
@@ -365,7 +410,11 @@ class ReadableFreezeUpgradeActionsTest {
                         "Than a fading star"));
     }
 
-    private void setupNodes() {
+    private void setupNodes() throws CertificateException, IOException {
+        final var pemFileName = "s-public-node1.pem";
+        final var pemFilePath = loadResourceFile(pemFileName);
+        certificate = readCertificatePemFile(pemFilePath);
+
         final var node1 = new Node(
                 1,
                 asAccount(3),
@@ -374,8 +423,7 @@ class ReadableFreezeUpgradeActionsTest {
                         V053AddressBookSchema.endpointFor("127.0.0.1", 1234),
                         V053AddressBookSchema.endpointFor("35.186.191.247", 50211)),
                 List.of(V053AddressBookSchema.endpointFor("45.186.191.247", 50231)),
-                Bytes.wrap(
-                        "e55c559975c1c285c5262d6c94262287e5d501c66a0c770f0c9a88f7234e0435c5643e03664eb9c8ce2d9f94de717ec"),
+                Bytes.wrap(certificate.getEncoded()),
                 Bytes.wrap("grpc1CertificateHash"),
                 2,
                 false,
@@ -388,8 +436,7 @@ class ReadableFreezeUpgradeActionsTest {
                         V053AddressBookSchema.endpointFor("127.0.0.2", 1245),
                         V053AddressBookSchema.endpointFor("35.186.191.245", 50221)),
                 List.of(V053AddressBookSchema.endpointFor("45.186.191.245", 50225)),
-                Bytes.wrap(
-                        "e55c559975c1c285c5262d6c94262287e6d501c66a0c770f0c9a88f7234e0435c5643e03664eb9c8ce2d9f94de717ec"),
+                Bytes.wrap(certificate.getEncoded()),
                 Bytes.wrap("grpc2CertificateHash"),
                 4,
                 false,
@@ -402,8 +449,7 @@ class ReadableFreezeUpgradeActionsTest {
                         V053AddressBookSchema.endpointFor("127.0.0.3", 1245),
                         V053AddressBookSchema.endpointFor("35.186.191.235", 50221)),
                 List.of(V053AddressBookSchema.endpointFor("45.186.191.235", 50225)),
-                Bytes.wrap(
-                        "e55c55997561c285c5262d6c94262287e6d501c66a0c770f0c9a88f7234e0435c5643e03664eb9c8ce2d9f94de717ec"),
+                Bytes.wrap(certificate.getEncoded()),
                 Bytes.wrap("grpc3CertificateHash"),
                 1,
                 true,
@@ -417,23 +463,21 @@ class ReadableFreezeUpgradeActionsTest {
                         V053AddressBookSchema.endpointFor("test.domain.com", 50225),
                         V053AddressBookSchema.endpointFor("35.186.191.225", 50225)),
                 List.of(V053AddressBookSchema.endpointFor("45.186.191.225", 50225)),
-                Bytes.wrap(
-                        "e55c559975c1c285c5262d6994262287e6d501c66a0c770f0c9a88f7234e0435c5643e03664eb9c8ce2d9f94de717ec"),
+                Bytes.wrap(certificate.getEncoded()),
                 Bytes.wrap("grpc5CertificateHash"),
                 8,
                 false,
                 A_COMPLEX_KEY);
-        final var readableNodeState = MapReadableKVState.<EntityNumber, Node>builder("NODES")
+        final var readableNodeState = MapReadableKVState.<EntityNumber, Node>builder(NODES_KEY)
                 .value(new EntityNumber(4), node4)
                 .value(new EntityNumber(2), node2)
                 .value(new EntityNumber(3), node3)
                 .value(new EntityNumber(1), node1)
                 .build();
-        given(nodeStore.keys()).willReturn(readableNodeState.keys());
-        given(nodeStore.get(1)).willReturn(node1);
-        given(nodeStore.get(2)).willReturn(node2);
-        given(nodeStore.get(3)).willReturn(node3);
-        given(nodeStore.get(4)).willReturn(node4);
+        given(readableStates.<EntityNumber, Node>get(NODES_KEY)).willReturn(readableNodeState);
+        nodeStore = new ReadableNodeStoreImpl(readableStates);
+        subject = new FreezeUpgradeActions(
+                configuration, writableFreezeStore, freezeExecutor, upgradeFileStore, nodeStore, stakingInfoStore);
         var stakingNodeInfo1 = mock(StakingNodeInfo.class);
         var stakingNodeInfo2 = mock(StakingNodeInfo.class);
         var stakingNodeInfo4 = mock(StakingNodeInfo.class);
@@ -445,23 +489,24 @@ class ReadableFreezeUpgradeActionsTest {
         given(stakingInfoStore.get(4)).willReturn(stakingNodeInfo4);
     }
 
-    private void assertDABFilesCreated(final String file, final Path baseDir) throws IOException {
+    private void assertDABFilesCreated(final String file, final Path baseDir, final Path keyDir)
+            throws IOException, CertificateException {
         final Path filePath = baseDir.resolve(file);
         final Path configFilePath = baseDir.resolve("config.txt");
         assertTrue(configFilePath.toFile().exists());
         final var configFile = Files.readString(configFilePath);
 
-        final Path pemFilePath1 = baseDir.resolve("s-public-node2.pem");
+        final Path pemFilePath1 = keyDir.resolve("s-public-node2.pem");
         assertTrue(pemFilePath1.toFile().exists());
-        final Path pemFilePath2 = baseDir.resolve("s-public-node3.pem");
+        final Path pemFilePath2 = keyDir.resolve("s-public-node3.pem");
         assertTrue(pemFilePath2.toFile().exists());
-        final Path pemFilePath3 = baseDir.resolve("s-public-node4.pem");
+        final Path pemFilePath3 = keyDir.resolve("s-public-node4.pem");
         assertFalse(pemFilePath3.toFile().exists());
-        final Path pemFilePath4 = baseDir.resolve("s-public-node5.pem");
+        final Path pemFilePath4 = keyDir.resolve("s-public-node5.pem");
         assertTrue(pemFilePath4.toFile().exists());
-        final var pemFile1 = Files.readAllBytes(pemFilePath1);
-        final var pemFile2 = Files.readAllBytes(pemFilePath2);
-        final var pemFile4 = Files.readAllBytes(pemFilePath4);
+        final var pemFile1 = readCertificatePemFile(pemFilePath1);
+        final var pemFile2 = readCertificatePemFile(pemFilePath2);
+        final var pemFile4 = readCertificatePemFile(pemFilePath4);
 
         final String configContents = new StringBuilder()
                 .append("address, 1, 1, node2, 5, 127.0.0.1, 1234, 35.186.191.247, 50211, 0.0.3\n")
@@ -469,15 +514,9 @@ class ReadableFreezeUpgradeActionsTest {
                 .append("address, 4, 4, node5, 20, 127.0.0.4, 1445, test.domain.com, 50225, 0.0.8\n")
                 .append("nextNodeId, 5")
                 .toString();
-        final byte[] pemFile1Bytes = Bytes.wrap(
-                        "e55c559975c1c285c5262d6c94262287e5d501c66a0c770f0c9a88f7234e0435c5643e03664eb9c8ce2d9f94de717ec")
-                .toByteArray();
-        final byte[] pemFile2Bytes = Bytes.wrap(
-                        "e55c559975c1c285c5262d6c94262287e6d501c66a0c770f0c9a88f7234e0435c5643e03664eb9c8ce2d9f94de717ec")
-                .toByteArray();
-        final byte[] pemFile4Bytes = Bytes.wrap(
-                        "e55c559975c1c285c5262d6994262287e6d501c66a0c770f0c9a88f7234e0435c5643e03664eb9c8ce2d9f94de717ec")
-                .toByteArray();
+        final byte[] pemFile1Bytes = pemFile1.getEncoded();
+        final byte[] pemFile2Bytes = pemFile2.getEncoded();
+        final byte[] pemFile4Bytes = pemFile4.getEncoded();
 
         if (file.equals(EXEC_IMMEDIATE_MARKER)) {
             assertThat(logCaptor.infoLogs())
@@ -490,9 +529,134 @@ class ReadableFreezeUpgradeActionsTest {
                     .anyMatch(l -> (l.startsWith("Finished generating config.txt and pem files into " + baseDir)));
             assertThat(logCaptor.infoLogs()).anyMatch(l -> (l.contains("Wrote marker " + filePath)));
             assertThat(configFile).isEqualTo(configContents);
-            assertArrayEquals(pemFile1, pemFile1Bytes);
-            assertArrayEquals(pemFile2, pemFile2Bytes);
-            assertArrayEquals(pemFile4, pemFile4Bytes);
+            assertArrayEquals(certificate.getEncoded(), pemFile1Bytes);
+            assertArrayEquals(certificate.getEncoded(), pemFile2Bytes);
+            assertArrayEquals(certificate.getEncoded(), pemFile4Bytes);
+        }
+    }
+
+    private void setupNodes2() throws CertificateException, IOException {
+        final var pemFileName = "s-public-node1.pem";
+        final var pemFilePath = loadResourceFile(pemFileName);
+        certificate = readCertificatePemFile(pemFilePath);
+
+        final var node1 = new Node(
+                0,
+                asAccount(3),
+                "node2",
+                List.of(
+                        V053AddressBookSchema.endpointFor("127.0.0.1", 1234),
+                        V053AddressBookSchema.endpointFor("35.186.191.247", 50211)),
+                List.of(V053AddressBookSchema.endpointFor("45.186.191.247", 50231)),
+                Bytes.wrap(certificate.getEncoded()),
+                Bytes.wrap("grpc1CertificateHash"),
+                2,
+                false,
+                A_COMPLEX_KEY);
+        final var node2 = new Node(
+                1,
+                asAccount(4),
+                "node3",
+                List.of(
+                        V053AddressBookSchema.endpointFor("127.0.0.2", 1245),
+                        V053AddressBookSchema.endpointFor("35.186.191.245", 50221)),
+                List.of(V053AddressBookSchema.endpointFor("45.186.191.245", 50225)),
+                Bytes.wrap(certificate.getEncoded()),
+                Bytes.wrap("grpc2CertificateHash"),
+                4,
+                false,
+                A_COMPLEX_KEY);
+        final var node3 = new Node(
+                2,
+                asAccount(6),
+                "node4",
+                List.of(
+                        V053AddressBookSchema.endpointFor("127.0.0.3", 1245),
+                        V053AddressBookSchema.endpointFor("35.186.191.235", 50221)),
+                List.of(V053AddressBookSchema.endpointFor("45.186.191.235", 50225)),
+                Bytes.wrap(certificate.getEncoded()),
+                Bytes.wrap("grpc3CertificateHash"),
+                1,
+                false,
+                A_COMPLEX_KEY);
+        final var node4 = new Node(
+                3,
+                asAccount(8),
+                "node5",
+                List.of(
+                        V053AddressBookSchema.endpointFor("127.0.0.4", 1445),
+                        V053AddressBookSchema.endpointFor("test.domain.com", 50225),
+                        V053AddressBookSchema.endpointFor("35.186.191.225", 50225)),
+                List.of(V053AddressBookSchema.endpointFor("45.186.191.225", 50225)),
+                Bytes.wrap(certificate.getEncoded()),
+                Bytes.wrap("grpc5CertificateHash"),
+                8,
+                true,
+                A_COMPLEX_KEY);
+        final var readableNodeState = MapReadableKVState.<EntityNumber, Node>builder(NODES_KEY)
+                .value(new EntityNumber(3), node4)
+                .value(new EntityNumber(1), node2)
+                .value(new EntityNumber(2), node3)
+                .value(new EntityNumber(0), node1)
+                .build();
+        given(readableStates.<EntityNumber, Node>get(NODES_KEY)).willReturn(readableNodeState);
+        nodeStore = new ReadableNodeStoreImpl(readableStates);
+        subject = new FreezeUpgradeActions(
+                configuration, writableFreezeStore, freezeExecutor, upgradeFileStore, nodeStore, stakingInfoStore);
+        var stakingNodeInfo1 = mock(StakingNodeInfo.class);
+        var stakingNodeInfo2 = mock(StakingNodeInfo.class);
+        var stakingNodeInfo3 = mock(StakingNodeInfo.class);
+        given(stakingNodeInfo1.weight()).willReturn(5);
+        given(stakingNodeInfo2.weight()).willReturn(10);
+        given(stakingNodeInfo3.weight()).willReturn(20);
+        given(stakingInfoStore.get(0)).willReturn(stakingNodeInfo1);
+        given(stakingInfoStore.get(1)).willReturn(stakingNodeInfo2);
+        given(stakingInfoStore.get(2)).willReturn(stakingNodeInfo3);
+    }
+
+    private void assertDABFilesCreated2(final String file, final Path baseDir, final Path keyDir)
+            throws IOException, CertificateException {
+        final Path filePath = baseDir.resolve(file);
+        final Path configFilePath = baseDir.resolve("config.txt");
+        assertTrue(configFilePath.toFile().exists());
+        final var configFile = Files.readString(configFilePath);
+
+        final Path pemFilePath1 = keyDir.resolve("s-public-node1.pem");
+        assertTrue(pemFilePath1.toFile().exists());
+        final Path pemFilePath2 = keyDir.resolve("s-public-node2.pem");
+        assertTrue(pemFilePath2.toFile().exists());
+        final Path pemFilePath3 = keyDir.resolve("s-public-node3.pem");
+        assertTrue(pemFilePath3.toFile().exists());
+        final Path pemFilePath4 = keyDir.resolve("s-public-node4.pem");
+        assertFalse(pemFilePath4.toFile().exists());
+        final var pemFile1 = readCertificatePemFile(pemFilePath1);
+        final var pemFile2 = readCertificatePemFile(pemFilePath2);
+        final var pemFile3 = readCertificatePemFile(pemFilePath3);
+
+        final String configContents = new StringBuilder()
+                .append("address, 0, 0, node1, 5, 127.0.0.1, 1234, 35.186.191.247, 50211, 0.0.3\n")
+                .append("address, 1, 1, node2, 10, 127.0.0.2, 1245, 35.186.191.245, 50221, 0.0.4\n")
+                .append("address, 2, 2, node3, 20, 127.0.0.3, 1245, 35.186.191.235, 50221, 0.0.6\n")
+                .append("nextNodeId, 4")
+                .toString();
+        final byte[] pemFile1Bytes = pemFile1.getEncoded();
+        final byte[] pemFile2Bytes = pemFile2.getEncoded();
+        final byte[] pemFile3Bytes = pemFile3.getEncoded();
+
+        if (file.equals(EXEC_IMMEDIATE_MARKER)) {
+            assertThat(logCaptor.infoLogs())
+                    .anyMatch(l -> (l.startsWith("About to unzip ")
+                            && l.contains(" bytes for software update into " + baseDir)));
+            assertThat(logCaptor.infoLogs())
+                    .anyMatch(l -> (l.startsWith("Finished unzipping ")
+                            && l.contains(" bytes for software update into " + baseDir)));
+            assertThat(logCaptor.infoLogs())
+                    .anyMatch(l -> (l.startsWith("Finished generating config.txt and pem files into " + baseDir)));
+            assertThat(logCaptor.infoLogs()).anyMatch(l -> (l.contains("Wrote marker " + filePath)));
+            assertThat(configFile).isEqualTo(configContents);
+            assertArrayEquals(certificate.getEncoded(), pemFile1Bytes);
+            assertArrayEquals(certificate.getEncoded(), pemFile2Bytes);
+            assertArrayEquals(certificate.getEncoded(), pemFile3Bytes);
         }
     }
 }

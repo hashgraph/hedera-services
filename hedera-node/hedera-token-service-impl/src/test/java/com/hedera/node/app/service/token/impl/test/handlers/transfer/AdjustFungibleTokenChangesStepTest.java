@@ -17,11 +17,15 @@
 package com.hedera.node.app.service.token.impl.test.handlers.transfer;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.UNEXPECTED_TOKEN_DECIMALS;
 import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.asAccount;
 import static com.hedera.node.app.service.token.impl.test.handlers.transfer.AccountAmountUtils.aaWith;
 import static com.hedera.node.app.service.token.impl.test.handlers.transfer.AccountAmountUtils.aaWithAllowance;
 import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
+import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.USER;
+import static com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer.NOOP_RECORD_CUSTOMIZER;
+import static com.hedera.node.app.spi.workflows.record.StreamBuilder.ReversingBehavior.REVERSIBLE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
@@ -42,8 +46,8 @@ import com.hedera.node.app.service.token.impl.handlers.transfer.EnsureAliasesSte
 import com.hedera.node.app.service.token.impl.handlers.transfer.ReplaceAliasesWithIDsInOp;
 import com.hedera.node.app.service.token.impl.handlers.transfer.TransferContextImpl;
 import com.hedera.node.app.spi.workflows.HandleException;
-import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
-import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
+import com.hedera.node.app.spi.workflows.record.StreamBuilder;
+import com.hedera.node.app.workflows.handle.record.RecordStreamBuilder;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -64,7 +68,7 @@ class AdjustFungibleTokenChangesStepTest extends StepsBase {
         transferContext = new TransferContextImpl(handleContext);
         writableTokenStore.put(givenValidFungibleToken(ownerId, false, false, false, false, false));
         given(handleContext.dispatchRemovablePrecedingTransaction(
-                        any(), eq(SingleTransactionRecordBuilder.class), eq(null), any()))
+                        any(), eq(StreamBuilder.class), eq(null), any(), any()))
                 .will((invocation) -> {
                     final var relation =
                             new TokenRelation(fungibleTokenId, tokenReceiverId, 1, false, true, true, null, null);
@@ -72,7 +76,7 @@ class AdjustFungibleTokenChangesStepTest extends StepsBase {
                             new TokenRelation(nonFungibleTokenId, tokenReceiverId, 1, false, true, true, null, null);
                     writableTokenRelStore.put(relation);
                     writableTokenRelStore.put(relation1);
-                    return new SingleTransactionRecordBuilderImpl(consensusInstant);
+                    return new RecordStreamBuilder(REVERSIBLE, NOOP_RECORD_CUSTOMIZER, USER).status(SUCCESS);
                 });
     }
 
@@ -81,6 +85,7 @@ class AdjustFungibleTokenChangesStepTest extends StepsBase {
         final var receiver = asAccount(tokenReceiver);
         given(handleContext.payer()).willReturn(spenderId);
         given(expiryValidator.expirationStatus(any(), anyBoolean(), anyLong())).willReturn(OK);
+        given(handleContext.savepointStack()).willReturn(stack);
         final var replacedOp = getReplacedOp();
         adjustFungibleTokenChangesStep = new AdjustFungibleTokenChangesStep(replacedOp.tokenTransfers(), payerId);
 
@@ -90,6 +95,7 @@ class AdjustFungibleTokenChangesStepTest extends StepsBase {
         final var receiverRelBefore = writableTokenRelStore.get(receiver, fungibleTokenId);
         writableTokenRelStore.put(receiverRelBefore
                 .copyBuilder()
+                .balance(0L)
                 .kycGranted(true)
                 .accountId(tokenReceiverId)
                 .build());
@@ -97,7 +103,6 @@ class AdjustFungibleTokenChangesStepTest extends StepsBase {
         assertThat(senderAccountBefore.numberPositiveBalances()).isEqualTo(2);
         assertThat(receiverAccountBefore.numberPositiveBalances()).isEqualTo(2);
         assertThat(senderRelBefore.balance()).isEqualTo(1000L);
-        assertThat(receiverRelBefore.balance()).isEqualTo(1);
 
         adjustFungibleTokenChangesStep.doIn(transferContext);
 
@@ -110,12 +115,10 @@ class AdjustFungibleTokenChangesStepTest extends StepsBase {
         // numPositiveBalancesChanged since all 1000 token Rel balance is transferred and new balance is 0
         assertThat(senderAccountAfter.numberPositiveBalances())
                 .isEqualTo(senderAccountBefore.numberPositiveBalances() - 1);
-        // It is not changed since the original balance before the method is called is > 0.
-        // So no need to increment the positive balances
         assertThat(receiverAccountAfter.numberPositiveBalances())
-                .isEqualTo(receiverAccountBefore.numberPositiveBalances());
+                .isEqualTo(receiverAccountBefore.numberPositiveBalances() + 1);
         assertThat(senderRelAfter.balance()).isEqualTo(senderRelBefore.balance() - 1000);
-        assertThat(receiverRelAfter.balance()).isEqualTo(receiverRelBefore.balance() + 1000);
+        assertThat(receiverRelAfter.balance()).isEqualTo(1000);
     }
 
     @Test
@@ -125,6 +128,7 @@ class AdjustFungibleTokenChangesStepTest extends StepsBase {
         replaceAliasesWithIDsInOp = new ReplaceAliasesWithIDsInOp();
         associateTokenRecepientsStep = new AssociateTokenRecipientsStep(body);
         given(handleContext.body()).willReturn(txn);
+        given(handleContext.savepointStack()).willReturn(stack);
 
         final var receiver = asAccount(tokenReceiver);
         given(expiryValidator.expirationStatus(any(), anyBoolean(), anyLong())).willReturn(OK);
@@ -146,7 +150,7 @@ class AdjustFungibleTokenChangesStepTest extends StepsBase {
         assertThat(receiverAccountBefore.numberPositiveBalances()).isEqualTo(2);
         assertThat(senderRelBefore.balance()).isEqualTo(1000L);
         // There is an association happening during the transfer for auto creation
-        assertThat(receiverRelBefore.balance()).isEqualTo(1);
+        assertThat(receiverRelBefore.balance()).isEqualTo(0);
 
         assertThat(senderAccountBefore.tokenAllowances()).hasSize(1);
 
@@ -161,10 +165,8 @@ class AdjustFungibleTokenChangesStepTest extends StepsBase {
         // numPositiveBalancesChanged since all 1000 token Rel balance is transferred and new balance is 0
         assertThat(senderAccountAfter.numberPositiveBalances())
                 .isEqualTo(senderAccountBefore.numberPositiveBalances() - 1);
-        // It is not changed since the original balance before the method is called is > 0.
-        // So no need to increment the positive balances
         assertThat(receiverAccountAfter.numberPositiveBalances())
-                .isEqualTo(receiverAccountBefore.numberPositiveBalances());
+                .isEqualTo(receiverAccountBefore.numberPositiveBalances() + 1);
         assertThat(senderRelAfter.balance()).isEqualTo(senderRelBefore.balance() - 1000);
         assertThat(receiverRelAfter.balance()).isEqualTo(receiverRelBefore.balance() + 1000);
 
@@ -190,6 +192,7 @@ class AdjustFungibleTokenChangesStepTest extends StepsBase {
         associateTokenRecepientsStep = new AssociateTokenRecipientsStep(body);
         given(handleContext.body()).willReturn(txn);
         given(handleContext.payer()).willReturn(spenderId);
+        given(handleContext.savepointStack()).willReturn(stack);
 
         given(expiryValidator.expirationStatus(any(), anyBoolean(), anyLong())).willReturn(OK);
         final var replacedOp = getReplacedOp();
@@ -218,6 +221,7 @@ class AdjustFungibleTokenChangesStepTest extends StepsBase {
         replaceAliasesWithIDsInOp = new ReplaceAliasesWithIDsInOp();
         associateTokenRecepientsStep = new AssociateTokenRecipientsStep(body);
         given(handleContext.body()).willReturn(txn);
+        given(handleContext.savepointStack()).willReturn(stack);
 
         given(expiryValidator.expirationStatus(any(), anyBoolean(), anyLong())).willReturn(OK);
         final var replacedOp = getReplacedOp();
@@ -251,6 +255,7 @@ class AdjustFungibleTokenChangesStepTest extends StepsBase {
         given(handleContext.body()).willReturn(txn);
         given(handleContext.payer()).willReturn(spenderId);
         given(expiryValidator.expirationStatus(any(), anyBoolean(), anyLong())).willReturn(OK);
+        given(handleContext.savepointStack()).willReturn(stack);
 
         final var replacedOp = getReplacedOp();
         adjustFungibleTokenChangesStep = new AdjustFungibleTokenChangesStep(replacedOp.tokenTransfers(), spenderId);

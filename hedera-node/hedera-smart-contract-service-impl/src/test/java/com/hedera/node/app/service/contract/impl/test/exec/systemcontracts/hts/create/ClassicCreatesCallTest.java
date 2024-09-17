@@ -43,7 +43,7 @@ import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AddressIdConverter;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.create.ClassicCreatesCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.create.CreateTranslator;
-import com.hedera.node.app.service.contract.impl.records.ContractCallRecordBuilder;
+import com.hedera.node.app.service.contract.impl.records.ContractCallStreamBuilder;
 import com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.common.CallTestBase;
 import java.math.BigInteger;
 import java.util.ArrayDeque;
@@ -65,7 +65,7 @@ public class ClassicCreatesCallTest extends CallTestBase {
     private AddressIdConverter addressIdConverter;
 
     @Mock
-    private ContractCallRecordBuilder recordBuilder;
+    private ContractCallStreamBuilder recordBuilder;
 
     @Mock
     private BlockValues blockValues;
@@ -312,7 +312,7 @@ public class ClassicCreatesCallTest extends CallTestBase {
 
     private void commonGivens(long baseCost, long value, boolean shouldBePreempted) {
         given(frame.getValue()).willReturn(Wei.of(value));
-        given(gasCalculator.canonicalPriceInTinybars(any(), any())).willReturn(baseCost);
+        given(gasCalculator.feeCalculatorPriceInTinyBars(any(), any())).willReturn(baseCost);
         stack.push(frame);
         given(addressIdConverter.convert(asHeadlongAddress(FRAME_SENDER_ADDRESS)))
                 .willReturn(A_NEW_ACCOUNT_ID);
@@ -325,7 +325,7 @@ public class ClassicCreatesCallTest extends CallTestBase {
                             any(TransactionBody.class),
                             eq(verificationStrategy),
                             eq(A_NEW_ACCOUNT_ID),
-                            eq(ContractCallRecordBuilder.class)))
+                            eq(ContractCallStreamBuilder.class)))
                     .willReturn(recordBuilder);
         }
         given(frame.getBlockValues()).willReturn(blockValues);

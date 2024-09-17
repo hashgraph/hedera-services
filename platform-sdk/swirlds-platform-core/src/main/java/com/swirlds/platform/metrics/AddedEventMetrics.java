@@ -33,7 +33,6 @@ import com.swirlds.metrics.api.Counter;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.stats.AverageStat;
-import com.swirlds.platform.system.events.EventDescriptor;
 import com.swirlds.platform.system.transaction.Transaction;
 import java.time.temporal.ChronoUnit;
 import java.util.Iterator;
@@ -157,12 +156,12 @@ public class AddedEventMetrics {
      * @param event the event that was added
      */
     public void eventAdded(final EventImpl event) {
-        if (event.isCreatedBy(selfId)) {
+        if (Objects.equals(event.getCreatorId(), selfId)) {
             eventsCreatedPerSecond.cycle();
             if (!event.getBaseEvent().getOtherParents().isEmpty()) {
                 averageOtherParentAgeDiff.update(event.getGeneration()
                         - event.getBaseEvent().getOtherParents().stream()
-                                .map(EventDescriptor::getGeneration)
+                                .map(ed -> ed.eventDescriptor().generation())
                                 .max(Long::compareTo)
                                 .orElse(0L));
             }
@@ -191,12 +190,12 @@ public class AddedEventMetrics {
             final Transaction transaction = iterator.next();
             if (transaction.isSystem()) {
                 numSysTrans++;
-                sysSize += transaction.getSerializedLength();
-                avgBytesPerTransactionSys.update(transaction.getSerializedLength());
+                sysSize += transaction.getSize();
+                avgBytesPerTransactionSys.update(transaction.getSize());
             } else {
                 numAppTrans++;
-                appSize += transaction.getSerializedLength();
-                avgBytesPerTransaction.update(transaction.getSerializedLength());
+                appSize += transaction.getSize();
+                avgBytesPerTransaction.update(transaction.getSize());
             }
         }
         avgTransactionsPerEvent.update(numAppTrans);
@@ -208,8 +207,8 @@ public class AddedEventMetrics {
         transactionsPerSecondSys.update(numSysTrans);
 
         // count all transactions ever in the hashgraph
-        if (!event.isEmpty()) {
-            numTrans.add(event.getBaseEvent().getPayloadCount());
+        if (event.getBaseEvent().getTransactionCount() != 0) {
+            numTrans.add(event.getBaseEvent().getTransactionCount());
         }
     }
 }

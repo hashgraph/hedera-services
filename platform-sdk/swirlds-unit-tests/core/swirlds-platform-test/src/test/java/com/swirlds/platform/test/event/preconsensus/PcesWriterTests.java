@@ -22,12 +22,11 @@ import static com.swirlds.common.utility.CompareTo.isGreaterThanOrEqualTo;
 import static com.swirlds.platform.event.AncientMode.BIRTH_ROUND_THRESHOLD;
 import static com.swirlds.platform.event.AncientMode.GENERATION_THRESHOLD;
 import static com.swirlds.platform.event.preconsensus.PcesFileManager.NO_LOWER_BOUND;
+import static com.swirlds.platform.system.transaction.TransactionWrapperUtils.createAppPayloadWrapper;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 import com.swirlds.base.test.fixtures.time.FakeTime;
 import com.swirlds.common.constructable.ConstructableRegistry;
@@ -38,6 +37,7 @@ import com.swirlds.common.io.config.FileSystemManagerConfig_;
 import com.swirlds.common.io.utility.FileUtils;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.RandomUtils;
+import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.common.test.fixtures.TransactionGenerator;
 import com.swirlds.common.test.fixtures.io.FileManipulation;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
@@ -61,8 +61,8 @@ import com.swirlds.platform.event.preconsensus.PcesWriter;
 import com.swirlds.platform.eventhandling.EventConfig_;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.StaticSoftwareVersion;
-import com.swirlds.platform.system.transaction.ConsensusTransactionImpl;
-import com.swirlds.platform.system.transaction.SwirldTransaction;
+import com.swirlds.platform.system.transaction.TransactionWrapper;
+import com.swirlds.platform.test.fixtures.event.TestingEventBuilder;
 import com.swirlds.platform.test.fixtures.event.generator.StandardGraphGenerator;
 import com.swirlds.platform.test.fixtures.event.source.StandardEventSource;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -201,7 +201,7 @@ class PcesWriterTests {
         final int transactionSizeStandardDeviationInKb = 5;
 
         return (final Random random) -> {
-            final ConsensusTransactionImpl[] transactions = new ConsensusTransactionImpl[transactionCount];
+            final TransactionWrapper[] transactions = new TransactionWrapper[transactionCount];
             for (int index = 0; index < transactionCount; index++) {
 
                 final int transactionSize = (int) UNIT_KILOBYTES.convertTo(
@@ -213,7 +213,7 @@ class PcesWriterTests {
                 final byte[] bytes = new byte[transactionSize];
                 random.nextBytes(bytes);
 
-                transactions[index] = new SwirldTransaction(bytes);
+                transactions[index] = createAppPayloadWrapper(bytes);
             }
             return transactions;
         };
@@ -756,6 +756,7 @@ class PcesWriterTests {
     @MethodSource("buildArguments")
     @DisplayName("Flush request test")
     void flushRequestTest(@NonNull final AncientMode ancientMode) throws IOException {
+        final Randotron r = Randotron.create();
         final PlatformContext platformContext = buildContext(ancientMode);
         final PcesFileManager fileManager =
                 new PcesFileManager(platformContext, new PcesFileTracker(ancientMode), selfId, 0);
@@ -765,8 +766,8 @@ class PcesWriterTests {
 
         final List<PlatformEvent> events = new ArrayList<>();
         for (long i = 0; i < 9; i++) {
-            final PlatformEvent event = mock(PlatformEvent.class);
-            when(event.getStreamSequenceNumber()).thenReturn(i);
+            final PlatformEvent event = new TestingEventBuilder(r).build();
+            event.setStreamSequenceNumber(i);
             events.add(event);
         }
 

@@ -17,7 +17,6 @@
 package com.swirlds.common.crypto;
 
 import static com.swirlds.common.test.fixtures.io.SerializationUtils.serializeDeserialize;
-import static com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags.TIME_CONSUMING;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.swirlds.common.constructable.ConstructableRegistry;
@@ -25,7 +24,6 @@ import com.swirlds.common.constructable.ConstructableRegistryException;
 import java.io.IOException;
 import java.util.concurrent.ThreadLocalRandom;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 public class SignatureTest {
@@ -35,7 +33,6 @@ public class SignatureTest {
     }
 
     @Test
-    @Tag(TIME_CONSUMING)
     public void serializeDeserializeTest() throws IOException {
         SignatureType signatureType = SignatureType.RSA;
         byte[] sigBytes = new byte[signatureType.signatureLength()];

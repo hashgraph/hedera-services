@@ -46,7 +46,7 @@ import com.hedera.node.app.service.token.impl.WritableTokenStore;
 import com.hedera.node.app.service.token.impl.util.TokenHandlerHelper;
 import com.hedera.node.app.service.token.impl.validators.CustomFeesValidator;
 import com.hedera.node.app.service.token.impl.validators.TokenCreateValidator;
-import com.hedera.node.app.service.token.records.TokenCreateRecordBuilder;
+import com.hedera.node.app.service.token.records.TokenCreateStreamBuilder;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.validation.ExpiryMeta;
@@ -127,7 +127,7 @@ public class TokenCreateHandler extends BaseTokenHandler implements TransactionH
         final var tokenStore = storeFactory.writableStore(WritableTokenStore.class);
         final var tokenRelationStore = storeFactory.writableStore(WritableTokenRelationStore.class);
 
-        final var recordBuilder = context.recordBuilders().getOrCreate(TokenCreateRecordBuilder.class);
+        final var recordBuilder = context.savepointStack().getBaseBuilder(TokenCreateStreamBuilder.class);
 
         /* Validate if the current token can be created */
         validateTrue(
@@ -145,7 +145,7 @@ public class TokenCreateHandler extends BaseTokenHandler implements TransactionH
 
         // validate custom fees and get back list of fees with created token denomination
         final var feesSetNeedingCollectorAutoAssociation = customFeesValidator.validateForCreation(
-                newToken, accountStore, tokenRelationStore, tokenStore, op.customFees());
+                newToken, accountStore, tokenRelationStore, tokenStore, op.customFees(), context.expiryValidator());
         // Put token into modifications map
         tokenStore.put(newToken);
         // associate token with treasury and collector ids of custom fees whose token denomination
@@ -163,7 +163,14 @@ public class TokenCreateHandler extends BaseTokenHandler implements TransactionH
         final var treasuryRel = requireNonNull(tokenRelationStore.get(op.treasuryOrThrow(), newTokenId));
         if (op.initialSupply() > 0) {
             // This keeps modified token with minted balance into modifications in token store
-            mintFungible(newToken, treasuryRel, op.initialSupply(), accountStore, tokenStore, tokenRelationStore);
+            mintFungible(
+                    newToken,
+                    treasuryRel,
+                    op.initialSupply(),
+                    accountStore,
+                    tokenStore,
+                    tokenRelationStore,
+                    context.expiryValidator());
         }
         // Increment treasury's title count
         final var treasuryAccount = requireNonNull(accountStore.get(treasuryRel.accountIdOrThrow()));
@@ -185,7 +192,7 @@ public class TokenCreateHandler extends BaseTokenHandler implements TransactionH
      * @param accountStore account store
      * @param tokenRelStore token relation store
      * @param requireCollectorAutoAssociation set of custom fees whose token denomination is set to sentinel value
-     * @param recordBuilder
+     * @param recordBuilder record builder
      */
     private void associateAccounts(
             final HandleContext context,
@@ -193,7 +200,7 @@ public class TokenCreateHandler extends BaseTokenHandler implements TransactionH
             final WritableAccountStore accountStore,
             @NonNull final WritableTokenRelationStore tokenRelStore,
             final List<CustomFee> requireCollectorAutoAssociation,
-            final TokenCreateRecordBuilder recordBuilder) {
+            final TokenCreateStreamBuilder recordBuilder) {
         final var tokensConfig = context.configuration().getConfigData(TokensConfig.class);
         final var entitiesConfig = context.configuration().getConfigData(EntitiesConfig.class);
 

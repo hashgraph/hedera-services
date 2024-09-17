@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-package com.swirlds.tss.api;
+package com.hedera.cryptography.tss.api;
 
-import com.swirlds.signaturescheme.api.PairingSignature;
+import com.hedera.cryptography.signaturescheme.api.PairingSignature;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**

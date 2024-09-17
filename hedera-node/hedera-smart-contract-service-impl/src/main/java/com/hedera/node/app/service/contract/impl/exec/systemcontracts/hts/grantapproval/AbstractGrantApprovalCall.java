@@ -33,7 +33,7 @@ import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalcu
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.AbstractCall;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater.Enhancement;
-import com.hedera.node.app.service.contract.impl.records.ContractCallRecordBuilder;
+import com.hedera.node.app.service.contract.impl.records.ContractCallStreamBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 
@@ -66,7 +66,7 @@ public abstract class AbstractGrantApprovalCall extends AbstractCall {
         this.tokenType = tokenType;
     }
 
-    protected ContractCallRecordBuilder withMonoStandard(@NonNull final ContractCallRecordBuilder recordBuilder) {
+    protected ContractCallStreamBuilder withMonoStandard(@NonNull final ContractCallStreamBuilder recordBuilder) {
         if (recordBuilder.status() == DELEGATING_SPENDER_DOES_NOT_HAVE_APPROVE_FOR_ALL
                 || recordBuilder.status() == INVALID_SIGNATURE) {
             recordBuilder.status(SENDER_DOES_NOT_OWN_NFT_SERIAL_NO);

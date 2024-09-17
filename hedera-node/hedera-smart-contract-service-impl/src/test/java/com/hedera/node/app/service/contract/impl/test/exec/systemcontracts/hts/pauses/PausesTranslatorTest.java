@@ -16,12 +16,20 @@
 
 package com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.hts.pauses;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.BDDMockito.given;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.burn.BurnTranslator.BURN_TOKEN_V2;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.pauses.PausesTranslator.PAUSE;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.pauses.PausesTranslator.UNPAUSE;
+import static com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.CallAttemptHelpers.prepareHtsAttemptWithSelector;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
+import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategies;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AddressIdConverter;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.pauses.PausesDecoder;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.pauses.PausesTranslator;
+import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater.Enhancement;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -32,6 +40,18 @@ import org.mockito.junit.jupiter.MockitoExtension;
 public class PausesTranslatorTest {
     @Mock
     private HtsCallAttempt attempt;
+
+    @Mock
+    private SystemContractGasCalculator gasCalculator;
+
+    @Mock
+    private Enhancement enhancement;
+
+    @Mock
+    private AddressIdConverter addressIdConverter;
+
+    @Mock
+    private VerificationStrategies verificationStrategies;
 
     private PausesDecoder decoder = new PausesDecoder();
 
@@ -44,15 +64,22 @@ public class PausesTranslatorTest {
 
     @Test
     void matchesPauseTest() {
-        given(attempt.selector()).willReturn(PausesTranslator.PAUSE.selector());
-        final var matches = subject.matches(attempt);
-        assertThat(matches).isTrue();
+        attempt = prepareHtsAttemptWithSelector(
+                PAUSE, subject, enhancement, addressIdConverter, verificationStrategies, gasCalculator);
+        assertTrue(subject.matches(attempt));
     }
 
     @Test
     void matchesUnpauseTest() {
-        given(attempt.selector()).willReturn(PausesTranslator.UNPAUSE.selector());
-        final var matches = subject.matches(attempt);
-        assertThat(matches).isTrue();
+        attempt = prepareHtsAttemptWithSelector(
+                UNPAUSE, subject, enhancement, addressIdConverter, verificationStrategies, gasCalculator);
+        assertTrue(subject.matches(attempt));
+    }
+
+    @Test
+    void matchesFailsOnIncorrectSelector() {
+        attempt = prepareHtsAttemptWithSelector(
+                BURN_TOKEN_V2, subject, enhancement, addressIdConverter, verificationStrategies, gasCalculator);
+        assertFalse(subject.matches(attempt));
     }
 }

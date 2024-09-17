@@ -22,16 +22,18 @@ import static com.hedera.hapi.node.base.HederaFunctionality.CONTRACT_CREATE;
 import static com.hedera.hapi.node.base.HederaFunctionality.CRYPTO_CREATE;
 import static com.hedera.hapi.node.base.HederaFunctionality.CRYPTO_TRANSFER;
 import static com.hedera.hapi.node.base.HederaFunctionality.ETHEREUM_TRANSACTION;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.CONSENSUS_GAS_EXHAUSTED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_AMOUNTS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
-import static com.hedera.node.app.workflows.handle.throttle.DispatchUsageManager.WorkDone.FEES_ONLY;
-import static com.hedera.node.app.workflows.handle.throttle.DispatchUsageManager.WorkDone.USER_TRANSACTION;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.THROTTLED_AT_CONSENSUS;
+import static com.hedera.node.app.spi.workflows.HandleContext.ConsensusThrottling.OFF;
+import static com.hedera.node.app.spi.workflows.HandleContext.ConsensusThrottling.ON;
 import static java.util.Objects.requireNonNull;
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -48,16 +50,18 @@ import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.store.ReadableStoreFactory;
+import com.hedera.node.app.throttle.CongestionThrottleService;
 import com.hedera.node.app.throttle.NetworkUtilizationManager;
 import com.hedera.node.app.throttle.ThrottleServiceManager;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.handle.Dispatch;
 import com.hedera.node.app.workflows.handle.metric.HandleWorkflowMetrics;
-import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
+import com.hedera.node.app.workflows.handle.record.RecordStreamBuilder;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.state.spi.ReadableStates;
 import com.swirlds.state.spi.info.NetworkInfo;
 import com.swirlds.state.spi.info.SelfNodeInfo;
 import java.time.Instant;
@@ -109,15 +113,20 @@ class DispatchUsageManagerTest {
                     .build())
             .build();
     private static final TransactionInfo ETH_TXN_INFO = new TransactionInfo(
-            Transaction.DEFAULT, ETH_TXN_BODY, SignatureMap.DEFAULT, Bytes.EMPTY, ETHEREUM_TRANSACTION);
+            Transaction.DEFAULT, ETH_TXN_BODY, SignatureMap.DEFAULT, Bytes.EMPTY, ETHEREUM_TRANSACTION, null);
     private static final TransactionInfo CRYPTO_TRANSFER_TXN_INFO = new TransactionInfo(
-            Transaction.DEFAULT, NONDESCRIPT_TXN_BODY, SignatureMap.DEFAULT, Bytes.EMPTY, CRYPTO_TRANSFER);
+            Transaction.DEFAULT, NONDESCRIPT_TXN_BODY, SignatureMap.DEFAULT, Bytes.EMPTY, CRYPTO_TRANSFER, null);
     private static final TransactionInfo CONTRACT_CALL_TXN_INFO = new TransactionInfo(
-            Transaction.DEFAULT, CONTRACT_CALL_TXN_BODY, SignatureMap.DEFAULT, Bytes.EMPTY, CONTRACT_CALL);
+            Transaction.DEFAULT, CONTRACT_CALL_TXN_BODY, SignatureMap.DEFAULT, Bytes.EMPTY, CONTRACT_CALL, null);
     private static final TransactionInfo CONTRACT_CREATE_TXN_INFO = new TransactionInfo(
-            Transaction.DEFAULT, CONTRACT_CREATE_TXN_BODY, SignatureMap.DEFAULT, Bytes.EMPTY, CONTRACT_CREATE);
+            Transaction.DEFAULT, CONTRACT_CREATE_TXN_BODY, SignatureMap.DEFAULT, Bytes.EMPTY, CONTRACT_CREATE, null);
     private static final TransactionInfo SUBMIT_TXN_INFO = new TransactionInfo(
-            Transaction.DEFAULT, NONDESCRIPT_TXN_BODY, SignatureMap.DEFAULT, Bytes.EMPTY, CONSENSUS_SUBMIT_MESSAGE);
+            Transaction.DEFAULT,
+            NONDESCRIPT_TXN_BODY,
+            SignatureMap.DEFAULT,
+            Bytes.EMPTY,
+            CONSENSUS_SUBMIT_MESSAGE,
+            null);
 
     @Mock
     private NetworkInfo networkInfo;
@@ -132,7 +141,10 @@ class DispatchUsageManagerTest {
     private ReadableAccountStore readableAccountStore;
 
     @Mock
-    private SingleTransactionRecordBuilderImpl recordBuilder;
+    private ReadableStates readableStates;
+
+    @Mock
+    private RecordStreamBuilder recordBuilder;
 
     @Mock
     private HandleWorkflowMetrics handleWorkflowMetrics;
@@ -158,8 +170,8 @@ class DispatchUsageManagerTest {
     }
 
     @Test
-    void doesNotScreeNonContractOperation() throws DispatchUsageManager.ThrottleException {
-        given(dispatch.txnInfo()).willReturn(CRYPTO_TRANSFER_TXN_INFO);
+    void doesNotScreenIfThrottleStrategyOff() throws ThrottleException {
+        given(dispatch.throttleStrategy()).willReturn(OFF);
 
         subject.screenForCapacity(dispatch);
 
@@ -167,73 +179,73 @@ class DispatchUsageManagerTest {
     }
 
     @Test
-    void alwaysTracksContractUtilization() {
-        given(dispatch.txnInfo()).willReturn(CONTRACT_CALL_TXN_INFO);
-        given(dispatch.consensusNow()).willReturn(CONSENSUS_NOW);
-        given(dispatch.stack()).willReturn(stack);
-
-        assertDoesNotThrow(() -> subject.screenForCapacity(dispatch));
-    }
-
-    @Test
-    void throwsThrottleExceptionIfGasThrottled() {
+    void throwsGasThrottleExceptionIfGasThrottled() {
         given(dispatch.txnInfo()).willReturn(CONTRACT_CALL_TXN_INFO);
         given(dispatch.consensusNow()).willReturn(CONSENSUS_NOW);
         given(dispatch.stack()).willReturn(stack);
         given(networkUtilizationManager.wasLastTxnGasThrottled()).willReturn(true);
+        given(dispatch.throttleStrategy()).willReturn(ON);
 
         Assertions.assertThatThrownBy(() -> subject.screenForCapacity(dispatch))
-                .isInstanceOf(DispatchUsageManager.ThrottleException.class);
+                .isInstanceOf(ThrottleException.class)
+                .extracting(ex -> ((ThrottleException) ex).getStatus())
+                .isEqualTo(CONSENSUS_GAS_EXHAUSTED);
     }
 
     @Test
-    void tracksNoUsageIfNotUserDispatch() {
-        given(dispatch.txnCategory()).willReturn(HandleContext.TransactionCategory.CHILD);
-
-        subject.trackUsage(dispatch, FEES_ONLY);
-
-        verifyNoInteractions(networkUtilizationManager);
-    }
-
-    @Test
-    void tracksJustFeePaymentsIfOnlyWorkDone() {
-        given(dispatch.txnCategory()).willReturn(HandleContext.TransactionCategory.USER);
+    void throwsNativeThrottleExceptionIfGasThrottled() {
+        given(dispatch.txnInfo()).willReturn(CRYPTO_TRANSFER_TXN_INFO);
         given(dispatch.consensusNow()).willReturn(CONSENSUS_NOW);
         given(dispatch.stack()).willReturn(stack);
+        given(dispatch.throttleStrategy()).willReturn(ON);
+        given(networkUtilizationManager.trackTxn(CRYPTO_TRANSFER_TXN_INFO, CONSENSUS_NOW, stack))
+                .willReturn(true);
 
-        subject.trackUsage(dispatch, FEES_ONLY);
-
-        verify(networkUtilizationManager).trackFeePayments(CONSENSUS_NOW, stack);
-        verify(throttleServiceManager).saveThrottleSnapshotsAndCongestionLevelStartsTo(stack);
+        Assertions.assertThatThrownBy(() -> subject.screenForCapacity(dispatch))
+                .isInstanceOf(ThrottleException.class)
+                .extracting(ex -> ((ThrottleException) ex).getStatus())
+                .isEqualTo(THROTTLED_AT_CONSENSUS);
     }
 
     @Test
-    void tracksUtilizationForNonContractOperationsAndNothingElseOnSuccess() {
+    void doesNotThrowIfNotThrottled() throws ThrottleException {
+        final var inOrder = inOrder(networkUtilizationManager, throttleServiceManager);
+        given(dispatch.txnInfo()).willReturn(CRYPTO_TRANSFER_TXN_INFO);
+        given(dispatch.consensusNow()).willReturn(CONSENSUS_NOW);
+        given(dispatch.stack()).willReturn(stack);
+        given(dispatch.throttleStrategy()).willReturn(ON);
+        given(stack.getReadableStates(CongestionThrottleService.NAME)).willReturn(readableStates);
+
+        subject.screenForCapacity(dispatch);
+
+        inOrder.verify(throttleServiceManager).resetThrottlesUnconditionally(readableStates);
+        inOrder.verify(networkUtilizationManager).trackTxn(CRYPTO_TRANSFER_TXN_INFO, CONSENSUS_NOW, stack);
+    }
+
+    @Test
+    void alwaysSavesThrottleUsageSnapshotsForSafety() {
         given(dispatch.txnCategory()).willReturn(HandleContext.TransactionCategory.USER);
         given(dispatch.txnInfo()).willReturn(CRYPTO_TRANSFER_TXN_INFO);
         given(recordBuilder.status()).willReturn(SUCCESS);
         given(dispatch.recordBuilder()).willReturn(recordBuilder);
-        given(dispatch.consensusNow()).willReturn(CONSENSUS_NOW);
         given(dispatch.stack()).willReturn(stack);
 
-        subject.trackUsage(dispatch, USER_TRANSACTION);
+        subject.finalizeAndSaveUsage(dispatch);
 
-        verify(networkUtilizationManager).trackTxn(CRYPTO_TRANSFER_TXN_INFO, CONSENSUS_NOW, stack);
         verify(throttleServiceManager).saveThrottleSnapshotsAndCongestionLevelStartsTo(stack);
     }
 
     @Test
-    void tracksUtilizationForNonAutoCreatingOperations() {
+    void onlySnapshotsForNonAutoCreatingOperations() {
         given(dispatch.txnCategory()).willReturn(HandleContext.TransactionCategory.USER);
         given(dispatch.txnInfo()).willReturn(SUBMIT_TXN_INFO);
-        given(dispatch.consensusNow()).willReturn(CONSENSUS_NOW);
         given(dispatch.stack()).willReturn(stack);
         given(dispatch.recordBuilder()).willReturn(recordBuilder);
 
-        subject.trackUsage(dispatch, USER_TRANSACTION);
+        subject.finalizeAndSaveUsage(dispatch);
 
-        verify(networkUtilizationManager).trackTxn(SUBMIT_TXN_INFO, CONSENSUS_NOW, stack);
         verify(throttleServiceManager).saveThrottleSnapshotsAndCongestionLevelStartsTo(stack);
+        verifyNoInteractions(handleWorkflowMetrics);
     }
 
     @Test
@@ -246,7 +258,7 @@ class DispatchUsageManagerTest {
         given(dispatch.config()).willReturn(DEFAULT_CONFIG);
         given(dispatch.stack()).willReturn(stack);
 
-        subject.trackUsage(dispatch, USER_TRANSACTION);
+        subject.finalizeAndSaveUsage(dispatch);
 
         verify(handleWorkflowMetrics).addGasUsed(GAS_USED);
         verify(networkUtilizationManager).leakUnusedGasPreviouslyReserved(CONTRACT_CALL_TXN_INFO, GAS_LIMIT - GAS_USED);
@@ -263,7 +275,7 @@ class DispatchUsageManagerTest {
         given(dispatch.config()).willReturn(DEFAULT_CONFIG);
         given(dispatch.stack()).willReturn(stack);
 
-        subject.trackUsage(dispatch, USER_TRANSACTION);
+        subject.finalizeAndSaveUsage(dispatch);
 
         verify(handleWorkflowMetrics).addGasUsed(GAS_USED);
         verify(networkUtilizationManager)
@@ -283,7 +295,7 @@ class DispatchUsageManagerTest {
         given(dispatch.readableStoreFactory()).willReturn(readableStoreFactory);
         given(readableStoreFactory.getStore(ReadableAccountStore.class)).willReturn(readableAccountStore);
 
-        subject.trackUsage(dispatch, USER_TRANSACTION);
+        subject.finalizeAndSaveUsage(dispatch);
 
         verify(handleWorkflowMetrics).addGasUsed(GAS_USED);
         verify(networkUtilizationManager)
@@ -298,7 +310,7 @@ class DispatchUsageManagerTest {
         given(dispatch.recordBuilder()).willReturn(recordBuilder);
         given(dispatch.stack()).willReturn(stack);
 
-        subject.trackUsage(dispatch, USER_TRANSACTION);
+        subject.finalizeAndSaveUsage(dispatch);
 
         verify(handleWorkflowMetrics, never()).addGasUsed(GAS_USED);
         verify(networkUtilizationManager, never()).leakUnusedGasPreviouslyReserved(any(), anyLong());
@@ -319,7 +331,7 @@ class DispatchUsageManagerTest {
         given(networkInfo.selfNodeInfo()).willReturn(selfNodeInfo);
         given(selfNodeInfo.accountId()).willReturn(CREATOR_ACCOUNT_ID);
 
-        subject.trackUsage(dispatch, USER_TRANSACTION);
+        subject.finalizeAndSaveUsage(dispatch);
 
         verify(throttleServiceManager).reclaimFrontendThrottleCapacity(1, CRYPTO_CREATE);
         verify(throttleServiceManager).saveThrottleSnapshotsAndCongestionLevelStartsTo(stack);
@@ -337,7 +349,7 @@ class DispatchUsageManagerTest {
         given(throttleServiceManager.numImplicitCreations(NONDESCRIPT_TXN_BODY, readableAccountStore))
                 .willReturn(0);
 
-        subject.trackUsage(dispatch, USER_TRANSACTION);
+        subject.finalizeAndSaveUsage(dispatch);
 
         verify(throttleServiceManager, never()).reclaimFrontendThrottleCapacity(anyInt(), any());
         verify(throttleServiceManager).saveThrottleSnapshotsAndCongestionLevelStartsTo(stack);
@@ -357,9 +369,19 @@ class DispatchUsageManagerTest {
         given(networkInfo.selfNodeInfo()).willReturn(selfNodeInfo);
         given(selfNodeInfo.accountId()).willReturn(OTHER_NODE_ID);
 
-        subject.trackUsage(dispatch, USER_TRANSACTION);
+        subject.finalizeAndSaveUsage(dispatch);
 
         verify(throttleServiceManager, never()).reclaimFrontendThrottleCapacity(anyInt(), any());
         verify(throttleServiceManager).saveThrottleSnapshotsAndCongestionLevelStartsTo(stack);
+    }
+
+    @Test
+    void delegatesTrackingFeePayments() {
+        given(dispatch.consensusNow()).willReturn(CONSENSUS_NOW);
+        given(dispatch.stack()).willReturn(stack);
+
+        subject.trackFeePayments(dispatch);
+
+        verify(networkUtilizationManager).trackFeePayments(CONSENSUS_NOW, stack);
     }
 }

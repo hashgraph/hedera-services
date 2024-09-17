@@ -44,7 +44,6 @@ import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hedera.node.config.data.FilesConfig;
-import com.hedera.node.config.data.NetworkAdminConfig;
 import com.hedera.node.config.types.LongPair;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -64,12 +63,18 @@ import org.apache.logging.log4j.Logger;
 @Singleton
 public class FreezeHandler implements TransactionHandler {
     private static final Logger log = LogManager.getLogger(FreezeHandler.class);
+
     // length of the hash of the update file included in the FreezeTransactionBody
     // used for a quick sanity check that the file hash is not invalid
-    public static final int UPDATE_FILE_HASH_LEN = 48;
+    private static final int UPDATE_FILE_HASH_LEN = 48;
 
     private final Executor freezeExecutor;
 
+    /**
+     * Constructs a {@link FreezeHandler} with the provided {@link Executor}.
+     *
+     * @param freezeExecutor the {@link Executor} to use for handling freeze transactions
+     */
     @Inject
     public FreezeHandler(@NonNull @Named("FreezeService") final Executor freezeExecutor) {
         this.freezeExecutor = requireNonNull(freezeExecutor);
@@ -146,7 +151,6 @@ public class FreezeHandler implements TransactionHandler {
     public void handle(@NonNull final HandleContext context) throws HandleException {
         requireNonNull(context);
         final var txn = context.body();
-        final NetworkAdminConfig adminServiceConfig = context.configuration().getConfigData(NetworkAdminConfig.class);
         final StoreFactory storeFactory = context.storeFactory();
         final ReadableUpgradeFileStore upgradeFileStore = storeFactory.readableStore(ReadableUpgradeFileStore.class);
         final ReadableNodeStore nodeStore = storeFactory.readableStore(ReadableNodeStore.class);
@@ -161,7 +165,7 @@ public class FreezeHandler implements TransactionHandler {
         final var filesConfig = context.configuration().getConfigData(FilesConfig.class);
 
         final FreezeUpgradeActions upgradeActions = new FreezeUpgradeActions(
-                adminServiceConfig, freezeStore, freezeExecutor, upgradeFileStore, nodeStore, stakingInfoStore);
+                context.configuration(), freezeStore, freezeExecutor, upgradeFileStore, nodeStore, stakingInfoStore);
         final Timestamp freezeStartTime = freezeTxn.startTime(); // may be null for some freeze types
 
         switch (freezeTxn.freezeType()) {
@@ -216,7 +220,7 @@ public class FreezeHandler implements TransactionHandler {
     }
 
     /**
-     * Performs checks that the entities related to this transaction exist and are valid
+     * Performs checks that the entities related to this transaction exist and are valid.
      */
     private static void validateSemantics(
             @NonNull final FreezeTransactionBody freezeTxn,

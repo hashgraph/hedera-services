@@ -26,6 +26,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 
+import com.hedera.hapi.platform.event.GossipEvent;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
@@ -107,7 +108,7 @@ class EventDeduplicatorTests {
         if (event != null) {
             if (ancientMode == AncientMode.BIRTH_ROUND_THRESHOLD) {
                 assertFalse(
-                        event.getDescriptor().getBirthRound() < minimumRoundNonAncient,
+                        event.getDescriptor().eventDescriptor().birthRound() < minimumRoundNonAncient,
                         "Ancient events shouldn't be emitted");
             } else {
                 assertFalse(event.getGeneration() < minimumGenerationNonAncient, "Ancient events shouldn't be emitted");
@@ -195,19 +196,22 @@ class EventDeduplicatorTests {
                         emittedEvents);
             } else {
                 // submit a duplicate event with a different signature 25% of the time
+                final PlatformEvent platformEvent = submittedEvents.get(random.nextInt(submittedEvents.size()));
                 final PlatformEvent duplicateEvent = new PlatformEvent(
-                        submittedEvents
-                                .get(random.nextInt(submittedEvents.size()))
-                                .getUnsignedEvent(),
-                        randomSignatureBytes(random) // randomize the signature
-                        );
+                        platformEvent.getOldSoftwareVersion(),
+                        new GossipEvent.Builder()
+                                .eventCore(platformEvent.getGossipEvent().eventCore())
+                                .signature(randomSignatureBytes(random)) // randomize the signature
+                                .eventTransaction(platformEvent.getGossipEvent().eventTransaction())
+                                .build());
+                duplicateEvent.setHash(platformEvent.getHash());
 
                 if (ancientMode == AncientMode.BIRTH_ROUND_THRESHOLD) {
-                    if (duplicateEvent.getDescriptor().getBirthRound() < minimumRoundNonAncient) {
+                    if (duplicateEvent.getDescriptor().eventDescriptor().birthRound() < minimumRoundNonAncient) {
                         ancientEventCount++;
                     }
                 } else {
-                    if (duplicateEvent.getDescriptor().getGeneration() < minimumGenerationNonAncient) {
+                    if (duplicateEvent.getDescriptor().eventDescriptor().generation() < minimumGenerationNonAncient) {
                         ancientEventCount++;
                     }
                 }

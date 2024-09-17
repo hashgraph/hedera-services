@@ -81,7 +81,7 @@ public abstract class AbstractNetwork implements HederaNetwork {
     }
 
     private HapiPropertySource environmentDefaults() {
-        final var defaultConfig = new ConfigProviderImpl(true, null).getConfiguration();
+        final var defaultConfig = new ConfigProviderImpl(true).getConfiguration();
         return new HapiPropertySource() {
             @Override
             public String get(@NonNull final String property) {

@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.workflows.handle;
 
+import static com.hedera.hapi.node.base.HederaFunctionality.ETHEREUM_TRANSACTION;
 import static com.hedera.hapi.node.base.HederaFunctionality.SYSTEM_DELETE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.AUTHORIZATION_FAILED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.ENTITY_NOT_ALLOWED_TO_DELETE;
@@ -24,29 +25,28 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.UNAUTHORIZED;
+import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.PRECEDING;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.USER;
 import static com.hedera.node.app.workflows.handle.HandleWorkflow.ALERT_MESSAGE;
 import static com.hedera.node.app.workflows.handle.dispatch.DispatchValidator.DuplicateStatus.DUPLICATE;
 import static com.hedera.node.app.workflows.handle.dispatch.DispatchValidator.ServiceFeeStatus.UNABLE_TO_PAY_SERVICE_FEE;
-import static com.hedera.node.app.workflows.handle.throttle.DispatchUsageManager.ThrottleException;
-import static com.hedera.node.app.workflows.handle.throttle.DispatchUsageManager.WorkDone.FEES_ONLY;
-import static com.hedera.node.app.workflows.handle.throttle.DispatchUsageManager.WorkDone.USER_TRANSACTION;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.node.app.fees.ExchangeRateManager;
+import com.hedera.node.app.service.contract.impl.handlers.EthereumTransactionHandler;
 import com.hedera.node.app.spi.authorization.Authorizer;
 import com.hedera.node.app.spi.workflows.HandleException;
+import com.hedera.node.app.spi.workflows.record.StreamBuilder;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.app.workflows.handle.dispatch.DispatchValidator;
 import com.hedera.node.app.workflows.handle.dispatch.RecordFinalizer;
 import com.hedera.node.app.workflows.handle.dispatch.ValidationResult;
-import com.hedera.node.app.workflows.handle.record.RecordListBuilder;
-import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.node.app.workflows.handle.steps.PlatformStateUpdates;
 import com.hedera.node.app.workflows.handle.steps.SystemFileUpdates;
 import com.hedera.node.app.workflows.handle.throttle.DispatchUsageManager;
+import com.hedera.node.app.workflows.handle.throttle.ThrottleException;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import javax.inject.Inject;
@@ -72,6 +72,7 @@ public class DispatchProcessor {
     private final DispatchUsageManager dispatchUsageManager;
     private final ExchangeRateManager exchangeRateManager;
     private final TransactionDispatcher dispatcher;
+    private final EthereumTransactionHandler ethereumTransactionHandler;
 
     @Inject
     public DispatchProcessor(
@@ -82,7 +83,8 @@ public class DispatchProcessor {
             @NonNull final PlatformStateUpdates platformStateUpdates,
             @NonNull final DispatchUsageManager dispatchUsageManager,
             @NonNull final ExchangeRateManager exchangeRateManager,
-            @NonNull final TransactionDispatcher dispatcher) {
+            @NonNull final TransactionDispatcher dispatcher,
+            @NonNull final EthereumTransactionHandler ethereumTransactionHandler) {
         this.authorizer = requireNonNull(authorizer);
         this.validator = requireNonNull(validator);
         this.recordFinalizer = requireNonNull(recordFinalizer);
@@ -91,34 +93,35 @@ public class DispatchProcessor {
         this.dispatchUsageManager = requireNonNull(dispatchUsageManager);
         this.exchangeRateManager = requireNonNull(exchangeRateManager);
         this.dispatcher = requireNonNull(dispatcher);
+        this.ethereumTransactionHandler = requireNonNull(ethereumTransactionHandler);
     }
 
     /**
      * This method is responsible for charging the fees and tries to execute the
      * business logic for the given dispatch, guaranteeing that the changes committed
      * to its stack are exactly reflected in its recordBuilder. At the end, it will
-     * finalize the record and commit the stack. The WorkDone returned will be used
-     * to track the network utilization. It will be {@link DispatchUsageManager.WorkDone#FEES_ONLY} if
-     * the transaction has node errors, otherwise it will be
-     * {@link DispatchUsageManager.WorkDone#USER_TRANSACTION}.
+     * finalize the record and commit the stack.
      *
      * @param dispatch the dispatch to be processed
      */
     public void processDispatch(@NonNull final Dispatch dispatch) {
         requireNonNull(dispatch);
         final var errorReport = validator.validationReportFor(dispatch);
-        var workDone = FEES_ONLY;
         if (errorReport.isCreatorError()) {
             chargeCreator(dispatch, errorReport);
         } else {
             chargePayer(dispatch, errorReport);
             if (!alreadyFailed(dispatch, errorReport)) {
-                workDone = tryHandle(dispatch, errorReport);
+                tryHandle(dispatch, errorReport);
             }
         }
-        dispatchUsageManager.trackUsage(dispatch, workDone);
+        dispatchUsageManager.finalizeAndSaveUsage(dispatch);
         recordFinalizer.finalizeRecord(dispatch);
-        dispatch.stack().commitFullStack();
+        if (dispatch.txnCategory() == USER) {
+            dispatch.stack().commitTransaction(dispatch.recordBuilder());
+        } else {
+            dispatch.stack().commitFullStack();
+        }
     }
 
     /**
@@ -132,36 +135,31 @@ public class DispatchProcessor {
      * @param validationResult the due diligence report for the dispatch
      * @return the work done by the dispatch
      */
-    private DispatchUsageManager.WorkDone tryHandle(
-            @NonNull final Dispatch dispatch, @NonNull final ValidationResult validationResult) {
+    private void tryHandle(@NonNull final Dispatch dispatch, @NonNull final ValidationResult validationResult) {
         try {
             dispatchUsageManager.screenForCapacity(dispatch);
             dispatcher.dispatchHandle(dispatch.handleContext());
             dispatch.recordBuilder().status(SUCCESS);
-            // Only user transactions can trigger system updates in the current system
-            if (dispatch.txnCategory() == USER) {
+            // Only user or preceding transactions can trigger system updates in the current system
+            if (dispatch.txnCategory() == USER || dispatch.txnCategory() == PRECEDING) {
                 handleSystemUpdates(dispatch);
             }
-            return USER_TRANSACTION;
         } catch (HandleException e) {
             // In case of a ContractCall when it reverts, the gas charged should not be rolled back
-            rollback(
-                    e.shouldRollbackStack(),
-                    e.getStatus(),
-                    dispatch.stack(),
-                    dispatch.recordListBuilder(),
-                    dispatch.recordBuilder());
+            rollback(e.shouldRollbackStack(), e.getStatus(), dispatch.stack(), dispatch.recordBuilder());
             if (e.shouldRollbackStack()) {
                 chargePayer(dispatch, validationResult);
             }
             // Since there is no easy way to say how much work was done in the failed dispatch,
             // and current throttling is very rough-grained, we just return USER_TRANSACTION here
-            return USER_TRANSACTION;
         } catch (final ThrottleException e) {
-            return nonHandleWorkDone(dispatch, validationResult, dispatch.recordListBuilder(), e.getStatus());
+            rollbackAndRechargeFee(dispatch, validationResult, e.getStatus());
+            if (dispatch.txnInfo().functionality() == ETHEREUM_TRANSACTION) {
+                ethereumTransactionHandler.handleThrottled(dispatch.handleContext());
+            }
         } catch (final Exception e) {
             logger.error("{} - exception thrown while handling dispatch", ALERT_MESSAGE, e);
-            return nonHandleWorkDone(dispatch, validationResult, dispatch.recordListBuilder(), FAIL_INVALID);
+            rollbackAndRechargeFee(dispatch, validationResult, FAIL_INVALID);
         }
     }
 
@@ -177,13 +175,13 @@ public class DispatchProcessor {
         final var fileUpdateResult = systemFileUpdates.handleTxBody(
                 dispatch.stack(), dispatch.txnInfo().txBody());
 
+        // In case we just changed the exchange rates via 0.0.112 update, reset them now
         dispatch.recordBuilder()
                 .exchangeRate(exchangeRateManager.exchangeRates())
                 .status(fileUpdateResult);
 
         // Notify if platform state was updated
-        platformStateUpdates.handleTxBody(
-                dispatch.stack(), dispatch.platformState(), dispatch.txnInfo().txBody());
+        platformStateUpdates.handleTxBody(dispatch.stack(), dispatch.txnInfo().txBody());
     }
 
     /**
@@ -192,19 +190,15 @@ public class DispatchProcessor {
      *
      * @param dispatch the dispatch to be processed
      * @param validationResult the due diligence report for the dispatch
-     * @param recordListBuilder the record list builder
      * @param status the status to set
-     * @return the work done in handling the exception
      */
-    @NonNull
-    private DispatchUsageManager.WorkDone nonHandleWorkDone(
+    private void rollbackAndRechargeFee(
             @NonNull final Dispatch dispatch,
             @NonNull final ValidationResult validationResult,
-            @NonNull final RecordListBuilder recordListBuilder,
             @NonNull final ResponseCodeEnum status) {
-        rollback(true, status, dispatch.stack(), recordListBuilder, dispatch.recordBuilder());
+        rollback(true, status, dispatch.stack(), dispatch.recordBuilder());
         chargePayer(dispatch, validationResult.withoutServiceFee());
-        return FEES_ONLY;
+        dispatchUsageManager.trackFeePayments(dispatch);
     }
 
     /**
@@ -259,24 +253,21 @@ public class DispatchProcessor {
      * {@link HandleException} that is due to a contract call revert.
      * @param status the status to set
      * @param stack the save point stack to rollback
-     * @param recordListBuilder the record list builder to revert
      */
     private void rollback(
             final boolean rollbackStack,
             @NonNull final ResponseCodeEnum status,
             @NonNull final SavepointStackImpl stack,
-            @NonNull final RecordListBuilder recordListBuilder,
-            @NonNull final SingleTransactionRecordBuilderImpl recordBuilder) {
+            @NonNull final StreamBuilder builder) {
+        builder.status(status);
         if (rollbackStack) {
             stack.rollbackFullStack();
         }
-        recordBuilder.status(status);
-        recordListBuilder.revertChildrenOf(recordBuilder);
     }
 
     /**
      * Checks if the transaction has already failed due to an error that can be identified before even performing
-     * the dispatch. If it has, it will set the status of the dispatch's record buidler and return true.
+     * the dispatch. If it has, it will set the status of the dispatch's record builder and return true.
      * Otherwise, it will return false.
      *
      * @param dispatch the dispatch to be processed

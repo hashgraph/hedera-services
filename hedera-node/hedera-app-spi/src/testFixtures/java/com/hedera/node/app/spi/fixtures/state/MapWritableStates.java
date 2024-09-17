@@ -18,7 +18,7 @@ package com.hedera.node.app.spi.fixtures.state;
 
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.node.app.spi.state.CommittableWritableStates;
+import com.swirlds.state.spi.CommittableWritableStates;
 import com.swirlds.state.spi.WritableKVState;
 import com.swirlds.state.spi.WritableKVStateBase;
 import com.swirlds.state.spi.WritableQueueState;

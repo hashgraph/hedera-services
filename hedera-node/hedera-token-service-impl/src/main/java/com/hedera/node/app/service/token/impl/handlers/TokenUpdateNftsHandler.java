@@ -23,7 +23,6 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_NFT_SERIA
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MISSING_SERIAL_NUMBERS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_HAS_NO_METADATA_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_HAS_NO_METADATA_OR_SUPPLY_KEY;
-import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.getIfUsable;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateTruePreCheck;
 import static java.util.Objects.requireNonNull;
@@ -76,7 +75,7 @@ public class TokenUpdateNftsHandler implements TransactionHandler {
         requireNonNull(txn);
         final var op = txn.tokenUpdateNftsOrThrow();
         validateTruePreCheck(op.hasToken(), INVALID_TOKEN_ID);
-        validateTrue(!op.serialNumbers().isEmpty(), MISSING_SERIAL_NUMBERS);
+        validateTruePreCheck(!op.serialNumbers().isEmpty(), MISSING_SERIAL_NUMBERS);
     }
 
     @Override
@@ -85,7 +84,8 @@ public class TokenUpdateNftsHandler implements TransactionHandler {
         final var txn = context.body();
         final var op = txn.tokenUpdateNftsOrThrow();
         final var tokenStore = context.createStore(ReadableTokenStore.class);
-        final var token = getIfUsable(op.tokenOrElse(TokenID.DEFAULT), tokenStore);
+        final var token = tokenStore.get(op.tokenOrElse(TokenID.DEFAULT));
+        validateTruePreCheck(token != null, INVALID_TOKEN_ID);
 
         final var nftStore = context.createStore(ReadableNftStore.class);
         if (serialNumbersInTreasury(
@@ -142,8 +142,9 @@ public class TokenUpdateNftsHandler implements TransactionHandler {
         }
     }
 
-    /** The total price should be N * $0.001, where N is the number of NFTs in the transaction body
-     * * @param feeContext the {@link FeeContext} with all information needed for the calculation
+    /**
+     * The total price should be N * $0.001, where N is the number of NFTs in the transaction body.
+     * @param feeContext the {@link FeeContext} with all information needed for the calculation
      * @return the total Fee
      */
     @NonNull
@@ -173,20 +174,26 @@ public class TokenUpdateNftsHandler implements TransactionHandler {
      * @param nftStore the nft store
      * @param tokenId the token id
      * @return true if all serial numbers are owned by the treasury account
+     * @throws PreCheckException if the Nft does not exist
      */
     private boolean serialNumbersInTreasury(
             @NonNull final AccountID treasuryAccount,
             @NonNull final List<Long> serialNumbers,
             @NonNull final ReadableNftStore nftStore,
-            @NonNull final TokenID tokenId) {
-        return serialNumbers.stream()
-                .map(serialNumber -> getIfUsable(
-                        NftID.newBuilder()
-                                .tokenId(tokenId)
-                                .serialNumber(serialNumber)
-                                .build(),
-                        nftStore))
-                .allMatch(nft ->
-                        nft != null && (nft.ownerId() == null || Objects.equals(nft.ownerId(), treasuryAccount)));
+            @NonNull final TokenID tokenId)
+            throws PreCheckException {
+        boolean serialNumbersInTreasury = true;
+        for (final Long serialNumber : serialNumbers) {
+            final Nft nft = nftStore.get(NftID.newBuilder()
+                    .tokenId(tokenId)
+                    .serialNumber(serialNumber)
+                    .build());
+            validateTruePreCheck(nft != null, INVALID_NFT_ID);
+            if (nft.ownerId() != null && !Objects.equals(nft.ownerId(), treasuryAccount)) {
+                serialNumbersInTreasury = false;
+                break;
+            }
+        }
+        return serialNumbersInTreasury;
     }
 }

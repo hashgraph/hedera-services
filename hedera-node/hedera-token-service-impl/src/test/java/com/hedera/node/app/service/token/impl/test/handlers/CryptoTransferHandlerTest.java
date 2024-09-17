@@ -21,6 +21,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_REPEATED_IN_ACC
 import static com.hedera.hapi.node.base.ResponseCodeEnum.BATCH_SIZE_LIMIT_EXCEEDED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_TRANSFER_LIST_SIZE_LIMIT_EXCEEDED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TRANSFER_LIST_SIZE_LIMIT_EXCEEDED;
 import static com.hedera.node.app.hapi.fees.usage.SingletonUsageProperties.USAGE_PROPERTIES;
@@ -52,7 +53,6 @@ import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.base.TransferList;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.Nft;
-import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.ReadableAccountStore;
@@ -62,8 +62,8 @@ import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.handlers.CryptoTransferHandler;
-import com.hedera.node.app.service.token.records.CryptoCreateRecordBuilder;
-import com.hedera.node.app.service.token.records.CryptoTransferRecordBuilder;
+import com.hedera.node.app.service.token.records.CryptoCreateStreamBuilder;
+import com.hedera.node.app.service.token.records.CryptoTransferStreamBuilder;
 import com.hedera.node.app.spi.fees.FeeCalculator;
 import com.hedera.node.app.spi.fees.FeeCalculatorFactory;
 import com.hedera.node.app.spi.fees.FeeContext;
@@ -71,11 +71,10 @@ import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.WarmupContext;
-import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
+import com.hedera.node.app.spi.workflows.record.StreamBuilder;
 import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.app.workflows.handle.DispatchHandleContext;
 import com.hedera.node.app.workflows.handle.cache.CacheWarmer;
-import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
@@ -92,7 +91,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class CryptoTransferHandlerTest extends CryptoTransferHandlerTestBase {
     @Mock
-    private CryptoTransferRecordBuilder transferRecordBuilder;
+    private CryptoTransferStreamBuilder transferRecordBuilder;
 
     private static final TokenID TOKEN_1357 = asToken(1357);
     private static final TokenID TOKEN_9191 = asToken(9191);
@@ -103,7 +102,6 @@ class CryptoTransferHandlerTest extends CryptoTransferHandlerTestBase {
     public void setUp() {
         super.setUp();
         subject = new CryptoTransferHandler(validator);
-        given(recordBuilders.getOrCreate(CryptoTransferRecordBuilder.class)).willReturn(transferRecordBuilder);
     }
 
     @Test
@@ -123,8 +121,8 @@ class CryptoTransferHandlerTest extends CryptoTransferHandlerTestBase {
 
         subject.warm(warmupContext);
 
-        verify(readableAccountStore, times(1)).warm(ACCOUNT_3333);
-        verify(readableAccountStore, times(1)).warm(ACCOUNT_4444);
+        verify(readableAccountStore, times(1)).warm(ACCOUNT_ID_3333);
+        verify(readableAccountStore, times(1)).warm(ACCOUNT_ID_4444);
     }
 
     @Test
@@ -155,7 +153,7 @@ class CryptoTransferHandlerTest extends CryptoTransferHandlerTestBase {
 
         subject.warm(warmupContext);
 
-        verify(readableTokenRelationStore, times(1)).warm(ACCOUNT_3333, TOKEN_2468);
+        verify(readableTokenRelationStore, times(1)).warm(ACCOUNT_ID_3333, TOKEN_2468);
         verify(readableNftStore, times(1)).warm(any());
     }
 
@@ -166,8 +164,8 @@ class CryptoTransferHandlerTest extends CryptoTransferHandlerTestBase {
                 .getOrCreateConfig();
         List<AccountAmount> acctAmounts = new ArrayList<>();
         List<TokenTransferList> tokenTransferLists = new ArrayList<>();
-        acctAmounts.add(aaWith(ACCOUNT_3333, -5));
-        acctAmounts.add(aaWith(ACCOUNT_4444, 5));
+        acctAmounts.add(aaWith(ACCOUNT_ID_3333, -5));
+        acctAmounts.add(aaWith(ACCOUNT_ID_4444, 5));
 
         CryptoTransferTransactionBody cryptoTransfer = CryptoTransferTransactionBody.newBuilder()
                 .transfers(TransferList.newBuilder().accountAmounts(acctAmounts))
@@ -181,7 +179,7 @@ class CryptoTransferHandlerTest extends CryptoTransferHandlerTestBase {
 
         when(feeContext.body())
                 .thenReturn(TransactionBody.newBuilder()
-                        .transactionID(TransactionID.newBuilder().accountID(ACCOUNT_3333))
+                        .transactionID(TransactionID.newBuilder().accountID(ACCOUNT_ID_3333))
                         .cryptoTransfer(cryptoTransfer)
                         .build());
         when(feeContext.configuration()).thenReturn(config);
@@ -212,11 +210,11 @@ class CryptoTransferHandlerTest extends CryptoTransferHandlerTestBase {
                 .token(fungibleTokenId)
                 .transfers(
                         AccountAmount.newBuilder()
-                                .accountID(ACCOUNT_3333)
+                                .accountID(ACCOUNT_ID_3333)
                                 .amount(-5)
                                 .build(),
                         AccountAmount.newBuilder()
-                                .accountID(ACCOUNT_4444)
+                                .accountID(ACCOUNT_ID_4444)
                                 .amount(5)
                                 .build())
                 .build());
@@ -233,7 +231,7 @@ class CryptoTransferHandlerTest extends CryptoTransferHandlerTestBase {
 
         when(feeContext.body())
                 .thenReturn(TransactionBody.newBuilder()
-                        .transactionID(TransactionID.newBuilder().accountID(ACCOUNT_3333))
+                        .transactionID(TransactionID.newBuilder().accountID(ACCOUNT_ID_3333))
                         .cryptoTransfer(cryptoTransfer)
                         .build());
         when(feeContext.configuration()).thenReturn(config);
@@ -280,7 +278,7 @@ class CryptoTransferHandlerTest extends CryptoTransferHandlerTestBase {
 
         when(feeContext.body())
                 .thenReturn(TransactionBody.newBuilder()
-                        .transactionID(TransactionID.newBuilder().accountID(ACCOUNT_3333))
+                        .transactionID(TransactionID.newBuilder().accountID(ACCOUNT_ID_3333))
                         .cryptoTransfer(cryptoTransfer)
                         .build());
         when(feeContext.configuration()).thenReturn(config);
@@ -464,20 +462,22 @@ class CryptoTransferHandlerTest extends CryptoTransferHandlerTestBase {
         givenTxn();
 
         given(handleContext.dispatchRemovablePrecedingTransaction(
-                        any(), eq(CryptoCreateRecordBuilder.class), eq(null), eq(payerId)))
+                        any(), eq(CryptoCreateStreamBuilder.class), eq(null), eq(payerId), any()))
                 .will((invocation) -> {
                     final var copy =
                             account.copyBuilder().accountId(hbarReceiverId).build();
                     writableAccountStore.put(copy);
                     writableAliases.put(ecKeyAlias, asAccount(hbarReceiver));
-                    return cryptoCreateRecordBuilder.accountID(asAccount(hbarReceiver));
+                    given(cryptoCreateRecordBuilder.status()).willReturn(SUCCESS);
+                    return cryptoCreateRecordBuilder;
                 })
                 .will((invocation) -> {
                     final var copy =
                             account.copyBuilder().accountId(tokenReceiverId).build();
                     writableAccountStore.put(copy);
                     writableAliases.put(edKeyAlias, asAccount(tokenReceiver));
-                    return cryptoCreateRecordBuilder.accountID(asAccount(tokenReceiver));
+                    given(cryptoCreateRecordBuilder.status()).willReturn(SUCCESS);
+                    return cryptoCreateRecordBuilder;
                 });
         given(storeFactory.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
 
@@ -496,13 +496,14 @@ class CryptoTransferHandlerTest extends CryptoTransferHandlerTestBase {
         givenTxn();
 
         given(handleContext.dispatchRemovablePrecedingTransaction(
-                        any(), eq(CryptoCreateRecordBuilder.class), eq(null), eq(payerId)))
+                        any(), eq(CryptoCreateStreamBuilder.class), eq(null), eq(payerId), any()))
                 .will((invocation) -> {
                     final var copy =
                             account.copyBuilder().accountId(hbarReceiverId).build();
                     writableAccountStore.put(copy);
                     writableAliases.put(ecKeyAlias, asAccount(hbarReceiver));
-                    return cryptoCreateRecordBuilder.accountID(asAccount(hbarReceiver));
+                    given(cryptoCreateRecordBuilder.status()).willReturn(SUCCESS);
+                    return cryptoCreateRecordBuilder;
                 })
                 .will((invocation) -> {
                     final var copy =
@@ -514,18 +515,8 @@ class CryptoTransferHandlerTest extends CryptoTransferHandlerTestBase {
                             .kycGranted(true)
                             .accountId(tokenReceiverId)
                             .build());
-                    return cryptoCreateRecordBuilder.accountID(asAccount(tokenReceiver));
-                });
-        given(handleContext.dispatchRemovablePrecedingTransaction(
-                        any(), eq(SingleTransactionRecordBuilder.class), eq(null), any()))
-                .will((invocation) -> {
-                    final var relation =
-                            new TokenRelation(fungibleTokenId, tokenReceiverId, 1, false, true, true, null, null);
-                    final var relation1 =
-                            new TokenRelation(nonFungibleTokenId, tokenReceiverId, 1, false, true, true, null, null);
-                    writableTokenRelStore.put(relation);
-                    writableTokenRelStore.put(relation1);
-                    return new SingleTransactionRecordBuilderImpl(consensusInstant);
+                    given(cryptoCreateRecordBuilder.status()).willReturn(SUCCESS);
+                    return cryptoCreateRecordBuilder;
                 });
         given(storeFactory.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
         given(storeFactory.writableStore(WritableTokenRelationStore.class)).willReturn(writableTokenRelStore);
@@ -535,6 +526,9 @@ class CryptoTransferHandlerTest extends CryptoTransferHandlerTestBase {
                 writableAccountStore.get(feeCollectorId).tinybarBalance();
         given(handleContext.expiryValidator()).willReturn(expiryValidator);
         given(expiryValidator.expirationStatus(any(), anyBoolean(), anyLong())).willReturn(OK);
+        given(handleContext.savepointStack()).willReturn(stack);
+        given(stack.getBaseBuilder(StreamBuilder.class)).willReturn(transferRecordBuilder);
+        given(stack.getBaseBuilder(CryptoTransferStreamBuilder.class)).willReturn(transferRecordBuilder);
 
         subject.handle(handleContext);
 
@@ -586,20 +580,22 @@ class CryptoTransferHandlerTest extends CryptoTransferHandlerTestBase {
         givenTxn(txnBody, payerId);
 
         given(handleContext.dispatchRemovablePrecedingTransaction(
-                        any(), eq(CryptoCreateRecordBuilder.class), eq(null), eq(payerId)))
+                        any(), eq(CryptoCreateStreamBuilder.class), eq(null), eq(payerId), any()))
                 .will((invocation) -> {
                     final var copy =
                             account.copyBuilder().accountId(hbarReceiverId).build();
                     writableAccountStore.put(copy);
                     writableAliases.put(ecKeyAlias, asAccount(hbarReceiver));
-                    return cryptoCreateRecordBuilder.accountID(asAccount(hbarReceiver));
+                    given(cryptoCreateRecordBuilder.status()).willReturn(SUCCESS);
+                    return cryptoCreateRecordBuilder;
                 })
                 .will((invocation) -> {
                     final var copy =
                             account.copyBuilder().accountId(tokenReceiverId).build();
                     writableAccountStore.put(copy);
                     writableAliases.put(edKeyAlias, asAccount(tokenReceiver));
-                    return cryptoCreateRecordBuilder.accountID(asAccount(tokenReceiver));
+                    given(cryptoCreateRecordBuilder.status()).willReturn(SUCCESS);
+                    return cryptoCreateRecordBuilder;
                 });
         given(storeFactory.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
 
@@ -632,20 +628,22 @@ class CryptoTransferHandlerTest extends CryptoTransferHandlerTestBase {
         givenTxn(txnBody, payerId);
 
         given(handleContext.dispatchRemovablePrecedingTransaction(
-                        any(), eq(CryptoCreateRecordBuilder.class), eq(null), eq(payerId)))
+                        any(), eq(CryptoCreateStreamBuilder.class), eq(null), eq(payerId), any()))
                 .will((invocation) -> {
                     final var copy =
                             account.copyBuilder().accountId(hbarReceiverId).build();
                     writableAccountStore.put(copy);
                     writableAliases.put(ecKeyAlias, asAccount(hbarReceiver));
-                    return cryptoCreateRecordBuilder.accountID(asAccount(hbarReceiver));
+                    given(cryptoCreateRecordBuilder.status()).willReturn(SUCCESS);
+                    return cryptoCreateRecordBuilder;
                 })
                 .will((invocation) -> {
                     final var copy =
                             account.copyBuilder().accountId(tokenReceiverId).build();
                     writableAccountStore.put(copy);
                     writableAliases.put(edKeyAlias, asAccount(tokenReceiver));
-                    return cryptoCreateRecordBuilder.accountID(asAccount(tokenReceiver));
+                    given(cryptoCreateRecordBuilder.status()).willReturn(SUCCESS);
+                    return cryptoCreateRecordBuilder;
                 });
         given(storeFactory.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
 

@@ -155,7 +155,7 @@ public class SendCommand implements Callable<Integer> {
                 while (rightPadded.length() < decimals) {
                     rightPadded += "0";
                 }
-                var m = 0;
+                long m = 0;
                 for (var c : rightPadded.toCharArray()) {
                     final var v = Long.parseLong("" + c);
                     m *= 10;

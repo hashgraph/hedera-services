@@ -186,6 +186,23 @@ public interface PreHandleContext extends TransactionKeys {
      * account does not exist.
      */
     @NonNull
+    PreHandleContext requireAliasedKeyOrThrow(
+            @Nullable final AccountID accountID, @NonNull final ResponseCodeEnum responseCode) throws PreCheckException;
+
+    /**
+     * Adds the admin key of the account addressed by the given {@code accountID} to the required non-payer keys. If
+     * the key is the same as the payer key, or if the key has already been added, then the call is a no-op. The
+     * {@link AccountID} must not be null, and must refer to an actual account. The admin key on that account must not
+     * be null or empty. If any of these conditions are not met, a PreCheckException is thrown with the given
+     * {@code responseCode}.
+     *
+     * @param accountID The ID of the account whose key is to be added
+     * @param responseCode the response code to be used in case the key is null or empty
+     * @return {@code this} object
+     * @throws PreCheckException if the key is null or empty or the account is null or the
+     * account does not exist.
+     */
+    @NonNull
     PreHandleContext requireKeyOrThrow(
             @Nullable final AccountID accountID, @NonNull final ResponseCodeEnum responseCode) throws PreCheckException;
 

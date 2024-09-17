@@ -24,11 +24,11 @@ repositories { gradlePluginPortal() }
 
 dependencies {
     implementation("com.adarshr:gradle-test-logger-plugin:4.0.0")
-    implementation("com.autonomousapps:dependency-analysis-gradle-plugin:1.32.0")
+    implementation("com.autonomousapps:dependency-analysis-gradle-plugin:2.0.1")
     implementation("com.diffplug.spotless:spotless-plugin-gradle:6.25.0")
     implementation("com.github.johnrengelman:shadow:8.1.1")
     implementation("com.google.protobuf:protobuf-gradle-plugin:0.9.4")
-    implementation("com.gradle:develocity-gradle-plugin:3.17.5")
+    implementation("com.gradle:develocity-gradle-plugin:3.18")
     implementation(
         "gradle.plugin.com.google.cloud.artifactregistry:artifactregistry-gradle-plugin:2.2.2"
     )
@@ -36,6 +36,6 @@ dependencies {
     implementation("me.champeau.jmh:jmh-gradle-plugin:0.7.2")
     implementation("net.swiftzer.semver:semver:1.3.0")
     implementation("org.gradlex:extra-java-module-info:1.8")
-    implementation("org.gradlex:jvm-dependency-conflict-resolution:2.0")
-    implementation("org.gradlex:java-module-dependencies:1.6.5")
+    implementation("org.gradlex:jvm-dependency-conflict-resolution:2.1.2")
+    implementation("org.gradlex:java-module-dependencies:1.7")
 }

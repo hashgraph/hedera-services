@@ -23,6 +23,8 @@ import static com.hedera.services.bdd.spec.keys.KeyShape.sigs;
 import static com.hedera.services.bdd.spec.keys.SigControl.ED25519_ON;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUpdate;
+import static com.hedera.services.bdd.suites.utils.contracts.precompile.TokenKeyType.FEE_SCHEDULE_KEY;
+import static com.hedera.services.bdd.suites.utils.contracts.precompile.TokenKeyType.SUPPLY_KEY;
 import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.joining;
 
@@ -34,10 +36,13 @@ import com.hedera.services.bdd.spec.dsl.entities.SpecContract;
 import com.hedera.services.bdd.spec.dsl.entities.SpecToken;
 import com.hedera.services.bdd.spec.dsl.operations.AbstractSpecOperation;
 import com.hedera.services.bdd.spec.keys.KeyShape;
+import com.hedera.services.bdd.suites.utils.contracts.precompile.TokenKeyType;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.EnumSet;
 import java.util.List;
+import java.util.Set;
 
 /**
  * Authorizes a contract to act on behalf of an entity.
@@ -46,6 +51,7 @@ public class AuthorizeContractOperation extends AbstractSpecOperation implements
     private final String managedKeyName;
     private final SpecEntity target;
     private final SpecContract[] contracts;
+    private final Set<TokenKeyType> extraTokenAuthorizations = EnumSet.noneOf(TokenKeyType.class);
 
     // non-standard ArrayList initializer
     @SuppressWarnings({"java:S3599", "java:S1171"})
@@ -63,8 +69,15 @@ public class AuthorizeContractOperation extends AbstractSpecOperation implements
     }
 
     /**
-     * {@inheritDoc}
+     * Update this operation to also authorize a given key types besides the admin key.
+     * @param keyType an additional the key types to authorize
+     * @return this
      */
+    public AuthorizeContractOperation alsoAuthorizing(@NonNull final TokenKeyType... keyType) {
+        extraTokenAuthorizations.addAll(Arrays.asList(keyType));
+        return this;
+    }
+
     @NonNull
     @Override
     protected SpecOperation computeDelegate(@NonNull final HapiSpec spec) {
@@ -73,14 +86,35 @@ public class AuthorizeContractOperation extends AbstractSpecOperation implements
         spec.registry().saveKey(managedKeyName, key);
         return switch (target) {
             case SpecAccount account -> cryptoUpdate(account.name()).key(managedKeyName);
-            case SpecToken token -> tokenUpdate(token.name()).adminKey(managedKeyName);
+            case SpecToken token -> {
+                final var op = tokenUpdate(token.name()).adminKey(managedKeyName);
+                if (extraTokenAuthorizations.contains(TokenKeyType.KYC_KEY)) {
+                    op.kycKey(managedKeyName);
+                }
+                if (extraTokenAuthorizations.contains(TokenKeyType.FREEZE_KEY)) {
+                    op.freezeKey(managedKeyName);
+                }
+                if (extraTokenAuthorizations.contains(TokenKeyType.WIPE_KEY)) {
+                    op.wipeKey(managedKeyName);
+                }
+                if (extraTokenAuthorizations.contains(SUPPLY_KEY)) {
+                    op.supplyKey(managedKeyName);
+                }
+                if (extraTokenAuthorizations.contains(FEE_SCHEDULE_KEY)) {
+                    op.feeScheduleKey(managedKeyName);
+                }
+                if (extraTokenAuthorizations.contains(TokenKeyType.PAUSE_KEY)) {
+                    op.pauseKey(managedKeyName);
+                }
+                if (extraTokenAuthorizations.contains(TokenKeyType.METADATA_KEY)) {
+                    op.metadataKey(managedKeyName);
+                }
+                yield op;
+            }
             default -> throw new IllegalStateException("Cannot authorize contracts for " + target);
         };
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     protected void onSuccess(@NonNull final HapiSpec spec) {
         switch (target) {

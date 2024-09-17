@@ -232,11 +232,11 @@ jobs:
       - spotless
     if: ${{ github.event_name != 'pull_request' || (github.actor != 'dependabot[bot]' && github.event.pull_request.head.repo.full_name == github.repository) }}
     with:
-      custom-job-name: "Network Error Tests"
+      custom-job-name: "Abbrev Update Test"
       branch-name: ${{ github.head_ref || github.ref_name }}
       hedera-tests-enabled: true
       use-branch-for-slack-channel: false
-      panel-config: "configs/services/suites/daily/GCP-Daily-Services-Comp-NetError-4N-1C.json"
+      panel-config: "configs/services/suites/daily/GCP-Daily-Services-Abbrev-Update-4N-2C.json"
     secrets:
       access-token: ${{ secrets.PLATFORM_GH_ACCESS_TOKEN }}
       jrs-ssh-user-name: ${{ secrets.PLATFORM_JRS_SSH_USER_NAME }}
@@ -276,7 +276,7 @@ jobs:
     with:
       ref: ${{ github.event.inputs.ref || '' }}
       java-distribution: temurin
-      java-version: 21.0.1
+      java-version: 21
     secrets:
       gradle-cache-username: ${{ secrets.GRADLE_CACHE_USERNAME }}
       gradle-cache-password: ${{ secrets.GRADLE_CACHE_PASSWORD }}
@@ -291,7 +291,7 @@ jobs:
     with:
       ref: ${{ github.event.inputs.ref || '' }}
       java-distribution: temurin
-      java-version: 21.0.1
+      java-version: 21
     secrets:
       gradle-cache-username: ${{ secrets.GRADLE_CACHE_USERNAME }}
       gradle-cache-password: ${{ secrets.GRADLE_CACHE_PASSWORD }}

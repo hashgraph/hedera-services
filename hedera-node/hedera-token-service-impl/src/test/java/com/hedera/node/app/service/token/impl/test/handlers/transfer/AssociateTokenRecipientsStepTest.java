@@ -20,10 +20,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.lenient;
 
 import com.hedera.hapi.node.base.AccountAmount;
 import com.hedera.hapi.node.base.AccountID;
@@ -31,15 +29,12 @@ import com.hedera.hapi.node.base.NftTransfer;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.TokenTransferList;
 import com.hedera.hapi.node.base.TransferList;
-import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.node.app.service.token.impl.handlers.transfer.AssociateTokenRecipientsStep;
 import com.hedera.node.app.service.token.impl.handlers.transfer.TransferContextImpl;
-import com.hedera.node.app.spi.records.RecordBuilders;
+import com.hedera.node.app.service.token.records.CryptoTransferStreamBuilder;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
-import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
-import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -60,7 +55,10 @@ public class AssociateTokenRecipientsStepTest extends StepsBase {
     private ExpiryValidator expiryValidator;
 
     @Mock
-    private RecordBuilders recordBuilders;
+    private HandleContext.SavepointStack stack;
+
+    @Mock
+    private CryptoTransferStreamBuilder builder;
 
     private AssociateTokenRecipientsStep subject;
     private CryptoTransferTransactionBody txn;
@@ -89,6 +87,8 @@ public class AssociateTokenRecipientsStepTest extends StepsBase {
                 .withValue("entities.unlimitedAutoAssociationsEnabled", false)
                 .getOrCreateConfig();
         given(handleContext.configuration()).willReturn(modifiedConfiguration);
+        given(handleContext.savepointStack()).willReturn(stack);
+        given(stack.getBaseBuilder(any())).willReturn(builder);
 
         subject.doIn(transferContext);
 
@@ -96,17 +96,6 @@ public class AssociateTokenRecipientsStepTest extends StepsBase {
         assertThat(writableTokenRelStore.get(ownerId, nonFungibleTokenId)).isNotNull();
         assertThat(writableTokenRelStore.get(spenderId, fungibleTokenId)).isNotNull();
         assertThat(writableTokenRelStore.get(spenderId, nonFungibleTokenId)).isNotNull();
-    }
-
-    @Test
-    void autoAssociationsDispatchSyntheticTransaction() {
-        given(handleContext.recordBuilders()).willReturn(recordBuilders);
-        final var modifiedConfiguration = HederaTestConfigBuilder.create().getOrCreateConfig();
-        given(handleContext.configuration()).willReturn(modifiedConfiguration);
-        given(handleContext.storeFactory()).willReturn(storeFactory);
-        subject.doIn(transferContext);
-
-        verify(handleContext, times(1)).dispatchRemovablePrecedingTransaction(any(), any(), any(), any());
     }
 
     void givenValidTxn() {
@@ -127,19 +116,10 @@ public class AssociateTokenRecipientsStepTest extends StepsBase {
                 .build();
         given(handleContext.configuration()).willReturn(configuration);
         given(handleContext.expiryValidator()).willReturn(expiryValidator);
-        given(expiryValidator.expirationStatus(any(), anyBoolean(), anyLong())).willReturn(ResponseCodeEnum.OK);
-        given(handleContext.recordBuilders()).willReturn(recordBuilders);
-        given(handleContext.dispatchRemovablePrecedingTransaction(
-                        any(), eq(SingleTransactionRecordBuilder.class), eq(null), any()))
-                .will((invocation) -> {
-                    final var relation =
-                            new TokenRelation(fungibleTokenId, spenderId, 1, false, true, true, null, null);
-                    final var relation1 =
-                            new TokenRelation(nonFungibleTokenId, spenderId, 1, false, true, true, null, null);
-                    writableTokenRelStore.put(relation);
-                    writableTokenRelStore.put(relation1);
-                    return new SingleTransactionRecordBuilderImpl(consensusInstant);
-                });
+        lenient()
+                .when(expiryValidator.expirationStatus(any(), anyBoolean(), anyLong()))
+                .thenReturn(ResponseCodeEnum.OK);
+        given(handleContext.savepointStack()).willReturn(stack);
     }
 
     private AccountAmount adjustFrom(AccountID account, long amount) {

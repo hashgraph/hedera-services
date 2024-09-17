@@ -43,7 +43,7 @@ import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AddressIdConverter;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.Erc20TransfersCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.SpecialRewardReceivers;
-import com.hedera.node.app.service.contract.impl.records.ContractCallRecordBuilder;
+import com.hedera.node.app.service.contract.impl.records.ContractCallStreamBuilder;
 import com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.common.CallTestBase;
 import com.hedera.node.app.service.contract.impl.utils.ConversionUtils;
 import com.hedera.node.app.service.token.ReadableAccountStore;
@@ -67,7 +67,7 @@ class Erc20TransfersCallTest extends CallTestBase {
     private VerificationStrategy verificationStrategy;
 
     @Mock
-    private ContractCallRecordBuilder recordBuilder;
+    private ContractCallStreamBuilder recordBuilder;
 
     @Mock
     private SystemContractGasCalculator systemContractGasCalculator;
@@ -105,7 +105,7 @@ class Erc20TransfersCallTest extends CallTestBase {
                         any(TransactionBody.class),
                         eq(verificationStrategy),
                         eq(SENDER_ID),
-                        eq(ContractCallRecordBuilder.class)))
+                        eq(ContractCallStreamBuilder.class)))
                 .willReturn(recordBuilder);
         given(recordBuilder.status()).willReturn(ResponseCodeEnum.SUCCESS);
         given(nativeOperations.readableAccountStore()).willReturn(readableAccountStore);
@@ -127,7 +127,7 @@ class Erc20TransfersCallTest extends CallTestBase {
                         any(TransactionBody.class),
                         eq(verificationStrategy),
                         eq(SENDER_ID),
-                        eq(ContractCallRecordBuilder.class)))
+                        eq(ContractCallStreamBuilder.class)))
                 .willReturn(recordBuilder);
         given(nativeOperations.readableAccountStore()).willReturn(readableAccountStore);
         given(readableAccountStore.getAliasedAccountById(A_NEW_ACCOUNT_ID)).willReturn(OWNER_ACCOUNT);
@@ -149,7 +149,7 @@ class Erc20TransfersCallTest extends CallTestBase {
                         any(TransactionBody.class),
                         eq(verificationStrategy),
                         eq(SENDER_ID),
-                        eq(ContractCallRecordBuilder.class)))
+                        eq(ContractCallStreamBuilder.class)))
                 .willReturn(recordBuilder);
         given(recordBuilder.status()).willReturn(INSUFFICIENT_ACCOUNT_BALANCE);
 

@@ -86,7 +86,7 @@ public class Bip0039 {
     public static byte asByte(boolean[] bits) {
         byte b = 0;
         for (int i = 0; i < 8; i++) {
-            b |= (bits[i] ? (1 << (7 - i)) : 0);
+            b |= (byte) (bits[i] ? (1 << (7 - i)) : 0);
         }
         return b;
     }

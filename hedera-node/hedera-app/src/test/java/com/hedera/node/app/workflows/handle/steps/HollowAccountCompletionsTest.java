@@ -19,7 +19,6 @@ package com.hedera.node.app.workflows.handle.steps;
 import static com.hedera.hapi.node.base.HederaFunctionality.ETHEREUM_TRANSACTION;
 import static com.hedera.node.app.fixtures.AppTestBase.DEFAULT_CONFIG;
 import static com.hedera.node.app.spi.key.KeyUtils.IMMUTABILITY_SENTINEL_KEY;
-import static com.hedera.node.app.workflows.handle.dispatch.ChildRecordBuilderFactoryTest.asTxn;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
@@ -33,6 +32,7 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.NftTransfer;
 import com.hedera.hapi.node.base.SignatureMap;
+import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenTransferList;
 import com.hedera.hapi.node.base.Transaction;
@@ -45,7 +45,7 @@ import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.hapi.utils.ethereum.EthTxSigs;
 import com.hedera.node.app.service.contract.impl.handlers.EthereumTransactionHandler;
 import com.hedera.node.app.service.token.ReadableAccountStore;
-import com.hedera.node.app.service.token.records.CryptoUpdateRecordBuilder;
+import com.hedera.node.app.service.token.records.CryptoUpdateStreamBuilder;
 import com.hedera.node.app.signature.AppKeyVerifier;
 import com.hedera.node.app.signature.impl.SignatureVerificationImpl;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
@@ -53,8 +53,8 @@ import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.handle.Dispatch;
-import com.hedera.node.app.workflows.handle.record.RecordListBuilder;
-import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
+import com.hedera.node.app.workflows.handle.record.RecordStreamBuilder;
+import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.node.app.workflows.prehandle.PreHandleResult;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import java.time.Instant;
@@ -68,7 +68,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class HollowAccountCompletionsTest {
+public class HollowAccountCompletionsTest {
     @Mock(strictness = LENIENT)
     private Dispatch dispatch;
 
@@ -88,7 +88,7 @@ class HollowAccountCompletionsTest {
     private PreHandleResult preHandleResult;
 
     @Mock(strictness = LENIENT)
-    private SingleTransactionRecordBuilderImpl recordBuilder;
+    private RecordStreamBuilder recordBuilder;
 
     @Mock
     private EthereumTransactionHandler ethereumTransactionHandler;
@@ -96,7 +96,10 @@ class HollowAccountCompletionsTest {
     @Mock
     private UserTxn userTxn;
 
-    private static final Instant consensusTime = Instant.ofEpochSecond(1_234_567L);
+    @Mock
+    private SavepointStackImpl stack;
+
+    public static final Instant consensusTime = Instant.ofEpochSecond(1_234_567L);
     private static final AccountID payerId =
             AccountID.newBuilder().accountNum(1_234L).build();
     private static final CryptoTransferTransactionBody transferBody = CryptoTransferTransactionBody.newBuilder()
@@ -115,8 +118,6 @@ class HollowAccountCompletionsTest {
             .build();
     private static final Bytes transactionBytes = SignedTransaction.PROTOBUF.toBytes(transaction);
 
-    private final RecordListBuilder recordListBuilder = new RecordListBuilder(consensusTime);
-
     @InjectMocks
     private HollowAccountCompletions hollowAccountCompletions;
 
@@ -125,7 +126,6 @@ class HollowAccountCompletionsTest {
         when(dispatch.handleContext()).thenReturn(handleContext);
         when(dispatch.keyVerifier()).thenReturn(keyVerifier);
         when(handleContext.payer()).thenReturn(payerId);
-        when(userTxn.recordListBuilder()).thenReturn(recordListBuilder);
         when(userTxn.readableStoreFactory()).thenReturn(readableStoreFactory);
         when(userTxn.readableStoreFactory().getStore(ReadableAccountStore.class))
                 .thenReturn(accountStore);
@@ -137,7 +137,6 @@ class HollowAccountCompletionsTest {
     @Test
     void completeHollowAccountsNoHollowAccounts() {
         when(userTxn.preHandleResult().getHollowAccounts()).thenReturn(Collections.emptySet());
-        when(userTxn.config()).thenReturn(DEFAULT_CONFIG);
 
         hollowAccountCompletions.completeHollowAccounts(userTxn, dispatch);
 
@@ -147,7 +146,6 @@ class HollowAccountCompletionsTest {
 
     @Test
     void doesntCompleteHollowAccountsWithNoImmutabilitySentinelKey() {
-        when(userTxn.config()).thenReturn(DEFAULT_CONFIG);
         final var hollowAccount = Account.newBuilder()
                 .accountId(AccountID.newBuilder().accountNum(1).build())
                 .key(Key.DEFAULT)
@@ -158,18 +156,19 @@ class HollowAccountCompletionsTest {
                 new SignatureVerificationImpl(Key.DEFAULT, Bytes.wrap(new byte[] {1, 2, 3}), true);
         when(keyVerifier.verificationFor(Bytes.wrap(new byte[] {1, 2, 3}))).thenReturn(verification);
         when(userTxn.preHandleResult().getHollowAccounts()).thenReturn(Set.of(hollowAccount));
+        when(userTxn.stack()).thenReturn(stack);
+        when(stack.hasMoreSystemRecords()).thenReturn(true);
 
         hollowAccountCompletions.completeHollowAccounts(userTxn, dispatch);
 
         verify(keyVerifier).verificationFor(Bytes.wrap(new byte[] {1, 2, 3}));
         verify(handleContext, never())
                 .dispatchPrecedingTransaction(
-                        eq(txBody), eq(CryptoUpdateRecordBuilder.class), isNull(), eq(AccountID.DEFAULT));
+                        eq(txBody), eq(CryptoUpdateStreamBuilder.class), isNull(), eq(AccountID.DEFAULT));
     }
 
     @Test
     void completeHollowAccountsWithHollowAccounts() {
-        when(userTxn.config()).thenReturn(DEFAULT_CONFIG);
         final var hollowAccount = Account.newBuilder()
                 .accountId(AccountID.newBuilder().accountNum(1).build())
                 .key(IMMUTABILITY_SENTINEL_KEY)
@@ -180,6 +179,8 @@ class HollowAccountCompletionsTest {
                 new SignatureVerificationImpl(Key.DEFAULT, Bytes.wrap(new byte[] {1, 2, 3}), true);
         when(keyVerifier.verificationFor(Bytes.wrap(new byte[] {1, 2, 3}))).thenReturn(verification);
         when(userTxn.preHandleResult().getHollowAccounts()).thenReturn(Set.of(hollowAccount));
+        when(userTxn.stack()).thenReturn(stack);
+        when(stack.hasMoreSystemRecords()).thenReturn(true);
 
         hollowAccountCompletions.completeHollowAccounts(userTxn, dispatch);
 
@@ -190,7 +191,6 @@ class HollowAccountCompletionsTest {
 
     @Test
     void skipDummyHollowAccountsFromCryptoCreateHandler() {
-        when(userTxn.config()).thenReturn(DEFAULT_CONFIG);
         final var hollowAccount = Account.newBuilder()
                 .accountId(AccountID.DEFAULT)
                 .key(IMMUTABILITY_SENTINEL_KEY)
@@ -198,6 +198,8 @@ class HollowAccountCompletionsTest {
                 .build();
         when(userTxn.preHandleResult().getHollowAccounts()).thenReturn(Collections.singleton(hollowAccount));
         when(userTxn.preHandleResult().getHollowAccounts()).thenReturn(Set.of(hollowAccount));
+        when(userTxn.stack()).thenReturn(stack);
+        when(stack.hasMoreSystemRecords()).thenReturn(true);
 
         hollowAccountCompletions.completeHollowAccounts(userTxn, dispatch);
 
@@ -229,13 +231,15 @@ class HollowAccountCompletionsTest {
                 txnBody,
                 SignatureMap.DEFAULT,
                 transactionBytes,
-                ETHEREUM_TRANSACTION);
+                ETHEREUM_TRANSACTION,
+                null);
 
         when(userTxn.readableStoreFactory().getStore(ReadableAccountStore.class))
                 .thenReturn(accountStore);
         when(userTxn.config()).thenReturn(DEFAULT_CONFIG);
-        when(userTxn.recordListBuilder()).thenReturn(recordListBuilder);
         when(userTxn.txnInfo()).thenReturn(txnInfo);
+        when(userTxn.stack()).thenReturn(stack);
+        when(stack.hasMoreSystemRecords()).thenReturn(true);
 
         hollowAccountCompletions.completeHollowAccounts(userTxn, dispatch);
 
@@ -259,11 +263,26 @@ class HollowAccountCompletionsTest {
                 txnBody,
                 SignatureMap.DEFAULT,
                 transactionBytes,
-                ETHEREUM_TRANSACTION);
+                ETHEREUM_TRANSACTION,
+                null);
         when(userTxn.txnInfo()).thenReturn(txnInfo);
 
         hollowAccountCompletions.completeHollowAccounts(userTxn, dispatch);
 
         verify(handleContext, never()).dispatchPrecedingTransaction(any(), any(), any(), any());
+    }
+
+    public static TransactionBody asTxn(
+            final CryptoTransferTransactionBody body, final AccountID payerId, Instant consensusTimestamp) {
+        return TransactionBody.newBuilder()
+                .transactionID(TransactionID.newBuilder()
+                        .accountID(payerId)
+                        .transactionValidStart(Timestamp.newBuilder()
+                                .seconds(consensusTimestamp.getEpochSecond())
+                                .build())
+                        .build())
+                .memo("test memo")
+                .cryptoTransfer(body)
+                .build();
     }
 }

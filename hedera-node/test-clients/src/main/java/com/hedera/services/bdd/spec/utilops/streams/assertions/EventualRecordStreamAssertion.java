@@ -16,39 +16,26 @@
 
 package com.hedera.services.bdd.spec.utilops.streams.assertions;
 
-import static com.hedera.services.bdd.junit.hedera.ExternalPath.STREAMS_DIR;
-import static com.hedera.services.bdd.junit.support.RecordStreamAccess.RECORD_STREAM_ACCESS;
+import static com.hedera.services.bdd.junit.hedera.ExternalPath.RECORD_STREAMS_DIR;
+import static com.hedera.services.bdd.junit.support.StreamFileAccess.STREAM_FILE_ACCESS;
+import static java.util.Objects.requireNonNull;
 
-import com.hedera.services.bdd.junit.support.RecordStreamAccess;
 import com.hedera.services.bdd.junit.support.StreamDataListener;
+import com.hedera.services.bdd.junit.support.StreamFileAccess;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.stream.proto.RecordStreamItem;
 import com.hedera.services.stream.proto.TransactionSidecarRecord;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.util.Objects;
+import java.nio.file.Path;
 import java.util.function.Function;
-import org.junit.jupiter.api.Assertions;
 
 /**
  * A {@link com.hedera.services.bdd.spec.utilops.UtilOp} that registers itself with {@link
- * RecordStreamAccess} and continually updates the {@link RecordStreamAssertion} yielded by a given
+ * StreamFileAccess} and continually updates the {@link RecordStreamAssertion} yielded by a given
  * factory with each new {@link RecordStreamItem}.
- *
- * <p><b>Important:</b> {@code HapiSpec#exec()} recognizes {@link EventualRecordStreamAssertion}
- * operations as a special case, in two ways.
- * <ol>
- *   <li>If a spec includes at least one {@link EventualRecordStreamAssertion}, and all other
- *       operations have passed, it starts running "background traffic" to ensure record stream
- *       files are being written.
- *   <li>For each {@link EventualRecordStreamAssertion}, the spec then calls its {@link
- *       #assertHasPassed()}, method which blocks until the assertion has either passed or timed
- *       out. (The default timeout is 3 seconds, since generally we expect the assertion to apply to
- *       the contents of a single record stream file, which are created every 2 seconds given steady
- *       background traffic.)
- * </ol>
  */
-public class EventualRecordStreamAssertion extends EventualAssertion {
+public class EventualRecordStreamAssertion extends AbstractEventualStreamAssertion {
     /**
      * The factory for the assertion to be tested.
      */
@@ -59,49 +46,40 @@ public class EventualRecordStreamAssertion extends EventualAssertion {
      */
     @Nullable
     private RecordStreamAssertion assertion;
+
     /**
-     * Once this op is submitted, the function to unsubscribe from the record stream.
+     * Returns an {@link EventualRecordStreamAssertion} that will pass as long as the given assertion does not
+     * throw an {@link AssertionError} before its timeout.
+     * @param assertionFactory the assertion factory
+     * @return the eventual record stream assertion that must not fail
      */
-    @Nullable
-    private Runnable unsubscribe;
-
-    public EventualRecordStreamAssertion(final Function<HapiSpec, RecordStreamAssertion> assertionFactory) {
-        this.assertionFactory = assertionFactory;
-    }
-
-    private EventualRecordStreamAssertion(
-            final Function<HapiSpec, RecordStreamAssertion> assertionFactory, final boolean hasPassedIfNothingFailed) {
-        super(hasPassedIfNothingFailed);
-        this.assertionFactory = assertionFactory;
-    }
-
     public static EventualRecordStreamAssertion eventuallyAssertingNoFailures(
             final Function<HapiSpec, RecordStreamAssertion> assertionFactory) {
         return new EventualRecordStreamAssertion(assertionFactory, true);
     }
 
     /**
-     * Returns the record stream location for the first listed node in the network targeted
-     * by the given spec.
-     *
-     * @param spec the spec
-     * @return a record stream location for the first listed node in the network
+     * Returns an {@link EventualRecordStreamAssertion} that will pass only if the given assertion explicitly
+     * passes within the default timeout.
+     * @param assertionFactory the assertion factory
+     * @return the eventual record stream assertion that must pass
      */
-    public static String recordStreamLocFor(@NonNull final HapiSpec spec) {
-        Objects.requireNonNull(spec);
-        return spec.targetNetworkOrThrow()
-                .nodes()
-                .getFirst()
-                .getExternalPath(STREAMS_DIR)
-                .toString();
+    public static EventualRecordStreamAssertion eventuallyAssertingExplicitPass(
+            final Function<HapiSpec, RecordStreamAssertion> assertionFactory) {
+        return new EventualRecordStreamAssertion(assertionFactory, false);
+    }
+
+    private EventualRecordStreamAssertion(
+            @NonNull final Function<HapiSpec, RecordStreamAssertion> assertionFactory,
+            final boolean hasPassedIfNothingFailed) {
+        super(hasPassedIfNothingFailed);
+        this.assertionFactory = requireNonNull(assertionFactory);
     }
 
     @Override
     protected boolean submitOp(final HapiSpec spec) throws Throwable {
-        final var locToUse = recordStreamLocFor(spec);
-        final var validatingListener = RECORD_STREAM_ACCESS.getValidatingListener(locToUse);
-        assertion = Objects.requireNonNull(assertionFactory.apply(spec));
-        unsubscribe = validatingListener.subscribe(new StreamDataListener() {
+        assertion = requireNonNull(assertionFactory.apply(spec));
+        unsubscribe = STREAM_FILE_ACCESS.subscribe(recordStreamLocFor(spec), new StreamDataListener() {
             @Override
             public void onNewItem(RecordStreamItem item) {
                 if (assertion.isApplicableTo(item)) {
@@ -127,33 +105,28 @@ public class EventualRecordStreamAssertion extends EventualAssertion {
                     }
                 }
             }
+
+            @Override
+            public String name() {
+                return assertion.toString();
+            }
         });
         return false;
     }
 
-    public void assertHasPassed() {
-        try {
-            final var eventualResult = result.get();
-            if (unsubscribe != null) {
-                unsubscribe.run();
-            }
-            if (!eventualResult.passed()) {
-                Assertions.fail(eventualResult.getErrorDetails());
-            }
-        } catch (final InterruptedException e) {
-            Thread.currentThread().interrupt();
-            Assertions.fail("Interrupted while waiting for " + assertion + " to pass");
-        }
-    }
-
-    public void unsubscribe() {
-        if (unsubscribe != null) {
-            unsubscribe.run();
-        }
-    }
-
     @Override
     public String toString() {
-        return "Eventually{" + assertion + "}";
+        return "EventuallyRecordStream{" + assertion + "}";
+    }
+
+    /**
+     * Returns the record stream location for the first listed node in the network targeted
+     * by the given spec.
+     *
+     * @param spec the spec
+     * @return a record stream location for the first listed node in the network
+     */
+    private static Path recordStreamLocFor(@NonNull final HapiSpec spec) {
+        return spec.targetNetworkOrThrow().nodes().getFirst().getExternalPath(RECORD_STREAMS_DIR);
     }
 }

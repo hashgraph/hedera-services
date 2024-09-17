@@ -21,6 +21,7 @@ import static com.hedera.services.bdd.junit.hedera.utils.AddressBookUtils.endpoi
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.bannerWith;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.netOf;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
+import static java.util.Objects.requireNonNull;
 
 import com.google.common.base.MoreObjects;
 import com.google.protobuf.ByteString;
@@ -47,6 +48,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.LongConsumer;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -68,6 +70,9 @@ public class HapiNodeCreate extends HapiTxnOp<HapiNodeCreate> {
     private Optional<KeyShape> adminKeyShape = Optional.empty();
 
     @Nullable
+    private LongConsumer nodeIdObserver;
+
+    @Nullable
     private Key adminKey;
 
     public HapiNodeCreate(@NonNull final String nodeName) {
@@ -86,6 +91,11 @@ public class HapiNodeCreate extends HapiTxnOp<HapiNodeCreate> {
 
     public HapiNodeCreate advertisingCreation() {
         advertiseCreation = true;
+        return this;
+    }
+
+    public HapiNodeCreate exposingCreatedIdTo(@NonNull final LongConsumer nodeIdObserver) {
+        this.nodeIdObserver = requireNonNull(nodeIdObserver);
         return this;
     }
 
@@ -170,7 +180,7 @@ public class HapiNodeCreate extends HapiTxnOp<HapiNodeCreate> {
                         NodeCreateTransactionBody.class, builder -> {
                             accountId.ifPresent(builder::setAccountId);
                             description.ifPresent(builder::setDescription);
-                            if (adminKey != null) builder.setAdminKey(adminKey);
+                            builder.setAdminKey(adminKey);
                             builder.clearGossipEndpoint().addAllGossipEndpoint(gossipEndpoints);
                             builder.clearServiceEndpoint().addAllServiceEndpoint(grpcEndpoints);
                             gossipCaCertificate.ifPresent(s -> builder.setGossipCaCertificate(ByteString.copyFrom(s)));
@@ -201,8 +211,12 @@ public class HapiNodeCreate extends HapiTxnOp<HapiNodeCreate> {
 
         if (advertiseCreation) {
             final String banner = "\n\n"
-                    + bannerWith(String.format("Created node '%s' with id '%d'.", nodeName, lastReceipt.getNodeId()));
+                    + bannerWith(String.format(
+                            "Created node '%s' with id '%d'.", description.orElse(nodeName), lastReceipt.getNodeId()));
             LOG.info(banner);
+        }
+        if (nodeIdObserver != null) {
+            nodeIdObserver.accept(newId);
         }
     }
 
@@ -211,5 +225,9 @@ public class HapiNodeCreate extends HapiTxnOp<HapiNodeCreate> {
         final MoreObjects.ToStringHelper helper = super.toStringHelper();
         Optional.ofNullable(lastReceipt).ifPresent(receipt -> helper.add("created", receipt.getNodeId()));
         return helper;
+    }
+
+    public Key getAdminKey() {
+        return adminKey;
     }
 }

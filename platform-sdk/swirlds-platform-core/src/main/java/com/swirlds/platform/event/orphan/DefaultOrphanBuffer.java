@@ -29,7 +29,7 @@ import com.swirlds.platform.sequence.map.SequenceMap;
 import com.swirlds.platform.sequence.map.StandardSequenceMap;
 import com.swirlds.platform.sequence.set.SequenceSet;
 import com.swirlds.platform.sequence.set.StandardSequenceSet;
-import com.swirlds.platform.system.events.EventDescriptor;
+import com.swirlds.platform.system.events.EventDescriptorWrapper;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.Deque;
@@ -51,7 +51,8 @@ public class DefaultOrphanBuffer implements OrphanBuffer {
     /**
      * Avoid the creation of lambdas for Map.computeIfAbsent() by reusing this lambda.
      */
-    private static final Function<EventDescriptor, List<OrphanedEvent>> EMPTY_LIST = ignored -> new ArrayList<>();
+    private static final Function<EventDescriptorWrapper, List<OrphanedEvent>> EMPTY_LIST =
+            ignored -> new ArrayList<>();
 
     /**
      * The current event window.
@@ -72,13 +73,13 @@ public class DefaultOrphanBuffer implements OrphanBuffer {
      * A set containing descriptors of all non-ancient events that have found their parents (or whose parents have
      * become ancient).
      */
-    private final SequenceSet<EventDescriptor> eventsWithParents;
+    private final SequenceSet<EventDescriptorWrapper> eventsWithParents;
 
     /**
      * A map where the key is the descriptor of a missing parent, and the value is a list of orphans that are missing
      * that parent.
      */
-    private final SequenceMap<EventDescriptor, List<OrphanedEvent>> missingParentMap;
+    private final SequenceMap<EventDescriptorWrapper, List<OrphanedEvent>> missingParentMap;
 
     /**
      * Constructor
@@ -105,11 +106,15 @@ public class DefaultOrphanBuffer implements OrphanBuffer {
                 .getAncientMode();
         this.eventWindow = EventWindow.getGenesisEventWindow(ancientMode);
         if (ancientMode == AncientMode.BIRTH_ROUND_THRESHOLD) {
-            missingParentMap = new StandardSequenceMap<>(0, INITIAL_CAPACITY, true, EventDescriptor::getBirthRound);
-            eventsWithParents = new StandardSequenceSet<>(0, INITIAL_CAPACITY, true, EventDescriptor::getBirthRound);
+            missingParentMap = new StandardSequenceMap<>(
+                    0, INITIAL_CAPACITY, true, ed -> ed.eventDescriptor().birthRound());
+            eventsWithParents = new StandardSequenceSet<>(
+                    0, INITIAL_CAPACITY, true, ed -> ed.eventDescriptor().birthRound());
         } else {
-            missingParentMap = new StandardSequenceMap<>(0, INITIAL_CAPACITY, true, EventDescriptor::getGeneration);
-            eventsWithParents = new StandardSequenceSet<>(0, INITIAL_CAPACITY, true, EventDescriptor::getGeneration);
+            missingParentMap = new StandardSequenceMap<>(
+                    0, INITIAL_CAPACITY, true, ed -> ed.eventDescriptor().generation());
+            eventsWithParents = new StandardSequenceSet<>(
+                    0, INITIAL_CAPACITY, true, ed -> ed.eventDescriptor().generation());
         }
     }
 
@@ -127,12 +132,12 @@ public class DefaultOrphanBuffer implements OrphanBuffer {
 
         currentOrphanCount++;
 
-        final List<EventDescriptor> missingParents = getMissingParents(event);
+        final List<EventDescriptorWrapper> missingParents = getMissingParents(event);
         if (missingParents.isEmpty()) {
             return eventIsNotAnOrphan(event);
         } else {
             final OrphanedEvent orphanedEvent = new OrphanedEvent(event, missingParents);
-            for (final EventDescriptor missingParent : missingParents) {
+            for (final EventDescriptorWrapper missingParent : missingParents) {
                 this.missingParentMap.computeIfAbsent(missingParent, EMPTY_LIST).add(orphanedEvent);
             }
 
@@ -177,7 +182,7 @@ public class DefaultOrphanBuffer implements OrphanBuffer {
     private List<PlatformEvent> missingParentBecameAncient(@NonNull final ParentAndOrphans parentAndOrphans) {
         final List<PlatformEvent> unorphanedEvents = new ArrayList<>();
 
-        final EventDescriptor parentDescriptor = parentAndOrphans.parent();
+        final EventDescriptorWrapper parentDescriptor = parentAndOrphans.parent();
 
         for (final OrphanedEvent orphan : parentAndOrphans.orphans()) {
             orphan.missingParents().remove(parentDescriptor);
@@ -197,10 +202,10 @@ public class DefaultOrphanBuffer implements OrphanBuffer {
      * @return the list of missing parents, empty if no parents are missing
      */
     @NonNull
-    private List<EventDescriptor> getMissingParents(@NonNull final PlatformEvent event) {
-        final List<EventDescriptor> missingParents = new ArrayList<>();
+    private List<EventDescriptorWrapper> getMissingParents(@NonNull final PlatformEvent event) {
+        final List<EventDescriptorWrapper> missingParents = new ArrayList<>();
 
-        for (final EventDescriptor parent : event.getAllParents()) {
+        for (final EventDescriptorWrapper parent : event.getAllParents()) {
             if (!eventsWithParents.contains(parent) && !eventWindow.isAncient(parent)) {
                 missingParents.add(parent);
             }
@@ -231,7 +236,7 @@ public class DefaultOrphanBuffer implements OrphanBuffer {
             currentOrphanCount--;
 
             final PlatformEvent nonOrphan = nonOrphanStack.pop();
-            final EventDescriptor nonOrphanDescriptor = nonOrphan.getDescriptor();
+            final EventDescriptorWrapper nonOrphanDescriptor = nonOrphan.getDescriptor();
 
             if (eventWindow.isAncient(nonOrphan)) {
                 // Although it doesn't cause harm to pass along ancient events, it is unnecessary to do so.

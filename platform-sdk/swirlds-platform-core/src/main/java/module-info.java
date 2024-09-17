@@ -69,12 +69,14 @@ module com.swirlds.platform.core {
             com.swirlds.platform.test;
     exports com.swirlds.platform.consensus to
             com.swirlds.platform.test,
-            com.swirlds.platform.core.test.fixtures;
+            com.swirlds.platform.core.test.fixtures,
+            com.hedera.node.app;
     exports com.swirlds.platform.crypto to
             com.swirlds.platform.test,
             com.hedera.node.test.clients,
             com.swirlds.platform.core.test.fixtures,
-            com.hedera.node.app.test.fixtures;
+            com.hedera.node.app.test.fixtures,
+            com.hedera.node.app;
     exports com.swirlds.platform.event.linking to
             com.swirlds.common,
             com.swirlds.platform.test,
@@ -120,6 +122,10 @@ module com.swirlds.platform.core {
     exports com.swirlds.platform.components.consensus;
     exports com.swirlds.platform.pool;
     exports com.swirlds.platform.state.snapshot;
+    exports com.swirlds.platform.state.service.schemas;
+    exports com.swirlds.platform.state.service;
+    exports com.swirlds.platform.builder.internal;
+    exports com.swirlds.platform.config.internal;
 
     requires transitive com.hedera.node.hapi;
     requires transitive com.swirlds.base;
@@ -127,6 +133,7 @@ module com.swirlds.platform.core {
     requires transitive com.swirlds.common;
     requires transitive com.swirlds.config.api;
     requires transitive com.swirlds.metrics.api;
+    requires transitive com.swirlds.state.api;
     requires transitive com.fasterxml.jackson.annotation;
     requires transitive com.fasterxml.jackson.databind;
     requires transitive com.hedera.pbj.runtime;
@@ -134,8 +141,8 @@ module com.swirlds.platform.core {
     requires transitive org.apache.logging.log4j;
     requires com.swirlds.config.extensions;
     requires com.swirlds.logging;
+    requires com.swirlds.merkle;
     requires com.swirlds.merkledb;
-    requires com.swirlds.state.api;
     requires com.swirlds.virtualmap;
     requires com.fasterxml.jackson.core;
     requires com.fasterxml.jackson.dataformat.yaml;

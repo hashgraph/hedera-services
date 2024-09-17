@@ -24,7 +24,7 @@ import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.sequence.set.SequenceSet;
 import com.swirlds.platform.sequence.set.StandardSequenceSet;
-import com.swirlds.platform.system.events.EventDescriptor;
+import com.swirlds.platform.system.events.EventDescriptorWrapper;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -41,7 +41,7 @@ public class ConsensusOutput implements Clearable {
     private final LinkedList<PlatformEvent> staleEvents;
 
     private final SequenceSet<PlatformEvent> nonAncientEvents;
-    private final SequenceSet<EventDescriptor> nonAncientConsensusEvents;
+    private final SequenceSet<EventDescriptorWrapper> nonAncientConsensusEvents;
 
     private long latestRound;
 
@@ -60,7 +60,8 @@ public class ConsensusOutput implements Clearable {
 
         // FUTURE WORK: birth round compatibility
         nonAncientEvents = new StandardSequenceSet<>(0, 1024, true, PlatformEvent::getGeneration);
-        nonAncientConsensusEvents = new StandardSequenceSet<>(0, 1024, true, EventDescriptor::getGeneration);
+        nonAncientConsensusEvents = new StandardSequenceSet<>(
+                0, 1024, true, ed -> ed.eventDescriptor().generation());
     }
 
     public void eventAdded(@NonNull final PlatformEvent event) {

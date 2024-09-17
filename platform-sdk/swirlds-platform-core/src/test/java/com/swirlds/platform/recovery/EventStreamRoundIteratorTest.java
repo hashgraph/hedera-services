@@ -39,7 +39,7 @@ import com.swirlds.platform.recovery.internal.StreamedRound;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.StaticSoftwareVersion;
 import com.swirlds.platform.system.address.AddressBook;
-import com.swirlds.platform.system.events.DetailedConsensusEvent;
+import com.swirlds.platform.system.events.CesEvent;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -68,8 +68,7 @@ class EventStreamRoundIteratorTest {
         StaticSoftwareVersion.reset();
     }
 
-    public static void assertEventsAreEqual(
-            final DetailedConsensusEvent expected, final DetailedConsensusEvent actual) {
+    public static void assertEventsAreEqual(final CesEvent expected, final CesEvent actual) {
         assertEquals(expected, actual);
     }
 
@@ -84,15 +83,14 @@ class EventStreamRoundIteratorTest {
         final int durationInSeconds = 100;
         final int secondsPerFile = 2;
 
-        final List<DetailedConsensusEvent> events =
-                generateRandomEvents(random, 1L, Duration.ofSeconds(durationInSeconds), 1, 20);
+        final List<CesEvent> events = generateRandomEvents(random, 1L, Duration.ofSeconds(durationInSeconds), 1, 20);
 
         writeRandomEventStream(random, directory, secondsPerFile, events);
 
         try (final IOIterator<StreamedRound> iterator = new EventStreamRoundIterator(
                 mock(AddressBook.class), directory, EventStreamPathIterator.FIRST_ROUND_AVAILABLE, true)) {
 
-            final List<DetailedConsensusEvent> deserializedEvents = new ArrayList<>();
+            final List<CesEvent> deserializedEvents = new ArrayList<>();
 
             while (iterator.hasNext()) {
 
@@ -130,10 +128,9 @@ class EventStreamRoundIteratorTest {
         final int secondsPerFile = 2;
         final long firstRoundToRead = 10;
 
-        final List<DetailedConsensusEvent> events =
-                generateRandomEvents(random, 1L, Duration.ofSeconds(durationInSeconds), 1, 20);
+        final List<CesEvent> events = generateRandomEvents(random, 1L, Duration.ofSeconds(durationInSeconds), 1, 20);
 
-        final List<DetailedConsensusEvent> eventsToBeReturned = new ArrayList<>();
+        final List<CesEvent> eventsToBeReturned = new ArrayList<>();
         events.forEach(event -> {
             if (event.getRoundReceived() >= firstRoundToRead) {
                 eventsToBeReturned.add(event);
@@ -145,7 +142,7 @@ class EventStreamRoundIteratorTest {
         try (final IOIterator<StreamedRound> iterator =
                 new EventStreamRoundIterator(mock(AddressBook.class), directory, firstRoundToRead, true)) {
 
-            final List<DetailedConsensusEvent> deserializedEvents = new ArrayList<>();
+            final List<CesEvent> deserializedEvents = new ArrayList<>();
 
             while (iterator.hasNext()) {
 
@@ -183,8 +180,7 @@ class EventStreamRoundIteratorTest {
         final int durationInSeconds = 100;
         final int secondsPerFile = 2;
 
-        final List<DetailedConsensusEvent> events =
-                generateRandomEvents(random, 1L, Duration.ofSeconds(durationInSeconds), 1, 20);
+        final List<CesEvent> events = generateRandomEvents(random, 1L, Duration.ofSeconds(durationInSeconds), 1, 20);
 
         writeRandomEventStream(random, directory, secondsPerFile, events);
 
@@ -195,7 +191,7 @@ class EventStreamRoundIteratorTest {
         try (final IOIterator<StreamedRound> iterator = new EventStreamRoundIterator(
                 mock(AddressBook.class), directory, EventStreamPathIterator.FIRST_ROUND_AVAILABLE, true)) {
 
-            final List<DetailedConsensusEvent> deserializedEvents = new ArrayList<>();
+            final List<CesEvent> deserializedEvents = new ArrayList<>();
 
             try {
                 while (iterator.hasNext()) {
@@ -245,8 +241,7 @@ class EventStreamRoundIteratorTest {
         final int durationInSeconds = 100;
         final int secondsPerFile = 2;
 
-        final List<DetailedConsensusEvent> events =
-                generateRandomEvents(random, 100L, Duration.ofSeconds(durationInSeconds), 1, 20);
+        final List<CesEvent> events = generateRandomEvents(random, 100L, Duration.ofSeconds(durationInSeconds), 1, 20);
 
         writeRandomEventStream(random, directory, secondsPerFile, events);
 
@@ -269,8 +264,7 @@ class EventStreamRoundIteratorTest {
         final int durationInSeconds = 100;
         final int secondsPerFile = 2;
 
-        final List<DetailedConsensusEvent> events =
-                generateRandomEvents(random, 1L, Duration.ofSeconds(durationInSeconds), 1, 20);
+        final List<CesEvent> events = generateRandomEvents(random, 1L, Duration.ofSeconds(durationInSeconds), 1, 20);
 
         writeRandomEventStream(random, directory, secondsPerFile, events);
 
@@ -280,7 +274,7 @@ class EventStreamRoundIteratorTest {
         try (final IOIterator<StreamedRound> iterator = new EventStreamRoundIterator(
                 mock(AddressBook.class), directory, EventStreamPathIterator.FIRST_ROUND_AVAILABLE, true)) {
 
-            final List<DetailedConsensusEvent> deserializedEvents = new ArrayList<>();
+            final List<CesEvent> deserializedEvents = new ArrayList<>();
 
             try {
                 while (iterator.hasNext()) {
@@ -329,8 +323,7 @@ class EventStreamRoundIteratorTest {
         final int durationInSeconds = 100;
         final int secondsPerFile = 2;
 
-        final List<DetailedConsensusEvent> events =
-                generateRandomEvents(random, 1L, Duration.ofSeconds(durationInSeconds), 1, 20);
+        final List<CesEvent> events = generateRandomEvents(random, 1L, Duration.ofSeconds(durationInSeconds), 1, 20);
 
         writeRandomEventStream(random, directory, secondsPerFile, events);
 
@@ -340,7 +333,7 @@ class EventStreamRoundIteratorTest {
         try (final IOIterator<StreamedRound> iterator = new EventStreamRoundIterator(
                 mock(AddressBook.class), directory, EventStreamPathIterator.FIRST_ROUND_AVAILABLE, false)) {
 
-            final List<DetailedConsensusEvent> deserializedEvents = new ArrayList<>();
+            final List<CesEvent> deserializedEvents = new ArrayList<>();
 
             while (iterator.hasNext()) {
 

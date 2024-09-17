@@ -42,8 +42,8 @@ import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.annotations.NodeSelfId;
 import com.hedera.node.app.fees.FeeContextImpl;
 import com.hedera.node.app.fees.FeeManager;
+import com.hedera.node.app.hapi.utils.EthSigsUtils;
 import com.hedera.node.app.info.CurrentPlatformStatus;
-import com.hedera.node.app.service.evm.utils.EthSigsUtils;
 import com.hedera.node.app.signature.DefaultKeyVerifier;
 import com.hedera.node.app.signature.ExpandedSignaturePair;
 import com.hedera.node.app.signature.SignatureExpander;
@@ -64,7 +64,7 @@ import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.data.LazyCreationConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.state.HederaState;
+import com.swirlds.state.State;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.InstantSource;
 import java.util.EnumSet;
@@ -155,20 +155,20 @@ public final class IngestChecker {
     /**
      * Runs all the ingest checks on a {@link Transaction}
      *
-     * @param state the {@link HederaState} to use
+     * @param state the {@link State} to use
      * @param tx the {@link Transaction} to check
      * @param configuration the {@link Configuration} to use
      * @return the {@link TransactionInfo} with the extracted information
      * @throws PreCheckException if a check fails
      */
     public TransactionInfo runAllChecks(
-            @NonNull final HederaState state, @NonNull final Transaction tx, @NonNull final Configuration configuration)
+            @NonNull final State state, @NonNull final Transaction tx, @NonNull final Configuration configuration)
             throws PreCheckException {
         // During ingest we approximate consensus time with wall clock time
         final var consensusTime = instantSource.instant();
 
         // 1. Check the syntax
-        final var txInfo = transactionChecker.check(tx);
+        final var txInfo = transactionChecker.check(tx, null);
         final var txBody = txInfo.txBody();
         final var functionality = txInfo.functionality();
 
@@ -192,8 +192,11 @@ public final class IngestChecker {
 
         // 4. Check throttles
         assertThrottlingPreconditions(txInfo, configuration);
-        if (synchronizedThrottleAccumulator.shouldThrottle(txInfo, state)) {
-            throw new PreCheckException(BUSY);
+        final var hederaConfig = configuration.getConfigData(HederaConfig.class);
+        if (hederaConfig.ingestThrottleEnabled()) {
+            if (synchronizedThrottleAccumulator.shouldThrottle(txInfo, state)) {
+                throw new PreCheckException(BUSY);
+            }
         }
 
         // 4a. Run pure checks

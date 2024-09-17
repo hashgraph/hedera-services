@@ -72,7 +72,7 @@ public class ReadableFileStoreImpl extends FileStore implements ReadableFileStor
     /**
      * Returns the number of files in the state.
      *
-     * @return the number of files in the state.
+     * @return the number of files in the state
      */
     public long sizeOfState() {
         return fileState.size();

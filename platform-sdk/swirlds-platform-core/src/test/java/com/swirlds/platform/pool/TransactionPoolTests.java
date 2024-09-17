@@ -25,9 +25,8 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import com.hedera.hapi.platform.event.EventPayload.PayloadOneOfType;
-import com.hedera.hapi.platform.event.StateSignaturePayload;
-import com.hedera.pbj.runtime.OneOf;
+import com.hedera.hapi.platform.event.EventTransaction;
+import com.hedera.hapi.platform.event.StateSignatureTransaction;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import java.util.ArrayList;
 import java.util.List;
@@ -38,10 +37,10 @@ class TransactionPoolTests {
 
     @Test
     void addTransactionTest() {
-        final List<OneOf<PayloadOneOfType>> transactionList = new ArrayList<>();
+        final List<EventTransaction> transactionList = new ArrayList<>();
         final TransactionPoolNexus transactionPoolNexus = mock(TransactionPoolNexus.class);
         when(transactionPoolNexus.submitTransaction(any(), anyBoolean())).thenAnswer(invocation -> {
-            final OneOf<PayloadOneOfType> transaction = invocation.getArgument(0);
+            final EventTransaction transaction = invocation.getArgument(0);
             final boolean isPriority = invocation.getArgument(1);
             assertTrue(isPriority);
             transactionList.add(transaction);
@@ -49,14 +48,15 @@ class TransactionPoolTests {
         });
 
         final TransactionPool transactionPool = new DefaultTransactionPool(transactionPoolNexus);
-        final StateSignaturePayload signaturePayload = StateSignaturePayload.newBuilder()
+        final StateSignatureTransaction signatureTransaction = StateSignatureTransaction.newBuilder()
                 .round(1)
                 .signature(Bytes.EMPTY)
                 .build();
 
-        transactionPool.submitSystemTransaction(signaturePayload);
+        transactionPool.submitSystemTransaction(signatureTransaction);
         assertEquals(1, transactionList.size());
-        assertSame(signaturePayload, transactionList.getFirst().as());
+        assertSame(
+                signatureTransaction, transactionList.getFirst().transaction().as());
     }
 
     @Test

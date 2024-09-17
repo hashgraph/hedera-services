@@ -40,14 +40,8 @@ public class SerializablePublicKey implements SelfSerializable {
     private PublicKey publicKey;
     private KeyType keyType;
 
-    /**
-     * {@inheritDoc}
-     */
     public SerializablePublicKey() {}
 
-    /**
-     * {@inheritDoc}
-     */
     public SerializablePublicKey(PublicKey publicKey) {
         if (publicKey == null) {
             // null will not be supported for the time being, or maybe never

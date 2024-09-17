@@ -24,14 +24,14 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import com.hedera.hapi.platform.event.StateSignaturePayload;
+import com.hedera.hapi.platform.event.StateSignatureTransaction;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.platform.crypto.PlatformSigner;
-import com.swirlds.platform.state.RandomSignedStateGenerator;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
+import com.swirlds.platform.test.fixtures.state.RandomSignedStateGenerator;
 import org.junit.jupiter.api.Test;
 
 public class StateSignerTests {
@@ -50,7 +50,7 @@ public class StateSignerTests {
         final StateSigner stateSigner = new DefaultStateSigner(platformSigner);
 
         final ReservedSignedState reservedSignedState = signedState.reserve("test");
-        final StateSignaturePayload signatureTransaction = stateSigner.signState(reservedSignedState);
+        final StateSignatureTransaction signatureTransaction = stateSigner.signState(reservedSignedState);
         assertTrue(reservedSignedState.isClosed());
         assertNull(signatureTransaction);
     }
@@ -72,7 +72,7 @@ public class StateSignerTests {
         final StateSigner stateSigner = new DefaultStateSigner(platformSigner);
 
         final ReservedSignedState reservedSignedState = signedState.reserve("test");
-        final StateSignaturePayload payload = stateSigner.signState(reservedSignedState);
+        final StateSignatureTransaction payload = stateSigner.signState(reservedSignedState);
         assertTrue(reservedSignedState.isClosed());
         assertNotNull(payload);
         assertArrayEquals(payload.signature().toByteArray(), signature.getSignatureBytes());

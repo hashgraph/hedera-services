@@ -119,6 +119,7 @@ public class CryptoTransferHTSSuite {
 
     private static final Logger log = LogManager.getLogger(CryptoTransferHTSSuite.class);
 
+    private static final long GAS_FOR_AUTO_ASSOCIATING_CALLS = 2_000_000;
     private static final long GAS_TO_OFFER = 4_000_000L;
     public static final long TOTAL_SUPPLY = 1_000;
     private static final String FUNGIBLE_TOKEN = "TokenA";
@@ -211,6 +212,7 @@ public class CryptoTransferHTSSuite {
                                                 asAddress(spec.registry().getAccountID(RECEIVER))),
                                         BigInteger.valueOf(allowance + 1))
                                 .via(revertingTransferFromTxn)
+                                .gas(GAS_FOR_AUTO_ASSOCIATING_CALLS)
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
                         // transfer allowance/2 amount
                         contractCall(
@@ -224,6 +226,7 @@ public class CryptoTransferHTSSuite {
                                                 asAddress(spec.registry().getAccountID(RECEIVER))),
                                         BigInteger.valueOf(allowance / 2))
                                 .via(successfulTransferFromTxn)
+                                .gas(GAS_FOR_AUTO_ASSOCIATING_CALLS)
                                 .hasKnownStatus(SUCCESS),
                         // transfer the rest of the allowance
                         contractCall(
@@ -237,6 +240,7 @@ public class CryptoTransferHTSSuite {
                                                 asAddress(spec.registry().getAccountID(RECEIVER))),
                                         BigInteger.valueOf(allowance / 2))
                                 .via(successfulTransferFromTxn2)
+                                .gas(GAS_FOR_AUTO_ASSOCIATING_CALLS)
                                 .hasKnownStatus(SUCCESS),
                         getAccountDetails(OWNER)
                                 .payingWith(GENESIS)
@@ -253,6 +257,7 @@ public class CryptoTransferHTSSuite {
                                                 asAddress(spec.registry().getAccountID(RECEIVER))),
                                         BigInteger.ONE)
                                 .via(revertingTransferFromTxn2)
+                                .gas(GAS_FOR_AUTO_ASSOCIATING_CALLS)
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED))))
                 .then(
                         childRecordsCheck(
@@ -267,7 +272,6 @@ public class CryptoTransferHTSSuite {
                         childRecordsCheck(
                                 successfulTransferFromTxn,
                                 SUCCESS,
-                                recordWith().status(SUCCESS),
                                 recordWith()
                                         .status(SUCCESS)
                                         .contractCallResult(resultWith()
@@ -785,6 +789,7 @@ public class CryptoTransferHTSSuite {
                                                 asAddress(spec.registry().getAccountID(RECEIVER))),
                                         BigInteger.ONE)
                                 .via(revertingTransferFromTxn)
+                                .gas(GAS_FOR_AUTO_ASSOCIATING_CALLS)
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
                         // transfer allowed NFT
                         contractCall(
@@ -798,6 +803,7 @@ public class CryptoTransferHTSSuite {
                                                 asAddress(spec.registry().getAccountID(RECEIVER))),
                                         BigInteger.TWO)
                                 .via(successfulTransferFromTxn)
+                                .gas(GAS_FOR_AUTO_ASSOCIATING_CALLS)
                                 .hasKnownStatus(SUCCESS))))
                 .then(
                         childRecordsCheck(
@@ -812,7 +818,6 @@ public class CryptoTransferHTSSuite {
                         childRecordsCheck(
                                 successfulTransferFromTxn,
                                 SUCCESS,
-                                recordWith().status(SUCCESS),
                                 recordWith()
                                         .status(SUCCESS)
                                         .contractCallResult(resultWith()

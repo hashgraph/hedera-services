@@ -43,7 +43,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
- * This class generates synthetic records for all reserved system accounts
+ * This class generates synthetic records for all reserved system accounts.
  */
 @Singleton
 public class SyntheticAccountCreator {
@@ -60,7 +60,7 @@ public class SyntheticAccountCreator {
     private final SortedSet<Account> blocklistAcctRcds = new TreeSet<>(ACCOUNT_COMPARATOR);
 
     /**
-     * Create a new instance
+     * Create a new instance.
      */
     @Inject
     public SyntheticAccountCreator() {
@@ -68,7 +68,7 @@ public class SyntheticAccountCreator {
     }
 
     /**
-     * Returns the synthetic records for system accounts
+     * Returns the synthetic records for system accounts.
      * @return the set of accounts for which records are generated
      */
     public SortedSet<Account> systemAccounts() {
@@ -76,7 +76,7 @@ public class SyntheticAccountCreator {
     }
 
     /**
-     * Returns the synthetic records for staking accounts
+     * Returns the synthetic records for staking accounts.
      * @return the set of accounts for which records are generated
      */
     public SortedSet<Account> stakingAccounts() {
@@ -84,7 +84,7 @@ public class SyntheticAccountCreator {
     }
 
     /**
-     * Returns the synthetic records for treasury accounts
+     * Returns the synthetic records for treasury accounts.
      * @return the set of accounts for which records are generated
      */
     public SortedSet<Account> treasuryClones() {
@@ -92,7 +92,7 @@ public class SyntheticAccountCreator {
     }
 
     /**
-     * Returns the synthetic records for multi-use accounts
+     * Returns the synthetic records for multi-use accounts.
      * @return the set of accounts for which records are generated
      */
     public SortedSet<Account> multiUseAccounts() {
@@ -100,7 +100,7 @@ public class SyntheticAccountCreator {
     }
 
     /**
-     * Returns the synthetic records for blocklist accounts
+     * Returns the synthetic records for blocklist accounts.
      * @return the set of accounts for which records are generated
      */
     public SortedSet<Account> blocklistAccounts() {

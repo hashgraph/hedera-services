@@ -16,7 +16,8 @@
 
 package com.hedera.services.bdd.suites.contract.hapi;
 
-import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
+import static com.hedera.node.app.hapi.utils.EthSigsUtils.recoverAddressFromPubKey;
+import static com.hedera.services.bdd.junit.TestTags.ADHOC;
 import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asContract;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asContractString;
@@ -71,9 +72,9 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.createLargeFile;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.logIt;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyListNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.recordStreamMustIncludeNoFailuresFrom;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sidecarIdValidator;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.streamMustIncludeNoFailuresFrom;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.submitModified;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.spec.utilops.mod.ModificationUtils.withSuccessivelyVariedBodyIds;
@@ -164,6 +165,7 @@ import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
 @Tag(SMART_CONTRACT)
+@Tag(ADHOC)
 public class ContractCallSuite {
 
     public static final String TOKEN = "yahcliToken";
@@ -243,7 +245,7 @@ public class ContractCallSuite {
         final var secondCreation = "secondCreation";
         return defaultHapiSpec("repeatedCreate2FailsWithInterpretableActionSidecars", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
-                        streamMustIncludeNoFailuresFrom(sidecarIdValidator()),
+                        recordStreamMustIncludeNoFailuresFrom(sidecarIdValidator()),
                         cryptoCreate(ACCOUNT).balance(ONE_MILLION_HBARS),
                         uploadInitCode(contract),
                         contractCreate(contract))
@@ -273,7 +275,7 @@ public class ContractCallSuite {
         final var tokenInfoFn = new Function("getTokenInfo(address)");
         return defaultHapiSpec("insufficientGasToPrecompileFailsWithInterpretableActionSidecars")
                 .given(
-                        streamMustIncludeNoFailuresFrom(sidecarIdValidator()),
+                        recordStreamMustIncludeNoFailuresFrom(sidecarIdValidator()),
                         uploadInitCode(contract),
                         contractCreate(contract))
                 .when(tokenCreate("someToken").exposingAddressTo(someTokenAddress::set))
@@ -305,7 +307,7 @@ public class ContractCallSuite {
         final var contract = "HollowAccountCreator";
         return defaultHapiSpec("HollowCreationFailsCleanly", FULLY_NONDETERMINISTIC)
                 .given(
-                        streamMustIncludeNoFailuresFrom(sidecarIdValidator()),
+                        recordStreamMustIncludeNoFailuresFrom(sidecarIdValidator()),
                         uploadInitCode(contract),
                         contractCreate(contract))
                 .when(contractCall(contract, "testCallFoo", randomHeadlongAddress(), BigInteger.valueOf(500_000L))
@@ -879,7 +881,7 @@ public class ContractCallSuite {
                                         "callWithValue",
                                         BigInteger.valueOf(minValueToAccessGatedMethodAtCurrentRate.get()))
                                 .sending(minValueToAccessGatedMethodAtCurrentRate.get())
-                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED)));
+                                .hasKnownStatus(INVALID_CONTRACT_ID)));
     }
 
     /**
@@ -1969,7 +1971,7 @@ public class ContractCallSuite {
                         NONDETERMINISTIC_FUNCTION_PARAMETERS,
                         NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
-                        streamMustIncludeNoFailuresFrom(sidecarIdValidator()),
+                        recordStreamMustIncludeNoFailuresFrom(sidecarIdValidator()),
                         newKeyNamed(RECEIVER_KEY),
                         cryptoCreate(ACC)
                                 .balance(5 * ONE_HUNDRED_HBARS)
@@ -2490,7 +2492,7 @@ public class ContractCallSuite {
                                 CONTRACT_REVERT_EXECUTED,
                                 recordWith()
                                         .status(INSUFFICIENT_GAS)
-                                        .consensusTimeImpliedByNonce(parentConsTime.get(), 1))));
+                                        .consensusTimeImpliedByOffset(parentConsTime.get(), 1))));
     }
 
     @HapiTest
@@ -2567,7 +2569,7 @@ public class ContractCallSuite {
         final var nonExtantMirrorAddress = asHeadlongAddress("0xE8D4A50FFF");
         return defaultHapiSpec("callToNonExtantLongZeroAddressUsesTargetedAddress")
                 .given(
-                        streamMustIncludeNoFailuresFrom(sidecarIdValidator()),
+                        recordStreamMustIncludeNoFailuresFrom(sidecarIdValidator()),
                         uploadInitCode(contract),
                         contractCreate(contract))
                 .when()
@@ -2581,7 +2583,7 @@ public class ContractCallSuite {
         final var nonExtantEvmAddress = asHeadlongAddress(TxnUtils.randomUtf8Bytes(20));
         return defaultHapiSpec("callToNonExtantEvmAddressUsesTargetedAddress")
                 .given(
-                        streamMustIncludeNoFailuresFrom(sidecarIdValidator()),
+                        recordStreamMustIncludeNoFailuresFrom(sidecarIdValidator()),
                         uploadInitCode(contract),
                         contractCreate(contract))
                 .when()

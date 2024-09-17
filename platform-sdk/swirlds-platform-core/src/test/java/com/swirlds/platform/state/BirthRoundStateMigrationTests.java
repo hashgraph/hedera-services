@@ -30,6 +30,8 @@ import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.system.BasicSoftwareVersion;
+import com.swirlds.platform.system.SoftwareVersion;
+import com.swirlds.platform.test.fixtures.state.RandomSignedStateGenerator;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -81,11 +83,10 @@ class BirthRoundStateMigrationTests {
         final SignedState signedState = generateSignedState(random, platformContext);
         final Hash originalHash = signedState.getState().getHash();
 
-        final BasicSoftwareVersion previousSoftwareVersion =
-                (BasicSoftwareVersion) signedState.getState().getPlatformState().getCreationSoftwareVersion();
+        final SoftwareVersion previousSoftwareVersion =
+                signedState.getState().getWritablePlatformState().getCreationSoftwareVersion();
 
-        final BasicSoftwareVersion newSoftwareVersion =
-                new BasicSoftwareVersion(previousSoftwareVersion.getSoftwareVersion() + 1);
+        final SoftwareVersion newSoftwareVersion = createNextVersion(previousSoftwareVersion);
 
         BirthRoundStateMigration.modifyStateForBirthRoundMigration(
                 signedState, AncientMode.GENERATION_THRESHOLD, newSoftwareVersion);
@@ -106,15 +107,18 @@ class BirthRoundStateMigrationTests {
 
         final SignedState signedState = generateSignedState(random, platformContext);
 
-        final BasicSoftwareVersion previousSoftwareVersion =
-                (BasicSoftwareVersion) signedState.getState().getPlatformState().getCreationSoftwareVersion();
+        final SoftwareVersion previousSoftwareVersion =
+                signedState.getState().getReadablePlatformState().getCreationSoftwareVersion();
 
-        final BasicSoftwareVersion newSoftwareVersion =
-                new BasicSoftwareVersion(previousSoftwareVersion.getSoftwareVersion() + 1);
+        ;
+        final SoftwareVersion newSoftwareVersion = createNextVersion(previousSoftwareVersion);
 
-        signedState.getState().getPlatformState().setLastRoundBeforeBirthRoundMode(signedState.getRound() - 100);
-        signedState.getState().getPlatformState().setFirstVersionInBirthRoundMode(previousSoftwareVersion);
-        signedState.getState().getPlatformState().setLowestJudgeGenerationBeforeBirthRoundMode(100);
+        signedState
+                .getState()
+                .getWritablePlatformState()
+                .setLastRoundBeforeBirthRoundMode(signedState.getRound() - 100);
+        signedState.getState().getWritablePlatformState().setFirstVersionInBirthRoundMode(previousSoftwareVersion);
+        signedState.getState().getWritablePlatformState().setLowestJudgeGenerationBeforeBirthRoundMode(100);
         rehashTree(signedState.getState());
         final Hash originalHash = signedState.getState().getHash();
 
@@ -129,6 +133,11 @@ class BirthRoundStateMigrationTests {
         assertEquals(originalHash, signedState.getState().getHash());
     }
 
+    private static SoftwareVersion createNextVersion(SoftwareVersion previousSoftwareVersion) {
+        return new BasicSoftwareVersion(
+                previousSoftwareVersion.getPbjSemanticVersion().major() + 1);
+    }
+
     @Test
     void migrationTest() {
         final Random random = getRandomPrintSeed();
@@ -138,15 +147,14 @@ class BirthRoundStateMigrationTests {
         final SignedState signedState = generateSignedState(random, platformContext);
         final Hash originalHash = signedState.getState().getHash();
 
-        final BasicSoftwareVersion previousSoftwareVersion =
-                (BasicSoftwareVersion) signedState.getState().getPlatformState().getCreationSoftwareVersion();
+        final SoftwareVersion previousSoftwareVersion =
+                signedState.getState().getReadablePlatformState().getCreationSoftwareVersion();
 
-        final BasicSoftwareVersion newSoftwareVersion =
-                new BasicSoftwareVersion(previousSoftwareVersion.getSoftwareVersion() + 1);
+        final SoftwareVersion newSoftwareVersion = createNextVersion(previousSoftwareVersion);
 
         final long lastRoundMinimumJudgeGeneration = signedState
                 .getState()
-                .getPlatformState()
+                .getReadablePlatformState()
                 .getSnapshot()
                 .getMinimumJudgeInfoList()
                 .getLast()
@@ -159,17 +167,22 @@ class BirthRoundStateMigrationTests {
 
         // We expect these fields to be populated at the migration boundary
         assertEquals(
-                newSoftwareVersion, signedState.getState().getPlatformState().getFirstVersionInBirthRoundMode());
+                newSoftwareVersion.getPbjSemanticVersion(),
+                signedState
+                        .getState()
+                        .getReadablePlatformState()
+                        .getFirstVersionInBirthRoundMode()
+                        .getPbjSemanticVersion());
         assertEquals(
                 lastRoundMinimumJudgeGeneration,
-                signedState.getState().getPlatformState().getLowestJudgeGenerationBeforeBirthRoundMode());
+                signedState.getState().getReadablePlatformState().getLowestJudgeGenerationBeforeBirthRoundMode());
         assertEquals(
                 signedState.getRound(),
-                signedState.getState().getPlatformState().getLastRoundBeforeBirthRoundMode());
+                signedState.getState().getReadablePlatformState().getLastRoundBeforeBirthRoundMode());
 
         // All of the judge info objects should now be using a birth round equal to the round of the state
         for (final MinimumJudgeInfo minimumJudgeInfo :
-                signedState.getState().getPlatformState().getSnapshot().getMinimumJudgeInfoList()) {
+                signedState.getState().getReadablePlatformState().getSnapshot().getMinimumJudgeInfoList()) {
             assertEquals(signedState.getRound(), minimumJudgeInfo.minimumJudgeAncientThreshold());
         }
     }

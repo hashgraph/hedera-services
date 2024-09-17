@@ -38,6 +38,8 @@ public class CallContractOperation extends AbstractSpecTransaction<CallContractO
     private final String function;
     private final Object[] parameters;
     private long gas = DEFAULT_GAS;
+    private long sendValue;
+    private String txnName;
 
     public CallContractOperation(
             @NonNull final SpecContract target, @NonNull final String function, @NonNull final Object... parameters) {
@@ -52,6 +54,8 @@ public class CallContractOperation extends AbstractSpecTransaction<CallContractO
     protected SpecOperation computeDelegate(@NonNull final HapiSpec spec) {
         final var op = contractCall(
                         target.name(), function, withSubstitutedTypes(spec.targetNetworkOrThrow(), parameters))
+                .sending(sendValue)
+                .via(txnName)
                 .gas(gas);
         maybeAssertions().ifPresent(a -> a.accept(op));
         return op;
@@ -64,6 +68,21 @@ public class CallContractOperation extends AbstractSpecTransaction<CallContractO
      */
     public CallContractOperation gas(final long gas) {
         this.gas = gas;
+        return this;
+    }
+
+    /**
+     * Sets the value to be sent with the call.
+     * @param value the "msg.value" for the call
+     * @return this
+     */
+    public CallContractOperation sending(final long value) {
+        this.sendValue = value;
+        return this;
+    }
+
+    public CallContractOperation via(final String txnName) {
+        this.txnName = txnName;
         return this;
     }
 

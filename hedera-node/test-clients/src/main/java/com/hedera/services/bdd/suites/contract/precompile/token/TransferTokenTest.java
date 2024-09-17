@@ -58,12 +58,12 @@ public class TransferTokenTest {
     @FungibleToken(name = "fungibleToken")
     static SpecFungibleToken fungibleToken;
 
-    @Account(name = "account", balance = 100 * ONE_HUNDRED_HBARS)
+    @Account(name = "account", tinybarBalance = 100 * ONE_HUNDRED_HBARS)
     static SpecAccount account;
 
     @BeforeAll
     static void beforeAll(@NonNull final TestLifecycle testLifecycle) {
-        fungibleToken.setInitialSupply(20L);
+        fungibleToken.builder().totalSupply(20L);
         fungibleToken.setTreasury(account);
     }
 

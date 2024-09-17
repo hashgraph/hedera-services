@@ -37,7 +37,7 @@ import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.metrics.RoundHandlingMetrics;
 import com.swirlds.platform.state.MerkleRoot;
-import com.swirlds.platform.state.PlatformState;
+import com.swirlds.platform.state.PlatformStateAccessor;
 import com.swirlds.platform.state.SwirldStateManager;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
@@ -184,7 +184,7 @@ public class DefaultTransactionHandler implements TransactionHandler {
         try {
             handlerMetrics.setPhase(SETTING_EVENT_CONSENSUS_DATA);
             for (final PlatformEvent event : consensusRound.getConsensusEvents()) {
-                event.setConsensusTimestampsOnPayloads();
+                event.setConsensusTimestampsOnTransactions();
             }
 
             handlerMetrics.setPhase(UPDATING_PLATFORM_STATE);
@@ -215,19 +215,20 @@ public class DefaultTransactionHandler implements TransactionHandler {
     }
 
     /**
-     * Populate the {@link com.swirlds.platform.state.PlatformState PlatformState} with all needed data for this round.
+     * Populate the {@link PlatformStateAccessor} with all needed data for this round.
      *
      * @param round the consensus round
      */
     private void updatePlatformState(@NonNull final ConsensusRound round) {
-        final PlatformState platformState =
-                swirldStateManager.getConsensusState().getPlatformState();
-
-        platformState.setRound(round.getRoundNum());
-        platformState.setConsensusTimestamp(round.getConsensusTimestamp());
-        platformState.setCreationSoftwareVersion(softwareVersion);
-        platformState.setRoundsNonAncient(roundsNonAncient);
-        platformState.setSnapshot(round.getSnapshot());
+        final PlatformStateAccessor platformState =
+                swirldStateManager.getConsensusState().getWritablePlatformState();
+        platformState.bulkUpdate(v -> {
+            v.setRound(round.getRoundNum());
+            v.setConsensusTimestamp(round.getConsensusTimestamp());
+            v.setCreationSoftwareVersion(softwareVersion);
+            v.setRoundsNonAncient(roundsNonAncient);
+            v.setSnapshot(round.getSnapshot());
+        });
     }
 
     /**
@@ -237,8 +238,8 @@ public class DefaultTransactionHandler implements TransactionHandler {
      * @throws InterruptedException if this thread is interrupted
      */
     private void updateRunningEventHash(@NonNull final ConsensusRound round) throws InterruptedException {
-        final PlatformState platformState =
-                swirldStateManager.getConsensusState().getPlatformState();
+        final PlatformStateAccessor platformState =
+                swirldStateManager.getConsensusState().getWritablePlatformState();
 
         if (writeLegacyRunningEventHash) {
             // Update the running hash object. If there are no events, the running hash does not change.
@@ -272,6 +273,7 @@ public class DefaultTransactionHandler implements TransactionHandler {
             // Let the swirld state manager know we are about to write the saved state for the freeze period
             swirldStateManager.savedStateInFreezePeriod();
         }
+        swirldStateManager.sealConsensusRound(consensusRound);
 
         handlerMetrics.setPhase(GETTING_STATE_TO_SIGN);
         final MerkleRoot immutableStateCons = swirldStateManager.getStateForSigning();

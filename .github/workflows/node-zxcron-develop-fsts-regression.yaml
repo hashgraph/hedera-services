@@ -16,8 +16,6 @@
 
 name: "ZXCron: [Node] Develop JRS Tests"
 on:
-  schedule:
-    - cron: '30 6 * * *'
   workflow_dispatch:
 
 defaults:
@@ -27,7 +25,7 @@ defaults:
 jobs:
   trigger-task:
     name: Trigger Daily Run
-    runs-on: [ self-hosted, Linux, small, scheduler, ephemeral ]
+    runs-on: network-node-linux-small-scheduler
     steps:
       - name: Display Branch Information
         run: |

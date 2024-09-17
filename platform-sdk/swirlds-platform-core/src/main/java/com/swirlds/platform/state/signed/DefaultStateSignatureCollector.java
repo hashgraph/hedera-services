@@ -19,7 +19,7 @@ package com.swirlds.platform.state.signed;
 import static java.util.stream.Collectors.collectingAndThen;
 import static java.util.stream.Collectors.toList;
 
-import com.hedera.hapi.platform.event.StateSignaturePayload;
+import com.hedera.hapi.platform.event.StateSignatureTransaction;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.crypto.SignatureType;
@@ -132,7 +132,7 @@ public class DefaultStateSignatureCollector implements StateSignatureCollector {
      */
     @Override
     public @Nullable List<ReservedSignedState> handlePreconsensusSignatures(
-            @NonNull final List<ScopedSystemTransaction<StateSignaturePayload>> transactions) {
+            @NonNull final List<ScopedSystemTransaction<StateSignatureTransaction>> transactions) {
         Objects.requireNonNull(transactions, "transactions");
         return transactions.stream()
                 .map(this::handlePreconsensusSignature)
@@ -141,7 +141,7 @@ public class DefaultStateSignatureCollector implements StateSignatureCollector {
     }
 
     private @Nullable ReservedSignedState handlePreconsensusSignature(
-            @NonNull final ScopedSystemTransaction<StateSignaturePayload> scopedTransaction) {
+            @NonNull final ScopedSystemTransaction<StateSignatureTransaction> scopedTransaction) {
 
         final long round = scopedTransaction.transaction().round();
         final Signature signature = new Signature(
@@ -168,7 +168,7 @@ public class DefaultStateSignatureCollector implements StateSignatureCollector {
      */
     @Override
     public @Nullable List<ReservedSignedState> handlePostconsensusSignatures(
-            @NonNull final List<ScopedSystemTransaction<StateSignaturePayload>> transactions) {
+            @NonNull final List<ScopedSystemTransaction<StateSignatureTransaction>> transactions) {
         Objects.requireNonNull(transactions, "transactions");
         return transactions.stream()
                 .map(this::handlePostconsensusSignature)
@@ -177,7 +177,7 @@ public class DefaultStateSignatureCollector implements StateSignatureCollector {
     }
 
     private @Nullable ReservedSignedState handlePostconsensusSignature(
-            @NonNull final ScopedSystemTransaction<StateSignaturePayload> scopedTransaction) {
+            @NonNull final ScopedSystemTransaction<StateSignatureTransaction> scopedTransaction) {
         final long round = scopedTransaction.transaction().round();
 
         final ReservedSignedState reservedState = incompleteStates.get(round);

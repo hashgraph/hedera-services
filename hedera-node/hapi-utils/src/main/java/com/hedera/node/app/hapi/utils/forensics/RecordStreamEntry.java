@@ -23,8 +23,10 @@ import com.hedera.node.app.hapi.utils.CommonPbjConverters;
 import com.hedera.services.stream.proto.RecordStreamItem;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
@@ -79,12 +81,46 @@ public record RecordStreamEntry(TransactionParts parts, TransactionRecord txnRec
         return CommonPbjConverters.toPbj(txnRecord.getReceipt().getFileID());
     }
 
+    /**
+     * Returns the schedule ID created by the transaction, if any.
+     *
+     * @return the created schedule ID
+     */
+    public ScheduleID createdScheduleId() {
+        return txnRecord.getReceipt().getScheduleID();
+    }
+
+    /**
+     * Returns the transaction ID of the scheduled transaction triggered by this transaction (if any).
+     *
+     * @return the scheduled transaction ID
+     */
+    public TransactionID scheduledTransactionId() {
+        return txnRecord.getReceipt().getScheduledTransactionID();
+    }
+
     public HederaFunctionality function() {
         return parts.function();
     }
 
     public TransactionRecord transactionRecord() {
         return txnRecord;
+    }
+
+    /**
+     * Returns the consensus timestamp of the parent transaction.
+     * @return the parent consensus timestamp
+     */
+    public Instant parentConsensusTimestamp() {
+        return timestampToInstant(txnRecord.getParentConsensusTimestamp());
+    }
+
+    /**
+     * Returns the transaction ID of the transaction.
+     * @return the transaction ID
+     */
+    public TransactionID txnId() {
+        return txnRecord.getTransactionID();
     }
 
     @Override

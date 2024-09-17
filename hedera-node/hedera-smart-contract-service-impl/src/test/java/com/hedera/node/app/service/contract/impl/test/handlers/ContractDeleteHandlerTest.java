@@ -28,9 +28,12 @@ import static com.hedera.node.app.service.contract.impl.test.TestHelpers.CALLED_
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.VALID_CONTRACT_ADDRESS;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.asNumericContractId;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.assertFailsWith;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.notNull;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -40,10 +43,12 @@ import com.hedera.hapi.node.contract.ContractDeleteTransactionBody;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.handlers.ContractDeleteHandler;
-import com.hedera.node.app.service.contract.impl.records.ContractDeleteRecordBuilder;
+import com.hedera.node.app.service.contract.impl.records.ContractDeleteStreamBuilder;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.api.TokenServiceApi;
-import com.hedera.node.app.spi.records.RecordBuilders;
+import com.hedera.node.app.spi.fees.FeeCalculator;
+import com.hedera.node.app.spi.fees.FeeCalculatorFactory;
+import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.store.StoreFactory;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.PreCheckException;
@@ -72,10 +77,10 @@ class ContractDeleteHandlerTest {
     private ReadableAccountStore readableAccountStore;
 
     @Mock
-    private ContractDeleteRecordBuilder recordBuilder;
+    private ContractDeleteStreamBuilder recordBuilder;
 
     @Mock
-    private RecordBuilders recordBuilders;
+    private HandleContext.SavepointStack stack;
 
     private final ContractDeleteHandler subject = new ContractDeleteHandler();
 
@@ -180,6 +185,20 @@ class ContractDeleteHandlerTest {
         return ContractDeleteTransactionBody.newBuilder().contractID(targetId).build();
     }
 
+    @Test
+    void testCalculateFeesWithNoDeleteBody() {
+        final var txn = TransactionBody.newBuilder().build();
+        final var feeCtx = mock(FeeContext.class);
+        given(feeCtx.body()).willReturn(txn);
+
+        final var feeCalcFactory = mock(FeeCalculatorFactory.class);
+        final var feeCalc = mock(FeeCalculator.class);
+        given(feeCtx.feeCalculatorFactory()).willReturn(feeCalcFactory);
+        given(feeCalcFactory.feeCalculator(notNull())).willReturn(feeCalc);
+
+        assertDoesNotThrow(() -> subject.calculateFees(feeCtx));
+    }
+
     private ContractDeleteTransactionBody deletion(final ContractID targetId, final ContractID transferId) {
         return ContractDeleteTransactionBody.newBuilder()
                 .contractID(targetId)
@@ -206,8 +225,8 @@ class ContractDeleteHandlerTest {
         given(context.body()).willReturn(txn);
         given(context.storeFactory()).willReturn(storeFactory);
         given(storeFactory.serviceApi(TokenServiceApi.class)).willReturn(tokenServiceApi);
-        given(context.recordBuilders()).willReturn(recordBuilders);
-        given(recordBuilders.getOrCreate(ContractDeleteRecordBuilder.class)).willReturn(recordBuilder);
+        given(context.savepointStack()).willReturn(stack);
+        given(stack.getBaseBuilder(ContractDeleteStreamBuilder.class)).willReturn(recordBuilder);
     }
 
     private static final Account TBD_CONTRACT = Account.newBuilder()

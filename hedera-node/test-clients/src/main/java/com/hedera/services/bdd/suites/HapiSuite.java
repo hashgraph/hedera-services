@@ -22,6 +22,7 @@ import static com.hedera.services.bdd.suites.HapiSuite.FinalOutcome.SUITE_PASSED
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
+import com.hedera.services.bdd.spec.SpecOperation;
 import com.hedera.services.bdd.spec.infrastructure.HapiClients;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -47,22 +48,12 @@ public abstract class HapiSuite {
     // The first 0 refers to the shard of the target network.
     // The second 0 refers to the realm.
     public static final String DEFAULT_SHARD_REALM = "0.0.";
-    public static final String TRUE_VALUE = "true";
     public static final String FALSE_VALUE = "false";
-    public static final String TOKEN_UNDER_TEST = "TokenUnderTest";
-    public static final String EVM_VERSION_PROPERTY = "contracts.evm.version";
     public static final String EVM_VERSION_046 = "v0.46";
     public static final String EVM_VERSION_050 = "v0.50";
     protected static String ALICE = "ALICE";
     protected static String BOB = "BOB";
-    protected static String CAROL = "CAROL";
-    protected static String RED_PARTITION = "RED_PARTITION";
-    protected static String BLUE_PARTITION = "BLUE_PARTITION";
-    protected static String GREEN_PARTITION = "GREEN_PARTITION";
     public static String CIVILIAN_PAYER = "CIVILIAN_PAYER";
-    public static long FUNGIBLE_INITIAL_SUPPLY = 1_000_000_000L;
-    public static long NON_FUNGIBLE_INITIAL_SUPPLY = 10L;
-    public static long FUNGIBLE_INITIAL_BALANCE = FUNGIBLE_INITIAL_SUPPLY / 100;
     private static final String STARTING_SUITE = "-------------- STARTING {} SUITE --------------";
 
     public enum FinalOutcome {
@@ -266,18 +257,17 @@ public abstract class HapiSuite {
     }
 
     @SuppressWarnings({"java:S3358", "java:S3740"})
-    public static HapiSpecOperation[] flattened(Object... ops) {
+    public static SpecOperation[] flattened(Object... ops) {
         return Stream.of(ops)
-                .map(op -> (op instanceof HapiSpecOperation hapiOp)
-                        ? new HapiSpecOperation[] {hapiOp}
-                        : ((op instanceof List list)
-                                ? list.toArray(new HapiSpecOperation[0])
-                                : (HapiSpecOperation[]) op))
+                .map(op -> (op instanceof SpecOperation hapiOp)
+                        ? new SpecOperation[] {hapiOp}
+                        : ((op instanceof List list) ? list.toArray(new SpecOperation[0]) : (SpecOperation[]) op))
                 .flatMap(Stream::of)
-                .toArray(HapiSpecOperation[]::new);
+                .toArray(SpecOperation[]::new);
     }
 
     @SafeVarargs
+    @SuppressWarnings("varargs")
     protected final List<Stream<DynamicTest>> allOf(final List<Stream<DynamicTest>>... specLists) {
         return Arrays.stream(specLists).flatMap(List::stream).toList();
     }

@@ -21,6 +21,8 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_GOSSIP_CA_CERTI
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NODE_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NODE_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.UPDATE_NODE_ACCOUNT_NOT_ALLOWED;
+import static com.hedera.node.app.service.addressbook.AddressBookHelper.checkDABEnabled;
+import static com.hedera.node.app.service.addressbook.impl.validators.AddressBookValidator.validateX509Certificate;
 import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateFalsePreCheck;
@@ -65,8 +67,10 @@ public class NodeUpdateHandler implements TransactionHandler {
         requireNonNull(txn);
         final var op = txn.nodeUpdate();
         validateFalsePreCheck(op.nodeId() < 0, INVALID_NODE_ID);
-        if (op.hasGossipCaCertificate())
+        if (op.hasGossipCaCertificate()) {
             validateFalsePreCheck(op.gossipCaCertificate().equals(Bytes.EMPTY), INVALID_GOSSIP_CA_CERTIFICATE);
+            validateX509Certificate(op.gossipCaCertificate());
+        }
         if (op.hasAdminKey()) {
             final var adminKey = op.adminKey();
             addressBookValidator.validateAdminKey(adminKey);
@@ -100,7 +104,7 @@ public class NodeUpdateHandler implements TransactionHandler {
     @Override
     public void handle(@NonNull final HandleContext handleContext) {
         requireNonNull(handleContext);
-        final var op = handleContext.body().nodeUpdate();
+        final var op = handleContext.body().nodeUpdateOrThrow();
 
         final var configuration = handleContext.configuration();
         final var nodeConfig = configuration.getConfigData(NodesConfig.class);
@@ -115,10 +119,12 @@ public class NodeUpdateHandler implements TransactionHandler {
             validateTrue(accountStore.contains(accountId), INVALID_NODE_ACCOUNT_ID);
         }
         if (op.hasDescription()) addressBookValidator.validateDescription(op.description(), nodeConfig);
-        if (!op.gossipEndpoint().isEmpty())
+        if (!op.gossipEndpoint().isEmpty()) {
             addressBookValidator.validateGossipEndpoint(op.gossipEndpoint(), nodeConfig);
-        if (!op.serviceEndpoint().isEmpty())
+        }
+        if (!op.serviceEndpoint().isEmpty()) {
             addressBookValidator.validateServiceEndpoint(op.serviceEndpoint(), nodeConfig);
+        }
 
         final var nodeBuilder = updateNode(op, existingNode);
         nodeStore.put(nodeBuilder.build());
@@ -127,6 +133,7 @@ public class NodeUpdateHandler implements TransactionHandler {
     @NonNull
     @Override
     public Fees calculateFees(@NonNull final FeeContext feeContext) {
+        checkDABEnabled(feeContext);
         final var calculator = feeContext.feeCalculatorFactory().feeCalculator(SubType.DEFAULT);
         calculator.resetUsage();
         // The price of node update should be increased based on number of signatures.

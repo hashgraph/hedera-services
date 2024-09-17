@@ -20,10 +20,10 @@ import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.io.streams.MerkleDataInputStream;
 import com.swirlds.common.io.streams.MerkleDataOutputStream;
+import com.swirlds.platform.event.EventSerializationUtils;
 import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.event.hashing.EventHasher;
-import com.swirlds.platform.event.hashing.PbjHasher;
-import com.swirlds.platform.event.hashing.StatefulEventHasher;
+import com.swirlds.platform.event.hashing.PbjStreamHasher;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.StaticSoftwareVersion;
 import com.swirlds.platform.test.fixtures.event.TestingEventBuilder;
@@ -54,19 +54,29 @@ public class EventBenchmarks {
     @Param({"0"})
     public long seed;
 
+    @Param({"20"})
+    public int numApp;
+
+    @Param({"10"})
+    public int numSys;
+
+    @Param({"PBJ_STREAM_DIGEST"})
+    public HasherType hasherType;
+
     private PlatformEvent event;
     private MerkleDataOutputStream outStream;
     private MerkleDataInputStream inStream;
-    private EventHasher legacyEventHasher;
-    private EventHasher pbjEventHasher;
+    private EventHasher eventHasher;
 
     @Setup
     public void setup() throws IOException, ConstructableRegistryException {
         final Random random = new Random(seed);
 
         event = new TestingEventBuilder(random)
-                .setAppTransactionCount(20)
-                .setSystemTransactionCount(10)
+                .setAppTransactionCount(numApp)
+                .setSystemTransactionCount(numSys)
+                .setSelfParent(new TestingEventBuilder(random).build())
+                .setOtherParent(new TestingEventBuilder(random).build())
                 .build();
         StaticSoftwareVersion.setSoftwareVersion(
                 new BasicSoftwareVersion(event.getSoftwareVersion().major()));
@@ -75,8 +85,7 @@ public class EventBenchmarks {
         final PipedOutputStream outputStream = new PipedOutputStream(inputStream);
         outStream = new MerkleDataOutputStream(outputStream);
         inStream = new MerkleDataInputStream(inputStream);
-        legacyEventHasher = new StatefulEventHasher();
-        pbjEventHasher = new PbjHasher();
+        eventHasher = hasherType.newHasher();
     }
 
     @Benchmark
@@ -87,39 +96,32 @@ public class EventBenchmarks {
         //
         // Benchmark                                (seed)   Mode  Cnt    Score    Error   Units
         // EventSerialization.serializeDeserialize       0  thrpt    3  962.486 ± 29.252  ops/ms
-        outStream.writeSerializable(event, false);
-        bh.consume(inStream.readSerializable(false, PlatformEvent::new));
+        EventSerializationUtils.serializePlatformEvent(outStream, event, true);
+        bh.consume(EventSerializationUtils.deserializePlatformEvent(inStream, true));
     }
 
+    /*
+    Results on M1 Max MacBook Pro:
+
+    Benchmark                     (hasherType)  (numApp)  (numSys)  (seed)   Mode  Cnt       Score       Error  Units
+    EventBenchmarks.hashing             LEGACY        20        10       0  thrpt    3  200225.404 ±  6112.327  ops/s
+    EventBenchmarks.hashing   PBJ_BYTES_DIGEST        20        10       0  thrpt    3   85932.837 ± 16372.289  ops/s
+    EventBenchmarks.hashing  PBJ_STREAM_DIGEST        20        10       0  thrpt    3  109295.516 ±  4892.847  ops/s
+     */
     @Benchmark
     @BenchmarkMode(Mode.Throughput)
-    @OutputTimeUnit(TimeUnit.MILLISECONDS)
-    public void hashingLegacy(final Blackhole bh) {
-        // results on Timo's M3 Max MacBook Pro:
-        //
-        // With 2 app and 1 system transactions:
-        // Benchmark                       (seed)   Mode  Cnt     Score     Error   Units
-        // EventSerialization.hashingBase       0  thrpt    3  1680.478 ± 173.379  ops/ms
-        //
-        // With 20 app and 10 system transactions:
-        // Benchmark                       (seed)   Mode  Cnt    Score    Error   Units
-        // EventSerialization.hashingBase       0  thrpt    3  236.143 ± 36.057  ops/ms
-        bh.consume(legacyEventHasher.hashEvent(event));
+    @OutputTimeUnit(TimeUnit.SECONDS)
+    public void hashing(final Blackhole bh) {
+        bh.consume(eventHasher.hashEvent(event));
     }
 
-    @Benchmark
-    @BenchmarkMode(Mode.Throughput)
-    @OutputTimeUnit(TimeUnit.MILLISECONDS)
-    public void hashingPbj(final Blackhole bh) {
-        // results on Timo's M3 Max MacBook Pro:
-        //
-        // With 2 app and 1 system transactions:
-        // Benchmark                      (seed)   Mode  Cnt    Score    Error   Units
-        // EventSerialization.hashingNew       0  thrpt    3  991.056 ± 75.874  ops/ms (~ 60 %)
-        // With 20 app and 10 system transactions:
-        // Benchmark                      (seed)   Mode  Cnt    Score    Error   Units
-        // EventSerialization.hashingNew       0  thrpt    3  121.640 ± 18.174  ops/ms (~ 50 %)
+    public enum HasherType {
+        PBJ_STREAM_DIGEST;
 
-        bh.consume(pbjEventHasher.hashEvent(event));
+        public EventHasher newHasher() {
+            return switch (this) {
+                case PBJ_STREAM_DIGEST -> new PbjStreamHasher();
+            };
+        }
     }
 }

@@ -17,6 +17,7 @@
 package com.swirlds.platform.state;
 
 import static com.swirlds.common.test.fixtures.AssertionUtils.assertEventuallyTrue;
+import static com.swirlds.platform.test.fixtures.state.FakeMerkleStateLifecycles.FAKE_MERKLE_STATE_LIFECYCLES;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
@@ -32,8 +33,9 @@ import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.platform.crypto.SignatureVerifier;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
-import com.swirlds.platform.system.SwirldState;
+import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.address.AddressBook;
+import com.swirlds.platform.test.fixtures.state.RandomSignedStateGenerator;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
@@ -44,10 +46,11 @@ import org.junit.jupiter.api.Test;
 
 @DisplayName("SignedState Tests")
 class SignedStateTests {
+
     /**
      * Generate a signed state.
      */
-    private SignedState generateSignedState(final Random random, final State state) {
+    private SignedState generateSignedState(final Random random, final MerkleStateRoot state) {
         return new RandomSignedStateGenerator(random).setState(state).build();
     }
 
@@ -57,17 +60,13 @@ class SignedStateTests {
      * @param reserveCallback this method is called when the State is reserved
      * @param releaseCallback this method is called when the State is released
      */
-    private State buildMockState(final Runnable reserveCallback, final Runnable releaseCallback) {
+    private MerkleStateRoot buildMockState(final Runnable reserveCallback, final Runnable releaseCallback) {
+        final MerkleStateRoot state = spy(new MerkleStateRoot(
+                FAKE_MERKLE_STATE_LIFECYCLES, version -> new BasicSoftwareVersion(version.major())));
 
-        final State state = spy(new State());
-        final SwirldState swirldState = mock(SwirldState.class);
-
-        final PlatformState platformState = new PlatformState();
+        final PlatformStateAccessor platformState = new PlatformState();
         platformState.setAddressBook(mock(AddressBook.class));
-        when(state.getPlatformState()).thenReturn(platformState);
-
-        when(state.getSwirldState()).thenReturn(swirldState);
-
+        when(state.getWritablePlatformState()).thenReturn(platformState);
         if (reserveCallback != null) {
             doAnswer(invocation -> {
                         reserveCallback.run();
@@ -97,7 +96,7 @@ class SignedStateTests {
         final AtomicBoolean reserved = new AtomicBoolean(false);
         final AtomicBoolean released = new AtomicBoolean(false);
 
-        final State state = buildMockState(
+        final MerkleStateRoot state = buildMockState(
                 () -> {
                     assertFalse(reserved.get(), "should only be reserved once");
                     reserved.set(true);
@@ -158,7 +157,7 @@ class SignedStateTests {
 
         final Thread mainThread = Thread.currentThread();
 
-        final State state = buildMockState(
+        final MerkleStateRoot state = buildMockState(
                 () -> {
                     assertFalse(reserved.get(), "should only be reserved once");
                     reserved.set(true);
@@ -207,9 +206,12 @@ class SignedStateTests {
     @Test
     @DisplayName("Alternate Constructor Reservations Test")
     void alternateConstructorReservationsTest() {
-        final MerkleRoot state = spy(new State());
-        final PlatformState platformState = mock(PlatformState.class);
-        when(state.getPlatformState()).thenReturn(platformState);
+        final MerkleRoot state = spy(new MerkleStateRoot(
+                FAKE_MERKLE_STATE_LIFECYCLES, version -> new BasicSoftwareVersion(version.major())));
+        final PlatformStateAccessor platformState = mock(PlatformStateAccessor.class);
+        // init state first
+        state.getWritablePlatformState();
+        when(state.getReadablePlatformState()).thenReturn(platformState);
         when(platformState.getRound()).thenReturn(0L);
         final SignedState signedState = new SignedState(
                 TestPlatformContextBuilder.create().build(),

@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.recovery.internal;
 
-import com.swirlds.platform.system.events.DetailedConsensusEvent;
+import com.swirlds.platform.system.events.CesEvent;
 
 /**
  * A lower bound on events in an event stream based on the consensus data in the events. The bound is inclusive of exact
@@ -38,5 +38,5 @@ public interface EventStreamLowerBound {
      * @return a value greater than, equal to, or less than 0, if the event is greater than, equal to, or less than the
      * bound.
      */
-    int compareTo(DetailedConsensusEvent event);
+    int compareTo(CesEvent event);
 }

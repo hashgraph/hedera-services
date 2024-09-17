@@ -21,14 +21,14 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.node.app.service.contract.impl.annotations.TransactionScope;
 import com.hedera.node.app.service.contract.impl.exec.processors.CustomContractCreationProcessor;
-import com.hedera.node.app.service.contract.impl.records.ContractOperationRecordBuilder;
+import com.hedera.node.app.service.contract.impl.records.ContractOperationStreamBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import javax.inject.Inject;
 
 /**
- * Wrapper that holds a reference to the {@link ContractOperationRecordBuilder} that should receive
+ * Wrapper that holds a reference to the {@link ContractOperationStreamBuilder} that should receive
  * the bytecode sidecar in the next {@code codeSuccess()}  call of {@link CustomContractCreationProcessor}.
  */
 @TransactionScope

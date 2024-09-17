@@ -17,8 +17,10 @@
 package com.hedera.services.bdd.suites.token;
 
 import static com.google.protobuf.ByteString.copyFromUtf8;
+import static com.hedera.services.bdd.junit.TestTags.ADHOC;
 import static com.hedera.services.bdd.junit.TestTags.TOKEN;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.changeFromSnapshot;
 import static com.hedera.services.bdd.spec.assertions.AutoAssocAsserts.accountTokenPairs;
@@ -43,6 +45,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenDissociate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenFreeze;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUpdate;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHbarFee;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHbarFeeInheritingRoyaltyCollector;
@@ -106,6 +109,7 @@ import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
 @Tag(TOKEN)
+@Tag(ADHOC)
 public class TokenTransactSpecs {
     public static final String PAYER = "payer";
     private static final long TOTAL_SUPPLY = 1_000;
@@ -2034,6 +2038,25 @@ public class TokenTransactSpecs {
                         getTxnRecord(TXN_TRIGGERING_COLLECTOR_EXEMPT_FEE)
                                 .hasPriority(recordWith().assessedCustomFeeCount(0))
                                 .logged());
+    }
+
+    @HapiTest
+    final Stream<DynamicTest> tokenFrozenOnTreasuryCannotBeFrozenAgain() {
+        final var alice = "alice";
+        final var token = "token";
+        final var freezeKey = "freezeKey";
+        return hapiTest(
+                newKeyNamed(freezeKey),
+                cryptoCreate(alice),
+                tokenCreate(token)
+                        .treasury(DEFAULT_PAYER)
+                        .tokenType(FUNGIBLE_COMMON)
+                        .initialSupply(1000L)
+                        .freezeKey(freezeKey)
+                        .hasKnownStatus(SUCCESS),
+                tokenAssociate(alice, token),
+                tokenFreeze(token, alice).hasKnownStatus(SUCCESS),
+                tokenFreeze(token, alice).hasKnownStatus(ACCOUNT_FROZEN_FOR_TOKEN));
     }
 
     private static final String TXN_TRIGGERING_COLLECTOR_EXEMPT_FEE = "collectorExempt";

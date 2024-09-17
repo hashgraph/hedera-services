@@ -17,8 +17,8 @@
 package com.swirlds.platform.test.consensus;
 
 import com.swirlds.platform.event.PlatformEvent;
+import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.system.address.Address;
-import com.swirlds.platform.test.fixtures.event.IndexedEvent;
 import com.swirlds.platform.test.fixtures.event.generator.GraphGenerator;
 import com.swirlds.platform.test.fixtures.event.source.EventSource;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -43,8 +43,8 @@ public abstract class ConsensusUtils {
                     .filter(e -> e.getCreatorId().id() == address.getNodeId().id())
                     .toList();
             eventsByCreator.forEach(e -> {
-                final IndexedEvent indexedEvent = new IndexedEvent(e);
-                source.setLatestEvent(random, indexedEvent);
+                final EventImpl eventImpl = new EventImpl(e, null, null);
+                source.setLatestEvent(random, eventImpl);
             });
             final Instant creatorMax = eventsByCreator.stream()
                     .max(Comparator.comparingLong(PlatformEvent::getGeneration))

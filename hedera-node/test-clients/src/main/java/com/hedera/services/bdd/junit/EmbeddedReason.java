@@ -17,7 +17,7 @@
 package com.hedera.services.bdd.junit;
 
 /**
- * Enumerates reasons a {@link LeakyHapiTest} cannot be run concurrently with other tests.
+ * Enumerates reasons a {@link EmbeddedHapiTest} is marked as such.
  */
 public enum EmbeddedReason {
     /**

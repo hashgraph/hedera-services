@@ -29,7 +29,7 @@ import com.hedera.node.app.service.contract.impl.exec.gas.DispatchType;
 import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater.Enhancement;
-import com.hedera.node.app.service.contract.impl.records.ContractCallRecordBuilder;
+import com.hedera.node.app.service.contract.impl.records.ContractCallStreamBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 
@@ -57,7 +57,7 @@ public class ERCGrantApprovalCall extends AbstractGrantApprovalCall {
         }
         final var body = synthApprovalBody();
         final var recordBuilder = systemContractOperations()
-                .dispatch(body, verificationStrategy, senderId, ContractCallRecordBuilder.class);
+                .dispatch(body, verificationStrategy, senderId, ContractCallStreamBuilder.class);
         final var status = withMonoStandard(recordBuilder).status();
         final var gasRequirement = gasCalculator.gasRequirement(body, DispatchType.APPROVE, senderId);
         if (status != SUCCESS) {

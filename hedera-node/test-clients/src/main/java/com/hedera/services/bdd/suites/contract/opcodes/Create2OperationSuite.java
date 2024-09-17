@@ -502,7 +502,12 @@ public class Create2OperationSuite {
                         .has(accountWith().balance(ONE_HBAR))),
                 contractCall(contract, "deployDeterministicChild", salt)
                         .sending(ONE_HBAR)
-                        .gas(2_000_000),
+                        .gas(2_000_000)
+                        .via("finalizationAsContract"),
+                // We should externalize the newly finalized contract's id in the created contracts list
+                getTxnRecord("finalizationAsContract")
+                        .hasPriority(
+                                recordWith().contractCallResult(resultWith().createdContractIdsCount(1))),
                 sourcing(() -> getLiteralAliasContractInfo(asLiteralHexed(childAddress.get()))
                         .exposingContractId(childId::set)
                         .has(contractWith().balance(2 * ONE_HBAR))),

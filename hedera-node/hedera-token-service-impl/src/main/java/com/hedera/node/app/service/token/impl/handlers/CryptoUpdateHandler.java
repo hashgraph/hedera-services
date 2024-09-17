@@ -55,7 +55,9 @@ import com.hedera.node.app.hapi.utils.CommonPbjConverters;
 import com.hedera.node.app.service.token.CryptoSignatureWaivers;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
+import com.hedera.node.app.service.token.impl.util.TokenHandlerHelper;
 import com.hedera.node.app.service.token.impl.validators.StakingValidator;
+import com.hedera.node.app.service.token.records.CryptoUpdateStreamBuilder;
 import com.hedera.node.app.spi.fees.FeeCalculator;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
@@ -84,19 +86,14 @@ import javax.inject.Singleton;
 @Singleton
 public class CryptoUpdateHandler extends BaseCryptoHandler implements TransactionHandler {
     private final CryptoSignatureWaivers waivers;
-    private final StakingValidator stakingValidator;
 
     /**
      * Default constructor for injection.
      * @param waivers the {@link CryptoSignatureWaivers} to use for checking signature waivers
-     * @param stakingValidator the {@link StakingValidator} to use for staking validation
      */
     @Inject
-    public CryptoUpdateHandler(
-            @NonNull final CryptoSignatureWaivers waivers, @NonNull final StakingValidator stakingValidator) {
+    public CryptoUpdateHandler(@NonNull final CryptoSignatureWaivers waivers) {
         this.waivers = requireNonNull(waivers, "The supplied argument 'waivers' must not be null");
-        this.stakingValidator =
-                requireNonNull(stakingValidator, "The supplied argument 'stakingValidator' must not be null");
     }
 
     @Override
@@ -151,8 +148,8 @@ public class CryptoUpdateHandler extends BaseCryptoHandler implements Transactio
 
         // validate update account exists
         final var accountStore = context.storeFactory().writableStore(WritableAccountStore.class);
-        final var targetAccount = accountStore.get(target);
-        validateTrue(targetAccount != null, INVALID_ACCOUNT_ID);
+        final var targetAccount =
+                TokenHandlerHelper.getIfUsable(target, accountStore, context.expiryValidator(), INVALID_ACCOUNT_ID);
         context.attributeValidator().validateMemo(op.memo());
 
         // Customize the account based on fields set in transaction body
@@ -170,10 +167,13 @@ public class CryptoUpdateHandler extends BaseCryptoHandler implements Transactio
 
         // Add account to the modifications in state
         accountStore.put(builder.build());
+        context.savepointStack()
+                .getBaseBuilder(CryptoUpdateStreamBuilder.class)
+                .accountID(targetAccount.accountIdOrThrow());
     }
 
     /**
-     * Add a builder from {@link CryptoUpdateTransactionBody} to create {@link Account.Builder} object
+     * Add a builder from {@link CryptoUpdateTransactionBody} to create {@link Account.Builder} object.
      * @param op Crypto update transaction body
      * @return builder
      */

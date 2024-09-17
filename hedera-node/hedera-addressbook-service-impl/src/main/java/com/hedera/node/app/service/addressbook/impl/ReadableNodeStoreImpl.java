@@ -16,7 +16,7 @@
 
 package com.hedera.node.app.service.addressbook.impl;
 
-import static com.hedera.node.app.service.addressbook.impl.AddressBookServiceImpl.NODES_KEY;
+import static com.hedera.node.app.service.addressbook.AddressBookHelper.NODES_KEY;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.state.addressbook.Node;
@@ -63,7 +63,7 @@ public class ReadableNodeStoreImpl implements ReadableNodeStore {
 
     /**
      * Returns the number of topics in the state.
-     * @return the number of topics in the state.
+     * @return the number of topics in the state
      */
     public long sizeOfState() {
         return nodesState.size();

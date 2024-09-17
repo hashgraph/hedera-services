@@ -85,12 +85,13 @@ import com.hedera.node.app.service.contract.impl.hevm.HederaEvmContext;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmTransaction;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmTransactionResult;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmVersion;
-import com.hedera.node.app.service.contract.impl.records.ContractOperationRecordBuilder;
+import com.hedera.node.app.service.contract.impl.records.ContractOperationStreamBuilder;
 import com.hedera.node.app.service.contract.impl.state.StorageAccess;
 import com.hedera.node.app.service.contract.impl.state.StorageAccesses;
 import com.hedera.node.app.spi.key.KeyUtils;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.ResourceExhaustedException;
+import com.hedera.node.config.data.AccountsConfig;
 import com.hedera.node.config.data.ContractsConfig;
 import com.hedera.node.config.data.EntitiesConfig;
 import com.hedera.node.config.data.HederaConfig;
@@ -143,6 +144,7 @@ public class TestHelpers {
     public static final HederaConfig DEFAULT_HEDERA_CONFIG = DEFAULT_CONFIG.getConfigData(HederaConfig.class);
     public static final ContractsConfig DEFAULT_CONTRACTS_CONFIG = DEFAULT_CONFIG.getConfigData(ContractsConfig.class);
     public static final EntitiesConfig DEFAULT_ENTITIES_CONFIG = DEFAULT_CONFIG.getConfigData(EntitiesConfig.class);
+    public static final AccountsConfig DEFAULT_ACCOUNTS_CONFIG = DEFAULT_CONFIG.getConfigData(AccountsConfig.class);
 
     public static final Configuration PERMITTED_CALLERS_CONFIG = HederaTestConfigBuilder.create()
             .withValue("contracts.permittedContractCallers", Set.of(1062787L))
@@ -311,6 +313,9 @@ public class TestHelpers {
     public static final Key PAUSE_KEY = Key.newBuilder()
             .ed25519(Bytes.fromHex("0505050505050505050505050505050505050505050505050505050505050505"))
             .build();
+    public static final Key METADATA_KEY = Key.newBuilder()
+            .ed25519(Bytes.fromHex("0606060606060606060606060606060606060606060606060606060606060606"))
+            .build();
     public static final Token FUNGIBLE_EVERYTHING_TOKEN = Token.newBuilder()
             .tokenId(FUNGIBLE_TOKEN_ID)
             .name("Fungible Everything Token")
@@ -337,6 +342,35 @@ public class TestHelpers {
             .feeScheduleKey(FEE_SCHEDULE_KEY)
             .pauseKey(PAUSE_KEY)
             .build();
+
+    public static final Token FUNGIBLE_EVERYTHING_TOKEN_V2 = Token.newBuilder()
+            .tokenId(FUNGIBLE_TOKEN_ID)
+            .name("Fungible Everything Token")
+            .symbol("FET")
+            .memo("The memo")
+            .treasuryAccountId(SENDER_ID)
+            .decimals(6)
+            .totalSupply(7777777L)
+            .maxSupply(88888888L)
+            .supplyType(TokenSupplyType.FINITE)
+            .tokenType(TokenType.FUNGIBLE_COMMON)
+            .accountsFrozenByDefault(true)
+            .accountsKycGrantedByDefault(true)
+            .paused(true)
+            .expirationSecond(100)
+            .autoRenewAccountId(SENDER_ID)
+            .autoRenewSeconds(200)
+            .metadata(Bytes.wrap("SOLD"))
+            .customFees(CUSTOM_FEES)
+            .adminKey(ADMIN_KEY)
+            .kycKey(KYC_KEY)
+            .freezeKey(FREEZE_KEY)
+            .wipeKey(WIPE_KEY)
+            .supplyKey(SUPPLY_KEY)
+            .feeScheduleKey(FEE_SCHEDULE_KEY)
+            .pauseKey(PAUSE_KEY)
+            .metadataKey(METADATA_KEY)
+            .build();
     public static final List<Tuple> EXPECTED_FIXED_CUSTOM_FEES = List.of(
             Tuple.of(2L, headlongAddressOf(ZERO_TOKEN_ID), true, false, headlongAddressOf(SENDER_ID)),
             Tuple.of(3L, headlongAddressOf(FUNGIBLE_TOKEN_ID), false, false, headlongAddressOf(SENDER_ID)));
@@ -354,6 +388,16 @@ public class TestHelpers {
             typedKeyTupleFor(TokenKeyType.SUPPLY_KEY.bigIntegerValue(), SUPPLY_KEY),
             typedKeyTupleFor(TokenKeyType.FEE_SCHEDULE_KEY.bigIntegerValue(), FEE_SCHEDULE_KEY),
             typedKeyTupleFor(TokenKeyType.PAUSE_KEY.bigIntegerValue(), PAUSE_KEY));
+
+    public static final List<Tuple> EXPECTED_KEYLIST_V2 = List.of(
+            typedKeyTupleFor(TokenKeyType.ADMIN_KEY.bigIntegerValue(), ADMIN_KEY),
+            typedKeyTupleFor(TokenKeyType.KYC_KEY.bigIntegerValue(), KYC_KEY),
+            typedKeyTupleFor(TokenKeyType.FREEZE_KEY.bigIntegerValue(), FREEZE_KEY),
+            typedKeyTupleFor(TokenKeyType.WIPE_KEY.bigIntegerValue(), WIPE_KEY),
+            typedKeyTupleFor(TokenKeyType.SUPPLY_KEY.bigIntegerValue(), SUPPLY_KEY),
+            typedKeyTupleFor(TokenKeyType.FEE_SCHEDULE_KEY.bigIntegerValue(), FEE_SCHEDULE_KEY),
+            typedKeyTupleFor(TokenKeyType.PAUSE_KEY.bigIntegerValue(), PAUSE_KEY),
+            typedKeyTupleFor(TokenKeyType.METADATA_KEY.bigIntegerValue(), METADATA_KEY));
 
     public static final List<Tuple> EXPECTE_DEFAULT_KEYLIST = List.of(
             typedKeyTupleFor(TokenKeyType.ADMIN_KEY.bigIntegerValue(), Key.DEFAULT),
@@ -626,6 +670,8 @@ public class TestHelpers {
             AccountID.newBuilder().accountNum(OWNER_ACCOUNT_NUM).build();
     public static final Account OWNER_ACCOUNT =
             Account.newBuilder().accountId(OWNER_ID).build();
+    public static final com.esaulpaugh.headlong.abi.Address OWNER_ACCOUNT_AS_ADDRESS =
+            asHeadlongAddress(asEvmAddress(OWNER_ACCOUNT.accountIdOrThrow().accountNumOrThrow()));
     public static final Bytes OWNER_ADDRESS = Bytes.fromHex("a213624b8b83a724438159ba7c0d333a2b6b3990");
     public static final com.esaulpaugh.headlong.abi.Address OWNER_HEADLONG_ADDRESS =
             asHeadlongAddress(OWNER_ADDRESS.toByteArray());
@@ -646,11 +692,13 @@ public class TestHelpers {
             asHeadlongAddress(APPROVED_ADDRESS.toByteArray());
 
     public static final AccountID RECEIVER_ID =
-            AccountID.newBuilder().accountNum(7773777L).build();
+            AccountID.newBuilder().accountNum(7773777L).build(); // 7773777L == 0x769e51
     public static final Bytes RECEIVER_ADDRESS = Bytes.fromHex("3b1ef340808e37344e8150037c0deee33060e123");
     public static final AccountID ALIASED_RECEIVER_ID =
             AccountID.newBuilder().alias(RECEIVER_ADDRESS).build();
 
+    public static final Account UNALIASED_RECEIVER =
+            Account.newBuilder().accountId(RECEIVER_ID).build();
     public static final Account ALIASED_RECEIVER =
             Account.newBuilder().accountId(RECEIVER_ID).alias(RECEIVER_ADDRESS).build();
 
@@ -786,7 +834,7 @@ public class TestHelpers {
             @NonNull final HederaEvmBlocks blocks,
             @NonNull final TinybarValues tinybarValues,
             @NonNull final SystemContractGasCalculator systemContractGasCalculator,
-            @NonNull ContractOperationRecordBuilder recordBuilder) {
+            @NonNull ContractOperationStreamBuilder recordBuilder) {
         return new HederaEvmContext(
                 NETWORK_GAS_PRICE,
                 false,

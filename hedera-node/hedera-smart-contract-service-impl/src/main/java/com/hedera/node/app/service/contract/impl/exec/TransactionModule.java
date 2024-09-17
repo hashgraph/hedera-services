@@ -36,9 +36,9 @@ import com.hedera.node.app.service.contract.impl.exec.scope.HandleSystemContract
 import com.hedera.node.app.service.contract.impl.exec.scope.HederaNativeOperations;
 import com.hedera.node.app.service.contract.impl.exec.scope.HederaOperations;
 import com.hedera.node.app.service.contract.impl.exec.scope.SystemContractOperations;
+import com.hedera.node.app.service.contract.impl.exec.tracers.EvmActionTracer;
 import com.hedera.node.app.service.contract.impl.exec.utils.ActionStack;
 import com.hedera.node.app.service.contract.impl.exec.utils.PendingCreationMetadataRef;
-import com.hedera.node.app.service.contract.impl.hevm.ActionSidecarContentTracer;
 import com.hedera.node.app.service.contract.impl.hevm.HandleContextHevmBlocks;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmBlocks;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmContext;
@@ -47,7 +47,7 @@ import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import com.hedera.node.app.service.contract.impl.hevm.HydratedEthTxData;
 import com.hedera.node.app.service.contract.impl.infra.EthTxSigsCache;
 import com.hedera.node.app.service.contract.impl.infra.EthereumCallDataHydration;
-import com.hedera.node.app.service.contract.impl.records.ContractOperationRecordBuilder;
+import com.hedera.node.app.service.contract.impl.records.ContractOperationStreamBuilder;
 import com.hedera.node.app.service.contract.impl.state.EvmFrameStateFactory;
 import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
 import com.hedera.node.app.service.contract.impl.state.ScopedEvmFrameStateFactory;
@@ -91,8 +91,13 @@ public interface TransactionModule {
     static TinybarValues provideTinybarValues(
             @TopLevelResourcePrices @NonNull final FunctionalityResourcePrices topLevelResourcePrices,
             @ChildTransactionResourcePrices @NonNull final FunctionalityResourcePrices childTransactionResourcePrices,
-            @NonNull final ExchangeRate exchangeRate) {
-        return TinybarValues.forTransactionWith(exchangeRate, topLevelResourcePrices, childTransactionResourcePrices);
+            @NonNull final ExchangeRate exchangeRate,
+            @NonNull final HandleContext context) {
+        return TinybarValues.forTransactionWith(
+                exchangeRate,
+                context.configuration().getConfigData(ContractsConfig.class),
+                topLevelResourcePrices,
+                childTransactionResourcePrices);
     }
 
     @Provides
@@ -173,7 +178,7 @@ public interface TransactionModule {
 
     @Provides
     @TransactionScope
-    static ActionSidecarContentTracer provideActionSidecarContentTracer() {
+    static EvmActionTracer provideEvmActionTracer() {
         return new EvmActionTracer(new ActionStack());
     }
 
@@ -192,7 +197,7 @@ public interface TransactionModule {
                 hederaEvmBlocks,
                 tinybarValues,
                 systemContractGasCalculator,
-                context.recordBuilders().getOrCreate(ContractOperationRecordBuilder.class),
+                context.savepointStack().getBaseBuilder(ContractOperationStreamBuilder.class),
                 pendingCreationMetadataRef);
     }
 

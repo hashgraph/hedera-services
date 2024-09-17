@@ -24,7 +24,7 @@ import static com.swirlds.platform.system.events.EventConstants.FIRST_GENERATION
 import com.swirlds.base.utility.ToStringBuilder;
 import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.event.PlatformEvent;
-import com.swirlds.platform.system.events.EventDescriptor;
+import com.swirlds.platform.system.events.EventDescriptorWrapper;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
@@ -167,7 +167,7 @@ public class EventWindow {
      * @param event the event to check for being ancient.
      * @return true if the event is ancient, false otherwise.
      */
-    public boolean isAncient(@NonNull final EventDescriptor event) {
+    public boolean isAncient(@NonNull final EventDescriptorWrapper event) {
         return event.getAncientIndicator(ancientMode) < ancientThreshold;
     }
 

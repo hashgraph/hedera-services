@@ -43,7 +43,7 @@ import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalcu
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.grantapproval.ERCGrantApprovalCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.grantapproval.GrantApprovalTranslator;
-import com.hedera.node.app.service.contract.impl.records.ContractCallRecordBuilder;
+import com.hedera.node.app.service.contract.impl.records.ContractCallStreamBuilder;
 import com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.common.CallTestBase;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import org.apache.tuweni.units.bigints.UInt256;
@@ -62,7 +62,7 @@ class ERCGrantApprovalCallTest extends CallTestBase {
     private SystemContractGasCalculator systemContractGasCalculator;
 
     @Mock
-    private ContractCallRecordBuilder recordBuilder;
+    private ContractCallStreamBuilder recordBuilder;
 
     @Mock
     private Nft nft;
@@ -94,7 +94,7 @@ class ERCGrantApprovalCallTest extends CallTestBase {
                         any(TransactionBody.class),
                         eq(verificationStrategy),
                         eq(OWNER_ID),
-                        eq(ContractCallRecordBuilder.class)))
+                        eq(ContractCallStreamBuilder.class)))
                 .willReturn(recordBuilder);
         given(recordBuilder.status()).willReturn(ResponseCodeEnum.SUCCESS);
         given(nativeOperations.readableAccountStore()).willReturn(accountStore);
@@ -126,7 +126,7 @@ class ERCGrantApprovalCallTest extends CallTestBase {
                         any(TransactionBody.class),
                         eq(verificationStrategy),
                         eq(OWNER_ID),
-                        eq(ContractCallRecordBuilder.class)))
+                        eq(ContractCallStreamBuilder.class)))
                 .willReturn(recordBuilder);
         given(recordBuilder.status()).willReturn(ResponseCodeEnum.SUCCESS);
         given(nativeOperations.getNft(NON_FUNGIBLE_TOKEN_ID.tokenNum(), 100L)).willReturn(nft);
@@ -163,7 +163,7 @@ class ERCGrantApprovalCallTest extends CallTestBase {
                         any(TransactionBody.class),
                         eq(verificationStrategy),
                         eq(OWNER_ID),
-                        eq(ContractCallRecordBuilder.class)))
+                        eq(ContractCallStreamBuilder.class)))
                 .willReturn(recordBuilder);
         given(recordBuilder.status()).willReturn(INVALID_ALLOWANCE_SPENDER_ID);
         final var result = subject.execute(frame).fullResult().result();
@@ -190,7 +190,7 @@ class ERCGrantApprovalCallTest extends CallTestBase {
                         any(TransactionBody.class),
                         eq(verificationStrategy),
                         eq(OWNER_ID),
-                        eq(ContractCallRecordBuilder.class)))
+                        eq(ContractCallStreamBuilder.class)))
                 .willReturn(recordBuilder);
         given(recordBuilder.status())
                 .willReturn(DELEGATING_SPENDER_DOES_NOT_HAVE_APPROVE_FOR_ALL)
@@ -220,7 +220,7 @@ class ERCGrantApprovalCallTest extends CallTestBase {
                         any(TransactionBody.class),
                         eq(verificationStrategy),
                         eq(OWNER_ID),
-                        eq(ContractCallRecordBuilder.class)))
+                        eq(ContractCallStreamBuilder.class)))
                 .willReturn(recordBuilder);
         given(recordBuilder.status()).willReturn(INVALID_TOKEN_NFT_SERIAL_NUMBER);
 
@@ -245,7 +245,7 @@ class ERCGrantApprovalCallTest extends CallTestBase {
                         any(TransactionBody.class),
                         eq(verificationStrategy),
                         eq(OWNER_ID),
-                        eq(ContractCallRecordBuilder.class)))
+                        eq(ContractCallStreamBuilder.class)))
                 .willReturn(recordBuilder);
         given(recordBuilder.status()).willReturn(ResponseCodeEnum.SUCCESS);
         given(nativeOperations.getNft(NON_FUNGIBLE_TOKEN_ID.tokenNum(), 100L)).willReturn(nft);

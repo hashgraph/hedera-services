@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.state;
 
-import com.hedera.hapi.platform.event.StateSignaturePayload;
+import com.hedera.hapi.platform.event.StateSignatureTransaction;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.components.state.output.StateHasEnoughSignaturesConsumer;
@@ -84,23 +84,23 @@ public class StateSignatureCollectorTester extends DefaultStateSignatureCollecto
 
     @Override
     public List<ReservedSignedState> handlePreconsensusSignatures(
-            @NonNull final List<ScopedSystemTransaction<StateSignaturePayload>> transactions) {
+            @NonNull final List<ScopedSystemTransaction<StateSignatureTransaction>> transactions) {
         return processStates(super.handlePreconsensusSignatures(transactions));
     }
 
     public void handlePreconsensusSignatureTransaction(
-            @NonNull final NodeId signerId, @NonNull final StateSignaturePayload signatureTransaction) {
+            @NonNull final NodeId signerId, @NonNull final StateSignatureTransaction signatureTransaction) {
         handlePreconsensusSignatures(List.of(new ScopedSystemTransaction<>(signerId, null, signatureTransaction)));
     }
 
     @Override
     public List<ReservedSignedState> handlePostconsensusSignatures(
-            @NonNull final List<ScopedSystemTransaction<StateSignaturePayload>> transactions) {
+            @NonNull final List<ScopedSystemTransaction<StateSignatureTransaction>> transactions) {
         return processStates(super.handlePostconsensusSignatures(transactions));
     }
 
     public void handlePostconsensusSignatureTransaction(
-            @NonNull final NodeId signerId, @NonNull final StateSignaturePayload transaction) {
+            @NonNull final NodeId signerId, @NonNull final StateSignatureTransaction transaction) {
         handlePostconsensusSignatures(List.of(new ScopedSystemTransaction<>(signerId, null, transaction)));
     }
 

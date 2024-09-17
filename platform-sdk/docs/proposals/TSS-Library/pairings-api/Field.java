@@ -15,7 +15,7 @@
  */
 
 
-package com.swirlds.pairings.api;
+package com.hedera.cryptography.pairings.api;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Random;

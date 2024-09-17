@@ -60,7 +60,7 @@ public record ConsistencyTestingToolRound(long roundNumber, long currentState, @
                 return;
             }
             transactionContents.add(
-                    byteArrayToLong(transaction.getApplicationPayload().toByteArray(), 0));
+                    byteArrayToLong(transaction.getApplicationTransaction().toByteArray(), 0));
         });
 
         return new ConsistencyTestingToolRound(round.getRoundNum(), currentState, transactionContents);

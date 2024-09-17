@@ -43,7 +43,7 @@ import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.hapi.utils.CommonPbjConverters;
 import com.hedera.node.app.service.consensus.ReadableTopicStore;
 import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
-import com.hedera.node.app.service.consensus.impl.records.ConsensusSubmitMessageRecordBuilder;
+import com.hedera.node.app.service.consensus.impl.records.ConsensusSubmitMessageStreamBuilder;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -130,7 +130,7 @@ public class ConsensusSubmitMessageHandler implements TransactionHandler {
             topicStore.put(updatedTopic);
 
             final var recordBuilder =
-                    handleContext.recordBuilders().getOrCreate(ConsensusSubmitMessageRecordBuilder.class);
+                    handleContext.savepointStack().getBaseBuilder(ConsensusSubmitMessageStreamBuilder.class);
             recordBuilder
                     .topicRunningHash(updatedTopic.runningHash())
                     .topicSequenceNumber(updatedTopic.sequenceNumber())
@@ -165,7 +165,8 @@ public class ConsensusSubmitMessageHandler implements TransactionHandler {
         if (topic == null) {
             throw new HandleException(INVALID_TOPIC_ID);
         }
-        /* If the message is too large, user will be able to submit the message fragments in chunks. Validate if chunk info is correct */
+        // If the message is too large, user will be able to submit the message fragments in chunks
+        // Validate if chunk info is correct
         validateChunkInfo(txnId, payer, op);
     }
 
@@ -195,7 +196,8 @@ public class ConsensusSubmitMessageHandler implements TransactionHandler {
                 throw new HandleException(INVALID_CHUNK_TRANSACTION_ID);
             }
 
-            /* Validate if the transaction is submitting initial chunk,payer in initial transaction Id should be same as payer of the transaction */
+            // Validate if the transaction is submitting initial chunk
+            // payer in initial transaction Id should be same as payer of the transaction
             if (1 == chunkInfo.number()
                     && !chunkInfo
                             .initialTransactionIDOrElse(TransactionID.DEFAULT)
@@ -228,9 +230,7 @@ public class ConsensusSubmitMessageHandler implements TransactionHandler {
         // This line will be uncommented once there is PBJ fix to make copyBuilder() public
         final var topicBuilder = topic.copyBuilder();
 
-        if (null == consensusNow) {
-            consensusNow = Instant.ofEpochSecond(0);
-        }
+        final var effectiveConsensusNow = (consensusNow == null) ? Instant.ofEpochSecond(0) : consensusNow;
 
         var sequenceNumber = topic.sequenceNumber();
         var runningHash = topic.runningHash();
@@ -245,8 +245,8 @@ public class ConsensusSubmitMessageHandler implements TransactionHandler {
             out.writeLong(topicId.shardNum());
             out.writeLong(topicId.realmNum());
             out.writeLong(topicId.topicNum());
-            out.writeLong(consensusNow.getEpochSecond());
-            out.writeInt(consensusNow.getNano());
+            out.writeLong(effectiveConsensusNow.getEpochSecond());
+            out.writeInt(effectiveConsensusNow.getNano());
 
             /* Update the sequence number */
             topicBuilder.sequenceNumber(++sequenceNumber);

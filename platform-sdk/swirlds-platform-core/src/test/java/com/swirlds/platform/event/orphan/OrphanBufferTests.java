@@ -34,7 +34,7 @@ import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.eventhandling.EventConfig_;
 import com.swirlds.platform.gossip.IntakeEventCounter;
-import com.swirlds.platform.system.events.EventDescriptor;
+import com.swirlds.platform.system.events.EventDescriptorWrapper;
 import com.swirlds.platform.test.fixtures.event.TestingEventBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
@@ -155,11 +155,11 @@ class OrphanBufferTests {
      * @return true if the event has been emitted or is ancient, false otherwise
      */
     private static boolean eventEmittedOrAncient(
-            @NonNull final EventDescriptor event,
+            @NonNull final EventDescriptorWrapper event,
             @NonNull final EventWindow eventWindow,
             @NonNull final Collection<Hash> emittedEvents) {
 
-        return emittedEvents.contains(event.getHash()) || eventWindow.isAncient(event);
+        return emittedEvents.contains(event.hash()) || eventWindow.isAncient(event);
     }
 
     /**
@@ -174,7 +174,7 @@ class OrphanBufferTests {
             @NonNull final PlatformEvent event,
             @NonNull final EventWindow eventWindow,
             @NonNull final Collection<Hash> emittedEvents) {
-        for (final EventDescriptor parent : event.getAllParents()) {
+        for (final EventDescriptorWrapper parent : event.getAllParents()) {
             assertTrue(eventEmittedOrAncient(parent, eventWindow, emittedEvents));
         }
     }
@@ -296,12 +296,12 @@ class OrphanBufferTests {
                 .setOtherParents(List.of(otherParent1, otherParent2, otherParent3))
                 .build();
 
-        final List<EventDescriptor> otherParents = new ArrayList<>();
+        final List<EventDescriptorWrapper> otherParents = new ArrayList<>();
         otherParents.add(otherParent1.getDescriptor());
         otherParents.add(otherParent2.getDescriptor());
         otherParents.add(otherParent3.getDescriptor());
 
-        final Iterator<EventDescriptor> iterator = event.getAllParents().iterator();
+        final Iterator<EventDescriptorWrapper> iterator = event.getAllParents().iterator();
 
         assertEquals(selfParent.getDescriptor(), iterator.next(), "The first parent should be the self parent");
         int index = 0;

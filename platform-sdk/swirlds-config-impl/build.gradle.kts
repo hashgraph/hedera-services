@@ -17,7 +17,7 @@
 plugins {
     id("com.hedera.gradle.platform")
     id("com.hedera.gradle.platform-publish")
-    id("com.hedera.gradle.benchmark")
+    id("com.hedera.gradle.feature.benchmark")
 }
 
 mainModuleInfo { annotationProcessor("com.google.auto.service.processor") }
@@ -26,7 +26,6 @@ testModuleInfo {
     requires("org.junit.jupiter.api")
     requires("org.junit.jupiter.params")
     requires("com.swirlds.common")
-    requires("com.swirlds.config.api.test.fixtures")
     runtimeOnly("com.swirlds.platform.core")
 }
 

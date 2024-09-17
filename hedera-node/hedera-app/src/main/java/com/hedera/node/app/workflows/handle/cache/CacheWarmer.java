@@ -30,18 +30,16 @@ import com.hedera.node.app.workflows.TransactionChecker;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.app.workflows.prehandle.PreHandleResult;
-import com.hedera.node.config.ConfigProvider;
-import com.hedera.node.config.data.CacheConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.events.ConsensusEvent;
 import com.swirlds.platform.system.transaction.Transaction;
-import com.swirlds.state.HederaState;
+import com.swirlds.state.State;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.concurrent.Executor;
-import java.util.concurrent.ForkJoinPool;
 import javax.inject.Inject;
+import javax.inject.Named;
 import javax.inject.Singleton;
 
 /**
@@ -60,14 +58,10 @@ public class CacheWarmer {
     public CacheWarmer(
             @NonNull final TransactionChecker checker,
             @NonNull final TransactionDispatcher dispatcher,
-            @NonNull final ConfigProvider configProvider) {
+            @NonNull @Named("CacheWarmer") final Executor executor) {
         this.checker = checker;
         this.dispatcher = requireNonNull(dispatcher);
-        final int parallelism = configProvider
-                .getConfiguration()
-                .getConfigData(CacheConfig.class)
-                .cryptoTransferWarmThreads();
-        this.executor = new ForkJoinPool(parallelism);
+        this.executor = requireNonNull(executor);
     }
 
     /**
@@ -76,7 +70,7 @@ public class CacheWarmer {
      * @param state the current state
      * @param round the current round
      */
-    public void warm(@NonNull final HederaState state, @NonNull final Round round) {
+    public void warm(@NonNull final State state, @NonNull final Round round) {
         executor.execute(() -> {
             final ReadableStoreFactory storeFactory = new ReadableStoreFactory(state);
             final ReadableAccountStore accountStore = storeFactory.getStore(ReadableAccountStore.class);
@@ -109,7 +103,7 @@ public class CacheWarmer {
         // We can potentially optimize this by limiting the code to the bare minimum needed
         // or keeping the result for later.
         try {
-            final Bytes buffer = platformTransaction.getApplicationPayload();
+            final Bytes buffer = platformTransaction.getApplicationTransaction();
             return checker.parseAndCheck(buffer).txBody();
         } catch (PreCheckException ex) {
             return null;

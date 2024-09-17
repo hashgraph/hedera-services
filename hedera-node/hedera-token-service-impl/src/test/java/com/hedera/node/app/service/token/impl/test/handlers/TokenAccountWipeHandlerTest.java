@@ -47,7 +47,6 @@ import static org.mockito.Mockito.mock;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.NftID;
-import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenType;
 import com.hedera.hapi.node.base.TransactionID;
@@ -67,18 +66,14 @@ import com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler;
 import com.hedera.node.app.service.token.impl.handlers.TokenAccountWipeHandler;
 import com.hedera.node.app.service.token.impl.test.handlers.util.ParityTestBase;
 import com.hedera.node.app.service.token.impl.validators.TokenSupplyChangeOpsValidator;
-import com.hedera.node.app.service.token.records.TokenAccountWipeRecordBuilder;
-import com.hedera.node.app.service.token.records.TokenBaseRecordBuilder;
-import com.hedera.node.app.spi.records.RecordBuilders;
+import com.hedera.node.app.service.token.records.TokenAccountWipeStreamBuilder;
 import com.hedera.node.app.spi.store.StoreFactory;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
-import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.swirlds.config.api.Configuration;
-import edu.umd.cs.findbugs.annotations.NonNull;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -87,6 +82,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+@ExtendWith(MockitoExtension.class)
 class TokenAccountWipeHandlerTest extends ParityTestBase {
     private static final AccountID ACCOUNT_4680 = BaseCryptoHandler.asAccount(4680);
     private static final AccountID TREASURY_ACCOUNT_9876 = BaseCryptoHandler.asAccount(9876);
@@ -95,7 +91,9 @@ class TokenAccountWipeHandlerTest extends ParityTestBase {
     private final TokenAccountWipeHandler subject = new TokenAccountWipeHandler(validator);
 
     private Configuration configuration;
-    private TokenAccountWipeRecordBuilder recordBuilder;
+
+    @Mock
+    private TokenAccountWipeStreamBuilder recordBuilder;
 
     @BeforeEach
     public void setUp() {
@@ -104,56 +102,6 @@ class TokenAccountWipeHandlerTest extends ParityTestBase {
                 .withValue("tokens.nfts.areEnabled", true)
                 .withValue("tokens.nfts.maxBatchSizeWipe", 100)
                 .getOrCreateConfig();
-        recordBuilder = new TokenAccountWipeRecordBuilder() {
-            private long newTotalSupply;
-            private TokenType tokenType;
-
-            @NonNull
-            @Override
-            public TransactionBody transactionBody() {
-                return TransactionBody.DEFAULT;
-            }
-
-            @Override
-            public long transactionFee() {
-                return 0;
-            }
-
-            @Override
-            public long getNewTotalSupply() {
-                return newTotalSupply;
-            }
-
-            @Override
-            public SingleTransactionRecordBuilder status(@NonNull ResponseCodeEnum status) {
-                return this;
-            }
-
-            @Override
-            public HandleContext.TransactionCategory category() {
-                return HandleContext.TransactionCategory.USER;
-            }
-
-            @NonNull
-            @Override
-            public TokenAccountWipeRecordBuilder newTotalSupply(final long supply) {
-                newTotalSupply = supply;
-                return this;
-            }
-
-            @NonNull
-            @Override
-            public TokenBaseRecordBuilder tokenType(final @NonNull TokenType tokenType) {
-                this.tokenType = tokenType;
-                return this;
-            }
-
-            @NonNull
-            @Override
-            public ResponseCodeEnum status() {
-                return OK;
-            }
-        };
     }
 
     @Nested
@@ -906,7 +854,7 @@ class TokenAccountWipeHandlerTest extends ParityTestBase {
 
         private HandleContext mockContext(TransactionBody txn) {
             final var context = mock(HandleContext.class);
-            final var recordBuilders = mock(RecordBuilders.class);
+            final var stack = mock(HandleContext.SavepointStack.class);
 
             given(context.body()).willReturn(txn);
 
@@ -920,9 +868,9 @@ class TokenAccountWipeHandlerTest extends ParityTestBase {
 
             given(context.expiryValidator()).willReturn(validator);
 
-            lenient().when(context.recordBuilders()).thenReturn(recordBuilders);
+            lenient().when(context.savepointStack()).thenReturn(stack);
             lenient()
-                    .when(recordBuilders.getOrCreate(TokenAccountWipeRecordBuilder.class))
+                    .when(stack.getBaseBuilder(TokenAccountWipeStreamBuilder.class))
                     .thenReturn(recordBuilder);
 
             return context;

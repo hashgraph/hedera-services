@@ -18,11 +18,13 @@ package com.hedera.services.bdd.spec.utilops;
 
 import com.hedera.hapi.node.state.addressbook.Node;
 import com.hedera.hapi.node.state.token.Account;
+import com.hedera.hapi.node.state.token.AccountPendingAirdrop;
 import com.hedera.services.bdd.junit.hedera.embedded.EmbeddedNetwork;
 import com.hedera.services.bdd.spec.utilops.embedded.MutateAccountOp;
 import com.hedera.services.bdd.spec.utilops.embedded.MutateNodeOp;
 import com.hedera.services.bdd.spec.utilops.embedded.ViewAccountOp;
 import com.hedera.services.bdd.spec.utilops.embedded.ViewNodeOp;
+import com.hedera.services.bdd.spec.utilops.embedded.ViewPendingAirdropOp;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.function.Consumer;
 
@@ -69,13 +71,29 @@ public final class EmbeddedVerbs {
     }
 
     /**
-     * Returns an operation that allows the test author to directly mutate a node.
+     * Returns an operation that allows the test author to view a node.
      *
-     * @param name the name of the node to mutate
-     * @param observer the mutation to apply to the node
-     * @return the operation that will mutate the node
+     * @param name the name of the node to view
+     * @param observer the mutation to receive the node
+     * @return the operation that will expose the node to the observer
      */
     public static ViewNodeOp viewNode(@NonNull final String name, @NonNull final Consumer<Node> observer) {
         return new ViewNodeOp(name, observer);
+    }
+
+    /***
+     * Returns an operation that allows the test author to view the pending airdrop of an account.
+     * @param tokenName the name of the token
+     * @param senderName the name of the sender
+     * @param receiverName the name of the receiver
+     * @param observer the observer to apply to the account
+     * @return the operation that will expose the pending airdrop of the account
+     */
+    public static ViewPendingAirdropOp viewAccountPendingAirdrop(
+            @NonNull final String tokenName,
+            @NonNull final String senderName,
+            @NonNull final String receiverName,
+            @NonNull final Consumer<AccountPendingAirdrop> observer) {
+        return new ViewPendingAirdropOp(tokenName, senderName, receiverName, observer);
     }
 }

@@ -18,7 +18,7 @@ package com.swirlds.demo.virtualmerkle.map.smartcontracts.data;
 
 import com.hedera.pbj.runtime.io.ReadableSequentialData;
 import com.hedera.pbj.runtime.io.WritableSequentialData;
-import com.swirlds.merkledb.serialize.ValueSerializer;
+import com.swirlds.virtualmap.serialize.ValueSerializer;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /** This class is the serializer of {@link SmartContractMapValue}. */

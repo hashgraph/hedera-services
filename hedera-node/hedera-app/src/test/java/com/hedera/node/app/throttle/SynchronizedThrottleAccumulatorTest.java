@@ -26,7 +26,7 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.transaction.Query;
 import com.hedera.node.app.workflows.TransactionInfo;
-import com.swirlds.state.HederaState;
+import com.swirlds.state.State;
 import java.time.InstantSource;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -53,19 +53,19 @@ class SynchronizedThrottleAccumulatorTest {
     }
 
     @Test
-    void verifyShouldThrottleIsCalled() {
+    void verifyCheckAndEnforceThrottleIsCalled() {
         // given
-        final var state = mock(HederaState.class);
+        final var state = mock(State.class);
 
         // when
         subject.shouldThrottle(transactionInfo, state);
 
         // then
-        verify(throttleAccumulator, times(1)).shouldThrottle(eq(transactionInfo), any(), eq(state));
+        verify(throttleAccumulator, times(1)).checkAndEnforceThrottle(eq(transactionInfo), any(), eq(state));
     }
 
     @Test
-    void verifyShouldThrottleQueryIsCalled() {
+    void verifyCheckAndEnforceThrottleQueryIsCalled() {
         // given
         final var query = mock(Query.class);
         final var accountID = mock(AccountID.class);
@@ -75,6 +75,6 @@ class SynchronizedThrottleAccumulatorTest {
 
         // then
         verify(throttleAccumulator, times(1))
-                .shouldThrottle(eq(HederaFunctionality.CONTRACT_CREATE), any(), eq(query), eq(accountID));
+                .checkAndEnforceThrottle(eq(HederaFunctionality.CONTRACT_CREATE), any(), eq(query), eq(accountID));
     }
 }

@@ -25,6 +25,7 @@ import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.contract.ContractFunctionResult;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult;
+import com.hedera.node.app.service.contract.impl.records.ContractCallStreamBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import org.hyperledger.besu.evm.frame.MessageFrame;
@@ -39,7 +40,7 @@ public interface Call {
      * <ol>
      *     <li>The "full result" of the call, including both its EVM-standard {@link PrecompileContractResult}
      *     and gas requirement (which is often difficult to compute without executing the call); as well as
-     *     any {@link com.hedera.node.app.service.contract.impl.records.ContractCallRecordBuilder} created
+     *     any {@link ContractCallStreamBuilder} created
      *     as a side-effect of executing the system contract.</li>
      *     <li>Any additional cost <i>beyond</i> the gas requirement.</li>
      * </ol>
@@ -80,7 +81,7 @@ public interface Call {
                 @NonNull final ContractID contractId,
                 @NonNull final Bytes functionParameters,
                 final long remainingGas) {
-            final var errorMessage = responseCode == SUCCESS ? null : responseCode.protoName();
+            final var errorMessage = responseCode == SUCCESS ? "" : responseCode.protoName();
             return ContractFunctionResult.newBuilder()
                     .contractID(contractId)
                     .amount(nonGasCost)

@@ -16,14 +16,23 @@
 
 package com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.hts.isassociated;
 
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.burn.BurnTranslator.BURN_TOKEN_V2;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.isassociated.IsAssociatedTranslator.IS_ASSOCIATED;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.FUNGIBLE_TOKEN;
+import static com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.CallAttemptHelpers.prepareHtsAttemptWithSelectorForRedirect;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.when;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
+import com.hedera.node.app.service.contract.impl.exec.scope.HederaNativeOperations;
+import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategies;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AddressIdConverter;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.isassociated.IsAssociatedCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.isassociated.IsAssociatedTranslator;
@@ -46,6 +55,15 @@ class IsAssociatedTranslatorTest {
     @Mock
     private SystemContractGasCalculator gasCalculator;
 
+    @Mock
+    private AddressIdConverter addressIdConverter;
+
+    @Mock
+    private VerificationStrategies verificationStrategies;
+
+    @Mock
+    private HederaNativeOperations nativeOperations;
+
     private IsAssociatedTranslator translator;
 
     @BeforeEach
@@ -55,18 +73,19 @@ class IsAssociatedTranslatorTest {
 
     @Test
     void matchesWithCorrectSelectorAndTokenRedirectReturnsTrue() {
-        when(mockAttempt.isTokenRedirect()).thenReturn(true);
-        when(mockAttempt.selector()).thenReturn(IsAssociatedTranslator.IS_ASSOCIATED.selector());
-
+        given(enhancement.nativeOperations()).willReturn(nativeOperations);
+        given(nativeOperations.getToken(anyLong())).willReturn(FUNGIBLE_TOKEN);
+        mockAttempt = prepareHtsAttemptWithSelectorForRedirect(
+                IS_ASSOCIATED, translator, enhancement, addressIdConverter, verificationStrategies, gasCalculator);
         assertTrue(translator.matches(mockAttempt));
     }
 
     @Test
     void matchesWithIncorrectSelectorReturnsFalse() {
-        when(mockAttempt.isTokenRedirect()).thenReturn(true);
-        byte[] incorrectSelector = new byte[] {1, 2, 3, 4};
-        when(mockAttempt.selector()).thenReturn(incorrectSelector);
-
+        given(enhancement.nativeOperations()).willReturn(nativeOperations);
+        given(nativeOperations.getToken(anyLong())).willReturn(FUNGIBLE_TOKEN);
+        mockAttempt = prepareHtsAttemptWithSelectorForRedirect(
+                BURN_TOKEN_V2, translator, enhancement, addressIdConverter, verificationStrategies, gasCalculator);
         assertFalse(translator.matches(mockAttempt));
     }
 

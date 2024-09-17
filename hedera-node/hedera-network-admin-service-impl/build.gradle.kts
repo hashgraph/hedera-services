@@ -21,13 +21,9 @@ plugins {
 
 description = "Default Hedera Network Admin Service Implementation"
 
-// Remove the following line to enable all 'javac' lint checks that we have turned on by default
-// and then fix the reported issues.
-tasks.withType<JavaCompile>().configureEach { options.compilerArgs.add("-Xlint:-exports") }
-
 val writeSemanticVersionProperties =
     tasks.register<WriteProperties>("writeSemanticVersionProperties") {
-        property("hapi.proto.version", libs.versions.hapi.proto.get())
+        property("hapi.proto.version", project.version)
         property("hedera.services.version", project.version)
 
         destinationFile.set(

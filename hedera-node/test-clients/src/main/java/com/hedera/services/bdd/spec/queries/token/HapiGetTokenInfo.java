@@ -354,6 +354,11 @@ public class HapiGetTokenInfo extends HapiQueryOp<HapiGetTokenInfo> {
         return this;
     }
 
+    public HapiGetTokenInfo hasEmptyCustom() {
+        expectedFees = new ArrayList<>();
+        return this;
+    }
+
     public HapiGetTokenInfo searchKeysGlobally() {
         searchKeysGlobally = true;
         return this;

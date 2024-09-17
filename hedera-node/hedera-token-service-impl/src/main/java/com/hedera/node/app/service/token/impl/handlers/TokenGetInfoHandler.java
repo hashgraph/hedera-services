@@ -129,11 +129,11 @@ public class TokenGetInfoHandler extends PaidQueryHandler {
      * Returns the {@link TokenInfo} for the given {@link TokenID}, if it exists.
      *
      * @param tokenID
-     * 		the {@link TokenID} for which to return the {@link TokenInfo}
+     * the {@link TokenID} for which to return the {@link TokenInfo}
      * @param readableTokenStore
-     * 		the {@link ReadableTokenStore} from which to retrieve the {@link TokenInfo}
+     * the {@link ReadableTokenStore} from which to retrieve the {@link TokenInfo}
      * @param config
-     * 		the {@link LedgerConfig} containing the ledger ID
+     * the {@link LedgerConfig} containing the ledger ID
      * @return the {@link TokenInfo} for the given {@link TokenID}, if it exists
      */
     private Optional<TokenInfo> infoForToken(

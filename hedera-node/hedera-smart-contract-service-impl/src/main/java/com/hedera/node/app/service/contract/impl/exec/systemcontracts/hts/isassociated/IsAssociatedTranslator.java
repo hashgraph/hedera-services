@@ -24,7 +24,6 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.Cal
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.Arrays;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -40,7 +39,7 @@ public class IsAssociatedTranslator extends AbstractCallTranslator<HtsCallAttemp
 
     @Override
     public final boolean matches(@NonNull final HtsCallAttempt attempt) {
-        return (attempt.isTokenRedirect() && matchesHrcSelector(attempt.selector()));
+        return attempt.isTokenRedirect() && attempt.isSelector(IS_ASSOCIATED);
     }
 
     @Override
@@ -51,9 +50,5 @@ public class IsAssociatedTranslator extends AbstractCallTranslator<HtsCallAttemp
                 attempt.enhancement(),
                 attempt.senderId(),
                 attempt.redirectToken());
-    }
-
-    private static boolean matchesHrcSelector(@NonNull final byte[] selector) {
-        return Arrays.equals(selector, IS_ASSOCIATED.selector());
     }
 }

@@ -56,7 +56,7 @@ import com.hedera.node.app.service.contract.impl.exec.utils.FrameBuilder;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmBlocks;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater.Enhancement;
-import com.hedera.node.app.service.contract.impl.records.ContractOperationRecordBuilder;
+import com.hedera.node.app.service.contract.impl.records.ContractOperationStreamBuilder;
 import com.hedera.node.app.service.contract.impl.state.HederaEvmAccount;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.workflows.HandleException;
@@ -117,7 +117,7 @@ class FrameBuilderTest {
     void constructsExpectedFrameForCallToExtantContractIncludingOptionalContextVariables() {
         final var transaction = wellKnownHapiCall();
         givenContractExists();
-        final var recordBuilder = mock(ContractOperationRecordBuilder.class);
+        final var recordBuilder = mock(ContractOperationStreamBuilder.class);
         given(worldUpdater.getHederaAccount(CALLED_CONTRACT_ID)).willReturn(account);
         given(account.getEvmCode(Bytes.wrap(CALL_DATA.toByteArray()))).willReturn(CONTRACT_CODE);
         given(worldUpdater.updater()).willReturn(stackedUpdater);

@@ -38,6 +38,10 @@ public abstract class WritableQueueStateBase<E> implements WritableQueueState<E>
     /** Each element that has been added to the queue, but not yet committed */
     private final List<E> addedElements = new ArrayList<>();
     /**
+     * Listeners to be notified when the queue changes.
+     */
+    private final List<QueueChangeListener<E>> listeners = new ArrayList<>();
+    /**
      * The current index into {@link #addedElements} that we have read from.
      *
      * <p>When a client reads from the queue (either with peek, poll, remove, or iterator) we will first read from
@@ -66,26 +70,44 @@ public abstract class WritableQueueStateBase<E> implements WritableQueueState<E>
     }
 
     /**
+     * Register a listener to be notified of changes to the state on {@link #commit()}. We do not support unregistering
+     * a listener, as the lifecycle of a {@link WritableQueueState} is scoped to the set of mutations made to a state in
+     * a round; and there is no case where an application would only want to be notified of a subset of those changes.
+     * @param listener the listener to register
+     */
+    public void registerListener(@NonNull final QueueChangeListener<E> listener) {
+        requireNonNull(listener);
+        listeners.add(listener);
+    }
+
+    /**
      * Flushes all changes into the underlying data store. This method should <strong>ONLY</strong>
-     * be called by the code that created the {@link WritableKVStateBase} instance or owns it. Don't
+     * be called by the code that created the {@link WritableQueueStateBase} instance or owns it. Don't
      * cast and commit unless you own the instance!
      */
     public final void commit() {
-        for (int i = 0; i < readElements.size(); i++) {
+        // We only want to remove from the data source elements we actually read from there; not
+        // any elements we read from the list of items added in this changeset; if we have peeked
+        // a non-zero number of elements from the added list, then we need to subtract one if the
+        // peeked element is not null, since it was only peeked and not read
+        final var numReadFromAdded =
+                currentAddedElementIndex > 0 ? currentAddedElementIndex - (peekedElement == null ? 0 : 1) : 0;
+        for (int i = 0, n = readElements.size() - numReadFromAdded; i < n; i++) {
             removeFromDataSource();
+            listeners.forEach(QueueChangeListener::queuePopChange);
         }
 
-        for (final var addedElement : addedElements) {
+        // We only want to add to the data source elements that were added and NOT subsequently read
+        for (int i = numReadFromAdded, n = addedElements.size(); i < n; i++) {
+            final var addedElement = addedElements.get(i);
             addToDataSource(addedElement);
+            listeners.forEach(l -> l.queuePushChange(addedElement));
         }
-
         reset();
     }
 
     /**
-     * {@inheritDoc}
-     *
-     * <p>Clears the set of peeked values and added values.
+     * Clears the set of peeked values and added values.
      */
     public final void reset() {
         readElements.clear();

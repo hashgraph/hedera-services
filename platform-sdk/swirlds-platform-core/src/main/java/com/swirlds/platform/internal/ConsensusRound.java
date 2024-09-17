@@ -23,8 +23,8 @@ import com.swirlds.platform.consensus.GraphGenerations;
 import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.address.AddressBook;
+import com.swirlds.platform.system.events.CesEvent;
 import com.swirlds.platform.system.events.ConsensusEvent;
-import com.swirlds.platform.system.events.DetailedConsensusEvent;
 import com.swirlds.platform.system.transaction.Transaction;
 import com.swirlds.platform.util.iterator.TypedIterator;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -48,7 +48,7 @@ public class ConsensusRound implements Round {
      * the CES is something that will be removed as soon as possible, this additional list allows us to decouple the CES
      * from the rest of the event structure.
      */
-    private final List<DetailedConsensusEvent> streamedEvents;
+    private final List<CesEvent> streamedEvents;
 
     /**
      * the consensus generations when this round reached consensus
@@ -128,7 +128,7 @@ public class ConsensusRound implements Round {
                     numAppTransactions++;
                 }
             }
-            streamedEvents.add(new DetailedConsensusEvent(e, snapshot.round(), !iterator.hasNext()));
+            streamedEvents.add(new CesEvent(e, snapshot.round(), !iterator.hasNext()));
         }
     }
 
@@ -153,7 +153,7 @@ public class ConsensusRound implements Round {
     /**
      * @return the list of CES events in this round
      */
-    public @NonNull List<DetailedConsensusEvent> getStreamedEvents() {
+    public @NonNull List<CesEvent> getStreamedEvents() {
         return streamedEvents;
     }
 
@@ -241,9 +241,6 @@ public class ConsensusRound implements Round {
         return reachedConsTimestamp;
     }
 
-    /**
-     * {@inheritDoc}
-     */
     public boolean isPcesRound() {
         return pcesRound;
     }

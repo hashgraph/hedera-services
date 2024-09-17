@@ -16,6 +16,7 @@
 
 package com.hedera.services.bdd.junit.hedera.embedded;
 
+import static com.swirlds.platform.system.transaction.TransactionWrapperUtils.createAppPayloadWrapper;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
@@ -31,7 +32,6 @@ import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.events.ConsensusEvent;
-import com.swirlds.platform.system.transaction.SwirldTransaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
 import java.time.Instant;
@@ -90,10 +90,7 @@ class ConcurrentEmbeddedHedera extends AbstractEmbeddedHedera implements Embedde
             warnOfSkippedIngestChecks(nodeAccountId, nodeId);
             platform.ingestQueue()
                     .add(new FakeEvent(
-                            nodeId,
-                            now(),
-                            semanticVersion,
-                            new SwirldTransaction(Bytes.wrap(transaction.toByteArray()))));
+                            nodeId, now(), semanticVersion, createAppPayloadWrapper(transaction.toByteArray())));
             return OK_RESPONSE;
         }
     }
@@ -129,10 +126,7 @@ class ConcurrentEmbeddedHedera extends AbstractEmbeddedHedera implements Embedde
         @Override
         public boolean createTransaction(@NonNull byte[] transaction) {
             return queue.add(new FakeEvent(
-                    defaultNodeId,
-                    now(),
-                    version.getPbjSemanticVersion(),
-                    new SwirldTransaction(Bytes.wrap(transaction))));
+                    defaultNodeId, now(), version.getPbjSemanticVersion(), createAppPayloadWrapper(transaction)));
         }
 
         /**
@@ -160,7 +154,8 @@ class ConcurrentEmbeddedHedera extends AbstractEmbeddedHedera implements Embedde
                             })
                             .toList();
                     final var round = new FakeRound(roundNo.getAndIncrement(), addressBook, consensusEvents);
-                    hedera.handleWorkflow().handleRound(state, platformState, round);
+                    hedera.handleWorkflow().handleRound(state, round);
+                    hedera.onSealConsensusRound(round, state);
                     prehandledEvents.clear();
                 }
                 // Now drain all events that will go in the next round and pre-handle them

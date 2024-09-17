@@ -20,22 +20,21 @@ import static com.hedera.hapi.node.freeze.FreezeType.FREEZE_UPGRADE;
 import static com.hedera.node.app.service.networkadmin.impl.schemas.V0490FreezeSchema.FREEZE_TIME_KEY;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mock.Strictness.LENIENT;
-import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.when;
 
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.freeze.FreezeTransactionBody;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.fixtures.state.FakeHederaState;
+import com.hedera.hapi.platform.state.PlatformState;
+import com.hedera.node.app.fixtures.state.FakeState;
 import com.hedera.node.app.service.networkadmin.FreezeService;
 import com.hedera.node.app.spi.fixtures.TransactionFactory;
-import com.swirlds.platform.state.PlatformState;
+import com.swirlds.platform.state.service.PlatformStateService;
+import com.swirlds.platform.state.service.schemas.V0540PlatformStateSchema;
 import com.swirlds.state.spi.WritableSingletonStateBase;
 import com.swirlds.state.spi.WritableStates;
-import java.time.Instant;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 import org.assertj.core.api.Assertions;
@@ -43,18 +42,15 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.Mock.Strictness;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class PlatformStateUpdatesTest implements TransactionFactory {
-    private FakeHederaState state;
+    private FakeState state;
 
     private PlatformStateUpdates subject;
     private AtomicReference<Timestamp> freezeTimeBackingStore;
-
-    @Mock(strictness = Strictness.LENIENT)
-    private PlatformState platformState;
+    private AtomicReference<PlatformState> platformStateBackingStore;
 
     @Mock(strictness = LENIENT)
     protected WritableStates writableStates;
@@ -62,15 +58,16 @@ class PlatformStateUpdatesTest implements TransactionFactory {
     @BeforeEach
     void setUp() {
         freezeTimeBackingStore = new AtomicReference<>(null);
+        platformStateBackingStore = new AtomicReference<>(V0540PlatformStateSchema.GENESIS_PLATFORM_STATE);
         when(writableStates.getSingleton(FREEZE_TIME_KEY))
                 .then(invocation -> new WritableSingletonStateBase<>(
                         FREEZE_TIME_KEY, freezeTimeBackingStore::get, freezeTimeBackingStore::set));
 
-        state = new FakeHederaState().addService(FreezeService.NAME, Map.of(FREEZE_TIME_KEY, freezeTimeBackingStore));
-
-        doAnswer(answer -> when(platformState.getFreezeTime()).thenReturn(answer.getArgument(0)))
-                .when(platformState)
-                .setFreezeTime(any(Instant.class));
+        state = new FakeState()
+                .addService(FreezeService.NAME, Map.of(FREEZE_TIME_KEY, freezeTimeBackingStore))
+                .addService(
+                        PlatformStateService.NAME,
+                        Map.of(V0540PlatformStateSchema.PLATFORM_STATE_KEY, platformStateBackingStore));
 
         subject = new PlatformStateUpdates();
     }
@@ -82,11 +79,9 @@ class PlatformStateUpdatesTest implements TransactionFactory {
         final var txBody = simpleCryptoTransfer().body();
 
         // then
-        assertThatThrownBy(() -> subject.handleTxBody(null, platformState, txBody))
-                .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> subject.handleTxBody(state, null, txBody)).isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> subject.handleTxBody(state, platformState, null))
-                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> subject.handleTxBody(null, txBody)).isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> subject.handleTxBody(state, txBody)).isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> subject.handleTxBody(state, null)).isInstanceOf(NullPointerException.class);
     }
 
     @Test
@@ -97,8 +92,7 @@ class PlatformStateUpdatesTest implements TransactionFactory {
                 .build();
 
         // then
-        Assertions.assertThatCode(() -> subject.handleTxBody(state, platformState, txBody))
-                .doesNotThrowAnyException();
+        Assertions.assertThatCode(() -> subject.handleTxBody(state, txBody)).doesNotThrowAnyException();
     }
 
     @Test
@@ -110,10 +104,11 @@ class PlatformStateUpdatesTest implements TransactionFactory {
                 .freeze(FreezeTransactionBody.newBuilder().freezeType(FREEZE_UPGRADE));
 
         // when
-        subject.handleTxBody(state, platformState, txBody.build());
+        subject.handleTxBody(state, txBody.build());
 
         // then
-        assertEquals(freezeTime.seconds(), platformState.getFreezeTime().getEpochSecond());
-        assertEquals(freezeTime.nanos(), platformState.getFreezeTime().getNano());
+        final var platformState = platformStateBackingStore.get();
+        assertEquals(freezeTime.seconds(), platformState.freezeTimeOrThrow().seconds());
+        assertEquals(freezeTime.nanos(), platformState.freezeTimeOrThrow().nanos());
     }
 }

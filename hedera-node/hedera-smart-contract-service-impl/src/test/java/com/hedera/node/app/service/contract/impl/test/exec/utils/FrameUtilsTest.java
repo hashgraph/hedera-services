@@ -33,7 +33,6 @@ import static com.hedera.node.app.service.contract.impl.test.TestHelpers.NON_SYS
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.NON_SYSTEM_LONG_ZERO_ADDRESS;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.PERMITTED_ADDRESS_CALLER;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.PERMITTED_CALLERS_CONFIG;
-import static com.hedera.node.app.service.evm.store.contracts.HederaEvmWorldStateTokenAccount.TOKEN_PROXY_ACCOUNT_NONCE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -52,10 +51,11 @@ import com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils;
 import com.hedera.node.app.service.contract.impl.infra.StorageAccessTracker;
 import com.hedera.node.app.service.contract.impl.state.ProxyEvmContract;
 import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
+import com.hedera.node.app.service.contract.impl.state.TokenEvmAccount;
 import com.hedera.node.app.service.contract.impl.utils.ConversionUtils;
 import com.hedera.node.app.service.contract.impl.utils.OpcodeUtils;
 import com.hedera.node.app.service.contract.impl.utils.SynthTxnUtils;
-import com.hedera.node.app.spi.workflows.record.DeleteCapableTransactionRecordBuilder;
+import com.hedera.node.app.spi.workflows.record.DeleteCapableTransactionStreamBuilder;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayDeque;
 import java.util.Arrays;
@@ -178,7 +178,7 @@ class FrameUtilsTest {
         given(initialFrame.getContractAddress()).willReturn(EIP_1014_ADDRESS);
 
         given(worldUpdater.get(EIP_1014_ADDRESS)).willReturn(account);
-        given(account.getNonce()).willReturn(TOKEN_PROXY_ACCOUNT_NONCE);
+        given(account.getNonce()).willReturn(TokenEvmAccount.TOKEN_PROXY_ACCOUNT_NONCE);
 
         assertEquals(DIRECT_OR_PROXY_REDIRECT, FrameUtils.callTypeOf(frame));
     }
@@ -302,7 +302,7 @@ class FrameUtilsTest {
     void checksForBeneficiaryMapAsExpected() {
         givenNonInitialFrame();
         given(frame.getMessageFrameStack()).willReturn(stack);
-        final DeleteCapableTransactionRecordBuilder beneficiaries = mock(DeleteCapableTransactionRecordBuilder.class);
+        final DeleteCapableTransactionStreamBuilder beneficiaries = mock(DeleteCapableTransactionStreamBuilder.class);
         given(initialFrame.getContextVariable(HAPI_RECORD_BUILDER_CONTEXT_VARIABLE))
                 .willReturn(beneficiaries);
         assertSame(beneficiaries, selfDestructBeneficiariesFor(frame));

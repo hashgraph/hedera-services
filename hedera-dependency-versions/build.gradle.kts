@@ -56,13 +56,13 @@ dependencies.constraints {
     api("com.google.jimfs:jimfs:1.2") {
         because("com.google.jimfs")
     }
-    api("com.google.protobuf:protobuf-java:3.21.7") {
+    api("com.google.protobuf:protobuf-java:3.25.4") {
         because("com.google.protobuf")
     }
-    api("com.google.protobuf:protobuf-java-util:3.21.7") {
+    api("com.google.protobuf:protobuf-java-util:3.25.4") {
         because("com.google.protobuf.util")
     }
-    api("com.hedera.pbj:pbj-runtime:0.8.9") {
+    api("com.hedera.pbj:pbj-runtime:0.9.2") {
         because("com.hedera.pbj.runtime")
     }
     api("com.squareup:javapoet:1.13.0") {
@@ -115,9 +115,6 @@ dependencies.constraints {
     }
     api("jakarta.inject:jakarta.inject-api:2.0.1") {
         because("jakarta.inject")
-    }
-    api("javax.annotation:javax.annotation-api:1.3.2") {
-        because("java.annotation")
     }
     api("javax.inject:javax.inject:1") {
         because("javax.inject")
@@ -188,6 +185,9 @@ dependencies.constraints {
     api("org.junit.jupiter:junit-jupiter-api:5.10.2") {
         because("org.junit.jupiter.api")
     }
+    api("org.junit.jupiter:junit-jupiter-engine:5.10.2") {
+        because("org.junit.jupiter.engine")
+    }
     api("org.junit-pioneer:junit-pioneer:2.0.1") {
         because("org.junitpioneer")
     }
@@ -221,10 +221,4 @@ dependencies.constraints {
     api("uk.org.webcompere:system-stubs-jupiter:2.1.5") {
         because("uk.org.webcompere.systemstubs.jupiter")
     }
-}
-
-dependencies.constraints {
-    // required to merge 'javax.annotation-api' into 'com.google.code.findbugs:jsr305'
-    // to have all annotations on the classpath available at compile time
-    api("javax.annotation:javax.annotation-api:1.3.2")
 }

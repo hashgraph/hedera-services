@@ -16,7 +16,10 @@
 
 package com.hedera.services.bdd.spec.utilops.streams;
 
+import static java.util.Objects.requireNonNull;
+
 import com.hedera.services.bdd.spec.utilops.streams.assertions.AssertionResult;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -29,13 +32,13 @@ public class EventualAssertionResult {
 
     private AssertionResult result;
 
-    public EventualAssertionResult(final Duration timeout) {
+    public EventualAssertionResult(@NonNull final Duration timeout) {
         this(false, timeout);
     }
 
-    public EventualAssertionResult(boolean hasPassedIfNothingFailed, final Duration timeout) {
+    public EventualAssertionResult(final boolean hasPassedIfNothingFailed, @NonNull final Duration timeout) {
         this.hasPassedIfNothingFailed = hasPassedIfNothingFailed;
-        this.timeout = timeout;
+        this.timeout = requireNonNull(timeout);
     }
 
     public AssertionResult get() throws InterruptedException {

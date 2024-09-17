@@ -35,7 +35,7 @@ import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionKeys;
-import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
+import com.hedera.node.app.workflows.handle.record.RecordStreamBuilder;
 import com.hedera.node.app.workflows.prehandle.PreHandleContextImpl;
 import java.security.InvalidKeyException;
 import java.time.Instant;
@@ -133,7 +133,7 @@ class AbstractScheduleHandlerTest extends ScheduleHandlerTestBase {
     }
 
     @Test
-    void verifyCheckTxnId() throws PreCheckException {
+    void verifyCheckTxnId() {
         assertThatThrownBy(new CallCheckValid(null, testHandler))
                 .is(new PreCheckExceptionMatch(ResponseCodeEnum.INVALID_TRANSACTION_ID));
         for (final Schedule next : listOfScheduledOptions) {
@@ -207,13 +207,14 @@ class AbstractScheduleHandlerTest extends ScheduleHandlerTestBase {
     @SuppressWarnings("unchecked")
     @Test
     void verifyTryExecute() {
-        final var mockRecordBuilder = Mockito.mock(SingleTransactionRecordBuilderImpl.class);
+        final var mockRecordBuilder = Mockito.mock(RecordStreamBuilder.class);
         BDDMockito.given(mockContext.dispatchChildTransaction(
                         any(TransactionBody.class),
                         any(),
                         any(Predicate.class),
                         any(AccountID.class),
-                        any(TransactionCategory.class)))
+                        any(TransactionCategory.class),
+                        any()))
                 .willReturn(mockRecordBuilder);
         for (final Schedule testItem : listOfScheduledOptions) {
             Set<Key> testRemaining = Set.of();

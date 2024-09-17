@@ -19,12 +19,13 @@ package com.hedera.node.app.state.merkle;
 import static com.hedera.node.app.state.merkle.SchemaApplicationType.MIGRATION;
 import static com.hedera.node.app.state.merkle.SchemaApplicationType.RESTART;
 import static com.hedera.node.app.state.merkle.SchemaApplicationType.STATE_DEFINITIONS;
+import static com.hedera.node.app.state.merkle.VersionUtils.alreadyIncludesStateDefs;
 import static com.hedera.node.app.state.merkle.VersionUtils.isSameVersion;
-import static com.hedera.node.app.state.merkle.VersionUtils.isSoOrdered;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.platform.state.MerkleStateRoot;
 import com.swirlds.state.spi.Schema;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -33,7 +34,7 @@ import java.util.Set;
 
 /**
  * Analyzes the ways in which the {@link MerkleSchemaRegistry} should apply a {@link Schema}
- * to the {@link MerkleHederaState}.
+ * to the {@link MerkleStateRoot}.
  *
  * @see SchemaApplicationType
  */
@@ -62,7 +63,7 @@ public class SchemaApplications {
         }
         // We only skip migration if the deserialized version is at least as new as the schema
         // version (which implies the deserialized state already went through this migration)
-        if (deserializedVersion == null || isSoOrdered(deserializedVersion, schema.getVersion())) {
+        if (!alreadyIncludesStateDefs(deserializedVersion, schema.getVersion())) {
             uses.add(MIGRATION);
         }
         // We only do restart if the schema is the latest one available

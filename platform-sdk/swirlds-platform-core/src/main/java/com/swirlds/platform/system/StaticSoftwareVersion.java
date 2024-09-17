@@ -16,9 +16,7 @@
 
 package com.swirlds.platform.system;
 
-import com.hedera.hapi.node.base.SemanticVersion;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Set;
 
 /**
@@ -34,11 +32,11 @@ public final class StaticSoftwareVersion {
      * The current software version.
      */
     private static Set<Long> softwareVersionClassIdSet;
-
     /**
-     * Semantic version of the software.
+     * The class ID of the Hedera software version.
+     * This is needed for migrating from 0.53.0 version of software to 0.54.0
      */
-    private static SemanticVersion semanticVersion;
+    private static final Long hederaSoftwareVersionClassId = 0x6f2b1bc2df8cbd0cL;
 
     private StaticSoftwareVersion() {}
 
@@ -48,8 +46,7 @@ public final class StaticSoftwareVersion {
      * @param softwareVersion the current software version
      */
     public static void setSoftwareVersion(@NonNull final SoftwareVersion softwareVersion) {
-        softwareVersionClassIdSet = Set.of(softwareVersion.getClassId());
-        semanticVersion = softwareVersion.getPbjSemanticVersion();
+        softwareVersionClassIdSet = Set.of(softwareVersion.getClassId(), hederaSoftwareVersionClassId);
     }
 
     /**
@@ -71,15 +68,5 @@ public final class StaticSoftwareVersion {
             throw new IllegalStateException("Software version not set");
         }
         return softwareVersionClassIdSet;
-    }
-
-    /**
-     * Get the semantic version of the software.
-     *
-     * @return the semantic version of the software
-     */
-    @Nullable
-    public static SemanticVersion getSemanticVersion() {
-        return semanticVersion;
     }
 }

@@ -61,7 +61,6 @@ public class TokenCustomFeesCall extends AbstractNonRevertibleTokenViewCall {
 
     private @NonNull FullResult fullResultsFor(
             @NonNull final ResponseCodeEnum status, final long gasRequirement, @NonNull final Token token) {
-        // @Future remove to revert #9071 after modularization is completed
         if (isStaticCall) {
             return successResult(
                     TOKEN_CUSTOM_FEES.getOutputs().encode(feesTupleFor(SUCCESS.protoOrdinal(), token)), gasRequirement);

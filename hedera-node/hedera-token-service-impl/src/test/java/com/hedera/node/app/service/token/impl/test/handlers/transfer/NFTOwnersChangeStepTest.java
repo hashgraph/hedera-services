@@ -18,10 +18,14 @@ package com.hedera.node.app.service.token.impl.test.handlers.transfer;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SPENDER_DOES_NOT_HAVE_ALLOWANCE;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.asAccount;
 import static com.hedera.node.app.service.token.impl.test.handlers.transfer.AccountAmountUtils.aaWith;
 import static com.hedera.node.app.service.token.impl.test.handlers.transfer.AccountAmountUtils.nftTransferWithAllowance;
 import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
+import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.USER;
+import static com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer.NOOP_RECORD_CUSTOMIZER;
+import static com.hedera.node.app.spi.workflows.record.StreamBuilder.ReversingBehavior.REVERSIBLE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
@@ -41,19 +45,23 @@ import com.hedera.node.app.service.token.impl.handlers.transfer.EnsureAliasesSte
 import com.hedera.node.app.service.token.impl.handlers.transfer.NFTOwnersChangeStep;
 import com.hedera.node.app.service.token.impl.handlers.transfer.ReplaceAliasesWithIDsInOp;
 import com.hedera.node.app.service.token.impl.handlers.transfer.TransferContextImpl;
+import com.hedera.node.app.service.token.records.CryptoTransferStreamBuilder;
 import com.hedera.node.app.spi.workflows.HandleException;
-import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
-import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
+import com.hedera.node.app.spi.workflows.record.StreamBuilder;
+import com.hedera.node.app.workflows.handle.record.RecordStreamBuilder;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mock;
 
 class NFTOwnersChangeStepTest extends StepsBase {
+    @Mock
+    private CryptoTransferStreamBuilder builder;
 
     @BeforeEach
     public void setUp() {
         super.setUp();
         given(handleContext.dispatchRemovablePrecedingTransaction(
-                        any(), eq(SingleTransactionRecordBuilder.class), eq(null), any()))
+                        any(), eq(StreamBuilder.class), eq(null), any(), any()))
                 .will((invocation) -> {
                     final var relation =
                             new TokenRelation(fungibleTokenId, tokenReceiverId, 1, false, true, true, null, null);
@@ -61,7 +69,7 @@ class NFTOwnersChangeStepTest extends StepsBase {
                             new TokenRelation(nonFungibleTokenId, tokenReceiverId, 1, false, true, true, null, null);
                     writableTokenRelStore.put(relation);
                     writableTokenRelStore.put(relation1);
-                    return new SingleTransactionRecordBuilderImpl(consensusInstant);
+                    return new RecordStreamBuilder(REVERSIBLE, NOOP_RECORD_CUSTOMIZER, USER).status(SUCCESS);
                 });
 
         refreshWritableStores();
@@ -98,6 +106,7 @@ class NFTOwnersChangeStepTest extends StepsBase {
         final var receiver = asAccount(tokenReceiver);
         given(handleContext.payer()).willReturn(spenderId);
         given(expiryValidator.expirationStatus(any(), anyBoolean(), anyLong())).willReturn(OK);
+        given(handleContext.savepointStack()).willReturn(stack);
         final var replacedOp = getReplacedOp();
         changeNFTOwnersStep = new NFTOwnersChangeStep(replacedOp.tokenTransfers(), payerId);
         final var nft = writableNftStore.get(nftIdSl1);
@@ -129,7 +138,7 @@ class NFTOwnersChangeStepTest extends StepsBase {
         assertThat(senderTokenRelBalance).isEqualTo(1);
         final var receiverTokenRelBalance =
                 writableTokenRelStore.get(receiver, nonFungibleTokenId).balance();
-        assertThat(receiverTokenRelBalance).isEqualTo(1);
+        assertThat(receiverTokenRelBalance).isEqualTo(0);
 
         changeNFTOwnersStep.doIn(transferContext);
 
@@ -157,7 +166,7 @@ class NFTOwnersChangeStepTest extends StepsBase {
         final var numPositiveBalancesSenderAfter = senderAccountAfter.numberPositiveBalances();
         assertThat(numPositiveBalancesSenderAfter).isEqualTo(numPositiveBalancesSender - 1);
         final var numPositiveBalancesReceiverAfter = receiverAccountAfter.numberPositiveBalances();
-        assertThat(numPositiveBalancesReceiverAfter).isEqualTo(numPositiveBalancesReceiver);
+        assertThat(numPositiveBalancesReceiverAfter).isEqualTo(numPositiveBalancesReceiver + 1);
 
         // see token relation balances for sender and receiver change
         final var senderTokenRelBalanceAfter = writableTokenRelStore.get(ownerId, nonFungibleTokenId);
@@ -182,6 +191,7 @@ class NFTOwnersChangeStepTest extends StepsBase {
                         .build())
                 .build();
         givenTxn(body, spenderId);
+        given(handleContext.savepointStack()).willReturn(stack);
         ensureAliasesStep = new EnsureAliasesStep(body);
         replaceAliasesWithIDsInOp = new ReplaceAliasesWithIDsInOp();
         associateTokenRecepientsStep = new AssociateTokenRecipientsStep(body);
@@ -213,7 +223,7 @@ class NFTOwnersChangeStepTest extends StepsBase {
         final var receiverTokenRelBalance =
                 writableTokenRelStore.get(receiver, nonFungibleTokenId).balance();
         // association already happened in association step
-        assertThat(receiverTokenRelBalance).isEqualTo(1);
+        assertThat(receiverTokenRelBalance).isEqualTo(0);
 
         changeNFTOwnersStep.doIn(transferContext);
 
@@ -232,7 +242,7 @@ class NFTOwnersChangeStepTest extends StepsBase {
         final var numPositiveBalancesSenderAfter = senderAccountAfter.numberPositiveBalances();
         assertThat(numPositiveBalancesSenderAfter).isEqualTo(numPositiveBalancesSender - 1);
         final var numPositiveBalancesReceiverAfter = receiverAccountAfter.numberPositiveBalances();
-        assertThat(numPositiveBalancesReceiverAfter).isEqualTo(numPositiveBalancesReceiver);
+        assertThat(numPositiveBalancesReceiverAfter).isEqualTo(numPositiveBalancesReceiver + 1);
 
         // see token relation balances for sender and receiver change
         final var senderTokenRelBalanceAfter = writableTokenRelStore.get(ownerId, nonFungibleTokenId);
@@ -253,6 +263,7 @@ class NFTOwnersChangeStepTest extends StepsBase {
                         .build())
                 .build();
         givenTxn(body, spenderId);
+        given(handleContext.savepointStack()).willReturn(stack);
         ensureAliasesStep = new EnsureAliasesStep(body);
         replaceAliasesWithIDsInOp = new ReplaceAliasesWithIDsInOp();
         associateTokenRecepientsStep = new AssociateTokenRecipientsStep(body);
