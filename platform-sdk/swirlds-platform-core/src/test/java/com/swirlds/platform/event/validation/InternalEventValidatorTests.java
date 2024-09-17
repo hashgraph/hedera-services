@@ -19,11 +19,9 @@ package com.swirlds.platform.event.validation;
 import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
 import static com.swirlds.platform.system.events.EventConstants.GENERATION_UNDEFINED;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
@@ -50,7 +48,6 @@ import com.swirlds.platform.test.fixtures.event.TestingEventBuilder;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -107,8 +104,7 @@ class InternalEventValidatorTests {
                 .build()
                 .getGossipEvent();
 
-        final GossipEvent noEventCore = GossipEvent
-                .newBuilder()
+        final GossipEvent noEventCore = GossipEvent.newBuilder()
                 .eventCore((EventCore) null)
                 .signature(wholeEvent.signature())
                 .eventTransaction(wholeEvent.eventTransaction())
@@ -118,8 +114,7 @@ class InternalEventValidatorTests {
         assertNull(singleNodeValidator.validateEvent(platformEvent));
         assertEquals(2, exitedIntakePipelineCount.get());
 
-        final GossipEvent noTimeCreated = GossipEvent
-                .newBuilder()
+        final GossipEvent noTimeCreated = GossipEvent.newBuilder()
                 .eventCore(EventCore.newBuilder()
                         .timeCreated((Timestamp) null)
                         .version(wholeEvent.eventCore().version())
@@ -132,8 +127,7 @@ class InternalEventValidatorTests {
         assertNull(singleNodeValidator.validateEvent(platformEvent));
         assertEquals(4, exitedIntakePipelineCount.get());
 
-        final GossipEvent noVersion = GossipEvent
-                .newBuilder()
+        final GossipEvent noVersion = GossipEvent.newBuilder()
                 .eventCore(EventCore.newBuilder()
                         .timeCreated(wholeEvent.eventCore().timeCreated())
                         .version((SemanticVersion) null)
@@ -146,8 +140,7 @@ class InternalEventValidatorTests {
         assertNull(singleNodeValidator.validateEvent(platformEvent));
         assertEquals(6, exitedIntakePipelineCount.get());
 
-        final GossipEvent nullTransaction = GossipEvent
-                .newBuilder()
+        final GossipEvent nullTransaction = GossipEvent.newBuilder()
                 .eventCore(wholeEvent.eventCore())
                 .signature(wholeEvent.signature())
                 .eventTransaction(
