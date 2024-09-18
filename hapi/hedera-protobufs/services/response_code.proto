@@ -1615,4 +1615,9 @@ enum ResponseCodeEnum {
      * Fee exempt key list MAY be set only if custom fee list is set.
      */
     MISSING_CUSTOM_FEES = 373;
+
+    /**
+    * The provided fee schedule key contains an invalid key.
+    */
+    INVALID_FEE_SCHEDULE_KEY = 374;
 }

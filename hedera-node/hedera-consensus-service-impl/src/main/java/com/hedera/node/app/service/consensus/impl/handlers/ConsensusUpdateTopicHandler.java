@@ -22,6 +22,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.CUSTOM_FEES_LIST_TOO_LO
 import static com.hedera.hapi.node.base.ResponseCodeEnum.FEKL_CONTAINS_DUPLICATED_KEYS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_CUSTOM_FEE_SCHEDULE_KEY;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_FEE_SCHEDULE_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_KEY_IN_FEKL;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_RENEWAL_PERIOD;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOPIC_ID;
@@ -141,6 +142,11 @@ public class ConsensusUpdateTopicHandler implements TransactionHandler {
                 context.requireKeyOrThrow(autoRenewAccountID, INVALID_AUTORENEW_ACCOUNT);
             }
         }
+
+        // If the fee schedule key is change then the transaction must also be signed by the new fee schedule key
+        if (op.hasFeeScheduleKey()) {
+            context.requireKeyOrThrow(op.feeScheduleKey(), INVALID_FEE_SCHEDULE_KEY);
+        }
     }
 
     private boolean onlyExtendsExpiry(@NonNull final ConsensusUpdateTopicTransactionBody op) {
@@ -204,7 +210,9 @@ public class ConsensusUpdateTopicHandler implements TransactionHandler {
             @NonNull final HandleContext handleContext,
             @NonNull final ConsensusUpdateTopicTransactionBody op,
             @NonNull final Topic.Builder builder,
+            // TODO: if all the TODO fields below are deleted - delete the topic from here and pass expiryMeta
             @NonNull final Topic topic) {
+
         if (op.hasAdminKey()) {
             var key = op.adminKey();
             // Empty key list is allowed and is used for immutable entities (e.g. system accounts)
@@ -214,7 +222,7 @@ public class ConsensusUpdateTopicHandler implements TransactionHandler {
                 builder.adminKey(key);
             }
         } else {
-            builder.adminKey(topic.adminKey());
+            builder.adminKey(topic.adminKey()); // TODO: delete?
         }
         if (op.hasSubmitKey()) {
             final var newSubmitKey = op.submitKeyOrThrow();
@@ -224,12 +232,12 @@ public class ConsensusUpdateTopicHandler implements TransactionHandler {
                 builder.submitKey(newSubmitKey);
             }
         } else {
-            builder.submitKey(topic.submitKey());
+            builder.submitKey(topic.submitKey()); // TODO: delete?
         }
         if (op.hasMemo()) {
             builder.memo(op.memo());
         } else {
-            builder.memo(topic.memo());
+            builder.memo(topic.memo()); // TODO: delete?
         }
         final var resolvedExpiryMeta = resolvedUpdateMetaFrom(handleContext.expiryValidator(), op, topic);
         builder.expirationSecond(resolvedExpiryMeta.expiry());
@@ -238,6 +246,15 @@ public class ConsensusUpdateTopicHandler implements TransactionHandler {
             builder.autoRenewAccountId((AccountID) null);
         } else {
             builder.autoRenewAccountId(resolvedExpiryMeta.autoRenewAccountId());
+        }
+        if (op.hasFeeScheduleKey()) {
+            builder.feeScheduleKey(op.feeScheduleKey());
+        }
+        if (op.hasFeeExemptKeyList() && !op.feeExemptKeyList().keys().isEmpty()) {
+            builder.feeExemptKeyList(op.feeExemptKeyList().keys());
+        }
+        if (op.hasCustomFees()) {
+            builder.customFees(op.customFees().fees());
         }
     }
 
@@ -347,6 +364,7 @@ public class ConsensusUpdateTopicHandler implements TransactionHandler {
                 op.feeExemptKeyList() != null
                         && op.feeExemptKeyList().keys().size() <= topicConfig.maxEntriesForFeeExemptKeyList(),
                 MAX_ENTRIES_FOR_FEKL_EXCEEDED);
+        // If the fee exempt key list is set we should always have custom fees
         validateTrue(op.customFees() != null && !op.customFees().fees().isEmpty(), MISSING_CUSTOM_FEES);
         op.feeExemptKeyList().keys().forEach(key -> attributeValidator.validateKey(key, INVALID_KEY_IN_FEKL));
     }
@@ -360,9 +378,9 @@ public class ConsensusUpdateTopicHandler implements TransactionHandler {
         final var tokenRelStore = handleContext.storeFactory().readableStore(ReadableTokenRelationStore.class);
 
         validateTrue(
-                op.customFees() != null && op.customFees().fees().size() <= topicConfig.maxCustoFeeEntriesForTopics(),
+                op.customFees() != null && op.customFees().fees().size() <= topicConfig.maxCustomFeeEntriesForTopics(),
                 CUSTOM_FEES_LIST_TOO_LONG);
-        customFeesValidator.validateForCreation(
+        customFeesValidator.validate(
                 accountStore, tokenRelStore, tokenStore, op.customFees().fees(), handleContext.expiryValidator());
     }
 

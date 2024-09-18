@@ -59,7 +59,7 @@ public class ConsensusCustomFeesValidator {
      * @param customFees         The custom fees to validate.
      * @param expiryValidator    The expiry validator to use (for fee collector accounts)
      */
-    public void validateForCreation(
+    public void validate(
             @NonNull final ReadableAccountStore accountStore,
             @NonNull final ReadableTokenRelationStore tokenRelationStore,
             @NonNull final ReadableTokenStore tokenStore,
@@ -81,11 +81,11 @@ public class ConsensusCustomFeesValidator {
 
             final var isSpecified = fee.hasFixedFee();
             validateTrue(isSpecified, CUSTOM_FEE_NOT_FULLY_SPECIFIED);
-            validateFixedFeeForCreation(fee, tokenRelationStore, tokenStore);
+            validateFixedFee(fee, tokenRelationStore, tokenStore);
         }
     }
 
-    private void validateFixedFeeForCreation(
+    private void validateFixedFee(
             @NonNull final ConsensusCustomFee fee,
             @NonNull final ReadableTokenRelationStore tokenRelationStore,
             @NonNull final ReadableTokenStore tokenStore) {
@@ -113,11 +113,11 @@ public class ConsensusCustomFeesValidator {
     private void validateExplicitTokenDenomination(
             @NonNull final AccountID feeCollectorNum,
             @NonNull final TokenID tokenNum,
-            @NonNull final long feeAmount,
+            final long feeAmount,
             @NonNull final ReadableTokenRelationStore tokenRelationStore,
             @NonNull final ReadableTokenStore tokenStore) {
         final var denomToken = getIfUsable(tokenNum, tokenStore, REQUIRE_NOT_PAUSED, INVALID_TOKEN_ID_IN_CUSTOM_FEES);
-        validateTrue(feeAmount >= denomToken.maxSupply(), AMOUNT_EXCEEDS_TOKEN_MAX_SUPPLY);
+        validateTrue(feeAmount <= denomToken.maxSupply(), AMOUNT_EXCEEDS_TOKEN_MAX_SUPPLY);
         validateTrue(isFungibleCommon(denomToken.tokenType()), CUSTOM_FEE_DENOMINATION_MUST_BE_FUNGIBLE_COMMON);
         validateTrue(tokenRelationStore.get(feeCollectorNum, tokenNum) != null, TOKEN_NOT_ASSOCIATED_TO_FEE_COLLECTOR);
     }
