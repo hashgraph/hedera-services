@@ -16,13 +16,34 @@
 
 package com.hedera.node.app.service.token.impl.handlers.staking;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
+import static com.hedera.node.app.service.token.impl.handlers.staking.EndOfStakingPeriodUtils.copyBuilderFrom;
+import static com.hedera.node.app.service.token.impl.handlers.staking.EndOfStakingPeriodUtils.fromStakingInfo;
+import static com.hedera.node.app.service.token.impl.handlers.staking.EndOfStakingPeriodUtils.lastInstantOfPreviousPeriodFor;
+import static com.hedera.node.app.service.token.impl.handlers.staking.EndOfStakingPeriodUtils.newNodeStakeUpdateBuilder;
 import static com.hedera.node.app.service.token.impl.handlers.staking.StakingUtilities.roundedToHbar;
 import static com.hedera.node.app.service.token.impl.handlers.staking.StakingUtilities.totalStake;
+import static com.hedera.node.app.spi.workflows.record.StreamBuilder.transactionWith;
+import static java.util.Collections.nCopies;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.state.token.Account;
+import com.hedera.hapi.node.state.token.NetworkStakingRewards;
+import com.hedera.hapi.node.state.token.StakingNodeInfo;
+import com.hedera.hapi.node.transaction.NodeStake;
+import com.hedera.node.app.service.token.impl.WritableNetworkStakingRewardsStore;
 import com.hedera.node.app.service.token.impl.WritableStakingInfoStore;
+import com.hedera.node.app.service.token.records.NodeStakeUpdateStreamBuilder;
+import com.hedera.node.app.service.token.records.TokenContext;
+import com.hedera.node.app.spi.workflows.record.StreamBuilder;
+import com.hedera.node.config.data.LedgerConfig;
+import com.hedera.node.config.data.StakingConfig;
+import com.swirlds.config.api.Configuration;
+import com.swirlds.state.spi.info.NetworkInfo;
+import com.swirlds.state.spi.info.NodeInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.ArrayList;
+import java.util.List;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;
@@ -34,6 +55,8 @@ import org.apache.logging.log4j.Logger;
 @Singleton
 public class StakeInfoHelper {
     private static final Logger log = LogManager.getLogger(StakeInfoHelper.class);
+
+    private static final String POST_UPGRADE_MEMO = "Post upgrade stake adjustment record";
 
     /**
      * Default constructor for injection.
@@ -78,6 +101,7 @@ public class StakeInfoHelper {
     /**
      * Awards the stake to the node's stakeToReward or stakeToNotReward depending on the account's decline reward.
      * If declineReward is true, the stake is awarded to stakeToNotReward, otherwise it is awarded to stakeToReward.
+     *
      * @param nodeId the node's numeric ID
      * @param account the account stake to be awarded to the node
      * @param stakingInfoStore the store for the staking info
@@ -113,6 +137,7 @@ public class StakeInfoHelper {
      * Withdraws the stake from the node's stakeToReward or stakeToNotReward depending on the account's decline reward.
      * If declineReward is true, the stake is withdrawn from stakeToNotReward, otherwise it is withdrawn from
      * stakeToReward.
+     *
      * @param nodeId the node's numeric ID
      * @param account the account 's stake to be withdrawn from node
      * @param stakingInfoStore the store for the staking info
@@ -129,12 +154,12 @@ public class StakeInfoHelper {
         final var isDeclineReward = account.declineReward();
 
         final var stakingInfo = stakingInfoStore.get(nodeId);
-        final var copy = stakingInfo.copyBuilder();
+        final var copy = requireNonNull(stakingInfo).copyBuilder();
         if (isDeclineReward) {
             final var stakedToNotReward = stakingInfo.stakeToNotReward() - stakeToWithdraw;
             if (stakedToNotReward < 0) {
                 log.warn(
-                        "Asked to withdraw {} more stake for node{} (now {}), but only {} was staked",
+                        "Asked to withdraw {} more unrewarded stake for node{} (now {}), but only {} was staked to not reward",
                         stakeToWithdraw,
                         nodeId,
                         stakedToNotReward,
@@ -145,7 +170,7 @@ public class StakeInfoHelper {
             final var stakeToReward = stakingInfo.stakeToReward() - stakeToWithdraw;
             if (stakeToReward < 0) {
                 log.warn(
-                        "Asked to withdraw {} more stake for node{} (now {}), but only {} was staked",
+                        "Asked to withdraw {} more rewarded stake for node{} (now {}), but only {} was staked to reward",
                         stakeToWithdraw,
                         nodeId,
                         stakeToReward,
@@ -154,5 +179,108 @@ public class StakeInfoHelper {
             copy.stakeToReward(Math.max(0, stakeToReward));
         }
         stakingInfoStore.put(nodeId, copy.build());
+    }
+
+    /**
+     * Adjusts the stakes of the nodes after an upgrade based on the given {@link NodeInfo} list from the current
+     * address book and the given {@link Configuration}, and returns the synthetic {@link StreamBuilder}
+     * from the given context that should externalize these changes.
+     * <p>
+     * Also clears any pending rewards from the {@link NetworkStakingRewards} singleton for nodes that are no
+     * longer in the address book.
+     *
+     * @param context the token context
+     * @param networkInfo the list of node infos from the address book
+     * @param config the configuration for the node
+     * @param infoStore the writable store for the staking info
+     * @param rewardsStore the store for the staking rewards
+     */
+    public StreamBuilder adjustPostUpgradeStakes(
+            @NonNull final TokenContext context,
+            @NonNull final NetworkInfo networkInfo,
+            @NonNull final Configuration config,
+            @NonNull final WritableStakingInfoStore infoStore,
+            @NonNull final WritableNetworkStakingRewardsStore rewardsStore) {
+        requireNonNull(infoStore);
+        requireNonNull(networkInfo);
+        requireNonNull(config);
+        requireNonNull(rewardsStore);
+        requireNonNull(context);
+        final var preUpgradeNodeIds = infoStore.getAll();
+        preUpgradeNodeIds.stream().sorted().forEach(nodeId -> {
+            final var stakingInfo = requireNonNull(infoStore.getForModify(nodeId));
+            if (!networkInfo.containsNode(nodeId) && !stakingInfo.deleted()) {
+                infoStore.put(
+                        nodeId,
+                        stakingInfo.copyBuilder().weight(0).deleted(true).build());
+                log.info("Marked node{} as deleted since it has been removed from the address book", nodeId);
+                // None of this node's rewards can ever be claimed now, so clear them from pending
+                final var rewards = copyBuilderFrom(rewardsStore)
+                        .pendingRewards(rewardsStore.pendingRewards() - stakingInfo.pendingRewards())
+                        .build();
+                rewardsStore.put(rewards);
+            }
+        });
+        // Validate if any new nodes are added in addressBook and not in staking info.
+        // If so, add them to staking info/ with weight 0. Also update maxStake and
+        // minStake for the new nodes.
+        completeUpdateFromNewAddressBook(infoStore, networkInfo.addressBook(), config);
+
+        final var postUpgradeNodeIds = infoStore.getAll();
+        final var nodeStakes = new ArrayList<NodeStake>();
+        postUpgradeNodeIds.stream().sorted().forEach(nodeId -> {
+            final var stakingInfo = requireNonNull(infoStore.getForModify(nodeId));
+            final var history = stakingInfo.rewardSumHistory();
+            final var rewardRate = stakingInfo.deleted() ? 0 : history.getFirst() - history.get(1);
+            nodeStakes.add(fromStakingInfo(rewardRate, stakingInfo));
+        });
+        final var stakingConfig = config.getConfigData(StakingConfig.class);
+        final var syntheticNodeStakeUpdateTxn = newNodeStakeUpdateBuilder(
+                lastInstantOfPreviousPeriodFor(context.consensusTime()),
+                nodeStakes,
+                stakingConfig,
+                rewardsStore.totalStakeRewardStart(),
+                0,
+                rewardsStore.pendingRewards(),
+                0,
+                stakingConfig.rewardBalanceThreshold(),
+                stakingConfig.maxStakeRewarded(),
+                POST_UPGRADE_MEMO);
+        log.info("Exporting:\n{}", nodeStakes);
+        return context.addPrecedingChildRecordBuilder(NodeStakeUpdateStreamBuilder.class)
+                .transaction(transactionWith(syntheticNodeStakeUpdateTxn.build()))
+                .memo(POST_UPGRADE_MEMO)
+                .status(SUCCESS);
+    }
+
+    private void completeUpdateFromNewAddressBook(
+            @NonNull final WritableStakingInfoStore store,
+            @NonNull final List<NodeInfo> nodeInfos,
+            @NonNull final Configuration config) {
+        final var numberOfNodesInAddressBook = nodeInfos.size();
+        final long maxStakePerNode =
+                config.getConfigData(LedgerConfig.class).totalTinyBarFloat() / numberOfNodesInAddressBook;
+        final var numRewardHistoryStoredPeriods =
+                config.getConfigData(StakingConfig.class).rewardHistoryNumStoredPeriods();
+        for (final var nodeId : nodeInfos) {
+            final var stakingInfo = store.get(nodeId.nodeId());
+            if (stakingInfo != null) {
+                if (stakingInfo.maxStake() != maxStakePerNode) {
+                    store.put(
+                            nodeId.nodeId(),
+                            stakingInfo.copyBuilder().maxStake(maxStakePerNode).build());
+                }
+            } else {
+                final var newNodeStakingInfo = StakingNodeInfo.newBuilder()
+                        .nodeNumber(nodeId.nodeId())
+                        .maxStake(maxStakePerNode)
+                        .minStake(0L)
+                        .rewardSumHistory(
+                                nCopies(numRewardHistoryStoredPeriods + 1, 0L).toArray(Long[]::new))
+                        .weight(0)
+                        .build();
+                store.put(nodeId.nodeId(), newNodeStakingInfo);
+            }
+        }
     }
 }

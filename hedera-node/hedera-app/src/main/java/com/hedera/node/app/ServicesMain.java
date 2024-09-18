@@ -224,7 +224,7 @@ public class ServicesMain implements SwirldMain {
                 recycleBin,
                 merkleCryptography);
         // Create initial state for the platform
-        final var initialState = getInitialState(
+        final var reservedState = getInitialState(
                 platformContext,
                 version,
                 hedera::newMerkleStateRoot,
@@ -233,6 +233,8 @@ public class ServicesMain implements SwirldMain {
                 Hedera.SWIRLD_NAME,
                 selfId,
                 bootstrapAddressBook);
+        final var initialState = reservedState.state();
+        final var stateHash = reservedState.hash();
 
         // Initialize the address book and set on platform builder
         final var addressBook =
@@ -247,6 +249,7 @@ public class ServicesMain implements SwirldMain {
                 .withRoster(createRoster(addressBook))
                 .withKeysAndCerts(keysAndCerts);
 
+        hedera.setInitialStateHash(stateHash);
         // IMPORTANT: A surface-level reading of this method will undersell the centrality
         // of the Hedera instance. It is actually omnipresent throughout both the startup
         // and runtime phases of the application.

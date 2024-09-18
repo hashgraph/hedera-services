@@ -14,8 +14,6 @@
  * limitations under the License.
  */
 
-import com.google.protobuf.gradle.ProtobufExtract
-
 plugins {
     id("com.hedera.gradle.application")
     id("com.hedera.gradle.feature.test-timing-sensitive")
@@ -28,7 +26,7 @@ tasks.withType<JavaCompile>().configureEach {
     options.compilerArgs.add("-Xlint:-exports,-static,-cast")
 }
 
-application.mainClass.set("com.swirlds.demo.platform.PlatformTestingToolMain")
+application.mainClass = "com.swirlds.demo.platform.PlatformTestingToolMain"
 
 testModuleInfo {
     requires("org.apache.logging.log4j.core")
@@ -51,17 +49,15 @@ timingSensitiveModuleInfo {
     requires("org.mockito")
 }
 
-protobuf { protoc { artifact = "com.google.protobuf:protoc:3.21.5" } }
+protobuf { protoc { artifact = "com.google.protobuf:protoc" } }
 
-configurations {
-    // Give proto compile access to the dependency versions
-    compileProtoPath { extendsFrom(configurations.internal.get()) }
-    testCompileProtoPath { extendsFrom(configurations.internal.get()) }
-    timingSensitiveCompileProtoPath { extendsFrom(configurations.internal.get()) }
-}
-
-tasks.withType<ProtobufExtract>().configureEach {
-    if (name == "extractIncludeProto") {
-        enabled = false
+configurations.configureEach {
+    if (name.startsWith("protobufToolsLocator") || name.endsWith("ProtoPath")) {
+        attributes { attribute(Usage.USAGE_ATTRIBUTE, objects.named(Usage.JAVA_API)) }
+        exclude(group = project.group.toString(), module = project.name)
+        withDependencies {
+            isTransitive = true
+            extendsFrom(configurations["internal"])
+        }
     }
 }
