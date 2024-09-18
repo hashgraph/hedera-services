@@ -20,6 +20,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.nodeDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.nodeUpdate;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingTwo;
 import static com.hedera.services.bdd.suites.crypto.CryptoCreateSuite.ED_25519_KEY;
 import static com.hedera.services.bdd.suites.freeze.CommonUpgradeResources.initializeSettings;
 import static com.hedera.services.bdd.suites.hip869.NodeCreateTest.GOSSIP_ENDPOINTS_IPS;
@@ -51,12 +52,13 @@ public class NodeOpsForUpgrade extends HapiSuite {
         }
         return defaultHapiSpec("NodeOpsForUpgrade")
                 .given(initializeSettings())
-                .when(overriding("nodes.enableDAB", "true"),
+                .when(overridingTwo("nodes.enableDAB", "true",
+                                "nodes.updateAccountIdAllowed", "true"),
                         newKeyNamed(ED_25519_KEY).shape(KeyShape.ED25519),
-                        nodeDelete("2").payingWith(GENESIS).signedBy(GENESIS),
+//                        nodeDelete("2").payingWith(GENESIS).signedBy(GENESIS),
                         nodeUpdate("0")
                                 .description("UpdatedNode0")
-                                .gossipEndpoint(toPbj(UPDATE_GOSSIP_ENDPOINTS_IPS))
+                                .accountId("0.0.100")
                                 .payingWith(GENESIS)
                                 .signedBy(GENESIS)
 //                        nodeCreate("node5")
