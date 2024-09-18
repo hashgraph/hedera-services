@@ -72,11 +72,6 @@ public class ReadableRosterStoreImpl implements ReadableRosterStore {
         return rosterMap.get(ProtoBytes.newBuilder().value(candidateRosterHash).build());
     }
 
-    @Override
-    public void setActiveRoster(@NonNull final Roster activeRoster, final long round) {
-        throw new MutabilityException(READ_ONLY);
-    }
-
     /**
      * Gets the active roster.
      * Returns the active roster iff:

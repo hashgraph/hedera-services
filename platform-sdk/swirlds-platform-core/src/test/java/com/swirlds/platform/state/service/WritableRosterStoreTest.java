@@ -76,34 +76,8 @@ class WritableRosterStoreTest {
     }
 
     @Test
-    void testBothActiveAndCandidateRosterWithValidInputs() {
-        // two rosters with separate hashes for test
-        final Roster roster1 = createValidRoster(2);
-        final Roster roster2 = createValidRoster(3);
-
-        writableRosterStore.setCandidateRoster(roster1);
-        writableRosterStore.setActiveRoster(roster2, 1L);
-
-        assertEquals(writableRosterStore.getCandidateRoster(), roster1);
-        assertEquals(writableRosterStore.getActiveRoster(), roster2);
-    }
-
-    @Test
     void testConstructorWithNullStates() {
         assertThrows(NullPointerException.class, () -> new WritableRosterStore(null));
-    }
-
-    @Test
-    void testSetActiveRosterWhenRosterIsNull() {
-        assertThrows(NullPointerException.class, () -> writableRosterStore.setActiveRoster(null, 1L));
-    }
-
-    @Test
-    void testSetActiveRosterWithValidInputs() {
-        final Roster roster = createValidRoster(3);
-
-        writableRosterStore.setActiveRoster(roster, 1L);
-        assertEquals(writableRosterStore.getActiveRoster(), roster);
     }
 
     @Test

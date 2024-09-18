@@ -17,7 +17,6 @@
 package com.swirlds.platform.state.service;
 
 import com.hedera.hapi.node.state.roster.Roster;
-import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 
 /**
@@ -32,14 +31,6 @@ public interface ReadableRosterStore {
      */
     @Nullable
     Roster getCandidateRoster();
-
-    /**
-     * Set the active roster.
-     *
-     * @param activeRoster an active roster to set
-     * @param round        the round in which this roster became active
-     */
-    void setActiveRoster(@NonNull final Roster activeRoster, final long round);
 
     /**
      * Get the active roster.

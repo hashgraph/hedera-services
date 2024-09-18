@@ -68,10 +68,12 @@ public class WritableRosterStore extends ReadableRosterStoreImpl {
     }
 
     /**
-     * {@inheritDoc}
+     * Stores this roster as the active roster.
+     *
+     * @param roster        a roster to set as active
+     * @param round        the round in which this roster became active
      */
-    @Override
-    public void setActiveRoster(@NonNull final Roster roster, final long round) {
+    private void storeAsActive(@NonNull final Roster roster, final long round) {
         Objects.requireNonNull(roster);
         RosterValidator.validate(roster);
 
@@ -126,7 +128,7 @@ public class WritableRosterStore extends ReadableRosterStoreImpl {
         }
         RosterValidator.validate(candidateRoster);
 
-        setActiveRoster(candidateRoster, roundNumber);
+        storeAsActive(candidateRoster, roundNumber);
         removeCandidateRoster();
     }
 
