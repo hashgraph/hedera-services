@@ -35,7 +35,6 @@ import com.hedera.hapi.platform.event.EventTransaction;
 import com.hedera.hapi.platform.event.EventTransaction.TransactionOneOfType;
 import com.hedera.hapi.platform.event.GossipEvent;
 import com.hedera.pbj.runtime.OneOf;
-import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.base.test.fixtures.time.FakeTime;
 import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
@@ -159,7 +158,7 @@ class InternalEventValidatorTests {
 
     @Test
     @DisplayName("An event with a byte field length that is invalid")
-    void byteFieldLength(){
+    void byteFieldLength() {
         final PlatformEvent platformEvent = Mockito.mock(PlatformEvent.class);
         final Randotron r = Randotron.create();
         final GossipEvent validEvent = new TestingEventBuilder(r)
@@ -172,7 +171,7 @@ class InternalEventValidatorTests {
 
         final GossipEvent shortSignature = GossipEvent.newBuilder()
                 .eventCore(validEvent.eventCore())
-                .signature(validEvent.signature().getBytes(1, SignatureType.RSA.signatureLength()-2))
+                .signature(validEvent.signature().getBytes(1, SignatureType.RSA.signatureLength() - 2))
                 .eventTransaction(validEvent.eventTransaction())
                 .build();
         when(platformEvent.getGossipEvent()).thenReturn(shortSignature);
@@ -184,14 +183,14 @@ class InternalEventValidatorTests {
                 .eventCore(EventCore.newBuilder()
                         .timeCreated(validEvent.eventCore().timeCreated())
                         .version(validEvent.eventCore().version())
-                        .parents(
-                                EventDescriptor
-                                        .newBuilder()
-                                        .hash(validEvent.eventCore().parents().getFirst().hash().getBytes(
-                                                1, DigestType.SHA_384.digestLength()-2
-                                        ))
-                                        .build()
-                        )
+                        .parents(EventDescriptor.newBuilder()
+                                .hash(validEvent
+                                        .eventCore()
+                                        .parents()
+                                        .getFirst()
+                                        .hash()
+                                        .getBytes(1, DigestType.SHA_384.digestLength() - 2))
+                                .build())
                         .build())
                 .signature(validEvent.signature())
                 .eventTransaction(validEvent.eventTransaction())
@@ -200,7 +199,6 @@ class InternalEventValidatorTests {
         assertNull(multinodeValidator.validateEvent(platformEvent));
         assertNull(singleNodeValidator.validateEvent(platformEvent));
         assertEquals(4, exitedIntakePipelineCount.get());
-
     }
 
     @Test
