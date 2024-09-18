@@ -161,4 +161,14 @@ public class AddressBookUtils {
         }
         return builder.build();
     }
+
+    /**
+     * Returns Address of the node id from the given address book.
+     *
+     * @param addressBook the address book
+     * @return the stream of node ids
+     */
+    public static Address nodeAddressFrom(AddressBook addressBook, long nodeId) {
+        return addressBook.getAddress(new NodeId(nodeId));
+    }
 }

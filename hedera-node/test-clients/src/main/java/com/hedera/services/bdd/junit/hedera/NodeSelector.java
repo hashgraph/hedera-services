@@ -79,16 +79,20 @@ public interface NodeSelector extends Predicate<HederaNode> {
     }
 
     /** Gets a {@link NodeSelector} that selects nodes by nodeId in a case-insensitive way */
-    static NodeSelector exceptNodeId(final long nodeId) {
+    static NodeSelector exceptNodeId(final long... nodeIds) {
         return new NodeSelector() {
             @Override
             public boolean test(@NonNull final HederaNode node) {
-                return node.getNodeId() != nodeId;
+                boolean result = true;
+                for (var nodeId : nodeIds) {
+                    result &= node.getNodeId() != nodeId;
+                }
+                return result;
             }
 
             @Override
             public String toString() {
-                return "by nodeId '" + nodeId + "'";
+                return "by nodeIds '" + nodeIds + "'";
             }
         };
     }

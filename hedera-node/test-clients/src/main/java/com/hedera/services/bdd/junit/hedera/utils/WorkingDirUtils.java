@@ -40,8 +40,11 @@ import java.util.List;
 import java.util.Properties;
 import java.util.Random;
 import java.util.stream.Stream;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 public class WorkingDirUtils {
+    private static final Logger log = LogManager.getLogger(WorkingDirUtils.class);
     private static final Path BASE_WORKING_LOC = Path.of("./build");
     private static final String DEFAULT_SCOPE = "hapi";
     private static final String KEYS_FOLDER = "keys";

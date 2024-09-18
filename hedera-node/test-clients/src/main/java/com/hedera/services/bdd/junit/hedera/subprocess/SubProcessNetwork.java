@@ -36,6 +36,7 @@ import com.hedera.services.bdd.junit.extensions.NetworkTargetingExtension;
 import com.hedera.services.bdd.junit.hedera.AbstractGrpcNetwork;
 import com.hedera.services.bdd.junit.hedera.HederaNetwork;
 import com.hedera.services.bdd.junit.hedera.HederaNode;
+import com.hedera.services.bdd.junit.hedera.NodeMetadata;
 import com.hedera.services.bdd.junit.hedera.NodeSelector;
 import com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils;
 import com.hedera.services.bdd.spec.HapiPropertySource;
@@ -231,53 +232,106 @@ public class SubProcessNetwork extends AbstractGrpcNetwork implements HederaNetw
      *
      * @param selector the selector for the node to remove
      * @param upgradeConfigTxt the upgrade address book source
+     * @param filter NodeSelector to check
+     * @param nodeIdsInitSelector the select for node to init
      */
-    public void removeNode(@NonNull final NodeSelector selector, @NonNull final UpgradeConfigTxt upgradeConfigTxt) {
+    public void removeNode(
+            @NonNull final NodeSelector selector,
+            @NonNull final UpgradeConfigTxt upgradeConfigTxt,
+            @NonNull final Predicate<HederaNode> filter,
+            final NodeSelector nodeIdsInitSelector) {
         requireNonNull(selector);
         requireNonNull(upgradeConfigTxt);
         final var node = getRequiredNode(selector);
         node.stopFuture();
         nodes.remove(node);
+        log.info("removed HederaNode id {}", node.getNodeId());
         configTxt = switch (upgradeConfigTxt) {
             case IMPLIED_BY_NETWORK_NODES -> configTxtForLocal(networkName, nodes, nextGossipPort, nextGossipTlsPort);
-            case DAB_GENERATED -> consensusDabConfigTxt();};
+            case DAB_GENERATED -> validateDabConfigTxt(filter);};
+        if (nodeIdsInitSelector != null) {
+            var nodeInit = getRequiredNode(nodeIdsInitSelector);
+            log.info("The init node is {}", nodeInit.getNodeId());
+            nodeInit.initWorkingDir(configTxt);
+        }
         refreshNodeConfigTxt();
     }
 
     /**
-     * Adds a node with the given id to the network and updates the <i>config.txt</i> file for the remaining nodes
+     * Adds a set of nodes with the given ids to the network and updates the <i>config.txt</i> file for the remaining nodes
      * from the given source.
      *
-     * @param nodeId the id of the node to add
+     * @param nodeIds the set of ids of the nodes to add
      * @param upgradeConfigTxt the upgrade address book source
+     * @param init to call initWorkingDir or not
      */
-    public void addNode(final long nodeId, @NonNull final UpgradeConfigTxt upgradeConfigTxt) {
+    public void addNode(final Set<Long> nodeIds, @NonNull final UpgradeConfigTxt upgradeConfigTxt, final boolean init) {
         requireNonNull(upgradeConfigTxt);
-        final var i = Collections.binarySearch(
-                nodes.stream().map(HederaNode::getNodeId).toList(), nodeId);
-        if (i >= 0) {
-            throw new IllegalArgumentException("Node with id " + nodeId + " already exists in network");
+        final var exist = nodes.stream().map(HederaNode::getNodeId).anyMatch(nodeIds::contains);
+        if (exist) {
+            throw new IllegalArgumentException("Node with ids " + nodeIds + " already exists in network");
         }
-        this.maxNodeId = Math.max(maxNodeId, nodeId);
-        final var insertionPoint = -i - 1;
-        nodes.add(
-                insertionPoint,
-                new SubProcessNode(
-                        classicMetadataFor(
-                                (int) nodeId,
-                                name(),
-                                SUBPROCESS_HOST,
-                                SHARED_NETWORK_NAME.equals(name()) ? null : name(),
-                                nextGrpcPort + (int) nodeId * 2,
-                                nextGossipPort + (int) nodeId * 2,
-                                nextGossipTlsPort + (int) nodeId * 2,
-                                nextPrometheusPort + (int) nodeId),
-                        GRPC_PINGER,
-                        PROMETHEUS_CLIENT));
+
+        this.maxNodeId =
+                Math.max(maxNodeId, nodeIds.stream().max(Long::compareTo).orElse(maxNodeId));
+
         configTxt = switch (upgradeConfigTxt) {
             case IMPLIED_BY_NETWORK_NODES -> configTxtForLocal(networkName, nodes, nextGossipPort, nextGossipTlsPort);
-            case DAB_GENERATED -> consensusDabConfigTxt(node -> node.getNodeId() != nodeId);};
-        ((SubProcessNode) nodes.get(insertionPoint)).initWorkingDir(configTxt);
+            case DAB_GENERATED -> validateDabConfigTxt();};
+        for (long nodeId : nodeIds) {
+            var node = new SubProcessNode(
+                    classicMetadataFor(
+                            (int) nodeId,
+                            name(),
+                            SUBPROCESS_HOST,
+                            SHARED_NETWORK_NAME.equals(name()) ? null : name(),
+                            nextGrpcPort + (int) nodeId * 2,
+                            nextGossipPort + (int) nodeId * 2,
+                            nextGossipTlsPort + (int) nodeId * 2,
+                            nextPrometheusPort + (int) nodeId),
+                    GRPC_PINGER,
+                    PROMETHEUS_CLIENT);
+            nodes.add(node);
+            if (init) {
+                node.initWorkingDir(configTxt);
+            }
+            log.info("added HederaNode id {}", nodeId);
+        }
+
+        refreshNodeConfigTxt();
+    }
+
+    /**
+     * Updates the matching node from the network and updates the <i>config.txt</i> file for the remaining nodes
+     * from the given source.
+     *
+     * @param selector the selector for the node to remove
+     * @param upgradeConfigTxt the upgrade address book source
+     * @param nodeMetadata the NodeMetadat to update
+     * @param init to call initWorkingDir or not
+     * @param filter NodeSelector to check
+     */
+    public void updateNode(
+            @NonNull final NodeSelector selector,
+            @NonNull final UpgradeConfigTxt upgradeConfigTxt,
+            @NonNull final NodeMetadata nodeMetadata,
+            final boolean init,
+            @NonNull final Predicate<HederaNode> filter) {
+        requireNonNull(selector);
+        requireNonNull(upgradeConfigTxt);
+        requireNonNull(nodeMetadata);
+        var node = getRequiredNode(selector);
+        node.stopFuture();
+        nodes.remove(node);
+        node = new SubProcessNode(nodeMetadata, GRPC_PINGER, PROMETHEUS_CLIENT);
+        nodes.add(node);
+        log.info("updated HederaNode id {}", node.getNodeId());
+        configTxt = switch (upgradeConfigTxt) {
+            case IMPLIED_BY_NETWORK_NODES -> configTxtForLocal(networkName, nodes, nextGossipPort, nextGossipTlsPort);
+            case DAB_GENERATED -> validateDabConfigTxt(filter);};
+        if (init) {
+            node.initWorkingDir(configTxt);
+        }
         refreshNodeConfigTxt();
     }
 
@@ -354,17 +408,18 @@ public class SubProcessNetwork extends AbstractGrpcNetwork implements HederaNetw
         });
     }
 
-    private String consensusDabConfigTxt() {
-        return consensusDabConfigTxt(ignore -> true);
+    private String validateDabConfigTxt() {
+        return validateDabConfigTxt(ignore -> true);
     }
 
-    private String consensusDabConfigTxt(@NonNull final Predicate<HederaNode> filter) {
+    private String validateDabConfigTxt(@NonNull final Predicate<HederaNode> filter) {
         final Set<String> configTxts = nodes.stream()
                 .filter(filter)
                 .map(node -> rethrowIO(() -> Files.readString(
                         node.getExternalPath(UPGRADE_ARTIFACTS_DIR).resolve(CONFIG_TXT))))
                 .collect(toSet());
         if (configTxts.size() != 1) {
+            log.info("configTxts is {}", configTxts);
             throw new IllegalStateException("DAB generated inconsistent config.txt files in network");
         }
         return configTxts.iterator().next();
