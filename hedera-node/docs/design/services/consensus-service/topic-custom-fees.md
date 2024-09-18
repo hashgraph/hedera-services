@@ -276,13 +276,17 @@ rpc approveAllowance (Transaction) returns (TransactionResponse);
   - Pre-handle:
     - Check for `Fee Schedule Key` signature, in case of fees updates.
   - Handle:
-    - Add validation on keys - `Fee Schedule Key` and all keys from the `Fee Exempt Key List`.
+      - Add validation on keys
+          - `Fee Schedule Key` and all keys from the `Fee Exempt Key List`.
+          - Verify that the size is no more than the config value(`maxEntriesForFeeExemptKeyList`)
     - Add validation on custom fees:
+        - Verify that the size is no more than the config(`maxCustomFeeEntriesForTopics`)
       - Check if the fee collector account is usable (not deleted/expired).
       - Check if the fee type is `fixed`.
       - If the fee has denominating token:
-        - Check if the token is usable ()
-        - Validate fee amount - TBD- MAX_FEE is not defined in the HIP, and it is used in the context of SDK only
+          - Check if the token is usable
+          - Check if the token is fungible
+          - Check if the fee amount is no more then the token's max supply
         - Check if the collector is associated with the token
     - Update the values of the new fields in the state.
 
@@ -292,11 +296,20 @@ rpc approveAllowance (Transaction) returns (TransactionResponse);
 - Update `ConsensusServiceDefinition` class to include the new RPC method definition for approve allowance.
 - Implement new `ConsensusApproveAllowanceHandler` class that should be invoked when the gRPC server handles `ConsensusApproveAllowanceTransaction` transactions. The class should be responsible for:
   - Verify that the amounts are set and positive values.
+  - Pure-checks:
+      - Validate there are no duplications in `ConsensusCryptoFeeScheduleAllowance` grouped by `owner` and `topicId`
+      - Validate there are no duplications in `ConsensusTokenFeeScheduleAllowance` grouped
+        by `tokenId`, `owner`, `topicId`
+      - Validate the `amounts` are positive
+      - Validate that the `amount` is no bigger than `amount_per_message`
   - Pre-handle:
     - The transaction must be signed by the sender.
     - TBD - more validations ?
   - Handle:
     - Any additional validation depending on config or state, i.e. semantics checks
+        - Validate that the `amount` in `ConsensusTokenFeeScheduleAllowance` is no bigger then the `maxSupply`
+        - Validate that the `amount` in `ConsensusCryptoFeeScheduleAllowance` is no bigger then HBAR.maxSupply(50m)
+        - Validate that the `topicId`s are usable(existing/not deleted/not expired)
     - Check that the sender account is a valid one. That is an existing account, and it is not deleted or expired.
     - Add approved allowance:
       - Set `ConsensusCryptoFeeScheduleAllowance` to the account.
