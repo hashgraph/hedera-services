@@ -173,12 +173,20 @@ public class DefaultInternalEventValidator implements InternalEventValidator {
     private boolean areRequiredFieldsNonNull(@NonNull final PlatformEvent event) {
         final GossipEvent gossipEvent = event.getGossipEvent();
         final EventCore eventCore = gossipEvent.eventCore();
-        if (eventCore == null
-                || eventCore.timeCreated() == null
-                || eventCore.version() == null
-                || eventCore.parents().stream().anyMatch(Objects::isNull)
-                || gossipEvent.eventTransaction().stream().anyMatch(DefaultInternalEventValidator::isTransactionNull)) {
-            nullFieldLogger.error(EXCEPTION.getMarker(), "Event has null field {}", gossipEvent);
+        String nullField = null;
+        if (eventCore == null) {
+            nullField = "eventCore";
+        } else if (eventCore.timeCreated() == null) {
+            nullField = "timeCreated";
+        } else if (eventCore.version() == null) {
+            nullField = "version";
+        } else if (eventCore.parents().stream().anyMatch(Objects::isNull)) {
+            nullField = "parent";
+        } else if (gossipEvent.eventTransaction().stream().anyMatch(DefaultInternalEventValidator::isTransactionNull)) {
+            nullField = "transaction";
+        }
+        if (nullField != null) {
+            nullFieldLogger.error(EXCEPTION.getMarker(), "Event has null field '{}' {}", nullField, gossipEvent);
             nullFieldAccumulator.update(1);
             return false;
         }
@@ -205,7 +213,7 @@ public class DefaultInternalEventValidator implements InternalEventValidator {
      */
     private boolean areByteFieldsCorrectLength(@NonNull final PlatformEvent event) {
         final GossipEvent gossipEvent = event.getGossipEvent();
-        final EventCore eventCore = event.getEventCore();
+        final EventCore eventCore = gossipEvent.eventCore();
         if (gossipEvent.signature().length() != SignatureType.RSA.signatureLength()) {
             fieldLengthLogger.error(EXCEPTION.getMarker(), "Event signature is the wrong length {}", gossipEvent);
             fieldLengthAccumulator.update(1);

@@ -30,13 +30,17 @@ import static org.mockito.Mockito.when;
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.platform.event.EventCore;
+import com.hedera.hapi.platform.event.EventDescriptor;
 import com.hedera.hapi.platform.event.EventTransaction;
 import com.hedera.hapi.platform.event.EventTransaction.TransactionOneOfType;
 import com.hedera.hapi.platform.event.GossipEvent;
 import com.hedera.pbj.runtime.OneOf;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.base.test.fixtures.time.FakeTime;
 import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
+import com.swirlds.common.crypto.DigestType;
+import com.swirlds.common.crypto.SignatureType;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
@@ -151,6 +155,52 @@ class InternalEventValidatorTests {
         assertNull(multinodeValidator.validateEvent(platformEvent));
         assertNull(singleNodeValidator.validateEvent(platformEvent));
         assertEquals(8, exitedIntakePipelineCount.get());
+    }
+
+    @Test
+    @DisplayName("An event with a byte field length that is invalid")
+    void byteFieldLength(){
+        final PlatformEvent platformEvent = Mockito.mock(PlatformEvent.class);
+        final Randotron r = Randotron.create();
+        final GossipEvent validEvent = new TestingEventBuilder(r)
+                .setSystemTransactionCount(1)
+                .setAppTransactionCount(2)
+                .setSelfParent(new TestingEventBuilder(r).build())
+                .setOtherParent(new TestingEventBuilder(r).build())
+                .build()
+                .getGossipEvent();
+
+        final GossipEvent shortSignature = GossipEvent.newBuilder()
+                .eventCore(validEvent.eventCore())
+                .signature(validEvent.signature().getBytes(1, SignatureType.RSA.signatureLength()-2))
+                .eventTransaction(validEvent.eventTransaction())
+                .build();
+        when(platformEvent.getGossipEvent()).thenReturn(shortSignature);
+        assertNull(multinodeValidator.validateEvent(platformEvent));
+        assertNull(singleNodeValidator.validateEvent(platformEvent));
+        assertEquals(2, exitedIntakePipelineCount.get());
+
+        final GossipEvent shortDescriptorHash = GossipEvent.newBuilder()
+                .eventCore(EventCore.newBuilder()
+                        .timeCreated(validEvent.eventCore().timeCreated())
+                        .version(validEvent.eventCore().version())
+                        .parents(
+                                EventDescriptor
+                                        .newBuilder()
+                                        .hash(validEvent.eventCore().parents().getFirst().hash().getBytes(
+                                                1, DigestType.SHA_384.digestLength()-2
+                                        ))
+                                        .build()
+                        )
+                        .build())
+                .signature(validEvent.signature())
+                .eventTransaction(validEvent.eventTransaction())
+                .build();
+        when(platformEvent.getGossipEvent()).thenReturn(shortDescriptorHash);
+        assertNull(multinodeValidator.validateEvent(platformEvent));
+        assertNull(singleNodeValidator.validateEvent(platformEvent));
+        assertEquals(4, exitedIntakePipelineCount.get());
+
     }
 
     @Test
