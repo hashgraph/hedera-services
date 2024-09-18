@@ -19,10 +19,10 @@ package com.hedera.node.app.blocks.impl;
 import static java.util.Objects.requireNonNull;
 
 import com.google.protobuf.InvalidProtocolBufferException;
-import com.hedera.hapi.block.PublishStreamResponseCode;
 import com.hedera.hapi.block.protoc.BlockStreamServiceGrpc;
 import com.hedera.hapi.block.protoc.PublishStreamRequest;
 import com.hedera.hapi.block.protoc.PublishStreamResponse;
+import com.hedera.hapi.block.protoc.PublishStreamResponseCode;
 import com.hedera.hapi.block.stream.protoc.BlockItem;
 import com.hedera.node.app.blocks.BlockItemWriter;
 import com.hedera.node.app.blocks.config.BlockStreamGrpcConfig;
@@ -49,6 +49,7 @@ public class GrpcBlockItemWriter implements BlockItemWriter {
 
     private final String address;
     private final int port;
+    private long blockNumber;
 
     /** The state of this writer */
     private State state;
@@ -75,36 +76,35 @@ public class GrpcBlockItemWriter implements BlockItemWriter {
         if (state != State.UNINITIALIZED) throw new IllegalStateException("GrpcBlockItemWriter initialized twice");
 
         if (blockNumber < 0) throw new IllegalArgumentException("Block number must be non-negative");
-
+        this.blockNumber = blockNumber;
         asyncStub = createBlockNodeAsyncStub();
 
-        StreamObserver<PublishStreamRequest> requestObserver =
-                asyncStub.publishBlockStream(new StreamObserver<PublishStreamResponse>() {
-                    @Override
-                    public void onNext(PublishStreamResponse value) {
-                        if (value.getStatus().equals(PublishStreamResponseCode.STREAM_ITEMS_UNKNOWN)) {
-                            closeBlock();
-                        }
-                        // Block Node build EndOfStream response in different scenarios:
-                        // https://github.com/hashgraph/hedera-block-node/blob/simulator-grpc-client2/server/src/main/java/com/hedera/block/server/producer/ProducerBlockItemObserver.java#L213-L221
-                        logger.info("PublishStreamResponse received: " + value.toString());
-                    }
+        requestObserver = asyncStub.publishBlockStream(new StreamObserver<>() {
+            @Override
+            public void onNext(PublishStreamResponse value) {
+                if (value.getStatus().equals(PublishStreamResponseCode.STREAM_ITEMS_UNKNOWN)) {
+                    closeBlock();
+                }
+                // Block Node build EndOfStream response in different scenarios:
+                // https://github.com/hashgraph/hedera-block-node/blob/simulator-grpc-client2/server/src/main/java/com/hedera/block/server/producer/ProducerBlockItemObserver.java#L213-L221
+                logger.info("PublishStreamResponse received: " + value.toString());
+            }
 
-                    @Override
-                    public void onError(Throwable t) {
-                        // TODO: What should be the approach when error occurs in the communication?
-                        // Maybe this should be considered in this case:
-                        // https://github.com/hashgraph/hedera-services/issues/15530
+            @Override
+            public void onError(Throwable t) {
+                // TODO: What should be the approach when error occurs in the communication?
+                // Maybe this should be considered in this case:
+                // https://github.com/hashgraph/hedera-services/issues/15530
 
-                        logger.error("onError method invoked with an exception: ", t);
-                    }
+                logger.error("onError method invoked with an exception: ", t);
+            }
 
-                    @Override
-                    public void onCompleted() {
-                        // TODO: Is there anything we should do?
-                        logger.info("PublishStreamResponse completed");
-                    }
-                });
+            @Override
+            public void onCompleted() {
+                // TODO: Is there anything we should do?
+                logger.info("PublishStreamResponse completed");
+            }
+        });
 
         this.state = State.OPEN;
     }
@@ -112,7 +112,8 @@ public class GrpcBlockItemWriter implements BlockItemWriter {
     @Override
     public BlockItemWriter writeItem(@NonNull Bytes serializedItem) {
         if (state != State.OPEN) {
-            throw new IllegalStateException("Cannot write to a GrpcBlockItemWriter that is not open");
+            throw new IllegalStateException(
+                    "Cannot write to a GrpcBlockItemWriter that is not open for block: " + this.blockNumber);
         }
 
         PublishStreamRequest request = PublishStreamRequest.newBuilder().build();
@@ -123,6 +124,13 @@ public class GrpcBlockItemWriter implements BlockItemWriter {
             requestObserver.onNext(request);
         } catch (InvalidProtocolBufferException e) {
             final String message = INVALID_MESSAGE.formatted("SubscribeStreamResponse", request);
+            /*final EndOfStream endOfStream =
+                    EndOfStream.newBuilder()
+                            .setStatus(PublishStreamResponseCode.STREAM_ITEMS_UNKNOWN)
+                            .build();
+            requestObserver.onNext(
+                    PublishStreamResponse.newBuilder().setStatus(endOfStream).build()
+            );*/
             logger.error(message);
             throw new RuntimeException(message, e);
         }

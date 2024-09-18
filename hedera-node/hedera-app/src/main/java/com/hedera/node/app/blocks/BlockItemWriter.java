@@ -34,6 +34,7 @@ public interface BlockItemWriter {
      * Writes a serialized item to the destination stream.
      *
      * @param serializedItem the serialized item to write
+     * @return the block item writer
      */
     BlockItemWriter writeItem(@NonNull Bytes serializedItem);
 
