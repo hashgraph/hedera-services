@@ -56,7 +56,7 @@ public class NodeOpsForUpgrade extends HapiSuite {
                                 "nodes.updateAccountIdAllowed", "true"),
                         newKeyNamed(ED_25519_KEY).shape(KeyShape.ED25519),
                         nodeDelete("2").payingWith(GENESIS).signedBy(GENESIS),
-                        nodeUpdate("0")
+                        nodeUpdate("3")
                                 .description("UpdatedNode0")
                                 .accountId("0.0.100")
                                 .payingWith(GENESIS)
