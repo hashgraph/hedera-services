@@ -53,7 +53,7 @@ public class NodeOpsForUpgrade extends HapiSuite {
                 .given(initializeSettings())
                 .when(overriding("nodes.enableDAB", "true"),
                         newKeyNamed(ED_25519_KEY).shape(KeyShape.ED25519),
-//                        nodeDelete("2").payingWith(GENESIS).signedBy(GENESIS),
+                        nodeDelete("2").payingWith(GENESIS).signedBy(GENESIS),
                         nodeUpdate("0")
                                 .description("UpdatedNode0")
                                 .gossipEndpoint(toPbj(UPDATE_GOSSIP_ENDPOINTS_IPS))
