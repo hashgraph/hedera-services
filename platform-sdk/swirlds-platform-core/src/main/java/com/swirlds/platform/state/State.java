@@ -164,14 +164,14 @@ public class State extends PartialNaryMerkleInternal implements MerkleRoot {
      * @param platformStateAccessor the platform state
      */
     @Override
-    public void updatePlatformState(@NonNull final PlatformStateAccessor platformStateAccessor) {
+    public void updatePlatformState(@NonNull final PlatformStateModifier platformStateAccessor) {
         if (platformStateAccessor instanceof PlatformState platformState) {
             setChild(ChildIndices.PLATFORM_STATE, platformState);
         } else {
             throw new UnsupportedOperationException("%s implementation of %s is not supported"
                     .formatted(
                             platformStateAccessor.getClass().getSimpleName(),
-                            PlatformStateAccessor.class.getSimpleName()));
+                            PlatformStateModifier.class.getSimpleName()));
         }
     }
 

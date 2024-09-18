@@ -390,7 +390,7 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
      * {@inheritDoc}
      */
     @Override
-    public void handleConsensusRound(@NonNull final Round round, @NonNull final PlatformStateAccessor platformState) {
+    public void handleConsensusRound(@NonNull final Round round, @NonNull final PlatformStateModifier platformState) {
         throwIfImmutable();
         lifecycles.onHandleConsensusRound(round, this);
     }
@@ -1014,7 +1014,7 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
      */
     @NonNull
     @Override
-    public PlatformStateAccessor getWritablePlatformState() {
+    public PlatformStateModifier getWritablePlatformState() {
         if (isImmutable()) {
             throw new IllegalStateException("Cannot get writable platform state when state is immutable");
         }
@@ -1022,12 +1022,20 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
     }
 
     /**
-     * Updates the platform state with the values from the provided instance of {@link PlatformStateAccessor}
+     * {@inheritDoc}
+     */
+    @Override
+    public void initPlatformState() {
+        writablePlatformStateStore();
+    }
+
+    /**
+     * Updates the platform state with the values from the provided instance of {@link PlatformStateModifier}
      *
      * @param accessor a source of values
      */
     @Override
-    public void updatePlatformState(@NonNull final PlatformStateAccessor accessor) {
+    public void updatePlatformState(@NonNull final PlatformStateModifier accessor) {
         writablePlatformStateStore().setAllFrom(accessor);
     }
 

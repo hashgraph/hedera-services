@@ -27,7 +27,7 @@ import com.hedera.hapi.platform.state.ConsensusSnapshot;
 import com.hedera.hapi.platform.state.PlatformState;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.crypto.Hash;
-import com.swirlds.platform.state.PlatformStateAccessor;
+import com.swirlds.platform.state.PlatformStateModifier;
 import com.swirlds.platform.state.service.schemas.V0540PlatformStateSchema;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.address.AddressBook;
@@ -43,7 +43,7 @@ import java.util.function.Function;
 /**
  * Extends the read-only platform state store to provide write access to the platform state.
  */
-public class WritablePlatformStateStore extends ReadablePlatformStateStore {
+public class WritablePlatformStateStore extends ReadablePlatformStateStore implements PlatformStateModifier {
     private final WritableStates writableStates;
     private final WritableSingletonState<PlatformState> state;
 
@@ -75,7 +75,7 @@ public class WritablePlatformStateStore extends ReadablePlatformStateStore {
     /**
      * Overwrite the current platform state with the provided state.
      */
-    public void setAllFrom(@NonNull final PlatformStateAccessor accessor) {
+    public void setAllFrom(@NonNull final PlatformStateModifier accessor) {
         this.update(toPbjPlatformState(accessor));
     }
 
@@ -229,7 +229,7 @@ public class WritablePlatformStateStore extends ReadablePlatformStateStore {
      * {@inheritDoc}
      */
     @Override
-    public void bulkUpdate(@NonNull final Consumer<PlatformStateAccessor> updater) {
+    public void bulkUpdate(@NonNull final Consumer<PlatformStateModifier> updater) {
         final var accumulator = new PlatformStateValueAccumulator();
         updater.accept(accumulator);
         setAllFrom(accumulator);

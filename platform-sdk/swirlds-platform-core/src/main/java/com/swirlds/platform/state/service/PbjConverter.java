@@ -29,6 +29,7 @@ import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.crypto.SerializableX509Certificate;
 import com.swirlds.platform.state.MinimumJudgeInfo;
 import com.swirlds.platform.state.PlatformStateAccessor;
+import com.swirlds.platform.state.PlatformStateModifier;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
@@ -52,7 +53,7 @@ import java.util.Optional;
  */
 public final class PbjConverter {
     /**
-     * Converts an instance of {@link PlatformStateAccessor} to PBJ representation (an instance of {@link com.hedera.hapi.platform.state.PlatformState}.)
+     * Converts an instance of {@link PlatformStateModifier} to PBJ representation (an instance of {@link com.hedera.hapi.platform.state.PlatformState}.)
      * @param accessor the source of the data
      * @return the platform state as PBJ object
      */
@@ -79,7 +80,7 @@ public final class PbjConverter {
     }
 
     /**
-     * Converts an instance of {@link PlatformStateAccessor} to PBJ representation (an instance of {@link com.hedera.hapi.platform.state.PlatformState}.)
+     * Converts an instance of {@link PlatformStateModifier} to PBJ representation (an instance of {@link com.hedera.hapi.platform.state.PlatformState}.)
      * @param accumulator the source of the data
      * @return the platform state as PBJ object
      */

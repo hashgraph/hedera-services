@@ -27,6 +27,7 @@ import com.swirlds.common.merkle.MerkleLeaf;
 import com.swirlds.common.merkle.impl.PartialMerkleLeaf;
 import com.swirlds.common.utility.NonCryptographicHashing;
 import com.swirlds.platform.state.PlatformStateAccessor;
+import com.swirlds.platform.state.PlatformStateModifier;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.Round;
@@ -249,7 +250,7 @@ public class ConsistencyTestingToolState extends PartialMerkleLeaf implements Sw
      * Writes the round and its contents to a log on disk
      */
     @Override
-    public void handleConsensusRound(final @NonNull Round round, final @NonNull PlatformStateAccessor platformState) {
+    public void handleConsensusRound(final @NonNull Round round, final @NonNull PlatformStateModifier platformState) {
         Objects.requireNonNull(round);
         Objects.requireNonNull(platformState);
 

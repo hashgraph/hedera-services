@@ -24,11 +24,7 @@ import com.swirlds.platform.system.address.AddressBook;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
-import java.util.function.Consumer;
 
-/**
- * This interface represents the platform state and provide access to the state's properties.
- */
 public interface PlatformStateAccessor {
     /**
      * The round of the genesis state.
@@ -44,13 +40,6 @@ public interface PlatformStateAccessor {
     SoftwareVersion getCreationSoftwareVersion();
 
     /**
-     * Set the software version of the application that created this state.
-     *
-     * @param creationVersion the creation version
-     */
-    void setCreationSoftwareVersion(@NonNull SoftwareVersion creationVersion);
-
-    /**
      * Get the address book.
      * @return an address book
      */
@@ -58,32 +47,11 @@ public interface PlatformStateAccessor {
     AddressBook getAddressBook();
 
     /**
-     * Set the address book.
-     *
-     * @param addressBook an address book
-     */
-    void setAddressBook(@Nullable AddressBook addressBook);
-
-    /**
      * Get the previous address book.
      * @return a previous address book
      */
     @Nullable
     AddressBook getPreviousAddressBook();
-
-    /**
-     * Set the previous address book.
-     *
-     * @param addressBook an address book
-     */
-    void setPreviousAddressBook(@Nullable AddressBook addressBook);
-
-    /**
-     * Set the round when this state was generated.
-     *
-     * @param round a round number
-     */
-    void setRound(long round);
 
     /**
      * Get the round when this state was generated.
@@ -101,13 +69,6 @@ public interface PlatformStateAccessor {
     Hash getLegacyRunningEventHash();
 
     /**
-     * Set the legacy running event hash. Used by the consensus event stream.
-     *
-     * @param legacyRunningEventHash a running hash of events
-     */
-    void setLegacyRunningEventHash(@Nullable Hash legacyRunningEventHash);
-
-    /**
      * Get the consensus timestamp for this state, defined as the timestamp of the first transaction that was applied in
      * the round that created the state.
      *
@@ -115,14 +76,6 @@ public interface PlatformStateAccessor {
      */
     @Nullable
     Instant getConsensusTimestamp();
-
-    /**
-     * Set the consensus timestamp for this state, defined as the timestamp of the first transaction that was applied in
-     * the round that created the state.
-     *
-     * @param consensusTimestamp a consensus timestamp
-     */
-    void setConsensusTimestamp(@NonNull Instant consensusTimestamp);
 
     /**
      * For the oldest non-ancient round, get the lowest ancient indicator out of all of those round's judges. This is
@@ -139,13 +92,6 @@ public interface PlatformStateAccessor {
     long getAncientThreshold();
 
     /**
-     * Sets the number of non-ancient rounds.
-     *
-     * @param roundsNonAncient the number of non-ancient rounds
-     */
-    void setRoundsNonAncient(int roundsNonAncient);
-
-    /**
      * Gets the number of non-ancient rounds.
      *
      * @return the number of non-ancient rounds
@@ -159,11 +105,6 @@ public interface PlatformStateAccessor {
     ConsensusSnapshot getSnapshot();
 
     /**
-     * @param snapshot the consensus snapshot for this round
-     */
-    void setSnapshot(@NonNull ConsensusSnapshot snapshot);
-
-    /**
      * Gets the time when the next freeze is scheduled to start. If null then there is no freeze scheduled.
      *
      * @return the time when the freeze starts
@@ -172,28 +113,12 @@ public interface PlatformStateAccessor {
     Instant getFreezeTime();
 
     /**
-     * Sets the instant after which the platform will enter FREEZING status. When consensus timestamp of a signed state
-     * is after this instant, the platform will stop creating events and accepting transactions. This is used to safely
-     * shut down the platform for maintenance.
-     *
-     * @param freezeTime an Instant in UTC
-     */
-    void setFreezeTime(@Nullable Instant freezeTime);
-
-    /**
      * Gets the last freezeTime based on which the nodes were frozen. If null then there has never been a freeze.
      *
      * @return the last freezeTime based on which the nodes were frozen
      */
     @Nullable
     Instant getLastFrozenTime();
-
-    /**
-     * Sets the last freezeTime based on which the nodes were frozen.
-     *
-     * @param lastFrozenTime the last freezeTime based on which the nodes were frozen
-     */
-    void setLastFrozenTime(@Nullable Instant lastFrozenTime);
 
     /**
      * Get the first software version where the birth round migration happened, or null if birth round migration has not
@@ -205,26 +130,11 @@ public interface PlatformStateAccessor {
     SoftwareVersion getFirstVersionInBirthRoundMode();
 
     /**
-     * Set the first software version where the birth round migration happened.
-     *
-     * @param firstVersionInBirthRoundMode the first software version where the birth round migration happened
-     */
-    @NonNull
-    void setFirstVersionInBirthRoundMode(SoftwareVersion firstVersionInBirthRoundMode);
-
-    /**
      * Get the last round before the birth round mode was enabled, or -1 if birth round mode has not yet been enabled.
      *
      * @return the last round before the birth round mode was enabled
      */
     long getLastRoundBeforeBirthRoundMode();
-
-    /**
-     * Set the last round before the birth round mode was enabled.
-     *
-     * @param lastRoundBeforeBirthRoundMode the last round before the birth round mode was enabled
-     */
-    void setLastRoundBeforeBirthRoundMode(long lastRoundBeforeBirthRoundMode);
 
     /**
      * Get the lowest judge generation before the birth round mode was enabled, or -1 if birth round mode has not yet
@@ -233,18 +143,4 @@ public interface PlatformStateAccessor {
      * @return the lowest judge generation before the birth round mode was enabled
      */
     long getLowestJudgeGenerationBeforeBirthRoundMode();
-
-    /**
-     * Set the lowest judge generation before the birth round mode was enabled.
-     *
-     * @param lowestJudgeGenerationBeforeBirthRoundMode the lowest judge generation before the birth round mode was
-     *                                                  enabled
-     */
-    void setLowestJudgeGenerationBeforeBirthRoundMode(long lowestJudgeGenerationBeforeBirthRoundMode);
-
-    /**
-     * This is a convenience method to update multiple fields in the platform state in a single operation.
-     * @param updater a consumer that updates the platform state
-     */
-    void bulkUpdate(@NonNull Consumer<PlatformStateAccessor> updater);
 }
