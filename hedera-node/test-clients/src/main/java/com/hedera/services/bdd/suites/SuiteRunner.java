@@ -41,7 +41,7 @@ import com.hedera.services.bdd.suites.perf.topic.SubmitMessageLoadTest;
 import com.hedera.services.bdd.suites.reconnect.CreateAccountsBeforeReconnect;
 import com.hedera.services.bdd.suites.reconnect.CreateFilesBeforeReconnect;
 import com.hedera.services.bdd.suites.reconnect.CreateTopicsBeforeReconnect;
-import com.hedera.services.bdd.suites.jrs.DeleteNodeForUpgrade;
+import com.hedera.services.bdd.suites.jrs.NodeOpsForUpgrade;
 import com.hedera.services.bdd.suites.jrs.UpdateNodeForUpgrade;
 import com.hedera.services.bdd.suites.jrs.AddNodeForUpgrade;
 import java.util.ArrayList;
@@ -94,7 +94,7 @@ public class SuiteRunner {
             put("CreateFilesBeforeReconnect", aof(CreateFilesBeforeReconnect::new));
             put("SubmitMessageLoadTest", aof(SubmitMessageLoadTest::new));
             put("AdjustFeeSchedule", aof(AdjustFeeScheduleSuite::new));
-            put("DeleteNodeForUpgrade", aof(DeleteNodeForUpgrade::new));
+            put("DeleteNodeForUpgrade", aof(NodeOpsForUpgrade::new));
             put("AddNodeForUpgrade", aof(AddNodeForUpgrade::new));
             put("UpdateNodeForUpgrade", aof(UpdateNodeForUpgrade::new));
         }
