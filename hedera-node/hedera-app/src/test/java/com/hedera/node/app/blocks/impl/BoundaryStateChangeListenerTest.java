@@ -19,7 +19,6 @@ package com.hedera.node.app.blocks.impl;
 import static com.hedera.hapi.block.stream.output.StateChange.ChangeOperationOneOfType.QUEUE_POP;
 import static com.hedera.hapi.block.stream.output.StateChange.ChangeOperationOneOfType.QUEUE_PUSH;
 import static com.hedera.hapi.block.stream.output.StateChange.ChangeOperationOneOfType.SINGLETON_UPDATE;
-import static com.hedera.hapi.util.HapiUtils.asInstant;
 import static com.hedera.node.app.blocks.impl.BlockImplUtils.stateIdFor;
 import static com.swirlds.state.StateChangeListener.StateType.QUEUE;
 import static com.swirlds.state.StateChangeListener.StateType.SINGLETON;
@@ -66,7 +65,7 @@ class BoundaryStateChangeListenerTest {
 
     @Test
     void testFlushChanges() {
-        listener.setLastUsedConsensusTime(Instant.now());
+        listener.setBoundaryTimestamp(Instant.now());
         listener.singletonUpdateChange(STATE_ID, PROTO_STRING);
         BlockItem blockItem = listener.flushChanges();
 
@@ -81,13 +80,6 @@ class BoundaryStateChangeListenerTest {
 
         List<StateChange> stateChanges = listener.allStateChanges();
         assertEquals(2, stateChanges.size());
-    }
-
-    @Test
-    void testEndOfBlockTimestamp() {
-        Instant now = Instant.now();
-        listener.setLastUsedConsensusTime(now);
-        assertEquals(now.plusNanos(1), asInstant(listener.endOfBlockTimestamp()));
     }
 
     @Test

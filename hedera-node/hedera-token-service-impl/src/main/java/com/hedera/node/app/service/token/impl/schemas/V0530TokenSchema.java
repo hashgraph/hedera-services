@@ -24,13 +24,14 @@ import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.token.AccountPendingAirdrop;
 import com.hedera.hapi.node.state.token.StakingNodeInfo;
 import com.swirlds.state.spi.MigrationContext;
+import com.swirlds.state.spi.Schema;
 import com.swirlds.state.spi.StateDefinition;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Set;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class V0530TokenSchema extends StakingInfoManagementSchema {
+public class V0530TokenSchema extends Schema {
     private static final Logger logger = LogManager.getLogger(V0530TokenSchema.class);
     private static final long MAX_PENDING_AIRDROPS = 1_000_000_000L;
     public static final String AIRDROPS_KEY = "PENDING_AIRDROPS";

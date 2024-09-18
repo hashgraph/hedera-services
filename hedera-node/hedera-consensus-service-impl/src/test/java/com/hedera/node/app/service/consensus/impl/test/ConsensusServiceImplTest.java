@@ -26,6 +26,9 @@ import com.swirlds.state.spi.SchemaRegistry;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+/**
+ * Unit tests of Consensus Service
+ */
 public class ConsensusServiceImplTest {
     private ConsensusServiceImpl subject;
 

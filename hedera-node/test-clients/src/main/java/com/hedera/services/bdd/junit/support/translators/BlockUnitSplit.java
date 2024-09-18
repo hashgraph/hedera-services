@@ -87,6 +87,9 @@ public class BlockUnitSplit {
         }
     }
 
+    @Nullable
+    private List<StateChange> genesisStateChanges = new ArrayList<>();
+
     /**
      * Splits the given block into transactional units.
      * @param block the block to split
@@ -120,6 +123,10 @@ public class BlockUnitSplit {
                             completeAndAdd(units, unitParts, unitStateChanges);
                         }
                         pendingParts.clear();
+                        if (genesisStateChanges != null) {
+                            unitStateChanges.addAll(genesisStateChanges);
+                            genesisStateChanges = null;
+                        }
                         if (txnIdType != TxnIdType.AUTO_SYSFILE_MGMT_ID) {
                             unitTxnId = txnId;
                         }
@@ -129,8 +136,13 @@ public class BlockUnitSplit {
                 }
                 case TRANSACTION_RESULT -> pendingParts.result = item.transactionResultOrThrow();
                 case TRANSACTION_OUTPUT -> pendingParts.addOutput(item.transactionOutputOrThrow());
-                case STATE_CHANGES -> unitStateChanges.addAll(
-                        item.stateChangesOrThrow().stateChanges());
+                case STATE_CHANGES -> {
+                    if (genesisStateChanges != null) {
+                        genesisStateChanges.addAll(item.stateChangesOrThrow().stateChanges());
+                    } else {
+                        unitStateChanges.addAll(item.stateChangesOrThrow().stateChanges());
+                    }
+                }
             }
         }
         if (pendingParts.areComplete()) {

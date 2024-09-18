@@ -22,7 +22,9 @@ dependencies {
     api(enforcedPlatform("io.netty:netty-bom:4.1.110.Final"))
 
     // forward logging from modules using SLF4J (e.g. 'org.hyperledger.besu.evm') to Log4J
-    runtime(javaModuleDependencies.gav("org.apache.logging.log4j.slf4j2.impl"))
+    runtime("org.apache.logging.log4j:log4j-slf4j2-impl") {
+        because("org.apache.logging.log4j.slf4j2.impl")
+    }
 }
 
 dependencies.constraints {
@@ -221,4 +223,7 @@ dependencies.constraints {
     api("uk.org.webcompere:system-stubs-jupiter:2.1.5") {
         because("uk.org.webcompere.systemstubs.jupiter")
     }
+
+    api("com.google.protobuf:protoc:3.25.4")
+    api("io.grpc:protoc-gen-grpc-java:1.66.0")
 }
