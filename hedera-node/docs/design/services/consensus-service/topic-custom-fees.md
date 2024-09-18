@@ -307,8 +307,6 @@ rpc approveAllowance (Transaction) returns (TransactionResponse);
     - TBD - more validations ?
   - Handle:
     - Any additional validation depending on config or state, i.e. semantics checks
-        - Validate that the `amount` in `ConsensusTokenFeeScheduleAllowance` is no bigger then the `maxSupply`
-        - Validate that the `amount` in `ConsensusCryptoFeeScheduleAllowance` is no bigger then HBAR.maxSupply(50m)
         - Validate that the `topicId`s are usable(existing/not deleted/not expired)
     - Check that the sender account is a valid one. That is an existing account, and it is not deleted or expired.
     - Add approved allowance:
