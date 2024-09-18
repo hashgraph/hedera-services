@@ -18,6 +18,7 @@ package com.hedera.node.app.blocks;
 
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 /**
@@ -26,6 +27,19 @@ import java.util.concurrent.CompletableFuture;
  * a perfect binary tree.
  */
 public interface StreamingTreeHasher {
+    /**
+     * Describes the status of the tree hash computation.
+     * @param numLeaves the number of leaves added to the tree
+     * @param rightmostHashes the rightmost hashes of the tree at each depth
+     */
+    record Status(int numLeaves, @NonNull List<Bytes> rightmostHashes) {
+        public static Status EMPTY = new Status(0, List.of());
+
+        public boolean isEmpty() {
+            return numLeaves == 0;
+        }
+    }
+
     /**
      * Adds a leaf to the implicit tree of items.
      * @param leaf the leaf to add
@@ -39,4 +53,14 @@ public interface StreamingTreeHasher {
      * @return a future that completes with the root hash of the tree of items
      */
     CompletableFuture<Bytes> rootHash();
+
+    /**
+     * If supported, blocks until this hasher can give a deterministic summary of the status of the
+     * tree hash computation.
+     * @return the status of the tree hash computation
+     * @throws UnsupportedOperationException if the implementation does not support status reporting
+     */
+    default Status status() {
+        throw new UnsupportedOperationException();
+    }
 }

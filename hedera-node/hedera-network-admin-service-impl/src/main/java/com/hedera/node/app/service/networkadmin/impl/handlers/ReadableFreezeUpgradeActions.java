@@ -115,10 +115,7 @@ public class ReadableFreezeUpgradeActions {
      * Write a NOW_FROZEN_MARKER marker file to signal that the network is frozen.
      */
     public void externalizeFreezeIfUpgradePending() {
-        log.info(
-                "Externalizing freeze if upgrade pending, freezeStore: {}, updateFileHash: {}",
-                freezeStore,
-                freezeStore.updateFileHash());
+        log.info("Externalizing freeze if upgrade pending, updateFileHash: {}", freezeStore.updateFileHash());
         if (freezeStore.updateFileHash() != null) {
             writeCheckMarker(NOW_FROZEN_MARKER);
         }

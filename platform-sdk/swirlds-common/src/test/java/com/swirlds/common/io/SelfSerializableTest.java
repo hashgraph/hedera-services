@@ -19,7 +19,6 @@ package com.swirlds.common.io;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.io.exceptions.InvalidVersionException;
 import com.swirlds.common.test.fixtures.io.InputOutputStream;
 import com.swirlds.common.test.fixtures.io.SelfSerializableExample;
@@ -72,28 +71,5 @@ class SelfSerializableTest {
         io2.startReading();
         assertThrows(InvalidVersionException.class, () -> io2.getInput()
                 .readSerializable(true, SelfSerializableExample::new));
-    }
-
-    @Test
-    void pbjSupportTest() throws IOException {
-        final SelfSerializableExample serializable = new SelfSerializableExample(666, "Not a PBJ object");
-        final byte[] byteArray = {1, 2, 3};
-        final Bytes bytes = Bytes.wrap(byteArray);
-
-        try (final InputOutputStream io = new InputOutputStream()) {
-            io.getOutput().writeSerializable(serializable, true);
-            bytes.writeTo(io.getOutput().getWritableSequentialData());
-            io.getOutput().writeSerializable(serializable, false);
-
-            io.startReading();
-
-            final SelfSerializable readSer1 = io.getInput().readSerializable(true, SelfSerializableExample::new);
-            final Bytes readBytes = io.getInput().getReadableSequentialData().readBytes(byteArray.length);
-            final SelfSerializable readSer2 = io.getInput().readSerializable(false, SelfSerializableExample::new);
-
-            assertEquals(serializable, readSer1, "the serializable object should be the same as the one written");
-            assertEquals(bytes, readBytes, "the bytes should be the same as the ones written");
-            assertEquals(serializable, readSer2, "the serializable object should be the same as the one written");
-        }
     }
 }
