@@ -55,8 +55,8 @@ public class NodeOpsForUpgrade extends HapiSuite {
                 .when(overridingTwo("nodes.enableDAB", "true",
                                 "nodes.updateAccountIdAllowed", "true"),
                         newKeyNamed(ED_25519_KEY).shape(KeyShape.ED25519),
-                        nodeDelete("2").payingWith(GENESIS).signedBy(GENESIS),
-                        nodeUpdate("3")
+                        nodeDelete("3").payingWith(GENESIS).signedBy(GENESIS),
+                        nodeUpdate("2")
                                 .description("UpdatedNode0")
                                 .accountId("0.0.100")
                                 .payingWith(GENESIS)
