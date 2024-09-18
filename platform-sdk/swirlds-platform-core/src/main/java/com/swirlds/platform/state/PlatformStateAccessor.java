@@ -25,6 +25,9 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
 
+/**
+ * This interface represents the platform state and provide access to the state's properties.
+ */
 public interface PlatformStateAccessor {
     /**
      * The round of the genesis state.

@@ -26,7 +26,7 @@ import java.time.Instant;
 import java.util.function.Consumer;
 
 /**
- * This interface represents the platform state and provide access to the state's properties.
+ * This interface represents the platform state and provide methods for modifying the state.
  */
 public interface PlatformStateModifier extends PlatformStateAccessor {
 
