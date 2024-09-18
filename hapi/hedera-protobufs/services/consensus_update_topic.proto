@@ -90,16 +90,16 @@ message ConsensusUpdateTopicTransactionBody {
     AccountID autoRenewAccount = 9;
 
     /**
-     * Access control for update/delete of custom fees.<br/>
+     * Access control for update/delete of custom fees.
      * <p>
      * If set, subsequent consensus_update_topic transactions signed with this
      *  key MAY update or delete the custom fees for this topic.<br/>
-     * If this field is set to a valid 'Key', the previous key and new
+     * If this field is set to a valid 'Key', the admin key and the new
      *  key MUST both sign this transaction.<br/>
      * If this field is set to a valid 'Key', the previous value SHALL be
      *  replaced.<br/>
-     * If set to a 'Key' containing an empty 'KeyList', the previous key and the
-     *  admin key MUST both sign this transaction.<br/>
+     * If set to a 'Key' containing an empty 'KeyList', the admin key MUST sign
+     *  this transaction.<br/>
      * If set to a 'Key' containing an empty 'KeyList', the previous value
      *  SHALL be cleared.<br/>
      * If not set, the current key SHALL NOT change.<br/>
@@ -132,14 +132,16 @@ message ConsensusUpdateTopicTransactionBody {
      * These are fees to be assessed for each submit to this topic.
      * <p>
      * Each fee defined in this set SHALL be evaluated for
-     * each message submitted to this topic, and the resultant
-     * total assessed fees SHALL be charged.<br/>
+     *  each message submitted to this topic, and the resultant
+     *  total assessed fees SHALL be charged.<br/>
      * Custom fees defined here SHALL be assessed in addition to the base
-     * network and node fees.<br/>
+     *  network and node fees.<br/>
      * If this field is not set, the current set of custom fees
-     * SHALL NOT change.<br/>
+     *  SHALL NOT change.<br/>
      * If this field is set, but contains an empty list, all current custom fees
-     * SHALL be removed.
+     *  SHALL be removed.
+     * custom_fees list SHALL NOT contain more than
+     *  `MAX_CUSTOM_FEE_ENTRIES_FOR_TOPICS` entries.
      */
     ConsensusCustomFeeList custom_fees = 12;
 }

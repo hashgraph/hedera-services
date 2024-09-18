@@ -188,8 +188,8 @@ message ConsensusCustomFee {
    * A fixed custom fee.
    * <p>
    * The amount of HBAR or other token described by this `FixedFee` SHALL
-   * be charged to the transction payer for each message submitted to a
-   * topic that assigns this consensus custom fee.
+   *  be charged to the transction payer for each message submitted to a
+   *  topic that assigns this consensus custom fee.
    */
   FixedFee fixed_fee = 1;
 
@@ -197,7 +197,7 @@ message ConsensusCustomFee {
    * A collection account identifier.
    * <p>
    * All amounts collected for this consensus custom fee SHALL be transferred
-   * to the account identified by this field.
+   *  to the account identified by this field.
    */
   AccountID fee_collector_account_id = 2;
 }
@@ -205,11 +205,11 @@ message ConsensusCustomFee {
 /**
  * A wrapper around a consensus custom fee list.<br/>
  * This wrapper exists to enable an update transaction to differentiate between
- * a field that is not set and an empty list of custom fees.
+ *  a field that is not set and an empty list of custom fees.
  * <p>
  * An _unset_ field of this type SHALL NOT modify existing values.<br/>
  * A _set_ field of this type with an empty `fees` list SHALL remove any
- * existing values.
+ *  existing values.
  */
 message ConsensusCustomFeeList {
   /**
@@ -222,11 +222,11 @@ message ConsensusCustomFeeList {
 /**
  * A wrapper for fee exempt key list.<br/>
  * This wrapper exists to enable an update transaction to differentiate between
- * a field that is not set and an empty list of keys.
+ *  a field that is not set and an empty list of keys.
  * <p>
  * An _unset_ field of this type SHALL NOT modify existing values.<br/>
  * A _set_ field of this type with an empty `keys` list SHALL remove any
- * existing values.
+ *  existing values.
  */
 message FeeExemptKeyList {
   /**
@@ -235,7 +235,7 @@ message FeeExemptKeyList {
    * topic without paying the topic's custom fees.
    * <p>
    * If a submit transaction is signed by _any_ key included in this set,
-   * custom fees SHALL NOT be charged for that transaction.
+   *  custom fees SHALL NOT be charged for that transaction.
    */
    repeated Key keys = 1;
 }

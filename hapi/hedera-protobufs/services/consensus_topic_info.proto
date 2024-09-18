@@ -103,13 +103,16 @@ message ConsensusTopicInfo {
      * A set of keys that are allowed to submit messages to the topic without
      * paying the topic's custom fees.
      * <p>
-     * If a submit transaction is signed by _any_ key included in this set,
+     * If a topic submit message is signed by _any_ key included in this set,
      *  custom fees SHALL NOT be charged for that transaction.<br/>
-     * fee_exempt_key_list MAY contain keys for accounts that are inactive,
+     * `fee_exempt_key_list` MAY contain keys for accounts that are inactive,
      *  deleted, or non-existent.<br/>
      * If not set, there SHALL NOT be any fee-exempt keys.  In particular, the
      *  following keys SHALL NOT be implicitly or automatically added to this
      *  list: `adminKey`, `submitKey`, `fee_schedule_key`.
+     * A `fee_exempt_key_list` MUST NOT contain more than
+     *  `MAX_ENTRIES_FOR_FEE_EXEMPT_KEY_LIST` keys.
+     * A `fee_exempt_key_list` MUST NOT contain any duplicate keys.
      */
     repeated Key fee_exempt_key_list = 11;
 
@@ -118,10 +121,10 @@ message ConsensusTopicInfo {
      * These are fees to be assessed for each submit to this topic.
      * <p>
      * Each fee defined in this set SHALL be evaluated for
-     * each message submitted to this topic, and the resultant
-     * total assessed fees SHALL be charged.<br/>
+     *  each message submitted to this topic, and the resultant
+     *  total assessed fees SHALL be charged.<br/>
      * Custom fees defined here SHALL be assessed in addition to the base
-     * network and node fees.
+     *  network and node fees.
      */
     repeated ConsensusCustomFee custom_fees = 12;
 }
