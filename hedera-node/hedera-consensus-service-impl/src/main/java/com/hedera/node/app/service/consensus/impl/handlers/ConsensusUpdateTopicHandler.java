@@ -357,20 +357,27 @@ public class ConsensusUpdateTopicHandler implements TransactionHandler {
             @NonNull final HandleContext handleContext,
             @NonNull final AttributeValidator attributeValidator,
             @NonNull final ConsensusUpdateTopicTransactionBody op) {
+        if (op.feeExemptKeyList() == null) {
+            return;
+        }
+
         final var configuration = handleContext.configuration();
         final var topicConfig = configuration.getConfigData(TopicsConfig.class);
 
         validateTrue(
-                op.feeExemptKeyList() != null
-                        && op.feeExemptKeyList().keys().size() <= topicConfig.maxEntriesForFeeExemptKeyList(),
+                op.feeExemptKeyList().keys().size() <= topicConfig.maxEntriesForFeeExemptKeyList(),
                 MAX_ENTRIES_FOR_FEKL_EXCEEDED);
         // If the fee exempt key list is set we should always have custom fees
-        validateTrue(op.customFees() != null && !op.customFees().fees().isEmpty(), MISSING_CUSTOM_FEES);
+        validateTrue(op.customFees() == null || !op.customFees().fees().isEmpty(), MISSING_CUSTOM_FEES);
         op.feeExemptKeyList().keys().forEach(key -> attributeValidator.validateKey(key, INVALID_KEY_IN_FEKL));
     }
 
     private void validateMaybeCustomFees(
             @NonNull final HandleContext handleContext, @NonNull final ConsensusUpdateTopicTransactionBody op) {
+        if (op.customFees() == null) {
+            return;
+        }
+
         final var configuration = handleContext.configuration();
         final var topicConfig = configuration.getConfigData(TopicsConfig.class);
         final var accountStore = handleContext.storeFactory().readableStore(ReadableAccountStore.class);
@@ -378,8 +385,7 @@ public class ConsensusUpdateTopicHandler implements TransactionHandler {
         final var tokenRelStore = handleContext.storeFactory().readableStore(ReadableTokenRelationStore.class);
 
         validateTrue(
-                op.customFees() != null && op.customFees().fees().size() <= topicConfig.maxCustomFeeEntriesForTopics(),
-                CUSTOM_FEES_LIST_TOO_LONG);
+                op.customFees().fees().size() <= topicConfig.maxCustomFeeEntriesForTopics(), CUSTOM_FEES_LIST_TOO_LONG);
         customFeesValidator.validate(
                 accountStore, tokenRelStore, tokenStore, op.customFees().fees(), handleContext.expiryValidator());
     }
