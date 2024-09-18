@@ -1,5 +1,5 @@
 /**
- * # Tss Message Map Key
+ * # Tss Vote Map Key
  *
  * ### Keywords
  * The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT",
@@ -10,7 +10,7 @@
  */
 syntax = "proto3";
 
-package com.hedera.hapi.platform.tss;
+package proto;
 
 /*
  * Hedera Network Services Protobuf
@@ -30,14 +30,14 @@ package com.hedera.hapi.platform.tss;
  * limitations under the License.
  */
 
-option java_package = "com.hedera.hapi.platform.tss.legacy";
+option java_package = "com.hederahashgraph.api.proto.java";
 // <<<pbj.java_package = "com.hedera.hapi.platform.tss">>> This comment is special code for setting PBJ Compiler java package
 option java_multiple_files = true;
 
 /**
-  * A key for use in the TssMessageMaps.
+  * A key for use in the TssVoteMaps.
   */
-message TssMessageMapKey {
+message TssVoteMapKey {
 
   /**
    * A hash of the target roster for the associated value in the map.
@@ -45,8 +45,7 @@ message TssMessageMapKey {
   bytes roster_hash = 1;
 
   /**
-   * A number representing consensus order.
-   * This declares the order in which the mapped value came to consensus.
+   * The node id of the node that created the TssVote.
    */
-  uint64 sequence_number = 2;
+  uint64 node_id = 2;
 }

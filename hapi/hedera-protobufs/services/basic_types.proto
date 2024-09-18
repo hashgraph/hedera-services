@@ -1249,6 +1249,16 @@ enum HederaFunctionality {
       * Claim one or more pending airdrops
      */
     TokenClaimAirdrop = 95;
+
+    /**
+     * Submit a TSS message
+     */
+    TssMessage = 96;
+
+    /**
+     * Submit a TSS vote
+     */
+    TssVote = 97;
 }
 
 /**
