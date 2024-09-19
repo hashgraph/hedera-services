@@ -23,21 +23,18 @@ import com.hedera.services.bdd.junit.hedera.subprocess.UpgradeConfigTxt;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.utilops.UtilOp;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.Set;
 
 /**
  * Adds the node with "classic" metadata implied by the given node id and refreshes the
  * {@link SubProcessNetwork} address book using the given {@link UpgradeConfigTxt} source.
  */
 public class AddNodeOp extends UtilOp {
-    private final Set<Long> nodeIds;
+    private final long nodeId;
     private final UpgradeConfigTxt upgradeConfigTxt;
-    private final boolean init;
 
-    public AddNodeOp(final Set<Long> nodeIds, @NonNull final UpgradeConfigTxt upgradeConfigTxt, final boolean init) {
-        this.nodeIds = nodeIds;
+    public AddNodeOp(final long nodeId, @NonNull final UpgradeConfigTxt upgradeConfigTxt) {
+        this.nodeId = nodeId;
         this.upgradeConfigTxt = requireNonNull(upgradeConfigTxt);
-        this.init = init;
     }
 
     @Override
@@ -45,7 +42,7 @@ public class AddNodeOp extends UtilOp {
         if (!(spec.targetNetworkOrThrow() instanceof SubProcessNetwork subProcessNetwork)) {
             throw new IllegalStateException("Can only remove nodes from a SubProcessNetwork");
         }
-        subProcessNetwork.addNode(nodeIds, upgradeConfigTxt, init);
+        subProcessNetwork.addNode(nodeId, upgradeConfigTxt);
         return false;
     }
 }
