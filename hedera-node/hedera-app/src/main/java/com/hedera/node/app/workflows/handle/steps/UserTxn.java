@@ -118,13 +118,12 @@ public record UserTxn(
         } else {
             type = ORDINARY_TRANSACTION;
         }
-        final var isGenesis = lastHandledConsensusTime.equals(Instant.EPOCH);
         final var config = configProvider.getConfiguration();
         final var consensusConfig = config.getConfigData(ConsensusConfig.class);
         final var blockStreamConfig = config.getConfigData(BlockStreamConfig.class);
         final var stack = SavepointStackImpl.newRootStack(
                 state,
-                isGenesis ? Integer.MAX_VALUE : consensusConfig.handleMaxPrecedingRecords(),
+                type != ORDINARY_TRANSACTION  ? Integer.MAX_VALUE : consensusConfig.handleMaxPrecedingRecords(),
                 consensusConfig.handleMaxFollowingRecords(),
                 boundaryStateChangeListener,
                 kvStateChangeListener,
