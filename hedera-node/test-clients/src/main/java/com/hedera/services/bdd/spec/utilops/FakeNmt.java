@@ -18,19 +18,14 @@ package com.hedera.services.bdd.spec.utilops;
 
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.services.bdd.junit.hedera.HederaNode;
-import com.hedera.services.bdd.junit.hedera.NodeMetadata;
 import com.hedera.services.bdd.junit.hedera.NodeSelector;
 import com.hedera.services.bdd.junit.hedera.subprocess.UpgradeConfigTxt;
 import com.hedera.services.bdd.spec.utilops.lifecycle.ops.ShutdownWithinOp;
 import com.hedera.services.bdd.spec.utilops.lifecycle.ops.TryToStartNodesOp;
 import com.hedera.services.bdd.spec.utilops.upgrade.AddNodeOp;
 import com.hedera.services.bdd.spec.utilops.upgrade.RemoveNodeOp;
-import com.hedera.services.bdd.spec.utilops.upgrade.UpdateNodeOp;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
-import java.util.Set;
-import java.util.function.Predicate;
 
 /**
  * Contains operations that in a real environment could only be accomplished by the
@@ -62,48 +57,23 @@ public class FakeNmt {
      *
      * @param selector the selector for the node to remove
      * @param upgradeConfigTxt the source of the new <i>config.txt</i> file
-     * @param nodeIdsInitSelector the select for node to init
      * @return the operation that removes the node
      */
     public static RemoveNodeOp removeNode(
-            @NonNull final NodeSelector selector,
-            @NonNull final UpgradeConfigTxt upgradeConfigTxt,
-            @NonNull final Predicate<HederaNode> filter,
-            final NodeSelector nodeIdsInitSelector) {
-        return new RemoveNodeOp(selector, upgradeConfigTxt, filter, nodeIdsInitSelector);
+            @NonNull final NodeSelector selector, @NonNull final UpgradeConfigTxt upgradeConfigTxt) {
+        return new RemoveNodeOp(selector, upgradeConfigTxt);
     }
 
     /**
      * Returns an operation that removes a subprocess node from the network and refreshes the
      * address books on all remaining nodes using the given <i>config.txt</i> source.
      *
-     * @param nodeIds set of the node ids to add
+     * @param nodeId id of the node to add
      * @param upgradeConfigTxt the source of the new <i>config.txt</i> file
-     * @param init to call initWorkingDir or not
      * @return the operation that removes the node
      */
-    public static AddNodeOp addNode(
-            @NonNull final Set<Long> nodeIds, @NonNull final UpgradeConfigTxt upgradeConfigTxt, final boolean init) {
-        return new AddNodeOp(nodeIds, upgradeConfigTxt, init);
-    }
-
-    /**
-     * Returns an operation that updates a subprocess node from the network and refreshes the
-     * address books on all remaining nodes using the given <i>config.txt</i> source.
-     *
-     * @param selector the selector for the node to update
-     * @param upgradeConfigTxt the source of the new <i>config.txt</i> file
-     * @param nodeMetadata the NodeMetadata to update
-     * @param init to call initWorkingDir or not
-     * @return the operation that removes the node
-     */
-    public static UpdateNodeOp updateNode(
-            @NonNull final NodeSelector selector,
-            @NonNull final UpgradeConfigTxt upgradeConfigTxt,
-            @NonNull NodeMetadata nodeMetadata,
-            final boolean init,
-            @NonNull final Predicate<HederaNode> filter) {
-        return new UpdateNodeOp(selector, upgradeConfigTxt, nodeMetadata, init, filter);
+    public static AddNodeOp addNode(@NonNull final long nodeId, @NonNull final UpgradeConfigTxt upgradeConfigTxt) {
+        return new AddNodeOp(nodeId, upgradeConfigTxt);
     }
 
     /**
