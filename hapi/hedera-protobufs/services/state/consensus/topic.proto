@@ -52,6 +52,8 @@ option java_multiple_files = true;
  *   8. (Optional) A fee schedule key whose signature must be active for the topic's custom fees to be updated.
  *   9. (Optional) A list of keys that can submit messages without paying custom fees.
  *   10. (Optional) A list of custom fees to be assessed for each message submitted to the topic.
+ *   11. (Optional) A list of crypto allowances for the topic.
+ *   12. (Optional) A list of fungible token allowances for the topic.
  */
 message Topic {
     /**
@@ -110,7 +112,7 @@ message Topic {
      * If this field is unset, the current custom fees CANNOT be changed.<br/>
      * If this field is set, that `Key` MUST sign any transaction to update
      * the custom fee schedule for this topic.
-    */
+     */
     Key fee_schedule_key = 11;
 
     /**
@@ -139,15 +141,24 @@ message Topic {
     repeated ConsensusCustomFee custom_fees = 13;
 
     /**
-     * (Optional) List of crypto allowances for the topic.
+     * A list of crypto allowances for the topic.
+     * <p>
+     * If a submit transaction is submitted by a user with an allowance,
+     * the custom fee SHALL be payed with the allowance<br/>
+     * If the allowance is not enough to pay the fee, the transaction SHALL fail.<br/>
+     * If an allowance amount is set to 0, the allowance SHALL be removed.<br/>
      * It contains account number for which the allowance is approved to and
      * the amount approved for that account.
      */
     repeated TopicCryptoAllowance crypto_allowances = 14;
 
     /**
-     * (Optional) List of fungible token allowances for the topic.
-     * It contains account number for which the allowance is approved to and the token number.
+     * List of fungible token allowances for the topic.
+     * <p>
+     * If a submit transaction is submitted by a user with an allowance,
+     * the custom fee SHALL be payed with the token allowance<br/>
+     * If the allowance is not enough to pay the fee, the transaction SHALL fail.<br/>
+     * It contains account number for which the allowance is approved to and the token number.<br/>
      * It also contains and the amount approved for that account.
      */
     repeated TopicFungibleTokenAllowance token_allowances = 30;
