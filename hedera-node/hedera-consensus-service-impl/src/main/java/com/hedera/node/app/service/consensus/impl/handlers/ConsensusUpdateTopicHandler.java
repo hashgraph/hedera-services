@@ -19,6 +19,7 @@ package com.hedera.node.app.service.consensus.impl.handlers;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.AUTORENEW_ACCOUNT_NOT_ALLOWED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.CUSTOM_FEES_LIST_TOO_LONG;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.FEE_SCHEDULE_KEY_CANNOT_BE_UPDATED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.FEKL_CONTAINS_DUPLICATED_KEYS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_CUSTOM_FEE_SCHEDULE_KEY;
@@ -184,7 +185,7 @@ public class ConsensusUpdateTopicHandler implements TransactionHandler {
                     AUTORENEW_ACCOUNT_NOT_ALLOWED);
         }
 
-        validateMaybeNewAttributes(handleContext, op);
+        validateMaybeNewAttributes(handleContext, op, topic);
 
         // Now we apply the mutations to a builder
         final var builder = topic.copyBuilder();
@@ -255,12 +256,14 @@ public class ConsensusUpdateTopicHandler implements TransactionHandler {
     }
 
     private void validateMaybeNewAttributes(
-            @NonNull final HandleContext handleContext, @NonNull final ConsensusUpdateTopicTransactionBody op) {
+        @NonNull final HandleContext handleContext,
+        @NonNull final ConsensusUpdateTopicTransactionBody op,
+        @NonNull final Topic topic) {
         final var attributeValidator = handleContext.attributeValidator();
         validateMaybeNewAdminKey(attributeValidator, op);
         validateMaybeNewSubmitKey(attributeValidator, op);
         validateMaybeNewMemo(attributeValidator, op);
-        validateMaybeNewFeeScheduleKey(attributeValidator, op);
+        validateMaybeNewFeeScheduleKey(attributeValidator, op, topic);
         validateMaybeFeeExemptKeyList(handleContext, attributeValidator, op);
         validateMaybeCustomFees(handleContext, op);
     }
@@ -330,8 +333,10 @@ public class ConsensusUpdateTopicHandler implements TransactionHandler {
 
     private void validateMaybeNewFeeScheduleKey(
             @NonNull final AttributeValidator attributeValidator,
-            @NonNull final ConsensusUpdateTopicTransactionBody op) {
+        @NonNull final ConsensusUpdateTopicTransactionBody op,
+        @NonNull final Topic topic) {
         if (op.hasFeeScheduleKey()) {
+            validateFalse(topic.hasFeeScheduleKey(), FEE_SCHEDULE_KEY_CANNOT_BE_UPDATED);
             attributeValidator.validateKey(op.feeScheduleKey(), INVALID_CUSTOM_FEE_SCHEDULE_KEY);
         }
     }
