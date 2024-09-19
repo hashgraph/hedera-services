@@ -165,25 +165,51 @@ message Topic {
 }
 
 /**
- * An allowance with a given amount granted by account for this topic.
+ * Representation of crypto allowance for a topic in the network Merkle tree.
+ *
+ * A crypto allowance for a topic represents the hbar funds allocated by an account to cover the fees
+ * required for submitting messages when the topic is configured with 'custom fees'.
  * This allows the spender to send messages to this topic while utilizing
  * the allocated allowance to cover the associated cost.
  */
 message TopicCryptoAllowance {
+    /**
+     * The account ID of the spender.
+     */
     AccountID spender_id = 1;
+    /**
+     * The total amount of hbar allocated for the allowance.
+     */
     uint64 amount = 2;
+    /**
+     * The amount of hbar allocated per message.
+     */
     uint64 amount_per_message = 3;
 }
 
 /**
- * An allowance granted by and account for a specific fungible token and this topic.
- * This also contains the amount of the token that is approved for the account.
+ * Representation of fungible token allowance for a topic in the network Merkle tree.
+
+ * A fungible token allowance for a topic represents the fungible token amounts allocated by an account
+ * to cover the fees required for submitting messages when the topic is configured with 'custom fees'.
  * This allows the spender to send messages to this topic while utilizing
  * the allocated fungible token allowance to cover the associated cost.
  */
 message TopicFungibleTokenAllowance {
+    /**
+     * The ID of the fungible token.
+     */
     TokenID token_id = 1;
+    /**
+     * The account ID of the spender.
+     */
     AccountID spender_id = 2;
+    /**
+     * The total amount of fungible tokens allocated for the allowance.
+     */
     uint64 amount = 3;
+    /**
+     * The amount of fungible tokens allocated per message.
+     */
     uint64 amount_per_message = 4;
 }
