@@ -47,6 +47,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
@@ -90,7 +91,7 @@ public final class NettyGrpcServerManager implements GrpcServerManager {
     /**
      * The set of {@link ServiceDescriptor}s for services that the node operator gRPC server will expose
      */
-    private final Set<ServerServiceDefinition> nodeOperatorServices;
+    private Set<ServerServiceDefinition> nodeOperatorServices = Collections.emptySet();
 
     /**
      * The configuration provider, so we can figure out ports and other information.
@@ -157,20 +158,24 @@ public final class NettyGrpcServerManager implements GrpcServerManager {
                 })
                 .collect(Collectors.toUnmodifiableSet());
 
-        // Convert the various RPC service definitions into query endpoints permitting unpaid queries for node operators
-        nodeOperatorServices = rpcServiceDefinitions
-                .get()
-                .filter(d -> d.methods().stream().anyMatch(m -> Query.class.equals(m.requestType())))
-                .map(d -> {
-                    final var builder = new GrpcServiceBuilder(d.basePath(), null, queryWorkflow);
-                    d.methods().forEach(m -> {
-                        if (Query.class.equals(m.requestType())) {
-                            builder.query(m.path());
-                        }
-                    });
-                    return builder.build(metrics, false);
-                })
-                .collect(Collectors.toUnmodifiableSet());
+        final var grpcConfig = configProvider.getConfiguration().getConfigData(GrpcConfig.class);
+        if (grpcConfig.nodeOperatorPortEnabled()) {
+            // Convert the various RPC service definitions into query endpoints permitting unpaid queries for node
+            // operators
+            nodeOperatorServices = rpcServiceDefinitions
+                    .get()
+                    .filter(d -> d.methods().stream().anyMatch(m -> Query.class.equals(m.requestType())))
+                    .map(d -> {
+                        final var builder = new GrpcServiceBuilder(d.basePath(), null, queryWorkflow);
+                        d.methods().forEach(m -> {
+                            if (Query.class.equals(m.requestType())) {
+                                builder.query(m.path());
+                            }
+                        });
+                        return builder.build(metrics, false);
+                    })
+                    .collect(Collectors.toUnmodifiableSet());
+        }
     }
 
     @Override
@@ -181,6 +186,11 @@ public final class NettyGrpcServerManager implements GrpcServerManager {
     @Override
     public int tlsPort() {
         return tlsServer == null ? -1 : tlsServer.getPort();
+    }
+
+    @Override
+    public int nodeOperatorPort() {
+        return nodeOperatorServer == null || nodeOperatorServer.isTerminated() ? -1 : nodeOperatorServer.getPort();
     }
 
     @Override

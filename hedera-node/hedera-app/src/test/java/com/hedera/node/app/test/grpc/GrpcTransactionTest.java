@@ -54,7 +54,7 @@ class GrpcTransactionTest extends GrpcTestBase {
 
     private void setUp(@NonNull final IngestWorkflow ingest) {
         registerIngest(METHOD, ingest, UNIMPLEMENTED_QUERY);
-        startServer();
+        startServer(false);
     }
 
     @Test
