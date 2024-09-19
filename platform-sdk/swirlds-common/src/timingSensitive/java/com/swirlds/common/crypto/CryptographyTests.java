@@ -141,14 +141,25 @@ class CryptographyTests {
         ecdsaSignaturePool = new EcdsaSignedTxnPool(cryptoConfig.computeCpuDigestThreadCount() * PARALLELISM, 64);
         final TransactionSignature signature = ecdsaSignaturePool.next();
         final SignatureComponents components = extractComponents(signature);
+        final byte[] data = components.data();
+        final byte[] publicKey = components.publicKey();
+        final byte[] signatureBytes = components.signatureBytes();
         Configurator.setAllLevels("", Level.ALL);
         assertFalse(
                 cryptography.verifySync(
-                        components.data(),
-                        components.signatureBytes(),
-                        Arrays.copyOfRange(components.publicKey(), 0, components.publicKey().length - 1),
+                        data,
+                        Arrays.copyOfRange(signatureBytes, 1, signatureBytes.length),
+                        publicKey,
                         SignatureType.ECDSA_SECP256K1),
                 "Fails for invalid signature");
+
+        assertFalse(
+                cryptography.verifySync(
+                        data,
+                        signatureBytes,
+                        Arrays.copyOfRange(publicKey, 1, publicKey.length),
+                        SignatureType.ECDSA_SECP256K1),
+                "Fails for invalid public key");
     }
 
     @Test
@@ -156,14 +167,26 @@ class CryptographyTests {
         ed25519SignaturePool = new SignaturePool(cryptoConfig.computeCpuDigestThreadCount() * PARALLELISM, 100, true);
         final TransactionSignature signature = ed25519SignaturePool.next();
         final SignatureComponents components = extractComponents(signature);
+        final byte[] data = components.data();
+        final byte[] publicKey = components.publicKey();
+        final byte[] signatureBytes = components.signatureBytes();
         Configurator.setAllLevels("", Level.ALL);
+
         assertFalse(
                 cryptography.verifySync(
-                        components.data(),
-                        components.signatureBytes(),
-                        Arrays.copyOfRange(components.publicKey(), 0, components.publicKey().length - 1),
+                        data,
+                        Arrays.copyOfRange(signatureBytes, 1, signatureBytes.length),
+                        publicKey,
                         SignatureType.ED25519),
                 "Fails for invalid signature");
+
+        assertFalse(
+                cryptography.verifySync(
+                        data,
+                        signatureBytes,
+                        Arrays.copyOfRange(publicKey, 1, publicKey.length),
+                        SignatureType.ED25519),
+                "Fails for invalid public key");
     }
 
     @Test

@@ -1123,8 +1123,11 @@ public final class MerkleDbDataSource implements VirtualDataSource {
             boolean isReconnect)
             throws IOException {
         // If both streams are empty, no new data files should be created. One simple way to
-        // check emptiness is to use iterators. The streams aren't processed in parallel anyway
+        // check emptiness is to use iterators. The iterators are consumed on a single thread
+        // (the current thread), but it still makes sense to use parallel streams as supplying
+        // elements to the stream includes expensive operations like serialization to bytes
         final Iterator<VirtualLeafBytes> dirtyIterator = dirtyLeaves
+                .parallel()
                 .sorted(Comparator.comparingLong(VirtualLeafBytes::path))
                 .iterator();
         final Iterator<VirtualLeafBytes> deletedIterator = deletedLeaves.iterator();
