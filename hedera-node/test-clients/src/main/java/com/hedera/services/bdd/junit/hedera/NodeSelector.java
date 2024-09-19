@@ -20,8 +20,8 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Arrays;
 import java.util.function.Predicate;
-import org.bouncycastle.util.Arrays;
 
 /**
  * Defines the criteria by which to select {@link HederaNode}s from a {@link HederaNetwork}.
@@ -87,12 +87,12 @@ public interface NodeSelector extends Predicate<HederaNode> {
         return new NodeSelector() {
             @Override
             public boolean test(@NonNull final HederaNode node) {
-                return !Arrays.contains(nodeIds, node.getNodeId());
+                return Arrays.stream(nodeIds).noneMatch(l -> l == node.getNodeId());
             }
 
             @Override
             public String toString() {
-                return "excluding nodeIds '" + java.util.Arrays.toString(nodeIds) + "'";
+                return "excluding nodeIds '" + Arrays.toString(nodeIds) + "'";
             }
         };
     }
