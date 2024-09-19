@@ -55,25 +55,29 @@ final class QueryMethodTest {
     @Test
     void nullServiceNameThrows() {
         //noinspection ConstantConditions
-        assertThrows(NullPointerException.class, () -> new QueryMethod(null, METHOD_NAME, queryWorkflow, metrics));
+        assertThrows(
+                NullPointerException.class, () -> new QueryMethod(null, METHOD_NAME, queryWorkflow, metrics, true));
     }
 
     @Test
     void nullMethodNameThrows() {
         //noinspection ConstantConditions
-        assertThrows(NullPointerException.class, () -> new QueryMethod(SERVICE_NAME, null, queryWorkflow, metrics));
+        assertThrows(
+                NullPointerException.class, () -> new QueryMethod(SERVICE_NAME, null, queryWorkflow, metrics, true));
     }
 
     @Test
     void nullWorkflowThrows() {
         //noinspection ConstantConditions
-        assertThrows(NullPointerException.class, () -> new QueryMethod(SERVICE_NAME, METHOD_NAME, null, metrics));
+        assertThrows(NullPointerException.class, () -> new QueryMethod(SERVICE_NAME, METHOD_NAME, null, metrics, true));
     }
 
     @Test
     void nullMetricsThrows() {
         //noinspection ConstantConditions
-        assertThrows(NullPointerException.class, () -> new QueryMethod(SERVICE_NAME, METHOD_NAME, queryWorkflow, null));
+        assertThrows(
+                NullPointerException.class,
+                () -> new QueryMethod(SERVICE_NAME, METHOD_NAME, queryWorkflow, null, true));
     }
 
     @ParameterizedTest(name = "With {0} bytes")
@@ -83,7 +87,7 @@ final class QueryMethodTest {
         final var requestBuffer = BufferedData.wrap(arr);
         final AtomicBoolean called = new AtomicBoolean(false);
         final QueryWorkflow w = (req, res) -> called.set(true);
-        final var method = new QueryMethod(SERVICE_NAME, METHOD_NAME, w, metrics);
+        final var method = new QueryMethod(SERVICE_NAME, METHOD_NAME, w, metrics, true);
 
         // When we invoke the method
         //noinspection unchecked
@@ -111,7 +115,7 @@ final class QueryMethodTest {
             called.set(true);
             res.writeBytes(new byte[] {1, 2, 3});
         };
-        final var method = new QueryMethod(SERVICE_NAME, METHOD_NAME, w, metrics);
+        final var method = new QueryMethod(SERVICE_NAME, METHOD_NAME, w, metrics, true);
 
         // When the method is invoked
         method.invoke(requestBuffer, streamObserver);
@@ -141,7 +145,7 @@ final class QueryMethodTest {
         final QueryWorkflow w = (req, res) -> {
             throw new RuntimeException("Unexpected!");
         };
-        final var method = new QueryMethod(SERVICE_NAME, METHOD_NAME, w, metrics);
+        final var method = new QueryMethod(SERVICE_NAME, METHOD_NAME, w, metrics, true);
 
         // When the method is invoked
         method.invoke(requestBuffer, streamObserver);
@@ -170,7 +174,7 @@ final class QueryMethodTest {
         final var numThreads = 5;
         final var numRequests = 1000;
         final QueryWorkflow w = (req, res) -> res.writeBytes(req);
-        final var method = new QueryMethod(SERVICE_NAME, METHOD_NAME, w, metrics);
+        final var method = new QueryMethod(SERVICE_NAME, METHOD_NAME, w, metrics, true);
 
         final var futures = new ArrayList<Future<?>>();
         final var exec = Executors.newFixedThreadPool(numThreads);

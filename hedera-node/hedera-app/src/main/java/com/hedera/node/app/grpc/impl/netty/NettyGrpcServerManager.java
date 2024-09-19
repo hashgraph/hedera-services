@@ -153,7 +153,7 @@ public final class NettyGrpcServerManager implements GrpcServerManager {
                             builder.query(m.path());
                         }
                     });
-                    return builder.build(metrics);
+                    return builder.build(metrics, true);
                 })
                 .collect(Collectors.toUnmodifiableSet());
 
@@ -168,7 +168,7 @@ public final class NettyGrpcServerManager implements GrpcServerManager {
                             builder.query(m.path());
                         }
                     });
-                    return builder.build(metrics);
+                    return builder.build(metrics, false);
                 })
                 .collect(Collectors.toUnmodifiableSet());
     }

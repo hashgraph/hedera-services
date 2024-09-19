@@ -93,7 +93,7 @@ final class GrpcServiceBuilder {
      * The set of transaction method names that need corresponding service method definitions generated.
      *
      * <p>Initially this set is empty, and is populated by calls to {@link #transaction(String)}. Then,
-     * when {@link #build(Metrics)} is called, the set is used to create the transaction service method definitions.
+     * when {@link #build(Metrics, boolean)} is called, the set is used to create the transaction service method definitions.
      */
     private final Set<String> txMethodNames = new HashSet<>();
 
@@ -101,7 +101,7 @@ final class GrpcServiceBuilder {
      * The set of query method names that need corresponding service method definitions generated.
      *
      * <p>Initially this set is empty, and is populated by calls to {@link #query(String)}. Then,
-     * when {@link #build(Metrics)} is called, the set is used to create the query service method definitions.
+     * when {@link #build(Metrics, boolean)} is called, the set is used to create the query service method definitions.
      */
     private final Set<String> queryMethodNames = new HashSet<>();
 
@@ -166,10 +166,11 @@ final class GrpcServiceBuilder {
      * Build a grpc {@link ServerServiceDefinition} for each transaction and query method registered with this builder.
      *
      * @param metrics Used for recording metrics for the transaction or query methods
+     * @param chargeQueries Indicates if the query workflow should charge for handling queries
      * @return A {@link ServerServiceDefinition} that can be registered with a gRPC server
      */
     @NonNull
-    public ServerServiceDefinition build(@NonNull final Metrics metrics) {
+    public ServerServiceDefinition build(@NonNull final Metrics metrics, boolean chargeQueries) {
         final var builder = ServerServiceDefinition.builder(serviceName);
         txMethodNames.forEach(methodName -> {
             logger.debug("Registering gRPC transaction method {}.{}", serviceName, methodName);
@@ -178,7 +179,7 @@ final class GrpcServiceBuilder {
         });
         queryMethodNames.forEach(methodName -> {
             logger.debug("Registering gRPC query method {}.{}", serviceName, methodName);
-            final var method = new QueryMethod(serviceName, methodName, queryWorkflow, metrics);
+            final var method = new QueryMethod(serviceName, methodName, queryWorkflow, metrics, chargeQueries);
             addMethod(builder, serviceName, methodName, method);
         });
         return builder.build();

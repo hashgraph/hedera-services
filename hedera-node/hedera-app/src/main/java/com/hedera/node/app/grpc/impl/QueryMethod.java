@@ -52,6 +52,11 @@ public final class QueryMethod extends MethodBase {
     private final SpeedometerMetric queriesAnsweredSpeedometer;
 
     /**
+     * Indicates if the QueryWorkflow should charge for handling queries.
+     */
+    private final boolean shouldCharge;
+
+    /**
      * Create a new QueryMethod.
      *
      * @param serviceName a non-null reference to the service name
@@ -62,12 +67,14 @@ public final class QueryMethod extends MethodBase {
             @NonNull final String serviceName,
             @NonNull final String methodName,
             @NonNull final QueryWorkflow workflow,
-            @NonNull final Metrics metrics) {
+            @NonNull final Metrics metrics,
+            boolean shouldCharge) {
         super(serviceName, methodName, metrics);
         this.workflow = requireNonNull(workflow);
         this.queriesAnsweredCounter = counter(metrics, COUNTER_ANSWERED_NAME_TPL, COUNTER_ANSWERED_DESC_TPL);
         this.queriesAnsweredSpeedometer =
                 speedometer(metrics, SPEEDOMETER_ANSWERED_NAME_TPL, SPEEDOMETER_ANSWERED_DESC_TPL);
+        this.shouldCharge = shouldCharge;
     }
 
     /** {@inheritDoc} */

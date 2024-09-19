@@ -104,7 +104,7 @@ final class GrpcServiceBuilderTest {
     @Test
     @DisplayName("The build method will return a ServiceDescriptor")
     void serviceDescriptorIsNotNullOnNoopBuilder() {
-        assertNotNull(builder.build(metrics));
+        assertNotNull(builder.build(metrics, true));
     }
 
     /**
@@ -114,7 +114,7 @@ final class GrpcServiceBuilderTest {
     @Test
     @DisplayName("The built ServiceDescriptor includes a method with the name of the defined" + " transaction")
     void singleTransaction() {
-        final var sd = builder.transaction("txA").build(metrics);
+        final var sd = builder.transaction("txA").build(metrics, true);
         assertNotNull(sd.getMethod(SERVICE_NAME + "/txA"));
     }
 
@@ -132,7 +132,7 @@ final class GrpcServiceBuilderTest {
                 .transaction("txC")
                 .query("qC")
                 .transaction("txD")
-                .build(metrics);
+                .build(metrics, true);
 
         assertNotNull(sd.getMethod(SERVICE_NAME + "/txA"));
         assertNotNull(sd.getMethod(SERVICE_NAME + "/txB"));
@@ -146,7 +146,7 @@ final class GrpcServiceBuilderTest {
     @Test
     @DisplayName("Calling `transaction` with the same name twice is idempotent")
     void duplicateTransaction() {
-        final var sd = builder.transaction("txA").transaction("txA").build(metrics);
+        final var sd = builder.transaction("txA").transaction("txA").build(metrics, true);
 
         assertNotNull(sd.getMethod(SERVICE_NAME + "/txA"));
     }
@@ -154,7 +154,7 @@ final class GrpcServiceBuilderTest {
     @Test
     @DisplayName("Calling `query` with the same name twice is idempotent")
     void duplicateQuery() {
-        final var sd = builder.query("qA").query("qA").build(metrics);
+        final var sd = builder.query("qA").query("qA").build(metrics, true);
 
         assertNotNull(sd.getMethod(SERVICE_NAME + "/qA"));
     }
