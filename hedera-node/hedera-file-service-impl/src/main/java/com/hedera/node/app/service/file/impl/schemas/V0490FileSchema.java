@@ -235,14 +235,17 @@ public class V0490FileSchema extends Schema {
                 NodeAddressBook.newBuilder().nodeAddress(nodeDetails).build());
     }
 
-    public void updateNodeDetailsAfterFreeze(
+    public void updateAddressBookAndNodeDetailsAfterFreeze(
             @NonNull final SystemContext systemContext, @NonNull final ReadableNodeStore nodeStore) {
         requireNonNull(systemContext);
         final var config = systemContext.configuration();
         final var filesConfig = config.getConfigData(FilesConfig.class);
-        // Create the node details for file 102
+        // Create the nodeDetails for file 102
         dispatchSynthFileUpdate(
                 systemContext, createFileID(filesConfig.nodeDetails(), config), nodeStoreNodeDetails(nodeStore));
+        // Create the addressBook for file 101
+        dispatchSynthFileUpdate(
+                systemContext, createFileID(filesConfig.addressBook(), config), nodeStoreAddressBook(nodeStore));
     }
 
     /**
@@ -281,20 +284,35 @@ public class V0490FileSchema extends Schema {
                 .mapToLong(EntityNumber::number)
                 .mapToObj(nodeStore::get)
                 .filter(node -> node != null && !node.deleted())
-                .forEach(node -> {
-                    nodeDetails.add(NodeAddress.newBuilder()
-                            .nodeId(node.nodeId())
-                            .nodeAccountId(node.accountId())
-                            .nodeCertHash(node.grpcCertificateHash())
-                            .description(node.description())
-                            .stake(node.weight())
-                            .rsaPubKey(readableKey(getPublicKeyFromCertBytes(
-                                    node.gossipCaCertificate().toByteArray(), node.nodeId())))
-                            .serviceEndpoint(node.serviceEndpoint())
-                            .build());
-                });
+                .forEach(node -> nodeDetails.add(NodeAddress.newBuilder()
+                        .nodeId(node.nodeId())
+                        .nodeAccountId(node.accountId())
+                        .nodeCertHash(node.grpcCertificateHash())
+                        .description(node.description())
+                        .stake(node.weight())
+                        .rsaPubKey(readableKey(getPublicKeyFromCertBytes(
+                                node.gossipCaCertificate().toByteArray(), node.nodeId())))
+                        .serviceEndpoint(node.serviceEndpoint())
+                        .build()));
         return NodeAddressBook.PROTOBUF.toBytes(
                 NodeAddressBook.newBuilder().nodeAddress(nodeDetails).build());
+    }
+
+    private Bytes nodeStoreAddressBook(@NonNull final ReadableNodeStore nodeStore) {
+        final var nodeAddresses = new ArrayList<NodeAddress>();
+        StreamSupport.stream(Spliterators.spliterator(nodeStore.keys(), nodeStore.sizeOfState(), DISTINCT), false)
+                .mapToLong(EntityNumber::number)
+                .mapToObj(nodeStore::get)
+                .filter(node -> node != null && !node.deleted())
+                .forEach(node -> nodeAddresses.add(NodeAddress.newBuilder()
+                        .nodeId(node.nodeId())
+                        .rsaPubKey(readableKey(getPublicKeyFromCertBytes(
+                                node.gossipCaCertificate().toByteArray(), node.nodeId())))
+                        .nodeAccountId(node.accountId())
+                        .serviceEndpoint(node.serviceEndpoint())
+                        .build()));
+        return NodeAddressBook.PROTOBUF.toBytes(
+                NodeAddressBook.newBuilder().nodeAddress(nodeAddresses).build());
     }
 
     // ================================================================================================================
