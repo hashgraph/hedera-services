@@ -29,6 +29,7 @@ public class NodeConnectInfo {
     public static int NEXT_DEFAULT_ACCOUNT_NUM = 3;
     private static final int DEFAULT_PORT = 50211;
     private static final int DEFAULT_TLS_PORT = 50212;
+    private static final int DEFAULT_NODE_OPERATOR_PORT = 50213;
     private static final int DEFAULT_WORKFLOW_PORT = 60211;
     private static final int DEFAULT_WORKFLOW_TLS_PORT = 60212;
     private static final String DEFAULT_HOST = "localhost";
@@ -37,6 +38,7 @@ public class NodeConnectInfo {
     private final String host;
     private final int port;
     private final int tlsPort;
+    private final int nodeOperatorPort;
     private final int workflowPort = DEFAULT_WORKFLOW_PORT;
     private final int workflowTlsPort = DEFAULT_WORKFLOW_TLS_PORT;
     private final AccountID account;
@@ -52,11 +54,15 @@ public class NodeConnectInfo {
         } else {
             port = DEFAULT_PORT;
         }
+
+        tlsPort = DEFAULT_TLS_PORT;
+
         if (ports.length > 1) {
-            tlsPort = ports[1];
+            nodeOperatorPort = ports[1];
         } else {
-            tlsPort = DEFAULT_TLS_PORT;
+            nodeOperatorPort = DEFAULT_NODE_OPERATOR_PORT;
         }
+
         account = Stream.of(aspects)
                 .filter(TxnUtils::isIdLiteral)
                 .map(HapiPropertySource::asAccount)
@@ -76,6 +82,10 @@ public class NodeConnectInfo {
         return String.format(FORMATTER, host, tlsPort);
     }
 
+    public String nodeOperatorUri() {
+        return String.format(FORMATTER, host, nodeOperatorPort);
+    }
+
     public String workflowUri() {
         return String.format(FORMATTER, host, workflowPort);
     }
@@ -90,6 +100,10 @@ public class NodeConnectInfo {
 
     public int getPort() {
         return port;
+    }
+
+    public int getNodeOperatorPort() {
+        return nodeOperatorPort;
     }
 
     public int getTlsPort() {
@@ -114,6 +128,7 @@ public class NodeConnectInfo {
                 .add("host", host)
                 .add("port", port)
                 .add("tlsPort", tlsPort)
+                .add("nodeOperatorPort", nodeOperatorPort)
                 .add("workflowPort", workflowPort)
                 .add("workflowTlsPort", workflowTlsPort)
                 .add("account", HapiPropertySource.asAccountString(account))

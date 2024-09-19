@@ -94,6 +94,7 @@ public class RemoteNetwork extends AbstractGrpcNetwork implements HederaNetwork 
                         .build(),
                 connectInfo.getHost(),
                 connectInfo.getPort(),
+                connectInfo.getNodeOperatorPort(),
                 UNKNOWN_PORT,
                 UNKNOWN_PORT,
                 UNKNOWN_PORT,
