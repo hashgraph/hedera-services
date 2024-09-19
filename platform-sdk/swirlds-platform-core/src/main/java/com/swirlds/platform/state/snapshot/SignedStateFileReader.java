@@ -19,6 +19,7 @@ package com.swirlds.platform.state.snapshot;
 import static com.swirlds.common.io.streams.SerializableStreamConstants.SERIALIZATION_PROTOCOL_VERSION;
 import static com.swirlds.common.io.streams.SerializableStreamConstants.SIGNATURE_SET_SEPARATED_VERSION;
 import static com.swirlds.common.io.streams.StreamDebugUtils.deserializeAndDebugOnFailure;
+import static com.swirlds.platform.state.snapshot.SignedStateFileUtils.SIGNATURE_SET_FILE_NAME;
 import static com.swirlds.platform.state.snapshot.SignedStateFileUtils.VERSIONED_FILE_BYTE;
 import static java.nio.file.Files.exists;
 
@@ -35,6 +36,7 @@ import com.swirlds.platform.state.signed.SigSet;
 import com.swirlds.platform.state.signed.SignedState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.BufferedInputStream;
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -67,6 +69,8 @@ public final class SignedStateFileReader {
                 .getSavedStateFiles(mainClassName, platformId, swirldName);
     }
 
+    public record StateFileData(MerkleRoot state, Hash hash, SigSet sigSet, int protocolVersion) {}
+
     /**
      * Reads a SignedState from disk using the provided snapshot reader function. If the reader throws
      * an exception, it is propagated by this method to the caller.
@@ -89,10 +93,48 @@ public final class SignedStateFileReader {
         checkSignedStatePath(stateFile);
 
         final DeserializedSignedState returnState;
+        StateFileData data = readStateFileData(stateFile, snapshotStateReader);
 
-        record StateFileData(MerkleRoot state, Hash hash, SigSet sigSet) {}
+        final StateFileData normalizedData;
+        if (data.sigSet == null) {
+            File sigSetFile =
+                    stateFile.getParent().resolve(SIGNATURE_SET_FILE_NAME).toFile();
+            normalizedData = deserializeAndDebugOnFailure(
+                    () -> new BufferedInputStream(new FileInputStream(sigSetFile)),
+                    (final MerkleDataInputStream in) -> {
+                        int protocolVersion = readAndCheckVersion(in);
+                        if (protocolVersion != data.protocolVersion) {
+                            throw new IOException(
+                                    "Protocol versions of the state file and the signature set file do not match");
+                        }
+                        final SigSet sigSet = in.readSerializable();
+                        return new StateFileData(data.state, data.hash, sigSet, protocolVersion);
+                    });
+        } else {
+            normalizedData = data;
+        }
 
-        final StateFileData data = deserializeAndDebugOnFailure(
+        final SignedState newSignedState = new SignedState(
+                platformContext,
+                CryptoStatic::verifySignature,
+                normalizedData.state,
+                "SignedStateFileReader.readStateFile()",
+                false,
+                false,
+                false);
+
+        newSignedState.setSigSet(normalizedData.sigSet);
+
+        returnState = new DeserializedSignedState(
+                newSignedState.reserve("SignedStateFileReader.readStateFile()"), normalizedData.hash);
+
+        return returnState;
+    }
+
+    public static StateFileData readStateFileData(
+            Path stateFile, CheckedBiFunction<MerkleDataInputStream, Path, MerkleRoot, IOException> snapshotStateReader)
+            throws IOException {
+        return deserializeAndDebugOnFailure(
                 () -> new BufferedInputStream(new FileInputStream(stateFile.toFile())),
                 (final MerkleDataInputStream in) -> {
                     int protocolVersion = readAndCheckVersion(in);
@@ -103,7 +145,7 @@ public final class SignedStateFileReader {
                             final MerkleRoot state = snapshotStateReader.apply(in, directory);
                             final Hash hash = in.readSerializable();
                             final SigSet sigSet = in.readSerializable();
-                            return new StateFileData(state, hash, sigSet);
+                            return new StateFileData(state, hash, sigSet, protocolVersion);
                         } catch (final IOException e) {
                             throw new IOException("Failed to read snapshot file " + stateFile.toFile(), e);
                         }
@@ -111,17 +153,8 @@ public final class SignedStateFileReader {
                         try {
                             final MerkleRoot state = snapshotStateReader.apply(in, directory);
                             final Hash hash = in.readSerializable();
-                            try (MerkleDataInputStream sigSetIn =
-                                    new MerkleDataInputStream(new BufferedInputStream(new FileInputStream(directory
-                                            .resolve(SignedStateFileUtils.SIGNATURE_SET_FILE_NAME)
-                                            .toFile())))) {
-                                if (readAndCheckVersion(sigSetIn) != protocolVersion) {
-                                    throw new IOException(
-                                            "Protocol versions of the state file and the signature set file do not match");
-                                }
-                                final SigSet sigSet = sigSetIn.readSerializable();
-                                return new StateFileData(state, hash, sigSet);
-                            }
+                            return new StateFileData(state, hash, null, protocolVersion);
+
                         } catch (final IOException e) {
                             throw new IOException("Failed to read snapshot file " + stateFile.toFile(), e);
                         }
@@ -129,22 +162,6 @@ public final class SignedStateFileReader {
                         throw new IOException("Unsupported protocol version: " + protocolVersion);
                     }
                 });
-
-        final SignedState newSignedState = new SignedState(
-                platformContext,
-                CryptoStatic::verifySignature,
-                data.state(),
-                "SignedStateFileReader.readStateFile()",
-                false,
-                false,
-                false);
-
-        newSignedState.setSigSet(data.sigSet());
-
-        returnState = new DeserializedSignedState(
-                newSignedState.reserve("SignedStateFileReader.readStateFile()"), data.hash());
-
-        return returnState;
     }
 
     /**

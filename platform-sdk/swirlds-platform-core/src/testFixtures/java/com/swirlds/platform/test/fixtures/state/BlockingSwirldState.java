@@ -87,6 +87,7 @@ public class BlockingSwirldState extends MerkleStateRoot {
     @Override
     public BlockingSwirldState copy() {
         throwIfImmutable();
+        setImmutable(true);
         return new BlockingSwirldState(this);
     }
 

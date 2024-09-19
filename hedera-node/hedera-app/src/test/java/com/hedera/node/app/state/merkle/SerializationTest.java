@@ -17,7 +17,7 @@
 package com.hedera.node.app.state.merkle;
 
 import static com.hedera.node.app.fixtures.AppTestBase.DEFAULT_CONFIG;
-import static com.swirlds.platform.state.snapshot.SignedStateFileReader.readStateFile;
+import static com.swirlds.platform.state.snapshot.SignedStateFileReader.readStateFileData;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -35,7 +35,6 @@ import com.swirlds.common.crypto.CryptographyFactory;
 import com.swirlds.common.crypto.config.CryptoConfig;
 import com.swirlds.common.io.utility.LegacyTemporaryFileBuilder;
 import com.swirlds.common.merkle.crypto.MerkleCryptographyFactory;
-import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.extensions.sources.SimpleConfigSource;
@@ -45,7 +44,7 @@ import com.swirlds.platform.config.StateConfig_;
 import com.swirlds.platform.state.MerkleStateLifecycles;
 import com.swirlds.platform.state.MerkleStateRoot;
 import com.swirlds.platform.state.signed.SignedState;
-import com.swirlds.platform.state.snapshot.DeserializedSignedState;
+import com.swirlds.platform.state.snapshot.SignedStateFileReader;
 import com.swirlds.platform.state.snapshot.SignedStateFileUtils;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;
@@ -235,22 +234,18 @@ class SerializationTest extends MerkleTestBase {
                 .build();
 
         Platform mockPlatform = mock(Platform.class);
-        when(mockPlatform.getSelfId()).thenReturn(new NodeId(1));
         when(mockPlatform.getContext()).thenReturn(context);
         originalTree.init(mockPlatform, InitTrigger.RESTART, new ServicesSoftwareVersion(schemaV1.getVersion()));
-
-        var target = tempDir.resolve("snapshot");
 
         // prepare the tree and create a snapshot
         originalTree.copy();
         originalTree.computeHash();
-        originalTree.createSnapshot(target);
+        originalTree.createSnapshot(tempDir);
 
-        final DeserializedSignedState deserializedSignedState = readStateFile(
-                context, target.resolve(SignedStateFileUtils.SIGNED_STATE_FILE_NAME), SignedStateFileUtils::readState);
+        final SignedStateFileReader.StateFileData deserializedSignedState = readStateFileData(
+                tempDir.resolve(SignedStateFileUtils.SIGNED_STATE_FILE_NAME), SignedStateFileUtils::readState);
 
-        MerkleStateRoot state = (MerkleStateRoot)
-                deserializedSignedState.reservedSignedState().get().getState();
+        MerkleStateRoot state = (MerkleStateRoot) deserializedSignedState.state();
         initServices(schemaV1, state);
         assertTree(state);
     }
