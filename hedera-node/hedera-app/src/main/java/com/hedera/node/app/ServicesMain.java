@@ -38,7 +38,7 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.services.OrderedServiceMigrator;
 import com.hedera.node.app.services.ServicesRegistryImpl;
-import com.hedera.node.app.tss.impl.PlaceholderTssBaseService;
+import com.hedera.node.app.tss.impl.TssBaseServiceImpl;
 import com.swirlds.base.time.Time;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.RuntimeConstructable;
@@ -363,6 +363,6 @@ public class ServicesMain implements SwirldMain {
                 ServicesRegistryImpl::new,
                 new OrderedServiceMigrator(),
                 InstantSource.system(),
-                PlaceholderTssBaseService::new);
+                TssBaseServiceImpl::new);
     }
 }

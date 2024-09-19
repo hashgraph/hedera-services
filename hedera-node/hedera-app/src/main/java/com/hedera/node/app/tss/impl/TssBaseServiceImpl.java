@@ -19,6 +19,7 @@ package com.hedera.node.app.tss.impl;
 import static com.hedera.node.app.hapi.utils.CommonUtils.noThrowSha384HashOf;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.node.app.tss.TssBaseService;
 import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.state.spi.SchemaRegistry;
@@ -36,8 +37,8 @@ import org.apache.logging.log4j.Logger;
  * Placeholder for the TSS base service, added to support testing production of indirect block proofs,
  * c.f. <a href="https://github.com/hashgraph/hedera-services/issues/15379">this issue</a>.
  */
-public class PlaceholderTssBaseService implements TssBaseService {
-    private static final Logger log = LogManager.getLogger(PlaceholderTssBaseService.class);
+public class TssBaseServiceImpl implements TssBaseService {
+    private static final Logger log = LogManager.getLogger(TssBaseServiceImpl.class);
 
     /**
      * Copy-on-write list to avoid concurrent modification exceptions if a consumer unregisters
@@ -89,5 +90,18 @@ public class PlaceholderTssBaseService implements TssBaseService {
     public void unregisterLedgerSignatureConsumer(@NonNull final BiConsumer<byte[], byte[]> consumer) {
         requireNonNull(consumer);
         consumers.remove(consumer);
+    }
+
+    /**
+     * Set the candidate roster for the TSS base service to generate key material.  This is a necessary step before the
+     * roster can be adopted by the platform. There can be only one candidate roster at a time. If there is an existing
+     * candidate roster in the state, it will be replaced and all related data will be removed from the state. For this
+     * reason, setting the candidate roster does not guarantee its adoption.
+     *
+     * @param candidateRoster The candidate roster to set.
+     */
+    @Override
+    public void setCandidateRoster(@NonNull Roster candidateRoster) {
+
     }
 }

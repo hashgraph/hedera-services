@@ -34,7 +34,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class PlaceholderTssBaseServiceTest {
+class TssBaseServiceImplTest {
     private CountDownLatch latch;
     private final List<byte[]> receivedMessageHashes = new ArrayList<>();
     private final List<byte[]> receivedSignatures = new ArrayList<>();
@@ -49,7 +49,7 @@ class PlaceholderTssBaseServiceTest {
     @Mock
     private SchemaRegistry registry;
 
-    private final PlaceholderTssBaseService subject = new PlaceholderTssBaseService();
+    private final TssBaseServiceImpl subject = new TssBaseServiceImpl();
 
     @BeforeEach
     void setUp() {

@@ -10,8 +10,8 @@
  */
 syntax = "proto3";
 
-package com.hedera.hapi.platform.event;
-
+//package com.hedera.hapi.platform.event;
+package proto;
 /*
  * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
@@ -64,7 +64,7 @@ message TssVoteTransactionBody {
    * Each bit in this vector indicates receipt (1) or non-receipt (0) of a
    * _valid_ `TssMessage` for a corresponding `TssMessageTransaction`.
    * <p>
-   * <h4>Example</h4>
+   * <b>Example</b>
    * <ul><li>The least significant bit of byte[0] SHALL be sequence 0.</li>
    *     <li>The most significant bit of byte[0] SHALL be sequence 7.</li>
    *     <li>The least significant bit of byte[1] SHALL be sequence 8.</li>
