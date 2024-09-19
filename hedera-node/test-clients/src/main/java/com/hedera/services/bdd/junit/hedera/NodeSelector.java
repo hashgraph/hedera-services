@@ -18,6 +18,8 @@ package com.hedera.services.bdd.junit.hedera;
 
 import com.hedera.hapi.node.base.AccountID;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import org.bouncycastle.util.Arrays;
+
 import java.util.function.Predicate;
 
 /**
@@ -78,21 +80,17 @@ public interface NodeSelector extends Predicate<HederaNode> {
         };
     }
 
-    /** Gets a {@link NodeSelector} that selects nodes by nodeId in a case-insensitive way */
-    static NodeSelector exceptNodeId(final long... nodeIds) {
+    /** Gets a {@link NodeSelector} that excludes nodes by nodeId in a case-insensitive way */
+    static NodeSelector exceptNodeIds(final long... nodeIds) {
         return new NodeSelector() {
             @Override
             public boolean test(@NonNull final HederaNode node) {
-                boolean result = true;
-                for (var nodeId : nodeIds) {
-                    result &= node.getNodeId() != nodeId;
-                }
-                return result;
+                return !Arrays.contains(nodeIds, node.getNodeId());
             }
 
             @Override
             public String toString() {
-                return "by nodeIds '" + nodeIds + "'";
+                return "by nodeIds '" + java.util.Arrays.toString(nodeIds) + "'";
             }
         };
     }

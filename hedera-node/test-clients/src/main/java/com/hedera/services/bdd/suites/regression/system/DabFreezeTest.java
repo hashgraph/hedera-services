@@ -19,7 +19,7 @@ package com.hedera.services.bdd.suites.regression.system;
 import static com.hedera.services.bdd.junit.TestTags.UPGRADE;
 import static com.hedera.services.bdd.junit.hedera.NodeSelector.allNodes;
 import static com.hedera.services.bdd.junit.hedera.NodeSelector.byNodeId;
-import static com.hedera.services.bdd.junit.hedera.NodeSelector.exceptNodeId;
+import static com.hedera.services.bdd.junit.hedera.NodeSelector.exceptNodeIds;
 import static com.hedera.services.bdd.junit.hedera.subprocess.UpgradeConfigTxt.DAB_GENERATED;
 import static com.hedera.services.bdd.junit.hedera.utils.AddressBookUtils.CLASSIC_NODE_NAMES;
 import static com.hedera.services.bdd.junit.hedera.utils.AddressBookUtils.classicMetadataFor;
@@ -282,7 +282,7 @@ public class DabFreezeTest implements LifecycleTest {
                     prepareFakeUpgrade(),
                     validateUpgradeAddressBooks(
                             addressBook -> assertThat(nodeIdsFrom(addressBook)).containsExactlyInAnyOrder(0L, 2L, 3L)),
-                    upgradeToNextConfigVersion(FakeNmt.removeNode(byNodeId(1), DAB_GENERATED, exceptNodeId(1), null)),
+                    upgradeToNextConfigVersion(FakeNmt.removeNode(byNodeId(1), DAB_GENERATED, exceptNodeIds(1), null)),
                     waitUntilStartOfNextStakingPeriod(1).withBackgroundTraffic(),
                     touchBalanceOf(NODE0_STAKER, NODE2_STAKER, NODE3_STAKER).andAssertStakingRewardCount(3),
                     touchBalanceOf(NODE1_STAKER).andAssertStakingRewardCount(0));
@@ -329,7 +329,7 @@ public class DabFreezeTest implements LifecycleTest {
                                     DAB_GENERATED,
                                     classicMetadataFor(4, "networkName", "node5", null, 0, 0, 0, 0),
                                     true,
-                                    exceptNodeId(4))));
+                                    exceptNodeIds(4))));
         }
     }
 
@@ -427,8 +427,8 @@ public class DabFreezeTest implements LifecycleTest {
                                     DAB_GENERATED,
                                     classicMetadataFor(5, "networkName", "node6", null, 0, 0, 0, 0),
                                     true,
-                                    exceptNodeId(1, 4, 5)),
-                            FakeNmt.removeNode(byNodeId(2), DAB_GENERATED, exceptNodeId(4, 5), byNodeId(1))));
+                                    exceptNodeIds(1, 4, 5)),
+                            FakeNmt.removeNode(byNodeId(2), DAB_GENERATED, exceptNodeIds(4, 5), byNodeId(1))));
             //                                        FakeNmt.removeNode(byNodeId(4), DAB_GENERATED, exceptNodeId(4, 5),
             // byNodeId(1))));
         }

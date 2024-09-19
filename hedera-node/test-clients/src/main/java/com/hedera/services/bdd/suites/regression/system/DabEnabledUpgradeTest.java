@@ -19,7 +19,7 @@ package com.hedera.services.bdd.suites.regression.system;
 import static com.hedera.services.bdd.junit.SharedNetworkLauncherSessionListener.CLASSIC_HAPI_TEST_NETWORK_SIZE;
 import static com.hedera.services.bdd.junit.TestTags.UPGRADE;
 import static com.hedera.services.bdd.junit.hedera.NodeSelector.byNodeId;
-import static com.hedera.services.bdd.junit.hedera.NodeSelector.exceptNodeId;
+import static com.hedera.services.bdd.junit.hedera.NodeSelector.exceptNodeIds;
 import static com.hedera.services.bdd.junit.hedera.subprocess.UpgradeConfigTxt.DAB_GENERATED;
 import static com.hedera.services.bdd.junit.hedera.utils.AddressBookUtils.CLASSIC_NODE_NAMES;
 import static com.hedera.services.bdd.junit.hedera.utils.AddressBookUtils.nodeIdsFrom;
@@ -151,7 +151,7 @@ public class DabEnabledUpgradeTest implements LifecycleTest {
                     prepareFakeUpgrade(),
                     validateUpgradeAddressBooks(
                             addressBook -> assertThat(nodeIdsFrom(addressBook)).containsExactlyInAnyOrder(0L, 2L, 3L)),
-                    upgradeToNextConfigVersion(FakeNmt.removeNode(byNodeId(1), DAB_GENERATED, exceptNodeId(1), null)),
+                    upgradeToNextConfigVersion(FakeNmt.removeNode(byNodeId(1), DAB_GENERATED, exceptNodeIds(1), null)),
                     waitUntilStartOfNextStakingPeriod(1).withBackgroundTraffic(),
                     touchBalanceOf(NODE0_STAKER, NODE2_STAKER, NODE3_STAKER).andAssertStakingRewardCount(3),
                     touchBalanceOf(NODE1_STAKER).andAssertStakingRewardCount(0));
@@ -186,7 +186,7 @@ public class DabEnabledUpgradeTest implements LifecycleTest {
                     prepareFakeUpgrade(),
                     validateUpgradeAddressBooks(
                             addressBook -> assertThat(nodeIdsFrom(addressBook)).containsExactlyInAnyOrder(0L, 2L)),
-                    upgradeToNextConfigVersion(FakeNmt.removeNode(byNodeId(3), DAB_GENERATED, exceptNodeId(3), null)),
+                    upgradeToNextConfigVersion(FakeNmt.removeNode(byNodeId(3), DAB_GENERATED, exceptNodeIds(3), null)),
                     waitUntilStartOfNextStakingPeriod(1).withBackgroundTraffic(),
                     touchBalanceOf(NODE0_STAKER, NODE2_STAKER).andAssertStakingRewardCount(2),
                     touchBalanceOf(NODE3_STAKER).andAssertStakingRewardCount(0));
@@ -217,7 +217,7 @@ public class DabEnabledUpgradeTest implements LifecycleTest {
             return hapiTest(
                     prepareFakeUpgrade(),
                     // node4 was not active before this the upgrade, so it could not have written a config.txt
-                    validateUpgradeAddressBooks(exceptNodeId(4L), addressBook -> assertThat(nodeIdsFrom(addressBook))
+                    validateUpgradeAddressBooks(exceptNodeIds(4L), addressBook -> assertThat(nodeIdsFrom(addressBook))
                             .contains(4L)),
                     upgradeToNextConfigVersion(FakeNmt.addNode(Set.of(4L), DAB_GENERATED, true)));
         }
