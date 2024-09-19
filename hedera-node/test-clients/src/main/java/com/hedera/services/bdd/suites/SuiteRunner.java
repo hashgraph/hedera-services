@@ -34,6 +34,7 @@ import com.hedera.services.bdd.suites.freeze.FreezeUpgrade;
 import com.hedera.services.bdd.suites.freeze.PrepareUpgrade;
 import com.hedera.services.bdd.suites.freeze.SimpleFreezeOnly;
 import com.hedera.services.bdd.suites.freeze.UpdateFileForUpgrade;
+import com.hedera.services.bdd.suites.jrs.NodeOpsForUpgrade;
 import com.hedera.services.bdd.suites.meta.VersionInfoSpec;
 import com.hedera.services.bdd.suites.perf.AdjustFeeScheduleSuite;
 import com.hedera.services.bdd.suites.perf.crypto.*;
@@ -41,8 +42,6 @@ import com.hedera.services.bdd.suites.perf.topic.SubmitMessageLoadTest;
 import com.hedera.services.bdd.suites.reconnect.CreateAccountsBeforeReconnect;
 import com.hedera.services.bdd.suites.reconnect.CreateFilesBeforeReconnect;
 import com.hedera.services.bdd.suites.reconnect.CreateTopicsBeforeReconnect;
-import com.hedera.services.bdd.suites.jrs.NodeOpsForUpgrade;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;

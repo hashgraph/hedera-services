@@ -853,7 +853,7 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener {
             // from the immutable state in the ReconnectCompleteNotification
             initialStateHashFuture = new CompletableFuture<>();
             notifications.register(ReconnectCompleteListener.class, new ReadReconnectStartingStateHash(notifications));
-        } else if(trigger == GENESIS) {
+        } else if (trigger == GENESIS) {
             initialStateHashFuture = completedFuture(Bytes.wrap(new byte[48]));
         }
         // For other triggers the initial state hash must have been set already
