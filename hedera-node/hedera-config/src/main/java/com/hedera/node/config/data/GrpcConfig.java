@@ -41,7 +41,7 @@ import com.swirlds.config.api.validation.annotation.Min;
 public record GrpcConfig(
         @ConfigProperty(defaultValue = "50211") @Min(0) @Max(65535) @NodeProperty int port,
         @ConfigProperty(defaultValue = "50212") @Min(0) @Max(65535) @NodeProperty int tlsPort,
-        @ConfigProperty(defaultValue = "true") @NodeProperty boolean nodeOperatorPortEnabled,
+        @ConfigProperty(defaultValue = "false") @NodeProperty boolean nodeOperatorPortEnabled,
         @ConfigProperty(defaultValue = "50213") @Min(1) @Max(65535) @NodeProperty int nodeOperatorPort,
         @ConfigProperty(defaultValue = "60211") @Min(0) @Max(65535) @NodeProperty int workflowsPort,
         @ConfigProperty(defaultValue = "60212") @Min(0) @Max(65535) @NodeProperty int workflowsTlsPort) {
