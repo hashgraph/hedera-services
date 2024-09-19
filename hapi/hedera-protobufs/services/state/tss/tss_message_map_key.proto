@@ -10,7 +10,7 @@
  */
 syntax = "proto3";
 
-package proto;
+package com.hedera.hapi.platform.tss;
 
 /*
  * Hedera Network Services Protobuf
