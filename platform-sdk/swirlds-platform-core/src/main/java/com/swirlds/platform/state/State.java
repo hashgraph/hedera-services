@@ -161,7 +161,7 @@ public class State extends PartialNaryMerkleInternal implements MerkleRoot {
 
     @NonNull
     @Override
-    public WritableRosterStore getWritableRosterStore() {
+    public WritableRosterStore getRosterStateModifier() {
         // roster is only a part of the platform state
         throw new UnsupportedOperationException("Roster can only be obtained from the state used by the platform");
     }

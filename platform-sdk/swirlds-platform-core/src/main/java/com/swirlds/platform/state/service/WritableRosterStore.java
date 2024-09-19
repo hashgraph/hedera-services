@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.state.service;
 
+import static com.swirlds.platform.util.BootstrapUtils.detectSoftwareUpgrade;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.state.primitives.ProtoBytes;
@@ -28,6 +29,10 @@ import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.RosterStateId;
 import com.swirlds.platform.roster.RosterUtils;
 import com.swirlds.platform.roster.RosterValidator;
+import com.swirlds.platform.state.RosterStateAccessor;
+import com.swirlds.platform.state.RosterStateModifier;
+import com.swirlds.platform.state.signed.ReservedSignedState;
+import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.state.spi.CommittableWritableStates;
 import com.swirlds.state.spi.WritableKVState;
 import com.swirlds.state.spi.WritableSingletonState;
@@ -40,10 +45,10 @@ import java.util.Objects;
 /**
  * Provides write methods for interacting with Rosters.
  */
-public class WritableRosterStore extends ReadableRosterStoreImpl {
+public class WritableRosterStore implements RosterStateModifier {
 
     private final WritableStates writableStates;
-
+    private final RosterStateAccessor rosterStateAccessor;
     /**
      * The roster state singleton. This is the state that holds the candidate roster hash and the list of pairs of
      * active roster hashes and the round number in which those rosters became active.
@@ -61,10 +66,96 @@ public class WritableRosterStore extends ReadableRosterStoreImpl {
      * @param writableStates the readable states
      */
     public WritableRosterStore(@NonNull final WritableStates writableStates) {
-        super(writableStates);
         this.writableStates = writableStates;
+        this.rosterStateAccessor = new ReadableRosterStore(writableStates);
         this.rosterState = writableStates.getSingleton(RosterStateId.ROSTER_STATES_KEY);
         this.rosterMap = writableStates.get(RosterStateId.ROSTER_KEY);
+    }
+
+    /**
+     * Set the candidate roster if valid and doesn't yet exist in the state.
+     *
+     * @param candidateRoster a candidate roster to set.
+     */
+    @Override
+    public void setCandidateRoster(@NonNull final Roster candidateRoster) {
+        Objects.requireNonNull(candidateRoster);
+        RosterValidator.validate(candidateRoster);
+
+        // update the roster state
+        final RosterState currentRosterState = rosterStateOrThrow();
+        final Bytes candidateRosterHash = RosterUtils.hashOf(candidateRoster).getBytes();
+        final Builder rosterStateBuilder = RosterState.newBuilder()
+                .candidateRosterHash(candidateRosterHash)
+                .roundRosterPairs(currentRosterState.roundRosterPairs());
+        this.rosterState.put(rosterStateBuilder.build());
+
+        // update the roster map and commit the changes
+        this.rosterMap.put(ProtoBytes.newBuilder().value(candidateRosterHash).build(), candidateRoster);
+        commit();
+    }
+
+    /**
+     * Determines the initial active roster based on the given software version and initial state.
+     * The active roster is obtained by adopting the candidate roster if a software upgrade is detected.
+     * Otherwise, the active roster is retrieved from the state or an exception is thrown if not found.
+     *
+     * @param version the software version of the current node
+     * @param initialState the initial state of the platform
+     * @return the active roster which will be used by the platform
+     */
+    @Override
+    public Roster determineActiveRoster(@NonNull SoftwareVersion version, @NonNull ReservedSignedState initialState) {
+        final boolean softwareUpgrade = detectSoftwareUpgrade(version, initialState.get());
+        final Roster candidateRoster = rosterStateAccessor.getCandidateRoster();
+
+        if (!softwareUpgrade) {
+            final Roster lastUsedActiveRoster = rosterStateAccessor.getActiveRoster();
+            // not in software upgrade mode (i.e., normal restart), return the
+            // active roster present in the state or throw if not found.
+            return Objects.requireNonNull(
+                    lastUsedActiveRoster, "Active Roster must be present in the state during normal network restart.");
+        }
+
+        // software upgrade is detected, we adopt the candidate roster
+        adoptCandidateRoster(initialState.get().getRound() + 1);
+        return candidateRoster;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public Roster getCandidateRoster() {
+        return rosterStateAccessor.getCandidateRoster();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public Roster getActiveRoster() {
+        return rosterStateAccessor.getActiveRoster();
+    }
+
+    /**
+     * Adopts the candidate roster present in the state as the active roster.
+     * Until the Dynamic Address Book is implemented, this method will be called unconditionally on network upgrade.
+     *
+     * @param roundNumber the round number in which the candidate roster became active
+     */
+    private void adoptCandidateRoster(final long roundNumber) {
+        final RosterState previousRosterState = rosterStateOrThrow();
+        final Roster candidateRoster = rosterMap.get(ProtoBytes.newBuilder()
+                .value(previousRosterState.candidateRosterHash())
+                .build());
+        if (candidateRoster == null) {
+            throw new IllegalStateException("Candidate roster not found in the state.");
+        }
+        RosterValidator.validate(candidateRoster);
+
+        storeAsActive(candidateRoster, roundNumber);
+        removeCandidateRoster();
     }
 
     /**
@@ -86,53 +177,16 @@ public class WritableRosterStore extends ReadableRosterStoreImpl {
         final Builder rosterStateBuilder = RosterState.newBuilder()
                 .candidateRosterHash(previousRosterState.candidateRosterHash())
                 .roundRosterPairs(roundRosterPairs);
-        update(rosterStateBuilder);
+        this.rosterState.put(rosterStateBuilder.build());
 
-        // update the roster map
-        update(ProtoBytes.newBuilder().value(activeRosterHash).build(), roster);
+        // update the roster map and commit the changes
+        this.rosterMap.put(ProtoBytes.newBuilder().value(activeRosterHash).build(), roster);
+        commit();
     }
 
     /**
-     * Set the candidate roster.
-     *
-     * @param candidateRoster a candidate roster to set
-     */
-    public void setCandidateRoster(@NonNull final Roster candidateRoster) {
-        Objects.requireNonNull(candidateRoster);
-        RosterValidator.validate(candidateRoster);
-
-        // update the roster state
-        final RosterState currentRosterState = rosterStateOrThrow();
-        final Bytes candidateRosterHash = RosterUtils.hashOf(candidateRoster).getBytes();
-        final Builder rosterStateBuilder = RosterState.newBuilder()
-                .candidateRosterHash(candidateRosterHash)
-                .roundRosterPairs(currentRosterState.roundRosterPairs());
-        update(rosterStateBuilder);
-
-        // update the roster map
-        update(ProtoBytes.newBuilder().value(candidateRosterHash).build(), candidateRoster);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void adoptCandidateRoster(final long roundNumber) {
-        final RosterState previousRosterState = rosterStateOrThrow();
-        final Roster candidateRoster = rosterMap.get(ProtoBytes.newBuilder()
-                .value(previousRosterState.candidateRosterHash())
-                .build());
-        if (candidateRoster == null) {
-            throw new IllegalStateException("Candidate roster not found in the state.");
-        }
-        RosterValidator.validate(candidateRoster);
-
-        storeAsActive(candidateRoster, roundNumber);
-        removeCandidateRoster();
-    }
-
-    /**
-     * removes the candidate roster from the roster state.
+     * Removes the candidate roster from the roster state.
+     * This method is called after the candidate roster is adopted as the active roster.
      */
     private void removeCandidateRoster() {
         final RosterState previousRosterState = rosterStateOrThrow();
@@ -140,30 +194,22 @@ public class WritableRosterStore extends ReadableRosterStoreImpl {
         final Builder rosterStateBuilder = RosterState.newBuilder()
                 .candidateRosterHash(Bytes.EMPTY)
                 .roundRosterPairs(previousRosterState.roundRosterPairs());
-        update(rosterStateBuilder);
+        this.rosterState.put(rosterStateBuilder.build());
     }
 
     /**
-     * returns the roster state or throws an exception if the state is null.
+     * Returns the roster state or throws an exception if the state is null.
      * @return the roster state
      * @throws NullPointerException if the roster state is null
-     * @implNote this method is package-private for testing purposes
      */
     @NonNull
-    RosterState rosterStateOrThrow() {
+    private RosterState rosterStateOrThrow() {
         return requireNonNull(rosterState.get());
     }
 
-    private void update(@NonNull final RosterState.Builder rosterStateBuilder) {
-        this.rosterState.put(rosterStateBuilder.build());
-        commit();
-    }
-
-    private void update(@NonNull final ProtoBytes key, @NonNull final Roster value) {
-        this.rosterMap.put(key, value);
-        commit();
-    }
-
+    /**
+     * Commits the changes to the state.
+     */
     private void commit() {
         if (writableStates instanceof final CommittableWritableStates committableWritableStates) {
             committableWritableStates.commit();

@@ -18,8 +18,8 @@ package com.swirlds.platform.roster;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -28,28 +28,20 @@ import com.hedera.hapi.node.state.roster.RosterEntry;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.platform.NodeId;
-import com.swirlds.platform.state.MerkleRoot;
-import com.swirlds.platform.state.PlatformStateAccessor;
-import com.swirlds.platform.state.service.WritableRosterStore;
+import com.swirlds.platform.builder.PlatformBuilder;
 import com.swirlds.platform.state.signed.ReservedSignedState;
-import com.swirlds.platform.state.signed.SignedState;
-import com.swirlds.platform.system.SoftwareVersion;
+import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
 import java.security.cert.CertificateEncodingException;
 import java.security.cert.X509Certificate;
-import org.junit.jupiter.api.DisplayName;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 
 class RosterUtilsTest {
 
-    private final AddressBook addressBook = mock(AddressBook.class);
-    private final Address address = mock(Address.class);
-    private final NodeId nodeId = new NodeId(1);
-    private final X509Certificate certificate = mock(X509Certificate.class);
-
     @Test
-    void testHashOf() {
+    void testHash() {
         final Hash hash = RosterUtils.hashOf(Roster.DEFAULT);
         assertEquals(
                 "38b060a751ac96384cd9327eb1b1e36a21fdb71114be07434c0cc7bf63f6e1da274edebfe76f65fbd51ad2f14898b95b",
@@ -68,74 +60,114 @@ class RosterUtilsTest {
     }
 
     @Test
-    @DisplayName("Test generate active roster with software upgrade")
-    void testDetermineActiveRosterWithSoftwareUpgrade() {
-        final SoftwareVersion version = mock(SoftwareVersion.class);
-        final ReservedSignedState initialState = mock(ReservedSignedState.class);
-        final SignedState state = mock(SignedState.class);
-        final MerkleRoot stateMerkleRoot = mock(MerkleRoot.class);
-        final WritableRosterStore rosterStore = mock(WritableRosterStore.class);
-        final Roster candidateRoster = mock(Roster.class);
-        final PlatformStateAccessor platformState = mock(PlatformStateAccessor.class);
+    void testEndpointForValidIpV4Address() {
+        final PlatformBuilder platformBuilder = PlatformBuilder.create(
+                "name",
+                "swirldName",
+                new BasicSoftwareVersion(1),
+                ReservedSignedState.createNullReservation(),
+                new NodeId(0));
 
-        when(initialState.get()).thenReturn(state);
-        when(state.getState()).thenReturn(stateMerkleRoot);
-        when(state.getState().getWritableRosterStore()).thenReturn(rosterStore);
-        when(stateMerkleRoot.getReadablePlatformState()).thenReturn(platformState);
-        when(state.getState().getWritablePlatformState()).thenReturn(platformState);
-        when(rosterStore.getCandidateRoster()).thenReturn(candidateRoster);
+        final Address address1 = new Address(new NodeId(1), "", "", 10, "192.168.1.1", 77, null, 88, null, null, "");
+        final Address address2 = new Address(new NodeId(2), "", "", 10, "testDomainName", 77, null, 88, null, null, "");
+        final AddressBook addressBook = new AddressBook();
+        addressBook.add(address1);
+        addressBook.add(address2);
+        platformBuilder.withAddressBook(addressBook);
+        final Roster roster = RosterUtils.createRoster(addressBook);
 
-        assertSame(candidateRoster, RosterUtils.determineActiveRoster(version, initialState, addressBook));
-    }
+        assertNotNull(roster);
+        assertEquals(2, roster.rosterEntries().size());
 
-    @Test
-    @DisplayName("Test generate active roster without software upgrade")
-    void testDetermineActiveRosterWithoutSoftwareUpgrade() {
-        final SoftwareVersion version = mock(SoftwareVersion.class);
-        final ReservedSignedState initialState = mock(ReservedSignedState.class);
-        final SignedState state = mock(SignedState.class);
-        final MerkleRoot stateMerkleRoot = mock(MerkleRoot.class);
-        final WritableRosterStore rosterStore = mock(WritableRosterStore.class);
-        final PlatformStateAccessor platformState = mock(PlatformStateAccessor.class);
-
-        when(initialState.get()).thenReturn(state);
-        when(state.getState()).thenReturn(stateMerkleRoot);
-        when(stateMerkleRoot.getWritableRosterStore()).thenReturn(rosterStore);
-        when(state.getState().getWritableRosterStore()).thenReturn(rosterStore);
-        when(stateMerkleRoot.getReadablePlatformState()).thenReturn(platformState);
-        when(state.getState().getWritablePlatformState()).thenReturn(platformState);
-        when(rosterStore.getCandidateRoster()).thenReturn(null);
         assertEquals(
-                RosterUtils.determineActiveRoster(version, initialState, addressBook),
-                RosterUtils.createRoster(addressBook));
+                roster.rosterEntries().getFirst().gossipEndpoint().getFirst().ipAddressV4(),
+                Bytes.wrap(new byte[] {(byte) 192, (byte) 168, 1, 1}));
+        assertEquals(
+                "", roster.rosterEntries().getFirst().gossipEndpoint().getLast().domainName());
+
+        assertEquals(
+                "testDomainName",
+                roster.rosterEntries().getLast().gossipEndpoint().getFirst().domainName());
+        assertEquals(roster.rosterEntries().getLast().gossipEndpoint().getLast().ipAddressV4(), Bytes.wrap(""));
     }
 
     @Test
-    @DisplayName("Test generate active roster without software upgrade but with an active roster present in the state")
-    void testDetermineActiveRosterWithoutSoftwareUpgrade2() {
-        final SoftwareVersion version = mock(SoftwareVersion.class);
-        final ReservedSignedState initialState = mock(ReservedSignedState.class);
-        final SignedState state = mock(SignedState.class);
-        final MerkleRoot stateMerkleRoot = mock(MerkleRoot.class);
-        final WritableRosterStore rosterStore = mock(WritableRosterStore.class);
-        final Roster activeRoster = mock(Roster.class);
-        final PlatformStateAccessor platformState = mock(PlatformStateAccessor.class);
+    void testCreateRosterFromNonEmptyAddressBook() {
+        final PlatformBuilder platformBuilder = PlatformBuilder.create(
+                "name",
+                "swirldName",
+                new BasicSoftwareVersion(1),
+                ReservedSignedState.createNullReservation(),
+                new NodeId(0));
 
-        when(initialState.get()).thenReturn(state);
-        when(state.getState()).thenReturn(stateMerkleRoot);
-        when(stateMerkleRoot.getWritableRosterStore()).thenReturn(rosterStore);
-        when(rosterStore.getActiveRoster()).thenReturn(activeRoster);
-        when(stateMerkleRoot.getWritableRosterStore()).thenReturn(rosterStore);
-        when(state.getState().getWritableRosterStore()).thenReturn(rosterStore);
-        when(stateMerkleRoot.getReadablePlatformState()).thenReturn(platformState);
-        when(state.getState().getWritablePlatformState()).thenReturn(platformState);
+        final Address address1 = new Address(new NodeId(1), "", "", 10, null, 77, null, 88, null, null, "");
+        final Address address2 = new Address(new NodeId(2), "", "", 10, null, 77, null, 88, null, null, "");
+        final AddressBook addressBook = new AddressBook();
+        addressBook.add(address1);
+        addressBook.add(address2);
+        platformBuilder.withAddressBook(addressBook);
+        final Roster roster = RosterUtils.createRoster(addressBook);
 
-        assertSame(activeRoster, RosterUtils.determineActiveRoster(version, initialState, addressBook));
+        assertNotNull(roster);
+        assertEquals(2, roster.rosterEntries().size());
+        assertEquals(1L, roster.rosterEntries().getFirst().nodeId());
+        assertEquals(2L, roster.rosterEntries().getLast().nodeId());
+    }
+
+    @Test
+    void testCreateRosterFromNullAddressBook() {
+        assertThrows(
+                NullPointerException.class,
+                () -> RosterUtils.createRoster(null),
+                "Illegal attempt to create a Roster from a null AddressBook");
+    }
+
+    @Test
+    void testCreateRosterFromEmptyAddressBook() {
+        final PlatformBuilder platformBuilder = PlatformBuilder.create(
+                "name",
+                "swirldName",
+                new BasicSoftwareVersion(1),
+                ReservedSignedState.createNullReservation(),
+                new NodeId(0));
+        final AddressBook addressBook = new AddressBook();
+        platformBuilder.withAddressBook(addressBook);
+        final Roster roster = RosterUtils.createRoster(addressBook);
+
+        assertNotNull(roster);
+        assertTrue(roster.rosterEntries().isEmpty());
+    }
+
+    @Test
+    void testToRosterEntryWithExternalHostname() {
+        final Address address = new Address().copySetHostnameExternal("hostnameExternal");
+        final AddressBook addressBook = new AddressBook(List.of(address));
+        final Roster roster = RosterUtils.createRoster(addressBook);
+
+        assertEquals(1, roster.rosterEntries().size());
+        assertEquals(
+                "hostnameExternal",
+                roster.rosterEntries().getFirst().gossipEndpoint().getFirst().domainName());
+    }
+
+    @Test
+    void testToRosterEntryWithInternalHostname() {
+        final Address address = new Address().copySetHostnameInternal("hostnameInternal");
+        final AddressBook addressBook = new AddressBook(List.of(address));
+        final Roster roster = RosterUtils.createRoster(addressBook);
+
+        assertEquals(1, roster.rosterEntries().size());
+        assertEquals(
+                "hostnameInternal",
+                roster.rosterEntries().getFirst().gossipEndpoint().getFirst().domainName());
     }
 
     @Test
     void testCreateRoster() {
+        final AddressBook addressBook = mock(AddressBook.class);
+        final Address address = mock(Address.class);
         when(addressBook.getSize()).thenReturn(1);
+        final NodeId nodeId = new NodeId(1);
         when(addressBook.getNodeId(0)).thenReturn(nodeId);
         when(addressBook.getAddress(nodeId)).thenReturn(address);
 
@@ -152,9 +184,13 @@ class RosterUtilsTest {
 
     @Test
     void testToRosterEntryWithCertificateEncodingException() throws CertificateEncodingException {
+        final Address address = mock(Address.class);
+        final X509Certificate certificate = mock(X509Certificate.class);
         when(address.getSigCert()).thenReturn(certificate);
         when(certificate.getEncoded()).thenThrow(new CertificateEncodingException());
+        final AddressBook addressBook = mock(AddressBook.class);
         when(addressBook.getSize()).thenReturn(1);
+        final NodeId nodeId = new NodeId(1);
         when(addressBook.getNodeId(0)).thenReturn(nodeId);
         when(addressBook.getAddress(nodeId)).thenReturn(address);
 

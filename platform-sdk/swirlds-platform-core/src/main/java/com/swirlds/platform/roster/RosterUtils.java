@@ -16,19 +16,12 @@
 
 package com.swirlds.platform.roster;
 
-import static com.swirlds.platform.system.address.AddressBookUtils.endpointFor;
-import static com.swirlds.platform.util.BootstrapUtils.detectSoftwareUpgrade;
-
 import com.hedera.hapi.node.base.ServiceEndpoint;
 import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.hapi.node.state.roster.RosterEntry;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.platform.NodeId;
-import com.swirlds.platform.state.MerkleRoot;
-import com.swirlds.platform.state.service.WritableRosterStore;
-import com.swirlds.platform.state.signed.ReservedSignedState;
-import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.util.PbjRecordHasher;
@@ -37,13 +30,15 @@ import java.security.cert.CertificateEncodingException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.regex.Pattern;
 
 /**
  * A utility class to help use Roster and RosterEntry instances.
  */
 public final class RosterUtils {
-
     private static final PbjRecordHasher PBJ_RECORD_HASHER = new PbjRecordHasher();
+    private static final Pattern IPV4_ADDRESS_PATTERN =
+            Pattern.compile("^((25[0-5]|(2[0-4]|1\\d|[1-9]|)\\d)\\.?\\b){4}$");
 
     /**
      * Prevents instantiation of this utility class.
@@ -75,72 +70,68 @@ public final class RosterUtils {
     }
 
     /**
-     * Determines the initial active roster based on the given software version and initial state.
-     * The active roster is obtained by adopting the candidate roster if a software upgrade is detected.
-     * Otherwise, the active roster is created from the address book.
+     * Creates a new roster from the given address book.
      *
-     * @param version the software version of the current node
-     * @param initialState the initial state of the platform
-     * @param addressBook  the address book being used by the network
-     * @return the active roster which will be used by the platform
-     */
-    @NonNull
-    public static Roster determineActiveRoster(
-            @NonNull final SoftwareVersion version,
-            @NonNull final ReservedSignedState initialState,
-            @NonNull final AddressBook addressBook) {
-        final boolean softwareUpgrade = detectSoftwareUpgrade(version, initialState.get());
-        final MerkleRoot merkleRoot = initialState.get().getState();
-        final WritableRosterStore rosterStore = merkleRoot.getWritableRosterStore();
-        final Roster candidateRoster = rosterStore.getCandidateRoster();
-
-        if (!softwareUpgrade || candidateRoster == null) {
-            final Roster previousActiveRoster = rosterStore.getActiveRoster();
-            // not in software upgrade mode, return the previous active roster if available
-            // otherwise, create a new roster from the address book
-            return Objects.requireNonNullElseGet(previousActiveRoster, () -> createRoster(addressBook));
-        }
-
-        // software upgrade is detected, we adopt the candidate roster
-        rosterStore.adoptCandidateRoster(initialState.get().getRound() + 1);
-        return candidateRoster;
-    }
-
-    /**
-     * Creates a new roster from the address book.
      * @param addressBook the address book
      * @return a new roster
      */
     @NonNull
     public static Roster createRoster(@NonNull final AddressBook addressBook) {
-        Objects.requireNonNull(addressBook, "The AddressBook must not be null.");
+        Objects.requireNonNull(addressBook, "The addressBook must not be null.");
         final List<RosterEntry> rosterEntries = new ArrayList<>(addressBook.getSize());
         for (int i = 0; i < addressBook.getSize(); i++) {
             final NodeId nodeId = addressBook.getNodeId(i);
             final Address address = addressBook.getAddress(nodeId);
 
-            final RosterEntry rosterEntry = RosterUtils.toRosterEntry(address);
+            final RosterEntry rosterEntry = toRosterEntry(address, nodeId);
             rosterEntries.add(rosterEntry);
         }
         return Roster.newBuilder().rosterEntries(rosterEntries).build();
     }
 
     /**
+     * Given a host and port, creates a {@link ServiceEndpoint} object with either an IP address or domain name
+     * depending on the given host.
+     *
+     * @param host the host
+     * @param port the port
+     * @return the {@link ServiceEndpoint} object
+     */
+    @NonNull
+    private static ServiceEndpoint endpointFor(@NonNull final String host, final int port) {
+        final var builder = ServiceEndpoint.newBuilder().port(port);
+        if (IPV4_ADDRESS_PATTERN.matcher(host).matches()) {
+            final var octets = host.split("[.]");
+            builder.ipAddressV4(Bytes.wrap(new byte[] {
+                (byte) Integer.parseInt(octets[0]),
+                (byte) Integer.parseInt(octets[1]),
+                (byte) Integer.parseInt(octets[2]),
+                (byte) Integer.parseInt(octets[3])
+            }));
+        } else {
+            builder.domainName(host);
+        }
+        return builder.build();
+    }
+
+    /**
      * Converts an address to a roster entry.
      *
      * @param address the address to convert
-     * @return the equivalent roster entry
+     * @param nodeId  the node ID to use for the roster entry
+     * @return the roster entry
      */
     @NonNull
-    private static RosterEntry toRosterEntry(@NonNull final Address address) {
+    private static RosterEntry toRosterEntry(@NonNull final Address address, @NonNull final NodeId nodeId) {
         Objects.requireNonNull(address);
+        Objects.requireNonNull(nodeId);
         final var signingCertificate = address.getSigCert();
-        Bytes signingCertificateBytes;
+        final Bytes signingCertificateBytes;
         try {
             signingCertificateBytes =
                     signingCertificate == null ? Bytes.EMPTY : Bytes.wrap(signingCertificate.getEncoded());
         } catch (final CertificateEncodingException e) {
-            signingCertificateBytes = Bytes.EMPTY;
+            throw new InvalidAddressBookException(e);
         }
 
         final List<ServiceEndpoint> serviceEndpoints = new ArrayList<>(2);
@@ -152,7 +143,7 @@ public final class RosterUtils {
         }
 
         return RosterEntry.newBuilder()
-                .nodeId(address.getNodeId().id())
+                .nodeId(nodeId.id())
                 .weight(address.getWeight())
                 .gossipCaCertificate(signingCertificateBytes)
                 .gossipEndpoint(serviceEndpoints)

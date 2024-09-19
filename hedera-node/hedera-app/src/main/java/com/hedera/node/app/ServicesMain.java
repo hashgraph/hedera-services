@@ -26,7 +26,7 @@ import static com.swirlds.platform.builder.internal.StaticPlatformBuilder.getMet
 import static com.swirlds.platform.builder.internal.StaticPlatformBuilder.setupGlobalMetrics;
 import static com.swirlds.platform.config.internal.PlatformConfigUtils.checkConfiguration;
 import static com.swirlds.platform.crypto.CryptoStatic.initNodeSecurity;
-import static com.swirlds.platform.roster.RosterUtils.determineActiveRoster;
+import static com.swirlds.platform.roster.RosterUtils.createRoster;
 import static com.swirlds.platform.state.signed.StartupStateUtils.getInitialState;
 import static com.swirlds.platform.system.SystemExitCode.CONFIGURATION_ERROR;
 import static com.swirlds.platform.system.SystemExitCode.NODE_ADDRESS_MISMATCH;
@@ -246,7 +246,7 @@ public class ServicesMain implements SwirldMain {
                 .withPlatformContext(platformContext)
                 .withConfiguration(configuration)
                 .withAddressBook(addressBook)
-                .withRoster(determineActiveRoster(version, initialState, addressBook))
+                .withRoster(createRoster(addressBook))
                 .withKeysAndCerts(keysAndCerts);
 
         hedera.setInitialStateHash(stateHash);

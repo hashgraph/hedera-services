@@ -45,6 +45,7 @@ import com.hedera.node.app.service.token.impl.WritableTokenStore;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.swirlds.common.RosterStateId;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.platform.state.RosterStateModifier;
 import com.swirlds.platform.state.service.WritableRosterStore;
 import com.swirlds.state.State;
 import com.swirlds.state.spi.WritableStates;
@@ -106,7 +107,7 @@ public class WritableStoreFactory {
         // Schedule Service
         newMap.put(WritableScheduleStore.class, new StoreEntry(ScheduleService.NAME, WritableScheduleStoreImpl::new));
         newMap.put(
-                WritableRosterStore.class,
+                RosterStateModifier.class,
                 new StoreEntry(RosterStateId.NAME, (states, config, metrics) -> new WritableRosterStore(states)));
         return Collections.unmodifiableMap(newMap);
     }

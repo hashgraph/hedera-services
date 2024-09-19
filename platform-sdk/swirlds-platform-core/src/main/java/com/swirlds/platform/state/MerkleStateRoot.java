@@ -154,11 +154,11 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
     private Metrics metrics;
 
     /**
-     * For the early round of migration, a writable state for the {@link WritableRosterStore},
+     * For the early round of migration, a writable state for the {@link RosterStateAccessor},
      * just like the {@link WritablePlatformStateStore} can only be obtained from here and not the usual
      * WritableStoreFactory instance.
      */
-    private WritableRosterStore writableRosterStore;
+    private RosterStateModifier rosterStateModifier;
 
     /**
      * Maintains information about each service, and each state of each service, known by this
@@ -1032,14 +1032,14 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
 
     @NonNull
     @Override
-    public WritableRosterStore getWritableRosterStore() {
+    public RosterStateModifier getRosterStateModifier() {
         if (isImmutable()) {
             throw new IllegalStateException("Cannot get writable roster store when state is immutable");
         }
-        if (writableRosterStore == null) {
-            writableRosterStore = new WritableRosterStore(getWritableStates(RosterStateId.NAME));
+        if (rosterStateModifier == null) {
+            rosterStateModifier = new WritableRosterStore(getWritableStates(RosterStateId.NAME));
         }
-        return writableRosterStore;
+        return rosterStateModifier;
     }
 
     /**
