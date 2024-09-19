@@ -123,7 +123,7 @@ public record UserTxn(
         final var blockStreamConfig = config.getConfigData(BlockStreamConfig.class);
         final var stack = SavepointStackImpl.newRootStack(
                 state,
-                type != ORDINARY_TRANSACTION  ? Integer.MAX_VALUE : consensusConfig.handleMaxPrecedingRecords(),
+                type != ORDINARY_TRANSACTION ? Integer.MAX_VALUE : consensusConfig.handleMaxPrecedingRecords(),
                 consensusConfig.handleMaxFollowingRecords(),
                 boundaryStateChangeListener,
                 kvStateChangeListener,

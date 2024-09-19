@@ -151,7 +151,7 @@ public class SystemFileExportsTest {
                 recordStreamMustIncludePassFrom(selectedItems(
                         sysFileExportValidator(
                                 "files.feeSchedules", upgradeFeeSchedules, SystemFileExportsTest::parseFeeSchedule),
-                        2,
+                        3,
                         this::isSysFileUpdate)),
                 // This is the genesis transaction
                 sourcingContextual(spec -> overridingTwo(
@@ -196,7 +196,7 @@ public class SystemFileExportsTest {
                                 "files.throttleDefinitions",
                                 upgradeThrottleDefs,
                                 SystemFileExportsTest::parseThrottleDefs),
-                        2,
+                        3,
                         this::isSysFileUpdate)),
                 // This is the genesis transaction
                 sourcingContextual(spec -> overridingTwo(
@@ -237,7 +237,7 @@ public class SystemFileExportsTest {
                                 "files.networkProperties",
                                 upgradePropOverrides,
                                 SystemFileExportsTest::parseConfigList),
-                        2,
+                        3,
                         this::isSysFileUpdate)),
                 // This is the genesis transaction
                 sourcingContextual(spec -> overriding(
@@ -272,7 +272,7 @@ public class SystemFileExportsTest {
                                 "files.networkProperties",
                                 ServicesConfigurationList.getDefaultInstance(),
                                 SystemFileExportsTest::parseConfigList),
-                        2,
+                        3,
                         this::isSysFileUpdate)),
                 // This is the genesis transaction
                 sourcingContextual(spec -> overridingTwo(
@@ -313,7 +313,7 @@ public class SystemFileExportsTest {
                                 "files.hapiPermissions",
                                 upgradePermissionOverrides,
                                 SystemFileExportsTest::parseConfigList),
-                        2,
+                        3,
                         this::isSysFileUpdate)),
                 // This is the genesis transaction
                 sourcingContextual(spec -> overriding(
