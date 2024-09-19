@@ -58,7 +58,6 @@ import javax.inject.Singleton;
 import javax.net.ssl.SSLException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.jetbrains.annotations.NotNull;
 
 /**
  * An implementation of {@link GrpcServerManager} based on Helidon gRPC.
@@ -367,7 +366,7 @@ public final class NettyGrpcServerManager implements GrpcServerManager {
         return builder;
     }
 
-    private static @NotNull NettyServerBuilder getInitialServerBuilder(int port, boolean localHostOnly) {
+    private static @NonNull NettyServerBuilder getInitialServerBuilder(int port, boolean localHostOnly) {
         if (localHostOnly) {
             return NettyServerBuilder.forAddress(new InetSocketAddress("localhost", port));
         }
