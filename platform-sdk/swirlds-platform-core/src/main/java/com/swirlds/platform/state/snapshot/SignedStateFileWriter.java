@@ -151,8 +151,11 @@ public final class SignedStateFileWriter {
         Objects.requireNonNull(signedState);
 
         State state = (State) signedState.getState();
-        // make it immutable
-        state.copy();
+        if (state.isMutable()) {
+            // make it immutable
+            state.copy();
+        }
+
         state.createSnapshot(directory);
         writeSignatureSetFile(directory, signedState);
         writeHashInfoFile(platformContext, directory, signedState.getState());
