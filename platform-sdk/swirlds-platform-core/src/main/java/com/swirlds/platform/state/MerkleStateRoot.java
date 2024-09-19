@@ -1026,7 +1026,9 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
      */
     @Override
     public void initPlatformState() {
-        getWritableStates(PlatformStateService.NAME);
+        if (!services.containsKey(PlatformStateService.NAME)) {
+            platformStateInitChanges = lifecycles.initPlatformState(this);
+        }
     }
 
     /**
