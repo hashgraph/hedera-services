@@ -31,7 +31,6 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.BiConsumer;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.jetbrains.annotations.NotNull;
 
 /**
  * A fake implementation of the {@link TssBaseService} that,
@@ -115,5 +114,5 @@ public class FakeTssBaseService implements TssBaseService {
      * @param candidateRoster The candidate roster to set.
      */
     @Override
-    public void setCandidateRoster(@NotNull Roster candidateRoster) {}
+    public void setCandidateRoster(@NonNull Roster candidateRoster) {}
 }

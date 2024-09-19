@@ -901,9 +901,6 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener {
                                         .orElse(startBlockHashFrom(state));
                             });
             daggerApp.tssBaseService().registerLedgerSignatureConsumer(daggerApp.blockStreamManager());
-            //            if (daggerApp.tssBaseService() instanceof TssBaseServiceImpl tssBaseServiceImpl) {
-            //                daggerApp.inject(tssBaseServiceImpl);
-            //            }
         }
     }
 
