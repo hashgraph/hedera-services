@@ -37,11 +37,11 @@ import java.security.cert.X509Certificate;
 import java.util.Objects;
 import java.util.Spliterators;
 import java.util.stream.StreamSupport;
-import org.testcontainers.shaded.org.bouncycastle.cert.X509CertificateHolder;
-import org.testcontainers.shaded.org.bouncycastle.cert.jcajce.JcaX509CertificateConverter;
-import org.testcontainers.shaded.org.bouncycastle.openssl.PEMParser;
-import org.testcontainers.shaded.org.bouncycastle.util.io.pem.PemObject;
-import org.testcontainers.shaded.org.bouncycastle.util.io.pem.PemWriter;
+import org.bouncycastle.cert.X509CertificateHolder;
+import org.bouncycastle.cert.jcajce.JcaX509CertificateConverter;
+import org.bouncycastle.openssl.PEMParser;
+import org.bouncycastle.util.io.pem.PemObject;
+import org.bouncycastle.util.io.pem.PemWriter;
 
 /**
  * Utility class that provides static methods and constants to facilitate the Address Book Services functions.
