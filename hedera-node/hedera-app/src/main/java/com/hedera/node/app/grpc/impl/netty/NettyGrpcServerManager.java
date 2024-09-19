@@ -20,6 +20,7 @@ import static io.netty.handler.ssl.SupportedCipherSuiteFilter.INSTANCE;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.Transaction;
+import com.hedera.hapi.node.transaction.Query;
 import com.hedera.node.app.grpc.GrpcServerManager;
 import com.hedera.node.app.services.ServicesRegistry;
 import com.hedera.node.app.spi.RpcService;
@@ -30,6 +31,7 @@ import com.hedera.node.config.data.GrpcConfig;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.data.NettyConfig;
 import com.hedera.node.config.types.Profile;
+import com.hedera.pbj.runtime.RpcServiceDefinition;
 import com.swirlds.metrics.api.Metrics;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -44,15 +46,19 @@ import io.netty.handler.ssl.SslContextBuilder;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.net.InetSocketAddress;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import javax.net.ssl.SSLException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * An implementation of {@link GrpcServerManager} based on Helidon gRPC.
@@ -81,6 +87,12 @@ public final class NettyGrpcServerManager implements GrpcServerManager {
      * The set of {@link ServiceDescriptor}s for services that the gRPC server will expose
      */
     private final Set<ServerServiceDefinition> services;
+
+    /**
+     * The set of {@link ServiceDescriptor}s for services that the node operator gRPC server will expose
+     */
+    private final Set<ServerServiceDefinition> nodeOperatorServices;
+
     /**
      * The configuration provider, so we can figure out ports and other information.
      */
@@ -93,6 +105,11 @@ public final class NettyGrpcServerManager implements GrpcServerManager {
      * The gRPC server listening on the plain TLS port
      */
     private Server tlsServer;
+
+    /**
+     * The node operator gRPC server listening on localhost port
+     */
+    private Server nodeOperatorServer;
 
     /**
      * Create a new instance.
@@ -115,21 +132,40 @@ public final class NettyGrpcServerManager implements GrpcServerManager {
         requireNonNull(queryWorkflow);
         requireNonNull(metrics);
 
+        final Supplier<Stream<RpcServiceDefinition>> rpcServiceDefinitions =
+                () -> servicesRegistry.registrations().stream()
+                        .map(ServicesRegistry.Registration::service)
+                        // Not all services are RPC services, but here we need RPC services only. The main difference
+                        // between RPC service and a service is that the RPC service has RPC definition.
+                        .filter(v -> v instanceof RpcService)
+                        .map(v -> (RpcService) v)
+                        .flatMap(s -> s.rpcDefinitions().stream());
+
         // Convert the various RPC service definitions into transaction or query endpoints using the
         // GrpcServiceBuilder.
-        services = servicesRegistry.registrations().stream()
-                .map(ServicesRegistry.Registration::service)
-                // Not all services are RPC services, but here we need RPC services only. The main difference
-                // between RPC service and a service is that the RPC service has RPC definition.
-                .filter(v -> v instanceof RpcService)
-                .map(v -> (RpcService) v)
-                .flatMap(s -> s.rpcDefinitions().stream())
+        services = rpcServiceDefinitions
+                .get()
                 .map(d -> {
                     final var builder = new GrpcServiceBuilder(d.basePath(), ingestWorkflow, queryWorkflow);
                     d.methods().forEach(m -> {
                         if (Transaction.class.equals(m.requestType())) {
                             builder.transaction(m.path());
                         } else {
+                            builder.query(m.path());
+                        }
+                    });
+                    return builder.build(metrics);
+                })
+                .collect(Collectors.toUnmodifiableSet());
+
+        // Convert the various RPC service definitions into query endpoints permitting unpaid queries for node operators
+        nodeOperatorServices = rpcServiceDefinitions
+                .get()
+                .filter(d -> d.methods().stream().anyMatch(m -> Query.class.equals(m.requestType())))
+                .map(d -> {
+                    final var builder = new GrpcServiceBuilder(d.basePath(), null, queryWorkflow);
+                    d.methods().forEach(m -> {
+                        if (Query.class.equals(m.requestType())) {
                             builder.query(m.path());
                         }
                     });
@@ -173,8 +209,8 @@ public final class NettyGrpcServerManager implements GrpcServerManager {
 
         // Start the plain-port server
         logger.info("Starting gRPC server on port {}", port);
-        var nettyBuilder = builderFor(port, nettyConfig, profile);
-        plainServer = startServerWithRetry(nettyBuilder, startRetries, startRetryIntervalMs);
+        var nettyBuilder = builderFor(port, nettyConfig, profile, false);
+        plainServer = startServerWithRetry(services, nettyBuilder, startRetries, startRetryIntervalMs);
         logger.info("gRPC server listening on port {}", plainServer.getPort());
 
         // Try to start the server listening on the tls port. If this doesn't start, then we just keep going. We should
@@ -184,9 +220,9 @@ public final class NettyGrpcServerManager implements GrpcServerManager {
         try {
             final var tlsPort = grpcConfig.tlsPort();
             logger.info("Starting TLS gRPC server on port {}", tlsPort);
-            nettyBuilder = builderFor(tlsPort, nettyConfig, profile);
+            nettyBuilder = builderFor(tlsPort, nettyConfig, profile, false);
             configureTls(nettyBuilder, nettyConfig);
-            tlsServer = startServerWithRetry(nettyBuilder, startRetries, startRetryIntervalMs);
+            tlsServer = startServerWithRetry(services, nettyBuilder, startRetries, startRetryIntervalMs);
             logger.info("TLS gRPC server listening on port {}", tlsServer.getPort());
         } catch (SSLException | FileNotFoundException e) {
             tlsServer = null;
@@ -197,7 +233,12 @@ public final class NettyGrpcServerManager implements GrpcServerManager {
             try {
                 final var nodeOperatorPort = grpcConfig.nodeOperatorPort();
                 logger.info("Starting node operator gRPC server on port {}", nodeOperatorPort);
+                nettyBuilder = builderFor(nodeOperatorPort, nettyConfig, profile, true);
+                nodeOperatorServer =
+                        startServerWithRetry(nodeOperatorServices, nettyBuilder, startRetries, startRetryIntervalMs);
+                logger.info("Node operator gRPC server listening on port {}", nodeOperatorServer.getPort());
             } catch (Exception e) {
+                nodeOperatorServer = null;
                 logger.warn("Could not start node operator gRPC server, will continue without it: {}", e.getMessage());
             }
         }
@@ -219,23 +260,34 @@ public final class NettyGrpcServerManager implements GrpcServerManager {
         } else {
             logger.info("Cannot shut down an already stopped gRPC server");
         }
+
+        if (nodeOperatorServer != null && !nodeOperatorServer.isTerminated()) {
+            logger.info("Shutting down node operator gRPC server on port {}", nodeOperatorServer.getPort());
+            terminateServer(nodeOperatorServer);
+        } else {
+            logger.info("Cannot shut down an already stopped node operator gRPC server");
+        }
     }
 
     /**
      * Attempts to start the server. It will retry {@code startRetries} times until it finally gives up with
      * {@code startRetryIntervalMs} between attempts.
      *
+     * @param serviceDefinitions The service definitions to register with the server
      * @param nettyBuilder The builder used to create the server to start
      * @param startRetries The number of times to retry, if needed. Non-negative (enforced by config).
      * @param startRetryIntervalMs The time interval between retries. Positive (enforced by config).
      */
     Server startServerWithRetry(
-            @NonNull final NettyServerBuilder nettyBuilder, final int startRetries, final long startRetryIntervalMs) {
-
+            @NonNull final Iterable<ServerServiceDefinition> serviceDefinitions,
+            @NonNull final NettyServerBuilder nettyBuilder,
+            final int startRetries,
+            final long startRetryIntervalMs) {
+        requireNonNull(serviceDefinitions);
         requireNonNull(nettyBuilder);
 
         // Setup the GRPC Routing, such that all grpc services are registered
-        services.forEach(nettyBuilder::addService);
+        serviceDefinitions.forEach(nettyBuilder::addService);
         final var server = nettyBuilder.build();
 
         var remaining = startRetries;
@@ -291,13 +343,16 @@ public final class NettyGrpcServerManager implements GrpcServerManager {
     }
 
     /**
-     * Utility for setting up various shared configuration settings between both servers
+     * Utility for setting up various shared configuration settings for all servers
      */
     private NettyServerBuilder builderFor(
-            final int port, @NonNull final NettyConfig config, @NonNull final Profile activeProfile) {
+            final int port,
+            @NonNull final NettyConfig config,
+            @NonNull final Profile activeProfile,
+            boolean localHostOnly) {
         NettyServerBuilder builder = null;
         try {
-            builder = withConfigForActiveProfile(NettyServerBuilder.forPort(port), config, activeProfile)
+            builder = withConfigForActiveProfile(getInitialServerBuilder(port, localHostOnly), config, activeProfile)
                     .channelType(EpollServerSocketChannel.class)
                     .bossEventLoopGroup(new EpollEventLoopGroup())
                     .workerEventLoopGroup(new EpollEventLoopGroup());
@@ -305,11 +360,19 @@ public final class NettyGrpcServerManager implements GrpcServerManager {
         } catch (final UnsatisfiedLinkError | NoClassDefFoundError ignored) {
             // If we can't use Epoll, then just use NIO
             logger.info("Epoll not available, using NIO");
-            builder = withConfigForActiveProfile(NettyServerBuilder.forPort(port), config, activeProfile);
+            builder = withConfigForActiveProfile(getInitialServerBuilder(port, localHostOnly), config, activeProfile);
         } catch (final Exception unexpected) {
             logger.info("Unexpected exception initializing Netty", unexpected);
         }
         return builder;
+    }
+
+    private static @NotNull NettyServerBuilder getInitialServerBuilder(int port, boolean localHostOnly) {
+        if (localHostOnly) {
+            return NettyServerBuilder.forAddress(new InetSocketAddress("localhost", port));
+        }
+
+        return NettyServerBuilder.forPort(port);
     }
 
     private NettyServerBuilder withConfigForActiveProfile(

@@ -28,6 +28,7 @@ import com.hedera.node.app.workflows.query.QueryWorkflow;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.swirlds.metrics.api.Metrics;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import io.grpc.Metadata;
 import io.grpc.MethodDescriptor;
 import io.grpc.MethodDescriptor.MethodType;
@@ -115,14 +116,14 @@ final class GrpcServiceBuilder {
      */
     public GrpcServiceBuilder(
             @NonNull final String serviceName,
-            @NonNull final IngestWorkflow ingestWorkflow,
+            @Nullable final IngestWorkflow ingestWorkflow,
             @NonNull final QueryWorkflow queryWorkflow) {
-        this.ingestWorkflow = requireNonNull(ingestWorkflow);
         this.queryWorkflow = requireNonNull(queryWorkflow);
         this.serviceName = requireNonNull(serviceName);
         if (serviceName.isBlank()) {
             throw new IllegalArgumentException("serviceName cannot be blank");
         }
+        this.ingestWorkflow = ingestWorkflow;
     }
 
     /**
