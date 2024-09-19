@@ -183,11 +183,14 @@ public class ConsensusUpdateTopicHandler implements TransactionHandler {
                     !topic.hasAdminKey() || (op.hasAdminKey() && isEmpty(op.adminKey())),
                     AUTORENEW_ACCOUNT_NOT_ALLOWED);
         }
-        validateMaybeNewAttributes(handleContext, op, topic);
+
+        validateMaybeNewAttributes(handleContext, op);
 
         // Now we apply the mutations to a builder
         final var builder = topic.copyBuilder();
-        resolveMutableBuilderAttributes(handleContext, op, builder, topic);
+        final var currentMeta =
+                new ExpiryMeta(topic.expirationSecond(), topic.autoRenewPeriod(), topic.autoRenewAccountId());
+        resolveMutableBuilderAttributes(handleContext, op, builder, currentMeta);
         topicStore.put(builder.build());
     }
 
@@ -210,8 +213,7 @@ public class ConsensusUpdateTopicHandler implements TransactionHandler {
             @NonNull final HandleContext handleContext,
             @NonNull final ConsensusUpdateTopicTransactionBody op,
             @NonNull final Topic.Builder builder,
-            // TODO: if all the TODO fields below are deleted - delete the topic from here and pass expiryMeta
-            @NonNull final Topic topic) {
+            @NonNull final ExpiryMeta currentExpiryMeta) {
 
         if (op.hasAdminKey()) {
             var key = op.adminKey();
@@ -221,8 +223,6 @@ public class ConsensusUpdateTopicHandler implements TransactionHandler {
             } else {
                 builder.adminKey(key);
             }
-        } else {
-            builder.adminKey(topic.adminKey()); // TODO: delete?
         }
         if (op.hasSubmitKey()) {
             final var newSubmitKey = op.submitKeyOrThrow();
@@ -231,15 +231,11 @@ public class ConsensusUpdateTopicHandler implements TransactionHandler {
             } else {
                 builder.submitKey(newSubmitKey);
             }
-        } else {
-            builder.submitKey(topic.submitKey()); // TODO: delete?
         }
         if (op.hasMemo()) {
             builder.memo(op.memo());
-        } else {
-            builder.memo(topic.memo()); // TODO: delete?
         }
-        final var resolvedExpiryMeta = resolvedUpdateMetaFrom(handleContext.expiryValidator(), op, topic);
+        final var resolvedExpiryMeta = resolvedUpdateMetaFrom(handleContext.expiryValidator(), op, currentExpiryMeta);
         builder.expirationSecond(resolvedExpiryMeta.expiry());
         builder.autoRenewPeriod(resolvedExpiryMeta.autoRenewPeriod());
         if (op.hasAutoRenewAccount() && designatesAccountRemoval(op.autoRenewAccount())) {
@@ -259,33 +255,20 @@ public class ConsensusUpdateTopicHandler implements TransactionHandler {
     }
 
     private void validateMaybeNewAttributes(
-            @NonNull final HandleContext handleContext,
-            @NonNull final ConsensusUpdateTopicTransactionBody op,
-            @NonNull final Topic topic) {
+            @NonNull final HandleContext handleContext, @NonNull final ConsensusUpdateTopicTransactionBody op) {
         final var attributeValidator = handleContext.attributeValidator();
-        final var expiryValidator = handleContext.expiryValidator();
         validateMaybeNewAdminKey(attributeValidator, op);
         validateMaybeNewSubmitKey(attributeValidator, op);
         validateMaybeNewMemo(attributeValidator, op);
-        validateMaybeNewExpiry(expiryValidator, op, topic);
         validateMaybeNewFeeScheduleKey(attributeValidator, op);
         validateMaybeFeeExemptKeyList(handleContext, attributeValidator, op);
         validateMaybeCustomFees(handleContext, op);
     }
 
-    private void validateMaybeNewExpiry(
-            @NonNull final ExpiryValidator expiryValidator,
-            @NonNull final ConsensusUpdateTopicTransactionBody op,
-            @NonNull final Topic topic) {
-        resolvedUpdateMetaFrom(expiryValidator, op, topic);
-    }
-
     private ExpiryMeta resolvedUpdateMetaFrom(
             @NonNull final ExpiryValidator expiryValidator,
             @NonNull final ConsensusUpdateTopicTransactionBody op,
-            @NonNull final Topic topic) {
-        final var currentMeta =
-                new ExpiryMeta(topic.expirationSecond(), topic.autoRenewPeriod(), topic.autoRenewAccountId());
+            @NonNull final ExpiryMeta currentMeta) {
         if (updatesExpiryMeta(op)) {
             final var updateMeta = new ExpiryMeta(effExpiryOf(op), effAutoRenewPeriodOf(op), op.autoRenewAccount());
             try {
