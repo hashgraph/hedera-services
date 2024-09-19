@@ -60,17 +60,21 @@ message TssVoteTransactionBody {
   bytes node_signature = 4;
 
   /**
-   * A bit vector where the index position of each bit corresponds to the
-   * sequence number of a `TssMessageTransaction`. The least significant bit
-   * of byte[0] corresponds to sequence number 0 and the most significant bit
-   * of byte[0] corresponds to sequence number 7.  The least significant bit
-   * of byte[1] corresponds to sequence number 8 and the most significant bit
-   * of byte[1] corresponds to the sequence number 15, and so on. If a bit is
-   * set to 1, then the TssMessage for the corresponding TssMessageTransaction
-   * sequence number was received as one of the first Threshold number of
-   * valid TssMessages in consensus order.  If a bit is set to 0, then the
-   * TssMessage was invalid or there was no TssMessageTransaction with a
-   * sequence number corresponding to the bit index.
+   * A bit vector of message statuses.<br/>
+   * Each bit in this vector indicates receipt (1) or non-receipt (0) of a
+   * _valid_ `TssMessage` for a corresponding `TssMessageTransaction`.
+   * <p>
+   * <h4>Example</h4>
+   * <ul><li>The least significant bit of byte[0] SHALL be sequence 0.</li>
+   *     <li>The most significant bit of byte[0] SHALL be sequence 7.</li>
+   *     <li>The least significant bit of byte[1] SHALL be sequence 8.</li>
+   *     <li>The most significant bit of byte[0] SHALL be sequence 15.</li>
+   * </ul>
+   * A bit SHALL be set if the `TssMessage` for the `TssMessageTransaction`
+   * with a sequence number matching that bit index has been
+   * received, and is valid.<br/>
+   * A bit SHALL NOT be set if the `TssMessage` has not been received or was
+   * received but not valid.
    */
   bytes tss_vote = 5;
 }
