@@ -266,7 +266,6 @@ class SerializationTest extends MerkleTestBase {
         final var originalTree = (MerkleStateRoot) createMerkleHederaState(schemaV1);
 
         MerkleStateRoot copy = originalTree.copy(); // make a copy to make VM flushable
-        ;
 
         forceFlush(originalTree.getReadableStates(FIRST_SERVICE).get(ANIMAL_STATE_KEY));
         copy.copy(); // make a fast copy because we can only write to disk an immutable copy

@@ -72,6 +72,9 @@ import org.apache.logging.log4j.Logger;
 public class ConsensusUpdateTopicHandler implements TransactionHandler {
     private static final Logger log = LogManager.getLogger(ConsensusUpdateTopicHandler.class);
 
+    /**
+     * Default constructor for injection.
+     */
     @Inject
     public ConsensusUpdateTopicHandler() {
         // Exists for injection
@@ -304,6 +307,10 @@ public class ConsensusUpdateTopicHandler implements TransactionHandler {
         }
     }
 
+    /**
+     * @param op the transaction body of consensus update operation
+     * @return {@code true} if the operation wants to update a non-expiry field, {@code false} otherwise.
+     */
     public static boolean wantsToMutateNonExpiryField(@NonNull final ConsensusUpdateTopicTransactionBody op) {
         return op.hasMemo()
                 || op.hasAdminKey()
