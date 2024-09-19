@@ -39,10 +39,16 @@ public final class SerializableStreamConstants {
     public static final int VERSION_BYTES = Integer.BYTES;
 
     /**
-     * The current version of the serialization protocol implemented by {@link SerializableDataOutputStream} and
+     * The previous version of the serialization protocol implemented by {@link SerializableDataOutputStream} and
      * {@link SerializableDataInputStream}
      */
     public static final int SERIALIZATION_PROTOCOL_VERSION = 1;
+
+    /**
+     * The current version of the serialization protocol implemented by {@link SerializableDataOutputStream} and
+     * {@link SerializableDataInputStream}. It has signature set separated stored in a separate file.
+     */
+    public static final int SIGNATURE_SET_SEPARATED_VERSION = 2;
 
     /**
      * Should stream methods that use checksums use checksums by default?

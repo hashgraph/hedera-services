@@ -32,6 +32,8 @@ public final class SignedStateFileUtils {
      */
     public static final String SIGNED_STATE_FILE_NAME = "SignedState.swh";
 
+    public static final String SIGNATURE_SET_FILE_NAME = "signatureSet.bin";
+
     public static final String HASH_INFO_FILE_NAME = "hashInfo.txt";
 
     /**

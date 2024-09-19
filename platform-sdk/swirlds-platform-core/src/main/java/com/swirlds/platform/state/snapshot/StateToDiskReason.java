@@ -52,10 +52,6 @@ public enum StateToDiskReason {
      */
     PCES_RECOVERY_COMPLETE("pces-recovery"),
     /**
-     * The state was written to disk there was a request to take a snapshot
-     */
-    SNAPSHOT_ON_DEMAND("snapshot-on-demand"),
-    /**
      * If the reason at the point of saving is not known, this value will be used
      */
     UNKNOWN("unknown");

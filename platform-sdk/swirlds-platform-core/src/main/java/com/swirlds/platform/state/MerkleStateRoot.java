@@ -16,10 +16,14 @@
 
 package com.swirlds.platform.state;
 
+import static com.swirlds.common.io.utility.FileUtils.writeAndFlush;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 import static com.swirlds.platform.state.MerkleStateUtils.createInfoString;
 import static com.swirlds.platform.state.service.PbjConverter.toPbjPlatformState;
+import static com.swirlds.platform.state.snapshot.SignedStateFileUtils.FILE_VERSION;
+import static com.swirlds.platform.state.snapshot.SignedStateFileUtils.SIGNED_STATE_FILE_NAME;
+import static com.swirlds.platform.state.snapshot.SignedStateFileUtils.VERSIONED_FILE_BYTE;
 import static com.swirlds.platform.system.InitTrigger.EVENT_STREAM_RECOVERY;
 import static com.swirlds.state.StateChangeListener.StateType.MAP;
 import static com.swirlds.state.StateChangeListener.StateType.QUEUE;
@@ -31,6 +35,7 @@ import com.hedera.hapi.block.stream.output.StateChanges;
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.swirlds.common.constructable.ConstructableIgnored;
 import com.swirlds.common.context.PlatformContext;
+import com.swirlds.common.io.streams.MerkleDataOutputStream;
 import com.swirlds.common.merkle.MerkleInternal;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.crypto.MerkleCryptography;
@@ -40,13 +45,9 @@ import com.swirlds.common.utility.RuntimeObjectRecord;
 import com.swirlds.common.utility.RuntimeObjectRegistry;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.metrics.api.Metrics;
-import com.swirlds.platform.crypto.CryptoStatic;
 import com.swirlds.platform.state.service.PlatformStateService;
 import com.swirlds.platform.state.service.ReadablePlatformStateStore;
 import com.swirlds.platform.state.service.WritablePlatformStateStore;
-import com.swirlds.platform.state.signed.SignedState;
-import com.swirlds.platform.state.snapshot.SignedStateFileWriter;
-import com.swirlds.platform.state.snapshot.StateToDiskReason;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.Round;
@@ -1099,19 +1100,29 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
     public void createSnapshot(Path targetPath) {
         throwIfMutable();
         throwIfDestroyed();
-        final SignedState signedState = new SignedState(
-                platformContext, CryptoStatic::verifySignature, this, "MerkleStateRoot.snapshot()", true, true, false);
-        signedState.markAsStateToSave(StateToDiskReason.SNAPSHOT_ON_DEMAND);
         try {
-            SignedStateFileWriter.writeSignedStateToDisk(
-                    platformContext, platform.getSelfId(), targetPath, signedState, signedState.getStateToDiskReason());
+            writeMerkleRootToFile(targetPath, this);
         } catch (final Throwable e) {
             logger.error(
                     EXCEPTION.getMarker(),
                     "Unable to write signed state to disk for round {} to {}.",
-                    signedState.getRound(),
+                    getReadablePlatformState().getRound(),
                     targetPath,
                     e);
         }
+    }
+
+    private static void writeMerkleRootToFile(final Path directory, final MerkleRoot merkleRoot) throws IOException {
+        writeAndFlush(
+                directory.resolve(SIGNED_STATE_FILE_NAME), out -> writeMerkleRootToStream(out, directory, merkleRoot));
+    }
+
+    private static void writeMerkleRootToStream(
+            final MerkleDataOutputStream out, final Path directory, final MerkleRoot merkleRoot) throws IOException {
+        out.write(VERSIONED_FILE_BYTE);
+        out.writeInt(FILE_VERSION);
+        out.writeProtocolVersion();
+        out.writeMerkleTree(directory, merkleRoot);
+        out.writeSerializable(merkleRoot.getHash(), true);
     }
 }
