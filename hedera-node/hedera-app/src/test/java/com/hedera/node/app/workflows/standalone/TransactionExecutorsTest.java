@@ -138,7 +138,7 @@ class TransactionExecutorsTest {
 
         // Get a standalone executor based on this state, with an override to allow slightly longer memos
         final var executor =
-                TRANSACTION_EXECUTORS.newExecutor(state, Map.of("hedera.transaction.maxMemoUtf8Bytes", "101"));
+                TRANSACTION_EXECUTORS.newExecutor(state, Map.of("hedera.transaction.maxMemoUtf8Bytes", "101"), null);
 
         // Execute a FileCreate that uploads the initcode for the Multipurpose.sol contract
         final var uploadOutput = executor.execute(uploadMultipurposeInitcode(), Instant.EPOCH);
