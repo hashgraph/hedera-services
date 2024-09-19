@@ -344,8 +344,10 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
                                 },
                                 // Register the metrics for the virtual map if they are available.
                                 // Early rounds of migration done by services such as PlatformStateService,
-                                // EntityIdService and RosterServiceImpl will not have metrics available yet, but their later rounds of migration will.
-                                // Therefore, for the first round of migration, we will not register the metrics for virtual maps.
+                                // EntityIdService and RosterServiceImpl will not have metrics available yet, but their
+                                // later rounds of migration will.
+                                // Therefore, for the first round of migration, we will not register the metrics for
+                                // virtual maps.
                                 UNAVAILABLE_METRICS.equals(metrics)
                                         ? virtualMap -> {}
                                         : virtualMap -> virtualMap.registerMetrics(metrics));
