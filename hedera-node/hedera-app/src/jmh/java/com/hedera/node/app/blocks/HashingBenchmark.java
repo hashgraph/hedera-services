@@ -17,7 +17,7 @@
 package com.hedera.node.app.blocks;
 
 import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_ACCOUNTS;
-import static com.hedera.node.app.blocks.NaiveStreamingTreeHasher.hashNaively;
+import static com.hedera.node.app.blocks.impl.NaiveStreamingTreeHasher.hashNaively;
 
 import com.hedera.hapi.block.stream.BlockItem;
 import com.hedera.hapi.block.stream.output.MapChangeKey;

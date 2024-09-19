@@ -23,6 +23,7 @@ import static com.swirlds.platform.event.AncientMode.GENERATION_THRESHOLD;
 import static com.swirlds.platform.event.preconsensus.PcesUtilities.getDatabaseDirectory;
 import static java.nio.file.StandardCopyOption.ATOMIC_MOVE;
 
+import com.hedera.hapi.platform.event.GossipEvent;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.io.IOIterator;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
@@ -32,7 +33,6 @@ import com.swirlds.common.io.utility.RecycleBin;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.event.AncientMode;
-import com.swirlds.platform.event.EventSerializationUtils;
 import com.swirlds.platform.event.PlatformEvent;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.BufferedOutputStream;
@@ -227,9 +227,9 @@ public final class PcesBirthRoundMigration {
         final Path temporaryFile = LegacyTemporaryFileBuilder.buildTemporaryFile("new-pces-file", platformContext.getConfiguration());
         final SerializableDataOutputStream outputStream = new SerializableDataOutputStream(
                 new BufferedOutputStream(new FileOutputStream(temporaryFile.toFile())));
-        outputStream.writeInt(PcesMutableFile.FILE_VERSION);
+        outputStream.writeInt(PcesFileVersion.currentVersionNumber());
         for (final PlatformEvent event : eventsToMigrate) {
-            EventSerializationUtils.serializePlatformEvent(outputStream, event, true);
+            outputStream.writePbjRecord(event.getGossipEvent(), GossipEvent.PROTOBUF);
         }
         outputStream.close();
 
