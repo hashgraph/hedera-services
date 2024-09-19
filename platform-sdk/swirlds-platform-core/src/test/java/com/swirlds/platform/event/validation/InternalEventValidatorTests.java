@@ -48,6 +48,7 @@ import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.eventhandling.EventConfig_;
 import com.swirlds.platform.gossip.IntakeEventCounter;
 import com.swirlds.platform.test.fixtures.event.TestingEventBuilder;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicLong;
@@ -154,6 +155,22 @@ class InternalEventValidatorTests {
         assertNull(multinodeValidator.validateEvent(platformEvent));
         assertNull(singleNodeValidator.validateEvent(platformEvent));
         assertEquals(8, exitedIntakePipelineCount.get());
+
+        final ArrayList<EventDescriptor> parents = new ArrayList<>();
+        parents.add(null);
+        final GossipEvent nullParent = GossipEvent.newBuilder()
+                .eventCore(EventCore.newBuilder()
+                        .timeCreated(wholeEvent.eventCore().timeCreated())
+                        .version(wholeEvent.eventCore().version())
+                        .parents(parents)
+                        .build())
+                .signature(wholeEvent.signature())
+                .eventTransaction(wholeEvent.eventTransaction())
+                .build();
+        when(platformEvent.getGossipEvent()).thenReturn(nullParent);
+        assertNull(multinodeValidator.validateEvent(platformEvent));
+        assertNull(singleNodeValidator.validateEvent(platformEvent));
+        assertEquals(10, exitedIntakePipelineCount.get());
     }
 
     @Test
