@@ -83,7 +83,7 @@ public final class RosterUtils {
             final NodeId nodeId = addressBook.getNodeId(i);
             final Address address = addressBook.getAddress(nodeId);
 
-            final RosterEntry rosterEntry = toRosterEntry(address, nodeId);
+            final RosterEntry rosterEntry = createRosterEntry(address);
             rosterEntries.add(rosterEntry);
         }
         return Roster.newBuilder().rosterEntries(rosterEntries).build();
@@ -118,13 +118,12 @@ public final class RosterUtils {
      * Converts an address to a roster entry.
      *
      * @param address the address to convert
-     * @param nodeId  the node ID to use for the roster entry
      * @return the roster entry
      */
     @NonNull
-    private static RosterEntry toRosterEntry(@NonNull final Address address, @NonNull final NodeId nodeId) {
+    private static RosterEntry createRosterEntry(@NonNull final Address address) {
         Objects.requireNonNull(address);
-        Objects.requireNonNull(nodeId);
+        Objects.requireNonNull(address.getNodeId());
         final var signingCertificate = address.getSigCert();
         final Bytes signingCertificateBytes;
         try {
@@ -143,7 +142,7 @@ public final class RosterUtils {
         }
 
         return RosterEntry.newBuilder()
-                .nodeId(nodeId.id())
+                .nodeId(address.getNodeId().id())
                 .weight(address.getWeight())
                 .gossipCaCertificate(signingCertificateBytes)
                 .gossipEndpoint(serviceEndpoints)

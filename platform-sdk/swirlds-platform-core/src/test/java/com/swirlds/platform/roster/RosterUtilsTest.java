@@ -28,11 +28,13 @@ import com.hedera.hapi.node.state.roster.RosterEntry;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.platform.builder.PlatformBuilder;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
+import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
 import java.security.cert.CertificateEncodingException;
 import java.security.cert.X509Certificate;
 import java.util.List;
@@ -68,6 +70,7 @@ class RosterUtilsTest {
                 ReservedSignedState.createNullReservation(),
                 new NodeId(0));
 
+        // can't use the RandomAddressBookBuilder here because we need to set/test the ip addresses explicitly
         final Address address1 = new Address(new NodeId(1), "", "", 10, "192.168.1.1", 77, null, 88, null, null, "");
         final Address address2 = new Address(new NodeId(2), "", "", 10, "testDomainName", 77, null, 88, null, null, "");
         final AddressBook addressBook = new AddressBook();
@@ -100,6 +103,7 @@ class RosterUtilsTest {
                 ReservedSignedState.createNullReservation(),
                 new NodeId(0));
 
+        //can't use the RandomAddressBookBuilder here because we need to set/test the nodeIds explicitly
         final Address address1 = new Address(new NodeId(1), "", "", 10, null, 77, null, 88, null, null, "");
         final Address address2 = new Address(new NodeId(2), "", "", 10, null, 77, null, 88, null, null, "");
         final AddressBook addressBook = new AddressBook();
@@ -164,13 +168,7 @@ class RosterUtilsTest {
 
     @Test
     void testCreateRoster() {
-        final AddressBook addressBook = mock(AddressBook.class);
-        final Address address = mock(Address.class);
-        when(addressBook.getSize()).thenReturn(1);
-        final NodeId nodeId = new NodeId(1);
-        when(addressBook.getNodeId(0)).thenReturn(nodeId);
-        when(addressBook.getAddress(nodeId)).thenReturn(address);
-
+        final AddressBook addressBook = RandomAddressBookBuilder.create(Randotron.create()).withSize(1).build();
         final Roster roster = RosterUtils.createRoster(addressBook);
         assertNotNull(roster);
         assertNotNull(roster.rosterEntries());
@@ -178,12 +176,14 @@ class RosterUtilsTest {
     }
 
     @Test
-    void testCreateRosterWithNullAddressBook() {
+    void testCreateRosterWithNullOrEmptyAddressBook() {
         assertThrows(NullPointerException.class, () -> RosterUtils.createRoster(null));
+        assertEquals(0, RosterUtils.createRoster(new AddressBook()).rosterEntries().size());
     }
 
     @Test
-    void testToRosterEntryWithCertificateEncodingException() throws CertificateEncodingException {
+    void testToRosterEntryWithCertificateEncodingExceptionThrows() throws CertificateEncodingException {
+        //have to use mocks here to test the exception
         final Address address = mock(Address.class);
         final X509Certificate certificate = mock(X509Certificate.class);
         when(address.getSigCert()).thenReturn(certificate);
@@ -191,11 +191,11 @@ class RosterUtilsTest {
         final AddressBook addressBook = mock(AddressBook.class);
         when(addressBook.getSize()).thenReturn(1);
         final NodeId nodeId = new NodeId(1);
+        when(address.getNodeId()).thenReturn(nodeId);
         when(addressBook.getNodeId(0)).thenReturn(nodeId);
         when(addressBook.getAddress(nodeId)).thenReturn(address);
 
-        assertEquals(
-                Bytes.EMPTY,
-                RosterUtils.createRoster(addressBook).rosterEntries().getFirst().gossipCaCertificate());
+       assertThrows(
+                InvalidAddressBookException.class, () -> RosterUtils.createRoster(addressBook).rosterEntries().getFirst().gossipCaCertificate());
     }
 }
