@@ -1251,7 +1251,7 @@ enum HederaFunctionality {
     TokenClaimAirdrop = 95;
 
     /**
-     * Submit a TSS message
+     * A message produced as part of Threshold Signature Scheme (TSS) processing.
      */
     TssMessage = 96;
 
