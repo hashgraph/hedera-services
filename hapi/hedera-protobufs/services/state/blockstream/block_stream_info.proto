@@ -48,7 +48,9 @@ option java_multiple_files = true;
  * This value MUST be transmitted in the "state changes" section of
  * _each_ block, but MUST be updated at the beginning of the _next_ block.<br/>
  * This value SHALL contain the block hash up to, and including, the
- * immediately prior completed block.
+ * immediately prior completed block.<br/>
+ * The state change to update this singleton MUST be the last "output"
+ * block item in this block.
  */
 message BlockStreamInfo {
     /**
@@ -92,4 +94,41 @@ message BlockStreamInfo {
      * The maximum length of this field SHALL be 8192 bytes.
      */
     bytes trailing_block_hashes = 4;
+
+    /**
+     * A SHA2-384 hash value.<br/>
+     * This is the hash of the "input" subtree for this block.
+     */
+    bytes input_tree_root_hash = 5;
+
+    /**
+     * A SHA2-384 hash value.<br/>
+     * This is the hash of consensus state at the _start_ of this block.
+     */
+    bytes start_of_block_state_hash = 6;
+
+    /**
+     * A count of "output" block items in this block.
+     * <p>
+     * This SHALL count the number of output block items that _precede_
+     * the state change that updates this singleton.
+     */
+    uint32 num_preceding_output_items = 7;
+
+    /**
+     * A concatenation of SHA2-384 hash values.<br/>
+     * This is the "rightmost" values of the "output" subtree.
+     * <p>
+     * The subtree containing these hashes SHALL be constructed from all "output"
+     * `BlockItem`s in this block that _precede_ the update to this singleton.
+     */
+    repeated bytes rightmost_preceding_output_tree_hashes = 8;
+
+    /**
+     * A block-end consensus time stamp.
+     * <p>
+     * This field SHALL hold the last-used consensus time for
+     * the current block.
+     */
+    proto.Timestamp block_end_time = 9;
 }
