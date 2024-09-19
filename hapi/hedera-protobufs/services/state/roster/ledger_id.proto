@@ -38,11 +38,11 @@ option java_multiple_files = true;
 message LedgerId {
 
   /**
-   * A public key.
+   * A public key.<br/>
    * This key both identifies the ledger and can be used to verify ledger signatures.
    * <p>
-   * This value MUST be set.
-   * This value MUST NOT be empty.
+   * This value MUST be set.<br/>
+   * This value MUST NOT be empty.<br/>
    * This value MUST contain a valid public key.
    */
   bytes ledger_id = 1;
