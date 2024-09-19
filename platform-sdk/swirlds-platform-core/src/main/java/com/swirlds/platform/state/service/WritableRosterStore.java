@@ -78,7 +78,6 @@ public class WritableRosterStore extends ReadableRosterStoreImpl {
         RosterValidator.validate(roster);
 
         final RosterState previousRosterState = rosterStateOrThrow();
-        Objects.requireNonNull(previousRosterState);
 
         // update the roster state
         final List<RoundRosterPair> roundRosterPairs = new LinkedList<>(previousRosterState.roundRosterPairs());
@@ -103,11 +102,11 @@ public class WritableRosterStore extends ReadableRosterStoreImpl {
         RosterValidator.validate(candidateRoster);
 
         // update the roster state
-        final RosterState previousRosterState = rosterStateOrThrow();
+        final RosterState currentRosterState = rosterStateOrThrow();
         final Bytes candidateRosterHash = RosterUtils.hashOf(candidateRoster).getBytes();
         final Builder rosterStateBuilder = RosterState.newBuilder()
                 .candidateRosterHash(candidateRosterHash)
-                .roundRosterPairs(previousRosterState.roundRosterPairs());
+                .roundRosterPairs(currentRosterState.roundRosterPairs());
         update(rosterStateBuilder);
 
         // update the roster map
@@ -133,18 +132,15 @@ public class WritableRosterStore extends ReadableRosterStoreImpl {
     }
 
     /**
-     * remove the candidate roster from the state.
+     * removes the candidate roster from the roster state.
      */
     private void removeCandidateRoster() {
         final RosterState previousRosterState = rosterStateOrThrow();
-        final Bytes candidateRosterHash = previousRosterState.candidateRosterHash();
 
         final Builder rosterStateBuilder = RosterState.newBuilder()
                 .candidateRosterHash(Bytes.EMPTY)
                 .roundRosterPairs(previousRosterState.roundRosterPairs());
         update(rosterStateBuilder);
-
-        rosterMap.remove(ProtoBytes.newBuilder().value(candidateRosterHash).build());
     }
 
     /**

@@ -21,6 +21,7 @@ import static com.hedera.node.app.state.merkle.SchemaApplicationType.RESTART;
 import static com.hedera.node.app.state.merkle.SchemaApplicationType.STATE_DEFINITIONS;
 import static com.hedera.node.app.state.merkle.VersionUtils.alreadyIncludesStateDefs;
 import static com.hedera.node.app.state.merkle.VersionUtils.isSoOrdered;
+import static com.hedera.node.app.workflows.handle.metric.UnavailableMetrics.UNAVAILABLE_METRICS;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.SemanticVersion;
@@ -341,8 +342,13 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
                                             new VirtualMap<>(label, keySerializer, valueSerializer, dsBuilder);
                                     return virtualMap;
                                 },
-                                virtualMap -> virtualMap.registerMetrics(
-                                        stateRoot.getMetrics() != null ? stateRoot.getMetrics() : metrics));
+                                // Register the metrics for the virtual map if they are available.
+                                // Early rounds of migration done by services such as PlatformStateService,
+                                // EntityIdService and RosterServiceImpl will not have metrics available yet, but their later rounds of migration will.
+                                // Therefore, for the first round of migration, we will not register the metrics for virtual maps.
+                                UNAVAILABLE_METRICS.equals(metrics)
+                                        ? virtualMap -> {}
+                                        : virtualMap -> virtualMap.registerMetrics(metrics));
                     }
                 });
 

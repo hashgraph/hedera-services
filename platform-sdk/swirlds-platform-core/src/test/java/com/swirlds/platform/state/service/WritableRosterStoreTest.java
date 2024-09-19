@@ -17,7 +17,6 @@
 package com.swirlds.platform.state.service;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
@@ -30,6 +29,7 @@ import com.hedera.hapi.node.state.roster.RosterEntry;
 import com.hedera.hapi.node.state.roster.RosterState;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.RosterStateId;
+import com.swirlds.platform.roster.RosterUtils;
 import com.swirlds.state.merkle.singleton.SingletonNode;
 import com.swirlds.state.merkle.singleton.WritableSingletonStateImpl;
 import com.swirlds.state.spi.WritableKVState;
@@ -96,7 +96,9 @@ class WritableRosterStoreTest {
         writableRosterStore.setCandidateRoster(candidateRoster);
         assertEquals(writableRosterStore.getCandidateRoster(), candidateRoster);
         assertNull(writableRosterStore.getActiveRoster());
-        assertNotEquals(Bytes.EMPTY, writableRosterStore.rosterStateOrThrow().candidateRosterHash());
+        assertEquals(
+                RosterUtils.hashOf(candidateRoster).getBytes(),
+                writableRosterStore.rosterStateOrThrow().candidateRosterHash());
 
         writableRosterStore.adoptCandidateRoster(1L);
         // This should be asserting the active roster is the (previous) candidate roster,

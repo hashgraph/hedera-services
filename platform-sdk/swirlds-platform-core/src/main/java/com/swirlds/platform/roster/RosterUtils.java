@@ -75,7 +75,7 @@ public final class RosterUtils {
     }
 
     /**
-     * Generates the initial active roster based on the given software version and initial state.
+     * Determines the initial active roster based on the given software version and initial state.
      * The active roster is obtained by adopting the candidate roster if a software upgrade is detected.
      * Otherwise, the active roster is created from the address book.
      *
@@ -85,7 +85,7 @@ public final class RosterUtils {
      * @return the active roster which will be used by the platform
      */
     @NonNull
-    public static Roster generateActiveRoster(
+    public static Roster determineActiveRoster(
             @NonNull final SoftwareVersion version,
             @NonNull final ReservedSignedState initialState,
             @NonNull final AddressBook addressBook) {

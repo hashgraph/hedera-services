@@ -69,7 +69,7 @@ class RosterUtilsTest {
 
     @Test
     @DisplayName("Test generate active roster with software upgrade")
-    void testGenerateActiveRosterWithSoftwareUpgrade() {
+    void testDetermineActiveRosterWithSoftwareUpgrade() {
         final SoftwareVersion version = mock(SoftwareVersion.class);
         final ReservedSignedState initialState = mock(ReservedSignedState.class);
         final SignedState state = mock(SignedState.class);
@@ -85,12 +85,12 @@ class RosterUtilsTest {
         when(state.getState().getWritablePlatformState()).thenReturn(platformState);
         when(rosterStore.getCandidateRoster()).thenReturn(candidateRoster);
 
-        assertSame(candidateRoster, RosterUtils.generateActiveRoster(version, initialState, addressBook));
+        assertSame(candidateRoster, RosterUtils.determineActiveRoster(version, initialState, addressBook));
     }
 
     @Test
     @DisplayName("Test generate active roster without software upgrade")
-    void testGenerateActiveRosterWithoutSoftwareUpgrade() {
+    void testDetermineActiveRosterWithoutSoftwareUpgrade() {
         final SoftwareVersion version = mock(SoftwareVersion.class);
         final ReservedSignedState initialState = mock(ReservedSignedState.class);
         final SignedState state = mock(SignedState.class);
@@ -106,13 +106,13 @@ class RosterUtilsTest {
         when(state.getState().getWritablePlatformState()).thenReturn(platformState);
         when(rosterStore.getCandidateRoster()).thenReturn(null);
         assertEquals(
-                RosterUtils.generateActiveRoster(version, initialState, addressBook),
+                RosterUtils.determineActiveRoster(version, initialState, addressBook),
                 RosterUtils.createRoster(addressBook));
     }
 
     @Test
     @DisplayName("Test generate active roster without software upgrade but with an active roster present in the state")
-    void testGenerateActiveRosterWithoutSoftwareUpgrade2() {
+    void testDetermineActiveRosterWithoutSoftwareUpgrade2() {
         final SoftwareVersion version = mock(SoftwareVersion.class);
         final ReservedSignedState initialState = mock(ReservedSignedState.class);
         final SignedState state = mock(SignedState.class);
@@ -130,7 +130,7 @@ class RosterUtilsTest {
         when(stateMerkleRoot.getReadablePlatformState()).thenReturn(platformState);
         when(state.getState().getWritablePlatformState()).thenReturn(platformState);
 
-        assertSame(activeRoster, RosterUtils.generateActiveRoster(version, initialState, addressBook));
+        assertSame(activeRoster, RosterUtils.determineActiveRoster(version, initialState, addressBook));
     }
 
     @Test
