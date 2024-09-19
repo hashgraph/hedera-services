@@ -168,7 +168,8 @@ public class AddressBookUtils {
      * @param addressBook the address book
      * @return the stream of node ids
      */
-    public static Address nodeAddressFrom(AddressBook addressBook, long nodeId) {
+    public static Address nodeAddressFrom(@NonNull final AddressBook addressBook, final long nodeId) {
+        requireNonNull(addressBook);
         return addressBook.getAddress(new NodeId(nodeId));
     }
 }
