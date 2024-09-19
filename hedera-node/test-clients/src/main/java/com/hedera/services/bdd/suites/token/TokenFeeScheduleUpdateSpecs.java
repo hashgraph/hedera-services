@@ -18,6 +18,7 @@ package com.hedera.services.bdd.suites.token;
 
 import static com.hedera.services.bdd.junit.TestTags.TOKEN;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
@@ -54,7 +55,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_F
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_FEE_COLLECTOR;
 
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode;
 import com.hederahashgraph.api.proto.java.TokenType;
 import java.time.Instant;
 import java.util.Map;
@@ -74,22 +74,21 @@ public class TokenFeeScheduleUpdateSpecs {
         final var feeScheduleKey = "feeSchedule";
         final var expectedBasePriceUsd = 0.001;
 
-        return defaultHapiSpec("BaseOperationIsChargedExpectedFee", SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES)
-                .given(
-                        newKeyNamed(feeScheduleKey),
-                        cryptoCreate("civilian").key(feeScheduleKey),
-                        cryptoCreate(htsCollector),
-                        tokenCreate(feeDenom).treasury(htsCollector),
-                        tokenCreate(targetToken)
-                                .expiry(Instant.now().getEpochSecond() + THREE_MONTHS_IN_SECONDS)
-                                .feeScheduleKey(feeScheduleKey))
-                .when(tokenFeeScheduleUpdate(targetToken)
+        return hapiTest(
+                newKeyNamed(feeScheduleKey),
+                cryptoCreate("civilian").key(feeScheduleKey),
+                cryptoCreate(htsCollector),
+                tokenCreate(feeDenom).treasury(htsCollector),
+                tokenCreate(targetToken)
+                        .expiry(Instant.now().getEpochSecond() + THREE_MONTHS_IN_SECONDS)
+                        .feeScheduleKey(feeScheduleKey),
+                tokenFeeScheduleUpdate(targetToken)
                         .signedBy(feeScheduleKey)
                         .payingWith("civilian")
                         .blankMemo()
                         .withCustom(fixedHtsFee(htsAmount, feeDenom, htsCollector))
-                        .via("baseFeeSchUpd"))
-                .then(validateChargedUsdWithin("baseFeeSchUpd", expectedBasePriceUsd, 1.0));
+                        .via("baseFeeSchUpd"),
+                validateChargedUsdWithin("baseFeeSchUpd", expectedBasePriceUsd, 1.0));
     }
 
     @HapiTest

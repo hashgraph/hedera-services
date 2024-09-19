@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.contract.impl.exec.scope;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.FEE_SCHEDULE_UNITS_PER_TINYCENT;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.tuweniToPbjBytes;
 import static com.hedera.node.app.service.contract.impl.utils.SynthTxnUtils.THREE_MONTHS_IN_SECONDS;
 import static com.hedera.node.app.service.contract.impl.utils.SynthTxnUtils.synthAccountCreationFromHapi;
@@ -191,8 +192,13 @@ public class HandleHederaOperations implements HederaOperations {
         final var synthCreation = TransactionBody.newBuilder()
                 .cryptoCreateAccount(CREATE_TXN_BODY_BUILDER.alias(tuweniToPbjBytes(recipient)))
                 .build();
-        final var createFee = gasCalculator.canonicalPriceInTinybars(synthCreation, payerId);
-        return (createFee) / gasCalculator.topLevelGasPrice();
+        final var createFee = gasCalculator.feeCalculatorPriceInTinyBars(synthCreation, payerId);
+
+        // isGasPrecisionLossFixEnabled is a temporary feature flag that will be removed in the future.
+        if (!contractsConfig.isGasPrecisionLossFixEnabled()) {
+            return (createFee) / gasCalculator.topLevelGasPrice();
+        }
+        return (createFee) * FEE_SCHEDULE_UNITS_PER_TINYCENT / gasCalculator.topLevelGasPriceInTinyBars();
     }
 
     /**

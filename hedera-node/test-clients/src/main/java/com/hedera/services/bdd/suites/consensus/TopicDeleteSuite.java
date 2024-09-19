@@ -17,6 +17,7 @@
 package com.hedera.services.bdd.suites.consensus;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTopicInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.asTopicId;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createTopic;
@@ -26,7 +27,6 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.submitModified;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsd;
 import static com.hedera.services.bdd.spec.utilops.mod.ModificationUtils.withSuccessivelyVariedBodyIds;
-import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.FULLY_NONDETERMINISTIC;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOPIC_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNAUTHORIZED;
 
@@ -66,16 +66,10 @@ public class TopicDeleteSuite {
 
     @HapiTest
     final Stream<DynamicTest> topicIdIsValidated() {
-        // Fully non-deterministic for fuzzy matching because the test uses an absolute entity number (i.e.
-        // 100.232.4534)
-        // but fuzzy matching compares relative entity numbers
-        return defaultHapiSpec("topicIdIsValidated", FULLY_NONDETERMINISTIC)
-                .given()
-                .when()
-                .then(
-                        deleteTopic((String) null).hasKnownStatus(INVALID_TOPIC_ID),
-                        deleteTopic("100.232.4534") // non-existent id
-                                .hasKnownStatus(INVALID_TOPIC_ID));
+        return hapiTest(
+                deleteTopic((String) null).hasKnownStatus(INVALID_TOPIC_ID),
+                deleteTopic("100.232.4534") // non-existent id
+                        .hasKnownStatus(INVALID_TOPIC_ID));
     }
 
     @HapiTest
