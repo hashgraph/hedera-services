@@ -22,7 +22,6 @@ import static com.swirlds.fcqueue.internal.FCQHashAlgorithm.HASH_RADIX;
 
 import com.swirlds.common.FastCopyable;
 import com.swirlds.common.crypto.Hash;
-import com.swirlds.common.crypto.ImmutableHash;
 import com.swirlds.common.crypto.SerializableHashable;
 import com.swirlds.common.test.fixtures.fcqueue.FCInt;
 import com.swirlds.fcqueue.internal.FCQHashAlgorithm;
@@ -93,7 +92,7 @@ public class MockFCQueue<E extends FastCopyable & SerializableHashable> extends 
     @Override
     public Hash getHash() {
         synchronized (original) {
-            return new ImmutableHash(hash);
+            return new Hash(hash);
         } // sync
     }
 
