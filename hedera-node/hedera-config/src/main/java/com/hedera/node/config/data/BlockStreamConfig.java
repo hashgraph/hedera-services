@@ -24,6 +24,8 @@ import com.hedera.node.config.types.BlockStreamWriterMode;
 import com.hedera.node.config.types.StreamMode;
 import com.swirlds.config.api.ConfigData;
 import com.swirlds.config.api.ConfigProperty;
+import com.swirlds.config.api.validation.annotation.Max;
+import com.swirlds.config.api.validation.annotation.Min;
 
 /**
  * Configuration for the block stream.
@@ -31,6 +33,8 @@ import com.swirlds.config.api.ConfigProperty;
  * @param writerMode if we are writing to a file or gRPC stream
  * @param blockFileDir directory to store block files
  * @param compressFilesOnCreation whether to compress files on creation
+ * @param address the address of the gRPC server
+ * @param port the port of the gRPC server
  */
 @ConfigData("blockStream")
 public record BlockStreamConfig(
@@ -38,7 +42,9 @@ public record BlockStreamConfig(
         @ConfigProperty(defaultValue = "FILE") @NodeProperty BlockStreamWriterMode writerMode,
         @ConfigProperty(defaultValue = "data/block-streams") @NodeProperty String blockFileDir,
         @ConfigProperty(defaultValue = "true") @NetworkProperty boolean compressFilesOnCreation,
-        @ConfigProperty(defaultValue = "1") @NetworkProperty int roundsPerBlock) {
+        @ConfigProperty(defaultValue = "1") @NetworkProperty int roundsPerBlock,
+        @ConfigProperty(defaultValue = "localhost") String address,
+        @ConfigProperty(defaultValue = "8080") @Min(0) @Max(65535) int port) {
     public boolean streamBlocks() {
         return streamMode == BOTH;
     }

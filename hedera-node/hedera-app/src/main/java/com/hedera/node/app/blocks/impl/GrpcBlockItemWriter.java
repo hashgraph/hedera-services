@@ -16,21 +16,23 @@
 
 package com.hedera.node.app.blocks.impl;
 
+import static com.hedera.hapi.block.protoc.PublishStreamResponseCode.STREAM_ITEMS_UNKNOWN;
+import static io.grpc.Status.fromThrowable;
 import static java.util.Objects.requireNonNull;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.hapi.block.protoc.BlockStreamServiceGrpc;
 import com.hedera.hapi.block.protoc.PublishStreamRequest;
 import com.hedera.hapi.block.protoc.PublishStreamResponse;
-import com.hedera.hapi.block.protoc.PublishStreamResponseCode;
+import com.hedera.hapi.block.protoc.PublishStreamResponse.EndOfStream;
 import com.hedera.hapi.block.stream.protoc.BlockItem;
 import com.hedera.node.app.blocks.BlockItemWriter;
-import com.hedera.node.app.blocks.config.BlockStreamGrpcConfig;
-import com.hedera.node.config.ConfigProvider;
+import com.hedera.node.config.data.BlockStreamConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
+import io.grpc.Status;
 import io.grpc.stub.StreamObserver;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -47,8 +49,6 @@ public class GrpcBlockItemWriter implements BlockItemWriter {
     private BlockStreamServiceGrpc.BlockStreamServiceStub asyncStub;
     private StreamObserver<PublishStreamRequest> requestObserver;
 
-    private final String address;
-    private final int port;
     private long blockNumber;
 
     /** The state of this writer */
@@ -61,14 +61,15 @@ public class GrpcBlockItemWriter implements BlockItemWriter {
     }
 
     /**
-     * @param configProvider the configuration provider
+     * @param blockStreamConfig the block stream configuration
      */
-    public GrpcBlockItemWriter(@NonNull final ConfigProvider configProvider) {
-        requireNonNull(configProvider, "The supplied argument 'configProvider' cannot be null!");
-        final var config = configProvider.getConfiguration();
-        final var blockStreamConfig = config.getConfigData(BlockStreamGrpcConfig.class);
-        this.address = blockStreamConfig.address();
-        this.port = blockStreamConfig.port();
+    public GrpcBlockItemWriter(@NonNull final BlockStreamConfig blockStreamConfig) {
+        requireNonNull(blockStreamConfig, "The supplied argument 'blockStreamConfig' cannot be null!");
+
+        ManagedChannel channel = ManagedChannelBuilder.forAddress(blockStreamConfig.address(), blockStreamConfig.port())
+                .usePlaintext()
+                .build();
+        asyncStub = BlockStreamServiceGrpc.newStub(channel);
     }
 
     @Override
@@ -77,17 +78,29 @@ public class GrpcBlockItemWriter implements BlockItemWriter {
 
         if (blockNumber < 0) throw new IllegalArgumentException("Block number must be non-negative");
         this.blockNumber = blockNumber;
-        asyncStub = createBlockNodeAsyncStub();
 
         requestObserver = asyncStub.publishBlockStream(new StreamObserver<>() {
             @Override
-            public void onNext(PublishStreamResponse value) {
-                if (value.getStatus().equals(PublishStreamResponseCode.STREAM_ITEMS_UNKNOWN)) {
+            public void onNext(PublishStreamResponse streamResponse) {
+                // close the stream if error stream response occurs
+                if (streamResponse.getStatus().getStatus() == STREAM_ITEMS_UNKNOWN) {
+                    /*, STREAM_ITEMS_SUCCESS, STREAM_ITEMS_BEHIND*/
+                    onNext(PublishStreamResponse.newBuilder()
+                            .setStatus(EndOfStream.newBuilder()
+                                    .setStatus(STREAM_ITEMS_UNKNOWN)
+                                    .build())
+                            .build());
+
                     closeBlock();
                 }
+
+                if (streamResponse.getAcknowledgement().hasItemAck()) {
+                    closeBlock();
+                }
+
                 // Block Node build EndOfStream response in different scenarios:
                 // https://github.com/hashgraph/hedera-block-node/blob/simulator-grpc-client2/server/src/main/java/com/hedera/block/server/producer/ProducerBlockItemObserver.java#L213-L221
-                logger.info("PublishStreamResponse received: " + value.toString());
+                logger.info("PublishStreamResponse received: " + streamResponse.toString());
             }
 
             @Override
@@ -96,7 +109,8 @@ public class GrpcBlockItemWriter implements BlockItemWriter {
                 // Maybe this should be considered in this case:
                 // https://github.com/hashgraph/hedera-services/issues/15530
 
-                logger.error("onError method invoked with an exception: ", t);
+                final Status status = fromThrowable(t);
+                logger.error(status.toString());
             }
 
             @Override
@@ -123,7 +137,7 @@ public class GrpcBlockItemWriter implements BlockItemWriter {
                     .build();
             requestObserver.onNext(request);
         } catch (InvalidProtocolBufferException e) {
-            final String message = INVALID_MESSAGE.formatted("SubscribeStreamResponse", request);
+            final String message = INVALID_MESSAGE.formatted("PublishStreamResponse", request);
             /*final EndOfStream endOfStream =
                     EndOfStream.newBuilder()
                             .setStatus(PublishStreamResponseCode.STREAM_ITEMS_UNKNOWN)
@@ -141,11 +155,5 @@ public class GrpcBlockItemWriter implements BlockItemWriter {
     public void closeBlock() {
         requestObserver.onCompleted();
         this.state = State.CLOSED;
-    }
-
-    private BlockStreamServiceGrpc.BlockStreamServiceStub createBlockNodeAsyncStub() {
-        ManagedChannel channel =
-                ManagedChannelBuilder.forAddress(address, port).usePlaintext().build();
-        return BlockStreamServiceGrpc.newStub(channel);
     }
 }
