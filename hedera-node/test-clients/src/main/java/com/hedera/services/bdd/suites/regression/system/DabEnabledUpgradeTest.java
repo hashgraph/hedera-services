@@ -55,7 +55,6 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.security.cert.CertificateEncodingException;
 import java.security.cert.X509Certificate;
 import java.util.List;
-import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeAll;
@@ -151,7 +150,7 @@ public class DabEnabledUpgradeTest implements LifecycleTest {
                     prepareFakeUpgrade(),
                     validateUpgradeAddressBooks(
                             addressBook -> assertThat(nodeIdsFrom(addressBook)).containsExactlyInAnyOrder(0L, 2L, 3L)),
-                    upgradeToNextConfigVersion(FakeNmt.removeNode(byNodeId(1), DAB_GENERATED, exceptNodeIds(1), null)),
+                    upgradeToNextConfigVersion(FakeNmt.removeNode(byNodeId(1), DAB_GENERATED)),
                     waitUntilStartOfNextStakingPeriod(1).withBackgroundTraffic(),
                     touchBalanceOf(NODE0_STAKER, NODE2_STAKER, NODE3_STAKER).andAssertStakingRewardCount(3),
                     touchBalanceOf(NODE1_STAKER).andAssertStakingRewardCount(0));
@@ -186,7 +185,7 @@ public class DabEnabledUpgradeTest implements LifecycleTest {
                     prepareFakeUpgrade(),
                     validateUpgradeAddressBooks(
                             addressBook -> assertThat(nodeIdsFrom(addressBook)).containsExactlyInAnyOrder(0L, 2L)),
-                    upgradeToNextConfigVersion(FakeNmt.removeNode(byNodeId(3), DAB_GENERATED, exceptNodeIds(3), null)),
+                    upgradeToNextConfigVersion(FakeNmt.removeNode(byNodeId(3), DAB_GENERATED)),
                     waitUntilStartOfNextStakingPeriod(1).withBackgroundTraffic(),
                     touchBalanceOf(NODE0_STAKER, NODE2_STAKER).andAssertStakingRewardCount(2),
                     touchBalanceOf(NODE3_STAKER).andAssertStakingRewardCount(0));
@@ -219,7 +218,7 @@ public class DabEnabledUpgradeTest implements LifecycleTest {
                     // node4 was not active before this the upgrade, so it could not have written a config.txt
                     validateUpgradeAddressBooks(exceptNodeIds(4L), addressBook -> assertThat(nodeIdsFrom(addressBook))
                             .contains(4L)),
-                    upgradeToNextConfigVersion(FakeNmt.addNode(Set.of(4L), DAB_GENERATED, true)));
+                    upgradeToNextConfigVersion(FakeNmt.addNode(4L, DAB_GENERATED)));
         }
     }
 

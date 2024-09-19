@@ -16,14 +16,12 @@
 
 package com.hedera.services.bdd.junit.hedera;
 
+import static java.util.Objects.requireNonNull;
+
 import com.hedera.hapi.node.base.AccountID;
 import edu.umd.cs.findbugs.annotations.NonNull;
-
-import java.util.Objects;
 import java.util.function.Predicate;
 import org.bouncycastle.util.Arrays;
-
-import static java.util.Objects.requireNonNull;
 
 /**
  * Defines the criteria by which to select {@link HederaNode}s from a {@link HederaNetwork}.

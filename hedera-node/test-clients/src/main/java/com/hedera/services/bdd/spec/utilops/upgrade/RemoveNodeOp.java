@@ -16,7 +16,6 @@
 
 package com.hedera.services.bdd.spec.utilops.upgrade;
 
-import com.hedera.services.bdd.junit.hedera.HederaNode;
 import com.hedera.services.bdd.junit.hedera.NodeSelector;
 import com.hedera.services.bdd.junit.hedera.subprocess.SubProcessNetwork;
 import com.hedera.services.bdd.junit.hedera.subprocess.UpgradeConfigTxt;
@@ -24,7 +23,6 @@ import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.utilops.UtilOp;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
-import java.util.function.Predicate;
 
 /**
  * Removes the selected node or nodes specified by the {@link NodeSelector} and refreshes the
@@ -33,18 +31,10 @@ import java.util.function.Predicate;
 public class RemoveNodeOp extends UtilOp {
     private final NodeSelector selector;
     private final UpgradeConfigTxt upgradeConfigTxt;
-    private final Predicate<HederaNode> filter;
-    private NodeSelector nodeIdsInitSelector;
 
-    public RemoveNodeOp(
-            @NonNull final NodeSelector selector,
-            @NonNull final UpgradeConfigTxt upgradeConfigTxt,
-            @NonNull final Predicate<HederaNode> filter,
-            final NodeSelector nodeIdsInitSelector) {
+    public RemoveNodeOp(@NonNull final NodeSelector selector, @NonNull final UpgradeConfigTxt upgradeConfigTxt) {
         this.selector = Objects.requireNonNull(selector);
         this.upgradeConfigTxt = Objects.requireNonNull(upgradeConfigTxt);
-        this.filter = Objects.requireNonNull(filter);
-        this.nodeIdsInitSelector = nodeIdsInitSelector;
     }
 
     @Override
@@ -52,7 +42,7 @@ public class RemoveNodeOp extends UtilOp {
         if (!(spec.targetNetworkOrThrow() instanceof SubProcessNetwork subProcessNetwork)) {
             throw new IllegalStateException("Can only remove nodes from a SubProcessNetwork");
         }
-        subProcessNetwork.removeNode(selector, upgradeConfigTxt, filter, nodeIdsInitSelector);
+        subProcessNetwork.removeNode(selector, upgradeConfigTxt);
         return false;
     }
 }
