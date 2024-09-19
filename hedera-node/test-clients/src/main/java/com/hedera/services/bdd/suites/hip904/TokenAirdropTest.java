@@ -797,10 +797,11 @@ public class TokenAirdropTest extends TokenAirdropBase {
     class AirdropTokensWithCustomFees {
         private static final long HBAR_FEE = 1000L;
         private static final long HTS_FEE = 100L;
+        private static final long TOKEN_TOTAL = 1_000_000L;
 
         @BeforeAll
         static void beforeAll(@NonNull final TestLifecycle lifecycle) {
-            lifecycle.doAdhoc(setUpTokensWithCustomFees(1_000_000L, HBAR_FEE, HTS_FEE));
+            lifecycle.doAdhoc(setUpTokensWithCustomFees(TOKEN_TOTAL, HBAR_FEE, HTS_FEE));
         }
 
         @HapiTest
@@ -1082,6 +1083,109 @@ public class TokenAirdropTest extends TokenAirdropBase {
                     tokenAirdrop(moving(50, FT_ALL_COLLECTORS_EXEMPT_TOKEN)
                                     .between(FT_ALL_COLLECTORS_EXEMPT_OWNER, FT_ALL_COLLECTORS_EXEMPT_RECEIVER))
                             .signedByPayerAnd(FT_ALL_COLLECTORS_EXEMPT_RECEIVER, FT_ALL_COLLECTORS_EXEMPT_OWNER));
+        }
+
+        // AIRDROP_27
+        @HapiTest
+        @DisplayName(
+                "max 10 tokens to not associated account and different fee collectors does not hit the transaction limit")
+        final Stream<DynamicTest> maxTokensNumberWithAllCustomFeesToNotAssociatedAccountWithDifferentFeeCollectors() {
+            final var initialBalance = 100 * ONE_HUNDRED_HBARS;
+            return hapiTest(flattened(
+                    // test setup
+                    createAccountsAndTokensWithAllCustomFees(TOKEN_TOTAL, HBAR_FEE, HTS_FEE),
+                    // create Airdrop
+                    tokenAirdrop(
+                                    moving(1, FT_WITH_HBAR_FEE)
+                                            .between(
+                                                    OWNER_OF_TOKENS_WITH_ALL_CUSTOM_FEES,
+                                                    RECEIVER_WITH_0_AUTO_ASSOCIATIONS),
+                                    moving(1, FT_WITH_HBAR_FEE)
+                                            .between(OWNER_OF_TOKENS_WITH_ALL_CUSTOM_FEES, RECEIVER_HBAR_FEE),
+                                    moving(10, FT_WITH_FRACTIONAL_FEE_WITH_NET_OF_TRANSFERS)
+                                            .between(OWNER_OF_TOKENS_WITH_ALL_CUSTOM_FEES, RECEIVER_FRACTIONAL_FEE),
+                                    moving(10, FT_WITH_FRACTIONAL_FEE_WITH_NET_OF_TRANSFERS)
+                                            .between(OWNER_OF_TOKENS_WITH_ALL_CUSTOM_FEES, RECEIVER_FRACTIONAL_FEE),
+                                    moving(1, FT_WITH_HTS_FEE)
+                                            .between(OWNER_OF_TOKENS_WITH_ALL_CUSTOM_FEES, RECEIVER_HTS_FEE),
+                                    moving(1, FT_WITH_HTS_FEE)
+                                            .between(OWNER_OF_TOKENS_WITH_ALL_CUSTOM_FEES, RECEIVER_HTS_FEE),
+                                    moving(1, FT_WITH_HTS_FEE)
+                                            .between(OWNER_OF_TOKENS_WITH_ALL_CUSTOM_FEES, RECEIVER_HTS_FEE_SECOND),
+                                    movingUnique(NFT_WITH_HBAR_FEE, 1)
+                                            .between(OWNER_OF_TOKENS_WITH_ALL_CUSTOM_FEES, RECEIVER_NFT_HBAR_FEE),
+                                    movingUnique(NFT_WITH_HTS_FEE, 1L)
+                                            .between(OWNER_OF_TOKENS_WITH_ALL_CUSTOM_FEES, RECEIVER_NFT_HTS_FEE),
+                                    movingUnique(NFT_WITH_ROYALTY_FEE_NO_FALLBACK, 1L)
+                                            .between(OWNER_OF_TOKENS_WITH_ALL_CUSTOM_FEES, RECEIVER_NFT_ROYALTY_FEE))
+                            .payingWith(OWNER_OF_TOKENS_WITH_ALL_CUSTOM_FEES)
+                            .via("multiple tokens transactions"),
+
+                    // assert outcomes
+                    getTxnRecord("multiple tokens transactions")
+                            .hasPriority(recordWith()
+                                    // assert FT pending airdrops
+                                    .pendingAirdrops(includingFungiblePendingAirdrop(
+                                            moving(1, FT_WITH_HBAR_FEE)
+                                                    .between(
+                                                            OWNER_OF_TOKENS_WITH_ALL_CUSTOM_FEES,
+                                                            RECEIVER_WITH_0_AUTO_ASSOCIATIONS),
+                                            moving(1, FT_WITH_HBAR_FEE)
+                                                    .between(OWNER_OF_TOKENS_WITH_ALL_CUSTOM_FEES, RECEIVER_HBAR_FEE),
+                                            moving(20, FT_WITH_FRACTIONAL_FEE_WITH_NET_OF_TRANSFERS)
+                                                    .between(
+                                                            OWNER_OF_TOKENS_WITH_ALL_CUSTOM_FEES,
+                                                            RECEIVER_FRACTIONAL_FEE),
+                                            moving(2, FT_WITH_HTS_FEE)
+                                                    .between(OWNER_OF_TOKENS_WITH_ALL_CUSTOM_FEES, RECEIVER_HTS_FEE),
+                                            moving(1, FT_WITH_HTS_FEE)
+                                                    .between(
+                                                            OWNER_OF_TOKENS_WITH_ALL_CUSTOM_FEES,
+                                                            RECEIVER_HTS_FEE_SECOND)))
+                                    // assert NFT pending airdrops
+                                    .pendingAirdrops(includingNftPendingAirdrop(
+                                            movingUnique(NFT_WITH_HBAR_FEE, 1L)
+                                                    .between(
+                                                            OWNER_OF_TOKENS_WITH_ALL_CUSTOM_FEES,
+                                                            RECEIVER_NFT_HBAR_FEE),
+                                            movingUnique(NFT_WITH_HTS_FEE, 1L)
+                                                    .between(
+                                                            OWNER_OF_TOKENS_WITH_ALL_CUSTOM_FEES, RECEIVER_NFT_HTS_FEE),
+                                            movingUnique(NFT_WITH_ROYALTY_FEE_NO_FALLBACK, 1L)
+                                                    .between(
+                                                            OWNER_OF_TOKENS_WITH_ALL_CUSTOM_FEES,
+                                                            RECEIVER_NFT_ROYALTY_FEE)))),
+                    // assert collectors balances
+                    getAccountBalance(FT_HBAR_COLLECTOR).hasTinyBars(HBAR_FEE),
+                    getAccountBalance(FT_FRACTIONAL_COLLECTOR)
+                            .hasTokenBalance(FT_WITH_FRACTIONAL_FEE_WITH_NET_OF_TRANSFERS, 2),
+                    getAccountBalance(FT_WITH_HTS_FEE_COLLECTOR)
+                            .hasTokenBalance(DENOM_TOKEN_HTS, 2 * HTS_FEE)
+                            .hasTokenBalance(FT_WITH_HTS_FEE, 0),
+                    //                    getAccountBalance(FT_WITH_HTS_FEE_COLLECTOR).hasTokenBalance(FT_WITH_HTS_FEE,
+                    // 0),
+                    getAccountBalance(NFT_HBAR_COLLECTOR).hasTinyBars(HBAR_FEE),
+                    getAccountBalance(NFT_HTS_COLLECTOR).hasTokenBalance(FT_WITH_HTS_FEE, HTS_FEE),
+                    getAccountBalance(NFT_ROYALTY_FEE_COLLECTOR).hasTinyBars(0),
+                    // assert owner balance
+                    withOpContext((spec, log) -> {
+                        final var record = getTxnRecord("multiple tokens transactions");
+                        allRunFor(spec, record);
+                        final var txFee = record.getResponseRecord().getTransactionFee();
+                        // the token should not be transferred but the custom fee should be charged
+                        final var ownerBalance = getAccountBalance(OWNER_OF_TOKENS_WITH_ALL_CUSTOM_FEES)
+                                .hasTinyBars(initialBalance - (txFee + 2 * HBAR_FEE))
+                                .hasTokenBalance(FT_WITH_HBAR_FEE, 1000)
+                                .hasTokenBalance(NFT_WITH_HBAR_FEE, 1L);
+                        allRunFor(spec, ownerBalance);
+                    }),
+                    getAccountBalance(OWNER_OF_TOKENS_WITH_ALL_CUSTOM_FEES)
+                            .hasTokenBalance(FT_WITH_FRACTIONAL_FEE_WITH_NET_OF_TRANSFERS, 998)
+                            .hasTokenBalance(FT_WITH_HTS_FEE, 1000 - HTS_FEE)
+                            .hasTokenBalance(FT_WITH_HTS_FEE, 1000 - HTS_FEE)
+                            .hasTokenBalance(DENOM_TOKEN_HTS, TOKEN_TOTAL - 2 * HTS_FEE)
+                            .hasTokenBalance(NFT_WITH_ROYALTY_FEE_NO_FALLBACK, 1),
+                    validateChargedUsd("multiple tokens transactions", 0.8, 10)));
         }
     }
 
