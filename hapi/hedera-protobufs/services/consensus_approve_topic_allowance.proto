@@ -36,21 +36,12 @@ import "basic_types.proto";
 
 /**
  * Approve Topic Allowance<br/>
- //TODO: Add more description
- * Complete one or more pending transfers on behalf of the
- * recipient(s) for an airdrop.
+ * Approve allowance for submitting a message to a topic with custom fee.
  *
- * The sender MUST have sufficient balance to fulfill the airdrop at the
- * time of claim. If the sender does not have sufficient balance, the
- * claim SHALL fail.<br/>
- * Each pending airdrop successfully claimed SHALL be removed from state and
- * SHALL NOT be available to claim again.<br/>
- * Each claim SHALL be represented in the transaction body and
- * SHALL NOT be restated in the record file.<br/>
- * All claims MUST succeed for this transaction to succeed.
- *
- * ### Record Stream Effects
- * The completed transfers SHALL be present in the transfer list.
+ * The topic MUST have a given custom fee in order to set allowance for that fee,
+ * otherwise the transaction SHALL fail.<br/>
+ * Setting the amount to zero in 'CryptoAllowance' or 'TokenAllowance'
+ * SHALL remove the respective allowance for the spender</br>
  */
 message ConsensusApproveAllowanceTransactionBody {
   /**

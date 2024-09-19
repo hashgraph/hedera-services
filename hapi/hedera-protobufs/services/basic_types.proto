@@ -1249,6 +1249,11 @@ enum HederaFunctionality {
       * Claim one or more pending airdrops
      */
     TokenClaimAirdrop = 95;
+
+    /**
+      * Approve allowance for a given topic
+     */
+    ConsensusApproveAllowance = 96;
 }
 
 /**
