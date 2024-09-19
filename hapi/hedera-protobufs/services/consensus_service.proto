@@ -120,4 +120,12 @@ service ConsensusService {
      * Request is [ConsensusSubmitMessageTransactionBody](#proto.ConsensusSubmitMessageTransactionBody)
      */
     rpc submitMessage (Transaction) returns (TransactionResponse);
+
+    /**
+     * Approve allowance for custom fees.
+     * <p>
+     * Set account allowances for a topic. This includes total allowance and allowance per message.
+     * Request is [ConsensusApproveAllowanceTransactionBody](#proto.ConsensusApproveAllowanceTransactionBody)
+     */
+    rpc approveAllowance (Transaction) returns (TransactionResponse);
 }
