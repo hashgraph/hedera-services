@@ -137,4 +137,42 @@ message Topic {
      * charged _in addition to_ the base network and node fees.
      */
     repeated ConsensusCustomFee custom_fees = 13;
+
+    /**
+     * (Optional) List of crypto allowances for the topic.
+     * It contains account number for which the allowance is approved to and
+     * the amount approved for that account.
+     */
+    repeated TopicCryptoAllowance crypto_allowances = 14;
+
+    /**
+     * (Optional) List of fungible token allowances for the topic.
+     * It contains account number for which the allowance is approved to and the token number.
+     * It also contains and the amount approved for that account.
+     */
+    repeated TopicFungibleTokenAllowance token_allowances = 30;
+}
+
+/**
+    * Allowance with a given amount granted by account for this topic.
+    * This allows the spender to send messages to this topic while utilizing
+    * the allocated allowance to cover the associated cost.
+    */
+message TopicCryptoAllowance {
+    AccountID spender_id = 1;
+    uint64 amount = 2;
+    uint64 amount_per_message = 3;
+}
+
+/**
+ * Allowance granted by and account for a specific fungible token and this topic.
+ * This also contains the amount of the token that is approved for the account.
+ * This allows the spender to send messages to this topic while utilizing
+ * the allocated fungible token allowance to cover the associated cost.
+ */
+message TopicFungibleTokenAllowance {
+    TokenID token_id = 1;
+    AccountID spender_id = 2;
+    uint64 amount = 3;
+    uint64 amount_per_message = 4;
 }

@@ -65,19 +65,16 @@ public final class ConsensusTestUtils {
     }
 
     static Topic newTopic(Key admin, Key submit) {
-        return new Topic(
-                TopicID.newBuilder().topicNum(123L).build(),
-                -1L,
-                0L,
-                -1L,
-                AccountID.newBuilder().accountNum(1234567L).build(),
-                false,
-                null,
-                "memo",
-                admin,
-                submit,
-                null,
-                null,
-                null);
+        return Topic.newBuilder()
+                .topicId(TopicID.newBuilder().topicNum(123L).build())
+                .sequenceNumber(-1L)
+                .expirationSecond(0L)
+                .autoRenewPeriod(-1L)
+                .autoRenewAccountId(AccountID.newBuilder().accountNum(1234567L).build())
+                .deleted(false)
+                .memo("memo")
+                .adminKey(admin)
+                .submitKey(submit)
+                .build();
     }
 }
