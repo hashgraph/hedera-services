@@ -24,6 +24,7 @@ import static com.swirlds.common.io.utility.FileUtils.throwIfFileExists;
 import static com.swirlds.common.io.utility.FileUtils.writeAndFlush;
 import static com.swirlds.common.test.fixtures.AssertionUtils.assertEventuallyDoesNotThrow;
 import static com.swirlds.common.test.fixtures.AssertionUtils.assertEventuallyTrue;
+import static com.swirlds.common.test.fixtures.ConfigurationUtils.configuration;
 import static com.swirlds.common.threading.interrupt.Uninterruptable.abortAndThrowIfInterrupted;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static java.nio.file.Files.delete;
@@ -506,7 +507,7 @@ class FileUtilsTests {
 
                                 out.writeNormalisedString("bar");
                             });
-                        });
+                        }, configuration());
                     } catch (final IOException e) {
                         throw new UncheckedIOException(e);
                     }
@@ -539,7 +540,7 @@ class FileUtilsTests {
 
         assertThrows(
                 IOException.class,
-                () -> executeAndRename(foo, null),
+                () -> executeAndRename(foo, null, configuration()),
                 "existence of directory before hand should cause problems");
     }
 

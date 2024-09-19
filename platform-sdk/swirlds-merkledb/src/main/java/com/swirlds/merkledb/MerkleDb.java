@@ -202,7 +202,7 @@ public final class MerkleDb {
     }
 
     /**
-     * This method resets the path to a default instance to force the next {@link #getDefaultInstance(Configuration)()} to
+     * This method resets the path to a default instance to force the next {@link #getDefaultInstance(Configuration)} to
      * create another instance. This method is used in tests to load multiple MerkleDb instances within one process.
      * When a node is restored from a saved state, all virtual maps are restored to the default MerkleDb instance.
      * There is no way yet to provide node config to MerkleDb, it's a singleton. It leads to nodes to attempt overwriting each other's data,

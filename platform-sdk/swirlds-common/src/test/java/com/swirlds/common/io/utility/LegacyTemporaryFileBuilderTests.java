@@ -22,6 +22,7 @@ import static com.swirlds.common.io.utility.LegacyTemporaryFileBuilder.buildTemp
 import static com.swirlds.common.io.utility.LegacyTemporaryFileBuilder.buildTemporaryFile;
 import static com.swirlds.common.io.utility.LegacyTemporaryFileBuilder.getTemporaryFileLocation;
 import static com.swirlds.common.io.utility.LegacyTemporaryFileBuilder.overrideTemporaryFileLocation;
+import static com.swirlds.common.test.fixtures.ConfigurationUtils.configuration;
 import static java.nio.file.Files.exists;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -44,7 +45,7 @@ public class LegacyTemporaryFileBuilderTests {
     @DisplayName("buildTemporaryDirectory() Test")
     @SuppressWarnings("ConstantConditions")
     void buildTemporaryDirectoryTest() throws IOException {
-        final Path tmp = buildTemporaryDirectory();
+        final Path tmp = buildTemporaryDirectory(configuration());
         assertTrue(exists(tmp), "directory should exist");
         assertTrue(tmp.toFile().canRead(), "invalid permissions, should be able to read");
         assertTrue(tmp.toFile().canWrite(), "invalid permissions, should be able to write");
@@ -60,21 +61,21 @@ public class LegacyTemporaryFileBuilderTests {
 
         for (int i = 0; i < 100; i++) {
             if (i % 2 == 0) {
-                assertTrue(files.add(buildTemporaryFile()), "file should not yet exist");
+                assertTrue(files.add(buildTemporaryFile(configuration())), "file should not yet exist");
             } else {
-                assertTrue(files.add(buildTemporaryDirectory()), "file should not yet exist");
+                assertTrue(files.add(buildTemporaryDirectory(configuration())), "file should not yet exist");
             }
         }
 
         // Cleanup
-        deleteDirectory(getTemporaryFileLocation());
+        deleteDirectory(getTemporaryFileLocation(configuration()));
     }
 
     @Test
     @DisplayName("Postfix Test")
     void postfixTest() throws IOException {
-        final Path file = buildTemporaryFile("foo");
-        final Path directory = buildTemporaryFile("bar");
+        final Path file = buildTemporaryFile("foo", configuration());
+        final Path directory = buildTemporaryFile("bar", configuration());
 
         final String fileName = file.getFileName().toString();
         final String[] fileNameElements = fileName.split("-");
@@ -87,7 +88,7 @@ public class LegacyTemporaryFileBuilderTests {
         assertEquals("bar", directoryNameElements[1], "invalid postfix");
 
         // Cleanup
-        deleteDirectory(getTemporaryFileLocation());
+        deleteDirectory(getTemporaryFileLocation(configuration()));
     }
 
     @Test
@@ -96,7 +97,7 @@ public class LegacyTemporaryFileBuilderTests {
         final List<Path> files = new LinkedList<>();
 
         for (int i = 0; i < 100; i++) {
-            assertTrue(files.add(buildTemporaryDirectory()), "file should not yet exist");
+            assertTrue(files.add(buildTemporaryDirectory(configuration())), "file should not yet exist");
         }
 
         for (final Path file : files) {
@@ -104,7 +105,7 @@ public class LegacyTemporaryFileBuilderTests {
         }
 
         // This should cause all files to be deleted
-        overrideTemporaryFileLocation(getTemporaryFileLocation());
+        overrideTemporaryFileLocation(getTemporaryFileLocation(configuration()));
 
         for (final Path file : files) {
             assertFalse(exists(file), "file should have been deleted");
@@ -115,12 +116,12 @@ public class LegacyTemporaryFileBuilderTests {
     @DisplayName("Set Temporary File Directory Test")
     void setTemporaryFileDirectoryTest() throws IOException {
 
-        final Path originalTemporaryFileLocation = getTemporaryFileLocation();
+        final Path originalTemporaryFileLocation = getTemporaryFileLocation(configuration());
 
         overrideTemporaryFileLocation(getAbsolutePath("foobar"));
-        final Path file = buildTemporaryFile();
+        final Path file = buildTemporaryFile(configuration());
         assertEquals("foobar", file.getParent().getFileName().toString(), "invalid location");
-        deleteDirectory(getTemporaryFileLocation());
+        deleteDirectory(getTemporaryFileLocation(configuration()));
 
         // Reset location for other tests
         overrideTemporaryFileLocation(originalTemporaryFileLocation);

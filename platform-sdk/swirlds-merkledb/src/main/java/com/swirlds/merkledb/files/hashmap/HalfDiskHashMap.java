@@ -147,11 +147,10 @@ public class HalfDiskHashMap implements AutoCloseable, Snapshotable, FileStatist
         return exec;
     }
 
-    // TODO: update docs
     /**
      * Construct a new HalfDiskHashMap
      *
-     * @param merkleDbConfig                         MerkleDb merkleDbConfig
+     * @param configuration                  Configuration.
      * @param mapSize                        The maximum map number of entries. This should be more than big enough to
      *                                       avoid too many key collisions.
      * @param storeDir                       The directory to use for storing data files.
