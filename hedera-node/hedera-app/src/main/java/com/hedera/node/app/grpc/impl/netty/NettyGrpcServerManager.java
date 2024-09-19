@@ -192,6 +192,15 @@ public final class NettyGrpcServerManager implements GrpcServerManager {
             tlsServer = null;
             logger.warn("Could not start TLS server, will continue without it: {}", e.getMessage());
         }
+
+        if (grpcConfig.nodeOperatorPortEnabled()) {
+            try {
+                final var nodeOperatorPort = grpcConfig.nodeOperatorPort();
+                logger.info("Starting node operator gRPC server on port {}", nodeOperatorPort);
+            } catch (Exception e) {
+                logger.warn("Could not start node operator gRPC server, will continue without it: {}", e.getMessage());
+            }
+        }
     }
 
     @Override
