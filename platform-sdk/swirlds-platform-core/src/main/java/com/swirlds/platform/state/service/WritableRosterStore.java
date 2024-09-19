@@ -175,12 +175,19 @@ public class WritableRosterStore implements RosterStateModifier {
         final List<RoundRosterPair> roundRosterPairs = new LinkedList<>(previousRosterState.roundRosterPairs());
         final Bytes activeRosterHash = RosterUtils.hashOf(roster).getBytes();
         roundRosterPairs.addFirst(new RoundRosterPair(round, activeRosterHash));
+
+        // remove the formerly previous active roster, i.e., the roster that was active before the last two adopted
+        // rosters, if any.
+        if (roundRosterPairs.size() > 2) {
+            roundRosterPairs.removeLast();
+        }
+
         final Builder rosterStateBuilder = RosterState.newBuilder()
                 .candidateRosterHash(previousRosterState.candidateRosterHash())
                 .roundRosterPairs(roundRosterPairs);
         this.rosterState.put(rosterStateBuilder.build());
 
-        // update the roster map and commit the changes
+        // update the roster map
         this.rosterMap.put(ProtoBytes.newBuilder().value(activeRosterHash).build(), roster);
     }
 

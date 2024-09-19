@@ -132,13 +132,36 @@ class WritableRosterStoreTest {
     @DisplayName("Test determine active roster during normal restart but with an active roster present")
     void testDetermineActiveRosterDuringNormalRestartWithActiveRoster() {
         enableSoftwareUpgradeMode(true);
-        rosterStateModifier.setCandidateRoster(createValidRoster(1));
+        final Roster candidateRoster = createValidRoster(2);
+        rosterStateModifier.setCandidateRoster(candidateRoster);
         rosterStateModifier.determineActiveRoster(version, initialState);
 
         enableSoftwareUpgradeMode(false);
-        assertSame(
-                rosterStateModifier.determineActiveRoster(version, initialState),
-                rosterStateAccessor.getActiveRoster());
+        assertSame(rosterStateModifier.determineActiveRoster(version, initialState), candidateRoster);
+        assertSame(rosterStateModifier.getActiveRoster(), candidateRoster);
+    }
+
+    @Test
+    @DisplayName("Test that the oldest roster is removed after 3 or more software upgrades")
+    void testDetermineActiveRosterWithExisting2PreviousRosters() {
+        enableSoftwareUpgradeMode(true);
+        rosterStateModifier.setCandidateRoster(createValidRoster(3));
+        rosterStateModifier.determineActiveRoster(version, initialState);
+
+        enableSoftwareUpgradeMode(false);
+
+        // set a 2nd candidate roster and adopt it
+        enableSoftwareUpgradeMode(true);
+        rosterStateModifier.setCandidateRoster(createValidRoster(1));
+        rosterStateModifier.determineActiveRoster(version, initialState);
+
+        // set a 3rd candidate roster and adopt it
+        enableSoftwareUpgradeMode(true);
+        final Roster latestCandidateRoster = createValidRoster(2);
+        rosterStateModifier.setCandidateRoster(latestCandidateRoster);
+
+        assertSame(rosterStateModifier.determineActiveRoster(version, initialState), latestCandidateRoster);
+        assertSame(rosterStateModifier.getActiveRoster(), latestCandidateRoster);
     }
 
     /**
