@@ -18,9 +18,12 @@ package com.hedera.services.bdd.junit.hedera;
 
 import com.hedera.hapi.node.base.AccountID;
 import edu.umd.cs.findbugs.annotations.NonNull;
+
+import java.util.Objects;
+import java.util.function.Predicate;
 import org.bouncycastle.util.Arrays;
 
-import java.util.function.Predicate;
+import static java.util.Objects.requireNonNull;
 
 /**
  * Defines the criteria by which to select {@link HederaNode}s from a {@link HederaNetwork}.
@@ -81,7 +84,8 @@ public interface NodeSelector extends Predicate<HederaNode> {
     }
 
     /** Gets a {@link NodeSelector} that excludes nodes by nodeId in a case-insensitive way */
-    static NodeSelector exceptNodeIds(final long... nodeIds) {
+    static NodeSelector exceptNodeIds(@NonNull final long... nodeIds) {
+        requireNonNull(nodeIds);
         return new NodeSelector() {
             @Override
             public boolean test(@NonNull final HederaNode node) {
@@ -90,7 +94,7 @@ public interface NodeSelector extends Predicate<HederaNode> {
 
             @Override
             public String toString() {
-                return "by nodeIds '" + java.util.Arrays.toString(nodeIds) + "'";
+                return "excluding nodeIds '" + java.util.Arrays.toString(nodeIds) + "'";
             }
         };
     }
