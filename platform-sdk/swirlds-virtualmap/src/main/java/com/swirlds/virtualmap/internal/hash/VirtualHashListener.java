@@ -19,20 +19,23 @@ package com.swirlds.virtualmap.internal.hash;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.virtualmap.VirtualKey;
 import com.swirlds.virtualmap.VirtualValue;
+import com.swirlds.virtualmap.config.VirtualMapConfig;
 import com.swirlds.virtualmap.datasource.VirtualLeafRecord;
 
 /**
  * Listens to various events that occur during the hashing process.
  */
 public interface VirtualHashListener<K extends VirtualKey, V extends VirtualValue> {
+
+    // TODO: update docs
     /**
      * Called when starting a new fresh hash operation.
      */
-    default void onHashingStarted() {}
+    default void onHashingStarted(final VirtualMapConfig vmConfig) {}
 
     /**
      * Called after each node is hashed, internal or leaf. This is called between
-     * {@link #onHashingStarted()} and {@link #onHashingCompleted()}.
+     * {@link #onHashingStarted(VirtualMapConfig)} and {@link #onHashingCompleted()}.
      *
      * @param path
      * 		Node path
@@ -43,7 +46,7 @@ public interface VirtualHashListener<K extends VirtualKey, V extends VirtualValu
 
     /**
      * Called after each leaf node on a rank is hashed. This is called between
-     * {@link #onHashingStarted()} and {@link #onHashingCompleted()}.
+     * {@link #onHashingStarted(VirtualMapConfig)} and {@link #onHashingCompleted()}.
      *
      * @param leaf
      * 		A non-null leaf record representing the hashed leaf.

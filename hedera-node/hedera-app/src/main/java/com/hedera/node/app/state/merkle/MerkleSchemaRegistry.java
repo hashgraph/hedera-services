@@ -38,6 +38,7 @@ import com.swirlds.config.api.Configuration;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.merkledb.MerkleDbDataSourceBuilder;
 import com.swirlds.merkledb.MerkleDbTableConfig;
+import com.swirlds.merkledb.config.MerkleDbConfig;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.state.MerkleStateRoot;
 import com.swirlds.state.State;
@@ -333,12 +334,12 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
                                             md.stateDefinition().valueCodec());
                                     // MAX_IN_MEMORY_HASHES (ramToDiskThreshold) = 8388608
                                     // PREFER_DISK_BASED_INDICES = false
-                                    final var tableConfig = new MerkleDbTableConfig((short) 1, DigestType.SHA_384)
+                                    final var tableConfig = new MerkleDbTableConfig((short) 1, DigestType.SHA_384, configuration.getConfigData(MerkleDbConfig.class))
                                             .maxNumberOfKeys(def.maxKeysHint());
                                     final var label = StateUtils.computeLabel(serviceName, stateKey);
-                                    final var dsBuilder = new MerkleDbDataSourceBuilder(tableConfig);
+                                    final var dsBuilder = new MerkleDbDataSourceBuilder(tableConfig, configuration);
                                     final var virtualMap =
-                                            new VirtualMap<>(label, keySerializer, valueSerializer, dsBuilder);
+                                            new VirtualMap<>(label, keySerializer, valueSerializer, dsBuilder, configuration);
                                     return virtualMap;
                                 },
                                 virtualMap -> virtualMap.registerMetrics(metrics));

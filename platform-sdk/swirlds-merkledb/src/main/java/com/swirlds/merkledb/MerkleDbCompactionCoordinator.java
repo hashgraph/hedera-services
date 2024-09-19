@@ -21,7 +21,6 @@ import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.logging.legacy.LogMarker.MERKLE_DB;
 import static com.swirlds.merkledb.MerkleDb.MERKLEDB_COMPONENT;
 
-import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.merkledb.config.MerkleDbConfig;
 import com.swirlds.merkledb.files.DataFileCompactor;
@@ -60,13 +59,12 @@ class MerkleDbCompactionCoordinator {
     private static final long SHUTDOWN_TIMEOUT_MILLIS = 60_000;
 
     /**
-     * An executor service to run compaction tasks. Accessed using {@link #getCompactionExecutor()}.
+     * An executor service to run compaction tasks. Accessed using {@link #getCompactionExecutor(MerkleDbConfig)}.
      */
     private static ExecutorService compactionExecutor = null;
 
-    static synchronized ExecutorService getCompactionExecutor() {
+    static synchronized ExecutorService getCompactionExecutor(final MerkleDbConfig config) {
         if (compactionExecutor == null) {
-            final MerkleDbConfig config = ConfigurationHolder.getConfigData(MerkleDbConfig.class);
             compactionExecutor = new ThreadPoolExecutor(
                     config.compactionThreads(),
                     config.compactionThreads(),
@@ -103,10 +101,14 @@ class MerkleDbCompactionCoordinator {
     @NonNull
     private final DataFileCompactor pathToKeyValue;
 
+    @NonNull
+    private final MerkleDbConfig merkleDbConfig;
+
     // Number of compaction tasks currently running. Checked during shutdown to make sure all
     // tasks are stopped
     private final AtomicInteger tasksRunning = new AtomicInteger(0);
 
+    // TODO: update docs
     /**
      * Creates a new instance of {@link MerkleDbCompactionCoordinator}.
      * @param tableName the name of the table
@@ -118,10 +120,12 @@ class MerkleDbCompactionCoordinator {
             @NonNull String tableName,
             @Nullable DataFileCompactor objectKeyToPath,
             @Nullable DataFileCompactor hashesStoreDisk,
-            @NonNull DataFileCompactor pathToKeyValue) {
+            @NonNull DataFileCompactor pathToKeyValue,
+            @NonNull MerkleDbConfig merkleDbConfig) {
         this.objectKeyToPath = objectKeyToPath;
         this.hashesStoreDisk = hashesStoreDisk;
         this.pathToKeyValue = pathToKeyValue;
+        this.merkleDbConfig = merkleDbConfig; // TODO: add Objects#requireNonNull ?
         if (objectKeyToPath != null) {
             objectKeyToPathTask = new CompactionTask(tableName + OBJECT_KEY_TO_PATH_SUFFIX, objectKeyToPath);
         } else {
@@ -246,7 +250,7 @@ class MerkleDbCompactionCoordinator {
                     return;
                 }
             }
-            final ExecutorService executor = getCompactionExecutor();
+            final ExecutorService executor = getCompactionExecutor(merkleDbConfig);
             compactionFuturesByName.put(task.id, executor.submit(task));
         }
     }

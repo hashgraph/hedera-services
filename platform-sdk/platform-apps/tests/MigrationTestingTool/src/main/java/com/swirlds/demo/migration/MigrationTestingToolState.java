@@ -18,6 +18,7 @@ package com.swirlds.demo.migration;
 
 import static com.swirlds.demo.migration.MigrationTestingToolMain.PREVIOUS_SOFTWARE_VERSION;
 import static com.swirlds.logging.legacy.LogMarker.STARTUP;
+import static com.swirlds.merkle.test.fixtures.map.util.MerkleMapTestUtil.configuration;
 
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.merkle.MerkleInternal;
@@ -32,6 +33,7 @@ import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.merkledb.MerkleDb;
 import com.swirlds.merkledb.MerkleDbDataSourceBuilder;
 import com.swirlds.merkledb.MerkleDbTableConfig;
+import com.swirlds.merkledb.config.MerkleDbConfig;
 import com.swirlds.platform.state.PlatformStateAccessor;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;
@@ -199,13 +201,13 @@ public class MigrationTestingToolState extends PartialNaryMerkleInternal impleme
      */
     private void genesisInit(final Platform platform) {
         setMerkleMap(new MerkleMap<>());
-        final MerkleDbTableConfig tableConfig = new MerkleDbTableConfig((short) 1, DigestType.SHA_384);
+        final MerkleDbTableConfig tableConfig = new MerkleDbTableConfig((short) 1, DigestType.SHA_384, configuration().getConfigData(MerkleDbConfig.class));
         // to make it work for the multiple node in one JVM case, we need reset the default instance path every time
         // we create another instance of MerkleDB.
         MerkleDb.resetDefaultInstancePath();
-        final VirtualDataSourceBuilder dsBuilder = new MerkleDbDataSourceBuilder(tableConfig);
+        final VirtualDataSourceBuilder dsBuilder = new MerkleDbDataSourceBuilder(tableConfig, configuration());
         setVirtualMap(new VirtualMap<>(
-                "virtualMap", new AccountVirtualMapKeySerializer(), new AccountVirtualMapValueSerializer(), dsBuilder));
+                "virtualMap", new AccountVirtualMapKeySerializer(), new AccountVirtualMapValueSerializer(), dsBuilder, configuration()));
         selfId = platform.getSelfId();
     }
 

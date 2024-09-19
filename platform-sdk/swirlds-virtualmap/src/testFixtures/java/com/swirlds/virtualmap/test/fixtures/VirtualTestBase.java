@@ -36,6 +36,8 @@ import java.util.List;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 
+import static com.swirlds.virtualmap.test.fixtures.VirtualMapTestUtils.vmConfig;
+
 @SuppressWarnings("jol")
 public class VirtualTestBase {
     protected static final Cryptography CRYPTO = CryptographyHolder.get();
@@ -139,7 +141,7 @@ public class VirtualTestBase {
     @BeforeEach
     public void setup() {
         rounds = new ArrayList<>();
-        cache = new VirtualNodeCache<>();
+        cache = new VirtualNodeCache<>(vmConfig());
         rounds.add(cache);
         lastCache = null;
     }

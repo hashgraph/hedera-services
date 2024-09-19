@@ -19,6 +19,7 @@ package com.swirlds.merkledb;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.io.utility.LegacyTemporaryFileBuilder;
+import com.swirlds.config.api.Configuration;
 import com.swirlds.virtualmap.datasource.VirtualDataSource;
 import com.swirlds.virtualmap.datasource.VirtualDataSourceBuilder;
 import java.io.IOException;
@@ -55,6 +56,9 @@ public class MerkleDbDataSourceBuilder implements VirtualDataSourceBuilder {
      */
     private MerkleDbTableConfig tableConfig;
 
+    // TODO: docs
+    private Configuration configuration;
+
     /**
      * Default constructor for deserialization purposes.
      */
@@ -68,8 +72,8 @@ public class MerkleDbDataSourceBuilder implements VirtualDataSourceBuilder {
      * @param tableConfig
      *      Table configuration to use to create new data sources
      */
-    public MerkleDbDataSourceBuilder(final MerkleDbTableConfig tableConfig) {
-        this(null, tableConfig);
+    public MerkleDbDataSourceBuilder(final MerkleDbTableConfig tableConfig, Configuration configuration) {
+        this(null, tableConfig, configuration);
     }
 
     /**
@@ -80,9 +84,10 @@ public class MerkleDbDataSourceBuilder implements VirtualDataSourceBuilder {
      * @param tableConfig
      *      Table configuration to use to create new data sources
      */
-    public MerkleDbDataSourceBuilder(final Path databaseDir, final MerkleDbTableConfig tableConfig) {
+    public MerkleDbDataSourceBuilder(final Path databaseDir, final MerkleDbTableConfig tableConfig, Configuration configuration) {
         this.databaseDir = databaseDir;
         this.tableConfig = tableConfig;
+        this.configuration = configuration;
     }
 
     /**
@@ -90,11 +95,15 @@ public class MerkleDbDataSourceBuilder implements VirtualDataSourceBuilder {
      */
     @Override
     public VirtualDataSource build(final String label, final boolean withDbCompactionEnabled) {
+        // TODO: maybe add @NonNull and Objects.requireNonNull to a constructor?
         if (tableConfig == null) {
             throw new IllegalArgumentException("Table serialization config is missing");
         }
+        if (configuration == null) {
+            throw new IllegalArgumentException("Configuration is missing");
+        }
         // Creates a new data source in this builder's database dir or in the default MerkleDb instance
-        final MerkleDb database = MerkleDb.getInstance(databaseDir);
+        final MerkleDb database = MerkleDb.getInstance(databaseDir, configuration);
         try {
             return database.createDataSource(
                     label, // use VirtualMap name as the table name
@@ -128,6 +137,10 @@ public class MerkleDbDataSourceBuilder implements VirtualDataSourceBuilder {
         if (!(snapshotMe instanceof MerkleDbDataSource source)) {
             throw new IllegalArgumentException("The datasource must be compatible with the MerkleDb");
         }
+        // TODO: maybe add @NonNull and Objects.requireNonNull to a constructor?
+        if (configuration == null) {
+            throw new IllegalArgumentException("Configuration is missing");
+        }
         try {
             // Snapshot all tables. When this snapshot() method is called for other data sources,
             // the database will check if they are already present in the destination path. If so,
@@ -143,10 +156,14 @@ public class MerkleDbDataSourceBuilder implements VirtualDataSourceBuilder {
      */
     @Override
     public VirtualDataSource restore(final String label, final Path source) {
+        // TODO: maybe add @NonNull and Objects.requireNonNull to a constructor?
+        if (configuration == null) {
+            throw new IllegalArgumentException("Configuration is missing");
+        }
         try {
             // Restore to the default database. Assuming the default database hasn't been initialized yet.
             // Note that all database data, shared and per-table for all tables, will be restored.
-            final MerkleDb database = MerkleDb.restore(source, databaseDir);
+            final MerkleDb database = MerkleDb.restore(source, databaseDir, configuration);
             return database.getDataSource(label, true);
         } catch (final IOException z) {
             throw new UncheckedIOException(z);

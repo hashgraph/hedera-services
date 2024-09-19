@@ -31,6 +31,7 @@ import com.swirlds.common.utility.Labeled;
 import com.swirlds.common.utility.RuntimeObjectRecord;
 import com.swirlds.common.utility.RuntimeObjectRegistry;
 import com.swirlds.common.utility.ValueReference;
+import com.swirlds.config.api.Configuration;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.virtualmap.datasource.VirtualDataSource;
 import com.swirlds.virtualmap.datasource.VirtualDataSourceBuilder;
@@ -165,6 +166,9 @@ public final class VirtualMap<K extends VirtualKey, V extends VirtualValue> exte
      */
     private final RuntimeObjectRecord registryRecord;
 
+    // TODO: docs
+    private Configuration configuration;
+
     /**
      * Required by the {@link com.swirlds.common.constructable.RuntimeConstructable} contract.
      * This can <strong>only</strong> be called as part of serialization and reconnect, not for normal use.
@@ -173,6 +177,7 @@ public final class VirtualMap<K extends VirtualKey, V extends VirtualValue> exte
         registryRecord = RuntimeObjectRegistry.createRecord(getClass());
     }
 
+    // TODO: update docs
     /**
      * Create a new {@link VirtualMap}.
      *
@@ -185,12 +190,14 @@ public final class VirtualMap<K extends VirtualKey, V extends VirtualValue> exte
             final String label,
             final KeySerializer<K> keySerializer,
             final ValueSerializer<V> valueSerializer,
-            final VirtualDataSourceBuilder dataSourceBuilder) {
+            final VirtualDataSourceBuilder dataSourceBuilder,
+            final Configuration configuration) {
         this();
+        this.configuration = configuration;
         setChild(ChildIndices.MAP_STATE_CHILD_INDEX, new VirtualMapState(Objects.requireNonNull(label)));
         setChild(
                 ChildIndices.VIRTUAL_ROOT_CHILD_INDEX,
-                new VirtualRootNode<>(keySerializer, valueSerializer, Objects.requireNonNull(dataSourceBuilder)));
+                new VirtualRootNode<>(keySerializer, valueSerializer, Objects.requireNonNull(dataSourceBuilder), configuration));
     }
 
     /**
@@ -201,6 +208,7 @@ public final class VirtualMap<K extends VirtualKey, V extends VirtualValue> exte
      */
     private VirtualMap(final VirtualMap<K, V> source) {
         this();
+        this.configuration = source.configuration;
         setChild(ChildIndices.MAP_STATE_CHILD_INDEX, source.getState().copy());
         setChild(ChildIndices.VIRTUAL_ROOT_CHILD_INDEX, source.getRoot().copy());
     }
@@ -371,7 +379,7 @@ public final class VirtualMap<K extends VirtualKey, V extends VirtualValue> exte
                 () -> new SerializableDataInputStream(new BufferedInputStream(new FileInputStream(inputFile.toFile()))),
                 (final MerkleDataInputStream stream) -> {
                     virtualMapState.setValue(stream.readSerializable());
-                    virtualRootNode.setValue(new VirtualRootNode<>());
+                    virtualRootNode.setValue(new VirtualRootNode<>(configuration));
                     virtualRootNode.getValue().deserialize(stream, inputFile.getParent(), stream.readInt());
                     return null;
                 });

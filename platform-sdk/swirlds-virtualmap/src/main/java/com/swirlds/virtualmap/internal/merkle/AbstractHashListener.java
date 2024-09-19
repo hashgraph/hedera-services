@@ -16,7 +16,6 @@
 
 package com.swirlds.virtualmap.internal.merkle;
 
-import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.virtualmap.VirtualKey;
 import com.swirlds.virtualmap.VirtualValue;
@@ -121,13 +120,13 @@ public abstract class AbstractHashListener<K extends VirtualKey, V extends Virtu
         this.dataSource = Objects.requireNonNull(dataSource);
     }
 
+    // TODO: change parameter to reconnectFlushInterval ?
     @Override
-    public synchronized void onHashingStarted() {
+    public synchronized void onHashingStarted(final VirtualMapConfig vmConfig) {
         assert (hashes == null) && (leaves == null) : "Hashing must not be started yet";
         hashes = new ArrayList<>();
         leaves = new ArrayList<>();
-        reconnectFlushInterval =
-                ConfigurationHolder.getConfigData(VirtualMapConfig.class).reconnectFlushInterval();
+        reconnectFlushInterval = vmConfig.reconnectFlushInterval();
     }
 
     /**

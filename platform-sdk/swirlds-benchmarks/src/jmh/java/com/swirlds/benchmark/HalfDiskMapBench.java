@@ -50,10 +50,9 @@ public class HalfDiskMapBench extends BaseBench {
         final long[] map = new long[verify ? maxKey : 0];
         Arrays.fill(map, INVALID_PATH);
 
-        final MerkleDbConfig dbConfig = getConfig(MerkleDbConfig.class);
-        final var store = new HalfDiskHashMap(dbConfig, maxKey, getTestDir(), storeName, null, false);
+        final var store = new HalfDiskHashMap(getConfig(), maxKey, getTestDir(), storeName, null, false);
         final var dataFileCompactor = new DataFileCompactor(
-                dbConfig,
+                getConfig(MerkleDbConfig.class),
                 storeName,
                 store.getFileCollection(),
                 store.getBucketIndexToBucketLocation(),

@@ -17,6 +17,7 @@
 package com.swirlds.merkledb.files;
 
 import static com.swirlds.merkledb.files.DataFileCompactor.INITIAL_COMPACTION_LEVEL;
+import static com.swirlds.merkledb.test.fixtures.MerkleDbTestUtils.config;
 
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.swirlds.common.config.singleton.ConfigurationHolder;
@@ -52,7 +53,7 @@ public class DataFileReaderHammerTest {
         final int readerThreads = 32;
         final int readIterations = 10_000;
 
-        final Path tempFile = LegacyTemporaryFileBuilder.buildTemporaryFile("interruptedReadsHammerTest");
+        final Path tempFile = LegacyTemporaryFileBuilder.buildTemporaryFile("interruptedReadsHammerTest", config());
         final ByteBuffer writeBuf = ByteBuffer.allocate(itemSize);
         for (int i = 0; i < itemSize; i++) {
             writeBuf.put((byte) (i % 100));

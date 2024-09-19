@@ -33,9 +33,12 @@ import com.swirlds.common.merkle.synchronization.config.ReconnectConfig_;
 import com.swirlds.common.test.fixtures.merkle.dummy.DummyMerkleInternal;
 import com.swirlds.common.test.fixtures.merkle.dummy.DummyMerkleLeaf;
 import com.swirlds.common.test.fixtures.merkle.util.MerkleTestUtils;
+import com.swirlds.config.api.Configuration;
+import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.virtualmap.VirtualMap;
+import com.swirlds.virtualmap.config.VirtualMapConfig;
 import com.swirlds.virtualmap.datasource.VirtualDataSource;
 import com.swirlds.virtualmap.datasource.VirtualDataSourceBuilder;
 import com.swirlds.virtualmap.datasource.VirtualHashRecord;
@@ -97,6 +100,12 @@ public abstract class VirtualMapReconnectTestBase {
 
     protected abstract VirtualDataSourceBuilder createBuilder() throws IOException;
 
+    public static Configuration configuration() {
+        return ConfigurationBuilder.create()
+                .withConfigDataType(VirtualMapConfig.class)
+                .build();
+    }
+
     @BeforeEach
     void setupEach() throws Exception {
         // Some tests set custom default VirtualMap settings, e.g. StreamEventParserTest calls
@@ -105,8 +114,8 @@ public abstract class VirtualMapReconnectTestBase {
         final VirtualDataSourceBuilder dataSourceBuilder = createBuilder();
         teacherBuilder = new BrokenBuilder(dataSourceBuilder);
         learnerBuilder = new BrokenBuilder(dataSourceBuilder);
-        teacherMap = new VirtualMap<>("Teacher", KEY_SERIALIZER, VALUE_SERIALIZER, teacherBuilder);
-        learnerMap = new VirtualMap<>("Learner", KEY_SERIALIZER, VALUE_SERIALIZER, learnerBuilder);
+        teacherMap = new VirtualMap<>("Teacher", KEY_SERIALIZER, VALUE_SERIALIZER, teacherBuilder, configuration());
+        learnerMap = new VirtualMap<>("Learner", KEY_SERIALIZER, VALUE_SERIALIZER, learnerBuilder, configuration());
     }
 
     @BeforeAll

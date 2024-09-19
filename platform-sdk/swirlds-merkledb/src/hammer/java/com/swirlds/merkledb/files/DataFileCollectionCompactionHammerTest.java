@@ -16,6 +16,7 @@
 
 package com.swirlds.merkledb.files;
 
+import static com.swirlds.merkledb.test.fixtures.MerkleDbTestUtils.config;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -69,7 +70,7 @@ class DataFileCollectionCompactionHammerTest {
     @Tags({@Tag("Speed")})
     void benchmark(int numFiles, int maxEntriesPerFile) throws IOException {
         final Path tempFileDir =
-                LegacyTemporaryFileBuilder.buildTemporaryDirectory("DataFileCollectionCompactionHammerTest");
+                LegacyTemporaryFileBuilder.buildTemporaryDirectory("DataFileCollectionCompactionHammerTest", config());
         assertDoesNotThrow(() -> {
             final LongListHeap index = new LongListHeap();
             String storeName = "benchmark";
@@ -134,7 +135,7 @@ class DataFileCollectionCompactionHammerTest {
     @Test
     void hammer() throws IOException, InterruptedException, ExecutionException {
         final Path tempFileDir =
-                LegacyTemporaryFileBuilder.buildTemporaryDirectory("DataFileCollectionCompactionHammerTest");
+                LegacyTemporaryFileBuilder.buildTemporaryDirectory("DataFileCollectionCompactionHammerTest", config());
         final LongListHeap index = new LongListHeap();
         String storeName = "hammer";
         final MerkleDbConfig dbConfig = ConfigurationHolder.getConfigData(MerkleDbConfig.class);

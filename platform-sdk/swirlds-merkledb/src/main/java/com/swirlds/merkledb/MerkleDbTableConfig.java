@@ -24,7 +24,6 @@ import com.hedera.pbj.runtime.ProtoConstants;
 import com.hedera.pbj.runtime.ProtoWriterTools;
 import com.hedera.pbj.runtime.io.ReadableSequentialData;
 import com.hedera.pbj.runtime.io.WritableSequentialData;
-import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.io.SelfSerializable;
@@ -141,6 +140,7 @@ public final class MerkleDbTableConfig implements SelfSerializable {
         // required for deserialization
     }
 
+    // TODO: update docs
     /**
      * Creates a new virtual table config with the specified params.
      *
@@ -149,16 +149,15 @@ public final class MerkleDbTableConfig implements SelfSerializable {
      * @param hashType
      *      Hash type
      */
-    public MerkleDbTableConfig(final short hashVersion, final DigestType hashType) {
+    public MerkleDbTableConfig(final short hashVersion, final DigestType hashType, final MerkleDbConfig merkleDbConfig) {
         // Mandatory fields
         this.hashVersion = hashVersion;
         this.hashType = hashType;
 
         // Optional hints, may be set explicitly using setters later. Defaults are loaded from
         // MerkleDb configuration
-        final MerkleDbConfig dbConfig = ConfigurationHolder.getConfigData(MerkleDbConfig.class);
-        maxNumberOfKeys = dbConfig.maxNumOfKeys();
-        hashesRamToDiskThreshold = dbConfig.hashesRamToDiskThreshold();
+        maxNumberOfKeys = merkleDbConfig.maxNumOfKeys();
+        hashesRamToDiskThreshold = merkleDbConfig.hashesRamToDiskThreshold();
     }
 
     public MerkleDbTableConfig(final ReadableSequentialData in) {
@@ -423,13 +422,14 @@ public final class MerkleDbTableConfig implements SelfSerializable {
         in.readSerializable(); // value serializer
     }
 
+    // TODO: update docs
     /**
      * Creates a copy of this table config.
      *
      * @return Table config copy
      */
-    public MerkleDbTableConfig copy() {
-        final MerkleDbTableConfig copy = new MerkleDbTableConfig(hashVersion, hashType);
+    public MerkleDbTableConfig copy(final MerkleDbConfig merkleDbConfig) {
+        final MerkleDbTableConfig copy = new MerkleDbTableConfig(hashVersion, hashType, merkleDbConfig);
         copy.preferDiskIndices(preferDiskBasedIndices);
         copy.hashesRamToDiskThreshold(hashesRamToDiskThreshold);
         copy.maxNumberOfKeys(maxNumberOfKeys);

@@ -17,6 +17,7 @@
 package com.swirlds.merkledb;
 
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
+import static com.swirlds.merkledb.test.fixtures.MerkleDbTestUtils.config;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -24,6 +25,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.swirlds.base.utility.Pair;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.io.utility.LegacyTemporaryFileBuilder;
+import com.swirlds.merkledb.config.MerkleDbConfig;
 import com.swirlds.merkledb.test.fixtures.ExampleFixedSizeVirtualValue;
 import com.swirlds.merkledb.test.fixtures.ExampleFixedSizeVirtualValueSerializer;
 import com.swirlds.merkledb.test.fixtures.ExampleLongKeyFixedSize;
@@ -61,7 +63,7 @@ class MigrationTest {
 
         // Build a virtual map.
         VirtualMap<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> map =
-                new VirtualMap<>("extractVirtualMapDataTest", KEY_SERIALIZER, VALUE_SERIALIZER, constructBuilder());
+                new VirtualMap<>("extractVirtualMapDataTest", KEY_SERIALIZER, VALUE_SERIALIZER, constructBuilder(), config());
         for (int i = 0; i < size; i++) {
             if (((i + 1) % (size / 100) == 0)) {
                 // Make a copy of the map in order to allow things to be flushed to disk
@@ -123,7 +125,7 @@ class MigrationTest {
 
         // Build a virtual map.
         VirtualMap<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> map =
-                new VirtualMap<>("extractDataConcurrentlyTest", KEY_SERIALIZER, VALUE_SERIALIZER, constructBuilder());
+                new VirtualMap<>("extractDataConcurrentlyTest", KEY_SERIALIZER, VALUE_SERIALIZER, constructBuilder(), config());
 
         final Random random = new Random(42);
         final byte[] value = new byte[ExampleFixedSizeVirtualValue.RANDOM_BYTES];
@@ -159,12 +161,12 @@ class MigrationTest {
     private static MerkleDbDataSourceBuilder constructBuilder() throws IOException {
         // The tests below create maps with identical names. They would conflict with each other in the default
         // MerkleDb instance, so let's use a new database location for every map
-        final Path defaultVirtualMapPath = LegacyTemporaryFileBuilder.buildTemporaryFile("merkledb-source");
+        final Path defaultVirtualMapPath = LegacyTemporaryFileBuilder.buildTemporaryFile("merkledb-source", config());
         MerkleDb.setDefaultPath(defaultVirtualMapPath);
-        final MerkleDbTableConfig tableConfig = new MerkleDbTableConfig((short) 1, DigestType.SHA_384)
+        final MerkleDbTableConfig tableConfig = new MerkleDbTableConfig((short) 1, DigestType.SHA_384, config().getConfigData(MerkleDbConfig.class))
                 .preferDiskIndices(false)
                 .hashesRamToDiskThreshold(Long.MAX_VALUE)
                 .maxNumberOfKeys(1234);
-        return new MerkleDbDataSourceBuilder(tableConfig);
+        return new MerkleDbDataSourceBuilder(tableConfig, config());
     }
 }

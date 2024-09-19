@@ -17,6 +17,7 @@
 package com.swirlds.merkledb;
 
 import static com.swirlds.common.test.fixtures.AssertionUtils.assertEventuallyTrue;
+import static com.swirlds.merkledb.test.fixtures.MerkleDbTestUtils.config;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
@@ -86,7 +87,7 @@ class MerkleDbSnapshotTest {
 
     @BeforeEach
     void setupTest() throws Exception {
-        MerkleDb.setDefaultPath(LegacyTemporaryFileBuilder.buildTemporaryDirectory("MerkleDbSnapshotTest"));
+        MerkleDb.setDefaultPath(LegacyTemporaryFileBuilder.buildTemporaryDirectory("MerkleDbSnapshotTest", config()));
     }
 
     @AfterEach
@@ -100,7 +101,7 @@ class MerkleDbSnapshotTest {
     }
 
     private static MerkleDbTableConfig fixedConfig() {
-        return new MerkleDbTableConfig((short) 1, DigestType.SHA_384);
+        return new MerkleDbTableConfig((short) 1, DigestType.SHA_384, config().getConfigData(MerkleDbConfig.class));
     }
 
     private void verify(final MerkleInternal stateRoot) {
@@ -121,15 +122,15 @@ class MerkleDbSnapshotTest {
     void snapshotMultipleTablesTestSync() throws Exception {
         final MerkleInternal initialRoot = new TestInternalNode();
         final MerkleDbTableConfig tableConfig = fixedConfig();
-        final MerkleDbDataSourceBuilder dsBuilder = new MerkleDbDataSourceBuilder(tableConfig);
+        final MerkleDbDataSourceBuilder dsBuilder = new MerkleDbDataSourceBuilder(tableConfig, config());
         for (int i = 0; i < MAPS_COUNT; i++) {
             final VirtualMap<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> vm =
-                    new VirtualMap<>("vm" + i, keySerializer, valueSerializer, dsBuilder);
+                    new VirtualMap<>("vm" + i, keySerializer, valueSerializer, dsBuilder, config());
             registerMetrics(vm);
             initialRoot.setChild(i, vm);
         }
 
-        final Path snapshotDir = LegacyTemporaryFileBuilder.buildTemporaryDirectory("snapshotSync");
+        final Path snapshotDir = LegacyTemporaryFileBuilder.buildTemporaryDirectory("snapshotSync", config());
         final Path snapshotFile = snapshotDir.resolve("state.swh");
 
         final AtomicReference<MerkleInternal> lastRoot = new AtomicReference<>();
@@ -176,10 +177,10 @@ class MerkleDbSnapshotTest {
     void snapshotMultipleTablesTestAsync() throws Exception {
         final MerkleInternal initialRoot = new TestInternalNode();
         final MerkleDbTableConfig tableConfig = fixedConfig();
-        final MerkleDbDataSourceBuilder dsBuilder = new MerkleDbDataSourceBuilder(tableConfig);
+        final MerkleDbDataSourceBuilder dsBuilder = new MerkleDbDataSourceBuilder(tableConfig, config());
         for (int i = 0; i < MAPS_COUNT; i++) {
             final VirtualMap<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> vm =
-                    new VirtualMap<>("vm" + i, keySerializer, valueSerializer, dsBuilder);
+                    new VirtualMap<>("vm" + i, keySerializer, valueSerializer, dsBuilder, config());
             initialRoot.setChild(i, vm);
         }
 
@@ -220,7 +221,7 @@ class MerkleDbSnapshotTest {
         assertEventuallyTrue(() -> lastRoot.get() != null, Duration.ofSeconds(10), "lastRoot is null");
 
         MerkleCryptoFactory.getInstance().digestTreeSync(rootToSnapshot.get());
-        final Path snapshotDir = LegacyTemporaryFileBuilder.buildTemporaryDirectory("snapshotAsync");
+        final Path snapshotDir = LegacyTemporaryFileBuilder.buildTemporaryDirectory("snapshotAsync", config());
         final Path snapshotFile = snapshotDir.resolve("state.swh");
         final MerkleDataOutputStream out = new MerkleDataOutputStream(
                 Files.newOutputStream(snapshotFile, StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE));
@@ -256,16 +257,16 @@ class MerkleDbSnapshotTest {
     @Test
     void testSnapshotAfterReconnect() throws Exception {
         final MerkleDbTableConfig tableConfig = fixedConfig();
-        final MerkleDbDataSourceBuilder dsBuilder = new MerkleDbDataSourceBuilder(tableConfig);
+        final MerkleDbDataSourceBuilder dsBuilder = new MerkleDbDataSourceBuilder(tableConfig, config());
         final VirtualDataSource original = dsBuilder.build("vm", false);
         // Simulate reconnect as a learner
         final VirtualDataSource copy = dsBuilder.copy(original, true);
 
         try {
-            final Path snapshotDir = LegacyTemporaryFileBuilder.buildTemporaryDirectory("snapshot");
+            final Path snapshotDir = LegacyTemporaryFileBuilder.buildTemporaryDirectory("snapshot", config());
             dsBuilder.snapshot(snapshotDir, copy);
 
-            final Path oldSnapshotDir = LegacyTemporaryFileBuilder.buildTemporaryDirectory("oldSnapshot");
+            final Path oldSnapshotDir = LegacyTemporaryFileBuilder.buildTemporaryDirectory("oldSnapshot", config());
             assertDoesNotThrow(() -> dsBuilder.snapshot(oldSnapshotDir, original));
         } finally {
             original.close();

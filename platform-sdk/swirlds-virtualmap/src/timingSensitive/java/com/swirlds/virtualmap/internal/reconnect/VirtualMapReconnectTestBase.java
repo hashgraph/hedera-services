@@ -17,6 +17,7 @@
 package com.swirlds.virtualmap.internal.reconnect;
 
 import static com.swirlds.common.test.fixtures.io.ResourceLoader.loadLog4jContext;
+import static com.swirlds.virtualmap.test.fixtures.VirtualMapTestUtils.configuration;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -107,9 +108,9 @@ public abstract class VirtualMapReconnectTestBase {
         teacherBuilder = new BrokenBuilder(dataSourceBuilder);
         learnerBuilder = new BrokenBuilder(dataSourceBuilder);
         teacherMap =
-                new VirtualMap<>("Teacher", TestKeySerializer.INSTANCE, TestValueSerializer.INSTANCE, teacherBuilder);
+                new VirtualMap<>("Teacher", TestKeySerializer.INSTANCE, TestValueSerializer.INSTANCE, teacherBuilder, configuration());
         learnerMap =
-                new VirtualMap<>("Learner", TestKeySerializer.INSTANCE, TestValueSerializer.INSTANCE, learnerBuilder);
+                new VirtualMap<>("Learner", TestKeySerializer.INSTANCE, TestValueSerializer.INSTANCE, learnerBuilder, configuration());
     }
 
     @BeforeAll
@@ -123,7 +124,7 @@ public abstract class VirtualMapReconnectTestBase {
         registry.registerConstructable(new ClassConstructorPair(DummyMerkleLeaf.class, DummyMerkleLeaf::new));
         registry.registerConstructable(new ClassConstructorPair(VirtualMap.class, VirtualMap::new));
         registry.registerConstructable(new ClassConstructorPair(VirtualMapState.class, VirtualMapState::new));
-        registry.registerConstructable(new ClassConstructorPair(VirtualRootNode.class, VirtualRootNode::new));
+        registry.registerConstructable(new ClassConstructorPair(VirtualRootNode.class, () -> new VirtualRootNode(configuration())));
         registry.registerConstructable(new ClassConstructorPair(TestKey.class, TestKey::new));
         registry.registerConstructable(new ClassConstructorPair(TestValue.class, TestValue::new));
         registry.registerConstructable(new ClassConstructorPair(BrokenBuilder.class, BrokenBuilder::new));

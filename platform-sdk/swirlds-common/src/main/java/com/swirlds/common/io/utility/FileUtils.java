@@ -22,6 +22,7 @@ import static com.swirlds.logging.legacy.LogMarker.STATE_TO_DISK;
 import static java.nio.file.Files.exists;
 
 import com.swirlds.common.io.streams.MerkleDataOutputStream;
+import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.BufferedOutputStream;
@@ -215,9 +216,11 @@ public final class FileUtils {
      * @param directory the name of directory after it is renamed
      * @param operation an operation that writes to a directory
      */
-    public static void executeAndRename(@NonNull final Path directory, @NonNull final IOConsumer<Path> operation)
+    public static void executeAndRename(@NonNull final Path directory,
+                                        @NonNull final IOConsumer<Path> operation,
+                                        @NonNull final Configuration configuration)
             throws IOException {
-        executeAndRename(directory, buildTemporaryDirectory(), operation);
+        executeAndRename(directory, buildTemporaryDirectory(configuration), operation);
     }
 
     /**

@@ -23,18 +23,23 @@ import static org.mockito.Mockito.mock;
 
 import com.sun.management.HotSpotDiagnosticMXBean;
 import com.swirlds.base.units.UnitConstants;
+import com.swirlds.common.config.StateCommonConfig;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.HashBuilder;
+import com.swirlds.common.io.config.TemporaryFileConfig;
 import com.swirlds.common.metrics.config.MetricsConfig;
 import com.swirlds.common.metrics.platform.DefaultPlatformMetrics;
 import com.swirlds.common.metrics.platform.MetricKeyRegistry;
 import com.swirlds.common.metrics.platform.PlatformMetricsFactoryImpl;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.merkledb.MerkleDbDataSource;
+import com.swirlds.merkledb.config.MerkleDbConfig;
 import com.swirlds.metrics.api.Metric;
 import com.swirlds.metrics.api.Metrics;
+import com.swirlds.virtualmap.config.VirtualMapConfig;
 import com.swirlds.virtualmap.datasource.VirtualDataSource;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -67,6 +72,16 @@ public class MerkleDbTestUtils {
      * variations in test runs while being small enough to catch leaks in tests.
      */
     private static final long DIRECT_MEMORY_BASE_USAGE = 4 * UnitConstants.MEBIBYTES_TO_BYTES;
+
+    // TODO: docs
+    public static Configuration config() {
+        return ConfigurationBuilder.create()
+                .withConfigDataType(MerkleDbConfig.class) // mostly used type
+                .withConfigDataType(VirtualMapConfig.class)
+                .withConfigDataType(TemporaryFileConfig.class) // LegacyTemporaryFileBuilder needs it
+                .withConfigDataType(StateCommonConfig.class) // LegacyTemporaryFileBuilder needs it
+                .build();
+    }
 
     /**
      * Run a callable test in the background and then make sure no direct memory is leaked and not

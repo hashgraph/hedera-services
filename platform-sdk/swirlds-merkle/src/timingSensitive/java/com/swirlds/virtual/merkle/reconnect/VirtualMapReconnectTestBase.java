@@ -17,6 +17,7 @@
 package com.swirlds.virtual.merkle.reconnect;
 
 import static com.swirlds.common.test.fixtures.io.ResourceLoader.loadLog4jContext;
+import static com.swirlds.merkle.test.fixtures.map.util.MerkleMapTestUtil.configuration;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -127,8 +128,8 @@ public class VirtualMapReconnectTestBase {
         final VirtualDataSourceBuilder dataSourceBuilder = createBuilder();
         teacherBuilder = createBrokenBuilder(dataSourceBuilder);
         learnerBuilder = createBrokenBuilder(dataSourceBuilder);
-        teacherMap = new VirtualMap<>("Teacher", keySerializer, valueSerializer, teacherBuilder);
-        learnerMap = new VirtualMap<>("Learner", keySerializer, valueSerializer, learnerBuilder);
+        teacherMap = new VirtualMap<>("Teacher", keySerializer, valueSerializer, teacherBuilder, configuration());
+        learnerMap = new VirtualMap<>("Learner", keySerializer, valueSerializer, learnerBuilder, configuration());
     }
 
     @BeforeAll

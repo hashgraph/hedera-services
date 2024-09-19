@@ -16,6 +16,7 @@
 
 package com.swirlds.merkledb;
 
+import static com.swirlds.merkledb.test.fixtures.MerkleDbTestUtils.config;
 import static com.swirlds.merkledb.test.fixtures.MerkleDbTestUtils.hash;
 
 import com.swirlds.common.constructable.ConstructableRegistry;
@@ -45,7 +46,7 @@ public class MerkleDbDataSourceHammerTest {
 
     @BeforeAll
     static void setup() throws Exception {
-        testDirectory = LegacyTemporaryFileBuilder.buildTemporaryFile("MerkleDbDataSourceHammerTest");
+        testDirectory = LegacyTemporaryFileBuilder.buildTemporaryFile("MerkleDbDataSourceHammerTest", config());
         ConstructableRegistry.getInstance().registerConstructables("com.swirlds.merkledb");
     }
 

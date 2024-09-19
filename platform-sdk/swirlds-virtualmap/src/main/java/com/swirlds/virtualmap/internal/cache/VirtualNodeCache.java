@@ -21,7 +21,6 @@ import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 
 import com.swirlds.base.state.MutabilityException;
 import com.swirlds.common.FastCopyable;
-import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.exceptions.PlatformException;
 import com.swirlds.common.io.SelfSerializable;
@@ -150,14 +149,13 @@ public final class VirtualNodeCache<K extends VirtualKey, V extends VirtualValue
 
     private static Executor cleaningPool = null;
 
-    private static synchronized Executor getCleaningPool() {
+    private static synchronized Executor getCleaningPool(final VirtualMapConfig vmConfig) {
         if (cleaningPool == null) {
-            final VirtualMapConfig config = ConfigurationHolder.getConfigData(VirtualMapConfig.class);
             cleaningPool = Boolean.getBoolean("syncCleaningPool")
                     ? Runnable::run
                     : new ThreadPoolExecutor(
-                            config.getNumCleanerThreads(),
-                            config.getNumCleanerThreads(),
+                            vmConfig.getNumCleanerThreads(),
+                            vmConfig.getNumCleanerThreads(),
                             60L,
                             TimeUnit.SECONDS,
                             new LinkedBlockingQueue<>(),
@@ -312,16 +310,20 @@ public final class VirtualNodeCache<K extends VirtualKey, V extends VirtualValue
      */
     private final AtomicLong lastReleased;
 
+    private final VirtualMapConfig vmConfig;
+
+    // TODO: update docs
     /**
      * Create a new VirtualNodeCache. The cache will be the first in the chain. It will get a
      * fastCopyVersion of zero, and create the shared data structures.
      */
-    public VirtualNodeCache() {
+    public VirtualNodeCache(final VirtualMapConfig vmConfig) {
         this.keyToDirtyLeafIndex = new ConcurrentHashMap<>();
         this.pathToDirtyLeafIndex = new ConcurrentHashMap<>();
         this.pathToDirtyHashIndex = new ConcurrentHashMap<>();
         this.releaseLock = new ReentrantLock();
         this.lastReleased = new AtomicLong(-1L);
+        this.vmConfig = vmConfig;
     }
 
     /**
@@ -345,6 +347,7 @@ public final class VirtualNodeCache<K extends VirtualKey, V extends VirtualValue
         this.pathToDirtyHashIndex = source.pathToDirtyHashIndex;
         this.releaseLock = source.releaseLock;
         this.lastReleased = source.lastReleased;
+        this.vmConfig = source.vmConfig;
 
         // The source now has immutable leaves and mutable internals
         source.prepareForHashing();
@@ -431,10 +434,10 @@ public final class VirtualNodeCache<K extends VirtualKey, V extends VirtualValue
 
         // Fire off the cleaning threads to go and clear out data in the indexes that doesn't need
         // to be there anymore.
-        getCleaningPool().execute(() -> {
-            purge(dirtyLeaves, keyToDirtyLeafIndex);
-            purge(dirtyLeafPaths, pathToDirtyLeafIndex);
-            purge(dirtyHashes, pathToDirtyHashIndex);
+        getCleaningPool(vmConfig).execute(() -> {
+            purge(dirtyLeaves, keyToDirtyLeafIndex, vmConfig);
+            purge(dirtyLeafPaths, pathToDirtyLeafIndex, vmConfig);
+            purge(dirtyHashes, pathToDirtyHashIndex, vmConfig);
 
             dirtyLeaves = null;
             dirtyLeafPaths = null;
@@ -795,7 +798,7 @@ public final class VirtualNodeCache<K extends VirtualKey, V extends VirtualValue
         }
         if (dedupe) {
             // Mark obsolete mutations to filter later
-            filterMutations(dirtyLeaves);
+            filterMutations(dirtyLeaves, vmConfig);
         }
         return dirtyLeaves.stream()
                 .filter(mutation -> {
@@ -834,7 +837,7 @@ public final class VirtualNodeCache<K extends VirtualKey, V extends VirtualValue
         }
 
         final Map<K, VirtualLeafRecord<K, V>> leaves = new ConcurrentHashMap<>();
-        final StandardFuture<Void> result = dirtyLeaves.parallelTraverse(getCleaningPool(), element -> {
+        final StandardFuture<Void> result = dirtyLeaves.parallelTraverse(getCleaningPool(vmConfig), element -> {
             if (element.isDeleted()) {
                 final K key = element.key;
                 final Mutation<K, VirtualLeafRecord<K, V>> mutation = lookup(keyToDirtyLeafIndex.get(key));
@@ -981,7 +984,7 @@ public final class VirtualNodeCache<K extends VirtualKey, V extends VirtualValue
             throw new MutabilityException("Cannot get the dirty internal records for a non-sealed cache.");
         }
         // Mark obsolete mutations to filter later
-        filterMutations(dirtyHashes);
+        filterMutations(dirtyHashes, vmConfig);
         return dirtyHashes.stream()
                 .filter(mutation -> mutation.key <= lastLeafPath)
                 .filter(mutation -> !mutation.isFiltered())
@@ -1067,7 +1070,7 @@ public final class VirtualNodeCache<K extends VirtualKey, V extends VirtualValue
      */
     public VirtualNodeCache<K, V> snapshot() {
         synchronized (lastReleased) {
-            final VirtualNodeCache<K, V> newSnapshot = new VirtualNodeCache<>();
+            final VirtualNodeCache<K, V> newSnapshot = new VirtualNodeCache<>(vmConfig);
             setMapSnapshotAndArray(
                     this.pathToDirtyHashIndex, newSnapshot.pathToDirtyHashIndex, newSnapshot.dirtyHashes);
             setMapSnapshotAndArray(
@@ -1281,9 +1284,11 @@ public final class VirtualNodeCache<K extends VirtualKey, V extends VirtualValue
      * @param <V>
      * 		The value type referenced by the mutation list
      */
-    private static <K, V> void purge(final ConcurrentArray<Mutation<K, V>> array, final Map<K, Mutation<K, V>> index) {
+    private static <K, V> void purge(final ConcurrentArray<Mutation<K, V>> array,
+                                     final Map<K, Mutation<K, V>> index,
+                                     final VirtualMapConfig vmConfig) {
         array.parallelTraverse(
-                getCleaningPool(),
+                getCleaningPool(vmConfig),
                 element -> index.compute(element.key, (key, mutation) -> {
                     if (mutation == null || element.equals(mutation)) {
                         // Already removed for a more recent mutation
@@ -1315,7 +1320,7 @@ public final class VirtualNodeCache<K extends VirtualKey, V extends VirtualValue
      * @param <V>
      * 		The value type referenced by the mutation list
      */
-    private static <K, V> void filterMutations(final ConcurrentArray<Mutation<K, V>> array) {
+    private static <K, V> void filterMutations(final ConcurrentArray<Mutation<K, V>> array, final VirtualMapConfig vmConfig) {
         final Consumer<Mutation<K, V>> action = mutation -> {
             // local variable is required because mutation.next can be changed by another thread to null
             // see https://github.com/hashgraph/hedera-services/issues/7046 for the context
@@ -1325,7 +1330,7 @@ public final class VirtualNodeCache<K extends VirtualKey, V extends VirtualValue
             }
         };
         try {
-            array.parallelTraverse(getCleaningPool(), action).getAndRethrow();
+            array.parallelTraverse(getCleaningPool(vmConfig), action).getAndRethrow();
         } catch (final InterruptedException e) {
             Thread.currentThread().interrupt();
             throw new RuntimeException(e);

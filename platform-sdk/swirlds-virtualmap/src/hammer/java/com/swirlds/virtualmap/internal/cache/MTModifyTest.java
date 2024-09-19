@@ -25,13 +25,15 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
+import static com.swirlds.virtualmap.test.fixtures.VirtualMapTestUtils.vmConfig;
+
 public class MTModifyTest {
 
     private static final Random rand = new Random();
 
     @Test
     public void mtModifyTest() throws Exception {
-        VirtualNodeCache<TestKey, TestValue> cache = new VirtualNodeCache<>();
+        VirtualNodeCache<TestKey, TestValue> cache = new VirtualNodeCache<>(vmConfig());
         final int maxKey = 100;
         // Populate the cache
         for (int i = 0; i < maxKey; i++) {

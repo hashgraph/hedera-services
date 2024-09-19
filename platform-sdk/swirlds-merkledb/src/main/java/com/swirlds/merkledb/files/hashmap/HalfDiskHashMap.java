@@ -23,8 +23,8 @@ import static com.swirlds.merkledb.MerkleDb.MERKLEDB_COMPONENT;
 
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
+import com.swirlds.config.api.Configuration;
 import com.swirlds.merkledb.FileStatisticAware;
 import com.swirlds.merkledb.Snapshotable;
 import com.swirlds.merkledb.collections.CASableLongIndex;
@@ -90,7 +90,8 @@ public class HalfDiskHashMap implements AutoCloseable, Snapshotable, FileStatist
     private static final long GOOD_AVERAGE_BUCKET_ENTRY_COUNT = 32;
     /** The limit on the number of concurrent read tasks in {@code endWriting()} */
     private static final int MAX_IN_FLIGHT = 64;
-
+    // TODO: docs
+    private final MerkleDbConfig merkleDbConfig;
     /**
      * Long list used for mapping bucketIndex(index into list) to disk location for latest copy of
      * bucket
@@ -125,15 +126,14 @@ public class HalfDiskHashMap implements AutoCloseable, Snapshotable, FileStatist
     /** Executor for parallel bucket reads/updates in {@link #endWriting()} */
     private static volatile ExecutorService flushExecutor = null;
 
-    private static ExecutorService getFlushExecutor() {
+    private static ExecutorService getFlushExecutor(final MerkleDbConfig merkleDbConfig) {
         ExecutorService exec = flushExecutor;
         if (exec == null) {
             synchronized (HalfDiskHashMap.class) {
                 exec = flushExecutor;
                 if (exec == null) {
-                    final MerkleDbConfig config = ConfigurationHolder.getConfigData(MerkleDbConfig.class);
                     exec = Executors.newFixedThreadPool(
-                            config.getNumHalfDiskHashMapFlushThreads(),
+                            merkleDbConfig.getNumHalfDiskHashMapFlushThreads(),
                             new ThreadConfiguration(getStaticThreadManager())
                                     .setComponent(MERKLEDB_COMPONENT)
                                     .setThreadName("HalfDiskHashMap Flushing")
@@ -147,10 +147,11 @@ public class HalfDiskHashMap implements AutoCloseable, Snapshotable, FileStatist
         return exec;
     }
 
+    // TODO: update docs
     /**
      * Construct a new HalfDiskHashMap
      *
-     * @param config                         MerkleDb config
+     * @param merkleDbConfig                         MerkleDb merkleDbConfig
      * @param mapSize                        The maximum map number of entries. This should be more than big enough to
      *                                       avoid too many key collisions.
      * @param storeDir                       The directory to use for storing data files.
@@ -166,13 +167,14 @@ public class HalfDiskHashMap implements AutoCloseable, Snapshotable, FileStatist
      * @throws IOException If there was a problem creating or opening a set of data files.
      */
     public HalfDiskHashMap(
-            final MerkleDbConfig config,
+            final Configuration configuration,
             final long mapSize,
             final Path storeDir,
             final String storeName,
             final String legacyStoreName,
             final boolean preferDiskBasedIndex)
             throws IOException {
+        this.merkleDbConfig = configuration.getConfigData(MerkleDbConfig.class);
         this.mapSize = mapSize;
         this.storeName = storeName;
         Path indexFile = storeDir.resolve(storeName + BUCKET_INDEX_FILENAME_SUFFIX);
@@ -215,15 +217,15 @@ public class HalfDiskHashMap implements AutoCloseable, Snapshotable, FileStatist
                         + "] because metadata file is missing");
             }
             // load or rebuild index
-            final boolean forceIndexRebuilding = config.indexRebuildingEnforced();
+            final boolean forceIndexRebuilding = merkleDbConfig.indexRebuildingEnforced();
             if (Files.exists(indexFile) && !forceIndexRebuilding) {
                 bucketIndexToBucketLocation =
-                        preferDiskBasedIndex ? new LongListDisk(indexFile) : new LongListOffHeap(indexFile);
+                        preferDiskBasedIndex ? new LongListDisk(indexFile, configuration) : new LongListOffHeap(indexFile);
                 loadedDataCallback = null;
             } else {
                 // create new index and setup call back to rebuild
                 bucketIndexToBucketLocation =
-                        preferDiskBasedIndex ? new LongListDisk(indexFile) : new LongListOffHeap();
+                        preferDiskBasedIndex ? new LongListDisk(indexFile, configuration) : new LongListOffHeap();
                 loadedDataCallback = (dataLocation, bucketData) -> {
                     final Bucket bucket = bucketPool.getBucket();
                     bucket.readFrom(bucketData);
@@ -234,7 +236,7 @@ public class HalfDiskHashMap implements AutoCloseable, Snapshotable, FileStatist
             // create store dir
             Files.createDirectories(storeDir);
             // create new index
-            bucketIndexToBucketLocation = preferDiskBasedIndex ? new LongListDisk(indexFile) : new LongListOffHeap();
+            bucketIndexToBucketLocation = preferDiskBasedIndex ? new LongListDisk(indexFile, configuration) : new LongListOffHeap();
             // calculate number of entries we can store in a disk page
             final int minimumBuckets = (int) (mapSize / GOOD_AVERAGE_BUCKET_ENTRY_COUNT);
             // numOfBuckets is the nearest power of two greater than minimumBuckets with a min of 2
@@ -253,8 +255,8 @@ public class HalfDiskHashMap implements AutoCloseable, Snapshotable, FileStatist
         bucketIndexToBucketLocation.updateValidRange(0, numOfBuckets - 1);
         // create file collection
         fileCollection = new DataFileCollection(
-                // Need: propagate MerkleDb config from the database
-                config, storeDir, storeName, legacyStoreName, loadedDataCallback);
+                // Need: propagate MerkleDb merkleDbConfig from the database
+                merkleDbConfig, storeDir, storeName, legacyStoreName, loadedDataCallback);
     }
 
     private void writeMetadata(final Path dir) throws IOException {
@@ -426,7 +428,7 @@ public class HalfDiskHashMap implements AutoCloseable, Snapshotable, FileStatist
                 size,
                 oneTransactionsData.stream().mapToLong(BucketMutation::size).sum());
 
-        final ExecutorService flushExecutor = getFlushExecutor();
+        final ExecutorService flushExecutor = getFlushExecutor(merkleDbConfig);
         final DataFileReader dataFileReader;
         if (size > 0) {
             final Queue<ReadBucketResult> queue = new ConcurrentLinkedQueue<>();

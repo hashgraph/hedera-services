@@ -12,4 +12,5 @@ module com.swirlds.demo.migration {
     requires java.logging;
     requires org.apache.logging.log4j;
     requires static com.github.spotbugs.annotations;
+    requires com.swirlds.merkle.test.fixtures;
 }

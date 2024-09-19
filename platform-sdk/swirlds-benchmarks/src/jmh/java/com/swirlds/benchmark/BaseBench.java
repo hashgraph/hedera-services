@@ -157,7 +157,7 @@ public abstract class BaseBench {
     @TearDown
     public void destroy() {
         BenchmarkMetrics.stop();
-        if (!getConfig().saveDataDirectory()) {
+        if (!getBenchmarkConfig().saveDataDirectory()) {
             Utils.deleteRecursively(benchDir);
         }
     }
@@ -201,7 +201,7 @@ public abstract class BaseBench {
 
     public void afterTest(boolean keepTestDir, RunnableWithException runnable) throws Exception {
         BenchmarkMetrics.report();
-        if (getConfig().printHistogram()) {
+        if (getBenchmarkConfig().printHistogram()) {
             // Class histogram is interesting before closing
             Utils.printClassHistogram(15);
         }
@@ -246,11 +246,15 @@ public abstract class BaseBench {
         return Utils.randomLong();
     }
 
-    public BenchmarkConfig getConfig() {
-        return getConfig(BenchmarkConfig.class);
+    public Configuration getConfig() {
+        return configuration;
     }
 
     public <T extends Record> T getConfig(Class<T> configCls) {
         return configuration.getConfigData(configCls);
+    }
+
+    public BenchmarkConfig getBenchmarkConfig() {
+        return getConfig(BenchmarkConfig.class);
     }
 }

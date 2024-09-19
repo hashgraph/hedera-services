@@ -16,6 +16,7 @@
 
 package com.swirlds.virtual.merkle.map;
 
+import static com.swirlds.merkle.test.fixtures.map.util.MerkleMapTestUtil.configuration;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -25,6 +26,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.merkledb.MerkleDbDataSourceBuilder;
 import com.swirlds.merkledb.MerkleDbTableConfig;
+import com.swirlds.merkledb.config.MerkleDbConfig;
 import com.swirlds.virtual.merkle.TestKey;
 import com.swirlds.virtual.merkle.TestKeySerializer;
 import com.swirlds.virtual.merkle.TestObjectKey;
@@ -44,22 +46,22 @@ import org.junit.jupiter.api.Test;
 final class MapTest {
 
     VirtualDataSourceBuilder createLongBuilder() {
-        final MerkleDbTableConfig tableConfig = new MerkleDbTableConfig((short) 1, DigestType.SHA_384);
-        return new MerkleDbDataSourceBuilder(tableConfig);
+        final MerkleDbTableConfig tableConfig = new MerkleDbTableConfig((short) 1, DigestType.SHA_384, configuration().getConfigData(MerkleDbConfig.class));
+        return new MerkleDbDataSourceBuilder(tableConfig, configuration());
     }
 
     VirtualDataSourceBuilder createGenericBuilder() {
-        final MerkleDbTableConfig tableConfig = new MerkleDbTableConfig((short) 1, DigestType.SHA_384);
-        return new MerkleDbDataSourceBuilder(tableConfig);
+        final MerkleDbTableConfig tableConfig = new MerkleDbTableConfig((short) 1, DigestType.SHA_384, configuration().getConfigData(MerkleDbConfig.class));
+        return new MerkleDbDataSourceBuilder(tableConfig, configuration());
     }
 
     VirtualMap<TestKey, TestValue> createLongMap(String label) {
-        return new VirtualMap<>(label, new TestKeySerializer(), new TestValueSerializer(), createLongBuilder());
+        return new VirtualMap<>(label, new TestKeySerializer(), new TestValueSerializer(), createLongBuilder(), configuration());
     }
 
     VirtualMap<TestObjectKey, TestValue> createObjectMap(String label) {
         return new VirtualMap<>(
-                label, new TestObjectKeySerializer(), new TestValueSerializer(), createGenericBuilder());
+                label, new TestObjectKeySerializer(), new TestValueSerializer(), createGenericBuilder(), configuration());
     }
 
     @Test

@@ -20,11 +20,15 @@ import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.utility.Keyed;
 import com.swirlds.common.test.fixtures.dummy.Key;
 import com.swirlds.common.test.fixtures.dummy.Value;
+import com.swirlds.config.api.Configuration;
+import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.merkle.tree.MerkleBinaryTree;
 import java.io.File;
 import java.io.IOException;
 import java.util.Map;
 import java.util.Random;
+
+import com.swirlds.virtualmap.config.VirtualMapConfig;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.core.LoggerContext;
 
@@ -107,5 +111,11 @@ public final class MerkleMapTestUtil {
             value.setKey(key);
             tree.insert(value, MerkleMapTestUtil::updateCache);
         }
+    }
+
+    public static Configuration configuration() {
+        return ConfigurationBuilder.create()
+                .withConfigDataType(VirtualMapConfig.class)
+                .build();
     }
 }

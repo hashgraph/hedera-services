@@ -17,6 +17,7 @@
 package com.swirlds.virtualmap.benchmark.reconnect;
 
 import static com.swirlds.common.test.fixtures.io.ResourceLoader.loadLog4jContext;
+import static com.swirlds.virtualmap.test.fixtures.VirtualMapTestUtils.configuration;
 
 import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
@@ -72,9 +73,9 @@ public abstract class VirtualMapReconnectBenchBase {
         teacherBuilder = createBuilder();
         learnerBuilder = createBuilder();
         teacherMap =
-                new VirtualMap<>("Teacher", TestKeySerializer.INSTANCE, TestValueSerializer.INSTANCE, teacherBuilder);
+                new VirtualMap<>("Teacher", TestKeySerializer.INSTANCE, TestValueSerializer.INSTANCE, teacherBuilder, configuration());
         learnerMap =
-                new VirtualMap<>("Learner", TestKeySerializer.INSTANCE, TestValueSerializer.INSTANCE, learnerBuilder);
+                new VirtualMap<>("Learner", TestKeySerializer.INSTANCE, TestValueSerializer.INSTANCE, learnerBuilder, configuration());
     }
 
     protected static void startup() throws ConstructableRegistryException, FileNotFoundException {
@@ -87,7 +88,7 @@ public abstract class VirtualMapReconnectBenchBase {
         registry.registerConstructable(new ClassConstructorPair(DummyMerkleLeaf.class, DummyMerkleLeaf::new));
         registry.registerConstructable(new ClassConstructorPair(VirtualMap.class, VirtualMap::new));
         registry.registerConstructable(new ClassConstructorPair(VirtualMapState.class, VirtualMapState::new));
-        registry.registerConstructable(new ClassConstructorPair(VirtualRootNode.class, VirtualRootNode::new));
+        registry.registerConstructable(new ClassConstructorPair(VirtualRootNode.class, () -> new VirtualRootNode<>(configuration())));
         registry.registerConstructable(new ClassConstructorPair(TestKey.class, TestKey::new));
         registry.registerConstructable(new ClassConstructorPair(TestValue.class, TestValue::new));
     }

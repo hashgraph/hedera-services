@@ -16,6 +16,7 @@
 
 package com.swirlds.merkledb;
 
+import static com.swirlds.merkledb.test.fixtures.MerkleDbTestUtils.config;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -35,6 +36,7 @@ import com.swirlds.common.io.utility.LegacyTemporaryFileBuilder;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.common.merkle.route.MerkleRoute;
+import com.swirlds.merkledb.config.MerkleDbConfig;
 import com.swirlds.merkledb.test.fixtures.ExampleFixedSizeVirtualValue;
 import com.swirlds.merkledb.test.fixtures.ExampleFixedSizeVirtualValueSerializer;
 import com.swirlds.merkledb.test.fixtures.ExampleLongKeyFixedSize;
@@ -83,13 +85,13 @@ class VirtualMapSerializationTests {
     public static MerkleDbDataSourceBuilder constructBuilder() throws IOException {
         // The tests below create maps with identical names. They would conflict with each other in the default
         // MerkleDb instance, so let's use a new database location for every map
-        final Path defaultVirtualMapPath = LegacyTemporaryFileBuilder.buildTemporaryFile("merkledb-source");
+        final Path defaultVirtualMapPath = LegacyTemporaryFileBuilder.buildTemporaryFile("merkledb-source", config());
         MerkleDb.setDefaultPath(defaultVirtualMapPath);
-        final MerkleDbTableConfig tableConfig = new MerkleDbTableConfig((short) 1, DigestType.SHA_384)
+        final MerkleDbTableConfig tableConfig = new MerkleDbTableConfig((short) 1, DigestType.SHA_384, config().getConfigData(MerkleDbConfig.class))
                 .preferDiskIndices(false)
                 .hashesRamToDiskThreshold(Long.MAX_VALUE)
                 .maxNumberOfKeys(1234);
-        return new MerkleDbDataSourceBuilder(tableConfig);
+        return new MerkleDbDataSourceBuilder(tableConfig, config());
     }
 
     /**
@@ -171,7 +173,7 @@ class VirtualMapSerializationTests {
     private VirtualMap<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> generateRandomMap(
             final long seed, final int count, final String name) throws IOException {
         final VirtualMap<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> map =
-                new VirtualMap<>(name, KEY_SERIALIZER, VALUE_SERIALIZER, constructBuilder());
+                new VirtualMap<>(name, KEY_SERIALIZER, VALUE_SERIALIZER, constructBuilder(), config());
         addRandomEntries(map, count, 0, seed);
         return map;
     }
@@ -242,7 +244,7 @@ class VirtualMapSerializationTests {
     private void testMapSerialization(final VirtualMap<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> map)
             throws IOException {
 
-        final Path savedStateDirectory = LegacyTemporaryFileBuilder.buildTemporaryDirectory("saved-state");
+        final Path savedStateDirectory = LegacyTemporaryFileBuilder.buildTemporaryDirectory("saved-state", config());
 
         final ByteArrayOutputStream byteOut = new ByteArrayOutputStream();
         final MerkleDataOutputStream out = new MerkleDataOutputStream(byteOut);
@@ -258,7 +260,7 @@ class VirtualMapSerializationTests {
         assertTrue(filesInDirectory.size() > 0, "there should be a non-zero number of files created");
 
         // Change default MerkleDb path, so data sources are restored into a different DB instance
-        final Path restoredDbDirectory = LegacyTemporaryFileBuilder.buildTemporaryDirectory("merkledb-restored");
+        final Path restoredDbDirectory = LegacyTemporaryFileBuilder.buildTemporaryDirectory("merkledb-restored", config());
         MerkleDb.setDefaultPath(restoredDbDirectory);
 
         final MerkleDataInputStream in = new MerkleDataInputStream(new ByteArrayInputStream(byteOut.toByteArray()));

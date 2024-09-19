@@ -16,10 +16,10 @@
 
 package com.swirlds.merkledb.files.hashmap;
 
+import static com.swirlds.merkledb.test.fixtures.MerkleDbTestUtils.config;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.merkledb.config.MerkleDbConfig;
 import com.swirlds.merkledb.files.DataFileCompactor;
@@ -42,14 +42,12 @@ class HalfDiskHashMapTest {
     @TempDir
     Path tempDirPath;
 
-    private MerkleDbConfig dbConfig = ConfigurationHolder.getConfigData(MerkleDbConfig.class);
-
     // =================================================================================================================
     // Helper Methods
     private HalfDiskHashMap createNewTempMap(FilesTestType testType, int count) throws IOException {
         // create map
         HalfDiskHashMap map = new HalfDiskHashMap(
-                dbConfig, count, tempDirPath.resolve(testType.name()), "HalfDiskHashMapTest", null, false);
+                config(), count, tempDirPath.resolve(testType.name()), "HalfDiskHashMapTest", null, false);
         map.printStats();
         return map;
     }
@@ -107,7 +105,7 @@ class HalfDiskHashMapTest {
         map.snapshot(tempSnapshotDir);
         // open snapshot and check data
         HalfDiskHashMap mapFromSnapshot = new HalfDiskHashMap(
-                ConfigurationHolder.getConfigData(MerkleDbConfig.class),
+                config(),
                 count,
                 tempSnapshotDir,
                 "HalfDiskHashMapTest",
@@ -145,7 +143,7 @@ class HalfDiskHashMapTest {
         // create map
         final HalfDiskHashMap map = createNewTempMap(testType, 10_000);
         final DataFileCompactor dataFileCompactor = new DataFileCompactor(
-                dbConfig,
+                config().getConfigData(MerkleDbConfig.class),
                 "HalfDiskHashMapTest",
                 map.getFileCollection(),
                 map.getBucketIndexToBucketLocation(),

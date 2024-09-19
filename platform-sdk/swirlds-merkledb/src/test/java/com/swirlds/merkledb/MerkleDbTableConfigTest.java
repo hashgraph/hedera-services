@@ -28,6 +28,8 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
+import static com.swirlds.merkledb.test.fixtures.MerkleDbTestUtils.config;
+
 class MerkleDbTableConfigTest {
 
     @BeforeAll
@@ -37,7 +39,7 @@ class MerkleDbTableConfigTest {
 
     @Test
     void deserializeDefaultsTest() throws IOException {
-        final MerkleDbTableConfig tableConfig = new MerkleDbTableConfig((short) 1, DigestType.SHA_384);
+        final MerkleDbTableConfig tableConfig = new MerkleDbTableConfig((short) 1, DigestType.SHA_384, config().getConfigData(MerkleDbConfig.class));
 
         final MerkleDbConfig dbConfig = ConfigurationHolder.getConfigData(MerkleDbConfig.class);
         Assertions.assertEquals(dbConfig.maxNumOfKeys(), tableConfig.getMaxNumberOfKeys());

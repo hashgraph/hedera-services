@@ -51,6 +51,8 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
+import static com.swirlds.merkledb.test.fixtures.MerkleDbTestUtils.config;
+
 /**
  * This is a regression test for swirlds/swirlds-platform/issues/6151, but
  * it can be used to find many different issues with VirtualMap.
@@ -65,7 +67,7 @@ public class CloseFlushTest {
 
     @BeforeAll
     public static void setup() throws IOException {
-        tmpFileDir = LegacyTemporaryFileBuilder.buildTemporaryFile();
+        tmpFileDir = LegacyTemporaryFileBuilder.buildTemporaryFile(config());
         Configurator.setRootLevel(Level.WARN);
     }
 
@@ -90,7 +92,7 @@ public class CloseFlushTest {
                     "closeFlushTest",
                     TestType.fixed_fixed.dataType().getKeySerializer(),
                     TestType.fixed_fixed.dataType().getValueSerializer(),
-                    builder);
+                    builder, config());
             for (int i = 0; i < count; i++) {
                 final ExampleLongKeyFixedSize key = new ExampleLongKeyFixedSize(i);
                 final ExampleFixedSizeVirtualValue value = new ExampleFixedSizeVirtualValue(i);

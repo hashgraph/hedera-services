@@ -31,6 +31,7 @@ import com.swirlds.common.io.utility.LegacyTemporaryFileBuilder;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.merkledb.MerkleDbDataSourceBuilder;
 import com.swirlds.merkledb.MerkleDbTableConfig;
+import com.swirlds.merkledb.config.MerkleDbConfig;
 import com.swirlds.platform.test.fixtures.state.MerkleTestBase;
 import com.swirlds.state.merkle.StateUtils;
 import com.swirlds.state.merkle.disk.OnDiskKey;
@@ -69,7 +70,7 @@ class OnDiskTest extends MerkleTestBase {
     @BeforeEach
     void setUp() throws IOException {
         setupConstructableRegistry();
-        final Path storageDir = LegacyTemporaryFileBuilder.buildTemporaryDirectory();
+        final Path storageDir = LegacyTemporaryFileBuilder.buildTemporaryDirectory(configuration);
 
         def = StateDefinition.onDisk(ACCOUNT_STATE_KEY, AccountID.PROTOBUF, Account.PROTOBUF, 100);
 
@@ -90,16 +91,16 @@ class OnDiskTest extends MerkleTestBase {
                 onDiskValueSerializerClassId(SERVICE_NAME, ACCOUNT_STATE_KEY),
                 onDiskValueClassId(SERVICE_NAME, ACCOUNT_STATE_KEY),
                 Account.PROTOBUF);
-        final var tableConfig = new MerkleDbTableConfig((short) 1, DigestType.SHA_384);
+        final var tableConfig = new MerkleDbTableConfig((short) 1, DigestType.SHA_384, configuration.getConfigData(MerkleDbConfig.class));
         // Force all hashes to disk, to make sure we're going through all the
         // serialization paths we can
         tableConfig.hashesRamToDiskThreshold(0);
         tableConfig.maxNumberOfKeys(100);
         tableConfig.preferDiskIndices(true);
 
-        final var builder = new MerkleDbDataSourceBuilder(storageDir, tableConfig);
+        final var builder = new MerkleDbDataSourceBuilder(storageDir, tableConfig, configuration);
         virtualMap = new VirtualMap<>(
-                StateUtils.computeLabel(SERVICE_NAME, ACCOUNT_STATE_KEY), keySerializer, valueSerializer, builder);
+                StateUtils.computeLabel(SERVICE_NAME, ACCOUNT_STATE_KEY), keySerializer, valueSerializer, builder, configuration);
 
         Configuration config = mock(Configuration.class);
         final var hederaConfig = mock(HederaConfig.class);
@@ -157,7 +158,7 @@ class OnDiskTest extends MerkleTestBase {
         virtualMap.copy(); // throw away the copy, we won't use it
         CRYPTO.digestTreeSync(virtualMap);
 
-        final var snapshotDir = LegacyTemporaryFileBuilder.buildTemporaryDirectory("snapshot");
+        final var snapshotDir = LegacyTemporaryFileBuilder.buildTemporaryDirectory("snapshot", configuration);
         final byte[] serializedBytes = writeTree(virtualMap, snapshotDir);
 
         // Before we can read the data back, we need to register the data types
