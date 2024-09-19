@@ -75,8 +75,8 @@ public class WritablePlatformStateStore extends ReadablePlatformStateStore imple
     /**
      * Overwrite the current platform state with the provided state.
      */
-    public void setAllFrom(@NonNull final PlatformStateModifier accessor) {
-        this.update(toPbjPlatformState(accessor));
+    public void setAllFrom(@NonNull final PlatformStateModifier modifier) {
+        this.update(toPbjPlatformState(modifier));
     }
 
     private void setAllFrom(@NonNull final PlatformStateValueAccumulator accumulator) {

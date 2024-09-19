@@ -111,6 +111,11 @@ public class State extends PartialNaryMerkleInternal implements MerkleRoot {
         return this;
     }
 
+    @Override
+    public void initPlatformState() {
+        // no initialization required
+    }
+
     /**
      * {@inheritDoc}
      */

@@ -106,7 +106,6 @@ public interface PlatformStateModifier extends PlatformStateAccessor {
      *
      * @param firstVersionInBirthRoundMode the first software version where the birth round migration happened
      */
-    @NonNull
     void setFirstVersionInBirthRoundMode(SoftwareVersion firstVersionInBirthRoundMode);
 
     /**

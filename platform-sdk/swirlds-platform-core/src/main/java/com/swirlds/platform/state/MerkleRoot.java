@@ -36,9 +36,7 @@ public interface MerkleRoot extends MerkleInternal {
      * This method makes sure that the platform state is initialized.
      * If it's already initialized, it does nothing.
      */
-    default void initPlatformState() {
-        // do nothing
-    }
+    void initPlatformState();
 
     /**
      * Get readable platform state.
