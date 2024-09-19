@@ -82,7 +82,7 @@ abstract class GrpcTestBase extends TestBase {
     /** A built-in {@link IngestWorkflow} which succeeds and does nothing. */
     protected static final IngestWorkflow NOOP_INGEST_WORKFLOW = (requestBuffer, responseBuffer) -> {};
     /** A built-in {@link QueryWorkflow} which succeeds and does nothing. */
-    protected static final QueryWorkflow NOOP_QUERY_WORKFLOW = (requestBuffer, responseBuffer) -> {};
+    protected static final QueryWorkflow NOOP_QUERY_WORKFLOW = (requestBuffer, responseBuffer, shouldCharge) -> {};
 
     /**
      * Represents "this node" in our tests.

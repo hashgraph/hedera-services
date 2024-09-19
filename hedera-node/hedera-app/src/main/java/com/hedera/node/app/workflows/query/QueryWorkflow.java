@@ -29,6 +29,7 @@ public interface QueryWorkflow {
      *
      * @param requestBuffer The raw protobuf query bytes. Must be a {@link Query} object.
      * @param responseBuffer The raw protobuf response bytes.
+     * @param shouldCharge If the workflow should charge for handling the query.
      */
-    void handleQuery(@NonNull Bytes requestBuffer, @NonNull BufferedData responseBuffer);
+    void handleQuery(@NonNull Bytes requestBuffer, @NonNull BufferedData responseBuffer, boolean shouldCharge);
 }

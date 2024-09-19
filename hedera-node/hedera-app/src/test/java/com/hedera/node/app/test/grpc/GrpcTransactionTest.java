@@ -49,7 +49,8 @@ class GrpcTransactionTest extends GrpcTestBase {
     private static final byte[] GOOD_RESPONSE_BYTES = GOOD_RESPONSE.getBytes(StandardCharsets.UTF_8);
 
     private static final IngestWorkflow GOOD_INGEST = (req, res) -> res.writeBytes(GOOD_RESPONSE_BYTES);
-    private static final QueryWorkflow UNIMPLEMENTED_QUERY = (r, r2) -> fail("The Query should not be called");
+    private static final QueryWorkflow UNIMPLEMENTED_QUERY =
+            (r, r2, shouldCharge) -> fail("The Query should not be called");
 
     private void setUp(@NonNull final IngestWorkflow ingest) {
         registerIngest(METHOD, ingest, UNIMPLEMENTED_QUERY);
