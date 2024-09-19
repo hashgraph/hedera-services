@@ -1615,4 +1615,14 @@ enum ResponseCodeEnum {
      * Fee exempt key list MAY be set only if custom fee list is set.
      */
     MISSING_CUSTOM_FEES = 373;
+
+    /**
+    * Allowance per message is higher than total allowance.
+    */
+    ALLOWANCE_PER_MESSAGE_EXCEEDS_TOTAL_ALLOWANCE = 374;
+
+    /**
+    * Repeated AccountId/TopicId pair in the transaction body.
+    */
+    REPEATED_ALLOWANCE_IN_TRANSACTION_BODY = 375;
 }
