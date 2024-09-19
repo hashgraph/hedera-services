@@ -43,7 +43,7 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * Provides write methods for interacting with Rosters.
+ * Read-write interface for accessing rosters states.
  */
 public class WritableRosterStore implements RosterStateModifier {
 
@@ -119,6 +119,7 @@ public class WritableRosterStore implements RosterStateModifier {
 
         // software upgrade is detected, we adopt the candidate roster
         adoptCandidateRoster(initialState.get().getRound() + 1);
+        commit();
         return candidateRoster;
     }
 
@@ -181,7 +182,6 @@ public class WritableRosterStore implements RosterStateModifier {
 
         // update the roster map and commit the changes
         this.rosterMap.put(ProtoBytes.newBuilder().value(activeRosterHash).build(), roster);
-        commit();
     }
 
     /**

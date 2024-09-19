@@ -103,7 +103,7 @@ class RosterUtilsTest {
                 ReservedSignedState.createNullReservation(),
                 new NodeId(0));
 
-        //can't use the RandomAddressBookBuilder here because we need to set/test the nodeIds explicitly
+        // can't use the RandomAddressBookBuilder here because we need to set/test the nodeIds explicitly
         final Address address1 = new Address(new NodeId(1), "", "", 10, null, 77, null, 88, null, null, "");
         final Address address2 = new Address(new NodeId(2), "", "", 10, null, 77, null, 88, null, null, "");
         final AddressBook addressBook = new AddressBook();
@@ -168,7 +168,8 @@ class RosterUtilsTest {
 
     @Test
     void testCreateRoster() {
-        final AddressBook addressBook = RandomAddressBookBuilder.create(Randotron.create()).withSize(1).build();
+        final AddressBook addressBook =
+                RandomAddressBookBuilder.create(Randotron.create()).withSize(1).build();
         final Roster roster = RosterUtils.createRoster(addressBook);
         assertNotNull(roster);
         assertNotNull(roster.rosterEntries());
@@ -178,12 +179,13 @@ class RosterUtilsTest {
     @Test
     void testCreateRosterWithNullOrEmptyAddressBook() {
         assertThrows(NullPointerException.class, () -> RosterUtils.createRoster(null));
-        assertEquals(0, RosterUtils.createRoster(new AddressBook()).rosterEntries().size());
+        assertEquals(
+                0, RosterUtils.createRoster(new AddressBook()).rosterEntries().size());
     }
 
     @Test
     void testToRosterEntryWithCertificateEncodingExceptionThrows() throws CertificateEncodingException {
-        //have to use mocks here to test the exception
+        // have to use mocks here to test the exception
         final Address address = mock(Address.class);
         final X509Certificate certificate = mock(X509Certificate.class);
         when(address.getSigCert()).thenReturn(certificate);
@@ -195,7 +197,9 @@ class RosterUtilsTest {
         when(addressBook.getNodeId(0)).thenReturn(nodeId);
         when(addressBook.getAddress(nodeId)).thenReturn(address);
 
-       assertThrows(
-                InvalidAddressBookException.class, () -> RosterUtils.createRoster(addressBook).rosterEntries().getFirst().gossipCaCertificate());
+        assertThrows(InvalidAddressBookException.class, () -> RosterUtils.createRoster(addressBook)
+                .rosterEntries()
+                .getFirst()
+                .gossipCaCertificate());
     }
 }

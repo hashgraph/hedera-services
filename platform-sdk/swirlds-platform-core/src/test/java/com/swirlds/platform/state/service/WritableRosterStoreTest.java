@@ -164,6 +164,11 @@ class WritableRosterStoreTest {
         return Roster.newBuilder().rosterEntries(entriesList).build();
     }
 
+    /**
+     * Fakes software upgrade mode by setting the software version to a higher version than the current version.
+     *
+     * @param mode the mode to enable
+     */
     private void enableSoftwareUpgradeMode(boolean mode) {
         final SignedState state = mock(SignedState.class);
         final MerkleRoot stateMerkleRoot = mock(MerkleRoot.class);

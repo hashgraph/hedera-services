@@ -18,6 +18,9 @@ package com.swirlds.platform.state;
 
 import com.hedera.hapi.node.state.roster.Roster;
 
+/**
+ * Read-only interface for accessing rosters states.
+ */
 public interface RosterStateAccessor {
     /**
      * Gets the candidate roster.
