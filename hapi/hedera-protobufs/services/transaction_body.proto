@@ -411,18 +411,18 @@ message TransactionBody {
         TokenAirdropTransactionBody tokenAirdrop = 58;
 
         /**
-        * A transaction body for a `cancelAirdrop` request.
-        */
+         * A transaction body for a `cancelAirdrop` request.
+         */
         TokenCancelAirdropTransactionBody tokenCancelAirdrop = 59;
 
         /**
-        * A transaction body for a `claimAirdrop` request.
+         * A transaction body for a `claimAirdrop` request.
          */
         TokenClaimAirdropTransactionBody tokenClaimAirdrop = 60;
 
         /**
-        * A transaction body for a `consensusApproveAllowance` request.
-        */
+         * A transaction body for a `consensusApproveAllowance` request.
+         */
         ConsensusApproveAllowanceTransactionBody consensusApproveAllowance = 61;
     }
 }

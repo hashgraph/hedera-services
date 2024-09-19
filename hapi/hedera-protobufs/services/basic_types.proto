@@ -1241,17 +1241,17 @@ enum HederaFunctionality {
     TokenAirdrop = 93;
 
     /**
-    * Remove one or more pending airdrops from state on behalf of the sender(s) for each airdrop.
-    */
+     * Remove one or more pending airdrops from state on behalf of the sender(s) for each airdrop.
+     */
     TokenCancelAirdrop = 94;
 
     /**
-      * Claim one or more pending airdrops
+     * Claim one or more pending airdrops
      */
     TokenClaimAirdrop = 95;
 
     /**
-      * Approve allowance for a given topic
+     * Approve allowance for a given topic
      */
     ConsensusApproveAllowance = 96;
 }
@@ -1813,8 +1813,8 @@ message ConsensusCryptoFeeScheduleAllowance {
  */
 message ConsensusTokenFeeScheduleAllowance {
     /**
-   * The token that the allowance pertains to.
-   */
+     * The token that the allowance pertains to.
+     */
     TokenID tokenId = 1;
 
     /**

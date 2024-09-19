@@ -154,10 +154,10 @@ message Topic {
 }
 
 /**
-    * Allowance with a given amount granted by account for this topic.
-    * This allows the spender to send messages to this topic while utilizing
-    * the allocated allowance to cover the associated cost.
-    */
+ * An allowance with a given amount granted by account for this topic.
+ * This allows the spender to send messages to this topic while utilizing
+ * the allocated allowance to cover the associated cost.
+ */
 message TopicCryptoAllowance {
     AccountID spender_id = 1;
     uint64 amount = 2;
@@ -165,7 +165,7 @@ message TopicCryptoAllowance {
 }
 
 /**
- * Allowance granted by and account for a specific fungible token and this topic.
+ * An allowance granted by and account for a specific fungible token and this topic.
  * This also contains the amount of the token that is approved for the account.
  * This allows the spender to send messages to this topic while utilizing
  * the allocated fungible token allowance to cover the associated cost.
