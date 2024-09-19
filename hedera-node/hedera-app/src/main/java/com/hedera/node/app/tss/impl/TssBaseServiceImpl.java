@@ -101,7 +101,5 @@ public class TssBaseServiceImpl implements TssBaseService {
      * @param candidateRoster The candidate roster to set.
      */
     @Override
-    public void setCandidateRoster(@NonNull Roster candidateRoster) {
-
-    }
+    public void setCandidateRoster(@NonNull Roster candidateRoster) {}
 }

@@ -115,7 +115,5 @@ public class FakeTssBaseService implements TssBaseService {
      * @param candidateRoster The candidate roster to set.
      */
     @Override
-    public void setCandidateRoster(@NotNull Roster candidateRoster) {
-
-    }
+    public void setCandidateRoster(@NotNull Roster candidateRoster) {}
 }
