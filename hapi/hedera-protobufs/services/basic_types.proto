@@ -1256,7 +1256,7 @@ enum HederaFunctionality {
     TssMessage = 96;
 
     /**
-     * Submit a TSS vote
+     * Submit a vote as part of the Threshold Signature Scheme (TSS) processing.
      */
     TssVote = 97;
 }

@@ -10,8 +10,8 @@
  */
 syntax = "proto3";
 
-//package com.hedera.hapi.platform.event;
 package proto;
+
 /*
  * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
@@ -29,7 +29,7 @@ package proto;
  */
 
 option java_package = "com.hederahashgraph.api.proto.java";
-// <<<pbj.java_package = "com.hedera.hapi.platform.event">>> This comment is special code for setting PBJ Compiler java package
+// <<<pbj.java_package = "com.hedera.hapi.node.tss">>> This comment is special code for setting PBJ Compiler java package
 option java_multiple_files = true;
 
 /**
@@ -53,8 +53,8 @@ message TssVoteTransactionBody {
   bytes ledger_id = 3;
 
   /**
-   * A signature produced by the node.
-   * This is produced using the node RSA signing key to sign the ledger_id.
+   * A signature produced by the node.<br/>
+   * This is produced using the node RSA signing key to sign the ledger_id.<br/>
    * This signature is used to establish a chain of trust in the ledger id.
    */
   bytes node_signature = 4;
@@ -64,7 +64,7 @@ message TssVoteTransactionBody {
    * Each bit in this vector indicates receipt (1) or non-receipt (0) of a
    * _valid_ `TssMessage` for a corresponding `TssMessageTransaction`.
    * <p>
-   * <b>Example</b>
+   * #### Example<br/>
    * <ul><li>The least significant bit of byte[0] SHALL be sequence 0.</li>
    *     <li>The most significant bit of byte[0] SHALL be sequence 7.</li>
    *     <li>The least significant bit of byte[1] SHALL be sequence 8.</li>
