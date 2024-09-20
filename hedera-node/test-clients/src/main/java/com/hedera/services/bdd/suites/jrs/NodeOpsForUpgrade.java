@@ -29,9 +29,11 @@ import static com.hedera.services.bdd.suites.hip869.NodeCreateTest.generateX509C
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.ServiceEndpoint;
+
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Stream;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
@@ -69,19 +71,7 @@ public class NodeOpsForUpgrade extends HapiSuite {
                                 .accountId("0.0.100")
                                 .payingWith(GENESIS)
                                 .signedBy(GENESIS)
-                        //                        nodeCreate("node5")
-                        //                                .signedBy(GENESIS)
-                        //                                .accountId(asAccount("0.0.300"))
-                        //                                .description("Node5AddedForUpgrade")
-                        //                                .gossipEndpoint(GOSSIP_ENDPOINTS_IPS)
-                        //                                .serviceEndpoint(SERVICES_ENDPOINTS_IPS)
-                        //                                .gossipCaCertificate(hash)
-                        //                                .grpcCertificateHash("hash".getBytes())
-                        //                                .adminKey(ED_25519_KEY)
-                        //                                .advertisingCreation()
-                        //                                .payingWith(GENESIS)
-                        //                                .signedBy(GENESIS, ED_25519_KEY)
-                        )
+                )
                 .then();
     }
 
