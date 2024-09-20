@@ -37,6 +37,7 @@ import com.swirlds.platform.state.MerkleRoot;
 import com.swirlds.platform.state.signed.SigSet;
 import com.swirlds.platform.state.signed.SignedState;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
@@ -71,7 +72,15 @@ public final class SignedStateFileReader {
                 .getSavedStateFiles(mainClassName, platformId, swirldName);
     }
 
-    public record StateFileData(MerkleRoot state, Hash hash, SigSet sigSet, int fileVersion) {}
+    /**
+     * This is a helper class to hold the data read from a state file.
+     * @param state the Merkle tree state
+     * @param hash the hash of the state
+     * @param sigSet the signature set
+     * @param fileVersion the version of the file
+     */
+    public record StateFileData(
+            @NonNull MerkleRoot state, @NonNull Hash hash, @Nullable SigSet sigSet, int fileVersion) {}
 
     /**
      * Reads a SignedState from disk using the provided snapshot reader function. If the reader throws
@@ -95,16 +104,16 @@ public final class SignedStateFileReader {
         checkSignedStatePath(stateFile);
 
         final DeserializedSignedState returnState;
-        StateFileData data = readStateFileData(stateFile, snapshotStateReader);
+        final StateFileData data = readStateFileData(stateFile, snapshotStateReader);
 
         final StateFileData normalizedData;
         if (data.sigSet == null) {
-            File sigSetFile =
+            final File sigSetFile =
                     stateFile.getParent().resolve(SIGNATURE_SET_FILE_NAME).toFile();
             normalizedData = deserializeAndDebugOnFailure(
                     () -> new BufferedInputStream(new FileInputStream(sigSetFile)),
                     (final MerkleDataInputStream in) -> {
-                        int fileVersion = readAndCheckSigSetFileVersion(in);
+                        final int fileVersion = readAndCheckSigSetFileVersion(in);
                         final SigSet sigSet = in.readSerializable();
                         return new StateFileData(data.state, data.hash, sigSet, fileVersion);
                     });
@@ -129,8 +138,17 @@ public final class SignedStateFileReader {
         return returnState;
     }
 
+    /**
+     * Reads a SignedState from disk using the provided snapshot reader function.
+     * @param stateFile the file to read from
+     * @param snapshotStateReader state snapshot reading function
+     * @return a signed state with it's associated hash (as computed when the state was serialized)
+     * @throws IOException if there is any problems with reading from a file
+     */
+    @NonNull
     public static StateFileData readStateFileData(
-            Path stateFile, CheckedBiFunction<MerkleDataInputStream, Path, MerkleRoot, IOException> snapshotStateReader)
+            final Path stateFile,
+            final CheckedBiFunction<MerkleDataInputStream, Path, MerkleRoot, IOException> snapshotStateReader)
             throws IOException {
         return deserializeAndDebugOnFailure(
                 () -> new BufferedInputStream(new FileInputStream(stateFile.toFile())),
@@ -139,27 +157,49 @@ public final class SignedStateFileReader {
 
                     final Path directory = stateFile.getParent();
                     if (fileVersion == INIT_FILE_VERSION) {
-                        try {
-                            final MerkleRoot state = snapshotStateReader.apply(in, directory);
-                            final Hash hash = in.readSerializable();
-                            final SigSet sigSet = in.readSerializable();
-                            return new StateFileData(state, hash, sigSet, fileVersion);
-                        } catch (final IOException e) {
-                            throw new IOException("Failed to read snapshot file " + stateFile.toFile(), e);
-                        }
+                        return readStateFileDataV1(stateFile, snapshotStateReader, in, directory, fileVersion);
                     } else if (fileVersion == SIG_SET_SEPARATE_VERSION) {
-                        try {
-                            final MerkleRoot state = snapshotStateReader.apply(in, directory);
-                            final Hash hash = in.readSerializable();
-                            return new StateFileData(state, hash, null, fileVersion);
-
-                        } catch (final IOException e) {
-                            throw new IOException("Failed to read snapshot file " + stateFile.toFile(), e);
-                        }
+                        return createStateFileDataV2(stateFile, snapshotStateReader, in, directory, fileVersion);
                     } else {
                         throw new IOException("Unsupported protocol version: " + fileVersion);
                     }
                 });
+    }
+
+    @NonNull
+    private static StateFileData createStateFileDataV2(
+            @NonNull Path stateFile,
+            @NonNull CheckedBiFunction<MerkleDataInputStream, Path, MerkleRoot, IOException> snapshotStateReader,
+            @NonNull MerkleDataInputStream in,
+            @NonNull Path directory,
+            int fileVersion)
+            throws IOException {
+        try {
+            final MerkleRoot state = snapshotStateReader.apply(in, directory);
+            final Hash hash = in.readSerializable();
+            return new StateFileData(state, hash, null, fileVersion);
+
+        } catch (final IOException e) {
+            throw new IOException("Failed to read snapshot file " + stateFile.toFile(), e);
+        }
+    }
+
+    @NonNull
+    private static StateFileData readStateFileDataV1(
+            @NonNull Path stateFile,
+            @NonNull CheckedBiFunction<MerkleDataInputStream, Path, MerkleRoot, IOException> snapshotStateReader,
+            @NonNull MerkleDataInputStream in,
+            @NonNull Path directory,
+            int fileVersion)
+            throws IOException {
+        try {
+            final MerkleRoot state = snapshotStateReader.apply(in, directory);
+            final Hash hash = in.readSerializable();
+            final SigSet sigSet = in.readSerializable();
+            return new StateFileData(state, hash, sigSet, fileVersion);
+        } catch (final IOException e) {
+            throw new IOException("Failed to read snapshot file " + stateFile.toFile(), e);
+        }
     }
 
     /**

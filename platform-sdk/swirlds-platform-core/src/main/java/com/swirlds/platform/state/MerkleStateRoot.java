@@ -1110,9 +1110,11 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
         throwIfDestroyed();
         long start = System.nanoTime();
         createSnapshot(this, targetPath);
-        snapshotMetrics
-                .getWriteStateToDiskTimeMetric()
-                .update(TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start));
+        if (snapshotMetrics != null) {
+            snapshotMetrics
+                    .getWriteStateToDiskTimeMetric()
+                    .update(TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start));
+        }
     }
 
     static void createSnapshot(MerkleRoot merkleRoot, Path targetPath) {

@@ -78,6 +78,7 @@ public interface State extends FastCopyable {
     /**
      * {@inheritDoc}
      */
+    @NonNull
     @Override
     default State copy() {
         throw new UnsupportedOperationException();
@@ -102,7 +103,7 @@ public interface State extends FastCopyable {
      * Creates a snapshots for the state. The state has to be hashed and immutable before calling this method.
      * @param targetPath The path to save the snapshot.
      */
-    default void createSnapshot(Path targetPath) {
+    default void createSnapshot(final @NonNull Path targetPath) {
         throw new UnsupportedOperationException();
     }
 }

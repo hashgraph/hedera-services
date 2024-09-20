@@ -39,7 +39,7 @@ public final class SerializableStreamConstants {
     public static final int VERSION_BYTES = Integer.BYTES;
 
     /**
-     * The previous version of the serialization protocol implemented by {@link SerializableDataOutputStream} and
+     * The current version of the serialization protocol implemented by {@link SerializableDataOutputStream} and
      * {@link SerializableDataInputStream}
      */
     public static final int SERIALIZATION_PROTOCOL_VERSION = 1;

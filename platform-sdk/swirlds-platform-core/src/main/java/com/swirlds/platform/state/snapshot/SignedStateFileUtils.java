@@ -53,7 +53,8 @@ public final class SignedStateFileUtils {
     public static final int INIT_FILE_VERSION = 1;
 
     /**
-     * The current version of the signed state file
+     * The current version of the signed state file. A file of this version no longer contains the signature set,
+     * instead the signature set is stored in a separate file.
      */
     public static final int SIG_SET_SEPARATE_VERSION = 2;
 
