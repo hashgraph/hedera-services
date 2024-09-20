@@ -203,7 +203,6 @@ public class SubProcessNetwork extends AbstractGrpcNetwork implements HederaNetw
 
     /**
      * Assigns updated metadata to nodes from the current <i>config.txt</i>.
-     * <p>
      * <p>Also reassigns ports and overwrites the existing <i>config.txt</i> file for each node in the
      * network with new ports if requested to avoid port binding issues in test environments.
      */
