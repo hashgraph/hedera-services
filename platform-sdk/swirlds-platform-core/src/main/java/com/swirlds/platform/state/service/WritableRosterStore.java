@@ -38,6 +38,7 @@ import com.swirlds.state.spi.WritableKVState;
 import com.swirlds.state.spi.WritableSingletonState;
 import com.swirlds.state.spi.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
@@ -104,10 +105,11 @@ public class WritableRosterStore implements RosterStateModifier {
      * @param initialState the initial state of the platform
      * @return the active roster which will be used by the platform
      */
+    @NonNull
     @Override
-    public Roster determineActiveRoster(@NonNull SoftwareVersion version, @NonNull ReservedSignedState initialState) {
+    public Roster determineActiveRoster(@NonNull final SoftwareVersion version,
+            @NonNull final ReservedSignedState initialState) {
         final boolean softwareUpgrade = detectSoftwareUpgrade(version, initialState.get());
-        final Roster candidateRoster = rosterStateAccessor.getCandidateRoster();
 
         if (!softwareUpgrade) {
             final Roster lastUsedActiveRoster = rosterStateAccessor.getActiveRoster();
@@ -118,6 +120,8 @@ public class WritableRosterStore implements RosterStateModifier {
         }
 
         // software upgrade is detected, we adopt the candidate roster
+        final Roster candidateRoster = Objects.requireNonNull(rosterStateAccessor.getCandidateRoster(),
+                "Candidate Roster must be present in the state during software upgrade.");
         adoptCandidateRoster(initialState.get().getRound() + 1);
         commit();
         return candidateRoster;
@@ -126,6 +130,7 @@ public class WritableRosterStore implements RosterStateModifier {
     /**
      * {@inheritDoc}
      */
+    @Nullable
     @Override
     public Roster getCandidateRoster() {
         return rosterStateAccessor.getCandidateRoster();
@@ -134,6 +139,7 @@ public class WritableRosterStore implements RosterStateModifier {
     /**
      * {@inheritDoc}
      */
+    @NonNull
     @Override
     public Roster getActiveRoster() {
         return rosterStateAccessor.getActiveRoster();
@@ -153,7 +159,6 @@ public class WritableRosterStore implements RosterStateModifier {
         if (candidateRoster == null) {
             throw new IllegalStateException("Candidate roster not found in the state.");
         }
-        RosterValidator.validate(candidateRoster);
 
         storeAsActive(candidateRoster, roundNumber);
         removeCandidateRoster();

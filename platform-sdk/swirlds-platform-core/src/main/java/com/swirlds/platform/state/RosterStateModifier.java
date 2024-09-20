@@ -21,6 +21,9 @@ import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.system.SoftwareVersion;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
+/**
+ * Read-write interface for modifying rosters states.
+ */
 public interface RosterStateModifier extends RosterStateAccessor {
 
     /**
@@ -38,6 +41,7 @@ public interface RosterStateModifier extends RosterStateAccessor {
      * @param initialState the initial state of the platform
      * @return the active roster which will be used by the platform
      */
+    @NonNull
     Roster determineActiveRoster(
             @NonNull final SoftwareVersion version, @NonNull final ReservedSignedState initialState);
 }

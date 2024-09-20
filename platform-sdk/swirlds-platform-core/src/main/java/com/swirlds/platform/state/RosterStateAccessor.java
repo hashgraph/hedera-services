@@ -17,6 +17,8 @@
 package com.swirlds.platform.state;
 
 import com.hedera.hapi.node.state.roster.Roster;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 
 /**
  * Read-only interface for accessing rosters states.
@@ -27,6 +29,7 @@ public interface RosterStateAccessor {
      *
      * @return the candidate roster
      */
+    @Nullable
     Roster getCandidateRoster();
 
     /**
@@ -34,5 +37,6 @@ public interface RosterStateAccessor {
      *
      * @return the active roster
      */
+    @NonNull
     Roster getActiveRoster();
 }
