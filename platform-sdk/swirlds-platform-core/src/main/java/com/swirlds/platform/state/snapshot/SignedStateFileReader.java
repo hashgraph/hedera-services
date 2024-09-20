@@ -16,10 +16,12 @@
 
 package com.swirlds.platform.state.snapshot;
 
-import static com.swirlds.common.io.streams.SerializableStreamConstants.SERIALIZATION_PROTOCOL_VERSION;
-import static com.swirlds.common.io.streams.SerializableStreamConstants.SIGNATURE_SET_SEPARATED_VERSION;
 import static com.swirlds.common.io.streams.StreamDebugUtils.deserializeAndDebugOnFailure;
+import static com.swirlds.platform.state.snapshot.SignedStateFileUtils.INIT_FILE_VERSION;
 import static com.swirlds.platform.state.snapshot.SignedStateFileUtils.SIGNATURE_SET_FILE_NAME;
+import static com.swirlds.platform.state.snapshot.SignedStateFileUtils.SIG_SET_SEPARATE_VERSION;
+import static com.swirlds.platform.state.snapshot.SignedStateFileUtils.SUPPORTED_SIGSET_VERSIONS;
+import static com.swirlds.platform.state.snapshot.SignedStateFileUtils.SUPPORTED_STATE_FILE_VERSIONS;
 import static com.swirlds.platform.state.snapshot.SignedStateFileUtils.VERSIONED_FILE_BYTE;
 import static java.nio.file.Files.exists;
 
@@ -69,7 +71,7 @@ public final class SignedStateFileReader {
                 .getSavedStateFiles(mainClassName, platformId, swirldName);
     }
 
-    public record StateFileData(MerkleRoot state, Hash hash, SigSet sigSet, int protocolVersion) {}
+    public record StateFileData(MerkleRoot state, Hash hash, SigSet sigSet, int fileVersion) {}
 
     /**
      * Reads a SignedState from disk using the provided snapshot reader function. If the reader throws
@@ -102,13 +104,9 @@ public final class SignedStateFileReader {
             normalizedData = deserializeAndDebugOnFailure(
                     () -> new BufferedInputStream(new FileInputStream(sigSetFile)),
                     (final MerkleDataInputStream in) -> {
-                        int protocolVersion = readAndCheckVersion(in);
-                        if (protocolVersion != data.protocolVersion) {
-                            throw new IOException(
-                                    "Protocol versions of the state file and the signature set file do not match");
-                        }
+                        int fileVersion = readAndCheckSigSetFileVersion(in);
                         final SigSet sigSet = in.readSerializable();
-                        return new StateFileData(data.state, data.hash, sigSet, protocolVersion);
+                        return new StateFileData(data.state, data.hash, sigSet, fileVersion);
                     });
         } else {
             normalizedData = data;
@@ -137,29 +135,29 @@ public final class SignedStateFileReader {
         return deserializeAndDebugOnFailure(
                 () -> new BufferedInputStream(new FileInputStream(stateFile.toFile())),
                 (final MerkleDataInputStream in) -> {
-                    int protocolVersion = readAndCheckVersion(in);
+                    int fileVersion = readAndCheckStateFileVersion(in);
 
                     final Path directory = stateFile.getParent();
-                    if (protocolVersion == SERIALIZATION_PROTOCOL_VERSION) {
+                    if (fileVersion == INIT_FILE_VERSION) {
                         try {
                             final MerkleRoot state = snapshotStateReader.apply(in, directory);
                             final Hash hash = in.readSerializable();
                             final SigSet sigSet = in.readSerializable();
-                            return new StateFileData(state, hash, sigSet, protocolVersion);
+                            return new StateFileData(state, hash, sigSet, fileVersion);
                         } catch (final IOException e) {
                             throw new IOException("Failed to read snapshot file " + stateFile.toFile(), e);
                         }
-                    } else if (protocolVersion == SIGNATURE_SET_SEPARATED_VERSION) {
+                    } else if (fileVersion == SIG_SET_SEPARATE_VERSION) {
                         try {
                             final MerkleRoot state = snapshotStateReader.apply(in, directory);
                             final Hash hash = in.readSerializable();
-                            return new StateFileData(state, hash, null, protocolVersion);
+                            return new StateFileData(state, hash, null, fileVersion);
 
                         } catch (final IOException e) {
                             throw new IOException("Failed to read snapshot file " + stateFile.toFile(), e);
                         }
                     } else {
-                        throw new IOException("Unsupported protocol version: " + protocolVersion);
+                        throw new IOException("Unsupported protocol version: " + fileVersion);
                     }
                 });
     }
@@ -186,13 +184,32 @@ public final class SignedStateFileReader {
      * @throws IOException if the version is invalid
      * @return the protocol version
      */
-    private static int readAndCheckVersion(@NonNull final MerkleDataInputStream in) throws IOException {
+    private static int readAndCheckStateFileVersion(@NonNull final MerkleDataInputStream in) throws IOException {
         final byte versionByte = in.readByte();
         if (versionByte != VERSIONED_FILE_BYTE) {
             throw new IOException("File is not versioned -- data corrupted or is an unsupported legacy state");
         }
 
-        in.readInt(); // file version
-        return in.readProtocolVersion();
+        final int fileVersion = in.readInt();
+        if (!SUPPORTED_STATE_FILE_VERSIONS.contains(fileVersion)) {
+            throw new IOException("Unsupported file version: " + fileVersion);
+        }
+        in.readProtocolVersion();
+        return fileVersion;
+    }
+    /**
+     * Read the version from a signature set file and check it
+     *
+     * @param in the stream to read from
+     * @throws IOException if the version is invalid
+     * @return the protocol version
+     */
+    private static int readAndCheckSigSetFileVersion(@NonNull final MerkleDataInputStream in) throws IOException {
+        final int fileVersion = in.readInt();
+        if (!SUPPORTED_SIGSET_VERSIONS.contains(fileVersion)) {
+            throw new IOException("Unsupported file version: " + fileVersion);
+        }
+        in.readProtocolVersion();
+        return fileVersion;
     }
 }

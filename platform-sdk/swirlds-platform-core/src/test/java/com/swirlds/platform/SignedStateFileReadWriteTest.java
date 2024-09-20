@@ -175,9 +175,9 @@ class SignedStateFileReadWriteTest {
 
         // now we need to emulate v1 by modifying the protocol version and appending signatures to the state file
         final byte[] fileContent = Files.readAllBytes(stateFile);
-        final int protocolVersionOffset = 1 + Integer.BYTES;
+        final int fileVersionOffset = 1;
         ByteBuffer buffer = ByteBuffer.wrap(fileContent);
-        buffer.position(protocolVersionOffset);
+        buffer.position(fileVersionOffset);
         // set the protocol version to v1
         buffer.putInt(1);
         try (OutputStream out = Files.newOutputStream(

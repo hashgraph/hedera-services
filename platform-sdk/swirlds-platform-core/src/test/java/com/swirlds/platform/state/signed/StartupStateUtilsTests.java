@@ -129,7 +129,7 @@ public class StartupStateUtilsTests {
             final long round,
             @Nullable final Hash epoch,
             final boolean corrupted,
-            final boolean immutable)
+            final boolean mutable)
             throws IOException {
 
         final SignedState signedState = new RandomSignedStateGenerator(random)
@@ -137,7 +137,7 @@ public class StartupStateUtilsTests {
                 .setEpoch(epoch)
                 .build();
 
-        if (immutable) {
+        if (mutable) {
             // make the state immutable
             signedState.getState().copy();
         }

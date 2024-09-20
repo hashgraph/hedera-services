@@ -23,10 +23,9 @@ import static com.swirlds.logging.legacy.LogMarker.STATE_TO_DISK;
 import static com.swirlds.platform.config.internal.PlatformConfigUtils.writeSettingsUsed;
 import static com.swirlds.platform.event.preconsensus.BestEffortPcesFileCopy.copyPcesFilesRetryOnFailure;
 import static com.swirlds.platform.state.snapshot.SignedStateFileUtils.CURRENT_ADDRESS_BOOK_FILE_NAME;
-import static com.swirlds.platform.state.snapshot.SignedStateFileUtils.FILE_VERSION;
 import static com.swirlds.platform.state.snapshot.SignedStateFileUtils.HASH_INFO_FILE_NAME;
+import static com.swirlds.platform.state.snapshot.SignedStateFileUtils.INIT_FILE_VERSION;
 import static com.swirlds.platform.state.snapshot.SignedStateFileUtils.SIGNATURE_SET_FILE_NAME;
-import static com.swirlds.platform.state.snapshot.SignedStateFileUtils.VERSIONED_FILE_BYTE;
 
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.io.streams.MerkleDataOutputStream;
@@ -117,8 +116,7 @@ public final class SignedStateFileWriter {
      */
     private static void writeSignatureSetToStream(final MerkleDataOutputStream out, final SignedState signedState)
             throws IOException {
-        out.write(VERSIONED_FILE_BYTE);
-        out.writeInt(FILE_VERSION);
+        out.writeInt(INIT_FILE_VERSION);
         out.writeProtocolVersion();
         out.writeSerializable(signedState.getSigSet(), true);
     }

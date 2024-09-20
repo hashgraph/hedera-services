@@ -21,6 +21,7 @@ import com.swirlds.platform.state.MerkleRoot;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.Set;
 
 /**
  * Utility methods for dealing with signed states on disk.
@@ -47,9 +48,18 @@ public final class SignedStateFileUtils {
     public static final byte VERSIONED_FILE_BYTE = Byte.MAX_VALUE;
 
     /**
+     * The previous version of the signed state file
+     */
+    public static final int INIT_FILE_VERSION = 1;
+
+    /**
      * The current version of the signed state file
      */
-    public static final int FILE_VERSION = 1;
+    public static final int SIG_SET_SEPARATE_VERSION = 2;
+
+    public static final Set<Integer> SUPPORTED_STATE_FILE_VERSIONS =
+            Set.of(INIT_FILE_VERSION, SIG_SET_SEPARATE_VERSION);
+    public static final Set<Integer> SUPPORTED_SIGSET_VERSIONS = Set.of(INIT_FILE_VERSION);
 
     public static final int MAX_MERKLE_NODES_IN_STATE = Integer.MAX_VALUE;
 

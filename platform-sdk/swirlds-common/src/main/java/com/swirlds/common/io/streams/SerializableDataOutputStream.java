@@ -21,7 +21,7 @@ import static com.swirlds.common.io.streams.SerializableStreamConstants.CLASS_ID
 import static com.swirlds.common.io.streams.SerializableStreamConstants.NULL_CLASS_ID;
 import static com.swirlds.common.io.streams.SerializableStreamConstants.NULL_LIST_ARRAY_LENGTH;
 import static com.swirlds.common.io.streams.SerializableStreamConstants.NULL_VERSION;
-import static com.swirlds.common.io.streams.SerializableStreamConstants.SIGNATURE_SET_SEPARATED_VERSION;
+import static com.swirlds.common.io.streams.SerializableStreamConstants.SERIALIZATION_PROTOCOL_VERSION;
 import static com.swirlds.common.io.streams.SerializableStreamConstants.VERSION_BYTES;
 
 import com.hedera.pbj.runtime.Codec;
@@ -70,7 +70,7 @@ public class SerializableDataOutputStream extends AugmentedDataOutputStream {
      * 		thrown if any IO problems occur
      */
     public void writeProtocolVersion() throws IOException {
-        this.writeInt(SIGNATURE_SET_SEPARATED_VERSION);
+        this.writeInt(SERIALIZATION_PROTOCOL_VERSION);
     }
 
     private void writeSerializable(
