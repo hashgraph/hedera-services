@@ -37,7 +37,7 @@ option java_multiple_files = true;
   * candidate roster.
   * <br/>
   * This transaction contains the information to identify the source and target
-   * rosters, as well as the specific TssMessage being sent.
+  * rosters, as well as the specific TssMessage being sent.
   */
 message TssMessageTransactionBody {
 

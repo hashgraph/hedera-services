@@ -51,7 +51,7 @@ message TssMessageMapKey {
   bytes roster_hash = 1;
 
   /**
-   * A number representing consensus order.<br/
+   * A number representing consensus order.<br/>
    * This declares the order in which the mapped value came to consensus.
    * <p>This value MUST be set.<br/>
    * This value MUST be a valid sequence number.
