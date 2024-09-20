@@ -23,7 +23,6 @@ import static com.hedera.services.bdd.spec.transactions.TxnUtils.asTopicId;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.netOf;
 import static com.hedera.services.bdd.suites.HapiSuite.EMPTY_KEY;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusUpdateTopic;
-import static java.util.stream.Collectors.toList;
 
 import com.google.common.base.MoreObjects;
 import com.google.protobuf.StringValue;
@@ -67,6 +66,8 @@ public class HapiTopicUpdate extends HapiTxnOp<HapiTopicUpdate> {
     private final List<Function<HapiSpec, ConsensusCustomFee>> feeScheduleSuppliers = new ArrayList<>();
     private Optional<List<Function<HapiSpec, Key>>> feeExemptKeyNamesList = Optional.empty();
     private Optional<List<Key>> freeMessageKeyList = Optional.empty();
+    private boolean emptyCustomFee = false;
+    private boolean emptyFeeExemptKeyList = false;
 
     public HapiTopicUpdate(final String topic) {
         this.topic = topic;
@@ -120,12 +121,22 @@ public class HapiTopicUpdate extends HapiTxnOp<HapiTopicUpdate> {
     public HapiTopicUpdate feeExemptKeys(String... keys) {
         feeExemptKeyNamesList = Optional.of(Stream.of(keys)
                 .<Function<HapiSpec, Key>>map(k -> spec -> spec.registry().getKey(k))
-                .collect(toList()));
+                .toList());
         return this;
     }
 
     public HapiTopicUpdate withConsensusCustomFee(final Function<HapiSpec, ConsensusCustomFee> supplier) {
         feeScheduleSuppliers.add(supplier);
+        return this;
+    }
+
+    public HapiTopicUpdate withEmptyCustomFee() {
+        emptyCustomFee = true;
+        return this;
+    }
+
+    public HapiTopicUpdate withEmptyFeeExemptKeyList() {
+        emptyFeeExemptKeyList = true;
         return this;
     }
 
@@ -182,12 +193,18 @@ public class HapiTopicUpdate extends HapiTxnOp<HapiTopicUpdate> {
                             feeScheduleKey.ifPresent(b::setFeeScheduleKey);
                             freeMessageKeyList.ifPresent(keys -> b.setFeeExemptKeyList(
                                     FeeExemptKeyList.newBuilder().addAllKeys(keys)));
+                            if (emptyFeeExemptKeyList) {
+                                b.setFeeExemptKeyList(FeeExemptKeyList.newBuilder());
+                            }
                             if (!feeScheduleSuppliers.isEmpty()) {
                                 var consensusCustomFeeList = ConsensusCustomFeeList.newBuilder();
                                 for (final var supplier : feeScheduleSuppliers) {
                                     consensusCustomFeeList.addFees(supplier.apply(spec));
                                 }
                                 b.setCustomFees(consensusCustomFeeList.build());
+                            } else if (emptyCustomFee) {
+                                b.setCustomFees(
+                                        ConsensusCustomFeeList.newBuilder().build());
                             }
                         });
         return b -> b.setConsensusUpdateTopic(opBody);

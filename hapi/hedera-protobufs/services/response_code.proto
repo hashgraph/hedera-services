@@ -1622,8 +1622,8 @@ enum ResponseCodeEnum {
     INVALID_FEE_SCHEDULE_KEY = 374;
 
     /**
-    * If a fee schedule key is not set when we create a topic<br/>
-    * we cannot add it a new one on update.
+    * If a fee schedule key is not set when we create a topic
+    * we cannot add it on update.
     */
     FEE_SCHEDULE_KEY_CANNOT_BE_UPDATED = 375;
 }

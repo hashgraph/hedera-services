@@ -26,11 +26,13 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO
 import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.TokenValidations.REQUIRE_NOT_PAUSED;
 import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.getIfUsable;
 import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.getIfUsableForAliasedId;
+import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.TokenID;
+import com.hedera.hapi.node.base.TokenSupplyType;
 import com.hedera.hapi.node.base.TokenType;
 import com.hedera.hapi.node.transaction.ConsensusCustomFee;
 import com.hedera.node.app.service.token.ReadableAccountStore;
@@ -117,7 +119,9 @@ public class ConsensusCustomFeesValidator {
             @NonNull final ReadableTokenRelationStore tokenRelationStore,
             @NonNull final ReadableTokenStore tokenStore) {
         final var denomToken = getIfUsable(tokenNum, tokenStore, REQUIRE_NOT_PAUSED, INVALID_TOKEN_ID_IN_CUSTOM_FEES);
-        validateTrue(feeAmount <= denomToken.maxSupply(), AMOUNT_EXCEEDS_TOKEN_MAX_SUPPLY);
+        validateFalse(
+                TokenSupplyType.FINITE.equals(denomToken.supplyType()) && feeAmount > denomToken.maxSupply(),
+                AMOUNT_EXCEEDS_TOKEN_MAX_SUPPLY);
         validateTrue(isFungibleCommon(denomToken.tokenType()), CUSTOM_FEE_DENOMINATION_MUST_BE_FUNGIBLE_COMMON);
         validateTrue(tokenRelationStore.get(feeCollectorNum, tokenNum) != null, TOKEN_NOT_ASSOCIATED_TO_FEE_COLLECTOR);
     }

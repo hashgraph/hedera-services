@@ -247,7 +247,7 @@ public class ConsensusUpdateTopicHandler implements TransactionHandler {
         if (op.hasFeeScheduleKey()) {
             builder.feeScheduleKey(op.feeScheduleKey());
         }
-        if (op.hasFeeExemptKeyList() && !op.feeExemptKeyList().keys().isEmpty()) {
+        if (op.hasFeeExemptKeyList()) {
             builder.feeExemptKeyList(op.feeExemptKeyList().keys());
         }
         if (op.hasCustomFees()) {
@@ -256,15 +256,15 @@ public class ConsensusUpdateTopicHandler implements TransactionHandler {
     }
 
     private void validateMaybeNewAttributes(
-        @NonNull final HandleContext handleContext,
-        @NonNull final ConsensusUpdateTopicTransactionBody op,
-        @NonNull final Topic topic) {
+            @NonNull final HandleContext handleContext,
+            @NonNull final ConsensusUpdateTopicTransactionBody op,
+            @NonNull final Topic topic) {
         final var attributeValidator = handleContext.attributeValidator();
         validateMaybeNewAdminKey(attributeValidator, op);
         validateMaybeNewSubmitKey(attributeValidator, op);
         validateMaybeNewMemo(attributeValidator, op);
         validateMaybeNewFeeScheduleKey(attributeValidator, op, topic);
-        validateMaybeFeeExemptKeyList(handleContext, attributeValidator, op);
+        validateMaybeFeeExemptKeyList(handleContext, attributeValidator, op, topic);
         validateMaybeCustomFees(handleContext, op);
     }
 
@@ -333,10 +333,10 @@ public class ConsensusUpdateTopicHandler implements TransactionHandler {
 
     private void validateMaybeNewFeeScheduleKey(
             @NonNull final AttributeValidator attributeValidator,
-        @NonNull final ConsensusUpdateTopicTransactionBody op,
-        @NonNull final Topic topic) {
+            @NonNull final ConsensusUpdateTopicTransactionBody op,
+            @NonNull final Topic topic) {
         if (op.hasFeeScheduleKey()) {
-            validateFalse(topic.hasFeeScheduleKey(), FEE_SCHEDULE_KEY_CANNOT_BE_UPDATED);
+            validateTrue(topic.hasFeeScheduleKey(), FEE_SCHEDULE_KEY_CANNOT_BE_UPDATED);
             attributeValidator.validateKey(op.feeScheduleKey(), INVALID_CUSTOM_FEE_SCHEDULE_KEY);
         }
     }
@@ -344,7 +344,8 @@ public class ConsensusUpdateTopicHandler implements TransactionHandler {
     private void validateMaybeFeeExemptKeyList(
             @NonNull final HandleContext handleContext,
             @NonNull final AttributeValidator attributeValidator,
-            @NonNull final ConsensusUpdateTopicTransactionBody op) {
+            @NonNull final ConsensusUpdateTopicTransactionBody op,
+            @NonNull final Topic topic) {
         if (op.feeExemptKeyList() == null) {
             return;
         }
@@ -355,9 +356,26 @@ public class ConsensusUpdateTopicHandler implements TransactionHandler {
         validateTrue(
                 op.feeExemptKeyList().keys().size() <= topicConfig.maxEntriesForFeeExemptKeyList(),
                 MAX_ENTRIES_FOR_FEKL_EXCEEDED);
-        // If the fee exempt key list is set we should always have custom fees
-        validateTrue(op.customFees() == null || !op.customFees().fees().isEmpty(), MISSING_CUSTOM_FEES);
+        validateCustomFeesWhenSettingFeeExemptKeyList(op, topic);
         op.feeExemptKeyList().keys().forEach(key -> attributeValidator.validateKey(key, INVALID_KEY_IN_FEKL));
+    }
+
+    /**
+     * If the fee exempt key list is set we should always have custom fees. This method is called when we are validating
+     * the fee exempt key list, so within this method we know that the list is changing.
+     * We are validating two cases:
+     * 1. If together with the list we are also updating(adding) the custom fees - this is a valid scenario
+     * 2. If we are not updating the custom fees we check if the topic already has custom fees - this is a valid scenario
+     * If we are not doing the second validation when we update the fee exempt key list we will always need to sent
+     * the custom fees(even if they are not updated).
+     * In all other cases we are throwing MISSING_CUSTOM_FEES response code.
+     */
+    private static void validateCustomFeesWhenSettingFeeExemptKeyList(
+            ConsensusUpdateTopicTransactionBody op, Topic topic) {
+        final var updatingTheCustomFees =
+                op.customFees() != null && !op.customFees().fees().isEmpty();
+        final var topicAlreadyHasCustomFees = !topic.customFees().isEmpty();
+        validateTrue(updatingTheCustomFees || topicAlreadyHasCustomFees, MISSING_CUSTOM_FEES);
     }
 
     private void validateMaybeCustomFees(

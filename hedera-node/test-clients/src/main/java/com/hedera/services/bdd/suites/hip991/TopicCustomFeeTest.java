@@ -114,7 +114,7 @@ public class TopicCustomFeeTest extends TopicCustomFeeBase {
                                 .hasAdminKey(ADMIN_KEY)
                                 .hasSubmitKey(SUBMIT_KEY)
                                 .hasFeeScheduleKey(FEE_SCHEDULE_KEY)
-                                .hasCustom(expectedConsensusFixedHbarFee(ONE_HBAR, collector)));
+                                .hasCustomFee(expectedConsensusFixedHbarFee(ONE_HBAR, collector)));
             }
 
             @HapiTest
@@ -137,7 +137,7 @@ public class TopicCustomFeeTest extends TopicCustomFeeBase {
                                 .hasAdminKey(ADMIN_KEY)
                                 .hasSubmitKey(SUBMIT_KEY)
                                 .hasFeeScheduleKey(FEE_SCHEDULE_KEY)
-                                .hasCustom(expectedConsensusFixedHTSFee(1, "testToken", collector)));
+                                .hasCustomFee(expectedConsensusFixedHTSFee(1, "testToken", collector)));
             }
 
             @HapiTest
