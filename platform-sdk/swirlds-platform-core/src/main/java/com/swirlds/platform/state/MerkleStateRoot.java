@@ -34,7 +34,6 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.block.stream.output.StateChanges;
 import com.hedera.hapi.node.base.SemanticVersion;
-import com.swirlds.base.time.Time;
 import com.swirlds.common.constructable.ConstructableIgnored;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.io.streams.MerkleDataOutputStream;
@@ -1107,12 +1106,13 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
      */
     @Override
     public void createSnapshot(Path targetPath) {
-        Time time = platformContext.getTime();
-        final long start = time.nanoTime();
         throwIfMutable();
         throwIfDestroyed();
+        long start = System.nanoTime();
         createSnapshot(this, targetPath);
-        snapshotMetrics.getWriteStateToDiskTimeMetric().update(TimeUnit.NANOSECONDS.toMillis(time.nanoTime() - start));
+        snapshotMetrics
+                .getWriteStateToDiskTimeMetric()
+                .update(TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start));
     }
 
     static void createSnapshot(MerkleRoot merkleRoot, Path targetPath) {
