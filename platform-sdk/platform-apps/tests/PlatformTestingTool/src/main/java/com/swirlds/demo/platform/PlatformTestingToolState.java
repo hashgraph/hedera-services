@@ -83,7 +83,7 @@ import com.swirlds.merkle.test.fixtures.map.lifecycle.TransactionType;
 import com.swirlds.merkle.test.fixtures.map.pta.MapKey;
 import com.swirlds.platform.ParameterProvider;
 import com.swirlds.platform.Utilities;
-import com.swirlds.platform.state.PlatformStateAccessor;
+import com.swirlds.platform.state.PlatformStateModifier;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.Round;
@@ -1071,7 +1071,7 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
      * Handle the freeze transaction type.
      */
     private void handleFreezeTransaction(
-            final TestTransaction testTransaction, final PlatformStateAccessor platformState) {
+            final TestTransaction testTransaction, final PlatformStateModifier platformState) {
         final FreezeTransaction freezeTx = testTransaction.getFreezeTransaction();
         FreezeTransactionHandler.freeze(freezeTx, platformState);
     }
@@ -1093,7 +1093,7 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
     }
 
     @Override
-    public synchronized void handleConsensusRound(final Round round, final PlatformStateAccessor platformState) {
+    public synchronized void handleConsensusRound(final Round round, final PlatformStateModifier platformState) {
         throwIfImmutable();
         if (!initialized.get()) {
             throw new IllegalStateException("handleConsensusRound() called before init()");
@@ -1125,7 +1125,7 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
     private void handleConsensusTransaction(
             final ConsensusEvent event,
             final ConsensusTransaction trans,
-            final PlatformStateAccessor platformState,
+            final PlatformStateModifier platformState,
             final long roundNum) {
         if (trans.isSystem()) {
             return;
@@ -1164,7 +1164,7 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
             @NonNull final Instant timeCreated,
             @NonNull final Instant timestamp,
             @NonNull final ConsensusTransaction trans,
-            @NonNull final PlatformStateAccessor platformState) {
+            @NonNull final PlatformStateModifier platformState) {
         if (getConfig().isAppendSig()) {
             try {
                 final TestTransactionWrapper testTransactionWrapper = TestTransactionWrapper.parseFrom(

@@ -64,7 +64,7 @@ class SignedStateTests {
         final MerkleStateRoot state = spy(new MerkleStateRoot(
                 FAKE_MERKLE_STATE_LIFECYCLES, version -> new BasicSoftwareVersion(version.major())));
 
-        final PlatformStateAccessor platformState = new PlatformState();
+        final PlatformStateModifier platformState = new PlatformState();
         platformState.setAddressBook(mock(AddressBook.class));
         when(state.getWritablePlatformState()).thenReturn(platformState);
         if (reserveCallback != null) {
@@ -208,9 +208,8 @@ class SignedStateTests {
     void alternateConstructorReservationsTest() {
         final MerkleRoot state = spy(new MerkleStateRoot(
                 FAKE_MERKLE_STATE_LIFECYCLES, version -> new BasicSoftwareVersion(version.major())));
-        final PlatformStateAccessor platformState = mock(PlatformStateAccessor.class);
-        // init state first
-        state.getWritablePlatformState();
+        final PlatformStateModifier platformState = mock(PlatformStateModifier.class);
+        state.initPlatformState();
         when(state.getReadablePlatformState()).thenReturn(platformState);
         when(platformState.getRound()).thenReturn(0L);
         final SignedState signedState = new SignedState(

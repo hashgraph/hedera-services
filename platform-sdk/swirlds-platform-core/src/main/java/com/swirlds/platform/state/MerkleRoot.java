@@ -33,6 +33,12 @@ public interface MerkleRoot extends MerkleInternal {
     SwirldState getSwirldState();
 
     /**
+     * This method makes sure that the platform state is initialized.
+     * If it's already initialized, it does nothing.
+     */
+    void initPlatformState();
+
+    /**
      * Get readable platform state.
      * Works on both - mutable and immutable {@link MerkleRoot} and, therefore, this method should be preferred.
      *
@@ -48,7 +54,7 @@ public interface MerkleRoot extends MerkleInternal {
      * @return mutable platform state
      */
     @NonNull
-    PlatformStateAccessor getWritablePlatformState();
+    PlatformStateModifier getWritablePlatformState();
 
     /**
      * Gets the Roster state modifier.
@@ -63,7 +69,7 @@ public interface MerkleRoot extends MerkleInternal {
      *
      * @param platformState the platform state
      */
-    void updatePlatformState(@NonNull final PlatformStateAccessor platformState);
+    void updatePlatformState(@NonNull final PlatformStateModifier platformState);
 
     /**
      * Generate a string that describes this state.
