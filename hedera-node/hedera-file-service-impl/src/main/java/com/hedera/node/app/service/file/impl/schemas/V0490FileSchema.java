@@ -306,8 +306,7 @@ public class V0490FileSchema extends Schema {
                 .filter(node -> node != null && !node.deleted())
                 .forEach(node -> nodeAddresses.add(NodeAddress.newBuilder()
                         .nodeId(node.nodeId())
-                        .rsaPubKey(readableKey(getPublicKeyFromCertBytes(
-                                node.gossipCaCertificate().toByteArray(), node.nodeId())))
+                        .nodeCertHash(node.grpcCertificateHash())
                         .nodeAccountId(node.accountId())
                         .serviceEndpoint(node.serviceEndpoint())
                         .build()));

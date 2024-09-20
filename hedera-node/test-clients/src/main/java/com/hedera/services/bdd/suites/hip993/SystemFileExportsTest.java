@@ -143,10 +143,15 @@ public class SystemFileExportsTest {
 
     @GenesisHapiTest
     final Stream<DynamicTest> syntheticAddressBookUpdateHappensAtUpgradeBoundary() {
+        final var grpcCertHashes = new byte[][] {
+            randomUtf8Bytes(48), randomUtf8Bytes(48), randomUtf8Bytes(48), randomUtf8Bytes(48),
+        };
         final AtomicReference<Map<Long, X509Certificate>> gossipCertificates = new AtomicReference<>();
         return hapiTest(
                 recordStreamMustIncludePassFrom(selectedItems(
-                        addressBookExportValidator("files.addressBook", gossipCertificates), 2, this::isSysFileUpdate)),
+                        addressBookExportValidator("files.addressBook", grpcCertHashes, gossipCertificates),
+                        2,
+                        this::isSysFileUpdate)),
                 given(() -> gossipCertificates.set(generateCertificates(CLASSIC_HAPI_TEST_NETWORK_SIZE))),
                 // This is the genesis transaction
                 cryptoCreate("firstUser"),
@@ -155,6 +160,7 @@ public class SystemFileExportsTest {
                         .accountId("0.0." + (i + ACCOUNT_ID_OFFSET))
                         .description(DESCRIPTION_PREFIX + i)
                         .serviceEndpoint(endpointsFor(i))
+                        .grpcCertificateHash(grpcCertHashes[i])
                         .gossipCaCertificate(derEncoded(gossipCertificates.get().get((long) i)))))),
                 // And now simulate an upgrade boundary
                 simulatePostUpgradeTransaction(),
@@ -470,6 +476,7 @@ public class SystemFileExportsTest {
 
     private static VisibleItemsValidator addressBookExportValidator(
             @NonNull final String fileNumProperty,
+            @NonNull final byte[][] grpcCertHashes,
             @NonNull final AtomicReference<Map<Long, X509Certificate>> gossipCertificates) {
         return (spec, records) -> {
             final var items = records.get(SELECTED_ITEMS_KEY);
@@ -491,10 +498,11 @@ public class SystemFileExportsTest {
                 final var updatedAddressBook = NodeAddressBook.PROTOBUF.parse(
                         Bytes.wrap(synthOp.getContents().toByteArray()));
                 for (final var address : updatedAddressBook.nodeAddress()) {
-                    final var expectedCert = gossipCertificates.get().get(address.nodeId());
-                    final var expectedPubKey = expectedCert.getPublicKey().getEncoded();
-                    final var actualPubKey = unhex(address.rsaPubKey());
-                    assertArrayEquals(expectedPubKey, actualPubKey, "node" + address.nodeId() + " has wrong RSA key");
+                    final var actualCertHash = address.nodeCertHash().toByteArray();
+                    assertArrayEquals(
+                            grpcCertHashes[(int) address.nodeId()],
+                            actualCertHash,
+                            "node" + address.nodeId() + " has wrong cert hash");
 
                     final var expectedAccountID = AccountID.newBuilder()
                             .accountNum(address.nodeId() + ACCOUNT_ID_OFFSET)
