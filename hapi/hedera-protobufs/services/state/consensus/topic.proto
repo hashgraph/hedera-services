@@ -141,19 +141,19 @@ message Topic {
     repeated ConsensusCustomFee custom_fees = 13;
 
     /**
-     * A list of crypto allowances for the topic.
+     * A list of crypto allowances for this topic.
      * <p>
      * If a submit transaction is submitted by a user with an allowance,
-     * the custom fee SHALL be payed with the allowance<br/>
+     * the custom fee SHALL be paid with the allowance.<br/>
      * If the allowance is not enough to pay the fee, the transaction SHALL fail.<br/>
      * If an allowance amount is set to 0, the allowance SHALL be removed.<br/>
-     * It contains account number for which the allowance is approved to and
-     * the amount approved for that account.
+     * It SHALL contain account identifier for which the allowance is approved,
+     * and the amount approved for that account.
      */
     repeated TopicCryptoAllowance crypto_allowances = 14;
 
     /**
-     * List of fungible token allowances for the topic.
+     * A list of fungible token allowances for this topic.
      * <p>
      * If a submit transaction is submitted by a user with an allowance,
      * the custom fee SHALL be payed with the token allowance<br/>
