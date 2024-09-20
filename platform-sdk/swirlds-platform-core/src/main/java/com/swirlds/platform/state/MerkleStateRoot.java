@@ -34,6 +34,7 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.block.stream.output.StateChanges;
 import com.hedera.hapi.node.base.SemanticVersion;
+import com.swirlds.base.time.Time;
 import com.swirlds.common.constructable.ConstructableIgnored;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.io.streams.MerkleDataOutputStream;
@@ -100,6 +101,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -159,6 +161,16 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
     }
 
     private Metrics metrics;
+
+    /**
+     * Metrics for the snapshot creation process
+     */
+    private MerkleRootSnapshotMetrics snapshotMetrics;
+
+    /**
+     * Provides system time
+     */
+    private Time time;
 
     /**
      * Maintains information about each service, and each state of each service, known by this
@@ -248,6 +260,8 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
         platformContext = this.platform.getContext();
         metrics = platformContext.getMetrics();
         merkleCryptography = platformContext.getMerkleCryptography();
+        time = platformContext.getTime();
+        snapshotMetrics = new MerkleRootSnapshotMetrics(platformContext);
 
         // If we are initialized for event stream recovery, we have to register an
         // extra listener to make sure we call all the required Hedera lifecycles
@@ -1099,9 +1113,11 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
      */
     @Override
     public void createSnapshot(Path targetPath) {
+        final long start = time.nanoTime();
         throwIfMutable();
         throwIfDestroyed();
         createSnapshot(this, targetPath);
+        snapshotMetrics.getWriteStateToDiskTimeMetric().update(TimeUnit.NANOSECONDS.toMillis(time.nanoTime() - start));
     }
 
     static void createSnapshot(MerkleRoot merkleRoot, Path targetPath) {

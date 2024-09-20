@@ -26,6 +26,7 @@ import com.hedera.node.app.ids.WritableEntityIdStore;
 import com.hedera.node.app.services.MigrationStateChanges;
 import com.hedera.node.app.version.ServicesSoftwareVersion;
 import com.hedera.node.config.data.HederaConfig;
+import com.swirlds.base.test.fixtures.time.FakeTime;
 import com.swirlds.common.config.StateCommonConfig_;
 import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistryException;
@@ -231,6 +232,7 @@ class SerializationTest extends MerkleTestBase {
         final PlatformContext context = TestPlatformContextBuilder.create()
                 .withMerkleCryptography(merkleCryptography)
                 .withConfiguration(configBuilder.getOrCreateConfig())
+                .withTime(new FakeTime())
                 .build();
 
         Platform mockPlatform = mock(Platform.class);
