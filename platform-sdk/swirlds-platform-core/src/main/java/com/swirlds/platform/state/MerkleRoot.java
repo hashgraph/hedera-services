@@ -19,6 +19,7 @@ package com.swirlds.platform.state;
 import com.swirlds.common.merkle.MerkleInternal;
 import com.swirlds.platform.system.SwirldState;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.nio.file.Path;
 
 /**
  * This interface represents the root node of the Merkle tree.
@@ -68,4 +69,6 @@ public interface MerkleRoot extends MerkleInternal {
     /** {@inheritDoc} */
     @NonNull
     MerkleRoot copy();
+
+    void createSnapshot(Path targetPath);
 }

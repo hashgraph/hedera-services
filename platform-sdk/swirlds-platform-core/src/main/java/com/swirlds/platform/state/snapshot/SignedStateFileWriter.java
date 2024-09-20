@@ -37,7 +37,6 @@ import com.swirlds.platform.recovery.emergencyfile.EmergencyRecoveryFile;
 import com.swirlds.platform.state.MerkleRoot;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.system.address.AddressBook;
-import com.swirlds.state.State;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.BufferedWriter;
@@ -148,7 +147,7 @@ public final class SignedStateFileWriter {
         Objects.requireNonNull(directory);
         Objects.requireNonNull(signedState);
 
-        State state = (State) signedState.getState();
+        MerkleRoot state = signedState.getState();
         if (state.isMutable()) {
             // make it immutable
             state.copy();

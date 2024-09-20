@@ -16,9 +16,16 @@
 
 package com.swirlds.platform.state;
 
+import static com.swirlds.common.io.utility.FileUtils.writeAndFlush;
+import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
+import static com.swirlds.logging.legacy.LogMarker.STATE_TO_DISK;
 import static com.swirlds.platform.state.MerkleStateUtils.createInfoString;
+import static com.swirlds.platform.state.snapshot.SignedStateFileUtils.SIGNED_STATE_FILE_NAME;
+import static com.swirlds.platform.state.snapshot.SignedStateFileUtils.SIG_SET_SEPARATE_VERSION;
+import static com.swirlds.platform.state.snapshot.SignedStateFileUtils.VERSIONED_FILE_BYTE;
 
 import com.swirlds.base.utility.ToStringBuilder;
+import com.swirlds.common.io.streams.MerkleDataOutputStream;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.impl.PartialNaryMerkleInternal;
 import com.swirlds.common.merkle.route.MerkleRouteFactory;
@@ -26,6 +33,8 @@ import com.swirlds.common.utility.RuntimeObjectRecord;
 import com.swirlds.common.utility.RuntimeObjectRegistry;
 import com.swirlds.platform.system.SwirldState;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.io.IOException;
+import java.nio.file.Path;
 import java.util.Objects;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -246,6 +255,24 @@ public class State extends PartialNaryMerkleInternal implements MerkleRoot {
         return createInfoString(hashDepth, platformState, getHash(), this);
     }
 
+    @Override
+    public void createSnapshot(Path targetPath) {
+        throwIfMutable();
+        throwIfDestroyed();
+        logger.info(STATE_TO_DISK.getMarker(), "Creating a snapshot on demand in {}", targetPath);
+        try {
+            writeMerkleRootToFile(targetPath, this);
+            logger.info(STATE_TO_DISK.getMarker(), "Creating a snapshot on demand in {}", targetPath);
+        } catch (final Throwable e) {
+            logger.error(
+                    EXCEPTION.getMarker(),
+                    "Unable to write signed state to disk for round {} to {}.",
+                    getReadablePlatformState().getRound(),
+                    targetPath,
+                    e);
+        }
+    }
+
     /**
      * {@inheritDoc}
      */
@@ -255,5 +282,19 @@ public class State extends PartialNaryMerkleInternal implements MerkleRoot {
                 .append("platformState", getReadablePlatformState())
                 .append("swirldState", getSwirldState())
                 .toString();
+    }
+
+    private static void writeMerkleRootToFile(final Path directory, final MerkleRoot merkleRoot) throws IOException {
+        writeAndFlush(
+                directory.resolve(SIGNED_STATE_FILE_NAME), out -> writeMerkleRootToStream(out, directory, merkleRoot));
+    }
+
+    private static void writeMerkleRootToStream(
+            final MerkleDataOutputStream out, final Path directory, final MerkleRoot merkleRoot) throws IOException {
+        out.write(VERSIONED_FILE_BYTE);
+        out.writeInt(SIG_SET_SEPARATE_VERSION);
+        out.writeProtocolVersion();
+        out.writeMerkleTree(directory, merkleRoot);
+        out.writeSerializable(merkleRoot.getHash(), true);
     }
 }

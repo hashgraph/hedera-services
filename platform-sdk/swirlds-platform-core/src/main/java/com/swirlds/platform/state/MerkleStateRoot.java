@@ -19,6 +19,7 @@ package com.swirlds.platform.state;
 import static com.swirlds.common.io.utility.FileUtils.writeAndFlush;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.logging.legacy.LogMarker.STARTUP;
+import static com.swirlds.logging.legacy.LogMarker.STATE_TO_DISK;
 import static com.swirlds.platform.state.MerkleStateUtils.createInfoString;
 import static com.swirlds.platform.state.service.PbjConverter.toPbjPlatformState;
 import static com.swirlds.platform.state.snapshot.SignedStateFileUtils.SIGNED_STATE_FILE_NAME;
@@ -1100,8 +1101,10 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
     public void createSnapshot(Path targetPath) {
         throwIfMutable();
         throwIfDestroyed();
+        logger.info(STATE_TO_DISK.getMarker(), "Creating a snapshot on demand in {}", targetPath);
         try {
             writeMerkleRootToFile(targetPath, this);
+            logger.info(STATE_TO_DISK.getMarker(), "Creating a snapshot on demand in {}", targetPath);
         } catch (final Throwable e) {
             logger.error(
                     EXCEPTION.getMarker(),
