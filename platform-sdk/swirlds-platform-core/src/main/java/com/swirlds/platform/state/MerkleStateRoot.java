@@ -23,7 +23,7 @@ import static com.swirlds.logging.legacy.LogMarker.STATE_TO_DISK;
 import static com.swirlds.platform.state.MerkleStateUtils.createInfoString;
 import static com.swirlds.platform.state.service.PbjConverter.toPbjPlatformState;
 import static com.swirlds.platform.state.snapshot.SignedStateFileUtils.SIGNED_STATE_FILE_NAME;
-import static com.swirlds.platform.state.snapshot.SignedStateFileUtils.SIG_SET_SEPARATE_VERSION;
+import static com.swirlds.platform.state.snapshot.SignedStateFileUtils.SIG_SET_SEPARATE_STATE_FILE_VERSION;
 import static com.swirlds.platform.state.snapshot.SignedStateFileUtils.VERSIONED_FILE_BYTE;
 import static com.swirlds.platform.system.InitTrigger.EVENT_STREAM_RECOVERY;
 import static com.swirlds.state.StateChangeListener.StateType.MAP;
@@ -1149,7 +1149,7 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
             @NonNull final MerkleRoot merkleRoot)
             throws IOException {
         out.write(VERSIONED_FILE_BYTE);
-        out.writeInt(SIG_SET_SEPARATE_VERSION);
+        out.writeInt(SIG_SET_SEPARATE_STATE_FILE_VERSION);
         out.writeProtocolVersion();
         out.writeMerkleTree(directory, merkleRoot);
         out.writeSerializable(merkleRoot.getHash(), true);

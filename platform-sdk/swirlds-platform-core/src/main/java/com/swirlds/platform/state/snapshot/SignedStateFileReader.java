@@ -17,9 +17,9 @@
 package com.swirlds.platform.state.snapshot;
 
 import static com.swirlds.common.io.streams.StreamDebugUtils.deserializeAndDebugOnFailure;
-import static com.swirlds.platform.state.snapshot.SignedStateFileUtils.INIT_FILE_VERSION;
+import static com.swirlds.platform.state.snapshot.SignedStateFileUtils.INIT_STATE_FILE_VERSION;
 import static com.swirlds.platform.state.snapshot.SignedStateFileUtils.SIGNATURE_SET_FILE_NAME;
-import static com.swirlds.platform.state.snapshot.SignedStateFileUtils.SIG_SET_SEPARATE_VERSION;
+import static com.swirlds.platform.state.snapshot.SignedStateFileUtils.SIG_SET_SEPARATE_STATE_FILE_VERSION;
 import static com.swirlds.platform.state.snapshot.SignedStateFileUtils.SUPPORTED_SIGSET_VERSIONS;
 import static com.swirlds.platform.state.snapshot.SignedStateFileUtils.SUPPORTED_STATE_FILE_VERSIONS;
 import static com.swirlds.platform.state.snapshot.SignedStateFileUtils.VERSIONED_FILE_BYTE;
@@ -153,12 +153,12 @@ public final class SignedStateFileReader {
         return deserializeAndDebugOnFailure(
                 () -> new BufferedInputStream(new FileInputStream(stateFile.toFile())),
                 (final MerkleDataInputStream in) -> {
-                    int fileVersion = readAndCheckStateFileVersion(in);
+                    final int fileVersion = readAndCheckStateFileVersion(in);
 
                     final Path directory = stateFile.getParent();
-                    if (fileVersion == INIT_FILE_VERSION) {
+                    if (fileVersion == INIT_STATE_FILE_VERSION) {
                         return readStateFileDataV1(stateFile, snapshotStateReader, in, directory, fileVersion);
-                    } else if (fileVersion == SIG_SET_SEPARATE_VERSION) {
+                    } else if (fileVersion == SIG_SET_SEPARATE_STATE_FILE_VERSION) {
                         return createStateFileDataV2(stateFile, snapshotStateReader, in, directory, fileVersion);
                     } else {
                         throw new IOException("Unsupported protocol version: " + fileVersion);
