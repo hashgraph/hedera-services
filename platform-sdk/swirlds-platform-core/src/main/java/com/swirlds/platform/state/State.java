@@ -111,6 +111,11 @@ public class State extends PartialNaryMerkleInternal implements MerkleRoot {
         return this;
     }
 
+    @Override
+    public void initPlatformState() {
+        // no initialization required
+    }
+
     /**
      * {@inheritDoc}
      */
@@ -161,17 +166,15 @@ public class State extends PartialNaryMerkleInternal implements MerkleRoot {
     /**
      * Updates the platform state.
      *
-     * @param platformStateAccessor the platform state
+     * @param modifier the platform state
      */
     @Override
-    public void updatePlatformState(@NonNull final PlatformStateAccessor platformStateAccessor) {
-        if (platformStateAccessor instanceof PlatformState platformState) {
+    public void updatePlatformState(@NonNull final PlatformStateModifier modifier) {
+        if (modifier instanceof PlatformState platformState) {
             setChild(ChildIndices.PLATFORM_STATE, platformState);
         } else {
             throw new UnsupportedOperationException("%s implementation of %s is not supported"
-                    .formatted(
-                            platformStateAccessor.getClass().getSimpleName(),
-                            PlatformStateAccessor.class.getSimpleName()));
+                    .formatted(modifier.getClass().getSimpleName(), PlatformStateModifier.class.getSimpleName()));
         }
     }
 
