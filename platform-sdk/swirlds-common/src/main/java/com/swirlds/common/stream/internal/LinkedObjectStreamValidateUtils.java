@@ -239,7 +239,7 @@ public final class LinkedObjectStreamValidateUtils {
                     SignatureType.RSA.signingAlgorithm(), SignatureType.RSA.provider());
             sig.initVerify(publicKey);
             hash.getBytes().updateSignature(sig);
-            return sig.verify(signature.getSignatureBytes());
+            return sig.verify(signature.getBytes().toByteArray());
         } catch (final NoSuchAlgorithmException
                 | NoSuchProviderException
                 | InvalidKeyException

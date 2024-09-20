@@ -69,6 +69,12 @@ import org.apache.logging.log4j.Logger;
 public class TimestampStreamFileWriter<T extends StreamAligned & RunningHashable & SerializableHashable & Timestamped>
         implements LinkedObjectStream<T> {
 
+    /** a unique class type identifier */
+    private static final long SIGNATURE_CLASS_ID = 0x13dc4b399b245c69L;
+
+    /** the current serialization version */
+    private static final int CLASS_VERSION = 1;
+
     /**
      * The serialization format of the stream files.
      */
@@ -216,9 +222,9 @@ public class TimestampStreamFileWriter<T extends StreamAligned & RunningHashable
 
             output.writeInt(OBJECT_STREAM_SIG_VERSION);
             output.writeSerializable(entireHash, true);
-            output.writeSerializable(entireSignature, true);
+            entireSignature.serialize(output, true);
             output.writeSerializable(metaHash, true);
-            output.writeSerializable(metaSignature, true);
+            metaSignature.serialize(output, true);
 
             logger.info(OBJECT_STREAM_FILE.getMarker(), "signature file saved: {}", sigFilePath);
         }
@@ -338,11 +344,11 @@ public class TimestampStreamFileWriter<T extends StreamAligned & RunningHashable
             final Hash metaHash = new Hash(metadataStreamDigest.digest(), SHA_384);
 
             // generate signature for entire Hash
-            final Signature entireSignature = new Signature(
-                    SIGNATURE_TYPE, signer.sign(entireHash.copyToByteArray()).getSignatureBytes());
+            Signature signature1 = signer.sign(entireHash.copyToByteArray());
+            final Signature entireSignature = new Signature(SIGNATURE_TYPE, signature1.getBytes());
             // generate signature for metaData Hash
-            final Signature metaSignature = new Signature(
-                    SIGNATURE_TYPE, signer.sign(metaHash.copyToByteArray()).getSignatureBytes());
+            Signature signature = signer.sign(metaHash.copyToByteArray());
+            final Signature metaSignature = new Signature(SIGNATURE_TYPE, signature.getBytes());
             try {
                 writeSignatureFile(
                         entireHash,

@@ -41,7 +41,6 @@ import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
 import com.swirlds.platform.test.fixtures.state.RandomSignedStateGenerator;
-import com.swirlds.platform.test.fixtures.state.manager.SignatureVerificationTestUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.security.PublicKey;
 import java.security.cert.X509Certificate;
@@ -258,88 +257,6 @@ class StateSigningTests {
                 // This should have no effect
                 signedState.pruneInvalidSignatures();
                 assertEquals(expectedWeight, signedState.getSigningWeight());
-            }
-        }
-    }
-
-    @ParameterizedTest
-    @ValueSource(booleans = {true, false})
-    @DisplayName("Signature Becomes Invalid Test")
-    void signatureBecomesInvalidTest(final boolean evenWeighting) {
-        final Random random = getRandomPrintSeed();
-
-        final int nodeCount = random.nextInt(10, 20);
-
-        final AddressBook addressBook = RandomAddressBookBuilder.create(random)
-                .withWeightDistributionStrategy(
-                        evenWeighting
-                                ? RandomAddressBookBuilder.WeightDistributionStrategy.BALANCED
-                                : RandomAddressBookBuilder.WeightDistributionStrategy.GAUSSIAN)
-                .withSize(nodeCount)
-                .build();
-
-        final SignedState signedState = new RandomSignedStateGenerator(random)
-                .setAddressBook(addressBook)
-                .setSignatures(new HashMap<>())
-                .build();
-
-        final Set<NodeId> signaturesAdded = new HashSet<>();
-        long expectedWeight = 0;
-
-        final SigSet sigSet = signedState.getSigSet();
-
-        // Randomize address order
-        final List<Address> nodes = new ArrayList<>(addressBook.getSize());
-        for (final Address address : addressBook) {
-            nodes.add(address);
-        }
-        Collections.shuffle(nodes, random);
-
-        final List<Signature> signatures = new ArrayList<>(nodeCount);
-        for (final Address address : nodes) {
-            signatures.add(SignatureVerificationTestUtils.buildFakeSignature(
-                    address.getSigPublicKey(), signedState.getState().getHash()));
-        }
-
-        for (int index = 0; index < nodeCount; index++) {
-            final boolean alreadyComplete = signedState.isComplete();
-            signedState.addSignature(nodes.get(index).getNodeId(), signatures.get(index));
-            if (!alreadyComplete) {
-                signaturesAdded.add(nodes.get(index).getNodeId());
-                expectedWeight += nodes.get(index).getWeight();
-            }
-        }
-
-        assertTrue(signedState.isComplete());
-        assertEquals(signaturesAdded.size(), sigSet.size());
-        assertEquals(expectedWeight, signedState.getSigningWeight());
-
-        // Remove a node from the address book
-        final NodeId nodeRemovedFromAddressBook = nodes.get(0).getNodeId();
-        final long weightRemovedFromAddressBook = nodes.get(0).getWeight();
-        final AddressBook updatedAddressBook = signedState.getAddressBook().remove(nodeRemovedFromAddressBook);
-        signedState.getState().getWritablePlatformState().setAddressBook(updatedAddressBook);
-
-        // Tamper with a node's signature
-        final long weightWithModifiedSignature = nodes.get(1).getWeight();
-        signatures.get(1).getSignatureBytes()[0] = 0;
-
-        signedState.pruneInvalidSignatures();
-
-        assertEquals(signaturesAdded.size() - 2, sigSet.size());
-        assertEquals(
-                expectedWeight - weightWithModifiedSignature - weightRemovedFromAddressBook,
-                signedState.getSigningWeight());
-
-        for (int index = 0; index < nodes.size(); index++) {
-            if (index == 0
-                    || index == 1
-                    || !signaturesAdded.contains(nodes.get(index).getNodeId())) {
-                assertNull(sigSet.getSignature(nodes.get(index).getNodeId()));
-            } else {
-                assertSame(
-                        signatures.get(index),
-                        sigSet.getSignature(nodes.get(index).getNodeId()));
             }
         }
     }

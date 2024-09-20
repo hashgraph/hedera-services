@@ -26,6 +26,7 @@ import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.pbj.runtime.io.stream.WritableStreamingData;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.HashingOutputStream;
+import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.stream.Signer;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -128,7 +129,8 @@ final class SignatureWriterV6 {
      * @return Signature object
      */
     private static SignatureObject generateSignatureObject(@NonNull final Signer signer, @NonNull final Bytes hash) {
-        final Bytes signature = Bytes.wrap(signer.sign(hash.toByteArray()).getSignatureBytes());
+        final Signature signature1 = signer.sign(hash.toByteArray());
+        final Bytes signature = signature1.getBytes();
         return SignatureObject.newBuilder()
                 .type(SignatureType.SHA_384_WITH_RSA)
                 .length((int) signature.length())
