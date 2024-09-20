@@ -161,7 +161,6 @@ public class WritableRosterStore implements RosterStateModifier {
         }
 
         storeAsActive(candidateRoster, roundNumber);
-        removeCandidateRoster();
     }
 
     /**
@@ -188,25 +187,10 @@ public class WritableRosterStore implements RosterStateModifier {
         }
 
         final Builder rosterStateBuilder = RosterState.newBuilder()
-                .candidateRosterHash(previousRosterState.candidateRosterHash())
+                .candidateRosterHash(Bytes.EMPTY)
                 .roundRosterPairs(roundRosterPairs);
         this.rosterState.put(rosterStateBuilder.build());
 
-        // update the roster map
-        this.rosterMap.put(ProtoBytes.newBuilder().value(activeRosterHash).build(), roster);
-    }
-
-    /**
-     * Removes the candidate roster from the roster state.
-     * This method is called after the candidate roster is adopted as the active roster.
-     */
-    private void removeCandidateRoster() {
-        final RosterState previousRosterState = rosterStateOrThrow();
-
-        final Builder rosterStateBuilder = RosterState.newBuilder()
-                .candidateRosterHash(Bytes.EMPTY)
-                .roundRosterPairs(previousRosterState.roundRosterPairs());
-        this.rosterState.put(rosterStateBuilder.build());
     }
 
     /**
