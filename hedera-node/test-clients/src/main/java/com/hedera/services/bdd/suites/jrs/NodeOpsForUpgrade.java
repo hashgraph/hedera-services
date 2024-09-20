@@ -29,11 +29,9 @@ import static com.hedera.services.bdd.suites.hip869.NodeCreateTest.generateX509C
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.ServiceEndpoint;
-
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Stream;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
@@ -70,8 +68,7 @@ public class NodeOpsForUpgrade extends HapiSuite {
                                 .description("UpdatedNode0")
                                 .accountId("0.0.100")
                                 .payingWith(GENESIS)
-                                .signedBy(GENESIS)
-                )
+                                .signedBy(GENESIS))
                 .then();
     }
 
