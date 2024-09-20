@@ -26,6 +26,7 @@ import com.swirlds.common.crypto.SerializableHashable;
 import com.swirlds.common.test.fixtures.fcqueue.FCInt;
 import com.swirlds.fcqueue.internal.FCQHashAlgorithm;
 import com.swirlds.fcqueue.internal.FCQueueNode;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.NoSuchElementException;
 import java.util.function.Supplier;
@@ -92,7 +93,7 @@ public class MockFCQueue<E extends FastCopyable & SerializableHashable> extends 
     @Override
     public Hash getHash() {
         synchronized (original) {
-            return new Hash(hash);
+            return new Hash(Arrays.copyOf(hash, hash.length));
         } // sync
     }
 
