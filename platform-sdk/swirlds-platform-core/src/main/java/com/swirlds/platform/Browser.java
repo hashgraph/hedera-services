@@ -278,6 +278,8 @@ public class Browser {
             final var initialState = reservedState.state();
             final var stateHash = reservedState.hash();
 
+            //            appDefinition.setInitialStateHash(stateHash);
+
             // Initialize the address book
             final AddressBook addressBook = initializeAddressBook(
                     nodeId,

@@ -301,9 +301,9 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener {
      * <p>This registration is a critical side effect that must happen called before any Platform initialization
      * steps that try to create or deserialize a {@link MerkleStateRoot}.
      *
-     * @param constructableRegistry the registry to register {@link RuntimeConstructable} factories with
-     * @param registryFactory the factory to use for creating the services registry
-     * @param migrator the migrator to use with the services
+     * @param constructableRegistry  the registry to register {@link RuntimeConstructable} factories with
+     * @param registryFactory        the factory to use for creating the services registry
+     * @param migrator               the migrator to use with the services
      * @param tssBaseServiceSupplier the supplier for the TSS base service
      */
     public Hedera(
@@ -531,9 +531,9 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener {
      * <p>If the {@code deserializedVersion} is {@code null}, then this is the first time the node has been started,
      * and thus all schemas will be executed.
      *
-     * @param state current state
+     * @param state               current state
      * @param deserializedVersion version deserialized
-     * @param trigger trigger that is calling migration
+     * @param trigger             trigger that is calling migration
      * @return the state changes caused by the migration
      */
     private List<StateChanges.Builder> onMigrate(
@@ -769,6 +769,7 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener {
 
     /**
      * Called to set the starting state hash after genesis or restart.
+     *
      * @param stateHash the starting state hash
      */
     public void setInitialStateHash(@NonNull final Hash stateHash) {
@@ -853,7 +854,9 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener {
             // from the immutable state in the ReconnectCompleteNotification
             initialStateHashFuture = new CompletableFuture<>();
             notifications.register(ReconnectCompleteListener.class, new ReadReconnectStartingStateHash(notifications));
-        } else if (trigger == GENESIS) {
+        }
+        if (initialStateHashFuture == null) {
+            logger.warn("Starting from Browser is deprecated. Setting initial start hash to empty hash.");
             initialStateHashFuture = completedFuture(Bytes.wrap(new byte[48]));
         }
         // For other triggers the initial state hash must have been set already
