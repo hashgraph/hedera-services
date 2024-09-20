@@ -92,7 +92,7 @@ public class MockFCQueue<E extends FastCopyable & SerializableHashable> extends 
     @Override
     public Hash getHash() {
         synchronized (original) {
-            return new Hash(hash);
+            return Hash.copy(hash);
         } // sync
     }
 
