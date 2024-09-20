@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.turtle.runner;
 
-import static com.swirlds.platform.roster.RosterUtils.createRoster;
+import static com.swirlds.platform.system.address.AddressBookUtils.createRoster;
 import static com.swirlds.platform.state.signed.StartupStateUtils.getInitialState;
 
 import com.swirlds.base.time.Time;
