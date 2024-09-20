@@ -36,6 +36,7 @@ import com.swirlds.common.platform.NodeId;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.metrics.api.Metrics;
+import com.swirlds.platform.config.BasicConfig;
 import com.swirlds.platform.config.TransactionConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.concurrent.ScheduledExecutorService;
@@ -46,6 +47,7 @@ public class FakePlatformContext implements PlatformContext {
             .withConfigDataType(MetricsConfig.class)
             .withConfigDataType(TransactionConfig.class)
             .withConfigDataType(CryptoConfig.class)
+            .withConfigDataType(BasicConfig.class)
             .build();
 
     private final Metrics metrics;

@@ -68,7 +68,9 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class ConsensusGetTopicInfoHandler extends PaidQueryHandler {
-
+    /**
+     * Default constructor for injection.
+     */
     @Inject
     public ConsensusGetTopicInfoHandler() {
         // Dagger 2
