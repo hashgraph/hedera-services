@@ -16,9 +16,9 @@
 
 package com.swirlds.virtualmap.internal.pipeline;
 
+import static com.swirlds.virtualmap.test.fixtures.VirtualMapTestUtils.configuration;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
-import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
@@ -36,7 +36,7 @@ class DummyVirtualRoot extends PartialMerkleLeaf implements VirtualRoot, MerkleL
 
     private static final long CLASS_ID = 0x37cc269627e18eb6L;
 
-    private static final VirtualMapConfig config = ConfigurationHolder.getConfigData(VirtualMapConfig.class);
+    private static final VirtualMapConfig config = configuration().getConfigData(VirtualMapConfig.class);
 
     private boolean shouldBeFlushed;
     private boolean merged;

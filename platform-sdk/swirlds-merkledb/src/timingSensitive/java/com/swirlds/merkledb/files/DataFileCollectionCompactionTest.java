@@ -16,12 +16,12 @@
 
 package com.swirlds.merkledb.files;
 
+import static com.swirlds.merkledb.test.fixtures.MerkleDbTestUtils.config;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
-import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.merkledb.collections.CASableLongIndex;
 import com.swirlds.merkledb.collections.LongList;
 import com.swirlds.merkledb.collections.LongListOffHeap;
@@ -48,8 +48,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 class DataFileCollectionCompactionTest {
 
     // Would be nice to add a test to make sure files get deleted
-
-    private static final MerkleDbConfig config = ConfigurationHolder.getConfigData(MerkleDbConfig.class);
+    private static final MerkleDbConfig config = config().getConfigData(MerkleDbConfig.class);
 
     /** Temporary directory provided by JUnit */
     @TempDir

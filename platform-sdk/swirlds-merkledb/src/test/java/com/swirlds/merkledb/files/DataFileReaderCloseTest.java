@@ -20,7 +20,6 @@ import static com.swirlds.merkledb.files.DataFileCompactor.INITIAL_COMPACTION_LE
 import static com.swirlds.merkledb.test.fixtures.MerkleDbTestUtils.config;
 
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
-import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.io.utility.LegacyTemporaryFileBuilder;
 import com.swirlds.merkledb.collections.LongList;
 import com.swirlds.merkledb.collections.LongListOffHeap;
@@ -46,7 +45,7 @@ class DataFileReaderCloseTest {
     @BeforeAll
     static void setup() throws IOException {
         final Path dir = LegacyTemporaryFileBuilder.buildTemporaryFile("readerIsOpenTest", config());
-        final MerkleDbConfig dbConfig = ConfigurationHolder.getConfigData(MerkleDbConfig.class);
+        final MerkleDbConfig dbConfig = config().getConfigData(MerkleDbConfig.class);
         collection = new DataFileCollection(dbConfig, dir, "store", null);
     }
 

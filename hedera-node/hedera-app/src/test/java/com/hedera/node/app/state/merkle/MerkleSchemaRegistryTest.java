@@ -27,10 +27,13 @@ import com.hedera.node.app.ids.WritableEntityIdStore;
 import com.hedera.node.app.services.MigrationStateChanges;
 import com.hedera.node.app.version.ServicesSoftwareVersion;
 import com.hedera.node.config.data.HederaConfig;
+import com.swirlds.common.config.StateCommonConfig;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
+import com.swirlds.common.io.config.TemporaryFileConfig;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.merkledb.MerkleDb;
+import com.swirlds.merkledb.config.MerkleDbConfig;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.state.MerkleStateLifecycles;
 import com.swirlds.platform.state.MerkleStateRoot;
@@ -44,6 +47,7 @@ import com.swirlds.state.spi.StateDefinition;
 import com.swirlds.state.spi.WritableKVState;
 import com.swirlds.state.spi.WritableSingletonState;
 import com.swirlds.state.spi.info.NetworkInfo;
+import com.swirlds.virtualmap.config.VirtualMapConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -84,6 +88,15 @@ class MerkleSchemaRegistryTest extends MerkleTestBase {
         networkInfo = mock(NetworkInfo.class);
         final var hederaConfig = mock(HederaConfig.class);
         lenient().when(config.getConfigData(HederaConfig.class)).thenReturn(hederaConfig);
+        final var merkleDbConfig = mock(MerkleDbConfig.class);
+        lenient().when(config.getConfigData(MerkleDbConfig.class)).thenReturn(merkleDbConfig);
+        final var vmConfig = mock(VirtualMapConfig.class);
+        lenient().when(config.getConfigData(VirtualMapConfig.class)).thenReturn(vmConfig);
+        final var temporaryFileDbConfig = mock(TemporaryFileConfig.class);
+        lenient().when(config.getConfigData(TemporaryFileConfig.class)).thenReturn(temporaryFileDbConfig);
+        final var stateCommonConfig = mock(StateCommonConfig.class);
+        lenient().when(config.getConfigData(StateCommonConfig.class)).thenReturn(stateCommonConfig);
+        lenient().when(temporaryFileDbConfig.getTemporaryFilePath(stateCommonConfig)).thenReturn("test");
     }
 
     @Nested

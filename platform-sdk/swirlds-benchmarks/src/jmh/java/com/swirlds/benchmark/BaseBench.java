@@ -18,7 +18,6 @@ package com.swirlds.benchmark;
 
 import com.swirlds.benchmark.config.BenchmarkConfig;
 import com.swirlds.benchmark.reconnect.BenchmarkMerkleInternal;
-import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
@@ -97,7 +96,6 @@ public abstract class BaseBench {
                 .withConfigDataType(MetricsConfig.class)
                 .withConfigDataType(CryptoConfig.class);
         configuration = configurationBuilder.build();
-        ConfigurationHolder.getInstance().setConfiguration(configuration);
 
         final StringBuilder settingsUsed = new StringBuilder();
         ConfigExport.addConfigContents(configuration, settingsUsed);

@@ -27,7 +27,6 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
@@ -403,9 +402,8 @@ class VirtualRootNodeTest extends VirtualTestBase {
         final Configuration configuration = new TestConfigBuilder()
                 .withValue(VirtualMapConfig_.COPY_FLUSH_THRESHOLD, "0")
                 .getOrCreateConfig();
-        ConfigurationHolder.getInstance().setConfiguration(configuration);
 
-        final VirtualMapConfig config = ConfigurationHolder.getConfigData(VirtualMapConfig.class);
+        final VirtualMapConfig config = configuration.getConfigData(VirtualMapConfig.class);
 
         VirtualRootNode<TestKey, TestValue> root = createRoot();
         assertEquals(0, root.getFlushThreshold());

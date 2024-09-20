@@ -21,7 +21,6 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.io.utility.LegacyTemporaryFileBuilder;
 import com.swirlds.merkledb.collections.LongListHeap;
 import com.swirlds.merkledb.config.MerkleDbConfig;
@@ -74,7 +73,7 @@ class DataFileCollectionCompactionHammerTest {
         assertDoesNotThrow(() -> {
             final LongListHeap index = new LongListHeap();
             String storeName = "benchmark";
-            final MerkleDbConfig dbConfig = ConfigurationHolder.getConfigData(MerkleDbConfig.class);
+            final MerkleDbConfig dbConfig = config().getConfigData(MerkleDbConfig.class);
             final var coll = new DataFileCollection(
                     dbConfig, tempFileDir.resolve(storeName), storeName, (dataLocation, dataValue) -> {});
             final var compactor = new DataFileCompactor(dbConfig, storeName, coll, index, null, null, null, null);
@@ -138,7 +137,7 @@ class DataFileCollectionCompactionHammerTest {
                 LegacyTemporaryFileBuilder.buildTemporaryDirectory("DataFileCollectionCompactionHammerTest", config());
         final LongListHeap index = new LongListHeap();
         String storeName = "hammer";
-        final MerkleDbConfig dbConfig = ConfigurationHolder.getConfigData(MerkleDbConfig.class);
+        final MerkleDbConfig dbConfig = config().getConfigData(MerkleDbConfig.class);
         final var coll = new DataFileCollection(
                 dbConfig, tempFileDir.resolve(storeName), storeName, (dataLocation, dataValue) -> {});
         final var compactor = new DataFileCompactor(dbConfig, storeName, coll, index, null, null, null, null);
