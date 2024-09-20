@@ -315,11 +315,11 @@ public class AddressBookUtils {
         final var builder = ServiceEndpoint.newBuilder().port(port);
         if (IPV4_ADDRESS_PATTERN.matcher(host).matches()) {
             final var octets = host.split("[.]");
-            builder.ipAddressV4(Bytes.wrap(new byte[]{
-                    (byte) Integer.parseInt(octets[0]),
-                    (byte) Integer.parseInt(octets[1]),
-                    (byte) Integer.parseInt(octets[2]),
-                    (byte) Integer.parseInt(octets[3])
+            builder.ipAddressV4(Bytes.wrap(new byte[] {
+                (byte) Integer.parseInt(octets[0]),
+                (byte) Integer.parseInt(octets[1]),
+                (byte) Integer.parseInt(octets[2]),
+                (byte) Integer.parseInt(octets[3])
             }));
         } else {
             builder.domainName(host);

@@ -178,7 +178,7 @@ class AddressBookNetworkUtilsTests {
     @Test
     void testEndpointForValidIpV4Address() {
         final ServiceEndpoint endpoint = AddressBookUtils.endpointFor("192.168.1.1", 2);
-        assertEquals(endpoint.ipAddressV4(), Bytes.wrap(new byte[]{(byte) 192, (byte) 168, 1, 1}));
+        assertEquals(endpoint.ipAddressV4(), Bytes.wrap(new byte[] {(byte) 192, (byte) 168, 1, 1}));
     }
 
     @Test
