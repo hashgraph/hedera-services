@@ -53,8 +53,8 @@ message TssVoteTransactionBody {
   bytes ledger_id = 3;
 
   /**
-   * A signature produced by the node.
-   * This is produced using the node RSA signing key to sign the ledger_id.
+   * A signature produced by the node.<br/>
+   * This is produced using the node RSA signing key to sign the ledger_id.<br/>
    * This signature is used to establish a chain of trust in the ledger id.
    */
   bytes node_signature = 4;

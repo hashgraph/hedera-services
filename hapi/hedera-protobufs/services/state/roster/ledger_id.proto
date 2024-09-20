@@ -48,7 +48,7 @@ message LedgerId {
   bytes ledger_id = 1;
 
   /**
-   * A round number.
+   * A round number.<br/>
    * This identifies when this ledger id becomes active.
    * <p>
    * This value is REQUIRED.
@@ -56,20 +56,21 @@ message LedgerId {
   uint64 round = 2;
 
   /**
-   * A signature from the prior ledger key.
+   * A signature from the prior ledger key.<br/>
    * This signature is the _previous_ ledger ID signing _this_ ledger ID.
    * <p>
-   * This value MAY be unset, if there is no prior ledger ID.
+   * This value MAY be unset, if there is no prior ledger ID. </br>
    * This value SHOULD be set if a prior ledger ID exists
    * to generate the signature.
    */
   bytes ledger_signature = 3;
 
   /**
-   * The signatures from nodes in the active roster signing the new ledger id.
+   * The signatures from nodes in the active roster signing the new ledger id.<br/>
    * These signatures establish a chain of trust from the network to the new ledger id.
    * <p>
-   * This value MUST be present when the ledger signature of a previous ledger id is absent.
+   * This value MUST be present when the ledger signature of a previous ledger
+   * id is absent.
    */
   RosterSignatures roster_signatures = 4;
 }
@@ -84,14 +85,15 @@ message RosterSignatures {
   bytes roster_hash = 1;
 
   /**
-   * A list of node signatures on the same message where all node ids in the NodeSignature objects are from the
-   * roster that the roster_hash represents.
+   * A list of node signatures on the same message where all node ids in the
+   * NodeSignature objects are from the roster that the roster_hash represents.
    */
   repeated NodeSignature node_signatures = 2;
 }
 
 /**
- * A pair of a _RSA_ signature and the node id of the node that created the signature.
+ * A pair of a _RSA_ signature and the node id of the node that created the
+ * signature.
  */
 message NodeSignature {
   /**
