@@ -93,7 +93,6 @@ class MerkleSchemaRegistryTest extends MerkleTestBase {
         final var vmConfig = mock(VirtualMapConfig.class);
         lenient().when(config.getConfigData(VirtualMapConfig.class)).thenReturn(vmConfig);
         lenient().when(vmConfig.maximumVirtualMapSize()).thenReturn(Long.valueOf(Integer.MAX_VALUE));
-
         final var temporaryFileDbConfig = mock(TemporaryFileConfig.class);
         lenient().when(config.getConfigData(TemporaryFileConfig.class)).thenReturn(temporaryFileDbConfig);
         final var stateCommonConfig = mock(StateCommonConfig.class);
