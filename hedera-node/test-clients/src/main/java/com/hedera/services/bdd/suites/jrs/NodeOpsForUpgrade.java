@@ -16,7 +16,6 @@
 
 package com.hedera.services.bdd.suites.jrs;
 
-import static com.hedera.services.bdd.junit.hedera.utils.AddressBookUtils.endpointFor;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.nodeDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.nodeUpdate;
@@ -24,12 +23,9 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingTwo;
 import static com.hedera.services.bdd.suites.crypto.CryptoCreateSuite.ED_25519_KEY;
 import static com.hedera.services.bdd.suites.freeze.CommonUpgradeResources.initializeSettings;
-import static com.hedera.services.bdd.suites.hip869.NodeCreateTest.generateX509Certificates;
 
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.suites.HapiSuite;
-import com.hederahashgraph.api.proto.java.ServiceEndpoint;
-import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
@@ -38,8 +34,6 @@ import org.junit.jupiter.api.DynamicTest;
 
 public class NodeOpsForUpgrade extends HapiSuite {
     private static final Logger log = LogManager.getLogger(NodeOpsForUpgrade.class);
-    public static List<ServiceEndpoint> UPDATE_GOSSIP_ENDPOINTS_IPS =
-            Arrays.asList(endpointFor("192.168.1.202", 123), endpointFor("192.168.1.203", 123));
 
     public static void main(String... args) {
         new NodeOpsForUpgrade().runSuiteSync();
@@ -51,13 +45,6 @@ public class NodeOpsForUpgrade extends HapiSuite {
     }
 
     final Stream<DynamicTest> doDelete() {
-        final var gossipCertificates = generateX509Certificates(2);
-        byte[] hash = new byte[0];
-        try {
-            hash = gossipCertificates.getFirst().getEncoded();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
         return defaultHapiSpec("NodeOpsForUpgrade")
                 .given(initializeSettings())
                 .when(
