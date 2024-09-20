@@ -99,9 +99,11 @@ class WritableRosterStoreTest {
     @DisplayName("Tests that adopting a candidate roster throws an exception when the candidate roster is null.")
     void testAdoptCandidateRosterWhenCandidateRosterNotFound() {
         enableSoftwareUpgradeMode(true);
-        Exception exception = assertThrows(
-                IllegalStateException.class, () -> rosterStateModifier.determineActiveRoster(version, initialState));
-        assertEquals("Candidate roster not found in the state.", exception.getMessage());
+        final Exception exception = assertThrows(
+                NullPointerException.class, () -> rosterStateModifier.determineActiveRoster(version, initialState));
+        assertEquals(
+                "Candidate Roster must be present in the state before attempting to adopt a roster.",
+                exception.getMessage());
     }
 
     @Test
@@ -142,7 +144,7 @@ class WritableRosterStoreTest {
     }
 
     @Test
-    @DisplayName("Test that the oldest roster is removed after 3 or more software upgrades")
+    @DisplayName("Test that the oldest roster is removed after 3 software upgrades")
     void testDetermineActiveRosterWithExisting2PreviousRosters() {
         // set a 1st candidate roster and adopt it
         enableSoftwareUpgradeMode(true);

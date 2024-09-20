@@ -107,8 +107,8 @@ public class WritableRosterStore implements RosterStateModifier {
      */
     @NonNull
     @Override
-    public Roster determineActiveRoster(@NonNull final SoftwareVersion version,
-            @NonNull final ReservedSignedState initialState) {
+    public Roster determineActiveRoster(
+            @NonNull final SoftwareVersion version, @NonNull final ReservedSignedState initialState) {
         final boolean softwareUpgrade = detectSoftwareUpgrade(version, initialState.get());
 
         if (!softwareUpgrade) {
@@ -120,8 +120,9 @@ public class WritableRosterStore implements RosterStateModifier {
         }
 
         // software upgrade is detected, we adopt the candidate roster
-        final Roster candidateRoster = Objects.requireNonNull(rosterStateAccessor.getCandidateRoster(),
-                "Candidate Roster must be present in the state during software upgrade.");
+        final Roster candidateRoster = Objects.requireNonNull(
+                rosterStateAccessor.getCandidateRoster(),
+                "Candidate Roster must be present in the state before attempting to adopt a roster.");
         adoptCandidateRoster(initialState.get().getRound() + 1);
         commit();
         return candidateRoster;
@@ -183,14 +184,30 @@ public class WritableRosterStore implements RosterStateModifier {
         // remove the formerly previous active roster, i.e., the roster that was active before the last two adopted
         // rosters, if any.
         if (roundRosterPairs.size() > 2) {
-            roundRosterPairs.removeLast();
+            final RoundRosterPair lastRemovedStillInState = roundRosterPairs.removeLast();
+
+            // remove the roster from the map if it is still present in the Roster state for whatever reason.
+            final boolean rosterStateDuplicateFound = roundRosterPairs.stream()
+                    .anyMatch(peer -> peer.activeRosterHash().equals(lastRemovedStillInState.activeRosterHash()));
+
+            if (!rosterStateDuplicateFound) {
+                this.rosterMap.remove(ProtoBytes.newBuilder()
+                        .value(lastRemovedStillInState.activeRosterHash())
+                        .build());
+            }
+
+            // At this phase of the implementation,
+            // the roster state should not contain more than 3 active rosters at most.
+            // Future implementations (e.g. DAB) can modify this.
+            if (roundRosterPairs.size() > 3) {
+                throw new IllegalStateException(
+                        "The roster state should not contain more than maximum of 3 active rosters.");
+            }
         }
 
-        final Builder rosterStateBuilder = RosterState.newBuilder()
-                .candidateRosterHash(Bytes.EMPTY)
-                .roundRosterPairs(roundRosterPairs);
+        final Builder rosterStateBuilder =
+                RosterState.newBuilder().candidateRosterHash(Bytes.EMPTY).roundRosterPairs(roundRosterPairs);
         this.rosterState.put(rosterStateBuilder.build());
-
     }
 
     /**
