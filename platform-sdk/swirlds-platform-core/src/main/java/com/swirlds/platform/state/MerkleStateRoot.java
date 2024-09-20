@@ -168,11 +168,6 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
     private MerkleRootSnapshotMetrics snapshotMetrics;
 
     /**
-     * Provides system time
-     */
-    private Time time;
-
-    /**
      * Maintains information about each service, and each state of each service, known by this
      * instance. The key is the "service-name.state-key".
      */
@@ -260,7 +255,6 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
         platformContext = this.platform.getContext();
         metrics = platformContext.getMetrics();
         merkleCryptography = platformContext.getMerkleCryptography();
-        time = platformContext.getTime();
         snapshotMetrics = new MerkleRootSnapshotMetrics(platformContext);
 
         // If we are initialized for event stream recovery, we have to register an
@@ -1113,6 +1107,7 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
      */
     @Override
     public void createSnapshot(Path targetPath) {
+        Time time = platformContext.getTime();
         final long start = time.nanoTime();
         throwIfMutable();
         throwIfDestroyed();
