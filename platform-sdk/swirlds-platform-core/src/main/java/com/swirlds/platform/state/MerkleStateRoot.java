@@ -1105,10 +1105,10 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
      * {@inheritDoc}
      */
     @Override
-    public void createSnapshot(Path targetPath) {
+    public void createSnapshot(@NonNull Path targetPath) {
         throwIfMutable();
         throwIfDestroyed();
-        long start = System.nanoTime();
+        final long start = System.nanoTime();
         createSnapshot(this, targetPath);
         if (snapshotMetrics != null) {
             snapshotMetrics
@@ -1117,8 +1117,8 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
         }
     }
 
-    static void createSnapshot(MerkleRoot merkleRoot, Path targetPath) {
-        long round = merkleRoot.getReadablePlatformState().getRound();
+    static void createSnapshot(@NonNull MerkleRoot merkleRoot, @NonNull Path targetPath) {
+        final long round = merkleRoot.getReadablePlatformState().getRound();
         logger.info(STATE_TO_DISK.getMarker(), "Creating a snapshot on demand in {} for round {}", targetPath, round);
         try {
             writeMerkleRootToFile(targetPath, merkleRoot);
@@ -1137,13 +1137,17 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
         }
     }
 
-    private static void writeMerkleRootToFile(final Path directory, final MerkleRoot merkleRoot) throws IOException {
+    private static void writeMerkleRootToFile(@NonNull final Path directory, @NonNull final MerkleRoot merkleRoot)
+            throws IOException {
         writeAndFlush(
                 directory.resolve(SIGNED_STATE_FILE_NAME), out -> writeMerkleRootToStream(out, directory, merkleRoot));
     }
 
     private static void writeMerkleRootToStream(
-            final MerkleDataOutputStream out, final Path directory, final MerkleRoot merkleRoot) throws IOException {
+            @NonNull final MerkleDataOutputStream out,
+            @NonNull final Path directory,
+            @NonNull final MerkleRoot merkleRoot)
+            throws IOException {
         out.write(VERSIONED_FILE_BYTE);
         out.writeInt(SIG_SET_SEPARATE_VERSION);
         out.writeProtocolVersion();

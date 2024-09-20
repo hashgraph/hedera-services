@@ -147,8 +147,8 @@ public final class SignedStateFileReader {
      */
     @NonNull
     public static StateFileData readStateFileData(
-            final Path stateFile,
-            final CheckedBiFunction<MerkleDataInputStream, Path, MerkleRoot, IOException> snapshotStateReader)
+            @NonNull final Path stateFile,
+            @NonNull final CheckedBiFunction<MerkleDataInputStream, Path, MerkleRoot, IOException> snapshotStateReader)
             throws IOException {
         return deserializeAndDebugOnFailure(
                 () -> new BufferedInputStream(new FileInputStream(stateFile.toFile())),

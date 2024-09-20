@@ -21,6 +21,9 @@ import com.swirlds.common.metrics.RunningAverageMetric;
 import com.swirlds.metrics.api.Metrics;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
+/**
+ * This class encapsulates metrics for the Merkle root snapshot.
+ */
 public class MerkleRootSnapshotMetrics {
     private static final RunningAverageMetric.Config WRITE_MERKLE_ROOT_TO_DISK_TIME_CONFIG =
             new RunningAverageMetric.Config("platform", "writeMerkleRootToDisk")

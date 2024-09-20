@@ -249,7 +249,7 @@ public class State extends PartialNaryMerkleInternal implements MerkleRoot {
     }
 
     @Override
-    public void createSnapshot(Path targetPath) {
+    public void createSnapshot(@NonNull final Path targetPath) {
         throwIfMutable();
         throwIfDestroyed();
         MerkleStateRoot.createSnapshot(this, targetPath);
