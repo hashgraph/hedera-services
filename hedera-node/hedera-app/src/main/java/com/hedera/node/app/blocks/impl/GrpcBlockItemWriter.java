@@ -16,7 +16,6 @@
 
 package com.hedera.node.app.blocks.impl;
 
-import static com.hedera.hapi.block.protoc.PublishStreamResponseCode.STREAM_ITEMS_UNKNOWN;
 import static io.grpc.Status.fromThrowable;
 import static java.util.Objects.requireNonNull;
 
@@ -24,7 +23,7 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.hapi.block.protoc.BlockStreamServiceGrpc;
 import com.hedera.hapi.block.protoc.PublishStreamRequest;
 import com.hedera.hapi.block.protoc.PublishStreamResponse;
-import com.hedera.hapi.block.protoc.PublishStreamResponse.EndOfStream;
+import com.hedera.hapi.block.protoc.PublishStreamResponse.Acknowledgement;
 import com.hedera.hapi.block.stream.protoc.BlockItem;
 import com.hedera.node.app.blocks.BlockItemWriter;
 import com.hedera.node.config.data.BlockStreamConfig;
@@ -46,13 +45,13 @@ public class GrpcBlockItemWriter implements BlockItemWriter {
     private static final Logger logger = LogManager.getLogger(GrpcBlockItemWriter.class);
     private static final String INVALID_MESSAGE = "Invalid protocol buffer converting %s from PBJ to protoc for %s";
 
-    private BlockStreamServiceGrpc.BlockStreamServiceStub asyncStub;
+    private final BlockStreamServiceGrpc.BlockStreamServiceStub asyncStub;
     private StreamObserver<PublishStreamRequest> requestObserver;
 
     private long blockNumber;
 
     /** The state of this writer */
-    private State state;
+    private State state = State.UNINITIALIZED;
 
     private enum State {
         UNINITIALIZED,
@@ -78,13 +77,14 @@ public class GrpcBlockItemWriter implements BlockItemWriter {
 
         if (blockNumber < 0) throw new IllegalArgumentException("Block number must be non-negative");
         this.blockNumber = blockNumber;
-
         requestObserver = asyncStub.publishBlockStream(new StreamObserver<>() {
             @Override
             public void onNext(PublishStreamResponse streamResponse) {
                 // close the stream if error stream response occurs
-                if (streamResponse.getStatus().getStatus() == STREAM_ITEMS_UNKNOWN) {
-                    /*, STREAM_ITEMS_SUCCESS, STREAM_ITEMS_BEHIND*/
+                /*if (streamResponse.getStatus().getStatus() == STREAM_ITEMS_UNKNOWN) {
+                 */
+                /*, STREAM_ITEMS_SUCCESS, STREAM_ITEMS_BEHIND*/
+                /*
                     onNext(PublishStreamResponse.newBuilder()
                             .setStatus(EndOfStream.newBuilder()
                                     .setStatus(STREAM_ITEMS_UNKNOWN)
@@ -92,15 +92,18 @@ public class GrpcBlockItemWriter implements BlockItemWriter {
                             .build());
 
                     closeBlock();
-                }
+                }*/
 
-                if (streamResponse.getAcknowledgement().hasItemAck()) {
-                    closeBlock();
+                if (streamResponse.hasAcknowledgement()) {
+                    final Acknowledgement acknowledgement = streamResponse.getAcknowledgement();
+                    if (acknowledgement.hasBlockAck()) {
+                        logger.info("PublishStreamResponse: a full block received: {}", acknowledgement.getBlockAck());
+                    } else if (acknowledgement.hasItemAck()) {
+                        logger.info(
+                                "PublishStreamResponse: a single block item is received: {}",
+                                acknowledgement.getItemAck());
+                    }
                 }
-
-                // Block Node build EndOfStream response in different scenarios:
-                // https://github.com/hashgraph/hedera-block-node/blob/simulator-grpc-client2/server/src/main/java/com/hedera/block/server/producer/ProducerBlockItemObserver.java#L213-L221
-                logger.info("PublishStreamResponse received: " + streamResponse.toString());
             }
 
             @Override
@@ -108,7 +111,6 @@ public class GrpcBlockItemWriter implements BlockItemWriter {
                 // TODO: What should be the approach when error occurs in the communication?
                 // Maybe this should be considered in this case:
                 // https://github.com/hashgraph/hedera-services/issues/15530
-
                 final Status status = fromThrowable(t);
                 logger.error(status.toString());
             }
@@ -129,7 +131,6 @@ public class GrpcBlockItemWriter implements BlockItemWriter {
             throw new IllegalStateException(
                     "Cannot write to a GrpcBlockItemWriter that is not open for block: " + this.blockNumber);
         }
-
         PublishStreamRequest request = PublishStreamRequest.newBuilder().build();
         try {
             request = PublishStreamRequest.newBuilder()
@@ -138,14 +139,6 @@ public class GrpcBlockItemWriter implements BlockItemWriter {
             requestObserver.onNext(request);
         } catch (InvalidProtocolBufferException e) {
             final String message = INVALID_MESSAGE.formatted("PublishStreamResponse", request);
-            /*final EndOfStream endOfStream =
-                    EndOfStream.newBuilder()
-                            .setStatus(PublishStreamResponseCode.STREAM_ITEMS_UNKNOWN)
-                            .build();
-            requestObserver.onNext(
-                    PublishStreamResponse.newBuilder().setStatus(endOfStream).build()
-            );*/
-            logger.error(message);
             throw new RuntimeException(message, e);
         }
         return this;
