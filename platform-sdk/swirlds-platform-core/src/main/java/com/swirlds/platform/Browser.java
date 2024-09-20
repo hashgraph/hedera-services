@@ -75,6 +75,7 @@ import com.swirlds.platform.system.SystemExitUtils;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.util.BootstrapUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
+
 import java.awt.GraphicsEnvironment;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -83,6 +84,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -277,8 +279,6 @@ public class Browser {
                     appDefinition.getConfigAddressBook());
             final var initialState = reservedState.state();
             final var stateHash = reservedState.hash();
-
-            //            appDefinition.setInitialStateHash(stateHash);
 
             // Initialize the address book
             final AddressBook addressBook = initializeAddressBook(
