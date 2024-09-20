@@ -28,7 +28,6 @@ import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.io.Serializable;
-import java.util.Arrays;
 import java.util.Objects;
 
 /**
@@ -96,17 +95,6 @@ public class Hash implements Comparable<Hash>, SerializableWithKnownLength, Seri
 
         this.digestType = other.digestType;
         this.bytes = other.bytes;
-    }
-
-    /**
-     * Create a hash by copying data from another byte array.
-     *
-     * @param value the hash to copy
-     * @return a new hash
-     */
-    @NonNull
-    public static Hash copy(@NonNull final byte[] value) {
-        return new Hash(Arrays.copyOf(value, value.length));
     }
 
     /**
