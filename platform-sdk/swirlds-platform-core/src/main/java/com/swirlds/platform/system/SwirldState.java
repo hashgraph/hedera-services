@@ -18,7 +18,7 @@ package com.swirlds.platform.system;
 
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.merkle.MerkleNode;
-import com.swirlds.platform.state.PlatformStateAccessor;
+import com.swirlds.platform.state.PlatformStateModifier;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.events.Event;
 import com.swirlds.platform.system.transaction.Transaction;
@@ -77,7 +77,7 @@ public interface SwirldState extends MerkleNode {
      * @param round         the round to apply
      * @param platformState the platform state
      */
-    void handleConsensusRound(final Round round, final PlatformStateAccessor platformState);
+    void handleConsensusRound(final Round round, final PlatformStateModifier platformState);
 
     /**
      * Called by the platform after it has made all its changes to this state for the given round.
