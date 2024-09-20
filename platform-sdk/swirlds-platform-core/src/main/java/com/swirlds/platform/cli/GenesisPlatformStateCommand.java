@@ -29,6 +29,7 @@ import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.platform.config.DefaultConfiguration;
 import com.swirlds.platform.consensus.SyntheticSnapshot;
 import com.swirlds.platform.state.PlatformStateAccessor;
+import com.swirlds.platform.state.PlatformStateModifier;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.snapshot.DeserializedSignedState;
 import com.swirlds.platform.state.snapshot.SignedStateFileReader;
@@ -75,8 +76,8 @@ public class GenesisPlatformStateCommand extends AbstractCommand {
         final DeserializedSignedState deserializedSignedState =
                 SignedStateFileReader.readStateFile(platformContext, statePath, SignedStateFileUtils::readState);
         try (final ReservedSignedState reservedSignedState = deserializedSignedState.reservedSignedState()) {
-            final PlatformStateAccessor platformState =
-                    reservedSignedState.get().getState().getPlatformState();
+            final PlatformStateModifier platformState =
+                    reservedSignedState.get().getState().getWritablePlatformState();
             platformState.bulkUpdate(v -> {
                 System.out.printf("Replacing platform data %n");
                 v.setRound(PlatformStateAccessor.GENESIS_ROUND);

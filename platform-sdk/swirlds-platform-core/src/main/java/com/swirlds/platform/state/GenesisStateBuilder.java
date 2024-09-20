@@ -37,9 +37,9 @@ public final class GenesisStateBuilder {
      * Initializes a genesis platform state.
      *
      */
-    private static void initGenesisPlatformState(
+    public static void initGenesisPlatformState(
             final PlatformContext platformContext,
-            final PlatformStateAccessor platformState,
+            final PlatformStateModifier platformState,
             final AddressBook addressBook,
             final SoftwareVersion appVersion) {
         platformState.bulkUpdate(v -> {
@@ -73,7 +73,7 @@ public final class GenesisStateBuilder {
             @NonNull final SoftwareVersion appVersion,
             @NonNull final MerkleRoot stateRoot) {
 
-        initGenesisPlatformState(platformContext, stateRoot.getPlatformState(), addressBook, appVersion);
+        initGenesisPlatformState(platformContext, stateRoot.getWritablePlatformState(), addressBook, appVersion);
 
         final SignedState signedState = new SignedState(
                 platformContext, CryptoStatic::verifySignature, stateRoot, "genesis state", false, false, false);

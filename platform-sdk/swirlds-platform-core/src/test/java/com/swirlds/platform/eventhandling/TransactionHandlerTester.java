@@ -25,7 +25,7 @@ import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.platform.state.MerkleRoot;
-import com.swirlds.platform.state.PlatformStateAccessor;
+import com.swirlds.platform.state.PlatformStateModifier;
 import com.swirlds.platform.state.SwirldStateManager;
 import com.swirlds.platform.state.service.PlatformStateValueAccumulator;
 import com.swirlds.platform.system.BasicSoftwareVersion;
@@ -42,7 +42,7 @@ import java.util.List;
  * A helper class for testing the {@link DefaultTransactionHandler}.
  */
 public class TransactionHandlerTester {
-    private final PlatformStateAccessor platformState;
+    private final PlatformStateModifier platformState;
     private final SwirldStateManager swirldStateManager;
     private final DefaultTransactionHandler defaultTransactionHandler;
     private final List<PlatformStatusAction> submittedActions = new ArrayList<>();
@@ -63,7 +63,8 @@ public class TransactionHandlerTester {
         final SwirldState swirldState = mock(SwirldState.class);
         when(consensusState.getSwirldState()).thenReturn(swirldState);
         when(consensusState.copy()).thenReturn(consensusState);
-        when(consensusState.getPlatformState()).thenReturn(platformState);
+        when(consensusState.getReadablePlatformState()).thenReturn(platformState);
+        when(consensusState.getWritablePlatformState()).thenReturn(platformState);
         doAnswer(i -> {
                     handledRounds.add(i.getArgument(0));
                     return null;
@@ -86,9 +87,9 @@ public class TransactionHandlerTester {
     }
 
     /**
-     * @return the {@link PlatformStateAccessor} used by this tester
+     * @return the {@link PlatformStateModifier} used by this tester
      */
-    public PlatformStateAccessor getPlatformState() {
+    public PlatformStateModifier getPlatformState() {
         return platformState;
     }
 

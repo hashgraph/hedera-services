@@ -390,7 +390,7 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
      * {@inheritDoc}
      */
     @Override
-    public void handleConsensusRound(@NonNull final Round round, @NonNull final PlatformStateAccessor platformState) {
+    public void handleConsensusRound(@NonNull final Round round, @NonNull final PlatformStateModifier platformState) {
         throwIfImmutable();
         lifecycles.onHandleConsensusRound(round, this);
     }
@@ -1005,17 +1005,39 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
      */
     @NonNull
     @Override
-    public PlatformStateAccessor getPlatformState() {
-        return !isImmutable() ? writablePlatformStateStore() : readablePlatformStateStore();
+    public PlatformStateAccessor getReadablePlatformState() {
+        return readablePlatformStateStore();
     }
 
     /**
-     * Updates the platform state with the values from the provided instance of {@link PlatformStateAccessor}
+     * {@inheritDoc}
+     */
+    @NonNull
+    @Override
+    public PlatformStateModifier getWritablePlatformState() {
+        if (isImmutable()) {
+            throw new IllegalStateException("Cannot get writable platform state when state is immutable");
+        }
+        return writablePlatformStateStore();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void initPlatformState() {
+        if (!services.containsKey(PlatformStateService.NAME)) {
+            platformStateInitChanges = lifecycles.initPlatformState(this);
+        }
+    }
+
+    /**
+     * Updates the platform state with the values from the provided instance of {@link PlatformStateModifier}
      *
      * @param accessor a source of values
      */
     @Override
-    public void updatePlatformState(@NonNull final PlatformStateAccessor accessor) {
+    public void updatePlatformState(@NonNull final PlatformStateModifier accessor) {
         writablePlatformStateStore().setAllFrom(accessor);
     }
 
@@ -1025,7 +1047,7 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
     @NonNull
     @Override
     public String getInfoString(final int hashDepth) {
-        return createInfoString(hashDepth, getPlatformState(), getHash(), this);
+        return createInfoString(hashDepth, readablePlatformStateStore(), getHash(), this);
     }
 
     private ReadablePlatformStateStore readablePlatformStateStore() {

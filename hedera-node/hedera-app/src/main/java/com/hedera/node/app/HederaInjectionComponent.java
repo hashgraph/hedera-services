@@ -22,6 +22,7 @@ import com.hedera.node.app.annotations.MaxSignedTxnSize;
 import com.hedera.node.app.authorization.AuthorizerInjectionModule;
 import com.hedera.node.app.blocks.BlockStreamManager;
 import com.hedera.node.app.blocks.BlockStreamModule;
+import com.hedera.node.app.blocks.InitialStateHash;
 import com.hedera.node.app.blocks.impl.BoundaryStateChangeListener;
 import com.hedera.node.app.blocks.impl.KVStateChangeListener;
 import com.hedera.node.app.components.IngestInjectionComponent;
@@ -47,6 +48,8 @@ import com.hedera.node.app.state.HederaStateInjectionModule;
 import com.hedera.node.app.state.WorkingStateAccessor;
 import com.hedera.node.app.throttle.ThrottleServiceManager;
 import com.hedera.node.app.throttle.ThrottleServiceModule;
+import com.hedera.node.app.tss.TssBaseService;
+import com.hedera.node.app.tss.impl.PlaceholderTssBaseService;
 import com.hedera.node.app.workflows.FacilityInitModule;
 import com.hedera.node.app.workflows.WorkflowsInjectionModule;
 import com.hedera.node.app.workflows.handle.HandleWorkflow;
@@ -132,6 +135,10 @@ public interface HederaInjectionComponent {
 
     StoreMetricsService storeMetricsService();
 
+    TssBaseService tssBaseService();
+
+    void inject(PlaceholderTssBaseService placeholderTssBaseService);
+
     @Component.Builder
     interface Builder {
         @BindsInstance
@@ -184,6 +191,12 @@ public interface HederaInjectionComponent {
 
         @BindsInstance
         Builder migrationStateChanges(List<StateChanges.Builder> migrationStateChanges);
+
+        @BindsInstance
+        Builder tssBaseService(TssBaseService tssBaseService);
+
+        @BindsInstance
+        Builder initialStateHash(InitialStateHash initialStateHash);
 
         HederaInjectionComponent build();
     }

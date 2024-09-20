@@ -17,6 +17,7 @@
 package com.hedera.node.app.components;
 
 import static com.hedera.node.app.fixtures.AppTestBase.DEFAULT_CONFIG;
+import static java.util.concurrent.CompletableFuture.completedFuture;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
@@ -25,6 +26,7 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.node.app.DaggerHederaInjectionComponent;
 import com.hedera.node.app.HederaInjectionComponent;
+import com.hedera.node.app.blocks.InitialStateHash;
 import com.hedera.node.app.blocks.impl.BoundaryStateChangeListener;
 import com.hedera.node.app.blocks.impl.KVStateChangeListener;
 import com.hedera.node.app.config.BootstrapConfigProviderImpl;
@@ -39,6 +41,7 @@ import com.hedera.node.app.signature.AppSignatureVerifier;
 import com.hedera.node.app.signature.impl.SignatureExpanderImpl;
 import com.hedera.node.app.signature.impl.SignatureVerifierImpl;
 import com.hedera.node.app.state.recordcache.RecordCacheService;
+import com.hedera.node.app.tss.TssBaseService;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -65,6 +68,9 @@ class IngestComponentTest {
 
     @Mock
     private Platform platform;
+
+    @Mock
+    private TssBaseService tssBaseService;
 
     private HederaInjectionComponent app;
 
@@ -114,6 +120,8 @@ class IngestComponentTest {
                 .kvStateChangeListener(new KVStateChangeListener())
                 .boundaryStateChangeListener(new BoundaryStateChangeListener())
                 .migrationStateChanges(List.of())
+                .tssBaseService(tssBaseService)
+                .initialStateHash(new InitialStateHash(completedFuture(Bytes.EMPTY), 0))
                 .build();
 
         final var state = new FakeState();

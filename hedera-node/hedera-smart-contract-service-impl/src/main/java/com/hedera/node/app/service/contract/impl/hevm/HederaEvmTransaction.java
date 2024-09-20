@@ -127,4 +127,23 @@ public record HederaEvmTransaction(
     public boolean requiresFullRelayerAllowance() {
         return offeredGasPrice == 0L;
     }
+
+    /**
+     * @return a copy of this transaction with the given {@code exception}
+     */
+    public HederaEvmTransaction withException(@NonNull final HandleException exception) {
+        return new HederaEvmTransaction(
+                this.senderId,
+                this.relayerId,
+                this.contractId,
+                this.nonce,
+                this.payload,
+                this.chainId,
+                this.value,
+                this.gasLimit,
+                this.offeredGasPrice,
+                this.maxGasAllowance,
+                this.hapiCreation,
+                exception);
+    }
 }

@@ -34,6 +34,7 @@ import com.hedera.pbj.runtime.ParseException;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
@@ -219,23 +220,29 @@ public enum BlockStreamAccess {
 
     private List<Path> orderedBlocksFrom(@NonNull final Path path) throws IOException {
         try (final var stream = Files.walk(path)) {
-            return stream.filter(this::isBlockFile)
-                    .sorted(comparing(this::extractBlockNumber))
+            return stream.filter(BlockStreamAccess::isBlockFile)
+                    .sorted(comparing(BlockStreamAccess::extractBlockNumber))
                     .toList();
         }
     }
 
-    private boolean isBlockFile(@NonNull final Path path) {
+    private static boolean isBlockFile(@NonNull final Path path) {
         return path.toFile().isFile() && extractBlockNumber(path) != -1;
     }
 
-    private long extractBlockNumber(@NonNull final Path path) {
-        final var fileName = path.getFileName().toString();
+    private static long extractBlockNumber(@NonNull final Path path) {
+        return extractBlockNumber(path.getFileName().toString());
+    }
+
+    public static boolean isBlockFile(@NonNull final File file) {
+        return file.isFile() && extractBlockNumber(file.getName()) != -1;
+    }
+
+    private static long extractBlockNumber(@NonNull final String fileName) {
         try {
             final var blockNumber = fileName.substring(0, fileName.indexOf(UNCOMPRESSED_FILE_EXT));
             return Long.parseLong(blockNumber);
         } catch (Exception ignore) {
-            log.info("Ignoring non-block file {}", path);
         }
         return -1;
     }

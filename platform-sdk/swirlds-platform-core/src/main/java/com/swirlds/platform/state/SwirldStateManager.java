@@ -118,14 +118,14 @@ public class SwirldStateManager implements FreezePeriodChecker {
 
     /**
      * Handles the events in a consensus round. Implementations are responsible for invoking
-     * {@link SwirldState#handleConsensusRound(Round, PlatformStateAccessor)}.
+     * {@link SwirldState#handleConsensusRound(Round, PlatformStateModifier)}.
      *
      * @param round the round to handle
      */
     public void handleConsensusRound(final ConsensusRound round) {
         final MerkleRoot state = stateRef.get();
 
-        uptimeTracker.handleRound(round, state.getPlatformState().getAddressBook());
+        uptimeTracker.handleRound(round, state.getReadablePlatformState().getAddressBook());
         transactionHandler.handleRound(round, state);
     }
 
@@ -157,8 +157,8 @@ public class SwirldStateManager implements FreezePeriodChecker {
     public void savedStateInFreezePeriod() {
         // set current DualState's lastFrozenTime to be current freezeTime
         stateRef.get()
-                .getPlatformState()
-                .setLastFrozenTime(stateRef.get().getPlatformState().getFreezeTime());
+                .getWritablePlatformState()
+                .setLastFrozenTime(stateRef.get().getReadablePlatformState().getFreezeTime());
     }
 
     /**
@@ -213,7 +213,7 @@ public class SwirldStateManager implements FreezePeriodChecker {
      */
     @Override
     public boolean isInFreezePeriod(final Instant timestamp) {
-        final PlatformStateAccessor platformState = getConsensusState().getPlatformState();
+        final PlatformStateAccessor platformState = getConsensusState().getReadablePlatformState();
         return SwirldStateManagerUtils.isInFreezePeriod(
                 timestamp, platformState.getFreezeTime(), platformState.getLastFrozenTime());
     }

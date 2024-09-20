@@ -36,6 +36,7 @@ import com.hedera.node.app.version.ServicesSoftwareVersion;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.services.bdd.junit.hedera.embedded.fakes.AbstractFakePlatform;
+import com.hedera.services.bdd.junit.hedera.embedded.fakes.FakeTssBaseService;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;
@@ -43,6 +44,7 @@ import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
 import com.swirlds.common.constructable.ConstructableRegistry;
+import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.config.legacy.LegacyConfigPropertiesLoader;
 import com.swirlds.platform.listeners.PlatformStatusChangeNotification;
@@ -78,6 +80,7 @@ public abstract class AbstractEmbeddedHedera implements EmbeddedHedera {
     protected static final NodeId MISSING_NODE_ID = new NodeId(666L);
     protected static final int MAX_PLATFORM_TXN_SIZE = 1024 * 6;
     protected static final int MAX_QUERY_RESPONSE_SIZE = 1024 * 1024 * 2;
+    protected static final Hash FAKE_START_OF_STATE_HASH = new Hash(new byte[48]);
     protected static final TransactionResponse OK_RESPONSE = TransactionResponse.getDefaultInstance();
     protected static final PlatformStatusChangeNotification ACTIVE_NOTIFICATION =
             new PlatformStatusChangeNotification(ACTIVE);
@@ -93,6 +96,7 @@ public abstract class AbstractEmbeddedHedera implements EmbeddedHedera {
     protected final AtomicInteger nextNano = new AtomicInteger(0);
     protected final Hedera hedera;
     protected final ServicesSoftwareVersion version;
+    protected final FakeTssBaseService tssBaseService;
     protected final ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor();
 
     protected AbstractEmbeddedHedera(@NonNull final EmbeddedNode node) {
@@ -104,11 +108,13 @@ public abstract class AbstractEmbeddedHedera implements EmbeddedHedera {
                 .collect(toMap(Address::getNodeId, address -> parseAccount(address.getMemo())));
         defaultNodeId = addressBook.getNodeId(0);
         defaultNodeAccountId = fromPbj(accountIds.get(defaultNodeId));
+        tssBaseService = new FakeTssBaseService();
         hedera = new Hedera(
                 ConstructableRegistry.getInstance(),
                 FakeServicesRegistry.FACTORY,
                 new FakeServiceMigrator(),
-                this::now);
+                this::now,
+                () -> tssBaseService);
         version = (ServicesSoftwareVersion) hedera.getSoftwareVersion();
         Runtime.getRuntime().addShutdownHook(new Thread(executorService::shutdownNow));
     }
@@ -116,6 +122,7 @@ public abstract class AbstractEmbeddedHedera implements EmbeddedHedera {
     @Override
     public void start() {
         hedera.initPlatformState(state);
+        hedera.setInitialStateHash(FAKE_START_OF_STATE_HASH);
         hedera.onStateInitialized(state, fakePlatform(), GENESIS, null);
         hedera.init(fakePlatform(), defaultNodeId);
         fakePlatform().start();
@@ -131,6 +138,11 @@ public abstract class AbstractEmbeddedHedera implements EmbeddedHedera {
     @Override
     public FakeState state() {
         return state;
+    }
+
+    @Override
+    public FakeTssBaseService tssBaseService() {
+        return tssBaseService;
     }
 
     @Override

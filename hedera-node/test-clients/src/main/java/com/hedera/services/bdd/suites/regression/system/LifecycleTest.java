@@ -18,6 +18,8 @@ package com.hedera.services.bdd.suites.regression.system;
 
 import static com.hedera.services.bdd.junit.hedera.MarkerFile.EXEC_IMMEDIATE_MF;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getVersionInfo;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
+import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.blockingOrder;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.buildUpgradeZipFrom;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.doAdhoc;
@@ -33,6 +35,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.waitForActiveNetwor
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.waitForFrozenNetwork;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.waitForMf;
 import static com.hedera.services.bdd.spec.utilops.upgrade.BuildUpgradeZipOp.FAKE_UPGRADE_ZIP_LOC;
+import static com.hedera.services.bdd.suites.HapiSuite.FUNDING;
 import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
 import static com.hedera.services.bdd.suites.freeze.CommonUpgradeResources.DEFAULT_UPGRADE_FILE_ID;
 import static com.hedera.services.bdd.suites.freeze.CommonUpgradeResources.FAKE_ASSETS_LOC;
@@ -133,7 +136,10 @@ public interface LifecycleTest {
      */
     default SpecOperation restartAtNextConfigVersion() {
         return blockingOrder(
-                freezeOnly().startingIn(5).seconds().payingWith(GENESIS),
+                freezeOnly().startingIn(5).seconds().payingWith(GENESIS).deferStatusResolution(),
+                // Immediately submit a transaction in the same round to ensure freeze time is only
+                // reset when last frozen time matches it (i.e., in a post-upgrade transaction)
+                cryptoTransfer(tinyBarsFromTo(GENESIS, FUNDING, 1)),
                 confirmFreezeAndShutdown(),
                 sourcing(() -> FakeNmt.restartNetwork(CURRENT_CONFIG_VERSION.incrementAndGet())),
                 waitForActiveNetwork(RESTART_TIMEOUT));
