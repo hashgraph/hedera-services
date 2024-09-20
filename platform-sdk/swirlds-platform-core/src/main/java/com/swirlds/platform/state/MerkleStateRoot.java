@@ -1101,15 +1101,24 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
     public void createSnapshot(Path targetPath) {
         throwIfMutable();
         throwIfDestroyed();
-        logger.info(STATE_TO_DISK.getMarker(), "Creating a snapshot on demand in {}", targetPath);
+        createSnapshot(this, targetPath);
+    }
+
+    static void createSnapshot(MerkleRoot merkleRoot, Path targetPath) {
+        long round = merkleRoot.getReadablePlatformState().getRound();
+        logger.info(STATE_TO_DISK.getMarker(), "Creating a snapshot on demand in {} for round {}", targetPath, round);
         try {
-            writeMerkleRootToFile(targetPath, this);
-            logger.info(STATE_TO_DISK.getMarker(), "Creating a snapshot on demand in {}", targetPath);
+            writeMerkleRootToFile(targetPath, merkleRoot);
+            logger.info(
+                    STATE_TO_DISK.getMarker(),
+                    "Successfully created a snapshot on demand in {}  for round {}",
+                    targetPath,
+                    round);
         } catch (final Throwable e) {
             logger.error(
                     EXCEPTION.getMarker(),
-                    "Unable to write signed state to disk for round {} to {}.",
-                    getReadablePlatformState().getRound(),
+                    "Unable to write a snapshot on demand for round {} to {}.",
+                    round,
                     targetPath,
                     e);
         }
