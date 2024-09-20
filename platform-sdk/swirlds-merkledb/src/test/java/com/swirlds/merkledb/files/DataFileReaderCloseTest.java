@@ -113,7 +113,7 @@ class DataFileReaderCloseTest {
     @Test
     void readWhileFinishWritingTest() throws IOException {
         final Path tmpDir = LegacyTemporaryFileBuilder.buildTemporaryDirectory("readWhileFinishWritingTest", config());
-        final MerkleDbConfig dbConfig = ConfigurationHolder.getConfigData(MerkleDbConfig.class);
+        final MerkleDbConfig dbConfig = config().getConfigData(MerkleDbConfig.class);
         for (int i = 0; i < 100; i++) {
             Path filePath = null;
             final int fi = i;
