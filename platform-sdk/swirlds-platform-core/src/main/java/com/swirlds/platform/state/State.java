@@ -159,6 +159,9 @@ public class State extends PartialNaryMerkleInternal implements MerkleRoot {
         return getChild(ChildIndices.PLATFORM_STATE);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @NonNull
     @Override
     public WritableRosterStore getRosterStateModifier() {

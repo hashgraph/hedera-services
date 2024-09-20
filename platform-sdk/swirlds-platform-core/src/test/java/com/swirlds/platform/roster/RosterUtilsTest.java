@@ -185,17 +185,14 @@ class RosterUtilsTest {
 
     @Test
     void testToRosterEntryWithCertificateEncodingExceptionThrows() throws CertificateEncodingException {
-        // have to use mocks here to test the exception
+        // use of mocks here to test the exception
         final Address address = mock(Address.class);
         final X509Certificate certificate = mock(X509Certificate.class);
         when(address.getSigCert()).thenReturn(certificate);
         when(certificate.getEncoded()).thenThrow(new CertificateEncodingException());
-        final AddressBook addressBook = mock(AddressBook.class);
-        when(addressBook.getSize()).thenReturn(1);
-        final NodeId nodeId = new NodeId(1);
-        when(address.getNodeId()).thenReturn(nodeId);
-        when(addressBook.getNodeId(0)).thenReturn(nodeId);
-        when(addressBook.getAddress(nodeId)).thenReturn(address);
+        when(address.getNodeId()).thenReturn(new NodeId(1));
+
+        final AddressBook addressBook = new AddressBook(List.of(address));
 
         assertThrows(InvalidAddressBookException.class, () -> RosterUtils.createRoster(addressBook)
                 .rosterEntries()

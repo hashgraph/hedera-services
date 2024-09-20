@@ -21,7 +21,6 @@ import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.hapi.node.state.roster.RosterEntry;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.crypto.Hash;
-import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.util.PbjRecordHasher;
@@ -79,13 +78,7 @@ public final class RosterUtils {
     public static Roster createRoster(@NonNull final AddressBook addressBook) {
         Objects.requireNonNull(addressBook, "The addressBook must not be null.");
         final List<RosterEntry> rosterEntries = new ArrayList<>(addressBook.getSize());
-        for (int i = 0; i < addressBook.getSize(); i++) {
-            final NodeId nodeId = addressBook.getNodeId(i);
-            final Address address = addressBook.getAddress(nodeId);
-
-            final RosterEntry rosterEntry = createRosterEntry(address);
-            rosterEntries.add(rosterEntry);
-        }
+        addressBook.iterator().forEachRemaining(address -> rosterEntries.add(createRosterEntry(address)));
         return Roster.newBuilder().rosterEntries(rosterEntries).build();
     }
 

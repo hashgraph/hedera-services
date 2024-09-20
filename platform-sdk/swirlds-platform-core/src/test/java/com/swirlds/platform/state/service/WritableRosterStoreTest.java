@@ -144,11 +144,10 @@ class WritableRosterStoreTest {
     @Test
     @DisplayName("Test that the oldest roster is removed after 3 or more software upgrades")
     void testDetermineActiveRosterWithExisting2PreviousRosters() {
+        // set a 1st candidate roster and adopt it
         enableSoftwareUpgradeMode(true);
         rosterStateModifier.setCandidateRoster(createValidRoster(3));
         rosterStateModifier.determineActiveRoster(version, initialState);
-
-        enableSoftwareUpgradeMode(false);
 
         // set a 2nd candidate roster and adopt it
         enableSoftwareUpgradeMode(true);

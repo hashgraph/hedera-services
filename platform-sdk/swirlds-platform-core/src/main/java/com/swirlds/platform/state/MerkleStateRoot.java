@@ -1030,6 +1030,9 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
         return writablePlatformStateStore();
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @NonNull
     @Override
     public RosterStateModifier getRosterStateModifier() {
