@@ -108,7 +108,7 @@ public final class SignedStateFileWriter {
     }
 
     /**
-     * Write a {@link SignedState} to a stream.
+     * Write a {@link com.swirlds.platform.state.signed.SigSet} to a stream.
      *
      * @param out         the stream to write to
      * @param signedState the signed state to write
@@ -125,7 +125,8 @@ public final class SignedStateFileWriter {
      * @param directory the directory to write to
      * @param signedState the signature set file
      */
-    public static void writeSignatureSetFile(Path directory, SignedState signedState) throws IOException {
+    public static void writeSignatureSetFile(final @NonNull Path directory, final @NonNull SignedState signedState)
+            throws IOException {
         writeAndFlush(directory.resolve(SIGNATURE_SET_FILE_NAME), out -> writeSignatureSetToStream(out, signedState));
     }
 
@@ -147,7 +148,7 @@ public final class SignedStateFileWriter {
         Objects.requireNonNull(directory);
         Objects.requireNonNull(signedState);
 
-        MerkleRoot state = signedState.getState();
+        final MerkleRoot state = signedState.getState();
         if (state.isMutable()) {
             // make it immutable
             state.copy();

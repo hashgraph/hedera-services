@@ -16,15 +16,10 @@
 
 package com.swirlds.platform.state;
 
-import static com.swirlds.common.io.utility.FileUtils.writeAndFlush;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.logging.legacy.LogMarker.STARTUP;
-import static com.swirlds.logging.legacy.LogMarker.STATE_TO_DISK;
 import static com.swirlds.platform.state.MerkleStateUtils.createInfoString;
 import static com.swirlds.platform.state.service.PbjConverter.toPbjPlatformState;
-import static com.swirlds.platform.state.snapshot.SignedStateFileUtils.SIGNED_STATE_FILE_NAME;
-import static com.swirlds.platform.state.snapshot.SignedStateFileUtils.SIG_SET_SEPARATE_STATE_FILE_VERSION;
-import static com.swirlds.platform.state.snapshot.SignedStateFileUtils.VERSIONED_FILE_BYTE;
 import static com.swirlds.platform.system.InitTrigger.EVENT_STREAM_RECOVERY;
 import static com.swirlds.state.StateChangeListener.StateType.MAP;
 import static com.swirlds.state.StateChangeListener.StateType.QUEUE;
@@ -36,7 +31,6 @@ import com.hedera.hapi.block.stream.output.StateChanges;
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.swirlds.common.constructable.ConstructableIgnored;
 import com.swirlds.common.context.PlatformContext;
-import com.swirlds.common.io.streams.MerkleDataOutputStream;
 import com.swirlds.common.merkle.MerkleInternal;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.crypto.MerkleCryptography;
@@ -1109,49 +1103,11 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
         throwIfMutable();
         throwIfDestroyed();
         final long start = System.nanoTime();
-        createSnapshot(this, targetPath);
+        MerkleTreeSnapshotWriter.createSnapshot(this, targetPath);
         if (snapshotMetrics != null) {
             snapshotMetrics
                     .getWriteStateToDiskTimeMetric()
                     .update(TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start));
         }
-    }
-
-    static void createSnapshot(@NonNull MerkleRoot merkleRoot, @NonNull Path targetPath) {
-        final long round = merkleRoot.getReadablePlatformState().getRound();
-        logger.info(STATE_TO_DISK.getMarker(), "Creating a snapshot on demand in {} for round {}", targetPath, round);
-        try {
-            writeMerkleRootToFile(targetPath, merkleRoot);
-            logger.info(
-                    STATE_TO_DISK.getMarker(),
-                    "Successfully created a snapshot on demand in {}  for round {}",
-                    targetPath,
-                    round);
-        } catch (final Throwable e) {
-            logger.error(
-                    EXCEPTION.getMarker(),
-                    "Unable to write a snapshot on demand for round {} to {}.",
-                    round,
-                    targetPath,
-                    e);
-        }
-    }
-
-    private static void writeMerkleRootToFile(@NonNull final Path directory, @NonNull final MerkleRoot merkleRoot)
-            throws IOException {
-        writeAndFlush(
-                directory.resolve(SIGNED_STATE_FILE_NAME), out -> writeMerkleRootToStream(out, directory, merkleRoot));
-    }
-
-    private static void writeMerkleRootToStream(
-            @NonNull final MerkleDataOutputStream out,
-            @NonNull final Path directory,
-            @NonNull final MerkleRoot merkleRoot)
-            throws IOException {
-        out.write(VERSIONED_FILE_BYTE);
-        out.writeInt(SIG_SET_SEPARATE_STATE_FILE_VERSION);
-        out.writeProtocolVersion();
-        out.writeMerkleTree(directory, merkleRoot);
-        out.writeSerializable(merkleRoot.getHash(), true);
     }
 }

@@ -248,11 +248,14 @@ public class State extends PartialNaryMerkleInternal implements MerkleRoot {
         return createInfoString(hashDepth, platformState, getHash(), this);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void createSnapshot(@NonNull final Path targetPath) {
         throwIfMutable();
         throwIfDestroyed();
-        MerkleStateRoot.createSnapshot(this, targetPath);
+        MerkleTreeSnapshotWriter.createSnapshot(this, targetPath);
     }
 
     /**

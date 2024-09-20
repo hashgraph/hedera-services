@@ -168,11 +168,11 @@ public final class SignedStateFileReader {
 
     @NonNull
     private static StateFileData createStateFileDataV2(
-            @NonNull Path stateFile,
-            @NonNull CheckedBiFunction<MerkleDataInputStream, Path, MerkleRoot, IOException> snapshotStateReader,
-            @NonNull MerkleDataInputStream in,
-            @NonNull Path directory,
-            int fileVersion)
+            @NonNull final Path stateFile,
+            @NonNull final CheckedBiFunction<MerkleDataInputStream, Path, MerkleRoot, IOException> snapshotStateReader,
+            @NonNull final MerkleDataInputStream in,
+            @NonNull final Path directory,
+            final int fileVersion)
             throws IOException {
         try {
             final MerkleRoot state = snapshotStateReader.apply(in, directory);
@@ -186,11 +186,11 @@ public final class SignedStateFileReader {
 
     @NonNull
     private static StateFileData readStateFileDataV1(
-            @NonNull Path stateFile,
-            @NonNull CheckedBiFunction<MerkleDataInputStream, Path, MerkleRoot, IOException> snapshotStateReader,
-            @NonNull MerkleDataInputStream in,
-            @NonNull Path directory,
-            int fileVersion)
+            @NonNull final Path stateFile,
+            @NonNull final CheckedBiFunction<MerkleDataInputStream, Path, MerkleRoot, IOException> snapshotStateReader,
+            @NonNull final MerkleDataInputStream in,
+            @NonNull final Path directory,
+            final int fileVersion)
             throws IOException {
         try {
             final MerkleRoot state = snapshotStateReader.apply(in, directory);
