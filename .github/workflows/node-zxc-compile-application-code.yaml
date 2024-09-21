@@ -206,7 +206,7 @@ jobs:
       - name: Unit Testing
         id: gradle-test
         if: ${{ inputs.enable-unit-tests && steps.gradle-build.conclusion == 'success' && !cancelled() }}
-        run: ${GRADLE_EXEC} :reports:testCodeCoverageReport -x :test-clients:test --continue --scan
+        run: ${GRADLE_EXEC} :aggregation:testCodeCoverageReport -x :test-clients:test --continue --scan
 
 
       - name: Publish Unit Test Report
@@ -538,13 +538,13 @@ jobs:
         uses: codecov/codecov-action@e28ff129e5465c2c0dcc6f003fc735cb6ae0c673 # v4.5.0
         with:
           token: ${{ secrets.codecov-token }}
-          files: gradle/reports/build/reports/jacoco/testCodeCoverageReport/testCodeCoverageReport.xml
+          files: gradle/aggregation/build/reports/jacoco/testCodeCoverageReport/testCodeCoverageReport.xml
 
       - name: Publish to Codacy
         env:
           CODACY_PROJECT_TOKEN: ${{ secrets.codacy-project-token }}
         if: ${{ inputs.enable-unit-tests && !cancelled() }}
-        run: bash <(curl -Ls https://coverage.codacy.com/get.sh) report -l Java -r gradle/reports/build/reports/jacoco/testCodeCoverageReport/testCodeCoverageReport.xml
+        run: bash <(curl -Ls https://coverage.codacy.com/get.sh) report -l Java -r gradle/aggregation/build/reports/jacoco/testCodeCoverageReport/testCodeCoverageReport.xml
 
       - name: Upload Test Reports
         uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 # v4.3.1
