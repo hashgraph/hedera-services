@@ -563,14 +563,16 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener {
         // (FUTURE) In principle, the FileService could actually change the active configuration during a
         // migration, which implies we should be passing the config provider and not a static configuration
         // here; but this is a currently unneeded affordance
-        migrationStateChanges.addAll(serviceMigrator.doMigrations(
+        blockStreamService.resetMigratedLastBlockHash();
+        final var migrationChanges = serviceMigrator.doMigrations(
                 state,
                 servicesRegistry,
                 deserializedVersion,
                 version,
                 configProvider.getConfiguration(),
                 networkInfo,
-                metrics));
+                metrics);
+        migrationStateChanges.addAll(migrationChanges);
         kvStateChangeListener.reset();
         boundaryStateChangeListener.reset();
         if (isUpgrade && !trigger.equals(RECONNECT)) {
@@ -896,10 +898,9 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener {
                     .initLastBlockHash(
                             switch (trigger) {
                                 case GENESIS -> BlockStreamManager.ZERO_BLOCK_HASH;
-                                    // FUTURE - get the actual last block hash from e.g. a reconnect teacher or disk
                                 default -> blockStreamService
                                         .migratedLastBlockHash()
-                                        .orElse(startBlockHashFrom(state));
+                                        .orElseGet(() -> startBlockHashFrom(state));
                             });
             daggerApp.tssBaseService().registerLedgerSignatureConsumer(daggerApp.blockStreamManager());
             if (daggerApp.tssBaseService() instanceof PlaceholderTssBaseService placeholderTssBaseService) {
