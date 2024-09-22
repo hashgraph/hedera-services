@@ -506,7 +506,7 @@ public class SavepointStackImpl implements HandleContext.SavepointStack, State {
         if (streamMode != RECORDS) {
             requireNonNull(roundStateChangeListener).setLastUsedConsensusTime(lastAssignedConsenusTime);
         }
-        return new HandleOutput(blockItems, new LegacyListRecordSource(records, indexOfUserRecord));
+        return new HandleOutput(blockItems, new LegacyListRecordSource(records));
     }
 
     private void setupFirstSavepoint(@NonNull final HandleContext.TransactionCategory category) {

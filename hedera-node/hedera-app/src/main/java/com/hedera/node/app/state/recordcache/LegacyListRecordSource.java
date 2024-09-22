@@ -26,9 +26,7 @@ import com.hedera.node.app.state.SingleTransactionRecord;
 import com.hedera.node.config.data.BlockStreamConfig;
 import com.hedera.node.config.types.StreamMode;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
-import java.util.Objects;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
@@ -38,28 +36,15 @@ import java.util.function.Consumer;
  * {@link SingleTransactionRecord} objects are already constructed for streaming.
  */
 public class LegacyListRecordSource implements RecordSource {
-    private final TransactionID userTxnId;
     private final List<SingleTransactionRecord> precomputedRecords;
 
-    public LegacyListRecordSource(@NonNull final SingleTransactionRecord precomputedRecord) {
-        this(List.of(precomputedRecord), 0);
-    }
-
-    public LegacyListRecordSource(
-            @NonNull final List<SingleTransactionRecord> precomputedRecords, final int indexOfUserRecord) {
+    public LegacyListRecordSource(@NonNull final List<SingleTransactionRecord> precomputedRecords) {
         requireNonNull(precomputedRecords);
         this.precomputedRecords = requireNonNull(precomputedRecords);
-        this.userTxnId =
-                precomputedRecords.get(indexOfUserRecord).transactionRecord().transactionIDOrThrow();
     }
 
     public @NonNull List<SingleTransactionRecord> precomputedRecords() {
         return precomputedRecords;
-    }
-
-    @Override
-    public @NonNull TransactionID userTxnId() {
-        return requireNonNull(userTxnId);
     }
 
     @Override
@@ -74,14 +59,5 @@ public class LegacyListRecordSource implements RecordSource {
         precomputedRecords.forEach(r -> action.accept(
                 r.transactionRecord().transactionIDOrThrow(),
                 r.transactionRecord().receiptOrThrow().status()));
-    }
-
-    @Override
-    public @Nullable TransactionRecord recordFor(@NonNull final TransactionID txnId) {
-        return precomputedRecords.stream()
-                .map(SingleTransactionRecord::transactionRecord)
-                .filter(transactionRecord -> Objects.equals(transactionRecord.transactionIDOrThrow(), txnId))
-                .findFirst()
-                .orElse(null);
     }
 }

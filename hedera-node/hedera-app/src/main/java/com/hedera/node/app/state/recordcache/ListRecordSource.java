@@ -25,10 +25,8 @@ import com.hedera.node.app.spi.records.RecordSource;
 import com.hedera.node.config.data.BlockStreamConfig;
 import com.hedera.node.config.types.StreamMode;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
@@ -38,7 +36,6 @@ import java.util.function.Consumer;
  * reconnect or restart.
  */
 public class ListRecordSource implements RecordSource {
-    private TransactionID userTxnId;
     private final List<TransactionRecord> precomputedRecords;
 
     public ListRecordSource() {
@@ -46,27 +43,17 @@ public class ListRecordSource implements RecordSource {
     }
 
     public ListRecordSource(@NonNull final TransactionRecord precomputedRecord) {
-        this(List.of(precomputedRecord), 0);
+        this(List.of(precomputedRecord));
     }
 
-    public ListRecordSource(@NonNull final List<TransactionRecord> precomputedRecords, final int indexOfUserRecord) {
+    public ListRecordSource(@NonNull final List<TransactionRecord> precomputedRecords) {
         requireNonNull(precomputedRecords);
         this.precomputedRecords = requireNonNull(precomputedRecords);
-        this.userTxnId = precomputedRecords.get(indexOfUserRecord).transactionIDOrThrow();
     }
 
     public void incorporate(@NonNull final TransactionRecord precomputedRecord) {
         requireNonNull(precomputedRecord);
-        final var txnId = precomputedRecord.transactionIDOrThrow();
-        if (userTxnId == null && txnId.nonce() == 0) {
-            userTxnId = txnId;
-        }
         precomputedRecords.add(precomputedRecord);
-    }
-
-    @Override
-    public @NonNull TransactionID userTxnId() {
-        return requireNonNull(userTxnId);
     }
 
     @Override
@@ -80,14 +67,5 @@ public class ListRecordSource implements RecordSource {
         requireNonNull(action);
         precomputedRecords.forEach(
                 r -> action.accept(r.transactionIDOrThrow(), r.receiptOrThrow().status()));
-    }
-
-    @Override
-    public @Nullable TransactionRecord recordFor(@NonNull final TransactionID txnId) {
-        requireNonNull(txnId);
-        return precomputedRecords.stream()
-                .filter(r -> Objects.equals(r.transactionIDOrThrow(), txnId))
-                .findFirst()
-                .orElse(null);
     }
 }

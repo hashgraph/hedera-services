@@ -305,37 +305,37 @@ public class NetworkAdminHandlerTestBase {
                 0,
                 primaryRecord.transactionIDOrThrow(),
                 HederaRecordCache.DueDiligenceFailure.NO,
-                new ListRecordSource(List.of(primaryRecord), 0));
+                new ListRecordSource(List.of(primaryRecord)));
         cache.addRecordSource(
                 1,
                 duplicate1.transactionIDOrThrow(),
                 HederaRecordCache.DueDiligenceFailure.NO,
-                new ListRecordSource(List.of(duplicate1), 0));
+                new ListRecordSource(List.of(duplicate1)));
         cache.addRecordSource(
                 2,
                 duplicate2.transactionIDOrThrow(),
                 HederaRecordCache.DueDiligenceFailure.NO,
-                new ListRecordSource(List.of(duplicate2), 0));
+                new ListRecordSource(List.of(duplicate2)));
         cache.addRecordSource(
                 3,
                 duplicate3.transactionIDOrThrow(),
                 HederaRecordCache.DueDiligenceFailure.NO,
-                new ListRecordSource(List.of(duplicate3), 0));
+                new ListRecordSource(List.of(duplicate3)));
         cache.addRecordSource(
                 0,
                 recordOne.transactionIDOrThrow(),
                 HederaRecordCache.DueDiligenceFailure.NO,
-                new ListRecordSource(List.of(recordOne), 0));
+                new ListRecordSource(List.of(recordOne)));
         cache.addRecordSource(
                 0,
                 recordTwo.transactionIDOrThrow(),
                 HederaRecordCache.DueDiligenceFailure.NO,
-                new ListRecordSource(List.of(recordTwo), 0));
+                new ListRecordSource(List.of(recordTwo)));
         cache.addRecordSource(
                 0,
                 recordThree.transactionIDOrThrow(),
                 HederaRecordCache.DueDiligenceFailure.NO,
-                new ListRecordSource(List.of(recordThree), 0));
+                new ListRecordSource(List.of(recordThree)));
     }
 
     private SingleTransactionRecord singleTransactionRecord(TransactionRecord record) {
