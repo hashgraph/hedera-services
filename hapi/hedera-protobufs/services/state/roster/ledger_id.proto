@@ -1,5 +1,10 @@
 /**
  * # Ledger ID
+ * A Ledger ID is a Threshold Signature Scheme (TSS) public key that
+ * identifies the ledger.  A Ledger ID is intended to be long-lived, but
+ * may change under rare circumstances.  The Ledger ID for a particular
+ * distributed ledger can be used to validate the signature of that ledger
+ * in, for example, a block stream "block proof".
  *
  * ### Keywords
  * The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT",
