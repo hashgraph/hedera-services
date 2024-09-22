@@ -1,14 +1,31 @@
+/*
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.hedera.node.app.spi.records;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.UNKNOWN;
+
+import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.transaction.TransactionReceipt;
 import com.hedera.hapi.node.transaction.TransactionRecord;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-
-import java.util.List;
-
-import static com.hedera.hapi.node.base.ResponseCodeEnum.UNKNOWN;
+import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 
 /**
  * A source of queryable {@link TransactionReceipt} and {@link TransactionRecord} records for one or more
@@ -23,46 +40,29 @@ public interface RecordSource {
             TransactionReceipt.newBuilder().status(UNKNOWN).build();
 
     /**
-     * All the transaction ids for which this source has (or will have) records.
-     * @return the transaction ids
+     * The transaction id of the user transaction that was used to assign consensus timestamps to the records
+     * in this source.
+     * @return the top-level user transaction id
      */
-    List<TransactionID> txnIds();
+    @NonNull
+    TransactionID userTxnId();
+
+    /**
+     * Perform the given action on each transaction record known to this source.
+     * @param action the action to perform
+     */
+    void forEachTxnRecord(@NonNull Consumer<TransactionRecord> action);
+
+    /**
+     * Perform the given action on each transaction id and corresponding status known to this source.
+     * @param action the action to perform
+     */
+    void forEachTxnOutcome(@NonNull BiConsumer<TransactionID, ResponseCodeEnum> action);
 
     /**
      * Gets the user transaction record for the given transaction id, if known.
      * @return the record, or {@code null} if the id is unknown
      */
     @Nullable
-    TransactionRecord userTransactionRecord(@NonNull TransactionID txnId);
-
-    /**
-     * Gets the primary receipt, that is, the receipt associated with the user transaction for the given
-     * transaction id, if known.
-     * @return the receipt, or {@code null} if the id is unknown
-     */
-    @Nullable
-    TransactionReceipt userTransactionReceipt(@NonNull TransactionID txnId);
-
-    /**
-     * Gets the list of all duplicate records for the given transaction id, as a view. Should the list of records change, this view will reflect
-     * those changes.
-     *
-     * @return the list of all duplicate records
-     */
-    @NonNull
-    List<TransactionRecord> duplicateRecords(@NonNull TransactionID txnId);
-
-    /**
-     * Gets the number of duplicate records for the given transaction id.
-     *
-     * @return the number of duplicate records
-     */
-    int duplicateCount(@NonNull TransactionID txnId);
-
-    /**
-     * Returns a list of all records for the given transaction id, ordered by consensus timestamp.
-     *
-     * @return the list of all records, ordered by consensus timestamp
-     */
-    List<TransactionRecord> orderedRecords(@NonNull TransactionID txnId);
+    TransactionRecord recordFor(@NonNull TransactionID txnId);
 }

@@ -39,6 +39,7 @@ import com.hedera.node.app.spi.workflows.record.StreamBuilder;
 import com.hedera.node.app.state.ReadonlyStatesWrapper;
 import com.hedera.node.app.state.SingleTransactionRecord;
 import com.hedera.node.app.state.WrappedState;
+import com.hedera.node.app.state.recordcache.LegacyListRecordSource;
 import com.hedera.node.app.workflows.handle.HandleOutput;
 import com.hedera.node.app.workflows.handle.record.RecordStreamBuilder;
 import com.hedera.node.app.workflows.handle.stack.savepoints.BuilderSinkImpl;
@@ -505,7 +506,7 @@ public class SavepointStackImpl implements HandleContext.SavepointStack, State {
         if (streamMode != RECORDS) {
             requireNonNull(roundStateChangeListener).setLastUsedConsensusTime(lastAssignedConsenusTime);
         }
-        return new HandleOutput(blockItems, records);
+        return new HandleOutput(blockItems, new LegacyListRecordSource(records, indexOfUserRecord));
     }
 
     private void setupFirstSavepoint(@NonNull final HandleContext.TransactionCategory category) {

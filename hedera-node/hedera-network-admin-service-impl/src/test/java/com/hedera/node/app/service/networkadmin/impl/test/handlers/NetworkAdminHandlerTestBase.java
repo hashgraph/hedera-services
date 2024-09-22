@@ -52,10 +52,12 @@ import com.hedera.node.app.service.token.impl.ReadableTokenRelationStoreImpl;
 import com.hedera.node.app.service.token.impl.ReadableTokenStoreImpl;
 import com.hedera.node.app.spi.fees.FeeCalculator;
 import com.hedera.node.app.state.DeduplicationCache;
+import com.hedera.node.app.state.HederaRecordCache;
 import com.hedera.node.app.state.SingleTransactionRecord;
 import com.hedera.node.app.state.SingleTransactionRecord.TransactionOutputs;
 import com.hedera.node.app.state.WorkingStateAccessor;
 import com.hedera.node.app.state.recordcache.DeduplicationCacheImpl;
+import com.hedera.node.app.state.recordcache.ListRecordSource;
 import com.hedera.node.app.state.recordcache.RecordCacheImpl;
 import com.hedera.node.app.state.recordcache.RecordCacheService;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
@@ -299,13 +301,41 @@ public class NetworkAdminHandlerTestBase {
                 .consensusTimestamp(asTimestamp(consensusTimestamp.plusNanos(3)))
                 .parentConsensusTimestamp(asTimestamp(consensusTimestamp))
                 .build();
-        cache.add(0, PAYER_ACCOUNT_ID, List.of(singleTransactionRecord(primaryRecord)));
-        cache.add(1, PAYER_ACCOUNT_ID, List.of(singleTransactionRecord(duplicate1)));
-        cache.add(2, PAYER_ACCOUNT_ID, List.of(singleTransactionRecord(duplicate2)));
-        cache.add(3, PAYER_ACCOUNT_ID, List.of(singleTransactionRecord(duplicate3)));
-        cache.add(0, PAYER_ACCOUNT_ID, List.of(singleTransactionRecord(recordOne)));
-        cache.add(0, PAYER_ACCOUNT_ID, List.of(singleTransactionRecord(recordTwo)));
-        cache.add(0, PAYER_ACCOUNT_ID, List.of(singleTransactionRecord(recordThree)));
+        cache.addRecordSource(
+                0,
+                primaryRecord.transactionIDOrThrow(),
+                HederaRecordCache.DueDiligenceFailure.NO,
+                new ListRecordSource(List.of(primaryRecord), 0));
+        cache.addRecordSource(
+                1,
+                duplicate1.transactionIDOrThrow(),
+                HederaRecordCache.DueDiligenceFailure.NO,
+                new ListRecordSource(List.of(duplicate1), 0));
+        cache.addRecordSource(
+                2,
+                duplicate2.transactionIDOrThrow(),
+                HederaRecordCache.DueDiligenceFailure.NO,
+                new ListRecordSource(List.of(duplicate2), 0));
+        cache.addRecordSource(
+                3,
+                duplicate3.transactionIDOrThrow(),
+                HederaRecordCache.DueDiligenceFailure.NO,
+                new ListRecordSource(List.of(duplicate3), 0));
+        cache.addRecordSource(
+                0,
+                recordOne.transactionIDOrThrow(),
+                HederaRecordCache.DueDiligenceFailure.NO,
+                new ListRecordSource(List.of(recordOne), 0));
+        cache.addRecordSource(
+                0,
+                recordTwo.transactionIDOrThrow(),
+                HederaRecordCache.DueDiligenceFailure.NO,
+                new ListRecordSource(List.of(recordTwo), 0));
+        cache.addRecordSource(
+                0,
+                recordThree.transactionIDOrThrow(),
+                HederaRecordCache.DueDiligenceFailure.NO,
+                new ListRecordSource(List.of(recordThree), 0));
     }
 
     private SingleTransactionRecord singleTransactionRecord(TransactionRecord record) {
@@ -334,7 +364,7 @@ public class NetworkAdminHandlerTestBase {
     @NonNull
     protected RecordCacheImpl emptyRecordCacheBuilder() {
         dedupeCache = new DeduplicationCacheImpl(props, instantSource);
-        return new RecordCacheImpl(dedupeCache, wsa, props);
+        return new RecordCacheImpl(dedupeCache, wsa, props, networkInfo);
     }
 
     @NonNull

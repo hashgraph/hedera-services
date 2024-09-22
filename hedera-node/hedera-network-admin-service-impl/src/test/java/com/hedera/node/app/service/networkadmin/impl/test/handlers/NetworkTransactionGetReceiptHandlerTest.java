@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.networkadmin.impl.test.handlers;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
@@ -45,7 +46,9 @@ import com.hedera.hapi.node.transaction.TransactionReceipt;
 import com.hedera.hapi.node.transaction.TransactionRecord;
 import com.hedera.node.app.service.networkadmin.impl.handlers.NetworkTransactionGetReceiptHandler;
 import com.hedera.node.app.spi.workflows.QueryContext;
+import com.hedera.node.app.state.HederaRecordCache;
 import com.hedera.node.app.state.SingleTransactionRecord;
+import com.hedera.node.app.state.recordcache.ListRecordSource;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -136,22 +139,31 @@ class NetworkTransactionGetReceiptHandlerTest extends NetworkAdminHandlerTestBas
         final var query = createGetTransactionReceiptQuery(targetChildTxnId, false, false);
         when(context.query()).thenReturn(query);
         when(context.recordCache()).thenReturn(cache);
-        cache.add(
+        cache.addRecordSource(
                 0L,
-                AccountID.newBuilder().accountNum(2L).build(),
-                List.of(
-                        singleRecordWith(TransactionRecord.newBuilder()
-                                .transactionID(otherChildTxnId)
-                                .receipt(TransactionReceipt.newBuilder()
-                                        .status(REVERTED_SUCCESS)
-                                        .build())
-                                .build()),
-                        singleRecordWith(TransactionRecord.newBuilder()
-                                .transactionID(targetChildTxnId)
-                                .receipt(TransactionReceipt.newBuilder()
-                                        .status(INVALID_TOKEN_NFT_SERIAL_NUMBER)
-                                        .build())
-                                .build())));
+                topLevelId,
+                HederaRecordCache.DueDiligenceFailure.NO,
+                new ListRecordSource(
+                        List.of(
+                                TransactionRecord.newBuilder()
+                                        .transactionID(topLevelId)
+                                        .receipt(TransactionReceipt.newBuilder()
+                                                .status(CONTRACT_REVERT_EXECUTED)
+                                                .build())
+                                        .build(),
+                                TransactionRecord.newBuilder()
+                                        .transactionID(otherChildTxnId)
+                                        .receipt(TransactionReceipt.newBuilder()
+                                                .status(REVERTED_SUCCESS)
+                                                .build())
+                                        .build(),
+                                TransactionRecord.newBuilder()
+                                        .transactionID(targetChildTxnId)
+                                        .receipt(TransactionReceipt.newBuilder()
+                                                .status(INVALID_TOKEN_NFT_SERIAL_NUMBER)
+                                                .build())
+                                        .build()),
+                        0));
 
         final var response = networkTransactionGetReceiptHandler.findResponse(context, responseHeader);
         final var answer = response.transactionGetReceiptOrThrow();
@@ -177,23 +189,31 @@ class NetworkTransactionGetReceiptHandlerTest extends NetworkAdminHandlerTestBas
         final var query = createGetTransactionReceiptQuery(missingChildTxnId, false, false);
         when(context.query()).thenReturn(query);
         when(context.recordCache()).thenReturn(cache);
-        cache.add(
+        cache.addRecordSource(
                 0L,
-                AccountID.newBuilder().accountNum(2L).build(),
-                List.of(
-                        singleRecordWith(TransactionRecord.newBuilder()
-                                .transactionID(otherChildTxnId)
-                                .receipt(TransactionReceipt.newBuilder()
-                                        .status(REVERTED_SUCCESS)
-                                        .build())
-                                .build()),
-                        singleRecordWith(TransactionRecord.newBuilder()
-                                .transactionID(targetChildTxnId)
-                                .receipt(TransactionReceipt.newBuilder()
-                                        .status(INVALID_TOKEN_NFT_SERIAL_NUMBER)
-                                        .build())
-                                .build())));
-
+                topLevelId,
+                HederaRecordCache.DueDiligenceFailure.NO,
+                new ListRecordSource(
+                        List.of(
+                                TransactionRecord.newBuilder()
+                                        .transactionID(topLevelId)
+                                        .receipt(TransactionReceipt.newBuilder()
+                                                .status(CONTRACT_REVERT_EXECUTED)
+                                                .build())
+                                        .build(),
+                                TransactionRecord.newBuilder()
+                                        .transactionID(otherChildTxnId)
+                                        .receipt(TransactionReceipt.newBuilder()
+                                                .status(REVERTED_SUCCESS)
+                                                .build())
+                                        .build(),
+                                TransactionRecord.newBuilder()
+                                        .transactionID(targetChildTxnId)
+                                        .receipt(TransactionReceipt.newBuilder()
+                                                .status(INVALID_TOKEN_NFT_SERIAL_NUMBER)
+                                                .build())
+                                        .build()),
+                        0));
         final var response = networkTransactionGetReceiptHandler.findResponse(context, responseHeader);
         final var answer = response.transactionGetReceiptOrThrow();
         assertEquals(RECEIPT_NOT_FOUND, answer.headerOrThrow().nodeTransactionPrecheckCode());

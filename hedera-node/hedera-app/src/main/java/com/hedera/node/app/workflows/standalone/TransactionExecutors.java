@@ -26,6 +26,7 @@ import com.hedera.node.app.services.AppContextImpl;
 import com.hedera.node.app.signature.AppSignatureVerifier;
 import com.hedera.node.app.signature.impl.SignatureExpanderImpl;
 import com.hedera.node.app.signature.impl.SignatureVerifierImpl;
+import com.hedera.node.app.state.recordcache.LegacyListRecordSource;
 import com.hedera.node.config.data.HederaConfig;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.metrics.noop.NoOpMetrics;
@@ -59,9 +60,10 @@ public enum TransactionExecutors {
             final var dispatch = executor.standaloneDispatchFactory().newDispatch(state, transactionBody, consensusNow);
             OPERATION_TRACERS.set(List.of(operationTracers));
             executor.dispatchProcessor().processDispatch(dispatch);
-            return dispatch.stack()
+            final var recordSource = dispatch.stack()
                     .buildHandleOutput(consensusNow, exchangeRateManager.exchangeRates())
-                    .recordsOrThrow();
+                    .recordSourceOrThrow();
+            return ((LegacyListRecordSource) recordSource).precomputedRecords();
         };
     }
 

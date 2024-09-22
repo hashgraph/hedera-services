@@ -19,7 +19,7 @@ package com.hedera.node.app.workflows.handle;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.block.stream.BlockItem;
-import com.hedera.node.app.state.SingleTransactionRecord;
+import com.hedera.node.app.spi.records.RecordSource;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
@@ -32,18 +32,17 @@ import java.util.List;
  *     <li>The block stream output items</li>
  * </ol>
  * @param blockItems maybe the block stream output items
- * @param recordStreamItems maybe the V6 record stream items
+ * @param recordStreamSource maybe record source derived from the V6 record stream items
  */
-public record HandleOutput(
-        @Nullable List<BlockItem> blockItems, @Nullable List<SingleTransactionRecord> recordStreamItems) {
+public record HandleOutput(@Nullable List<BlockItem> blockItems, @Nullable RecordSource recordStreamSource) {
     public HandleOutput {
         if (blockItems == null) {
-            requireNonNull(recordStreamItems);
+            requireNonNull(recordStreamSource);
         }
     }
 
-    public @NonNull List<SingleTransactionRecord> recordsOrThrow() {
-        return requireNonNull(recordStreamItems);
+    public @NonNull RecordSource recordSourceOrThrow() {
+        return requireNonNull(recordStreamSource);
     }
 
     public @NonNull List<BlockItem> blocksItemsOrThrow() {

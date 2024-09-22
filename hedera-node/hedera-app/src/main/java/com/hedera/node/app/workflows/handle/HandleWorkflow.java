@@ -29,6 +29,7 @@ import static com.hedera.node.app.state.logging.TransactionStateLogger.logStartU
 import static com.hedera.node.app.state.merkle.VersionUtils.isSoOrdered;
 import static com.hedera.node.app.workflows.handle.TransactionType.GENESIS_TRANSACTION;
 import static com.hedera.node.app.workflows.handle.TransactionType.POST_UPGRADE_TRANSACTION;
+import static com.hedera.node.app.workflows.prehandle.PreHandleResult.Status.NODE_DUE_DILIGENCE_FAILURE;
 import static com.swirlds.platform.system.InitTrigger.EVENT_STREAM_RECOVERY;
 import static com.swirlds.state.spi.HapiUtils.SEMANTIC_VERSION_COMPARATOR;
 import static java.util.Objects.requireNonNull;
@@ -55,6 +56,9 @@ import com.hedera.node.app.spi.authorization.Authorizer;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.workflows.record.StreamBuilder;
 import com.hedera.node.app.state.HederaRecordCache;
+import com.hedera.node.app.state.HederaRecordCache.DueDiligenceFailure;
+import com.hedera.node.app.state.recordcache.LegacyListRecordSource;
+import com.hedera.node.app.state.recordcache.ListRecordSource;
 import com.hedera.node.app.store.WritableStoreFactory;
 import com.hedera.node.app.throttle.NetworkUtilizationManager;
 import com.hedera.node.app.throttle.ThrottleServiceManager;
@@ -309,7 +313,8 @@ public class HandleWorkflow {
         }
         final var handleOutput = execute(userTxn);
         if (blockStreamConfig.streamRecords()) {
-            blockRecordManager.endUserTransaction(handleOutput.recordsOrThrow().stream(), state);
+            final var records = ((LegacyListRecordSource) handleOutput.recordSourceOrThrow()).precomputedRecords();
+            blockRecordManager.endUserTransaction(records.stream(), state);
         }
         if (blockStreamConfig.streamBlocks()) {
             handleOutput.blocksItemsOrThrow().forEach(blockStreamManager::writeItem);
@@ -368,8 +373,14 @@ public class HandleWorkflow {
             // Note that we don't yet support producing ONLY blocks, because we haven't integrated
             // translators from block items to records for answering queries
             if (blockStreamConfig.streamRecords()) {
-                recordCache.add(
-                        userTxn.creatorInfo().nodeId(), userTxn.txnInfo().payerID(), handleOutput.recordsOrThrow());
+                final var dueDiligenceFailure = userTxn.preHandleResult().status() == NODE_DUE_DILIGENCE_FAILURE
+                        ? DueDiligenceFailure.YES
+                        : DueDiligenceFailure.NO;
+                recordCache.addRecordSource(
+                        userTxn.creatorInfo().nodeId(),
+                        userTxn.txnInfo().transactionID(),
+                        dueDiligenceFailure,
+                        handleOutput.recordSourceOrThrow());
             } else {
                 throw new IllegalStateException("Records must be produced directly without block item translators");
             }
@@ -404,11 +415,13 @@ public class HandleWorkflow {
                 .status(FAIL_INVALID)
                 .consensusTimestamp(userTxn.consensusNow());
         final var failInvalidRecord = failInvalidBuilder.build();
-        recordCache.add(
+        final var recordStreamSource = new ListRecordSource(failInvalidRecord.transactionRecord());
+        recordCache.addRecordSource(
                 userTxn.creatorInfo().nodeId(),
-                requireNonNull(userTxn.txnInfo().payerID()),
-                List.of(failInvalidRecord));
-        return new HandleOutput(blockItems, List.of(failInvalidRecord));
+                userTxn.txnInfo().transactionID(),
+                DueDiligenceFailure.NO,
+                recordStreamSource);
+        return new HandleOutput(blockItems, recordStreamSource);
     }
 
     /**

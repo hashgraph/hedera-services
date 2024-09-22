@@ -123,6 +123,7 @@ public abstract class AbstractSavepoint extends BuilderSinkImpl implements Savep
         final var builder =
                 switch (streamMode) {
                     case RECORDS -> new RecordStreamBuilder(reversingBehavior, customizer, txnCategory);
+                    case BLOCKS -> null;
                     case BOTH -> new PairedStreamBuilder(reversingBehavior, customizer, txnCategory);
                 };
         if (!customizer.shouldSuppressRecord()) {

@@ -52,7 +52,8 @@ public interface RecordCache {
      * For mono-service fidelity, records with these statuses do not prevent valid transactions with
      * the same id from reaching consensus and being handled.
      */
-    Set<ResponseCodeEnum> DUE_DILIGENCE_FAILURES = EnumSet.of(INVALID_NODE_ACCOUNT, INVALID_PAYER_SIGNATURE);
+    Set<ResponseCodeEnum> NON_UNIQUE_FAILURES = EnumSet.of(INVALID_NODE_ACCOUNT, INVALID_PAYER_SIGNATURE);
+
     /**
      * And when ordering records for queries, we treat records with unclassifiable statuses as the
      * lowest "priority"; so that e.g. if a transaction with id {@code X} resolves to {@link ResponseCodeEnum#SUCCESS}
@@ -64,9 +65,9 @@ public interface RecordCache {
     @SuppressWarnings("java:S3358")
     Comparator<TransactionRecord> RECORD_COMPARATOR = Comparator.<TransactionRecord, ResponseCodeEnum>comparing(
                     rec -> rec.receiptOrThrow().status(),
-                    (a, b) -> DUE_DILIGENCE_FAILURES.contains(a) == DUE_DILIGENCE_FAILURES.contains(b)
+                    (a, b) -> NON_UNIQUE_FAILURES.contains(a) == NON_UNIQUE_FAILURES.contains(b)
                             ? 0
-                            : (DUE_DILIGENCE_FAILURES.contains(b) ? -1 : 1))
+                            : (NON_UNIQUE_FAILURES.contains(b) ? -1 : 1))
             .thenComparing(rec -> rec.consensusTimestampOrElse(Timestamp.DEFAULT), TIMESTAMP_COMPARATOR);
 
     /**
@@ -182,5 +183,4 @@ public interface RecordCache {
      */
     @NonNull
     List<TransactionRecord> getRecords(@NonNull AccountID accountID);
-
 }
