@@ -26,6 +26,7 @@ import static com.swirlds.common.io.streams.internal.SerializationOperation.READ
 import static com.swirlds.common.io.streams.internal.SerializationOperation.READ_SERIALIZABLE;
 import static com.swirlds.common.io.streams.internal.SerializationOperation.READ_SERIALIZABLE_LIST;
 import static com.swirlds.common.io.streams.internal.SerializationOperation.STREAM_OPENED;
+import static com.swirlds.common.test.fixtures.ConfigurationUtils.configuration;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -57,6 +58,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicBoolean;
+
+import com.swirlds.virtualmap.VirtualMap;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
@@ -77,12 +80,12 @@ class SerializationDebugTest {
         new TestConfigBuilder().getOrCreateConfig();
 
         final ConstructableRegistry registry = ConstructableRegistry.getInstance();
-        registry.registerConstructables("com.swirlds");
         registry.registerConstructable(new ClassConstructorPair(MerkleMap.class, MerkleMap::new));
         registry.registerConstructable(new ClassConstructorPair(MerkleBinaryTree.class, MerkleBinaryTree::new));
         registry.registerConstructable(
                 new ClassConstructorPair(MerkleTreeInternalNode.class, MerkleTreeInternalNode::new));
         registry.registerConstructable(new ClassConstructorPair(ExplodingValue.class, ExplodingValue::new));
+        registry.registerConstructable(new ClassConstructorPair(VirtualMap.class, () -> new VirtualMap(configuration())));
     }
 
     /**

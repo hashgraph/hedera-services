@@ -16,11 +16,13 @@
 
 package com.swirlds.demo.platform;
 
+import static com.swirlds.common.test.fixtures.ConfigurationUtils.configuration;
 import static com.swirlds.merkle.test.fixtures.map.pta.TransactionRecord.DEFAULT_EXPIRATION_TIME;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.crypto.Hash;
@@ -36,6 +38,7 @@ import com.swirlds.demo.merkle.map.MapValueData;
 import com.swirlds.demo.merkle.map.MapValueFCQ;
 import com.swirlds.demo.merkle.map.internal.DummyExpectedFCMFamily;
 import com.swirlds.demo.merkle.map.internal.ExpectedFCMFamily;
+import com.swirlds.demo.platform.actions.QuorumResult;
 import com.swirlds.demo.platform.expiration.ExpirationRecordEntry;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.merkle.test.fixtures.map.lifecycle.ExpectedValue;
@@ -59,6 +62,8 @@ import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.PriorityBlockingQueue;
+
+import com.swirlds.virtualmap.VirtualMap;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -78,7 +83,8 @@ class MapValueSerializableTest {
 
     @BeforeAll
     public static void setUp() throws ConstructableRegistryException {
-        ConstructableRegistry.getInstance().registerConstructables("com.swirlds");
+        ConstructableRegistry registry = ConstructableRegistry.getInstance();
+        registry.registerConstructable(new ClassConstructorPair(VirtualMap.class, () -> new VirtualMap(configuration())));
         cryptography = MerkleCryptoFactory.getInstance();
     }
 

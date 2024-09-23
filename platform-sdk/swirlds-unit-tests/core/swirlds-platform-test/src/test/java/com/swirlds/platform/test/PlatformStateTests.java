@@ -16,12 +16,14 @@
 
 package com.swirlds.platform.test;
 
+import static com.swirlds.common.test.fixtures.ConfigurationUtils.configuration;
 import static com.swirlds.platform.test.PlatformStateUtils.randomPlatformState;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertSame;
 
+import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
@@ -32,6 +34,8 @@ import com.swirlds.platform.state.PlatformState;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Path;
+
+import com.swirlds.virtualmap.VirtualMap;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
@@ -78,7 +82,7 @@ class PlatformStateTests {
     @DisplayName("Platform State Serialization Test")
     @SuppressWarnings("resource")
     void platformStateSerializationTest() throws IOException, ConstructableRegistryException {
-        ConstructableRegistry.getInstance().registerConstructables("com.swirlds");
+        ConstructableRegistry.getInstance().registerConstructable(new ClassConstructorPair(VirtualMap.class, () -> new VirtualMap(configuration())));
 
         final InputOutputStream io = new InputOutputStream();
         final PlatformState state = (PlatformState) randomPlatformState(new PlatformState());

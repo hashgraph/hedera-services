@@ -16,23 +16,31 @@
 
 package com.swirlds.demo.platform;
 
+import static com.swirlds.common.test.fixtures.ConfigurationUtils.configuration;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.test.fixtures.io.InputOutputStream;
+import com.swirlds.common.test.fixtures.merkle.dummy.DummyMerkleInternal;
+import com.swirlds.common.test.fixtures.merkle.dummy.DummyMerkleInternal2;
 import com.swirlds.demo.platform.actions.QuorumResult;
 import com.swirlds.demo.platform.fs.stresstest.proto.ControlType;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.concurrent.atomic.AtomicReferenceArray;
+
+import com.swirlds.virtualmap.VirtualMap;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 public class ControlActionTest {
     @BeforeAll
     public static void setUp() throws ConstructableRegistryException {
-        ConstructableRegistry.getInstance().registerConstructables("com.swirlds");
+        ConstructableRegistry registry = ConstructableRegistry.getInstance();
+        registry.registerConstructable(new ClassConstructorPair(QuorumResult.class, QuorumResult::new));
+        registry.registerConstructable(new ClassConstructorPair(VirtualMap.class, () -> new VirtualMap(configuration())));
     }
 
     @Test

@@ -17,11 +17,14 @@
 package com.swirlds.demo.virtualmerkle;
 
 import static com.swirlds.demo.virtualmerkle.VirtualMerkleLeafHasher.hashOf;
-import static com.swirlds.merkle.test.fixtures.map.util.MerkleMapTestUtil.configuration;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import com.swirlds.common.config.StateCommonConfig;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.io.config.TemporaryFileConfig;
+import com.swirlds.config.api.Configuration;
+import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.demo.virtualmerkle.map.smartcontracts.bytecode.SmartContractByteCodeMapKey;
 import com.swirlds.demo.virtualmerkle.map.smartcontracts.bytecode.SmartContractByteCodeMapKeySerializer;
 import com.swirlds.demo.virtualmerkle.map.smartcontracts.bytecode.SmartContractByteCodeMapValue;
@@ -36,6 +39,8 @@ import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
+
+import com.swirlds.virtualmap.config.VirtualMapConfig;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
@@ -45,6 +50,16 @@ class VirtualMerkleLeafHasherTest {
     static SmartContractByteCodeMapKeySerializer keySerializer;
     static SmartContractByteCodeMapValueSerializer valueSerializer;
     static MerkleDbDataSourceBuilder dataSourceBuilder;
+
+    // TODO: refactor
+    static Configuration configuration() {
+        return ConfigurationBuilder.create()
+                .withConfigDataType(TemporaryFileConfig.class)
+                .withConfigDataType(StateCommonConfig.class)
+                .withConfigDataType(VirtualMapConfig.class)
+                .withConfigDataType(MerkleDbConfig.class)
+                .build();
+    }
 
     @BeforeAll
     static void beforeAll() {

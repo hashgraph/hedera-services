@@ -18,6 +18,7 @@ package com.swirlds.demo.virtualmerkle;
 
 import static com.swirlds.common.io.utility.FileUtils.getAbsolutePath;
 import static com.swirlds.common.merkle.iterators.MerkleIterationOrder.BREADTH_FIRST;
+import static com.swirlds.common.test.fixtures.ConfigurationUtils.configuration;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -172,7 +173,7 @@ public class VirtualMerkleLeafHasher<K extends VirtualKey, V extends VirtualValu
             Hash byteCodeHash;
 
             try {
-                final VirtualMap<AccountVirtualMapKey, AccountVirtualMapValue> accountsMap = new VirtualMap<>();
+                final VirtualMap<AccountVirtualMapKey, AccountVirtualMapValue> accountsMap = new VirtualMap<>(configuration());
                 accountsMap.loadFromFile(roundFolder.resolve(accountsName));
                 final VirtualMerkleLeafHasher<AccountVirtualMapKey, AccountVirtualMapValue> accountsHasher =
                         new VirtualMerkleLeafHasher<>(accountsMap);
@@ -182,7 +183,7 @@ public class VirtualMerkleLeafHasher<K extends VirtualKey, V extends VirtualValu
             }
 
             try {
-                final VirtualMap<SmartContractMapKey, SmartContractMapValue> scMap = new VirtualMap<>();
+                final VirtualMap<SmartContractMapKey, SmartContractMapValue> scMap = new VirtualMap<>(configuration());
                 scMap.loadFromFile(roundFolder.resolve(scName));
                 final VirtualMerkleLeafHasher<SmartContractMapKey, SmartContractMapValue> scHasher =
                         new VirtualMerkleLeafHasher<>(scMap);
@@ -193,7 +194,7 @@ public class VirtualMerkleLeafHasher<K extends VirtualKey, V extends VirtualValu
 
             try {
                 final VirtualMap<SmartContractByteCodeMapKey, SmartContractByteCodeMapValue> byteCodeMap =
-                        new VirtualMap<>();
+                        new VirtualMap<>(configuration());
                 byteCodeMap.loadFromFile(roundFolder.resolve(scByteCodeName));
                 final VirtualMerkleLeafHasher<SmartContractByteCodeMapKey, SmartContractByteCodeMapValue>
                         byteCodeHasher = new VirtualMerkleLeafHasher<>(byteCodeMap);

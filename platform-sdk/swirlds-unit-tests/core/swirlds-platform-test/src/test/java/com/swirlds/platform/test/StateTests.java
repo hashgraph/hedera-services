@@ -16,10 +16,12 @@
 
 package com.swirlds.platform.test;
 
+import static com.swirlds.common.test.fixtures.ConfigurationUtils.configuration;
 import static com.swirlds.common.test.fixtures.merkle.util.MerkleTestUtils.areTreesEqual;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
@@ -31,6 +33,8 @@ import com.swirlds.platform.state.State;
 import com.swirlds.platform.test.fixtures.state.BlockingSwirldState;
 import java.io.IOException;
 import java.nio.file.Path;
+
+import com.swirlds.virtualmap.VirtualMap;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
@@ -51,7 +55,7 @@ class StateTests {
     static void setUp() throws ConstructableRegistryException {
         new TestConfigBuilder().getOrCreateConfig();
 
-        ConstructableRegistry.getInstance().registerConstructables("com.swirlds");
+        ConstructableRegistry.getInstance().registerConstructable(new ClassConstructorPair(VirtualMap.class, () -> new VirtualMap(configuration())));
 
         state = new State();
         state.setSwirldState(new BlockingSwirldState());
