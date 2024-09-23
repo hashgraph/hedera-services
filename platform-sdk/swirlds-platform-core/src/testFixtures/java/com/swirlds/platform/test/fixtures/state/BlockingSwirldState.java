@@ -26,7 +26,7 @@ import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.platform.state.MerkleRoot;
 import com.swirlds.platform.state.MerkleStateRoot;
-import com.swirlds.platform.state.PlatformStateAccessor;
+import com.swirlds.platform.state.PlatformStateModifier;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.SwirldState;
@@ -77,7 +77,7 @@ public class BlockingSwirldState extends MerkleStateRoot {
     }
 
     @Override
-    public void handleConsensusRound(final Round round, final PlatformStateAccessor platformState) {
+    public void handleConsensusRound(final Round round, final PlatformStateModifier platformState) {
         // intentionally does nothing
     }
 
