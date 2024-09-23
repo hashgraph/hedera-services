@@ -56,5 +56,36 @@ jobs:
 
       - name: Report failure
         if: ${{ failure() }}
-        run: |
-          echo "Failure encountered. Report on slack/pager duty"
+        uses: slackapi/slack-github-action@6c661ce58804a1a20f6dc5fbee7f0381b469e001 # v1.25.0
+        env:
+          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_CITR_WEBHOOK }}
+        with:
+          payload: |
+            {
+              "attachments": [
+                {
+                  "color": "#7647cd",
+                  "blocks": [
+                    {
+                      "type": "header",
+                      "text": {
+                        "type": "plain_text",
+                        "text": ":grey_exclamation: Hedera Services - XTS Candidate Tagging Failed",
+                        "emoji": true
+                      }
+                    },
+                    {
+                      "type": "divider"
+                    },
+                    {
+                      "type": "section",
+                      "text": {
+                        "type": "mrkdwn",
+                        "text": "*Source Commit*: \n<${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}>"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }

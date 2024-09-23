@@ -170,6 +170,7 @@ jobs:
       - fetch-xts-candidate
       - hedera-node-jrs-panel
       - tag-for-promotion
+
     if: ${{ needs.abbreviated-panel.result != 'success' ||
             needs.extended-test-suite.result != 'success' ||
             needs.fetch-xts-candidate.result != 'success' ||
