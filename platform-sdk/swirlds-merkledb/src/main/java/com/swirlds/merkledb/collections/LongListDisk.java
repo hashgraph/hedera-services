@@ -22,6 +22,8 @@ import com.swirlds.common.io.utility.LegacyTemporaryFileBuilder;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.merkledb.utilities.MerkleDbFileUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
+
+import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.io.UncheckedIOException;
@@ -33,6 +35,7 @@ import java.nio.file.StandardOpenOption;
 import java.util.Arrays;
 import java.util.Deque;
 import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.concurrent.atomic.AtomicReferenceArray;
 
 /**
  *  A direct on disk implementation of LongList. This implementation creates a temporary file to store the data.
@@ -87,6 +90,7 @@ public class LongListDisk extends AbstractLongList<Long> {
 
     LongListDisk(final int numLongsPerChunk, final long maxLongs, final long reservedBufferLength, Configuration configuration) {
         super(numLongsPerChunk, maxLongs, reservedBufferLength);
+        this.configuration = configuration;
         try {
             currentFileChannel = FileChannel.open(
                     createTempFile(DEFAULT_FILE_NAME, configuration),
@@ -97,7 +101,6 @@ public class LongListDisk extends AbstractLongList<Long> {
             throw new UncheckedIOException(e);
         }
         freeChunks = new ConcurrentLinkedDeque<>();
-        this.configuration = configuration;
         fillBufferWithZeroes(initOrGetTransferBuffer());
     }
 
@@ -111,8 +114,14 @@ public class LongListDisk extends AbstractLongList<Long> {
         this(file, DEFAULT_RESERVED_BUFFER_LENGTH, configuration);
     }
 
-    LongListDisk(final Path file, final long reservedBufferLength, final Configuration configuration) throws IOException {
-        super(file, reservedBufferLength);
+    LongListDisk(final Path path, final long reservedBufferLength, final Configuration configuration) throws IOException {
+        super(path, reservedBufferLength);
+        this.configuration = configuration;
+        final File file = path.toFile();
+        if (!file.exists() || file.length() == 0) {
+            // no existing content, initializing with default values
+            onEmptyOrAbsentSourceFile(path);
+        }
         freeChunks = new ConcurrentLinkedDeque<>();
         // IDE complains that the tempFile is not initialized, but it's initialized in readBodyFromFileChannelOnInit
         // which is called from the constructor of the parent class
@@ -122,14 +131,12 @@ public class LongListDisk extends AbstractLongList<Long> {
         }
         currentFileChannel = FileChannel.open(
                 tempFile, StandardOpenOption.CREATE, StandardOpenOption.READ, StandardOpenOption.WRITE);
-        this.configuration = configuration;
     }
 
     /**
      * Initializes the file channel to a temporary file.
      * @param path the path to the source file
      */
-    @Override
     protected void onEmptyOrAbsentSourceFile(final Path path) throws IOException {
         tempFile = createTempFile(path.toFile().getName(), configuration);
     }

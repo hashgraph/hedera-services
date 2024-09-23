@@ -175,7 +175,6 @@ public abstract class AbstractLongList<C> implements LongList {
             maxLongs = DEFAULT_MAX_LONGS_TO_STORE;
             currentFileHeaderSize = FILE_HEADER_SIZE_V2;
             chunkList = new AtomicReferenceArray<>(calculateNumberOfChunks(maxLongs));
-            onEmptyOrAbsentSourceFile(path);
         } else {
             try (final FileChannel fileChannel = FileChannel.open(path, StandardOpenOption.READ)) {
                 // read header from existing file
@@ -229,15 +228,6 @@ public abstract class AbstractLongList<C> implements LongList {
      */
     protected abstract void readBodyFromFileChannelOnInit(String sourceFileName, FileChannel fileChannel)
             throws IOException;
-
-    /**
-     * Called when the list is initialized from an empty or absent source file.
-     * @param path the path to the source file
-     * @throws IOException if there was a problem reading the file
-     */
-    protected void onEmptyOrAbsentSourceFile(Path path) throws IOException {
-        // do nothing
-    }
 
     /**
      * Loads the long at the given index.

@@ -281,15 +281,15 @@ public class MerkleTestBase extends StateTestBase {
             registry.registerConstructables("com.swirlds.merklemap");
             registry.registerConstructables("com.swirlds.merkledb");
             registry.registerConstructables("com.swirlds.fcqueue");
-            registry.registerConstructable(new ClassConstructorPair(VirtualMap.class, () -> new VirtualMap(configuration())));
-            registry.registerConstructable(new ClassConstructorPair(VirtualMapState.class, VirtualMapState::new));
-            registry.registerConstructable(new ClassConstructorPair(VirtualRootNode.class, () -> new VirtualRootNode<>(configuration())));
-            registry.registerConstructable(new ClassConstructorPair(VirtualNodeCache.class, () -> new VirtualNodeCache<>(configuration().getConfigData(VirtualMapConfig.class))));
-            registry.registerConstructable(new ClassConstructorPair(MerkleDbDataSourceBuilder.class, () -> new MerkleDbDataSourceBuilder(configuration())));
             registry.registerConstructables("com.swirlds.common.merkle");
             registry.registerConstructables("com.swirlds.common");
             registry.registerConstructables("com.swirlds.merkle");
             registry.registerConstructables("com.swirlds.merkle.tree");
+            registry.registerConstructable(new ClassConstructorPair(VirtualMapState.class, VirtualMapState::new));
+            registry.registerConstructable(new ClassConstructorPair(VirtualMap.class, () -> new VirtualMap(configuration())));
+            registry.registerConstructable(new ClassConstructorPair(VirtualRootNode.class, () -> new VirtualRootNode<>(configuration())));
+            registry.registerConstructable(new ClassConstructorPair(VirtualNodeCache.class, () -> new VirtualNodeCache<>(configuration().getConfigData(VirtualMapConfig.class))));
+            registry.registerConstructable(new ClassConstructorPair(MerkleDbDataSourceBuilder.class, () -> new MerkleDbDataSourceBuilder(configuration())));
         } catch (ConstructableRegistryException ex) {
             throw new AssertionError(ex);
         }

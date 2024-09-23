@@ -36,6 +36,7 @@ import java.util.List;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 
+import static com.swirlds.virtualmap.test.fixtures.VirtualMapTestUtils.configuration;
 import static com.swirlds.virtualmap.test.fixtures.VirtualMapTestUtils.vmConfig;
 
 @SuppressWarnings("jol")
@@ -128,14 +129,13 @@ public class VirtualTestBase {
         // Ensure VirtualNodeCache.release() returns clean
         System.setProperty("syncCleaningPool", "true");
         final ConstructableRegistry registry = ConstructableRegistry.getInstance();
+        registry.registerConstructables("com.swirlds.virtualmap.test.fixtures");
+        registry.registerConstructables("com.swirlds.common.crypto");
         registry.registerConstructable(new ClassConstructorPair(TestKey.class, () -> new TestKey(0L)));
         registry.registerConstructable(new ClassConstructorPair(TestValue.class, () -> new TestValue("")));
         registry.registerConstructable(new ClassConstructorPair(TestInternal.class, TestInternal::new));
         registry.registerConstructable(new ClassConstructorPair(TestLeaf.class, TestLeaf::new));
-        registry.registerConstructables("com.swirlds.virtualmap");
-        registry.registerConstructables("com.swirlds.virtualmap.test.fixtures");
-        registry.registerConstructables("com.swirlds.common.crypto");
-        registry.registerConstructable(new ClassConstructorPair(VirtualMap.class, VirtualMap::new));
+        registry.registerConstructable(new ClassConstructorPair(VirtualMap.class, () -> new VirtualMap(configuration())));
     }
 
     @BeforeEach
