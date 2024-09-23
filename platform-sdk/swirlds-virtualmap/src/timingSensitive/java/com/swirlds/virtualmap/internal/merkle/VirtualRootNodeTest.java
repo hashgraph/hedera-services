@@ -16,6 +16,7 @@
 
 package com.swirlds.virtualmap.internal.merkle;
 
+import static com.swirlds.common.test.fixtures.AssertionUtils.assertEventuallyTrue;
 import static com.swirlds.common.test.fixtures.RandomUtils.nextInt;
 import static com.swirlds.virtualmap.test.fixtures.VirtualMapTestUtils.createRoot;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -53,6 +54,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
@@ -426,6 +428,54 @@ class VirtualRootNodeTest extends VirtualTestBase {
         }
         assertFalse(root.shouldBeFlushed()); // should still have a custom flush threshold
         root.release();
+    }
+
+    @Test
+    void inMemoryModeNoFlushTest() {
+        final Configuration configuration = new TestConfigBuilder()
+                .withValue(VirtualMapConfig_.COPY_FLUSH_THRESHOLD, 1_000_000)
+                .getOrCreateConfig();
+        ConfigurationHolder.getInstance().setConfiguration(configuration);
+
+        VirtualRootNode<TestKey, TestValue> root =
+                new VirtualRootNode<>(TestKeySerializer.INSTANCE, TestValueSerializer.INSTANCE, new InMemoryBuilder());
+
+        final VirtualRootNode<TestKey, TestValue> copy0 = root;
+        VirtualMapState state = new VirtualMapState("label");
+        copy0.postInit(new VirtualStateAccessorImpl(state));
+
+        for (int i = 0; i < 100; i++) {
+            final TestKey key = new TestKey(i);
+            final TestValue value = new TestValue(1000000 + i);
+            root.put(key, value);
+        }
+
+        final int nCopies = 10000;
+        final VirtualRootNode[] copies = new VirtualRootNode[nCopies];
+        copies[0] = root;
+        for (int copyNo = 1; copyNo < nCopies; copyNo++) {
+            final VirtualRootNode<TestKey, TestValue> copy = root.copy();
+            copies[copyNo] = copy;
+            state = state.copy();
+            copy.postInit(new VirtualStateAccessorImpl(state));
+            root.release();
+            root = copy;
+            for (int i = 0; i < 100; i++) {
+                final int toAdd = copyNo * 100 + i;
+                final TestKey keyToAdd = new TestKey(toAdd);
+                final TestValue value = new TestValue(1000000 + toAdd);
+                root.put(keyToAdd, value);
+                final int toRemove = (copyNo - 1) * 100 + i;
+                final TestKey keytoRemove = new TestKey(toRemove);
+                root.remove(keytoRemove);
+            }
+        }
+
+        // The last two copies should not be checked: the last one is mutable, the one before is not
+        // mergeable until its next copy is immutable
+        for (int i = 0; i < nCopies - 2; i++) {
+            assertEventuallyTrue(copies[i]::isMerged, Duration.ofSeconds(16), "copy " + i + " should be merged");
+        }
     }
 
     @Test
