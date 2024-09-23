@@ -17,7 +17,9 @@
 package com.hedera.node.app.platform.event;
 
 import com.hedera.hapi.node.base.SemanticVersion;
+import com.hedera.node.app.version.HederaSoftwareVersion;
 import com.hedera.node.app.version.ServicesSoftwareVersion;
+import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.crypto.Hash;
@@ -25,7 +27,9 @@ import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.event.hashing.DefaultEventHasher;
 import com.swirlds.platform.recovery.internal.EventStreamSingleFileIterator;
 import com.swirlds.platform.system.StaticSoftwareVersion;
+import com.swirlds.platform.system.events.CesEvent;
 import com.swirlds.platform.system.events.EventDescriptorWrapper;
+import com.swirlds.virtualmap.VirtualMap;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.File;
 import java.io.IOException;
@@ -40,11 +44,17 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import static com.swirlds.common.test.fixtures.ConfigurationUtils.configuration;
+
 public class EventMigrationTest {
 
     @BeforeAll
     public static void setUp() throws ConstructableRegistryException {
-        ConstructableRegistry.getInstance().registerConstructables("");
+        ConstructableRegistry registry = ConstructableRegistry.getInstance();
+        registry.registerConstructable(new ClassConstructorPair(Hash.class, Hash::new));
+        registry.registerConstructable(new ClassConstructorPair(CesEvent.class, CesEvent::new));
+        registry.registerConstructable(new ClassConstructorPair(HederaSoftwareVersion.class, HederaSoftwareVersion::new));
+        registry.registerConstructable(new ClassConstructorPair(VirtualMap.class, () -> new VirtualMap(configuration())));
         StaticSoftwareVersion.setSoftwareVersion(new ServicesSoftwareVersion(SemanticVersion.DEFAULT, 0));
     }
 

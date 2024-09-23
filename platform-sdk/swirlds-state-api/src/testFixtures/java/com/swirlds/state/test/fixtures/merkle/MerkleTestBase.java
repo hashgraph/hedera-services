@@ -21,6 +21,7 @@ import static com.swirlds.state.merkle.StateUtils.computeClassId;
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.pbj.runtime.Codec;
 import com.swirlds.common.config.StateCommonConfig;
+import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.crypto.DigestType;
@@ -49,14 +50,19 @@ import com.swirlds.state.merkle.singleton.SingletonNode;
 import com.swirlds.state.test.fixtures.StateTestBase;
 import com.swirlds.virtualmap.VirtualMap;
 import com.swirlds.virtualmap.config.VirtualMapConfig;
+import com.swirlds.virtualmap.internal.cache.VirtualNodeCache;
+import com.swirlds.virtualmap.internal.merkle.VirtualMapState;
+import com.swirlds.virtualmap.internal.merkle.VirtualRootNode;
 import com.swirlds.virtualmap.serialize.KeySerializer;
 import com.swirlds.virtualmap.serialize.ValueSerializer;
 import edu.umd.cs.findbugs.annotations.NonNull;
+
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.stream.Stream;
+
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.provider.Arguments;
@@ -84,6 +90,15 @@ import org.junit.jupiter.params.provider.Arguments;
  * even if they don't need it, I just use it for virtual map specific tests).
  */
 public class MerkleTestBase extends StateTestBase {
+
+    public static Configuration configuration() {
+        return ConfigurationBuilder.create()
+                .withConfigDataType(VirtualMapConfig.class)
+                .withConfigDataType(MerkleDbConfig.class)
+                .withConfigDataType(TemporaryFileConfig.class)
+                .withConfigDataType(StateCommonConfig.class)
+                .build();
+    }
 
     protected Configuration configuration = ConfigurationBuilder.create()
             .withConfigDataType(VirtualMapConfig.class)
@@ -266,7 +281,11 @@ public class MerkleTestBase extends StateTestBase {
             registry.registerConstructables("com.swirlds.merklemap");
             registry.registerConstructables("com.swirlds.merkledb");
             registry.registerConstructables("com.swirlds.fcqueue");
-            registry.registerConstructables("com.swirlds.virtualmap");
+            registry.registerConstructable(new ClassConstructorPair(VirtualMap.class, () -> new VirtualMap(configuration())));
+            registry.registerConstructable(new ClassConstructorPair(VirtualMapState.class, VirtualMapState::new));
+            registry.registerConstructable(new ClassConstructorPair(VirtualRootNode.class, () -> new VirtualRootNode<>(configuration())));
+            registry.registerConstructable(new ClassConstructorPair(VirtualNodeCache.class, () -> new VirtualNodeCache<>(configuration().getConfigData(VirtualMapConfig.class))));
+            registry.registerConstructable(new ClassConstructorPair(MerkleDbDataSourceBuilder.class, () -> new MerkleDbDataSourceBuilder(configuration())));
             registry.registerConstructables("com.swirlds.common.merkle");
             registry.registerConstructables("com.swirlds.common");
             registry.registerConstructables("com.swirlds.merkle");

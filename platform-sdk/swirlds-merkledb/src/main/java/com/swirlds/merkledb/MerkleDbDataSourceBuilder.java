@@ -16,16 +16,20 @@
 
 package com.swirlds.merkledb;
 
+import com.swirlds.common.constructable.ConstructableClass;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.io.utility.LegacyTemporaryFileBuilder;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.merkledb.constructable.constructors.MerkleDbDataSourceBuilderConstructor;
 import com.swirlds.virtualmap.datasource.VirtualDataSource;
 import com.swirlds.virtualmap.datasource.VirtualDataSourceBuilder;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Path;
 import java.util.Objects;
+
+import static com.swirlds.merkledb.MerkleDbDataSourceBuilder.CLASS_ID;
 
 /**
  * Virtual data source builder that manages {@link MerkleDb} based data sources.
@@ -37,9 +41,10 @@ import java.util.Objects;
  * between data sources with the same label, e.g. on copy or snapshot, MerkleDb builders
  * use different database directories, usually managed using {@link LegacyTemporaryFileBuilder}.
  */
+@ConstructableClass(value = CLASS_ID, constructorType = MerkleDbDataSourceBuilderConstructor.class)
 public class MerkleDbDataSourceBuilder implements VirtualDataSourceBuilder {
 
-    private static final long CLASS_ID = 0x176ede0e1a69828L;
+    public static final long CLASS_ID = 0x176ede0e1a69828L;
 
     private static final class ClassVersion {
         public static final int ORIGINAL = 1;
@@ -62,7 +67,8 @@ public class MerkleDbDataSourceBuilder implements VirtualDataSourceBuilder {
     /**
      * Default constructor for deserialization purposes.
      */
-    public MerkleDbDataSourceBuilder() {
+    public MerkleDbDataSourceBuilder(final Configuration configuration) {
+        this.configuration = configuration;
         // for deserialization
     }
 
@@ -72,7 +78,7 @@ public class MerkleDbDataSourceBuilder implements VirtualDataSourceBuilder {
      * @param tableConfig
      *      Table configuration to use to create new data sources
      */
-    public MerkleDbDataSourceBuilder(final MerkleDbTableConfig tableConfig, Configuration configuration) {
+    public MerkleDbDataSourceBuilder(final MerkleDbTableConfig tableConfig, final Configuration configuration) {
         this(null, tableConfig, configuration);
     }
 
@@ -84,7 +90,7 @@ public class MerkleDbDataSourceBuilder implements VirtualDataSourceBuilder {
      * @param tableConfig
      *      Table configuration to use to create new data sources
      */
-    public MerkleDbDataSourceBuilder(final Path databaseDir, final MerkleDbTableConfig tableConfig, Configuration configuration) {
+    public MerkleDbDataSourceBuilder(final Path databaseDir, final MerkleDbTableConfig tableConfig, final Configuration configuration) {
         this.databaseDir = databaseDir;
         this.tableConfig = tableConfig;
         this.configuration = configuration;

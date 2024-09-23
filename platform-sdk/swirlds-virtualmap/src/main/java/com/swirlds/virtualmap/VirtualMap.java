@@ -173,7 +173,8 @@ public final class VirtualMap<K extends VirtualKey, V extends VirtualValue> exte
      * Required by the {@link com.swirlds.common.constructable.RuntimeConstructable} contract.
      * This can <strong>only</strong> be called as part of serialization and reconnect, not for normal use.
      */
-    public VirtualMap() {
+    public VirtualMap(Configuration configuration) {
+        this.configuration = configuration;
         registryRecord = RuntimeObjectRegistry.createRecord(getClass());
     }
 
@@ -192,7 +193,7 @@ public final class VirtualMap<K extends VirtualKey, V extends VirtualValue> exte
             final ValueSerializer<V> valueSerializer,
             final VirtualDataSourceBuilder dataSourceBuilder,
             final Configuration configuration) {
-        this();
+        this(configuration);
         this.configuration = configuration;
         setChild(ChildIndices.MAP_STATE_CHILD_INDEX, new VirtualMapState(Objects.requireNonNull(label)));
         setChild(
@@ -207,8 +208,7 @@ public final class VirtualMap<K extends VirtualKey, V extends VirtualValue> exte
      * 		must not be null.
      */
     private VirtualMap(final VirtualMap<K, V> source) {
-        this();
-        this.configuration = source.configuration;
+        this(source.configuration);
         setChild(ChildIndices.MAP_STATE_CHILD_INDEX, source.getState().copy());
         setChild(ChildIndices.VIRTUAL_ROOT_CHILD_INDEX, source.getRoot().copy());
     }
