@@ -34,6 +34,7 @@ import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.r
 import static com.hedera.services.bdd.spec.assertions.TransferListAsserts.includingDeduction;
 import static com.hedera.services.bdd.spec.keys.KeyFactory.KeyType.THRESHOLD;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAliasedAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAutoCreatedAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractBytecode;
@@ -90,9 +91,11 @@ import static com.hedera.services.bdd.suites.contract.Utils.asToken;
 import static com.hedera.services.bdd.suites.contract.Utils.eventSignatureOf;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
 import static com.hedera.services.bdd.suites.contract.Utils.getResourcePath;
+import static com.hedera.services.bdd.suites.contract.hapi.ContractCallSuite.DEPOSIT;
 import static com.hedera.services.bdd.suites.contract.precompile.CreatePrecompileSuite.TOKEN_NAME;
 import static com.hedera.services.bdd.suites.crypto.AutoCreateUtils.updateSpecFor;
 import static com.hedera.services.bdd.suites.crypto.CryptoCreateSuite.ACCOUNT;
+import static com.hedera.services.bdd.suites.ethereum.HelloWorldEthereumSuite.depositAmount;
 import static com.hedera.services.bdd.suites.leaky.LeakyContractTestsSuite.RECEIVER;
 import static com.hedera.services.bdd.suites.token.TokenAssociationSpecs.MULTI_KEY;
 import static com.hedera.services.bdd.suites.token.TokenAssociationSpecs.VANILLA_TOKEN;
@@ -212,6 +215,29 @@ public class EthereumSuite {
                         // Quick assertion to verify top-level HAPI fees were still charged after aborting
                         getTxnRecord("createTokenTxn")
                                 .hasPriority(recordWith().transfers(includingDeduction("HAPI fees", RELAYER))));
+    }
+
+    @HapiTest
+    final Stream<DynamicTest> baseRelayerCostAsExpected() {
+        return hapiTest(
+                newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
+                cryptoCreate(RELAYER).balance(ONE_HUNDRED_HBARS),
+                cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS)),
+                uploadInitCode(PAY_RECEIVABLE_CONTRACT),
+                contractCreate(PAY_RECEIVABLE_CONTRACT).adminKey(THRESHOLD),
+                ethereumCall(PAY_RECEIVABLE_CONTRACT, DEPOSIT, BigInteger.valueOf(depositAmount))
+                        .type(EthTxData.EthTransactionType.EIP1559)
+                        .signingWith(SECP_256K1_SOURCE_KEY)
+                        .payingWith(RELAYER)
+                        .nonce(0)
+                        .gasPrice(100L)
+                        .maxFeePerGas(100L)
+                        .maxPriorityGas(2_000_000L)
+                        .gasLimit(1_000_000L)
+                        .sending(depositAmount),
+                // The relayer's cost to transmit a simple call with sufficient gas allowance is ≈ $0.0001
+                getAccountInfo(RELAYER)
+                        .has(accountWith().expectedBalanceWithChargedUsd(ONE_HUNDRED_HBARS, 0.0001, 0.5)));
     }
 
     @HapiTest
