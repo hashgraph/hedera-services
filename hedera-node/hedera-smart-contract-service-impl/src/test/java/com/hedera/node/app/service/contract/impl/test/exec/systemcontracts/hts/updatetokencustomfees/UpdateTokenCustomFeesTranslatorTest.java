@@ -44,6 +44,7 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.update
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.common.CallTestBase;
 import com.hedera.node.config.data.ContractsConfig;
+import com.hedera.node.config.data.TokensConfig;
 import com.swirlds.config.api.Configuration;
 import org.apache.tuweni.bytes.Bytes;
 import org.junit.jupiter.api.BeforeEach;
@@ -69,6 +70,9 @@ class UpdateTokenCustomFeesTranslatorTest extends CallTestBase {
 
     @Mock
     private ContractsConfig contractsConfig;
+
+    @Mock
+    private TokensConfig tokensConfig;
 
     @Mock
     private HederaWorldUpdater.Enhancement enhancement;
@@ -161,6 +165,9 @@ class UpdateTokenCustomFeesTranslatorTest extends CallTestBase {
         given(addressIdConverter.convert(any())).willReturn(OWNER_ID);
         given(attempt.defaultVerificationStrategy()).willReturn(verificationStrategy);
         given(attempt.systemContractGasCalculator()).willReturn(gasCalculator);
+        given(attempt.configuration()).willReturn(configuration);
+        given(configuration.getConfigData(TokensConfig.class)).willReturn(tokensConfig);
+        given(tokensConfig.maxCustomFeesAllowed()).willReturn(10);
 
         final var call = subject.callFrom(attempt);
         assertThat(call).isInstanceOf(DispatchForResponseCodeHtsCall.class);
@@ -192,6 +199,9 @@ class UpdateTokenCustomFeesTranslatorTest extends CallTestBase {
         given(addressIdConverter.convert(any())).willReturn(OWNER_ID);
         given(attempt.defaultVerificationStrategy()).willReturn(verificationStrategy);
         given(attempt.systemContractGasCalculator()).willReturn(gasCalculator);
+        given(attempt.configuration()).willReturn(configuration);
+        given(configuration.getConfigData(TokensConfig.class)).willReturn(tokensConfig);
+        given(tokensConfig.maxCustomFeesAllowed()).willReturn(10);
 
         final var call = subject.callFrom(attempt);
         assertThat(call).isInstanceOf(DispatchForResponseCodeHtsCall.class);

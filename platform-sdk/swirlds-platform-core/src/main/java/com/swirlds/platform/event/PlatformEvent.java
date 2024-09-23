@@ -29,7 +29,6 @@ import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.Hashable;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.consensus.ConsensusConstants;
-import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.events.ConsensusEvent;
 import com.swirlds.platform.system.events.EventDescriptorWrapper;
 import com.swirlds.platform.system.events.EventMetadata;
@@ -47,7 +46,7 @@ import java.util.Objects;
 import java.util.concurrent.CountDownLatch;
 
 /**
- * A class used to hold information about an event transferred through gossip
+ * A class used to hold information about an event throughout its lifecycle.
  */
 public class PlatformEvent implements ConsensusEvent, Hashable {
     private static final EventConsensusData NO_CONSENSUS =
@@ -97,8 +96,10 @@ public class PlatformEvent implements ConsensusEvent, Hashable {
     private long birthRound;
 
     /**
-     * @param unsignedEvent   the unsigned event
-     * @param signature the signature for the event
+     * Construct a new instance from an unsigned event and a signature.
+     *
+     * @param unsignedEvent the unsigned event
+     * @param signature     the signature for the event
      */
     public PlatformEvent(@NonNull final UnsignedEvent unsignedEvent, @NonNull final byte[] signature) {
         this(
@@ -111,14 +112,13 @@ public class PlatformEvent implements ConsensusEvent, Hashable {
     }
 
     /**
-     * @param softwareVersion the software version instance
+     * Construct a new instance from a gossip event.
+     *
      * @param gossipEvent the gossip event
+     * @throws NullPointerException if gossipEvent or any of its fields are null
      */
-    public PlatformEvent(@NonNull final SoftwareVersion softwareVersion, @NonNull final GossipEvent gossipEvent) {
-        this(
-                Objects.requireNonNull(gossipEvent, "The gossipEvent must not be null"),
-                new EventMetadata(
-                        Objects.requireNonNull(softwareVersion, "The softwareVersion must not be null"), gossipEvent));
+    public PlatformEvent(@NonNull final GossipEvent gossipEvent) {
+        this(Objects.requireNonNull(gossipEvent, "The gossipEvent must not be null"), new EventMetadata(gossipEvent));
     }
 
     private PlatformEvent(@NonNull final GossipEvent gossipEvent, @NonNull final EventMetadata metadata) {
@@ -138,7 +138,7 @@ public class PlatformEvent implements ConsensusEvent, Hashable {
      * @return a copy of this event
      */
     public PlatformEvent copyGossipedData() {
-        final PlatformEvent platformEvent = new PlatformEvent(metadata.getSoftwareVersion(), gossipEvent);
+        final PlatformEvent platformEvent = new PlatformEvent(gossipEvent);
         platformEvent.setHash(getHash());
         return platformEvent;
     }
@@ -203,13 +203,7 @@ public class PlatformEvent implements ConsensusEvent, Hashable {
     @NonNull
     @Override
     public SemanticVersion getSoftwareVersion() {
-        return metadata.getSoftwareVersion().getPbjSemanticVersion();
-    }
-
-    @NonNull
-    @Deprecated(forRemoval = true)
-    public SoftwareVersion getOldSoftwareVersion() {
-        return metadata.getSoftwareVersion();
+        return gossipEvent.eventCore().version();
     }
 
     /**
