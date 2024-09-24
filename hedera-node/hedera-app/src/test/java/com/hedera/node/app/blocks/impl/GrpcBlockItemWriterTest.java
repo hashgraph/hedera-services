@@ -131,6 +131,7 @@ public class GrpcBlockItemWriterTest {
 
         // Close the block
         grpcBlockItemWriter.closeBlock();
+        assertThat(grpcBlockItemWriter.getState()).isEqualTo(GrpcBlockItemWriter.State.CLOSED);
     }
 
     @Test
