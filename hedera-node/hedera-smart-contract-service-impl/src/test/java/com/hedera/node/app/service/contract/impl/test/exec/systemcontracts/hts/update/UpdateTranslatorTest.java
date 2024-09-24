@@ -40,6 +40,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.verifyNoInteractions;
 
 import com.esaulpaugh.headlong.abi.Tuple;
@@ -247,6 +248,11 @@ class UpdateTranslatorTest extends CallTestBase {
         Bytes inputBytes = Bytes.wrapByteBuffer(TOKEN_UPDATE_INFO_FUNCTION_V1.encodeCall(tuple));
         given(attempt.input()).willReturn(inputBytes);
         given(attempt.isSelector(TOKEN_UPDATE_INFO_FUNCTION_V1)).willReturn(true);
+        lenient()
+                .when(attempt.isSelector(TOKEN_UPDATE_INFO_FUNCTION_WITH_METADATA))
+                .thenReturn(false);
+        lenient().when(attempt.isSelector(TOKEN_UPDATE_INFO_FUNCTION_V2)).thenReturn(false);
+        lenient().when(attempt.isSelector(TOKEN_UPDATE_INFO_FUNCTION_V3)).thenReturn(false);
         given(attempt.enhancement()).willReturn(mockEnhancement());
         given(attempt.addressIdConverter()).willReturn(addressIdConverter);
         given(addressIdConverter.convertSender(any())).willReturn(NON_SYSTEM_ACCOUNT_ID);
