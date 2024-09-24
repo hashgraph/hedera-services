@@ -19,6 +19,7 @@ open module com.swirlds.common.test.fixtures {
     requires transitive com.swirlds.metrics.api;
     requires transitive com.swirlds.platform.core;
     requires transitive com.hedera.pbj.runtime;
+    requires com.swirlds.virtualmap;
     requires com.swirlds.config.extensions.test.fixtures;
     requires com.swirlds.logging;
     requires lazysodium.java;

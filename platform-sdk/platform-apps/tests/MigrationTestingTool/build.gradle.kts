@@ -19,7 +19,6 @@ plugins { id("com.hedera.gradle.application") }
 application.mainClass.set("com.swirlds.demo.migration.MigrationTestingToolMain")
 
 testModuleInfo {
-    requires("com.swirlds.merkle.test.fixtures")
     requires("org.junit.jupiter.api")
     requires("org.junit.jupiter.params")
 }

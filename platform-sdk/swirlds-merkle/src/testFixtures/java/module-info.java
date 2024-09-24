@@ -9,6 +9,7 @@ open module com.swirlds.merkle.test.fixtures {
 
     requires transitive com.swirlds.common.test.fixtures;
     requires transitive com.swirlds.common;
+    requires transitive com.swirlds.config.api;
     requires transitive com.fasterxml.jackson.annotation;
     requires transitive com.fasterxml.jackson.core;
     requires transitive com.fasterxml.jackson.databind;
@@ -17,6 +18,7 @@ open module com.swirlds.merkle.test.fixtures {
     requires com.swirlds.fcqueue;
     requires com.swirlds.logging;
     requires com.swirlds.merkle;
+    requires com.swirlds.virtualmap;
     requires com.hedera.pbj.runtime;
     requires org.apache.logging.log4j.core;
     requires org.apache.logging.log4j;
