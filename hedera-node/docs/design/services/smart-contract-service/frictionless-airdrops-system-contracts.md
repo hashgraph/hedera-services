@@ -4,7 +4,7 @@
 
 [HIP-904](https://hips.hedera.com/hip/hip-904) introduced the Frictionless Airdrops feature for fungible and non-fungible tokens.
 This document will define the architecture and implementation of the `airdropToken`, `claimAirdrops`, `cancelAirdrops` and `rejectTokens` smart contract functions
-and their respective redirect function calls (`cancelAirdropFT`, `cancleAirdropNFT`, `claimAirdropFT`, `claimAirdropNFT`, `rejectTokenFT`, `rejectTokenNFTs`, `setAutomaticAssociations`) that will extend the capabilities of the Hedera Smart Contract Service (HSCS) to support frictionless airdrops.
+and their respective redirect function calls (`cancelAirdropFT`, `cancleAirdropNFT`, `claimAirdropFT`, `claimAirdropNFT`, `rejectTokenFT`, `rejectTokenNFTs`, `setUnlimitedAutomaticAssociations`) that will extend the capabilities of the Hedera Smart Contract Service (HSCS) to support frictionless airdrops.
 
 ## References
 
@@ -13,7 +13,7 @@ and their respective redirect function calls (`cancelAirdropFT`, `cancleAirdropN
 ## Goals
 
 - Expose `airdropToken`, `claimAirdrops`, `cancelAirdrops` and `rejectTokens` as new functions in the Hedera Token Service Smart Contract.
-- Expose `cancelAirdropFT`, `cancleAirdropNFT`, `claimAirdropFT`, `claimAirdropNFT`, `rejectTokenFt`, `rejectTokenNFTs`, `setAutomaticAssociations` as new functions in a new proxy redirect token facade contract IHRC904.
+- Expose `cancelAirdropFT`, `cancleAirdropNFT`, `claimAirdropFT`, `claimAirdropNFT`, `rejectTokenFt`, `rejectTokenNFTs`, `setUnlimitedAutomaticAssociations` as new functions in a new proxy redirect token facade contract IHRC904.
 - Implement the needed HTS system contract classes to support the new functions.
 
 ## Non Goals
@@ -42,12 +42,12 @@ struct PendingAirdrop {
 }
 ```
 
-`NftId` - A struct that represents the Nft serials to be rejected.
+`NftId` - A struct that represents the Nft serial to be rejected.
 
 ```solidity
 struct NftId {
     address nft;
-    int64[] serials;
+    int64 serial;
 }
 ```
 
@@ -64,15 +64,15 @@ New system contract functions must be added to the `IHederaTokenService` interfa
 
 New system contract functions must be added to a new `IHRC904` interface to support airdropping tokens.
 
-| Function Selector Hash |                                                Function Signature                                                | HAPI Transaction | Responsible service |    Response    |                                 |
-|------------------------|------------------------------------------------------------------------------------------------------------------|------------------|---------------------|----------------|---------------------------------|
-| `0xcef5b705`           | `function cancelAirdropFT(address receiverAddress) external returns (uint256 responseCode)`                      | TokenCancel      | HTS                 | `ResponseCode` | The response code from the call |
-| `0xad4917cf`           | `function cancelAirdropNFT(address receiverAddress, int64 serialNumber) external returns (uint256 responseCode)` | TokenCancel      | HTS                 | `ResponseCode` | The response code from the call |
-| `0xa83bc5b2`           | `function claimAirdropFT(address senderAddress) external returns (uint256 responseCode)`                         | TokenClaim       | HTS                 | `ResponseCode` | The response code from the call |
-| `0x63ada5d7`           | `function claimAirdropNFT(address senderAddress, int64 serialNumber) external returns (uint256 responseCode)`    | TokenClaim       | HTS                 | `ResponseCode` | The response code from the call |
-| `0x76c6b391`           | `function rejectTokenFT() external returns (uint256 responseCode)`                                               | TokenReject      | HTS                 | `ResponseCode` | The response code from the call |
-| `0xa869c78a`           | `function rejectTokenNFTs(int64[] memory serialNumbers) external returns (uint256 responseCode)`                 | TokenReject      | HTS                 | `ResponseCode` | The response code from the call |
-| `0x966884d4`           | `function setAutomaticAssociations(boolean enableAutoAssociations) external returns (uint256 responseCode)`      | CryptoUpdate     | HAS                 | `ResponseCode` | The response code from the call |
+| Function Selector Hash |                                                  Function Signature                                                  | HAPI Transaction | Responsible service |    Response    |                                 |
+|------------------------|----------------------------------------------------------------------------------------------------------------------|------------------|---------------------|----------------|---------------------------------|
+| `0xcef5b705`           | `function cancelAirdropFT(address receiverAddress) external returns (uint256 responseCode)`                          | TokenCancel      | HTS                 | `ResponseCode` | The response code from the call |
+| `0xad4917cf`           | `function cancelAirdropNFT(address receiverAddress, int64 serialNumber) external returns (uint256 responseCode)`     | TokenCancel      | HTS                 | `ResponseCode` | The response code from the call |
+| `0xa83bc5b2`           | `function claimAirdropFT(address senderAddress) external returns (uint256 responseCode)`                             | TokenClaim       | HTS                 | `ResponseCode` | The response code from the call |
+| `0x63ada5d7`           | `function claimAirdropNFT(address senderAddress, int64 serialNumber) external returns (uint256 responseCode)`        | TokenClaim       | HTS                 | `ResponseCode` | The response code from the call |
+| `0x76c6b391`           | `function rejectTokenFT() external returns (uint256 responseCode)`                                                   | TokenReject      | HTS                 | `ResponseCode` | The response code from the call |
+| `0xa869c78a`           | `function rejectTokenNFTs(int64[] memory serialNumbers) external returns (uint256 responseCode)`                     | TokenReject      | HTS                 | `ResponseCode` | The response code from the call |
+| `0x966884d4`           | `function setUnlimitedAutomaticAssociations(boolean enableAutoAssociations) external returns (uint256 responseCode)` | CryptoUpdate     | HAS                 | `ResponseCode` | The response code from the call |
 
 #### Input limitations
 
@@ -94,6 +94,15 @@ New system contract functions must be added to a new `IHRC904` interface to supp
 - `RejectTokensDecoder` - This class provides methods and constants for decoding the given `HtsCallAttempt` into `TokenReference` list for `TokenReject` call.
 - `SetAutomaticAssociationsTranslator` - This class will be responsible for handling the `setAutomaticAssociations` selector and dispatching it to the corresponding HAPI calls.
 - `SetAutomaticAssociationsCall` - This class provides methods for preparing and executing the given `HasCallAttempt`.
+
+### Feature Flags
+
+In order to gate the newly introduced system contract calls, we will introduce the following feature flags:
+- `contracts.systemContract.airdropTokens.enabled` - Enable/Disable the `airdropTokens` system contract call.
+- `contracts.systemContract.cancelAirdrops.enabled` - Enable/Disable the `cancelAirdrops`, `cancelAirdropFT` and `cancelAirdropNFT` system contract calls.
+- `contracts.systemContract.claimAirdrops.enabled` - Enable/Disable the `claimAirdrops`, `claimAirdropFT` and `claimAirdropNFT` system contract calls.
+- `contracts.systemContract.rejectTokens.enabled` - Enable/Disable the `rejectTokens`, `rejectTokenFT` and `rejectTokenNFTs` system contract calls.
+- `contracts.systemContract.setUnlimitedAutoAssociations.enabled` - Enable/Disable the `setUnlimitedAutomaticAssociations` system contract call.
 
 ## Security Implications
 
@@ -124,8 +133,8 @@ We will apply the `TokenReject`, `TokenAirdrop`, `TokenClaimAirdrop`, `TokenCanc
 - Verify that the `rejectTokenFT` function rejects tokens for a given account.
 - Verify that the `rejectTokenNFTs` function rejects tokens for a given account and serial number.
 - Verify that the `rejectTokenNFTs` function rejects 10 tokens for a given account and serial number.
-- Verify that the `setAutomaticAssociations` function enables the automatic associations to unlimited (-1) for a given account.
-- Verify that the `setAutomaticAssociations` function disables the automatic associations to zero for a given account.
+- Verify that the `setUnlimitedAutomaticAssociations` function enables the automatic associations to unlimited (-1) for a given account.
+- Verify that the `setUnlimitedAutomaticAssociations` function disables the automatic associations to zero for a given account.
 
 #### Negative Tests
 
