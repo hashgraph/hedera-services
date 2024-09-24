@@ -18,7 +18,9 @@ package com.swirlds.virtualmap;
 
 import static com.swirlds.common.io.streams.StreamDebugUtils.deserializeAndDebugOnFailure;
 import static com.swirlds.common.utility.CommonUtils.getNormalisedStringBytes;
+import static com.swirlds.virtualmap.VirtualMap.CLASS_ID;
 
+import com.swirlds.common.constructable.ConstructableClass;
 import com.swirlds.common.io.ExternalSelfSerializable;
 import com.swirlds.common.io.streams.MerkleDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
@@ -33,6 +35,7 @@ import com.swirlds.common.utility.RuntimeObjectRegistry;
 import com.swirlds.common.utility.ValueReference;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.metrics.api.Metrics;
+import com.swirlds.virtualmap.constructable.constructors.VirtualMapConstructor;
 import com.swirlds.virtualmap.datasource.VirtualDataSource;
 import com.swirlds.virtualmap.datasource.VirtualDataSourceBuilder;
 import com.swirlds.virtualmap.internal.merkle.VirtualMapState;
@@ -40,6 +43,8 @@ import com.swirlds.virtualmap.internal.merkle.VirtualRootNode;
 import com.swirlds.virtualmap.internal.merkle.VirtualStateAccessorImpl;
 import com.swirlds.virtualmap.serialize.KeySerializer;
 import com.swirlds.virtualmap.serialize.ValueSerializer;
+import edu.umd.cs.findbugs.annotations.NonNull;
+
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.FileInputStream;
@@ -117,6 +122,7 @@ import java.util.Objects;
  * 		The value. Must be a {@link VirtualValue}.
  */
 @DebugIterationEndpoint
+@ConstructableClass(value = CLASS_ID, constructorType = VirtualMapConstructor.class)
 public final class VirtualMap<K extends VirtualKey, V extends VirtualValue> extends PartialBinaryMerkleInternal
         implements ExternalSelfSerializable, Labeled, MerkleInternal {
 

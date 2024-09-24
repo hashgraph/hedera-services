@@ -147,22 +147,7 @@ public final class BootstrapUtils {
      */
     public static void setupConstructableRegistry() {
         try {
-            Configuration configuration = ConfigurationBuilder.create()
-                    .withConfigDataType(VirtualMapConfig.class)
-                    //                    .withConfigDataType(MerkleDbConfig.class)
-                    //                    .withConfigDataType(TemporaryFileConfig.class)
-                    //                    .withConfigDataType(StateCommonConfig.class)
-                    .build();
-
-            //            ConstructableRegistry.getInstance().registerConstructables("");
-            ConstructableRegistry registry = ConstructableRegistry.getInstance();
-            //            registry.registerConstructables("com.swirlds.merkle");
-            //            registry.registerConstructables("com.swirlds.common");
-            //            registry.registerConstructables("com.swirlds.fcqueue");
-            //            registry.registerConstructables("com.swirlds.demo");
-            registry.registerConstructable(
-                    new ClassConstructorPair(VirtualMap.class, () -> new VirtualMap(configuration)));
-
+            ConstructableRegistry.getInstance().registerConstructables("");
         } catch (final ConstructableRegistryException e) {
             throw new RuntimeException(e);
         }
