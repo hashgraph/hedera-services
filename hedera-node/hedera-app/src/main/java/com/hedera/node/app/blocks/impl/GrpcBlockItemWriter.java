@@ -19,6 +19,7 @@ package com.hedera.node.app.blocks.impl;
 import static io.grpc.Status.fromThrowable;
 import static java.util.Objects.requireNonNull;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.hapi.block.protoc.BlockStreamServiceGrpc;
 import com.hedera.hapi.block.protoc.PublishStreamRequest;
@@ -53,9 +54,21 @@ public class GrpcBlockItemWriter implements BlockItemWriter {
     /** The state of this writer */
     private State state = State.UNINITIALIZED;
 
-    private enum State {
+    /**
+     * The current state of the gRPC writer.
+     */
+    public enum State {
+        /**
+         * The gRPC client still not initialized
+         */
         UNINITIALIZED,
+        /**
+         * The gRPC client is currently open
+         */
         OPEN,
+        /**
+         * The gRPC client is already closed
+         */
         CLOSED
     }
 
@@ -131,6 +144,7 @@ public class GrpcBlockItemWriter implements BlockItemWriter {
             throw new IllegalStateException(
                     "Cannot write to a GrpcBlockItemWriter that is not open for block: " + this.blockNumber);
         }
+
         PublishStreamRequest request = PublishStreamRequest.newBuilder().build();
         try {
             request = PublishStreamRequest.newBuilder()
@@ -146,7 +160,37 @@ public class GrpcBlockItemWriter implements BlockItemWriter {
 
     @Override
     public void closeBlock() {
+        if (state.ordinal() < GrpcBlockItemWriter.State.OPEN.ordinal()) {
+            throw new IllegalStateException("Cannot close a GrpcBlockItemWriter that is not open");
+        } else if (state.ordinal() == GrpcBlockItemWriter.State.CLOSED.ordinal()) {
+            throw new IllegalStateException("Cannot close a GrpcBlockItemWriter that is already closed");
+        }
+
         requestObserver.onCompleted();
         this.state = State.CLOSED;
+    }
+
+    /**
+     * @return the current state of the gRPC writer
+     */
+    @VisibleForTesting
+    public long getBlockNumber() {
+        return blockNumber;
+    }
+
+    /**
+     * @return the current state of the gRPC writer
+     */
+    @VisibleForTesting
+    public State getState() {
+        return state;
+    }
+
+    /**
+     * @return the stub of the gRPC writer
+     */
+    @VisibleForTesting
+    public BlockStreamServiceGrpc.BlockStreamServiceStub getStub() {
+        return asyncStub;
     }
 }

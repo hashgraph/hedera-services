@@ -16,12 +16,15 @@
 
 package com.hedera.node.app.blocks.impl;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.when;
 
+import com.hedera.hapi.block.stream.BlockItem;
+import com.hedera.hapi.block.stream.BlockProof;
 import com.hedera.node.config.data.BlockStreamConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import java.io.IOException;
+import java.util.ArrayList;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -36,31 +39,30 @@ public class GrpcBlockItemWriterTest {
     @Test
     public void testGrpcBlockItemWriterConstructor() {
         when(blockStreamConfig.address()).thenReturn("localhost");
-        when(blockStreamConfig.port()).thenReturn(9090);
+        when(blockStreamConfig.port()).thenReturn(8080);
 
-        new GrpcBlockItemWriter(blockStreamConfig);
+        final GrpcBlockItemWriter grpcBlockItemWriter = new GrpcBlockItemWriter(blockStreamConfig);
+        assertThat(grpcBlockItemWriter).isNotNull();
+        assertThat(grpcBlockItemWriter.getStub()).isNotNull();
     }
 
     @Test
     public void testOpenBlock() {
         when(blockStreamConfig.address()).thenReturn("localhost");
-        when(blockStreamConfig.port()).thenReturn(9090);
+        when(blockStreamConfig.port()).thenReturn(8080);
 
         GrpcBlockItemWriter grpcBlockItemWriter = new GrpcBlockItemWriter(blockStreamConfig);
-
-        // Assertion to check if the directory is created
-
         grpcBlockItemWriter.openBlock(1);
+        assertThat(grpcBlockItemWriter.getBlockNumber()).isEqualTo(1);
+        assertThat(grpcBlockItemWriter.getState()).isEqualTo(GrpcBlockItemWriter.State.OPEN);
     }
 
     @Test
     public void testOpenBlockCannotInitializeTwice() {
         when(blockStreamConfig.address()).thenReturn("localhost");
-        when(blockStreamConfig.port()).thenReturn(9090);
+        when(blockStreamConfig.port()).thenReturn(8080);
 
         GrpcBlockItemWriter grpcBlockItemWriter = new GrpcBlockItemWriter(blockStreamConfig);
-
-        // Assertion to check if the directory is created
 
         grpcBlockItemWriter.openBlock(1);
 
@@ -71,30 +73,30 @@ public class GrpcBlockItemWriterTest {
     @Test
     public void testOpenBlockNegativeBlockNumber() {
         when(blockStreamConfig.address()).thenReturn("localhost");
-        when(blockStreamConfig.port()).thenReturn(9090);
+        when(blockStreamConfig.port()).thenReturn(8080);
 
         GrpcBlockItemWriter grpcBlockItemWriter = new GrpcBlockItemWriter(blockStreamConfig);
-
-        // Assertion to check if the directory is created
 
         assertThatThrownBy(() -> grpcBlockItemWriter.openBlock(-1), "Block number must be non-negative")
                 .isInstanceOf(IllegalArgumentException.class);
     }
 
     @Test
-    public void testWriteItem() throws IOException {
+    public void testWriteItem() {
         when(blockStreamConfig.address()).thenReturn("localhost");
-        when(blockStreamConfig.port()).thenReturn(9090);
+        when(blockStreamConfig.port()).thenReturn(8080);
 
         GrpcBlockItemWriter grpcBlockItemWriter = new GrpcBlockItemWriter(blockStreamConfig);
 
         // Open a block
         grpcBlockItemWriter.openBlock(1);
 
-        // Create a Bytes object and write it
+        // Create BlockProof as easiest way to build object from BlockStreams
         Bytes bytes = Bytes.wrap(new byte[] {1, 2, 3, 4, 5});
-        byte[] expectedBytes = {10, 5, 1, 2, 3, 4, 5};
-        grpcBlockItemWriter.writeItem(bytes);
+        final var proof = new BlockProof.Builder().blockSignature(bytes).siblingHashes(new ArrayList<>());
+        final var blockProof = BlockItem.PROTOBUF.toBytes(
+                BlockItem.newBuilder().blockProof(proof).build());
+        grpcBlockItemWriter.writeItem(blockProof);
 
         // Close the block
         grpcBlockItemWriter.closeBlock();
@@ -103,21 +105,24 @@ public class GrpcBlockItemWriterTest {
     @Test
     public void testWriteItemBeforeOpen() {
         when(blockStreamConfig.address()).thenReturn("localhost");
-        when(blockStreamConfig.port()).thenReturn(9090);
+        when(blockStreamConfig.port()).thenReturn(8080);
 
         GrpcBlockItemWriter grpcBlockItemWriter = new GrpcBlockItemWriter(blockStreamConfig);
 
-        // Create a Bytes object and write it
+        // Create BlockProof as easiest way to build object from BlockStreams
         Bytes bytes = Bytes.wrap(new byte[] {1, 2, 3, 4, 5});
+        final var proof = new BlockProof.Builder().blockSignature(bytes).siblingHashes(new ArrayList<>());
+        final var blockProof = BlockItem.PROTOBUF.toBytes(
+                BlockItem.newBuilder().blockProof(proof).build());
 
-        assertThatThrownBy(() -> grpcBlockItemWriter.writeItem(bytes), "Cannot write item before opening a block")
+        assertThatThrownBy(() -> grpcBlockItemWriter.writeItem(blockProof), "Cannot write item before opening a block")
                 .isInstanceOf(IllegalStateException.class);
     }
 
     @Test
     public void testCloseBlock() {
         when(blockStreamConfig.address()).thenReturn("localhost");
-        when(blockStreamConfig.port()).thenReturn(9090);
+        when(blockStreamConfig.port()).thenReturn(8080);
 
         GrpcBlockItemWriter grpcBlockItemWriter = new GrpcBlockItemWriter(blockStreamConfig);
 
@@ -131,7 +136,7 @@ public class GrpcBlockItemWriterTest {
     @Test
     public void testCloseBlockNotOpen() {
         when(blockStreamConfig.address()).thenReturn("localhost");
-        when(blockStreamConfig.port()).thenReturn(9090);
+        when(blockStreamConfig.port()).thenReturn(8080);
 
         GrpcBlockItemWriter grpcBlockItemWriter = new GrpcBlockItemWriter(blockStreamConfig);
 
@@ -142,7 +147,7 @@ public class GrpcBlockItemWriterTest {
     @Test
     public void testCloseBlockAlreadyClosed() {
         when(blockStreamConfig.address()).thenReturn("localhost");
-        when(blockStreamConfig.port()).thenReturn(9090);
+        when(blockStreamConfig.port()).thenReturn(8080);
 
         GrpcBlockItemWriter grpcBlockItemWriter = new GrpcBlockItemWriter(blockStreamConfig);
 
