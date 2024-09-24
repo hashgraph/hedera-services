@@ -405,7 +405,7 @@ class VirtualRootNodeTest extends VirtualTestBase {
 
         final VirtualMapConfig config = configuration.getConfigData(VirtualMapConfig.class);
 
-        VirtualRootNode<TestKey, TestValue> root = createRoot();
+        VirtualRootNode<TestKey, TestValue> root = createRoot(configuration);
         assertEquals(0, root.getFlushThreshold());
         final int flushInterval = config.flushInterval();
         for (int i = 0; i < flushInterval; i++) {

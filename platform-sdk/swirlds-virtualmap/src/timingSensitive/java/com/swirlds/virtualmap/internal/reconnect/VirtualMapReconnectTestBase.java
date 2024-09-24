@@ -118,18 +118,17 @@ public abstract class VirtualMapReconnectTestBase {
         loadLog4jContext();
         final ConstructableRegistry registry = ConstructableRegistry.getInstance();
         registry.registerConstructables("com.swirlds.common");
-        registry.registerConstructables("com.swirlds.virtualmap");
         registry.registerConstructable(new ClassConstructorPair(QueryResponse.class, QueryResponse::new));
         registry.registerConstructable(new ClassConstructorPair(DummyMerkleInternal.class, DummyMerkleInternal::new));
         registry.registerConstructable(new ClassConstructorPair(DummyMerkleLeaf.class, DummyMerkleLeaf::new));
-        registry.registerConstructable(
-                new ClassConstructorPair(VirtualMap.class, () -> new VirtualMap(configuration())));
-        registry.registerConstructable(new ClassConstructorPair(VirtualMapState.class, VirtualMapState::new));
-        registry.registerConstructable(
-                new ClassConstructorPair(VirtualRootNode.class, () -> new VirtualRootNode(configuration())));
         registry.registerConstructable(new ClassConstructorPair(TestKey.class, TestKey::new));
         registry.registerConstructable(new ClassConstructorPair(TestValue.class, TestValue::new));
         registry.registerConstructable(new ClassConstructorPair(BrokenBuilder.class, BrokenBuilder::new));
+        registry.registerConstructable(new ClassConstructorPair(VirtualMapState.class, VirtualMapState::new));
+        registry.registerConstructable(
+                new ClassConstructorPair(VirtualMap.class, () -> new VirtualMap(configuration())));
+        registry.registerConstructable(
+                new ClassConstructorPair(VirtualRootNode.class, () -> new VirtualRootNode(configuration())));
     }
 
     protected MerkleInternal createTreeForMap(VirtualMap<TestKey, TestValue> map) {

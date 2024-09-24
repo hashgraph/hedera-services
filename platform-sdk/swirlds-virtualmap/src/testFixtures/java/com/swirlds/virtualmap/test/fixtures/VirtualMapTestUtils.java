@@ -54,9 +54,18 @@ public final class VirtualMapTestUtils {
         return createMap("Test");
     }
 
+    // TODO: refactor
+
     public static VirtualRootNode<TestKey, TestValue> createRoot() {
         final VirtualRootNode<TestKey, TestValue> root = new VirtualRootNode<>(
                 TestKeySerializer.INSTANCE, TestValueSerializer.INSTANCE, new InMemoryBuilder(), configuration());
+        root.postInit(new DummyVirtualStateAccessor());
+        return root;
+    }
+
+    public static VirtualRootNode<TestKey, TestValue> createRoot(final Configuration configuration) {
+        final VirtualRootNode<TestKey, TestValue> root = new VirtualRootNode<>(
+                TestKeySerializer.INSTANCE, TestValueSerializer.INSTANCE, new InMemoryBuilder(), configuration);
         root.postInit(new DummyVirtualStateAccessor());
         return root;
     }

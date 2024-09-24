@@ -16,14 +16,17 @@
 
 package com.swirlds.virtual.merkle.map;
 
-import static com.swirlds.merkle.test.fixtures.map.util.MerkleMapTestUtil.configuration;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.swirlds.common.config.StateCommonConfig;
 import com.swirlds.common.crypto.DigestType;
+import com.swirlds.common.io.config.TemporaryFileConfig;
+import com.swirlds.config.api.Configuration;
+import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.merkledb.MerkleDbDataSourceBuilder;
 import com.swirlds.merkledb.MerkleDbTableConfig;
 import com.swirlds.merkledb.config.MerkleDbConfig;
@@ -34,6 +37,7 @@ import com.swirlds.virtual.merkle.TestObjectKeySerializer;
 import com.swirlds.virtual.merkle.TestValue;
 import com.swirlds.virtual.merkle.TestValueSerializer;
 import com.swirlds.virtualmap.VirtualMap;
+import com.swirlds.virtualmap.config.VirtualMapConfig;
 import com.swirlds.virtualmap.datasource.VirtualDataSourceBuilder;
 import com.swirlds.virtualmap.datasource.VirtualLeafRecord;
 import com.swirlds.virtualmap.internal.RecordAccessor;
@@ -45,30 +49,34 @@ import org.junit.jupiter.api.Test;
 
 final class MapTest {
 
+    // TODO: refactor
+    private static Configuration configuration = ConfigurationBuilder.create()
+            .withConfigDataType(VirtualMapConfig.class)
+            .withConfigDataType(MerkleDbConfig.class)
+            .withConfigDataType(TemporaryFileConfig.class)
+            .withConfigDataType(StateCommonConfig.class)
+            .build();
+
     VirtualDataSourceBuilder createLongBuilder() {
         final MerkleDbTableConfig tableConfig = new MerkleDbTableConfig(
-                (short) 1, DigestType.SHA_384, configuration().getConfigData(MerkleDbConfig.class));
-        return new MerkleDbDataSourceBuilder(tableConfig, configuration());
+                (short) 1, DigestType.SHA_384, configuration.getConfigData(MerkleDbConfig.class));
+        return new MerkleDbDataSourceBuilder(tableConfig, configuration);
     }
 
     VirtualDataSourceBuilder createGenericBuilder() {
         final MerkleDbTableConfig tableConfig = new MerkleDbTableConfig(
-                (short) 1, DigestType.SHA_384, configuration().getConfigData(MerkleDbConfig.class));
-        return new MerkleDbDataSourceBuilder(tableConfig, configuration());
+                (short) 1, DigestType.SHA_384, configuration.getConfigData(MerkleDbConfig.class));
+        return new MerkleDbDataSourceBuilder(tableConfig, configuration);
     }
 
     VirtualMap<TestKey, TestValue> createLongMap(String label) {
         return new VirtualMap<>(
-                label, new TestKeySerializer(), new TestValueSerializer(), createLongBuilder(), configuration());
+                label, new TestKeySerializer(), new TestValueSerializer(), createLongBuilder(), configuration);
     }
 
     VirtualMap<TestObjectKey, TestValue> createObjectMap(String label) {
         return new VirtualMap<>(
-                label,
-                new TestObjectKeySerializer(),
-                new TestValueSerializer(),
-                createGenericBuilder(),
-                configuration());
+                label, new TestObjectKeySerializer(), new TestValueSerializer(), createGenericBuilder(), configuration);
     }
 
     @Test

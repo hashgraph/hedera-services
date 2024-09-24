@@ -30,9 +30,11 @@ import com.swirlds.common.merkle.MerkleLeaf;
 import com.swirlds.common.merkle.impl.PartialBinaryMerkleInternal;
 import com.swirlds.common.merkle.impl.PartialMerkleLeaf;
 import com.swirlds.virtualmap.VirtualMap;
+import com.swirlds.virtualmap.config.VirtualMapConfig;
 import com.swirlds.virtualmap.datasource.VirtualHashRecord;
 import com.swirlds.virtualmap.datasource.VirtualLeafRecord;
 import com.swirlds.virtualmap.internal.cache.VirtualNodeCache;
+import com.swirlds.virtualmap.internal.merkle.VirtualMapState;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -135,8 +137,12 @@ public class VirtualTestBase {
         registry.registerConstructable(new ClassConstructorPair(TestValue.class, () -> new TestValue("")));
         registry.registerConstructable(new ClassConstructorPair(TestInternal.class, TestInternal::new));
         registry.registerConstructable(new ClassConstructorPair(TestLeaf.class, TestLeaf::new));
+        registry.registerConstructable(new ClassConstructorPair(VirtualMapState.class, VirtualMapState::new));
         registry.registerConstructable(
                 new ClassConstructorPair(VirtualMap.class, () -> new VirtualMap(configuration())));
+        registry.registerConstructable(new ClassConstructorPair(
+                VirtualNodeCache.class,
+                () -> new VirtualNodeCache(configuration().getConfigData(VirtualMapConfig.class))));
     }
 
     @BeforeEach

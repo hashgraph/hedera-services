@@ -23,6 +23,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
@@ -45,7 +46,9 @@ import com.swirlds.merkledb.test.fixtures.ExampleFixedSizeVirtualValueSerializer
 import com.swirlds.merkledb.test.fixtures.ExampleLongKeyFixedSize;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.virtualmap.VirtualMap;
+import com.swirlds.virtualmap.config.VirtualMapConfig;
 import com.swirlds.virtualmap.datasource.VirtualDataSource;
+import com.swirlds.virtualmap.internal.cache.VirtualNodeCache;
 import com.swirlds.virtualmap.internal.merkle.VirtualMapState;
 import com.swirlds.virtualmap.internal.merkle.VirtualRootNode;
 import com.swirlds.virtualmap.serialize.KeySerializer;
@@ -80,9 +83,15 @@ class MerkleDbSnapshotTest {
 
     @BeforeAll
     static void setup() throws Exception {
-        ConstructableRegistry.getInstance().registerConstructables("com.swirlds.common");
-        ConstructableRegistry.getInstance().registerConstructables("com.swirlds.merkledb");
-        ConstructableRegistry.getInstance().registerConstructables("com.swirlds.virtualmap");
+        ConstructableRegistry registry = ConstructableRegistry.getInstance();
+        registry.registerConstructables("com.swirlds.common");
+        registry.registerConstructables("com.swirlds.merkledb");
+        registry.registerConstructable(new ClassConstructorPair(VirtualMapState.class, VirtualMapState::new));
+        registry.registerConstructable(new ClassConstructorPair(VirtualMap.class, () -> new VirtualMap(config())));
+        registry.registerConstructable(new ClassConstructorPair(
+                VirtualNodeCache.class, () -> new VirtualNodeCache(config().getConfigData(VirtualMapConfig.class))));
+        registry.registerConstructable(new ClassConstructorPair(
+                MerkleDbDataSourceBuilder.class, () -> new MerkleDbDataSourceBuilder(config())));
     }
 
     @BeforeEach

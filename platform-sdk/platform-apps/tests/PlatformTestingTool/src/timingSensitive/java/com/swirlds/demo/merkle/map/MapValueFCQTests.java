@@ -19,11 +19,13 @@ package com.swirlds.demo.merkle.map;
 import static com.swirlds.demo.platform.TestUtil.generateRandomContent;
 import static com.swirlds.demo.platform.TestUtil.generateTxRecord;
 import static com.swirlds.merkle.test.fixtures.map.lifecycle.EntityType.FCQ;
+import static com.swirlds.merkle.test.fixtures.map.util.MerkleMapTestUtil.configuration;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.when;
 
+import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
@@ -41,6 +43,7 @@ import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.address.AddressBook;
+import com.swirlds.virtualmap.VirtualMap;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.time.Instant;
@@ -73,7 +76,14 @@ public class MapValueFCQTests {
 
     @BeforeAll
     public static void setUp() throws ConstructableRegistryException {
-        ConstructableRegistry.getInstance().registerConstructables("com.swirlds");
+        ConstructableRegistry registry = ConstructableRegistry.getInstance();
+        registry.registerConstructables("com.swirlds.merkle");
+        registry.registerConstructables("com.swirlds.common");
+        registry.registerConstructables("com.swirlds.fcqueue");
+        registry.registerConstructables("com.swirlds.demo");
+        registry.registerConstructable(
+                new ClassConstructorPair(VirtualMap.class, () -> new VirtualMap(configuration())));
+
         cryptography = MerkleCryptoFactory.getInstance();
 
         mapKey = new MapKey(0, 0, random.nextLong());

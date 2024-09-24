@@ -16,6 +16,8 @@
 
 package com.swirlds.merkle.test.fixtures.map.util;
 
+import com.swirlds.common.config.StateCommonConfig;
+import com.swirlds.common.io.config.TemporaryFileConfig;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.utility.Keyed;
 import com.swirlds.common.test.fixtures.dummy.Key;
@@ -115,6 +117,8 @@ public final class MerkleMapTestUtil {
     public static Configuration configuration() {
         return ConfigurationBuilder.create()
                 .withConfigDataType(VirtualMapConfig.class)
+                .withConfigDataType(TemporaryFileConfig.class)
+                .withConfigDataType(StateCommonConfig.class)
                 .build();
     }
 }
