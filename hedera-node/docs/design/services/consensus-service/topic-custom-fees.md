@@ -276,17 +276,17 @@ rpc approveAllowance (Transaction) returns (TransactionResponse);
   - Pre-handle:
     - Check for `Fee Schedule Key` signature, in case of fees updates.
   - Handle:
-      - Add validation on keys
-          - `Fee Schedule Key` and all keys from the `Fee Exempt Key List`.
-          - Verify that the size is no more than the config value(`maxEntriesForFeeExemptKeyList`)
+    - Add validation on keys
+      - `Fee Schedule Key` and all keys from the `Fee Exempt Key List`.
+      - Verify that the size is no more than the config value(`maxEntriesForFeeExemptKeyList`)
     - Add validation on custom fees:
-        - Verify that the size is no more than the config(`maxCustomFeeEntriesForTopics`)
+      - Verify that the size is no more than the config(`maxCustomFeeEntriesForTopics`)
       - Check if the fee collector account is usable (not deleted/expired).
       - Check if the fee type is `fixed`.
       - If the fee has denominating token:
-          - Check if the token is usable
-          - Check if the token is fungible
-          - Check if the fee amount is no more then the token's max supply
+        - Check if the token is usable
+        - Check if the token is fungible
+        - Check if the fee amount is no more then the token's max supply
         - Check if the collector is associated with the token
     - Update the values of the new fields in the state.
 
@@ -297,17 +297,17 @@ rpc approveAllowance (Transaction) returns (TransactionResponse);
 - Implement new `ConsensusApproveAllowanceHandler` class that should be invoked when the gRPC server handles `ConsensusApproveAllowanceTransaction` transactions. The class should be responsible for:
   - Verify that the amounts are set and positive values.
   - Pure-checks:
-      - Validate there are no duplications in `ConsensusCryptoFeeScheduleAllowance` grouped by `owner` and `topicId`
-      - Validate there are no duplications in `ConsensusTokenFeeScheduleAllowance` grouped
-        by `tokenId`, `owner`, `topicId`
-      - Validate the `amounts` are positive
-      - Validate that the `amount` is no bigger than `amount_per_message`
+    - Validate there are no duplications in `ConsensusCryptoFeeScheduleAllowance` grouped by `owner` and `topicId`
+    - Validate there are no duplications in `ConsensusTokenFeeScheduleAllowance` grouped
+      by `tokenId`, `owner`, `topicId`
+    - Validate the `amounts` are positive
+    - Validate that the `amount` is no bigger than `amount_per_message`
   - Pre-handle:
     - The transaction must be signed by the sender.
     - TBD - more validations ?
   - Handle:
     - Any additional validation depending on config or state, i.e. semantics checks
-        - Validate that the `topicId`s are usable(existing/not deleted/not expired)
+      - Validate that the `topicId`s are usable(existing/not deleted/not expired)
     - Check that the sender account is a valid one. That is an existing account, and it is not deleted or expired.
     - Add approved allowance:
       - Set `ConsensusCryptoFeeScheduleAllowance` to the account.
@@ -332,10 +332,27 @@ rpc approveAllowance (Transaction) returns (TransactionResponse);
 ## Acceptance Tests
 
 ### Topic create acceptance tests
-  * todo
+
+* todo
+
 ### Topic update acceptance tests
-  * todo
+
+* Update the custom fee value. Sign with the feeScheduleKey. Custom fee should be updated.
+* Update the custom fee from FT to HBAR. The custom fee should now be HBAR.
+* Update the custom fee from HBAR to FT. The custom fee should now be FT.
+* Update the custom fee to remove all custom fees. The topic shouldn't have custom fees.
+* Update the custom fee to remove one of two custom fees. The topic should have only one custom fee.
+* Update the topic with no fee exempt key list to add a valid entry in the list. The topic should have an entry in the
+  list.
+* Update the topic with a fee exempt key list entry to add a new entry. Now the topic should have two entries.
+* Update the topic with a fee exempt key list entry to remove a new entry. Now the topic should have a single entry.
+* Update the topic with a fee exempt key list to remove all entries. Now the topic should have no entries.
+* Update the feeScheduleKey and sign with the old one. The transaction should fail with `INVALID_SIGNATURE`
+
 ### Approve allowance acceptance tests
-  * todo
+
+* todo
+
 ### Submit message acceptance tests
-  * todo
+
+* todo
