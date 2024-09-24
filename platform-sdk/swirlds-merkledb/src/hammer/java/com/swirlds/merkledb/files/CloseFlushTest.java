@@ -136,9 +136,12 @@ public class CloseFlushTest {
         private AtomicReference<Exception> exceptionSink = null;
 
         // Provided for deserialization
-        public CustomDataSourceBuilder() {}
+        public CustomDataSourceBuilder() {
+            super(config());
+        }
 
         public CustomDataSourceBuilder(final VirtualDataSource delegate, AtomicReference<Exception> sink) {
+            super(config());
             this.delegate = delegate;
             this.exceptionSink = sink;
         }

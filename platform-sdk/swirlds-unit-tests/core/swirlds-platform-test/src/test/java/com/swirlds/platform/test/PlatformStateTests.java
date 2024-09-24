@@ -35,6 +35,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Path;
 
+import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.virtualmap.VirtualMap;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
@@ -82,7 +83,10 @@ class PlatformStateTests {
     @DisplayName("Platform State Serialization Test")
     @SuppressWarnings("resource")
     void platformStateSerializationTest() throws IOException, ConstructableRegistryException {
-        ConstructableRegistry.getInstance().registerConstructable(new ClassConstructorPair(VirtualMap.class, () -> new VirtualMap(configuration())));
+        ConstructableRegistry registry = ConstructableRegistry.getInstance();
+        registry.registerConstructable(new ClassConstructorPair(PlatformState.class, PlatformState::new));
+        registry.registerConstructable(new ClassConstructorPair(BasicSoftwareVersion.class, BasicSoftwareVersion::new));
+        registry.registerConstructable(new ClassConstructorPair(VirtualMap.class, () -> new VirtualMap(configuration())));
 
         final InputOutputStream io = new InputOutputStream();
         final PlatformState state = (PlatformState) randomPlatformState(new PlatformState());

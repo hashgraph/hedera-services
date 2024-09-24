@@ -22,6 +22,7 @@ import static com.swirlds.platform.test.consensus.ConsensusTestArgs.DEFAULT_PLAT
 import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
+import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.test.fixtures.RandomUtils;
 import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.event.report.EventStreamReport;
@@ -31,6 +32,7 @@ import com.swirlds.platform.recovery.internal.EventStreamRoundLowerBound;
 import com.swirlds.platform.recovery.internal.EventStreamTimestampLowerBound;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.StaticSoftwareVersion;
+import com.swirlds.platform.system.events.CesEvent;
 import com.swirlds.platform.test.consensus.GenerateConsensus;
 import com.swirlds.platform.test.fixtures.stream.StreamUtils;
 import com.swirlds.platform.test.simulated.RandomSigner;
@@ -78,7 +80,7 @@ class EventStreamReportingToolTest {
         final Duration eventStreamWindowSize = Duration.ofSeconds(1);
 
         // setup
-        ConstructableRegistry.getInstance().registerConstructables("com.swirlds");
+        ConstructableRegistry.getInstance().registerConstructable(new ClassConstructorPair(VirtualMap.class, () -> new VirtualMap(configuration())));
 
         // generate consensus events
         final Deque<ConsensusRound> rounds = GenerateConsensus.generateConsensusRounds(
@@ -123,7 +125,10 @@ class EventStreamReportingToolTest {
         final Duration eventStreamWindowSize = Duration.ofSeconds(1);
 
         // setup
-        ConstructableRegistry.getInstance().registerConstructable(new ClassConstructorPair(VirtualMap.class, () -> new VirtualMap(configuration())));
+        ConstructableRegistry constructableRegistry = ConstructableRegistry.getInstance();
+        constructableRegistry.registerConstructable(new ClassConstructorPair(Hash.class, Hash::new));
+        constructableRegistry.registerConstructable(new ClassConstructorPair(CesEvent.class, CesEvent::new));
+        constructableRegistry.registerConstructable(new ClassConstructorPair(VirtualMap.class, () -> new VirtualMap(configuration())));
 
         // generate consensus events
         final Deque<ConsensusRound> rounds = GenerateConsensus.generateConsensusRounds(

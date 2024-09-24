@@ -21,6 +21,7 @@ import static com.swirlds.common.merkle.iterators.MerkleIterationOrder.BREADTH_F
 import static com.swirlds.common.test.fixtures.AssertionUtils.assertEventuallyEquals;
 import static com.swirlds.common.test.fixtures.AssertionUtils.assertEventuallyTrue;
 import static com.swirlds.common.test.fixtures.io.ResourceLoader.loadLog4jContext;
+import static com.swirlds.virtualmap.test.fixtures.VirtualMapTestUtils.configuration;
 import static com.swirlds.virtualmap.test.fixtures.VirtualMapTestUtils.createMap;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -788,7 +789,7 @@ class VirtualMapTests extends VirtualTestBase {
 
     @Test
     void testMapConstructedWithDefaultConstructorIsInvalid() {
-        VirtualMap<TestKey, TestValue> subject = new VirtualMap<>();
+        VirtualMap<TestKey, TestValue> subject = new VirtualMap<>(configuration());
         assertFalse(subject.isValid());
     }
 

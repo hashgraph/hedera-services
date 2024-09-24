@@ -48,6 +48,7 @@ import com.swirlds.common.merkle.utility.MerkleLong;
 import com.swirlds.common.test.fixtures.io.InputOutputStream;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.merkle.map.MerkleMap;
+import com.swirlds.merkle.map.internal.MerkleMapInfo;
 import com.swirlds.merkle.tree.MerkleBinaryTree;
 import com.swirlds.merkle.tree.MerkleTreeInternalNode;
 import java.io.IOException;
@@ -81,6 +82,8 @@ class SerializationDebugTest {
 
         final ConstructableRegistry registry = ConstructableRegistry.getInstance();
         registry.registerConstructable(new ClassConstructorPair(MerkleMap.class, MerkleMap::new));
+        registry.registerConstructable(new ClassConstructorPair(MerkleMapInfo.class, MerkleMapInfo::new));
+        registry.registerConstructable(new ClassConstructorPair(MerkleLong.class, MerkleLong::new));
         registry.registerConstructable(new ClassConstructorPair(MerkleBinaryTree.class, MerkleBinaryTree::new));
         registry.registerConstructable(
                 new ClassConstructorPair(MerkleTreeInternalNode.class, MerkleTreeInternalNode::new));

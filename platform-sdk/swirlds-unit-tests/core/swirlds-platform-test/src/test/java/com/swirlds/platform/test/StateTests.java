@@ -29,6 +29,7 @@ import com.swirlds.common.test.fixtures.io.InputOutputStream;
 import com.swirlds.common.test.fixtures.junit.tags.TestComponentTags;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.platform.state.MerkleRoot;
+import com.swirlds.platform.state.PlatformState;
 import com.swirlds.platform.state.State;
 import com.swirlds.platform.test.fixtures.state.BlockingSwirldState;
 import java.io.IOException;
@@ -55,7 +56,11 @@ class StateTests {
     static void setUp() throws ConstructableRegistryException {
         new TestConfigBuilder().getOrCreateConfig();
 
-        ConstructableRegistry.getInstance().registerConstructable(new ClassConstructorPair(VirtualMap.class, () -> new VirtualMap(configuration())));
+        ConstructableRegistry constructableRegistry = ConstructableRegistry.getInstance();
+        constructableRegistry.registerConstructable(new ClassConstructorPair(State.class, State::new));
+        constructableRegistry.registerConstructable(new ClassConstructorPair(BlockingSwirldState.class, BlockingSwirldState::new));
+        constructableRegistry.registerConstructable(new ClassConstructorPair(PlatformState.class, PlatformState::new));
+        constructableRegistry.registerConstructable(new ClassConstructorPair(VirtualMap.class, () -> new VirtualMap(configuration())));
 
         state = new State();
         state.setSwirldState(new BlockingSwirldState());
