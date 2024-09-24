@@ -54,12 +54,13 @@ public class BlockContentsValidator implements BlockStreamValidator {
 
     @Override
     public void validateBlocks(@NonNull final List<Block> blocks) {
-        final var firstBlock = blocks.get(0);
-        validate(firstBlock, true);
-
-        final var restBlocks = blocks.subList(1, blocks.size());
-        for (final var block : restBlocks) {
-            validate(block, false);
+        for (int i = 0; i < blocks.size(); i++) {
+            try {
+                validate(blocks.get(i), i == 0);
+            } catch (AssertionError err) {
+                logger.error("Error validating block {}", blocks.get(i));
+                throw err;
+            }
         }
     }
 
@@ -95,7 +96,7 @@ public class BlockContentsValidator implements BlockStreamValidator {
             // `state_proof`.
             if (blockItems.stream()
                     .skip(1)
-                    .limit(blockItems.size() - 2)
+                    .limit(blockItems.size() - 2L)
                     .anyMatch(item -> !item.hasEventHeader() && !item.hasStateChanges())) {
                 Assertions.fail(
                         "Block with no user transactions should contain items of type `block_header`, `event_headers`, `state_changes` or `state_proof`");
