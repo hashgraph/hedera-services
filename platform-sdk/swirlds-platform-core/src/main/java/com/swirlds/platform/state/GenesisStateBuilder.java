@@ -37,9 +37,9 @@ public final class GenesisStateBuilder {
      * Initializes a genesis platform state.
      *
      */
-    private static void initGenesisPlatformState(
+    public static void initGenesisPlatformState(
             final PlatformContext platformContext,
-            final PlatformStateAccessor platformState,
+            final PlatformStateModifier platformState,
             final AddressBook addressBook,
             final SoftwareVersion appVersion) {
         platformState.bulkUpdate(v -> {

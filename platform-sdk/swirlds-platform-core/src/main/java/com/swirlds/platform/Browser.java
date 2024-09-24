@@ -67,7 +67,7 @@ import com.swirlds.platform.gui.internal.WinBrowser;
 import com.swirlds.platform.gui.model.InfoApp;
 import com.swirlds.platform.gui.model.InfoMember;
 import com.swirlds.platform.gui.model.InfoSwirld;
-import com.swirlds.platform.state.signed.ReservedSignedState;
+import com.swirlds.platform.state.signed.HashedReservedSignedState;
 import com.swirlds.platform.state.snapshot.SignedStateFileUtils;
 import com.swirlds.platform.system.SwirldMain;
 import com.swirlds.platform.system.SystemExitCode;
@@ -266,7 +266,7 @@ public class Browser {
                     recycleBin,
                     MerkleCryptographyFactory.create(configuration, CryptographyHolder.get()));
             // Create the initial state for the platform
-            final ReservedSignedState initialState = getInitialState(
+            final HashedReservedSignedState reservedState = getInitialState(
                     platformContext,
                     appMain.getSoftwareVersion(),
                     appMain::newMerkleStateRoot,
@@ -275,6 +275,9 @@ public class Browser {
                     appDefinition.getSwirldName(),
                     nodeId,
                     appDefinition.getConfigAddressBook());
+            final var initialState = reservedState.state();
+            final var stateHash = reservedState.hash();
+
             // Initialize the address book
             final AddressBook addressBook = initializeAddressBook(
                     nodeId,

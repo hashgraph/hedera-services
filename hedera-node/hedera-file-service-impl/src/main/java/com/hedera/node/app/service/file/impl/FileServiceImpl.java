@@ -73,13 +73,13 @@ public final class FileServiceImpl implements FileService {
     }
 
     /**
-     * Creates the 102 files in the given genesis context.
+     * Update the 101, 102 files with the nodeStore data.
      *
      * @param context the genesis context
      * @param nodeStore the ReadableNodeStore
      */
-    public void updateNodeDetailsAfterFreeze(
+    public void updateAddressBookAndNodeDetailsAfterFreeze(
             @NonNull final SystemContext context, @NonNull final ReadableNodeStore nodeStore) {
-        fileSchema.updateNodeDetailsAfterFreeze(context, nodeStore);
+        fileSchema.updateAddressBookAndNodeDetailsAfterFreeze(context, nodeStore);
     }
 }

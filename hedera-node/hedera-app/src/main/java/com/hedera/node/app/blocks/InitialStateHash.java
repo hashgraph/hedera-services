@@ -14,15 +14,16 @@
  * limitations under the License.
  */
 
-package com.hedera.cryptography.tss.api;
+package com.hedera.node.app.blocks;
 
-import com.hedera.cryptography.signaturescheme.api.PairingPublicKey;
-import edu.umd.cs.findbugs.annotations.NonNull;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
+import java.util.concurrent.CompletableFuture;
 
 /**
- * A record that contains a share ID, and the corresponding public key.
- *
- * @param shareId   the share ID
- * @param publicKey the public key
+ * A simple record to hold the starting state info when node start at Genesis, Restart or Reconnect.
+ * This is needed because the stateHash is needed to construct {@link com.hedera.hapi.block.stream.BlockProof}
+ * for first round after node started.
+ * @param hashFuture resolves to the hash of the initial state
+ * @param roundNum the round number of the initial state
  */
-public record TssPublicShare(@NonNull TssShareId shareId, @NonNull PairingPublicKey publicKey) {}
+public record InitialStateHash(CompletableFuture<Bytes> hashFuture, long roundNum) {}
