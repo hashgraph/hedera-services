@@ -173,7 +173,8 @@ public class VirtualMerkleLeafHasher<K extends VirtualKey, V extends VirtualValu
             Hash byteCodeHash;
 
             try {
-                final VirtualMap<AccountVirtualMapKey, AccountVirtualMapValue> accountsMap = new VirtualMap<>(configuration());
+                final VirtualMap<AccountVirtualMapKey, AccountVirtualMapValue> accountsMap =
+                        new VirtualMap<>(configuration());
                 accountsMap.loadFromFile(roundFolder.resolve(accountsName));
                 final VirtualMerkleLeafHasher<AccountVirtualMapKey, AccountVirtualMapValue> accountsHasher =
                         new VirtualMerkleLeafHasher<>(accountsMap);

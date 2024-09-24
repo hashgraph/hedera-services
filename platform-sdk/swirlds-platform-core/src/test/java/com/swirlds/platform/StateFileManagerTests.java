@@ -43,7 +43,6 @@ import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.io.utility.LegacyTemporaryFileBuilder;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.common.platform.NodeId;
-import com.swirlds.common.test.fixtures.merkle.dummy.DummyMerkleInternal;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.common.utility.CompareTo;
@@ -68,6 +67,7 @@ import com.swirlds.platform.test.fixtures.state.BlockingSwirldState;
 import com.swirlds.platform.test.fixtures.state.FakeMerkleStateLifecycles;
 import com.swirlds.platform.test.fixtures.state.RandomSignedStateGenerator;
 import com.swirlds.platform.wiring.components.StateAndRound;
+import com.swirlds.virtualmap.VirtualMap;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -77,8 +77,6 @@ import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
-
-import com.swirlds.virtualmap.VirtualMap;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -105,7 +103,8 @@ class StateFileManagerTests {
     @BeforeAll
     static void beforeAll() throws ConstructableRegistryException {
         ConstructableRegistry registry = ConstructableRegistry.getInstance();
-        registry.registerConstructable(new ClassConstructorPair(VirtualMap.class, () -> new VirtualMap(configuration())));
+        registry.registerConstructable(
+                new ClassConstructorPair(VirtualMap.class, () -> new VirtualMap(configuration())));
         FakeMerkleStateLifecycles.registerMerkleStateRootClassIds();
     }
 

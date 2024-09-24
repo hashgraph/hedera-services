@@ -16,6 +16,9 @@
 
 package com.swirlds.virtualmap.test.fixtures;
 
+import static com.swirlds.virtualmap.test.fixtures.VirtualMapTestUtils.configuration;
+import static com.swirlds.virtualmap.test.fixtures.VirtualMapTestUtils.vmConfig;
+
 import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.crypto.Cryptography;
@@ -35,9 +38,6 @@ import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
-
-import static com.swirlds.virtualmap.test.fixtures.VirtualMapTestUtils.configuration;
-import static com.swirlds.virtualmap.test.fixtures.VirtualMapTestUtils.vmConfig;
 
 @SuppressWarnings("jol")
 public class VirtualTestBase {
@@ -135,7 +135,8 @@ public class VirtualTestBase {
         registry.registerConstructable(new ClassConstructorPair(TestValue.class, () -> new TestValue("")));
         registry.registerConstructable(new ClassConstructorPair(TestInternal.class, TestInternal::new));
         registry.registerConstructable(new ClassConstructorPair(TestLeaf.class, TestLeaf::new));
-        registry.registerConstructable(new ClassConstructorPair(VirtualMap.class, () -> new VirtualMap(configuration())));
+        registry.registerConstructable(
+                new ClassConstructorPair(VirtualMap.class, () -> new VirtualMap(configuration())));
     }
 
     @BeforeEach

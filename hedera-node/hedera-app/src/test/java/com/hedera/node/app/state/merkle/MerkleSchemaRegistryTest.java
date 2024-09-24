@@ -97,7 +97,9 @@ class MerkleSchemaRegistryTest extends MerkleTestBase {
         lenient().when(config.getConfigData(TemporaryFileConfig.class)).thenReturn(temporaryFileDbConfig);
         final var stateCommonConfig = mock(StateCommonConfig.class);
         lenient().when(config.getConfigData(StateCommonConfig.class)).thenReturn(stateCommonConfig);
-        lenient().when(temporaryFileDbConfig.getTemporaryFilePath(stateCommonConfig)).thenReturn("test");
+        lenient()
+                .when(temporaryFileDbConfig.getTemporaryFilePath(stateCommonConfig))
+                .thenReturn("test");
     }
 
     @Nested

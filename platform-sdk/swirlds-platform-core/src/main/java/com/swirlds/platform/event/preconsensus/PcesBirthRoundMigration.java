@@ -130,9 +130,10 @@ public final class PcesBirthRoundMigration {
      * @param recycleBin        the fileSystemManager
      * @param databaseDirectory the database directory (i.e. where PCES files are stored)
      */
-    private static void makeBackupFiles(@NonNull final RecycleBin recycleBin,
-                                        @NonNull final Path databaseDirectory,
-                                        @NonNull final Configuration configuration)
+    private static void makeBackupFiles(
+            @NonNull final RecycleBin recycleBin,
+            @NonNull final Path databaseDirectory,
+            @NonNull final Configuration configuration)
             throws IOException {
         logger.info(
                 STARTUP.getMarker(), "Backing up PCES files prior to PCES modification in case of unexpected failure.");
@@ -224,7 +225,8 @@ public final class PcesBirthRoundMigration {
             throws IOException {
 
         // First, write the data to a temporary file. If we crash, easier to recover if this operation is atomic.
-        final Path temporaryFile = LegacyTemporaryFileBuilder.buildTemporaryFile("new-pces-file", platformContext.getConfiguration());
+        final Path temporaryFile =
+                LegacyTemporaryFileBuilder.buildTemporaryFile("new-pces-file", platformContext.getConfiguration());
         final SerializableDataOutputStream outputStream = new SerializableDataOutputStream(
                 new BufferedOutputStream(new FileOutputStream(temporaryFile.toFile())));
         outputStream.writeInt(PcesFileVersion.currentVersionNumber());

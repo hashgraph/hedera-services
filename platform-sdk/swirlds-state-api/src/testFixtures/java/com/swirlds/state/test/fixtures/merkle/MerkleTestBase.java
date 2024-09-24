@@ -56,13 +56,11 @@ import com.swirlds.virtualmap.internal.merkle.VirtualRootNode;
 import com.swirlds.virtualmap.serialize.KeySerializer;
 import com.swirlds.virtualmap.serialize.ValueSerializer;
 import edu.umd.cs.findbugs.annotations.NonNull;
-
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.stream.Stream;
-
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.provider.Arguments;
@@ -286,10 +284,15 @@ public class MerkleTestBase extends StateTestBase {
             registry.registerConstructables("com.swirlds.merkle");
             registry.registerConstructables("com.swirlds.merkle.tree");
             registry.registerConstructable(new ClassConstructorPair(VirtualMapState.class, VirtualMapState::new));
-            registry.registerConstructable(new ClassConstructorPair(VirtualMap.class, () -> new VirtualMap(configuration())));
-            registry.registerConstructable(new ClassConstructorPair(VirtualRootNode.class, () -> new VirtualRootNode<>(configuration())));
-            registry.registerConstructable(new ClassConstructorPair(VirtualNodeCache.class, () -> new VirtualNodeCache<>(configuration().getConfigData(VirtualMapConfig.class))));
-            registry.registerConstructable(new ClassConstructorPair(MerkleDbDataSourceBuilder.class, () -> new MerkleDbDataSourceBuilder(configuration())));
+            registry.registerConstructable(
+                    new ClassConstructorPair(VirtualMap.class, () -> new VirtualMap(configuration())));
+            registry.registerConstructable(
+                    new ClassConstructorPair(VirtualRootNode.class, () -> new VirtualRootNode<>(configuration())));
+            registry.registerConstructable(new ClassConstructorPair(
+                    VirtualNodeCache.class,
+                    () -> new VirtualNodeCache<>(configuration().getConfigData(VirtualMapConfig.class))));
+            registry.registerConstructable(new ClassConstructorPair(
+                    MerkleDbDataSourceBuilder.class, () -> new MerkleDbDataSourceBuilder(configuration())));
         } catch (ConstructableRegistryException ex) {
             throw new AssertionError(ex);
         }
@@ -317,7 +320,8 @@ public class MerkleTestBase extends StateTestBase {
                 new OnDiskKeySerializer<>(keySerializerClassId, keyClassId, keyCodec);
         final ValueSerializer<OnDiskValue<String>> valueSerializer =
                 new OnDiskValueSerializer<>(valueSerializerClassId, valueClassId, valueCodec);
-        final var merkleDbTableConfig = new MerkleDbTableConfig((short) 1, DigestType.SHA_384, configuration.getConfigData(MerkleDbConfig.class));
+        final var merkleDbTableConfig = new MerkleDbTableConfig(
+                (short) 1, DigestType.SHA_384, configuration.getConfigData(MerkleDbConfig.class));
         merkleDbTableConfig.hashesRamToDiskThreshold(0);
         merkleDbTableConfig.maxNumberOfKeys(100);
         merkleDbTableConfig.preferDiskIndices(true);

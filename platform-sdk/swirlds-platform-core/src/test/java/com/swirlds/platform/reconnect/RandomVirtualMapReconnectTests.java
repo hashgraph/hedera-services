@@ -65,7 +65,8 @@ class RandomVirtualMapReconnectTests extends VirtualMapReconnectTestBase {
         // MerkleDb instance, so let's use a new (temp) database location for every run
         final Path defaultVirtualMapPath = LegacyTemporaryFileBuilder.buildTemporaryFile(configuration());
         MerkleDb.setDefaultPath(defaultVirtualMapPath);
-        final MerkleDbTableConfig tableConfig = new MerkleDbTableConfig((short) 1, DigestType.SHA_384, configuration().getConfigData(MerkleDbConfig.class));
+        final MerkleDbTableConfig tableConfig = new MerkleDbTableConfig(
+                (short) 1, DigestType.SHA_384, configuration().getConfigData(MerkleDbConfig.class));
         return new MerkleDbDataSourceBuilder(tableConfig, configuration());
     }
 

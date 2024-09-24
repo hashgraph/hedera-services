@@ -163,7 +163,8 @@ public final class MerkleDb {
      * @return Virtual database instance that stores its data in the specified path
      */
     public static MerkleDb getInstance(final Path path, Configuration configuration) {
-        return instances.computeIfAbsent(path != null ? path : getDefaultPath(configuration), p -> new MerkleDb(p, configuration));
+        return instances.computeIfAbsent(
+                path != null ? path : getDefaultPath(configuration), p -> new MerkleDb(p, configuration));
     }
 
     // TODO: update docs
@@ -444,7 +445,8 @@ public final class MerkleDb {
                 return ds;
             }
             try {
-                return new MerkleDbDataSource(this, tableName, tableId, tableConfig, configuration, dbCompactionEnabled);
+                return new MerkleDbDataSource(
+                        this, tableName, tableId, tableConfig, configuration, dbCompactionEnabled);
             } catch (final IOException z) {
                 rethrowIO.set(z);
                 return null;
@@ -547,7 +549,8 @@ public final class MerkleDb {
      * @throws IOException If an I/O error occurs
      * @throws IllegalStateException If the default database instance is already created
      */
-    public static MerkleDb restore(final Path source, final Path target, Configuration configuration) throws IOException {
+    public static MerkleDb restore(final Path source, final Path target, Configuration configuration)
+            throws IOException {
         final Path defaultInstancePath = (target != null) ? target : getDefaultPath(configuration);
         if (!Files.exists(defaultInstancePath.resolve(METADATA_FILENAME))) {
             Files.createDirectories(defaultInstancePath);

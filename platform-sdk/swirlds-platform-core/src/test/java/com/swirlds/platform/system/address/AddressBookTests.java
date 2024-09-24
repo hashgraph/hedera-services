@@ -274,7 +274,8 @@ class AddressBookTests {
     void serializationTest() throws IOException, ConstructableRegistryException {
         ConstructableRegistry registry = ConstructableRegistry.getInstance();
         registry.registerConstructable(new ClassConstructorPair(AddressBook.class, AddressBook::new));
-        registry.registerConstructable(new ClassConstructorPair(VirtualMap.class, () -> new VirtualMap(configuration())));
+        registry.registerConstructable(
+                new ClassConstructorPair(VirtualMap.class, () -> new VirtualMap(configuration())));
 
         final AddressBook original = RandomAddressBookBuilder.create(getRandomPrintSeed())
                 .withSize(100)

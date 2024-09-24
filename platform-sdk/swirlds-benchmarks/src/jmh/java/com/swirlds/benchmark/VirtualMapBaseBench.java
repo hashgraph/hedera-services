@@ -108,10 +108,12 @@ public abstract class VirtualMapBaseBench extends BaseBench {
     }
 
     protected VirtualMap<BenchmarkKey, BenchmarkValue> createEmptyMap(String label) {
-        MerkleDbTableConfig tableConfig =
-                new MerkleDbTableConfig((short) 1, DigestType.SHA_384, getConfig(MerkleDbConfig.class)).preferDiskIndices(false);
+        MerkleDbTableConfig tableConfig = new MerkleDbTableConfig(
+                        (short) 1, DigestType.SHA_384, getConfig(MerkleDbConfig.class))
+                .preferDiskIndices(false);
         MerkleDbDataSourceBuilder dataSourceBuilder = new MerkleDbDataSourceBuilder(tableConfig, getConfig());
-        return new VirtualMap<>(label, new BenchmarkKeySerializer(), new BenchmarkValueSerializer(), dataSourceBuilder, configuration);
+        return new VirtualMap<>(
+                label, new BenchmarkKeySerializer(), new BenchmarkValueSerializer(), dataSourceBuilder, configuration);
     }
 
     protected VirtualMap<BenchmarkKey, BenchmarkValue> createMap(final long[] map) {

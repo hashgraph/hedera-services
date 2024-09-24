@@ -23,12 +23,11 @@ import com.swirlds.common.test.fixtures.dummy.Value;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.merkle.tree.MerkleBinaryTree;
+import com.swirlds.virtualmap.config.VirtualMapConfig;
 import java.io.File;
 import java.io.IOException;
 import java.util.Map;
 import java.util.Random;
-
-import com.swirlds.virtualmap.config.VirtualMapConfig;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.core.LoggerContext;
 

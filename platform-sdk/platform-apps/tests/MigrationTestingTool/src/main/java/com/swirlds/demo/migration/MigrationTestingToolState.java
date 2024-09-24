@@ -201,13 +201,18 @@ public class MigrationTestingToolState extends PartialNaryMerkleInternal impleme
      */
     private void genesisInit(final Platform platform) {
         setMerkleMap(new MerkleMap<>());
-        final MerkleDbTableConfig tableConfig = new MerkleDbTableConfig((short) 1, DigestType.SHA_384, configuration().getConfigData(MerkleDbConfig.class));
+        final MerkleDbTableConfig tableConfig = new MerkleDbTableConfig(
+                (short) 1, DigestType.SHA_384, configuration().getConfigData(MerkleDbConfig.class));
         // to make it work for the multiple node in one JVM case, we need reset the default instance path every time
         // we create another instance of MerkleDB.
         MerkleDb.resetDefaultInstancePath();
         final VirtualDataSourceBuilder dsBuilder = new MerkleDbDataSourceBuilder(tableConfig, configuration());
         setVirtualMap(new VirtualMap<>(
-                "virtualMap", new AccountVirtualMapKeySerializer(), new AccountVirtualMapValueSerializer(), dsBuilder, configuration()));
+                "virtualMap",
+                new AccountVirtualMapKeySerializer(),
+                new AccountVirtualMapValueSerializer(),
+                dsBuilder,
+                configuration()));
         selfId = platform.getSelfId();
     }
 

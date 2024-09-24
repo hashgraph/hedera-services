@@ -16,7 +16,6 @@
 
 package com.hedera.node.app.state.merkle.disk;
 
-import static com.hedera.node.app.fixtures.AppTestBase.DEFAULT_CONFIG;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
@@ -91,7 +90,8 @@ class OnDiskTest extends MerkleTestBase {
                 onDiskValueSerializerClassId(SERVICE_NAME, ACCOUNT_STATE_KEY),
                 onDiskValueClassId(SERVICE_NAME, ACCOUNT_STATE_KEY),
                 Account.PROTOBUF);
-        final var tableConfig = new MerkleDbTableConfig((short) 1, DigestType.SHA_384, configuration.getConfigData(MerkleDbConfig.class));
+        final var tableConfig = new MerkleDbTableConfig(
+                (short) 1, DigestType.SHA_384, configuration.getConfigData(MerkleDbConfig.class));
         // Force all hashes to disk, to make sure we're going through all the
         // serialization paths we can
         tableConfig.hashesRamToDiskThreshold(0);
@@ -100,7 +100,11 @@ class OnDiskTest extends MerkleTestBase {
 
         final var builder = new MerkleDbDataSourceBuilder(storageDir, tableConfig, configuration);
         virtualMap = new VirtualMap<>(
-                StateUtils.computeLabel(SERVICE_NAME, ACCOUNT_STATE_KEY), keySerializer, valueSerializer, builder, configuration);
+                StateUtils.computeLabel(SERVICE_NAME, ACCOUNT_STATE_KEY),
+                keySerializer,
+                valueSerializer,
+                builder,
+                configuration);
 
         Configuration config = mock(Configuration.class);
         final var hederaConfig = mock(HederaConfig.class);

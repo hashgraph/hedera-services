@@ -44,10 +44,9 @@ import com.swirlds.common.test.fixtures.merkle.dummy.DummyBinaryMerkleInternal;
 import com.swirlds.common.test.fixtures.merkle.dummy.DummyMerkleInternal;
 import com.swirlds.common.test.fixtures.merkle.dummy.DummyMerkleLeaf;
 import com.swirlds.common.test.fixtures.merkle.dummy.DummyMerkleNode;
+import com.swirlds.virtualmap.VirtualMap;
 import java.util.HashSet;
 import java.util.Set;
-
-import com.swirlds.virtualmap.VirtualMap;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
@@ -60,7 +59,8 @@ class MerkleCopyTests {
     public static void setUp() throws ConstructableRegistryException {
         ConstructableRegistry registry = ConstructableRegistry.getInstance();
         registry.registerConstructable(new ClassConstructorPair(DummyMerkleInternal.class, DummyMerkleInternal::new));
-        registry.registerConstructable(new ClassConstructorPair(VirtualMap.class, () -> new VirtualMap(configuration())));
+        registry.registerConstructable(
+                new ClassConstructorPair(VirtualMap.class, () -> new VirtualMap(configuration())));
     }
 
     /**

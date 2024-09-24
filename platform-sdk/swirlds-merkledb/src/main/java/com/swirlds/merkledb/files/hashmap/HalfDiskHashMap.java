@@ -21,8 +21,8 @@ import static com.swirlds.logging.legacy.LogMarker.MERKLE_DB;
 
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.swirlds.config.api.Configuration;
 import com.swirlds.common.wiring.tasks.AbstractTask;
+import com.swirlds.config.api.Configuration;
 import com.swirlds.merkledb.FileStatisticAware;
 import com.swirlds.merkledb.Snapshotable;
 import com.swirlds.merkledb.collections.CASableLongIndex;
@@ -249,8 +249,9 @@ public class HalfDiskHashMap implements AutoCloseable, Snapshotable, FileStatist
             // load or rebuild index
             final boolean forceIndexRebuilding = merkleDbConfig.indexRebuildingEnforced();
             if (Files.exists(indexFile) && !forceIndexRebuilding) {
-                bucketIndexToBucketLocation =
-                        preferDiskBasedIndex ? new LongListDisk(indexFile, configuration) : new LongListOffHeap(indexFile);
+                bucketIndexToBucketLocation = preferDiskBasedIndex
+                        ? new LongListDisk(indexFile, configuration)
+                        : new LongListOffHeap(indexFile);
                 loadedDataCallback = null;
             } else {
                 // create new index and setup call back to rebuild
@@ -266,7 +267,8 @@ public class HalfDiskHashMap implements AutoCloseable, Snapshotable, FileStatist
             // create store dir
             Files.createDirectories(storeDir);
             // create new index
-            bucketIndexToBucketLocation = preferDiskBasedIndex ? new LongListDisk(indexFile, configuration) : new LongListOffHeap();
+            bucketIndexToBucketLocation =
+                    preferDiskBasedIndex ? new LongListDisk(indexFile, configuration) : new LongListOffHeap();
             // calculate number of entries we can store in a disk page
             final int minimumBuckets = (int) (mapSize / GOOD_AVERAGE_BUCKET_ENTRY_COUNT);
             // numOfBuckets is the nearest power of two greater than minimumBuckets with a min of 2

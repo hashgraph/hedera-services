@@ -523,8 +523,8 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
         new ThreadConfiguration(getStaticThreadManager())
                 .setComponent("virtualmap")
                 .setThreadName("leafRehasher")
-                .setRunnable(() -> fullRehashFuture.complete(
-                        hasher.hash(records::findHash, rehashIterator, firstLeafPath, lastLeafPath, hashListener, configuration)))
+                .setRunnable(() -> fullRehashFuture.complete(hasher.hash(
+                        records::findHash, rehashIterator, firstLeafPath, lastLeafPath, hashListener, configuration)))
                 .setExceptionHandler((thread, exception) -> {
                     // Shut down the iterator.
                     rehashIterator.close();
@@ -1464,7 +1464,8 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
                     getStaticThreadManager(), reconnectConfig, this, state, pipeline);
             case VirtualMapReconnectMode.PULL_TWO_PHASE_PESSIMISTIC -> new TeacherPullVirtualTreeView<>(
                     getStaticThreadManager(), reconnectConfig, this, state, pipeline);
-            default -> throw new UnsupportedOperationException("Unknown reconnect mode: " + virtualMapConfig.reconnectMode());
+            default -> throw new UnsupportedOperationException(
+                    "Unknown reconnect mode: " + virtualMapConfig.reconnectMode());
         };
     }
 
@@ -1563,7 +1564,8 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
                         twoPhasePessimistic,
                         mapStats);
             }
-            default -> throw new UnsupportedOperationException("Unknown reconnect mode: " + virtualMapConfig.reconnectMode());
+            default -> throw new UnsupportedOperationException(
+                    "Unknown reconnect mode: " + virtualMapConfig.reconnectMode());
         };
     }
 
@@ -1616,7 +1618,12 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
                 .setComponent("virtualmap")
                 .setThreadName("hasher")
                 .setRunnable(() -> reconnectHashingFuture.complete(hasher.hash(
-                        reconnectRecords::findHash, reconnectIterator, firstLeafPath, lastLeafPath, hashListener, configuration)))
+                        reconnectRecords::findHash,
+                        reconnectIterator,
+                        firstLeafPath,
+                        lastLeafPath,
+                        hashListener,
+                        configuration)))
                 .setExceptionHandler((thread, exception) -> {
                     // Shut down the iterator. This will cause reconnect to terminate.
                     reconnectIterator.close();

@@ -74,7 +74,8 @@ class EventStreamPathIteratorTest {
     @DisplayName("Starting From First Event Test")
     void startingFromFirstEventTest() throws IOException, NoSuchAlgorithmException, ConstructableRegistryException {
         ConstructableRegistry registry = ConstructableRegistry.getInstance();
-        registry.registerConstructable(new ClassConstructorPair(VirtualMap.class, () -> new VirtualMap(ConfigurationUtils.configuration())));
+        registry.registerConstructable(
+                new ClassConstructorPair(VirtualMap.class, () -> new VirtualMap(ConfigurationUtils.configuration())));
 
         final Random random = getRandomPrintSeed();
         final Path directory = LegacyTemporaryFileBuilder.buildTemporaryDirectory(configuration());
@@ -116,7 +117,8 @@ class EventStreamPathIteratorTest {
     @DisplayName("Starting From Specified Event Test")
     void startingFromSpecifiedEventTest() throws IOException, NoSuchAlgorithmException, ConstructableRegistryException {
         ConstructableRegistry registry = ConstructableRegistry.getInstance();
-        registry.registerConstructable(new ClassConstructorPair(VirtualMap.class, () -> new VirtualMap(ConfigurationUtils.configuration())));
+        registry.registerConstructable(
+                new ClassConstructorPair(VirtualMap.class, () -> new VirtualMap(ConfigurationUtils.configuration())));
 
         final Random random = getRandomPrintSeed();
         final Path directory = LegacyTemporaryFileBuilder.buildTemporaryDirectory(configuration());
@@ -164,7 +166,8 @@ class EventStreamPathIteratorTest {
     @DisplayName("Request Non Existent Rounds Test")
     void requestNonExistentRoundsTest() throws ConstructableRegistryException, IOException, NoSuchAlgorithmException {
         ConstructableRegistry registry = ConstructableRegistry.getInstance();
-        registry.registerConstructable(new ClassConstructorPair(VirtualMap.class, () -> new VirtualMap(ConfigurationUtils.configuration())));
+        registry.registerConstructable(
+                new ClassConstructorPair(VirtualMap.class, () -> new VirtualMap(ConfigurationUtils.configuration())));
 
         final Random random = getRandomPrintSeed();
         final Path directory = LegacyTemporaryFileBuilder.buildTemporaryDirectory(configuration());
@@ -193,7 +196,8 @@ class EventStreamPathIteratorTest {
     @DisplayName("Extensive Bound Test")
     void extensiveBoundTest() throws IOException, NoSuchAlgorithmException, ConstructableRegistryException {
         ConstructableRegistry registry = ConstructableRegistry.getInstance();
-        registry.registerConstructable(new ClassConstructorPair(VirtualMap.class, () -> new VirtualMap(ConfigurationUtils.configuration())));
+        registry.registerConstructable(
+                new ClassConstructorPair(VirtualMap.class, () -> new VirtualMap(ConfigurationUtils.configuration())));
 
         final Random random = getRandomPrintSeed();
         final Path directory = LegacyTemporaryFileBuilder.buildTemporaryDirectory(configuration());

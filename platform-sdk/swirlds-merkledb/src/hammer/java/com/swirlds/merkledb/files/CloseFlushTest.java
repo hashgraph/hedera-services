@@ -16,6 +16,8 @@
 
 package com.swirlds.merkledb.files;
 
+import static com.swirlds.merkledb.test.fixtures.MerkleDbTestUtils.config;
+
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.utility.LegacyTemporaryFileBuilder;
@@ -50,8 +52,6 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-
-import static com.swirlds.merkledb.test.fixtures.MerkleDbTestUtils.config;
 
 /**
  * This is a regression test for swirlds/swirlds-platform/issues/6151, but
@@ -92,7 +92,8 @@ public class CloseFlushTest {
                     "closeFlushTest",
                     TestType.fixed_fixed.dataType().getKeySerializer(),
                     TestType.fixed_fixed.dataType().getValueSerializer(),
-                    builder, config());
+                    builder,
+                    config());
             for (int i = 0; i < count; i++) {
                 final ExampleLongKeyFixedSize key = new ExampleLongKeyFixedSize(i);
                 final ExampleFixedSizeVirtualValue value = new ExampleFixedSizeVirtualValue(i);

@@ -48,7 +48,6 @@ import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.common.merkle.interfaces.MerkleType;
 import com.swirlds.common.merkle.route.MerkleRouteFactory;
 import com.swirlds.common.platform.NodeId;
-import com.swirlds.common.test.fixtures.merkle.dummy.DummyMerkleInternal;
 import com.swirlds.common.test.fixtures.merkle.dummy.DummyMerkleLeaf;
 import com.swirlds.common.utility.Threshold;
 import com.swirlds.platform.proof.tree.StateProofOpaqueNode;
@@ -85,7 +84,8 @@ class StateProofTests {
         registry.registerConstructable(new ClassConstructorPair(StateProof.class, StateProof::new));
         registry.registerConstructable(new ClassConstructorPair(StateProofOpaqueNode.class, StateProofOpaqueNode::new));
         registry.registerConstructable(new ClassConstructorPair(StateProofPayload.class, StateProofPayload::new));
-        registry.registerConstructable(new ClassConstructorPair(VirtualMap.class, () -> new VirtualMap(configuration())));
+        registry.registerConstructable(
+                new ClassConstructorPair(VirtualMap.class, () -> new VirtualMap(configuration())));
     }
 
     /**

@@ -1289,9 +1289,10 @@ public final class VirtualNodeCache<K extends VirtualKey, V extends VirtualValue
      * @param <V>
      * 		The value type referenced by the mutation list
      */
-    private static <K, V> void purge(final ConcurrentArray<Mutation<K, V>> array,
-                                     final Map<K, Mutation<K, V>> index,
-                                     final VirtualMapConfig vmConfig) {
+    private static <K, V> void purge(
+            final ConcurrentArray<Mutation<K, V>> array,
+            final Map<K, Mutation<K, V>> index,
+            final VirtualMapConfig vmConfig) {
         array.parallelTraverse(
                 getCleaningPool(vmConfig),
                 element -> index.compute(element.key, (key, mutation) -> {
@@ -1325,7 +1326,8 @@ public final class VirtualNodeCache<K extends VirtualKey, V extends VirtualValue
      * @param <V>
      * 		The value type referenced by the mutation list
      */
-    private static <K, V> void filterMutations(final ConcurrentArray<Mutation<K, V>> array, final VirtualMapConfig vmConfig) {
+    private static <K, V> void filterMutations(
+            final ConcurrentArray<Mutation<K, V>> array, final VirtualMapConfig vmConfig) {
         final Consumer<Mutation<K, V>> action = mutation -> {
             // local variable is required because mutation.next can be changed by another thread to null
             // see https://github.com/hashgraph/hedera-services/issues/7046 for the context

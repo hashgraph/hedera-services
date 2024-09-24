@@ -16,6 +16,8 @@
 
 package com.swirlds.merkledb;
 
+import static com.swirlds.merkledb.test.fixtures.MerkleDbTestUtils.config;
+
 import com.hedera.pbj.runtime.io.stream.ReadableStreamingData;
 import com.hedera.pbj.runtime.io.stream.WritableStreamingData;
 import com.swirlds.common.constructable.ConstructableRegistry;
@@ -26,8 +28,6 @@ import java.io.IOException;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-
-import static com.swirlds.merkledb.test.fixtures.MerkleDbTestUtils.config;
 
 class MerkleDbTableConfigTest {
 

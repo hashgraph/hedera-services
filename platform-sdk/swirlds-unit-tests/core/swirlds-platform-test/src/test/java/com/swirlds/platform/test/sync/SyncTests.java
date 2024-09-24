@@ -308,7 +308,9 @@ public class SyncTests {
     public static void setup() throws FileNotFoundException, ConstructableRegistryException {
         new TestConfigBuilder().getOrCreateConfig();
 
-        ConstructableRegistry.getInstance().registerConstructable(new ClassConstructorPair(VirtualMap.class, () -> new VirtualMap(configuration())));
+        ConstructableRegistry.getInstance()
+                .registerConstructable(
+                        new ClassConstructorPair(VirtualMap.class, () -> new VirtualMap(configuration())));
 
         if (platformLoggingEnabled) {
             loadLog4jContext();

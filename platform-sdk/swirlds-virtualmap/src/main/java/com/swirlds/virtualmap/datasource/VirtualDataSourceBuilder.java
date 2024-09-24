@@ -17,8 +17,6 @@
 package com.swirlds.virtualmap.datasource;
 
 import com.swirlds.common.io.SelfSerializable;
-import com.swirlds.config.api.Configuration;
-
 import java.nio.file.Path;
 
 /**

@@ -22,7 +22,6 @@ import com.swirlds.common.io.utility.LegacyTemporaryFileBuilder;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.merkledb.utilities.MerkleDbFileUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
-
 import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
@@ -35,7 +34,6 @@ import java.nio.file.StandardOpenOption;
 import java.util.Arrays;
 import java.util.Deque;
 import java.util.concurrent.ConcurrentLinkedDeque;
-import java.util.concurrent.atomic.AtomicReferenceArray;
 
 /**
  *  A direct on disk implementation of LongList. This implementation creates a temporary file to store the data.
@@ -88,7 +86,11 @@ public class LongListDisk extends AbstractLongList<Long> {
         this(DEFAULT_NUM_LONGS_PER_CHUNK, DEFAULT_MAX_LONGS_TO_STORE, DEFAULT_RESERVED_BUFFER_LENGTH, configuration);
     }
 
-    LongListDisk(final int numLongsPerChunk, final long maxLongs, final long reservedBufferLength, Configuration configuration) {
+    LongListDisk(
+            final int numLongsPerChunk,
+            final long maxLongs,
+            final long reservedBufferLength,
+            Configuration configuration) {
         super(numLongsPerChunk, maxLongs, reservedBufferLength);
         this.configuration = configuration;
         try {
@@ -114,7 +116,8 @@ public class LongListDisk extends AbstractLongList<Long> {
         this(file, DEFAULT_RESERVED_BUFFER_LENGTH, configuration);
     }
 
-    LongListDisk(final Path path, final long reservedBufferLength, final Configuration configuration) throws IOException {
+    LongListDisk(final Path path, final long reservedBufferLength, final Configuration configuration)
+            throws IOException {
         super(path, reservedBufferLength);
         this.configuration = configuration;
         final File file = path.toFile();
@@ -206,7 +209,8 @@ public class LongListDisk extends AbstractLongList<Long> {
     }
 
     static Path createTempFile(final String sourceFileName, final Configuration configuration) throws IOException {
-        return LegacyTemporaryFileBuilder.buildTemporaryDirectory(STORE_POSTFIX, configuration).resolve(sourceFileName);
+        return LegacyTemporaryFileBuilder.buildTemporaryDirectory(STORE_POSTFIX, configuration)
+                .resolve(sourceFileName);
     }
 
     /** {@inheritDoc} */

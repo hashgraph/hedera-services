@@ -241,7 +241,8 @@ public final class MerkleDbDataSource implements VirtualDataSource {
         // create path to disk location index
         final boolean forceIndexRebuilding = database.getConfig().indexRebuildingEnforced();
         if (tableConfig.isPreferDiskBasedIndices()) {
-            pathToDiskLocationInternalNodes = new LongListDisk(dbPaths.pathToDiskLocationInternalNodesFile, configuration);
+            pathToDiskLocationInternalNodes =
+                    new LongListDisk(dbPaths.pathToDiskLocationInternalNodesFile, configuration);
         } else if (Files.exists(dbPaths.pathToDiskLocationInternalNodesFile) && !forceIndexRebuilding) {
             pathToDiskLocationInternalNodes = new LongListOffHeap(dbPaths.pathToDiskLocationInternalNodesFile);
         } else {
@@ -384,7 +385,11 @@ public final class MerkleDbDataSource implements VirtualDataSource {
                 tableConfig.getHashesRamToDiskThreshold());
 
         compactionCoordinator = new MerkleDbCompactionCoordinator(
-                tableName, keyToPathFileCompactor, hashStoreDiskFileCompactor, pathToKeyValueFileCompactor, database.getConfig());
+                tableName,
+                keyToPathFileCompactor,
+                hashStoreDiskFileCompactor,
+                pathToKeyValueFileCompactor,
+                database.getConfig());
 
         if (compactionEnabled) {
             enableBackgroundCompaction();

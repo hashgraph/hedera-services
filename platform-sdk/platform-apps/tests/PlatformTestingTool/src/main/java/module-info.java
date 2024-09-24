@@ -26,6 +26,7 @@ module com.swirlds.demo.platform {
     requires com.swirlds.base;
     requires com.swirlds.common.test.fixtures;
     requires com.swirlds.common;
+    requires com.swirlds.config.api;
     requires com.swirlds.fchashmap;
     requires com.swirlds.fcqueue;
     requires com.swirlds.logging;
@@ -35,7 +36,6 @@ module com.swirlds.demo.platform {
     requires com.swirlds.metrics.api;
     requires com.swirlds.platform.core;
     requires com.swirlds.virtualmap;
-    requires com.swirlds.config.api;
     requires com.fasterxml.jackson.annotation;
     requires com.fasterxml.jackson.core;
     requires com.fasterxml.jackson.databind;

@@ -103,7 +103,8 @@ public class VirtualMapReconnectTestBase {
         // MerkleDb instance, so let's use a new (temp) database location for every run
         final Path defaultVirtualMapPath = LegacyTemporaryFileBuilder.buildTemporaryFile(configuration());
         MerkleDb.setDefaultPath(defaultVirtualMapPath);
-        final MerkleDbTableConfig tableConfig = new MerkleDbTableConfig((short) 1, DigestType.SHA_384, configuration().getConfigData(MerkleDbConfig.class));
+        final MerkleDbTableConfig tableConfig = new MerkleDbTableConfig(
+                (short) 1, DigestType.SHA_384, configuration().getConfigData(MerkleDbConfig.class));
         tableConfig.hashesRamToDiskThreshold(0);
         return new MerkleDbDataSourceBuilder(tableConfig, configuration());
     }
@@ -144,9 +145,11 @@ public class VirtualMapReconnectTestBase {
         registry.registerConstructable(new ClassConstructorPair(DummyMerkleInternal.class, DummyMerkleInternal::new));
         registry.registerConstructable(new ClassConstructorPair(DummyMerkleLeaf.class, DummyMerkleLeaf::new));
         registry.registerConstructable(new ClassConstructorPair(Lesson.class, Lesson::new));
-        registry.registerConstructable(new ClassConstructorPair(VirtualMap.class, () -> new VirtualMap(configuration())));
+        registry.registerConstructable(
+                new ClassConstructorPair(VirtualMap.class, () -> new VirtualMap(configuration())));
         registry.registerConstructable(new ClassConstructorPair(VirtualMapState.class, VirtualMapState::new));
-        registry.registerConstructable(new ClassConstructorPair(VirtualRootNode.class, () -> new VirtualRootNode<>(configuration())));
+        registry.registerConstructable(
+                new ClassConstructorPair(VirtualRootNode.class, () -> new VirtualRootNode<>(configuration())));
         registry.registerConstructable(new ClassConstructorPair(TestKey.class, TestKey::new));
         registry.registerConstructable(new ClassConstructorPair(TestValue.class, TestValue::new));
 

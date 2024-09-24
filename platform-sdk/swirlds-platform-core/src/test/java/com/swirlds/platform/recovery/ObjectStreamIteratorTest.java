@@ -42,6 +42,7 @@ import com.swirlds.platform.recovery.internal.ObjectStreamIterator;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.StaticSoftwareVersion;
 import com.swirlds.platform.system.events.CesEvent;
+import com.swirlds.virtualmap.VirtualMap;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -50,8 +51,6 @@ import java.time.Duration;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Random;
-
-import com.swirlds.virtualmap.VirtualMap;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
@@ -79,7 +78,8 @@ class ObjectStreamIteratorTest {
     public void simpleStreamTest() throws IOException, NoSuchAlgorithmException, ConstructableRegistryException {
 
         ConstructableRegistry registry = ConstructableRegistry.getInstance();
-        registry.registerConstructable(new ClassConstructorPair(VirtualMap.class, () -> new VirtualMap(ConfigurationUtils.configuration())));
+        registry.registerConstructable(
+                new ClassConstructorPair(VirtualMap.class, () -> new VirtualMap(ConfigurationUtils.configuration())));
 
         // FUTURE WORK: once streaming code is simplified, rewrite this test to use simple object types
 
@@ -145,7 +145,8 @@ class ObjectStreamIteratorTest {
             throws ConstructableRegistryException, IOException, NoSuchAlgorithmException {
 
         ConstructableRegistry registry = ConstructableRegistry.getInstance();
-        registry.registerConstructable(new ClassConstructorPair(VirtualMap.class, () -> new VirtualMap(ConfigurationUtils.configuration())));
+        registry.registerConstructable(
+                new ClassConstructorPair(VirtualMap.class, () -> new VirtualMap(ConfigurationUtils.configuration())));
 
         // FUTURE WORK: once streaming code is simplified, rewrite this test to use simple object types
 
@@ -200,7 +201,8 @@ class ObjectStreamIteratorTest {
             throws ConstructableRegistryException, IOException, NoSuchAlgorithmException {
 
         ConstructableRegistry registry = ConstructableRegistry.getInstance();
-        registry.registerConstructable(new ClassConstructorPair(VirtualMap.class, () -> new VirtualMap(ConfigurationUtils.configuration())));
+        registry.registerConstructable(
+                new ClassConstructorPair(VirtualMap.class, () -> new VirtualMap(ConfigurationUtils.configuration())));
 
         // FUTURE WORK: once streaming code is simplified, rewrite this test to use simple object types
 

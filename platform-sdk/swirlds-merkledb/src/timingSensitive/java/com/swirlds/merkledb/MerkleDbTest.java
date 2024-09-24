@@ -118,7 +118,8 @@ public class MerkleDbTest {
         final MerkleDbDataSource sourceDs = sourceDb.createDataSource("table" + sourceUsePbj, tableConfig, false);
 
         for (final boolean snapshotUsePbj : new boolean[] {true, false}) {
-            final Path snapshotDir = LegacyTemporaryFileBuilder.buildTemporaryDirectory("testLoadMetadataSnapshot", sourceConfig);
+            final Path snapshotDir =
+                    LegacyTemporaryFileBuilder.buildTemporaryDirectory("testLoadMetadataSnapshot", sourceConfig);
             Files.delete(snapshotDir);
             // Don't call sourceDb.snapshot() as it would create and initialize an instance for snapshotDir
             FileUtils.hardLinkTree(dbDir, snapshotDir.resolve("db"));
@@ -178,8 +179,8 @@ public class MerkleDbTest {
         instance.createDataSource(tableName, tableConfig, false).close();
 
         // create datasource reusing existing metadata
-        MerkleDbDataSource dataSource =
-                new MerkleDbDataSource(instance, tableName, instance.getNextTableId() - 1, tableConfig, config(), false);
+        MerkleDbDataSource dataSource = new MerkleDbDataSource(
+                instance, tableName, instance.getNextTableId() - 1, tableConfig, config(), false);
         // This datasource cannot be properly closed because MerkleDb instance is not aware of this.
         // Assertion error is expected
         assertThrows(AssertionError.class, dataSource::close);
@@ -489,7 +490,8 @@ public class MerkleDbTest {
         final MerkleDbDataSource dataSource = instance1.createDataSource(tableName + "1", tableConfig, true);
         Assertions.assertNotNull(dataSource);
 
-        final Path snapshotDir = LegacyTemporaryFileBuilder.buildTemporaryFile("checkBackgroundCompactionsOnImport", config());
+        final Path snapshotDir =
+                LegacyTemporaryFileBuilder.buildTemporaryFile("checkBackgroundCompactionsOnImport", config());
         instance1.snapshot(snapshotDir, dataSource);
 
         Assertions.assertTrue(dataSource.isCompactionEnabled());

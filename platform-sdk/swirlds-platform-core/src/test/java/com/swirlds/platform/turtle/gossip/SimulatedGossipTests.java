@@ -78,7 +78,8 @@ class SimulatedGossipTests {
     static void beforeAll() throws ConstructableRegistryException {
         StaticSoftwareVersion.setSoftwareVersion(new BasicSoftwareVersion(1));
         ConstructableRegistry registry = ConstructableRegistry.getInstance();
-        registry.registerConstructable(new ClassConstructorPair(VirtualMap.class, () -> new VirtualMap(configuration())));
+        registry.registerConstructable(
+                new ClassConstructorPair(VirtualMap.class, () -> new VirtualMap(configuration())));
     }
 
     @SuppressWarnings("unchecked")

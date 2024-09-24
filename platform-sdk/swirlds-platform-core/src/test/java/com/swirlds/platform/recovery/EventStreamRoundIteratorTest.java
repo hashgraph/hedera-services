@@ -43,6 +43,7 @@ import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.StaticSoftwareVersion;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.events.CesEvent;
+import com.swirlds.virtualmap.VirtualMap;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -52,8 +53,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Random;
-
-import com.swirlds.virtualmap.VirtualMap;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Disabled;
@@ -81,7 +80,8 @@ class EventStreamRoundIteratorTest {
     @DisplayName("Read All Events Test")
     void readAllEventsTest() throws ConstructableRegistryException, IOException, NoSuchAlgorithmException {
         ConstructableRegistry registry = ConstructableRegistry.getInstance();
-        registry.registerConstructable(new ClassConstructorPair(VirtualMap.class, () -> new VirtualMap(ConfigurationUtils.configuration())));
+        registry.registerConstructable(
+                new ClassConstructorPair(VirtualMap.class, () -> new VirtualMap(ConfigurationUtils.configuration())));
 
         final Random random = getRandomPrintSeed();
         final Path directory = LegacyTemporaryFileBuilder.buildTemporaryDirectory(configuration());
@@ -126,7 +126,8 @@ class EventStreamRoundIteratorTest {
             throws ConstructableRegistryException, IOException, NoSuchAlgorithmException {
 
         ConstructableRegistry registry = ConstructableRegistry.getInstance();
-        registry.registerConstructable(new ClassConstructorPair(VirtualMap.class, () -> new VirtualMap(ConfigurationUtils.configuration())));
+        registry.registerConstructable(
+                new ClassConstructorPair(VirtualMap.class, () -> new VirtualMap(ConfigurationUtils.configuration())));
 
         final Random random = getRandomPrintSeed();
         final Path directory = LegacyTemporaryFileBuilder.buildTemporaryDirectory(configuration());
@@ -180,7 +181,8 @@ class EventStreamRoundIteratorTest {
     @DisplayName("Missing Event File Test")
     void missingEventFileTest() throws ConstructableRegistryException, IOException, NoSuchAlgorithmException {
         ConstructableRegistry registry = ConstructableRegistry.getInstance();
-        registry.registerConstructable(new ClassConstructorPair(VirtualMap.class, () -> new VirtualMap(ConfigurationUtils.configuration())));
+        registry.registerConstructable(
+                new ClassConstructorPair(VirtualMap.class, () -> new VirtualMap(ConfigurationUtils.configuration())));
 
         final Random random = getRandomPrintSeed();
         final Path directory = LegacyTemporaryFileBuilder.buildTemporaryDirectory(configuration());
@@ -242,7 +244,8 @@ class EventStreamRoundIteratorTest {
     @DisplayName("Early Rounds Not Present Test")
     void earlyRoundsNotPresentTest() throws ConstructableRegistryException, IOException, NoSuchAlgorithmException {
         ConstructableRegistry registry = ConstructableRegistry.getInstance();
-        registry.registerConstructable(new ClassConstructorPair(VirtualMap.class, () -> new VirtualMap(ConfigurationUtils.configuration())));
+        registry.registerConstructable(
+                new ClassConstructorPair(VirtualMap.class, () -> new VirtualMap(ConfigurationUtils.configuration())));
 
         final Random random = getRandomPrintSeed();
         final Path directory = LegacyTemporaryFileBuilder.buildTemporaryDirectory(configuration());
@@ -266,7 +269,8 @@ class EventStreamRoundIteratorTest {
     @DisplayName("Read All Events Truncated File Test")
     void readAllEventsTruncatedFileTest() throws ConstructableRegistryException, IOException, NoSuchAlgorithmException {
         ConstructableRegistry registry = ConstructableRegistry.getInstance();
-        registry.registerConstructable(new ClassConstructorPair(VirtualMap.class, () -> new VirtualMap(ConfigurationUtils.configuration())));
+        registry.registerConstructable(
+                new ClassConstructorPair(VirtualMap.class, () -> new VirtualMap(ConfigurationUtils.configuration())));
 
         final Random random = getRandomPrintSeed();
         final Path directory = LegacyTemporaryFileBuilder.buildTemporaryDirectory(configuration());

@@ -23,7 +23,6 @@ import static java.nio.file.Files.exists;
 import com.swirlds.common.config.StateCommonConfig;
 import com.swirlds.common.io.config.TemporaryFileConfig;
 import com.swirlds.config.api.Configuration;
-
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -108,7 +107,8 @@ public final class LegacyTemporaryFileBuilder {
      * @deprecated use {@link com.swirlds.common.io.filesystem.FileSystemManager#resolveNewTemp(String)} instead.
      */
     @Deprecated
-    public static synchronized Path buildTemporaryFile(final String postfix, final Configuration configuration) throws IOException {
+    public static synchronized Path buildTemporaryFile(final String postfix, final Configuration configuration)
+            throws IOException {
         final String fileName = nextFileId + (postfix == null ? "" : ("-" + postfix));
         nextFileId++;
 
@@ -149,7 +149,8 @@ public final class LegacyTemporaryFileBuilder {
      * and then create a directory using {@link Files#createDirectory(Path, FileAttribute[])}
      */
     @Deprecated
-    public static synchronized Path buildTemporaryDirectory(final String postfix, final Configuration configuration) throws IOException {
+    public static synchronized Path buildTemporaryDirectory(final String postfix, final Configuration configuration)
+            throws IOException {
         final Path directory = buildTemporaryFile(postfix, configuration);
         if (!exists(directory)) {
             Files.createDirectories(directory);

@@ -285,12 +285,7 @@ class MemoryIndexDiskKeyValueStoreTest {
         // open snapshot and check data
         final LongListOffHeap snapshotIndex = new LongListOffHeap();
         final MemoryIndexDiskKeyValueStore storeFromSnapshot = new MemoryIndexDiskKeyValueStore(
-                config().getConfigData(MerkleDbConfig.class),
-                tempSnapshotDir,
-                storeName,
-                null,
-                null,
-                snapshotIndex);
+                config().getConfigData(MerkleDbConfig.class), tempSnapshotDir, storeName, null, null, snapshotIndex);
         checkRange(testType, storeFromSnapshot, 0, 2000, 8910);
         checkRange(testType, storeFromSnapshot, 2000, 48_000, 56_000);
         storeFromSnapshot.close();

@@ -72,10 +72,10 @@ public abstract class VirtualMapReconnectBenchBase {
     protected void setupEach() {
         teacherBuilder = createBuilder();
         learnerBuilder = createBuilder();
-        teacherMap =
-                new VirtualMap<>("Teacher", TestKeySerializer.INSTANCE, TestValueSerializer.INSTANCE, teacherBuilder, configuration());
-        learnerMap =
-                new VirtualMap<>("Learner", TestKeySerializer.INSTANCE, TestValueSerializer.INSTANCE, learnerBuilder, configuration());
+        teacherMap = new VirtualMap<>(
+                "Teacher", TestKeySerializer.INSTANCE, TestValueSerializer.INSTANCE, teacherBuilder, configuration());
+        learnerMap = new VirtualMap<>(
+                "Learner", TestKeySerializer.INSTANCE, TestValueSerializer.INSTANCE, learnerBuilder, configuration());
     }
 
     protected static void startup() throws ConstructableRegistryException, FileNotFoundException {
@@ -86,9 +86,11 @@ public abstract class VirtualMapReconnectBenchBase {
         registry.registerConstructable(new ClassConstructorPair(QueryResponse.class, QueryResponse::new));
         registry.registerConstructable(new ClassConstructorPair(DummyMerkleInternal.class, DummyMerkleInternal::new));
         registry.registerConstructable(new ClassConstructorPair(DummyMerkleLeaf.class, DummyMerkleLeaf::new));
-        registry.registerConstructable(new ClassConstructorPair(VirtualMap.class, () -> new VirtualMap(configuration())));
+        registry.registerConstructable(
+                new ClassConstructorPair(VirtualMap.class, () -> new VirtualMap(configuration())));
         registry.registerConstructable(new ClassConstructorPair(VirtualMapState.class, VirtualMapState::new));
-        registry.registerConstructable(new ClassConstructorPair(VirtualRootNode.class, () -> new VirtualRootNode<>(configuration())));
+        registry.registerConstructable(
+                new ClassConstructorPair(VirtualRootNode.class, () -> new VirtualRootNode<>(configuration())));
         registry.registerConstructable(new ClassConstructorPair(TestKey.class, TestKey::new));
         registry.registerConstructable(new ClassConstructorPair(TestValue.class, TestValue::new));
     }

@@ -87,7 +87,9 @@ class PcesBirthRoundMigrationTests {
 
     @BeforeAll
     static void beforeAll() throws ConstructableRegistryException {
-        ConstructableRegistry.getInstance().registerConstructable(new ClassConstructorPair(VirtualMap.class, () -> new VirtualMap(configuration())));
+        ConstructableRegistry.getInstance()
+                .registerConstructable(
+                        new ClassConstructorPair(VirtualMap.class, () -> new VirtualMap(configuration())));
     }
 
     @BeforeEach

@@ -82,7 +82,9 @@ class VirtualHasherTest extends VirtualHasherTestBase {
         final TestDataSource ds = new TestDataSource(1, 2);
         final VirtualHasher<TestKey, TestValue> hasher = new VirtualHasher<>();
         final List<VirtualLeafRecord<TestKey, TestValue>> leaves = new ArrayList<>();
-        assertNull(hasher.hash(ds::loadHash, leaves.iterator(), 1, 2, configuration()), "Call should have returned a null hash");
+        assertNull(
+                hasher.hash(ds::loadHash, leaves.iterator(), 1, 2, configuration()),
+                "Call should have returned a null hash");
     }
 
     /**
@@ -97,11 +99,15 @@ class VirtualHasherTest extends VirtualHasherTestBase {
         final List<VirtualLeafRecord<TestKey, TestValue>> leaves = new ArrayList<>();
         leaves.add(appleLeaf(VirtualTestBase.A_PATH));
         assertNull(
-                hasher.hash(ds::loadHash, leaves.iterator(), Path.INVALID_PATH, 2, configuration()), "Call should have produced null");
+                hasher.hash(ds::loadHash, leaves.iterator(), Path.INVALID_PATH, 2, configuration()),
+                "Call should have produced null");
         assertNull(
-                hasher.hash(ds::loadHash, leaves.iterator(), 1, Path.INVALID_PATH, configuration()), "Call should have produced null");
-        assertNull(hasher.hash(ds::loadHash, leaves.iterator(), 0, 2, configuration()), "Call should have produced null");
-        assertNull(hasher.hash(ds::loadHash, leaves.iterator(), 1, 0, configuration()), "Call should have produced null");
+                hasher.hash(ds::loadHash, leaves.iterator(), 1, Path.INVALID_PATH, configuration()),
+                "Call should have produced null");
+        assertNull(
+                hasher.hash(ds::loadHash, leaves.iterator(), 0, 2, configuration()), "Call should have produced null");
+        assertNull(
+                hasher.hash(ds::loadHash, leaves.iterator(), 1, 0, configuration()), "Call should have produced null");
     }
 
     /**
@@ -125,7 +131,8 @@ class VirtualHasherTest extends VirtualHasherTestBase {
         final VirtualHasher<TestKey, TestValue> hasher = new VirtualHasher<>();
         final Hash expected = hashTree(ds);
         final List<VirtualLeafRecord<TestKey, TestValue>> leaves = invalidateNodes(ds, dirtyPaths.stream());
-        final Hash rootHash = hasher.hash(ds::loadHash, leaves.iterator(), firstLeafPath, lastLeafPath, listener, configuration());
+        final Hash rootHash =
+                hasher.hash(ds::loadHash, leaves.iterator(), firstLeafPath, lastLeafPath, listener, configuration());
         assertEquals(expected, rootHash, "Hash value does not match expected");
 
         // Make sure the saver saw each dirty node exactly once.

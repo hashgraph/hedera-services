@@ -16,6 +16,8 @@
 
 package com.swirlds.virtualmap.internal.cache;
 
+import static com.swirlds.virtualmap.test.fixtures.VirtualMapTestUtils.vmConfig;
+
 import com.swirlds.virtualmap.datasource.VirtualLeafRecord;
 import com.swirlds.virtualmap.test.fixtures.TestKey;
 import com.swirlds.virtualmap.test.fixtures.TestValue;
@@ -24,8 +26,6 @@ import java.util.Random;
 import java.util.concurrent.ConcurrentHashMap;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
-
-import static com.swirlds.virtualmap.test.fixtures.VirtualMapTestUtils.vmConfig;
 
 public class MTModifyTest {
 

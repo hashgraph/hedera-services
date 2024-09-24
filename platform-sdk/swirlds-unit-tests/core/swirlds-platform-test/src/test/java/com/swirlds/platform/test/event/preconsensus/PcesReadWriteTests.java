@@ -79,7 +79,9 @@ class PcesReadWriteTests {
 
     @BeforeAll
     static void beforeAll() throws ConstructableRegistryException {
-        ConstructableRegistry.getInstance().registerConstructable(new ClassConstructorPair(VirtualMap.class, () -> new VirtualMap(configuration())));
+        ConstructableRegistry.getInstance()
+                .registerConstructable(
+                        new ClassConstructorPair(VirtualMap.class, () -> new VirtualMap(configuration())));
         StaticSoftwareVersion.setSoftwareVersion(new BasicSoftwareVersion(1));
     }
 

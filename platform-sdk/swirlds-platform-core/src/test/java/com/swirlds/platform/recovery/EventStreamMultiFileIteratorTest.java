@@ -36,8 +36,6 @@ import com.swirlds.common.io.IOIterator;
 import com.swirlds.common.io.utility.FileUtils;
 import com.swirlds.common.io.utility.LegacyTemporaryFileBuilder;
 import com.swirlds.common.test.fixtures.ConfigurationUtils;
-import com.swirlds.common.test.fixtures.merkle.dummy.DummyMerkleInternal;
-import com.swirlds.common.test.fixtures.merkle.dummy.DummyMerkleInternal2;
 import com.swirlds.platform.recovery.internal.EventStreamLowerBound;
 import com.swirlds.platform.recovery.internal.EventStreamMultiFileIterator;
 import com.swirlds.platform.recovery.internal.EventStreamRoundLowerBound;
@@ -70,7 +68,8 @@ class EventStreamMultiFileIteratorTest {
     @BeforeAll
     static void beforeAll() throws ConstructableRegistryException {
         ConstructableRegistry registry = ConstructableRegistry.getInstance();
-        registry.registerConstructable(new ClassConstructorPair(VirtualMap.class, () -> new VirtualMap(ConfigurationUtils.configuration())));
+        registry.registerConstructable(
+                new ClassConstructorPair(VirtualMap.class, () -> new VirtualMap(ConfigurationUtils.configuration())));
         StaticSoftwareVersion.setSoftwareVersion(new BasicSoftwareVersion(1));
     }
 
@@ -319,7 +318,8 @@ class EventStreamMultiFileIteratorTest {
         ConstructableRegistry registry = ConstructableRegistry.getInstance();
         registry.registerConstructable(new ClassConstructorPair(CesEvent.class, CesEvent::new));
         registry.registerConstructable(new ClassConstructorPair(Hash.class, Hash::new));
-        registry.registerConstructable(new ClassConstructorPair(VirtualMap.class, () -> new VirtualMap(ConfigurationUtils.configuration())));
+        registry.registerConstructable(
+                new ClassConstructorPair(VirtualMap.class, () -> new VirtualMap(ConfigurationUtils.configuration())));
 
         final Random random = getRandomPrintSeed();
         final Path directory = LegacyTemporaryFileBuilder.buildTemporaryDirectory(configuration());

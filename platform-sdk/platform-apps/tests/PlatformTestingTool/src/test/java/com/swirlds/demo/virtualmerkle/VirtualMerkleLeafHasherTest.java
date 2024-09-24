@@ -34,13 +34,12 @@ import com.swirlds.merkledb.MerkleDbDataSourceBuilder;
 import com.swirlds.merkledb.MerkleDbTableConfig;
 import com.swirlds.merkledb.config.MerkleDbConfig;
 import com.swirlds.virtualmap.VirtualMap;
+import com.swirlds.virtualmap.config.VirtualMapConfig;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
-
-import com.swirlds.virtualmap.config.VirtualMapConfig;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
@@ -72,7 +71,8 @@ class VirtualMerkleLeafHasherTest {
 
         keySerializer = new SmartContractByteCodeMapKeySerializer();
         valueSerializer = new SmartContractByteCodeMapValueSerializer();
-        final MerkleDbTableConfig tableConfig = new MerkleDbTableConfig((short) 1, DigestType.SHA_384, configuration().getConfigData(MerkleDbConfig.class))
+        final MerkleDbTableConfig tableConfig = new MerkleDbTableConfig(
+                        (short) 1, DigestType.SHA_384, configuration().getConfigData(MerkleDbConfig.class))
                 .maxNumberOfKeys(50_000_000)
                 .hashesRamToDiskThreshold(0)
                 .preferDiskIndices(false);

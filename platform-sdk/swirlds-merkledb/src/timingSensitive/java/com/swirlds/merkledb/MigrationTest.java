@@ -62,8 +62,8 @@ class MigrationTest {
         final int size = 5_000_000;
 
         // Build a virtual map.
-        VirtualMap<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> map =
-                new VirtualMap<>("extractVirtualMapDataTest", KEY_SERIALIZER, VALUE_SERIALIZER, constructBuilder(), config());
+        VirtualMap<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> map = new VirtualMap<>(
+                "extractVirtualMapDataTest", KEY_SERIALIZER, VALUE_SERIALIZER, constructBuilder(), config());
         for (int i = 0; i < size; i++) {
             if (((i + 1) % (size / 100) == 0)) {
                 // Make a copy of the map in order to allow things to be flushed to disk
@@ -124,8 +124,8 @@ class MigrationTest {
         final int size = 5_000_000;
 
         // Build a virtual map.
-        VirtualMap<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> map =
-                new VirtualMap<>("extractDataConcurrentlyTest", KEY_SERIALIZER, VALUE_SERIALIZER, constructBuilder(), config());
+        VirtualMap<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> map = new VirtualMap<>(
+                "extractDataConcurrentlyTest", KEY_SERIALIZER, VALUE_SERIALIZER, constructBuilder(), config());
 
         final Random random = new Random(42);
         final byte[] value = new byte[ExampleFixedSizeVirtualValue.RANDOM_BYTES];
@@ -163,7 +163,8 @@ class MigrationTest {
         // MerkleDb instance, so let's use a new database location for every map
         final Path defaultVirtualMapPath = LegacyTemporaryFileBuilder.buildTemporaryFile("merkledb-source", config());
         MerkleDb.setDefaultPath(defaultVirtualMapPath);
-        final MerkleDbTableConfig tableConfig = new MerkleDbTableConfig((short) 1, DigestType.SHA_384, config().getConfigData(MerkleDbConfig.class))
+        final MerkleDbTableConfig tableConfig = new MerkleDbTableConfig(
+                        (short) 1, DigestType.SHA_384, config().getConfigData(MerkleDbConfig.class))
                 .preferDiskIndices(false)
                 .hashesRamToDiskThreshold(Long.MAX_VALUE)
                 .maxNumberOfKeys(1234);

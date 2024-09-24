@@ -99,11 +99,12 @@ public class StartupStateUtilsTests {
     @BeforeAll
     static void beforeAll() throws ConstructableRegistryException {
         ConstructableRegistry registry = ConstructableRegistry.getInstance();
-        registry.registerConstructable(new ClassConstructorPair(VirtualMap.class, () -> new VirtualMap(configuration())));
+        registry.registerConstructable(
+                new ClassConstructorPair(VirtualMap.class, () -> new VirtualMap(configuration())));
         registry.registerConstructable(new ClassConstructorPair(
-                        MerkleStateRoot.class,
-                        () -> new MerkleStateRoot(
-                                FAKE_MERKLE_STATE_LIFECYCLES, version -> new BasicSoftwareVersion(version.major()))));
+                MerkleStateRoot.class,
+                () -> new MerkleStateRoot(
+                        FAKE_MERKLE_STATE_LIFECYCLES, version -> new BasicSoftwareVersion(version.major()))));
     }
 
     @NonNull

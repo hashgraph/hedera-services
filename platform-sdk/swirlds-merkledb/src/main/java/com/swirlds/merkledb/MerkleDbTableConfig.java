@@ -149,7 +149,8 @@ public final class MerkleDbTableConfig implements SelfSerializable {
      * @param hashType
      *      Hash type
      */
-    public MerkleDbTableConfig(final short hashVersion, final DigestType hashType, final MerkleDbConfig merkleDbConfig) {
+    public MerkleDbTableConfig(
+            final short hashVersion, final DigestType hashType, final MerkleDbConfig merkleDbConfig) {
         // Mandatory fields
         this.hashVersion = hashVersion;
         this.hashType = hashType;

@@ -31,12 +31,11 @@ import com.swirlds.common.test.fixtures.io.InputOutputStream;
 import com.swirlds.common.test.fixtures.junit.tags.TestComponentTags;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.platform.state.PlatformState;
+import com.swirlds.platform.system.BasicSoftwareVersion;
+import com.swirlds.virtualmap.VirtualMap;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Path;
-
-import com.swirlds.platform.system.BasicSoftwareVersion;
-import com.swirlds.virtualmap.VirtualMap;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
@@ -86,7 +85,8 @@ class PlatformStateTests {
         ConstructableRegistry registry = ConstructableRegistry.getInstance();
         registry.registerConstructable(new ClassConstructorPair(PlatformState.class, PlatformState::new));
         registry.registerConstructable(new ClassConstructorPair(BasicSoftwareVersion.class, BasicSoftwareVersion::new));
-        registry.registerConstructable(new ClassConstructorPair(VirtualMap.class, () -> new VirtualMap(configuration())));
+        registry.registerConstructable(
+                new ClassConstructorPair(VirtualMap.class, () -> new VirtualMap(configuration())));
 
         final InputOutputStream io = new InputOutputStream();
         final PlatformState state = (PlatformState) randomPlatformState(new PlatformState());

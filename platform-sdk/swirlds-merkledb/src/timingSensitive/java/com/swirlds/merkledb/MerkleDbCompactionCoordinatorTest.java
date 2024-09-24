@@ -67,7 +67,12 @@ class MerkleDbCompactionCoordinatorTest {
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
-        coordinator = new MerkleDbCompactionCoordinator("test", objectKeyToPath, hashStoreDisk, pathToHashKeyValue, config().getConfigData(MerkleDbConfig.class));
+        coordinator = new MerkleDbCompactionCoordinator(
+                "test",
+                objectKeyToPath,
+                hashStoreDisk,
+                pathToHashKeyValue,
+                config().getConfigData(MerkleDbConfig.class));
         coordinator.enableBackgroundCompaction();
     }
 
@@ -75,14 +80,17 @@ class MerkleDbCompactionCoordinatorTest {
     void cleanUp() {
         coordinator.stopAndDisableBackgroundCompaction();
         assertEventuallyTrue(
-                () -> ((ThreadPoolExecutor) MerkleDbCompactionCoordinator.getCompactionExecutor(config().getConfigData(MerkleDbConfig.class)))
+                () -> ((ThreadPoolExecutor) MerkleDbCompactionCoordinator.getCompactionExecutor(
+                                config().getConfigData(MerkleDbConfig.class)))
                         .getQueue()
                         .isEmpty(),
                 Duration.ofSeconds(1),
                 "Queue is not empty");
         assertEventuallyEquals(
                 0,
-                () -> ((ThreadPoolExecutor) MerkleDbCompactionCoordinator.getCompactionExecutor(config().getConfigData(MerkleDbConfig.class))).getActiveCount(),
+                () -> ((ThreadPoolExecutor) MerkleDbCompactionCoordinator.getCompactionExecutor(
+                                config().getConfigData(MerkleDbConfig.class)))
+                        .getActiveCount(),
                 Duration.ofSeconds(1),
                 "Active task count is not 0");
     }
@@ -204,7 +212,8 @@ class MerkleDbCompactionCoordinatorTest {
     @Test
     void testCompactionWithNullNullables() throws IOException, InterruptedException {
         String table = randomAlphabetic(7);
-        coordinator = new MerkleDbCompactionCoordinator(table, null, null, pathToHashKeyValue, config().getConfigData(MerkleDbConfig.class));
+        coordinator = new MerkleDbCompactionCoordinator(
+                table, null, null, pathToHashKeyValue, config().getConfigData(MerkleDbConfig.class));
         coordinator.enableBackgroundCompaction();
 
         testCompaction(

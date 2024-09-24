@@ -51,6 +51,7 @@ import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.merkle.map.internal.MerkleMapInfo;
 import com.swirlds.merkle.tree.MerkleBinaryTree;
 import com.swirlds.merkle.tree.MerkleTreeInternalNode;
+import com.swirlds.virtualmap.VirtualMap;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.time.Instant;
@@ -59,8 +60,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicBoolean;
-
-import com.swirlds.virtualmap.VirtualMap;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
@@ -88,7 +87,8 @@ class SerializationDebugTest {
         registry.registerConstructable(
                 new ClassConstructorPair(MerkleTreeInternalNode.class, MerkleTreeInternalNode::new));
         registry.registerConstructable(new ClassConstructorPair(ExplodingValue.class, ExplodingValue::new));
-        registry.registerConstructable(new ClassConstructorPair(VirtualMap.class, () -> new VirtualMap(configuration())));
+        registry.registerConstructable(
+                new ClassConstructorPair(VirtualMap.class, () -> new VirtualMap(configuration())));
     }
 
     /**

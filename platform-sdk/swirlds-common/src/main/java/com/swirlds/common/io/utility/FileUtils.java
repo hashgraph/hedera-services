@@ -216,9 +216,10 @@ public final class FileUtils {
      * @param directory the name of directory after it is renamed
      * @param operation an operation that writes to a directory
      */
-    public static void executeAndRename(@NonNull final Path directory,
-                                        @NonNull final IOConsumer<Path> operation,
-                                        @NonNull final Configuration configuration)
+    public static void executeAndRename(
+            @NonNull final Path directory,
+            @NonNull final IOConsumer<Path> operation,
+            @NonNull final Configuration configuration)
             throws IOException {
         executeAndRename(directory, buildTemporaryDirectory(configuration), operation);
     }

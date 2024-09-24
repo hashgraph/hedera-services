@@ -16,6 +16,8 @@
 
 package com.swirlds.merkledb;
 
+import static com.swirlds.merkledb.MerkleDbDataSourceBuilder.CLASS_ID;
+
 import com.swirlds.common.constructable.ConstructableClass;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
@@ -28,8 +30,6 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Path;
 import java.util.Objects;
-
-import static com.swirlds.merkledb.MerkleDbDataSourceBuilder.CLASS_ID;
 
 /**
  * Virtual data source builder that manages {@link MerkleDb} based data sources.
@@ -90,7 +90,8 @@ public class MerkleDbDataSourceBuilder implements VirtualDataSourceBuilder {
      * @param tableConfig
      *      Table configuration to use to create new data sources
      */
-    public MerkleDbDataSourceBuilder(final Path databaseDir, final MerkleDbTableConfig tableConfig, final Configuration configuration) {
+    public MerkleDbDataSourceBuilder(
+            final Path databaseDir, final MerkleDbTableConfig tableConfig, final Configuration configuration) {
         this.databaseDir = databaseDir;
         this.tableConfig = tableConfig;
         this.configuration = configuration;

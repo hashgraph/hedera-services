@@ -33,6 +33,7 @@ import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.state.signed.SigSet;
+import com.swirlds.virtualmap.VirtualMap;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -41,8 +42,6 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
-
-import com.swirlds.virtualmap.VirtualMap;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -109,7 +108,8 @@ class SigSetTests {
     void serializationTest() throws IOException, ConstructableRegistryException {
         ConstructableRegistry registry = ConstructableRegistry.getInstance();
         registry.registerConstructable(new ClassConstructorPair(SigSet.class, SigSet::new));
-        registry.registerConstructable(new ClassConstructorPair(VirtualMap.class, () -> new VirtualMap(configuration())));
+        registry.registerConstructable(
+                new ClassConstructorPair(VirtualMap.class, () -> new VirtualMap(configuration())));
 
         final Random random = getRandomPrintSeed();
         final SigSet sigSet = new SigSet();

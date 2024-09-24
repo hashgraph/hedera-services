@@ -38,7 +38,6 @@ import com.swirlds.demo.merkle.map.MapValueData;
 import com.swirlds.demo.merkle.map.MapValueFCQ;
 import com.swirlds.demo.merkle.map.internal.DummyExpectedFCMFamily;
 import com.swirlds.demo.merkle.map.internal.ExpectedFCMFamily;
-import com.swirlds.demo.platform.actions.QuorumResult;
 import com.swirlds.demo.platform.expiration.ExpirationRecordEntry;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.merkle.map.internal.MerkleMapInfo;
@@ -46,6 +45,9 @@ import com.swirlds.merkle.test.fixtures.map.lifecycle.ExpectedValue;
 import com.swirlds.merkle.test.fixtures.map.pta.MapKey;
 import com.swirlds.merkle.test.fixtures.map.pta.MapValue;
 import com.swirlds.merkle.test.fixtures.map.pta.TransactionRecord;
+import com.swirlds.merkle.tree.MerkleBinaryTree;
+import com.swirlds.merkle.tree.MerkleTreeInternalNode;
+import com.swirlds.virtualmap.VirtualMap;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -63,10 +65,6 @@ import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.PriorityBlockingQueue;
-
-import com.swirlds.merkle.tree.MerkleBinaryTree;
-import com.swirlds.merkle.tree.MerkleTreeInternalNode;
-import com.swirlds.virtualmap.VirtualMap;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -92,8 +90,10 @@ class MapValueSerializableTest {
         registry.registerConstructable(new ClassConstructorPair(MerkleBinaryTree.class, MerkleBinaryTree::new));
         registry.registerConstructable(new ClassConstructorPair(MerkleMapInfo.class, MerkleMapInfo::new));
         registry.registerConstructable(new ClassConstructorPair(MerkleLong.class, MerkleLong::new));
-        registry.registerConstructable(new ClassConstructorPair(MerkleTreeInternalNode.class, MerkleTreeInternalNode::new));
-        registry.registerConstructable(new ClassConstructorPair(VirtualMap.class, () -> new VirtualMap(configuration())));
+        registry.registerConstructable(
+                new ClassConstructorPair(MerkleTreeInternalNode.class, MerkleTreeInternalNode::new));
+        registry.registerConstructable(
+                new ClassConstructorPair(VirtualMap.class, () -> new VirtualMap(configuration())));
         cryptography = MerkleCryptoFactory.getInstance();
     }
 

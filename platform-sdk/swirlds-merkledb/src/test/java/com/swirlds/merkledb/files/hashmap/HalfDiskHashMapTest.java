@@ -104,13 +104,8 @@ class HalfDiskHashMapTest {
         // create snapshot
         map.snapshot(tempSnapshotDir);
         // open snapshot and check data
-        HalfDiskHashMap mapFromSnapshot = new HalfDiskHashMap(
-                config(),
-                count,
-                tempSnapshotDir,
-                "HalfDiskHashMapTest",
-                null,
-                false);
+        HalfDiskHashMap mapFromSnapshot =
+                new HalfDiskHashMap(config(), count, tempSnapshotDir, "HalfDiskHashMapTest", null, false);
         mapFromSnapshot.printStats();
         checkData(testType, mapFromSnapshot, 1, count, 1);
         // check deletion

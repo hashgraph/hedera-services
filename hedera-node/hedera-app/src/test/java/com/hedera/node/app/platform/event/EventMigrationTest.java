@@ -16,6 +16,8 @@
 
 package com.hedera.node.app.platform.event;
 
+import static com.swirlds.common.test.fixtures.ConfigurationUtils.configuration;
+
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.node.app.version.HederaSoftwareVersion;
 import com.hedera.node.app.version.ServicesSoftwareVersion;
@@ -44,8 +46,6 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import static com.swirlds.common.test.fixtures.ConfigurationUtils.configuration;
-
 public class EventMigrationTest {
 
     @BeforeAll
@@ -53,8 +53,10 @@ public class EventMigrationTest {
         ConstructableRegistry registry = ConstructableRegistry.getInstance();
         registry.registerConstructable(new ClassConstructorPair(Hash.class, Hash::new));
         registry.registerConstructable(new ClassConstructorPair(CesEvent.class, CesEvent::new));
-        registry.registerConstructable(new ClassConstructorPair(HederaSoftwareVersion.class, HederaSoftwareVersion::new));
-        registry.registerConstructable(new ClassConstructorPair(VirtualMap.class, () -> new VirtualMap(configuration())));
+        registry.registerConstructable(
+                new ClassConstructorPair(HederaSoftwareVersion.class, HederaSoftwareVersion::new));
+        registry.registerConstructable(
+                new ClassConstructorPair(VirtualMap.class, () -> new VirtualMap(configuration())));
         StaticSoftwareVersion.setSoftwareVersion(new ServicesSoftwareVersion(SemanticVersion.DEFAULT, 0));
     }
 

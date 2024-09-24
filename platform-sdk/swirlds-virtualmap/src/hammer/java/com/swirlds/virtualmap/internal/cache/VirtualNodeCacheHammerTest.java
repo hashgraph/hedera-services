@@ -19,7 +19,6 @@ package com.swirlds.virtualmap.internal.cache;
 import static com.swirlds.common.test.fixtures.AssertionUtils.assertEventuallyDoesNotThrow;
 import static com.swirlds.virtualmap.internal.cache.VirtualNodeCache.DELETED_HASH;
 import static com.swirlds.virtualmap.internal.cache.VirtualNodeCache.DELETED_LEAF_RECORD;
-import static com.swirlds.virtualmap.test.fixtures.VirtualMapTestUtils.configuration;
 import static com.swirlds.virtualmap.test.fixtures.VirtualMapTestUtils.vmConfig;
 import static java.util.Arrays.asList;
 import static org.junit.jupiter.api.Assertions.assertEquals;

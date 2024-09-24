@@ -36,6 +36,7 @@ import com.swirlds.platform.system.events.CesEvent;
 import com.swirlds.platform.test.consensus.GenerateConsensus;
 import com.swirlds.platform.test.fixtures.stream.StreamUtils;
 import com.swirlds.platform.test.simulated.RandomSigner;
+import com.swirlds.virtualmap.VirtualMap;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.time.Duration;
@@ -45,8 +46,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicReference;
-
-import com.swirlds.virtualmap.VirtualMap;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
@@ -80,7 +79,9 @@ class EventStreamReportingToolTest {
         final Duration eventStreamWindowSize = Duration.ofSeconds(1);
 
         // setup
-        ConstructableRegistry.getInstance().registerConstructable(new ClassConstructorPair(VirtualMap.class, () -> new VirtualMap(configuration())));
+        ConstructableRegistry.getInstance()
+                .registerConstructable(
+                        new ClassConstructorPair(VirtualMap.class, () -> new VirtualMap(configuration())));
 
         // generate consensus events
         final Deque<ConsensusRound> rounds = GenerateConsensus.generateConsensusRounds(
@@ -128,7 +129,8 @@ class EventStreamReportingToolTest {
         ConstructableRegistry constructableRegistry = ConstructableRegistry.getInstance();
         constructableRegistry.registerConstructable(new ClassConstructorPair(Hash.class, Hash::new));
         constructableRegistry.registerConstructable(new ClassConstructorPair(CesEvent.class, CesEvent::new));
-        constructableRegistry.registerConstructable(new ClassConstructorPair(VirtualMap.class, () -> new VirtualMap(configuration())));
+        constructableRegistry.registerConstructable(
+                new ClassConstructorPair(VirtualMap.class, () -> new VirtualMap(configuration())));
 
         // generate consensus events
         final Deque<ConsensusRound> rounds = GenerateConsensus.generateConsensusRounds(

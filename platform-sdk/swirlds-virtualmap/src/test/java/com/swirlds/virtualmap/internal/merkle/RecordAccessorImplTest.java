@@ -77,7 +77,8 @@ public class RecordAccessorImplTest {
     @BeforeEach
     void setUp() throws IOException {
         DummyVirtualStateAccessor state = new DummyVirtualStateAccessor();
-        VirtualNodeCache<TestKey, TestValue> cache = new VirtualNodeCache<>(configuration().getConfigData(VirtualMapConfig.class));
+        VirtualNodeCache<TestKey, TestValue> cache =
+                new VirtualNodeCache<>(configuration().getConfigData(VirtualMapConfig.class));
         dataSource = new BreakableDataSource();
         records = new RecordAccessorImpl<>(
                 state, cache, TestKeySerializer.INSTANCE, TestValueSerializer.INSTANCE, dataSource);

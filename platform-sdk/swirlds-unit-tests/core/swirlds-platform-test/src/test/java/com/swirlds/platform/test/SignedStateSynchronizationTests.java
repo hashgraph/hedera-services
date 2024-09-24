@@ -16,6 +16,8 @@
 
 package com.swirlds.platform.test;
 
+import static com.swirlds.common.test.fixtures.ConfigurationUtils.configuration;
+
 import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
@@ -32,8 +34,6 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
-import static com.swirlds.common.test.fixtures.ConfigurationUtils.configuration;
-
 @DisplayName("Signed State Synchronization Tests")
 public class SignedStateSynchronizationTests {
     private final Configuration configuration = new TestConfigBuilder().getOrCreateConfig();
@@ -42,7 +42,8 @@ public class SignedStateSynchronizationTests {
     @BeforeAll
     static void setUp() throws ConstructableRegistryException {
         final ConstructableRegistry registry = ConstructableRegistry.getInstance();
-        registry.registerConstructable(new ClassConstructorPair(VirtualMap.class, () -> new VirtualMap(configuration())));
+        registry.registerConstructable(
+                new ClassConstructorPair(VirtualMap.class, () -> new VirtualMap(configuration())));
         FakeMerkleStateLifecycles.registerMerkleStateRootClassIds();
     }
 

@@ -29,18 +29,15 @@ import com.swirlds.common.merkle.utility.MerkleLong;
 import com.swirlds.common.test.fixtures.dummy.Key;
 import com.swirlds.common.test.fixtures.dummy.Value;
 import com.swirlds.common.test.fixtures.junit.tags.TestComponentTags;
-import com.swirlds.common.test.fixtures.merkle.dummy.DummyMerkleInternal;
-import com.swirlds.common.test.fixtures.merkle.dummy.DummyMerkleInternal2;
 import com.swirlds.common.test.fixtures.merkle.util.MerkleSerializeUtils;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.merkle.map.internal.MerkleMapInfo;
 import com.swirlds.merkle.test.fixtures.map.util.KeyValueProvider;
-import java.io.IOException;
-import java.nio.file.Path;
-
 import com.swirlds.merkle.tree.MerkleBinaryTree;
 import com.swirlds.merkle.tree.MerkleTreeInternalNode;
 import com.swirlds.virtualmap.VirtualMap;
+import java.io.IOException;
+import java.nio.file.Path;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
@@ -63,9 +60,11 @@ class MMSerializeTests {
         registry.registerConstructable(new ClassConstructorPair(MerkleBinaryTree.class, MerkleBinaryTree::new));
         registry.registerConstructable(new ClassConstructorPair(MerkleMapInfo.class, MerkleMapInfo::new));
         registry.registerConstructable(new ClassConstructorPair(MerkleLong.class, MerkleLong::new));
-        registry.registerConstructable(new ClassConstructorPair(MerkleTreeInternalNode.class, MerkleTreeInternalNode::new));
+        registry.registerConstructable(
+                new ClassConstructorPair(MerkleTreeInternalNode.class, MerkleTreeInternalNode::new));
         registry.registerConstructable(new ClassConstructorPair(Value.class, Value::new));
-        registry.registerConstructable(new ClassConstructorPair(VirtualMap.class, () -> new VirtualMap(configuration())));
+        registry.registerConstructable(
+                new ClassConstructorPair(VirtualMap.class, () -> new VirtualMap(configuration())));
         cryptography = MerkleCryptoFactory.getInstance();
     }
 

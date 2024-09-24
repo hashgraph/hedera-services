@@ -34,11 +34,10 @@ import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.StaticSoftwareVersion;
 import com.swirlds.platform.test.fixtures.event.TestingEventBuilder;
 import com.swirlds.platform.test.utils.EqualsVerifier;
+import com.swirlds.virtualmap.VirtualMap;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.Random;
-
-import com.swirlds.virtualmap.VirtualMap;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
@@ -63,7 +62,9 @@ class PlatformEventTest {
         final Random random = RandomUtils.getRandomPrintSeed();
 
         final PlatformEvent platformEvent = new TestingEventBuilder(random).build();
-        ConstructableRegistry.getInstance().registerConstructable(new ClassConstructorPair(VirtualMap.class, () -> new VirtualMap(configuration())));
+        ConstructableRegistry.getInstance()
+                .registerConstructable(
+                        new ClassConstructorPair(VirtualMap.class, () -> new VirtualMap(configuration())));
         final PlatformEvent copy = EventSerializationUtils.serializeDeserializePlatformEvent(platformEvent);
         assertEquals(platformEvent, copy, "deserialized version should be the same");
     }
@@ -77,7 +78,9 @@ class PlatformEventTest {
                 .setSystemTransactionCount(0)
                 .setAppTransactionCount(0)
                 .build();
-        ConstructableRegistry.getInstance().registerConstructable(new ClassConstructorPair(VirtualMap.class, () -> new VirtualMap(configuration())));
+        ConstructableRegistry.getInstance()
+                .registerConstructable(
+                        new ClassConstructorPair(VirtualMap.class, () -> new VirtualMap(configuration())));
         final PlatformEvent copy = EventSerializationUtils.serializeDeserializePlatformEvent(platformEvent);
         assertEquals(platformEvent, copy, "deserialized version should be the same");
     }
@@ -91,7 +94,9 @@ class PlatformEventTest {
                 .setAppTransactionCount(0)
                 .setSystemTransactionCount(2)
                 .build();
-        ConstructableRegistry.getInstance().registerConstructable(new ClassConstructorPair(VirtualMap.class, () -> new VirtualMap(configuration())));
+        ConstructableRegistry.getInstance()
+                .registerConstructable(
+                        new ClassConstructorPair(VirtualMap.class, () -> new VirtualMap(configuration())));
         final PlatformEvent copy = EventSerializationUtils.serializeDeserializePlatformEvent(platformEvent);
         assertEquals(platformEvent, copy, "deserialized version should be the same");
     }
@@ -105,7 +110,9 @@ class PlatformEventTest {
                 .setAppTransactionCount(2)
                 .setSystemTransactionCount(2)
                 .build();
-        ConstructableRegistry.getInstance().registerConstructable(new ClassConstructorPair(VirtualMap.class, () -> new VirtualMap(configuration())));
+        ConstructableRegistry.getInstance()
+                .registerConstructable(
+                        new ClassConstructorPair(VirtualMap.class, () -> new VirtualMap(configuration())));
         final PlatformEvent copy = EventSerializationUtils.serializeDeserializePlatformEvent(platformEvent);
         assertEquals(platformEvent, copy, "deserialized version should be the same");
     }
