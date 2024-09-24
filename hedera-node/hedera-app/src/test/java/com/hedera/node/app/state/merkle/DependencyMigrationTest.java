@@ -56,6 +56,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+// TODO: add more tests for platform config?
 @ExtendWith(MockitoExtension.class)
 class DependencyMigrationTest extends MerkleTestBase {
     private static final VersionedConfigImpl VERSIONED_CONFIG =
@@ -94,6 +95,7 @@ class DependencyMigrationTest extends MerkleTestBase {
                             null,
                             new ServicesSoftwareVersion(CURRENT_VERSION),
                             VERSIONED_CONFIG,
+                            VERSIONED_CONFIG,
                             networkInfo,
                             mock(Metrics.class)))
                     .isInstanceOf(NullPointerException.class);
@@ -107,6 +109,7 @@ class DependencyMigrationTest extends MerkleTestBase {
                             servicesRegistry,
                             null,
                             null,
+                            VERSIONED_CONFIG,
                             VERSIONED_CONFIG,
                             networkInfo,
                             mock(Metrics.class)))
@@ -122,6 +125,7 @@ class DependencyMigrationTest extends MerkleTestBase {
                             null,
                             new ServicesSoftwareVersion(CURRENT_VERSION),
                             null,
+                            null,
                             networkInfo,
                             mock(Metrics.class)))
                     .isInstanceOf(NullPointerException.class);
@@ -136,6 +140,7 @@ class DependencyMigrationTest extends MerkleTestBase {
                             null,
                             new ServicesSoftwareVersion(CURRENT_VERSION),
                             VERSIONED_CONFIG,
+                            VERSIONED_CONFIG,
                             null,
                             mock(Metrics.class)))
                     .isInstanceOf(NullPointerException.class);
@@ -149,6 +154,7 @@ class DependencyMigrationTest extends MerkleTestBase {
                             servicesRegistry,
                             null,
                             new ServicesSoftwareVersion(CURRENT_VERSION),
+                            VERSIONED_CONFIG,
                             VERSIONED_CONFIG,
                             networkInfo,
                             null))
@@ -189,6 +195,7 @@ class DependencyMigrationTest extends MerkleTestBase {
                 null,
                 new ServicesSoftwareVersion(
                         SemanticVersion.newBuilder().major(2).build()),
+                VERSIONED_CONFIG,
                 VERSIONED_CONFIG,
                 networkInfo,
                 mock(Metrics.class));
@@ -295,6 +302,7 @@ class DependencyMigrationTest extends MerkleTestBase {
                 null,
                 new ServicesSoftwareVersion(
                         SemanticVersion.newBuilder().major(1).build()),
+                VERSIONED_CONFIG,
                 VERSIONED_CONFIG,
                 networkInfo,
                 mock(Metrics.class));

@@ -243,13 +243,13 @@ public class StateChangesValidator implements BlockStreamValidator {
         final var configVersion =
                 bootstrapConfig.getConfigData(HederaConfig.class).configVersion();
         final var currentVersion = new ServicesSoftwareVersion(servicesVersion, configVersion);
-        final var lifecycles = newPlatformInitLifecycle(bootstrapConfig, currentVersion, migrator, servicesRegistry);
+        final var fakePlatformContext =
+                new FakePlatformContext(new NodeId(0), Executors.newSingleThreadScheduledExecutor());
+        final var lifecycles = newPlatformInitLifecycle(
+                bootstrapConfig, fakePlatformContext.getConfiguration(), currentVersion, migrator, servicesRegistry);
         this.state = new MerkleStateRoot(lifecycles, version -> new ServicesSoftwareVersion(version, configVersion));
         initGenesisPlatformState(
-                new FakePlatformContext(new NodeId(0), Executors.newSingleThreadScheduledExecutor()),
-                this.state.getWritablePlatformState(),
-                addressBook,
-                currentVersion);
+                fakePlatformContext, this.state.getWritablePlatformState(), addressBook, currentVersion);
         final var stateToBeCopied = state;
         state = state.copy();
         // get the state hash before applying the state changes from current block
@@ -261,6 +261,7 @@ public class StateChangesValidator implements BlockStreamValidator {
                 null,
                 new ServicesSoftwareVersion(servicesVersion, configVersion),
                 new ConfigProviderImpl().getConfiguration(),
+                fakePlatformContext.getConfiguration(),
                 networkInfo,
                 new NoOpMetrics());
 
@@ -668,6 +669,7 @@ public class StateChangesValidator implements BlockStreamValidator {
 
     private static MerkleStateLifecycles newPlatformInitLifecycle(
             @NonNull final Configuration bootstrapConfig,
+            @NonNull final Configuration platformConfig,
             @NonNull final SoftwareVersion currentVersion,
             @NonNull final OrderedServiceMigrator serviceMigrator,
             @NonNull final ServicesRegistryImpl servicesRegistry) {
@@ -681,6 +683,7 @@ public class StateChangesValidator implements BlockStreamValidator {
                         deserializedVersion == null ? null : new ServicesSoftwareVersion(deserializedVersion),
                         currentVersion,
                         bootstrapConfig,
+                        platformConfig,
                         UNAVAILABLE_NETWORK_INFO,
                         UNAVAILABLE_METRICS);
             }

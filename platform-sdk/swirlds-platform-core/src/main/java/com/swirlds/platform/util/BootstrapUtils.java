@@ -21,6 +21,7 @@ import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 import static com.swirlds.platform.system.SystemExitCode.NODE_ADDRESS_MISMATCH;
 import static com.swirlds.platform.system.SystemExitUtils.exitSystem;
 
+import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.platform.NodeId;
@@ -54,6 +55,8 @@ import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.SwirldMain;
 import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
+import com.swirlds.virtualmap.VirtualMap;
+import com.swirlds.virtualmap.config.VirtualMapConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.awt.Dimension;
@@ -144,7 +147,22 @@ public final class BootstrapUtils {
      */
     public static void setupConstructableRegistry() {
         try {
-            ConstructableRegistry.getInstance().registerConstructables("");
+            Configuration configuration = ConfigurationBuilder.create()
+                    .withConfigDataType(VirtualMapConfig.class)
+                    //                    .withConfigDataType(MerkleDbConfig.class)
+                    //                    .withConfigDataType(TemporaryFileConfig.class)
+                    //                    .withConfigDataType(StateCommonConfig.class)
+                    .build();
+
+            //            ConstructableRegistry.getInstance().registerConstructables("");
+            ConstructableRegistry registry = ConstructableRegistry.getInstance();
+            //            registry.registerConstructables("com.swirlds.merkle");
+            //            registry.registerConstructables("com.swirlds.common");
+            //            registry.registerConstructables("com.swirlds.fcqueue");
+            //            registry.registerConstructables("com.swirlds.demo");
+            registry.registerConstructable(
+                    new ClassConstructorPair(VirtualMap.class, () -> new VirtualMap(configuration)));
+
         } catch (final ConstructableRegistryException e) {
             throw new RuntimeException(e);
         }
