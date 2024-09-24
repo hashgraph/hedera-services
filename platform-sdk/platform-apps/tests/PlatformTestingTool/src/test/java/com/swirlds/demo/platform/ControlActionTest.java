@@ -40,6 +40,7 @@ public class ControlActionTest {
     public static void setUp() throws ConstructableRegistryException {
         ConstructableRegistry registry = ConstructableRegistry.getInstance();
         registry.registerConstructable(new ClassConstructorPair(QuorumResult.class, QuorumResult::new));
+        registry.registerConstructable(new ClassConstructorPair(ControlAction.class, ControlAction::new));
         registry.registerConstructable(new ClassConstructorPair(VirtualMap.class, () -> new VirtualMap(configuration())));
     }
 

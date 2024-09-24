@@ -41,6 +41,7 @@ import com.swirlds.demo.merkle.map.internal.ExpectedFCMFamily;
 import com.swirlds.demo.platform.actions.QuorumResult;
 import com.swirlds.demo.platform.expiration.ExpirationRecordEntry;
 import com.swirlds.merkle.map.MerkleMap;
+import com.swirlds.merkle.map.internal.MerkleMapInfo;
 import com.swirlds.merkle.test.fixtures.map.lifecycle.ExpectedValue;
 import com.swirlds.merkle.test.fixtures.map.pta.MapKey;
 import com.swirlds.merkle.test.fixtures.map.pta.MapValue;
@@ -63,6 +64,8 @@ import java.util.Random;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.PriorityBlockingQueue;
 
+import com.swirlds.merkle.tree.MerkleBinaryTree;
+import com.swirlds.merkle.tree.MerkleTreeInternalNode;
 import com.swirlds.virtualmap.VirtualMap;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -84,6 +87,12 @@ class MapValueSerializableTest {
     @BeforeAll
     public static void setUp() throws ConstructableRegistryException {
         ConstructableRegistry registry = ConstructableRegistry.getInstance();
+        registry.registerConstructable(new ClassConstructorPair(MerkleMap.class, MerkleMap::new));
+        registry.registerConstructable(new ClassConstructorPair(MapValueFCQ.class, MapValueFCQ::new));
+        registry.registerConstructable(new ClassConstructorPair(MerkleBinaryTree.class, MerkleBinaryTree::new));
+        registry.registerConstructable(new ClassConstructorPair(MerkleMapInfo.class, MerkleMapInfo::new));
+        registry.registerConstructable(new ClassConstructorPair(MerkleLong.class, MerkleLong::new));
+        registry.registerConstructable(new ClassConstructorPair(MerkleTreeInternalNode.class, MerkleTreeInternalNode::new));
         registry.registerConstructable(new ClassConstructorPair(VirtualMap.class, () -> new VirtualMap(configuration())));
         cryptography = MerkleCryptoFactory.getInstance();
     }
