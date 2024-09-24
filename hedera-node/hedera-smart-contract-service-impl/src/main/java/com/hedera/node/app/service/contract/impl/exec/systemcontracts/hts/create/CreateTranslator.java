@@ -156,28 +156,31 @@ public class CreateTranslator extends AbstractCallTranslator<HtsCallAttempt> {
      * to determine if a given call attempt is a creation call, because we do not allow sending value to Hedera system contracts
      * except in the case of token creation
      */
-    public static final Map<Function, CreateDecoderFunction> decoderMap = new HashMap<>();
+    public static final Map<Function, CreateDecoderFunction> createSelectorsMap = new HashMap<>();
 
     @Inject
     public CreateTranslator(final CreateDecoder decoder) {
-        decoderMap.put(CREATE_FUNGIBLE_TOKEN_V1, decoder::decodeCreateFungibleTokenV1);
-        decoderMap.put(CREATE_FUNGIBLE_TOKEN_V2, decoder::decodeCreateFungibleTokenV2);
-        decoderMap.put(CREATE_FUNGIBLE_TOKEN_V3, decoder::decodeCreateFungibleTokenV3);
-        decoderMap.put(CREATE_FUNGIBLE_TOKEN_WITH_METADATA, decoder::decodeCreateFungibleTokenWithMetadata);
-        decoderMap.put(CREATE_FUNGIBLE_WITH_CUSTOM_FEES_V1, decoder::decodeCreateFungibleTokenWithCustomFeesV1);
-        decoderMap.put(CREATE_FUNGIBLE_WITH_CUSTOM_FEES_V2, decoder::decodeCreateFungibleTokenWithCustomFeesV2);
-        decoderMap.put(CREATE_FUNGIBLE_WITH_CUSTOM_FEES_V3, decoder::decodeCreateFungibleTokenWithCustomFeesV3);
-        decoderMap.put(
+        createSelectorsMap.put(CREATE_FUNGIBLE_TOKEN_V1, decoder::decodeCreateFungibleTokenV1);
+        createSelectorsMap.put(CREATE_FUNGIBLE_TOKEN_V2, decoder::decodeCreateFungibleTokenV2);
+        createSelectorsMap.put(CREATE_FUNGIBLE_TOKEN_V3, decoder::decodeCreateFungibleTokenV3);
+        createSelectorsMap.put(CREATE_FUNGIBLE_TOKEN_WITH_METADATA, decoder::decodeCreateFungibleTokenWithMetadata);
+        createSelectorsMap.put(CREATE_FUNGIBLE_WITH_CUSTOM_FEES_V1, decoder::decodeCreateFungibleTokenWithCustomFeesV1);
+        createSelectorsMap.put(CREATE_FUNGIBLE_WITH_CUSTOM_FEES_V2, decoder::decodeCreateFungibleTokenWithCustomFeesV2);
+        createSelectorsMap.put(CREATE_FUNGIBLE_WITH_CUSTOM_FEES_V3, decoder::decodeCreateFungibleTokenWithCustomFeesV3);
+        createSelectorsMap.put(
                 CREATE_FUNGIBLE_TOKEN_WITH_METADATA_AND_CUSTOM_FEES,
                 decoder::decodeCreateFungibleTokenWithMetadataAndCustomFees);
-        decoderMap.put(CREATE_NON_FUNGIBLE_TOKEN_V1, decoder::decodeCreateNonFungibleV1);
-        decoderMap.put(CREATE_NON_FUNGIBLE_TOKEN_V2, decoder::decodeCreateNonFungibleV2);
-        decoderMap.put(CREATE_NON_FUNGIBLE_TOKEN_V3, decoder::decodeCreateNonFungibleV3);
-        decoderMap.put(CREATE_NON_FUNGIBLE_TOKEN_WITH_METADATA, decoder::decodeCreateNonFungibleWithMetadata);
-        decoderMap.put(CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES_V1, decoder::decodeCreateNonFungibleWithCustomFeesV1);
-        decoderMap.put(CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES_V2, decoder::decodeCreateNonFungibleWithCustomFeesV2);
-        decoderMap.put(CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES_V3, decoder::decodeCreateNonFungibleWithCustomFeesV3);
-        decoderMap.put(
+        createSelectorsMap.put(CREATE_NON_FUNGIBLE_TOKEN_V1, decoder::decodeCreateNonFungibleV1);
+        createSelectorsMap.put(CREATE_NON_FUNGIBLE_TOKEN_V2, decoder::decodeCreateNonFungibleV2);
+        createSelectorsMap.put(CREATE_NON_FUNGIBLE_TOKEN_V3, decoder::decodeCreateNonFungibleV3);
+        createSelectorsMap.put(CREATE_NON_FUNGIBLE_TOKEN_WITH_METADATA, decoder::decodeCreateNonFungibleWithMetadata);
+        createSelectorsMap.put(
+                CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES_V1, decoder::decodeCreateNonFungibleWithCustomFeesV1);
+        createSelectorsMap.put(
+                CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES_V2, decoder::decodeCreateNonFungibleWithCustomFeesV2);
+        createSelectorsMap.put(
+                CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES_V3, decoder::decodeCreateNonFungibleWithCustomFeesV3);
+        createSelectorsMap.put(
                 CREATE_NON_FUNGIBLE_TOKEN_WITH_METADATA_AND_CUSTOM_FEES,
                 decoder::decodeCreateNonFungibleWithMetadataAndCustomFees);
     }
@@ -191,7 +194,7 @@ public class CreateTranslator extends AbstractCallTranslator<HtsCallAttempt> {
                 CREATE_FUNGIBLE_TOKEN_WITH_METADATA_AND_CUSTOM_FEES,
                 CREATE_NON_FUNGIBLE_TOKEN_WITH_METADATA,
                 CREATE_NON_FUNGIBLE_TOKEN_WITH_METADATA_AND_CUSTOM_FEES);
-        return decoderMap.keySet().stream()
+        return createSelectorsMap.keySet().stream()
                 .anyMatch(selector -> metaSelectors.contains(selector)
                         ? attempt.isSelectorIfConfigEnabled(selector, metaConfigEnabled)
                         : attempt.isSelector(selector));
@@ -213,7 +216,7 @@ public class CreateTranslator extends AbstractCallTranslator<HtsCallAttempt> {
         final var nativeOperations = attempt.nativeOperations();
         final var addressIdConverter = attempt.addressIdConverter();
 
-        return decoderMap.entrySet().stream()
+        return createSelectorsMap.entrySet().stream()
                 .filter(entry -> attempt.isSelector(entry.getKey()))
                 .map(entry -> entry.getValue().decode(inputBytes, senderId, nativeOperations, addressIdConverter))
                 .findFirst()

@@ -35,6 +35,8 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.Return
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import com.hedera.node.config.data.ContractsConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.HashMap;
+import java.util.Map;
 import javax.inject.Inject;
 
 public class UpdateTranslator extends AbstractCallTranslator<HtsCallAttempt> {
@@ -54,12 +56,14 @@ public class UpdateTranslator extends AbstractCallTranslator<HtsCallAttempt> {
     public static final Function TOKEN_UPDATE_INFO_FUNCTION_WITH_METADATA =
             new Function(UPDATE_TOKEN_INFO_STRING + HEDERA_TOKEN_WITH_METADATA + ")", ReturnTypes.INT);
 
-    private final UpdateDecoder decoder;
+    private static final Map<Function, UpdateDecoderFunction> updateSelectorsMap = new HashMap<>();
 
     @Inject
-    public UpdateTranslator(UpdateDecoder decoder) {
-        // Dagger2
-        this.decoder = decoder;
+    public UpdateTranslator(final UpdateDecoder decoder) {
+        updateSelectorsMap.put(TOKEN_UPDATE_INFO_FUNCTION_V1, decoder::decodeTokenUpdateV1);
+        updateSelectorsMap.put(TOKEN_UPDATE_INFO_FUNCTION_V2, decoder::decodeTokenUpdateV2);
+        updateSelectorsMap.put(TOKEN_UPDATE_INFO_FUNCTION_V3, decoder::decodeTokenUpdateV3);
+        updateSelectorsMap.put(TOKEN_UPDATE_INFO_FUNCTION_WITH_METADATA, decoder::decodeTokenUpdateWithMetadata);
     }
 
     @Override
@@ -67,9 +71,10 @@ public class UpdateTranslator extends AbstractCallTranslator<HtsCallAttempt> {
         final boolean metadataSupport =
                 attempt.configuration().getConfigData(ContractsConfig.class).metadataKeyAndFieldEnabled();
 
-        return attempt.isSelector(
-                        TOKEN_UPDATE_INFO_FUNCTION_V1, TOKEN_UPDATE_INFO_FUNCTION_V2, TOKEN_UPDATE_INFO_FUNCTION_V3)
-                || (attempt.isSelector(TOKEN_UPDATE_INFO_FUNCTION_WITH_METADATA) && metadataSupport);
+        return updateSelectorsMap.keySet().stream()
+                .anyMatch(selector -> selector.equals(TOKEN_UPDATE_INFO_FUNCTION_WITH_METADATA)
+                        ? attempt.isSelectorIfConfigEnabled(selector, metadataSupport)
+                        : attempt.isSelector(selector));
     }
 
     @Override
@@ -87,14 +92,10 @@ public class UpdateTranslator extends AbstractCallTranslator<HtsCallAttempt> {
     }
 
     private TransactionBody nominalBodyFor(@NonNull final HtsCallAttempt attempt) {
-        if (attempt.isSelector(TOKEN_UPDATE_INFO_FUNCTION_V1)) {
-            return decoder.decodeTokenUpdateV1(attempt);
-        } else if (attempt.isSelector(TOKEN_UPDATE_INFO_FUNCTION_V2)) {
-            return decoder.decodeTokenUpdateV2(attempt);
-        } else if (attempt.isSelector(TOKEN_UPDATE_INFO_FUNCTION_V3)) {
-            return decoder.decodeTokenUpdateV3(attempt);
-        } else {
-            return decoder.decodeTokenUpdateWithMetadata(attempt);
-        }
+        return updateSelectorsMap.entrySet().stream()
+                .filter(entry -> attempt.isSelector(entry.getKey()))
+                .map(entry -> entry.getValue().decode(attempt))
+                .findFirst()
+                .orElse(null);
     }
 }

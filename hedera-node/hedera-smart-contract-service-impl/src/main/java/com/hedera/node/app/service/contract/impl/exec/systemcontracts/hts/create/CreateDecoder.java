@@ -426,7 +426,7 @@ public class CreateDecoder {
         return TransactionBody.newBuilder().tokenCreation(tokenCreate).build();
     }
 
-    private static TokenCreateWrapper getTokenCreateWrapper(
+    private TokenCreateWrapper getTokenCreateWrapper(
             @NonNull final Tuple tokenCreateStruct,
             final boolean isFungible,
             final long initSupply,
@@ -472,7 +472,7 @@ public class CreateDecoder {
         return tokenCreateWrapper;
     }
 
-    public static TokenCreateWrapper getTokenCreateWrapperWithMetadata(
+    public TokenCreateWrapper getTokenCreateWrapperWithMetadata(
             @NonNull final Tuple tokenCreateStruct,
             final boolean isFungible,
             final long initSupply,
@@ -487,7 +487,7 @@ public class CreateDecoder {
         return tokenCreateWrapper;
     }
 
-    private static TokenCreateWrapper getTokenCreateWrapperFungibleWithCustomFees(
+    private TokenCreateWrapper getTokenCreateWrapperFungibleWithCustomFees(
             @NonNull final Tuple tokenCreateStruct,
             final long initSupply,
             final int decimals,
@@ -505,7 +505,7 @@ public class CreateDecoder {
         return tokenCreateWrapper;
     }
 
-    private static TokenCreateWrapper getTokenCreateWrapperWithMetadataAndCustomFees(
+    private TokenCreateWrapper getTokenCreateWrapperWithMetadataAndCustomFees(
             @NonNull final Tuple tokenCreateStruct,
             final long initSupply,
             final int decimals,
@@ -523,7 +523,7 @@ public class CreateDecoder {
         return tokenCreateWrapper;
     }
 
-    private static TokenCreateWrapper getTokenCreateWrapperNonFungible(
+    private TokenCreateWrapper getTokenCreateWrapperNonFungible(
             @NonNull final Tuple tokenCreateStruct,
             @NonNull final AccountID senderId,
             @NonNull final HederaNativeOperations nativeOperations,
@@ -534,7 +534,7 @@ public class CreateDecoder {
                 tokenCreateStruct, false, initSupply, decimals, senderId, nativeOperations, addressIdConverter);
     }
 
-    private static TokenCreateWrapper getTokenCreateWrapperNonFungibleWithMetadata(
+    private TokenCreateWrapper getTokenCreateWrapperNonFungibleWithMetadata(
             @NonNull final Tuple tokenCreateStruct,
             @NonNull final AccountID senderId,
             @NonNull final HederaNativeOperations nativeOperations,
@@ -545,7 +545,7 @@ public class CreateDecoder {
                 tokenCreateStruct, false, initSupply, decimals, senderId, nativeOperations, addressIdConverter);
     }
 
-    private static TokenCreateWrapper getTokenCreateWrapperNonFungibleWithCustomFees(
+    private TokenCreateWrapper getTokenCreateWrapperNonFungibleWithCustomFees(
             @NonNull final Tuple tokenCreateStruct,
             @NonNull final Tuple[] fixedFeesTuple,
             @NonNull final Tuple[] royaltyFeesTuple,
@@ -563,7 +563,7 @@ public class CreateDecoder {
         return tokenCreateWrapper;
     }
 
-    private static TokenCreateWrapper getTokenCreateWrapperNonFungibleWithMetadataAndCustomFees(
+    private TokenCreateWrapper getTokenCreateWrapperNonFungibleWithMetadataAndCustomFees(
             @NonNull final Tuple tokenCreateStruct,
             @NonNull final Tuple[] fixedFeesTuple,
             @NonNull final Tuple[] royaltyFeesTuple,
@@ -581,7 +581,7 @@ public class CreateDecoder {
         return tokenCreateWrapper;
     }
 
-    private static List<TokenKeyWrapper> decodeTokenKeys(
+    private List<TokenKeyWrapper> decodeTokenKeys(
             @NonNull final Tuple[] tokenKeysTuples, @NonNull final AddressIdConverter addressIdConverter) {
 
         // TokenKey
@@ -618,7 +618,7 @@ public class CreateDecoder {
         return tokenKeys;
     }
 
-    private static TokenExpiryWrapper decodeTokenExpiry(
+    private TokenExpiryWrapper decodeTokenExpiry(
             @NonNull final Tuple expiryTuple, @NonNull final AddressIdConverter addressIdConverter) {
 
         // Expiry
@@ -635,7 +635,7 @@ public class CreateDecoder {
                 second, autoRenewAccount.accountNum() == 0 ? null : autoRenewAccount, autoRenewPeriod);
     }
 
-    public static List<FixedFeeWrapper> decodeFixedFees(
+    public List<FixedFeeWrapper> decodeFixedFees(
             @NonNull final Tuple[] fixedFeesTuples, @NonNull final AddressIdConverter addressIdConverter) {
 
         // FixedFee
@@ -662,7 +662,7 @@ public class CreateDecoder {
         return fixedFees;
     }
 
-    public static List<FractionalFeeWrapper> decodeFractionalFees(
+    public List<FractionalFeeWrapper> decodeFractionalFees(
             @NonNull final Tuple[] fractionalFeesTuples, @NonNull final AddressIdConverter addressIdConverter) {
 
         // FractionalFee
@@ -692,7 +692,7 @@ public class CreateDecoder {
         return fractionalFees;
     }
 
-    public static List<RoyaltyFeeWrapper> decodeRoyaltyFees(
+    public List<RoyaltyFeeWrapper> decodeRoyaltyFees(
             @NonNull final Tuple[] royaltyFeesTuples, @NonNull final AddressIdConverter addressIdConverter) {
 
         // RoyaltyFee
