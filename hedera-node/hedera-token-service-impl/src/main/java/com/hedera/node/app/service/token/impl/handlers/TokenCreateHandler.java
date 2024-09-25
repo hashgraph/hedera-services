@@ -269,7 +269,8 @@ public class TokenCreateHandler extends BaseTokenHandler implements TransactionH
                 op.maxSupply(),
                 false,
                 op.freezeDefault(),
-                false,
+                // We should set the default kyc status to true if there is KYC key provided
+                op.hasKycKey(),
                 modifyCustomFeesWithSentinelValues(op.customFees(), newTokenNum),
                 op.metadata(),
                 op.metadataKey());
