@@ -16,13 +16,10 @@
 
 package com.swirlds.platform.test.cli;
 
-import static com.swirlds.common.test.fixtures.ConfigurationUtils.configuration;
 import static com.swirlds.platform.test.consensus.ConsensusTestArgs.DEFAULT_PLATFORM_CONTEXT;
 
-import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
-import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.test.fixtures.RandomUtils;
 import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.event.report.EventStreamReport;
@@ -32,11 +29,9 @@ import com.swirlds.platform.recovery.internal.EventStreamRoundLowerBound;
 import com.swirlds.platform.recovery.internal.EventStreamTimestampLowerBound;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.StaticSoftwareVersion;
-import com.swirlds.platform.system.events.CesEvent;
 import com.swirlds.platform.test.consensus.GenerateConsensus;
 import com.swirlds.platform.test.fixtures.stream.StreamUtils;
 import com.swirlds.platform.test.simulated.RandomSigner;
-import com.swirlds.virtualmap.VirtualMap;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.time.Duration;
@@ -58,8 +53,9 @@ class EventStreamReportingToolTest {
     Path tmpDir;
 
     @BeforeAll
-    static void beforeAll() {
+    static void beforeAll() throws ConstructableRegistryException {
         StaticSoftwareVersion.setSoftwareVersion(new BasicSoftwareVersion(1));
+        ConstructableRegistry.getInstance().registerConstructables("com.swirlds");
     }
 
     @AfterAll
@@ -72,16 +68,11 @@ class EventStreamReportingToolTest {
      * written, it generates a report and checks the values.
      */
     @Test
-    void createReportTest() throws IOException, ConstructableRegistryException {
+    void createReportTest() throws IOException {
         final Random random = RandomUtils.getRandomPrintSeed();
         final int numNodes = 10;
         final int numEvents = 100_000;
         final Duration eventStreamWindowSize = Duration.ofSeconds(1);
-
-        // setup
-        ConstructableRegistry.getInstance()
-                .registerConstructable(
-                        new ClassConstructorPair(VirtualMap.class, () -> new VirtualMap(configuration())));
 
         // generate consensus events
         final Deque<ConsensusRound> rounds = GenerateConsensus.generateConsensusRounds(
@@ -119,18 +110,11 @@ class EventStreamReportingToolTest {
      * written, it generates a report and checks the values.
      */
     @Test
-    void createTimeBoundReportTest() throws IOException, ConstructableRegistryException {
+    void createTimeBoundReportTest() throws IOException {
         final Random random = RandomUtils.getRandomPrintSeed();
         final int numNodes = 10;
         final int numEvents = 100_000;
         final Duration eventStreamWindowSize = Duration.ofSeconds(1);
-
-        // setup
-        ConstructableRegistry constructableRegistry = ConstructableRegistry.getInstance();
-        constructableRegistry.registerConstructable(new ClassConstructorPair(Hash.class, Hash::new));
-        constructableRegistry.registerConstructable(new ClassConstructorPair(CesEvent.class, CesEvent::new));
-        constructableRegistry.registerConstructable(
-                new ClassConstructorPair(VirtualMap.class, () -> new VirtualMap(configuration())));
 
         // generate consensus events
         final Deque<ConsensusRound> rounds = GenerateConsensus.generateConsensusRounds(

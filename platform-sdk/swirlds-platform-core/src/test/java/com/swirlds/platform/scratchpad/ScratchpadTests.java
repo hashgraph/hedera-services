@@ -24,7 +24,6 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.swirlds.common.config.StateCommonConfig_;
-import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.context.PlatformContext;
@@ -33,11 +32,9 @@ import com.swirlds.common.io.utility.FileUtils;
 import com.swirlds.common.io.utility.LegacyTemporaryFileBuilder;
 import com.swirlds.common.merkle.utility.SerializableLong;
 import com.swirlds.common.platform.NodeId;
-import com.swirlds.common.test.fixtures.ConfigurationUtils;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
-import com.swirlds.virtualmap.VirtualMap;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -83,9 +80,7 @@ class ScratchpadTests {
 
     @BeforeAll
     static void beforeAll() throws ConstructableRegistryException {
-        ConstructableRegistry registry = ConstructableRegistry.getInstance();
-        registry.registerConstructable(
-                new ClassConstructorPair(VirtualMap.class, () -> new VirtualMap(ConfigurationUtils.configuration())));
+        ConstructableRegistry.getInstance().registerConstructables("com.swirlds");
     }
 
     @Test

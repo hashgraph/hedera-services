@@ -16,7 +16,6 @@
 
 package com.swirlds.platform.test.sync;
 
-import static com.swirlds.common.test.fixtures.ConfigurationUtils.configuration;
 import static com.swirlds.common.test.fixtures.io.ResourceLoader.loadLog4jContext;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static com.swirlds.common.utility.CompareTo.max;
@@ -29,7 +28,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
-import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.platform.NodeId;
@@ -54,7 +52,6 @@ import com.swirlds.platform.test.fixtures.event.source.StandardEventSource;
 import com.swirlds.platform.test.graph.OtherParentMatrixFactory;
 import com.swirlds.platform.test.graph.PartitionedGraphCreator;
 import com.swirlds.platform.test.graph.SplitForkGraphCreator;
-import com.swirlds.virtualmap.VirtualMap;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.FileNotFoundException;
 import java.net.SocketException;
@@ -308,9 +305,7 @@ public class SyncTests {
     public static void setup() throws FileNotFoundException, ConstructableRegistryException {
         new TestConfigBuilder().getOrCreateConfig();
 
-        ConstructableRegistry.getInstance()
-                .registerConstructable(
-                        new ClassConstructorPair(VirtualMap.class, () -> new VirtualMap(configuration())));
+        ConstructableRegistry.getInstance().registerConstructables("com.swirlds");
 
         if (platformLoggingEnabled) {
             loadLog4jContext();

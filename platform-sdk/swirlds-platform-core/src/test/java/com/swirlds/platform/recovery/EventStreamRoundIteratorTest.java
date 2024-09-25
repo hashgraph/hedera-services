@@ -29,13 +29,11 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 
-import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.io.IOIterator;
 import com.swirlds.common.io.utility.FileUtils;
 import com.swirlds.common.io.utility.LegacyTemporaryFileBuilder;
-import com.swirlds.common.test.fixtures.ConfigurationUtils;
 import com.swirlds.platform.recovery.internal.EventStreamPathIterator;
 import com.swirlds.platform.recovery.internal.EventStreamRoundIterator;
 import com.swirlds.platform.recovery.internal.StreamedRound;
@@ -43,7 +41,6 @@ import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.StaticSoftwareVersion;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.events.CesEvent;
-import com.swirlds.virtualmap.VirtualMap;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -63,7 +60,8 @@ import org.junit.jupiter.api.Test;
 class EventStreamRoundIteratorTest {
 
     @BeforeAll
-    static void beforeAll() {
+    static void beforeAll() throws ConstructableRegistryException {
+        ConstructableRegistry.getInstance().registerConstructables("com.swirlds");
         StaticSoftwareVersion.setSoftwareVersion(new BasicSoftwareVersion(1));
     }
 
@@ -78,11 +76,7 @@ class EventStreamRoundIteratorTest {
 
     @Test
     @DisplayName("Read All Events Test")
-    void readAllEventsTest() throws ConstructableRegistryException, IOException, NoSuchAlgorithmException {
-        ConstructableRegistry registry = ConstructableRegistry.getInstance();
-        registry.registerConstructable(
-                new ClassConstructorPair(VirtualMap.class, () -> new VirtualMap(ConfigurationUtils.configuration())));
-
+    void readAllEventsTest() throws IOException, NoSuchAlgorithmException {
         final Random random = getRandomPrintSeed();
         final Path directory = LegacyTemporaryFileBuilder.buildTemporaryDirectory(configuration());
 
@@ -122,13 +116,7 @@ class EventStreamRoundIteratorTest {
 
     @Test
     @DisplayName("Read All Events Starting From Round Test")
-    void readAllEventsStartingFromRoundTest()
-            throws ConstructableRegistryException, IOException, NoSuchAlgorithmException {
-
-        ConstructableRegistry registry = ConstructableRegistry.getInstance();
-        registry.registerConstructable(
-                new ClassConstructorPair(VirtualMap.class, () -> new VirtualMap(ConfigurationUtils.configuration())));
-
+    void readAllEventsStartingFromRoundTest() throws IOException, NoSuchAlgorithmException {
         final Random random = getRandomPrintSeed();
         final Path directory = LegacyTemporaryFileBuilder.buildTemporaryDirectory(configuration());
 
@@ -179,11 +167,7 @@ class EventStreamRoundIteratorTest {
 
     @Test
     @DisplayName("Missing Event File Test")
-    void missingEventFileTest() throws ConstructableRegistryException, IOException, NoSuchAlgorithmException {
-        ConstructableRegistry registry = ConstructableRegistry.getInstance();
-        registry.registerConstructable(
-                new ClassConstructorPair(VirtualMap.class, () -> new VirtualMap(ConfigurationUtils.configuration())));
-
+    void missingEventFileTest() throws IOException, NoSuchAlgorithmException {
         final Random random = getRandomPrintSeed();
         final Path directory = LegacyTemporaryFileBuilder.buildTemporaryDirectory(configuration());
 
@@ -242,11 +226,7 @@ class EventStreamRoundIteratorTest {
 
     @Test
     @DisplayName("Early Rounds Not Present Test")
-    void earlyRoundsNotPresentTest() throws ConstructableRegistryException, IOException, NoSuchAlgorithmException {
-        ConstructableRegistry registry = ConstructableRegistry.getInstance();
-        registry.registerConstructable(
-                new ClassConstructorPair(VirtualMap.class, () -> new VirtualMap(ConfigurationUtils.configuration())));
-
+    void earlyRoundsNotPresentTest() throws IOException, NoSuchAlgorithmException {
         final Random random = getRandomPrintSeed();
         final Path directory = LegacyTemporaryFileBuilder.buildTemporaryDirectory(configuration());
 
@@ -267,11 +247,7 @@ class EventStreamRoundIteratorTest {
 
     @Test
     @DisplayName("Read All Events Truncated File Test")
-    void readAllEventsTruncatedFileTest() throws ConstructableRegistryException, IOException, NoSuchAlgorithmException {
-        ConstructableRegistry registry = ConstructableRegistry.getInstance();
-        registry.registerConstructable(
-                new ClassConstructorPair(VirtualMap.class, () -> new VirtualMap(ConfigurationUtils.configuration())));
-
+    void readAllEventsTruncatedFileTest() throws IOException, NoSuchAlgorithmException {
         final Random random = getRandomPrintSeed();
         final Path directory = LegacyTemporaryFileBuilder.buildTemporaryDirectory(configuration());
 
@@ -326,11 +302,7 @@ class EventStreamRoundIteratorTest {
     @Disabled("This test is disabled because it is flaky. Fails ~1/10 times, but only when run remotely.")
     @Test
     @DisplayName("Read Complete Rounds Truncated File Test")
-    void readCompleteRoundsTruncatedFileTest()
-            throws ConstructableRegistryException, IOException, NoSuchAlgorithmException {
-
-        ConstructableRegistry.getInstance().registerConstructables("com.swirlds");
-
+    void readCompleteRoundsTruncatedFileTest() throws IOException, NoSuchAlgorithmException {
         final Random random = getRandomPrintSeed();
         final Path directory = LegacyTemporaryFileBuilder.buildTemporaryDirectory(configuration());
 

@@ -29,17 +29,14 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.io.utility.FileUtils;
 import com.swirlds.common.io.utility.LegacyTemporaryFileBuilder;
-import com.swirlds.common.test.fixtures.ConfigurationUtils;
 import com.swirlds.platform.recovery.internal.EventStreamSingleFileIterator;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.StaticSoftwareVersion;
 import com.swirlds.platform.system.events.CesEvent;
-import com.swirlds.virtualmap.VirtualMap;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.security.NoSuchAlgorithmException;
@@ -57,7 +54,8 @@ import org.junit.jupiter.api.Test;
 class EventStreamSingleFileIteratorTest {
 
     @BeforeAll
-    static void beforeAll() {
+    static void beforeAll() throws ConstructableRegistryException {
+        ConstructableRegistry.getInstance().registerConstructables("com.swirlds");
         StaticSoftwareVersion.setSoftwareVersion(new BasicSoftwareVersion(1));
     }
 
@@ -72,12 +70,7 @@ class EventStreamSingleFileIteratorTest {
 
     @Test
     @DisplayName("Simple Stream Test")
-    void simpleStreamTest() throws IOException, NoSuchAlgorithmException, ConstructableRegistryException {
-
-        ConstructableRegistry registry = ConstructableRegistry.getInstance();
-        registry.registerConstructable(
-                new ClassConstructorPair(VirtualMap.class, () -> new VirtualMap(ConfigurationUtils.configuration())));
-
+    void simpleStreamTest() throws IOException, NoSuchAlgorithmException {
         final Random random = getRandomPrintSeed();
         final Path directory = LegacyTemporaryFileBuilder.buildTemporaryDirectory(configuration());
 
@@ -113,10 +106,7 @@ class EventStreamSingleFileIteratorTest {
     @Disabled("this test is flaky")
     @Test
     @DisplayName("Allowed Truncated File Test")
-    void allowedTruncatedFileTest() throws IOException, NoSuchAlgorithmException, ConstructableRegistryException {
-
-        ConstructableRegistry.getInstance().registerConstructables("com.swirlds");
-
+    void allowedTruncatedFileTest() throws IOException, NoSuchAlgorithmException {
         final Random random = getRandomPrintSeed();
         final Path directory = LegacyTemporaryFileBuilder.buildTemporaryDirectory(configuration());
 
@@ -153,12 +143,7 @@ class EventStreamSingleFileIteratorTest {
 
     @Test
     @DisplayName("Disallowed Truncated File Test")
-    void disallowedTruncatedFileTest() throws IOException, NoSuchAlgorithmException, ConstructableRegistryException {
-
-        ConstructableRegistry registry = ConstructableRegistry.getInstance();
-        registry.registerConstructable(
-                new ClassConstructorPair(VirtualMap.class, () -> new VirtualMap(ConfigurationUtils.configuration())));
-
+    void disallowedTruncatedFileTest() throws IOException, NoSuchAlgorithmException {
         final Random random = getRandomPrintSeed();
         final Path directory = LegacyTemporaryFileBuilder.buildTemporaryDirectory(configuration());
 
@@ -203,13 +188,7 @@ class EventStreamSingleFileIteratorTest {
 
     @Test
     @DisplayName("Disallowed Truncated File Test")
-    void disallowedTruncatedOnBoundaryTest()
-            throws IOException, NoSuchAlgorithmException, ConstructableRegistryException {
-
-        ConstructableRegistry registry = ConstructableRegistry.getInstance();
-        registry.registerConstructable(
-                new ClassConstructorPair(VirtualMap.class, () -> new VirtualMap(ConfigurationUtils.configuration())));
-
+    void disallowedTruncatedOnBoundaryTest() throws IOException, NoSuchAlgorithmException {
         final Random random = getRandomPrintSeed();
         final Path directory = LegacyTemporaryFileBuilder.buildTemporaryDirectory(configuration());
 

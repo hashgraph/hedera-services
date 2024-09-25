@@ -26,7 +26,6 @@ import static com.swirlds.common.io.streams.internal.SerializationOperation.READ
 import static com.swirlds.common.io.streams.internal.SerializationOperation.READ_SERIALIZABLE;
 import static com.swirlds.common.io.streams.internal.SerializationOperation.READ_SERIALIZABLE_LIST;
 import static com.swirlds.common.io.streams.internal.SerializationOperation.STREAM_OPENED;
-import static com.swirlds.common.test.fixtures.ConfigurationUtils.configuration;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -48,10 +47,8 @@ import com.swirlds.common.merkle.utility.MerkleLong;
 import com.swirlds.common.test.fixtures.io.InputOutputStream;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.merkle.map.MerkleMap;
-import com.swirlds.merkle.map.internal.MerkleMapInfo;
 import com.swirlds.merkle.tree.MerkleBinaryTree;
 import com.swirlds.merkle.tree.MerkleTreeInternalNode;
-import com.swirlds.virtualmap.VirtualMap;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.time.Instant;
@@ -80,15 +77,12 @@ class SerializationDebugTest {
         new TestConfigBuilder().getOrCreateConfig();
 
         final ConstructableRegistry registry = ConstructableRegistry.getInstance();
+        registry.registerConstructables("com.swirlds");
         registry.registerConstructable(new ClassConstructorPair(MerkleMap.class, MerkleMap::new));
-        registry.registerConstructable(new ClassConstructorPair(MerkleMapInfo.class, MerkleMapInfo::new));
-        registry.registerConstructable(new ClassConstructorPair(MerkleLong.class, MerkleLong::new));
         registry.registerConstructable(new ClassConstructorPair(MerkleBinaryTree.class, MerkleBinaryTree::new));
         registry.registerConstructable(
                 new ClassConstructorPair(MerkleTreeInternalNode.class, MerkleTreeInternalNode::new));
         registry.registerConstructable(new ClassConstructorPair(ExplodingValue.class, ExplodingValue::new));
-        registry.registerConstructable(
-                new ClassConstructorPair(VirtualMap.class, () -> new VirtualMap(configuration())));
     }
 
     /**

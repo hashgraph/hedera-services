@@ -49,7 +49,6 @@ import com.swirlds.platform.state.snapshot.SignedStateFileUtils;
 import com.swirlds.platform.state.snapshot.StateToDiskReason;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.test.fixtures.state.RandomSignedStateGenerator;
-import com.swirlds.virtualmap.VirtualMap;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.BufferedWriter;
@@ -98,13 +97,12 @@ public class StartupStateUtilsTests {
 
     @BeforeAll
     static void beforeAll() throws ConstructableRegistryException {
-        ConstructableRegistry registry = ConstructableRegistry.getInstance();
-        registry.registerConstructable(
-                new ClassConstructorPair(VirtualMap.class, () -> new VirtualMap(configuration())));
-        registry.registerConstructable(new ClassConstructorPair(
-                MerkleStateRoot.class,
-                () -> new MerkleStateRoot(
-                        FAKE_MERKLE_STATE_LIFECYCLES, version -> new BasicSoftwareVersion(version.major()))));
+        ConstructableRegistry.getInstance().registerConstructables("com.swirlds");
+        ConstructableRegistry.getInstance()
+                .registerConstructable(new ClassConstructorPair(
+                        MerkleStateRoot.class,
+                        () -> new MerkleStateRoot(
+                                FAKE_MERKLE_STATE_LIFECYCLES, version -> new BasicSoftwareVersion(version.major()))));
     }
 
     @NonNull

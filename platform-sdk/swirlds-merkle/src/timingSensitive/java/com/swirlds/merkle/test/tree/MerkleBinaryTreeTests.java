@@ -16,13 +16,11 @@
 
 package com.swirlds.merkle.test.tree;
 
-import static com.swirlds.merkle.test.fixtures.map.util.MerkleMapTestUtil.configuration;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.exceptions.ReferenceCountException;
@@ -38,7 +36,6 @@ import com.swirlds.common.test.fixtures.io.InputOutputStream;
 import com.swirlds.common.test.fixtures.junit.tags.TestComponentTags;
 import com.swirlds.merkle.tree.MerkleBinaryTree;
 import com.swirlds.merkle.tree.MerkleTreeInternalNode;
-import com.swirlds.virtualmap.VirtualMap;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -140,11 +137,7 @@ class MerkleBinaryTreeTests {
 
     @BeforeAll
     void setUp() throws ConstructableRegistryException {
-        ConstructableRegistry registry = ConstructableRegistry.getInstance();
-        registry.registerConstructables("com.swirlds.merkle");
-        registry.registerConstructables("com.swirlds.common");
-        registry.registerConstructable(
-                new ClassConstructorPair(VirtualMap.class, () -> new VirtualMap(configuration())));
+        ConstructableRegistry.getInstance().registerConstructables("com.swirlds");
     }
 
     protected Stream<Arguments> buildSizeArguments() {

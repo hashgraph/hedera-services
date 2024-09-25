@@ -16,12 +16,10 @@
 
 package com.swirlds.platform.test;
 
-import static com.swirlds.common.test.fixtures.ConfigurationUtils.configuration;
 import static com.swirlds.common.test.fixtures.merkle.util.MerkleTestUtils.areTreesEqual;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
@@ -29,10 +27,8 @@ import com.swirlds.common.test.fixtures.io.InputOutputStream;
 import com.swirlds.common.test.fixtures.junit.tags.TestComponentTags;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.platform.state.MerkleRoot;
-import com.swirlds.platform.state.PlatformState;
 import com.swirlds.platform.state.State;
 import com.swirlds.platform.test.fixtures.state.BlockingSwirldState;
-import com.swirlds.virtualmap.VirtualMap;
 import java.io.IOException;
 import java.nio.file.Path;
 import org.junit.jupiter.api.BeforeAll;
@@ -55,13 +51,7 @@ class StateTests {
     static void setUp() throws ConstructableRegistryException {
         new TestConfigBuilder().getOrCreateConfig();
 
-        ConstructableRegistry constructableRegistry = ConstructableRegistry.getInstance();
-        constructableRegistry.registerConstructable(new ClassConstructorPair(State.class, State::new));
-        constructableRegistry.registerConstructable(
-                new ClassConstructorPair(BlockingSwirldState.class, BlockingSwirldState::new));
-        constructableRegistry.registerConstructable(new ClassConstructorPair(PlatformState.class, PlatformState::new));
-        constructableRegistry.registerConstructable(
-                new ClassConstructorPair(VirtualMap.class, () -> new VirtualMap(configuration())));
+        ConstructableRegistry.getInstance().registerConstructables("com.swirlds");
 
         state = new State();
         state.setSwirldState(new BlockingSwirldState());

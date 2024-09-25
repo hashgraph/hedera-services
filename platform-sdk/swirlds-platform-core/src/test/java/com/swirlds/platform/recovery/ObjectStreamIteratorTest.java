@@ -29,7 +29,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
-import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.crypto.Hash;
@@ -37,12 +36,10 @@ import com.swirlds.common.io.IOIterator;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.utility.FileUtils;
 import com.swirlds.common.io.utility.LegacyTemporaryFileBuilder;
-import com.swirlds.common.test.fixtures.ConfigurationUtils;
 import com.swirlds.platform.recovery.internal.ObjectStreamIterator;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.StaticSoftwareVersion;
 import com.swirlds.platform.system.events.CesEvent;
-import com.swirlds.virtualmap.VirtualMap;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -60,7 +57,8 @@ import org.junit.jupiter.api.Test;
 class ObjectStreamIteratorTest {
 
     @BeforeAll
-    static void beforeAll() {
+    static void beforeAll() throws ConstructableRegistryException {
+        ConstructableRegistry.getInstance().registerConstructables("com.swirlds");
         StaticSoftwareVersion.setSoftwareVersion(new BasicSoftwareVersion(1));
     }
 
@@ -75,12 +73,7 @@ class ObjectStreamIteratorTest {
 
     @Test
     @DisplayName("Simple Stream Test")
-    public void simpleStreamTest() throws IOException, NoSuchAlgorithmException, ConstructableRegistryException {
-
-        ConstructableRegistry registry = ConstructableRegistry.getInstance();
-        registry.registerConstructable(
-                new ClassConstructorPair(VirtualMap.class, () -> new VirtualMap(ConfigurationUtils.configuration())));
-
+    public void simpleStreamTest() throws IOException, NoSuchAlgorithmException {
         // FUTURE WORK: once streaming code is simplified, rewrite this test to use simple object types
 
         final Random random = getRandomPrintSeed();
@@ -141,13 +134,7 @@ class ObjectStreamIteratorTest {
 
     @Test
     @DisplayName("Allowed Truncated File Test")
-    public void allowedTruncatedFileTest()
-            throws ConstructableRegistryException, IOException, NoSuchAlgorithmException {
-
-        ConstructableRegistry registry = ConstructableRegistry.getInstance();
-        registry.registerConstructable(
-                new ClassConstructorPair(VirtualMap.class, () -> new VirtualMap(ConfigurationUtils.configuration())));
-
+    public void allowedTruncatedFileTest() throws IOException, NoSuchAlgorithmException {
         // FUTURE WORK: once streaming code is simplified, rewrite this test to use simple object types
 
         final Random random = getRandomPrintSeed();
@@ -197,13 +184,7 @@ class ObjectStreamIteratorTest {
 
     @Test
     @DisplayName("Disallowed Truncated File Test")
-    public void disallowedTruncatedFileTest()
-            throws ConstructableRegistryException, IOException, NoSuchAlgorithmException {
-
-        ConstructableRegistry registry = ConstructableRegistry.getInstance();
-        registry.registerConstructable(
-                new ClassConstructorPair(VirtualMap.class, () -> new VirtualMap(ConfigurationUtils.configuration())));
-
+    public void disallowedTruncatedFileTest() throws IOException, NoSuchAlgorithmException {
         // FUTURE WORK: once streaming code is simplified, rewrite this test to use simple object types
 
         final Random random = getRandomPrintSeed();

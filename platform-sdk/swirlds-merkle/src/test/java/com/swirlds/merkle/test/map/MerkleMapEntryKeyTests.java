@@ -16,14 +16,12 @@
 
 package com.swirlds.merkle.test.map;
 
-import static com.swirlds.common.test.fixtures.ConfigurationUtils.configuration;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 
-import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.crypto.CryptographyHolder;
@@ -32,7 +30,6 @@ import com.swirlds.common.io.streams.MerkleDataOutputStream;
 import com.swirlds.common.merkle.utility.SerializableLong;
 import com.swirlds.common.test.fixtures.junit.tags.TestComponentTags;
 import com.swirlds.merkle.map.internal.MerkleMapEntryKey;
-import com.swirlds.virtualmap.VirtualMap;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -54,9 +51,7 @@ class MerkleMapEntryKeyTests {
 
     @BeforeAll
     static void setup() throws ConstructableRegistryException {
-        ConstructableRegistry registry = ConstructableRegistry.getInstance();
-        registry.registerConstructable(
-                new ClassConstructorPair(VirtualMap.class, () -> new VirtualMap(configuration())));
+        ConstructableRegistry.getInstance().registerConstructables("*");
     }
 
     @Test

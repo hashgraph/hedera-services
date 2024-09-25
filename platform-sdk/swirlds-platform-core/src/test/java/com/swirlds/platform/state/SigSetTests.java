@@ -16,7 +16,6 @@
 
 package com.swirlds.platform.state;
 
-import static com.swirlds.common.test.fixtures.ConfigurationUtils.configuration;
 import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
 import static com.swirlds.common.test.fixtures.RandomUtils.randomSignature;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -25,7 +24,6 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.crypto.Signature;
@@ -33,7 +31,6 @@ import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.state.signed.SigSet;
-import com.swirlds.virtualmap.VirtualMap;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -106,10 +103,7 @@ class SigSetTests {
     @Test
     @DisplayName("Serialization Test")
     void serializationTest() throws IOException, ConstructableRegistryException {
-        ConstructableRegistry registry = ConstructableRegistry.getInstance();
-        registry.registerConstructable(new ClassConstructorPair(SigSet.class, SigSet::new));
-        registry.registerConstructable(
-                new ClassConstructorPair(VirtualMap.class, () -> new VirtualMap(configuration())));
+        ConstructableRegistry.getInstance().registerConstructables("");
 
         final Random random = getRandomPrintSeed();
         final SigSet sigSet = new SigSet();

@@ -16,7 +16,6 @@
 
 package com.swirlds.merkle.test.map;
 
-import static com.swirlds.merkle.test.fixtures.map.util.MerkleMapTestUtil.configuration;
 import static java.util.Map.Entry;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -57,7 +56,6 @@ import com.swirlds.merkle.test.fixtures.map.pta.TransactionRecord;
 import com.swirlds.merkle.test.fixtures.map.util.KeyValueProvider;
 import com.swirlds.merkle.test.fixtures.map.util.MerkleMapTestUtil;
 import com.swirlds.merkle.tree.MerkleBinaryTree;
-import com.swirlds.virtualmap.VirtualMap;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -100,14 +98,7 @@ class MerkleMapTests {
     @BeforeAll
     static void setUp() throws ConstructableRegistryException {
         MerkleMapTestUtil.loadLogging();
-
-        ConstructableRegistry registry = ConstructableRegistry.getInstance();
-        registry.registerConstructables("com.swirlds.merkle");
-        registry.registerConstructables("com.swirlds.common");
-        registry.registerConstructables("com.swirlds.fcqueue");
-        registry.registerConstructable(
-                new ClassConstructorPair(VirtualMap.class, () -> new VirtualMap(configuration())));
-
+        ConstructableRegistry.getInstance().registerConstructables("com.swirlds");
         cryptography = MerkleCryptoFactory.getInstance();
     }
 

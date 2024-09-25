@@ -16,13 +16,11 @@
 
 package com.swirlds.demo.platform;
 
-import static com.swirlds.common.test.fixtures.ConfigurationUtils.configuration;
 import static com.swirlds.merkle.test.fixtures.map.pta.TransactionRecord.DEFAULT_EXPIRATION_TIME;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.crypto.Hash;
@@ -40,14 +38,10 @@ import com.swirlds.demo.merkle.map.internal.DummyExpectedFCMFamily;
 import com.swirlds.demo.merkle.map.internal.ExpectedFCMFamily;
 import com.swirlds.demo.platform.expiration.ExpirationRecordEntry;
 import com.swirlds.merkle.map.MerkleMap;
-import com.swirlds.merkle.map.internal.MerkleMapInfo;
 import com.swirlds.merkle.test.fixtures.map.lifecycle.ExpectedValue;
 import com.swirlds.merkle.test.fixtures.map.pta.MapKey;
 import com.swirlds.merkle.test.fixtures.map.pta.MapValue;
 import com.swirlds.merkle.test.fixtures.map.pta.TransactionRecord;
-import com.swirlds.merkle.tree.MerkleBinaryTree;
-import com.swirlds.merkle.tree.MerkleTreeInternalNode;
-import com.swirlds.virtualmap.VirtualMap;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -84,16 +78,7 @@ class MapValueSerializableTest {
 
     @BeforeAll
     public static void setUp() throws ConstructableRegistryException {
-        ConstructableRegistry registry = ConstructableRegistry.getInstance();
-        registry.registerConstructable(new ClassConstructorPair(MerkleMap.class, MerkleMap::new));
-        registry.registerConstructable(new ClassConstructorPair(MapValueFCQ.class, MapValueFCQ::new));
-        registry.registerConstructable(new ClassConstructorPair(MerkleBinaryTree.class, MerkleBinaryTree::new));
-        registry.registerConstructable(new ClassConstructorPair(MerkleMapInfo.class, MerkleMapInfo::new));
-        registry.registerConstructable(new ClassConstructorPair(MerkleLong.class, MerkleLong::new));
-        registry.registerConstructable(
-                new ClassConstructorPair(MerkleTreeInternalNode.class, MerkleTreeInternalNode::new));
-        registry.registerConstructable(
-                new ClassConstructorPair(VirtualMap.class, () -> new VirtualMap(configuration())));
+        ConstructableRegistry.getInstance().registerConstructables("com.swirlds");
         cryptography = MerkleCryptoFactory.getInstance();
     }
 

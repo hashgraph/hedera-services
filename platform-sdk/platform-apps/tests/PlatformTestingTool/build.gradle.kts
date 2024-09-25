@@ -44,8 +44,6 @@ timingSensitiveModuleInfo {
     requires("com.swirlds.merkle")
     requires("com.swirlds.merkle.test.fixtures")
     requires("com.swirlds.platform.core")
-    requires("com.swirlds.config.api")
-    requires("com.swirlds.virtualmap")
     requires("org.junit.jupiter.api")
     requires("org.junit.jupiter.params")
     requires("org.mockito")
