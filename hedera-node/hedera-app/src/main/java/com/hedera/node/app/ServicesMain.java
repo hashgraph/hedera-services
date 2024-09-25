@@ -76,6 +76,7 @@ import com.swirlds.platform.util.BootstrapUtils;
 import com.swirlds.virtualmap.VirtualMap;
 import com.swirlds.virtualmap.config.VirtualMapConfig;
 import com.swirlds.virtualmap.internal.cache.VirtualNodeCache;
+import com.swirlds.virtualmap.internal.merkle.VirtualRootNode;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.InstantSource;
 import java.util.List;
@@ -229,6 +230,9 @@ public class ServicesMain implements SwirldMain {
                 .registerConstructable(new ClassConstructorPair(
                         VirtualNodeCache.class,
                         () -> new VirtualNodeCache(configuration.getConfigData(VirtualMapConfig.class))));
+        ConstructableRegistry.getInstance()
+                .registerConstructable(
+                        new ClassConstructorPair(VirtualRootNode.class, () -> new VirtualRootNode(configuration)));
 
         // Create the platform context
         final var platformContext = PlatformContext.create(
