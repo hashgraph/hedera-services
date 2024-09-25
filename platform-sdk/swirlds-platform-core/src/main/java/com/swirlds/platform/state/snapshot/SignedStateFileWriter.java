@@ -149,11 +149,6 @@ public final class SignedStateFileWriter {
         Objects.requireNonNull(signedState);
 
         final MerkleRoot state = signedState.getState();
-        if (state.isMutable()) {
-            // make it immutable
-            state.copy();
-        }
-
         state.createSnapshot(directory);
         writeSignatureSetFile(directory, signedState);
         writeHashInfoFile(platformContext, directory, signedState.getState());

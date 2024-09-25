@@ -161,7 +161,7 @@ public final class SignedStateFileReader {
                     } else if (fileVersion == SIG_SET_SEPARATE_STATE_FILE_VERSION) {
                         return createStateFileDataV2(stateFile, snapshotStateReader, in, directory, fileVersion);
                     } else {
-                        throw new IOException("Unsupported protocol version: " + fileVersion);
+                        throw new IOException("Unsupported state file version: " + fileVersion);
                     }
                 });
     }
