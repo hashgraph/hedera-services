@@ -99,7 +99,9 @@ module com.hedera.node.test.clients {
     requires com.hedera.node.app.spi;
     requires com.swirlds.base.test.fixtures;
     requires com.swirlds.config.extensions.test.fixtures;
+    requires com.swirlds.merkledb;
     requires com.swirlds.platform.core.test.fixtures;
+    requires com.swirlds.virtualmap;
     requires com.fasterxml.jackson.core;
     requires com.fasterxml.jackson.databind;
     requires com.github.docker.java.api;
