@@ -15,7 +15,8 @@ open module com.swirlds.virtualmap {
     exports com.swirlds.virtualmap.internal.cache to
             com.swirlds.virtualmap.test.fixtures,
             com.swirlds.common,
-            com.swirlds.state.api.test.fixtures;
+            com.swirlds.state.api.test.fixtures,
+            com.hedera.node.app;
 
     requires transitive com.swirlds.common;
     requires transitive com.swirlds.config.api;

@@ -40,6 +40,7 @@ import com.hedera.node.app.services.OrderedServiceMigrator;
 import com.hedera.node.app.services.ServicesRegistryImpl;
 import com.hedera.node.app.tss.impl.PlaceholderTssBaseService;
 import com.swirlds.base.time.Time;
+import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.RuntimeConstructable;
 import com.swirlds.common.context.PlatformContext;
@@ -55,6 +56,7 @@ import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.config.extensions.sources.SystemEnvironmentConfigSource;
 import com.swirlds.config.extensions.sources.SystemPropertiesConfigSource;
+import com.swirlds.merkledb.MerkleDbDataSourceBuilder;
 import com.swirlds.platform.CommandLineArgs;
 import com.swirlds.platform.ParameterProvider;
 import com.swirlds.platform.builder.PlatformBuilder;
@@ -71,6 +73,9 @@ import com.swirlds.platform.system.SwirldMain;
 import com.swirlds.platform.system.SwirldState;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.util.BootstrapUtils;
+import com.swirlds.virtualmap.VirtualMap;
+import com.swirlds.virtualmap.config.VirtualMapConfig;
+import com.swirlds.virtualmap.internal.cache.VirtualNodeCache;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.InstantSource;
 import java.util.List;
@@ -213,6 +218,17 @@ public class ServicesMain implements SwirldMain {
         // Initialize the Merkle cryptography
         final var merkleCryptography = MerkleCryptographyFactory.create(configuration, cryptography);
         MerkleCryptoFactory.set(merkleCryptography);
+
+        // Initialize ... (TODO: update this comment)
+        ConstructableRegistry.getInstance()
+                .registerConstructable(new ClassConstructorPair(VirtualMap.class, () -> new VirtualMap(configuration)));
+        ConstructableRegistry.getInstance()
+                .registerConstructable(new ClassConstructorPair(
+                        MerkleDbDataSourceBuilder.class, () -> new MerkleDbDataSourceBuilder(configuration)));
+        ConstructableRegistry.getInstance()
+                .registerConstructable(new ClassConstructorPair(
+                        VirtualNodeCache.class,
+                        () -> new VirtualNodeCache(configuration.getConfigData(VirtualMapConfig.class))));
 
         // Create the platform context
         final var platformContext = PlatformContext.create(
