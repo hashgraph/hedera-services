@@ -103,6 +103,7 @@ public class DefaultTokenStatusSuite {
     @HapiTest
     final Stream<DynamicTest> getTokenDefaultKycStatus() {
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
+        final AtomicReference<TokenID> noKycTokenId = new AtomicReference<>();
         final var notAnAddress = new byte[20];
 
         return hapiTest(
@@ -115,6 +116,11 @@ public class DefaultTokenStatusSuite {
                         .kycKey(KYC_KEY)
                         .initialSupply(1_000)
                         .exposingCreatedIdTo(id -> vanillaTokenID.set(asToken(id))),
+                tokenCreate("noKycToken")
+                        .tokenType(FUNGIBLE_COMMON)
+                        .treasury(TOKEN_TREASURY)
+                        .initialSupply(1_000)
+                        .exposingCreatedIdTo(id -> noKycTokenId.set(asToken(id))),
                 uploadInitCode(TOKEN_DEFAULT_KYC_FREEZE_STATUS_CONTRACT),
                 contractCreate(TOKEN_DEFAULT_KYC_FREEZE_STATUS_CONTRACT),
                 withOpContext((spec, opLog) -> allRunFor(
@@ -126,12 +132,29 @@ public class DefaultTokenStatusSuite {
                                 .payingWith(ACCOUNT)
                                 .via("GetTokenDefaultKycStatusTx")
                                 .gas(GAS_TO_OFFER),
+                        contractCall(
+                                        TOKEN_DEFAULT_KYC_FREEZE_STATUS_CONTRACT,
+                                        GET_TOKEN_DEFAULT_KYC,
+                                        HapiParserUtil.asHeadlongAddress(asAddress(noKycTokenId.get())))
+                                .payingWith(ACCOUNT)
+                                .via("defaultKycStatus")
+                                .gas(GAS_TO_OFFER),
                         contractCallLocal(
                                 TOKEN_DEFAULT_KYC_FREEZE_STATUS_CONTRACT,
                                 GET_TOKEN_DEFAULT_KYC,
                                 HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenID.get()))))),
                 childRecordsCheck(
                         "GetTokenDefaultKycStatusTx",
+                        SUCCESS,
+                        recordWith()
+                                .status(SUCCESS)
+                                .contractCallResult(resultWith()
+                                        .contractCallResult(htsPrecompileResult()
+                                                .forFunction(FunctionType.GET_TOKEN_DEFAULT_KYC_STATUS)
+                                                .withStatus(SUCCESS)
+                                                .withTokenDefaultKycStatus(true)))),
+                childRecordsCheck(
+                        "defaultKycStatus",
                         SUCCESS,
                         recordWith()
                                 .status(SUCCESS)

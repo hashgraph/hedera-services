@@ -87,6 +87,7 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.RoyaltyFee;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenInfo;
+import com.hederahashgraph.api.proto.java.TokenKycStatus;
 import com.hederahashgraph.api.proto.java.TokenNftInfo;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import com.hederahashgraph.api.proto.java.TokenType;
@@ -260,7 +261,8 @@ public class TokenInfoHTSSuite {
                                                                             getTokenKeyFromSpec(
                                                                                     spec, TokenKeyType.ADMIN_KEY),
                                                                             expirySecond,
-                                                                            targetLedgerId.get()))))),
+                                                                            targetLedgerId.get(),
+                                                                            TokenKycStatus.Granted))))),
                             childRecordsCheck(
                                     "TOKEN_INFO_TXN_V2",
                                     SUCCESS,
@@ -281,7 +283,8 @@ public class TokenInfoHTSSuite {
                                                                             getTokenKeyFromSpec(
                                                                                     spec, TokenKeyType.ADMIN_KEY),
                                                                             expirySecond,
-                                                                            targetLedgerId.get()))))));
+                                                                            targetLedgerId.get(),
+                                                                            TokenKycStatus.Granted))))));
                 }));
     }
 
@@ -390,7 +393,8 @@ public class TokenInfoHTSSuite {
                                                                             getTokenKeyFromSpec(
                                                                                     spec, TokenKeyType.ADMIN_KEY),
                                                                             expirySecond,
-                                                                            targetLedgerId.get()))))),
+                                                                            targetLedgerId.get(),
+                                                                            TokenKycStatus.Granted))))),
                             childRecordsCheck(
                                     "FUNGIBLE_TOKEN_INFO_TXN_V2",
                                     SUCCESS,
@@ -412,7 +416,8 @@ public class TokenInfoHTSSuite {
                                                                             getTokenKeyFromSpec(
                                                                                     spec, TokenKeyType.ADMIN_KEY),
                                                                             expirySecond,
-                                                                            targetLedgerId.get()))))));
+                                                                            targetLedgerId.get(),
+                                                                            TokenKycStatus.Granted))))));
                 }));
     }
 
@@ -539,7 +544,8 @@ public class TokenInfoHTSSuite {
                                                                             getTokenKeyFromSpec(
                                                                                     spec, TokenKeyType.ADMIN_KEY),
                                                                             expirySecond,
-                                                                            targetLedgerId.get()))
+                                                                            targetLedgerId.get(),
+                                                                            TokenKycStatus.Granted))
                                                             .withNftTokenInfo(nftTokenInfo)))),
                             childRecordsCheck(
                                     "NON_FUNGIBLE_TOKEN_INFO_TXN_V2",
@@ -559,7 +565,8 @@ public class TokenInfoHTSSuite {
                                                                             getTokenKeyFromSpec(
                                                                                     spec, TokenKeyType.ADMIN_KEY),
                                                                             expirySecond,
-                                                                            targetLedgerId.get()))
+                                                                            targetLedgerId.get(),
+                                                                            TokenKycStatus.Granted))
                                                             .withNftTokenInfo(nftTokenInfo)))));
                 }));
     }
@@ -1211,7 +1218,8 @@ public class TokenInfoHTSSuite {
                                                                     spec.registry()
                                                                             .getKey(CONTRACT_KEY),
                                                                     expirySecond,
-                                                                    targetLedgerId.get()))))));
+                                                                    targetLedgerId.get(),
+                                                                    TokenKycStatus.Granted))))));
                 }));
     }
 
@@ -1321,7 +1329,8 @@ public class TokenInfoHTSSuite {
                                                                     spec.registry()
                                                                             .getKey(CONTRACT_KEY),
                                                                     expirySecond,
-                                                                    targetLedgerId.get()))))));
+                                                                    targetLedgerId.get(),
+                                                                    TokenKycStatus.Granted))))));
                 }));
     }
 
@@ -1443,7 +1452,8 @@ public class TokenInfoHTSSuite {
                                                                     spec.registry()
                                                                             .getKey(CONTRACT_KEY),
                                                                     expirySecond,
-                                                                    targetLedgerId.get()))
+                                                                    targetLedgerId.get(),
+                                                                    TokenKycStatus.Granted))
                                                             .withNftTokenInfo(nftTokenInfo)))));
                 }));
     }
@@ -1599,9 +1609,10 @@ public class TokenInfoHTSSuite {
             final AccountID treasury,
             final Key adminKey,
             final long expirySecond,
-            ByteString ledgerId) {
+            ByteString ledgerId,
+            final TokenKycStatus kycDefault) {
 
-        return buildBaseTokenInfo(spec, tokenName, symbol, memo, treasury, adminKey, expirySecond, ledgerId)
+        return buildBaseTokenInfo(spec, tokenName, symbol, memo, treasury, adminKey, expirySecond, ledgerId, kycDefault)
                 .build();
     }
 
@@ -1613,11 +1624,12 @@ public class TokenInfoHTSSuite {
             final AccountID treasury,
             final Key adminKey,
             final long expirySecond,
-            ByteString ledgerId) {
+            ByteString ledgerId,
+            final TokenKycStatus kycDefault) {
 
         final ByteString meta = ByteString.copyFrom("metadata".getBytes(StandardCharsets.UTF_8));
 
-        return buildBaseTokenInfo(spec, tokenName, symbol, memo, treasury, adminKey, expirySecond, ledgerId)
+        return buildBaseTokenInfo(spec, tokenName, symbol, memo, treasury, adminKey, expirySecond, ledgerId, kycDefault)
                 .setMetadata(meta)
                 .setMetadataKey(getTokenKeyFromSpec(spec, TokenKeyType.METADATA_KEY))
                 .build();
@@ -1631,7 +1643,8 @@ public class TokenInfoHTSSuite {
             final AccountID treasury,
             final Key adminKey,
             final long expirySecond,
-            ByteString ledgerId) {
+            ByteString ledgerId,
+            final TokenKycStatus kycDefault) {
 
         final var autoRenewAccount = spec.registry().getAccountID(AUTO_RENEW_ACCOUNT);
         final var customFees = getExpectedCustomFees(spec);
@@ -1657,7 +1670,8 @@ public class TokenInfoHTSSuite {
                 .setWipeKey(getTokenKeyFromSpec(spec, TokenKeyType.WIPE_KEY))
                 .setSupplyKey(getTokenKeyFromSpec(spec, TokenKeyType.SUPPLY_KEY))
                 .setFeeScheduleKey(getTokenKeyFromSpec(spec, TokenKeyType.FEE_SCHEDULE_KEY))
-                .setPauseKey(getTokenKeyFromSpec(spec, TokenKeyType.PAUSE_KEY));
+                .setPauseKey(getTokenKeyFromSpec(spec, TokenKeyType.PAUSE_KEY))
+                .setDefaultKycStatus(kycDefault);
     }
 
     @NonNull
@@ -1708,8 +1722,10 @@ public class TokenInfoHTSSuite {
             final AccountID treasury,
             final Key adminKey,
             final long expirySecond,
-            final ByteString ledgerId) {
-        return buildTokenInfo(spec, tokenName, symbol, memo, treasury, adminKey, expirySecond, ledgerId, null, false);
+            final ByteString ledgerId,
+            final TokenKycStatus kycDefault) {
+        return buildTokenInfo(
+                spec, tokenName, symbol, memo, treasury, adminKey, expirySecond, ledgerId, null, false, kycDefault);
     }
 
     private TokenInfo getTokenInfoStructForNonFungibleTokenV2(
@@ -1717,7 +1733,8 @@ public class TokenInfoHTSSuite {
             final AccountID treasury,
             final Key adminKey,
             final long expirySecond,
-            final ByteString ledgerId) {
+            final ByteString ledgerId,
+            final TokenKycStatus kycDefault) {
         final ByteString meta = ByteString.copyFrom("metadata".getBytes(StandardCharsets.UTF_8));
         return buildTokenInfo(
                 spec,
@@ -1729,7 +1746,8 @@ public class TokenInfoHTSSuite {
                 expirySecond,
                 ledgerId,
                 meta,
-                true);
+                true,
+                kycDefault);
     }
 
     private TokenInfo buildTokenInfo(
@@ -1742,7 +1760,8 @@ public class TokenInfoHTSSuite {
             final long expirySecond,
             final ByteString ledgerId,
             final ByteString metadata,
-            final boolean includeMetadataKey) {
+            final boolean includeMetadataKey,
+            final TokenKycStatus kycDefault) {
         final var autoRenewAccount = spec.registry().getAccountID(AUTO_RENEW_ACCOUNT);
 
         TokenInfo.Builder builder = TokenInfo.newBuilder()
@@ -1766,7 +1785,8 @@ public class TokenInfoHTSSuite {
                 .setWipeKey(getTokenKeyFromSpec(spec, TokenKeyType.WIPE_KEY))
                 .setSupplyKey(getTokenKeyFromSpec(spec, TokenKeyType.SUPPLY_KEY))
                 .setFeeScheduleKey(getTokenKeyFromSpec(spec, TokenKeyType.FEE_SCHEDULE_KEY))
-                .setPauseKey(getTokenKeyFromSpec(spec, TokenKeyType.PAUSE_KEY));
+                .setPauseKey(getTokenKeyFromSpec(spec, TokenKeyType.PAUSE_KEY))
+                .setDefaultKycStatus(kycDefault);
 
         if (metadata != null) {
             builder.setMetadata(metadata);
