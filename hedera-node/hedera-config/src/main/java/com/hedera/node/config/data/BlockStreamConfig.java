@@ -38,8 +38,8 @@ import com.swirlds.config.api.validation.annotation.Min;
  */
 @ConfigData("blockStream")
 public record BlockStreamConfig(
-        @ConfigProperty(defaultValue = "RECORDS") @NetworkProperty StreamMode streamMode,
-        @ConfigProperty(defaultValue = "FILE") @NodeProperty BlockStreamWriterMode writerMode,
+        @ConfigProperty(defaultValue = "BOTH") @NetworkProperty StreamMode streamMode,
+        @ConfigProperty(defaultValue = "GRPC") @NodeProperty BlockStreamWriterMode writerMode,
         @ConfigProperty(defaultValue = "data/block-streams") @NodeProperty String blockFileDir,
         @ConfigProperty(defaultValue = "true") @NetworkProperty boolean compressFilesOnCreation,
         @ConfigProperty(defaultValue = "1") @NetworkProperty int roundsPerBlock,
