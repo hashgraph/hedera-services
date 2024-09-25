@@ -34,6 +34,7 @@ import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import io.grpc.Status;
 import io.grpc.stub.StreamObserver;
+import java.util.concurrent.TimeUnit;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -47,6 +48,7 @@ public class GrpcBlockItemWriter implements BlockItemWriter {
     private static final String INVALID_MESSAGE = "Invalid protocol buffer converting %s from PBJ to protoc for %s";
 
     private final BlockStreamServiceGrpc.BlockStreamServiceStub asyncStub;
+    private final ManagedChannel channel;
     private StreamObserver<PublishStreamRequest> requestObserver;
 
     private long blockNumber;
@@ -78,7 +80,7 @@ public class GrpcBlockItemWriter implements BlockItemWriter {
     public GrpcBlockItemWriter(@NonNull final BlockStreamConfig blockStreamConfig) {
         requireNonNull(blockStreamConfig, "The supplied argument 'blockStreamConfig' cannot be null!");
 
-        ManagedChannel channel = ManagedChannelBuilder.forAddress(blockStreamConfig.address(), blockStreamConfig.port())
+        channel = ManagedChannelBuilder.forAddress(blockStreamConfig.address(), blockStreamConfig.port())
                 .usePlaintext()
                 .build();
         asyncStub = BlockStreamServiceGrpc.newStub(channel);
@@ -93,7 +95,8 @@ public class GrpcBlockItemWriter implements BlockItemWriter {
         requestObserver = asyncStub.publishBlockStream(new StreamObserver<>() {
             @Override
             public void onNext(PublishStreamResponse streamResponse) {
-                // close the stream if error stream response occurs
+                // close the stream if error stream response occurs - source handshake design
+                // https://github.com/hashgraph/hedera-block-node/issues/120
                 /*if (streamResponse.getStatus().getStatus() == STREAM_ITEMS_UNKNOWN) {
                  */
                 /*, STREAM_ITEMS_SUCCESS, STREAM_ITEMS_BEHIND*/
@@ -121,7 +124,6 @@ public class GrpcBlockItemWriter implements BlockItemWriter {
 
             @Override
             public void onError(Throwable t) {
-                // TODO: What should be the approach when error occurs in the communication?
                 // Maybe this should be considered in this case:
                 // https://github.com/hashgraph/hedera-services/issues/15530
                 final Status status = fromThrowable(t);
@@ -130,7 +132,11 @@ public class GrpcBlockItemWriter implements BlockItemWriter {
 
             @Override
             public void onCompleted() {
-                // TODO: Is there anything we should do?
+                try {
+                    channel.shutdown().awaitTermination(10, TimeUnit.MILLISECONDS);
+                } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
                 logger.info("PublishStreamResponse completed");
             }
         });
@@ -184,6 +190,18 @@ public class GrpcBlockItemWriter implements BlockItemWriter {
     @VisibleForTesting
     public State getState() {
         return state;
+    }
+
+    /**
+     * Close the existing channel.
+     */
+    @VisibleForTesting
+    public void closeChannel() {
+        try {
+            channel.shutdown().awaitTermination(10, TimeUnit.MILLISECONDS);
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     /**

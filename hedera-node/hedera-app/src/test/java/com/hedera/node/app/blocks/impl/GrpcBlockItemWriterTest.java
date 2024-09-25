@@ -44,6 +44,9 @@ public class GrpcBlockItemWriterTest {
         final GrpcBlockItemWriter grpcBlockItemWriter = new GrpcBlockItemWriter(blockStreamConfig);
         assertThat(grpcBlockItemWriter).isNotNull();
         assertThat(grpcBlockItemWriter.getStub()).isNotNull();
+
+        // Close the existing channel so that it does not hang out and be garbage collected
+        grpcBlockItemWriter.closeChannel();
     }
 
     @Test
@@ -117,6 +120,9 @@ public class GrpcBlockItemWriterTest {
 
         assertThatThrownBy(() -> grpcBlockItemWriter.writeItem(blockProof), "Cannot write item before opening a block")
                 .isInstanceOf(IllegalStateException.class);
+
+        // Close the existing channel so that it does not hang out and be garbage collected
+        grpcBlockItemWriter.closeChannel();
     }
 
     @Test
@@ -143,6 +149,9 @@ public class GrpcBlockItemWriterTest {
 
         assertThatThrownBy(grpcBlockItemWriter::closeBlock, "Cannot close a GrpcBlockItemWriter that is not open")
                 .isInstanceOf(IllegalStateException.class);
+
+        // Close the existing channel so that it does not hang out and be garbage collected
+        grpcBlockItemWriter.closeChannel();
     }
 
     @Test
