@@ -271,7 +271,7 @@ public class TopicCustomFeeTest extends TopicCustomFeeBase {
 
             @HapiTest
             @DisplayName("Approve crypto allowance for topic")
-            final Stream<DynamicTest> createTopicWithAllKeys() {
+            final Stream<DynamicTest> approveAllowance() {
                 return hapiTest(
                         cryptoCreate(OWNER),
                         createTopic(TOPIC)
