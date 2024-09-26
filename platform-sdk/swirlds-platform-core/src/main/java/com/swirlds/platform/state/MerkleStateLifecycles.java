@@ -37,7 +37,7 @@ import java.util.List;
  */
 public interface MerkleStateLifecycles {
     /**
-     * Called when a {@link MerkleStateRoot} needs to ensure its {@link PlatformStateAccessor} implementation
+     * Called when a {@link MerkleStateRoot} needs to ensure its {@link PlatformStateModifier} implementation
      * is initialized.
      *
      * @param state the root of the state to be initialized

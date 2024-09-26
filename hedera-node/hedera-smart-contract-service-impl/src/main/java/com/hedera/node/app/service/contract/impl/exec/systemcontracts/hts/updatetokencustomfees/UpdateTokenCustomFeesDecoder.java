@@ -16,9 +16,12 @@
 
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.updatetokencustomfees;
 
+import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
+
 import com.esaulpaugh.headlong.abi.Address;
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.hedera.hapi.node.base.Fraction;
+import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.token.TokenFeeScheduleUpdateTransactionBody;
 import com.hedera.hapi.node.transaction.CustomFee;
@@ -29,6 +32,7 @@ import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AddressIdConverter;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
 import com.hedera.node.app.service.contract.impl.utils.ConversionUtils;
+import com.hedera.node.config.data.TokensConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Arrays;
@@ -93,6 +97,7 @@ public class UpdateTokenCustomFeesDecoder {
             throws IllegalArgumentException {
         final var call = UpdateTokenCustomFeesTranslator.UPDATE_FUNGIBLE_TOKEN_CUSTOM_FEES_FUNCTION.decodeCall(
                 attempt.inputBytes());
+        validateCustomFeesLength(attempt, call);
         return TransactionBody.newBuilder()
                 .tokenFeeScheduleUpdate(
                         updateTokenCustomFees(call, attempt.addressIdConverter(), this::customFungibleFees))
@@ -110,6 +115,7 @@ public class UpdateTokenCustomFeesDecoder {
             throws IllegalArgumentException {
         final var call = UpdateTokenCustomFeesTranslator.UPDATE_NON_FUNGIBLE_TOKEN_CUSTOM_FEES_FUNCTION.decodeCall(
                 attempt.inputBytes());
+        validateCustomFeesLength(attempt, call);
         return TransactionBody.newBuilder()
                 .tokenFeeScheduleUpdate(
                         updateTokenCustomFees(call, attempt.addressIdConverter(), this::customNonFungibleFees))
@@ -218,5 +224,17 @@ public class UpdateTokenCustomFeesDecoder {
                         .denominatingTokenId(getDenominationTokenIdOrNull(
                                 tokenAddress, fee.get(ROYALTY_FALLBACK_FEE_USE_HBARS_FOR_PAYMENT)))
                         .build();
+    }
+
+    private void validateCustomFeesLength(@NonNull final HtsCallAttempt attempt, @NonNull final Tuple call) {
+        final var maxAllowedCustomFees =
+                attempt.configuration().getConfigData(TokensConfig.class).maxCustomFeesAllowed();
+        final var fixedFee = (Tuple[]) call.get(FIXED_FEE);
+        final var fractionalOrRoyaltyFee = (Tuple[]) call.get(ROYALTY_FEE);
+        validateFalse(fixedFee.length > maxAllowedCustomFees, ResponseCodeEnum.CUSTOM_FEES_LIST_TOO_LONG);
+        validateFalse(fractionalOrRoyaltyFee.length > maxAllowedCustomFees, ResponseCodeEnum.CUSTOM_FEES_LIST_TOO_LONG);
+        validateFalse(
+                fixedFee.length + fractionalOrRoyaltyFee.length > maxAllowedCustomFees,
+                ResponseCodeEnum.CUSTOM_FEES_LIST_TOO_LONG);
     }
 }
