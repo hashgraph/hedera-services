@@ -18,6 +18,7 @@ package com.hedera.services.bdd.suites.crypto;
 
 import static com.hedera.services.bdd.junit.TestTags.CRYPTO;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.approxChangeFromSnapshot;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
@@ -38,8 +39,6 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.balanceSnapshot;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.submitModified;
 import static com.hedera.services.bdd.spec.utilops.mod.ModificationUtils.withSuccessivelyVariedBodyIds;
-import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.FULLY_NONDETERMINISTIC;
-import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
 import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PAYER;
 import static com.hedera.services.bdd.suites.HapiSuite.FUNDING;
 import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
@@ -82,24 +81,19 @@ public class CryptoDeleteSuite {
         final var beneficiaryAccount = "beneficiaryAccountForDeletedAccount";
         final var submittingNodePreTransfer = "submittingNodePreTransfer";
         final var submittingNodeAfterBalanceLoad = "submittingNodeAfterBalanceLoad";
-        return defaultHapiSpec("DeletedAccountCannotBePayer", FULLY_NONDETERMINISTIC)
-                .given(
-                        cryptoCreate(ACCOUNT_TO_BE_DELETED),
-                        cryptoCreate(beneficiaryAccount).balance(0L))
-                .when()
-                .then(
-                        balanceSnapshot(submittingNodePreTransfer, submittingNodeAccount),
-                        cryptoTransfer(tinyBarsFromTo(GENESIS, submittingNodeAccount, 1000000000)),
-                        balanceSnapshot(submittingNodeAfterBalanceLoad, submittingNodeAccount),
-                        cryptoDelete(ACCOUNT_TO_BE_DELETED)
-                                .transfer(beneficiaryAccount)
-                                .deferStatusResolution(),
-                        cryptoTransfer(tinyBarsFromTo(beneficiaryAccount, GENESIS, 1))
-                                .payingWith(ACCOUNT_TO_BE_DELETED)
-                                .hasKnownStatus(PAYER_ACCOUNT_DELETED),
-                        getAccountBalance(submittingNodeAccount)
-                                .hasTinyBars(approxChangeFromSnapshot(submittingNodeAfterBalanceLoad, -100000, 50000))
-                                .logged());
+        return hapiTest(
+                cryptoCreate(ACCOUNT_TO_BE_DELETED),
+                cryptoCreate(beneficiaryAccount).balance(0L),
+                balanceSnapshot(submittingNodePreTransfer, submittingNodeAccount),
+                cryptoTransfer(tinyBarsFromTo(GENESIS, submittingNodeAccount, 1000000000)),
+                balanceSnapshot(submittingNodeAfterBalanceLoad, submittingNodeAccount),
+                cryptoDelete(ACCOUNT_TO_BE_DELETED).transfer(beneficiaryAccount).deferStatusResolution(),
+                cryptoTransfer(tinyBarsFromTo(beneficiaryAccount, GENESIS, 1))
+                        .payingWith(ACCOUNT_TO_BE_DELETED)
+                        .hasKnownStatus(PAYER_ACCOUNT_DELETED),
+                getAccountBalance(submittingNodeAccount)
+                        .hasTinyBars(approxChangeFromSnapshot(submittingNodeAfterBalanceLoad, -100000, 50000))
+                        .logged());
     }
 
     @HapiTest
@@ -174,14 +168,11 @@ public class CryptoDeleteSuite {
 
     @HapiTest
     final Stream<DynamicTest> cannotDeleteAlreadyDeletedAccount() {
-        return defaultHapiSpec("CannotDeleteAlreadyDeletedAccount", NONDETERMINISTIC_TRANSACTION_FEES)
-                .given(cryptoCreate(ACCOUNT_TO_BE_DELETED), cryptoCreate(TRANSFER_ACCOUNT))
-                .when(cryptoDelete(ACCOUNT_TO_BE_DELETED)
-                        .transfer(TRANSFER_ACCOUNT)
-                        .hasKnownStatus(SUCCESS))
-                .then(cryptoDelete(ACCOUNT_TO_BE_DELETED)
-                        .transfer(TRANSFER_ACCOUNT)
-                        .hasKnownStatus(ACCOUNT_DELETED));
+        return hapiTest(
+                cryptoCreate(ACCOUNT_TO_BE_DELETED),
+                cryptoCreate(TRANSFER_ACCOUNT),
+                cryptoDelete(ACCOUNT_TO_BE_DELETED).transfer(TRANSFER_ACCOUNT).hasKnownStatus(SUCCESS),
+                cryptoDelete(ACCOUNT_TO_BE_DELETED).transfer(TRANSFER_ACCOUNT).hasKnownStatus(ACCOUNT_DELETED));
     }
 
     @HapiTest
@@ -207,11 +198,12 @@ public class CryptoDeleteSuite {
 
     @HapiTest
     final Stream<DynamicTest> cannotDeleteTreasuryAccount() {
-        return defaultHapiSpec("CannotDeleteTreasuryAccount", NONDETERMINISTIC_TRANSACTION_FEES)
-                .given(cryptoCreate(TREASURY), cryptoCreate(TRANSFER_ACCOUNT))
-                .when(tokenCreate("toBeTransferred")
+        return hapiTest(
+                cryptoCreate(TREASURY),
+                cryptoCreate(TRANSFER_ACCOUNT),
+                tokenCreate("toBeTransferred")
                         .initialSupply(TOKEN_INITIAL_SUPPLY)
-                        .treasury(TREASURY))
-                .then(cryptoDelete(TREASURY).transfer(TRANSFER_ACCOUNT).hasKnownStatus(ACCOUNT_IS_TREASURY));
+                        .treasury(TREASURY),
+                cryptoDelete(TREASURY).transfer(TRANSFER_ACCOUNT).hasKnownStatus(ACCOUNT_IS_TREASURY));
     }
 }

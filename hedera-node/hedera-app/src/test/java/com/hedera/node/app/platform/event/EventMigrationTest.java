@@ -26,15 +26,19 @@ import com.swirlds.platform.event.hashing.DefaultEventHasher;
 import com.swirlds.platform.recovery.internal.EventStreamSingleFileIterator;
 import com.swirlds.platform.system.StaticSoftwareVersion;
 import com.swirlds.platform.system.events.EventDescriptorWrapper;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.File;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 public class EventMigrationTest {
 
@@ -42,6 +46,12 @@ public class EventMigrationTest {
     public static void setUp() throws ConstructableRegistryException {
         ConstructableRegistry.getInstance().registerConstructables("");
         StaticSoftwareVersion.setSoftwareVersion(new ServicesSoftwareVersion(SemanticVersion.DEFAULT, 0));
+    }
+
+    public static Stream<Arguments> migrationTestArguments() {
+        return Stream.of(
+                Arguments.of("eventFiles/previewnet-53/2024-08-26T10_38_35.016340634Z.events", 637, 4),
+                Arguments.of("eventFiles/testnet-53/2024-09-10T00_00_00.021456201Z.events", 635, 5));
     }
 
     /**
@@ -53,21 +63,17 @@ public class EventMigrationTest {
      * Even though this could be considered a platform test, it needs to be in the services module because the event
      * contains a {@link SerializableSemVers} which is a services class
      */
-    @Test
-    public void migration() throws URISyntaxException, IOException {
-        final int numEventsExpected = 637;
-        final int unmatchedHashesExpected = 4;
+    @ParameterizedTest
+    @MethodSource("migrationTestArguments")
+    public void migration(
+            @NonNull final String fileName, final int numEventsExpected, final int unmatchedHashesExpected)
+            throws URISyntaxException, IOException {
         final Set<Hash> eventHashes = new HashSet<>();
         final Set<Hash> parentHashes = new HashSet<>();
         int numEventsFound = 0;
 
         try (final EventStreamSingleFileIterator iterator = new EventStreamSingleFileIterator(
-                new File(this.getClass()
-                                .getClassLoader()
-                                .getResource("eventFiles/previewnet-53/2024-08-26T10_38_35.016340634Z.events")
-                                .toURI())
-                        .toPath(),
-                false)) {
+                new File(this.getClass().getClassLoader().getResource(fileName).toURI()).toPath(), false)) {
             while (iterator.hasNext()) {
                 final PlatformEvent platformEvent = iterator.next().getPlatformEvent();
                 new DefaultEventHasher().hashEvent(platformEvent);
