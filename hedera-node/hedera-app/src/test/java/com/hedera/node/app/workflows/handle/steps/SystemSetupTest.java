@@ -177,7 +177,7 @@ class SystemSetupTest {
         subject.doPostUpgradeSetup(dispatch);
 
         final var filesConfig = config.getConfigData(FilesConfig.class);
-        verify(fileService).updateNodeDetailsAfterFreeze(any(SystemContext.class), eq(readableNodeStore));
+        verify(fileService).updateAddressBookAndNodeDetailsAfterFreeze(any(SystemContext.class), eq(readableNodeStore));
         verifyUpdateDispatch(filesConfig.networkProperties(), serializedPropertyOverrides());
         verifyUpdateDispatch(filesConfig.hapiPermissions(), serializedPermissionOverrides());
         verifyUpdateDispatch(filesConfig.throttleDefinitions(), serializedThrottleOverrides());
@@ -186,7 +186,7 @@ class SystemSetupTest {
     }
 
     @Test
-    void onlyNodeDetailsAutoUpdateIsDispatchedWithNoFilesAvailable() {
+    void onlyAddressBookAndNodeDetailsAutoUpdateIsDispatchedWithNoFilesAvailable() {
         final var config = HederaTestConfigBuilder.create()
                 .withValue("networkAdmin.upgradeSysFilesLoc", tempDir.toString())
                 .getOrCreateConfig();
@@ -198,7 +198,7 @@ class SystemSetupTest {
 
         subject.doPostUpgradeSetup(dispatch);
 
-        verify(fileService).updateNodeDetailsAfterFreeze(any(SystemContext.class), eq(readableNodeStore));
+        verify(fileService).updateAddressBookAndNodeDetailsAfterFreeze(any(SystemContext.class), eq(readableNodeStore));
         verify(stack, times(1)).commitFullStack();
 
         final var infoLogs = logCaptor.infoLogs();
@@ -210,7 +210,7 @@ class SystemSetupTest {
     }
 
     @Test
-    void onlyNodeDetailsAutoUpdateIsDispatchedWithInvalidFilesAvailable() throws IOException {
+    void onlyAddressBookAndNodeDetailsAutoUpdateIsDispatchedWithInvalidFilesAvailable() throws IOException {
         final var config = HederaTestConfigBuilder.create()
                 .withValue("networkAdmin.upgradeSysFilesLoc", tempDir.toString())
                 .getOrCreateConfig();
@@ -227,7 +227,7 @@ class SystemSetupTest {
 
         subject.doPostUpgradeSetup(dispatch);
 
-        verify(fileService).updateNodeDetailsAfterFreeze(any(SystemContext.class), eq(readableNodeStore));
+        verify(fileService).updateAddressBookAndNodeDetailsAfterFreeze(any(SystemContext.class), eq(readableNodeStore));
         verify(stack, times(1)).commitFullStack();
 
         final var errorLogs = logCaptor.errorLogs();
