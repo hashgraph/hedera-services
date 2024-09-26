@@ -68,13 +68,12 @@ public class OrderedServiceMigrator implements ServiceMigrator {
             @Nullable final SoftwareVersion previousVersion,
             @NonNull final SoftwareVersion currentVersion,
             @NonNull final Configuration nodeConfiguration,
-            @NonNull final Configuration platformConfiguration,
+            @Nullable final Configuration platformConfiguration,
             @NonNull final NetworkInfo networkInfo,
             @NonNull final Metrics metrics) {
         requireNonNull(state);
         requireNonNull(currentVersion);
         requireNonNull(nodeConfiguration);
-        requireNonNull(platformConfiguration);
         requireNonNull(networkInfo);
         requireNonNull(metrics);
 

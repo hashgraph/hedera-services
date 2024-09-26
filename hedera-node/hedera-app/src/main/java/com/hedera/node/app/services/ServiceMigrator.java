@@ -52,7 +52,7 @@ public interface ServiceMigrator {
             @Nullable SoftwareVersion previousVersion,
             @NonNull SoftwareVersion currentVersion,
             @NonNull Configuration nodeConfiguration,
-            @NonNull Configuration platformConfiguration,
+            @Nullable Configuration platformConfiguration,
             @NonNull NetworkInfo networkInfo,
             @NonNull Metrics metrics);
 
