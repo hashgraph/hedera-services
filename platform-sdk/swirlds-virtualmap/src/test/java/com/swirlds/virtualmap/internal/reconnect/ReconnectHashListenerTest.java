@@ -27,6 +27,7 @@ import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.metrics.api.Metrics;
+import com.swirlds.virtualmap.config.VirtualMapConfig;
 import com.swirlds.virtualmap.datasource.VirtualDataSource;
 import com.swirlds.virtualmap.datasource.VirtualHashRecord;
 import com.swirlds.virtualmap.datasource.VirtualLeafBytes;
@@ -82,7 +83,7 @@ class ReconnectHashListenerTest {
     }) // Invalid (both should be equal only if == 1
     @DisplayName("Illegal first and last leaf path combinations throw")
     void badLeafPaths(long firstLeafPath, long lastLeafPath) {
-        final VirtualDataSource ds = new InMemoryBuilder().build("badLeafPaths", true);
+        final VirtualDataSource ds = new InMemoryBuilder().build("badLeafPaths", true, configuration());
         assertThrows(
                 IllegalArgumentException.class,
                 () -> new ReconnectHashListener<>(
@@ -99,7 +100,7 @@ class ReconnectHashListenerTest {
     @CsvSource({"-1, -1", " 1,  1", " 1,  2", " 4,  8"})
     @DisplayName("Valid configurations create an instance")
     void goodLeafPaths(long firstLeafPath, long lastLeafPath) {
-        final VirtualDataSource ds = new InMemoryBuilder().build("goodLeafPaths", true);
+        final VirtualDataSource ds = new InMemoryBuilder().build("goodLeafPaths", true, configuration());
         try {
             new ReconnectHashListener<>(
                     firstLeafPath, lastLeafPath, TestKeySerializer.INSTANCE, TestValueSerializer.INSTANCE, ds, null);
@@ -113,7 +114,8 @@ class ReconnectHashListenerTest {
     @ValueSource(ints = {1, 2, 10, 100, 1000, 10_000, 100_000, 1_000_000})
     @DisplayName("Flushed data is always done in the right order")
     void flushOrder(int size) {
-        final VirtualDataSourceSpy ds = new VirtualDataSourceSpy(new InMemoryBuilder().build("flushOrder", true));
+        final VirtualDataSourceSpy ds =
+                new VirtualDataSourceSpy(new InMemoryBuilder().build("flushOrder", true, configuration()));
 
         final ReconnectNodeRemover<TestKey, TestValue> remover = mock(ReconnectNodeRemover.class);
 
@@ -128,7 +130,7 @@ class ReconnectHashListenerTest {
                 size,
                 last,
                 listener,
-                configuration());
+                configuration().getConfigData(VirtualMapConfig.class));
 
         // Now validate that everything showed up the data source in ordered chunks
         final TreeSet<VirtualHashRecord> allInternalRecords =

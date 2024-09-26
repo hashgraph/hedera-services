@@ -92,8 +92,6 @@ class VirtualMapSerializationTests {
         registry.registerConstructable(new ClassConstructorPair(VirtualMapState.class, VirtualMapState::new));
         registry.registerConstructable(new ClassConstructorPair(VirtualMap.class, () -> new VirtualMap(configuration)));
         registry.registerConstructable(new ClassConstructorPair(
-                MerkleDbDataSourceBuilder.class, () -> new MerkleDbDataSourceBuilder(configuration)));
-        registry.registerConstructable(new ClassConstructorPair(
                 VirtualNodeCache.class,
                 () -> new VirtualNodeCache(configuration.getConfigData(VirtualMapConfig.class))));
     }
@@ -111,7 +109,7 @@ class VirtualMapSerializationTests {
                 .preferDiskIndices(false)
                 .hashesRamToDiskThreshold(Long.MAX_VALUE)
                 .maxNumberOfKeys(1234);
-        return new MerkleDbDataSourceBuilder(tableConfig, config());
+        return new MerkleDbDataSourceBuilder(tableConfig);
     }
 
     /**

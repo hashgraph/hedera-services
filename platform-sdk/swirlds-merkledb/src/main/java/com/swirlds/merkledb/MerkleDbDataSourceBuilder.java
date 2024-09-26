@@ -18,14 +18,13 @@ package com.swirlds.merkledb;
 
 import static com.swirlds.merkledb.MerkleDbDataSourceBuilder.CLASS_ID;
 
-import com.swirlds.common.constructable.ConstructableClass;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.io.utility.LegacyTemporaryFileBuilder;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.merkledb.constructable.constructors.MerkleDbDataSourceBuilderConstructor;
 import com.swirlds.virtualmap.datasource.VirtualDataSource;
 import com.swirlds.virtualmap.datasource.VirtualDataSourceBuilder;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Path;
@@ -41,7 +40,6 @@ import java.util.Objects;
  * between data sources with the same label, e.g. on copy or snapshot, MerkleDb builders
  * use different database directories, usually managed using {@link LegacyTemporaryFileBuilder}.
  */
-@ConstructableClass(value = CLASS_ID, constructorType = MerkleDbDataSourceBuilderConstructor.class)
 public class MerkleDbDataSourceBuilder implements VirtualDataSourceBuilder {
 
     public static final long CLASS_ID = 0x176ede0e1a69828L;
@@ -61,14 +59,10 @@ public class MerkleDbDataSourceBuilder implements VirtualDataSourceBuilder {
      */
     private MerkleDbTableConfig tableConfig;
 
-    // TODO: docs
-    private Configuration configuration;
-
     /**
      * Default constructor for deserialization purposes.
      */
-    public MerkleDbDataSourceBuilder(final Configuration configuration) {
-        this.configuration = configuration;
+    public MerkleDbDataSourceBuilder() {
         // for deserialization
     }
 
@@ -78,8 +72,8 @@ public class MerkleDbDataSourceBuilder implements VirtualDataSourceBuilder {
      * @param tableConfig
      *      Table configuration to use to create new data sources
      */
-    public MerkleDbDataSourceBuilder(final MerkleDbTableConfig tableConfig, final Configuration configuration) {
-        this(null, tableConfig, configuration);
+    public MerkleDbDataSourceBuilder(final MerkleDbTableConfig tableConfig) {
+        this(null, tableConfig);
     }
 
     /**
@@ -90,19 +84,17 @@ public class MerkleDbDataSourceBuilder implements VirtualDataSourceBuilder {
      * @param tableConfig
      *      Table configuration to use to create new data sources
      */
-    public MerkleDbDataSourceBuilder(
-            final Path databaseDir, final MerkleDbTableConfig tableConfig, final Configuration configuration) {
+    public MerkleDbDataSourceBuilder(final Path databaseDir, final MerkleDbTableConfig tableConfig) {
         this.databaseDir = databaseDir;
         this.tableConfig = tableConfig;
-        this.configuration = configuration;
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public VirtualDataSource build(final String label, final boolean withDbCompactionEnabled) {
-        // TODO: maybe add @NonNull and Objects.requireNonNull to a constructor?
+    public VirtualDataSource build(
+            final String label, final boolean withDbCompactionEnabled, final @NonNull Configuration configuration) {
         if (tableConfig == null) {
             throw new IllegalArgumentException("Table serialization config is missing");
         }
@@ -144,10 +136,6 @@ public class MerkleDbDataSourceBuilder implements VirtualDataSourceBuilder {
         if (!(snapshotMe instanceof MerkleDbDataSource source)) {
             throw new IllegalArgumentException("The datasource must be compatible with the MerkleDb");
         }
-        // TODO: maybe add @NonNull and Objects.requireNonNull to a constructor?
-        if (configuration == null) {
-            throw new IllegalArgumentException("Configuration is missing");
-        }
         try {
             // Snapshot all tables. When this snapshot() method is called for other data sources,
             // the database will check if they are already present in the destination path. If so,
@@ -162,8 +150,8 @@ public class MerkleDbDataSourceBuilder implements VirtualDataSourceBuilder {
      * {@inheritDoc}
      */
     @Override
-    public VirtualDataSource restore(final String label, final Path source) {
-        // TODO: maybe add @NonNull and Objects.requireNonNull to a constructor?
+    public VirtualDataSource restore(
+            final String label, final Path source, final @NonNull Configuration configuration) {
         if (configuration == null) {
             throw new IllegalArgumentException("Configuration is missing");
         }

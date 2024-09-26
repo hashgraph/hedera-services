@@ -56,7 +56,6 @@ import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.config.extensions.sources.SystemEnvironmentConfigSource;
 import com.swirlds.config.extensions.sources.SystemPropertiesConfigSource;
-import com.swirlds.merkledb.MerkleDbDataSourceBuilder;
 import com.swirlds.platform.CommandLineArgs;
 import com.swirlds.platform.ParameterProvider;
 import com.swirlds.platform.builder.PlatformBuilder;
@@ -223,9 +222,6 @@ public class ServicesMain implements SwirldMain {
         // Initialize ... (TODO: update this comment)
         ConstructableRegistry.getInstance()
                 .registerConstructable(new ClassConstructorPair(VirtualMap.class, () -> new VirtualMap(configuration)));
-        ConstructableRegistry.getInstance()
-                .registerConstructable(new ClassConstructorPair(
-                        MerkleDbDataSourceBuilder.class, () -> new MerkleDbDataSourceBuilder(configuration)));
         ConstructableRegistry.getInstance()
                 .registerConstructable(new ClassConstructorPair(
                         VirtualNodeCache.class,

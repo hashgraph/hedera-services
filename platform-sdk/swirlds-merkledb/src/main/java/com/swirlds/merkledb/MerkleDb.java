@@ -549,7 +549,7 @@ public final class MerkleDb {
      * @throws IOException If an I/O error occurs
      * @throws IllegalStateException If the default database instance is already created
      */
-    public static MerkleDb restore(final Path source, final Path target, Configuration configuration)
+    public static MerkleDb restore(final Path source, final Path target, final @NonNull Configuration configuration)
             throws IOException {
         final Path defaultInstancePath = (target != null) ? target : getDefaultPath(configuration);
         if (!Files.exists(defaultInstancePath.resolve(METADATA_FILENAME))) {

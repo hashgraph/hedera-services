@@ -98,7 +98,7 @@ class OnDiskTest extends MerkleTestBase {
         tableConfig.maxNumberOfKeys(100);
         tableConfig.preferDiskIndices(true);
 
-        final var builder = new MerkleDbDataSourceBuilder(storageDir, tableConfig, configuration);
+        final var builder = new MerkleDbDataSourceBuilder(storageDir, tableConfig);
         virtualMap = new VirtualMap<>(
                 StateUtils.computeLabel(SERVICE_NAME, ACCOUNT_STATE_KEY),
                 keySerializer,

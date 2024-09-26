@@ -60,13 +60,13 @@ final class MapTest {
     VirtualDataSourceBuilder createLongBuilder() {
         final MerkleDbTableConfig tableConfig = new MerkleDbTableConfig(
                 (short) 1, DigestType.SHA_384, configuration.getConfigData(MerkleDbConfig.class));
-        return new MerkleDbDataSourceBuilder(tableConfig, configuration);
+        return new MerkleDbDataSourceBuilder(tableConfig);
     }
 
     VirtualDataSourceBuilder createGenericBuilder() {
         final MerkleDbTableConfig tableConfig = new MerkleDbTableConfig(
                 (short) 1, DigestType.SHA_384, configuration.getConfigData(MerkleDbConfig.class));
-        return new MerkleDbDataSourceBuilder(tableConfig, configuration);
+        return new MerkleDbDataSourceBuilder(tableConfig);
     }
 
     VirtualMap<TestKey, TestValue> createLongMap(String label) {

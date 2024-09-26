@@ -118,7 +118,7 @@ public class VirtualMapReconnectTestBase {
         final MerkleDbTableConfig tableConfig = new MerkleDbTableConfig(
                 (short) 1, DigestType.SHA_384, configuration.getConfigData(MerkleDbConfig.class));
         tableConfig.hashesRamToDiskThreshold(0);
-        return new MerkleDbDataSourceBuilder(tableConfig, configuration);
+        return new MerkleDbDataSourceBuilder(tableConfig);
     }
 
     BrokenBuilder createBrokenBuilder(final VirtualDataSourceBuilder delegate) {

@@ -90,8 +90,6 @@ class MerkleDbSnapshotTest {
         registry.registerConstructable(new ClassConstructorPair(VirtualMap.class, () -> new VirtualMap(config())));
         registry.registerConstructable(new ClassConstructorPair(
                 VirtualNodeCache.class, () -> new VirtualNodeCache(config().getConfigData(VirtualMapConfig.class))));
-        registry.registerConstructable(new ClassConstructorPair(
-                MerkleDbDataSourceBuilder.class, () -> new MerkleDbDataSourceBuilder(config())));
     }
 
     @BeforeEach
@@ -131,7 +129,7 @@ class MerkleDbSnapshotTest {
     void snapshotMultipleTablesTestSync() throws Exception {
         final MerkleInternal initialRoot = new TestInternalNode();
         final MerkleDbTableConfig tableConfig = fixedConfig();
-        final MerkleDbDataSourceBuilder dsBuilder = new MerkleDbDataSourceBuilder(tableConfig, config());
+        final MerkleDbDataSourceBuilder dsBuilder = new MerkleDbDataSourceBuilder(tableConfig);
         for (int i = 0; i < MAPS_COUNT; i++) {
             final VirtualMap<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> vm =
                     new VirtualMap<>("vm" + i, keySerializer, valueSerializer, dsBuilder, config());
@@ -186,7 +184,7 @@ class MerkleDbSnapshotTest {
     void snapshotMultipleTablesTestAsync() throws Exception {
         final MerkleInternal initialRoot = new TestInternalNode();
         final MerkleDbTableConfig tableConfig = fixedConfig();
-        final MerkleDbDataSourceBuilder dsBuilder = new MerkleDbDataSourceBuilder(tableConfig, config());
+        final MerkleDbDataSourceBuilder dsBuilder = new MerkleDbDataSourceBuilder(tableConfig);
         for (int i = 0; i < MAPS_COUNT; i++) {
             final VirtualMap<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> vm =
                     new VirtualMap<>("vm" + i, keySerializer, valueSerializer, dsBuilder, config());
@@ -266,8 +264,8 @@ class MerkleDbSnapshotTest {
     @Test
     void testSnapshotAfterReconnect() throws Exception {
         final MerkleDbTableConfig tableConfig = fixedConfig();
-        final MerkleDbDataSourceBuilder dsBuilder = new MerkleDbDataSourceBuilder(tableConfig, config());
-        final VirtualDataSource original = dsBuilder.build("vm", false);
+        final MerkleDbDataSourceBuilder dsBuilder = new MerkleDbDataSourceBuilder(tableConfig);
+        final VirtualDataSource original = dsBuilder.build("vm", false, config());
         // Simulate reconnect as a learner
         final VirtualDataSource copy = dsBuilder.copy(original, true);
 

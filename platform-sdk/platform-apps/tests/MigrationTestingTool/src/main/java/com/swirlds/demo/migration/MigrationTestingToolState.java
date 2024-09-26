@@ -206,7 +206,7 @@ public class MigrationTestingToolState extends PartialNaryMerkleInternal impleme
         // to make it work for the multiple node in one JVM case, we need reset the default instance path every time
         // we create another instance of MerkleDB.
         MerkleDb.resetDefaultInstancePath();
-        final VirtualDataSourceBuilder dsBuilder = new MerkleDbDataSourceBuilder(tableConfig, configuration());
+        final VirtualDataSourceBuilder dsBuilder = new MerkleDbDataSourceBuilder(tableConfig);
         setVirtualMap(new VirtualMap<>(
                 "virtualMap",
                 new AccountVirtualMapKeySerializer(),

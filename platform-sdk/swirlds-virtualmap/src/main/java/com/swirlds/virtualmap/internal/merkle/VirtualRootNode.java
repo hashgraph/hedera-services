@@ -450,7 +450,7 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
         updateShouldBeFlushed();
         Objects.requireNonNull(dataSourceBuilder);
         if (dataSource == null) {
-            dataSource = dataSourceBuilder.build(state.getLabel(), true);
+            dataSource = dataSourceBuilder.build(state.getLabel(), true, configuration);
         }
         this.records = new RecordAccessorImpl<>(this.state, cache, keySerializer, valueSerializer, dataSource);
         if (statistics == null) {
@@ -524,7 +524,12 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
                 .setComponent("virtualmap")
                 .setThreadName("leafRehasher")
                 .setRunnable(() -> fullRehashFuture.complete(hasher.hash(
-                        records::findHash, rehashIterator, firstLeafPath, lastLeafPath, hashListener, configuration)))
+                        records::findHash,
+                        rehashIterator,
+                        firstLeafPath,
+                        lastLeafPath,
+                        hashListener,
+                        configuration.getConfigData(VirtualMapConfig.class))))
                 .setExceptionHandler((thread, exception) -> {
                     // Shut down the iterator.
                     rehashIterator.close();
@@ -1283,7 +1288,7 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
             throws IOException {
         final String label = in.readNormalisedString(MAX_LABEL_LENGTH);
         dataSourceBuilder = in.readSerializable();
-        dataSource = dataSourceBuilder.restore(label, inputDirectory);
+        dataSource = dataSourceBuilder.restore(label, inputDirectory, configuration);
         if (version < ClassVersion.VERSION_2_KEYVALUE_SERIALIZERS) {
             // In version 1, key and value serializers are stored in the data source
             keySerializer = dataSource.getKeySerializer();
@@ -1385,7 +1390,7 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
                 state.getFirstLeafPath(),
                 state.getLastLeafPath(),
                 hashListener,
-                configuration);
+                configuration.getConfigData(VirtualMapConfig.class));
 
         if (virtualHash == null) {
             final Hash rootHash = (state.size() == 0) ? null : records.findHash(0);
@@ -1623,7 +1628,7 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
                         firstLeafPath,
                         lastLeafPath,
                         hashListener,
-                        configuration)))
+                        configuration.getConfigData(VirtualMapConfig.class))))
                 .setExceptionHandler((thread, exception) -> {
                     // Shut down the iterator. This will cause reconnect to terminate.
                     reconnectIterator.close();

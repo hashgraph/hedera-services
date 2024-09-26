@@ -21,6 +21,7 @@ import static com.swirlds.merkledb.test.fixtures.MerkleDbTestUtils.config;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.utility.LegacyTemporaryFileBuilder;
+import com.swirlds.config.api.Configuration;
 import com.swirlds.merkledb.MerkleDbDataSourceBuilder;
 import com.swirlds.merkledb.test.fixtures.ExampleByteArrayVirtualValue;
 import com.swirlds.merkledb.test.fixtures.ExampleFixedSizeVirtualValue;
@@ -137,12 +138,9 @@ public class CloseFlushTest {
         private AtomicReference<Exception> exceptionSink = null;
 
         // Provided for deserialization
-        public CustomDataSourceBuilder() {
-            super(config());
-        }
+        public CustomDataSourceBuilder() {}
 
         public CustomDataSourceBuilder(final VirtualDataSource delegate, AtomicReference<Exception> sink) {
-            super(config());
             this.delegate = delegate;
             this.exceptionSink = sink;
         }
@@ -153,7 +151,8 @@ public class CloseFlushTest {
         }
 
         @Override
-        public VirtualDataSource build(final String label, final boolean withDbCompactionEnabled) {
+        public VirtualDataSource build(
+                final String label, final boolean withDbCompactionEnabled, final @NonNull Configuration configuration) {
             return new VirtualDataSource() {
                 @Override
                 public void close() throws IOException {

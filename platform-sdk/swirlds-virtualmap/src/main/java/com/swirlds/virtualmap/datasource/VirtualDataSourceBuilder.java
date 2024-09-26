@@ -17,6 +17,7 @@
 package com.swirlds.virtualmap.datasource;
 
 import com.swirlds.common.io.SelfSerializable;
+import com.swirlds.config.api.Configuration;
 import java.nio.file.Path;
 
 /**
@@ -30,6 +31,7 @@ import java.nio.file.Path;
  */
 public interface VirtualDataSourceBuilder extends SelfSerializable {
 
+    // TODO: update docs
     /**
      * Builds a new {@link VirtualDataSource} using the configuration of this builder and
      * the given label. If a data source with the given label already exists, it's used instead.
@@ -43,7 +45,7 @@ public interface VirtualDataSourceBuilder extends SelfSerializable {
      * @return
      * 		An opened {@link VirtualDataSource}.
      */
-    VirtualDataSource build(String label, final boolean withDbCompactionEnabled);
+    VirtualDataSource build(String label, final boolean withDbCompactionEnabled, final Configuration configuration);
 
     /**
      * Builds a new {@link VirtualDataSource} using the configuration of this builder by creating
@@ -80,6 +82,7 @@ public interface VirtualDataSourceBuilder extends SelfSerializable {
      */
     void snapshot(Path destination, VirtualDataSource snapshotMe);
 
+    // TODO: update docs
     /**
      * Builds a new {@link VirtualDataSource} using the configuration of this builder and
      * the given label by copying all the database files from the given path into the new
@@ -95,5 +98,5 @@ public interface VirtualDataSourceBuilder extends SelfSerializable {
      * @return
      * 		An opened {@link VirtualDataSource}
      */
-    VirtualDataSource restore(String label, Path source);
+    VirtualDataSource restore(String label, Path source, final Configuration configuration);
 }

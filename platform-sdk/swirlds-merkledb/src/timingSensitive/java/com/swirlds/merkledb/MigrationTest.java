@@ -168,6 +168,6 @@ class MigrationTest {
                 .preferDiskIndices(false)
                 .hashesRamToDiskThreshold(Long.MAX_VALUE)
                 .maxNumberOfKeys(1234);
-        return new MerkleDbDataSourceBuilder(tableConfig, config());
+        return new MerkleDbDataSourceBuilder(tableConfig);
     }
 }

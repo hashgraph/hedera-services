@@ -198,7 +198,6 @@ public final class VirtualMap<K extends VirtualKey, V extends VirtualValue> exte
             final VirtualDataSourceBuilder dataSourceBuilder,
             final Configuration configuration) {
         this(configuration);
-        this.configuration = configuration;
         setChild(ChildIndices.MAP_STATE_CHILD_INDEX, new VirtualMapState(Objects.requireNonNull(label)));
         setChild(
                 ChildIndices.VIRTUAL_ROOT_CHILD_INDEX,

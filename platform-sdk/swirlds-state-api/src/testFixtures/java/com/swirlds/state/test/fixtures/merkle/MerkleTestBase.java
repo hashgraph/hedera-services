@@ -291,8 +291,6 @@ public class MerkleTestBase extends StateTestBase {
             registry.registerConstructable(new ClassConstructorPair(
                     VirtualNodeCache.class,
                     () -> new VirtualNodeCache<>(configuration().getConfigData(VirtualMapConfig.class))));
-            registry.registerConstructable(new ClassConstructorPair(
-                    MerkleDbDataSourceBuilder.class, () -> new MerkleDbDataSourceBuilder(configuration())));
         } catch (ConstructableRegistryException ex) {
             throw new AssertionError(ex);
         }
@@ -325,7 +323,7 @@ public class MerkleTestBase extends StateTestBase {
         merkleDbTableConfig.hashesRamToDiskThreshold(0);
         merkleDbTableConfig.maxNumberOfKeys(100);
         merkleDbTableConfig.preferDiskIndices(true);
-        final var builder = new MerkleDbDataSourceBuilder(virtualDbPath, merkleDbTableConfig, configuration);
+        final var builder = new MerkleDbDataSourceBuilder(virtualDbPath, merkleDbTableConfig);
         return new VirtualMap<>(label, keySerializer, valueSerializer, builder, configuration);
     }
 
