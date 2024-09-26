@@ -142,7 +142,6 @@ public final class MerkleDbTableConfig implements SelfSerializable {
         // required for deserialization
     }
 
-    // TODO: update docs
     /**
      * Creates a new virtual table config with the specified params.
      *
@@ -150,6 +149,7 @@ public final class MerkleDbTableConfig implements SelfSerializable {
      *      Hash version
      * @param hashType
      *      Hash type
+     * @param merkleDbConfig platform config for MerkleDbDataSource
      */
     public MerkleDbTableConfig(
             final short hashVersion, final DigestType hashType, final @NonNull MerkleDbConfig merkleDbConfig) {
@@ -427,10 +427,10 @@ public final class MerkleDbTableConfig implements SelfSerializable {
         in.readSerializable(); // value serializer
     }
 
-    // TODO: update docs
     /**
      * Creates a copy of this table config.
      *
+     * @param merkleDbConfig platform config for MerkleDbDataSource
      * @return Table config copy
      */
     public MerkleDbTableConfig copy(final @NonNull MerkleDbConfig merkleDbConfig) {

@@ -21,7 +21,6 @@ import static java.util.Objects.requireNonNull;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.virtualmap.VirtualKey;
 import com.swirlds.virtualmap.VirtualValue;
-import com.swirlds.virtualmap.config.VirtualMapConfig;
 import com.swirlds.virtualmap.datasource.VirtualDataSource;
 import com.swirlds.virtualmap.datasource.VirtualHashRecord;
 import com.swirlds.virtualmap.datasource.VirtualLeafRecord;
@@ -121,14 +120,12 @@ public abstract class AbstractHashListener<K extends VirtualKey, V extends Virtu
         this.dataSource = requireNonNull(dataSource);
     }
 
-    // TODO: change parameter to reconnectFlushInterval ?
     @Override
-    public synchronized void onHashingStarted(final @NonNull VirtualMapConfig virtualMapConfig) {
-        requireNonNull(virtualMapConfig);
+    public synchronized void onHashingStarted(int reconnectFlushInterval) {
         assert (hashes == null) && (leaves == null) : "Hashing must not be started yet";
         hashes = new ArrayList<>();
         leaves = new ArrayList<>();
-        reconnectFlushInterval = virtualMapConfig.reconnectFlushInterval();
+        this.reconnectFlushInterval = reconnectFlushInterval;
     }
 
     /**

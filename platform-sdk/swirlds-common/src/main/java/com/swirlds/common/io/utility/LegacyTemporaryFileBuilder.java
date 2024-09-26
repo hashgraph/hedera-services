@@ -44,10 +44,10 @@ public final class LegacyTemporaryFileBuilder {
     private static long nextFileId = 0;
     private static Path temporaryFileLocation = null;
 
-    // TODO: update docs
     /**
      * Get the directory that holds all temporary files created by this utility.
      *
+     * @param configuration platform configuration
      * @return a directory where temporary files are stored
      */
     public static synchronized Path getTemporaryFileLocation(final @NonNull Configuration configuration)
@@ -87,11 +87,11 @@ public final class LegacyTemporaryFileBuilder {
         Files.createDirectories(temporaryFileLocation);
     }
 
-    // TODO: update docs
     /**
      * Return a temporary file. File will not exist when this method returns. File is guaranteed to have a unique
      * name. File will not be automatically deleted until this JVM is restarted.
      *
+     * @param configuration platform configuration
      * @return a new temporary file
      * @deprecated use {@link com.swirlds.common.io.filesystem.FileSystemManager#resolveNewTemp(String)} instead.
      */
@@ -101,7 +101,6 @@ public final class LegacyTemporaryFileBuilder {
         return buildTemporaryFile(null, configuration);
     }
 
-    // TODO: update docs
     /**
      * Return a temporary file. File will not exist when this method returns. File is guaranteed to have a unique
      * name. File will not be automatically deleted until this JVM is restarted.
@@ -109,6 +108,7 @@ public final class LegacyTemporaryFileBuilder {
      * @param postfix
      * 		an optional postfix, helps to make temporary file directory easier to understand
      * 		if a human ever looks at it directly. Ignored if null.
+     * @param configuration platform configuration
      * @return a new temporary file
      * @deprecated use {@link com.swirlds.common.io.filesystem.FileSystemManager#resolveNewTemp(String)} instead.
      */
@@ -128,12 +128,12 @@ public final class LegacyTemporaryFileBuilder {
         return temporaryFile;
     }
 
-    // TODO: update docs
     /**
      * Return a temporary directory. Directory will exist when this method returns.
      * Directory is guaranteed to have a unique name.
      * Directory will not be automatically deleted until this JVM is restarted.
      *
+     * @param configuration platform configuration
      * @return a new temporary directory
      * @deprecated use {@link com.swirlds.common.io.filesystem.FileSystemManager#resolveNewTemp(String)} instead
      * and then create a directory using {@link Files#createDirectory(Path, FileAttribute[])}
@@ -145,7 +145,6 @@ public final class LegacyTemporaryFileBuilder {
         return buildTemporaryDirectory(null, configuration);
     }
 
-    // TODO: update docs
     /**
      * Return a temporary directory. Directory will exist when this method returns.
      * Directory is guaranteed to have a unique name.
@@ -154,6 +153,7 @@ public final class LegacyTemporaryFileBuilder {
      * @param postfix
      * 		an optional postfix, helps to make temporary file directory easier to understand
      * 		if a human ever looks at it directly. Ignored if null.
+     * @param configuration platform configuration
      * @return a new temporary directory
      * @deprecated use {@link com.swirlds.common.io.filesystem.FileSystemManager#resolveNewTemp(String)} instead
      * and then create a directory using {@link Files#createDirectory(Path, FileAttribute[])}

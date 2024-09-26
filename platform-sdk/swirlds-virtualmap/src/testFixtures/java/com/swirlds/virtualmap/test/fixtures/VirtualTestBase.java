@@ -17,7 +17,7 @@
 package com.swirlds.virtualmap.test.fixtures;
 
 import static com.swirlds.virtualmap.test.fixtures.VirtualMapTestUtils.configuration;
-import static com.swirlds.virtualmap.test.fixtures.VirtualMapTestUtils.vmConfig;
+import static com.swirlds.virtualmap.test.fixtures.VirtualMapTestUtils.virtualMapConfig;
 
 import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
@@ -148,7 +148,7 @@ public class VirtualTestBase {
     @BeforeEach
     public void setup() {
         rounds = new ArrayList<>();
-        cache = new VirtualNodeCache<>(vmConfig());
+        cache = new VirtualNodeCache<>(virtualMapConfig());
         rounds.add(cache);
         lastCache = null;
     }

@@ -101,7 +101,7 @@ public final class MerkleDb {
     /** Label for database component used in logging, stats, etc. */
     public static final String MERKLEDB_COMPONENT = "merkledb";
 
-    // TODO: docs
+    /** Platform configuration */
     @NonNull
     private final Configuration configuration;
 
@@ -156,12 +156,12 @@ public final class MerkleDb {
     private static final FieldDefinition FIELD_DBMETADATA_TABLEMETADATA =
             new FieldDefinition("tableMetadata", FieldType.MESSAGE, true, true, false, 11);
 
-    // TODO: update docs
     /**
      * Returns a virtual database instance for a given path. If the instance doesn't exist, it gets
      * created first. If the path is {@code null}, the default MerkleDb path is used instead.
      *
      * @param path Database storage dir. If {@code null}, the default MerkleDb path is used
+     * @param configuration platform configuration
      * @return Virtual database instance that stores its data in the specified path
      */
     public static MerkleDb getInstance(final Path path, final @NonNull Configuration configuration) {
@@ -171,10 +171,10 @@ public final class MerkleDb {
                 path != null ? path : getDefaultPath(configuration), p -> new MerkleDb(p, configuration));
     }
 
-    // TODO: update docs
     /**
      * A database path (storage dir) to use for new or restored data sources
      *
+     * @param configuration platform configuration
      * @return Default instance path
      */
     private static Path getDefaultPath(final @NonNull Configuration configuration) {
@@ -220,11 +220,11 @@ public final class MerkleDb {
         defaultInstancePath.set(null);
     }
 
-    // TODO: update docs
     /**
      * Gets a default database instance. Used by virtual data source builder to create new data
      * sources or restore data sources from snapshots.
      *
+     * @param configuration platform configuration
      * @return Default database instance
      */
     public static MerkleDb getDefaultInstance(final @NonNull Configuration configuration) {
@@ -232,11 +232,11 @@ public final class MerkleDb {
         return getInstance(getDefaultPath(configuration), configuration);
     }
 
-    // TODO: update docs
     /**
      * Creates a new database instance with the given path as the storage dir. If database metadata
      * file exists in the specified folder, it gets loaded into the tables map.
      *
+     * @param configuration platform configuration
      * @param storageDir A folder to store database files in
      */
     private MerkleDb(final Path storageDir, final @NonNull Configuration configuration) {
@@ -543,7 +543,6 @@ public final class MerkleDb {
         targetDb.storeMetadata();
     }
 
-    // TODO: update docs
     /**
      * Creates a database instance from a database snapshot in the specified folder. The instance is
      * created in the specified target folder, if not {@code null}, or in the default MerkleDb
@@ -553,6 +552,7 @@ public final class MerkleDb {
      *
      * @param source Source folder
      * @param target Target folder, optional. If {@code null}, the default MerkleDb folder is used
+     * @param configuration platform configuration
      * @return Default database instance
      * @throws IOException If an I/O error occurs
      * @throws IllegalStateException If the default database instance is already created

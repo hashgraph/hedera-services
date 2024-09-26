@@ -37,7 +37,7 @@ public final class VirtualMapTestUtils {
                 .build();
     }
 
-    public static VirtualMapConfig vmConfig() {
+    public static VirtualMapConfig virtualMapConfig() {
         return ConfigurationBuilder.create()
                 .withConfigDataType(VirtualMapConfig.class)
                 .build()

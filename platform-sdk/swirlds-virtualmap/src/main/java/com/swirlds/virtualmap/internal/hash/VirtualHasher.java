@@ -139,6 +139,7 @@ public final class VirtualHasher<K extends VirtualKey, V extends VirtualValue> {
      * @param lastLeafPath
      * 		The lastLeafPath of the tree that is being hashed. If &lt; 1, then a null hash result is returned.
      * 		No leaf in {@code sortedDirtyLeaves} may have a path greater than {@code lastLeafPath}.
+     * @param virtualMapConfig platform configuration for VirtualMap
      * @return The hash of the root of the tree
      */
     public Hash hash(
@@ -285,7 +286,8 @@ public final class VirtualHasher<K extends VirtualKey, V extends VirtualValue> {
             final long firstLeafPath,
             final long lastLeafPath,
             VirtualHashListener<K, V> listener,
-            final VirtualMapConfig virtualMapConfig) {
+            final @NonNull VirtualMapConfig virtualMapConfig) {
+        requireNonNull(virtualMapConfig);
 
         // If the first or last leaf path are invalid, then there is nothing to hash.
         if (firstLeafPath < 1 || lastLeafPath < 1) {
@@ -338,7 +340,7 @@ public final class VirtualHasher<K extends VirtualKey, V extends VirtualValue> {
         int lastLeafRank = Path.getRank(lastLeafPath);
 
         // Let the listener know we have started hashing.
-        listener.onHashingStarted(virtualMapConfig);
+        listener.onHashingStarted(virtualMapConfig.reconnectFlushInterval());
 
         // This map contains all tasks created, but not scheduled for execution yet
         final HashMap<Long, ChunkHashTask> map = new HashMap<>();

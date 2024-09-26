@@ -33,7 +33,6 @@ import com.swirlds.virtualmap.internal.Path;
 import com.swirlds.virtualmap.test.fixtures.TestKey;
 import com.swirlds.virtualmap.test.fixtures.TestValue;
 import com.swirlds.virtualmap.test.fixtures.VirtualTestBase;
-import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
@@ -436,7 +435,7 @@ class VirtualHasherTest extends VirtualHasherTestBase {
         }
 
         @Override
-        public synchronized void onHashingStarted(final @NonNull VirtualMapConfig vmConfig) {
+        public synchronized void onHashingStarted(int reconnectFlushInterval) {
             onHashingStartedCallCount++;
             callHistory.append(ON_HASHING_STARTED_SYMBOL);
             internals.clear();

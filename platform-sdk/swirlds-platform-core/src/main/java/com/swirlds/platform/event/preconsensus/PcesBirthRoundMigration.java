@@ -132,6 +132,7 @@ public final class PcesBirthRoundMigration {
      *
      * @param recycleBin        the fileSystemManager
      * @param databaseDirectory the database directory (i.e. where PCES files are stored)
+     * @param configuration platform configuration
      */
     private static void makeBackupFiles(
             @NonNull final RecycleBin recycleBin,

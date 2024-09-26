@@ -32,7 +32,6 @@ import java.nio.file.Path;
  */
 public interface VirtualDataSourceBuilder extends SelfSerializable {
 
-    // TODO: update docs
     /**
      * Builds a new {@link VirtualDataSource} using the configuration of this builder and
      * the given label. If a data source with the given label already exists, it's used instead.
@@ -43,6 +42,7 @@ public interface VirtualDataSourceBuilder extends SelfSerializable {
      * @param withDbCompactionEnabled
      * 		If true then the new database will have background compaction enabled, false and the
      * 		new database will not have background compaction enabled
+     * @param configuration platform configuration
      * @return
      * 		An opened {@link VirtualDataSource}.
      */
@@ -84,7 +84,6 @@ public interface VirtualDataSourceBuilder extends SelfSerializable {
      */
     void snapshot(Path destination, VirtualDataSource snapshotMe);
 
-    // TODO: update docs
     /**
      * Builds a new {@link VirtualDataSource} using the configuration of this builder and
      * the given label by copying all the database files from the given path into the new
@@ -97,6 +96,7 @@ public interface VirtualDataSourceBuilder extends SelfSerializable {
      * 		The label. Cannot be null. This label must be posix compliant
      * @param source
      * 		The base path of the database from which to copy all the database files. Cannot be null
+     * @param configuration platform configuration
      * @return
      * 		An opened {@link VirtualDataSource}
      */

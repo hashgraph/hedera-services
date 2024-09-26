@@ -111,13 +111,13 @@ class MerkleDbCompactionCoordinator {
     // tasks are stopped
     private final AtomicInteger tasksRunning = new AtomicInteger(0);
 
-    // TODO: update docs
     /**
      * Creates a new instance of {@link MerkleDbCompactionCoordinator}.
      * @param tableName the name of the table
      * @param objectKeyToPath an object key to path store
      * @param hashesStoreDisk a hash store
      * @param pathToKeyValue a path to key-value store
+     * @param merkleDbConfig platform config for MerkleDbDataSource
      */
     public MerkleDbCompactionCoordinator(
             @NonNull String tableName,

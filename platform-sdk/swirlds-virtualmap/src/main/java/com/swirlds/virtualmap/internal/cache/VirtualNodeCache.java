@@ -160,8 +160,8 @@ public final class VirtualNodeCache<K extends VirtualKey, V extends VirtualValue
             cleaningPool = Boolean.getBoolean("syncCleaningPool")
                     ? Runnable::run
                     : new ThreadPoolExecutor(
-                            vmConfig.getNumCleanerThreads(),
-                            vmConfig.getNumCleanerThreads(),
+                            virtualMapConfig.getNumCleanerThreads(),
+                            virtualMapConfig.getNumCleanerThreads(),
                             60L,
                             TimeUnit.SECONDS,
                             new LinkedBlockingQueue<>(),
@@ -316,22 +316,24 @@ public final class VirtualNodeCache<K extends VirtualKey, V extends VirtualValue
      */
     private final AtomicLong lastReleased;
 
+    /** Platform configuration for VirtualMap */
     @NonNull
-    private final VirtualMapConfig vmConfig;
+    private final VirtualMapConfig virtualMapConfig;
 
-    // TODO: update docs
     /**
      * Create a new VirtualNodeCache. The cache will be the first in the chain. It will get a
      * fastCopyVersion of zero, and create the shared data structures.
+     *
+     * @param virtualMapConfig platform configuration for VirtualMap
      */
-    public VirtualNodeCache(final @NonNull VirtualMapConfig vmConfig) {
-        requireNonNull(vmConfig);
+    public VirtualNodeCache(final @NonNull VirtualMapConfig virtualMapConfig) {
+        requireNonNull(virtualMapConfig);
         this.keyToDirtyLeafIndex = new ConcurrentHashMap<>();
         this.pathToDirtyLeafIndex = new ConcurrentHashMap<>();
         this.pathToDirtyHashIndex = new ConcurrentHashMap<>();
         this.releaseLock = new ReentrantLock();
         this.lastReleased = new AtomicLong(-1L);
-        this.vmConfig = vmConfig;
+        this.virtualMapConfig = virtualMapConfig;
     }
 
     /**
@@ -355,7 +357,7 @@ public final class VirtualNodeCache<K extends VirtualKey, V extends VirtualValue
         this.pathToDirtyHashIndex = source.pathToDirtyHashIndex;
         this.releaseLock = source.releaseLock;
         this.lastReleased = source.lastReleased;
-        this.vmConfig = source.vmConfig;
+        this.virtualMapConfig = source.virtualMapConfig;
 
         // The source now has immutable leaves and mutable internals
         source.prepareForHashing();
@@ -1078,7 +1080,7 @@ public final class VirtualNodeCache<K extends VirtualKey, V extends VirtualValue
      */
     public VirtualNodeCache<K, V> snapshot() {
         synchronized (lastReleased) {
-            final VirtualNodeCache<K, V> newSnapshot = new VirtualNodeCache<>(vmConfig);
+            final VirtualNodeCache<K, V> newSnapshot = new VirtualNodeCache<>(virtualMapConfig);
             setMapSnapshotAndArray(
                     this.pathToDirtyHashIndex, newSnapshot.pathToDirtyHashIndex, newSnapshot.dirtyHashes);
             setMapSnapshotAndArray(

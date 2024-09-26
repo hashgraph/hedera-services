@@ -219,7 +219,7 @@ public class ServicesMain implements SwirldMain {
         final var merkleCryptography = MerkleCryptographyFactory.create(configuration, cryptography);
         MerkleCryptoFactory.set(merkleCryptography);
 
-        // Initialize ... (TODO: update this comment)
+        // Register with the ConstructableRegistry classes which need configuration.
         ConstructableRegistry.getInstance()
                 .registerConstructable(new ClassConstructorPair(VirtualMap.class, () -> new VirtualMap(configuration)));
         ConstructableRegistry.getInstance()

@@ -70,7 +70,7 @@ public class LongListDisk extends AbstractLongList<Long> {
      */
     private final Deque<Long> freeChunks;
 
-    // TODO: docs
+    /** Platform configuration */
     @NonNull
     private final Configuration configuration;
 
@@ -83,6 +83,8 @@ public class LongListDisk extends AbstractLongList<Long> {
 
     /**
      * Create a {@link LongListDisk} with default parameters.
+     *
+     * @param configuration platform configuration
      */
     public LongListDisk(Configuration configuration) {
         this(DEFAULT_NUM_LONGS_PER_CHUNK, DEFAULT_MAX_LONGS_TO_STORE, DEFAULT_RESERVED_BUFFER_LENGTH, configuration);
@@ -113,6 +115,7 @@ public class LongListDisk extends AbstractLongList<Long> {
      * Create a {@link LongListDisk} on a file, if the file doesn't exist it will be created.
      *
      * @param file The file to read and write to
+     * @param configuration platform configuration
      * @throws IOException If there was a problem reading the file
      */
     public LongListDisk(final Path file, final @NonNull Configuration configuration) throws IOException {

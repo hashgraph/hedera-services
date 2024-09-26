@@ -216,6 +216,7 @@ public final class FileUtils {
      *
      * @param directory the name of directory after it is renamed
      * @param operation an operation that writes to a directory
+     * @param configuration platform configuration
      */
     public static void executeAndRename(
             @NonNull final Path directory,

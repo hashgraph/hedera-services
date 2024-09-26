@@ -91,7 +91,7 @@ public class HalfDiskHashMap implements AutoCloseable, Snapshotable, FileStatist
     /** The limit on the number of concurrent read tasks in {@code endWriting()} */
     private static final int MAX_IN_FLIGHT = 1024;
 
-    // TODO: docs
+    /** Platform configuration */
     @NonNull
     private final MerkleDbConfig merkleDbConfig;
 
@@ -184,7 +184,7 @@ public class HalfDiskHashMap implements AutoCloseable, Snapshotable, FileStatist
     /**
      * Construct a new HalfDiskHashMap
      *
-     * @param configuration                  Configuration.
+     * @param configuration                  Platform configuration.
      * @param mapSize                        The maximum map number of entries. This should be more than big enough to
      *                                       avoid too many key collisions.
      * @param storeDir                       The directory to use for storing data files.

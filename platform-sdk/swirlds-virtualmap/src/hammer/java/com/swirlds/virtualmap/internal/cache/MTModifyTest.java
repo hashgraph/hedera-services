@@ -16,7 +16,7 @@
 
 package com.swirlds.virtualmap.internal.cache;
 
-import static com.swirlds.virtualmap.test.fixtures.VirtualMapTestUtils.vmConfig;
+import static com.swirlds.virtualmap.test.fixtures.VirtualMapTestUtils.virtualMapConfig;
 
 import com.swirlds.virtualmap.datasource.VirtualLeafRecord;
 import com.swirlds.virtualmap.test.fixtures.TestKey;
@@ -33,7 +33,7 @@ public class MTModifyTest {
 
     @Test
     public void mtModifyTest() throws Exception {
-        VirtualNodeCache<TestKey, TestValue> cache = new VirtualNodeCache<>(vmConfig());
+        VirtualNodeCache<TestKey, TestValue> cache = new VirtualNodeCache<>(virtualMapConfig());
         final int maxKey = 100;
         // Populate the cache
         for (int i = 0; i < maxKey; i++) {

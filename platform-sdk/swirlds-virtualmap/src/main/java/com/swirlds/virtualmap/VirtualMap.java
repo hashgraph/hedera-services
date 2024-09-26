@@ -171,7 +171,7 @@ public final class VirtualMap<K extends VirtualKey, V extends VirtualValue> exte
      */
     private final RuntimeObjectRecord registryRecord;
 
-    // TODO: docs
+    /** Platform configuration */
     @NonNull
     private Configuration configuration;
 
@@ -185,7 +185,6 @@ public final class VirtualMap<K extends VirtualKey, V extends VirtualValue> exte
         registryRecord = RuntimeObjectRegistry.createRecord(getClass());
     }
 
-    // TODO: update docs
     /**
      * Create a new {@link VirtualMap}.
      *
@@ -193,6 +192,7 @@ public final class VirtualMap<K extends VirtualKey, V extends VirtualValue> exte
      * 		A label to give the virtual map. This label is used by the data source and cannot be null.
      * @param dataSourceBuilder
      * 		The data source builder. Must not be null.
+     * @param configuration platform configuration
      */
     public VirtualMap(
             final String label,

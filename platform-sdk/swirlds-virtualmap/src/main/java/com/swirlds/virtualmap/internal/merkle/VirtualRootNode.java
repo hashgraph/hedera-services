@@ -188,11 +188,10 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
      */
     private static final int MAX_FULL_REHASHING_TIMEOUT = 3600; // 1 hour
 
-    // TODO: docs
+    /** Platform configuration */
     @NonNull
     private final Configuration configuration;
 
-    // TODO: update docs
     /**
      * Placeholder (since this is such a hotspot) to hold the results from {@link Configuration#getConfigData(Class)}
      * rather than calling that method more than once during the lifecycle of a {@link VirtualRootNode} instance.
@@ -354,10 +353,11 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
      */
     private final AtomicReference<Thread> currentModifyingThreadRef = new AtomicReference<>(null);
 
-    // TODO: update docs
     /**
      * Creates a new empty root node. This constructor is used for deserialization and
      * reconnects, not for normal use.
+     *
+     * @param configuration platform configuration
      */
     public VirtualRootNode(final @NonNull Configuration configuration) {
         requireNonNull(configuration);
@@ -377,6 +377,7 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
      * @param keySerializer virtual key serializer, must not be null
      * @param valueSerializer virtual value serializer, must not be null
      * @param dataSourceBuilder data source builder, must not be null
+     * @param configuration platform configuration
      */
     public VirtualRootNode(
             final @NonNull KeySerializer<K> keySerializer,
@@ -389,7 +390,7 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
         requireNonNull(configuration);
         this.fastCopyVersion = 0;
         this.hasher = new VirtualHasher<>();
-        this.configuration = configuration; // TODO: add Objects#requireNonNull ?
+        this.configuration = configuration;
         this.virtualMapConfig = configuration.getConfigData(VirtualMapConfig.class);
         this.flushThreshold.set(virtualMapConfig.copyFlushThreshold());
         this.keySerializer = requireNonNull(keySerializer);
