@@ -60,6 +60,7 @@ public class GrantApprovalTranslator extends AbstractCallTranslator<HtsCallAttem
      */
     public static final Function GRANT_APPROVAL_NFT =
             new Function("approveNFT(address,address,uint256)", ReturnTypes.INT_64);
+
     private final GrantApprovalDecoder decoder;
 
     /**

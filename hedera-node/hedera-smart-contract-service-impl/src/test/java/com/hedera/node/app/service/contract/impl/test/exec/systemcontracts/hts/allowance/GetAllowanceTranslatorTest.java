@@ -44,7 +44,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 /**
- * Unit tests for get allowance translator
+ * Unit tests for {@link GetAllowanceTranslator}.
  */
 @ExtendWith(MockitoExtension.class)
 public class GetAllowanceTranslatorTest {

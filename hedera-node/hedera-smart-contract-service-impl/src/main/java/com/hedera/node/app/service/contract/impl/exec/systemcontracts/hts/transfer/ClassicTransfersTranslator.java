@@ -77,6 +77,7 @@ public class ClassicTransfersTranslator extends AbstractCallTranslator<HtsCallAt
      */
     public static final Function TRANSFER_NFT_FROM =
             new Function("transferFromNFT(address,address,address,uint256)", ReturnTypes.INT_64);
+
     private final ClassicTransfersDecoder decoder;
 
     /**

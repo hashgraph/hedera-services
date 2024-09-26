@@ -88,6 +88,7 @@ public class DispatchingEvmFrameState implements EvmFrameState {
      */
     public static final Key HOLLOW_ACCOUNT_KEY =
             Key.newBuilder().keyList(KeyList.DEFAULT).build();
+
     private static final String ADDRESS_BYTECODE_PATTERN = "fefefefefefefefefefefefefefefefefefefefe";
 
     @SuppressWarnings("java:S6418")

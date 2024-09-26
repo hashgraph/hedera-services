@@ -82,6 +82,14 @@ public class ClassicCreatesCall extends AbstractCall {
     private final VerificationStrategy verificationStrategy;
     private final AccountID spenderId;
 
+    /**
+     * @param systemContractGasCalculator the gas calculator for the system contract
+     * @param enhancement the enhancement to be used
+     * @param syntheticCreate the body of synthetic create operation
+     * @param verificationStrategy the verification strategy to use
+     * @param spender the spender account id
+     * @param addressIdConverter the address ID converter for this call
+     */
     public ClassicCreatesCall(
             @NonNull final SystemContractGasCalculator systemContractGasCalculator,
             @NonNull final HederaWorldUpdater.Enhancement enhancement,
