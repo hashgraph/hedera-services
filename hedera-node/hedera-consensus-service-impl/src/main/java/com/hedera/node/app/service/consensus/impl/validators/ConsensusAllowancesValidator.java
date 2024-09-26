@@ -16,11 +16,14 @@
 
 package com.hedera.node.app.service.consensus.impl.validators;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.ALLOWANCE_PER_MESSAGE_EXCEEDS_TOTAL_ALLOWANCE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.EMPTY_ALLOWANCES;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ALLOWANCE_SPENDER_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOPIC_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.NEGATIVE_ALLOWANCE_AMOUNT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NFT_IN_FUNGIBLE_TOKEN_ALLOWANCES;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.REPEATED_ALLOWANCE_IN_TRANSACTION_BODY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOPIC_DELETED;
 import static com.hedera.node.app.service.consensus.impl.util.ConsensusHandlerHelper.getIfUsable;
@@ -34,7 +37,6 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ConsensusCryptoFeeScheduleAllowance;
 import com.hedera.hapi.node.base.ConsensusTokenFeeScheduleAllowance;
-import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenType;
 import com.hedera.hapi.node.base.TopicID;
@@ -147,13 +149,13 @@ public class ConsensusAllowancesValidator {
             validateFalsePreCheck(
                     uniqueMap.containsKey(hbarAllowance.owner())
                             && uniqueMap.get(hbarAllowance.owner()).equals(hbarAllowance.topicId()),
-                    ResponseCodeEnum.REPEATED_ALLOWANCE_IN_TRANSACTION_BODY);
+                    REPEATED_ALLOWANCE_IN_TRANSACTION_BODY);
             // Validate the allowance amount and amount per message
-            validateTruePreCheck(hbarAllowance.amount() >= 0, ResponseCodeEnum.NEGATIVE_ALLOWANCE_AMOUNT);
-            validateTruePreCheck(hbarAllowance.amountPerMessage() >= 0, ResponseCodeEnum.NEGATIVE_ALLOWANCE_AMOUNT);
+            validateTruePreCheck(hbarAllowance.amount() >= 0, NEGATIVE_ALLOWANCE_AMOUNT);
+            validateTruePreCheck(hbarAllowance.amountPerMessage() >= 0, NEGATIVE_ALLOWANCE_AMOUNT);
             validateTruePreCheck(
                     hbarAllowance.amount() > hbarAllowance.amountPerMessage(),
-                    ResponseCodeEnum.ALLOWANCE_PER_MESSAGE_EXCEEDS_TOTAL_ALLOWANCE);
+                    ALLOWANCE_PER_MESSAGE_EXCEEDS_TOTAL_ALLOWANCE);
             // Add the unique (AccountID, TopicID) pair to the map
             uniqueMap.put(hbarAllowance.owner(), hbarAllowance.topicId());
         }
@@ -175,8 +177,7 @@ public class ConsensusAllowancesValidator {
             if (accountTokenMap != null && accountTokenMap.containsKey(accountId)) {
                 // If the AccountID exists, check if the TokenID matches
                 validateFalsePreCheck(
-                        accountTokenMap.get(accountId).equals(tokenId),
-                        ResponseCodeEnum.REPEATED_ALLOWANCE_IN_TRANSACTION_BODY);
+                        accountTokenMap.get(accountId).equals(tokenId), REPEATED_ALLOWANCE_IN_TRANSACTION_BODY);
             } else {
                 // If the TopicID or AccountID does not exist, create the entry
                 uniqueMap.putIfAbsent(topicId, new HashMap<>());
@@ -186,11 +187,11 @@ public class ConsensusAllowancesValidator {
             uniqueMap.get(topicId).put(accountId, tokenId);
 
             // Validate the allowance amount and amount per message
-            validateTruePreCheck(tokenAllowance.amount() >= 0, ResponseCodeEnum.NEGATIVE_ALLOWANCE_AMOUNT);
-            validateTruePreCheck(tokenAllowance.amountPerMessage() >= 0, ResponseCodeEnum.NEGATIVE_ALLOWANCE_AMOUNT);
+            validateTruePreCheck(tokenAllowance.amount() >= 0, NEGATIVE_ALLOWANCE_AMOUNT);
+            validateTruePreCheck(tokenAllowance.amountPerMessage() >= 0, NEGATIVE_ALLOWANCE_AMOUNT);
             validateTruePreCheck(
                     tokenAllowance.amount() > tokenAllowance.amountPerMessage(),
-                    ResponseCodeEnum.ALLOWANCE_PER_MESSAGE_EXCEEDS_TOTAL_ALLOWANCE);
+                    ALLOWANCE_PER_MESSAGE_EXCEEDS_TOTAL_ALLOWANCE);
         }
     }
 }
