@@ -220,7 +220,7 @@ dependencies.constraints {
     api("uk.org.webcompere:system-stubs-core:2.1.5") {
         because("uk.org.webcompere.systemstubs.core")
     }
-    api("uk.org.webcompere:system-stubs-jupiter:2.1.5") {
+    api("uk.org.webcompere:system-stubs-jupiter:2.1.7") {
         because("uk.org.webcompere.systemstubs.jupiter")
     }
 
