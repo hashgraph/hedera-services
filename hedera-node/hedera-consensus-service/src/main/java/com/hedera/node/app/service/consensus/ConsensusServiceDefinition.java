@@ -82,7 +82,13 @@ public final class ConsensusServiceDefinition implements RpcServiceDefinition {
             // topicRunningHash.
             // Request is [ConsensusSubmitMessageTransactionBody](#proto.ConsensusSubmitMessageTransactionBody)
             //
-            new RpcMethodDefinition<>("submitMessage", Transaction.class, TransactionResponse.class));
+            new RpcMethodDefinition<>("submitMessage", Transaction.class, TransactionResponse.class),
+            //
+            // Approve allowance for custom fees.
+            // Set account allowances for a topic. This includes total allowance and allowance per message.
+            // Request is [ConsensusApproveAllowanceTransactionBody](#proto.ConsensusApproveAllowanceTransactionBody)
+            //
+            new RpcMethodDefinition<>("approveAllowance", Transaction.class, TransactionResponse.class));
 
     private ConsensusServiceDefinition() {
         // Just something to keep the Gradle build believing we have a non-transitive

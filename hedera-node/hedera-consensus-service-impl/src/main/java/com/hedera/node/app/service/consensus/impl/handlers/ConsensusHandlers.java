@@ -37,6 +37,8 @@ public class ConsensusHandlers {
 
     private final ConsensusUpdateTopicHandler consensusUpdateTopicHandler;
 
+    private final ConsensusApproveAllowanceHandler consensusApproveAllowanceHandler;
+
     /**
      * Constructor for ConsensusHandlers.
      */
@@ -46,7 +48,8 @@ public class ConsensusHandlers {
             @NonNull final ConsensusDeleteTopicHandler consensusDeleteTopicHandler,
             @NonNull final ConsensusGetTopicInfoHandler consensusGetTopicInfoHandler,
             @NonNull final ConsensusSubmitMessageHandler consensusSubmitMessageHandler,
-            @NonNull final ConsensusUpdateTopicHandler consensusUpdateTopicHandler) {
+            @NonNull final ConsensusUpdateTopicHandler consensusUpdateTopicHandler,
+            @NonNull final ConsensusApproveAllowanceHandler consensusApproveAllowanceHandler) {
         this.consensusCreateTopicHandler =
                 Objects.requireNonNull(consensusCreateTopicHandler, "consensusCreateTopicHandler must not be null");
         this.consensusDeleteTopicHandler =
@@ -57,6 +60,8 @@ public class ConsensusHandlers {
                 Objects.requireNonNull(consensusSubmitMessageHandler, "consensusSubmitMessageHandler must not be null");
         this.consensusUpdateTopicHandler =
                 Objects.requireNonNull(consensusUpdateTopicHandler, "consensusUpdateTopicHandler must not be null");
+        this.consensusApproveAllowanceHandler = Objects.requireNonNull(
+                consensusApproveAllowanceHandler, "consensusApproveAllowanceHandler must not be null");
     }
 
     /**
@@ -102,5 +107,14 @@ public class ConsensusHandlers {
      */
     public ConsensusUpdateTopicHandler consensusUpdateTopicHandler() {
         return consensusUpdateTopicHandler;
+    }
+
+    /**
+     * Get the consensusApproveAllowanceHandler.
+     *
+     * @return the consensusApproveAllowanceHandler
+     */
+    public ConsensusApproveAllowanceHandler consensusApproveAllowanceHandler() {
+        return consensusApproveAllowanceHandler;
     }
 }

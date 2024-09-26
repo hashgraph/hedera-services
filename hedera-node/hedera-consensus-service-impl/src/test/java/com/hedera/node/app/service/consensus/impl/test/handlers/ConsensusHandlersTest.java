@@ -19,6 +19,7 @@ package com.hedera.node.app.service.consensus.impl.test.handlers;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 
+import com.hedera.node.app.service.consensus.impl.handlers.ConsensusApproveAllowanceHandler;
 import com.hedera.node.app.service.consensus.impl.handlers.ConsensusCreateTopicHandler;
 import com.hedera.node.app.service.consensus.impl.handlers.ConsensusDeleteTopicHandler;
 import com.hedera.node.app.service.consensus.impl.handlers.ConsensusGetTopicInfoHandler;
@@ -34,6 +35,7 @@ class ConsensusHandlersTest {
     private ConsensusGetTopicInfoHandler consensusGetTopicInfoHandler;
     private ConsensusSubmitMessageHandler consensusSubmitMessageHandler;
     private ConsensusUpdateTopicHandler consensusUpdateTopicHandler;
+    private ConsensusApproveAllowanceHandler consensusApproveAllowanceHandler;
 
     private ConsensusHandlers consensusHandlers;
 
@@ -44,13 +46,15 @@ class ConsensusHandlersTest {
         consensusGetTopicInfoHandler = mock(ConsensusGetTopicInfoHandler.class);
         consensusSubmitMessageHandler = mock(ConsensusSubmitMessageHandler.class);
         consensusUpdateTopicHandler = mock(ConsensusUpdateTopicHandler.class);
+        consensusApproveAllowanceHandler = mock(ConsensusApproveAllowanceHandler.class);
 
         consensusHandlers = new ConsensusHandlers(
                 consensusCreateTopicHandler,
                 consensusDeleteTopicHandler,
                 consensusGetTopicInfoHandler,
                 consensusSubmitMessageHandler,
-                consensusUpdateTopicHandler);
+                consensusUpdateTopicHandler,
+                consensusApproveAllowanceHandler);
     }
 
     @Test
@@ -91,5 +95,13 @@ class ConsensusHandlersTest {
                 consensusUpdateTopicHandler,
                 consensusHandlers.consensusUpdateTopicHandler(),
                 "consensusUpdateTopicHandler does not return correct instance");
+    }
+
+    @Test
+    void consensusApproveAllowanceHandlerReturnsCorrectInstance() {
+        assertEquals(
+                consensusApproveAllowanceHandler,
+                consensusHandlers.consensusApproveAllowanceHandler(),
+                "consensusApproveAllowanceHandler does not return correct instance");
     }
 }

@@ -18,6 +18,7 @@ package com.hedera.services.bdd.suites.hip991;
 
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTopicInfo;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.approveTopicAllowance;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createTopic;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoDelete;
@@ -251,6 +252,33 @@ public class TopicCustomFeeTest extends TopicCustomFeeBase {
                                 .feeScheduleKeyName(FEE_SCHEDULE_KEY)
                                 .withConsensusCustomFee(fixedConsensusHbarFee(ONE_HBAR, collector))
                                 .hasKnownStatus(ACCOUNT_DELETED));
+            }
+        }
+    }
+
+    @Nested
+    @DisplayName("Topic approve allowance")
+    class TopicApproveAllowance {
+
+        @Nested
+        @DisplayName("Positive scenarios")
+        class ApproveAllowancePositiveScenarios {
+
+            @BeforeAll
+            static void beforeAll(@NonNull final TestLifecycle lifecycle) {
+                lifecycle.doAdhoc(setupBaseKeys());
+            }
+
+            @HapiTest
+            @DisplayName("Approve crypto allowance for topic")
+            final Stream<DynamicTest> createTopicWithAllKeys() {
+                return hapiTest(
+                        cryptoCreate(OWNER),
+                        createTopic(TOPIC)
+                                .adminKeyName(ADMIN_KEY)
+                                .submitKeyName(SUBMIT_KEY)
+                                .feeScheduleKeyName(FEE_SCHEDULE_KEY),
+                        approveTopicAllowance().payingWith(OWNER).addCryptoAllowance(OWNER, TOPIC, 100, 10));
             }
         }
     }
