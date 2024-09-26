@@ -19,6 +19,7 @@ package com.swirlds.virtualmap;
 import static com.swirlds.common.io.streams.StreamDebugUtils.deserializeAndDebugOnFailure;
 import static com.swirlds.common.utility.CommonUtils.getNormalisedStringBytes;
 import static com.swirlds.virtualmap.VirtualMap.CLASS_ID;
+import static java.util.Objects.requireNonNull;
 
 import com.swirlds.common.constructable.ConstructableClass;
 import com.swirlds.common.io.ExternalSelfSerializable;
@@ -43,6 +44,7 @@ import com.swirlds.virtualmap.internal.merkle.VirtualRootNode;
 import com.swirlds.virtualmap.internal.merkle.VirtualStateAccessorImpl;
 import com.swirlds.virtualmap.serialize.KeySerializer;
 import com.swirlds.virtualmap.serialize.ValueSerializer;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.FileInputStream;
@@ -50,7 +52,6 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.List;
-import java.util.Objects;
 
 /**
  * A {@link MerkleInternal} node that virtualizes all of its children, such that the child nodes
@@ -171,13 +172,15 @@ public final class VirtualMap<K extends VirtualKey, V extends VirtualValue> exte
     private final RuntimeObjectRecord registryRecord;
 
     // TODO: docs
+    @NonNull
     private Configuration configuration;
 
     /**
      * Required by the {@link com.swirlds.common.constructable.RuntimeConstructable} contract.
      * This can <strong>only</strong> be called as part of serialization and reconnect, not for normal use.
      */
-    public VirtualMap(Configuration configuration) {
+    public VirtualMap(final @NonNull Configuration configuration) {
+        requireNonNull(configuration);
         this.configuration = configuration;
         registryRecord = RuntimeObjectRegistry.createRecord(getClass());
     }
@@ -196,13 +199,16 @@ public final class VirtualMap<K extends VirtualKey, V extends VirtualValue> exte
             final KeySerializer<K> keySerializer,
             final ValueSerializer<V> valueSerializer,
             final VirtualDataSourceBuilder dataSourceBuilder,
-            final Configuration configuration) {
+            final @NonNull Configuration configuration) {
         this(configuration);
-        setChild(ChildIndices.MAP_STATE_CHILD_INDEX, new VirtualMapState(Objects.requireNonNull(label)));
+        setChild(ChildIndices.MAP_STATE_CHILD_INDEX, new VirtualMapState(requireNonNull(label)));
         setChild(
                 ChildIndices.VIRTUAL_ROOT_CHILD_INDEX,
                 new VirtualRootNode<>(
-                        keySerializer, valueSerializer, Objects.requireNonNull(dataSourceBuilder), configuration));
+                        keySerializer,
+                        valueSerializer,
+                        requireNonNull(dataSourceBuilder),
+                        requireNonNull(configuration)));
     }
 
     /**

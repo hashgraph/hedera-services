@@ -20,6 +20,7 @@ import static com.swirlds.common.io.utility.LegacyTemporaryFileBuilder.buildTemp
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.logging.legacy.LogMarker.STATE_TO_DISK;
 import static java.nio.file.Files.exists;
+import static java.util.Objects.requireNonNull;
 
 import com.swirlds.common.io.streams.MerkleDataOutputStream;
 import com.swirlds.config.api.Configuration;
@@ -221,6 +222,9 @@ public final class FileUtils {
             @NonNull final IOConsumer<Path> operation,
             @NonNull final Configuration configuration)
             throws IOException {
+        requireNonNull(directory);
+        requireNonNull(operation);
+        requireNonNull(configuration);
         executeAndRename(directory, buildTemporaryDirectory(configuration), operation);
     }
 

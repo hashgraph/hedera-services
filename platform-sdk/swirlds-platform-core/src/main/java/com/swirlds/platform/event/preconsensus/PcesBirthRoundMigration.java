@@ -22,6 +22,7 @@ import static com.swirlds.platform.event.AncientMode.BIRTH_ROUND_THRESHOLD;
 import static com.swirlds.platform.event.AncientMode.GENERATION_THRESHOLD;
 import static com.swirlds.platform.event.preconsensus.PcesUtilities.getDatabaseDirectory;
 import static java.nio.file.StandardCopyOption.ATOMIC_MOVE;
+import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.platform.event.GossipEvent;
 import com.swirlds.common.context.PlatformContext;
@@ -74,6 +75,8 @@ public final class PcesBirthRoundMigration {
             final long migrationRound,
             final long minimumJudgeGenerationInMigrationRound)
             throws IOException {
+        requireNonNull(platformContext);
+        requireNonNull(selfId);
 
         final Path databaseDirectory = getDatabaseDirectory(platformContext, selfId);
 
@@ -135,6 +138,10 @@ public final class PcesBirthRoundMigration {
             @NonNull final Path databaseDirectory,
             @NonNull final Configuration configuration)
             throws IOException {
+        requireNonNull(recycleBin);
+        requireNonNull(databaseDirectory);
+        requireNonNull(configuration);
+
         logger.info(
                 STARTUP.getMarker(), "Backing up PCES files prior to PCES modification in case of unexpected failure.");
 
@@ -154,6 +161,9 @@ public final class PcesBirthRoundMigration {
      */
     @NonNull
     public static List<PcesFile> findPcesFiles(@NonNull final Path path, @NonNull final AncientMode ancientMode) {
+        requireNonNull(path);
+        requireNonNull(ancientMode);
+
         try (final Stream<Path> fileStream = Files.walk(path)) {
             return fileStream
                     .filter(f -> !Files.isDirectory(f))
@@ -184,6 +194,8 @@ public final class PcesBirthRoundMigration {
             final long minimumJudgeGenerationInMigrationRound,
             final long migrationRound)
             throws IOException {
+        requireNonNull(platformContext);
+        requireNonNull(selfId);
 
         final PcesFileTracker originalFiles = PcesFileReader.readFilesFromDisk(
                 platformContext,
@@ -223,6 +235,9 @@ public final class PcesBirthRoundMigration {
             @NonNull final List<PlatformEvent> eventsToMigrate,
             final long migrationRound)
             throws IOException {
+        requireNonNull(platformContext);
+        requireNonNull(selfId);
+        requireNonNull(eventsToMigrate);
 
         // First, write the data to a temporary file. If we crash, easier to recover if this operation is atomic.
         final Path temporaryFile =
@@ -255,6 +270,8 @@ public final class PcesBirthRoundMigration {
      * @param databaseDirectory the database directory (i.e. where PCES files are stored)
      */
     private static void cleanUpOldFiles(@NonNull final Path databaseDirectory) throws IOException {
+        requireNonNull(databaseDirectory);
+
         final List<PcesFile> filesToDelete = findPcesFiles(databaseDirectory, GENERATION_THRESHOLD);
 
         logger.info(STARTUP.getMarker(), "Cleaning up old {} legacy formatted PCES files.", filesToDelete.size());

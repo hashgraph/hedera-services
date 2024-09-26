@@ -18,6 +18,7 @@ package com.swirlds.merkledb.files.hashmap;
 
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.logging.legacy.LogMarker.MERKLE_DB;
+import static java.util.Objects.requireNonNull;
 
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -34,6 +35,7 @@ import com.swirlds.merkledb.config.MerkleDbConfig;
 import com.swirlds.merkledb.files.DataFileCollection;
 import com.swirlds.merkledb.files.DataFileCollection.LoadedDataCallback;
 import com.swirlds.merkledb.files.DataFileReader;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -90,6 +92,7 @@ public class HalfDiskHashMap implements AutoCloseable, Snapshotable, FileStatist
     private static final int MAX_IN_FLIGHT = 1024;
 
     // TODO: docs
+    @NonNull
     private final MerkleDbConfig merkleDbConfig;
 
     /**
@@ -197,13 +200,14 @@ public class HalfDiskHashMap implements AutoCloseable, Snapshotable, FileStatist
      * @throws IOException If there was a problem creating or opening a set of data files.
      */
     public HalfDiskHashMap(
-            final Configuration configuration,
+            final @NonNull Configuration configuration,
             final long mapSize,
             final Path storeDir,
             final String storeName,
             final String legacyStoreName,
             final boolean preferDiskBasedIndex)
             throws IOException {
+        requireNonNull(configuration);
         this.merkleDbConfig = configuration.getConfigData(MerkleDbConfig.class);
         this.mapSize = mapSize;
         this.storeName = storeName;

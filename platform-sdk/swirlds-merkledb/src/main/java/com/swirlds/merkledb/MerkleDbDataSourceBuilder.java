@@ -16,8 +16,6 @@
 
 package com.swirlds.merkledb;
 
-import static com.swirlds.merkledb.MerkleDbDataSourceBuilder.CLASS_ID;
-
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.io.utility.LegacyTemporaryFileBuilder;

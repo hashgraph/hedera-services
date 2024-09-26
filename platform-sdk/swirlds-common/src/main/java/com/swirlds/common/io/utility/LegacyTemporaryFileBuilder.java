@@ -19,10 +19,12 @@ package com.swirlds.common.io.utility;
 import static com.swirlds.common.io.utility.FileUtils.deleteDirectoryAndLog;
 import static com.swirlds.common.io.utility.FileUtils.getAbsolutePath;
 import static java.nio.file.Files.exists;
+import static java.util.Objects.requireNonNull;
 
 import com.swirlds.common.config.StateCommonConfig;
 import com.swirlds.common.io.config.TemporaryFileConfig;
 import com.swirlds.config.api.Configuration;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -48,7 +50,10 @@ public final class LegacyTemporaryFileBuilder {
      *
      * @return a directory where temporary files are stored
      */
-    public static synchronized Path getTemporaryFileLocation(final Configuration configuration) throws IOException {
+    public static synchronized Path getTemporaryFileLocation(final @NonNull Configuration configuration)
+            throws IOException {
+        requireNonNull(configuration);
+
         if (temporaryFileLocation == null) {
             final TemporaryFileConfig config = configuration.getConfigData(TemporaryFileConfig.class);
             final StateCommonConfig stateConfig = configuration.getConfigData(StateCommonConfig.class);
@@ -91,7 +96,8 @@ public final class LegacyTemporaryFileBuilder {
      * @deprecated use {@link com.swirlds.common.io.filesystem.FileSystemManager#resolveNewTemp(String)} instead.
      */
     @Deprecated
-    public static synchronized Path buildTemporaryFile(Configuration configuration) throws IOException {
+    public static synchronized Path buildTemporaryFile(final @NonNull Configuration configuration) throws IOException {
+        requireNonNull(configuration);
         return buildTemporaryFile(null, configuration);
     }
 
@@ -107,8 +113,10 @@ public final class LegacyTemporaryFileBuilder {
      * @deprecated use {@link com.swirlds.common.io.filesystem.FileSystemManager#resolveNewTemp(String)} instead.
      */
     @Deprecated
-    public static synchronized Path buildTemporaryFile(final String postfix, final Configuration configuration)
+    public static synchronized Path buildTemporaryFile(final String postfix, final @NonNull Configuration configuration)
             throws IOException {
+        requireNonNull(configuration);
+
         final String fileName = nextFileId + (postfix == null ? "" : ("-" + postfix));
         nextFileId++;
 
@@ -131,7 +139,9 @@ public final class LegacyTemporaryFileBuilder {
      * and then create a directory using {@link Files#createDirectory(Path, FileAttribute[])}
      */
     @Deprecated
-    public static synchronized Path buildTemporaryDirectory(final Configuration configuration) throws IOException {
+    public static synchronized Path buildTemporaryDirectory(final @NonNull Configuration configuration)
+            throws IOException {
+        requireNonNull(configuration);
         return buildTemporaryDirectory(null, configuration);
     }
 
@@ -149,8 +159,10 @@ public final class LegacyTemporaryFileBuilder {
      * and then create a directory using {@link Files#createDirectory(Path, FileAttribute[])}
      */
     @Deprecated
-    public static synchronized Path buildTemporaryDirectory(final String postfix, final Configuration configuration)
-            throws IOException {
+    public static synchronized Path buildTemporaryDirectory(
+            final String postfix, final @NonNull Configuration configuration) throws IOException {
+        requireNonNull(configuration);
+
         final Path directory = buildTemporaryFile(postfix, configuration);
         if (!exists(directory)) {
             Files.createDirectories(directory);

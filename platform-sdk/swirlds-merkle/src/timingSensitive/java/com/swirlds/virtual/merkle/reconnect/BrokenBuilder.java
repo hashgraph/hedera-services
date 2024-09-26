@@ -21,6 +21,7 @@ import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.virtualmap.datasource.VirtualDataSource;
 import com.swirlds.virtualmap.datasource.VirtualDataSourceBuilder;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.nio.file.Path;
 
@@ -74,7 +75,7 @@ public final class BrokenBuilder implements VirtualDataSourceBuilder {
 
     @Override
     public BreakableDataSource build(
-            final String label, final boolean withDbCompactionEnabled, final Configuration configuration) {
+            final String label, final boolean withDbCompactionEnabled, final @NonNull Configuration configuration) {
         return new BreakableDataSource(this, delegate.build(label, withDbCompactionEnabled, configuration));
     }
 
@@ -91,7 +92,8 @@ public final class BrokenBuilder implements VirtualDataSourceBuilder {
     }
 
     @Override
-    public BreakableDataSource restore(final String label, final Path from, final Configuration configuration) {
+    public BreakableDataSource restore(
+            final String label, final Path from, final @NonNull Configuration configuration) {
         return new BreakableDataSource(this, delegate.restore(label, from, configuration));
     }
 

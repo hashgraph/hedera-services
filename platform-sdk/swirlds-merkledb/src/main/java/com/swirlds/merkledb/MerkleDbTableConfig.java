@@ -17,6 +17,7 @@
 package com.swirlds.merkledb;
 
 import static com.hedera.pbj.runtime.ProtoParserTools.TAG_FIELD_OFFSET;
+import static java.util.Objects.requireNonNull;
 
 import com.hedera.pbj.runtime.FieldDefinition;
 import com.hedera.pbj.runtime.FieldType;
@@ -32,6 +33,7 @@ import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.merkledb.config.MerkleDbConfig;
 import com.swirlds.virtualmap.serialize.KeySerializer;
 import com.swirlds.virtualmap.serialize.ValueSerializer;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.util.Objects;
 
@@ -150,7 +152,9 @@ public final class MerkleDbTableConfig implements SelfSerializable {
      *      Hash type
      */
     public MerkleDbTableConfig(
-            final short hashVersion, final DigestType hashType, final MerkleDbConfig merkleDbConfig) {
+            final short hashVersion, final DigestType hashType, final @NonNull MerkleDbConfig merkleDbConfig) {
+        requireNonNull(merkleDbConfig);
+
         // Mandatory fields
         this.hashVersion = hashVersion;
         this.hashType = hashType;
@@ -205,7 +209,7 @@ public final class MerkleDbTableConfig implements SelfSerializable {
         }
 
         // Check that all mandatory fields have been loaded from the stream
-        Objects.requireNonNull(hashType, "Null or wrong hash type");
+        requireNonNull(hashType, "Null or wrong hash type");
         if (maxNumberOfKeys <= 0) {
             throw new IllegalArgumentException("Missing or wrong max number of keys");
         }
@@ -429,7 +433,8 @@ public final class MerkleDbTableConfig implements SelfSerializable {
      *
      * @return Table config copy
      */
-    public MerkleDbTableConfig copy(final MerkleDbConfig merkleDbConfig) {
+    public MerkleDbTableConfig copy(final @NonNull MerkleDbConfig merkleDbConfig) {
+        requireNonNull(merkleDbConfig);
         final MerkleDbTableConfig copy = new MerkleDbTableConfig(hashVersion, hashType, merkleDbConfig);
         copy.preferDiskIndices(preferDiskBasedIndices);
         copy.hashesRamToDiskThreshold(hashesRamToDiskThreshold);

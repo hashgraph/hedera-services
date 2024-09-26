@@ -182,9 +182,11 @@ public final class MerkleDbDataSource implements VirtualDataSource {
             final String tableName,
             final int tableId,
             final MerkleDbTableConfig tableConfig,
-            final Configuration configuration,
+            final @NonNull Configuration configuration,
             final boolean compactionEnabled)
             throws IOException {
+        requireNonNull(configuration);
+
         this.database = database;
         this.tableName = tableName;
         this.tableId = tableId;

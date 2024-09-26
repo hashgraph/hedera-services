@@ -221,7 +221,7 @@ public abstract class VirtualMapReconnectTestBase {
 
         @Override
         public BreakableDataSource build(
-                final String label, final boolean withDbCompactionEnabled, final Configuration configuration) {
+                final String label, final boolean withDbCompactionEnabled, final @NonNull Configuration configuration) {
             return new BreakableDataSource(this, delegate.build(label, withDbCompactionEnabled, configuration));
         }
 
@@ -238,7 +238,8 @@ public abstract class VirtualMapReconnectTestBase {
         }
 
         @Override
-        public BreakableDataSource restore(final String label, final Path from, final Configuration configuration) {
+        public BreakableDataSource restore(
+                final String label, final Path from, final @NonNull Configuration configuration) {
             return new BreakableDataSource(this, delegate.restore(label, from, configuration));
         }
 

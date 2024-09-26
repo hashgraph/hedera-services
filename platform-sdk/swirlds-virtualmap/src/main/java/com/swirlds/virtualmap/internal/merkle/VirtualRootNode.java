@@ -36,6 +36,7 @@ import static com.swirlds.virtualmap.internal.Path.isFarRight;
 import static com.swirlds.virtualmap.internal.Path.isLeft;
 import static com.swirlds.virtualmap.internal.merkle.VirtualMapState.CLASS_ID;
 import static com.swirlds.virtualmap.internal.merkle.VirtualMapState.MAX_LABEL_LENGTH;
+import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
@@ -98,7 +99,6 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.channels.ClosedByInterruptException;
 import java.nio.file.Path;
-import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
@@ -189,6 +189,7 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
     private static final int MAX_FULL_REHASHING_TIMEOUT = 3600; // 1 hour
 
     // TODO: docs
+    @NonNull
     private final Configuration configuration;
 
     // TODO: update docs
@@ -359,6 +360,7 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
      * reconnects, not for normal use.
      */
     public VirtualRootNode(final @NonNull Configuration configuration) {
+        requireNonNull(configuration);
         this.fastCopyVersion = 0;
         // Hasher is required during reconnects
         this.hasher = new VirtualHasher<>();
@@ -381,14 +383,18 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
             final @NonNull ValueSerializer<V> valueSerializer,
             final @NonNull VirtualDataSourceBuilder dataSourceBuilder,
             final @NonNull Configuration configuration) {
+        requireNonNull(keySerializer);
+        requireNonNull(valueSerializer);
+        requireNonNull(dataSourceBuilder);
+        requireNonNull(configuration);
         this.fastCopyVersion = 0;
         this.hasher = new VirtualHasher<>();
         this.configuration = configuration; // TODO: add Objects#requireNonNull ?
         this.virtualMapConfig = configuration.getConfigData(VirtualMapConfig.class);
         this.flushThreshold.set(virtualMapConfig.copyFlushThreshold());
-        this.keySerializer = Objects.requireNonNull(keySerializer);
-        this.valueSerializer = Objects.requireNonNull(valueSerializer);
-        this.dataSourceBuilder = Objects.requireNonNull(dataSourceBuilder);
+        this.keySerializer = requireNonNull(keySerializer);
+        this.valueSerializer = requireNonNull(valueSerializer);
+        this.dataSourceBuilder = requireNonNull(dataSourceBuilder);
         // All other fields are initialized in postInit()
     }
 
@@ -446,9 +452,9 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
         if (cache == null) {
             cache = new VirtualNodeCache<>(configuration.getConfigData(VirtualMapConfig.class));
         }
-        this.state = Objects.requireNonNull(state);
+        this.state = requireNonNull(state);
         updateShouldBeFlushed();
-        Objects.requireNonNull(dataSourceBuilder);
+        requireNonNull(dataSourceBuilder);
         if (dataSource == null) {
             dataSource = dataSourceBuilder.build(state.getLabel(), true, configuration);
         }
@@ -477,7 +483,7 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
      * for this method it is critical to not load all the leaves into memory because there are too many of them.
      */
     public void fullLeafRehashIfNecessary() {
-        Objects.requireNonNull(records, "Records must be initialized before rehashing");
+        requireNonNull(records, "Records must be initialized before rehashing");
 
         final ConcurrentBlockingIterator<VirtualLeafRecord<K, V>> rehashIterator =
                 new ConcurrentBlockingIterator<>(MAX_REHASHING_BUFFER_SIZE);
@@ -839,7 +845,7 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
      * @return True if there is a leaf corresponding to this key.
      */
     public boolean containsKey(final K key) {
-        Objects.requireNonNull(key, NO_NULL_KEYS_ALLOWED_MESSAGE);
+        requireNonNull(key, NO_NULL_KEYS_ALLOWED_MESSAGE);
         final long path = records.findKey(key);
         statistics.countReadEntities();
         return path != INVALID_PATH;
@@ -857,7 +863,7 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
      */
     public V getForModify(final K key) {
         throwIfImmutable();
-        Objects.requireNonNull(key, NO_NULL_KEYS_ALLOWED_MESSAGE);
+        requireNonNull(key, NO_NULL_KEYS_ALLOWED_MESSAGE);
         assert currentModifyingThreadRef.compareAndSet(null, Thread.currentThread());
         try {
             final VirtualLeafRecord<K, V> rec = records.findLeafRecord(key, true);
@@ -877,7 +883,7 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
      * @return The value. The value may be null, or will be read only.
      */
     public V get(final K key) {
-        Objects.requireNonNull(key, NO_NULL_KEYS_ALLOWED_MESSAGE);
+        requireNonNull(key, NO_NULL_KEYS_ALLOWED_MESSAGE);
         final VirtualLeafRecord<K, V> rec = records.findLeafRecord(key, false);
         final V value = rec == null ? null : rec.getValue();
         statistics.countReadEntities();
@@ -900,7 +906,7 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
         assert !isHashed() : "Cannot modify already hashed node";
         assert currentModifyingThreadRef.compareAndSet(null, Thread.currentThread());
         try {
-            Objects.requireNonNull(key, NO_NULL_KEYS_ALLOWED_MESSAGE);
+            requireNonNull(key, NO_NULL_KEYS_ALLOWED_MESSAGE);
 
             final long path = records.findKey(key);
             if (path == INVALID_PATH) {
@@ -935,7 +941,7 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
      */
     public V replace(final K key, final V value) {
         throwIfImmutable();
-        Objects.requireNonNull(key, NO_NULL_KEYS_ALLOWED_MESSAGE);
+        requireNonNull(key, NO_NULL_KEYS_ALLOWED_MESSAGE);
         assert currentModifyingThreadRef.compareAndSet(null, Thread.currentThread());
         try {
             // Attempt to replace the existing leaf
@@ -962,7 +968,7 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
      */
     public V remove(final K key) {
         throwIfImmutable();
-        Objects.requireNonNull(key);
+        requireNonNull(key);
         assert currentModifyingThreadRef.compareAndSet(null, Thread.currentThread());
         try {
             // Verify whether the current leaf exists. If not, we can just return null.
@@ -1755,7 +1761,7 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
             // The firstLeafPath points to the old leaf that we want to replace.
             // Get the old leaf.
             final VirtualLeafRecord<K, V> oldLeaf = records.findLeafRecord(firstLeafPath, true);
-            Objects.requireNonNull(oldLeaf);
+            requireNonNull(oldLeaf);
             cache.clearLeafPath(firstLeafPath);
             oldLeaf.setPath(getLeftChildPath(firstLeafPath));
             cache.putLeaf(oldLeaf);

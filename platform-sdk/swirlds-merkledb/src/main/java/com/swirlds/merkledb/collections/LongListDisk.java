@@ -17,6 +17,7 @@
 package com.swirlds.merkledb.collections;
 
 import static java.lang.Math.toIntExact;
+import static java.util.Objects.requireNonNull;
 
 import com.swirlds.common.io.utility.LegacyTemporaryFileBuilder;
 import com.swirlds.config.api.Configuration;
@@ -70,6 +71,7 @@ public class LongListDisk extends AbstractLongList<Long> {
     private final Deque<Long> freeChunks;
 
     // TODO: docs
+    @NonNull
     private final Configuration configuration;
 
     static {
@@ -90,8 +92,9 @@ public class LongListDisk extends AbstractLongList<Long> {
             final int numLongsPerChunk,
             final long maxLongs,
             final long reservedBufferLength,
-            Configuration configuration) {
+            final @NonNull Configuration configuration) {
         super(numLongsPerChunk, maxLongs, reservedBufferLength);
+        requireNonNull(configuration);
         this.configuration = configuration;
         try {
             currentFileChannel = FileChannel.open(
@@ -112,13 +115,14 @@ public class LongListDisk extends AbstractLongList<Long> {
      * @param file The file to read and write to
      * @throws IOException If there was a problem reading the file
      */
-    public LongListDisk(final Path file, final Configuration configuration) throws IOException {
+    public LongListDisk(final Path file, final @NonNull Configuration configuration) throws IOException {
         this(file, DEFAULT_RESERVED_BUFFER_LENGTH, configuration);
     }
 
-    LongListDisk(final Path path, final long reservedBufferLength, final Configuration configuration)
+    LongListDisk(final Path path, final long reservedBufferLength, final @NonNull Configuration configuration)
             throws IOException {
         super(path, reservedBufferLength);
+        requireNonNull(configuration);
         this.configuration = configuration;
         final File file = path.toFile();
         if (!file.exists() || file.length() == 0) {
@@ -208,7 +212,9 @@ public class LongListDisk extends AbstractLongList<Long> {
         return buffer;
     }
 
-    static Path createTempFile(final String sourceFileName, final Configuration configuration) throws IOException {
+    static Path createTempFile(final String sourceFileName, final @NonNull Configuration configuration)
+            throws IOException {
+        requireNonNull(configuration);
         return LegacyTemporaryFileBuilder.buildTemporaryDirectory(STORE_POSTFIX, configuration)
                 .resolve(sourceFileName);
     }

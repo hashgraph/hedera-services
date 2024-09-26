@@ -19,6 +19,7 @@ package com.swirlds.virtualmap.internal.cache;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.virtualmap.internal.cache.VirtualNodeCache.CLASS_ID;
+import static java.util.Objects.requireNonNull;
 
 import com.swirlds.base.state.MutabilityException;
 import com.swirlds.common.FastCopyable;
@@ -37,10 +38,10 @@ import com.swirlds.virtualmap.config.VirtualMapConfig;
 import com.swirlds.virtualmap.constructable.constructors.VirtualNodeCacheConstructor;
 import com.swirlds.virtualmap.datasource.VirtualHashRecord;
 import com.swirlds.virtualmap.datasource.VirtualLeafRecord;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.util.Comparator;
 import java.util.Map;
-import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -315,6 +316,7 @@ public final class VirtualNodeCache<K extends VirtualKey, V extends VirtualValue
      */
     private final AtomicLong lastReleased;
 
+    @NonNull
     private final VirtualMapConfig vmConfig;
 
     // TODO: update docs
@@ -322,7 +324,8 @@ public final class VirtualNodeCache<K extends VirtualKey, V extends VirtualValue
      * Create a new VirtualNodeCache. The cache will be the first in the chain. It will get a
      * fastCopyVersion of zero, and create the shared data structures.
      */
-    public VirtualNodeCache(final VirtualMapConfig vmConfig) {
+    public VirtualNodeCache(final @NonNull VirtualMapConfig vmConfig) {
+        requireNonNull(vmConfig);
         this.keyToDirtyLeafIndex = new ConcurrentHashMap<>();
         this.pathToDirtyLeafIndex = new ConcurrentHashMap<>();
         this.pathToDirtyHashIndex = new ConcurrentHashMap<>();
@@ -552,7 +555,7 @@ public final class VirtualNodeCache<K extends VirtualKey, V extends VirtualValue
      */
     public VirtualLeafRecord<K, V> putLeaf(final VirtualLeafRecord<K, V> leaf) {
         throwIfLeafImmutable();
-        Objects.requireNonNull(leaf);
+        requireNonNull(leaf);
 
         // The key must never be null. Only DELETED_LEAF_RECORD should have a null key.
         // The VirtualMap forbids null keys, so we should never see a null here.
@@ -584,7 +587,7 @@ public final class VirtualNodeCache<K extends VirtualKey, V extends VirtualValue
      */
     public void deleteLeaf(final VirtualLeafRecord<K, V> leaf) {
         throwIfLeafImmutable();
-        Objects.requireNonNull(leaf);
+        requireNonNull(leaf);
 
         // This leaf is no longer at this leaf path. So clear it.
         clearLeafPath(leaf.getPath());
@@ -648,7 +651,7 @@ public final class VirtualNodeCache<K extends VirtualKey, V extends VirtualValue
      * 		if the cache has already been released
      */
     public VirtualLeafRecord<K, V> lookupLeafByKey(final K key, final boolean forModify) {
-        Objects.requireNonNull(key);
+        requireNonNull(key);
 
         // The only way to be released is to be in a condition where the data source has
         // the data that was once in this cache but was merged and is therefore now released.
@@ -872,7 +875,7 @@ public final class VirtualNodeCache<K extends VirtualKey, V extends VirtualValue
      * @param node the node to get path and hash from
      */
     public void putHash(final VirtualHashRecord node) {
-        Objects.requireNonNull(node);
+        requireNonNull(node);
         putHash(node.path(), node.hash());
     }
 

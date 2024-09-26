@@ -20,6 +20,7 @@ import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticT
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.logging.legacy.LogMarker.MERKLE_DB;
 import static com.swirlds.merkledb.MerkleDb.MERKLEDB_COMPONENT;
+import static java.util.Objects.requireNonNull;
 
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.merkledb.config.MerkleDbConfig;
@@ -63,11 +64,13 @@ class MerkleDbCompactionCoordinator {
      */
     private static ExecutorService compactionExecutor = null;
 
-    static synchronized ExecutorService getCompactionExecutor(final MerkleDbConfig config) {
+    static synchronized ExecutorService getCompactionExecutor(final @NonNull MerkleDbConfig merkleDbConfig) {
+        requireNonNull(merkleDbConfig);
+
         if (compactionExecutor == null) {
             compactionExecutor = new ThreadPoolExecutor(
-                    config.compactionThreads(),
-                    config.compactionThreads(),
+                    merkleDbConfig.compactionThreads(),
+                    merkleDbConfig.compactionThreads(),
                     50L,
                     TimeUnit.MILLISECONDS,
                     new LinkedBlockingQueue<>(),
@@ -122,10 +125,13 @@ class MerkleDbCompactionCoordinator {
             @Nullable DataFileCompactor hashesStoreDisk,
             @NonNull DataFileCompactor pathToKeyValue,
             @NonNull MerkleDbConfig merkleDbConfig) {
+        requireNonNull(tableName);
+        requireNonNull(pathToKeyValue);
+        requireNonNull(merkleDbConfig);
         this.objectKeyToPath = objectKeyToPath;
         this.hashesStoreDisk = hashesStoreDisk;
         this.pathToKeyValue = pathToKeyValue;
-        this.merkleDbConfig = merkleDbConfig; // TODO: add Objects#requireNonNull ?
+        this.merkleDbConfig = merkleDbConfig;
         if (objectKeyToPath != null) {
             objectKeyToPathTask = new CompactionTask(tableName + OBJECT_KEY_TO_PATH_SUFFIX, objectKeyToPath);
         } else {

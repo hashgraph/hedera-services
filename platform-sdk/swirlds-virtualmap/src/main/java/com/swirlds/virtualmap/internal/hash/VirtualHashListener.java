@@ -21,6 +21,7 @@ import com.swirlds.virtualmap.VirtualKey;
 import com.swirlds.virtualmap.VirtualValue;
 import com.swirlds.virtualmap.config.VirtualMapConfig;
 import com.swirlds.virtualmap.datasource.VirtualLeafRecord;
+import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
  * Listens to various events that occur during the hashing process.
@@ -31,7 +32,7 @@ public interface VirtualHashListener<K extends VirtualKey, V extends VirtualValu
     /**
      * Called when starting a new fresh hash operation.
      */
-    default void onHashingStarted(final VirtualMapConfig vmConfig) {}
+    default void onHashingStarted(final @NonNull VirtualMapConfig vmConfig) {}
 
     /**
      * Called after each node is hashed, internal or leaf. This is called between

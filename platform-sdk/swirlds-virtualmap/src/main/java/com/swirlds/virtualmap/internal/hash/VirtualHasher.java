@@ -19,6 +19,7 @@ package com.swirlds.virtualmap.internal.hash;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.virtualmap.internal.Path.INVALID_PATH;
 import static com.swirlds.virtualmap.internal.Path.ROOT_PATH;
+import static java.util.Objects.requireNonNull;
 
 import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.crypto.CryptographyHolder;
@@ -33,6 +34,7 @@ import com.swirlds.virtualmap.datasource.VirtualLeafRecord;
 import com.swirlds.virtualmap.internal.Path;
 import com.swirlds.virtualmap.internal.merkle.VirtualInternalNode;
 import com.swirlds.virtualmap.internal.merkle.VirtualRootNode;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -98,7 +100,7 @@ public final class VirtualHasher<K extends VirtualKey, V extends VirtualValue> {
 
     private static volatile ForkJoinPool hashingPool = null;
 
-    private static ForkJoinPool getHashingPool(final VirtualMapConfig vmConfig) {
+    private static ForkJoinPool getHashingPool(final @NonNull VirtualMapConfig vmConfig) {
         ForkJoinPool pool = hashingPool;
         if (pool == null) {
             synchronized (VirtualHasher.class) {
@@ -144,7 +146,8 @@ public final class VirtualHasher<K extends VirtualKey, V extends VirtualValue> {
             Iterator<VirtualLeafRecord<K, V>> sortedDirtyLeaves,
             final long firstLeafPath,
             final long lastLeafPath,
-            final VirtualMapConfig virtualMapConfig) {
+            final @NonNull VirtualMapConfig virtualMapConfig) {
+        requireNonNull(virtualMapConfig);
         return hash(hashReader, sortedDirtyLeaves, firstLeafPath, lastLeafPath, null, virtualMapConfig);
     }
 

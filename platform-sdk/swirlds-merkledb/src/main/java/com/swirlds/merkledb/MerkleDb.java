@@ -20,6 +20,7 @@ import static com.hedera.pbj.runtime.ProtoParserTools.TAG_FIELD_OFFSET;
 import static com.swirlds.common.io.utility.FileUtils.hardLinkTree;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.logging.legacy.LogMarker.MERKLE_DB;
+import static java.util.Objects.requireNonNull;
 
 import com.hedera.pbj.runtime.FieldDefinition;
 import com.hedera.pbj.runtime.FieldType;
@@ -101,6 +102,7 @@ public final class MerkleDb {
     public static final String MERKLEDB_COMPONENT = "merkledb";
 
     // TODO: docs
+    @NonNull
     private final Configuration configuration;
 
     /**
@@ -162,7 +164,9 @@ public final class MerkleDb {
      * @param path Database storage dir. If {@code null}, the default MerkleDb path is used
      * @return Virtual database instance that stores its data in the specified path
      */
-    public static MerkleDb getInstance(final Path path, Configuration configuration) {
+    public static MerkleDb getInstance(final Path path, final @NonNull Configuration configuration) {
+        requireNonNull(configuration);
+
         return instances.computeIfAbsent(
                 path != null ? path : getDefaultPath(configuration), p -> new MerkleDb(p, configuration));
     }
@@ -173,7 +177,9 @@ public final class MerkleDb {
      *
      * @return Default instance path
      */
-    private static Path getDefaultPath(Configuration configuration) {
+    private static Path getDefaultPath(final @NonNull Configuration configuration) {
+        requireNonNull(configuration);
+
         return defaultInstancePath.updateAndGet(p -> {
             if (p == null) {
                 try {
@@ -195,7 +201,7 @@ public final class MerkleDb {
      * @param value The new default database path
      */
     public static void setDefaultPath(@NonNull Path value) {
-        Objects.requireNonNull(value);
+        requireNonNull(value);
         // It probably makes sense to let change default instance path only before the first call
         // to getDefaultInstance(). Update: in the tests, this method may be called multiple times,
         // if a test needs to create multiple maps with the same name
@@ -221,7 +227,8 @@ public final class MerkleDb {
      *
      * @return Default database instance
      */
-    public static MerkleDb getDefaultInstance(Configuration configuration) {
+    public static MerkleDb getDefaultInstance(final @NonNull Configuration configuration) {
+        requireNonNull(configuration);
         return getInstance(getDefaultPath(configuration), configuration);
     }
 
@@ -232,8 +239,9 @@ public final class MerkleDb {
      *
      * @param storageDir A folder to store database files in
      */
-    private MerkleDb(final Path storageDir, final Configuration configuration) {
-        this.configuration = configuration; // TODO: maybe add @NonNull and Objects#requireNonNull ?
+    private MerkleDb(final Path storageDir, final @NonNull Configuration configuration) {
+        requireNonNull(configuration);
+        this.configuration = configuration;
         if (storageDir == null) {
             throw new IllegalArgumentException("Cannot create a MerkleDatabase instance with null storageDir");
         }
@@ -551,6 +559,7 @@ public final class MerkleDb {
      */
     public static MerkleDb restore(final Path source, final Path target, final @NonNull Configuration configuration)
             throws IOException {
+        requireNonNull(configuration);
         final Path defaultInstancePath = (target != null) ? target : getDefaultPath(configuration);
         if (!Files.exists(defaultInstancePath.resolve(METADATA_FILENAME))) {
             Files.createDirectories(defaultInstancePath);
@@ -776,8 +785,8 @@ public final class MerkleDb {
                 }
             }
 
-            Objects.requireNonNull(tableName, "Null table name");
-            Objects.requireNonNull(tableConfig, "Null table config");
+            requireNonNull(tableName, "Null table name");
+            requireNonNull(tableConfig, "Null table config");
 
             this.tableId = tableId;
             this.tableName = tableName;
