@@ -17,7 +17,6 @@
 package com.hedera.node.config.data;
 
 import static com.hedera.node.config.types.StreamMode.BOTH;
-import static com.hedera.node.config.types.StreamMode.RECORDS;
 
 import com.hedera.node.config.NetworkProperty;
 import com.hedera.node.config.NodeProperty;
@@ -39,7 +38,7 @@ import com.swirlds.config.api.validation.annotation.Min;
  */
 @ConfigData("blockStream")
 public record BlockStreamConfig(
-        @ConfigProperty(defaultValue = "RECORDS") @NetworkProperty StreamMode streamMode,
+        @ConfigProperty(defaultValue = "BOTH") @NetworkProperty StreamMode streamMode,
         @ConfigProperty(defaultValue = "FILE") @NodeProperty BlockStreamWriterMode writerMode,
         @ConfigProperty(defaultValue = "data/block-streams") @NodeProperty String blockFileDir,
         @ConfigProperty(defaultValue = "true") @NetworkProperty boolean compressFilesOnCreation,
@@ -51,6 +50,6 @@ public record BlockStreamConfig(
     }
 
     public boolean streamRecords() {
-        return streamMode == RECORDS;
+        return true;
     }
 }
