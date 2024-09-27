@@ -6,6 +6,8 @@ import java.io.IOException;
 
 public interface PcesFileWriter {
 
+    void writeVersion(int version) throws IOException;
+
     void writeEvent(@NonNull final GossipEvent event) throws IOException;
 
     /**
@@ -17,4 +19,6 @@ public interface PcesFileWriter {
      * Close the file.
      */
     void close() throws IOException;
+
+    long fileSize();
 }
