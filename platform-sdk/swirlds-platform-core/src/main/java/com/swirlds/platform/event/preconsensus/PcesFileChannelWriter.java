@@ -13,17 +13,19 @@ public class PcesFileChannelWriter implements PcesFileWriter {
     final FileChannel channel;
     final ByteBuffer buffer;
     final WritableSequentialData writableSequentialData;
+    private int fileSize;
 
     public PcesFileChannelWriter(@NonNull final Path filePath) throws IOException {
         channel = FileChannel.open(filePath);
         buffer = ByteBuffer.allocateDirect(1024*1024*10);
         writableSequentialData = BufferedData.wrap(buffer);
+    }
 
-        buffer.putInt(1);
-        final int bytesWritten = channel.write(buffer);
-        if (bytesWritten != Integer.BYTES) {
-            throw new IOException("Failed to write version number to file");
-        }
+    @Override
+    public void writeVersion(final int version) throws IOException {
+        buffer.clear();
+        buffer.putInt(version);
+        flipAndWrite();
     }
 
     @Override
@@ -31,10 +33,15 @@ public class PcesFileChannelWriter implements PcesFileWriter {
         buffer.clear();
         buffer.putInt(GossipEvent.PROTOBUF.measureRecord(event));
         GossipEvent.PROTOBUF.write(event, writableSequentialData);
+        flipAndWrite();
+    }
+
+    private void flipAndWrite() throws IOException {
         buffer.flip();
         final int bytesWritten = channel.write(buffer);
+        fileSize += bytesWritten;
         if (bytesWritten != buffer.limit()) {
-            throw new IOException("Failed to write event to file");
+            throw new IOException("Failed to write data to file. Wrote " + bytesWritten + " bytes out of " + buffer.limit());
         }
     }
 
@@ -46,5 +53,10 @@ public class PcesFileChannelWriter implements PcesFileWriter {
     @Override
     public void close() throws IOException {
         channel.close();
+    }
+
+    @Override
+    public long fileSize() {
+        return fileSize;
     }
 }
