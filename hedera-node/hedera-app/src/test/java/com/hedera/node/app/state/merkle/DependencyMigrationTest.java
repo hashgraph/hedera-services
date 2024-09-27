@@ -46,6 +46,7 @@ import com.swirlds.state.spi.info.NetworkInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.Set;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -56,7 +57,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-// TODO: add more tests for platform config?
 @ExtendWith(MockitoExtension.class)
 class DependencyMigrationTest extends MerkleTestBase {
     private static final VersionedConfigImpl VERSIONED_CONFIG =
@@ -117,7 +117,22 @@ class DependencyMigrationTest extends MerkleTestBase {
         }
 
         @Test
-        void versionedConfigRequired() {
+        void configRequired() {
+            final var subject = new OrderedServiceMigrator();
+            Assertions.assertThatThrownBy(() -> subject.doMigrations(
+                            merkleTree,
+                            servicesRegistry,
+                            null,
+                            new ServicesSoftwareVersion(CURRENT_VERSION),
+                            VERSIONED_CONFIG,
+                            null,
+                            networkInfo,
+                            mock(Metrics.class)))
+                    .isInstanceOf(NoSuchElementException.class);
+        }
+
+        @Test
+        void configRequired2() {
             final var subject = new OrderedServiceMigrator();
             Assertions.assertThatThrownBy(() -> subject.doMigrations(
                             merkleTree,

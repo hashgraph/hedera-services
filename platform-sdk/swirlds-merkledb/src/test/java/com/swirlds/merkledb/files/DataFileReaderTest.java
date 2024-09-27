@@ -16,7 +16,7 @@
 
 package com.swirlds.merkledb.files;
 
-import static com.swirlds.merkledb.test.fixtures.MerkleDbTestUtils.config;
+import static com.swirlds.merkledb.test.fixtures.MerkleDbTestUtils.CONFIGURATION;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.MockitoAnnotations.openMocks;
 
@@ -30,7 +30,7 @@ import org.mockito.Mock;
 
 class DataFileReaderTest {
 
-    private final MerkleDbConfig dbConfig = config().getConfigData(MerkleDbConfig.class);
+    private final MerkleDbConfig dbConfig = CONFIGURATION.getConfigData(MerkleDbConfig.class);
 
     @Mock
     private DataFileMetadata dataFileMetadata;

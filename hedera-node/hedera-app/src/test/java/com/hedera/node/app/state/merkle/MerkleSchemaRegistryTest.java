@@ -259,10 +259,9 @@ class MerkleSchemaRegistryTest extends MerkleTestBase {
                     .isInstanceOf(NullPointerException.class);
         }
 
-        // TODO: add one more test for platform config ?
         @Test
-        @DisplayName("Calling migrate with a null config throws NPE")
-        void nullConfigVersionThrows() {
+        @DisplayName("Calling migrate with a null node config throws NPE")
+        void nullNodeConfigVersionThrows() {
             //noinspection ConstantConditions
             assertThatThrownBy(() -> schemaRegistry.migrate(
                             merkleTree,
@@ -270,6 +269,24 @@ class MerkleSchemaRegistryTest extends MerkleTestBase {
                             versions[1],
                             null,
                             null,
+                            networkInfo,
+                            mock(Metrics.class),
+                            mock(WritableEntityIdStore.class),
+                            new HashMap<>(),
+                            migrationStateChanges))
+                    .isInstanceOf(NullPointerException.class);
+        }
+
+        @Test
+        @DisplayName("Calling migrate with a null node config throws NPE")
+        void nullNodeConfigVersionThrows1() {
+            //noinspection ConstantConditions
+            assertThatThrownBy(() -> schemaRegistry.migrate(
+                            merkleTree,
+                            versions[0],
+                            versions[1],
+                            null,
+                            config,
                             networkInfo,
                             mock(Metrics.class),
                             mock(WritableEntityIdStore.class),

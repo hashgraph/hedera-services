@@ -17,7 +17,7 @@
 package com.swirlds.merkledb.files;
 
 import static com.swirlds.merkledb.files.DataFileCompactor.INITIAL_COMPACTION_LEVEL;
-import static com.swirlds.merkledb.test.fixtures.MerkleDbTestUtils.config;
+import static com.swirlds.merkledb.test.fixtures.MerkleDbTestUtils.CONFIGURATION;
 
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.swirlds.common.io.utility.LegacyTemporaryFileBuilder;
@@ -52,7 +52,8 @@ public class DataFileReaderHammerTest {
         final int readerThreads = 32;
         final int readIterations = 10_000;
 
-        final Path tempFile = LegacyTemporaryFileBuilder.buildTemporaryFile("interruptedReadsHammerTest", config());
+        final Path tempFile =
+                LegacyTemporaryFileBuilder.buildTemporaryFile("interruptedReadsHammerTest", CONFIGURATION);
         final ByteBuffer writeBuf = ByteBuffer.allocate(itemSize);
         for (int i = 0; i < itemSize; i++) {
             writeBuf.put((byte) (i % 100));
@@ -67,7 +68,7 @@ public class DataFileReaderHammerTest {
 
         final ExecutorService exec = Executors.newFixedThreadPool(readerThreads);
         final Random rand = new Random();
-        final MerkleDbConfig dbConfig = config().getConfigData(MerkleDbConfig.class);
+        final MerkleDbConfig dbConfig = CONFIGURATION.getConfigData(MerkleDbConfig.class);
         final DataFileMetadata metadata = new DataFileMetadata(itemCount, 0, Instant.now(), INITIAL_COMPACTION_LEVEL);
         final DataFileReader dataReader = new DataFileReader(dbConfig, tempFile, metadata);
         final AtomicInteger activeReaders = new AtomicInteger(readerThreads);

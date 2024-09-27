@@ -19,7 +19,7 @@ package com.swirlds.merkledb.files;
 import static com.swirlds.merkledb.files.DataFileCommon.FILE_EXTENSION;
 import static com.swirlds.merkledb.files.DataFileCommon.createDataFilePath;
 import static com.swirlds.merkledb.files.DataFileCompactor.INITIAL_COMPACTION_LEVEL;
-import static com.swirlds.merkledb.test.fixtures.MerkleDbTestUtils.config;
+import static com.swirlds.merkledb.test.fixtures.MerkleDbTestUtils.CONFIGURATION;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -55,7 +55,7 @@ class DataFileLowLevelTest {
     @TempDir
     static Path tempFileDir;
 
-    private final MerkleDbConfig dbConfig = config().getConfigData(MerkleDbConfig.class);
+    private final MerkleDbConfig dbConfig = CONFIGURATION.getConfigData(MerkleDbConfig.class);
 
     protected static final Random RANDOM = new Random(123456);
     protected static final Instant TEST_START = Instant.now();

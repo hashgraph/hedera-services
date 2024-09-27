@@ -16,7 +16,7 @@
 
 package com.swirlds.merkledb.files.hashmap;
 
-import static com.swirlds.merkledb.test.fixtures.MerkleDbTestUtils.config;
+import static com.swirlds.merkledb.test.fixtures.MerkleDbTestUtils.CONFIGURATION;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -47,7 +47,7 @@ class HalfDiskHashMapTest {
     private HalfDiskHashMap createNewTempMap(FilesTestType testType, int count) throws IOException {
         // create map
         HalfDiskHashMap map = new HalfDiskHashMap(
-                config(), count, tempDirPath.resolve(testType.name()), "HalfDiskHashMapTest", null, false);
+                CONFIGURATION, count, tempDirPath.resolve(testType.name()), "HalfDiskHashMapTest", null, false);
         map.printStats();
         return map;
     }
@@ -105,7 +105,7 @@ class HalfDiskHashMapTest {
         map.snapshot(tempSnapshotDir);
         // open snapshot and check data
         HalfDiskHashMap mapFromSnapshot =
-                new HalfDiskHashMap(config(), count, tempSnapshotDir, "HalfDiskHashMapTest", null, false);
+                new HalfDiskHashMap(CONFIGURATION, count, tempSnapshotDir, "HalfDiskHashMapTest", null, false);
         mapFromSnapshot.printStats();
         checkData(testType, mapFromSnapshot, 1, count, 1);
         // check deletion
@@ -138,7 +138,7 @@ class HalfDiskHashMapTest {
         // create map
         final HalfDiskHashMap map = createNewTempMap(testType, 10_000);
         final DataFileCompactor dataFileCompactor = new DataFileCompactor(
-                config().getConfigData(MerkleDbConfig.class),
+                CONFIGURATION.getConfigData(MerkleDbConfig.class),
                 "HalfDiskHashMapTest",
                 map.getFileCollection(),
                 map.getBucketIndexToBucketLocation(),

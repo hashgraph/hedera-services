@@ -16,6 +16,7 @@
 
 package com.swirlds.merkledb.test.fixtures;
 
+import static com.swirlds.merkledb.test.fixtures.MerkleDbTestUtils.CONFIGURATION;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -43,7 +44,6 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.concurrent.ScheduledExecutorService;
 
-// Not sure if further refactoring here is needed -- revisit later
 /**
  * Supports parameterized testing of {@link MerkleDbDataSource} with
  * both fixed- and variable-size data.
@@ -83,8 +83,8 @@ public enum TestType {
 
     public Metrics getMetrics() {
         if (metrics == null) {
-            final Configuration configuration = new TestConfigBuilder().getOrCreateConfig();
-            MetricsConfig metricsConfig = configuration.getConfigData(MetricsConfig.class);
+            final Configuration CONFIGURATION = new TestConfigBuilder().getOrCreateConfig();
+            MetricsConfig metricsConfig = CONFIGURATION.getConfigData(MetricsConfig.class);
 
             final MetricKeyRegistry registry = mock(MetricKeyRegistry.class);
             when(registry.register(any(), any(), any())).thenReturn(true);
@@ -95,7 +95,7 @@ public enum TestType {
                     new PlatformMetricsFactoryImpl(metricsConfig),
                     metricsConfig);
             MerkleDbStatistics statistics =
-                    new MerkleDbStatistics(configuration.getConfigData(MerkleDbConfig.class), "test");
+                    new MerkleDbStatistics(CONFIGURATION.getConfigData(MerkleDbConfig.class), "test");
             statistics.registerMetrics(metrics);
         }
         return metrics;
@@ -221,8 +221,7 @@ public enum TestType {
                 final boolean enableMerging,
                 boolean preferDiskBasedIndexes)
                 throws IOException {
-            final Configuration configuration = new TestConfigBuilder().getOrCreateConfig();
-            final MerkleDb database = MerkleDb.getInstance(dbPath, configuration);
+            final MerkleDb database = MerkleDb.getInstance(dbPath, CONFIGURATION);
             final MerkleDbTableConfig tableConfig = new MerkleDbTableConfig(
                             (short) 1, DigestType.SHA_384, database.getConfig())
                     .preferDiskIndices(preferDiskBasedIndexes)
@@ -235,8 +234,7 @@ public enum TestType {
 
         public MerkleDbDataSource getDataSource(final Path dbPath, final String name, final boolean enableMerging)
                 throws IOException {
-            final Configuration configuration = new TestConfigBuilder().getOrCreateConfig();
-            final MerkleDb database = MerkleDb.getInstance(dbPath, configuration);
+            final MerkleDb database = MerkleDb.getInstance(dbPath, CONFIGURATION);
             return database.getDataSource(name, enableMerging);
         }
 

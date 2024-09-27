@@ -17,7 +17,7 @@
 package com.swirlds.merkledb.files;
 
 import static com.swirlds.merkledb.files.DataFileCompactor.INITIAL_COMPACTION_LEVEL;
-import static com.swirlds.merkledb.test.fixtures.MerkleDbTestUtils.config;
+import static com.swirlds.merkledb.test.fixtures.MerkleDbTestUtils.CONFIGURATION;
 
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.swirlds.common.io.utility.LegacyTemporaryFileBuilder;
@@ -44,8 +44,8 @@ class DataFileReaderCloseTest {
 
     @BeforeAll
     static void setup() throws IOException {
-        final Path dir = LegacyTemporaryFileBuilder.buildTemporaryFile("readerIsOpenTest", config());
-        final MerkleDbConfig dbConfig = config().getConfigData(MerkleDbConfig.class);
+        final Path dir = LegacyTemporaryFileBuilder.buildTemporaryFile("readerIsOpenTest", CONFIGURATION);
+        final MerkleDbConfig dbConfig = CONFIGURATION.getConfigData(MerkleDbConfig.class);
         collection = new DataFileCollection(dbConfig, dir, "store", null);
     }
 
@@ -112,8 +112,9 @@ class DataFileReaderCloseTest {
 
     @Test
     void readWhileFinishWritingTest() throws IOException {
-        final Path tmpDir = LegacyTemporaryFileBuilder.buildTemporaryDirectory("readWhileFinishWritingTest", config());
-        final MerkleDbConfig dbConfig = config().getConfigData(MerkleDbConfig.class);
+        final Path tmpDir =
+                LegacyTemporaryFileBuilder.buildTemporaryDirectory("readWhileFinishWritingTest", CONFIGURATION);
+        final MerkleDbConfig dbConfig = CONFIGURATION.getConfigData(MerkleDbConfig.class);
         for (int i = 0; i < 100; i++) {
             Path filePath = null;
             final int fi = i;

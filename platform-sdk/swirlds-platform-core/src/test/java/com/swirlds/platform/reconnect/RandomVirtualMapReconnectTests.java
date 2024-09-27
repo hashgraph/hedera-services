@@ -17,6 +17,7 @@
 package com.swirlds.platform.reconnect;
 
 import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
+import static com.swirlds.platform.test.fixtures.config.ConfigUtils.CONFIGURATION;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -63,10 +64,10 @@ class RandomVirtualMapReconnectTests extends VirtualMapReconnectTestBase {
     protected VirtualDataSourceBuilder createBuilder() throws IOException {
         // The tests create maps with identical names. They would conflict with each other in the default
         // MerkleDb instance, so let's use a new (temp) database location for every run
-        final Path defaultVirtualMapPath = LegacyTemporaryFileBuilder.buildTemporaryFile(configuration());
+        final Path defaultVirtualMapPath = LegacyTemporaryFileBuilder.buildTemporaryFile(CONFIGURATION);
         MerkleDb.setDefaultPath(defaultVirtualMapPath);
         final MerkleDbTableConfig tableConfig = new MerkleDbTableConfig(
-                (short) 1, DigestType.SHA_384, configuration().getConfigData(MerkleDbConfig.class));
+                (short) 1, DigestType.SHA_384, CONFIGURATION.getConfigData(MerkleDbConfig.class));
         return new MerkleDbDataSourceBuilder(tableConfig);
     }
 

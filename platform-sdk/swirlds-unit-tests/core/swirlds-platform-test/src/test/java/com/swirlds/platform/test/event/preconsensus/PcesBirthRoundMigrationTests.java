@@ -16,7 +16,6 @@
 
 package com.swirlds.platform.test.event.preconsensus;
 
-import static com.swirlds.common.test.fixtures.ConfigurationUtils.configuration;
 import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
 import static com.swirlds.common.test.fixtures.RandomUtils.randomInstant;
 import static com.swirlds.platform.consensus.ConsensusConstants.ROUND_FIRST;

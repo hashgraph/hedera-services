@@ -16,8 +16,6 @@
 
 package com.swirlds.platform.test;
 
-import static com.swirlds.common.test.fixtures.ConfigurationUtils.configuration;
-
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;

@@ -16,7 +16,7 @@
 
 package com.swirlds.virtualmap.internal.hash;
 
-import static com.swirlds.virtualmap.test.fixtures.VirtualMapTestUtils.configuration;
+import static com.swirlds.virtualmap.test.fixtures.VirtualMapTestUtils.CONFIGURATION;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import com.swirlds.common.crypto.Hash;
@@ -71,7 +71,7 @@ class VirtualHasherHugeTest extends VirtualHasherTestBase {
                         .iterator(),
                 firstLeafPath,
                 lastLeafPath,
-                configuration().getConfigData(VirtualMapConfig.class));
+                CONFIGURATION.getConfigData(VirtualMapConfig.class));
         assertNotNull(rootHash, "No hash produced");
     }
 }

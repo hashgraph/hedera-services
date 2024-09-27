@@ -16,7 +16,7 @@
 
 package com.swirlds.merkledb;
 
-import static com.swirlds.merkledb.test.fixtures.MerkleDbTestUtils.config;
+import static com.swirlds.merkledb.test.fixtures.MerkleDbTestUtils.CONFIGURATION;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -40,7 +40,7 @@ class MerkleDbBuilderTest {
 
     @BeforeAll
     static void setup() throws IOException {
-        testDirectory = LegacyTemporaryFileBuilder.buildTemporaryFile("MerkleDbBuilderTest", config());
+        testDirectory = LegacyTemporaryFileBuilder.buildTemporaryFile("MerkleDbBuilderTest", CONFIGURATION);
     }
 
     @AfterEach
@@ -50,7 +50,8 @@ class MerkleDbBuilderTest {
     }
 
     private MerkleDbTableConfig createTableConfig() {
-        return new MerkleDbTableConfig((short) 1, DigestType.SHA_384, config().getConfigData(MerkleDbConfig.class));
+        return new MerkleDbTableConfig(
+                (short) 1, DigestType.SHA_384, CONFIGURATION.getConfigData(MerkleDbConfig.class));
     }
 
     @Test
@@ -60,7 +61,7 @@ class MerkleDbBuilderTest {
         final MerkleDbDataSourceBuilder builder = new MerkleDbDataSourceBuilder(tableConfig);
         VirtualDataSource dataSource = null;
         try {
-            dataSource = builder.build("test1", false, config());
+            dataSource = builder.build("test1", false, CONFIGURATION);
             assertTrue(dataSource instanceof MerkleDbDataSource);
             MerkleDbDataSource merkleDbDataSource = (MerkleDbDataSource) dataSource;
             assertEquals(tableConfig, merkleDbDataSource.getTableConfig());
@@ -76,10 +77,10 @@ class MerkleDbBuilderTest {
     public void testBuilderDefaults() throws IOException {
         final MerkleDbTableConfig tableConfig = createTableConfig();
         final MerkleDbDataSourceBuilder builder = new MerkleDbDataSourceBuilder(tableConfig);
-        final MerkleDb defaultDatabase = MerkleDb.getDefaultInstance(config());
+        final MerkleDb defaultDatabase = MerkleDb.getDefaultInstance(CONFIGURATION);
         VirtualDataSource dataSource = null;
         try {
-            dataSource = builder.build("test2", false, config());
+            dataSource = builder.build("test2", false, CONFIGURATION);
             assertTrue(dataSource instanceof MerkleDbDataSource);
             MerkleDbDataSource merkleDbDataSource = (MerkleDbDataSource) dataSource;
             assertEquals(
@@ -89,8 +90,8 @@ class MerkleDbBuilderTest {
                             .resolve("test2-" + merkleDbDataSource.getTableId()),
                     merkleDbDataSource.getStorageDir());
 
-            final Configuration configuration = new TestConfigBuilder().getOrCreateConfig();
-            final MerkleDbConfig merkleDbConfig = configuration.getConfigData(MerkleDbConfig.class);
+            final Configuration CONFIGURATION = new TestConfigBuilder().getOrCreateConfig();
+            final MerkleDbConfig merkleDbConfig = CONFIGURATION.getConfigData(MerkleDbConfig.class);
             assertFalse(merkleDbDataSource.isPreferDiskBasedIndexes());
             assertEquals(merkleDbConfig.maxNumOfKeys(), merkleDbDataSource.getMaxNumberOfKeys());
             assertEquals(merkleDbConfig.hashesRamToDiskThreshold(), merkleDbDataSource.getHashesRamToDiskThreshold());
@@ -113,7 +114,7 @@ class MerkleDbBuilderTest {
         MerkleDb.setDefaultPath(defaultDbPath);
         VirtualDataSource dataSource = null;
         try {
-            dataSource = builder.build("test3", true, config());
+            dataSource = builder.build("test3", true, CONFIGURATION);
             assertTrue(dataSource instanceof MerkleDbDataSource);
             MerkleDbDataSource merkleDbDataSource = (MerkleDbDataSource) dataSource;
             assertEquals(

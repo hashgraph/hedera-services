@@ -17,7 +17,7 @@
 package com.swirlds.virtualmap.internal.merkle;
 
 import static com.swirlds.virtualmap.internal.Path.INVALID_PATH;
-import static com.swirlds.virtualmap.test.fixtures.VirtualMapTestUtils.configuration;
+import static com.swirlds.virtualmap.test.fixtures.VirtualMapTestUtils.CONFIGURATION;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
@@ -78,7 +78,7 @@ public class RecordAccessorImplTest {
     void setUp() throws IOException {
         DummyVirtualStateAccessor state = new DummyVirtualStateAccessor();
         VirtualNodeCache<TestKey, TestValue> cache =
-                new VirtualNodeCache<>(configuration().getConfigData(VirtualMapConfig.class));
+                new VirtualNodeCache<>(CONFIGURATION.getConfigData(VirtualMapConfig.class));
         dataSource = new BreakableDataSource();
         records = new RecordAccessorImpl<>(
                 state, cache, TestKeySerializer.INSTANCE, TestValueSerializer.INSTANCE, dataSource);
@@ -308,7 +308,7 @@ public class RecordAccessorImplTest {
 
     private static final class BreakableDataSource implements VirtualDataSource {
 
-        private final InMemoryDataSource delegate = new InMemoryBuilder().build("delegate", true, configuration());
+        private final InMemoryDataSource delegate = new InMemoryBuilder().build("delegate", true, CONFIGURATION);
         boolean throwExceptionOnLoadLeafRecordByKey = false;
         boolean throwExceptionOnLoadLeafRecordByPath = false;
         boolean throwExceptionOnLoadHashByPath = false;

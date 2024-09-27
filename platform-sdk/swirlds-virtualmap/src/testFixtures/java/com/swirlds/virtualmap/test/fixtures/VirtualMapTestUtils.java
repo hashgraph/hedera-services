@@ -30,37 +30,24 @@ public final class VirtualMapTestUtils {
 
     private VirtualMapTestUtils() {}
 
-    public static Configuration configuration() {
-        // TODO: check if MerkleDbConfig, TemporaryFileConfig and StateCommonConfig needed
-        return ConfigurationBuilder.create()
-                .withConfigDataType(VirtualMapConfig.class)
-                .build();
-    }
+    public static Configuration CONFIGURATION = ConfigurationBuilder.create()
+            .withConfigDataType(VirtualMapConfig.class)
+            .build();
 
-    public static VirtualMapConfig virtualMapConfig() {
-        return ConfigurationBuilder.create()
-                .withConfigDataType(VirtualMapConfig.class)
-                .build()
-                .getConfigData(VirtualMapConfig.class);
-    }
+    public static VirtualMapConfig VIRTUAL_MAP_CONFIG = CONFIGURATION.getConfigData(VirtualMapConfig.class);
 
     public static VirtualMap<TestKey, TestValue> createMap(String label) {
         final VirtualDataSourceBuilder builder = new InMemoryBuilder();
         return new VirtualMap<>(
-                label, TestKeySerializer.INSTANCE, TestValueSerializer.INSTANCE, builder, configuration());
+                label, TestKeySerializer.INSTANCE, TestValueSerializer.INSTANCE, builder, CONFIGURATION);
     }
 
     public static VirtualMap<TestKey, TestValue> createMap() {
         return createMap("Test");
     }
 
-    // TODO: refactor
-
     public static VirtualRootNode<TestKey, TestValue> createRoot() {
-        final VirtualRootNode<TestKey, TestValue> root = new VirtualRootNode<>(
-                TestKeySerializer.INSTANCE, TestValueSerializer.INSTANCE, new InMemoryBuilder(), configuration());
-        root.postInit(new DummyVirtualStateAccessor());
-        return root;
+        return createRoot(CONFIGURATION);
     }
 
     public static VirtualRootNode<TestKey, TestValue> createRoot(final Configuration configuration) {

@@ -18,10 +18,10 @@ package com.swirlds.platform.recovery;
 
 import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
 import static com.swirlds.common.utility.CompareTo.isLessThan;
-import static com.swirlds.platform.reconnect.VirtualMapReconnectTestBase.configuration;
 import static com.swirlds.platform.recovery.RecoveryTestUtils.generateRandomEvents;
 import static com.swirlds.platform.recovery.RecoveryTestUtils.writeRandomEventStream;
 import static com.swirlds.platform.recovery.internal.EventStreamLowerBound.UNBOUNDED;
+import static com.swirlds.platform.test.fixtures.config.ConfigUtils.CONFIGURATION;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -72,7 +72,7 @@ class EventStreamPathIteratorTest {
     @DisplayName("Starting From First Event Test")
     void startingFromFirstEventTest() throws IOException, NoSuchAlgorithmException {
         final Random random = getRandomPrintSeed();
-        final Path directory = LegacyTemporaryFileBuilder.buildTemporaryDirectory(configuration());
+        final Path directory = LegacyTemporaryFileBuilder.buildTemporaryDirectory(CONFIGURATION);
 
         final int durationInSeconds = 100;
         final int secondsPerFile = 2;
@@ -111,7 +111,7 @@ class EventStreamPathIteratorTest {
     @DisplayName("Starting From Specified Event Test")
     void startingFromSpecifiedEventTest() throws IOException, NoSuchAlgorithmException {
         final Random random = getRandomPrintSeed();
-        final Path directory = LegacyTemporaryFileBuilder.buildTemporaryDirectory(configuration());
+        final Path directory = LegacyTemporaryFileBuilder.buildTemporaryDirectory(CONFIGURATION);
 
         final int durationInSeconds = 100;
         final int roundsPerSecond = 1;
@@ -156,7 +156,7 @@ class EventStreamPathIteratorTest {
     @DisplayName("Request Non Existent Rounds Test")
     void requestNonExistentRoundsTest() throws IOException, NoSuchAlgorithmException {
         final Random random = getRandomPrintSeed();
-        final Path directory = LegacyTemporaryFileBuilder.buildTemporaryDirectory(configuration());
+        final Path directory = LegacyTemporaryFileBuilder.buildTemporaryDirectory(CONFIGURATION);
 
         final int durationInSeconds = 100;
         final int roundsPerSecond = 1;
@@ -182,7 +182,7 @@ class EventStreamPathIteratorTest {
     @DisplayName("Extensive Bound Test")
     void extensiveBoundTest() throws IOException, NoSuchAlgorithmException {
         final Random random = getRandomPrintSeed();
-        final Path directory = LegacyTemporaryFileBuilder.buildTemporaryDirectory(configuration());
+        final Path directory = LegacyTemporaryFileBuilder.buildTemporaryDirectory(CONFIGURATION);
 
         final int durationInSeconds = 100;
         final int roundsPerSecond = 1;

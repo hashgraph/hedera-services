@@ -16,13 +16,14 @@
 
 package com.swirlds.merkle.test.map;
 
-import static com.swirlds.common.test.fixtures.ConfigurationUtils.configuration;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
+import com.swirlds.common.config.StateCommonConfig;
 import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
+import com.swirlds.common.io.config.TemporaryFileConfig;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.common.merkle.crypto.MerkleCryptography;
 import com.swirlds.common.merkle.utility.MerkleLong;
@@ -30,6 +31,8 @@ import com.swirlds.common.test.fixtures.dummy.Key;
 import com.swirlds.common.test.fixtures.dummy.Value;
 import com.swirlds.common.test.fixtures.junit.tags.TestComponentTags;
 import com.swirlds.common.test.fixtures.merkle.util.MerkleSerializeUtils;
+import com.swirlds.config.api.Configuration;
+import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.merkle.map.internal.MerkleMapInfo;
 import com.swirlds.merkle.test.fixtures.map.util.KeyValueProvider;
@@ -55,6 +58,12 @@ class MMSerializeTests {
 
     @BeforeAll
     public static void setUp() throws ConstructableRegistryException {
+        final Configuration configuration = ConfigurationBuilder.create()
+                .withConfigDataType(TemporaryFileConfig.class)
+                .withConfigDataType(StateCommonConfig.class)
+                .withConfigDataType(TemporaryFileConfig.class)
+                .withConfigDataType(StateCommonConfig.class)
+                .build();
         ConstructableRegistry registry = ConstructableRegistry.getInstance();
         registry.registerConstructable(new ClassConstructorPair(MerkleMap.class, MerkleMap::new));
         registry.registerConstructable(new ClassConstructorPair(MerkleBinaryTree.class, MerkleBinaryTree::new));
@@ -63,8 +72,7 @@ class MMSerializeTests {
         registry.registerConstructable(
                 new ClassConstructorPair(MerkleTreeInternalNode.class, MerkleTreeInternalNode::new));
         registry.registerConstructable(new ClassConstructorPair(Value.class, Value::new));
-        registry.registerConstructable(
-                new ClassConstructorPair(VirtualMap.class, () -> new VirtualMap(configuration())));
+        registry.registerConstructable(new ClassConstructorPair(VirtualMap.class, () -> new VirtualMap(configuration)));
         cryptography = MerkleCryptoFactory.getInstance();
     }
 

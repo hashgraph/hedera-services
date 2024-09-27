@@ -49,8 +49,7 @@ import org.junit.jupiter.api.Test;
 
 final class MapTest {
 
-    // TODO: refactor
-    private static Configuration configuration = ConfigurationBuilder.create()
+    private static Configuration CONFIGURATION = ConfigurationBuilder.create()
             .withConfigDataType(VirtualMapConfig.class)
             .withConfigDataType(MerkleDbConfig.class)
             .withConfigDataType(TemporaryFileConfig.class)
@@ -59,24 +58,24 @@ final class MapTest {
 
     VirtualDataSourceBuilder createLongBuilder() {
         final MerkleDbTableConfig tableConfig = new MerkleDbTableConfig(
-                (short) 1, DigestType.SHA_384, configuration.getConfigData(MerkleDbConfig.class));
+                (short) 1, DigestType.SHA_384, CONFIGURATION.getConfigData(MerkleDbConfig.class));
         return new MerkleDbDataSourceBuilder(tableConfig);
     }
 
     VirtualDataSourceBuilder createGenericBuilder() {
         final MerkleDbTableConfig tableConfig = new MerkleDbTableConfig(
-                (short) 1, DigestType.SHA_384, configuration.getConfigData(MerkleDbConfig.class));
+                (short) 1, DigestType.SHA_384, CONFIGURATION.getConfigData(MerkleDbConfig.class));
         return new MerkleDbDataSourceBuilder(tableConfig);
     }
 
     VirtualMap<TestKey, TestValue> createLongMap(String label) {
         return new VirtualMap<>(
-                label, new TestKeySerializer(), new TestValueSerializer(), createLongBuilder(), configuration);
+                label, new TestKeySerializer(), new TestValueSerializer(), createLongBuilder(), CONFIGURATION);
     }
 
     VirtualMap<TestObjectKey, TestValue> createObjectMap(String label) {
         return new VirtualMap<>(
-                label, new TestObjectKeySerializer(), new TestValueSerializer(), createGenericBuilder(), configuration);
+                label, new TestObjectKeySerializer(), new TestValueSerializer(), createGenericBuilder(), CONFIGURATION);
     }
 
     @Test

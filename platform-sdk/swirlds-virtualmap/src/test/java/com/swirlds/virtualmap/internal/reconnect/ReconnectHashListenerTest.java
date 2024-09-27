@@ -16,7 +16,7 @@
 
 package com.swirlds.virtualmap.internal.reconnect;
 
-import static com.swirlds.virtualmap.test.fixtures.VirtualMapTestUtils.configuration;
+import static com.swirlds.virtualmap.test.fixtures.VirtualMapTestUtils.CONFIGURATION;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -83,7 +83,7 @@ class ReconnectHashListenerTest {
     }) // Invalid (both should be equal only if == 1
     @DisplayName("Illegal first and last leaf path combinations throw")
     void badLeafPaths(long firstLeafPath, long lastLeafPath) {
-        final VirtualDataSource ds = new InMemoryBuilder().build("badLeafPaths", true, configuration());
+        final VirtualDataSource ds = new InMemoryBuilder().build("badLeafPaths", true, CONFIGURATION);
         assertThrows(
                 IllegalArgumentException.class,
                 () -> new ReconnectHashListener<>(
@@ -100,7 +100,7 @@ class ReconnectHashListenerTest {
     @CsvSource({"-1, -1", " 1,  1", " 1,  2", " 4,  8"})
     @DisplayName("Valid configurations create an instance")
     void goodLeafPaths(long firstLeafPath, long lastLeafPath) {
-        final VirtualDataSource ds = new InMemoryBuilder().build("goodLeafPaths", true, configuration());
+        final VirtualDataSource ds = new InMemoryBuilder().build("goodLeafPaths", true, CONFIGURATION);
         try {
             new ReconnectHashListener<>(
                     firstLeafPath, lastLeafPath, TestKeySerializer.INSTANCE, TestValueSerializer.INSTANCE, ds, null);
@@ -115,7 +115,7 @@ class ReconnectHashListenerTest {
     @DisplayName("Flushed data is always done in the right order")
     void flushOrder(int size) {
         final VirtualDataSourceSpy ds =
-                new VirtualDataSourceSpy(new InMemoryBuilder().build("flushOrder", true, configuration()));
+                new VirtualDataSourceSpy(new InMemoryBuilder().build("flushOrder", true, CONFIGURATION));
 
         final ReconnectNodeRemover<TestKey, TestValue> remover = mock(ReconnectNodeRemover.class);
 
@@ -130,7 +130,7 @@ class ReconnectHashListenerTest {
                 size,
                 last,
                 listener,
-                configuration().getConfigData(VirtualMapConfig.class));
+                CONFIGURATION.getConfigData(VirtualMapConfig.class));
 
         // Now validate that everything showed up the data source in ordered chunks
         final TreeSet<VirtualHashRecord> allInternalRecords =

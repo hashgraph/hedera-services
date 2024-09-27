@@ -69,7 +69,7 @@ class OnDiskTest extends MerkleTestBase {
     @BeforeEach
     void setUp() throws IOException {
         setupConstructableRegistry();
-        final Path storageDir = LegacyTemporaryFileBuilder.buildTemporaryDirectory(configuration);
+        final Path storageDir = LegacyTemporaryFileBuilder.buildTemporaryDirectory(CONFIGURATION);
 
         def = StateDefinition.onDisk(ACCOUNT_STATE_KEY, AccountID.PROTOBUF, Account.PROTOBUF, 100);
 
@@ -91,7 +91,7 @@ class OnDiskTest extends MerkleTestBase {
                 onDiskValueClassId(SERVICE_NAME, ACCOUNT_STATE_KEY),
                 Account.PROTOBUF);
         final var tableConfig = new MerkleDbTableConfig(
-                (short) 1, DigestType.SHA_384, configuration.getConfigData(MerkleDbConfig.class));
+                (short) 1, DigestType.SHA_384, CONFIGURATION.getConfigData(MerkleDbConfig.class));
         // Force all hashes to disk, to make sure we're going through all the
         // serialization paths we can
         tableConfig.hashesRamToDiskThreshold(0);
@@ -104,7 +104,7 @@ class OnDiskTest extends MerkleTestBase {
                 keySerializer,
                 valueSerializer,
                 builder,
-                configuration);
+                CONFIGURATION);
 
         Configuration config = mock(Configuration.class);
         final var hederaConfig = mock(HederaConfig.class);
@@ -162,12 +162,12 @@ class OnDiskTest extends MerkleTestBase {
         virtualMap.copy(); // throw away the copy, we won't use it
         CRYPTO.digestTreeSync(virtualMap);
 
-        final var snapshotDir = LegacyTemporaryFileBuilder.buildTemporaryDirectory("snapshot", configuration);
+        final var snapshotDir = LegacyTemporaryFileBuilder.buildTemporaryDirectory("snapshot", CONFIGURATION);
         final byte[] serializedBytes = writeTree(virtualMap, snapshotDir);
 
         // Before we can read the data back, we need to register the data types
         // I plan to deserialize.
-        final var r = new MerkleSchemaRegistry(registry, SERVICE_NAME, configuration, new SchemaApplications());
+        final var r = new MerkleSchemaRegistry(registry, SERVICE_NAME, CONFIGURATION, new SchemaApplications());
         r.register(schema);
 
         // read it back now as our map and validate the data come back fine

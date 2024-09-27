@@ -24,7 +24,6 @@ import static com.swirlds.common.io.utility.FileUtils.throwIfFileExists;
 import static com.swirlds.common.io.utility.FileUtils.writeAndFlush;
 import static com.swirlds.common.test.fixtures.AssertionUtils.assertEventuallyDoesNotThrow;
 import static com.swirlds.common.test.fixtures.AssertionUtils.assertEventuallyTrue;
-import static com.swirlds.common.test.fixtures.ConfigurationUtils.configuration;
 import static com.swirlds.common.threading.interrupt.Uninterruptable.abortAndThrowIfInterrupted;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static java.nio.file.Files.delete;
@@ -37,9 +36,13 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.swirlds.common.config.StateCommonConfig;
+import com.swirlds.common.io.config.TemporaryFileConfig;
 import com.swirlds.common.io.streams.MerkleDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
+import com.swirlds.config.api.Configuration;
+import com.swirlds.config.api.ConfigurationBuilder;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -62,6 +65,11 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 @DisplayName("FileUtils Tests")
 class FileUtilsTests {
+
+    private static final Configuration CONFIGURATION = ConfigurationBuilder.create()
+            .withConfigDataType(TemporaryFileConfig.class)
+            .withConfigDataType(StateCommonConfig.class)
+            .build();
 
     /**
      * Temporary directory provided by JUnit
@@ -511,7 +519,7 @@ class FileUtilsTests {
                                         out.writeNormalisedString("bar");
                                     });
                                 },
-                                configuration());
+                                CONFIGURATION);
                     } catch (final IOException e) {
                         throw new UncheckedIOException(e);
                     }
@@ -544,7 +552,7 @@ class FileUtilsTests {
 
         assertThrows(
                 IOException.class,
-                () -> executeAndRename(foo, null, configuration()),
+                () -> executeAndRename(foo, null, CONFIGURATION),
                 "existence of directory before hand should cause problems");
     }
 

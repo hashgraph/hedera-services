@@ -16,8 +16,7 @@
 
 package com.swirlds.virtualmap.test.fixtures;
 
-import static com.swirlds.virtualmap.test.fixtures.VirtualMapTestUtils.configuration;
-import static com.swirlds.virtualmap.test.fixtures.VirtualMapTestUtils.virtualMapConfig;
+import static com.swirlds.virtualmap.test.fixtures.VirtualMapTestUtils.CONFIGURATION;
 
 import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
@@ -138,17 +137,16 @@ public class VirtualTestBase {
         registry.registerConstructable(new ClassConstructorPair(TestInternal.class, TestInternal::new));
         registry.registerConstructable(new ClassConstructorPair(TestLeaf.class, TestLeaf::new));
         registry.registerConstructable(new ClassConstructorPair(VirtualMapState.class, VirtualMapState::new));
-        registry.registerConstructable(
-                new ClassConstructorPair(VirtualMap.class, () -> new VirtualMap(configuration())));
+        registry.registerConstructable(new ClassConstructorPair(VirtualMap.class, () -> new VirtualMap(CONFIGURATION)));
         registry.registerConstructable(new ClassConstructorPair(
                 VirtualNodeCache.class,
-                () -> new VirtualNodeCache(configuration().getConfigData(VirtualMapConfig.class))));
+                () -> new VirtualNodeCache(CONFIGURATION.getConfigData(VirtualMapConfig.class))));
     }
 
     @BeforeEach
     public void setup() {
         rounds = new ArrayList<>();
-        cache = new VirtualNodeCache<>(virtualMapConfig());
+        cache = new VirtualNodeCache<>(CONFIGURATION.getConfigData(VirtualMapConfig.class));
         rounds.add(cache);
         lastCache = null;
     }

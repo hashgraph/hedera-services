@@ -16,7 +16,7 @@
 
 package com.swirlds.merkledb.files;
 
-import static com.swirlds.merkledb.test.fixtures.MerkleDbTestUtils.config;
+import static com.swirlds.merkledb.test.fixtures.MerkleDbTestUtils.CONFIGURATION;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -71,7 +71,7 @@ class MemoryIndexDiskKeyValueStoreCompactionHammerTest {
 
     /**
      * Hammers the {@link MemoryIndexDiskKeyValueStore} looking for any race conditions or weakness
-     * in the implementation that can be observed due to load. The configuration options here are
+     * in the implementation that can be observed due to load. The CONFIGURATION options here are
      * intended to create new files rapidly. This is not a stress test on the size of the files,
      * only the frequency in which they occur. It was designed to find the bug #4514.
      *
@@ -97,7 +97,7 @@ class MemoryIndexDiskKeyValueStoreCompactionHammerTest {
         // Collection of database files and index
         final var serializer = new ExampleFixedSizeDataSerializer();
         LongListOffHeap storeIndex = new LongListOffHeap();
-        final MerkleDbConfig dbConfig = config().getConfigData(MerkleDbConfig.class);
+        final MerkleDbConfig dbConfig = CONFIGURATION.getConfigData(MerkleDbConfig.class);
         final var store = new MemoryIndexDiskKeyValueStore(
                 dbConfig,
                 testDirectory.resolve("megaMergeHammerTest"),

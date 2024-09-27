@@ -16,16 +16,11 @@
 
 package com.swirlds.merkle.test.fixtures.map.util;
 
-import com.swirlds.common.config.StateCommonConfig;
-import com.swirlds.common.io.config.TemporaryFileConfig;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.utility.Keyed;
 import com.swirlds.common.test.fixtures.dummy.Key;
 import com.swirlds.common.test.fixtures.dummy.Value;
-import com.swirlds.config.api.Configuration;
-import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.merkle.tree.MerkleBinaryTree;
-import com.swirlds.virtualmap.config.VirtualMapConfig;
 import java.io.File;
 import java.io.IOException;
 import java.util.Map;
@@ -112,13 +107,5 @@ public final class MerkleMapTestUtil {
             value.setKey(key);
             tree.insert(value, MerkleMapTestUtil::updateCache);
         }
-    }
-
-    public static Configuration configuration() {
-        return ConfigurationBuilder.create()
-                .withConfigDataType(VirtualMapConfig.class)
-                .withConfigDataType(TemporaryFileConfig.class)
-                .withConfigDataType(StateCommonConfig.class)
-                .build();
     }
 }

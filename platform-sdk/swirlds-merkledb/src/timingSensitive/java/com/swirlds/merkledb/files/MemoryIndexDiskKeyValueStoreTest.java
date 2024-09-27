@@ -186,7 +186,7 @@ class MemoryIndexDiskKeyValueStoreTest {
         final AtomicLong timeSpent = new AtomicLong(0);
         final AtomicDouble savedSpace = new AtomicDouble(0.0);
         String storeName = "MemoryIndexDiskKeyValueStoreTest";
-        final MerkleDbConfig dbConfig = config().getConfigData(MerkleDbConfig.class);
+        final MerkleDbConfig dbConfig = CONFIGURATION.getConfigData(MerkleDbConfig.class);
         final MemoryIndexDiskKeyValueStore store =
                 new MemoryIndexDiskKeyValueStore(dbConfig, tempDir, storeName, null, null, index);
         final DataFileCompactor dataFileCompactor =
@@ -285,7 +285,12 @@ class MemoryIndexDiskKeyValueStoreTest {
         // open snapshot and check data
         final LongListOffHeap snapshotIndex = new LongListOffHeap();
         final MemoryIndexDiskKeyValueStore storeFromSnapshot = new MemoryIndexDiskKeyValueStore(
-                config().getConfigData(MerkleDbConfig.class), tempSnapshotDir, storeName, null, null, snapshotIndex);
+                CONFIGURATION.getConfigData(MerkleDbConfig.class),
+                tempSnapshotDir,
+                storeName,
+                null,
+                null,
+                snapshotIndex);
         checkRange(testType, storeFromSnapshot, 0, 2000, 8910);
         checkRange(testType, storeFromSnapshot, 2000, 48_000, 56_000);
         storeFromSnapshot.close();

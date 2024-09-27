@@ -76,7 +76,7 @@ class MerkleDbDataSourceTest {
 
     @BeforeAll
     static void setup() throws Exception {
-        testDirectory = LegacyTemporaryFileBuilder.buildTemporaryFile("MerkleDbDataSourceTest", config());
+        testDirectory = LegacyTemporaryFileBuilder.buildTemporaryFile("MerkleDbDataSourceTest", CONFIGURATION);
         ConstructableRegistry.getInstance().registerConstructables("com.swirlds.merkledb");
     }
 
@@ -449,7 +449,7 @@ class MerkleDbDataSourceTest {
             assertFalse(
                     Files.exists(originalDb.getTableDir(tableName, dataSource.getTableId())),
                     "Data source dir should be deleted");
-            final MerkleDb snapshotDb = MerkleDb.getInstance(snapshotDbPathRef[0], config());
+            final MerkleDb snapshotDb = MerkleDb.getInstance(snapshotDbPathRef[0], CONFIGURATION);
             assertTrue(
                     Files.exists(snapshotDb.getTableDir(tableName, dataSource.getTableId())),
                     "Snapshot dir [" + snapshotDbPathRef[0] + "] should exist");
@@ -510,7 +510,7 @@ class MerkleDbDataSourceTest {
             // close data source
             dataSource.close();
 
-            final MerkleDb snapshotDb = MerkleDb.getInstance(snapshotDbPath, config());
+            final MerkleDb snapshotDb = MerkleDb.getInstance(snapshotDbPath, CONFIGURATION);
             final MerkleDbPaths snapshotPaths = new MerkleDbPaths(snapshotDb.getTableDir(tableName, tableId));
             // Delete all indices
             Files.delete(snapshotPaths.pathToDiskLocationLeafNodesFile);

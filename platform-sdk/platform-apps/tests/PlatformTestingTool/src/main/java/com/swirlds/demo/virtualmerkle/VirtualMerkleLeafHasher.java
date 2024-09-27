@@ -18,17 +18,20 @@ package com.swirlds.demo.virtualmerkle;
 
 import static com.swirlds.common.io.utility.FileUtils.getAbsolutePath;
 import static com.swirlds.common.merkle.iterators.MerkleIterationOrder.BREADTH_FIRST;
-import static com.swirlds.common.test.fixtures.ConfigurationUtils.configuration;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.swirlds.common.config.StateCommonConfig;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.io.config.TemporaryFileConfig;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.io.utility.LegacyTemporaryFileBuilder;
 import com.swirlds.common.merkle.MerkleNode;
+import com.swirlds.config.api.Configuration;
+import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.demo.virtualmerkle.map.account.AccountVirtualMapKey;
 import com.swirlds.demo.virtualmerkle.map.account.AccountVirtualMapValue;
 import com.swirlds.demo.virtualmerkle.map.smartcontracts.bytecode.SmartContractByteCodeMapKey;
@@ -55,6 +58,13 @@ import java.util.stream.Stream;
  * Validator to read a data source and all its data and check the complete data set is valid.
  */
 public class VirtualMerkleLeafHasher<K extends VirtualKey, V extends VirtualValue> {
+
+    private static final Configuration CONFIGURATION = ConfigurationBuilder.create()
+            .withConfigDataType(TemporaryFileConfig.class)
+            .withConfigDataType(StateCommonConfig.class)
+            .withConfigDataType(TemporaryFileConfig.class)
+            .withConfigDataType(StateCommonConfig.class)
+            .build();
 
     /** The data source we are validating */
     private final VirtualMap<K, V> virtualMap;
@@ -174,7 +184,7 @@ public class VirtualMerkleLeafHasher<K extends VirtualKey, V extends VirtualValu
 
             try {
                 final VirtualMap<AccountVirtualMapKey, AccountVirtualMapValue> accountsMap =
-                        new VirtualMap<>(configuration());
+                        new VirtualMap<>(CONFIGURATION);
                 accountsMap.loadFromFile(roundFolder.resolve(accountsName));
                 final VirtualMerkleLeafHasher<AccountVirtualMapKey, AccountVirtualMapValue> accountsHasher =
                         new VirtualMerkleLeafHasher<>(accountsMap);
@@ -184,7 +194,7 @@ public class VirtualMerkleLeafHasher<K extends VirtualKey, V extends VirtualValu
             }
 
             try {
-                final VirtualMap<SmartContractMapKey, SmartContractMapValue> scMap = new VirtualMap<>(configuration());
+                final VirtualMap<SmartContractMapKey, SmartContractMapValue> scMap = new VirtualMap<>(CONFIGURATION);
                 scMap.loadFromFile(roundFolder.resolve(scName));
                 final VirtualMerkleLeafHasher<SmartContractMapKey, SmartContractMapValue> scHasher =
                         new VirtualMerkleLeafHasher<>(scMap);
@@ -195,7 +205,7 @@ public class VirtualMerkleLeafHasher<K extends VirtualKey, V extends VirtualValu
 
             try {
                 final VirtualMap<SmartContractByteCodeMapKey, SmartContractByteCodeMapValue> byteCodeMap =
-                        new VirtualMap<>(configuration());
+                        new VirtualMap<>(CONFIGURATION);
                 byteCodeMap.loadFromFile(roundFolder.resolve(scByteCodeName));
                 final VirtualMerkleLeafHasher<SmartContractByteCodeMapKey, SmartContractByteCodeMapValue>
                         byteCodeHasher = new VirtualMerkleLeafHasher<>(byteCodeMap);

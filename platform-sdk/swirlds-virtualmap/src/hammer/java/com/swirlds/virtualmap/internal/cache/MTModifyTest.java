@@ -16,8 +16,9 @@
 
 package com.swirlds.virtualmap.internal.cache;
 
-import static com.swirlds.virtualmap.test.fixtures.VirtualMapTestUtils.virtualMapConfig;
+import static com.swirlds.virtualmap.test.fixtures.VirtualMapTestUtils.CONFIGURATION;
 
+import com.swirlds.virtualmap.config.VirtualMapConfig;
 import com.swirlds.virtualmap.datasource.VirtualLeafRecord;
 import com.swirlds.virtualmap.test.fixtures.TestKey;
 import com.swirlds.virtualmap.test.fixtures.TestValue;
@@ -29,11 +30,13 @@ import org.junit.jupiter.api.Test;
 
 public class MTModifyTest {
 
+    private static final VirtualMapConfig VIRTUAL_MAP_CONFIG = CONFIGURATION.getConfigData(VirtualMapConfig.class);
+
     private static final Random rand = new Random();
 
     @Test
     public void mtModifyTest() throws Exception {
-        VirtualNodeCache<TestKey, TestValue> cache = new VirtualNodeCache<>(virtualMapConfig());
+        VirtualNodeCache<TestKey, TestValue> cache = new VirtualNodeCache<>(VIRTUAL_MAP_CONFIG);
         final int maxKey = 100;
         // Populate the cache
         for (int i = 0; i < maxKey; i++) {

@@ -16,7 +16,7 @@
 
 package com.swirlds.merkledb.files;
 
-import static com.swirlds.merkledb.test.fixtures.MerkleDbTestUtils.config;
+import static com.swirlds.merkledb.test.fixtures.MerkleDbTestUtils.CONFIGURATION;
 
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.crypto.Hash;
@@ -68,7 +68,7 @@ public class CloseFlushTest {
 
     @BeforeAll
     public static void setup() throws IOException {
-        tmpFileDir = LegacyTemporaryFileBuilder.buildTemporaryFile(config());
+        tmpFileDir = LegacyTemporaryFileBuilder.buildTemporaryFile(CONFIGURATION);
         Configurator.setRootLevel(Level.WARN);
     }
 
@@ -94,7 +94,7 @@ public class CloseFlushTest {
                     TestType.fixed_fixed.dataType().getKeySerializer(),
                     TestType.fixed_fixed.dataType().getValueSerializer(),
                     builder,
-                    config());
+                    CONFIGURATION);
             for (int i = 0; i < count; i++) {
                 final ExampleLongKeyFixedSize key = new ExampleLongKeyFixedSize(i);
                 final ExampleFixedSizeVirtualValue value = new ExampleFixedSizeVirtualValue(i);
@@ -152,7 +152,7 @@ public class CloseFlushTest {
 
         @Override
         public VirtualDataSource build(
-                final String label, final boolean withDbCompactionEnabled, final @NonNull Configuration configuration) {
+                final String label, final boolean withDbCompactionEnabled, final @NonNull Configuration CONFIGURATION) {
             return new VirtualDataSource() {
                 @Override
                 public void close() throws IOException {

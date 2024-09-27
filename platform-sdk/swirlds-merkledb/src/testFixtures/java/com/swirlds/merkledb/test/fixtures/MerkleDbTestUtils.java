@@ -67,21 +67,19 @@ import javax.management.MBeanServer;
 
 @SuppressWarnings("unused")
 public class MerkleDbTestUtils {
+
     /**
      * The amount of direct memory used by JVM and caches. This needs to be big enough to allow for
      * variations in test runs while being small enough to catch leaks in tests.
      */
     private static final long DIRECT_MEMORY_BASE_USAGE = 4 * UnitConstants.MEBIBYTES_TO_BYTES;
 
-    // TODO: docs
-    public static Configuration config() {
-        return ConfigurationBuilder.create()
-                .withConfigDataType(MerkleDbConfig.class) // mostly used type
-                .withConfigDataType(VirtualMapConfig.class)
-                .withConfigDataType(TemporaryFileConfig.class) // LegacyTemporaryFileBuilder needs it
-                .withConfigDataType(StateCommonConfig.class) // LegacyTemporaryFileBuilder needs it
-                .build();
-    }
+    public static final Configuration CONFIGURATION = ConfigurationBuilder.create()
+            .withConfigDataType(MerkleDbConfig.class)
+            .withConfigDataType(VirtualMapConfig.class)
+            .withConfigDataType(TemporaryFileConfig.class)
+            .withConfigDataType(StateCommonConfig.class)
+            .build();
 
     /**
      * Run a callable test in the background and then make sure no direct memory is leaked and not
