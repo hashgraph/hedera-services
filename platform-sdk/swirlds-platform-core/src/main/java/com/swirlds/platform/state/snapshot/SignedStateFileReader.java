@@ -157,50 +157,59 @@ public final class SignedStateFileReader {
 
                     final Path directory = stateFile.getParent();
                     if (fileVersion == INIT_STATE_FILE_VERSION) {
-                        return readStateFileDataV1(stateFile, snapshotStateReader, in, directory, fileVersion);
+                        return readStateFileDataV1(stateFile, snapshotStateReader, in, directory);
                     } else if (fileVersion == SIG_SET_SEPARATE_STATE_FILE_VERSION) {
-                        return createStateFileDataV2(stateFile, snapshotStateReader, in, directory, fileVersion);
+                        return readStateFileDataV2(stateFile, snapshotStateReader, in, directory);
                     } else {
                         throw new IOException("Unsupported state file version: " + fileVersion);
                     }
                 });
     }
 
-    @NonNull
-    private static StateFileData createStateFileDataV2(
-            @NonNull final Path stateFile,
-            @NonNull final CheckedBiFunction<MerkleDataInputStream, Path, MerkleRoot, IOException> snapshotStateReader,
-            @NonNull final MerkleDataInputStream in,
-            @NonNull final Path directory,
-            final int fileVersion)
-            throws IOException {
-        try {
-            final MerkleRoot state = snapshotStateReader.apply(in, directory);
-            final Hash hash = in.readSerializable();
-            return new StateFileData(state, hash, null, fileVersion);
-
-        } catch (final IOException e) {
-            throw new IOException("Failed to read snapshot file " + stateFile.toFile(), e);
-        }
-    }
-
+    /**
+     * This method reads the state file data from a version 1 state file. This version of the state file contains
+     * signature set data.
+     */
     @NonNull
     private static StateFileData readStateFileDataV1(
             @NonNull final Path stateFile,
             @NonNull final CheckedBiFunction<MerkleDataInputStream, Path, MerkleRoot, IOException> snapshotStateReader,
             @NonNull final MerkleDataInputStream in,
-            @NonNull final Path directory,
-            final int fileVersion)
+            @NonNull final Path directory)
             throws IOException {
         try {
             final MerkleRoot state = snapshotStateReader.apply(in, directory);
             final Hash hash = in.readSerializable();
             final SigSet sigSet = in.readSerializable();
-            return new StateFileData(state, hash, sigSet, fileVersion);
+            return new StateFileData(state, hash, sigSet, INIT_STATE_FILE_VERSION);
         } catch (final IOException e) {
             throw new IOException("Failed to read snapshot file " + stateFile.toFile(), e);
         }
     }
+
+
+    /**
+     * This method reads the state file data from a version 2 state file. This version of the state file
+     * doesn't contain signature set data. Instead, the signature set data is stored in a separate file,
+     * and the resulting object doesn't have {@link SigSet} field initialized.
+     */
+    @NonNull
+    private static StateFileData readStateFileDataV2(
+            @NonNull final Path stateFile,
+            @NonNull final CheckedBiFunction<MerkleDataInputStream, Path, MerkleRoot, IOException> snapshotStateReader,
+            @NonNull final MerkleDataInputStream in,
+            @NonNull final Path directory)
+            throws IOException {
+        try {
+            final MerkleRoot state = snapshotStateReader.apply(in, directory);
+            final Hash hash = in.readSerializable();
+            return new StateFileData(state, hash, null, SIG_SET_SEPARATE_STATE_FILE_VERSION);
+
+        } catch (final IOException e) {
+            throw new IOException("Failed to read snapshot file " + stateFile.toFile(), e);
+        }
+    }
+
 
     /**
      * Check the path of a signed state file

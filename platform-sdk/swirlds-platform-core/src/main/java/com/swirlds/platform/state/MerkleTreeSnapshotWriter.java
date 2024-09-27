@@ -41,6 +41,11 @@ public final class MerkleTreeSnapshotWriter {
         // prevent instantiation
     }
 
+    /**
+     * Writes a snapshot of the given {@link MerkleRoot} to the given {@link Path}.
+     * @param merkleRoot the {@link MerkleRoot} to write
+     * @param targetPath the {@link Path} to write the snapshot to
+     */
     static void createSnapshot(@NonNull final MerkleRoot merkleRoot, @NonNull final Path targetPath) {
         final long round = merkleRoot.getReadablePlatformState().getRound();
         logger.info(STATE_TO_DISK.getMarker(), "Creating a snapshot on demand in {} for round {}", targetPath, round);

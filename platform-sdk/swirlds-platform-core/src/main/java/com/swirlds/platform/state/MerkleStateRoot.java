@@ -146,8 +146,6 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
 
     private final Function<SemanticVersion, SoftwareVersion> versionFactory;
     private MerkleCryptography merkleCryptography;
-    private PlatformContext platformContext;
-    private Platform platform;
 
     public Map<String, Map<String, StateMetadata<?, ?>>> getServices() {
         return services;
@@ -244,8 +242,7 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
             @NonNull final Platform platform,
             @NonNull final InitTrigger trigger,
             @Nullable final SoftwareVersion deserializedVersion) {
-        this.platform = platform;
-        platformContext = this.platform.getContext();
+        PlatformContext platformContext = platform.getContext();
         metrics = platformContext.getMetrics();
         merkleCryptography = platformContext.getMerkleCryptography();
         snapshotMetrics = new MerkleRootSnapshotMetrics(platformContext);
@@ -1099,7 +1096,7 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
      * {@inheritDoc}
      */
     @Override
-    public void createSnapshot(@NonNull Path targetPath) {
+    public void createSnapshot(@NonNull final Path targetPath) {
         throwIfMutable();
         throwIfDestroyed();
         final long start = System.nanoTime();

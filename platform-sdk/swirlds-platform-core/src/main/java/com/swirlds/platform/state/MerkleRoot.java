@@ -70,8 +70,8 @@ public interface MerkleRoot extends MerkleInternal {
     @NonNull
     MerkleRoot copy();
 
-    /* Creates a snapshots for the state. The state has to be hashed and immutable before calling this method.
+    /** Creates a snapshots for the state. The state has to be hashed and immutable before calling this method.
      * @param targetPath The path to save the snapshot.
      */
-    void createSnapshot(final Path targetPath);
+    void createSnapshot(final @NonNull Path targetPath);
 }
