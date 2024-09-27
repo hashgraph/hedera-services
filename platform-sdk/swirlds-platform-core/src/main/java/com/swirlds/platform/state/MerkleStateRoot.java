@@ -29,6 +29,7 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.block.stream.output.StateChanges;
 import com.hedera.hapi.node.base.SemanticVersion;
+import com.swirlds.base.time.Time;
 import com.swirlds.common.constructable.ConstructableIgnored;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.merkle.MerkleInternal;
@@ -94,7 +95,6 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -146,6 +146,7 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
 
     private final Function<SemanticVersion, SoftwareVersion> versionFactory;
     private MerkleCryptography merkleCryptography;
+    private Time time;
 
     public Map<String, Map<String, StateMetadata<?, ?>>> getServices() {
         return services;
@@ -243,6 +244,7 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
             @NonNull final InitTrigger trigger,
             @Nullable final SoftwareVersion deserializedVersion) {
         PlatformContext platformContext = platform.getContext();
+        time = platformContext.getTime();
         metrics = platformContext.getMetrics();
         merkleCryptography = platformContext.getMerkleCryptography();
         snapshotMetrics = new MerkleRootSnapshotMetrics(platformContext);
@@ -1099,12 +1101,10 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
     public void createSnapshot(@NonNull final Path targetPath) {
         throwIfMutable();
         throwIfDestroyed();
-        final long start = System.nanoTime();
+        final Long startTime = time == null ? null : time.currentTimeMillis();
         MerkleTreeSnapshotWriter.createSnapshot(this, targetPath);
-        if (snapshotMetrics != null) {
-            snapshotMetrics
-                    .getWriteStateToDiskTimeMetric()
-                    .update(TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start));
+        if (snapshotMetrics != null && time != null) {
+            snapshotMetrics.updateWriteStateToDiskTimeMetric(time.currentTimeMillis() - startTime);
         }
     }
 }

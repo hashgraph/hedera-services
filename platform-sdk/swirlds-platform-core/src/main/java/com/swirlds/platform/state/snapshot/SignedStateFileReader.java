@@ -187,7 +187,6 @@ public final class SignedStateFileReader {
         }
     }
 
-
     /**
      * This method reads the state file data from a version 2 state file. This version of the state file
      * doesn't contain signature set data. Instead, the signature set data is stored in a separate file,
@@ -209,7 +208,6 @@ public final class SignedStateFileReader {
             throw new IOException("Failed to read snapshot file " + stateFile.toFile(), e);
         }
     }
-
 
     /**
      * Check the path of a signed state file

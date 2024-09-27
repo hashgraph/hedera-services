@@ -20,6 +20,7 @@ import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.metrics.RunningAverageMetric;
 import com.swirlds.metrics.api.Metrics;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.concurrent.TimeUnit;
 
 /**
  * This class encapsulates metrics for the Merkle root snapshot.
@@ -42,12 +43,10 @@ public class MerkleRootSnapshotMetrics {
     }
 
     /**
-     * Get a metric tracking the average time required to write a Merkle tree to disk.
-     *
-     * @return the metric tracking the average time required to write a Merkle tree to disk
+     * Update the metric tracking the average time required to write a Merkle tree to disk.
+     * @param timeTakenMs the time taken to write the state to disk
      */
-    @NonNull
-    public RunningAverageMetric getWriteStateToDiskTimeMetric() {
-        return writeMerkleRootToDiskTime;
+    public void updateWriteStateToDiskTimeMetric(long timeTakenMs) {
+        writeMerkleRootToDiskTime.update(TimeUnit.MILLISECONDS.toMillis(timeTakenMs));
     }
 }
