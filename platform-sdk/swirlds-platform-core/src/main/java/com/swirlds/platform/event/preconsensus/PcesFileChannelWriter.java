@@ -17,8 +17,7 @@ public class PcesFileChannelWriter implements PcesFileWriter {
     private int fileSize;
 
     public PcesFileChannelWriter(@NonNull final Path filePath) throws IOException {
-        filePath.toFile().createNewFile();
-        channel = FileChannel.open(filePath, StandardOpenOption.WRITE);
+        channel = FileChannel.open(filePath,StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE, StandardOpenOption.DSYNC);
         buffer = ByteBuffer.allocateDirect(1024*1024*10);
         writableSequentialData = BufferedData.wrap(buffer);
     }

@@ -51,8 +51,6 @@ public class PcesMutableFile {
         }
 
         Files.createDirectories(descriptor.getPath().getParent());
-        System.out.println("Created dirs: "+descriptor.getPath().getParent());
-        System.out.println("Dir exists: "+descriptor.getPath().getParent().toFile().exists());
 
         this.descriptor = descriptor;
         writer = useFileChannelWriter
