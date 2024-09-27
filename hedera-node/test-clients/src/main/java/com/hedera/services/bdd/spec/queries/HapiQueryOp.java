@@ -365,7 +365,7 @@ public abstract class HapiQueryOp<T extends HapiQueryOp<T>> extends HapiSpecOper
 
     public T payingWith(String name) {
         payer = Optional.of(name);
-        return self();
+         return self();
     }
 
     public T signedBy(String... keys) {

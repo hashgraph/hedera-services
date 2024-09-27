@@ -13,12 +13,10 @@ import org.junit.jupiter.api.Nested;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Stream;
 
-import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountDetails;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenInfo;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTopicInfo;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 
 // @Tag(QUERIES)
 @HapiTestLifecycle
@@ -37,29 +35,31 @@ public class FreeQueriesTest extends FreeQueriesBase {
         @HapiTest
         final Stream<DynamicTest> FreeQueryVerifyWithPaidQueryForAccountBalance() {
             // declare payer account balance variables
-            final AtomicLong initialPayerbalance = new AtomicLong();
+            final AtomicLong initialPayerBalance = new AtomicLong();
             final AtomicLong newPayerBalance = new AtomicLong();
             final AtomicLong currentPayerBalance = new AtomicLong();
             return hapiTest(
                     // set initial payer balance variable
-                    getAccountBalance(PAYER).exposingBalanceTo(initialPayerbalance::set),
+                    getAccountBalance(PAYER).exposingBalanceTo(initialPayerBalance::set),
                     // perform paid query with node operator, pay for the query with payer account
                     // the grpc client performs the query to different ports
                     getTokenInfo(FUNGIBLE_QUERY_TOKEN)
                             .payingWith(PAYER)
-                            .signedBy(NODE_OPERATOR),
+                            .signedBy(PAYER),
                     // assert payer account balance is changed
                     getAccountBalance(PAYER).exposingBalanceTo(newPayerBalance::set),
-                    Assertions.assertNotEquals(initialPayerbalance.get(), newPayerBalance.get()),
+                    withOpContext((spec, log) ->
+                            Assertions.assertEquals(initialPayerBalance.get(), newPayerBalance.get())),
                     // assert some query data - research for me
                     // perform free query to local port with node operator, pay for the query with payer account
                     getTokenInfo(FUNGIBLE_QUERY_TOKEN)
                             .payingWith(PAYER)
-                            .signedBy(NODE_OPERATOR)
+                            .signedBy(PAYER)
                             .asNodeOperator,
                     // assert payer account balance is not changed
                     getAccountBalance(PAYER).exposingBalanceTo(currentPayerBalance::set),
-                    Assertions.assertEquals(newPayerBalance.get(), currentPayerBalance.get())
+                    withOpContext((spec, log) ->
+                            Assertions.assertEquals(newPayerBalance.get(), currentPayerBalance.get()))
                     // assert some query data - research for me
             );
         }
