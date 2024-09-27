@@ -19,6 +19,7 @@ package com.swirlds.merkledb;
 import static com.swirlds.common.test.fixtures.AssertionUtils.assertEventuallyEquals;
 import static com.swirlds.common.test.fixtures.AssertionUtils.assertEventuallyFalse;
 import static com.swirlds.merkledb.test.fixtures.MerkleDbTestUtils.checkDirectMemoryIsCleanedUpToLessThanBaseUsage;
+import static com.swirlds.merkledb.test.fixtures.MerkleDbTestUtils.config;
 import static com.swirlds.merkledb.test.fixtures.MerkleDbTestUtils.getDirectMemoryUsedBytes;
 import static com.swirlds.merkledb.test.fixtures.MerkleDbTestUtils.hash;
 import static com.swirlds.merkledb.test.fixtures.MerkleDbTestUtils.shuffle;
@@ -456,7 +457,7 @@ class MerkleDbDataSourceTest {
             assertFalse(
                     Files.exists(originalDb.getTableDir(tableName, dataSource.getTableId())),
                     "Data source dir should be deleted");
-            final MerkleDb snapshotDb = MerkleDb.getInstance(snapshotDbPathRef[0]);
+            final MerkleDb snapshotDb = MerkleDb.getInstance(snapshotDbPathRef[0], config());
             assertTrue(
                     Files.exists(snapshotDb.getTableDir(tableName, dataSource.getTableId())),
                     "Snapshot dir [" + snapshotDbPathRef[0] + "] should exist");
@@ -517,7 +518,7 @@ class MerkleDbDataSourceTest {
             // close data source
             dataSource.close();
 
-            final MerkleDb snapshotDb = MerkleDb.getInstance(snapshotDbPath);
+            final MerkleDb snapshotDb = MerkleDb.getInstance(snapshotDbPath, config());
             final MerkleDbPaths snapshotPaths = new MerkleDbPaths(snapshotDb.getTableDir(tableName, tableId));
             // Delete all indices
             Files.delete(snapshotPaths.pathToDiskLocationLeafNodesFile);

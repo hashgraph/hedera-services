@@ -19,6 +19,7 @@ package com.swirlds.merkledb.files;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.utility.LegacyTemporaryFileBuilder;
+import com.swirlds.config.api.Configuration;
 import com.swirlds.merkledb.MerkleDbDataSourceBuilder;
 import com.swirlds.merkledb.test.fixtures.ExampleByteArrayVirtualValue;
 import com.swirlds.merkledb.test.fixtures.ExampleFixedSizeVirtualValue;
@@ -147,7 +148,8 @@ public class CloseFlushTest {
         }
 
         @Override
-        public VirtualDataSource build(final String label, final boolean withDbCompactionEnabled) {
+        public VirtualDataSource build(
+                final String label, final boolean withDbCompactionEnabled, final Configuration configuration) {
             return new VirtualDataSource() {
                 @Override
                 public void close() throws IOException {

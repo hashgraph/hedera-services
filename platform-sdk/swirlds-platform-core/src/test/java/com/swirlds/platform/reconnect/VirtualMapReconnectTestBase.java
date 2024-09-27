@@ -34,6 +34,7 @@ import com.swirlds.common.test.fixtures.TestFileSystemManager;
 import com.swirlds.common.test.fixtures.merkle.dummy.DummyMerkleInternal;
 import com.swirlds.common.test.fixtures.merkle.dummy.DummyMerkleLeaf;
 import com.swirlds.common.test.fixtures.merkle.util.MerkleTestUtils;
+import com.swirlds.config.api.Configuration;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.virtualmap.VirtualMap;
@@ -213,8 +214,9 @@ public abstract class VirtualMapReconnectTestBase {
         }
 
         @Override
-        public BreakableDataSource build(final String label, final boolean withDbCompactionEnabled) {
-            return new BreakableDataSource(this, delegate.build(label, withDbCompactionEnabled));
+        public BreakableDataSource build(
+                final String label, final boolean withDbCompactionEnabled, final Configuration configuration) {
+            return new BreakableDataSource(this, delegate.build(label, withDbCompactionEnabled, configuration));
         }
 
         @Override
@@ -230,8 +232,8 @@ public abstract class VirtualMapReconnectTestBase {
         }
 
         @Override
-        public BreakableDataSource restore(final String label, final Path from) {
-            return new BreakableDataSource(this, delegate.restore(label, from));
+        public BreakableDataSource restore(final String label, final Path from, final Configuration configuration) {
+            return new BreakableDataSource(this, delegate.restore(label, from, configuration));
         }
 
         public void setNumCallsBeforeThrow(int num) {

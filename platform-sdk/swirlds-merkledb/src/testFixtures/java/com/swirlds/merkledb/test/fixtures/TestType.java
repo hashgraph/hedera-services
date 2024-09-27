@@ -220,7 +220,8 @@ public enum TestType {
                 final boolean enableMerging,
                 boolean preferDiskBasedIndexes)
                 throws IOException {
-            final MerkleDb database = MerkleDb.getInstance(dbPath);
+            final Configuration configuration = new TestConfigBuilder().getOrCreateConfig();
+            final MerkleDb database = MerkleDb.getInstance(dbPath, configuration);
             final MerkleDbTableConfig tableConfig = new MerkleDbTableConfig((short) 1, DigestType.SHA_384)
                     .preferDiskIndices(preferDiskBasedIndexes)
                     .maxNumberOfKeys(size * 10L)
@@ -232,7 +233,8 @@ public enum TestType {
 
         public MerkleDbDataSource getDataSource(final Path dbPath, final String name, final boolean enableMerging)
                 throws IOException {
-            final MerkleDb database = MerkleDb.getInstance(dbPath);
+            final Configuration configuration = new TestConfigBuilder().getOrCreateConfig();
+            final MerkleDb database = MerkleDb.getInstance(dbPath, configuration);
             return database.getDataSource(name, enableMerging);
         }
 

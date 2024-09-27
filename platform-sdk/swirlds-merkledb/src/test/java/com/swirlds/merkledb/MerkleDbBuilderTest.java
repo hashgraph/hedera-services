@@ -16,6 +16,7 @@
 
 package com.swirlds.merkledb;
 
+import static com.swirlds.merkledb.test.fixtures.MerkleDbTestUtils.config;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -65,7 +66,7 @@ class MerkleDbBuilderTest {
                 new MerkleDbDataSourceBuilder(testDirectory.resolve("merkledb"), tableConfig);
         VirtualDataSource dataSource = null;
         try {
-            dataSource = builder.build("test1", false);
+            dataSource = builder.build("test1", false, config());
             assertTrue(dataSource instanceof MerkleDbDataSource);
             MerkleDbDataSource merkleDbDataSource = (MerkleDbDataSource) dataSource;
             assertEquals(tableConfig, merkleDbDataSource.getTableConfig());
@@ -83,10 +84,10 @@ class MerkleDbBuilderTest {
         final MerkleDbDataSourceBuilder builder =
                 new MerkleDbDataSourceBuilder(testDirectory.resolve("merkledb"), tableConfig);
         MerkleDb.setDefaultPath(testDirectory.resolve("merkledb"));
-        final MerkleDb defaultDatabase = MerkleDb.getDefaultInstance();
+        final MerkleDb defaultDatabase = MerkleDb.getDefaultInstance(config());
         VirtualDataSource dataSource = null;
         try {
-            dataSource = builder.build("test2", false);
+            dataSource = builder.build("test2", false, config());
             assertTrue(dataSource instanceof MerkleDbDataSource);
             MerkleDbDataSource merkleDbDataSource = (MerkleDbDataSource) dataSource;
             assertEquals(
@@ -120,7 +121,7 @@ class MerkleDbBuilderTest {
         MerkleDb.setDefaultPath(defaultDbPath);
         VirtualDataSource dataSource = null;
         try {
-            dataSource = builder.build("test3", true);
+            dataSource = builder.build("test3", true, config());
             assertTrue(dataSource instanceof MerkleDbDataSource);
             MerkleDbDataSource merkleDbDataSource = (MerkleDbDataSource) dataSource;
             assertEquals(

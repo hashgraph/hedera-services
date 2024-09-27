@@ -17,6 +17,7 @@
 package com.swirlds.merkledb;
 
 import static com.swirlds.common.test.fixtures.AssertionUtils.assertEventuallyTrue;
+import static com.swirlds.merkledb.test.fixtures.MerkleDbTestUtils.config;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
@@ -265,7 +266,7 @@ class MerkleDbSnapshotTest {
     void testSnapshotAfterReconnect() throws Exception {
         final MerkleDbTableConfig tableConfig = fixedConfig();
         final MerkleDbDataSourceBuilder dsBuilder = new MerkleDbDataSourceBuilder(tableConfig);
-        final VirtualDataSource original = dsBuilder.build("vm", false);
+        final VirtualDataSource original = dsBuilder.build("vm", false, config());
         // Simulate reconnect as a learner
         final VirtualDataSource copy = dsBuilder.copy(original, true);
 

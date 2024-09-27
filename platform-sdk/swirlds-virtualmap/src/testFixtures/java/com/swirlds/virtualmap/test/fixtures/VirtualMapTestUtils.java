@@ -16,7 +16,10 @@
 
 package com.swirlds.virtualmap.test.fixtures;
 
+import com.swirlds.config.api.Configuration;
+import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.virtualmap.VirtualMap;
+import com.swirlds.virtualmap.config.VirtualMapConfig;
 import com.swirlds.virtualmap.datasource.VirtualDataSourceBuilder;
 import com.swirlds.virtualmap.internal.merkle.VirtualRootNode;
 
@@ -26,6 +29,12 @@ import com.swirlds.virtualmap.internal.merkle.VirtualRootNode;
 public final class VirtualMapTestUtils {
 
     private VirtualMapTestUtils() {}
+
+    public static Configuration configuration() {
+        return ConfigurationBuilder.create()
+                .withConfigDataType(VirtualMapConfig.class)
+                .build();
+    }
 
     public static VirtualMap<TestKey, TestValue> createMap(String label) {
         final VirtualDataSourceBuilder builder = new InMemoryBuilder();

@@ -18,6 +18,7 @@ package com.swirlds.virtual.merkle.reconnect;
 
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
+import com.swirlds.config.api.Configuration;
 import com.swirlds.virtualmap.datasource.VirtualDataSource;
 import com.swirlds.virtualmap.datasource.VirtualDataSourceBuilder;
 import java.io.IOException;
@@ -72,8 +73,9 @@ public final class BrokenBuilder implements VirtualDataSourceBuilder {
     }
 
     @Override
-    public BreakableDataSource build(final String label, final boolean withDbCompactionEnabled) {
-        return new BreakableDataSource(this, delegate.build(label, withDbCompactionEnabled));
+    public BreakableDataSource build(
+            final String label, final boolean withDbCompactionEnabled, final Configuration configuration) {
+        return new BreakableDataSource(this, delegate.build(label, withDbCompactionEnabled, configuration));
     }
 
     @Override
@@ -89,8 +91,8 @@ public final class BrokenBuilder implements VirtualDataSourceBuilder {
     }
 
     @Override
-    public BreakableDataSource restore(final String label, final Path from) {
-        return new BreakableDataSource(this, delegate.restore(label, from));
+    public BreakableDataSource restore(final String label, final Path from, final Configuration configuration) {
+        return new BreakableDataSource(this, delegate.restore(label, from, configuration));
     }
 
     public void setNumCallsBeforeThrow(final int numCallsBeforeThrow) {

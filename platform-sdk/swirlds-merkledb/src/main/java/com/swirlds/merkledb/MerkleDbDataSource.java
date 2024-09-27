@@ -34,11 +34,11 @@ import com.hedera.pbj.runtime.io.stream.ReadableStreamingData;
 import com.hedera.pbj.runtime.io.stream.WritableStreamingData;
 import com.swirlds.base.units.UnitConstants;
 import com.swirlds.base.utility.ToStringBuilder;
-import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.filesystem.FileSystemManager;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
+import com.swirlds.config.api.Configuration;
 import com.swirlds.merkledb.collections.HashListByteBuffer;
 import com.swirlds.merkledb.collections.LongList;
 import com.swirlds.merkledb.collections.LongListDisk;
@@ -186,7 +186,8 @@ public final class MerkleDbDataSource implements VirtualDataSource {
             final String tableName,
             final int tableId,
             final MerkleDbTableConfig tableConfig,
-            final boolean compactionEnabled)
+            final boolean compactionEnabled,
+            final Configuration configuration)
             throws IOException {
         this.database = database;
         this.tableName = tableName;
@@ -194,8 +195,7 @@ public final class MerkleDbDataSource implements VirtualDataSource {
         this.tableConfig = tableConfig;
 
         if (tableConfig.isPreferDiskBasedIndices()) {
-            this.fileSystemManager =
-                    FileSystemManager.create(ConfigurationHolder.getInstance().get());
+            this.fileSystemManager = FileSystemManager.create(configuration);
         }
 
         // create thread group with label
