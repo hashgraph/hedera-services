@@ -17,6 +17,7 @@
 package com.hedera.node.config.data;
 
 import static com.hedera.node.config.types.StreamMode.BOTH;
+import static com.hedera.node.config.types.StreamMode.RECORDS;
 
 import com.hedera.node.config.NetworkProperty;
 import com.hedera.node.config.NodeProperty;
@@ -50,6 +51,6 @@ public record BlockStreamConfig(
     }
 
     public boolean streamRecords() {
-        return true;
+        return streamMode == RECORDS;
     }
 }
