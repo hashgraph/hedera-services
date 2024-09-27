@@ -242,7 +242,10 @@ public class HapiGetTopicInfo extends HapiQueryOp<HapiGetTopicInfo> {
             assertFalse(info.hasSubmitKey(), "Should have no submit key!");
         }
         if (hasNoFeeScheduleKey) {
-            assertFalse(info.hasFeeScheduleKey(), "Should have no fee schedule key!");
+            assertFalse(
+                info.hasFeeScheduleKey()
+                    && info.getFeeScheduleKey().getKeyList().getKeysCount() > 0,
+                "Should have no fee schedule key!");
         }
         final var actualFees = info.getCustomFeesList();
         if (expectNoFees) {

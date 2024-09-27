@@ -22,6 +22,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnUtils.isIdLiteral;
 
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ConsensusCustomFee;
 import com.hederahashgraph.api.proto.java.CustomFee;
 import com.hederahashgraph.api.proto.java.FixedFee;
@@ -222,9 +223,18 @@ public class CustomFeeSpecs {
         return ConsensusCustomFee.newBuilder().setFixedFee(fixedBuilder).setFeeCollectorAccountId(collectorId);
     }
 
+    static ConsensusCustomFee.Builder baseConsensusFixedBuilder(long amount, AccountID collector) {
+        final var fixedBuilder = FixedFee.newBuilder().setAmount(amount);
+        return ConsensusCustomFee.newBuilder().setFixedFee(fixedBuilder).setFeeCollectorAccountId(collector);
+    }
+
     // consensus custom fee suppliers
     public static Function<HapiSpec, ConsensusCustomFee> fixedConsensusHbarFee(long amount, String collector) {
         return spec -> builtConsensusFixedHbar(amount, collector, spec);
+    }
+
+    public static Function<HapiSpec, ConsensusCustomFee> fixedConsensusHbarFee(long amount, AccountID collector) {
+        return spec -> builtConsensusFixedHbar(amount, collector);
     }
 
     public static Function<HapiSpec, ConsensusCustomFee> fixedConsensusHtsFee(
@@ -235,6 +245,10 @@ public class CustomFeeSpecs {
     // builders
     static ConsensusCustomFee builtConsensusFixedHbar(long amount, String collector, HapiSpec spec) {
         return baseConsensusFixedBuilder(amount, collector, spec).build();
+    }
+
+    static ConsensusCustomFee builtConsensusFixedHbar(long amount, AccountID collector) {
+        return baseConsensusFixedBuilder(amount, collector).build();
     }
 
     static ConsensusCustomFee builtConsensusFixedHts(long amount, String denom, String collector, HapiSpec spec) {

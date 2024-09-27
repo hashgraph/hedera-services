@@ -46,6 +46,7 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.Key;
+import com.hedera.hapi.node.base.Key.KeyOneOfType;
 import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.base.TopicID;
 import com.hedera.hapi.node.consensus.ConsensusUpdateTopicTransactionBody;
@@ -145,7 +146,8 @@ public class ConsensusUpdateTopicHandler implements TransactionHandler {
         }
 
         // If the fee schedule key is change then the transaction must also be signed by the new fee schedule key
-        if (op.hasFeeScheduleKey()) {
+        if (op.hasFeeScheduleKey()
+                && !KeyOneOfType.UNSET.equals(op.feeScheduleKey().key().kind())) {
             context.requireKeyOrThrow(op.feeScheduleKey(), INVALID_FEE_SCHEDULE_KEY);
         }
     }
@@ -335,7 +337,8 @@ public class ConsensusUpdateTopicHandler implements TransactionHandler {
             @NonNull final AttributeValidator attributeValidator,
             @NonNull final ConsensusUpdateTopicTransactionBody op,
             @NonNull final Topic topic) {
-        if (op.hasFeeScheduleKey()) {
+        if (op.hasFeeScheduleKey()
+                && !KeyOneOfType.UNSET.equals(op.feeScheduleKey().key().kind())) {
             validateTrue(topic.hasFeeScheduleKey(), FEE_SCHEDULE_KEY_CANNOT_BE_UPDATED);
             attributeValidator.validateKey(op.feeScheduleKey(), INVALID_CUSTOM_FEE_SCHEDULE_KEY);
         }
@@ -364,9 +367,9 @@ public class ConsensusUpdateTopicHandler implements TransactionHandler {
      * If the fee exempt key list is set we should always have custom fees. This method is called when we are validating
      * the fee exempt key list, so within this method we know that the list is changing.
      * We are validating two cases:
-     * 1. If together with the list we are also updating(adding) the custom fees - this is a valid scenario
+     * 1. If together with the key we are also updating(adding) the custom fees - this is a valid scenario
      * 2. If we are not updating the custom fees we check if the topic already has custom fees - this is a valid scenario
-     * If we are not doing the second validation when we update the fee exempt key list we will always need to sent
+     * If we are not doing the second validation when we update the fee exempt key list we will always need to send
      * the custom fees(even if they are not updated).
      * In all other cases we are throwing MISSING_CUSTOM_FEES response code.
      */
