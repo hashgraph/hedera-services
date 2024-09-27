@@ -23,11 +23,13 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOPIC_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOPIC_MESSAGE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MESSAGE_SIZE_TOO_LARGE;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.BASIC_ENTITY_ID_SIZE;
 import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.LONG_SIZE;
 import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.RECEIPT_STORAGE_TIME_SEC;
 import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.TX_HASH_SIZE;
 import static com.hedera.node.app.spi.validation.Validations.mustExist;
+import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateFalsePreCheck;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateTruePreCheck;
 import static java.util.Objects.requireNonNull;
@@ -44,6 +46,7 @@ import com.hedera.node.app.hapi.utils.CommonPbjConverters;
 import com.hedera.node.app.service.consensus.ReadableTopicStore;
 import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
 import com.hedera.node.app.service.consensus.impl.records.ConsensusSubmitMessageStreamBuilder;
+import com.hedera.node.app.service.consensus.impl.util.ConsensusCustomFeeHelper;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -61,6 +64,7 @@ import java.io.ObjectOutputStream;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
+import java.util.HashSet;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -99,6 +103,12 @@ public class ConsensusSubmitMessageHandler implements TransactionHandler {
         if (topic.hasSubmitKey()) {
             context.requireKeyOrThrow(topic.submitKeyOrThrow(), INVALID_SUBMIT_KEY);
         }
+        // add optional fee exempt keys in to the key verifieer
+        // later it will be used to validate if transaction was signed by
+        // any of these keys and based on that, custom fees will be charged or not
+        if (!topic.feeExemptKeyList().isEmpty()) {
+            context.optionalKeys(new HashSet<>(topic.feeExemptKeyList()));
+        }
     }
 
     /**
@@ -121,6 +131,33 @@ public class ConsensusSubmitMessageHandler implements TransactionHandler {
         /* Validate all needed fields in the transaction */
         final var config = handleContext.configuration().getConfigData(ConsensusConfig.class);
         validateTransaction(txn, config, topic);
+
+        /* handle custom fees */
+        // check if payer is fee exempt
+        var payerIsFeeExempted = false;
+        if (!topic.feeExemptKeyList().isEmpty()) {
+            for (final var key : topic.feeExemptKeyList()) {
+                final var keyVerificationResult = handleContext.keyVerifier().verificationFor(key);
+                if (keyVerificationResult.passed()) {
+                    payerIsFeeExempted = true;
+                }
+            }
+        }
+        if (!topic.customFees().isEmpty() && !payerIsFeeExempted) {
+            // validate and create synthetic body
+            final var syntheticBody = ConsensusCustomFeeHelper.assessCustomFee(topic, handleContext);
+            // dispatch crypto transfer
+            var record = handleContext.dispatchChildTransaction(
+                    TransactionBody.newBuilder().cryptoTransfer(syntheticBody).build(),
+                    ConsensusSubmitMessageStreamBuilder.class,
+                    null,
+                    handleContext.payer(),
+                    HandleContext.TransactionCategory.CHILD,
+                    HandleContext.ConsensusThrottling.OFF);
+            validateTrue(record.status().equals(SUCCESS), record.status());
+            // update total allowances
+            ConsensusCustomFeeHelper.adjustAllowance(syntheticBody);
+        }
 
         try {
             final var updatedTopic = updateRunningHashAndSequenceNumber(txn, topic, handleContext.consensusNow());
