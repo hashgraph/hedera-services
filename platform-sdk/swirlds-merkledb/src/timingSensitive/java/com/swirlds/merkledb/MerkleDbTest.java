@@ -125,7 +125,6 @@ public class MerkleDbTest {
             // Don't call sourceDb.snapshot() as it would create and initialize an instance for snapshotDir
             FileUtils.hardLinkTree(dbDir, snapshotDir.resolve("db"));
 
-            // TODO: refactor this -- add to CONFIGURATION method
             final Configuration snapshotConfig = ConfigurationBuilder.create()
                     .withSources(new SimpleConfigSource("merkleDb.usePbj", snapshotUsePbj))
                     .withConfigDataType(MerkleDbConfig.class)
