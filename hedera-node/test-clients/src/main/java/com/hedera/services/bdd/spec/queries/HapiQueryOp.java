@@ -87,6 +87,8 @@ public abstract class HapiQueryOp<T extends HapiQueryOp<T>> extends HapiSpecOper
     /** if response code in the set then allow to resubmit transaction */
     protected Optional<EnumSet<ResponseCodeEnum>> answerOnlyRetryPrechecks = Optional.empty();
 
+    private boolean asNodeOperator = false;
+
     private ResponseCodeEnum expectedCostAnswerPrecheck() {
         return costAnswerPrecheck.orElse(OK);
     }
@@ -203,12 +205,19 @@ public abstract class HapiQueryOp<T extends HapiQueryOp<T>> extends HapiSpecOper
             }
 
             if (needsPayment() && !loggingOff) {
-                String message = String.format("%sPaying for %s with %s", spec.logPrefix(), this, txnToString(payment));
+                String message;
+                if (asNodeOperator) {
+                    message = String.format(
+                            "%sNode operator sending %s with %s", spec.logPrefix(), this, txnToString(payment));
+                } else {
+                    message = String.format("%sPaying for %s with %s", spec.logPrefix(), this, txnToString(payment));
+                }
+
                 log.info(message);
             }
             query = maybeModified(queryFor(spec, payment, ResponseType.ANSWER_ONLY), spec);
             beforeAnswerOnlyQuery();
-            response = spec.targetNetworkOrThrow().send(query, type(), targetNodeFor(spec));
+            response = spec.targetNetworkOrThrow().send(query, type(), targetNodeFor(spec), asNodeOperator);
             processAnswerOnlyResponse(spec);
 
             actualPrecheck = reflectForPrecheck(response);
@@ -275,12 +284,19 @@ public abstract class HapiQueryOp<T extends HapiQueryOp<T>> extends HapiSpecOper
             long initNodePayment = costOnlyNodePayment(spec);
             Transaction payment = finalizedTxn(spec, opDef(spec, initNodePayment), true);
             if (!loggingOff) {
-                final String message = String.format(
-                        "%sPaying for COST_ANSWER of %s with %s", spec.logPrefix(), this, txnToString(payment));
+                String message;
+                if (asNodeOperator) {
+                    message = String.format(
+                            "%sNode operator sending COST_ANSWER query for %s with %s",
+                            spec.logPrefix(), this, txnToString(payment));
+                } else {
+                    message = String.format(
+                            "%sPaying for COST_ANSWER of %s with %s", spec.logPrefix(), this, txnToString(payment));
+                }
                 log.info(message);
             }
             query = maybeModified(queryFor(spec, payment, ResponseType.COST_ANSWER), spec);
-            response = spec.targetNetworkOrThrow().send(query, type(), targetNodeFor(spec));
+            response = spec.targetNetworkOrThrow().send(query, type(), targetNodeFor(spec), asNodeOperator);
             final var realNodePayment = costFrom(response);
             Optional.ofNullable(nodePaymentObserver).ifPresent(observer -> observer.accept(realNodePayment));
             if (expectedCostAnswerPrecheck() != OK) {
@@ -365,7 +381,7 @@ public abstract class HapiQueryOp<T extends HapiQueryOp<T>> extends HapiSpecOper
 
     public T payingWith(String name) {
         payer = Optional.of(name);
-         return self();
+        return self();
     }
 
     public T signedBy(String... keys) {
@@ -447,6 +463,11 @@ public abstract class HapiQueryOp<T extends HapiQueryOp<T>> extends HapiSpecOper
 
     public T exposingNodePaymentTo(@NonNull final LongConsumer observer) {
         nodePaymentObserver = requireNonNull(observer);
+        return self();
+    }
+
+    public T asNodeOperator() {
+        asNodeOperator = true;
         return self();
     }
 }

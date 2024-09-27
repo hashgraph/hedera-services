@@ -71,6 +71,10 @@ public class HapiClients {
      * Id of node-{host, port} pairs to use for non-workflow operations using TLS ports
      */
     private final Map<AccountID, String> tlsStubIds;
+    /**
+     * Id of node-{host, port} pairs to use for non-workflow operations using node operator ports
+     */
+    private final Map<AccountID, String> nodeOperatorStubIds;
 
     /**
      * Maps from a node connection URI to a pool of {@link ChannelStubs} that have been created for that URI.
@@ -144,13 +148,28 @@ public class HapiClients {
         stubSequences.putIfAbsent(channelUri, new AtomicInteger());
     }
 
+    private void ensureNodeOperatorChannelStubsInPool(@NonNull final NodeConnectInfo node) {
+        requireNonNull(node);
+        final var channelUri = node.nodeOperatorUri();
+        final var existingPool = channelPools.computeIfAbsent(channelUri, COPY_ON_WRITE_LIST_SUPPLIER);
+        if (existingPool.size() < MAX_DESIRED_CHANNELS_PER_NODE) {
+            final var channel = createNettyChannel(false, node.getHost(), node.getNodeOperatorPort(), -1);
+            requireNonNull(channel, "Cannot continue without Netty channel");
+            existingPool.add(ChannelStubs.from(channel, node, false));
+        }
+        stubSequences.putIfAbsent(channelUri, new AtomicInteger());
+    }
+
     private HapiClients(final List<NodeConnectInfo> nodes) {
         this.nodes = nodes;
         stubIds = nodes.stream().collect(Collectors.toMap(NodeConnectInfo::getAccount, NodeConnectInfo::uri));
         tlsStubIds = nodes.stream().collect(Collectors.toMap(NodeConnectInfo::getAccount, NodeConnectInfo::tlsUri));
+        nodeOperatorStubIds =
+                nodes.stream().collect(Collectors.toMap(NodeConnectInfo::getAccount, NodeConnectInfo::nodeOperatorUri));
         nodes.forEach(node -> {
             ensureChannelStubsInPool(node, false);
             ensureChannelStubsInPool(node, true);
+            ensureNodeOperatorChannelStubsInPool(node);
         });
     }
 
@@ -166,68 +185,76 @@ public class HapiClients {
                 .toList());
     }
 
-    public FileServiceBlockingStub getFileSvcStub(AccountID nodeId, boolean useTls) {
-        return nextStubsFromPool(stubId(nodeId, useTls))
+    public FileServiceBlockingStub getFileSvcStub(AccountID nodeId, boolean useTls, boolean asNodeOperator) {
+        return nextStubsFromPool(stubId(nodeId, useTls, asNodeOperator))
                 .fileSvcStubs()
                 .withDeadlineAfter(DEADLINE_SECS, TimeUnit.SECONDS);
     }
 
-    public TokenServiceBlockingStub getTokenSvcStub(AccountID nodeId, boolean useTls) {
-        return nextStubsFromPool(stubId(nodeId, useTls))
+    public TokenServiceBlockingStub getTokenSvcStub(AccountID nodeId, boolean useTls, boolean asNodeOperator) {
+        return nextStubsFromPool(stubId(nodeId, useTls, asNodeOperator))
                 .tokenSvcStubs()
                 .withDeadlineAfter(DEADLINE_SECS, TimeUnit.SECONDS);
     }
 
-    public AddressBookServiceBlockingStub getAddressBookSvcStub(AccountID nodeId, boolean useTls) {
-        return nextStubsFromPool(stubId(nodeId, useTls))
+    public AddressBookServiceBlockingStub getAddressBookSvcStub(
+            AccountID nodeId, boolean useTls, boolean asNodeOperator) {
+        return nextStubsFromPool(stubId(nodeId, useTls, asNodeOperator))
                 .addressBookSvcStubs()
                 .withDeadlineAfter(DEADLINE_SECS, TimeUnit.SECONDS);
     }
 
-    public CryptoServiceBlockingStub getCryptoSvcStub(AccountID nodeId, boolean useTls) {
-        return nextStubsFromPool(stubId(nodeId, useTls))
+    public CryptoServiceBlockingStub getCryptoSvcStub(AccountID nodeId, boolean useTls, boolean asNodeOperator) {
+        return nextStubsFromPool(stubId(nodeId, useTls, asNodeOperator))
                 .cryptoSvcStubs()
                 .withDeadlineAfter(DEADLINE_SECS, TimeUnit.SECONDS);
     }
 
-    public FreezeServiceBlockingStub getFreezeSvcStub(AccountID nodeId, boolean useTls) {
-        return nextStubsFromPool(stubId(nodeId, useTls))
+    public FreezeServiceBlockingStub getFreezeSvcStub(AccountID nodeId, boolean useTls, boolean asNodeOperator) {
+        return nextStubsFromPool(stubId(nodeId, useTls, asNodeOperator))
                 .freezeSvcStubs()
                 .withDeadlineAfter(DEADLINE_SECS, TimeUnit.SECONDS);
     }
 
-    public SmartContractServiceBlockingStub getScSvcStub(AccountID nodeId, boolean useTls) {
-        return nextStubsFromPool(stubId(nodeId, useTls))
+    public SmartContractServiceBlockingStub getScSvcStub(AccountID nodeId, boolean useTls, boolean asNodeOperator) {
+        return nextStubsFromPool(stubId(nodeId, useTls, asNodeOperator))
                 .scSvcStubs()
                 .withDeadlineAfter(DEADLINE_SECS, TimeUnit.SECONDS);
     }
 
-    public ConsensusServiceBlockingStub getConsSvcStub(AccountID nodeId, boolean useTls) {
-        return nextStubsFromPool(stubId(nodeId, useTls))
+    public ConsensusServiceBlockingStub getConsSvcStub(AccountID nodeId, boolean useTls, boolean asNodeOperator) {
+        return nextStubsFromPool(stubId(nodeId, useTls, asNodeOperator))
                 .consSvcStubs()
                 .withDeadlineAfter(DEADLINE_SECS, TimeUnit.SECONDS);
     }
 
-    public NetworkServiceBlockingStub getNetworkSvcStub(AccountID nodeId, boolean useTls) {
-        return nextStubsFromPool(stubId(nodeId, useTls))
+    public NetworkServiceBlockingStub getNetworkSvcStub(AccountID nodeId, boolean useTls, boolean asNodeOperator) {
+        return nextStubsFromPool(stubId(nodeId, useTls, asNodeOperator))
                 .networkSvcStubs()
                 .withDeadlineAfter(DEADLINE_SECS, TimeUnit.SECONDS);
     }
 
-    public ScheduleServiceBlockingStub getScheduleSvcStub(AccountID nodeId, boolean useTls) {
-        return nextStubsFromPool(stubId(nodeId, useTls))
+    public ScheduleServiceBlockingStub getScheduleSvcStub(AccountID nodeId, boolean useTls, boolean asNodeOperator) {
+        return nextStubsFromPool(stubId(nodeId, useTls, asNodeOperator))
                 .scheduleSvcStubs()
                 .withDeadlineAfter(DEADLINE_SECS, TimeUnit.SECONDS);
     }
 
-    public UtilServiceGrpc.UtilServiceBlockingStub getUtilSvcStub(AccountID nodeId, boolean useTls) {
-        return nextStubsFromPool(stubId(nodeId, useTls))
+    public UtilServiceGrpc.UtilServiceBlockingStub getUtilSvcStub(
+            AccountID nodeId, boolean useTls, boolean asNodeOperator) {
+        return nextStubsFromPool(stubId(nodeId, useTls, asNodeOperator))
                 .utilSvcStubs()
                 .withDeadlineAfter(DEADLINE_SECS, TimeUnit.SECONDS);
     }
 
-    private String stubId(AccountID nodeId, boolean useTls) {
-        return useTls ? tlsStubIds.get(nodeId) : stubIds.get(nodeId);
+    private String stubId(AccountID nodeId, boolean useTls, boolean asNodeOperator) {
+        if (useTls) {
+            return tlsStubIds.get(nodeId);
+        } else if (asNodeOperator) {
+            return nodeOperatorStubIds.get(nodeId);
+        } else {
+            return stubIds.get(nodeId);
+        }
     }
 
     private static synchronized ChannelStubs nextStubsFromPool(@NonNull final String stubId) {
