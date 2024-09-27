@@ -45,15 +45,19 @@ public class PcesMutableFile {
      *
      * @param descriptor a description of the file
      */
-    PcesMutableFile(@NonNull final PcesFile descriptor) throws IOException {
+    PcesMutableFile(@NonNull final PcesFile descriptor, boolean useFileChannelWriter) throws IOException {
         if (Files.exists(descriptor.getPath())) {
             throw new IOException("File " + descriptor.getPath() + " already exists");
         }
 
         Files.createDirectories(descriptor.getPath().getParent());
+        System.out.println("Created dirs: "+descriptor.getPath().getParent());
+        System.out.println("Dir exists: "+descriptor.getPath().getParent().toFile().exists());
 
         this.descriptor = descriptor;
-        writer = new PcesLegacyFileWriter(descriptor.getPath());
+        writer = useFileChannelWriter
+                ? new PcesFileChannelWriter(descriptor.getPath())
+                : new PcesLegacyFileWriter(descriptor.getPath());
         writer.writeVersion(PcesFileVersion.currentVersionNumber());
         highestAncientIdentifierInFile = descriptor.getLowerBound();
     }

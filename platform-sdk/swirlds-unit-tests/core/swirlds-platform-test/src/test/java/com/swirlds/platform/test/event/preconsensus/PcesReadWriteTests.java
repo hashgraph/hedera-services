@@ -96,14 +96,23 @@ class PcesReadWriteTests {
         FileUtils.deleteDirectory(testDirectory);
     }
 
-    protected static Stream<Arguments> buildArguments() {
+    protected static Stream<Arguments> ancientModeArguments() {
         return Stream.of(Arguments.of(GENERATION_THRESHOLD), Arguments.of(BIRTH_ROUND_THRESHOLD));
     }
 
+    protected static Stream<Arguments> ancientAndWriterTypeArguments() {
+        return Stream.of(
+                Arguments.of(GENERATION_THRESHOLD, false),
+                Arguments.of(BIRTH_ROUND_THRESHOLD, false),
+                Arguments.of(GENERATION_THRESHOLD, true),
+                Arguments.of(BIRTH_ROUND_THRESHOLD, true)
+        );
+    }
+
     @ParameterizedTest
-    @MethodSource("buildArguments")
+    @MethodSource("ancientAndWriterTypeArguments")
     @DisplayName("Write Then Read Test")
-    void writeThenReadTest(@NonNull final AncientMode ancientMode) throws IOException {
+    void writeThenReadTest(@NonNull final AncientMode ancientMode, final boolean useFileChannelWriter) throws IOException {
         final Random random = RandomUtils.getRandomPrintSeed();
 
         final int numEvents = 100;
@@ -137,7 +146,7 @@ class PcesReadWriteTests {
                 0,
                 testDirectory);
 
-        final PcesMutableFile mutableFile = file.getMutableFile();
+        final PcesMutableFile mutableFile = file.getMutableFile(useFileChannelWriter);
         for (final PlatformEvent event : events) {
             mutableFile.writeEvent(event);
         }
@@ -154,7 +163,7 @@ class PcesReadWriteTests {
     }
 
     @ParameterizedTest
-    @MethodSource("buildArguments")
+    @MethodSource("ancientModeArguments")
     @DisplayName("Read Files After Minimum Test")
     void readFilesAfterMinimumTest(@NonNull final AncientMode ancientMode) throws IOException {
         final Random random = RandomUtils.getRandomPrintSeed();
@@ -219,7 +228,7 @@ class PcesReadWriteTests {
     }
 
     @ParameterizedTest
-    @MethodSource("buildArguments")
+    @MethodSource("ancientModeArguments")
     @DisplayName("Read Empty File Test")
     void readEmptyFileTest(@NonNull final AncientMode ancientMode) throws IOException {
         final Random random = RandomUtils.getRandomPrintSeed();
@@ -241,7 +250,7 @@ class PcesReadWriteTests {
     }
 
     @ParameterizedTest
-    @MethodSource("buildArguments")
+    @MethodSource("ancientModeArguments")
     @DisplayName("Truncated Event Test")
     void truncatedEventTest(@NonNull final AncientMode ancientMode) throws IOException {
         for (final boolean truncateOnBoundary : List.of(true, false)) {
@@ -311,7 +320,7 @@ class PcesReadWriteTests {
     }
 
     @ParameterizedTest
-    @MethodSource("buildArguments")
+    @MethodSource("ancientModeArguments")
     @DisplayName("Corrupted Events Test")
     void corruptedEventsTest(@NonNull final AncientMode ancientMode) throws IOException {
         final Random random = RandomUtils.getRandomPrintSeed();
@@ -375,7 +384,7 @@ class PcesReadWriteTests {
     }
 
     @ParameterizedTest
-    @MethodSource("buildArguments")
+    @MethodSource("ancientModeArguments")
     @DisplayName("Write Invalid Event Test")
     void writeInvalidEventTest(@NonNull final AncientMode ancientMode) throws IOException {
         final Random random = RandomUtils.getRandomPrintSeed();
@@ -438,7 +447,7 @@ class PcesReadWriteTests {
     }
 
     @ParameterizedTest
-    @MethodSource("buildArguments")
+    @MethodSource("ancientModeArguments")
     @DisplayName("Span Compression Test")
     void spanCompressionTest(@NonNull final AncientMode ancientMode) throws IOException {
         final Random random = RandomUtils.getRandomPrintSeed(0);
@@ -504,7 +513,7 @@ class PcesReadWriteTests {
     }
 
     @ParameterizedTest
-    @MethodSource("buildArguments")
+    @MethodSource("ancientModeArguments")
     @DisplayName("Partial Span Compression Test")
     void partialSpanCompressionTest(@NonNull final AncientMode ancientMode) throws IOException {
         final Random random = RandomUtils.getRandomPrintSeed(0);
@@ -573,7 +582,7 @@ class PcesReadWriteTests {
     }
 
     @ParameterizedTest
-    @MethodSource("buildArguments")
+    @MethodSource("ancientModeArguments")
     @DisplayName("Empty File Test")
     void emptyFileTest(@NonNull final AncientMode ancientMode) throws IOException {
         final PcesFile file = PcesFile.of(ancientMode, Instant.now(), 0, 0, 100, 0, testDirectory);

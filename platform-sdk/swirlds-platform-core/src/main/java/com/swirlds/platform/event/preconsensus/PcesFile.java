@@ -400,7 +400,12 @@ public final class PcesFile implements Comparable<PcesFile> {
      */
     @NonNull
     public PcesMutableFile getMutableFile() throws IOException {
-        return new PcesMutableFile(this);
+        return new PcesMutableFile(this, false);
+    }
+
+    @NonNull
+    public PcesMutableFile getMutableFile(final boolean useFileChannelWriter) throws IOException {
+        return new PcesMutableFile(this, useFileChannelWriter);
     }
 
     /**

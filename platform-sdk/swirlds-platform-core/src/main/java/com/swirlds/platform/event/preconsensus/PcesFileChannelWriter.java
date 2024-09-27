@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 
 public class PcesFileChannelWriter implements PcesFileWriter {
     final FileChannel channel;
@@ -16,7 +17,8 @@ public class PcesFileChannelWriter implements PcesFileWriter {
     private int fileSize;
 
     public PcesFileChannelWriter(@NonNull final Path filePath) throws IOException {
-        channel = FileChannel.open(filePath);
+        filePath.toFile().createNewFile();
+        channel = FileChannel.open(filePath, StandardOpenOption.WRITE);
         buffer = ByteBuffer.allocateDirect(1024*1024*10);
         writableSequentialData = BufferedData.wrap(buffer);
     }
