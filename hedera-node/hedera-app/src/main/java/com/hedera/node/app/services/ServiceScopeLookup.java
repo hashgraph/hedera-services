@@ -60,6 +60,7 @@ public class ServiceScopeLookup {
             case CONSENSUS_CREATE_TOPIC,
                     CONSENSUS_UPDATE_TOPIC,
                     CONSENSUS_DELETE_TOPIC,
+                    CONSENSUS_APPROVE_ALLOWANCE,
                     CONSENSUS_SUBMIT_MESSAGE -> ConsensusService.NAME;
 
             case CONTRACT_CREATE_INSTANCE,
