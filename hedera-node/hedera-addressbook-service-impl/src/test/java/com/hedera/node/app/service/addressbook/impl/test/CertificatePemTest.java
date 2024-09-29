@@ -82,7 +82,7 @@ class CertificatePemTest {
         final var genPemPath = Path.of(tmpDir.getPath() + "/generated.pem");
         writeCertificatePemFile(genPemPath, Bytes.wrap("anyString").toByteArray());
         final var exception = assertThrows(IOException.class, () -> readCertificatePemFile(genPemPath));
-        assertThat(exception.getMessage()).contains("problem parsing cert: java.io.IOException:");
+        assertThat(exception.getMessage()).contains("problem parsing cert: java.io.EOFException:");
         final var msg = assertThrows(PreCheckException.class, () -> validateX509Certificate(Bytes.wrap("anyString")));
         assertEquals(ResponseCodeEnum.INVALID_GOSSIP_CA_CERTIFICATE, msg.responseCode());
     }
