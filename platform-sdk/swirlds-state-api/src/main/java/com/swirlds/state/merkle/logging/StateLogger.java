@@ -21,16 +21,16 @@ import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.base.ScheduleID;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TopicID;
-import com.swirlds.fcqueue.FCQueue;
-import com.swirlds.state.merkle.disk.OnDiskKey;
-import com.swirlds.state.merkle.disk.OnDiskValue;
 import com.swirlds.state.merkle.memory.InMemoryKey;
 import com.swirlds.state.merkle.memory.InMemoryValue;
 import com.swirlds.state.merkle.singleton.ValueLeaf;
+import com.swirlds.state.merkle.vmapsupport.OnDiskKey;
+import com.swirlds.state.merkle.vmapsupport.OnDiskValue;
 import com.swirlds.virtualmap.VirtualMap;
 import com.swirlds.virtualmap.internal.merkle.VirtualLeafNode;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.util.Iterator;
 import java.util.Set;
 import java.util.Spliterator;
 import java.util.Spliterators;
@@ -116,19 +116,22 @@ public class StateLogger {
      * Log the iteration over a queue.
      *
      * @param label The label of the queue
-     * @param queue The queue that was iterated
+     * @param size The queue size
+     * @param it The queue elements iterator
      * @param <K> The type of the queue values
      */
-    public static <K> void logQueueIterate(@NonNull final String label, @NonNull final FCQueue<ValueLeaf<K>> queue) {
+    public static <K> void logQueueIterate(
+            @NonNull final String label, final long size, @NonNull final Iterator<K> it) {
         if (logger.isDebugEnabled() && Thread.currentThread().getName().equals(TRANSACTION_HANDLING_THREAD_NAME)) {
-            if (queue.isEmpty()) {
+            if (size == 0) {
                 logger.debug("      ITERATE queue {} size 0 values:EMPTY", label);
             } else {
+                final Iterable<K> iterable = () -> it;
                 logger.debug(
                         "      ITERATE queue {} size {} values:\n{}",
                         label,
-                        queue.size(),
-                        queue.stream()
+                        size,
+                        StreamSupport.stream(iterable.spliterator(), false)
                                 .map(leaf -> leaf == null ? "null" : leaf.toString())
                                 .collect(Collectors.joining(",\n")));
             }

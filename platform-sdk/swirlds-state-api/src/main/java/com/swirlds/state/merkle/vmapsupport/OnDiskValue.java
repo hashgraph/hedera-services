@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.state.merkle.disk;
+package com.swirlds.state.merkle.vmapsupport;
 
 import static com.swirlds.state.merkle.StateUtils.readFromStream;
 import static com.swirlds.state.merkle.StateUtils.writeToStream;

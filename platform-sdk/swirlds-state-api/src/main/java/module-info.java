@@ -8,6 +8,7 @@ module com.swirlds.state.api {
     exports com.swirlds.state.merkle.memory;
     exports com.swirlds.state.merkle.disk;
     exports com.swirlds.state.merkle;
+    exports com.swirlds.state.merkle.vmapsupport;
 
     requires transitive com.hedera.node.hapi;
     requires transitive com.swirlds.common;
@@ -16,6 +17,8 @@ module com.swirlds.state.api {
     requires transitive com.swirlds.virtualmap;
     requires transitive com.hedera.pbj.runtime;
     requires com.swirlds.fcqueue;
+    requires com.swirlds.logging;
+    requires com.swirlds.merkledb;
     requires org.apache.logging.log4j;
     requires static transitive com.github.spotbugs.annotations;
 }
