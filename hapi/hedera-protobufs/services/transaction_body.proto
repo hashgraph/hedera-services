@@ -3,7 +3,7 @@ syntax = "proto3";
 package proto;
 
 /*
- * Copyright (C) 2018-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -88,6 +88,9 @@ import "util_prng.proto";
 import "node_create.proto";
 import "node_update.proto";
 import "node_delete.proto";
+
+import "tss_message_transaction.proto";
+import "tss_vote_transaction.proto";
 
 /**
  * A single transaction. All transaction types are possible here.
@@ -418,5 +421,15 @@ message TransactionBody {
         * A transaction body for a `claimAirdrop` request.
          */
         TokenClaimAirdropTransactionBody tokenClaimAirdrop = 60;
+
+        /**
+         * A transaction body for a `tssMessage` request.
+         */
+        TssMessageTransactionBody tssMessage = 61;
+
+        /**
+         * A transaction body for a `tssVote` request.
+         */
+        TssVoteTransactionBody tssVote = 62;
     }
 }
