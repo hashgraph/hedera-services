@@ -16,7 +16,6 @@
 
 package com.hedera.node.app.state.merkle;
 
-import static com.hedera.node.app.fixtures.AppTestBase.DEFAULT_CONFIG;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 
@@ -27,6 +26,8 @@ import com.hedera.node.config.data.HederaConfig;
 import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.constructable.RuntimeConstructable;
+import com.swirlds.common.io.config.FileSystemManagerConfig;
+import com.swirlds.common.io.config.FileSystemManagerConfig_;
 import com.swirlds.common.test.fixtures.TestFileSystemManager;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.extensions.sources.SimpleConfigSource;
@@ -90,15 +91,16 @@ class SerializationTest extends MerkleTestBase {
     @BeforeEach
     void setUp() throws IOException {
         setupConstructableRegistry();
-
         this.testFileSystemManager = new TestFileSystemManager(tempDir);
         this.dir = testFileSystemManager.resolveNewTemp(null);
         Files.createDirectory(this.dir);
         this.config = new TestConfigBuilder()
                 .withSource(new SimpleConfigSource()
                         .withValue(VirtualMapConfig_.FLUSH_INTERVAL, 1 + "")
-                        .withValue(VirtualMapConfig_.COPY_FLUSH_THRESHOLD, 1 + ""))
+                        .withValue(VirtualMapConfig_.COPY_FLUSH_THRESHOLD, 1 + "")
+                        .withValue(FileSystemManagerConfig_.ROOT_PATH, this.dir.toString()))
                 .withConfigDataType(VirtualMapConfig.class)
+                .withConfigDataType(FileSystemManagerConfig.class)
                 .withConfigDataType(HederaConfig.class)
                 .getOrCreateConfig();
         this.networkInfo = mock(NetworkInfo.class);
@@ -247,8 +249,7 @@ class SerializationTest extends MerkleTestBase {
 
     private MerkleStateRoot loadeMerkleTree(Schema schemaV1, byte[] serializedBytes)
             throws ConstructableRegistryException, IOException {
-        final var newRegistry =
-                new MerkleSchemaRegistry(registry, FIRST_SERVICE, DEFAULT_CONFIG, new SchemaApplications());
+        final var newRegistry = new MerkleSchemaRegistry(registry, FIRST_SERVICE, config, new SchemaApplications());
         newRegistry.register(schemaV1);
 
         // Register the MerkleStateRoot so, when found in serialized bytes, it will register with
@@ -279,7 +280,7 @@ class SerializationTest extends MerkleTestBase {
     private MerkleStateRoot createMerkleHederaState(Schema schemaV1) {
         final var originalTree = new MerkleStateRoot(lifecycles, version -> new ServicesSoftwareVersion(version, 0));
         final var originalRegistry =
-                new MerkleSchemaRegistry(registry, FIRST_SERVICE, DEFAULT_CONFIG, new SchemaApplications());
+                new MerkleSchemaRegistry(registry, FIRST_SERVICE, config, new SchemaApplications());
         originalRegistry.register(schemaV1);
         originalRegistry.migrate(
                 originalTree,
