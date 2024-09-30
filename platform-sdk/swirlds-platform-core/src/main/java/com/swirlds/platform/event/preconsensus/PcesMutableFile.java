@@ -16,10 +16,10 @@
 
 package com.swirlds.platform.event.preconsensus;
 
+import com.hedera.hapi.platform.event.GossipEvent;
 import com.swirlds.common.io.extendable.ExtendableOutputStream;
 import com.swirlds.common.io.extendable.extensions.CountingStreamExtension;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
-import com.swirlds.platform.event.EventSerializationUtils;
 import com.swirlds.platform.event.PlatformEvent;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.BufferedOutputStream;
@@ -33,9 +33,6 @@ import java.nio.file.StandardCopyOption;
  * Represents a preconsensus event file that can be written to.
  */
 public class PcesMutableFile {
-    /** the file version to write at the beginning of the file. atm, this is just a placeholder for future changes */
-    public static final int FILE_VERSION = 1;
-
     /**
      * Describes the file that is being written to.
      */
@@ -74,7 +71,7 @@ public class PcesMutableFile {
                 new BufferedOutputStream(
                         new FileOutputStream(descriptor.getPath().toFile())),
                 counter));
-        out.writeInt(FILE_VERSION);
+        out.writeInt(PcesFileVersion.currentVersionNumber());
         highestAncientIdentifierInFile = descriptor.getLowerBound();
     }
 
@@ -98,7 +95,7 @@ public class PcesMutableFile {
             throw new IllegalStateException("Cannot write event " + event.getHash() + " with ancient indicator "
                     + event.getAncientIndicator(descriptor.getFileType()) + " to file " + descriptor);
         }
-        EventSerializationUtils.serializePlatformEvent(out, event, true);
+        out.writePbjRecord(event.getGossipEvent(), GossipEvent.PROTOBUF);
         highestAncientIdentifierInFile =
                 Math.max(highestAncientIdentifierInFile, event.getAncientIndicator(descriptor.getFileType()));
     }

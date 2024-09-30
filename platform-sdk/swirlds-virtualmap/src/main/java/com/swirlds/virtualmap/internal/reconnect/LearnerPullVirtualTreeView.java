@@ -16,7 +16,6 @@
 
 package com.swirlds.virtualmap.internal.reconnect;
 
-import static com.swirlds.logging.legacy.LogMarker.RECONNECT;
 import static com.swirlds.virtualmap.internal.Path.ROOT_PATH;
 
 import com.swirlds.common.crypto.CryptographyHolder;
@@ -109,11 +108,6 @@ public final class LearnerPullVirtualTreeView<K extends VirtualKey, V extends Vi
      * must be for path 0 (root virtual node)
      */
     private volatile boolean firstNodeResponse = true;
-
-    /**
-     * True until we have handled our first leaf
-     */
-    private volatile boolean firstLeaf = true;
 
     /**
      * Responses from teacher may come in a different order than they are sent by learner. The order
@@ -316,11 +310,6 @@ public final class LearnerPullVirtualTreeView<K extends VirtualKey, V extends Vi
         traversalOrder.nodeReceived(path, isClean);
 
         if (isLeaf) {
-            if (firstLeaf) {
-                logger.info(RECONNECT.getMarker(), "First leaf response received, view={}", viewId);
-                root.prepareForFirstLeaf();
-                firstLeaf = false;
-            }
             if (!isClean) {
                 final VirtualLeafRecord<K, V> leaf = response.getLeafData();
                 assert leaf != null;

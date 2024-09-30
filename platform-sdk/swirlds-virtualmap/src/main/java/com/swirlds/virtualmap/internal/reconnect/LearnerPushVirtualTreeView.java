@@ -113,11 +113,6 @@ public final class LearnerPushVirtualTreeView<K extends VirtualKey, V extends Vi
     private final ReconnectMapStats mapStats;
 
     /**
-     * True until we have handled our first leaf
-     */
-    private boolean firstLeaf = true;
-
-    /**
      * Create a new {@link LearnerPushVirtualTreeView}.
      *
      * @param root
@@ -258,11 +253,6 @@ public final class LearnerPushVirtualTreeView<K extends VirtualKey, V extends Vi
      */
     @Override
     public Long deserializeLeaf(final SerializableDataInputStream in) throws IOException {
-        if (firstLeaf) {
-            root.prepareForFirstLeaf();
-            firstLeaf = false;
-        }
-
         final VirtualLeafRecord<K, V> leaf = in.readSerializable(false, VirtualLeafRecord::new);
         nodeRemover.newLeafNode(leaf.getPath(), leaf.getKey());
         root.handleReconnectLeaf(leaf); // may block if hashing is slower than ingest

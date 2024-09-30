@@ -26,7 +26,6 @@ import static org.mockito.Mockito.when;
 import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
-import com.swirlds.common.crypto.ImmutableHash;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.test.fixtures.RandomUtils;
@@ -43,8 +42,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 class QueueThreadObjectStreamTest {
+    private static final Hash initialHash = new Hash(new byte[DigestType.SHA_384.digestLength()]);
     private static Cryptography cryptography;
-    private static Hash initialHash = new ImmutableHash(new byte[DigestType.SHA_384.digestLength()]);
     private static WriteToStreamConsumer consumer;
     private static QueueThreadObjectStream<ObjectForTestStream> queueThread;
     private static RunningHashCalculatorForStream<ObjectForTestStream> runningHashCalculator;
