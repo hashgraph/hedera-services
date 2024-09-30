@@ -21,6 +21,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_SENDER_ACC
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.TokenID;
+import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.transaction.CustomFee;
 import com.hedera.hapi.node.transaction.FixedFee;
 import com.hedera.node.app.spi.workflows.HandleException;
@@ -98,18 +99,19 @@ public class AdjustmentUtils {
      * Adjusts a HTS fee. If the fee is self-denominated, it should not trigger custom fees again
      * So add the adjustment to previous level transaction. If the fee is not self-denominated,
      * it should trigger custom fees again. So add the adjustment to next level transaction.
-     * @param result The {@link AssessmentResult} object
-     * @param sender The sender account
-     * @param collector The fee collector
-     * @param chargingTokenMeta The {@link CustomFeeMeta} object of token to be charged
-     * @param amount The amount to be charged
+     *
+     * @param result            The {@link AssessmentResult} object
+     * @param sender            The sender account
+     * @param collector         The fee collector
+     * @param token             the token
+     * @param amount            The amount to be charged
      * @param denominatingToken The token denomination
      */
     public static void adjustHtsFees(
             final AssessmentResult result,
             final AccountID sender,
             final AccountID collector,
-            final CustomFeeMeta chargingTokenMeta,
+            final Token token,
             final long amount,
             final TokenID denominatingToken) {
         final var newHtsAdjustments = result.getHtsAdjustments();
@@ -117,7 +119,7 @@ public class AdjustmentUtils {
 
         // If the fee is self-denominated, we don't need it to trigger next level custom fees
         // So add assessments in given input transaction body.
-        if (chargingTokenMeta.tokenId().equals(denominatingToken)) {
+        if (token.tokenId().equals(denominatingToken)) {
             addHtsAdjustment(inputHtsAdjustments, sender, collector, amount, denominatingToken);
         } else {
             // Any change that might trigger next level custom fees should be added to next
@@ -149,7 +151,7 @@ public class AdjustmentUtils {
     }
 
     /**
-     * Given a list of changes for a specific token, filters all credits and returns them
+     * Given a list of changes for a specific token, filters all credits and returns them.
      * @param tokenIdChanges The list of changes for a specific token
      * @return The list of credits
      */
@@ -167,7 +169,7 @@ public class AdjustmentUtils {
 
     /**
      * Given a list of changes for a specific token, filters all fungible credits including hbar or
-     * fungible token balances for a given beneficiary and returns them
+     * fungible token balances for a given beneficiary and returns them.
      * @param result The {@link AssessmentResult} object
      * @param sender The sender of the nft
      * @return The list of credits
@@ -198,7 +200,7 @@ public class AdjustmentUtils {
      * Represents the exchanged value between accounts. It can be hbar or fungible token adjustments.
      * It is used to track the credits that can be used to deduct the custom royalty fees for an NFT transfer.
      * If there are no fungible units to the receiver, and if there is a fallback fee on NFT then receiver
-     * should pay the fallback fee
+     * should pay the fallback fee.
      * @param account The account ID of the receiver
      * @param tokenId The token ID of the fungible token
      * @param amount The amount exchanged
@@ -225,25 +227,25 @@ public class AdjustmentUtils {
 
     /**
      * Adds two longs and throws an exception if the result overflows.
-     * @param a The first long
-     * @param b The second long
+     * @param addendA The first long
+     * @param addendB The second long
      * @return The sum of the two longs
      */
-    public static long addExactOrThrow(final long a, final long b) {
-        return addExactOrThrowReason(a, b, INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE);
+    public static long addExactOrThrow(final long addendA, final long addendB) {
+        return addExactOrThrowReason(addendA, addendB, INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE);
     }
 
     /**
      * Adds two longs and throws an exception if the result overflows.
-     * @param a The first long
-     * @param b The second long
+     * @param addendA The first long
+     * @param addendB The second long
      * @param failureReason The reason for the failure
      * @return The sum of the two longs
      */
     public static long addExactOrThrowReason(
-            final long a, final long b, @NonNull final ResponseCodeEnum failureReason) {
+            final long addendA, final long addendB, @NonNull final ResponseCodeEnum failureReason) {
         try {
-            return Math.addExact(a, b);
+            return Math.addExact(addendA, addendB);
         } catch (final ArithmeticException ignore) {
             throw new HandleException(failureReason);
         }

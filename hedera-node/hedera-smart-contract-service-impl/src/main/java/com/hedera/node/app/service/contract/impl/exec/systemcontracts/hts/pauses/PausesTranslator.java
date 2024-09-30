@@ -28,7 +28,6 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCal
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.Arrays;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -53,7 +52,7 @@ public class PausesTranslator extends AbstractCallTranslator<HtsCallAttempt> {
      */
     @Override
     public boolean matches(@NonNull final HtsCallAttempt attempt) {
-        return matchesClassicSelector(attempt.selector());
+        return attempt.isSelector(PAUSE, UNPAUSE);
     }
 
     /**
@@ -64,7 +63,7 @@ public class PausesTranslator extends AbstractCallTranslator<HtsCallAttempt> {
         return new DispatchForResponseCodeHtsCall(
                 attempt,
                 bodyForClassic(attempt),
-                Arrays.equals(attempt.selector(), PAUSE.selector())
+                attempt.isSelector(PAUSE)
                         ? PausesTranslator::pauseGasRequirement
                         : PausesTranslator::unpauseGasRequirement);
     }
@@ -86,14 +85,10 @@ public class PausesTranslator extends AbstractCallTranslator<HtsCallAttempt> {
     }
 
     private TransactionBody bodyForClassic(@NonNull final HtsCallAttempt attempt) {
-        if (Arrays.equals(attempt.selector(), PAUSE.selector())) {
+        if (attempt.isSelector(PAUSE)) {
             return decoder.decodePause(attempt);
         } else {
             return decoder.decodeUnpause(attempt);
         }
-    }
-
-    private static boolean matchesClassicSelector(@NonNull final byte[] selector) {
-        return Arrays.equals(selector, PAUSE.selector()) || Arrays.equals(selector, UNPAUSE.selector());
     }
 }

@@ -18,11 +18,12 @@ package com.swirlds.platform.system;
 
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.merkle.MerkleNode;
-import com.swirlds.platform.state.PlatformState;
+import com.swirlds.platform.state.PlatformStateModifier;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.events.Event;
 import com.swirlds.platform.system.transaction.Transaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Objects;
 
 /**
@@ -44,17 +45,15 @@ public interface SwirldState extends MerkleNode {
      * </p>
      *
      * @param platform                the Platform that instantiated this state
-     * @param platformState           the platform state
      * @param trigger                 describes the reason why the state was created/recreated
      * @param previousSoftwareVersion the previous version of the software, {@link SoftwareVersion#NO_VERSION} if this
      *                                is genesis or if migrating from code from before the concept of an application
      *                                software version
      */
     default void init(
-            final Platform platform,
-            final PlatformState platformState,
-            final InitTrigger trigger,
-            final SoftwareVersion previousSoftwareVersion) {
+            @NonNull final Platform platform,
+            @NonNull final InitTrigger trigger,
+            @Nullable final SoftwareVersion previousSoftwareVersion) {
         // Override if needed
     }
 
@@ -78,7 +77,15 @@ public interface SwirldState extends MerkleNode {
      * @param round         the round to apply
      * @param platformState the platform state
      */
-    void handleConsensusRound(final Round round, final PlatformState platformState);
+    void handleConsensusRound(final Round round, final PlatformStateModifier platformState);
+
+    /**
+     * Called by the platform after it has made all its changes to this state for the given round.
+     * @param round the round whose platform state changes are completed
+     */
+    default void sealConsensusRound(@NonNull final Round round) {
+        // No-op, only implemented by applications that externalize state changes
+    }
 
     /**
      * Implementations of the SwirldState should always override this method in production.  The AddressBook returned

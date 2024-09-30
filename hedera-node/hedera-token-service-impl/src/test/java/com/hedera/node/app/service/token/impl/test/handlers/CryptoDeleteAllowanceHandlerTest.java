@@ -71,6 +71,7 @@ class CryptoDeleteAllowanceHandlerTest extends CryptoTokenHandlerTestBase {
 
         given(handleContext.configuration()).willReturn(configuration);
         given(handleContext.expiryValidator()).willReturn(expiryValidator);
+        given(expiryValidator.expirationStatus(any(), anyBoolean(), anyLong())).willReturn(OK);
     }
 
     @Test

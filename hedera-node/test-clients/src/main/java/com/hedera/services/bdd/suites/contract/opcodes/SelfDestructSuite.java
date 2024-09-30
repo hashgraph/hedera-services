@@ -16,10 +16,12 @@
 
 package com.hedera.services.bdd.suites.contract.opcodes;
 
+import static com.hedera.services.bdd.junit.ContextRequirement.NO_CONCURRENT_CREATIONS;
 import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
 import static com.hedera.services.bdd.spec.assertions.ContractInfoAsserts.contractWith;
+import static com.hedera.services.bdd.spec.dsl.SpecEntity.forceCreateAndRegister;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocal;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
@@ -35,21 +37,27 @@ import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
 import static com.hedera.services.bdd.suites.HapiSuite.flattened;
 import static com.hedera.services.bdd.suites.contract.Utils.mirrorAddrWith;
-import static com.hedera.services.bdd.suites.contract.evm.Evm46ValidationSuite.existingSystemAccounts;
 import static com.hedera.services.bdd.suites.contract.evm.Evm46ValidationSuite.nonExistingSystemAccounts;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.LOCAL_CALL_MODIFICATION_EXCEPTION;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
-import static org.junit.jupiter.api.parallel.ResourceAccessMode.READ;
 import static org.junit.jupiter.api.parallel.ResourceAccessMode.READ_WRITE;
 
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestLifecycle;
+import com.hedera.services.bdd.junit.LeakyHapiTest;
 import com.hedera.services.bdd.junit.support.TestLifecycle;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
+import com.hedera.services.bdd.spec.dsl.annotations.Account;
+import com.hedera.services.bdd.spec.dsl.annotations.Contract;
+import com.hedera.services.bdd.spec.dsl.entities.SpecAccount;
+import com.hedera.services.bdd.spec.dsl.entities.SpecContract;
+import com.hedera.services.bdd.spec.queries.contract.HapiGetContractInfo;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -74,14 +82,16 @@ public class SelfDestructSuite {
 
     @BeforeAll
     static void beforeAll(@NonNull final TestLifecycle testLifecycle) {
-        // Multiple tests use the same contract, so we upload it once here
-        testLifecycle.doAdhoc(uploadInitCode(SELF_DESTRUCT_CALLABLE_CONTRACT));
+        testLifecycle.doAdhoc(
+                // Multiple tests use the same contract, so we upload it once here
+                uploadInitCode(SELF_DESTRUCT_CALLABLE_CONTRACT));
     }
 
     @Nested
-    @DisplayName("with 0.46 EVM")
+    @DisplayName("with 0.46 EVM (pre-cancun)")
     @ResourceLock(value = "EVM_VERSION", mode = READ_WRITE)
     class WithV046EVM {
+
         @BeforeAll
         static void beforeAll(@NonNull final TestLifecycle testLifecycle) {
             testLifecycle.overrideInClass(Map.of("contracts.evm.version", "v0.46"));
@@ -89,6 +99,7 @@ public class SelfDestructSuite {
 
         @HapiTest
         @DisplayName("can SELFDESTRUCT in constructor without destroying created child")
+        @LeakyHapiTest(requirement = NO_CONCURRENT_CREATIONS)
         final Stream<DynamicTest> hscsEvm008SelfDestructInConstructorWorks() {
             final var contract = "FactorySelfDestructConstructor";
             final var nextAccount = "civilian";
@@ -103,11 +114,8 @@ public class SelfDestructSuite {
                     getAccountInfo(contract).hasCostAnswerPrecheck(ACCOUNT_DELETED),
                     getContractInfo(contract).has(contractWith().isDeleted()),
                     withOpContext((spec, opLog) -> {
-                        final var registry = spec.registry();
-                        final var destroyedNum =
-                                registry.getContractId(contract).getContractNum();
-                        final var childInfoQuery = getContractInfo("0.0." + (destroyedNum + 1))
-                                .has(contractWith().isNotDeleted());
+                        final var childInfo = getNthNextContractInfoFrom(spec, contract, 1);
+                        final var childInfoQuery = childInfo.has(contractWith().isNotDeleted());
                         allRunFor(spec, childInfoQuery);
                     }));
         }
@@ -127,20 +135,22 @@ public class SelfDestructSuite {
         @HapiTest
         @DisplayName("cannot SELFDESTRUCT to a beneficiary with receiverSigRequired that has not signed")
         final Stream<DynamicTest> selfDestructFailsWhenBeneficiaryHasReceiverSigRequiredAndHasNotSignedTheTxn46() {
-            return selfDestructFailsWhenBeneficiaryHasReceiverSigRequiredAndHasNotSignedTheTxn();
+            return selfDestructFailsWhenBeneficiaryHasReceiverSigRequiredAndHasNotSignedTheTxn(
+                    HapiSuite.EVM_VERSION_046);
         }
 
         @HapiTest
         @DisplayName("cannot SELFDESTRUCT within a static call")
         final Stream<DynamicTest>
                 selfDestructViaCallLocalWithAccount999ResultsInLocalCallModificationPrecheckFailed46() {
-            return selfDestructViaCallLocalWithAccount999ResultsInLocalCallModificationPrecheckFailed();
+            return selfDestructViaCallLocalWithAccount999ResultsInLocalCallModificationPrecheckFailed(
+                    HapiSuite.EVM_VERSION_046);
         }
 
         @HapiTest
         @DisplayName("cannot SELFDESTRUCT with system account beneficiary")
         final Stream<DynamicTest> testSelfDestructForSystemAccounts46() {
-            return testSelfDestructForSystemAccounts();
+            return testSelfDestructForSystemAccounts(HapiSuite.EVM_VERSION_046);
         }
 
         @HapiTest
@@ -148,29 +158,63 @@ public class SelfDestructSuite {
         final Stream<DynamicTest> deletedContractsCannotBeUpdated46() {
             return deletedContractsCannotBeUpdated(HapiSuite.EVM_VERSION_046);
         }
+
+        @HapiTest
+        @DisplayName("pre-cancun: self destructed contract is deleted, created in same transaction")
+        @LeakyHapiTest(requirement = NO_CONCURRENT_CREATIONS)
+        final Stream<DynamicTest> selfDestructedContractIsDeletedInSameTx046(
+                @Account(name = "Payer", tinybarBalance = ONE_HUNDRED_HBARS) SpecAccount payerAccount,
+                @Contract(contract = "FactoryQuickSelfDestruct", creationGas = 500_000L)
+                        SpecContract quickSelfDestructContract,
+                @Contract(contract = "SelfDestructCallable", creationGas = 500_000L)
+                        SpecContract selfDestructCallableContract) {
+            return selfDestructedContractIsDeletedInSameTx(
+                    HapiSuite.EVM_VERSION_046, payerAccount, quickSelfDestructContract, selfDestructCallableContract);
+        }
+
+        @HapiTest
+        @DisplayName("pre-cancun: self destructed contract is deleted, when previously created")
+        @LeakyHapiTest(requirement = NO_CONCURRENT_CREATIONS)
+        final Stream<DynamicTest> selfDestructedContractIsDeletedWhenPreviouslyCreated046(
+                @Account(name = "Payer", tinybarBalance = ONE_HUNDRED_HBARS) SpecAccount payerAccount,
+                @Contract(contract = "FactoryQuickSelfDestruct", creationGas = 500_000L)
+                        SpecContract quickSelfDestructContract,
+                @Contract(contract = "SelfDestructCallable", creationGas = 500_000L)
+                        SpecContract selfDestructCallableContract) {
+            return selfDestructedContractMightBeDeletedWhenPreviouslyCreated(
+                    HapiSuite.EVM_VERSION_046, payerAccount, quickSelfDestructContract, selfDestructCallableContract);
+        }
     }
 
     @Nested
-    @DisplayName("with 0.50 EVM")
-    @ResourceLock(value = "EVM_VERSION", mode = READ)
+    @DisplayName("with 0.50 EVM (cancun w/ EIP-6780)")
+    @ResourceLock(value = "EVM_VERSION", mode = READ_WRITE)
     class WithV050EVM {
+
+        @BeforeAll
+        static void beforeAll(@NonNull final TestLifecycle testLifecycle) {
+            testLifecycle.overrideInClass(Map.of("contracts.evm.version", "v0.50"));
+        }
+
         @HapiTest
         @DisplayName("cannot SELFDESTRUCT to a beneficiary with receiverSigRequired that has not signed")
         final Stream<DynamicTest> selfDestructFailsWhenBeneficiaryHasReceiverSigRequiredAndHasNotSignedTheTxn50() {
-            return selfDestructFailsWhenBeneficiaryHasReceiverSigRequiredAndHasNotSignedTheTxn();
+            return selfDestructFailsWhenBeneficiaryHasReceiverSigRequiredAndHasNotSignedTheTxn(
+                    HapiSuite.EVM_VERSION_050);
         }
 
         @HapiTest
         @DisplayName("cannot SELFDESTRUCT within a static call")
         final Stream<DynamicTest>
                 selfDestructViaCallLocalWithAccount999ResultsInLocalCallModificationPrecheckFailed50() {
-            return selfDestructViaCallLocalWithAccount999ResultsInLocalCallModificationPrecheckFailed();
+            return selfDestructViaCallLocalWithAccount999ResultsInLocalCallModificationPrecheckFailed(
+                    HapiSuite.EVM_VERSION_050);
         }
 
         @HapiTest
         @DisplayName("cannot SELFDESTRUCT with system account beneficiary")
         final Stream<DynamicTest> testSelfDestructForSystemAccounts50() {
-            return testSelfDestructForSystemAccounts();
+            return testSelfDestructForSystemAccounts(HapiSuite.EVM_VERSION_050);
         }
 
         @HapiTest
@@ -178,9 +222,59 @@ public class SelfDestructSuite {
         final Stream<DynamicTest> deletedContractsCannotBeUpdated50() {
             return deletedContractsCannotBeUpdated(HapiSuite.EVM_VERSION_050);
         }
+
+        @HapiTest
+        @DisplayName("can SELFDESTRUCT in constructor without destroying created child")
+        @LeakyHapiTest(requirement = NO_CONCURRENT_CREATIONS)
+        final Stream<DynamicTest> hscsEvm008SelfDestructInConstructorWorks() {
+            final var contract = "FactorySelfDestructConstructor";
+            final var nextAccount = "civilian";
+            return hapiTest(
+                    cryptoCreate(BENEFICIARY).balance(ONE_HUNDRED_HBARS),
+                    uploadInitCode(contract),
+                    contractCreate(contract)
+                            .balance(3 * ONE_HBAR)
+                            .via("contractCreate")
+                            .payingWith(BENEFICIARY),
+                    cryptoCreate(nextAccount),
+                    getAccountInfo(contract).hasCostAnswerPrecheck(ACCOUNT_DELETED),
+                    getContractInfo(contract).has(contractWith().isDeleted()),
+                    withOpContext((spec, opLog) -> {
+                        final var childInfo = getNthNextContractInfoFrom(spec, contract, 1);
+                        final var childInfoQuery = childInfo.has(contractWith().isNotDeleted());
+                        allRunFor(spec, childInfoQuery);
+                    }));
+        }
+
+        @HapiTest
+        @DisplayName("cancun: self destructed contract is deleted, created in same transaction")
+        @LeakyHapiTest(requirement = NO_CONCURRENT_CREATIONS)
+        final Stream<DynamicTest> selfDestructedContractIsDeletedInSameTx050(
+                @Account(name = "Payer", tinybarBalance = ONE_HUNDRED_HBARS) SpecAccount payerAccount,
+                @Contract(contract = "FactoryQuickSelfDestruct", creationGas = 500_000L)
+                        SpecContract quickSelfDestructContract,
+                @Contract(contract = "SelfDestructCallable", creationGas = 500_000L)
+                        SpecContract selfDestructCallableContract) {
+            return selfDestructedContractIsDeletedInSameTx(
+                    HapiSuite.EVM_VERSION_050, payerAccount, quickSelfDestructContract, selfDestructCallableContract);
+        }
+
+        @HapiTest
+        @DisplayName("cancun: self destructed contract is NOT deleted, when previously created")
+        @LeakyHapiTest(requirement = NO_CONCURRENT_CREATIONS)
+        final Stream<DynamicTest> selfDestructedContractIsNotDeletedWhenPreviouslyCreated050(
+                @Account(name = "Payer", tinybarBalance = ONE_HUNDRED_HBARS) SpecAccount payerAccount,
+                @Contract(contract = "FactoryQuickSelfDestruct", creationGas = 500_000L)
+                        SpecContract quickSelfDestructContract,
+                @Contract(contract = "SelfDestructCallable", creationGas = 500_000L)
+                        SpecContract selfDestructCallableContract) {
+            return selfDestructedContractMightBeDeletedWhenPreviouslyCreated(
+                    HapiSuite.EVM_VERSION_050, payerAccount, quickSelfDestructContract, selfDestructCallableContract);
+        }
     }
 
-    final Stream<DynamicTest> selfDestructFailsWhenBeneficiaryHasReceiverSigRequiredAndHasNotSignedTheTxn() {
+    final Stream<DynamicTest> selfDestructFailsWhenBeneficiaryHasReceiverSigRequiredAndHasNotSignedTheTxn(
+            @NonNull final String evmVersion) {
         final AtomicLong beneficiaryId = new AtomicLong();
         return hapiTest(
                 cryptoCreate(BENEFICIARY)
@@ -198,26 +292,22 @@ public class SelfDestructSuite {
                         .has(contractWith().balance(ONE_HBAR)));
     }
 
-    final Stream<DynamicTest> selfDestructViaCallLocalWithAccount999ResultsInLocalCallModificationPrecheckFailed() {
+    final Stream<DynamicTest> selfDestructViaCallLocalWithAccount999ResultsInLocalCallModificationPrecheckFailed(
+            @NonNull final String evmVersion) {
         return hapiTest(
                 contractCreate(SELF_DESTRUCT_CALLABLE_CONTRACT).balance(ONE_HBAR),
                 contractCallLocal(SELF_DESTRUCT_CALLABLE_CONTRACT, "destroyExplicitBeneficiary", mirrorAddrWith(999L))
                         .hasAnswerOnlyPrecheck(LOCAL_CALL_MODIFICATION_EXCEPTION));
     }
 
-    final Stream<DynamicTest> testSelfDestructForSystemAccounts() {
+    final Stream<DynamicTest> testSelfDestructForSystemAccounts(@NonNull final String evmVersion) {
         final AtomicLong deployer = new AtomicLong();
         final var nonExistingAccountsOps = createOpsArray(
                 nonExistingSystemAccounts,
                 SELF_DESTRUCT_CALLABLE_CONTRACT,
                 DESTROY_EXPLICIT_BENEFICIARY,
                 INVALID_SOLIDITY_ADDRESS);
-        final var existingAccountsOps = createOpsArray(
-                existingSystemAccounts, SELF_DESTRUCT_CALLABLE_CONTRACT, DESTROY_EXPLICIT_BENEFICIARY, SUCCESS);
-        final var opsArray = new HapiSpecOperation[nonExistingAccountsOps.length + existingAccountsOps.length];
 
-        System.arraycopy(nonExistingAccountsOps, 0, opsArray, 0, nonExistingAccountsOps.length);
-        System.arraycopy(existingAccountsOps, 0, opsArray, nonExistingAccountsOps.length, existingAccountsOps.length);
         return hapiTest(flattened(
                 cryptoCreate(BENEFICIARY)
                         .balance(ONE_HUNDRED_HBARS)
@@ -246,6 +336,68 @@ public class SelfDestructSuite {
                 contractUpdate(contract).newMemo("Hi there!").hasKnownStatus(expectedStatus));
     }
 
+    final Stream<DynamicTest> selfDestructedContractIsDeletedInSameTx(
+            @NonNull final String evmVersion,
+            @NonNull final SpecAccount payerAccount,
+            @NonNull final SpecContract quickSelfDestructContract,
+            @NonNull final SpecContract selfDestructCallableContract) {
+
+        final var expectedDeletionStatus =
+                switch (evmVersion) {
+                    case HapiSuite.EVM_VERSION_046 -> true;
+                    case HapiSuite.EVM_VERSION_050 -> true;
+                    default -> throw new IllegalArgumentException("unexpected evm version: " + evmVersion);
+                };
+
+        return hapiTest(
+                withOpContext((spec, opLog) -> {
+                    // Some tests create a child contract and need it to have a predictable entity number
+                    forceCreateAndRegister(spec, payerAccount, quickSelfDestructContract);
+                }),
+                quickSelfDestructContract
+                        .call("createAndDeleteChild")
+                        .gas(100_000L)
+                        .payingWith(payerAccount)
+                        .andAssert(txn -> txn.hasKnownStatus(SUCCESS)),
+                withOpContext((spec, opLog) -> {
+                    final var childInfo = getNthNextContractInfoFrom(spec, quickSelfDestructContract.name(), 1);
+                    final var childInfoQuery = expectedDeletionStatus
+                            ? childInfo.has(contractWith().isDeleted())
+                            : childInfo.has(contractWith().isNotDeleted());
+                    allRunFor(spec, childInfoQuery);
+                }));
+    }
+
+    final Stream<DynamicTest> selfDestructedContractMightBeDeletedWhenPreviouslyCreated(
+            @NonNull final String evmVersion,
+            @NonNull final SpecAccount payerAccount,
+            @NonNull final SpecContract quickSelfDestructContract,
+            @NonNull final SpecContract selfDestructCallableContract) {
+
+        final var expectedDeletionStatus =
+                switch (evmVersion) {
+                    case HapiSuite.EVM_VERSION_046 -> true;
+                    case HapiSuite.EVM_VERSION_050 -> false;
+                    default -> throw new IllegalArgumentException("unexpected evm version: " + evmVersion);
+                };
+
+        return hapiTest(
+                withOpContext((spec, opLog) -> {
+                    // Some tests create a child contract and need it to have a predictable entity number
+                    forceCreateAndRegister(spec, payerAccount, selfDestructCallableContract);
+                }),
+                selfDestructCallableContract
+                        .call("destroy")
+                        .gas(100_000L)
+                        .payingWith(payerAccount)
+                        .andAssert(txn -> txn.hasKnownStatus(SUCCESS)),
+                selfDestructCallableContract.getInfo().andAssert(ci -> {
+                    if (expectedDeletionStatus)
+                        ci.hasCostAnswerPrecheck(OK).has(contractWith().isDeleted());
+                    else ci.hasCostAnswerPrecheck(OK).has(contractWith().isNotDeleted());
+                }));
+    }
+
     private HapiSpecOperation[] createOpsArray(
             List<Long> accounts, String contract, String methodName, ResponseCodeEnum status) {
         HapiSpecOperation[] opsArray = new HapiSpecOperation[accounts.size()];
@@ -254,5 +406,15 @@ public class SelfDestructSuite {
                     .hasKnownStatus(status);
         }
         return opsArray;
+    }
+
+    private @NonNull String getNthNextEntityFrom(final long nth, final long from) {
+        return "0.0." + (from + nth);
+    }
+
+    private @NonNull HapiGetContractInfo getNthNextContractInfoFrom(
+            @NonNull final HapiSpec spec, @NonNull final String contract, final long nth) {
+        final var fromNum = spec.registry().getContractId(contract).getContractNum();
+        return getContractInfo(getNthNextEntityFrom(nth, fromNum));
     }
 }

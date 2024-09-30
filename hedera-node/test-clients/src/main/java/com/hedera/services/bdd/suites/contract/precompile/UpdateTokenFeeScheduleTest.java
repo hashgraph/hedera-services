@@ -32,7 +32,7 @@ import static com.hedera.services.bdd.spec.transactions.token.CustomFeeTests.roy
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEES_LIST_TOO_LONG;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_DENOMINATION_MUST_BE_FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_MUST_BE_POSITIVE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_SCHEDULE_ALREADY_HAS_NO_FEES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FRACTION_DIVIDES_BY_ZERO;
@@ -171,7 +171,11 @@ public class UpdateTokenFeeScheduleTest {
                 updateTokenFeeSchedules.call("updateFungibleFractionalFee", feeToken, 1L, 10L, false, feeCollector),
                 feeToken.getInfo()
                         .andAssert(info -> info.hasCustom(
-                                fractionalFeeInSchedule(1L, 10L, 0L, OptionalLong.of(0), false, feeCollector.name()))));
+                                fractionalFeeInSchedule(1L, 10L, 0L, OptionalLong.of(0), false, feeCollector.name()))),
+                updateTokenFeeSchedules.call("updateFungibleFractionalFee", feeToken, 1L, 10L, true, feeCollector),
+                feeToken.getInfo()
+                        .andAssert(info -> info.hasCustom(
+                                fractionalFeeInSchedule(1L, 10L, 0L, OptionalLong.of(0), true, feeCollector.name()))));
     }
 
     @Order(6)
@@ -245,7 +249,7 @@ public class UpdateTokenFeeScheduleTest {
     @Order(11)
     @HapiTest
     @DisplayName("fungible token with n fractional fee")
-    public Stream<DynamicTest> updateFungibleTokenWithNFractionaldFee() {
+    public Stream<DynamicTest> updateFungibleTokenWithNFractionalFee() {
         return hapiTest(
                 updateTokenFeeSchedules.call("updateFungibleFractionalFees", feeToken, 3, 1L, 10L, false, feeCollector),
                 feeToken.getInfo().andAssert(info -> info.hasCustom(
@@ -389,13 +393,13 @@ public class UpdateTokenFeeScheduleTest {
                 overriding("tokens.maxCustomFeesAllowed", "10"),
                 updateTokenFeeSchedules
                         .call("updateFungibleFixedHbarFees", fungibleToken, 11, 10L, feeCollector)
-                        .andAssert(txn -> txn.hasKnownStatuses(CONTRACT_REVERT_EXECUTED, CUSTOM_FEES_LIST_TOO_LONG)),
+                        .andAssert(txn -> txn.hasKnownStatus(CONTRACT_REVERT_EXECUTED)),
                 updateTokenFeeSchedules
                         .call("updateFungibleFractionalFees", feeToken, 11, 1L, 10L, false, feeCollector)
-                        .andAssert(txn -> txn.hasKnownStatuses(CONTRACT_REVERT_EXECUTED, CUSTOM_FEES_LIST_TOO_LONG)),
+                        .andAssert(txn -> txn.hasKnownStatus(CONTRACT_REVERT_EXECUTED)),
                 updateTokenFeeSchedules
                         .call("updateNonFungibleRoyaltyFees", nonFungibleToken, 11, 1L, 10L, feeCollector)
-                        .andAssert(txn -> txn.hasKnownStatuses(CONTRACT_REVERT_EXECUTED, CUSTOM_FEES_LIST_TOO_LONG)));
+                        .andAssert(txn -> txn.hasKnownStatus(CONTRACT_REVERT_EXECUTED)));
     }
 
     @Order(21)
@@ -457,5 +461,15 @@ public class UpdateTokenFeeScheduleTest {
                                 collector)
                         .andAssert(txn ->
                                 txn.hasKnownStatuses(CONTRACT_REVERT_EXECUTED, TOKEN_NOT_ASSOCIATED_TO_FEE_COLLECTOR)));
+    }
+
+    @Order(24)
+    @HapiTest
+    @DisplayName("update nft token royalty fees with invalid fee denomination")
+    public Stream<DynamicTest> updateNonFungibleTokenWithInvalidFeeDenomination() {
+        return hapiTest(updateTokenFeeSchedules
+                .call("updateNonFungibleFixedTokenFee", nonFungibleToken, 1L, feeCollector)
+                .andAssert(txn -> txn.hasKnownStatuses(
+                        CONTRACT_REVERT_EXECUTED, CUSTOM_FEE_DENOMINATION_MUST_BE_FUNGIBLE_COMMON)));
     }
 }

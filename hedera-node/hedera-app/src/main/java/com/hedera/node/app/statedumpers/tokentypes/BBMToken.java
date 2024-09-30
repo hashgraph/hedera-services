@@ -19,7 +19,7 @@ package com.hedera.node.app.statedumpers.tokentypes;
 import static com.hedera.node.app.statedumpers.utils.ThingsToStrings.toStructureSummaryOfJKey;
 
 import com.hedera.hapi.node.base.TokenSupplyType;
-import com.hedera.node.app.service.evm.store.tokens.TokenType;
+import com.hedera.node.app.hapi.utils.TokenType;
 import com.hedera.node.app.statedumpers.legacy.EntityId;
 import com.hedera.node.app.statedumpers.legacy.FcCustomFee;
 import com.hedera.node.app.statedumpers.legacy.JKey;

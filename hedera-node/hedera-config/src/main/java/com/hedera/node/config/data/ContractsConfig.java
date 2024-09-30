@@ -81,14 +81,22 @@ public record ContractsConfig(
         @ConfigProperty(value = "systemContract.accountService.isAuthorizedRawEnabled", defaultValue = "true")
                 @NetworkProperty
                 boolean systemContractAccountServiceIsAuthorizedRawEnabled,
-        @ConfigProperty(value = "systemContract.updateCustomFees.enabled", defaultValue = "false") @NetworkProperty
+        @ConfigProperty(value = "systemContract.updateCustomFees.enabled", defaultValue = "true") @NetworkProperty
                 boolean systemContractUpdateCustomFeesEnabled,
+        @ConfigProperty(value = "systemContract.tokenInfo.v2.enabled", defaultValue = "false") @NetworkProperty
+                boolean systemContractTokenInfoV2Enabled,
+        @ConfigProperty(value = "systemContract.precisionLossFixForGas.enabled", defaultValue = "true") @NetworkProperty
+                boolean isGasPrecisionLossFixEnabled,
+        @ConfigProperty(value = "systemContract.canonicalViewGas.enabled", defaultValue = "true") @NetworkProperty
+                boolean isCanonicalViewGasEnabled,
+        @ConfigProperty(value = "systemContract.updateNFTsMetadata.enabled", defaultValue = "false") @NetworkProperty
+                boolean systemContractUpdateNFTsMetadataEnabled,
         @ConfigProperty(value = "evm.version.dynamic", defaultValue = "false") @NetworkProperty
                 boolean evmVersionDynamic,
         @ConfigProperty(value = "evm.allowCallsToNonContractAccounts", defaultValue = "true") @NetworkProperty
                 boolean evmAllowCallsToNonContractAccounts,
-        @ConfigProperty(value = "evm.chargeGasOnPreEvmException", defaultValue = "true") @NetworkProperty
-                boolean chargeGasOnPreEvmException,
+        @ConfigProperty(value = "evm.chargeGasOnEvmHandleException", defaultValue = "true") @NetworkProperty
+                boolean chargeGasOnEvmHandleException,
         @ConfigProperty(value = "evm.nonExtantContractsFail", defaultValue = "0") @NetworkProperty
                 Set<Long> evmNonExtantContractsFail,
         @ConfigProperty(value = "evm.version", defaultValue = "v0.50") @NetworkProperty String evmVersion) {}

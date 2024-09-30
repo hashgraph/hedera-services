@@ -21,7 +21,7 @@ import static com.hedera.node.app.hapi.utils.CommonUtils.functionOf;
 import static java.util.Objects.requireNonNull;
 
 import com.google.protobuf.InvalidProtocolBufferException;
-import com.hedera.node.app.hapi.utils.exception.UnknownHederaFunctionality;
+import com.hedera.hapi.util.UnknownHederaFunctionality;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -42,20 +42,11 @@ public record TransactionParts(
     public static TransactionParts from(@NonNull final Transaction txn) {
         try {
             final var body = extractTransactionBody(txn);
-            return new TransactionParts(txn, body, computeFunction(body));
+            return new TransactionParts(txn, body, functionOf(body));
         } catch (InvalidProtocolBufferException | UnknownHederaFunctionality e) {
             // Fail immediately with invalid transactions that should not be
             // in any production record stream
             throw new IllegalArgumentException(e);
-        }
-    }
-
-    private static HederaFunctionality computeFunction(@NonNull final TransactionBody body)
-            throws UnknownHederaFunctionality {
-        if (body.hasNodeStakeUpdate()) {
-            return HederaFunctionality.NodeStakeUpdate;
-        } else {
-            return functionOf(body);
         }
     }
 }

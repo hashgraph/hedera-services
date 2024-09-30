@@ -39,7 +39,7 @@ import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.platform.config.AddressBookConfig_;
 import com.swirlds.platform.state.MerkleRoot;
-import com.swirlds.platform.state.PlatformState;
+import com.swirlds.platform.state.PlatformStateAccessor;
 import com.swirlds.platform.state.address.AddressBookInitializer;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.system.SoftwareVersion;
@@ -359,9 +359,9 @@ class AddressBookInitializerTest {
      * @param weightValue         The weight value that the SwirldState should set all addresses to in its updateWeight
      *                            method.
      * @param currentAddressBook  The address book that should be returned by {@link SignedState#getAddressBook()} and
-     *                            {@link PlatformState#getAddressBook()}
+     *                            {@link PlatformStateAccessor#getAddressBook()}
      * @param previousAddressBook The address book that should be returned by
-     *                            {@link PlatformState#getPreviousAddressBook()}
+     *                            {@link PlatformStateAccessor#getPreviousAddressBook()}
      * @param fromGenesis         Whether the state should be from genesis or not.
      * @return The mock SignedState and SwirldState configured to set all addresses with given weightValue.
      */
@@ -374,12 +374,12 @@ class AddressBookInitializerTest {
         final SoftwareVersion softwareVersion = getMockSoftwareVersion(2);
         final SwirldState swirldState = getMockSwirldStateSupplier(weightValue).get();
         when(signedState.getSwirldState()).thenReturn(swirldState);
-        final PlatformState platformState = mock(PlatformState.class);
+        final PlatformStateAccessor platformState = mock(PlatformStateAccessor.class);
         when(platformState.getCreationSoftwareVersion()).thenReturn(softwareVersion);
         when(platformState.getAddressBook()).thenReturn(currentAddressBook);
         when(platformState.getPreviousAddressBook()).thenReturn(previousAddressBook);
         final MerkleRoot state = mock(MerkleRoot.class);
-        when(state.getPlatformState()).thenReturn(platformState);
+        when(state.getReadablePlatformState()).thenReturn(platformState);
         when(signedState.getState()).thenReturn(state);
         when(signedState.isGenesisState()).thenReturn(fromGenesis);
         when(signedState.getAddressBook()).thenReturn(currentAddressBook);

@@ -19,6 +19,7 @@ package com.swirlds.platform.system.events;
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.platform.event.EventConsensusData;
 import com.hedera.hapi.platform.event.EventCore;
+import com.hedera.hapi.platform.event.GossipEvent;
 import com.hedera.hapi.util.HapiUtils;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.base.utility.ToStringBuilder;
@@ -30,6 +31,7 @@ import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.stream.StreamAligned;
 import com.swirlds.common.stream.Timestamped;
+import com.swirlds.platform.event.EventSerializationUtils;
 import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
 import com.swirlds.platform.system.transaction.Transaction;
@@ -49,7 +51,8 @@ public class CesEvent extends AbstractSerializableHashable
     public static final long UNDEFINED = -1;
 
     public static final long CLASS_ID = 0xe250a9fbdcc4b1baL;
-    private static final int CLASS_VERSION = 1;
+    private static final int CES_EVENT_VERSION_ORIGINAL = 1;
+    private static final int CES_EVENT_VERSION_PBJ_EVENT = 2;
     private static final int CONSENSUS_DATA_CLASS_VERSION = 2;
 
     /** the pre-consensus event */
@@ -82,16 +85,12 @@ public class CesEvent extends AbstractSerializableHashable
         this.lastInRoundReceived = lastInRoundReceived;
     }
 
-    public static void serialize(
-            @NonNull final SerializableDataOutputStream out,
-            @NonNull final PlatformEvent platformEvent,
-            final long roundReceived,
-            final boolean lastInRoundReceived)
-            throws IOException {
+    @Override
+    public void serialize(@NonNull final SerializableDataOutputStream out) throws IOException {
         Objects.requireNonNull(out);
         Objects.requireNonNull(platformEvent);
 
-        platformEvent.serialize(out);
+        out.writePbjRecord(platformEvent.getGossipEvent(), GossipEvent.PROTOBUF);
 
         // some fields used to be part of the stream but are no longer used
         // in order to maintain compatibility with older versions of the stream, we write a constant in their place
@@ -107,14 +106,11 @@ public class CesEvent extends AbstractSerializableHashable
     }
 
     @Override
-    public void serialize(@NonNull final SerializableDataOutputStream out) throws IOException {
-        serialize(out, platformEvent, roundReceived, lastInRoundReceived);
-    }
-
-    @Override
     public void deserialize(@NonNull final SerializableDataInputStream in, final int version) throws IOException {
-        this.platformEvent = new PlatformEvent();
-        this.platformEvent.deserialize(in, platformEvent.getVersion());
+        this.platformEvent = switch (version) {
+            case CES_EVENT_VERSION_ORIGINAL -> EventSerializationUtils.deserializePlatformEvent(in, false);
+            case CES_EVENT_VERSION_PBJ_EVENT -> new PlatformEvent(in.readPbjRecord(GossipEvent.PROTOBUF));
+            default -> throw new IOException("Unsupported version " + version);};
 
         in.readInt(); // ConsensusData.version
         in.readLong(); // ConsensusData.generation
@@ -226,7 +222,7 @@ public class CesEvent extends AbstractSerializableHashable
      */
     @Override
     public int getVersion() {
-        return CLASS_VERSION;
+        return CES_EVENT_VERSION_PBJ_EVENT;
     }
 
     //

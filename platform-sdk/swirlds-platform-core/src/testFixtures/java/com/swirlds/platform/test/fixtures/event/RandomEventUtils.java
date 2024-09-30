@@ -22,7 +22,7 @@ import com.swirlds.common.crypto.SignatureType;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.RandomUtils;
 import com.swirlds.platform.event.PlatformEvent;
-import com.swirlds.platform.event.hashing.StatefulEventHasher;
+import com.swirlds.platform.event.hashing.PbjStreamHasher;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.events.EventDescriptorWrapper;
@@ -44,7 +44,7 @@ public class RandomEventUtils {
      * Similar to randomEvent, but the timestamp used for the event's creation timestamp
      * is provided by an argument.
      */
-    public static IndexedEvent randomEventWithTimestamp(
+    public static EventImpl randomEventWithTimestamp(
             final Random random,
             final NodeId creatorId,
             final Instant timestamp,
@@ -60,7 +60,7 @@ public class RandomEventUtils {
         final byte[] sig = new byte[SignatureType.RSA.signatureLength()];
         random.nextBytes(sig);
 
-        return new IndexedEvent(new PlatformEvent(unsignedEvent, sig), selfParent, otherParent);
+        return new EventImpl(new PlatformEvent(unsignedEvent, sig), selfParent, otherParent);
     }
 
     /**
@@ -108,7 +108,7 @@ public class RandomEventUtils {
         if (fakeHash) {
             unsignedEvent.setHash(RandomUtils.randomHash(random));
         } else {
-            new StatefulEventHasher().hashUnsignedEvent(unsignedEvent);
+            new PbjStreamHasher().hashUnsignedEvent(unsignedEvent);
         }
         return unsignedEvent;
     }

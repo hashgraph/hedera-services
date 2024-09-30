@@ -26,7 +26,8 @@ import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Tag;
 
 @Tag("STREAM_VALIDATION")
-@Order(Integer.MAX_VALUE - 1)
+// Ordered to come after any other HapiTest that runs in a PR check
+@Order(Integer.MAX_VALUE)
 public class StreamValidationTest {
     @LeakyHapiTest
     final Stream<DynamicTest> streamsAreValid() {

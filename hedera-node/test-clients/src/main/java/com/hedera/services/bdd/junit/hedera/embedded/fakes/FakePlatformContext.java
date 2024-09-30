@@ -23,8 +23,11 @@ import com.swirlds.common.concurrent.ExecutorFactory;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.crypto.CryptographyHolder;
+import com.swirlds.common.crypto.config.CryptoConfig;
 import com.swirlds.common.io.filesystem.FileSystemManager;
 import com.swirlds.common.io.utility.RecycleBin;
+import com.swirlds.common.merkle.crypto.MerkleCryptography;
+import com.swirlds.common.merkle.crypto.MerkleCryptographyFactory;
 import com.swirlds.common.metrics.config.MetricsConfig;
 import com.swirlds.common.metrics.platform.DefaultPlatformMetrics;
 import com.swirlds.common.metrics.platform.MetricKeyRegistry;
@@ -33,14 +36,18 @@ import com.swirlds.common.platform.NodeId;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.metrics.api.Metrics;
+import com.swirlds.platform.config.BasicConfig;
 import com.swirlds.platform.config.TransactionConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.concurrent.ScheduledExecutorService;
+import org.jetbrains.annotations.NotNull;
 
 public class FakePlatformContext implements PlatformContext {
     private final Configuration platformConfig = ConfigurationBuilder.create()
             .withConfigDataType(MetricsConfig.class)
             .withConfigDataType(TransactionConfig.class)
+            .withConfigDataType(CryptoConfig.class)
+            .withConfigDataType(BasicConfig.class)
             .build();
 
     private final Metrics metrics;
@@ -98,5 +105,11 @@ public class FakePlatformContext implements PlatformContext {
     @Override
     public RecycleBin getRecycleBin() {
         throw new UnsupportedOperationException("Not used by Hedera");
+    }
+
+    @NotNull
+    @Override
+    public MerkleCryptography getMerkleCryptography() {
+        return MerkleCryptographyFactory.create(platformConfig, getCryptography());
     }
 }

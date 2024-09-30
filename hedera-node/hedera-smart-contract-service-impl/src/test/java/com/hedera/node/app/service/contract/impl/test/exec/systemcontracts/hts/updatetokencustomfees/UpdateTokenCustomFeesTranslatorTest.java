@@ -16,27 +16,35 @@
 
 package com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.hts.updatetokencustomfees;
 
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.burn.BurnTranslator.BURN_TOKEN_V2;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.updatetokencustomfees.UpdateTokenCustomFeesTranslator.UPDATE_FUNGIBLE_TOKEN_CUSTOM_FEES_FUNCTION;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.updatetokencustomfees.UpdateTokenCustomFeesTranslator.UPDATE_NON_FUNGIBLE_TOKEN_CUSTOM_FEES_FUNCTION;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.FUNGIBLE_TOKEN_HEADLONG_ADDRESS;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.NON_FUNGIBLE_TOKEN_HEADLONG_ADDRESS;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.OWNER_HEADLONG_ADDRESS;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.OWNER_ID;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.SENDER_ID;
+import static com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.CallAttemptHelpers.prepareHtsAttemptWithSelectorAndCustomConfig;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.lenient;
 
 import com.esaulpaugh.headlong.abi.Address;
 import com.esaulpaugh.headlong.abi.Tuple;
+import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategies;
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AddressIdConverter;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.DispatchForResponseCodeHtsCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.updatetokencustomfees.UpdateTokenCustomFeesDecoder;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.updatetokencustomfees.UpdateTokenCustomFeesTranslator;
+import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.common.CallTestBase;
 import com.hedera.node.config.data.ContractsConfig;
+import com.hedera.node.config.data.TokensConfig;
 import com.swirlds.config.api.Configuration;
 import org.apache.tuweni.bytes.Bytes;
 import org.junit.jupiter.api.BeforeEach;
@@ -63,6 +71,15 @@ class UpdateTokenCustomFeesTranslatorTest extends CallTestBase {
     @Mock
     private ContractsConfig contractsConfig;
 
+    @Mock
+    private TokensConfig tokensConfig;
+
+    @Mock
+    private HederaWorldUpdater.Enhancement enhancement;
+
+    @Mock
+    private VerificationStrategies verificationStrategies;
+
     private final UpdateTokenCustomFeesDecoder decoder = new UpdateTokenCustomFeesDecoder();
 
     private UpdateTokenCustomFeesTranslator subject;
@@ -73,12 +90,32 @@ class UpdateTokenCustomFeesTranslatorTest extends CallTestBase {
     }
 
     @Test
-    void matchesUpdateFungibleTokenCustomFees() {
+    void matchesIsTrueWhenSelectorForFungibleIsCorrect() {
         // given:
         setConfiguration(true);
-        given(attempt.selector())
-                .willReturn(UpdateTokenCustomFeesTranslator.UPDATE_FUNGIBLE_TOKEN_CUSTOM_FEES_FUNCTION.selector());
-        // expect:
+        attempt = prepareHtsAttemptWithSelectorAndCustomConfig(
+                UPDATE_FUNGIBLE_TOKEN_CUSTOM_FEES_FUNCTION,
+                subject,
+                enhancement,
+                addressIdConverter,
+                verificationStrategies,
+                gasCalculator,
+                configuration);
+        assertTrue(subject.matches(attempt));
+    }
+
+    @Test
+    void matchesIsTrueWhenSelectorForNFTIsCorrect() {
+        // given:
+        setConfiguration(true);
+        attempt = prepareHtsAttemptWithSelectorAndCustomConfig(
+                UPDATE_NON_FUNGIBLE_TOKEN_CUSTOM_FEES_FUNCTION,
+                subject,
+                enhancement,
+                addressIdConverter,
+                verificationStrategies,
+                gasCalculator,
+                configuration);
         assertTrue(subject.matches(attempt));
     }
 
@@ -91,13 +128,18 @@ class UpdateTokenCustomFeesTranslatorTest extends CallTestBase {
     }
 
     @Test
-    void matchesUpdateNonFungibleTokenCustomFees() {
+    void matchesIsFalseWhenSelectorsAreIncorrect() {
         // given:
         setConfiguration(true);
-        given(attempt.selector())
-                .willReturn(UpdateTokenCustomFeesTranslator.UPDATE_NON_FUNGIBLE_TOKEN_CUSTOM_FEES_FUNCTION.selector());
-        // expect:
-        assertTrue(subject.matches(attempt));
+        attempt = prepareHtsAttemptWithSelectorAndCustomConfig(
+                BURN_TOKEN_V2,
+                subject,
+                enhancement,
+                addressIdConverter,
+                verificationStrategies,
+                gasCalculator,
+                configuration);
+        assertFalse(subject.matches(attempt));
     }
 
     @Test
@@ -113,18 +155,19 @@ class UpdateTokenCustomFeesTranslatorTest extends CallTestBase {
                             OWNER_HEADLONG_ADDRESS)
                 },
                 new Tuple[0]);
-        byte[] inputBytes = Bytes.wrapByteBuffer(
-                        UpdateTokenCustomFeesTranslator.UPDATE_FUNGIBLE_TOKEN_CUSTOM_FEES_FUNCTION.encodeCall(tuple))
+        byte[] inputBytes = Bytes.wrapByteBuffer(UPDATE_FUNGIBLE_TOKEN_CUSTOM_FEES_FUNCTION.encodeCall(tuple))
                 .toArray();
         given(attempt.inputBytes()).willReturn(inputBytes);
-        given(attempt.selector())
-                .willReturn(UpdateTokenCustomFeesTranslator.UPDATE_FUNGIBLE_TOKEN_CUSTOM_FEES_FUNCTION.selector());
+        given(attempt.selector()).willReturn(UPDATE_FUNGIBLE_TOKEN_CUSTOM_FEES_FUNCTION.selector());
         given(attempt.enhancement()).willReturn(mockEnhancement());
         given(attempt.addressIdConverter()).willReturn(addressIdConverter);
         given(addressIdConverter.convertSender(any())).willReturn(SENDER_ID);
         given(addressIdConverter.convert(any())).willReturn(OWNER_ID);
         given(attempt.defaultVerificationStrategy()).willReturn(verificationStrategy);
         given(attempt.systemContractGasCalculator()).willReturn(gasCalculator);
+        given(attempt.configuration()).willReturn(configuration);
+        given(configuration.getConfigData(TokensConfig.class)).willReturn(tokensConfig);
+        given(tokensConfig.maxCustomFeesAllowed()).willReturn(10);
 
         final var call = subject.callFrom(attempt);
         assertThat(call).isInstanceOf(DispatchForResponseCodeHtsCall.class);
@@ -156,13 +199,16 @@ class UpdateTokenCustomFeesTranslatorTest extends CallTestBase {
         given(addressIdConverter.convert(any())).willReturn(OWNER_ID);
         given(attempt.defaultVerificationStrategy()).willReturn(verificationStrategy);
         given(attempt.systemContractGasCalculator()).willReturn(gasCalculator);
+        given(attempt.configuration()).willReturn(configuration);
+        given(configuration.getConfigData(TokensConfig.class)).willReturn(tokensConfig);
+        given(tokensConfig.maxCustomFeesAllowed()).willReturn(10);
 
         final var call = subject.callFrom(attempt);
         assertThat(call).isInstanceOf(DispatchForResponseCodeHtsCall.class);
     }
 
     private void setConfiguration(final boolean enabled) {
-        given(attempt.configuration()).willReturn(configuration);
+        lenient().when(attempt.configuration()).thenReturn(configuration);
         given(configuration.getConfigData(ContractsConfig.class)).willReturn(contractsConfig);
         given(contractsConfig.systemContractUpdateCustomFeesEnabled()).willReturn(enabled);
     }

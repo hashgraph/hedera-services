@@ -27,6 +27,7 @@ import static com.hedera.node.app.spi.workflows.record.StreamBuilder.ReversingBe
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.node.app.blocks.impl.PairedStreamBuilder;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer;
 import com.hedera.node.app.spi.workflows.record.StreamBuilder;
@@ -34,6 +35,7 @@ import com.hedera.node.app.state.WrappedState;
 import com.hedera.node.app.workflows.handle.record.RecordStreamBuilder;
 import com.hedera.node.app.workflows.handle.stack.BuilderSink;
 import com.hedera.node.app.workflows.handle.stack.Savepoint;
+import com.hedera.node.config.types.StreamMode;
 import com.swirlds.state.State;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.EnumSet;
@@ -93,8 +95,8 @@ public abstract class AbstractSavepoint extends BuilderSinkImpl implements Savep
     public void commit() {
         assertNotFinished();
 
-        state.commit();
         commitBuilders();
+        state.commit();
         status = Status.FINISHED;
     }
 
@@ -113,11 +115,16 @@ public abstract class AbstractSavepoint extends BuilderSinkImpl implements Savep
             @NonNull final StreamBuilder.ReversingBehavior reversingBehavior,
             @NonNull final HandleContext.TransactionCategory txnCategory,
             @NonNull final ExternalizedRecordCustomizer customizer,
-            final boolean isBaseBuilder) {
+            final boolean isBaseBuilder,
+            @NonNull final StreamMode streamMode) {
         requireNonNull(reversingBehavior);
         requireNonNull(txnCategory);
         requireNonNull(customizer);
-        final var builder = new RecordStreamBuilder(reversingBehavior, customizer, txnCategory);
+        final var builder =
+                switch (streamMode) {
+                    case RECORDS -> new RecordStreamBuilder(reversingBehavior, customizer, txnCategory);
+                    case BOTH -> new PairedStreamBuilder(reversingBehavior, customizer, txnCategory);
+                };
         if (!customizer.shouldSuppressRecord()) {
             if (txnCategory == PRECEDING && !isBaseBuilder) {
                 addPrecedingOrThrow(builder);

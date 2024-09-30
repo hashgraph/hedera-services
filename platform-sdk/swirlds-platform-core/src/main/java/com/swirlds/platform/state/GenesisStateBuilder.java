@@ -34,31 +34,37 @@ public final class GenesisStateBuilder {
     private GenesisStateBuilder() {}
 
     /**
-     * Construct a genesis platform state.
+     * Initializes a genesis platform state.
      *
-     * @return a genesis platform state
      */
-    private static PlatformState buildGenesisPlatformState(
-            final AddressBook addressBook, final SoftwareVersion appVersion) {
+    public static void initGenesisPlatformState(
+            final PlatformContext platformContext,
+            final PlatformStateModifier platformState,
+            final AddressBook addressBook,
+            final SoftwareVersion appVersion) {
+        platformState.bulkUpdate(v -> {
+            v.setAddressBook(addressBook.copy());
+            v.setCreationSoftwareVersion(appVersion);
+            v.setRound(0);
+            v.setLegacyRunningEventHash(null);
+            v.setConsensusTimestamp(Instant.ofEpochSecond(0L));
 
-        final PlatformState platformState = new PlatformState();
-        platformState.setAddressBook(addressBook.copy());
+            final BasicConfig basicConfig = platformContext.getConfiguration().getConfigData(BasicConfig.class);
 
-        platformState.setCreationSoftwareVersion(appVersion);
-        platformState.setRound(0);
-        platformState.setLegacyRunningEventHash(null);
-        platformState.setConsensusTimestamp(Instant.ofEpochSecond(0L));
-
-        return platformState;
+            final long genesisFreezeTime = basicConfig.genesisFreezeTime();
+            if (genesisFreezeTime > 0) {
+                v.setFreezeTime(Instant.ofEpochSecond(genesisFreezeTime));
+            }
+        });
     }
 
     /**
      * Build and initialize a genesis state.
      *
-     * @param platformContext the platform context
-     * @param addressBook     the current address book
-     * @param appVersion      the software version of the app
-     * @param stateRoot       the merkle root node of the state
+     * @param platformContext       the platform context
+     * @param addressBook           the current address book
+     * @param appVersion            the software version of the app
+     * @param stateRoot             the merkle root node of the state
      * @return a reserved genesis signed state
      */
     public static ReservedSignedState buildGenesisState(
@@ -67,13 +73,7 @@ public final class GenesisStateBuilder {
             @NonNull final SoftwareVersion appVersion,
             @NonNull final MerkleRoot stateRoot) {
 
-        final BasicConfig basicConfig = platformContext.getConfiguration().getConfigData(BasicConfig.class);
-        stateRoot.setPlatformState(buildGenesisPlatformState(addressBook, appVersion));
-
-        final long genesisFreezeTime = basicConfig.genesisFreezeTime();
-        if (genesisFreezeTime > 0) {
-            stateRoot.getPlatformState().setFreezeTime(Instant.ofEpochSecond(genesisFreezeTime));
-        }
+        initGenesisPlatformState(platformContext, stateRoot.getWritablePlatformState(), addressBook, appVersion);
 
         final SignedState signedState = new SignedState(
                 platformContext, CryptoStatic::verifySignature, stateRoot, "genesis state", false, false, false);

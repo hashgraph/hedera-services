@@ -21,11 +21,11 @@ import com.swirlds.common.test.fixtures.WeightGenerators;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.platform.Consensus;
 import com.swirlds.platform.ConsensusImpl;
+import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.metrics.NoOpConsensusMetrics;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.test.event.emitter.StandardEventEmitter;
 import com.swirlds.platform.test.event.source.EventSourceFactory;
-import com.swirlds.platform.test.fixtures.event.IndexedEvent;
 import com.swirlds.platform.test.fixtures.event.generator.StandardGraphGenerator;
 import com.swirlds.platform.test.fixtures.event.source.EventSource;
 import java.util.List;
@@ -58,7 +58,7 @@ public class ConsensusBenchmark {
     @Param({"0"})
     public long seed;
 
-    private List<IndexedEvent> events;
+    private List<EventImpl> events;
     private Consensus consensus;
 
     @Setup(Level.Iteration)
@@ -80,7 +80,7 @@ public class ConsensusBenchmark {
     @BenchmarkMode(Mode.AverageTime)
     @OutputTimeUnit(TimeUnit.MILLISECONDS)
     public void calculateConsensus(final Blackhole bh) {
-        for (final IndexedEvent event : events) {
+        for (final EventImpl event : events) {
             bh.consume(consensus.addEvent(event));
         }
 

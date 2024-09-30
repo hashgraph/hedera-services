@@ -108,13 +108,18 @@ public class HandleHederaNativeOperations implements HederaNativeOperations {
     public @NonNull ResponseCodeEnum createHollowAccount(@NonNull final Bytes evmAddress) {
         final var synthTxn = TransactionBody.newBuilder()
                 .cryptoCreateAccount(synthHollowAccountCreation(evmAddress))
+                .memo(LAZY_CREATION_MEMO)
                 .build();
 
         // Note the use of the null "verification assistant" callback; we don't want any
         // signing requirements enforced for this synthetic transaction
         try {
             final var childRecordBuilder = context.dispatchRemovablePrecedingTransaction(
-                    synthTxn, CryptoCreateStreamBuilder.class, null, context.payer());
+                    synthTxn,
+                    CryptoCreateStreamBuilder.class,
+                    null,
+                    context.payer(),
+                    HandleContext.ConsensusThrottling.ON);
             childRecordBuilder.memo(LAZY_CREATION_MEMO);
 
             return childRecordBuilder.status();
@@ -137,8 +142,6 @@ public class HandleHederaNativeOperations implements HederaNativeOperations {
         final var hollowAccountId = requireNonNull(accountStore.getAccountIDByAlias(evmAddress));
         final var tokenServiceApi = context.storeFactory().serviceApi(TokenServiceApi.class);
         tokenServiceApi.finalizeHollowAccountAsContract(hollowAccountId);
-        // FUTURE: For temporary backward-compatibility with mono-service, consume an entity id
-        context.entityNumGenerator().newEntityNum();
     }
 
     /**

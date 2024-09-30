@@ -25,28 +25,28 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
  * A {@code StreamBuilder} that collects and builds the information required to create a synthetic
- * account record, specifically for a system account created during node genesis (startup)
+ * account record, specifically for a system account created during node genesis (startup).
  */
 public interface GenesisAccountStreamBuilder extends StreamBuilder {
 
     /**
-     * Tracks the created account ID for the system account
+     * Tracks the created account ID for the system account.
      * @param accountID the account ID of the system account
      * @return this builder
      */
     @NonNull
-    GenesisAccountStreamBuilder accountID(@NonNull final AccountID accountID);
+    GenesisAccountStreamBuilder accountID(@NonNull AccountID accountID);
 
     /**
-     * Tracks the synthetic transaction that represents the created system account
+     * Tracks the synthetic transaction that represents the created system account.
      * @param txn the synthetic transaction that represents the created system account
      * @return this builder
      */
     @NonNull
-    GenesisAccountStreamBuilder transaction(@NonNull final Transaction txn);
+    GenesisAccountStreamBuilder transaction(@NonNull Transaction txn);
 
     /**
-     * Tracks the synthetic transaction that represents the created system account
+     * Tracks the synthetic transaction that represents the created system account.
      * @param status the status of the synthetic transaction that represents the created system account
      * @return this builder
      */
@@ -54,16 +54,16 @@ public interface GenesisAccountStreamBuilder extends StreamBuilder {
     GenesisAccountStreamBuilder status(@NonNull ResponseCodeEnum status);
 
     /**
-     * Tracks the memo for the synthetic record
+     * Tracks the memo for the synthetic record.
      * @param memo the memo for the synthetic record
      * @return this builder
      */
     @NonNull
-    GenesisAccountStreamBuilder memo(@NonNull final String memo);
+    GenesisAccountStreamBuilder memo(@NonNull String memo);
 
     /**
      * Tracks the <b>net</b> hbar transfers that need to be applied to the associated accounts
-     * (accounts are specified in the {@code TransferList} input param)
+     * (accounts are specified in the {@code TransferList} input param).
      *
      * @param hbarTransfers the net list of adjustments to make to account balances
      * @return this builder

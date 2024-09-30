@@ -76,6 +76,7 @@ public class WritableTopicStore extends ReadableTopicStoreImpl {
      * Returns the {@link Topic} with the given number using {@link WritableKVState#getForModify}.
      * If no such topic exists, returns {@code Optional.empty()}
      * @param topicID - the id of the topic to be retrieved.
+     * @return the retrieved topic
      */
     public Topic getForModify(@NonNull final TopicID topicID) {
         requireNonNull(topicID);
@@ -84,7 +85,7 @@ public class WritableTopicStore extends ReadableTopicStoreImpl {
 
     /**
      * Returns the number of topics in the state.
-     * @return the number of topics in the state.
+     * @return the number of topics in the state
      */
     public long sizeOfState() {
         return topicState().size();

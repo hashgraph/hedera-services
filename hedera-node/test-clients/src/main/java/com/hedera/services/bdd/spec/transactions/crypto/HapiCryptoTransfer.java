@@ -33,8 +33,8 @@ import com.esaulpaugh.headlong.abi.Address;
 import com.google.common.base.MoreObjects;
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.hapi.utils.CommonUtils;
+import com.hedera.node.app.hapi.utils.EthSigsUtils;
 import com.hedera.node.app.hapi.utils.fee.FeeObject;
-import com.hedera.node.app.service.evm.utils.EthSigsUtils;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.transactions.HapiBaseTransfer;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
@@ -157,6 +157,7 @@ public class HapiCryptoTransfer extends HapiBaseTransfer<HapiCryptoTransfer> {
     }
 
     @SafeVarargs
+    @SuppressWarnings("varargs")
     public HapiCryptoTransfer(final boolean sortTransferList, final Function<HapiSpec, TransferList>... providers) {
         if (providers.length == 0) {
             hbarOnlyProvider = ignore -> TransferList.getDefaultInstance();

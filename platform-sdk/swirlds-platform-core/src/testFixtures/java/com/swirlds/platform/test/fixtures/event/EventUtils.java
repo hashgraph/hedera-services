@@ -18,14 +18,17 @@ package com.swirlds.platform.test.fixtures.event;
 
 import static java.lang.Integer.max;
 
+import com.hedera.hapi.platform.event.GossipEvent;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.event.PlatformEvent;
+import com.swirlds.platform.internal.EventImpl;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -49,7 +52,7 @@ public final class EventUtils {
     public static byte[] serializePlatformEvent(@NonNull final PlatformEvent event) {
         final ByteArrayOutputStream stream = new ByteArrayOutputStream();
         try {
-            event.serialize(new SerializableDataOutputStream(stream));
+            new SerializableDataOutputStream(stream).writePbjRecord(event.getGossipEvent(), GossipEvent.PROTOBUF);
         } catch (final IOException e) {
             throw new UncheckedIOException(e);
         }
@@ -94,11 +97,11 @@ public final class EventUtils {
      * Check to see if all events have increasing generation numbers for each node.
      */
     public static boolean areGenerationNumbersValid(
-            @NonNull final Iterable<IndexedEvent> events, final int numberOfNodes) {
+            @NonNull final Iterable<EventImpl> events, final int numberOfNodes) {
         Objects.requireNonNull(events, "events must not be null");
         final Map<NodeId, Long> previousGenNumber = new HashMap<>(numberOfNodes);
 
-        for (final IndexedEvent event : events) {
+        for (final EventImpl event : events) {
             final NodeId nodeId = event.getCreatorId();
             if (previousGenNumber.containsKey(nodeId)) {
                 if (previousGenNumber.get(nodeId) >= event.getGeneration()) {
@@ -111,12 +114,12 @@ public final class EventUtils {
     }
 
     /** Given a list of events, check if each event comes after all of its ancestors. */
-    public static boolean isEventOrderValid(final List<IndexedEvent> events) {
-        final Set<IndexedEvent> eventsEncountered = new HashSet<>();
+    public static boolean isEventOrderValid(final List<EventImpl> events) {
+        final Set<EventImpl> eventsEncountered = new HashSet<>();
 
-        for (final IndexedEvent event : events) {
-            final IndexedEvent selfParent = (IndexedEvent) event.getSelfParent();
-            final IndexedEvent otherParent = (IndexedEvent) event.getOtherParent();
+        for (final EventImpl event : events) {
+            final EventImpl selfParent = event.getSelfParent();
+            final EventImpl otherParent = event.getOtherParent();
 
             if (selfParent != null) {
                 if (!eventsEncountered.contains(selfParent)) {
@@ -135,25 +138,20 @@ public final class EventUtils {
         return true;
     }
 
-    /** Used for sorting a list of events. */
-    public static int compareEvents(final IndexedEvent event1, final IndexedEvent event2) {
-        return (int) (event1.getGeneratorIndex() - event2.getGeneratorIndex());
-    }
-
     /**
      * Sort a list of events on generator ID.
      *
      * @param events An unsorted list of events.
      * @return A sorted list of events.
      */
-    public static List<IndexedEvent> sortEventList(final List<IndexedEvent> events) {
-        final List<IndexedEvent> sortedEvents = new ArrayList<>(events);
-        sortedEvents.sort(EventUtils::compareEvents);
+    public static List<EventImpl> sortEventList(final List<EventImpl> events) {
+        final List<EventImpl> sortedEvents = new ArrayList<>(events);
+        sortedEvents.sort(Comparator.comparing(EventImpl::getBaseHash));
         return sortedEvents;
     }
 
     /** Check if two event lists contain the same values (but in a possibly different order). */
-    public static boolean areEventListsEquivalent(List<IndexedEvent> events1, List<IndexedEvent> events2) {
+    public static boolean areEventListsEquivalent(List<EventImpl> events1, List<EventImpl> events2) {
         events1 = sortEventList(events1);
         events2 = sortEventList(events2);
         return events1.equals(events2);
@@ -205,10 +203,10 @@ public final class EventUtils {
      * @param eventIndex the index of the event to be considered. The age of the event's other
      *     parent is returned.
      */
-    private static int calculateOtherParentAge(final List<IndexedEvent> events, final int eventIndex) {
+    private static int calculateOtherParentAge(final List<EventImpl> events, final int eventIndex) {
 
-        final IndexedEvent event = events.get(eventIndex);
-        final IndexedEvent otherParent = (IndexedEvent) event.getOtherParent();
+        final EventImpl event = events.get(eventIndex);
+        final EventImpl otherParent = event.getOtherParent();
         if (otherParent == null) {
             return 0;
         }
@@ -216,7 +214,7 @@ public final class EventUtils {
 
         int age = 0;
         for (int index = eventIndex - 1; index >= 0; index--) {
-            final IndexedEvent nextEvent = events.get(index);
+            final EventImpl nextEvent = events.get(index);
             if (nextEvent == otherParent) {
                 break;
             }
@@ -244,7 +242,7 @@ public final class EventUtils {
      * @return A map: {age : number of events with that age}
      */
     public static Map<Integer, Integer> gatherOtherParentAges(
-            final List<IndexedEvent> events, final Set<NodeId> excludedNodes) {
+            final List<EventImpl> events, final Set<NodeId> excludedNodes) {
         final Map<Integer, Integer> map = new HashMap<>();
         for (int eventIndex = 0; eventIndex < events.size(); eventIndex++) {
 

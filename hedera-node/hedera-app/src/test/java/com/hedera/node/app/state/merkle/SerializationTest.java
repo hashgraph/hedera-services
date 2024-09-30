@@ -21,6 +21,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 
 import com.hedera.node.app.ids.WritableEntityIdStore;
+import com.hedera.node.app.services.MigrationStateChanges;
+import com.hedera.node.app.version.ServicesSoftwareVersion;
 import com.hedera.node.config.data.HederaConfig;
 import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistryException;
@@ -74,6 +76,9 @@ class SerializationTest extends MerkleTestBase {
     @Mock
     private MerkleStateLifecycles lifecycles;
 
+    @Mock
+    private MigrationStateChanges migrationStateChanges;
+
     @BeforeEach
     void setUp() throws IOException {
         setupConstructableRegistry();
@@ -90,7 +95,7 @@ class SerializationTest extends MerkleTestBase {
     }
 
     Schema createV1Schema() {
-        return new TestSchema(1) {
+        return new TestSchema(v1) {
             @NonNull
             @Override
             @SuppressWarnings("rawtypes")
@@ -203,7 +208,6 @@ class SerializationTest extends MerkleTestBase {
         final var originalTree = createMerkleHederaState(schemaV1);
 
         MerkleStateRoot copy = originalTree.copy(); // make a copy to make VM flushable
-        ;
 
         forceFlush(originalTree.getReadableStates(FIRST_SERVICE).get(ANIMAL_STATE_KEY));
         copy.copy(); // make a fast copy because we can only write to disk an immutable copy
@@ -238,7 +242,8 @@ class SerializationTest extends MerkleTestBase {
 
         // Register the MerkleStateRoot so, when found in serialized bytes, it will register with
         // our migration callback, etc. (normally done by the Hedera main method)
-        final Supplier<RuntimeConstructable> constructor = () -> new MerkleStateRoot(lifecycles);
+        final Supplier<RuntimeConstructable> constructor =
+                () -> new MerkleStateRoot(lifecycles, version -> new ServicesSoftwareVersion(version, 0));
         final var pair = new ClassConstructorPair(MerkleStateRoot.class, constructor);
         registry.registerConstructable(pair);
 
@@ -251,15 +256,15 @@ class SerializationTest extends MerkleTestBase {
                 networkInfo,
                 mock(Metrics.class),
                 mock(WritableEntityIdStore.class),
-                new HashMap<>());
-        loadedTree.migrate(1);
+                new HashMap<>(),
+                migrationStateChanges);
+        loadedTree.migrate(MerkleStateRoot.CURRENT_VERSION);
 
         return loadedTree;
     }
 
     private MerkleStateRoot createMerkleHederaState(Schema schemaV1) {
-        final var v1 = version(1, 0, 0);
-        final var originalTree = new MerkleStateRoot(lifecycles);
+        final var originalTree = new MerkleStateRoot(lifecycles, version -> new ServicesSoftwareVersion(version, 0));
         final var originalRegistry =
                 new MerkleSchemaRegistry(registry, FIRST_SERVICE, DEFAULT_CONFIG, new SchemaApplications());
         originalRegistry.register(schemaV1);
@@ -271,7 +276,8 @@ class SerializationTest extends MerkleTestBase {
                 networkInfo,
                 mock(Metrics.class),
                 mock(WritableEntityIdStore.class),
-                new HashMap<>());
+                new HashMap<>(),
+                migrationStateChanges);
         return originalTree;
     }
 

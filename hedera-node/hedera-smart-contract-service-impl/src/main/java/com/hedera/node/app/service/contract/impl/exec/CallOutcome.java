@@ -35,6 +35,7 @@ import edu.umd.cs.findbugs.annotations.Nullable;
  *
  * @param result the result of the call
  * @param status the resolved status of the call
+ * @param recipientId if known, the Hedera id of the contract that was called
  * @param tinybarGasPrice the tinybar-denominated gas price used for the call
  * @param actions any contract actions that should be externalized in a sidecar
  * @param stateChanges any contract state changes that should be externalized in a sidecar
@@ -47,22 +48,12 @@ public record CallOutcome(
         @Nullable ContractActions actions,
         @Nullable ContractStateChanges stateChanges) {
 
-    /**
-     * Enumerates whether to externalize the result of aborted calls; needed for
-     * mono-service fidelity, since only a top-level {@code EthereumTransaction}
-     * would externalize the result of an aborted call there.
-     */
-    public enum ExternalizeAbortResult {
-        YES,
-        NO
-    }
-
     public boolean hasStateChanges() {
         return stateChanges != null && !stateChanges.contractStateChanges().isEmpty();
     }
 
     public static CallOutcome fromResultsWithMaybeSidecars(
-            @NonNull ContractFunctionResult result, @NonNull HederaEvmTransactionResult hevmResult) {
+            @NonNull final ContractFunctionResult result, @NonNull final HederaEvmTransactionResult hevmResult) {
         return new CallOutcome(
                 result,
                 hevmResult.finalStatus(),
@@ -96,19 +87,13 @@ public record CallOutcome(
      * Adds the call details to the given record builder.
      *
      * @param recordBuilder the record builder
-     * @param externalizeAbortResult whether to externalize the result of aborted calls
      */
-    public void addCallDetailsTo(
-            @NonNull final ContractCallStreamBuilder recordBuilder,
-            @NonNull final ExternalizeAbortResult externalizeAbortResult) {
+    public void addCallDetailsTo(@NonNull final ContractCallStreamBuilder recordBuilder) {
         requireNonNull(recordBuilder);
-        requireNonNull(externalizeAbortResult);
         if (!callWasAborted()) {
             recordBuilder.contractID(recipientId);
         }
-        if (shouldExternalizeResult(externalizeAbortResult)) {
-            recordBuilder.contractCallResult(result);
-        }
+        recordBuilder.contractCallResult(result);
         recordBuilder.withCommonFieldsSetFrom(this);
     }
 
@@ -117,15 +102,10 @@ public record CallOutcome(
      *
      * @param recordBuilder the record builder
      */
-    public void addCreateDetailsTo(
-            @NonNull final ContractCreateStreamBuilder recordBuilder,
-            @NonNull final ExternalizeAbortResult externalizeAbortResult) {
+    public void addCreateDetailsTo(@NonNull final ContractCreateStreamBuilder recordBuilder) {
         requireNonNull(recordBuilder);
-        requireNonNull(externalizeAbortResult);
         recordBuilder.contractID(recipientIdIfCreated());
-        if (shouldExternalizeResult(externalizeAbortResult)) {
-            recordBuilder.contractCreateResult(result);
-        }
+        recordBuilder.contractCreateResult(result);
         recordBuilder.withCommonFieldsSetFrom(this);
     }
 
@@ -150,10 +130,6 @@ public record CallOutcome(
 
     private boolean representsTopLevelCreation() {
         return isSuccess() && requireNonNull(result).hasEvmAddress();
-    }
-
-    private boolean shouldExternalizeResult(@NonNull final ExternalizeAbortResult externalizeAbortResult) {
-        return !callWasAborted() || externalizeAbortResult == ExternalizeAbortResult.YES;
     }
 
     private boolean callWasAborted() {

@@ -16,8 +16,10 @@
 
 package com.hedera.services.bdd.suites.contract.records;
 
+import static com.hedera.services.bdd.junit.RepeatableReason.NEEDS_VIRTUAL_TIME_FOR_FAST_EXECUTION;
 import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
@@ -29,17 +31,17 @@ import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfe
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.assertionsHold;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.waitUntilStartOfNextAdhocPeriod;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
-import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_ETHEREUM_DATA;
-import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_LOG_DATA;
-import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
 import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_MILLION_HBARS;
 import static com.hedera.services.bdd.suites.HapiSuite.RELAYER;
 import static com.hedera.services.bdd.suites.HapiSuite.SECP_256K1_SHAPE;
 import static com.hedera.services.bdd.suites.HapiSuite.SECP_256K1_SOURCE_KEY;
+import static com.hedera.services.bdd.suites.crypto.CryptoCreateSuite.ACCOUNT;
+import static com.hedera.services.bdd.suites.leaky.LeakyContractTestsSuite.RECEIVER;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.RECORD_NOT_FOUND;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -48,6 +50,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.google.common.primitives.Longs;
 import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
 import com.hedera.services.bdd.junit.HapiTest;
+import com.hedera.services.bdd.junit.RepeatableHapiTest;
+import com.hedera.services.bdd.spec.HapiSpec;
+import com.hedera.services.bdd.spec.HapiSpecOperation;
+import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
 import com.hedera.services.bdd.spec.utilops.CustomSpecAssert;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -59,13 +65,16 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
+import java.util.function.Consumer;
 import java.util.stream.Stream;
 import org.apache.tuweni.bytes.Bytes32;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
 @Tag(SMART_CONTRACT)
+@DisplayName("Records Suite")
 public class RecordsSuite {
     public static final String LOG_NOW = "logNow";
     public static final String AUTO_ACCOUNT = "autoAccount";
@@ -92,13 +101,12 @@ public class RecordsSuite {
     final Stream<DynamicTest> txRecordsContainValidTransfers() {
         final var contract = "ParentChildTransfer";
 
-        return defaultHapiSpec("TXRecordsContainValidTransfers", NONDETERMINISTIC_TRANSACTION_FEES)
-                .given(
-                        uploadInitCode(contract),
-                        contractCreate(contract).balance(10_000L).via("createTx"))
-                .when(contractCall(contract, "transferToChild", BigInteger.valueOf(10_000))
-                        .via("transferTx"))
-                .then(assertionsHold((spec, ctxLog) -> {
+        return hapiTest(
+                uploadInitCode(contract),
+                contractCreate(contract).balance(10_000L).via("createTx"),
+                contractCall(contract, "transferToChild", BigInteger.valueOf(10_000))
+                        .via("transferTx"),
+                assertionsHold((spec, ctxLog) -> {
                     final var subop01 = getTxnRecord("createTx").saveTxnRecordToRegistry("createTxRec");
                     final var subop02 = getTxnRecord("transferTx").saveTxnRecordToRegistry("transferTxRec");
                     CustomSpecAssert.allRunFor(spec, subop01, subop02);
@@ -142,39 +150,37 @@ public class RecordsSuite {
         final var firstCall = "firstCall";
         final var secondCall = "secondCall";
 
-        return defaultHapiSpec("returnsTimestampOfTheBlock", NONDETERMINISTIC_ETHEREUM_DATA, NONDETERMINISTIC_LOG_DATA)
-                .given(
-                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
-                        cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS),
-                        cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS))
-                                .via(AUTO_ACCOUNT),
-                        getTxnRecord(AUTO_ACCOUNT).andAllChildRecords(),
-                        uploadInitCode(contract),
-                        contractCreate(contract))
-                .when(
-                        // Ensure we submit these two transactions in the same block
-                        waitUntilStartOfNextAdhocPeriod(2_000),
-                        ethereumCall(contract, LOG_NOW)
-                                .type(EthTxData.EthTransactionType.EIP1559)
-                                .signingWith(SECP_256K1_SOURCE_KEY)
-                                .payingWith(RELAYER)
-                                .nonce(0)
-                                .maxFeePerGas(50L)
-                                .gasLimit(1_000_000L)
-                                .via(firstCall)
-                                .deferStatusResolution()
-                                .hasKnownStatus(ResponseCodeEnum.SUCCESS),
-                        ethereumCall(contract, LOG_NOW)
-                                .type(EthTxData.EthTransactionType.EIP1559)
-                                .signingWith(SECP_256K1_SOURCE_KEY)
-                                .payingWith(RELAYER)
-                                .nonce(1)
-                                .maxFeePerGas(50L)
-                                .gasLimit(1_000_000L)
-                                .via(secondCall)
-                                .deferStatusResolution()
-                                .hasKnownStatus(ResponseCodeEnum.SUCCESS))
-                .then(withOpContext((spec, opLog) -> {
+        return hapiTest(
+                newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
+                cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS),
+                cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS))
+                        .via(AUTO_ACCOUNT),
+                getTxnRecord(AUTO_ACCOUNT).andAllChildRecords(),
+                uploadInitCode(contract),
+                contractCreate(contract),
+                // Ensure we submit these two transactions in the same block
+                waitUntilStartOfNextAdhocPeriod(2_000),
+                ethereumCall(contract, LOG_NOW)
+                        .type(EthTxData.EthTransactionType.EIP1559)
+                        .signingWith(SECP_256K1_SOURCE_KEY)
+                        .payingWith(RELAYER)
+                        .nonce(0)
+                        .maxFeePerGas(50L)
+                        .gasLimit(1_000_000L)
+                        .via(firstCall)
+                        .deferStatusResolution()
+                        .hasKnownStatus(ResponseCodeEnum.SUCCESS),
+                ethereumCall(contract, LOG_NOW)
+                        .type(EthTxData.EthTransactionType.EIP1559)
+                        .signingWith(SECP_256K1_SOURCE_KEY)
+                        .payingWith(RELAYER)
+                        .nonce(1)
+                        .maxFeePerGas(50L)
+                        .gasLimit(1_000_000L)
+                        .via(secondCall)
+                        .deferStatusResolution()
+                        .hasKnownStatus(ResponseCodeEnum.SUCCESS),
+                withOpContext((spec, opLog) -> {
                     final var firstBlockOp = getTxnRecord(firstCall).hasRetryAnswerOnlyPrecheck(RECORD_NOT_FOUND);
                     final var recordOp = getTxnRecord(secondCall).hasRetryAnswerOnlyPrecheck(RECORD_NOT_FOUND);
                     allRunFor(spec, firstBlockOp, recordOp);
@@ -221,40 +227,37 @@ public class RecordsSuite {
         final var firstBlock = "firstBlock";
         final var secondBlock = "secondBlock";
 
-        return defaultHapiSpec(
-                        "returnsCorrectBlockProperties", NONDETERMINISTIC_ETHEREUM_DATA, NONDETERMINISTIC_LOG_DATA)
-                .given(
-                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
-                        cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS),
-                        cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS))
-                                .via(AUTO_ACCOUNT),
-                        getTxnRecord(AUTO_ACCOUNT).andAllChildRecords(),
-                        uploadInitCode(contract),
-                        contractCreate(contract))
-                .when(
-                        waitUntilStartOfNextAdhocPeriod(2_000L),
-                        ethereumCall(contract, LOG_NOW)
-                                .type(EthTxData.EthTransactionType.EIP1559)
-                                .signingWith(SECP_256K1_SOURCE_KEY)
-                                .payingWith(RELAYER)
-                                .nonce(0)
-                                .maxFeePerGas(50L)
-                                .gasLimit(1_000_000L)
-                                .via(firstBlock)
-                                .deferStatusResolution()
-                                .hasKnownStatus(ResponseCodeEnum.SUCCESS),
-                        // Make sure we submit the next transaction in the next block
-                        waitUntilStartOfNextAdhocPeriod(2_000L),
-                        ethereumCall(contract, LOG_NOW)
-                                .type(EthTxData.EthTransactionType.EIP1559)
-                                .signingWith(SECP_256K1_SOURCE_KEY)
-                                .payingWith(RELAYER)
-                                .nonce(1)
-                                .maxFeePerGas(50L)
-                                .gasLimit(1_000_000L)
-                                .via(secondBlock)
-                                .hasKnownStatus(ResponseCodeEnum.SUCCESS))
-                .then(withOpContext((spec, opLog) -> {
+        return hapiTest(
+                newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
+                cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS),
+                cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS))
+                        .via(AUTO_ACCOUNT),
+                getTxnRecord(AUTO_ACCOUNT).andAllChildRecords(),
+                uploadInitCode(contract),
+                contractCreate(contract),
+                waitUntilStartOfNextAdhocPeriod(2_000L),
+                ethereumCall(contract, LOG_NOW)
+                        .type(EthTxData.EthTransactionType.EIP1559)
+                        .signingWith(SECP_256K1_SOURCE_KEY)
+                        .payingWith(RELAYER)
+                        .nonce(0)
+                        .maxFeePerGas(50L)
+                        .gasLimit(1_000_000L)
+                        .via(firstBlock)
+                        .deferStatusResolution()
+                        .hasKnownStatus(ResponseCodeEnum.SUCCESS),
+                // Make sure we submit the next transaction in the next block
+                waitUntilStartOfNextAdhocPeriod(2_000L),
+                ethereumCall(contract, LOG_NOW)
+                        .type(EthTxData.EthTransactionType.EIP1559)
+                        .signingWith(SECP_256K1_SOURCE_KEY)
+                        .payingWith(RELAYER)
+                        .nonce(1)
+                        .maxFeePerGas(50L)
+                        .gasLimit(1_000_000L)
+                        .via(secondBlock)
+                        .hasKnownStatus(ResponseCodeEnum.SUCCESS),
+                withOpContext((spec, opLog) -> {
                     final var firstBlockOp = getTxnRecord(firstBlock).hasRetryAnswerOnlyPrecheck(RECORD_NOT_FOUND);
                     final var recordOp = getTxnRecord(secondBlock).hasRetryAnswerOnlyPrecheck(RECORD_NOT_FOUND);
                     allRunFor(spec, firstBlockOp, recordOp);
@@ -297,6 +300,55 @@ public class RecordsSuite {
 
                     assertEquals(Bytes32.ZERO, secondBlockHash);
                 }));
+    }
+
+    @DisplayName("Block Hash Returns The Hash Of The Latest 256 Blocks")
+    @RepeatableHapiTest(NEEDS_VIRTUAL_TIME_FOR_FAST_EXECUTION)
+    final Stream<DynamicTest> blockHashReturnsTheHashOfTheLatest256Blocks() {
+        final var contract = "EmitBlockTimestamp";
+        return hapiTest(
+                newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
+                uploadInitCode(contract),
+                contractCreate(contract).gas(4_000_000L),
+                cryptoCreate(ACCOUNT).balance(6 * ONE_MILLION_HBARS),
+                cryptoCreate(RECEIVER),
+                cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS)),
+                withOpContext((spec, opLog) -> {
+                    doNTransfers(spec, 256);
+                    waitUntilStartOfNextAdhocPeriod(2_000L);
+                    final var ethCall = ethereumCall(contract, "getAllBlockHashes")
+                            .logged()
+                            .gasLimit(4_000_000L)
+                            .via("blockHashes");
+                    final var blockHashRes = getTxnRecord("blockHashes").logged();
+                    allRunFor(spec, ethCall, waitUntilStartOfNextAdhocPeriod(2_000L), blockHashRes);
+                    assertTrue(blockHashRes
+                            .getResponseRecord()
+                            .getContractCallResult()
+                            .getErrorMessage()
+                            .isEmpty());
+                    final var res = blockHashRes
+                            .getResponseRecord()
+                            .getContractCallResult()
+                            .getContractCallResult()
+                            .substring(64);
+                    // Ensure that we have 256 block hashes
+                    assertEquals(res.size() / 32, 256);
+                }));
+    }
+
+    // Helper method to perform multiple transfers and simulate multiple block creations
+    private void doNTransfers(@NonNull final HapiSpec spec, final int amount) {
+        allRunFor(
+                spec,
+                Stream.iterate(1, i -> i + 1)
+                        .limit(amount)
+                        .mapMulti((Integer i, Consumer<HapiSpecOperation> consumer) -> {
+                            consumer.accept(sleepFor(2_000L));
+                            consumer.accept(
+                                    cryptoTransfer(TokenMovement.movingHbar(i).between(ACCOUNT, RECEIVER)));
+                        })
+                        .toArray(HapiSpecOperation[]::new));
     }
 
     /**

@@ -39,6 +39,7 @@ import com.hedera.node.config.data.LedgerConfig;
 import com.hedera.node.config.data.StakingConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.state.spi.MigrationContext;
+import com.swirlds.state.spi.Schema;
 import com.swirlds.state.spi.StateDefinition;
 import com.swirlds.state.spi.WritableKVState;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -54,7 +55,7 @@ import org.apache.logging.log4j.Logger;
 /**
  * Initial mod-service schema for the token service.
  */
-public class V0490TokenSchema extends StakingInfoManagementSchema {
+public class V0490TokenSchema extends Schema {
     private static final Logger log = LogManager.getLogger(V0490TokenSchema.class);
 
     // These need to be big so databases are created at right scale. If they are too small then the on disk hash map
@@ -209,15 +210,15 @@ public class V0490TokenSchema extends StakingInfoManagementSchema {
     public long getTotalBalanceOfAllAccounts(
             @NonNull final WritableKVState<AccountID, Account> accounts, @NonNull final HederaConfig hederaConfig) {
         long totalBalance = 0;
-        long i = 1; // Start with the first account ID
+        long curAccountId = 1; // Start with the first account ID
         long totalAccounts = accounts.size();
         do {
-            Account account = accounts.get(asAccountId(i, hederaConfig));
+            final Account account = accounts.get(asAccountId(curAccountId, hederaConfig));
             if (account != null) {
                 totalBalance += account.tinybarBalance();
                 totalAccounts--;
             }
-            i++;
+            curAccountId++;
         } while (totalAccounts > 0);
         return totalBalance;
     }

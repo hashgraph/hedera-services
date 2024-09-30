@@ -17,18 +17,17 @@
 package com.hedera.node.app.workflows.handle.record;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.IDENTICAL_SCHEDULE_ALREADY_CREATED;
-import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.USER;
+import static com.hedera.node.app.service.token.impl.comparator.TokenComparators.PENDING_AIRDROP_ID_COMPARATOR;
 import static com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer.NOOP_RECORD_CUSTOMIZER;
-import static com.hedera.node.app.spi.workflows.record.StreamBuilder.ReversingBehavior.REVERSIBLE;
 import static com.hedera.node.app.state.logging.TransactionStateLogger.logEndTransactionRecord;
 import static java.util.Collections.emptySet;
 import static java.util.Objects.requireNonNull;
 
-import com.google.common.annotations.VisibleForTesting;
 import com.hedera.hapi.node.base.AccountAmount;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.FileID;
+import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.ScheduleID;
 import com.hedera.hapi.node.base.Timestamp;
@@ -147,8 +146,11 @@ public class RecordStreamBuilder
     private static final Comparator<TokenAssociation> TOKEN_ASSOCIATION_COMPARATOR =
             Comparator.<TokenAssociation>comparingLong(a -> a.tokenId().tokenNum())
                     .thenComparingLong(a -> a.accountIdOrThrow().accountNum());
+    private static final Comparator<PendingAirdropRecord> PENDING_AIRDROP_RECORD_COMPARATOR =
+            Comparator.comparing(PendingAirdropRecord::pendingAirdropIdOrThrow, PENDING_AIRDROP_ID_COMPARATOR);
     // base transaction data
     private Transaction transaction;
+
     private Bytes transactionBytes = Bytes.EMPTY;
     // fields needed for TransactionRecord
     // Mutable because the provisional consensus timestamp assigned on dispatch could
@@ -206,16 +208,6 @@ public class RecordStreamBuilder
     private TokenID tokenID;
     private TokenType tokenType;
 
-    /**
-     * Creates new transaction record builder where reversion will leave its record in the stream
-     * with either a failure status or {@link ResponseCodeEnum#REVERTED_SUCCESS}.
-     *
-     */
-    @VisibleForTesting
-    public RecordStreamBuilder() {
-        this(REVERSIBLE, NOOP_RECORD_CUSTOMIZER, USER);
-    }
-
     public RecordStreamBuilder(
             @NonNull final ReversingBehavior reversingBehavior,
             @NonNull final ExternalizedRecordCustomizer customizer,
@@ -256,10 +248,16 @@ public class RecordStreamBuilder
         final Timestamp parentConsensusTimestamp =
                 parentConsensus != null ? HapiUtils.asTimestamp(parentConsensus) : null;
 
-        // sort the automatic associations to match the order of mono-service records
-        final var newAutomaticTokenAssociations = new ArrayList<>(automaticTokenAssociations);
+        // Sort non-empty automatic associations and pending airdrops to simplify record translation
+        var newAutomaticTokenAssociations = automaticTokenAssociations;
         if (!automaticTokenAssociations.isEmpty()) {
+            newAutomaticTokenAssociations = new ArrayList<>(automaticTokenAssociations);
             newAutomaticTokenAssociations.sort(TOKEN_ASSOCIATION_COMPARATOR);
+        }
+        var newPendingAirdropRecords = pendingAirdropRecords;
+        if (!pendingAirdropRecords.isEmpty()) {
+            newPendingAirdropRecords = new ArrayList<>(pendingAirdropRecords);
+            newPendingAirdropRecords.sort(PENDING_AIRDROP_RECORD_COMPARATOR);
         }
 
         final var transactionRecord = transactionRecordBuilder
@@ -270,7 +268,7 @@ public class RecordStreamBuilder
                 .parentConsensusTimestamp(parentConsensusTimestamp)
                 .transferList(transferList)
                 .tokenTransferLists(tokenTransferLists)
-                .newPendingAirdrops(pendingAirdropRecords)
+                .newPendingAirdrops(newPendingAirdropRecords)
                 .assessedCustomFees(assessedCustomFees)
                 .automaticTokenAssociations(newAutomaticTokenAssociations)
                 .paidStakingRewards(paidStakingRewards)
@@ -366,6 +364,11 @@ public class RecordStreamBuilder
     @NonNull
     public RecordStreamBuilder transaction(@NonNull final Transaction transaction) {
         this.transaction = requireNonNull(transaction, "transaction must not be null");
+        return this;
+    }
+
+    @Override
+    public StreamBuilder serializedTransaction(@Nullable final Bytes serializedTransaction) {
         return this;
     }
 
@@ -577,8 +580,8 @@ public class RecordStreamBuilder
      * @return the builder
      */
     @Override
-    public RecordStreamBuilder addPendingAirdrop(@NonNull PendingAirdropRecord pendingAirdropRecord) {
-        requireNonNull(pendingAirdropRecords, "pendingAirdropRecords must not be null");
+    public RecordStreamBuilder addPendingAirdrop(@NonNull final PendingAirdropRecord pendingAirdropRecord) {
+        requireNonNull(pendingAirdropRecord);
         this.pendingAirdropRecords.add(pendingAirdropRecord);
         return this;
     }
@@ -856,17 +859,18 @@ public class RecordStreamBuilder
         return exchangeRate;
     }
 
-    /**
-     * Sets the receipt exchange rate.
-     *
-     * @param exchangeRate the {@link ExchangeRateSet} for the receipt
-     * @return the builder
-     */
+    /**{@inheritDoc}*/
     @NonNull
     @Override
-    public RecordStreamBuilder exchangeRate(@NonNull final ExchangeRateSet exchangeRate) {
-        requireNonNull(exchangeRate, "exchangeRate must not be null");
+    public RecordStreamBuilder exchangeRate(@Nullable final ExchangeRateSet exchangeRate) {
         this.exchangeRate = exchangeRate;
+        return this;
+    }
+
+    @NonNull
+    @Override
+    public StreamBuilder congestionMultiplier(long congestionMultiplier) {
+        // No-op
         return this;
     }
 
@@ -1064,20 +1068,6 @@ public class RecordStreamBuilder
     }
 
     /**
-     * Sets the contractActions which are part of sidecar records.
-     *
-     * @param contractActions the contractActions
-     * @return the builder
-     */
-    @NonNull
-    public RecordStreamBuilder contractActions(
-            @NonNull final List<AbstractMap.SimpleEntry<ContractActions, Boolean>> contractActions) {
-        requireNonNull(contractActions, "contractActions must not be null");
-        this.contractActions = contractActions;
-        return this;
-    }
-
-    /**
      * Adds contractActions to sidecar records.
      *
      * @param contractActions the contractActions to add
@@ -1093,26 +1083,13 @@ public class RecordStreamBuilder
     }
 
     /**
-     * Sets the contractBytecodes which are part of sidecar records.
-     *
-     * @param contractBytecodes the contractBytecodes
-     * @return the builder
-     */
-    @NonNull
-    public RecordStreamBuilder contractBytecodes(
-            @NonNull final List<AbstractMap.SimpleEntry<ContractBytecode, Boolean>> contractBytecodes) {
-        requireNonNull(contractBytecodes, "contractBytecodes must not be null");
-        this.contractBytecodes = contractBytecodes;
-        return this;
-    }
-
-    /**
      * Adds contractBytecodes to sidecar records.
      *
      * @param contractBytecode the contractBytecode to add
      * @param isMigration flag indicating whether sidecar is from migration
      * @return the builder
      */
+    @Override
     @NonNull
     public RecordStreamBuilder addContractBytecode(
             @NonNull final ContractBytecode contractBytecode, final boolean isMigration) {
@@ -1131,7 +1108,6 @@ public class RecordStreamBuilder
      * @param beneficiaryForDeletedAccount the beneficiary account ID
      */
     @Override
-    @NonNull
     public void addBeneficiaryForDeletedAccount(
             @NonNull final AccountID deletedAccountID, @NonNull final AccountID beneficiaryForDeletedAccount) {
         requireNonNull(deletedAccountID, "deletedAccountID must not be null");
@@ -1189,16 +1165,13 @@ public class RecordStreamBuilder
         }
     }
 
-    public EthereumTransactionStreamBuilder feeChargedToPayer(@NonNull long amount) {
-        transactionRecordBuilder.transactionFee(transactionFee + amount);
-        return this;
-    }
-
     /**
      * Returns the staking rewards paid in this transaction.
      *
      * @return the staking rewards paid in this transaction
      */
+    @Override
+    @NonNull
     public List<AccountAmount> getPaidStakingRewards() {
         return paidStakingRewards;
     }
@@ -1208,7 +1181,14 @@ public class RecordStreamBuilder
      * @return the {@link TransactionRecord.Builder} of the record
      */
     @Override
+    @NonNull
     public TransactionCategory category() {
         return category;
+    }
+
+    @Override
+    public StreamBuilder functionality(@NonNull final HederaFunctionality functionality) {
+        // No-op
+        return this;
     }
 }

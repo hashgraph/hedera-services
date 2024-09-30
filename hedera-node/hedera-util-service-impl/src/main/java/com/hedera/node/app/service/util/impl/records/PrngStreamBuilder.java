@@ -33,15 +33,15 @@ public interface PrngStreamBuilder extends StreamBuilder {
      * @return this builder
      */
     @NonNull
-    PrngStreamBuilder entropyNumber(final int num);
+    PrngStreamBuilder entropyNumber(int num);
 
     /**
      * Tracks the pseudorandom 384-bit string generated when no output range is provided or range of 0 is provided in
-     * {@link com.hedera.hapi.node.util.UtilPrngTransactionBody}
+     * {@link com.hedera.hapi.node.util.UtilPrngTransactionBody}.
      *
      * @param prngBytes the pseudorandom 384-bit string
      * @return this builder
      */
     @NonNull
-    PrngStreamBuilder entropyBytes(@NonNull final Bytes prngBytes);
+    PrngStreamBuilder entropyBytes(@NonNull Bytes prngBytes);
 }

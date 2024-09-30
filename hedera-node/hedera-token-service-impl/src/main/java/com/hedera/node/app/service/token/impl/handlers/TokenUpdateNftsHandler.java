@@ -75,7 +75,7 @@ public class TokenUpdateNftsHandler implements TransactionHandler {
         requireNonNull(txn);
         final var op = txn.tokenUpdateNftsOrThrow();
         validateTruePreCheck(op.hasToken(), INVALID_TOKEN_ID);
-        validateTrue(!op.serialNumbers().isEmpty(), MISSING_SERIAL_NUMBERS);
+        validateTruePreCheck(!op.serialNumbers().isEmpty(), MISSING_SERIAL_NUMBERS);
     }
 
     @Override
@@ -142,8 +142,9 @@ public class TokenUpdateNftsHandler implements TransactionHandler {
         }
     }
 
-    /** The total price should be N * $0.001, where N is the number of NFTs in the transaction body
-     * * @param feeContext the {@link FeeContext} with all information needed for the calculation
+    /**
+     * The total price should be N * $0.001, where N is the number of NFTs in the transaction body.
+     * @param feeContext the {@link FeeContext} with all information needed for the calculation
      * @return the total Fee
      */
     @NonNull

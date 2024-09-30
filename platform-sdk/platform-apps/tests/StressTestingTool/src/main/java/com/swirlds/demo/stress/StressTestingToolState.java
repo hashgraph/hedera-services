@@ -31,7 +31,7 @@ import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.MerkleLeaf;
 import com.swirlds.common.merkle.impl.PartialMerkleLeaf;
 import com.swirlds.common.utility.ByteUtils;
-import com.swirlds.platform.state.PlatformState;
+import com.swirlds.platform.state.PlatformStateModifier;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.Round;
@@ -40,6 +40,7 @@ import com.swirlds.platform.system.SwirldState;
 import com.swirlds.platform.system.events.Event;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.time.Duration;
 
@@ -76,11 +77,13 @@ public class StressTestingToolState extends PartialMerkleLeaf implements SwirldS
         return new StressTestingToolState(this);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public void init(
             @NonNull final Platform platform,
-            @NonNull final PlatformState platformState,
             @NonNull final InitTrigger trigger,
-            @NonNull final SoftwareVersion previousSoftwareVersion) {
+            @Nullable final SoftwareVersion previousSoftwareVersion) {
         this.config = platform.getContext().getConfiguration().getConfigData(StressTestingToolConfig.class);
     }
 
@@ -96,7 +99,7 @@ public class StressTestingToolState extends PartialMerkleLeaf implements SwirldS
      * {@inheritDoc}
      */
     @Override
-    public void handleConsensusRound(final Round round, final PlatformState platformState) {
+    public void handleConsensusRound(final Round round, final PlatformStateModifier platformState) {
         throwIfImmutable();
         round.forEachTransaction(this::handleTransaction);
     }

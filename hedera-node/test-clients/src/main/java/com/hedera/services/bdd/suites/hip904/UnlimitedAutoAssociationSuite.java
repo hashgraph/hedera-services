@@ -17,7 +17,7 @@
 package com.hedera.services.bdd.suites.hip904;
 
 import static com.google.protobuf.ByteString.copyFromUtf8;
-import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
+import static com.hedera.node.app.hapi.utils.EthSigsUtils.recoverAddressFromPubKey;
 import static com.hedera.services.bdd.junit.TestTags.TOKEN;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asSolidityAddress;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
@@ -47,7 +47,6 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
-import static com.hedera.services.bdd.suites.HapiSuite.ONE_MILLION_HBARS;
 import static com.hedera.services.bdd.suites.HapiSuite.SECP_256K1_SHAPE;
 import static com.hedera.services.bdd.suites.HapiSuite.TINY_PARTS_PER_WHOLE;
 import static com.hedera.services.bdd.suites.contract.Utils.aaWith;
@@ -263,7 +262,7 @@ public class UnlimitedAutoAssociationSuite {
         final var hollowAccountTxn = "hollowAccountTxn";
         return hapiTest(
                 newKeyNamed(hollowKey).shape(SECP_256K1_SHAPE),
-                cryptoCreate(TREASURY).balance(10_000 * ONE_MILLION_HBARS),
+                cryptoCreate(TREASURY).balance(10_000 * ONE_HBAR),
                 tokenCreate(tokenA)
                         .tokenType(FUNGIBLE_COMMON)
                         .initialSupply(10L)
@@ -311,7 +310,7 @@ public class UnlimitedAutoAssociationSuite {
                                 .exposingIdTo(id -> spec.registry().saveAccountId(hollowKey, id))
                                 .logged())),
                 // Transfer some hbars to the hollow account so that it could pay the next transaction
-                cryptoTransfer(movingHbar(ONE_MILLION_HBARS).between(TREASURY, hollowKey)),
+                cryptoTransfer(movingHbar(ONE_HBAR).between(TREASURY, hollowKey)),
                 // Send transfer to complete the hollow account
                 cryptoTransfer(moving(1, tokenA).between(hollowKey, TREASURY))
                         .payingWith(hollowKey)
@@ -338,7 +337,7 @@ public class UnlimitedAutoAssociationSuite {
         return hapiTest(
                 newKeyNamed(hollowAccountKey).shape(SECP_256K1_SHAPE),
                 newKeyNamed(MULTI_KEY),
-                cryptoCreate(TREASURY).balance(10_000 * ONE_MILLION_HBARS),
+                cryptoCreate(TREASURY).balance(10_000 * ONE_HBAR),
                 // Create NFT1
                 tokenCreate(tokenA)
                         .tokenType(NON_FUNGIBLE_UNIQUE)
@@ -410,7 +409,7 @@ public class UnlimitedAutoAssociationSuite {
                                 .has(accountWith().hasEmptyKey())
                                 .exposingIdTo(id -> spec.registry().saveAccountId(hollowAccountKey, id)),
                         // Transfer some hbars to the hollow account so that it could pay the next transaction
-                        cryptoTransfer(movingHbar(ONE_MILLION_HBARS).between(TREASURY, hollowAccountKey)),
+                        cryptoTransfer(movingHbar(ONE_HBAR).between(TREASURY, hollowAccountKey)),
                         cryptoTransfer(movingUnique(tokenA, 1L).between(hollowAccountKey, TREASURY))
                                 .payingWith(hollowAccountKey)
                                 .signedBy(hollowAccountKey, TREASURY)
@@ -436,11 +435,11 @@ public class UnlimitedAutoAssociationSuite {
 
         return hapiTest(
                 newKeyNamed(MULTI_KEY),
-                cryptoCreate(ALICE).balance(10_000 * ONE_MILLION_HBARS),
-                cryptoCreate(BOB).balance(10_000 * ONE_MILLION_HBARS),
+                cryptoCreate(ALICE).balance(10_000 * ONE_HBAR),
+                cryptoCreate(BOB).balance(10_000 * ONE_HBAR),
                 newKeyNamed(CAROL).shape(SECP_256K1_SHAPE),
                 cryptoCreate(DAVE).maxAutomaticTokenAssociations(1),
-                cryptoCreate(TREASURY).balance(ONE_MILLION_HBARS),
+                cryptoCreate(TREASURY).balance(ONE_HBAR),
                 tokenCreate(FUNGIBLE_TOKEN)
                         .tokenType(FUNGIBLE_COMMON)
                         .initialSupply(5)
@@ -489,7 +488,7 @@ public class UnlimitedAutoAssociationSuite {
                                 .has(accountWith().hasEmptyKey())
                                 .exposingIdTo(id -> spec.registry().saveAccountId(CAROL, id)),
                         // Transfer some hbars to the hollow account so that it could pay the next transaction
-                        cryptoTransfer(movingHbar(ONE_MILLION_HBARS).between(BOB, CAROL)),
+                        cryptoTransfer(movingHbar(ONE_HBAR).between(BOB, CAROL)),
                         // Send transfer to complete the hollow account
                         cryptoTransfer(moving(1, FUNGIBLE_TOKEN).between(CAROL, DAVE))
                                 .payingWith(CAROL)

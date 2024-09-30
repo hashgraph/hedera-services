@@ -16,36 +16,42 @@
 
 package com.hedera.node.app.platform.event;
 
-import com.hederahashgraph.api.proto.java.SemanticVersion;
+import com.hedera.hapi.node.base.SemanticVersion;
+import com.hedera.node.app.version.ServicesSoftwareVersion;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.platform.event.PlatformEvent;
-import com.swirlds.platform.event.hashing.StatefulEventHasher;
+import com.swirlds.platform.event.hashing.DefaultEventHasher;
 import com.swirlds.platform.recovery.internal.EventStreamSingleFileIterator;
 import com.swirlds.platform.system.StaticSoftwareVersion;
 import com.swirlds.platform.system.events.EventDescriptorWrapper;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.File;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 public class EventMigrationTest {
 
     @BeforeAll
     public static void setUp() throws ConstructableRegistryException {
         ConstructableRegistry.getInstance().registerConstructables("");
-        SemanticVersion semanticVersion = SemanticVersion.newBuilder()
-                .setMajor(0)
-                .setMinor(46)
-                .setPatch(3)
-                .build();
-        StaticSoftwareVersion.setSoftwareVersion(new SerializableSemVers(semanticVersion, semanticVersion));
+        StaticSoftwareVersion.setSoftwareVersion(new ServicesSoftwareVersion(SemanticVersion.DEFAULT, 0));
+    }
+
+    public static Stream<Arguments> migrationTestArguments() {
+        return Stream.of(
+                Arguments.of("eventFiles/previewnet-53/2024-08-26T10_38_35.016340634Z.events", 637, 4),
+                Arguments.of("eventFiles/testnet-53/2024-09-10T00_00_00.021456201Z.events", 635, 5));
     }
 
     /**
@@ -54,28 +60,24 @@ public class EventMigrationTest {
      * events that are read and matching them to the parent descriptors inside the events. The parents of most events
      * will be present in the file, except for a few events at the beginning of the file.
      * <p>
-     * The file being read is from mainnet written by the SDK 0.46.3.
-     * <p>
      * Even though this could be considered a platform test, it needs to be in the services module because the event
      * contains a {@link SerializableSemVers} which is a services class
      */
-    @Test
-    public void migration() throws URISyntaxException, IOException {
+    @ParameterizedTest
+    @MethodSource("migrationTestArguments")
+    public void migration(
+            @NonNull final String fileName, final int numEventsExpected, final int unmatchedHashesExpected)
+            throws URISyntaxException, IOException {
         final Set<Hash> eventHashes = new HashSet<>();
         final Set<Hash> parentHashes = new HashSet<>();
-        int numEvents = 0;
+        int numEventsFound = 0;
 
         try (final EventStreamSingleFileIterator iterator = new EventStreamSingleFileIterator(
-                new File(this.getClass()
-                                .getClassLoader()
-                                .getResource("eventFiles/sdk0.46.3/2024-03-05T00_10_55.002129867Z.events")
-                                .toURI())
-                        .toPath(),
-                false)) {
+                new File(this.getClass().getClassLoader().getResource(fileName).toURI()).toPath(), false)) {
             while (iterator.hasNext()) {
                 final PlatformEvent platformEvent = iterator.next().getPlatformEvent();
-                new StatefulEventHasher().hashEvent(platformEvent);
-                numEvents++;
+                new DefaultEventHasher().hashEvent(platformEvent);
+                numEventsFound++;
                 eventHashes.add(platformEvent.getHash());
                 platformEvent.getAllParents().stream()
                         .filter(Objects::nonNull)
@@ -84,14 +86,18 @@ public class EventMigrationTest {
             }
         }
 
-        Assertions.assertEquals(2417, numEvents, "this file is expected to have 2417 events but has " + numEvents);
         Assertions.assertEquals(
-                2417,
+                numEventsExpected,
+                numEventsFound,
+                "this file is expected to have %d events but has %d".formatted(numEventsExpected, numEventsFound));
+        Assertions.assertEquals(
+                numEventsExpected,
                 eventHashes.size(),
-                "we expected to have 2417 hashes (one for each event) but have " + eventHashes.size());
+                "we expected to have %d hashes (one for each event) but have %d"
+                        .formatted(numEventsExpected, eventHashes.size()));
         eventHashes.removeAll(parentHashes);
         Assertions.assertEquals(
-                9,
+                unmatchedHashesExpected,
                 eventHashes.size(),
                 "the hashes of most parents are expected to match the hashes of events."
                         + " Number of unmatched hashes: " + eventHashes.size());

@@ -24,10 +24,10 @@ import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.Ful
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.Call.PricedResult.gasOnly;
 
 import com.hedera.hapi.node.state.token.Token;
+import com.hedera.node.app.hapi.utils.HederaExceptionalHaltReason;
 import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.AbstractCall;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
-import com.hedera.node.app.service.evm.contracts.operations.HederaExceptionalHaltReason;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import org.hyperledger.besu.evm.frame.MessageFrame;
@@ -63,8 +63,7 @@ public class TokenUriCall extends AbstractCall {
         var metadata = URI_QUERY_NON_EXISTING_TOKEN_ERROR;
         if (token != null) {
             if (token.tokenType() == FUNGIBLE_COMMON) {
-                // (FUTURE) consider removing this pattern, but for now match
-                // mono-service by halting on an invalid token type
+                // For backwards compatibility, we need to halt here per issue #8746.
                 return gasOnly(
                         haltResult(
                                 HederaExceptionalHaltReason.ERROR_DECODING_PRECOMPILE_INPUT,

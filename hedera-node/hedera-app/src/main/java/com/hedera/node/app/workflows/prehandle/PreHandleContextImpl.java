@@ -282,6 +282,26 @@ public class PreHandleContextImpl implements PreHandleContext {
             throws PreCheckException {
         requireNonNull(responseCode);
 
+        return requireKey(accountID, responseCode, false);
+    }
+
+    @Override
+    @NonNull
+    @SuppressWarnings(
+            "java:S2637") // requireKey accepts "@NonNull" but warning states that null could be passed, seems like
+    // false positive because of the !isValid(key) check
+    public PreHandleContext requireAliasedKeyOrThrow(
+            @Nullable final AccountID accountID, @NonNull final ResponseCodeEnum responseCode)
+            throws PreCheckException {
+        requireNonNull(responseCode);
+        return requireKey(accountID, responseCode, true);
+    }
+
+    private @NonNull PreHandleContext requireKey(
+            final @Nullable AccountID accountID,
+            final @NonNull ResponseCodeEnum responseCode,
+            final boolean allowAliasedIds)
+            throws PreCheckException {
         if (accountID == null) {
             throw new PreCheckException(responseCode);
         }
@@ -293,8 +313,12 @@ public class PreHandleContextImpl implements PreHandleContext {
         if (accountID.equals(payer)) {
             return this;
         }
-
-        final var account = accountStore.getAccountById(accountID);
+        final Account account;
+        if (allowAliasedIds) {
+            account = accountStore.getAliasedAccountById(accountID);
+        } else {
+            account = accountStore.getAccountById(accountID);
+        }
         if (account == null) {
             throw new PreCheckException(responseCode);
         }

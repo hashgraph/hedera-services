@@ -40,7 +40,7 @@ import com.swirlds.common.merkle.utility.SerializableLong;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.utility.ByteUtils;
 import com.swirlds.platform.scratchpad.Scratchpad;
-import com.swirlds.platform.state.PlatformState;
+import com.swirlds.platform.state.PlatformStateModifier;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.Round;
@@ -148,10 +148,9 @@ public class ISSTestingToolState extends PartialMerkleLeaf implements SwirldStat
      */
     @Override
     public void init(
-            final Platform platform,
-            final PlatformState platformState,
-            final InitTrigger trigger,
-            final SoftwareVersion previousSoftwareVersion) {
+            @NonNull final Platform platform,
+            @NonNull final InitTrigger trigger,
+            @Nullable final SoftwareVersion previousSoftwareVersion) {
 
         throwIfImmutable();
 
@@ -173,7 +172,7 @@ public class ISSTestingToolState extends PartialMerkleLeaf implements SwirldStat
      * {@inheritDoc}
      */
     @Override
-    public void handleConsensusRound(final Round round, final PlatformState platformState) {
+    public void handleConsensusRound(final Round round, final PlatformStateModifier platformState) {
         throwIfImmutable();
         final Iterator<ConsensusEvent> eventIterator = round.iterator();
 

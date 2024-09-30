@@ -16,10 +16,14 @@
 
 package com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.has.hbarApprove;
 
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.has.hbarallowance.HbarAllowanceTranslator.HBAR_ALLOWANCE_PROXY;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.has.hbarapprove.HbarApproveTranslator.HBAR_APPROVE;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.has.hbarapprove.HbarApproveTranslator.HBAR_APPROVE_PROXY;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.APPROVED_HEADLONG_ADDRESS;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.A_NEW_ACCOUNT_ID;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.B_NEW_ACCOUNT_ID;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.UNAUTHORIZED_SPENDER_HEADLONG_ADDRESS;
+import static com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.CallAttemptHelpers.prepareHasAttemptWithSelector;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -27,8 +31,9 @@ import static org.mockito.BDDMockito.given;
 
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
+import com.hedera.node.app.service.contract.impl.exec.scope.HederaNativeOperations;
+import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategies;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.has.HasCallAttempt;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.has.hbarallowance.HbarAllowanceTranslator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.has.hbarapprove.HbarApproveCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.has.hbarapprove.HbarApproveTranslator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AddressIdConverter;
@@ -55,6 +60,12 @@ public class HbarApproveTranslatorTest {
     @Mock
     private HederaWorldUpdater.Enhancement enhancement;
 
+    @Mock
+    private VerificationStrategies verificationStrategies;
+
+    @Mock
+    private HederaNativeOperations nativeOperations;
+
     private HbarApproveTranslator subject;
 
     @BeforeEach
@@ -64,27 +75,31 @@ public class HbarApproveTranslatorTest {
 
     @Test
     void matchesHbarApprove() {
-        given(attempt.selector()).willReturn(HbarApproveTranslator.HBAR_APPROVE.selector());
-        var matches = subject.matches(attempt);
-        assertTrue(matches);
+        given(enhancement.nativeOperations()).willReturn(nativeOperations);
+        attempt = prepareHasAttemptWithSelector(
+                HBAR_APPROVE, subject, enhancement, addressIdConverter, verificationStrategies, gasCalculator);
+        assertTrue(subject.matches(attempt));
 
-        given(attempt.selector()).willReturn(HbarApproveTranslator.HBAR_APPROVE_PROXY.selector());
-        matches = subject.matches(attempt);
-        assertTrue(matches);
+        attempt = prepareHasAttemptWithSelector(
+                HBAR_APPROVE_PROXY, subject, enhancement, addressIdConverter, verificationStrategies, gasCalculator);
+        assertTrue(subject.matches(attempt));
     }
 
     @Test
     void failsOnInvalidSelector() {
-        given(attempt.selector()).willReturn(HbarAllowanceTranslator.HBAR_ALLOWANCE_PROXY.selector());
-        final var matches = subject.matches(attempt);
-        assertFalse(matches);
+        given(enhancement.nativeOperations()).willReturn(nativeOperations);
+        attempt = prepareHasAttemptWithSelector(
+                HBAR_ALLOWANCE_PROXY, subject, enhancement, addressIdConverter, verificationStrategies, gasCalculator);
+        assertFalse(subject.matches(attempt));
     }
 
     @Test
     void callFromHbarApproveProxyTest() {
-        final Bytes inputBytes = Bytes.wrapByteBuffer(HbarApproveTranslator.HBAR_APPROVE_PROXY.encodeCall(
-                Tuple.of(APPROVED_HEADLONG_ADDRESS, BigInteger.ONE)));
+        final Bytes inputBytes = Bytes.wrapByteBuffer(
+                HBAR_APPROVE_PROXY.encodeCall(Tuple.of(APPROVED_HEADLONG_ADDRESS, BigInteger.ONE)));
         givenCommonForCall(inputBytes);
+        given(attempt.isSelector(HBAR_APPROVE_PROXY)).willReturn(true);
+        given(attempt.isSelector(HBAR_APPROVE)).willReturn(false);
         given(attempt.senderId()).willReturn(A_NEW_ACCOUNT_ID);
 
         final var call = subject.callFrom(attempt);
@@ -93,9 +108,10 @@ public class HbarApproveTranslatorTest {
 
     @Test
     void callFromHbarApproveTest() {
-        final Bytes inputBytes = Bytes.wrapByteBuffer(HbarApproveTranslator.HBAR_APPROVE.encodeCall(
+        final Bytes inputBytes = Bytes.wrapByteBuffer(HBAR_APPROVE.encodeCall(
                 Tuple.of(APPROVED_HEADLONG_ADDRESS, UNAUTHORIZED_SPENDER_HEADLONG_ADDRESS, BigInteger.ONE)));
         givenCommonForCall(inputBytes);
+        given(attempt.isSelector(HBAR_APPROVE)).willReturn(true);
         given(addressIdConverter.convert(APPROVED_HEADLONG_ADDRESS)).willReturn(B_NEW_ACCOUNT_ID);
         given(addressIdConverter.convert(UNAUTHORIZED_SPENDER_HEADLONG_ADDRESS)).willReturn(A_NEW_ACCOUNT_ID);
 
@@ -105,7 +121,6 @@ public class HbarApproveTranslatorTest {
 
     private void givenCommonForCall(Bytes inputBytes) {
         given(attempt.inputBytes()).willReturn(inputBytes.toArray());
-        given(attempt.selector()).willReturn(inputBytes.slice(0, 4).toArray());
         given(attempt.enhancement()).willReturn(enhancement);
         given(attempt.addressIdConverter()).willReturn(addressIdConverter);
         given(addressIdConverter.convert(APPROVED_HEADLONG_ADDRESS)).willReturn(B_NEW_ACCOUNT_ID);

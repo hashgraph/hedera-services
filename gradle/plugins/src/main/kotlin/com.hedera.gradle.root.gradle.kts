@@ -24,7 +24,6 @@ plugins {
     id("com.hedera.gradle.nexus-publish")
     id("com.hedera.gradle.spotless-kotlin")
     id("com.hedera.gradle.spotless-markdown")
-    id("com.autonomousapps.dependency-analysis")
 }
 
 spotless {
@@ -44,10 +43,13 @@ tasks.register("githubVersionSummary") {
     inputs.property("version", productVersion)
 
     if (!providers.environmentVariable("GITHUB_STEP_SUMMARY").isPresent) {
-        throw IllegalArgumentException(
-            "This task may only be run in a Github Actions CI environment! " +
-                "Unable to locate the GITHUB_STEP_SUMMARY environment variable."
-        )
+        // Do not throw an exception if running the `gradlew tasks` task
+        if (project.gradle.startParameter.taskNames.contains("githubVersionSummary")) {
+            throw IllegalArgumentException(
+                "This task may only be run in a Github Actions CI environment! " +
+                    "Unable to locate the GITHUB_STEP_SUMMARY environment variable."
+            )
+        }
     }
     outputs.file(providers.environmentVariable("GITHUB_STEP_SUMMARY"))
 
@@ -114,10 +116,13 @@ tasks.register("versionAsSpecified") {
     inputs.property("newVersion", providers.gradleProperty("newVersion").orNull)
 
     if (inputs.properties["newVersion"] == null) {
-        throw IllegalArgumentException(
-            "No newVersion property provided! " +
-                "Please add the parameter -PnewVersion=<version> when running this task."
-        )
+        // Do not throw an exception if running the `gradlew tasks` task
+        if (project.gradle.startParameter.taskNames.contains("versionAsSpecified")) {
+            throw IllegalArgumentException(
+                "No newVersion property provided! " +
+                    "Please add the parameter -PnewVersion=<version> when running this task."
+            )
+        }
     }
     outputs.file(layout.projectDirectory.versionTxt())
 

@@ -37,7 +37,7 @@ public interface TokenContext {
     Instant consensusTime();
 
     /**
-     * Returns the current {@link Configuration}
+     * Returns the current {@link Configuration}.
      *
      * @return the {@code Configuration}
      */
@@ -82,11 +82,6 @@ public interface TokenContext {
      */
     @NonNull
     <T extends StreamBuilder> T addPrecedingChildRecordBuilder(@NonNull Class<T> recordBuilderClass);
-
-    /**
-     * Signal that any records created during startup migrations have been streamed.
-     */
-    void markMigrationRecordsStreamed();
 
     /**
      * Returns the set of all known node ids, including ids that may no longer be active.

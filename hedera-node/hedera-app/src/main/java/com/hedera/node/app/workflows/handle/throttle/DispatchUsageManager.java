@@ -20,22 +20,22 @@ import static com.hedera.hapi.node.base.HederaFunctionality.CONTRACT_CREATE;
 import static com.hedera.hapi.node.base.HederaFunctionality.CRYPTO_CREATE;
 import static com.hedera.hapi.node.base.HederaFunctionality.ETHEREUM_TRANSACTION;
 import static com.hedera.hapi.node.base.HederaFunctionality.TOKEN_ASSOCIATE_TO_ACCOUNT;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.CONSENSUS_GAS_EXHAUSTED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.node.app.hapi.utils.ethereum.EthTxData.populateEthTxData;
+import static com.hedera.node.app.spi.workflows.HandleContext.ConsensusThrottling.ON;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.USER;
 import static com.hedera.node.app.throttle.ThrottleAccumulator.canAutoAssociate;
 import static com.hedera.node.app.throttle.ThrottleAccumulator.canAutoCreate;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
-import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.contract.ContractCallTransactionBody;
 import com.hedera.hapi.node.contract.ContractCreateTransactionBody;
 import com.hedera.hapi.node.contract.EthereumTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.ReadableTokenRelationStore;
+import com.hedera.node.app.throttle.CongestionThrottleService;
 import com.hedera.node.app.throttle.NetworkUtilizationManager;
 import com.hedera.node.app.throttle.ThrottleServiceManager;
 import com.hedera.node.app.workflows.handle.Dispatch;
@@ -64,10 +64,10 @@ public class DispatchUsageManager {
             @NonNull final HandleWorkflowMetrics handleWorkflowMetrics,
             @NonNull final ThrottleServiceManager throttleServiceManager,
             @NonNull final NetworkUtilizationManager networkUtilizationManager) {
-        this.networkInfo = networkInfo;
-        this.handleWorkflowMetrics = handleWorkflowMetrics;
-        this.throttleServiceManager = throttleServiceManager;
-        this.networkUtilizationManager = networkUtilizationManager;
+        this.networkInfo = requireNonNull(networkInfo);
+        this.handleWorkflowMetrics = requireNonNull(handleWorkflowMetrics);
+        this.throttleServiceManager = requireNonNull(throttleServiceManager);
+        this.networkUtilizationManager = requireNonNull(networkUtilizationManager);
     }
 
     /**
@@ -78,47 +78,47 @@ public class DispatchUsageManager {
      * @throws ThrottleException if the dispatch should be throttled
      */
     public void screenForCapacity(@NonNull final Dispatch dispatch) throws ThrottleException {
-        if (isContractOperation(dispatch)) {
-            networkUtilizationManager.trackTxn(dispatch.txnInfo(), dispatch.consensusNow(), dispatch.stack());
+        if (dispatch.throttleStrategy() == ON) {
+            final var readableStates = dispatch.stack().getReadableStates(CongestionThrottleService.NAME);
+            // reset throttles for every dispatch before we track the usage. This is to ensure that
+            // when the user transaction fails, we release the capacity taken at consensus by child transactions.
+            throttleServiceManager.resetThrottlesUnconditionally(readableStates);
+            final var isThrottled =
+                    networkUtilizationManager.trackTxn(dispatch.txnInfo(), dispatch.consensusNow(), dispatch.stack());
             if (networkUtilizationManager.wasLastTxnGasThrottled()) {
-                throw new ThrottleException(CONSENSUS_GAS_EXHAUSTED);
+                throw ThrottleException.newGasThrottleException();
+            } else if (isThrottled) {
+                throw ThrottleException.newNativeThrottleException();
             }
         }
     }
 
     /**
      * Tracks the final work done by handling this user transaction.
-     *
-     * @param workDone the work done
+     * @param dispatch the dispatch
      */
-    public void trackUsage(@NonNull final Dispatch dispatch, @NonNull final WorkDone workDone) {
-        // In the current system we only trackUsage utilization for user transactions
-        if (dispatch.txnCategory() != USER) {
-            return;
+    public void finalizeAndSaveUsage(@NonNull final Dispatch dispatch) {
+        final var function = dispatch.txnInfo().functionality();
+        if (CONTRACT_OPERATIONS.contains(function)) {
+            leakUnusedGas(dispatch);
         }
-        switch (workDone) {
-            case FEES_ONLY -> networkUtilizationManager.trackFeePayments(dispatch.consensusNow(), dispatch.stack());
-            case USER_TRANSACTION -> {
-                // (FUTURE) When throttling is better encapsulated as a dispatch-scope concern, call trackTxn()
-                // in only one place; for now we have already tracked utilization for contract operations
-                // at point of dispatch so we could detect CONSENSUS_GAS_EXHAUSTED
-                final var function = dispatch.txnInfo().functionality();
-                if (!CONTRACT_OPERATIONS.contains(function)) {
-                    networkUtilizationManager.trackTxn(dispatch.txnInfo(), dispatch.consensusNow(), dispatch.stack());
-                } else {
-                    leakUnusedGas(dispatch);
-                }
-                if (dispatch.recordBuilder().status() != SUCCESS) {
-                    if (canAutoCreate(function)) {
-                        reclaimFailedCryptoCreateCapacity(dispatch);
-                    }
-                    if (canAutoAssociate(function)) {
-                        reclaimFailedTokenAssociate(dispatch);
-                    }
-                }
+        if (dispatch.txnCategory() == USER && dispatch.recordBuilder().status() != SUCCESS) {
+            if (canAutoCreate(function)) {
+                reclaimFailedCryptoCreateCapacity(dispatch);
+            }
+            if (canAutoAssociate(function)) {
+                reclaimFailedTokenAssociate(dispatch);
             }
         }
         throttleServiceManager.saveThrottleSnapshotsAndCongestionLevelStartsTo(dispatch.stack());
+    }
+
+    /**
+     * Tracks the work done for a dispatch that stopped after charging fees.
+     * @param dispatch the dispatch
+     */
+    public void trackFeePayments(@NonNull final Dispatch dispatch) {
+        networkUtilizationManager.trackFeePayments(dispatch.consensusNow(), dispatch.stack());
     }
 
     /**
@@ -181,7 +181,7 @@ public class DispatchUsageManager {
      * Returns true if the transaction used frontend throttle capacity on this node.
      *
      * @param numUsedCapacity the number of used capacity for either create ot auto associate operations
-     * @param txnBody the transaction body
+     * @param txnBody         the transaction body
      * @return true if the transaction used frontend throttle capacity on this node
      */
     private boolean usedSelfFrontendThrottleCapacity(
@@ -194,7 +194,7 @@ public class DispatchUsageManager {
     /**
      * Returns the gas limit for a contract transaction.
      *
-     * @param txnBody the transaction body
+     * @param txnBody  the transaction body
      * @param function the functionality
      * @return the gas limit for a contract transaction
      */
@@ -210,45 +210,6 @@ public class DispatchUsageManager {
         } else {
             return txnBody.contractCallOrElse(ContractCallTransactionBody.DEFAULT)
                     .gas();
-        }
-    }
-
-    /**
-     * Checks if the given dispatch is a contract operation.
-     * @param dispatch the dispatch
-     * @return true if the dispatch is a contract operation, false otherwise
-     */
-    public static boolean isContractOperation(@NonNull Dispatch dispatch) {
-        return CONTRACT_OPERATIONS.contains(dispatch.txnInfo().functionality());
-    }
-
-    /**
-     * The work done by the dispatch. It can be either {@link WorkDone#FEES_ONLY} or {@link WorkDone#USER_TRANSACTION}.
-     * {@link WorkDone#FEES_ONLY} is returned when the transaction has node or user errors. Otherwise, it will be
-     * {@link WorkDone#USER_TRANSACTION}.
-     */
-    public enum WorkDone {
-        FEES_ONLY,
-        USER_TRANSACTION
-    }
-
-    /**
-     * This class is used to throw a {@link ThrottleException} when a transaction is gas throttled.
-     */
-    public static class ThrottleException extends Exception {
-        private final ResponseCodeEnum status;
-
-        public ThrottleException(@NonNull final ResponseCodeEnum status) {
-            this.status = requireNonNull(status);
-        }
-
-        /**
-         * Gets the status of the exception.
-         *
-         * @return the status
-         */
-        public ResponseCodeEnum getStatus() {
-            return status;
         }
     }
 }

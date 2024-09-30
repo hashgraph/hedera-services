@@ -19,7 +19,11 @@ package com.hedera.node.app.state;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.node.app.spi.records.RecordCache;
+import com.hedera.node.config.data.HederaConfig;
+import com.hederahashgraph.api.proto.java.TransactionReceiptEntries;
+import com.swirlds.state.State;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.time.Instant;
 import java.util.List;
 
 /**
@@ -46,8 +50,8 @@ public interface HederaRecordCache extends RecordCache {
      * Records the fact that the given {@link TransactionID} has been seen by the given node. If the node has already
      * been seen, then this call is a no-op. This call does not perform any additional validation of the transaction ID.
      *
-     * @param nodeId The node ID of the node that submitted this transaction to consensus, as known in the address book
-     * @param payerAccountId The {@link AccountID} of the "payer" of the transaction
+     * @param nodeId             The node ID of the node that submitted this transaction to consensus, as known in the address book
+     * @param payerAccountId     The {@link AccountID} of the "payer" of the transaction
      * @param transactionRecords The list of all related transaction records. This may be a stream of 1, if the list
      *                           only contains the user transaction. Or it may be a list including preceding
      *                           transactions, user transactions, and child transactions. There is no requirement as to
@@ -68,6 +72,33 @@ public interface HederaRecordCache extends RecordCache {
      */
     @NonNull
     DuplicateCheckResult hasDuplicate(@NonNull TransactionID transactionID, long nodeId);
+
+    /**
+     * Resets the receipts pf all transactions stored per round. This is called at the end of each round to
+     * clear out the receipts from the previous round.
+     */
+    void resetRoundReceipts();
+
+    /**
+     * Commits the current round's transaction receipts to the transaction receipt queue in {@link State},
+     * doing additional work as needed to purge the receipts from any round whose transaction ids cannot
+     * be duplicated because they are now expired.
+     * <p>
+     * Purging receipts works as follows:
+     * <ol>
+     *     <li>Find the latest {@link TransactionID#transactionValidStart()} of the all the receipts in the
+     *     {@link TransactionReceiptEntries} object at the head of the round receipt queue.</li>
+     *     <li>If even the latest valid start is more than {@link HederaConfig#transactionMaxValidDuration()}
+     *     seconds before consensus time now, purge the history of all receipts from that round, and remove it
+     *     from the queue.</li>
+     *     <li>Repeat this process until the queue is empty or the round at the head of the queue has a valid
+     *     start within {@link HederaConfig#transactionMaxValidDuration()} seconds of the given consensus time
+     *     (meaning it might still be duplicated).</li>
+     * </ol>
+     * @param state The state to commit the transaction receipts to
+     * @param consensusNow The current consensus time
+     */
+    void commitRoundReceipts(@NonNull State state, @NonNull Instant consensusNow);
 
     /** The possible results of a duplicate check */
     enum DuplicateCheckResult {

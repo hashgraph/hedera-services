@@ -36,12 +36,12 @@ import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.events.ConsensusEvent;
+import com.swirlds.platform.system.state.notifications.StateHashedNotification;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 import java.util.concurrent.ScheduledExecutorService;
-import org.jetbrains.annotations.NotNull;
 
 /**
  * An embedded Hedera node that handles transactions synchronously on ingest and thus
@@ -69,7 +69,7 @@ class RepeatableEmbeddedHedera extends AbstractEmbeddedHedera implements Embedde
     }
 
     @Override
-    public void tick(@NotNull Duration duration) {
+    public void tick(@NonNull Duration duration) {
         time.tick(duration);
     }
 
@@ -95,8 +95,13 @@ class RepeatableEmbeddedHedera extends AbstractEmbeddedHedera implements Embedde
         }
         if (response.getNodeTransactionPrecheckCode() == OK) {
             hedera.onPreHandle(platform.lastCreatedEvent, state);
+            final var round = platform.nextConsensusRound();
             // Handle each transaction in own round
-            hedera.handleWorkflow().handleRound(state, platformState, platform.nextConsensusRound());
+            hedera.handleWorkflow().handleRound(state, round);
+            hedera.onSealConsensusRound(round, state);
+            // Immediately notify the block stream manager of the "hash" at the end of this round
+            hedera.blockStreamManager()
+                    .notify(new StateHashedNotification(round.getRoundNum(), FAKE_START_OF_STATE_HASH));
         }
         return response;
     }

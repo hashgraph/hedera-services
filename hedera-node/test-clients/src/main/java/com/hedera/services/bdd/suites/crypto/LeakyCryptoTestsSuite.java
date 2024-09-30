@@ -18,12 +18,11 @@ package com.hedera.services.bdd.suites.crypto;
 
 import static com.google.protobuf.ByteString.EMPTY;
 import static com.google.protobuf.ByteString.copyFromUtf8;
-import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
+import static com.hedera.node.app.hapi.utils.EthSigsUtils.recoverAddressFromPubKey;
 import static com.hedera.services.bdd.junit.ContextRequirement.FEE_SCHEDULE_OVERRIDES;
 import static com.hedera.services.bdd.junit.TestTags.CRYPTO;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asContractString;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asSolidityAddress;
-import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.assertions.AccountDetailsAsserts.accountDetailsWith;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
@@ -75,11 +74,8 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingTwo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.reduceFeeFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.uploadDefaultFeeSchedules;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsd;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
-import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.FULLY_NONDETERMINISTIC;
-import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
 import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PAYER;
 import static com.hedera.services.bdd.suites.HapiSuite.EMPTY_KEY;
 import static com.hedera.services.bdd.suites.HapiSuite.FIVE_HBARS;
@@ -105,8 +101,6 @@ import static com.hedera.services.bdd.suites.crypto.AutoAccountUpdateSuite.TRANS
 import static com.hedera.services.bdd.suites.crypto.CryptoApproveAllowanceSuite.ANOTHER_SPENDER;
 import static com.hedera.services.bdd.suites.crypto.CryptoApproveAllowanceSuite.FUNGIBLE_TOKEN;
 import static com.hedera.services.bdd.suites.crypto.CryptoApproveAllowanceSuite.FUNGIBLE_TOKEN_MINT_TXN;
-import static com.hedera.services.bdd.suites.crypto.CryptoApproveAllowanceSuite.HEDERA_ALLOWANCES_MAX_ACCOUNT_LIMIT;
-import static com.hedera.services.bdd.suites.crypto.CryptoApproveAllowanceSuite.HEDERA_ALLOWANCES_MAX_TRANSACTION_LIMIT;
 import static com.hedera.services.bdd.suites.crypto.CryptoApproveAllowanceSuite.NFT_TOKEN_MINT_TXN;
 import static com.hedera.services.bdd.suites.crypto.CryptoApproveAllowanceSuite.NON_FUNGIBLE_TOKEN;
 import static com.hedera.services.bdd.suites.crypto.CryptoApproveAllowanceSuite.OWNER;
@@ -227,54 +221,48 @@ public class LeakyCryptoTestsSuite {
         final AtomicLong nodeAndNetworkFee = new AtomicLong();
         final AtomicLong maxSendable = new AtomicLong();
 
-        return defaultHapiSpec(
-                        "GetsInsufficientPayerBalanceIfSendingAccountCanPayEverythingButServiceFee",
-                        NONDETERMINISTIC_TRANSACTION_FEES)
-                .given(cryptoCreate(civilian).balance(civilianStartBalance), uploadInitCode(EMPTY_CONSTRUCTOR_CONTRACT))
-                .when(
-                        contractCreate(EMPTY_CONSTRUCTOR_CONTRACT)
-                                .gas(gasToOffer)
-                                .payingWith(civilian)
-                                .balance(0L)
-                                .via(creation),
-                        withOpContext((spec, opLog) -> {
-                            final var lookup = getTxnRecord(creation).logged();
-                            allRunFor(spec, lookup);
-                            final var creationRecord = lookup.getResponseRecord();
-                            final var gasUsed =
-                                    creationRecord.getContractCreateResult().getGasUsed();
-                            gasFee.set(tinybarCostOfGas(spec, ContractCreate, gasUsed));
-                            offeredGasFee.set(tinybarCostOfGas(spec, ContractCreate, gasToOffer));
-                            nodeAndNetworkFee.set(creationRecord.getTransactionFee() - gasFee.get());
-                            log.info(
-                                    "Network + node fees were {}, gas fee was {} (sum to" + " {}, compare with {})",
-                                    nodeAndNetworkFee::get,
-                                    gasFee::get,
-                                    () -> nodeAndNetworkFee.get() + gasFee.get(),
-                                    creationRecord::getTransactionFee);
-                            maxSendable.set(civilianStartBalance
-                                    - 2 * nodeAndNetworkFee.get()
-                                    - gasFee.get()
-                                    - offeredGasFee.get());
-                            log.info("Maximum amount send-able in precheck should be {}", maxSendable::get);
-                        }))
-                .then(
-                        sourcing(() -> getAccountBalance(civilian)
-                                .hasTinyBars(civilianStartBalance - nodeAndNetworkFee.get() - gasFee.get())),
-                        // Fire-and-forget a txn that will leave the civilian payer with 1 too few
-                        // tinybars at consensus
-                        cryptoTransfer(tinyBarsFromTo(civilian, FUNDING, 1))
-                                .payingWith(GENESIS)
-                                .deferStatusResolution(),
-                        sourcing(() -> contractCustomCreate(EMPTY_CONSTRUCTOR_CONTRACT, "Clone")
-                                .gas(gasToOffer)
-                                .payingWith(civilian)
-                                .balance(maxSendable.get())
-                                // because this fails depending on the previous operation reaching
-                                // consensus before the current operation or after, since we have added
-                                // deferStatusResolution
-                                .hasPrecheckFrom(OK, INSUFFICIENT_PAYER_BALANCE, INSUFFICIENT_ACCOUNT_BALANCE)
-                                .hasKnownStatusFrom(INSUFFICIENT_PAYER_BALANCE, INSUFFICIENT_ACCOUNT_BALANCE)));
+        return hapiTest(
+                cryptoCreate(civilian).balance(civilianStartBalance),
+                uploadInitCode(EMPTY_CONSTRUCTOR_CONTRACT),
+                contractCreate(EMPTY_CONSTRUCTOR_CONTRACT)
+                        .gas(gasToOffer)
+                        .payingWith(civilian)
+                        .balance(0L)
+                        .via(creation),
+                withOpContext((spec, opLog) -> {
+                    final var lookup = getTxnRecord(creation).logged();
+                    allRunFor(spec, lookup);
+                    final var creationRecord = lookup.getResponseRecord();
+                    final var gasUsed = creationRecord.getContractCreateResult().getGasUsed();
+                    gasFee.set(tinybarCostOfGas(spec, ContractCreate, gasUsed));
+                    offeredGasFee.set(tinybarCostOfGas(spec, ContractCreate, gasToOffer));
+                    nodeAndNetworkFee.set(creationRecord.getTransactionFee() - gasFee.get());
+                    log.info(
+                            "Network + node fees were {}, gas fee was {} (sum to" + " {}, compare with {})",
+                            nodeAndNetworkFee::get,
+                            gasFee::get,
+                            () -> nodeAndNetworkFee.get() + gasFee.get(),
+                            creationRecord::getTransactionFee);
+                    maxSendable.set(
+                            civilianStartBalance - 2 * nodeAndNetworkFee.get() - gasFee.get() - offeredGasFee.get());
+                    log.info("Maximum amount send-able in precheck should be {}", maxSendable::get);
+                }),
+                sourcing(() -> getAccountBalance(civilian)
+                        .hasTinyBars(civilianStartBalance - nodeAndNetworkFee.get() - gasFee.get())),
+                // Fire-and-forget a txn that will leave the civilian payer with 1 too few
+                // tinybars at consensus
+                cryptoTransfer(tinyBarsFromTo(civilian, FUNDING, 1))
+                        .payingWith(GENESIS)
+                        .deferStatusResolution(),
+                sourcing(() -> contractCustomCreate(EMPTY_CONSTRUCTOR_CONTRACT, "Clone")
+                        .gas(gasToOffer)
+                        .payingWith(civilian)
+                        .balance(maxSendable.get())
+                        // because this fails depending on the previous operation reaching
+                        // consensus before the current operation or after, since we have added
+                        // deferStatusResolution
+                        .hasPrecheckFrom(OK, INSUFFICIENT_PAYER_BALANCE, INSUFFICIENT_ACCOUNT_BALANCE)
+                        .hasKnownStatusFrom(INSUFFICIENT_PAYER_BALANCE, INSUFFICIENT_ACCOUNT_BALANCE)));
     }
 
     @Order(1)
@@ -369,86 +357,76 @@ public class LeakyCryptoTestsSuite {
                         .hasKnownStatus(MAX_ALLOWANCES_EXCEEDED));
     }
 
-    @HapiTest
     @Order(3)
+    @LeakyHapiTest(overrides = {"hedera.allowances.maxTransactionLimit", "hedera.allowances.maxAccountLimit"})
     final Stream<DynamicTest> cannotExceedAllowancesTransactionLimit() {
-        return defaultHapiSpec("CannotExceedAllowancesTransactionLimit", NONDETERMINISTIC_TRANSACTION_FEES)
-                .given(
-                        newKeyNamed(SUPPLY_KEY),
-                        overridingTwo(
-                                HEDERA_ALLOWANCES_MAX_TRANSACTION_LIMIT, "4",
-                                HEDERA_ALLOWANCES_MAX_ACCOUNT_LIMIT, "5"),
-                        cryptoCreate(OWNER).balance(ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(10),
-                        cryptoCreate(SPENDER).balance(ONE_HUNDRED_HBARS),
-                        cryptoCreate(ANOTHER_SPENDER).balance(ONE_HUNDRED_HBARS),
-                        cryptoCreate(SECOND_SPENDER).balance(ONE_HUNDRED_HBARS),
-                        cryptoCreate(TOKEN_TREASURY)
-                                .balance(100 * ONE_HUNDRED_HBARS)
-                                .maxAutomaticTokenAssociations(10),
-                        tokenCreate(FUNGIBLE_TOKEN)
-                                .tokenType(FUNGIBLE_COMMON)
-                                .supplyType(TokenSupplyType.FINITE)
-                                .supplyKey(SUPPLY_KEY)
-                                .maxSupply(1000L)
-                                .initialSupply(10L)
-                                .treasury(TOKEN_TREASURY),
-                        tokenCreate(NON_FUNGIBLE_TOKEN)
-                                .maxSupply(10L)
-                                .initialSupply(0)
-                                .supplyType(TokenSupplyType.FINITE)
-                                .tokenType(NON_FUNGIBLE_UNIQUE)
-                                .supplyKey(SUPPLY_KEY)
-                                .treasury(TOKEN_TREASURY),
-                        tokenAssociate(OWNER, FUNGIBLE_TOKEN),
-                        tokenAssociate(OWNER, NON_FUNGIBLE_TOKEN),
-                        mintToken(
-                                        NON_FUNGIBLE_TOKEN,
-                                        List.of(
-                                                ByteString.copyFromUtf8("a"),
-                                                ByteString.copyFromUtf8("b"),
-                                                ByteString.copyFromUtf8("c")))
-                                .via(NFT_TOKEN_MINT_TXN),
-                        mintToken(FUNGIBLE_TOKEN, 500L).via(FUNGIBLE_TOKEN_MINT_TXN),
-                        cryptoTransfer(
-                                movingUnique(NON_FUNGIBLE_TOKEN, 1L, 2L, 3L).between(TOKEN_TREASURY, OWNER)))
-                .when(
-                        cryptoApproveAllowance()
-                                .payingWith(OWNER)
-                                .addCryptoAllowance(OWNER, SPENDER, 100L)
-                                .addCryptoAllowance(OWNER, ANOTHER_SPENDER, 100L)
-                                .addCryptoAllowance(OWNER, SECOND_SPENDER, 100L)
-                                .addTokenAllowance(OWNER, FUNGIBLE_TOKEN, SPENDER, 100L)
-                                .addNftAllowance(OWNER, NON_FUNGIBLE_TOKEN, SPENDER, false, List.of(1L))
-                                .hasPrecheckFrom(OK, MAX_ALLOWANCES_EXCEEDED)
-                                .hasKnownStatus(MAX_ALLOWANCES_EXCEEDED),
-                        cryptoApproveAllowance()
-                                .payingWith(OWNER)
-                                .addNftAllowance(OWNER, NON_FUNGIBLE_TOKEN, SPENDER, false, List.of(1L, 1L, 1L, 1L, 1L))
-                                .hasPrecheckFrom(OK, MAX_ALLOWANCES_EXCEEDED)
-                                .hasKnownStatus(MAX_ALLOWANCES_EXCEEDED),
-                        cryptoApproveAllowance()
-                                .payingWith(OWNER)
-                                .addCryptoAllowance(OWNER, SPENDER, 100L)
-                                .addCryptoAllowance(OWNER, SPENDER, 200L)
-                                .addCryptoAllowance(OWNER, SPENDER, 100L)
-                                .addCryptoAllowance(OWNER, SPENDER, 200L)
-                                .addCryptoAllowance(OWNER, SPENDER, 200L)
-                                .hasPrecheckFrom(OK, MAX_ALLOWANCES_EXCEEDED)
-                                .hasKnownStatus(MAX_ALLOWANCES_EXCEEDED),
-                        cryptoApproveAllowance()
-                                .payingWith(OWNER)
-                                .addTokenAllowance(OWNER, FUNGIBLE_TOKEN, SPENDER, 100L)
-                                .addTokenAllowance(OWNER, FUNGIBLE_TOKEN, SPENDER, 100L)
-                                .addTokenAllowance(OWNER, FUNGIBLE_TOKEN, SPENDER, 100L)
-                                .addTokenAllowance(OWNER, FUNGIBLE_TOKEN, SPENDER, 100L)
-                                .addTokenAllowance(OWNER, FUNGIBLE_TOKEN, SPENDER, 100L)
-                                .hasPrecheckFrom(OK, MAX_ALLOWANCES_EXCEEDED)
-                                .hasKnownStatus(MAX_ALLOWANCES_EXCEEDED))
-                .then(
-                        // reset
-                        overridingTwo(
-                                HEDERA_ALLOWANCES_MAX_TRANSACTION_LIMIT, "20",
-                                HEDERA_ALLOWANCES_MAX_ACCOUNT_LIMIT, "100"));
+        return hapiTest(
+                newKeyNamed(SUPPLY_KEY),
+                overridingTwo(
+                        "hedera.allowances.maxTransactionLimit", "4",
+                        "hedera.allowances.maxAccountLimit", "5"),
+                cryptoCreate(OWNER).balance(ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(10),
+                cryptoCreate(SPENDER).balance(ONE_HUNDRED_HBARS),
+                cryptoCreate(ANOTHER_SPENDER).balance(ONE_HUNDRED_HBARS),
+                cryptoCreate(SECOND_SPENDER).balance(ONE_HUNDRED_HBARS),
+                cryptoCreate(TOKEN_TREASURY).balance(100 * ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(10),
+                tokenCreate(FUNGIBLE_TOKEN)
+                        .tokenType(FUNGIBLE_COMMON)
+                        .supplyType(TokenSupplyType.FINITE)
+                        .supplyKey(SUPPLY_KEY)
+                        .maxSupply(1000L)
+                        .initialSupply(10L)
+                        .treasury(TOKEN_TREASURY),
+                tokenCreate(NON_FUNGIBLE_TOKEN)
+                        .maxSupply(10L)
+                        .initialSupply(0)
+                        .supplyType(TokenSupplyType.FINITE)
+                        .tokenType(NON_FUNGIBLE_UNIQUE)
+                        .supplyKey(SUPPLY_KEY)
+                        .treasury(TOKEN_TREASURY),
+                tokenAssociate(OWNER, FUNGIBLE_TOKEN),
+                tokenAssociate(OWNER, NON_FUNGIBLE_TOKEN),
+                mintToken(
+                                NON_FUNGIBLE_TOKEN,
+                                List.of(
+                                        ByteString.copyFromUtf8("a"),
+                                        ByteString.copyFromUtf8("b"),
+                                        ByteString.copyFromUtf8("c")))
+                        .via(NFT_TOKEN_MINT_TXN),
+                mintToken(FUNGIBLE_TOKEN, 500L).via(FUNGIBLE_TOKEN_MINT_TXN),
+                cryptoTransfer(movingUnique(NON_FUNGIBLE_TOKEN, 1L, 2L, 3L).between(TOKEN_TREASURY, OWNER)),
+                cryptoApproveAllowance()
+                        .payingWith(OWNER)
+                        .addCryptoAllowance(OWNER, SPENDER, 100L)
+                        .addCryptoAllowance(OWNER, ANOTHER_SPENDER, 100L)
+                        .addCryptoAllowance(OWNER, SECOND_SPENDER, 100L)
+                        .addTokenAllowance(OWNER, FUNGIBLE_TOKEN, SPENDER, 100L)
+                        .addNftAllowance(OWNER, NON_FUNGIBLE_TOKEN, SPENDER, false, List.of(1L))
+                        .hasPrecheckFrom(OK, MAX_ALLOWANCES_EXCEEDED)
+                        .hasKnownStatus(MAX_ALLOWANCES_EXCEEDED),
+                cryptoApproveAllowance()
+                        .payingWith(OWNER)
+                        .addNftAllowance(OWNER, NON_FUNGIBLE_TOKEN, SPENDER, false, List.of(1L, 1L, 1L, 1L, 1L))
+                        .hasPrecheckFrom(OK, MAX_ALLOWANCES_EXCEEDED)
+                        .hasKnownStatus(MAX_ALLOWANCES_EXCEEDED),
+                cryptoApproveAllowance()
+                        .payingWith(OWNER)
+                        .addCryptoAllowance(OWNER, SPENDER, 100L)
+                        .addCryptoAllowance(OWNER, SPENDER, 200L)
+                        .addCryptoAllowance(OWNER, SPENDER, 100L)
+                        .addCryptoAllowance(OWNER, SPENDER, 200L)
+                        .addCryptoAllowance(OWNER, SPENDER, 200L)
+                        .hasPrecheckFrom(OK, MAX_ALLOWANCES_EXCEEDED)
+                        .hasKnownStatus(MAX_ALLOWANCES_EXCEEDED),
+                cryptoApproveAllowance()
+                        .payingWith(OWNER)
+                        .addTokenAllowance(OWNER, FUNGIBLE_TOKEN, SPENDER, 100L)
+                        .addTokenAllowance(OWNER, FUNGIBLE_TOKEN, SPENDER, 100L)
+                        .addTokenAllowance(OWNER, FUNGIBLE_TOKEN, SPENDER, 100L)
+                        .addTokenAllowance(OWNER, FUNGIBLE_TOKEN, SPENDER, 100L)
+                        .addTokenAllowance(OWNER, FUNGIBLE_TOKEN, SPENDER, 100L)
+                        .hasPrecheckFrom(OK, MAX_ALLOWANCES_EXCEEDED)
+                        .hasKnownStatus(MAX_ALLOWANCES_EXCEEDED));
     }
 
     @Order(9)
@@ -569,10 +547,8 @@ public class LeakyCryptoTestsSuite {
                             op7,
                             op7FeeAssertion,
                             op8,
-                            op9,
-                            uploadDefaultFeeSchedules(GENESIS));
-                }),
-                uploadDefaultFeeSchedules(GENESIS));
+                            op9);
+                }));
     }
 
     @Order(14)
@@ -856,59 +832,55 @@ public class LeakyCryptoTestsSuite {
         final String tokenBcreateTxn = "tokenBCreate";
         final String transferToFU = "transferToFU";
 
-        return defaultHapiSpec("autoAssociationWorksForContracts", NONDETERMINISTIC_TRANSACTION_FEES)
-                .given(
-                        newKeyNamed(SUPPLY_KEY),
-                        uploadInitCode(theContract),
-                        contractCreate(theContract).maxAutomaticTokenAssociations(2),
-                        cryptoCreate(TOKEN_TREASURY).balance(ONE_HUNDRED_HBARS),
-                        tokenCreate(tokenA)
-                                .tokenType(TokenType.FUNGIBLE_COMMON)
-                                .initialSupply(Long.MAX_VALUE)
-                                .treasury(TOKEN_TREASURY)
-                                .via(tokenAcreateTxn),
-                        tokenCreate(tokenB)
-                                .tokenType(TokenType.FUNGIBLE_COMMON)
-                                .initialSupply(Long.MAX_VALUE)
-                                .treasury(TOKEN_TREASURY)
-                                .via(tokenBcreateTxn),
-                        tokenCreate(uniqueToken)
-                                .tokenType(NON_FUNGIBLE_UNIQUE)
-                                .initialSupply(0L)
-                                .supplyKey(SUPPLY_KEY)
-                                .treasury(TOKEN_TREASURY),
-                        mintToken(uniqueToken, List.of(copyFromUtf8("ONE"), copyFromUtf8("TWO"))),
-                        getTxnRecord(tokenAcreateTxn)
-                                .hasNewTokenAssociation(tokenA, TOKEN_TREASURY)
-                                .logged(),
-                        getTxnRecord(tokenBcreateTxn)
-                                .hasNewTokenAssociation(tokenB, TOKEN_TREASURY)
-                                .logged(),
-                        cryptoTransfer(moving(1, tokenA).between(TOKEN_TREASURY, theContract))
-                                .via(transferToFU)
-                                .logged(),
-                        getTxnRecord(transferToFU)
-                                .hasNewTokenAssociation(tokenA, theContract)
-                                .logged(),
-                        getContractInfo(theContract)
-                                .has(ContractInfoAsserts.contractWith()
-                                        .hasAlreadyUsedAutomaticAssociations(1)
-                                        .maxAutoAssociations(2)))
-                .when(
-                        cryptoTransfer(movingUnique(uniqueToken, 1L).between(TOKEN_TREASURY, theContract)),
-                        getContractInfo(theContract)
-                                .has(ContractInfoAsserts.contractWith()
-                                        .hasAlreadyUsedAutomaticAssociations(2)
-                                        .maxAutoAssociations(2)))
-                .then(
-                        cryptoTransfer(moving(1, tokenB).between(TOKEN_TREASURY, theContract))
-                                .hasKnownStatus(NO_REMAINING_AUTOMATIC_ASSOCIATIONS)
-                                .via("failedTransfer"),
-                        getContractInfo(theContract)
-                                .has(ContractInfoAsserts.contractWith()
-                                        .hasAlreadyUsedAutomaticAssociations(2)
-                                        .maxAutoAssociations(2))
-                                .logged());
+        return hapiTest(
+                newKeyNamed(SUPPLY_KEY),
+                uploadInitCode(theContract),
+                contractCreate(theContract).maxAutomaticTokenAssociations(2),
+                cryptoCreate(TOKEN_TREASURY).balance(ONE_HUNDRED_HBARS),
+                tokenCreate(tokenA)
+                        .tokenType(TokenType.FUNGIBLE_COMMON)
+                        .initialSupply(Long.MAX_VALUE)
+                        .treasury(TOKEN_TREASURY)
+                        .via(tokenAcreateTxn),
+                tokenCreate(tokenB)
+                        .tokenType(TokenType.FUNGIBLE_COMMON)
+                        .initialSupply(Long.MAX_VALUE)
+                        .treasury(TOKEN_TREASURY)
+                        .via(tokenBcreateTxn),
+                tokenCreate(uniqueToken)
+                        .tokenType(NON_FUNGIBLE_UNIQUE)
+                        .initialSupply(0L)
+                        .supplyKey(SUPPLY_KEY)
+                        .treasury(TOKEN_TREASURY),
+                mintToken(uniqueToken, List.of(copyFromUtf8("ONE"), copyFromUtf8("TWO"))),
+                getTxnRecord(tokenAcreateTxn)
+                        .hasNewTokenAssociation(tokenA, TOKEN_TREASURY)
+                        .logged(),
+                getTxnRecord(tokenBcreateTxn)
+                        .hasNewTokenAssociation(tokenB, TOKEN_TREASURY)
+                        .logged(),
+                cryptoTransfer(moving(1, tokenA).between(TOKEN_TREASURY, theContract))
+                        .via(transferToFU)
+                        .logged(),
+                getTxnRecord(transferToFU)
+                        .hasNewTokenAssociation(tokenA, theContract)
+                        .logged(),
+                getContractInfo(theContract)
+                        .has(ContractInfoAsserts.contractWith()
+                                .hasAlreadyUsedAutomaticAssociations(1)
+                                .maxAutoAssociations(2)),
+                cryptoTransfer(movingUnique(uniqueToken, 1L).between(TOKEN_TREASURY, theContract)),
+                getContractInfo(theContract)
+                        .has(ContractInfoAsserts.contractWith()
+                                .hasAlreadyUsedAutomaticAssociations(2)
+                                .maxAutoAssociations(2)),
+                cryptoTransfer(moving(1, tokenB).between(TOKEN_TREASURY, theContract))
+                        .hasKnownStatus(NO_REMAINING_AUTOMATIC_ASSOCIATIONS)
+                        .via("failedTransfer"),
+                getContractInfo(theContract)
+                        .has(ContractInfoAsserts.contractWith()
+                                .hasAlreadyUsedAutomaticAssociations(2)
+                                .maxAutoAssociations(2)));
     }
 
     @HapiTest
@@ -923,61 +895,52 @@ public class LeakyCryptoTestsSuite {
         final var otherCollector = "otherCollector";
         final var finalTxn = "finalTxn";
 
-        return defaultHapiSpec("CustomFeesHaveExpectedAutoCreateInteractions", FULLY_NONDETERMINISTIC)
-                .given(
-                        wellKnownTokenEntities(),
-                        cryptoCreate(otherCollector),
-                        cryptoCreate(CIVILIAN).maxAutomaticTokenAssociations(42),
-                        inParallel(
-                                createWellKnownFungibleToken(
-                                        ftWithNetOfTransfersFractional,
-                                        creation -> creation.withCustom(fractionalFeeNetOfTransfers(
-                                                1L, 100L, 1L, OptionalLong.of(5L), TOKEN_TREASURY))),
-                                createWellKnownFungibleToken(
-                                        ftWithNonNetOfTransfersFractional,
-                                        creation -> creation.withCustom(
-                                                fractionalFee(1L, 100L, 1L, OptionalLong.of(5L), TOKEN_TREASURY))),
-                                createWellKnownNonFungibleToken(
-                                        nftWithRoyaltyNoFallback,
-                                        1,
-                                        creation ->
-                                                creation.withCustom(royaltyFeeNoFallback(1L, 100L, TOKEN_TREASURY))),
-                                createWellKnownNonFungibleToken(
-                                        nftWithRoyaltyPlusHbarFallback,
-                                        1,
-                                        creation -> creation.withCustom(royaltyFeeWithFallback(
-                                                1L,
-                                                100L,
-                                                fixedHbarFeeInheritingRoyaltyCollector(ONE_HBAR),
-                                                TOKEN_TREASURY)))),
-                        tokenAssociate(otherCollector, ftWithNonNetOfTransfersFractional),
+        return hapiTest(
+                wellKnownTokenEntities(),
+                cryptoCreate(otherCollector),
+                cryptoCreate(CIVILIAN).maxAutomaticTokenAssociations(42),
+                inParallel(
+                        createWellKnownFungibleToken(
+                                ftWithNetOfTransfersFractional,
+                                creation -> creation.withCustom(fractionalFeeNetOfTransfers(
+                                        1L, 100L, 1L, OptionalLong.of(5L), TOKEN_TREASURY))),
+                        createWellKnownFungibleToken(
+                                ftWithNonNetOfTransfersFractional,
+                                creation -> creation.withCustom(
+                                        fractionalFee(1L, 100L, 1L, OptionalLong.of(5L), TOKEN_TREASURY))),
                         createWellKnownNonFungibleToken(
-                                nftWithRoyaltyPlusHtsFallback,
+                                nftWithRoyaltyNoFallback,
+                                1,
+                                creation -> creation.withCustom(royaltyFeeNoFallback(1L, 100L, TOKEN_TREASURY))),
+                        createWellKnownNonFungibleToken(
+                                nftWithRoyaltyPlusHbarFallback,
                                 1,
                                 creation -> creation.withCustom(royaltyFeeWithFallback(
-                                        1L,
-                                        100L,
-                                        fixedHtsFeeInheritingRoyaltyCollector(666, ftWithNonNetOfTransfersFractional),
-                                        otherCollector))))
-                .when(
-                        autoCreateWithFungible(ftWithNetOfTransfersFractional),
-                        autoCreateWithFungible(ftWithNonNetOfTransfersFractional),
-                        autoCreateWithNonFungible(nftWithRoyaltyNoFallback, SUCCESS),
-                        autoCreateWithNonFungible(
-                                nftWithRoyaltyPlusHbarFallback, INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE))
-                .then(
-                        newKeyNamed(finalReceiverKey),
-                        cryptoTransfer(
-                                moving(100_000, ftWithNonNetOfTransfersFractional)
-                                        .between(TOKEN_TREASURY, CIVILIAN),
-                                movingUnique(nftWithRoyaltyPlusHtsFallback, 1L).between(TOKEN_TREASURY, CIVILIAN)),
-                        cryptoTransfer(
-                                        moving(10_000, ftWithNonNetOfTransfersFractional)
-                                                .between(CIVILIAN, finalReceiverKey),
-                                        movingUnique(nftWithRoyaltyPlusHtsFallback, 1L)
-                                                .between(CIVILIAN, finalReceiverKey))
-                                .hasKnownStatus(INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE)
-                                .via(finalTxn));
+                                        1L, 100L, fixedHbarFeeInheritingRoyaltyCollector(ONE_HBAR), TOKEN_TREASURY)))),
+                tokenAssociate(otherCollector, ftWithNonNetOfTransfersFractional),
+                createWellKnownNonFungibleToken(
+                        nftWithRoyaltyPlusHtsFallback,
+                        1,
+                        creation -> creation.withCustom(royaltyFeeWithFallback(
+                                1L,
+                                100L,
+                                fixedHtsFeeInheritingRoyaltyCollector(666, ftWithNonNetOfTransfersFractional),
+                                otherCollector))),
+                autoCreateWithFungible(ftWithNetOfTransfersFractional),
+                autoCreateWithFungible(ftWithNonNetOfTransfersFractional),
+                autoCreateWithNonFungible(nftWithRoyaltyNoFallback, SUCCESS),
+                autoCreateWithNonFungible(
+                        nftWithRoyaltyPlusHbarFallback, INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE),
+                newKeyNamed(finalReceiverKey),
+                cryptoTransfer(
+                        moving(100_000, ftWithNonNetOfTransfersFractional).between(TOKEN_TREASURY, CIVILIAN),
+                        movingUnique(nftWithRoyaltyPlusHtsFallback, 1L).between(TOKEN_TREASURY, CIVILIAN)),
+                cryptoTransfer(
+                                moving(10_000, ftWithNonNetOfTransfersFractional)
+                                        .between(CIVILIAN, finalReceiverKey),
+                                movingUnique(nftWithRoyaltyPlusHtsFallback, 1L).between(CIVILIAN, finalReceiverKey))
+                        .hasKnownStatus(INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE)
+                        .via(finalTxn));
     }
 
     @LeakyHapiTest(overrides = {"accounts.releaseAliasAfterDeletion"})

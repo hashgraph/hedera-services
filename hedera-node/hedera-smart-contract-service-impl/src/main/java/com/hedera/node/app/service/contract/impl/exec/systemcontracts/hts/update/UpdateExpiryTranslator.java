@@ -50,8 +50,7 @@ public class UpdateExpiryTranslator extends AbstractCallTranslator<HtsCallAttemp
 
     @Override
     public boolean matches(@NonNull HtsCallAttempt attempt) {
-        return Arrays.equals(attempt.selector(), UPDATE_TOKEN_EXPIRY_INFO_V1.selector())
-                || Arrays.equals(attempt.selector(), UPDATE_TOKEN_EXPIRY_INFO_V2.selector());
+        return attempt.isSelector(UPDATE_TOKEN_EXPIRY_INFO_V1, UPDATE_TOKEN_EXPIRY_INFO_V2);
     }
 
     @Override

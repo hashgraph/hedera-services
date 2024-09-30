@@ -37,7 +37,7 @@ import static com.swirlds.platform.state.snapshot.SavedStateMetadataField.WALL_C
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.formatting.TextTable;
 import com.swirlds.common.platform.NodeId;
-import com.swirlds.platform.state.PlatformState;
+import com.swirlds.platform.state.PlatformStateAccessor;
 import com.swirlds.platform.state.signed.SignedState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -167,7 +167,7 @@ public record SavedStateMetadata(
         Objects.requireNonNull(signedState.getState().getHash(), "state must be hashed");
         Objects.requireNonNull(now, "now must not be null");
 
-        final PlatformState platformState = signedState.getState().getPlatformState();
+        final PlatformStateAccessor platformState = signedState.getState().getReadablePlatformState();
 
         final List<NodeId> signingNodes = signedState.getSigSet().getSigningNodes();
         Collections.sort(signingNodes);

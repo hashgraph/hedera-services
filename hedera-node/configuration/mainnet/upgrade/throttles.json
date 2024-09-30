@@ -39,7 +39,10 @@
             "TokenGetNftInfos",
             "CryptoApproveAllowance",
             "CryptoDeleteAllowance",
-            "UtilPrng"
+            "UtilPrng",
+            "NodeCreate",
+            "NodeUpdate",
+            "NodeDelete"
           ]
         },
         {
@@ -96,7 +99,8 @@
             "TokenUpdateNfts",
             "TokenReject",
             "TokenAirdrop",
-            "TokenClaimAirdrop"
+            "TokenClaimAirdrop",
+            "TokenCancelAirdrop"
           ]
         }
       ]
@@ -145,7 +149,8 @@
           "opsPerSec": 0,
           "milliOpsPerSec": 2000,
           "operations": [
-            "CryptoCreate"
+            "CryptoCreate",
+            "NodeCreate"
           ]
         },
         {
@@ -161,7 +166,8 @@
           "operations": [
             "TokenCreate",
             "TokenAssociateToAccount",
-            "ScheduleCreate"
+            "ScheduleCreate",
+            "TokenAirdrop"
           ]
         }
       ]

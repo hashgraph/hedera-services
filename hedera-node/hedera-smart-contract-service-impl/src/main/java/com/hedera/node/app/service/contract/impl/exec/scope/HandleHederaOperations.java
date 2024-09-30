@@ -18,6 +18,7 @@ package com.hedera.node.app.service.contract.impl.exec.scope;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.node.app.service.contract.impl.ContractServiceImpl.LAZY_MEMO;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.FEE_SCHEDULE_UNITS_PER_TINYCENT;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.tuweniToPbjBytes;
 import static com.hedera.node.app.service.contract.impl.utils.SynthTxnUtils.*;
 import static com.hedera.node.app.spi.key.KeyUtils.IMMUTABILITY_SENTINEL_KEY;
@@ -47,6 +48,7 @@ import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.ResourceExhaustedException;
 import com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer;
+import com.hedera.node.config.data.AccountsConfig;
 import com.hedera.node.config.data.ContractsConfig;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.data.LedgerConfig;
@@ -83,6 +85,7 @@ public class HandleHederaOperations implements HederaOperations {
     private final HandleContext context;
     private final HederaFunctionality functionality;
     private final PendingCreationMetadataRef pendingCreationMetadataRef;
+    private final AccountsConfig accountsConfig;
 
     @Inject
     public HandleHederaOperations(
@@ -93,7 +96,8 @@ public class HandleHederaOperations implements HederaOperations {
             @NonNull final SystemContractGasCalculator gasCalculator,
             @NonNull final HederaConfig hederaConfig,
             @NonNull final HederaFunctionality functionality,
-            @NonNull final PendingCreationMetadataRef pendingCreationMetadataRef) {
+            @NonNull final PendingCreationMetadataRef pendingCreationMetadataRef,
+            @NonNull final AccountsConfig accountsConfig) {
         this.ledgerConfig = requireNonNull(ledgerConfig);
         this.contractsConfig = requireNonNull(contractsConfig);
         this.context = requireNonNull(context);
@@ -102,6 +106,7 @@ public class HandleHederaOperations implements HederaOperations {
         this.hederaConfig = requireNonNull(hederaConfig);
         this.functionality = requireNonNull(functionality);
         this.pendingCreationMetadataRef = requireNonNull(pendingCreationMetadataRef);
+        this.accountsConfig = requireNonNull(accountsConfig);
     }
 
     /**
@@ -158,12 +163,17 @@ public class HandleHederaOperations implements HederaOperations {
         return contractsConfig.maxNumber();
     }
 
+    @Override
+    public long accountCreationLimit() {
+        return accountsConfig.maxNumber();
+    }
+
     /**
      * {@inheritDoc}
      */
     @Override
     public @NonNull Bytes entropy() {
-        final var entropy = context.blockRecordInfo().getNMinus3RunningHash();
+        final var entropy = context.blockRecordInfo().prngSeed();
         return (entropy == null || entropy.equals(Bytes.EMPTY)) ? ZERO_ENTROPY : entropy;
     }
 
@@ -177,8 +187,13 @@ public class HandleHederaOperations implements HederaOperations {
         final var synthCreation = TransactionBody.newBuilder()
                 .cryptoCreateAccount(CREATE_TXN_BODY_BUILDER.alias(tuweniToPbjBytes(recipient)))
                 .build();
-        final var createFee = gasCalculator.canonicalPriceInTinybars(synthCreation, payerId);
-        return (createFee) / gasCalculator.topLevelGasPrice();
+        final var createFee = gasCalculator.feeCalculatorPriceInTinyBars(synthCreation, payerId);
+
+        // isGasPrecisionLossFixEnabled is a temporary feature flag that will be removed in the future.
+        if (!contractsConfig.isGasPrecisionLossFixEnabled()) {
+            return (createFee) / gasCalculator.topLevelGasPrice();
+        }
+        return (createFee) * FEE_SCHEDULE_UNITS_PER_TINYCENT / gasCalculator.topLevelGasPriceInTinyBars();
     }
 
     /**
@@ -361,7 +376,8 @@ public class HandleHederaOperations implements HederaOperations {
             @NonNull final ExternalizeInitcodeOnSuccess externalizeInitcodeOnSuccess) {
         // Create should have conditional child record, but we only externalize this child if it's not already
         // externalized by the top-level HAPI transaction; and we "finish" the synthetic transaction by swapping
-        // in the contract creation body for the dispatched crypto create body
+        // in the contract creation body for the dispatched crypto create body. This child transaction will not
+        // be throttled at consensus.
         final var isTopLevelCreation = bodyToExternalize == null;
         final var recordBuilder = context.dispatchRemovableChildTransaction(
                 TransactionBody.newBuilder().cryptoCreateAccount(bodyToDispatch).build(),
@@ -370,7 +386,8 @@ public class HandleHederaOperations implements HederaOperations {
                 context.payer(),
                 isTopLevelCreation
                         ? SUPPRESSING_EXTERNALIZED_RECORD_CUSTOMIZER
-                        : contractBodyCustomizerFor(number, bodyToExternalize));
+                        : contractBodyCustomizerFor(number, bodyToExternalize),
+                HandleContext.ConsensusThrottling.OFF);
         if (recordBuilder.status() != SUCCESS) {
             // The only plausible failure mode (MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED) should
             // have been pre-validated in ProxyWorldUpdater.createAccount() so this is an invariant failure

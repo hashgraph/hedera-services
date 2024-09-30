@@ -36,7 +36,10 @@
 			"ContractGetRecords",
 			"ContractCallLocal",
 			"TransactionGetRecord",
-			"GetVersionInfo"
+			"GetVersionInfo",
+			"NodeCreate",
+			"NodeUpdate",
+			"NodeDelete"
 		  ]
 		},
 		{
@@ -73,7 +76,8 @@
 			"TokenUpdateNfts",
 			"TokenReject",
 			"TokenAirdrop",
-			"TokenClaimAirdrop"
+			"TokenClaimAirdrop",
+			"TokenCancelAirdrop"
 		  ]
 		}
 	  ]
@@ -103,7 +107,8 @@
 		{
 		  "opsPerSec": 2000,
 		  "operations": [
-			"CryptoCreate"
+			"CryptoCreate",
+			  "NodeCreate"
 		  ]
 		},
 		{
@@ -123,7 +128,8 @@
 		  "operations": [
 			"TokenCreate",
 			"TokenAssociateToAccount",
-			"ScheduleCreate"
+			"ScheduleCreate",
+			  "TokenAirdrop"
 		  ]
 		}
 	  ]

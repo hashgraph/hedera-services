@@ -18,6 +18,8 @@ package com.hedera.services.bdd.suites.regression.system;
 
 import static com.hedera.services.bdd.junit.hedera.MarkerFile.EXEC_IMMEDIATE_MF;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getVersionInfo;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
+import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.blockingOrder;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.buildUpgradeZipFrom;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.doAdhoc;
@@ -33,6 +35,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.waitForActiveNetwor
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.waitForFrozenNetwork;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.waitForMf;
 import static com.hedera.services.bdd.spec.utilops.upgrade.BuildUpgradeZipOp.FAKE_UPGRADE_ZIP_LOC;
+import static com.hedera.services.bdd.suites.HapiSuite.FUNDING;
 import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
 import static com.hedera.services.bdd.suites.freeze.CommonUpgradeResources.DEFAULT_UPGRADE_FILE_ID;
 import static com.hedera.services.bdd.suites.freeze.CommonUpgradeResources.FAKE_ASSETS_LOC;
@@ -60,6 +63,7 @@ public interface LifecycleTest {
     int MIXED_OPS_BURST_TPS = 50;
     Duration FREEZE_TIMEOUT = Duration.ofSeconds(90);
     Duration RESTART_TIMEOUT = Duration.ofSeconds(180);
+    //    Duration RESTART_TIMEOUT = Duration.ofSeconds(300);
     Duration SHUTDOWN_TIMEOUT = Duration.ofSeconds(60);
     Duration MIXED_OPS_BURST_DURATION = Duration.ofSeconds(10);
     Duration EXEC_IMMEDIATE_MF_TIMEOUT = Duration.ofSeconds(10);
@@ -132,7 +136,10 @@ public interface LifecycleTest {
      */
     default SpecOperation restartAtNextConfigVersion() {
         return blockingOrder(
-                freezeOnly().startingIn(5).seconds().payingWith(GENESIS),
+                freezeOnly().startingIn(5).seconds().payingWith(GENESIS).deferStatusResolution(),
+                // Immediately submit a transaction in the same round to ensure freeze time is only
+                // reset when last frozen time matches it (i.e., in a post-upgrade transaction)
+                cryptoTransfer(tinyBarsFromTo(GENESIS, FUNDING, 1)),
                 confirmFreezeAndShutdown(),
                 sourcing(() -> FakeNmt.restartNetwork(CURRENT_CONFIG_VERSION.incrementAndGet())),
                 waitForActiveNetwork(RESTART_TIMEOUT));
@@ -151,11 +158,11 @@ public interface LifecycleTest {
      * Returns an operation that upgrades the network to the next configuration version using a fake upgrade ZIP,
      * running the given operation before the network is restarted.
      *
-     * @param preRestartOp an operation to run before the network is restarted
+     * @param preRestartOps operations to run before the network is restarted
      * @return the operation
      */
-    default SpecOperation upgradeToNextConfigVersion(@NonNull final SpecOperation preRestartOp) {
-        return sourcing(() -> upgradeToConfigVersion(CURRENT_CONFIG_VERSION.get() + 1, preRestartOp));
+    default SpecOperation upgradeToNextConfigVersion(@NonNull final SpecOperation... preRestartOps) {
+        return sourcing(() -> upgradeToConfigVersion(CURRENT_CONFIG_VERSION.get() + 1, preRestartOps));
     }
 
     /**
@@ -163,11 +170,11 @@ public interface LifecycleTest {
      * running the given operation before the network is restarted.
      *
      * @param version the configuration version to upgrade to
-     * @param preRestartOp an operation to run before the network is restarted
+     * @param preRestartOps  operations to run before the network is restarted
      * @return the operation
      */
-    default HapiSpecOperation upgradeToConfigVersion(final int version, @NonNull final SpecOperation preRestartOp) {
-        requireNonNull(preRestartOp);
+    default HapiSpecOperation upgradeToConfigVersion(final int version, @NonNull final SpecOperation... preRestartOps) {
+        requireNonNull(preRestartOps);
         return blockingOrder(
                 sourcing(() -> freezeUpgrade()
                         .startingIn(2)
@@ -175,7 +182,7 @@ public interface LifecycleTest {
                         .withUpdateFile(DEFAULT_UPGRADE_FILE_ID)
                         .havingHash(upgradeFileHashAt(FAKE_UPGRADE_ZIP_LOC))),
                 confirmFreezeAndShutdown(),
-                preRestartOp,
+                blockingOrder(preRestartOps),
                 FakeNmt.restartNetwork(version),
                 doAdhoc(() -> CURRENT_CONFIG_VERSION.set(version)),
                 waitForActiveNetwork(RESTART_TIMEOUT));

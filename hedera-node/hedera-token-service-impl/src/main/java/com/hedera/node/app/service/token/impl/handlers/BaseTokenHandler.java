@@ -42,7 +42,9 @@ import com.hedera.hapi.node.token.TokenUpdateTransactionBody;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
+import com.hedera.node.app.service.token.impl.util.TokenHandlerHelper;
 import com.hedera.node.app.service.token.impl.util.TokenKey;
+import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.config.data.EntitiesConfig;
 import com.hedera.node.config.data.TokensConfig;
 import com.swirlds.config.api.Configuration;
@@ -71,18 +73,20 @@ public class BaseTokenHandler {
     protected static final Set<TokenKey> TOKEN_KEYS = EnumSet.allOf(TokenKey.class);
 
     /**
-     * The value for unlimited automatic associations
+     * The value for unlimited automatic associations.
      */
     public static final int UNLIMITED_AUTOMATIC_ASSOCIATIONS = -1;
 
     /**
      * Mints fungible tokens. This method is called in both token create and mint.
-     * @param token the new or existing token to mint
-     * @param treasuryRel the treasury relation for the token
-     * @param amount the amount to mint
-     * @param accountStore the account store
-     * @param tokenStore the token store
+     *
+     * @param token              the new or existing token to mint
+     * @param treasuryRel        the treasury relation for the token
+     * @param amount             the amount to mint
+     * @param accountStore       the account store
+     * @param tokenStore         the token store
      * @param tokenRelationStore the token relation store
+     * @param expiryValidator    the expiry validator
      */
     protected long mintFungible(
             @NonNull final Token token,
@@ -90,12 +94,20 @@ public class BaseTokenHandler {
             final long amount,
             @NonNull final WritableAccountStore accountStore,
             @NonNull final WritableTokenStore tokenStore,
-            @NonNull final WritableTokenRelationStore tokenRelationStore) {
+            @NonNull final WritableTokenRelationStore tokenRelationStore,
+            @NonNull final ExpiryValidator expiryValidator) {
         requireNonNull(token);
         requireNonNull(treasuryRel);
 
         return changeSupply(
-                token, treasuryRel, +amount, INVALID_TOKEN_MINT_AMOUNT, accountStore, tokenStore, tokenRelationStore);
+                token,
+                treasuryRel,
+                +amount,
+                INVALID_TOKEN_MINT_AMOUNT,
+                accountStore,
+                tokenStore,
+                tokenRelationStore,
+                expiryValidator);
     }
 
     /**
@@ -105,13 +117,14 @@ public class BaseTokenHandler {
      * <p>
      * <b>Note:</b> This method assumes the given token has a non-null supply key!
      *
-     * @param token the token that is minted or burned
-     * @param treasuryRel the treasury relation for the token
-     * @param amount the amount to mint or burn
-     * @param invalidSupplyCode the invalid supply code to use if the supply is invalid
-     * @param accountStore the account store
-     * @param tokenStore the token store
+     * @param token              the token that is minted or burned
+     * @param treasuryRel        the treasury relation for the token
+     * @param amount             the amount to mint or burn
+     * @param invalidSupplyCode  the invalid supply code to use if the supply is invalid
+     * @param accountStore       the account store
+     * @param tokenStore         the token store
      * @param tokenRelationStore the token relation store
+     * @param expiryValidator    the expiry validator
      */
     protected long changeSupply(
             @NonNull final Token token,
@@ -120,7 +133,8 @@ public class BaseTokenHandler {
             @NonNull final ResponseCodeEnum invalidSupplyCode,
             @NonNull final WritableAccountStore accountStore,
             @NonNull final WritableTokenStore tokenStore,
-            @NonNull final WritableTokenRelationStore tokenRelationStore) {
+            @NonNull final WritableTokenRelationStore tokenRelationStore,
+            @NonNull final ExpiryValidator expiryValidator) {
         requireNonNull(token);
         requireNonNull(treasuryRel);
         requireNonNull(invalidSupplyCode);
@@ -140,8 +154,8 @@ public class BaseTokenHandler {
             validateTrue(token.maxSupply() >= newTotalSupply, TOKEN_MAX_SUPPLY_REACHED);
         }
 
-        final var treasuryAccount = accountStore.get(treasuryRel.accountId());
-        validateTrue(treasuryAccount != null, INVALID_TREASURY_ACCOUNT_FOR_TOKEN);
+        final var treasuryAccount = TokenHandlerHelper.getIfUsable(
+                treasuryRel.accountId(), accountStore, expiryValidator, INVALID_TREASURY_ACCOUNT_FOR_TOKEN);
 
         final long newTreasuryBalance = treasuryRel.balance() + amount;
         validateTrue(newTreasuryBalance >= 0, INSUFFICIENT_TOKEN_BALANCE);
@@ -309,7 +323,7 @@ public class BaseTokenHandler {
     /**
      * Creates a new {@link TokenRelation} with the account and token. This is called when there is
      * no association yet, but have open slots for maxAutoAssociations on the account.
-     * @param account the account to link the tokens to
+     * @param accountId the accountId to link the tokens to
      * @param token the token to link to the account
      * @param accountStore the account store
      * @param tokenRelStore the token relation store
@@ -317,7 +331,7 @@ public class BaseTokenHandler {
      * @return the new token relation added
      */
     protected TokenRelation autoAssociate(
-            @NonNull final Account account,
+            @NonNull final AccountID accountId,
             @NonNull final Token token,
             @NonNull final WritableAccountStore accountStore,
             @NonNull final WritableTokenRelationStore tokenRelStore,
@@ -325,7 +339,6 @@ public class BaseTokenHandler {
         final var tokensConfig = config.getConfigData(TokensConfig.class);
         final var entitiesConfig = config.getConfigData(EntitiesConfig.class);
 
-        final var accountId = account.accountIdOrThrow();
         final var tokenId = token.tokenIdOrThrow();
         // If token is already associated, no need to associate again
         final var existingRel = tokenRelStore.get(accountId, tokenId);
@@ -334,6 +347,7 @@ public class BaseTokenHandler {
                 tokenRelStore.sizeOfState() + 1 < tokensConfig.maxAggregateRels(),
                 MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED);
 
+        final var account = accountStore.get(accountId);
         // Check is number of used associations is less than maxAutoAssociations
         final var numAssociations = account.numberAssociations();
         validateFalse(
@@ -449,7 +463,7 @@ public class BaseTokenHandler {
     }
 
     /**
-     * Determines if a given token is valid
+     * Determines if a given token is valid.
      *
      * @param tokenId the token to check
      * @return true if the token is valid

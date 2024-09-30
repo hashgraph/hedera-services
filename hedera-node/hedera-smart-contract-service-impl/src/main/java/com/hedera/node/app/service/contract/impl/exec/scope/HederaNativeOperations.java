@@ -201,9 +201,7 @@ public interface HederaNativeOperations {
 
     /**
      * Finalizes an existing hollow account with the given address as a contract by setting
-     * {@code isContract=true}, {@code key=Key{contractID=...}}, and {@code nonce=1}. As with
-     * a "normal" internal {@code CONTRACT_CREATION}, the record of this finalization should
-     * only be externalized if the top-level HAPI transaction succeeds.
+     * {@code isContract=true}, {@code key=Key{contractID=...}}, and {@code nonce=1}.
      *
      * @param evmAddress the EVM address of the hollow account to finalize as a contract
      */

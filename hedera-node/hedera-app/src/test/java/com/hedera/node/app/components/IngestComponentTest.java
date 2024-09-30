@@ -17,6 +17,7 @@
 package com.hedera.node.app.components;
 
 import static com.hedera.node.app.fixtures.AppTestBase.DEFAULT_CONFIG;
+import static java.util.concurrent.CompletableFuture.completedFuture;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
@@ -25,6 +26,10 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.node.app.DaggerHederaInjectionComponent;
 import com.hedera.node.app.HederaInjectionComponent;
+import com.hedera.node.app.blocks.InitialStateHash;
+import com.hedera.node.app.blocks.impl.BoundaryStateChangeListener;
+import com.hedera.node.app.blocks.impl.KVStateChangeListener;
+import com.hedera.node.app.config.BootstrapConfigProviderImpl;
 import com.hedera.node.app.config.ConfigProviderImpl;
 import com.hedera.node.app.fixtures.state.FakeState;
 import com.hedera.node.app.info.SelfNodeInfoImpl;
@@ -36,7 +41,7 @@ import com.hedera.node.app.signature.AppSignatureVerifier;
 import com.hedera.node.app.signature.impl.SignatureExpanderImpl;
 import com.hedera.node.app.signature.impl.SignatureVerifierImpl;
 import com.hedera.node.app.state.recordcache.RecordCacheService;
-import com.hedera.node.app.version.HederaSoftwareVersion;
+import com.hedera.node.app.tss.TssBaseService;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -50,6 +55,7 @@ import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.status.PlatformStatus;
 import java.time.InstantSource;
 import java.util.ArrayDeque;
+import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -62,6 +68,9 @@ class IngestComponentTest {
 
     @Mock
     private Platform platform;
+
+    @Mock
+    private TssBaseService tssBaseService;
 
     private HederaInjectionComponent app;
 
@@ -83,10 +92,7 @@ class IngestComponentTest {
                 "0123456789012345678901234567890123456789012345678901234567890123",
                 "Node7",
                 Bytes.wrap("cert7"),
-                new HederaSoftwareVersion(
-                        SemanticVersion.newBuilder().major(1).build(),
-                        SemanticVersion.newBuilder().major(2).build(),
-                        0),
+                SemanticVersion.newBuilder().major(1).build(),
                 "Node7");
 
         final var configProvider = new ConfigProviderImpl(false);
@@ -97,24 +103,30 @@ class IngestComponentTest {
                         new SignatureExpanderImpl(),
                         new SignatureVerifierImpl(CryptographyHolder.get())));
         app = DaggerHederaInjectionComponent.builder()
+                .configProviderImpl(configProvider)
+                .bootstrapConfigProviderImpl(new BootstrapConfigProviderImpl())
+                .fileServiceImpl(new FileServiceImpl())
+                .contractServiceImpl(new ContractServiceImpl(appContext))
                 .initTrigger(InitTrigger.GENESIS)
                 .platform(platform)
                 .crypto(CryptographyHolder.get())
-                .configProvider(configProvider)
-                .configProviderImpl(configProvider)
                 .self(selfNodeInfo)
                 .maxSignedTxnSize(1024)
                 .currentPlatformStatus(() -> PlatformStatus.ACTIVE)
                 .servicesRegistry(mock(ServicesRegistry.class))
                 .instantSource(InstantSource.system())
                 .softwareVersion(mock(SemanticVersion.class))
-                .contractServiceImpl(new ContractServiceImpl(appContext))
-                .fileServiceImpl(new FileServiceImpl())
                 .metrics(metrics)
+                .kvStateChangeListener(new KVStateChangeListener())
+                .boundaryStateChangeListener(new BoundaryStateChangeListener())
+                .migrationStateChanges(List.of())
+                .tssBaseService(tssBaseService)
+                .initialStateHash(new InitialStateHash(completedFuture(Bytes.EMPTY), 0))
                 .build();
 
         final var state = new FakeState();
         state.addService(RecordCacheService.NAME, Map.of("TransactionRecordQueue", new ArrayDeque<String>()));
+        state.addService(RecordCacheService.NAME, Map.of("TransactionReceiptQueue", new ArrayDeque<String>()));
         app.workingStateAccessor().setState(state);
     }
 

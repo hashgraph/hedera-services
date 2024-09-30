@@ -111,7 +111,7 @@ public class ReadableTokenStoreImpl implements ReadableTokenStore {
 
     /**
      * Returns the number of tokens in the state.
-     * @return the number of tokens in the state.
+     * @return the number of tokens in the state
      */
     @Override
     public long sizeOfState() {

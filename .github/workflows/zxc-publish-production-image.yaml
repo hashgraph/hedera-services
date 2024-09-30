@@ -79,7 +79,7 @@ permissions:
 jobs:
   publish-image:
     name: ${{ inputs.custom-job-name || 'Publish Production Image (GCP)' }}
-    runs-on: [self-hosted, Linux, large, ephemeral]
+    runs-on: network-node-linux-large
     outputs:
       docker-registry: ${{ steps.set-registry.outputs.docker-registry }}
       docker-image: ${{ steps.set-registry.outputs.docker-tag-base }}/consensus-node:${{ inputs.version }}
@@ -145,58 +145,17 @@ jobs:
 
           echo "docker-tag-base=${DOCKER_TAG_BASE}" >>"${GITHUB_OUTPUT}"
 
-      - name: Install KillAll
-        run: sudo apt-get update && sudo apt-get install --yes --no-install-recommends psmisc
-
-      - name: Create Docker Working Directory
-        run: |
-          USER="$(id -un)"
-          GROUP="$(id -gn)"
-          sudo mkdir -p /x
-          sudo chown -vR ${USER}:${GROUP} /x
-          sudo ls -lah /x
-
-      - name: Remove Docker from Self Hosted Runners
-        run: |
-          set -x
-          sudo killall dockerd || true
-          sudo killall containerd || true
-          sudo rm -rvf /usr/bin/*containerd* || true
-          sudo rm -rvf /usr/bin/docker* || true
-          sudo rm -rvf /usr/local/bin/docker* || true
-          sudo rm -rvf /usr/local/bin/*lima* || true
-
-      - name: Setup Containerd Support
-        uses: crazy-max/ghaction-setup-containerd@60acbf31e6572da7b83a4ed6b428ed92a35ff4d7 # v3.0.0
-        with:
-          containerd-version: v1.7.2
-
-      - name: Setup Docker Support
-        uses: step-security/ghaction-setup-docker@42e219a378b907a83f1b323a1458fbf352af3ffd # v3.3.0
-        env:
-          HOME: /x
-        with:
-          version: v25.0.5
-
-      - name: Configure Default Docker Context
-        run: |
-          set -x
-          if grep setup-docker-action < <(docker context ls --format '{{ .Name }}') >/dev/null; then
-            docker context rm -f setup-docker-action
-          fi
-
-          DOCKER_CONTEXT_PATH="$(sudo find /x -name docker.sock | tr -d '[:space:]')"
-          docker context create setup-docker-action --docker "host=unix://${DOCKER_CONTEXT_PATH}"
-          docker context use setup-docker-action
-
       - name: Setup QEmu Support
         uses: docker/setup-qemu-action@68827325e0b33c7199eb31dd4e31fbe9023e06e3 # v3.0.0
 
       - name: Setup Docker Buildx Support
-        uses: docker/setup-buildx-action@4fd812986e6c8c2a69e18311145f9371337f27d4 # v3.4.0
+        uses: docker/setup-buildx-action@988b5a0280414f521da01fcc63a27aeeb4b104db # v3.6.1
         with:
-          version: v0.15.1
+          version: v0.16.2
           driver-opts: network=host
+          buildkitd-config-inline: |
+            [registry."docker.io"]
+              mirrors = ["https://hub.mirror.docker.lat.ope.eng.hashgraph.io"]
 
       - name: Setup Local Docker Registry
         if: ${{ inputs.dry-run-enabled == true && !cancelled() && !failure() }}

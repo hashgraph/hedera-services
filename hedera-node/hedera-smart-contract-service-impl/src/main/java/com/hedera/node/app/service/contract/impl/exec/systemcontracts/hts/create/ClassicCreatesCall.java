@@ -113,7 +113,7 @@ public class ClassicCreatesCall extends AbstractCall {
                         .transactionValidStart(timestamp)
                         .build())
                 .build();
-        final var baseCost = gasCalculator.canonicalPriceInTinybars(syntheticCreateWithId, spenderId);
+        final var baseCost = gasCalculator.feeCalculatorPriceInTinyBars(syntheticCreateWithId, spenderId);
         // The non-gas cost is a 20% surcharge on the HAPI TokenCreate price, minus the fee taken as gas
         long nonGasCost = baseCost + (baseCost / 5) - gasCalculator.gasCostInTinybars(FIXED_GAS_COST);
         if (frame.getValue().lessThan(Wei.of(nonGasCost))) {
@@ -123,9 +123,6 @@ public class ClassicCreatesCall extends AbstractCall {
                     RC_AND_ADDRESS_ENCODER.encodeElements((long) INSUFFICIENT_TX_FEE.protoOrdinal(), ZERO_ADDRESS));
         } else {
             operations().collectFee(spenderId, nonGasCost);
-            // (FUTURE) remove after differential testing, mono-service used the entire
-            // value in the frame for the non-gas cost even if it was only a portion
-            nonGasCost = frame.getValue().toLong();
         }
 
         final var op = syntheticCreate.tokenCreationOrThrow();
@@ -192,7 +189,7 @@ public class ClassicCreatesCall extends AbstractCall {
                 ? new EitherOrVerificationStrategy(
                         verificationStrategy, new SpecificCryptoVerificationStrategy(op.adminKeyOrThrow()))
                 : verificationStrategy;
-        // And our final dispatch verification strategy must very depending on if
+        // And our final dispatch verification strategy must vary depending on if
         // a legacy activation address is active (somewhere on the stack)
         return stackIncludesActiveAddress(frame, legacyActivation.besuAddress())
                 ? new EitherOrVerificationStrategy(

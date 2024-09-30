@@ -16,7 +16,7 @@
 
 package com.hedera.node.app.statedumpers.legacy;
 
-import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrue;
+import static com.hedera.node.app.hapi.utils.ValidationUtils.validateTrue;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_NOT_FULLY_SPECIFIED;
 
 import com.google.common.annotations.VisibleForTesting;

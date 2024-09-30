@@ -22,6 +22,7 @@ import static java.util.stream.StreamSupport.stream;
 
 import com.hedera.services.bdd.spec.props.JutilPropertySource;
 import com.swirlds.platform.config.legacy.LegacyConfigPropertiesLoader;
+import com.swirlds.platform.crypto.CryptoStatic;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -57,6 +58,7 @@ public class WorkingDirUtils {
     public static final String CONFIG_TXT = "config.txt";
     public static final String GENESIS_PROPERTIES = "genesis.properties";
     public static final String ERROR_REDIRECT_FILE = "test-clients.log";
+    public static final String STATE_METADATA_FILE = "stateMetadata.txt";
     public static final String APPLICATION_PROPERTIES = "application.properties";
 
     private static final List<String> WORKING_DIR_DATA_FOLDERS = List.of(KEYS_FOLDER, CONFIG_FOLDER, UPGRADE_DIR);
@@ -172,7 +174,7 @@ public class WorkingDirUtils {
                                     <AppenderRef ref="Console"/>
                                     <AppenderRef ref="TestClientRollingFile"/>
                                   </Logger>
-                                  """)
+                                 \s""")
                 .replace(
                         "output/",
                         workingDir.resolve(OUTPUT_DIR).toAbsolutePath().normalize() + "/");
@@ -319,5 +321,17 @@ public class WorkingDirUtils {
         return new AddressBook(stream(spliteratorUnknownSize(addressBook.iterator(), 0), false)
                 .map(address -> address.copySetSigCert(sigCert))
                 .toList());
+    }
+
+    public static AddressBook loadAddressBookWithDeterministicCerts(@NonNull final Path path) {
+        requireNonNull(path);
+        final var configFile = LegacyConfigPropertiesLoader.loadConfigFile(path.toAbsolutePath());
+        try {
+            final var addressBook = configFile.getAddressBook();
+            CryptoStatic.generateKeysAndCerts(addressBook);
+            return addressBook;
+        } catch (Exception e) {
+            throw new RuntimeException("Error generating keys and certs", e);
+        }
     }
 }

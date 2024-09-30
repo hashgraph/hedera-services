@@ -29,7 +29,6 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.has.HasCal
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes;
 import com.hedera.node.config.data.ContractsConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.Arrays;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -62,11 +61,10 @@ public class IsAuthorizedRawTranslator extends AbstractCallTranslator<HasCallAtt
     public boolean matches(@NonNull final HasCallAttempt attempt) {
         requireNonNull(attempt, "attempt");
 
-        final boolean matchesCall = matchesIsAuthorizedRawSelector(attempt.selector());
         final boolean callEnabled = attempt.configuration()
                 .getConfigData(ContractsConfig.class)
                 .systemContractAccountServiceIsAuthorizedRawEnabled();
-        return matchesCall && callEnabled;
+        return callEnabled && attempt.isSelector(IS_AUTHORIZED_RAW);
     }
 
     /**
@@ -76,7 +74,7 @@ public class IsAuthorizedRawTranslator extends AbstractCallTranslator<HasCallAtt
     public Call callFrom(@NonNull final HasCallAttempt attempt) {
         requireNonNull(attempt, "attempt");
 
-        if (matchesIsAuthorizedRawSelector(attempt.selector())) {
+        if (attempt.isSelector(IS_AUTHORIZED_RAW)) {
 
             final var call = IS_AUTHORIZED_RAW.decodeCall(attempt.inputBytes());
             final var address = (Address) call.get(ADDRESS_ARG);
@@ -86,11 +84,5 @@ public class IsAuthorizedRawTranslator extends AbstractCallTranslator<HasCallAtt
             return new IsAuthorizedRawCall(attempt, address, messageHash, signature, customGasCalculator);
         }
         return null;
-    }
-
-    private boolean matchesIsAuthorizedRawSelector(@NonNull final byte[] selector) {
-        requireNonNull(selector, "selector");
-
-        return Arrays.equals(selector, IS_AUTHORIZED_RAW.selector());
     }
 }

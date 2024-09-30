@@ -69,12 +69,14 @@ module com.swirlds.platform.core {
             com.swirlds.platform.test;
     exports com.swirlds.platform.consensus to
             com.swirlds.platform.test,
-            com.swirlds.platform.core.test.fixtures;
+            com.swirlds.platform.core.test.fixtures,
+            com.hedera.node.app;
     exports com.swirlds.platform.crypto to
             com.swirlds.platform.test,
             com.hedera.node.test.clients,
             com.swirlds.platform.core.test.fixtures,
-            com.hedera.node.app.test.fixtures;
+            com.hedera.node.app.test.fixtures,
+            com.hedera.node.app;
     exports com.swirlds.platform.event.linking to
             com.swirlds.common,
             com.swirlds.platform.test,
@@ -120,6 +122,10 @@ module com.swirlds.platform.core {
     exports com.swirlds.platform.components.consensus;
     exports com.swirlds.platform.pool;
     exports com.swirlds.platform.state.snapshot;
+    exports com.swirlds.platform.state.service.schemas;
+    exports com.swirlds.platform.state.service;
+    exports com.swirlds.platform.builder.internal;
+    exports com.swirlds.platform.config.internal;
 
     requires transitive com.hedera.node.hapi;
     requires transitive com.swirlds.base;

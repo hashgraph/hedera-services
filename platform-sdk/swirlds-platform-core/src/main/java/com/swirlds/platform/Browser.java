@@ -23,17 +23,31 @@ import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.platform.builder.PlatformBuildConstants.DEFAULT_CONFIG_FILE_NAME;
 import static com.swirlds.platform.builder.PlatformBuildConstants.DEFAULT_SETTINGS_FILE_NAME;
 import static com.swirlds.platform.builder.PlatformBuildConstants.LOG4J_FILE_NAME;
+import static com.swirlds.platform.builder.internal.StaticPlatformBuilder.getMetricsProvider;
+import static com.swirlds.platform.builder.internal.StaticPlatformBuilder.setupGlobalMetrics;
+import static com.swirlds.platform.crypto.CryptoStatic.initNodeSecurity;
 import static com.swirlds.platform.gui.internal.BrowserWindowManager.addPlatforms;
 import static com.swirlds.platform.gui.internal.BrowserWindowManager.getStateHierarchy;
 import static com.swirlds.platform.gui.internal.BrowserWindowManager.moveBrowserWindowToFront;
 import static com.swirlds.platform.gui.internal.BrowserWindowManager.setBrowserWindow;
 import static com.swirlds.platform.gui.internal.BrowserWindowManager.setStateHierarchy;
 import static com.swirlds.platform.gui.internal.BrowserWindowManager.showBrowserWindow;
+import static com.swirlds.platform.state.signed.StartupStateUtils.getInitialState;
+import static com.swirlds.platform.system.address.AddressBookUtils.createRoster;
+import static com.swirlds.platform.system.address.AddressBookUtils.initializeAddressBook;
 import static com.swirlds.platform.util.BootstrapUtils.checkNodesToRun;
 import static com.swirlds.platform.util.BootstrapUtils.getNodesToRun;
 import static com.swirlds.platform.util.BootstrapUtils.loadSwirldMains;
 import static com.swirlds.platform.util.BootstrapUtils.setupBrowserWindow;
 
+import com.swirlds.base.time.Time;
+import com.swirlds.common.context.PlatformContext;
+import com.swirlds.common.crypto.CryptographyFactory;
+import com.swirlds.common.crypto.CryptographyHolder;
+import com.swirlds.common.io.filesystem.FileSystemManager;
+import com.swirlds.common.io.utility.RecycleBin;
+import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
+import com.swirlds.common.merkle.crypto.MerkleCryptographyFactory;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.startup.Log4jSetup;
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
@@ -44,6 +58,7 @@ import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.builder.PlatformBuilder;
 import com.swirlds.platform.config.PathsConfig;
 import com.swirlds.platform.crypto.CryptoConstants;
+import com.swirlds.platform.crypto.KeysAndCerts;
 import com.swirlds.platform.gui.GuiEventStorage;
 import com.swirlds.platform.gui.hashgraph.HashgraphGuiSource;
 import com.swirlds.platform.gui.hashgraph.internal.StandardGuiSource;
@@ -52,10 +67,12 @@ import com.swirlds.platform.gui.internal.WinBrowser;
 import com.swirlds.platform.gui.model.InfoApp;
 import com.swirlds.platform.gui.model.InfoMember;
 import com.swirlds.platform.gui.model.InfoSwirld;
+import com.swirlds.platform.state.signed.HashedReservedSignedState;
 import com.swirlds.platform.state.snapshot.SignedStateFileUtils;
 import com.swirlds.platform.system.SwirldMain;
 import com.swirlds.platform.system.SystemExitCode;
 import com.swirlds.platform.system.SystemExitUtils;
+import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.util.BootstrapUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.awt.GraphicsEnvironment;
@@ -70,8 +87,12 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
- * The Browser that launches the Platforms that run the apps.
+ * The Browser that launches the Platforms that run the apps. This is used by the demo apps to launch the
+ * Platforms.
+ * This class will be removed once the demo apps moved to Inversion of Control pattern to build and start platform
+ * directly.
  */
+@Deprecated(forRemoval = true)
 public class Browser {
     // Each member is represented by an AddressBook entry in config.txt. On a given computer, a single java
     // process runs all members whose listed internal IP address matches some address on that computer. That
@@ -213,21 +234,78 @@ public class Browser {
                     BootstrapUtils.setupConfigBuilder(configBuilder, getAbsolutePath(DEFAULT_SETTINGS_FILE_NAME)));
             final Configuration configuration = configBuilder.build();
 
+            setupGlobalMetrics(configuration);
+            guiMetrics = getMetricsProvider().createPlatformMetrics(nodeId);
+
+            final var recycleBin = RecycleBin.create(
+                    guiMetrics,
+                    configuration,
+                    getStaticThreadManager(),
+                    Time.getCurrent(),
+                    FileSystemManager.create(configuration),
+                    nodeId);
+            final var cryptography = CryptographyFactory.create();
+            CryptographyHolder.set(cryptography);
+            final KeysAndCerts keysAndCerts = initNodeSecurity(appDefinition.getConfigAddressBook(), configuration)
+                    .get(nodeId);
+
+            // the AddressBook is not changed after this point, so we calculate the hash now
+            cryptography.digestSync(appDefinition.getConfigAddressBook());
+
+            // Set the MerkleCryptography instance for this node
+            final var merkleCryptography = MerkleCryptographyFactory.create(configuration, CryptographyHolder.get());
+            MerkleCryptoFactory.set(merkleCryptography);
+
+            // Create platform context
+            final var platformContext = PlatformContext.create(
+                    configuration,
+                    Time.getCurrent(),
+                    guiMetrics,
+                    cryptography,
+                    FileSystemManager.create(configuration),
+                    recycleBin,
+                    MerkleCryptographyFactory.create(configuration, CryptographyHolder.get()));
+            // Create the initial state for the platform
+            final HashedReservedSignedState reservedState = getInitialState(
+                    platformContext,
+                    appMain.getSoftwareVersion(),
+                    appMain::newMerkleStateRoot,
+                    SignedStateFileUtils::readState,
+                    appMain.getClass().getName(),
+                    appDefinition.getSwirldName(),
+                    nodeId,
+                    appDefinition.getConfigAddressBook());
+            final var initialState = reservedState.state();
+            final var stateHash = reservedState.hash();
+
+            // Initialize the address book
+            final AddressBook addressBook = initializeAddressBook(
+                    nodeId,
+                    appMain.getSoftwareVersion(),
+                    initialState,
+                    appDefinition.getConfigAddressBook(),
+                    platformContext);
+
+            // Build the platform with the given values
             final PlatformBuilder builder = PlatformBuilder.create(
                     appMain.getClass().getName(),
                     appDefinition.getSwirldName(),
                     appMain.getSoftwareVersion(),
-                    appMain::newMerkleStateRoot,
-                    SignedStateFileUtils::readState,
+                    initialState,
                     nodeId);
-
             if (showUi && index == 0) {
                 builder.withPreconsensusEventCallback(guiEventStorage::handlePreconsensusEvent);
                 builder.withConsensusSnapshotOverrideCallback(guiEventStorage::handleSnapshotOverride);
             }
-
-            final SwirldsPlatform platform =
-                    (SwirldsPlatform) builder.withConfiguration(configuration).build();
+            // Build platform using the Inversion of Control pattern by injecting all needed
+            // dependencies into the PlatformBuilder.
+            final SwirldsPlatform platform = (SwirldsPlatform) builder.withConfiguration(configuration)
+                    .withPlatformContext(platformContext)
+                    .withConfiguration(configuration)
+                    .withAddressBook(addressBook)
+                    .withRoster(createRoster(appDefinition.getConfigAddressBook()))
+                    .withKeysAndCerts(keysAndCerts)
+                    .build();
             platforms.put(nodeId, platform);
 
             if (showUi) {

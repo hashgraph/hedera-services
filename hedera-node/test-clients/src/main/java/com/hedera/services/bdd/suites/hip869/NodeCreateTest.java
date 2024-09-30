@@ -35,7 +35,6 @@ import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
 import static com.hedera.services.bdd.suites.HapiSuite.NONSENSE_KEY;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.GOSSIP_ENDPOINTS_EXCEEDED_LIMIT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.GOSSIP_ENDPOINT_CANNOT_HAVE_FQDN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
@@ -47,6 +46,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NODE_D
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SERVICE_ENDPOINT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.KEY_REQUIRED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_NODES_CREATED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SERVICE_ENDPOINTS_EXCEEDED_LIMIT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
@@ -494,15 +494,16 @@ public class NodeCreateTest {
     }
 
     @HapiTest
-    final Stream<DynamicTest> failsAtIngestForUnAuthorizedTxns() {
+    final Stream<DynamicTest> failsAtIngestForUnAuthorizedTxns() throws CertificateEncodingException {
         final String description = "His vorpal blade went snicker-snack!";
         return hapiTest(
                 cryptoCreate("payer").balance(ONE_HUNDRED_HBARS),
                 nodeCreate("ntb")
                         .payingWith("payer")
                         .description(description)
+                        .gossipCaCertificate(gossipCertificates.getFirst().getEncoded())
                         .fee(ONE_HBAR)
-                        .hasPrecheck(BUSY)
+                        .hasKnownStatus(UNAUTHORIZED)
                         .via("nodeCreation"));
     }
 
@@ -543,6 +544,17 @@ public class NodeCreateTest {
                 .gossipEndpoint(GOSSIP_ENDPOINTS)
                 .gossipCaCertificate(gossipCertificates.getFirst().getEncoded())
                 .hasKnownStatus(GOSSIP_ENDPOINT_CANNOT_HAVE_FQDN));
+    }
+
+    @LeakyHapiTest(overrides = {"nodes.enableDAB"})
+    @DisplayName("test DAB enable")
+    final Stream<DynamicTest> checkDABEnable() throws CertificateEncodingException {
+        return hapiTest(
+                overriding("nodes.enableDAB", "false"),
+                nodeCreate("testNode")
+                        .description("toolarge")
+                        .gossipCaCertificate(gossipCertificates.getFirst().getEncoded())
+                        .hasPrecheck(NOT_SUPPORTED));
     }
 
     private static void assertEqualServiceEndpoints(

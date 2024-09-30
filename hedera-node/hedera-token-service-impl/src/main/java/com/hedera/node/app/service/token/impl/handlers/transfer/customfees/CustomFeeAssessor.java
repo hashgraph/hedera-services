@@ -22,6 +22,7 @@ import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.TokenType;
+import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.ReadableTokenRelationStore;
@@ -73,7 +74,7 @@ public class CustomFeeAssessor extends BaseTokenHandler {
      * 2. Fractional fees (for fungible common tokens)
      * 3. Royalty fees (for non-fungible unique tokens)
      * @param sender the sender account ID
-     * @param feeMeta the custom fee metadata
+     * @param token the token
      * @param receiver the receiver account ID
      * @param result the assessment result
      * @param tokenRelStore the token relation store
@@ -82,23 +83,23 @@ public class CustomFeeAssessor extends BaseTokenHandler {
      */
     public void assess(
             final AccountID sender,
-            final CustomFeeMeta feeMeta,
+            final Token token,
             final AccountID receiver,
             final AssessmentResult result,
             final ReadableTokenRelationStore tokenRelStore,
             final ReadableAccountStore accountStore,
             final Predicate<AccountID> autoCreationTest) {
-        fixedFeeAssessor.assessFixedFees(feeMeta, sender, result);
+        fixedFeeAssessor.assessFixedFees(token, sender, result);
 
         revalidateAssessmentResult(result, tokenRelStore, accountStore, autoCreationTest);
 
         // A FUNGIBLE_COMMON token can have fractional fees but not royalty fees.
         // A NON_FUNGIBLE_UNIQUE token can have royalty fees but not fractional fees.
         // So check token type and do further assessment
-        if (feeMeta.tokenType().equals(TokenType.FUNGIBLE_COMMON)) {
-            fractionalFeeAssessor.assessFractionalFees(feeMeta, sender, result);
+        if (token.tokenType().equals(TokenType.FUNGIBLE_COMMON)) {
+            fractionalFeeAssessor.assessFractionalFees(token, sender, result);
         } else {
-            royaltyFeeAssessor.assessRoyaltyFees(feeMeta, sender, receiver, result);
+            royaltyFeeAssessor.assessRoyaltyFees(token, sender, receiver, result);
         }
         revalidateAssessmentResult(result, tokenRelStore, accountStore, autoCreationTest);
     }

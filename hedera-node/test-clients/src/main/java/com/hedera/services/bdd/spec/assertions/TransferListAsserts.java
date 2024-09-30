@@ -58,6 +58,7 @@ public class TransferListAsserts extends BaseErroringAssertsProvider<TransferLis
     }
 
     @SafeVarargs
+    @SuppressWarnings("varargs")
     public static TransferListAsserts including(Function<HapiSpec, TransferList>... providers) {
         return new ExplicitTransferAsserts(Arrays.asList(providers));
     }

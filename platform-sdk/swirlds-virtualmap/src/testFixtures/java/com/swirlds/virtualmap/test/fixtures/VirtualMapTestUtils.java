@@ -28,8 +28,8 @@ public final class VirtualMapTestUtils {
     private VirtualMapTestUtils() {}
 
     public static VirtualMap<TestKey, TestValue> createMap(String label) {
-        final VirtualDataSourceBuilder<TestKey, TestValue> builder = new InMemoryBuilder();
-        return new VirtualMap<>(label, builder);
+        final VirtualDataSourceBuilder builder = new InMemoryBuilder();
+        return new VirtualMap<>(label, TestKeySerializer.INSTANCE, TestValueSerializer.INSTANCE, builder);
     }
 
     public static VirtualMap<TestKey, TestValue> createMap() {
@@ -37,7 +37,8 @@ public final class VirtualMapTestUtils {
     }
 
     public static VirtualRootNode<TestKey, TestValue> createRoot() {
-        final VirtualRootNode<TestKey, TestValue> root = new VirtualRootNode<>(new InMemoryBuilder());
+        final VirtualRootNode<TestKey, TestValue> root =
+                new VirtualRootNode<>(TestKeySerializer.INSTANCE, TestValueSerializer.INSTANCE, new InMemoryBuilder());
         root.postInit(new DummyVirtualStateAccessor());
         return root;
     }

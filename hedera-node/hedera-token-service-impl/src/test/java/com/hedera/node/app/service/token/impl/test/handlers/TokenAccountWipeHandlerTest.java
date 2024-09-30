@@ -44,14 +44,11 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 
-import com.hedera.hapi.node.base.AccountAmount;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.NftID;
-import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenType;
-import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.Nft;
@@ -59,7 +56,6 @@ import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.hapi.node.token.TokenBurnTransactionBody;
 import com.hedera.hapi.node.token.TokenWipeAccountTransactionBody;
-import com.hedera.hapi.node.transaction.ExchangeRateSet;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableNftStore;
@@ -71,22 +67,14 @@ import com.hedera.node.app.service.token.impl.handlers.TokenAccountWipeHandler;
 import com.hedera.node.app.service.token.impl.test.handlers.util.ParityTestBase;
 import com.hedera.node.app.service.token.impl.validators.TokenSupplyChangeOpsValidator;
 import com.hedera.node.app.service.token.records.TokenAccountWipeStreamBuilder;
-import com.hedera.node.app.service.token.records.TokenBaseStreamBuilder;
 import com.hedera.node.app.spi.store.StoreFactory;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
-import com.hedera.node.app.spi.workflows.record.StreamBuilder;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
-import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
-import edu.umd.cs.findbugs.annotations.NonNull;
-import java.time.Instant;
-import java.util.List;
-import java.util.Set;
 import org.assertj.core.api.Assertions;
-import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -94,6 +82,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+@ExtendWith(MockitoExtension.class)
 class TokenAccountWipeHandlerTest extends ParityTestBase {
     private static final AccountID ACCOUNT_4680 = BaseCryptoHandler.asAccount(4680);
     private static final AccountID TREASURY_ACCOUNT_9876 = BaseCryptoHandler.asAccount(9876);
@@ -102,6 +91,8 @@ class TokenAccountWipeHandlerTest extends ParityTestBase {
     private final TokenAccountWipeHandler subject = new TokenAccountWipeHandler(validator);
 
     private Configuration configuration;
+
+    @Mock
     private TokenAccountWipeStreamBuilder recordBuilder;
 
     @BeforeEach
@@ -111,137 +102,6 @@ class TokenAccountWipeHandlerTest extends ParityTestBase {
                 .withValue("tokens.nfts.areEnabled", true)
                 .withValue("tokens.nfts.maxBatchSizeWipe", 100)
                 .getOrCreateConfig();
-        recordBuilder = new TokenAccountWipeStreamBuilder() {
-            private long newTotalSupply;
-
-            @Override
-            public int getNumAutoAssociations() {
-                return 0;
-            }
-
-            @Override
-            public Transaction transaction() {
-                return Transaction.DEFAULT;
-            }
-
-            @Override
-            public Set<AccountID> explicitRewardSituationIds() {
-                return Set.of();
-            }
-
-            @Override
-            public List<AccountAmount> getPaidStakingRewards() {
-                return List.of();
-            }
-
-            @Override
-            public boolean hasContractResult() {
-                return false;
-            }
-
-            @Override
-            public long getGasUsedForContractTxn() {
-                return 0;
-            }
-
-            @Override
-            public StreamBuilder memo(@NonNull String memo) {
-                return this;
-            }
-
-            @Override
-            public StreamBuilder transaction(@NonNull Transaction transaction) {
-                return this;
-            }
-
-            @Override
-            public StreamBuilder transactionBytes(@NonNull Bytes transactionBytes) {
-                return this;
-            }
-
-            @Override
-            public StreamBuilder exchangeRate(@NonNull ExchangeRateSet exchangeRate) {
-                return this;
-            }
-
-            @NonNull
-            @Override
-            public TransactionBody transactionBody() {
-                return TransactionBody.DEFAULT;
-            }
-
-            @Override
-            public long transactionFee() {
-                return 0;
-            }
-
-            @Override
-            public long getNewTotalSupply() {
-                return newTotalSupply;
-            }
-
-            @Override
-            public StreamBuilder status(@NonNull ResponseCodeEnum status) {
-                return this;
-            }
-
-            @Override
-            public HandleContext.TransactionCategory category() {
-                return HandleContext.TransactionCategory.USER;
-            }
-
-            @Override
-            public ReversingBehavior reversingBehavior() {
-                return null;
-            }
-
-            @Override
-            public void nullOutSideEffectFields() {}
-
-            @Override
-            public StreamBuilder syncBodyIdFromRecordId() {
-                return null;
-            }
-
-            @Override
-            public StreamBuilder consensusTimestamp(@NotNull final Instant now) {
-                return null;
-            }
-
-            @Override
-            public TransactionID transactionID() {
-                return null;
-            }
-
-            @Override
-            public StreamBuilder transactionID(@NotNull final TransactionID transactionID) {
-                return null;
-            }
-
-            @Override
-            public StreamBuilder parentConsensus(@NotNull final Instant parentConsensus) {
-                return null;
-            }
-
-            @NonNull
-            @Override
-            public TokenAccountWipeStreamBuilder newTotalSupply(final long supply) {
-                newTotalSupply = supply;
-                return this;
-            }
-
-            @NonNull
-            @Override
-            public TokenBaseStreamBuilder tokenType(final @NonNull TokenType tokenType) {
-                return this;
-            }
-
-            @NonNull
-            @Override
-            public ResponseCodeEnum status() {
-                return OK;
-            }
-        };
     }
 
     @Nested

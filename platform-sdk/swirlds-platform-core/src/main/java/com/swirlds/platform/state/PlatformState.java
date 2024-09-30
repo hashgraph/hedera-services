@@ -31,18 +31,17 @@ import java.io.IOException;
 import java.time.Instant;
 import java.util.List;
 import java.util.Objects;
+import java.util.function.Consumer;
 
 /**
  * State managed and used by the platform.
+ * @deprecated Implementation of {@link PlatformStateModifier} before moving platform state into State API. This class
+ * should be moved to the platform test fixtures after migration to 0.54.0.
  */
-public class PlatformState extends PartialMerkleLeaf implements MerkleLeaf {
+@Deprecated(since = "0.54.0", forRemoval = true)
+public class PlatformState extends PartialMerkleLeaf implements MerkleLeaf, PlatformStateModifier {
 
     public static final long CLASS_ID = 0x52cef730a11cb6dfL;
-
-    /**
-     * The round of the genesis state.
-     */
-    public static final long GENESIS_ROUND = 0;
 
     private static final class ClassVersion {
         public static final int ORIGINAL = 1;
@@ -266,6 +265,7 @@ public class PlatformState extends PartialMerkleLeaf implements MerkleLeaf {
      * @return the creation version
      */
     @NonNull
+    @Override
     public SoftwareVersion getCreationSoftwareVersion() {
         return creationSoftwareVersion;
     }
@@ -275,6 +275,7 @@ public class PlatformState extends PartialMerkleLeaf implements MerkleLeaf {
      *
      * @param creationVersion the creation version
      */
+    @Override
     public void setCreationSoftwareVersion(@NonNull final SoftwareVersion creationVersion) {
         this.creationSoftwareVersion = Objects.requireNonNull(creationVersion);
     }
@@ -282,6 +283,7 @@ public class PlatformState extends PartialMerkleLeaf implements MerkleLeaf {
     /**
      * Get the address book.
      */
+    @Override
     @Nullable
     public AddressBook getAddressBook() {
         return addressBook;
@@ -292,6 +294,7 @@ public class PlatformState extends PartialMerkleLeaf implements MerkleLeaf {
      *
      * @param addressBook an address book
      */
+    @Override
     public void setAddressBook(@Nullable final AddressBook addressBook) {
         this.addressBook = addressBook;
     }
@@ -299,6 +302,7 @@ public class PlatformState extends PartialMerkleLeaf implements MerkleLeaf {
     /**
      * Get the previous address book.
      */
+    @Override
     @Nullable
     public AddressBook getPreviousAddressBook() {
         return previousAddressBook;
@@ -309,6 +313,7 @@ public class PlatformState extends PartialMerkleLeaf implements MerkleLeaf {
      *
      * @param addressBook an address book
      */
+    @Override
     public void setPreviousAddressBook(@Nullable final AddressBook addressBook) {
         this.previousAddressBook = addressBook;
     }
@@ -318,6 +323,7 @@ public class PlatformState extends PartialMerkleLeaf implements MerkleLeaf {
      *
      * @return a round number
      */
+    @Override
     public long getRound() {
         return round;
     }
@@ -327,6 +333,7 @@ public class PlatformState extends PartialMerkleLeaf implements MerkleLeaf {
      *
      * @param round a round number
      */
+    @Override
     public void setRound(final long round) {
         this.round = round;
     }
@@ -336,6 +343,7 @@ public class PlatformState extends PartialMerkleLeaf implements MerkleLeaf {
      *
      * @return a running hash of events
      */
+    @Override
     @Nullable
     public Hash getLegacyRunningEventHash() {
         return legacyRunningEventHash;
@@ -346,6 +354,7 @@ public class PlatformState extends PartialMerkleLeaf implements MerkleLeaf {
      *
      * @param legacyRunningEventHash a running hash of events
      */
+    @Override
     public void setLegacyRunningEventHash(@Nullable final Hash legacyRunningEventHash) {
         this.legacyRunningEventHash = legacyRunningEventHash;
     }
@@ -356,6 +365,7 @@ public class PlatformState extends PartialMerkleLeaf implements MerkleLeaf {
      *
      * @return a consensus timestamp
      */
+    @Override
     @Nullable
     public Instant getConsensusTimestamp() {
         return consensusTimestamp;
@@ -367,6 +377,7 @@ public class PlatformState extends PartialMerkleLeaf implements MerkleLeaf {
      *
      * @param consensusTimestamp a consensus timestamp
      */
+    @Override
     public void setConsensusTimestamp(@NonNull final Instant consensusTimestamp) {
         this.consensusTimestamp = Objects.requireNonNull(consensusTimestamp);
     }
@@ -384,6 +395,7 @@ public class PlatformState extends PartialMerkleLeaf implements MerkleLeaf {
      *
      * @return the ancient threshold after this round has reached consensus
      */
+    @Override
     public long getAncientThreshold() {
         if (snapshot == null) {
             throw new IllegalStateException(
@@ -404,6 +416,7 @@ public class PlatformState extends PartialMerkleLeaf implements MerkleLeaf {
      *
      * @param roundsNonAncient the number of non-ancient rounds
      */
+    @Override
     public void setRoundsNonAncient(final int roundsNonAncient) {
         this.roundsNonAncient = roundsNonAncient;
     }
@@ -413,6 +426,7 @@ public class PlatformState extends PartialMerkleLeaf implements MerkleLeaf {
      *
      * @return the number of non-ancient rounds
      */
+    @Override
     public int getRoundsNonAncient() {
         return roundsNonAncient;
     }
@@ -420,6 +434,7 @@ public class PlatformState extends PartialMerkleLeaf implements MerkleLeaf {
     /**
      * @return the consensus snapshot for this round
      */
+    @Override
     @Nullable
     public ConsensusSnapshot getSnapshot() {
         return snapshot;
@@ -428,6 +443,7 @@ public class PlatformState extends PartialMerkleLeaf implements MerkleLeaf {
     /**
      * @param snapshot the consensus snapshot for this round
      */
+    @Override
     public void setSnapshot(@NonNull final ConsensusSnapshot snapshot) {
         this.snapshot = Objects.requireNonNull(snapshot);
     }
@@ -437,6 +453,7 @@ public class PlatformState extends PartialMerkleLeaf implements MerkleLeaf {
      *
      * @return the time when the freeze starts
      */
+    @Override
     @Nullable
     public Instant getFreezeTime() {
         return freezeTime;
@@ -449,6 +466,7 @@ public class PlatformState extends PartialMerkleLeaf implements MerkleLeaf {
      *
      * @param freezeTime an Instant in UTC
      */
+    @Override
     public void setFreezeTime(@Nullable final Instant freezeTime) {
         this.freezeTime = freezeTime;
     }
@@ -458,6 +476,7 @@ public class PlatformState extends PartialMerkleLeaf implements MerkleLeaf {
      *
      * @return the last freezeTime based on which the nodes were frozen
      */
+    @Override
     @Nullable
     public Instant getLastFrozenTime() {
         return lastFrozenTime;
@@ -468,6 +487,7 @@ public class PlatformState extends PartialMerkleLeaf implements MerkleLeaf {
      *
      * @param lastFrozenTime the last freezeTime based on which the nodes were frozen
      */
+    @Override
     public void setLastFrozenTime(@Nullable final Instant lastFrozenTime) {
         this.lastFrozenTime = lastFrozenTime;
     }
@@ -478,6 +498,7 @@ public class PlatformState extends PartialMerkleLeaf implements MerkleLeaf {
      *
      * @return the first software version where the birth round migration happened
      */
+    @Override
     @Nullable
     public SoftwareVersion getFirstVersionInBirthRoundMode() {
         return firstVersionInBirthRoundMode;
@@ -488,6 +509,7 @@ public class PlatformState extends PartialMerkleLeaf implements MerkleLeaf {
      *
      * @param firstVersionInBirthRoundMode the first software version where the birth round migration happened
      */
+    @Override
     public void setFirstVersionInBirthRoundMode(final SoftwareVersion firstVersionInBirthRoundMode) {
         this.firstVersionInBirthRoundMode = firstVersionInBirthRoundMode;
     }
@@ -497,6 +519,7 @@ public class PlatformState extends PartialMerkleLeaf implements MerkleLeaf {
      *
      * @return the last round before the birth round mode was enabled
      */
+    @Override
     public long getLastRoundBeforeBirthRoundMode() {
         return lastRoundBeforeBirthRoundMode;
     }
@@ -506,6 +529,7 @@ public class PlatformState extends PartialMerkleLeaf implements MerkleLeaf {
      *
      * @param lastRoundBeforeBirthRoundMode the last round before the birth round mode was enabled
      */
+    @Override
     public void setLastRoundBeforeBirthRoundMode(final long lastRoundBeforeBirthRoundMode) {
         this.lastRoundBeforeBirthRoundMode = lastRoundBeforeBirthRoundMode;
     }
@@ -516,6 +540,7 @@ public class PlatformState extends PartialMerkleLeaf implements MerkleLeaf {
      *
      * @return the lowest judge generation before the birth round mode was enabled
      */
+    @Override
     public long getLowestJudgeGenerationBeforeBirthRoundMode() {
         return lowestJudgeGenerationBeforeBirthRoundMode;
     }
@@ -526,7 +551,16 @@ public class PlatformState extends PartialMerkleLeaf implements MerkleLeaf {
      * @param lowestJudgeGenerationBeforeBirthRoundMode the lowest judge generation before the birth round mode was
      *                                                  enabled
      */
+    @Override
     public void setLowestJudgeGenerationBeforeBirthRoundMode(final long lowestJudgeGenerationBeforeBirthRoundMode) {
         this.lowestJudgeGenerationBeforeBirthRoundMode = lowestJudgeGenerationBeforeBirthRoundMode;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void bulkUpdate(@NonNull Consumer<PlatformStateModifier> updater) {
+        updater.accept(this);
     }
 }

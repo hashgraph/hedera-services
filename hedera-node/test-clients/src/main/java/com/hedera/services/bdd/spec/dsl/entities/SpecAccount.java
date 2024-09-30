@@ -30,10 +30,11 @@ import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.services.bdd.junit.hedera.HederaNetwork;
 import com.hedera.services.bdd.spec.HapiSpec;
+import com.hedera.services.bdd.spec.OwningEntity;
 import com.hedera.services.bdd.spec.dsl.EvmAddressableEntity;
-import com.hedera.services.bdd.spec.dsl.SpecEntity;
 import com.hedera.services.bdd.spec.dsl.operations.queries.GetAccountInfoOperation;
 import com.hedera.services.bdd.spec.dsl.operations.queries.GetBalanceOperation;
+import com.hedera.services.bdd.spec.dsl.operations.transactions.AirdropOperation;
 import com.hedera.services.bdd.spec.dsl.operations.transactions.ApproveAllowanceOperation;
 import com.hedera.services.bdd.spec.dsl.operations.transactions.AssociateTokensOperation;
 import com.hedera.services.bdd.spec.dsl.operations.transactions.AuthorizeContractOperation;
@@ -51,7 +52,7 @@ import java.util.List;
  * registered with more than one {@link HapiSpec} if desired.
  */
 public class SpecAccount extends AbstractSpecEntity<HapiCryptoCreate, Account>
-        implements SpecEntity, EvmAddressableEntity {
+        implements OwningEntity, EvmAddressableEntity {
     private static final long UNSPECIFIED_CENT_BALANCE = -1;
 
     private final Account.Builder builder = Account.newBuilder();
@@ -99,6 +100,62 @@ public class SpecAccount extends AbstractSpecEntity<HapiCryptoCreate, Account>
         requireNonNull(token);
         requireNonNull(to);
         return new TransferTokensOperation(this, to, token, units);
+    }
+
+    /**
+     * Returns an operation to transfer tokens, transferring its balance to the given beneficiary.
+     *
+     * @param to the beneficiary
+     * @param units the number of units to transfer
+     * @param token the token to transfer
+     * @return the operation
+     */
+    public TransferTokensOperation transferUnitsTo(
+            @NonNull final SpecContract to, final long units, @NonNull final SpecFungibleToken token) {
+        requireNonNull(token);
+        requireNonNull(to);
+        return new TransferTokensOperation(this, to, token, units);
+    }
+
+    /**
+     * Returns an operation to transfer NFT, transferring the NFT to the given beneficiary.
+     *
+     * @param to the beneficiary
+     * @param serialNumber the specific serial number of the NFT
+     * @param token the NFT to transfer
+     * @return the operation
+     */
+    public TransferTokensOperation transferNFTsTo(
+            @NonNull final SpecContract to, @NonNull final SpecNonFungibleToken token, final long... serialNumber) {
+        requireNonNull(token);
+        requireNonNull(to);
+        return new TransferTokensOperation(this, to, token, serialNumber);
+    }
+
+    /**
+     * Returns an operation to transfer NFT, transferring the NFT to the given beneficiary.
+     *
+     * @param to the beneficiary
+     * @param serialNumber the specific serial number of the NFT
+     * @param token the NFT to transfer
+     * @return the operation
+     */
+    public TransferTokensOperation transferNFTsTo(
+            @NonNull final SpecAccount to, @NonNull final SpecNonFungibleToken token, final long... serialNumber) {
+        requireNonNull(token);
+        requireNonNull(to);
+        return new TransferTokensOperation(this, to, token, serialNumber);
+    }
+
+    /**
+     * Returns an operation to perform the given airdrops.
+     *
+     * @param airdrops the airdrops
+     * @return the operation
+     */
+    public AirdropOperation doAirdrops(@NonNull final AirdropOperation.Airdrop... airdrops) {
+        requireNonNull(airdrops);
+        return new AirdropOperation(this, List.of(airdrops));
     }
 
     /**

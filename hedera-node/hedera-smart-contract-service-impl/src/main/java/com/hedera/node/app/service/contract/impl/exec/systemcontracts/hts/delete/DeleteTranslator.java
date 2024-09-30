@@ -30,7 +30,6 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.Return
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import com.hedera.node.app.service.contract.impl.utils.ConversionUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.Arrays;
 import javax.inject.Inject;
 
 public class DeleteTranslator extends AbstractCallTranslator<HtsCallAttempt> {
@@ -43,7 +42,7 @@ public class DeleteTranslator extends AbstractCallTranslator<HtsCallAttempt> {
 
     @Override
     public boolean matches(@NonNull HtsCallAttempt attempt) {
-        return Arrays.equals(attempt.selector(), DELETE_TOKEN.selector());
+        return attempt.isSelector(DELETE_TOKEN);
     }
 
     @Override

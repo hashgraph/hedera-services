@@ -16,6 +16,9 @@
 
 package com.swirlds.platform.turtle.runner;
 
+import static com.swirlds.platform.state.signed.StartupStateUtils.getInitialState;
+import static com.swirlds.platform.system.address.AddressBookUtils.createRoster;
+
 import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.platform.NodeId;
@@ -30,6 +33,7 @@ import com.swirlds.platform.builder.PlatformComponentBuilder;
 import com.swirlds.platform.config.BasicConfig_;
 import com.swirlds.platform.crypto.KeysAndCerts;
 import com.swirlds.platform.eventhandling.EventConfig_;
+import com.swirlds.platform.state.MerkleRoot;
 import com.swirlds.platform.state.snapshot.SignedStateFileUtils;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.Platform;
@@ -39,6 +43,7 @@ import com.swirlds.platform.test.fixtures.turtle.gossip.SimulatedNetwork;
 import com.swirlds.platform.util.RandomBuilder;
 import com.swirlds.platform.wiring.PlatformSchedulersConfig_;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.function.Supplier;
 
 /**
  * Encapsulates a single node running in a TURTLE network.
@@ -92,24 +97,27 @@ public class TurtleNode {
         model = WiringModelBuilder.create(platformContext)
                 .withDeterministicModeEnabled(true)
                 .build();
-
+        final Supplier<MerkleRoot> genesisStateSupplier = TurtleTestingToolState::getStateRootNode;
+        final var version = new BasicSoftwareVersion(1);
+        final var reservedState = getInitialState(
+                platformContext,
+                version,
+                genesisStateSupplier,
+                SignedStateFileUtils::readState,
+                "foo",
+                "bar",
+                nodeId,
+                addressBook);
+        final var initialState = reservedState.state();
         final PlatformBuilder platformBuilder = PlatformBuilder.create(
-                        "foo",
-                        "bar",
-                        new BasicSoftwareVersion(1),
-                        TurtleTestingToolState::getStateRootNode,
-                        SignedStateFileUtils::readState,
-                        nodeId)
+                        "foo", "bar", new BasicSoftwareVersion(1), initialState, nodeId)
                 .withModel(model)
-                .withCryptography(platformContext.getCryptography())
-                .withMetrics(platformContext.getMetrics())
-                .withTime(platformContext.getTime())
-                .withFileSystemManager(platformContext.getFileSystemManager())
-                .withRecycleBin(platformContext.getRecycleBin())
-                .withExecutorFactory(platformContext.getExecutorFactory())
                 .withRandomBuilder(new RandomBuilder(randotron.nextLong()))
-                .withBootstrapAddressBook(addressBook)
-                .withKeysAndCerts(privateKeys);
+                .withAddressBook(addressBook)
+                .withRoster(createRoster(addressBook))
+                .withKeysAndCerts(privateKeys)
+                .withPlatformContext(platformContext)
+                .withConfiguration(configuration);
 
         final PlatformComponentBuilder platformComponentBuilder = platformBuilder.buildComponentBuilder();
 

@@ -46,12 +46,12 @@ public final class UnzipUtility {
     private static final int THRESHOLD_ZIP_SIZE = 1000000000; // 1 GB - max allowed total size of all uncompressed files
     private static final int THRESHOLD_ENTRY_SIZE = 100000000; // 100 MB - max allowed size of one uncompressed file
     // max allowed ratio between uncompressed and compressed file size
-    private static final double THRESHOLD_RATIO = 10;
+    private static final double THRESHOLD_RATIO = 100;
 
     private UnzipUtility() {}
 
     /**
-     * Extracts (unzips) a zipped file from a byte array
+     * Extracts (unzips) a zipped file from a byte array.
      * @param bytes the byte array containing the zipped file
      * @param dstDir the destination directory to extract the unzipped file to
      * @throws IOException if the destination does not exist and can't be created, or if the file can't be written
@@ -93,7 +93,7 @@ public final class UnzipUtility {
                     }
                     log.info(" - Extracted update file {}", filePath);
                 } else {
-                    if (!fileOrDir.mkdirs()) {
+                    if (!fileOrDir.exists() && !fileOrDir.mkdirs()) {
                         throw new IOException("Unable to create assets sub-directory: " + fileOrDir);
                     }
                     log.info(" - Created assets sub-directory {}", fileOrDir);
@@ -105,7 +105,7 @@ public final class UnzipUtility {
     }
 
     /**
-     * Extracts a zip entry (file entry)
+     * Extracts a zip entry (file entry).
      *
      * @param inputStream Input stream of zip file content
      * @param filePath Output file name

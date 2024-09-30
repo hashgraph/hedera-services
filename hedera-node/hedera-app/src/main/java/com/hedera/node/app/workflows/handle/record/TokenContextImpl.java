@@ -20,7 +20,6 @@ import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategor
 import static com.hedera.node.app.workflows.handle.stack.SavepointStackImpl.castBuilder;
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.node.app.records.BlockRecordManager;
 import com.hedera.node.app.service.token.ReadableStakingInfoStore;
 import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.service.token.records.FinalizeContext;
@@ -40,7 +39,6 @@ public class TokenContextImpl implements TokenContext, FinalizeContext {
     private final Configuration configuration;
     private final ReadableStoreFactory readableStoreFactory;
     private final WritableStoreFactory writableStoreFactory;
-    private final BlockRecordManager blockRecordManager;
     private final Instant consensusTime;
     private final SavepointStackImpl stack;
 
@@ -48,12 +46,10 @@ public class TokenContextImpl implements TokenContext, FinalizeContext {
             @NonNull final Configuration configuration,
             @NonNull final StoreMetricsService storeMetricsService,
             @NonNull final SavepointStackImpl stack,
-            @NonNull final BlockRecordManager blockRecordManager,
             @NonNull final Instant consensusTime) {
         this.stack = stack;
         requireNonNull(stack, "stack must not be null");
         this.configuration = requireNonNull(configuration, "configuration must not be null");
-        this.blockRecordManager = requireNonNull(blockRecordManager, "blockRecordManager must not be null");
 
         this.readableStoreFactory = new ReadableStoreFactory(stack);
         this.writableStoreFactory =
@@ -115,11 +111,6 @@ public class TokenContextImpl implements TokenContext, FinalizeContext {
     @Override
     public boolean isScheduleDispatch() {
         return stack.txnCategory() == SCHEDULED;
-    }
-
-    @Override
-    public void markMigrationRecordsStreamed() {
-        blockRecordManager.markMigrationRecordsStreamed();
     }
 
     @Override
