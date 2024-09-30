@@ -78,6 +78,7 @@ public class LongListDisk extends AbstractLongList<Long> {
 
     /**
      * Create a {@link LongListDisk} with default parameters.
+     * @param fileSystemManager file system manager to use for creating temporary files
      */
     public LongListDisk(FileSystemManager fileSystemManager) {
         this(

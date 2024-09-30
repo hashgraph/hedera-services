@@ -157,6 +157,7 @@ public final class MerkleDb {
      * created first. If the path is {@code null}, the default MerkleDb path is used instead.
      *
      * @param path Database storage dir. If {@code null}, the default MerkleDb path is used
+     * @param configuration The configuration to use
      * @return Virtual database instance that stores its data in the specified path
      */
     public static MerkleDb getInstance(final Path path, final Configuration configuration) {
@@ -167,6 +168,7 @@ public final class MerkleDb {
     /**
      * A database path (storage dir) to use for new or restored data sources
      *
+     * @param configuration The configuration to use
      * @return Default instance path
      */
     private static Path getDefaultPath(final Configuration configuration) {
@@ -210,6 +212,7 @@ public final class MerkleDb {
      * Gets a default database instance. Used by virtual data source builder to create new data
      * sources or restore data sources from snapshots.
      *
+     * @param configuration The configuration to use
      * @return Default database instance
      */
     public static MerkleDb getDefaultInstance(final Configuration configuration) {
@@ -221,6 +224,7 @@ public final class MerkleDb {
      * file exists in the specified folder, it gets loaded into the tables map.
      *
      * @param storageDir A folder to store database files in
+     * @param configuration The configuration to use
      */
     private MerkleDb(final Path storageDir, final Configuration configuration) {
         this.configuration = configuration;
@@ -534,6 +538,7 @@ public final class MerkleDb {
      *
      * @param source Source folder
      * @param target Target folder, optional. If {@code null}, the default MerkleDb folder is used
+     * @param configuration The configuration to use
      * @return Default database instance
      * @throws IOException If an I/O error occurs
      * @throws IllegalStateException If the default database instance is already created

@@ -136,6 +136,7 @@ public abstract class AbstractLongList<C> implements LongList {
      * @param numLongsPerChunk number of longs to store in each chunk of memory allocated
      * @param maxLongs the maximum number of longs permissible for this LongList
      * @param reservedBufferLength reserved buffer length that the list should have before minimal index in the list
+     * @param fileSystemManager the file system manager to use
      */
     protected AbstractLongList(
             final int numLongsPerChunk,
@@ -171,6 +172,8 @@ public abstract class AbstractLongList<C> implements LongList {
      * positioned at the start of the data after the header at the end of this constructor.
      *
      * @param path File to read header from
+     * @param reservedBufferLength reserved buffer length that the list should have before minimal index in the list
+     * @param fileSystemManager the file system manager to use
      * @throws IOException If there was a problem reading the file
      */
     protected AbstractLongList(final Path path, final long reservedBufferLength, FileSystemManager fileSystemManager)
