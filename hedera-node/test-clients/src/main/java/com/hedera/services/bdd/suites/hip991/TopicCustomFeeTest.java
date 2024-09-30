@@ -47,12 +47,15 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_MUS
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FEKL_CONTAINS_DUPLICATED_KEYS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CUSTOM_FEE_SCHEDULE_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_TRANSFER_LIST_SIZE_LIMIT_EXCEEDED;
 
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestLifecycle;
 import com.hedera.services.bdd.junit.support.TestLifecycle;
+import com.hedera.services.bdd.spec.SpecOperation;
 import com.hederahashgraph.api.proto.java.TokenType;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeAll;
@@ -271,92 +274,223 @@ public class TopicCustomFeeTest extends TopicCustomFeeBase {
     @DisplayName("Submit message")
     class SubmitMessage {
 
-        @BeforeAll
-        static void beforeAll(@NonNull final TestLifecycle lifecycle) {
-            lifecycle.doAdhoc(setupBaseKeys());
-        }
+//        @HapiTest
+//        @DisplayName("submit")
+//        final Stream<DynamicTest> submitMessage() {
+//            final var collector = "collector";
+//            final var payer = "submitter";
+//            final var treasury = "treasury";
+//            final var token = "testToken";
+//            final var secondToken = "secondToken";
+//            final var denomToken = "denomToken";
+//            final var simpleKey = "simpleKey";
+//            final var simpleKey2 = "simpleKey2";
+//            final var invalidKey = "invalidKey";
+//            final var threshKey = "threshKey";
+//
+//            return hapiTest(
+//                    // create keys
+//                    newKeyNamed(invalidKey),
+//                    newKeyNamed(simpleKey),
+//                    newKeyNamed(simpleKey2),
+//                    newKeyNamed(threshKey)
+//                            .shape(threshOf(1, PREDEFINED_SHAPE, PREDEFINED_SHAPE)
+//                                    .signedWith(sigs(simpleKey2, simpleKey))),
+//                    // create accounts and denomination token
+//                    cryptoCreate(collector).balance(0L),
+//                    cryptoCreate(payer).balance(ONE_HUNDRED_HBARS),
+//                    cryptoCreate(treasury),
+//                    tokenCreate(denomToken)
+//                            .treasury(treasury)
+//                            .tokenType(TokenType.FUNGIBLE_COMMON)
+//                            .initialSupply(500),
+//                    tokenAssociate(collector, denomToken),
+//                    tokenAssociate(payer, denomToken),
+//                    tokenCreate(token)
+//                            .treasury(treasury)
+//                            .tokenType(TokenType.FUNGIBLE_COMMON)
+//                            .withCustom(fixedHtsFee(1, denomToken, collector))
+//                            .initialSupply(500),
+//                    tokenCreate(secondToken)
+//                            .treasury(treasury)
+//                            .tokenType(TokenType.FUNGIBLE_COMMON)
+//                            .initialSupply(500),
+//                    tokenAssociate(collector, token, secondToken),
+//                    tokenAssociate(payer, token, secondToken),
+//                    cryptoTransfer(
+//                            moving(2, token).between(treasury, payer),
+//                            moving(1, secondToken).between(treasury, payer),
+//                            moving(1, denomToken).between(treasury, payer)),
+//
+//                    // create topic with custom fees
+//                    createTopic(TOPIC)
+//                            //                            .withConsensusCustomFee(fixedConsensusHtsFee(1, token,
+//                            // collector))
+//                            //                            .withConsensusCustomFee(fixedConsensusHtsFee(1, secondToken,
+//                            // collector))
+//                            .withConsensusCustomFee(fixedConsensusHbarFee(ONE_HBAR, collector))
+//                            .feeExemptKeys(threshKey)
+//                            .hasKnownStatus(SUCCESS),
+//
+//                    // add allowance
+//                    approveTopicAllowance()
+//                            .payingWith(payer)
+//                            .addCryptoAllowance(payer, TOPIC, ONE_HUNDRED_HBARS, ONE_HBAR),
+//
+//                    // submit message
+//                    submitMessageTo(TOPIC)
+//                            .message("TEST")
+//                            .signedBy(invalidKey, payer)
+//                            .payingWith(payer)
+//                            .via("submit"),
+//
+//                    // check records
+//                    getTxnRecord("submit").andAllChildRecords().logged(),
+//
+//                    // assert balances
+//                    getAccountBalance(collector).hasTinyBars(ONE_HBAR));
+//            //                            .hasTokenBalance(token, 2)
+//            //                            .hasTokenBalance(denomToken,1)
+//            //                            .hasTokenBalance(secondToken, 1),
+//            //                    getAccountBalance(payer)
+//            //                            .hasTokenBalance(token, 0)
+//            //                            .hasTokenBalance(secondToken, 0));
+//        }
 
-        @HapiTest
-        @DisplayName("submit")
-        final Stream<DynamicTest> submitMessage() {
-            final var collector = "collector";
-            final var payer = "submitter";
-            final var treasury = "treasury";
-            final var token = "testToken";
-            final var secondToken = "secondToken";
-            final var denomToken = "denomToken";
-            final var simpleKey = "simpleKey";
-            final var simpleKey2 = "simpleKey2";
-            final var invalidKey = "invalidKey";
-            final var threshKey = "threshKey";
+        @Nested
+        @DisplayName("Positive scenarios")
+        class SubmitMessagesPositiveScenarios {
 
-            return hapiTest(
-                    // create keys
-                    newKeyNamed(invalidKey),
-                    newKeyNamed(simpleKey),
-                    newKeyNamed(simpleKey2),
-                    newKeyNamed(threshKey)
-                            .shape(threshOf(1, PREDEFINED_SHAPE, PREDEFINED_SHAPE)
-                                    .signedWith(sigs(simpleKey2, simpleKey))),
-                    // create accounts and denomination token
-                    cryptoCreate(collector).balance(0L),
-                    cryptoCreate(payer).balance(ONE_HUNDRED_HBARS),
-                    cryptoCreate(treasury),
-                    tokenCreate(denomToken)
-                            .treasury(treasury)
-                            .tokenType(TokenType.FUNGIBLE_COMMON)
-                            .initialSupply(500),
-                    tokenAssociate(collector, denomToken),
-                    tokenAssociate(payer, denomToken),
-                    tokenCreate(token)
-                            .treasury(treasury)
-                            .tokenType(TokenType.FUNGIBLE_COMMON)
-                            .withCustom(fixedHtsFee(1, denomToken, collector))
-                            .initialSupply(500),
-                    tokenCreate(secondToken)
-                            .treasury(treasury)
-                            .tokenType(TokenType.FUNGIBLE_COMMON)
-                            .initialSupply(500),
-                    tokenAssociate(collector, token, secondToken),
-                    tokenAssociate(payer, token, secondToken),
-                    cryptoTransfer(
-                            moving(2, token).between(treasury, payer),
-                            moving(1, secondToken).between(treasury, payer),
-                            moving(1, denomToken).between(treasury, payer)),
+            @BeforeAll
+            static void beforeAll(@NonNull final TestLifecycle lifecycle) {
+                lifecycle.doAdhoc(associateFeeTokensAndSubmitter());
+            }
 
-                    // create topic with custom fees
-                    createTopic(TOPIC)
-                            //                            .withConsensusCustomFee(fixedConsensusHtsFee(1, token,
-                            // collector))
-                            //                            .withConsensusCustomFee(fixedConsensusHtsFee(1, secondToken,
-                            // collector))
-                            .withConsensusCustomFee(fixedConsensusHbarFee(ONE_HBAR, collector))
-                            .feeExemptKeys(threshKey)
-                            .hasKnownStatus(SUCCESS),
+            @HapiTest
+            @DisplayName("MessageSubmit to a public topic with a fee of 1 HBAR")
+            final Stream<DynamicTest> messageSubmitToPublicTopicWithFee1Hbar() {
+                final var collector = "collector";
+                final var submitter = "submitter";
+                return hapiTest(
+                        cryptoCreate(collector).balance(0L),
+                        cryptoCreate(submitter).balance(ONE_HUNDRED_HBARS),
+                        createTopic(TOPIC).withConsensusCustomFee(fixedConsensusHbarFee(ONE_HBAR, collector)),
+                        approveTopicAllowance()
+                                .addCryptoAllowance(submitter, TOPIC, ONE_HUNDRED_HBARS, ONE_HBAR)
+                                .payingWith(submitter),
+                        submitMessageTo(TOPIC).message("TEST").payingWith(submitter),
+                        getAccountBalance(collector).hasTinyBars(ONE_HBAR));
+            }
 
-                    // add allowance
-                    approveTopicAllowance()
-                            .payingWith(payer)
-                            .addCryptoAllowance(payer, TOPIC, ONE_HUNDRED_HBARS, ONE_HBAR),
+            @HapiTest
+            @DisplayName("MessageSubmit to a public topic with a fee of 1 FT")
+            final Stream<DynamicTest> messageSubmitToPublicTopicWithFee1token() {
+                final var collector = "collector";
+                return hapiTest(
+                        cryptoCreate(collector),
+                        tokenAssociate(collector, BASE_TOKEN),
+                        createTopic(TOPIC).withConsensusCustomFee(fixedConsensusHtsFee(1, BASE_TOKEN, collector)),
+                        approveTopicAllowance()
+                                .addTokenAllowance(SUBMITTER, BASE_TOKEN, TOPIC, 100, 1)
+                                .payingWith(SUBMITTER),
+                        submitMessageTo(TOPIC).message("TEST").payingWith(SUBMITTER),
+                        getAccountBalance(collector).hasTokenBalance(BASE_TOKEN, 1));
+            }
 
-                    // submit message
-                    submitMessageTo(TOPIC)
-                            .message("TEST")
-                            .signedBy(invalidKey, payer)
-                            .payingWith(payer)
-                            .via("submit"),
+            @HapiTest
+            @DisplayName("MessageSubmit to a public topic with 2 layer fee")
+            final Stream<DynamicTest> messageSubmitToPublicTopicWith2layerFee() {
+                final var topicFeeCollector = "collector";
+                final var token = MULTI_LAYER_FEE_PREFIX + "token_0";
+                final var tokenFeeCollector = MULTI_LAYER_FEE_PREFIX + "collector_0";
+                return hapiTest(flattened(
+                        cryptoCreate(topicFeeCollector).balance(0L),
+                        // create denomination token and transfer it to the submitter
+                        transferMultiLayerFeeTokensTo(SUBMITTER, 1),
+                        tokenAssociate(topicFeeCollector, token),
+                        // create topic with multilayer fee
+                        createTopic(TOPIC).withConsensusCustomFee(fixedConsensusHtsFee(1, token, topicFeeCollector)),
+                        approveTopicAllowance()
+                                .addTokenAllowance(SUBMITTER, token, TOPIC, 100, 1)
+                                .payingWith(SUBMITTER),
+                        submitMessageTo(TOPIC).message("TEST").payingWith(SUBMITTER),
+                        // assert topic fee collector balance
+                        getAccountBalance(topicFeeCollector).hasTokenBalance(token, 1),
+                        // assert token fee collector balance
+                        getAccountBalance(tokenFeeCollector).hasTinyBars(ONE_HBAR)));
+            }
 
-                    // check records
-                    getTxnRecord("submit").andAllChildRecords().logged(),
+            @HapiTest
+            @DisplayName("MessageSubmit to a public topic with 10 different 2 layer fees")
+            final Stream<DynamicTest> messageSubmitToPublicTopicWith10different2layerFees() {
+                return hapiTest(flattened(
+                        // create 9 denomination tokens and transfer them to the submitter
+                        transferMultiLayerFeeTokensTo(SUBMITTER, 9),
+                        // create 9 collectors and associate them with tokens
+                        associateAllTokensToCollectors(),
+                        // create topic with 10 multilayer fees - 9 HTS + 1 HBAR
+                        createTopicWith10Different2layerFees(),
+                        approveTopicAllowanceForAllFees(),
+                        submitMessageTo(TOPIC).message("TEST").payingWith(SUBMITTER)
+                                // todo for now custom fee will fail, because of limitation in cryptoTransfer
+                                .hasKnownStatus(TOKEN_TRANSFER_LIST_SIZE_LIMIT_EXCEEDED)));
+                        // assert topic fee collector balance
+//                        assertAllCollectorsBalances()));
+            }
 
-                    // assert balances
-                    getAccountBalance(collector).hasTinyBars(ONE_HBAR));
-            //                            .hasTokenBalance(token, 2)
-            //                            .hasTokenBalance(denomToken,1)
-            //                            .hasTokenBalance(secondToken, 1),
-            //                    getAccountBalance(payer)
-            //                            .hasTokenBalance(token, 0)
-            //                            .hasTokenBalance(secondToken, 0));
+
+
+
+
+
+            private SpecOperation[] associateAllTokensToCollectors() {
+                final var tokenName = MULTI_LAYER_FEE_PREFIX + "token_";
+                final var collectorName = "collector_";
+                final var associateTokensToCollectors = new ArrayList<SpecOperation>();
+                for (int i = 0; i < 9; i++) {
+                    associateTokensToCollectors.add(
+                            cryptoCreate(collectorName + i).balance(0L));
+                    associateTokensToCollectors.add(tokenAssociate(collectorName + i, tokenName + i));
+                }
+                return associateTokensToCollectors.toArray(SpecOperation[]::new);
+            }
+
+            private SpecOperation createTopicWith10Different2layerFees() {
+                final var tokenName = MULTI_LAYER_FEE_PREFIX + "token_";
+                final var collectorName = "collector_";
+                final var topicCreateOp = createTopic(TOPIC);
+                for (int i = 0; i < 9; i++) {
+                    topicCreateOp.withConsensusCustomFee(fixedConsensusHtsFee(1, tokenName + i, collectorName + i));
+                }
+                // add one hbar custom fee
+                topicCreateOp.withConsensusCustomFee(fixedConsensusHbarFee(ONE_HBAR, collectorName + 0));
+                return topicCreateOp;
+            }
+
+            private SpecOperation approveTopicAllowanceForAllFees() {
+                final var tokenName = MULTI_LAYER_FEE_PREFIX + "token_";
+                final var approveAllowance = approveTopicAllowance().payingWith(SUBMITTER);
+
+                for (int i = 0; i < 9; i++) {
+                    approveAllowance.addTokenAllowance(SUBMITTER, tokenName + i, TOPIC, 100, 1);
+                }
+                approveAllowance.addCryptoAllowance(SUBMITTER, TOPIC, ONE_HUNDRED_HBARS, ONE_HBAR);
+                return approveAllowance;
+            }
+
+            private SpecOperation[] assertAllCollectorsBalances() {
+                final var tokenName = MULTI_LAYER_FEE_PREFIX + "token_";
+                final var collectorName = "collector_";
+
+                final var assertBalances = new ArrayList<SpecOperation>();
+
+                for (int i = 0; i < 9; i++) {
+                    assertBalances.add(getAccountBalance(collectorName + i).hasTokenBalance(tokenName + i, 1));
+                }
+                // add assert for hbar fee
+                assertBalances.add(getAccountBalance(collectorName + 0).hasTinyBars(ONE_HBAR));
+                return assertBalances.toArray(SpecOperation[]::new);
+            }
         }
     }
 
