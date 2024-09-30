@@ -318,8 +318,11 @@ reconnect, it may be missing events. In this case, the node will need to ask its
 
 For this reason, every honest node needs to buffer some events, so when its neighbors ask it for events, it is able to
 send them. The Gossip module **may** cache all non-expired events, but **must** cache all non-ancient events.
-Non-expired events are crucial to support "catch up" after reconnect, where a node, after reconnecting, may still be
-several minutes behind its neighbors, and catches up by receiving those older events through gossip.
+Non-expired events are crucial, because such events allow a node that is moderately far behind its neighbors to catch
+back up without incurring the high cost of a reconnect. This may occur during normal operation, if a node is
+experiencing stress, but is particularly likely just after having performed a reconnect. A recently reconnected node may
+be several minutes behind its neighbors, but still be able to catch the rest of the way up by receiving those older
+events through gossip.
 
 #### Neighbor Discipline
 
