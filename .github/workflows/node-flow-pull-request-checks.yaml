@@ -212,7 +212,8 @@ jobs:
     needs:
       - dependency-check
       - spotless
-    if: ${{ github.event_name == 'workflow_dispatch' }}
+    # Add this if back in after CITR Pager duty reporting service is in place
+    # if: ${{ github.event_name == 'workflow_dispatch' }}
     with:
       custom-job-name: "Platform SDK"
       panel-config: "configs/suites/GCP-PRCheck-Abbrev-4N.json"
@@ -243,7 +244,8 @@ jobs:
     needs:
       - dependency-check
       - spotless
-    if: ${{ github.event_name == 'workflow_dispatch' }}
+    # Add this if back in after CITR Pager duty reporting service is in place
+    # if: ${{ github.event_name == 'workflow_dispatch' }}
     with:
       custom-job-name: "Abbrev Update Test"
       branch-name: ${{ github.head_ref || github.ref_name }}

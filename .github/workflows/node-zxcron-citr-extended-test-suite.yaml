@@ -16,6 +16,7 @@
 
 name: CITR Extended CI Tests
 on:
+  workflow_dispatch:
   schedule:
     # Runs Extended Test Suite every three hours
     - cron: '0 */3 * * *'
