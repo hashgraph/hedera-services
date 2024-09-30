@@ -224,7 +224,7 @@ public final class FileUtils {
             @NonNull final Configuration configuration)
             throws IOException {
         requireNonNull(directory);
-        requireNonNull(operation);
+        // don't null check operation as FileUtilsTests#executeAndRename expects IOException
         requireNonNull(configuration);
         executeAndRename(directory, buildTemporaryDirectory(configuration), operation);
     }
