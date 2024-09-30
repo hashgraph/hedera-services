@@ -14,7 +14,7 @@
 # limitations under the License.
 ##
 
-name: Prepare Extended Test Suite
+name: "ZXF: Prepare Extended Test Suite"
 on:
   workflow_run:
     workflows:

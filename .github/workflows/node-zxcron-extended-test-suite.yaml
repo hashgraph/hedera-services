@@ -14,7 +14,7 @@
 # limitations under the License.
 ##
 
-name: CITR Extended CI Tests
+name: "ZXCron: Extended Test Suite"
 on:
   workflow_dispatch:
   schedule:

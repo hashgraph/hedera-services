@@ -121,7 +121,7 @@ jobs:
   release-branch:
     name: Release [Branch]
     uses: ./.github/workflows/node-zxc-build-release-artifact.yaml
-    if: ${{ github.event_name == 'workflow_run' }}
+    if: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success'}}
     with:
       version-policy: branch-commit
       trigger-env-deploy: integration
