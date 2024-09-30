@@ -214,6 +214,8 @@ jobs:
       - spotless
     # Add this if back in after CITR Pager duty reporting service is in place
     # if: ${{ github.event_name == 'workflow_dispatch' }}
+    # Turn off this if check when CITR Pager duty reporting service is in place
+    if: ${{ github.event_name != 'pull_request' || (github.actor != 'dependabot[bot]' && github.event.pull_request.head.repo.full_name == github.repository) }}
     with:
       custom-job-name: "Platform SDK"
       panel-config: "configs/suites/GCP-PRCheck-Abbrev-4N.json"
@@ -246,6 +248,8 @@ jobs:
       - spotless
     # Add this if back in after CITR Pager duty reporting service is in place
     # if: ${{ github.event_name == 'workflow_dispatch' }}
+    # Turn off this if check when CITR Pager duty reporting service is in place
+    if: ${{ github.event_name != 'pull_request' || (github.actor != 'dependabot[bot]' && github.event.pull_request.head.repo.full_name == github.repository) }}
     with:
       custom-job-name: "Abbrev Update Test"
       branch-name: ${{ github.head_ref || github.ref_name }}
