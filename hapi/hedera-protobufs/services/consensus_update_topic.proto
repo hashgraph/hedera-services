@@ -94,12 +94,8 @@ message ConsensusUpdateTopicTransactionBody {
      * <p>
      * If set, subsequent consensus_update_topic transactions signed with this
      * key MAY update or delete the custom fees for this topic.<br/>
-     * If this field is set to a valid 'Key', the admin key and the new
-     * key MUST both sign this transaction.<br/>
-     * If this field is set to a valid 'Key', the previous value SHALL be
-     * replaced.<br/>
-     * If set to a 'Key' containing an empty 'KeyList', the admin key MUST sign
-     * this transaction.<br/>
+     * If this field is set, the admin key MUST sign this transaction.<br/>
+     * If this field is set, the previous value SHALL be replaced.<br/>
      * If set to a 'Key' containing an empty 'KeyList', the previous value
      * SHALL be cleared.<br/>
      * If not set, the current key SHALL NOT change.<br/>
