@@ -10,19 +10,35 @@ import java.nio.channels.FileChannel;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 
+/**
+ * Writes preconsensus events to a file using a {@link FileChannel}.
+ */
 public class PcesFileChannelWriter implements PcesFileWriter {
-    final FileChannel channel;
-    final ByteBuffer buffer;
-    final WritableSequentialData writableSequentialData;
+    /** The capacity of the ByteBuffer used to write events */
+    private static final int BUFFER_CAPACITY = 1024 * 1024 * 10;
+    /** The file channel for writing events */
+    private final FileChannel channel;
+    /** The buffer used to hold data being written to the file */
+    private final ByteBuffer buffer;
+    /** Wraps a ByteBuffer so that the protobuf codec can write to it */
+    private final WritableSequentialData writableSequentialData;
+    /** Tracks the size of the file in bytes */
     private int fileSize;
 
+    /**
+     * Create a new writer that writes events to a file using a {@link FileChannel}.
+     *
+     * @param filePath the path to the file to write to
+     * @param syncEveryEvent if true, the file will be synced after every event is written
+     * @throws IOException if an error occurs while opening the file
+     */
     public PcesFileChannelWriter(@NonNull final Path filePath, final boolean syncEveryEvent) throws IOException {
         if(syncEveryEvent) {
             channel = FileChannel.open(filePath,StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE, StandardOpenOption.DSYNC);
         }else{
             channel = FileChannel.open(filePath,StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE);
         }
-        buffer = ByteBuffer.allocateDirect(1024*1024*10);
+        buffer = ByteBuffer.allocateDirect(BUFFER_CAPACITY);
         writableSequentialData = BufferedData.wrap(buffer);
     }
 
@@ -52,6 +68,7 @@ public class PcesFileChannelWriter implements PcesFileWriter {
 
     @Override
     public void flush() throws IOException {
+        // benchmarks show that this has horrible performance
         channel.force(false);
     }
 

@@ -6,27 +6,36 @@ import com.swirlds.common.io.extendable.extensions.CountingStreamExtension;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.BufferedOutputStream;
-import java.io.FileNotFoundException;
+import java.io.FileDescriptor;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.file.Path;
 
-public class PcesLegacyFileWriter implements PcesFileWriter{
-    /**
-     * The output stream to write to.
-     */
+/**
+ * Writes events to a file using an output stream.
+ */
+public class PcesOutputStreamFileWriter implements PcesFileWriter{
+    /** The output stream to write to */
     private final SerializableDataOutputStream out;
-    final FileOutputStream fileOutputStream;
-    /**
-     * Counts the bytes written to the file.
-     */
+    /** The file descriptor of the file being written to */
+    private final FileDescriptor fileDescriptor;
+    /** Counts the bytes written to the file */
     private final CountingStreamExtension counter;
+    /** Whether to sync the file after every event */
     private final boolean syncEveryEvent;
 
-    public PcesLegacyFileWriter(@NonNull final Path filePath, final boolean syncEveryEvent) throws FileNotFoundException {
+    /**
+     * Create a new file writer.
+     *
+     * @param filePath the path to the file to write to
+     * @param syncEveryEvent whether to sync the file after every event
+     * @throws IOException if the file cannot be opened
+     */
+    public PcesOutputStreamFileWriter(@NonNull final Path filePath, final boolean syncEveryEvent) throws IOException {
         this.syncEveryEvent = syncEveryEvent;
         counter = new CountingStreamExtension(false);
-        fileOutputStream = new FileOutputStream(filePath.toFile());
+        final FileOutputStream fileOutputStream = new FileOutputStream(filePath.toFile());
+        fileDescriptor = fileOutputStream.getFD();
         out = new SerializableDataOutputStream(new ExtendableOutputStream(
                 new BufferedOutputStream(fileOutputStream),
                 counter));
@@ -42,7 +51,7 @@ public class PcesLegacyFileWriter implements PcesFileWriter{
         out.writePbjRecord(event, GossipEvent.PROTOBUF);
         if(syncEveryEvent) {
             out.flush();
-            fileOutputStream.getFD().sync();
+            fileDescriptor.sync();
         }
     }
 

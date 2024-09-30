@@ -393,18 +393,25 @@ public final class PcesFile implements Comparable<PcesFile> {
     }
 
     /**
-     * Get an object that can be used to write events to this file. Throws if there already exists a file on disk with
-     * the same path.
-     *
-     * @return a writer for this file
+     * Same as {@link #getMutableFile(boolean, boolean)} with both parameters set to false.
      */
     @NonNull
     public PcesMutableFile getMutableFile() throws IOException {
         return new PcesMutableFile(this, false, false);
     }
 
+    /**
+     * Get an object that can be used to write events to this file. Throws if there already exists a file on disk with
+     * the same path.
+     *
+     * @param useFileChannelWriter if true, use a {@link java.nio.channels.FileChannel} to write to the file. Otherwise,
+     *                             use a {@link java.io.FileOutputStream}.
+     * @param syncEveryEvent       if true, sync the file after every event is written
+     * @return a writer for this file
+     */
     @NonNull
-    public PcesMutableFile getMutableFile(final boolean useFileChannelWriter, final boolean syncEveryEvent) throws IOException {
+    public PcesMutableFile getMutableFile(final boolean useFileChannelWriter, final boolean syncEveryEvent)
+            throws IOException {
         return new PcesMutableFile(this, useFileChannelWriter, syncEveryEvent);
     }
 
