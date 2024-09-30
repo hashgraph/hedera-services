@@ -2,7 +2,7 @@
   "buckets": [
     {
       "burstPeriod": 0,
-      "burstPeriodMs": 16000,
+      "burstPeriodMs": 15000,
       "name": "ThroughputLimits",
       "throttleGroups": [
         {
