@@ -56,7 +56,7 @@ public class NodeOpsForUpgrade extends HapiSuite {
                                 .accountId("0.0.100")
                                 .payingWith(GENESIS)
                                 .signedBy(GENESIS))
-                .then();
+                .then(overridingTwo("nodes.enableDAB", "true", "nodes.updateAccountIdAllowed", "false"));
     }
 
     @Override
