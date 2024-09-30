@@ -243,9 +243,9 @@ public class HapiGetTopicInfo extends HapiQueryOp<HapiGetTopicInfo> {
         }
         if (hasNoFeeScheduleKey) {
             assertFalse(
-                info.hasFeeScheduleKey()
-                    && info.getFeeScheduleKey().getKeyList().getKeysCount() > 0,
-                "Should have no fee schedule key!");
+                    info.hasFeeScheduleKey()
+                            && info.getFeeScheduleKey().getKeyList().getKeysCount() > 0,
+                    "Should have no fee schedule key!");
         }
         final var actualFees = info.getCustomFeesList();
         if (expectNoFees) {

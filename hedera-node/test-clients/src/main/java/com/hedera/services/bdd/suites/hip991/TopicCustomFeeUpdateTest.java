@@ -35,6 +35,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.HapiSuite.flattened;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEES_LIST_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FEE_SCHEDULE_KEY_CANNOT_BE_UPDATED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FEE_SCHEDULE_KEY_NOT_SET;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CUSTOM_FEE_COLLECTOR;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 
@@ -278,7 +279,9 @@ public class TopicCustomFeeUpdateTest extends TopicCustomFeeBase {
                 contractCreate(contract),
 
                 // Update the topic to have contract as a collector
-                updateTopic(TOPIC).withConsensusCustomFee(fixedConsensusHbarFee(1, contract)),
+                updateTopic(TOPIC)
+                        .withConsensusCustomFee(fixedConsensusHbarFee(1, contract))
+                        .signedByPayerAnd(ADMIN_KEY, FEE_SCHEDULE_KEY),
                 getTopicInfo(TOPIC).hasCustomFee(expectedConsensusFixedHbarFee(1, contract)));
     }
 
@@ -300,7 +303,7 @@ public class TopicCustomFeeUpdateTest extends TopicCustomFeeBase {
                 cryptoDelete(collector),
 
                 // Delete the custom fee
-                updateTopic(TOPIC).withEmptyCustomFee().signedByPayerAnd(ADMIN_KEY),
+                updateTopic(TOPIC).withEmptyCustomFee().signedByPayerAnd(ADMIN_KEY, FEE_SCHEDULE_KEY),
                 getTopicInfo(TOPIC).hasNoCustomFee());
     }
 
@@ -338,7 +341,7 @@ public class TopicCustomFeeUpdateTest extends TopicCustomFeeBase {
     final Stream<DynamicTest> updateFeeExemptKeyList() {
         return hapiTest(flattened(
                 // Create a topic with no feeExemptKeyList
-                createTopic(TOPIC).adminKeyName(ADMIN_KEY),
+                createTopic(TOPIC).adminKeyName(ADMIN_KEY).feeScheduleKeyName(FEE_SCHEDULE_KEY),
 
                 // Create 10 keys
                 newNamedKeysForFEKL(10),
@@ -347,7 +350,7 @@ public class TopicCustomFeeUpdateTest extends TopicCustomFeeBase {
                 updateTopic(TOPIC)
                         .withConsensusCustomFee(fixedConsensusHbarFee(1, COLLECTOR))
                         .feeExemptKeys(feeExemptKeyNames(10))
-                        .signedByPayerAnd(ADMIN_KEY),
+                        .signedByPayerAnd(ADMIN_KEY, FEE_SCHEDULE_KEY),
                 getTopicInfo(TOPIC)
                         .hasCustomFee(expectedConsensusFixedHbarFee(1, COLLECTOR))
                         .hasFeeExemptKeys(List.of(feeExemptKeyNames(10)))));
@@ -517,14 +520,15 @@ public class TopicCustomFeeUpdateTest extends TopicCustomFeeBase {
     final Stream<DynamicTest> updateToAddACustomFee() {
         return hapiTest(
                 // create a topic without a custom fee
-                createTopic(TOPIC).adminKeyName(ADMIN_KEY),
+                createTopic(TOPIC).adminKeyName(ADMIN_KEY).feeScheduleKeyName(FEE_SCHEDULE_KEY),
 
                 // Update the topic to add a custom fee
-                updateTopic(TOPIC).withConsensusCustomFee(fixedConsensusHbarFee(1, COLLECTOR)),
+                updateTopic(TOPIC)
+                        .withConsensusCustomFee(fixedConsensusHbarFee(1, COLLECTOR))
+                        .signedByPayerAnd(ADMIN_KEY, FEE_SCHEDULE_KEY),
                 getTopicInfo(TOPIC).hasCustomFee(expectedConsensusFixedHbarFee(1, COLLECTOR)));
     }
 
-    // TODO: do we need to explicitly delete the custom fees if we delete the feeScheduleKey?
     @HapiTest
     @DisplayName("to remove the fee schedule key and the custom fee should not be deleted")
     // TOPIC_FEE_068
@@ -664,12 +668,6 @@ public class TopicCustomFeeUpdateTest extends TopicCustomFeeBase {
                         .hasKnownStatus(CUSTOM_FEES_LIST_TOO_LONG));
     }
 
-    // TODO: see this is dept.
-    /*
-    Currently this is working and it shouldn't. I should have a check to see if the fee schedule key has signed
-    Also check if we sign with different schedule key - will I still be able to update the custom fees
-    Check that as well.
-     */
     @HapiTest
     @DisplayName("the custom fee without having a custom fee and a schedule key")
     // TOPIC_FEE_076
@@ -681,7 +679,8 @@ public class TopicCustomFeeUpdateTest extends TopicCustomFeeBase {
                 // Update the custom fee to add custom fee
                 updateTopic(TOPIC)
                         .withConsensusCustomFee(fixedConsensusHbarFee(1, COLLECTOR))
-                        .signedByPayerAnd(ADMIN_KEY)));
+                        .signedByPayerAnd(ADMIN_KEY)
+                        .hasKnownStatus(FEE_SCHEDULE_KEY_NOT_SET)));
     }
 
     // TODO: talk with Ani - this will be success because we are not setting anything and we ignore the field
@@ -697,7 +696,6 @@ public class TopicCustomFeeUpdateTest extends TopicCustomFeeBase {
                 updateTopic(TOPIC).withEmptyFeeScheduleKey().signedByPayerAnd(ADMIN_KEY)));
     }
 
-    // TODO: same as 76
     @HapiTest
     @DisplayName("to remove the custom fees sign with admin key only")
     // TOPIC_FEE_079
@@ -710,7 +708,18 @@ public class TopicCustomFeeUpdateTest extends TopicCustomFeeBase {
                         .withConsensusCustomFee(fixedConsensusHtsFee(1, TOKEN, COLLECTOR)),
 
                 // Update the custom fee and verify that it's updated
-                updateTopic(TOPIC).withEmptyCustomFee().signedByPayerAnd(ADMIN_KEY)));
+                updateTopic(TOPIC)
+                        .withEmptyCustomFee()
+                        .signedByPayerAnd(ADMIN_KEY)
+                        .hasKnownStatus(INVALID_SIGNATURE)));
+    }
+
+    @HapiTest
+    // TODO: fill the following
+    @DisplayName("")
+    // TOPIC_FEE_082
+    final Stream<DynamicTest> test() {
+        return hapiTest();
     }
 
     /*

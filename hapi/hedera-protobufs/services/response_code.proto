@@ -1626,4 +1626,11 @@ enum ResponseCodeEnum {
     * we cannot add it on update.
     */
     FEE_SCHEDULE_KEY_CANNOT_BE_UPDATED = 375;
+
+    /**
+    * If the topic's custom fees are updated the topic SHOULD have a
+    * fee schedule key
+     */
+    FEE_SCHEDULE_KEY_NOT_SET = 376;
+
 }
