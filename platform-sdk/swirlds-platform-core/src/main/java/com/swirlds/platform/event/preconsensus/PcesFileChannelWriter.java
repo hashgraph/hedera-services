@@ -16,8 +16,12 @@ public class PcesFileChannelWriter implements PcesFileWriter {
     final WritableSequentialData writableSequentialData;
     private int fileSize;
 
-    public PcesFileChannelWriter(@NonNull final Path filePath) throws IOException {
-        channel = FileChannel.open(filePath,StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE, StandardOpenOption.DSYNC);
+    public PcesFileChannelWriter(@NonNull final Path filePath, final boolean syncEveryEvent) throws IOException {
+        if(syncEveryEvent) {
+            channel = FileChannel.open(filePath,StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE, StandardOpenOption.DSYNC);
+        }else{
+            channel = FileChannel.open(filePath,StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE);
+        }
         buffer = ByteBuffer.allocateDirect(1024*1024*10);
         writableSequentialData = BufferedData.wrap(buffer);
     }

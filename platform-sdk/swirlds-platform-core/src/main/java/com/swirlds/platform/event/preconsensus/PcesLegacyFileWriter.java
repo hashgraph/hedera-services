@@ -16,16 +16,19 @@ public class PcesLegacyFileWriter implements PcesFileWriter{
      * The output stream to write to.
      */
     private final SerializableDataOutputStream out;
+    final FileOutputStream fileOutputStream;
     /**
      * Counts the bytes written to the file.
      */
     private final CountingStreamExtension counter;
+    private final boolean syncEveryEvent;
 
-    public PcesLegacyFileWriter(@NonNull final Path filePath) throws FileNotFoundException {
+    public PcesLegacyFileWriter(@NonNull final Path filePath, final boolean syncEveryEvent) throws FileNotFoundException {
+        this.syncEveryEvent = syncEveryEvent;
         counter = new CountingStreamExtension(false);
+        fileOutputStream = new FileOutputStream(filePath.toFile());
         out = new SerializableDataOutputStream(new ExtendableOutputStream(
-                new BufferedOutputStream(
-                        new FileOutputStream(filePath.toFile())),
+                new BufferedOutputStream(fileOutputStream),
                 counter));
     }
 
@@ -37,6 +40,10 @@ public class PcesLegacyFileWriter implements PcesFileWriter{
     @Override
     public void writeEvent(@NonNull final GossipEvent event) throws IOException {
         out.writePbjRecord(event, GossipEvent.PROTOBUF);
+        if(syncEveryEvent) {
+            out.flush();
+            fileOutputStream.getFD().sync();
+        }
     }
 
     @Override
