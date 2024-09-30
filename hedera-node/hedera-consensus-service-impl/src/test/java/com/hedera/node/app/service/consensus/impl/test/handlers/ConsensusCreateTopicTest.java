@@ -544,7 +544,7 @@ class ConsensusCreateTopicTest extends ConsensusTestBase {
         given(handleContext.expiryValidator()).willReturn(expiryValidator);
 
         final var msg = assertThrows(HandleException.class, () -> subject.handle(handleContext));
-        assertEquals(ResponseCodeEnum.MAX_ENTRIES_FOR_FEKL_EXCEEDED, msg.getStatus());
+        assertEquals(ResponseCodeEnum.MAX_ENTRIES_FOR_FEE_EXEMPT_KEY_LIST_EXCEEDED, msg.getStatus());
         assertEquals(0, topicStore.modifiedTopics().size());
     }
 
