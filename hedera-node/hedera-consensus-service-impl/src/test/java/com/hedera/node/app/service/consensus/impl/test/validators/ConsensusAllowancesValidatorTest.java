@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.consensus.impl.test.validators;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.ALLOWANCE_PER_MESSAGE_EXCEEDS_TOTAL_ALLOWANCE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.EMPTY_ALLOWANCES;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NEGATIVE_ALLOWANCE_AMOUNT;
@@ -78,6 +79,34 @@ class ConsensusAllowancesValidatorTest {
         // Act & Assert: Should throw PreCheckException with EMPTY_ALLOWANCES response
         var exception = assertThrows(PreCheckException.class, () -> validator.pureChecks(op));
         assertEquals(exception.responseCode(), EMPTY_ALLOWANCES);
+    }
+
+    @Test
+    void testRepeatedAllowanceForSameAccountButDifferentTopic() throws PreCheckException {
+        // Arrange: Create allowances with the same AccountID but different TopicIDs
+        var tokenAllowance1 = ConsensusTokenFeeScheduleAllowance.newBuilder()
+                .owner(AccountID.DEFAULT)
+                .topicId(TopicID.newBuilder().topicNum(1).build())
+                .amount(100L)
+                .amountPerMessage(10L)
+                .tokenId(TokenID.DEFAULT)
+                .build();
+
+        var tokenAllowance2 = ConsensusTokenFeeScheduleAllowance.newBuilder()
+                .owner(AccountID.DEFAULT)
+                .topicId(TopicID.newBuilder().topicNum(2).build())
+                .amount(200L)
+                .amountPerMessage(20L)
+                .tokenId(TokenID.DEFAULT)
+                .build();
+
+        // Build the operation containing the token allowances
+        var op = ConsensusApproveAllowanceTransactionBody.newBuilder()
+                .consensusTokenFeeScheduleAllowances(tokenAllowance1, tokenAllowance2)
+                .build();
+
+        // Act & Assert: Should pass without exception
+        validator.pureChecks(op);
     }
 
     @Test
@@ -173,5 +202,38 @@ class ConsensusAllowancesValidatorTest {
         // Act & Assert: Should throw PreCheckException with NEGATIVE_ALLOWANCE_AMOUNT code
         var exception = assertThrows(PreCheckException.class, () -> validator.pureChecks(op));
         assertEquals(NEGATIVE_ALLOWANCE_AMOUNT, exception.responseCode());
+    }
+
+    @Test
+    void amountPerMessageExceedsTotal() {
+        // Arrange
+        var cryptoAllowance = ConsensusCryptoFeeScheduleAllowance.newBuilder()
+                .owner(AccountID.DEFAULT)
+                .topicId(TopicID.DEFAULT)
+                .amount(10)
+                .amountPerMessage(15)
+                .build();
+        var tokenAllowance = ConsensusTokenFeeScheduleAllowance.newBuilder()
+                .owner(AccountID.DEFAULT)
+                .topicId(TopicID.DEFAULT)
+                .tokenId(TokenID.DEFAULT)
+                .amount(10)
+                .amountPerMessage(15)
+                .build();
+
+        var op = ConsensusApproveAllowanceTransactionBody.newBuilder()
+                .consensusCryptoFeeScheduleAllowances(cryptoAllowance)
+                .build();
+
+        var tokenOp = ConsensusApproveAllowanceTransactionBody.newBuilder()
+                .consensusTokenFeeScheduleAllowances(tokenAllowance)
+                .build();
+
+        // Act & Assert: Should throw PreCheckException with ALLOWANCE_PER_MESSAGE_EXCEEDS_TOTAL_ALLOWANCE code
+        var exception = assertThrows(PreCheckException.class, () -> validator.pureChecks(op));
+        assertEquals(ALLOWANCE_PER_MESSAGE_EXCEEDS_TOTAL_ALLOWANCE, exception.responseCode());
+
+        var tokenException = assertThrows(PreCheckException.class, () -> validator.pureChecks(tokenOp));
+        assertEquals(ALLOWANCE_PER_MESSAGE_EXCEEDS_TOTAL_ALLOWANCE, tokenException.responseCode());
     }
 }
