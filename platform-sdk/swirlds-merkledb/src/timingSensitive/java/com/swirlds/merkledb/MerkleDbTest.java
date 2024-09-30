@@ -105,12 +105,11 @@ public class MerkleDbTest {
     @ParameterizedTest
     @ValueSource(booleans = {false, true})
     void testLoadMetadata(final boolean sourceUsePbj) throws IOException {
-        // TODO: refactor this -- add to CONFIGURATION method
         final Configuration sourceConfig = ConfigurationBuilder.create()
                 .withSources(new SimpleConfigSource("merkleDb.usePbj", sourceUsePbj))
-                .withConfigDataType(MerkleDbConfig.class) // mostly used type
-                .withConfigDataType(TemporaryFileConfig.class) // LegacyTemporaryFileBuilder needs it
-                .withConfigDataType(StateCommonConfig.class) // LegacyTemporaryFileBuilder needs it
+                .withConfigDataType(MerkleDbConfig.class)
+                .withConfigDataType(TemporaryFileConfig.class)
+                .withConfigDataType(StateCommonConfig.class)
                 .build();
         final Path dbDir = LegacyTemporaryFileBuilder.buildTemporaryDirectory("testLoadMetadata", sourceConfig);
         final MerkleDb sourceDb = MerkleDb.getInstance(dbDir, sourceConfig);

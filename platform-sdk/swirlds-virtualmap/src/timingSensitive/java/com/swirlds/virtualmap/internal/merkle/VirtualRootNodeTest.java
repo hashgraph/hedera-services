@@ -402,11 +402,11 @@ class VirtualRootNodeTest extends VirtualTestBase {
         final Configuration configuration = new TestConfigBuilder()
                 .withValue(VirtualMapConfig_.COPY_FLUSH_THRESHOLD, "0")
                 .getOrCreateConfig();
-        final VirtualMapConfig virtualMapConfig = configuration.getConfigData(VirtualMapConfig.class);
 
         VirtualRootNode<TestKey, TestValue> root = createRoot(configuration);
         assertEquals(0, root.getFlushThreshold());
-        final int flushInterval = virtualMapConfig.flushInterval();
+        final int flushInterval =
+                configuration.getConfigData(VirtualMapConfig.class).flushInterval();
         for (int i = 0; i < flushInterval; i++) {
             VirtualRootNode<TestKey, TestValue> copy = root.copy();
             copy.postInit(root.getState());

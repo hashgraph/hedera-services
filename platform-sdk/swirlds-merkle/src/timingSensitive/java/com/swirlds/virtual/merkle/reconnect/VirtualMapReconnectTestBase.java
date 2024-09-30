@@ -51,7 +51,6 @@ import com.swirlds.virtual.merkle.TestValueSerializer;
 import com.swirlds.virtualmap.VirtualMap;
 import com.swirlds.virtualmap.config.VirtualMapConfig;
 import com.swirlds.virtualmap.datasource.VirtualDataSourceBuilder;
-import com.swirlds.virtualmap.internal.merkle.VirtualMapState;
 import com.swirlds.virtualmap.internal.merkle.VirtualNode;
 import com.swirlds.virtualmap.internal.merkle.VirtualRootNode;
 import com.swirlds.virtualmap.internal.pipeline.VirtualRoot;
@@ -102,8 +101,7 @@ public class VirtualMapReconnectTestBase {
     protected BrokenBuilder teacherBuilder;
     protected BrokenBuilder learnerBuilder;
 
-    // TODO: refactor
-    protected static Configuration configuration = ConfigurationBuilder.create()
+    protected static Configuration CONFIGURATION = ConfigurationBuilder.create()
             .withConfigDataType(VirtualMapConfig.class)
             .withConfigDataType(MerkleDbConfig.class)
             .withConfigDataType(TemporaryFileConfig.class)
@@ -113,10 +111,10 @@ public class VirtualMapReconnectTestBase {
     VirtualDataSourceBuilder createBuilder() throws IOException {
         // The tests create maps with identical names. They would conflict with each other in the default
         // MerkleDb instance, so let's use a new (temp) database location for every run
-        final Path defaultVirtualMapPath = LegacyTemporaryFileBuilder.buildTemporaryFile(configuration);
+        final Path defaultVirtualMapPath = LegacyTemporaryFileBuilder.buildTemporaryFile(CONFIGURATION);
         MerkleDb.setDefaultPath(defaultVirtualMapPath);
         final MerkleDbTableConfig tableConfig = new MerkleDbTableConfig(
-                (short) 1, DigestType.SHA_384, configuration.getConfigData(MerkleDbConfig.class));
+                (short) 1, DigestType.SHA_384, CONFIGURATION.getConfigData(MerkleDbConfig.class));
         tableConfig.hashesRamToDiskThreshold(0);
         return new MerkleDbDataSourceBuilder(tableConfig);
     }
@@ -142,8 +140,8 @@ public class VirtualMapReconnectTestBase {
         final VirtualDataSourceBuilder dataSourceBuilder = createBuilder();
         teacherBuilder = createBrokenBuilder(dataSourceBuilder);
         learnerBuilder = createBrokenBuilder(dataSourceBuilder);
-        teacherMap = new VirtualMap<>("Teacher", keySerializer, valueSerializer, teacherBuilder, configuration);
-        learnerMap = new VirtualMap<>("Learner", keySerializer, valueSerializer, learnerBuilder, configuration);
+        teacherMap = new VirtualMap<>("Teacher", keySerializer, valueSerializer, teacherBuilder, CONFIGURATION);
+        learnerMap = new VirtualMap<>("Learner", keySerializer, valueSerializer, learnerBuilder, CONFIGURATION);
     }
 
     @BeforeAll
@@ -152,14 +150,14 @@ public class VirtualMapReconnectTestBase {
         final ConstructableRegistry registry = ConstructableRegistry.getInstance();
 
         registry.registerConstructables("com.swirlds.common");
+        registry.registerConstructables("com.swirlds.virtualmap");
         registry.registerConstructable(new ClassConstructorPair(QueryResponse.class, QueryResponse::new));
         registry.registerConstructable(new ClassConstructorPair(DummyMerkleInternal.class, DummyMerkleInternal::new));
         registry.registerConstructable(new ClassConstructorPair(DummyMerkleLeaf.class, DummyMerkleLeaf::new));
         registry.registerConstructable(new ClassConstructorPair(Lesson.class, Lesson::new));
-        registry.registerConstructable(new ClassConstructorPair(VirtualMap.class, () -> new VirtualMap(configuration)));
-        registry.registerConstructable(new ClassConstructorPair(VirtualMapState.class, VirtualMapState::new));
+        registry.registerConstructable(new ClassConstructorPair(VirtualMap.class, () -> new VirtualMap(CONFIGURATION)));
         registry.registerConstructable(
-                new ClassConstructorPair(VirtualRootNode.class, () -> new VirtualRootNode<>(configuration)));
+                new ClassConstructorPair(VirtualRootNode.class, () -> new VirtualRootNode<>(CONFIGURATION)));
         registry.registerConstructable(new ClassConstructorPair(TestKey.class, TestKey::new));
         registry.registerConstructable(new ClassConstructorPair(TestValue.class, TestValue::new));
 

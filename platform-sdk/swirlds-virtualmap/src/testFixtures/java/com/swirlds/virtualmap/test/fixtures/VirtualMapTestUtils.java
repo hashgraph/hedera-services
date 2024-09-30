@@ -30,11 +30,11 @@ public final class VirtualMapTestUtils {
 
     private VirtualMapTestUtils() {}
 
-    public static Configuration CONFIGURATION = ConfigurationBuilder.create()
+    public static final Configuration CONFIGURATION = ConfigurationBuilder.create()
             .withConfigDataType(VirtualMapConfig.class)
             .build();
 
-    public static VirtualMapConfig VIRTUAL_MAP_CONFIG = CONFIGURATION.getConfigData(VirtualMapConfig.class);
+    public static final VirtualMapConfig VIRTUAL_MAP_CONFIG = CONFIGURATION.getConfigData(VirtualMapConfig.class);
 
     public static VirtualMap<TestKey, TestValue> createMap(String label) {
         final VirtualDataSourceBuilder builder = new InMemoryBuilder();

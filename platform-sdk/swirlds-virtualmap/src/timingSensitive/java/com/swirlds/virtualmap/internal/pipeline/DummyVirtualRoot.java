@@ -72,8 +72,8 @@ class DummyVirtualRoot extends PartialMerkleLeaf implements VirtualRoot, MerkleL
 
     private final VirtualMapStatistics statistics;
 
-    public DummyVirtualRoot(final String label, VirtualMapConfig VIRTUAL_MAP_CONFIG) {
-        pipeline = new VirtualPipeline(VIRTUAL_MAP_CONFIG, label);
+    public DummyVirtualRoot(final String label, VirtualMapConfig virtualMapConfig) {
+        pipeline = new VirtualPipeline(virtualMapConfig, label);
         flushLatch = new CountDownLatch(1);
         mergeLatch = new CountDownLatch(1);
         statistics = new VirtualMapStatistics(label);

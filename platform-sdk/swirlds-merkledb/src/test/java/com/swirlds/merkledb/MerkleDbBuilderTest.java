@@ -90,8 +90,8 @@ class MerkleDbBuilderTest {
                             .resolve("test2-" + merkleDbDataSource.getTableId()),
                     merkleDbDataSource.getStorageDir());
 
-            final Configuration CONFIGURATION = new TestConfigBuilder().getOrCreateConfig();
-            final MerkleDbConfig merkleDbConfig = CONFIGURATION.getConfigData(MerkleDbConfig.class);
+            final Configuration configuration = new TestConfigBuilder().getOrCreateConfig();
+            final MerkleDbConfig merkleDbConfig = configuration.getConfigData(MerkleDbConfig.class);
             assertFalse(merkleDbDataSource.isPreferDiskBasedIndexes());
             assertEquals(merkleDbConfig.maxNumOfKeys(), merkleDbDataSource.getMaxNumberOfKeys());
             assertEquals(merkleDbConfig.hashesRamToDiskThreshold(), merkleDbDataSource.getHashesRamToDiskThreshold());

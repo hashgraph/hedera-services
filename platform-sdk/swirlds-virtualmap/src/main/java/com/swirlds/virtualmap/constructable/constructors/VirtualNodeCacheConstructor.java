@@ -21,5 +21,5 @@ import com.swirlds.virtualmap.internal.cache.VirtualNodeCache;
 
 @FunctionalInterface
 public interface VirtualNodeCacheConstructor {
-    VirtualNodeCache create(final VirtualMapConfig virtualMapConfig);
+    VirtualNodeCache create(VirtualMapConfig virtualMapConfig);
 }

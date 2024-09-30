@@ -71,7 +71,7 @@ class MemoryIndexDiskKeyValueStoreCompactionHammerTest {
 
     /**
      * Hammers the {@link MemoryIndexDiskKeyValueStore} looking for any race conditions or weakness
-     * in the implementation that can be observed due to load. The CONFIGURATION options here are
+     * in the implementation that can be observed due to load. The configuration options here are
      * intended to create new files rapidly. This is not a stress test on the size of the files,
      * only the frequency in which they occur. It was designed to find the bug #4514.
      *

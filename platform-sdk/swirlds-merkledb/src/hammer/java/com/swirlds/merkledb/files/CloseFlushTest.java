@@ -152,7 +152,7 @@ public class CloseFlushTest {
 
         @Override
         public VirtualDataSource build(
-                final String label, final boolean withDbCompactionEnabled, final @NonNull Configuration CONFIGURATION) {
+                final String label, final boolean withDbCompactionEnabled, final @NonNull Configuration configuration) {
             return new VirtualDataSource() {
                 @Override
                 public void close() throws IOException {

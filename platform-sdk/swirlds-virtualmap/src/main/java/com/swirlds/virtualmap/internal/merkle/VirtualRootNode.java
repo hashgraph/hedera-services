@@ -193,12 +193,6 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
     private final Configuration configuration;
 
     /**
-     * Placeholder (since this is such a hotspot) to hold the results from {@link Configuration#getConfigData(Class)}
-     * rather than calling that method more than once during the lifecycle of a {@link VirtualRootNode} instance.
-     */
-    private final VirtualMapConfig virtualMapConfig;
-
-    /**
      * The maximum size() we have reached, where we have (already) recorded a warning message about how little
      * space is left before this {@link VirtualRootNode} hits the size limit.  We retain this information
      * because if we later delete some nodes and then add some more, we don't want to trigger a duplicate warning.
@@ -365,8 +359,8 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
         // Hasher is required during reconnects
         this.hasher = new VirtualHasher<>();
         this.configuration = configuration;
-        this.virtualMapConfig = configuration.getConfigData(VirtualMapConfig.class);
-        this.flushThreshold.set(virtualMapConfig.copyFlushThreshold());
+        this.flushThreshold.set(
+                configuration.getConfigData(VirtualMapConfig.class).copyFlushThreshold());
         // All other fields are initialized in postInit()
     }
 
@@ -391,8 +385,8 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
         this.fastCopyVersion = 0;
         this.hasher = new VirtualHasher<>();
         this.configuration = configuration;
-        this.virtualMapConfig = configuration.getConfigData(VirtualMapConfig.class);
-        this.flushThreshold.set(virtualMapConfig.copyFlushThreshold());
+        this.flushThreshold.set(
+                configuration.getConfigData(VirtualMapConfig.class).copyFlushThreshold());
         this.keySerializer = requireNonNull(keySerializer);
         this.valueSerializer = requireNonNull(valueSerializer);
         this.dataSourceBuilder = requireNonNull(dataSourceBuilder);
@@ -426,7 +420,6 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
         this.flushThreshold.set(source.flushThreshold.get());
         this.statistics = source.statistics;
         this.configuration = source.configuration;
-        this.virtualMapConfig = source.virtualMapConfig;
 
         if (this.pipeline.isTerminated()) {
             throw new IllegalStateException("A fast-copy was made of a VirtualRootNode with a terminated pipeline!");
@@ -468,7 +461,7 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
         // At this point in time the copy knows if it should be flushed or merged, and so it is safe
         // to register with the pipeline.
         if (pipeline == null) {
-            pipeline = new VirtualPipeline(virtualMapConfig, state.getLabel());
+            pipeline = new VirtualPipeline(configuration.getConfigData(VirtualMapConfig.class), state.getLabel());
         }
         pipeline.registerCopy(this);
     }
@@ -1178,7 +1171,12 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
     private void updateShouldBeFlushed() {
         if (flushThreshold.get() <= 0) {
             // If copy size flush threshold is not set, use flush interval
-            this.shouldBeFlushed.set(fastCopyVersion != 0 && fastCopyVersion % virtualMapConfig.flushInterval() == 0);
+            this.shouldBeFlushed.set(fastCopyVersion != 0
+                    && fastCopyVersion
+                                    % configuration
+                                            .getConfigData(VirtualMapConfig.class)
+                                            .flushInterval()
+                            == 0);
         }
     }
 
@@ -1469,15 +1467,15 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
      */
     @Override
     public TeacherTreeView<Long> buildTeacherView(final ReconnectConfig reconnectConfig) {
-        return switch (virtualMapConfig.reconnectMode()) {
+        return switch (configuration.getConfigData(VirtualMapConfig.class).reconnectMode()) {
             case VirtualMapReconnectMode.PUSH -> new TeacherPushVirtualTreeView<>(
                     getStaticThreadManager(), reconnectConfig, this, state, pipeline);
             case VirtualMapReconnectMode.PULL_TOP_TO_BOTTOM -> new TeacherPullVirtualTreeView<>(
                     getStaticThreadManager(), reconnectConfig, this, state, pipeline);
             case VirtualMapReconnectMode.PULL_TWO_PHASE_PESSIMISTIC -> new TeacherPullVirtualTreeView<>(
                     getStaticThreadManager(), reconnectConfig, this, state, pipeline);
-            default -> throw new UnsupportedOperationException(
-                    "Unknown reconnect mode: " + virtualMapConfig.reconnectMode());
+            default -> throw new UnsupportedOperationException("Unknown reconnect mode: "
+                    + configuration.getConfigData(VirtualMapConfig.class).reconnectMode());
         };
     }
 
@@ -1549,7 +1547,7 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
         final VirtualStateAccessor originalState = originalMap.getState();
         nodeRemover = new ReconnectNodeRemover<>(
                 originalMap.getRecords(), originalState.getFirstLeafPath(), originalState.getLastLeafPath());
-        return switch (virtualMapConfig.reconnectMode()) {
+        return switch (configuration.getConfigData(VirtualMapConfig.class).reconnectMode()) {
             case VirtualMapReconnectMode.PUSH -> new LearnerPushVirtualTreeView<>(
                     reconnectConfig, this, originalMap.records, originalState, reconnectState, nodeRemover, mapStats);
             case VirtualMapReconnectMode.PULL_TOP_TO_BOTTOM -> {
@@ -1576,8 +1574,8 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
                         twoPhasePessimistic,
                         mapStats);
             }
-            default -> throw new UnsupportedOperationException(
-                    "Unknown reconnect mode: " + virtualMapConfig.reconnectMode());
+            default -> throw new UnsupportedOperationException("Unknown reconnect mode: "
+                    + configuration.getConfigData(VirtualMapConfig.class).reconnectMode());
         };
     }
 
@@ -1713,15 +1711,21 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
 
         // Confirm that adding one more entry is not too much for this VirtualMap to hold.
         final long currentSize = size();
-        final long maximumAllowedSize = virtualMapConfig.maximumVirtualMapSize();
+        final long maximumAllowedSize =
+                configuration.getConfigData(VirtualMapConfig.class).maximumVirtualMapSize();
         if (currentSize >= maximumAllowedSize) {
             throw new IllegalStateException("Virtual Map has no more space");
         }
 
         final long remainingCapacity = maximumAllowedSize - currentSize;
         if ((currentSize > maxSizeReachedTriggeringWarning)
-                && (remainingCapacity <= virtualMapConfig.virtualMapWarningThreshold())
-                && (remainingCapacity % virtualMapConfig.virtualMapWarningInterval() == 0)) {
+                && (remainingCapacity
+                        <= configuration.getConfigData(VirtualMapConfig.class).virtualMapWarningThreshold())
+                && (remainingCapacity
+                                % configuration
+                                        .getConfigData(VirtualMapConfig.class)
+                                        .virtualMapWarningInterval()
+                        == 0)) {
             maxSizeReachedTriggeringWarning = currentSize;
             logger.warn(
                     VIRTUAL_MERKLE_STATS.getMarker(),

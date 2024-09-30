@@ -21,5 +21,5 @@ import com.swirlds.virtualmap.VirtualMap;
 
 @FunctionalInterface
 public interface VirtualMapConstructor {
-    VirtualMap create(final Configuration configuration);
+    VirtualMap create(Configuration configuration);
 }
