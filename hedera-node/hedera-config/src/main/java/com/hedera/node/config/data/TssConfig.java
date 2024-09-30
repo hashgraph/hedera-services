@@ -28,4 +28,5 @@ import com.swirlds.config.api.ConfigProperty;
 @ConfigData("tss")
 public record TssConfig(
         @ConfigProperty(defaultValue = "3") @NetworkProperty long maxSharesPerNode,
-        @ConfigProperty(defaultValue = "false") @NetworkProperty boolean keyActiveRoster) {}
+        @ConfigProperty(defaultValue = "false") @NetworkProperty boolean keyActiveRoster,
+        @ConfigProperty(defaultValue = "false") @NetworkProperty boolean enableLedgerId) {}
