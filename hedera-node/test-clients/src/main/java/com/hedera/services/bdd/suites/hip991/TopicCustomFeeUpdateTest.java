@@ -545,7 +545,7 @@ public class TopicCustomFeeUpdateTest extends TopicCustomFeeBase {
                 getTopicInfo(TOPIC).hasNoFeeScheduleKey().hasCustomFee(expectedConsensusFixedHbarFee(1, COLLECTOR)));
     }
 
-    // TODO: this should throw FEE_SCHEDULE_KEY_CANNOT_BE_UPDATED
+    // TODO: Talk with Ani - this should throw FEE_SCHEDULE_KEY_CANNOT_BE_UPDATED
     @HapiTest
     @DisplayName("to delete the fee schedule key and then setting the same key back")
     // TOPIC_FEE_069
@@ -558,7 +558,10 @@ public class TopicCustomFeeUpdateTest extends TopicCustomFeeBase {
                 updateTopic(TOPIC).withEmptyFeeScheduleKey().signedByPayerAnd(ADMIN_KEY),
 
                 // Try to add the fee schedule key back
-                updateTopic(TOPIC).feeScheduleKeyName(FEE_SCHEDULE_KEY).signedByPayerAnd(ADMIN_KEY, FEE_SCHEDULE_KEY));
+                updateTopic(TOPIC)
+                        .feeScheduleKeyName(FEE_SCHEDULE_KEY)
+                        .signedByPayerAnd(ADMIN_KEY, FEE_SCHEDULE_KEY)
+                        .hasKnownStatus(FEE_SCHEDULE_KEY_CANNOT_BE_UPDATED));
     }
 
     @HapiTest
