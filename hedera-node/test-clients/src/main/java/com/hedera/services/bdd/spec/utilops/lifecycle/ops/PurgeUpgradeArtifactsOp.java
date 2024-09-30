@@ -17,7 +17,6 @@
 package com.hedera.services.bdd.spec.utilops.lifecycle.ops;
 
 import static com.hedera.services.bdd.junit.hedera.ExternalPath.UPGRADE_ARTIFACTS_DIR;
-import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.CONFIG_TXT;
 import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.guaranteedExtantDir;
 import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.rm;
 
@@ -33,8 +32,7 @@ public class PurgeUpgradeArtifactsOp extends AbstractLifecycleOp {
 
     @Override
     protected void run(@NonNull final HederaNode node) {
-        final var upgradeArtifactsLoc =
-                node.getExternalPath(UPGRADE_ARTIFACTS_DIR).resolve(CONFIG_TXT);
+        final var upgradeArtifactsLoc = node.getExternalPath(UPGRADE_ARTIFACTS_DIR);
         rm(upgradeArtifactsLoc);
         guaranteedExtantDir(upgradeArtifactsLoc);
     }

@@ -40,7 +40,7 @@ public class AddNodeOp extends UtilOp {
     @Override
     protected boolean submitOp(HapiSpec spec) throws Throwable {
         if (!(spec.targetNetworkOrThrow() instanceof SubProcessNetwork subProcessNetwork)) {
-            throw new IllegalStateException("Can only remove nodes from a SubProcessNetwork");
+            throw new IllegalStateException("Can only add nodes to a SubProcessNetwork");
         }
         subProcessNetwork.addNode(nodeId, upgradeConfigTxt);
         return false;
