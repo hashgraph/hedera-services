@@ -105,14 +105,14 @@ class PcesReadWriteTests {
                 Arguments.of(GENERATION_THRESHOLD, false),
                 Arguments.of(BIRTH_ROUND_THRESHOLD, false),
                 Arguments.of(GENERATION_THRESHOLD, true),
-                Arguments.of(BIRTH_ROUND_THRESHOLD, true)
-        );
+                Arguments.of(BIRTH_ROUND_THRESHOLD, true));
     }
 
     @ParameterizedTest
     @MethodSource("ancientAndWriterTypeArguments")
     @DisplayName("Write Then Read Test")
-    void writeThenReadTest(@NonNull final AncientMode ancientMode, final boolean useFileChannelWriter) throws IOException {
+    void writeThenReadTest(@NonNull final AncientMode ancientMode, final boolean useFileChannelWriter)
+            throws IOException {
         final Random random = RandomUtils.getRandomPrintSeed();
 
         final int numEvents = 100;

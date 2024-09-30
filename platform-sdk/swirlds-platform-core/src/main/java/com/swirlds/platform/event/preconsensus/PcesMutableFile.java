@@ -39,7 +39,6 @@ public class PcesMutableFile {
      */
     private long highestAncientIdentifierInFile;
 
-
     /**
      * Create a new preconsensus event file that can be written to.
      *
@@ -47,7 +46,9 @@ public class PcesMutableFile {
      * @param useFileChannelWriter whether to use a FileChannel to write to the file as opposed to an OutputStream
      * @param syncEveryEvent       whether to sync the file after every event
      */
-    PcesMutableFile(@NonNull final PcesFile descriptor, final boolean useFileChannelWriter, final boolean syncEveryEvent) throws IOException {
+    PcesMutableFile(
+            @NonNull final PcesFile descriptor, final boolean useFileChannelWriter, final boolean syncEveryEvent)
+            throws IOException {
         if (Files.exists(descriptor.getPath())) {
             throw new IOException("File " + descriptor.getPath() + " already exists");
         }

@@ -49,6 +49,7 @@ public class PcesWriterBenchmark {
 
     @Param({"true", "false"})
     public boolean useFileChannelWriter;
+
     @Param({"true", "false"})
     public boolean syncEveryEvent;
 
@@ -67,16 +68,9 @@ public class PcesWriterBenchmark {
                 .setOtherParent(new TestingEventBuilder(r).build())
                 .build();
         directory = Files.createTempDirectory("PcesWriterBenchmark");
-        final PcesFile file = PcesFile.of(
-                AncientMode.GENERATION_THRESHOLD,
-                r.nextInstant(),
-                1,
-                0,
-                100,
-                0,
-                directory);
+        final PcesFile file = PcesFile.of(AncientMode.GENERATION_THRESHOLD, r.nextInstant(), 1, 0, 100, 0, directory);
 
-       mutableFile = file.getMutableFile(useFileChannelWriter, syncEveryEvent);
+        mutableFile = file.getMutableFile(useFileChannelWriter, syncEveryEvent);
     }
 
     @TearDown(Level.Iteration)
@@ -84,20 +78,19 @@ public class PcesWriterBenchmark {
         mutableFile.close();
         FileUtils.deleteDirectory(directory);
     }
-/*
-Results on a M1 Max MacBook Pro:
+    /*
+    Results on a M1 Max MacBook Pro:
 
-Benchmark                       (syncEveryEvent)  (useFileChannelWriter)   Mode  Cnt       Score        Error  Units
-PcesWriterBenchmark.writeEvent              true                    true  thrpt    3   12440.268 ±  42680.146  ops/s
-PcesWriterBenchmark.writeEvent              true                   false  thrpt    3   16244.412 ±  38461.148  ops/s
-PcesWriterBenchmark.writeEvent             false                    true  thrpt    3  411138.079 ± 110692.138  ops/s
-PcesWriterBenchmark.writeEvent             false                   false  thrpt    3  643582.781 ± 154393.415  ops/s
-*/
+    Benchmark                       (syncEveryEvent)  (useFileChannelWriter)   Mode  Cnt       Score        Error  Units
+    PcesWriterBenchmark.writeEvent              true                    true  thrpt    3   12440.268 ±  42680.146  ops/s
+    PcesWriterBenchmark.writeEvent              true                   false  thrpt    3   16244.412 ±  38461.148  ops/s
+    PcesWriterBenchmark.writeEvent             false                    true  thrpt    3  411138.079 ± 110692.138  ops/s
+    PcesWriterBenchmark.writeEvent             false                   false  thrpt    3  643582.781 ± 154393.415  ops/s
+    */
     @Benchmark
     @BenchmarkMode(Mode.Throughput)
     @OutputTimeUnit(TimeUnit.SECONDS)
     public void writeEvent() throws IOException {
         mutableFile.writeEvent(event);
     }
-
 }
