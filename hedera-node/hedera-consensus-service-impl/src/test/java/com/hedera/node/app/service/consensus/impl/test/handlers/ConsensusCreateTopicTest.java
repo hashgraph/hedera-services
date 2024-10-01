@@ -156,9 +156,17 @@ class ConsensusCreateTopicTest extends ConsensusTestBase {
                 .getOrCreateConfig();
         topicStore = new WritableTopicStore(writableStates, config, storeMetricsService);
         given(handleContext.configuration()).willReturn(config);
+
         given(handleContext.storeFactory().readableStore(ReadableTopicStore.class))
                 .willReturn(topicStore);
         given(storeFactory.writableStore(WritableTopicStore.class)).willReturn(topicStore);
+        given(handleContext.storeFactory().readableStore(ReadableAccountStore.class))
+                .willReturn(accountStore);
+        given(handleContext.storeFactory().readableStore(ReadableTokenStore.class))
+                .willReturn(tokenStore);
+        given(handleContext.storeFactory().readableStore(ReadableTokenRelationStore.class))
+                .willReturn(tokenRelationStore);
+
         given(handleContext.savepointStack()).willReturn(stack);
         given(stack.getBaseBuilder(ConsensusCreateTopicStreamBuilder.class)).willReturn(recordBuilder);
         lenient().when(handleContext.entityNumGenerator()).thenReturn(entityNumGenerator);
@@ -364,7 +372,6 @@ class ConsensusCreateTopicTest extends ConsensusTestBase {
         given(handleContext.expiryValidator()).willReturn(expiryValidator);
         given(expiryValidator.resolveCreationAttempt(anyBoolean(), any(), any()))
                 .willThrow(new HandleException(ResponseCodeEnum.INVALID_EXPIRATION_TIME));
-
         final var msg = assertThrows(HandleException.class, () -> subject.handle(handleContext));
         assertEquals(ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE, msg.getStatus());
     }
@@ -389,12 +396,11 @@ class ConsensusCreateTopicTest extends ConsensusTestBase {
     @Test
     @DisplayName("Memo Validation Failure will throw")
     void handleThrowsIfAttributeValidatorFails() {
-        final var adminKey = SIMPLE_KEY_A;
-        final var submitKey = SIMPLE_KEY_B;
-        final var txnBody = newCreateTxn(adminKey, submitKey, true);
+        final var txnBody = newCreateTxn(SIMPLE_KEY_A, SIMPLE_KEY_B, true);
         given(handleContext.body()).willReturn(txnBody);
 
         given(handleContext.attributeValidator()).willReturn(validator);
+        given(handleContext.expiryValidator()).willReturn(expiryValidator);
 
         doThrow(new HandleException(ResponseCodeEnum.MEMO_TOO_LONG))
                 .when(validator)
@@ -483,14 +489,7 @@ class ConsensusCreateTopicTest extends ConsensusTestBase {
         final var txnBody = newCreateTxn(adminKey, null, true, customFees, feeExemptKeyList);
         given(handleContext.body()).willReturn(txnBody);
 
-        // mock stores
-        given(handleContext.storeFactory().readableStore(ReadableAccountStore.class))
-                .willReturn(accountStore);
         given(accountStore.getAliasedAccountById(any())).willReturn(Account.DEFAULT);
-        given(handleContext.storeFactory().readableStore(ReadableTokenStore.class))
-                .willReturn(tokenStore);
-        given(handleContext.storeFactory().readableStore(ReadableTokenRelationStore.class))
-                .willReturn(tokenRelationStore);
 
         // mock validators
         given(handleContext.consensusNow()).willReturn(Instant.ofEpochSecond(1_234_567L));
@@ -530,14 +529,6 @@ class ConsensusCreateTopicTest extends ConsensusTestBase {
         final var txnBody = newCreateTxn(adminKey, null, true, null, feeExemptKeyList);
         given(handleContext.body()).willReturn(txnBody);
 
-        // mock stores
-        given(handleContext.storeFactory().readableStore(ReadableAccountStore.class))
-                .willReturn(accountStore);
-        given(handleContext.storeFactory().readableStore(ReadableTokenStore.class))
-                .willReturn(tokenStore);
-        given(handleContext.storeFactory().readableStore(ReadableTokenRelationStore.class))
-                .willReturn(tokenRelationStore);
-
         // mock validators
         given(handleContext.consensusNow()).willReturn(Instant.ofEpochSecond(1_234_567L));
         given(handleContext.attributeValidator()).willReturn(validator);
@@ -558,14 +549,7 @@ class ConsensusCreateTopicTest extends ConsensusTestBase {
         final var txnBody = newCreateTxn(adminKey, null, true, customFees, null);
         given(handleContext.body()).willReturn(txnBody);
 
-        // mock stores
-        given(handleContext.storeFactory().readableStore(ReadableAccountStore.class))
-                .willReturn(accountStore);
         given(accountStore.getAliasedAccountById(any())).willReturn(Account.DEFAULT);
-        given(handleContext.storeFactory().readableStore(ReadableTokenStore.class))
-                .willReturn(tokenStore);
-        given(handleContext.storeFactory().readableStore(ReadableTokenRelationStore.class))
-                .willReturn(tokenRelationStore);
 
         // mock validators
         given(handleContext.consensusNow()).willReturn(Instant.ofEpochSecond(1_234_567L));
@@ -588,14 +572,7 @@ class ConsensusCreateTopicTest extends ConsensusTestBase {
         final var txnBody = newCreateTxn(adminKey, null, true, customFees, null);
         given(handleContext.body()).willReturn(txnBody);
 
-        // mock stores
-        given(handleContext.storeFactory().readableStore(ReadableAccountStore.class))
-                .willReturn(accountStore);
         given(accountStore.getAliasedAccountById(any())).willReturn(null);
-        given(handleContext.storeFactory().readableStore(ReadableTokenStore.class))
-                .willReturn(tokenStore);
-        given(handleContext.storeFactory().readableStore(ReadableTokenRelationStore.class))
-                .willReturn(tokenRelationStore);
 
         // mock
         given(handleContext.consensusNow()).willReturn(Instant.ofEpochSecond(1_234_567L));
