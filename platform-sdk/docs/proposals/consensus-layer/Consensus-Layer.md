@@ -268,10 +268,10 @@ the node was able to gracefully handle slow execution without having to take any
 
 When Execution starts, it will (at the appropriate time in its startup routine) create an instance of Consensus, and
 `initialize` it with appropriate arguments, which will be defined in detail in further documents. Critically,
-Consensus **does not persist state**. Execution is wholly responsible for the management of state. To start Consensus
-from a particular moment in time, Execution will need to initialize it with some information such as the judges of the
-round it wants to start from. It is by using this `initialize` method that Execution is able to create a Consensus
-instance that starts from genesis, or from a particular round.
+Consensus **does not persist state in the merkle tree**. Execution is wholly responsible for the management of the
+state. To start Consensus from a particular moment in time, Execution will need to initialize it with some information
+such as the judges of the round it wants to start from. It is by using this `initialize` method that Execution is able
+to create a Consensus instance that starts from genesis, or from a particular round.
 
 Likewise, if a node needs to reconnect, Execution will `destroy` the existing Consensus instance, and create a new one,
 and `initialize` it appropriately with information from the starting round, after having downloaded necessary data and
