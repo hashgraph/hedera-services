@@ -78,8 +78,8 @@ class WritableRosterStoreTest {
     }
 
     @Test
-    @DisplayName("Test determine active roster without software upgrade")
-    void testSetCandidateRosterWithValidInputs() {
+    @DisplayName("Test that a stored candidate roster can be successfully retrieved")
+    void testSetCandidateRosterReturnsSame() {
         final Roster roster1 = createValidRoster(1);
         rosterStateModifier.setCandidateRoster(roster1);
 
@@ -133,12 +133,14 @@ class WritableRosterStoreTest {
     @Test
     @DisplayName("Test determine active roster during normal restart but with an active roster present")
     void testDetermineActiveRosterDuringNormalRestartWithActiveRoster() {
-        enableSoftwareUpgradeMode(true);
         final Roster candidateRoster = createValidRoster(2);
         rosterStateModifier.setCandidateRoster(candidateRoster);
+        // enable network upgrade and adopt the candidate roster.
+        enableSoftwareUpgradeMode(true);
         rosterStateModifier.determineActiveRoster(version, initialState);
 
         enableSoftwareUpgradeMode(false);
+        // Normal restart. Assert that the active roster is the same one we adopted earlier
         assertSame(rosterStateModifier.determineActiveRoster(version, initialState), candidateRoster);
         assertSame(rosterStateModifier.getActiveRoster(), candidateRoster);
     }
@@ -200,7 +202,7 @@ class WritableRosterStoreTest {
         when(initialState.get()).thenReturn(state);
         when(state.getRound()).thenReturn(1L);
         when(state.getState()).thenReturn(stateMerkleRoot);
-        when(stateMerkleRoot.getRosterStateModifier()).thenReturn(rosterStateModifier);
+        when(stateMerkleRoot.getWritableRosterState()).thenReturn(rosterStateModifier);
         when(stateMerkleRoot.getReadablePlatformState()).thenReturn(platformState);
         when(platformState.getCreationSoftwareVersion()).thenReturn(version);
         when(version.compareTo(any())).thenReturn(mode ? 1 : 0);

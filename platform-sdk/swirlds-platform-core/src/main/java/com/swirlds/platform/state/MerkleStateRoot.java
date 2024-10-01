@@ -1035,7 +1035,7 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
      */
     @NonNull
     @Override
-    public RosterStateModifier getRosterStateModifier() {
+    public RosterStateModifier getWritableRosterState() {
         if (isImmutable()) {
             throw new IllegalStateException("Cannot get writable roster store when state is immutable");
         }

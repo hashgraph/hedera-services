@@ -148,7 +148,6 @@ public class WritableRosterStore implements RosterStateModifier {
 
     /**
      * Adopts the candidate roster present in the state as the active roster.
-     * Until the Dynamic Address Book is implemented, this method will be called unconditionally on network upgrade.
      *
      * @param roundNumber the round number in which the candidate roster became active
      */
