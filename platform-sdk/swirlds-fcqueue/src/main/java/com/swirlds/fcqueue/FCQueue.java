@@ -24,7 +24,6 @@ import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
-import com.swirlds.common.crypto.ImmutableHash;
 import com.swirlds.common.crypto.SerializableHashable;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
@@ -91,7 +90,7 @@ public class FCQueue<E extends FastCopyable & SerializableHashable> extends Part
     /** The bytes of a NULL_HASH */
     private static final byte[] NULL_HASH_BYTES = new byte[DIGEST_TYPE.digestLength()];
     /** A hash value representing a null element or a destroyed queue */
-    private static final ImmutableHash NULL_HASH = new ImmutableHash(NULL_HASH_BYTES);
+    private static final Hash NULL_HASH = new Hash(NULL_HASH_BYTES);
 
     /** the number of elements in this queue */
     private int size;
@@ -106,7 +105,7 @@ public class FCQueue<E extends FastCopyable & SerializableHashable> extends Part
     private final AtomicReference<Node<E>> unhashed;
 
     /** the hash of this queue once it becomes immutable */
-    private volatile ImmutableHash hash;
+    private volatile Hash hash;
 
     static class Node<E extends FastCopyable> {
         /** the element in the list */
@@ -151,7 +150,7 @@ public class FCQueue<E extends FastCopyable & SerializableHashable> extends Part
         }
 
         synchronized (this) {
-            ImmutableHash result = hash;
+            Hash result = hash;
             if (result == null) {
                 result = computeHash();
                 if (isImmutable()) {
@@ -194,7 +193,7 @@ public class FCQueue<E extends FastCopyable & SerializableHashable> extends Part
      * shared data structure are invariant. Volatile <code>runningHash</code> helps to reduce overlap between
      * threads.</p>
      */
-    private ImmutableHash computeHash() {
+    private Hash computeHash() {
         // Ensure we have tail's running hash
         if (tail.runningHash == null) {
             Node<E> node = unhashed.get();
@@ -221,7 +220,7 @@ public class FCQueue<E extends FastCopyable & SerializableHashable> extends Part
         for (int i = 0; i < headHash.length; ++i) {
             longToByteArray(tailHash[i] - headHash[i] * exponent, result, i * Long.BYTES);
         }
-        return new ImmutableHash(result);
+        return new Hash(result);
     }
 
     /**
