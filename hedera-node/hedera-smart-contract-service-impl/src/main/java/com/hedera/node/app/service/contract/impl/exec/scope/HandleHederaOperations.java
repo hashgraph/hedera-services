@@ -394,6 +394,7 @@ public class HandleHederaOperations implements HederaOperations {
             // have been pre-validated in ProxyWorldUpdater.createAccount() so this is an invariant failure
             throw new IllegalStateException("Unexpected failure creating new contract - " + recordBuilder.status());
         }
+        recordBuilder.functionality(CONTRACT_CREATE);
         // If this creation runs to a successful completion, its ContractBytecode sidecar
         // goes in the top-level record or the just-created child record depending on whether
         // we are doing this on behalf of a HAPI ContractCreate call; we only include the
