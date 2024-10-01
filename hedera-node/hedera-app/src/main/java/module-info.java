@@ -43,11 +43,15 @@ module com.hedera.node.app {
     requires com.google.common;
     requires com.google.errorprone.annotations;
     requires com.google.protobuf;
-    requires io.grpc.netty;
+    /*requires io.grpc.netty;
     requires io.grpc;
     requires io.netty.handler;
     requires io.netty.transport.classes.epoll;
-    requires io.netty.transport;
+    requires io.netty.transport;*/
+    requires io.helidon.grpc.core;
+    requires io.helidon.common;
+    requires io.helidon.config;
+    requires io.helidon.common.media.type;
     requires org.apache.commons.lang3;
     requires org.hyperledger.besu.datatypes;
     requires static com.github.spotbugs.annotations;

@@ -88,6 +88,12 @@ dependencies.constraints {
     api("io.grpc:grpc-stub:1.64.0") {
         because("io.grpc.stub")
     }
+    api("io.helidon.grpc:helidon-grpc-core:3.2.9") {
+        because("io.helidon.grpc.core")
+    }
+    api("io.helidon.grpc:helidon-grpc-client:3.2.9") {
+        because("io.helidon.grpc.client")
+    }
     api("com.esaulpaugh:headlong:6.1.1") {
         because("headlong")
     }
