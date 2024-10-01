@@ -279,7 +279,7 @@ public class BlockStreamBuilder
         public TransactionRecord translatedWith(@NonNull final RecordTranslator translator) {
             requireNonNull(translator);
             int i = 0;
-            int n = blockItems.size();
+            final var n = blockItems.size();
             TransactionResult result = null;
             while (i < n && (result = blockItems.get(i++).transactionResult()) == null) {
                 // Skip over non-result items
@@ -287,8 +287,8 @@ public class BlockStreamBuilder
             requireNonNull(result);
             if (i < n && blockItems.get(i).hasTransactionOutput()) {
                 int j = i;
-                while (j < n && blockItems.get(j++).hasTransactionOutput()) {
-                    // Find all the transaction outputs
+                while (j < n && blockItems.get(j).hasTransactionOutput()) {
+                    j++;
                 }
                 final var outputs = new TransactionOutput[j - i];
                 for (int k = i; k < j; k++) {
