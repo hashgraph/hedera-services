@@ -457,6 +457,11 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
         return throttleAdviser;
     }
 
+    @Override
+    public void submitInternalTransaction(final TransactionBody transactionBody) {
+        throw new UnsupportedOperationException("Yet to be implemented");
+    }
+
     @NonNull
     @Override
     public Map<AccountID, Long> dispatchPaidRewards() {
