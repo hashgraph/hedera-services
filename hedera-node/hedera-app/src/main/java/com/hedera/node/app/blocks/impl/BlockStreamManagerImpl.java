@@ -339,7 +339,7 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
             block.writer()
                     .writeItem(BlockItem.PROTOBUF.toBytes(
                             BlockItem.newBuilder().blockProof(proof).build()))
-            .closeBlock() ;
+                    .closeBlock();
             if (block.number() != blockNumber) {
                 siblingHashes.removeFirst();
             }
