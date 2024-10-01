@@ -58,11 +58,16 @@ import com.hedera.hapi.node.transaction.ExchangeRateSet;
 import com.hedera.hapi.node.transaction.PendingAirdropRecord;
 import com.hedera.hapi.node.transaction.SignedTransaction;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.hapi.node.transaction.TransactionRecord;
 import com.hedera.hapi.platform.event.EventTransaction;
 import com.hedera.hapi.streams.ContractActions;
 import com.hedera.hapi.streams.ContractBytecode;
 import com.hedera.hapi.streams.ContractStateChanges;
 import com.hedera.hapi.streams.TransactionSidecarRecord;
+import com.hedera.node.app.blocks.RecordTranslator;
+import com.hedera.node.app.blocks.impl.contexts.BaseOpContext;
+import com.hedera.node.app.blocks.impl.contexts.ContractOpContext;
+import com.hedera.node.app.blocks.impl.contexts.CryptoCreateContext;
 import com.hedera.node.app.service.addressbook.impl.records.NodeCreateStreamBuilder;
 import com.hedera.node.app.service.consensus.impl.records.ConsensusCreateTopicStreamBuilder;
 import com.hedera.node.app.service.consensus.impl.records.ConsensusSubmitMessageStreamBuilder;
@@ -106,6 +111,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Consumer;
 
 /**
  * An implementation of {@link BlockStreamBuilder} that produces block items for a single user or
@@ -144,7 +150,7 @@ public class BlockStreamBuilder
             Comparator.<TokenAssociation>comparingLong(a -> a.tokenIdOrThrow().tokenNum())
                     .thenComparingLong(a -> a.accountIdOrThrow().accountNumOrThrow());
 
-    // base transaction data
+    // Base transaction data
     private Transaction transaction;
 
     @Nullable
@@ -153,6 +159,7 @@ public class BlockStreamBuilder
     // fields needed for TransactionRecord
     // Mutable because the provisional consensus timestamp assigned on dispatch could
     // change when removable records appear "between" this record and the parent record
+    private String memo;
     private Instant consensusNow;
     private TransactionID transactionID;
     private List<TokenTransferList> tokenTransferLists = new LinkedList<>();
@@ -218,6 +225,8 @@ public class BlockStreamBuilder
     private final ExternalizedRecordCustomizer customizer;
 
     private TokenID tokenID;
+    private AccountID accountId;
+    private ContractID contractId;
     private ScheduleID scheduleID;
     private boolean createsOrDeletesSchedule;
     private TransactionID scheduledTransactionId;
@@ -231,6 +240,81 @@ public class BlockStreamBuilder
         this.category = requireNonNull(category);
     }
 
+    public record Output(@NonNull List<BlockItem> blockItems, @NonNull RecordTranslationContext translationContext) {
+        public Output {
+            requireNonNull(blockItems);
+            requireNonNull(translationContext);
+        }
+
+        public void forEachItem(@NonNull final Consumer<BlockItem> action) {
+            requireNonNull(action);
+            blockItems.forEach(action);
+        }
+
+        /**
+         * Translates the block items into a transaction record.
+         * @param translator the translator to use
+         * @return the transaction record
+         */
+        public TransactionRecord translatedWith(@NonNull final RecordTranslator translator) {
+            requireNonNull(translator);
+            int i = 0;
+            int n = blockItems.size();
+            TransactionResult result = null;
+            while (i < n && (result = blockItems.get(i++).transactionResult()) == null) {
+                // Skip over non-result items
+            }
+            requireNonNull(result);
+            if (i < n && blockItems.get(i).hasTransactionOutput()) {
+                final var outputs = new TransactionOutput[n - i];
+                for (int j = i; j < n; j++) {
+                    outputs[j - i] = blockItems.get(j).transactionOutput();
+                }
+                return translator.translate(translationContext, result, outputs);
+            } else {
+                return translator.translate(translationContext, result);
+            }
+        }
+    }
+
+    /**
+     * Builds the list of block items with their translation contexts.
+     *
+     * @return the list of block items
+     */
+    public Output build() {
+        final var blockItems = new ArrayList<BlockItem>();
+        blockItems.add(BlockItem.newBuilder()
+                .eventTransaction(EventTransaction.newBuilder()
+                        .applicationTransaction(getSerializedTransaction())
+                        .build())
+                .build());
+        blockItems.add(transactionResultBlockItem());
+        addOutputItemsTo(blockItems);
+        if (!stateChanges.isEmpty()) {
+            blockItems.add(BlockItem.newBuilder()
+                    .stateChanges(StateChanges.newBuilder()
+                            .consensusTimestamp(asTimestamp(consensusNow))
+                            .stateChanges(stateChanges)
+                            .build())
+                    .build());
+        }
+        return new Output(blockItems, translationContext());
+    }
+
+    private RecordTranslationContext translationContext() {
+        return switch (requireNonNull(functionality)) {
+            case CONTRACT_CALL,
+                    CONTRACT_CREATE,
+                    CONTRACT_DELETE,
+                    CONTRACT_UPDATE,
+                    ETHEREUM_TRANSACTION -> new ContractOpContext(
+                    memo, transactionID, transaction, functionality, contractId);
+            case CRYPTO_CREATE -> new CryptoCreateContext(memo, transactionID, transaction, functionality, accountId);
+            default -> new BaseOpContext(memo, transactionID, transaction, functionality);
+        };
+    }
+
     @Override
     public StreamBuilder stateChanges(@NonNull List<StateChange> stateChanges) {
         this.stateChanges.addAll(stateChanges);
@@ -241,38 +325,6 @@ public class BlockStreamBuilder
     public BlockStreamBuilder functionality(@NonNull final HederaFunctionality functionality) {
         this.functionality = requireNonNull(functionality);
         return this;
-    }
-
-    /**
-     * Builds the list of block items.
-     *
-     * @return the list of block items
-     */
-    public List<BlockItem> build() {
-        final var blockItems = new ArrayList<BlockItem>();
-
-        final var transactionBlockItem = BlockItem.newBuilder()
-                .eventTransaction(EventTransaction.newBuilder()
-                        .applicationTransaction(getSerializedTransaction())
-                        .build())
-                .build();
-        blockItems.add(transactionBlockItem);
-
-        final var resultBlockItem = getTransactionResultBlockItem();
-        blockItems.add(resultBlockItem);
-
-        addOutputItems(blockItems);
-
-        if (!stateChanges.isEmpty()) {
-            final var stateChangesBlockItem = BlockItem.newBuilder()
-                    .stateChanges(StateChanges.newBuilder()
-                            .consensusTimestamp(asTimestamp(consensusNow))
-                            .stateChanges(stateChanges)
-                            .build())
-                    .build();
-            blockItems.add(stateChangesBlockItem);
-        }
-        return blockItems;
     }
 
     @Override
@@ -355,7 +407,7 @@ public class BlockStreamBuilder
     @Override
     @NonNull
     public BlockStreamBuilder memo(@NonNull final String memo) {
-        // No-op
+        this.memo = requireNonNull(memo);
         return this;
     }
 
@@ -561,8 +613,8 @@ public class BlockStreamBuilder
 
     @Override
     @NonNull
-    public BlockStreamBuilder accountID(@NonNull final AccountID accountID) {
-        // No-op
+    public BlockStreamBuilder accountID(@Nullable final AccountID accountID) {
+        this.accountId = accountID;
         return this;
     }
 
@@ -576,7 +628,8 @@ public class BlockStreamBuilder
     @Override
     @NonNull
     public BlockStreamBuilder contractID(@Nullable final ContractID contractID) {
-        // No-op
+        this.contractId = contractID;
+        this.accountId = null;
         return this;
     }
 
@@ -775,7 +828,7 @@ public class BlockStreamBuilder
     }
 
     @NonNull
-    private BlockItem getTransactionResultBlockItem() {
+    private BlockItem transactionResultBlockItem() {
         if (!automaticTokenAssociations.isEmpty()) {
             automaticTokenAssociations.sort(TOKEN_ASSOCIATION_COMPARATOR);
             transactionResultBuilder.automaticTokenAssociations(automaticTokenAssociations);
@@ -796,7 +849,7 @@ public class BlockStreamBuilder
         }
     }
 
-    private void addOutputItems(@NonNull final List<BlockItem> items) {
+    private void addOutputItemsTo(@NonNull final List<BlockItem> items) {
         if (utilPrngOutputItem != null) {
             items.add(utilPrngOutputItem);
         }

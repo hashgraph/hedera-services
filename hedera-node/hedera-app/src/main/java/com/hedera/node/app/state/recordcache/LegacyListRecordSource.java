@@ -35,14 +35,13 @@ import java.util.function.Consumer;
  * {@link BlockStreamConfig#streamMode()} is {@link StreamMode#RECORDS} since in this case the
  * {@link SingleTransactionRecord} objects are already constructed for streaming.
  */
-public class LegacyListRecordSource implements RecordSource {
-    private final List<SingleTransactionRecord> precomputedRecords;
-
+public record LegacyListRecordSource(List<SingleTransactionRecord> precomputedRecords) implements RecordSource {
     public LegacyListRecordSource(@NonNull final List<SingleTransactionRecord> precomputedRecords) {
         requireNonNull(precomputedRecords);
         this.precomputedRecords = requireNonNull(precomputedRecords);
     }
 
+    @Override
     public @NonNull List<SingleTransactionRecord> precomputedRecords() {
         return precomputedRecords;
     }

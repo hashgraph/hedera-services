@@ -42,6 +42,7 @@ import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.transaction.ExchangeRateSet;
 import com.hedera.node.app.blocks.BlockStreamManager;
+import com.hedera.node.app.blocks.RecordTranslator;
 import com.hedera.node.app.blocks.impl.BlockStreamBuilder;
 import com.hedera.node.app.blocks.impl.BoundaryStateChangeListener;
 import com.hedera.node.app.blocks.impl.KVStateChangeListener;
@@ -54,9 +55,11 @@ import com.hedera.node.app.service.token.impl.handlers.staking.StakePeriodManage
 import com.hedera.node.app.services.ServiceScopeLookup;
 import com.hedera.node.app.spi.authorization.Authorizer;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
+import com.hedera.node.app.spi.records.RecordSource;
 import com.hedera.node.app.spi.workflows.record.StreamBuilder;
 import com.hedera.node.app.state.HederaRecordCache;
 import com.hedera.node.app.state.HederaRecordCache.DueDiligenceFailure;
+import com.hedera.node.app.state.recordcache.BlockRecordSource;
 import com.hedera.node.app.state.recordcache.LegacyListRecordSource;
 import com.hedera.node.app.state.recordcache.ListRecordSource;
 import com.hedera.node.app.store.WritableStoreFactory;
@@ -129,6 +132,7 @@ public class HandleWorkflow {
     private final KVStateChangeListener kvStateChangeListener;
     private final BoundaryStateChangeListener boundaryStateChangeListener;
     private final List<StateChanges.Builder> migrationStateChanges;
+    private final RecordTranslator recordTranslator;
 
     @Inject
     public HandleWorkflow(
@@ -158,7 +162,8 @@ public class HandleWorkflow {
             @NonNull final StakePeriodManager stakePeriodManager,
             @NonNull final KVStateChangeListener kvStateChangeListener,
             @NonNull final BoundaryStateChangeListener boundaryStateChangeListener,
-            @NonNull final List<StateChanges.Builder> migrationStateChanges) {
+            @NonNull final List<StateChanges.Builder> migrationStateChanges,
+            @NonNull final RecordTranslator recordTranslator) {
         this.networkInfo = requireNonNull(networkInfo);
         this.nodeStakeUpdates = requireNonNull(nodeStakeUpdates);
         this.authorizer = requireNonNull(authorizer);
@@ -186,6 +191,7 @@ public class HandleWorkflow {
         this.kvStateChangeListener = requireNonNull(kvStateChangeListener);
         this.boundaryStateChangeListener = requireNonNull(boundaryStateChangeListener);
         this.migrationStateChanges = new ArrayList<>(migrationStateChanges);
+        this.recordTranslator = requireNonNull(recordTranslator);
     }
 
     /**
@@ -246,8 +252,6 @@ public class HandleWorkflow {
                     if (!platformTxn.isSystem()) {
                         userTransactionsHandled.set(true);
                         handlePlatformTransaction(state, event, creator, platformTxn, blockStreamConfig);
-                    } else {
-                        // TODO - handle block and signature transactions here?
                     }
                 } catch (final Exception e) {
                     logger.fatal(
@@ -317,7 +321,7 @@ public class HandleWorkflow {
             blockRecordManager.endUserTransaction(records.stream(), state);
         }
         if (blockStreamConfig.streamBlocks()) {
-            handleOutput.blocksItemsOrThrow().forEach(blockStreamManager::writeItem);
+            handleOutput.blockRecordSourceOrThrow().forEachItem(blockStreamManager::writeItem);
         }
         handleWorkflowMetrics.updateTransactionDuration(
                 userTxn.functionality(), (int) (System.nanoTime() - handleStart));
@@ -370,20 +374,14 @@ public class HandleWorkflow {
             }
             final var handleOutput =
                     userTxn.stack().buildHandleOutput(userTxn.consensusNow(), exchangeRateManager.exchangeRates());
-            // Note that we don't yet support producing ONLY blocks, because we haven't integrated
-            // translators from block items to records for answering queries
-            if (blockStreamConfig.streamRecords()) {
-                final var dueDiligenceFailure = userTxn.preHandleResult().status() == NODE_DUE_DILIGENCE_FAILURE
-                        ? DueDiligenceFailure.YES
-                        : DueDiligenceFailure.NO;
-                recordCache.addRecordSource(
-                        userTxn.creatorInfo().nodeId(),
-                        userTxn.txnInfo().transactionID(),
-                        dueDiligenceFailure,
-                        handleOutput.recordSourceOrThrow());
-            } else {
-                throw new IllegalStateException("Records must be produced directly without block item translators");
-            }
+            final var dueDiligenceFailure = userTxn.preHandleResult().status() == NODE_DUE_DILIGENCE_FAILURE
+                    ? DueDiligenceFailure.YES
+                    : DueDiligenceFailure.NO;
+            recordCache.addRecordSource(
+                    userTxn.creatorInfo().nodeId(),
+                    userTxn.txnInfo().transactionID(),
+                    dueDiligenceFailure,
+                    handleOutput.preferredRecordSource());
             return handleOutput;
         } catch (final Exception e) {
             logger.error("{} - exception thrown while handling user transaction", ALERT_MESSAGE, e);
@@ -399,29 +397,39 @@ public class HandleWorkflow {
      */
     private HandleOutput failInvalidStreamItems(@NonNull final UserTxn userTxn) {
         userTxn.stack().rollbackFullStack();
+        RecordSource cacheableRecordSource = null;
         // The stack for the user txn should never be committed
-        final List<BlockItem> blockItems = new LinkedList<>();
+        final BlockRecordSource blockRecordSource;
         final var blockStreamConfig = configProvider.getConfiguration().getConfigData(BlockStreamConfig.class);
         if (blockStreamConfig.streamBlocks()) {
+            final List<BlockStreamBuilder.Output> outputs = new LinkedList<>();
             final var failInvalidBuilder = new BlockStreamBuilder(REVERSIBLE, NOOP_RECORD_CUSTOMIZER, USER);
             initializeBuilderInfo(failInvalidBuilder, userTxn.txnInfo(), exchangeRateManager.exchangeRates())
                     .status(FAIL_INVALID)
                     .consensusTimestamp(userTxn.consensusNow());
-            blockItems.addAll(failInvalidBuilder.build());
+            outputs.add(failInvalidBuilder.build());
+            cacheableRecordSource = blockRecordSource = new BlockRecordSource(recordTranslator, outputs);
+        } else {
+            blockRecordSource = null;
         }
 
-        final var failInvalidBuilder = new RecordStreamBuilder(REVERSIBLE, NOOP_RECORD_CUSTOMIZER, USER);
-        initializeBuilderInfo(failInvalidBuilder, userTxn.txnInfo(), exchangeRateManager.exchangeRates())
-                .status(FAIL_INVALID)
-                .consensusTimestamp(userTxn.consensusNow());
-        final var failInvalidRecord = failInvalidBuilder.build();
-        final var recordStreamSource = new ListRecordSource(failInvalidRecord.transactionRecord());
+        final RecordSource recordSource;
+        if (blockStreamConfig.streamRecords()) {
+            final var failInvalidBuilder = new RecordStreamBuilder(REVERSIBLE, NOOP_RECORD_CUSTOMIZER, USER);
+            initializeBuilderInfo(failInvalidBuilder, userTxn.txnInfo(), exchangeRateManager.exchangeRates())
+                    .status(FAIL_INVALID)
+                    .consensusTimestamp(userTxn.consensusNow());
+            final var failInvalidRecord = failInvalidBuilder.build();
+            cacheableRecordSource = recordSource = new ListRecordSource(failInvalidRecord.transactionRecord());
+        } else {
+            recordSource = null;
+        }
         recordCache.addRecordSource(
                 userTxn.creatorInfo().nodeId(),
                 userTxn.txnInfo().transactionID(),
                 DueDiligenceFailure.NO,
-                recordStreamSource);
-        return new HandleOutput(blockItems, recordStreamSource);
+                requireNonNull(cacheableRecordSource));
+        return new HandleOutput(blockRecordSource, recordSource);
     }
 
     /**

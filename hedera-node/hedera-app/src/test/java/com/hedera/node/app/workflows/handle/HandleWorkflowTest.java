@@ -24,6 +24,7 @@ import static org.mockito.Mockito.verify;
 
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.node.app.blocks.BlockStreamManager;
+import com.hedera.node.app.blocks.RecordTranslator;
 import com.hedera.node.app.blocks.impl.BoundaryStateChangeListener;
 import com.hedera.node.app.blocks.impl.KVStateChangeListener;
 import com.hedera.node.app.fees.ExchangeRateManager;
@@ -88,6 +89,9 @@ class HandleWorkflowTest {
 
     @Mock
     private TransactionDispatcher dispatcher;
+
+    @Mock
+    private RecordTranslator recordTranslator;
 
     @Mock
     private NetworkUtilizationManager networkUtilizationManager;
@@ -181,7 +185,8 @@ class HandleWorkflowTest {
                 stakePeriodManager,
                 kvStateChangeListener,
                 boundaryStateChangeListener,
-                List.of());
+                List.of(),
+                recordTranslator);
     }
 
     @Test

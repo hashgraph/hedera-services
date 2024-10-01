@@ -18,11 +18,10 @@ package com.hedera.node.app.workflows.handle;
 
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.hapi.block.stream.BlockItem;
 import com.hedera.node.app.spi.records.RecordSource;
+import com.hedera.node.app.state.recordcache.BlockRecordSource;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.util.List;
 
 /**
  * A temporary wrapper class as we transition from the V6 record stream to the block stream;
@@ -31,21 +30,26 @@ import java.util.List;
  *     <li>The V6 record stream items,</li>
  *     <li>The block stream output items</li>
  * </ol>
- * @param blockItems maybe the block stream output items
- * @param recordStreamSource maybe record source derived from the V6 record stream items
+ *
+ * @param blockRecordSource maybe the block stream output items
+ * @param recordSource maybe record source derived from the V6 record stream items
  */
-public record HandleOutput(@Nullable List<BlockItem> blockItems, @Nullable RecordSource recordStreamSource) {
+public record HandleOutput(@Nullable BlockRecordSource blockRecordSource, @Nullable RecordSource recordSource) {
     public HandleOutput {
-        if (blockItems == null) {
-            requireNonNull(recordStreamSource);
+        if (blockRecordSource == null) {
+            requireNonNull(recordSource);
         }
     }
 
     public @NonNull RecordSource recordSourceOrThrow() {
-        return requireNonNull(recordStreamSource);
+        return requireNonNull(recordSource);
     }
 
-    public @NonNull List<BlockItem> blocksItemsOrThrow() {
-        return requireNonNull(blockItems);
+    public @NonNull BlockRecordSource blockRecordSourceOrThrow() {
+        return requireNonNull(blockRecordSource);
+    }
+
+    public @NonNull RecordSource preferredRecordSource() {
+        return blockRecordSource != null ? blockRecordSource : requireNonNull(recordSource);
     }
 }
