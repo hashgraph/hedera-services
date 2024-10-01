@@ -60,18 +60,14 @@ public class RecordTranslator {
             @NonNull final RecordTranslationContext context,
             @NonNull final TransactionResult result,
             @Nullable final TransactionOutput... outputs) {
-        final var receiptBuilder = TransactionReceipt.newBuilder()
-                .status(result.status())
-                // TODO - validate how BlockStreamBuilder sets this
-                .exchangeRate(result.exchangeRate());
+        final var receiptBuilder =
+                TransactionReceipt.newBuilder().status(result.status()).exchangeRate(result.exchangeRate());
         final var recordBuilder = TransactionRecord.newBuilder()
                 .transactionID(context.txnId())
                 .memo(context.memo())
                 .transactionHash(context.transactionHash())
                 .consensusTimestamp(result.consensusTimestamp())
-                // TODO - validate how BlockStreamBuilder sets this
                 .parentConsensusTimestamp(result.parentConsensusTimestamp())
-                // TODO - validate how BlockStreamBuilder sets this
                 .scheduleRef(result.scheduleRef())
                 .transactionFee(result.transactionFeeCharged())
                 .transferList(result.transferList())
@@ -111,8 +107,10 @@ public class RecordTranslator {
                             recordBuilder.assessedCustomFees(cryptoOutput.assessedCustomFees());
                         }
                     }
-                    case CRYPTO_CREATE, CRYPTO_UPDATE -> receiptBuilder.accountID(
-                            ((CryptoOpContext) context).accountId());
+                    case CRYPTO_CREATE, CRYPTO_UPDATE -> {
+                        receiptBuilder.accountID(((CryptoOpContext) context).accountId());
+                        recordBuilder.evmAddress(((CryptoOpContext) context).evmAddress());
+                    }
                     case FILE_CREATE -> receiptBuilder.fileID(((FileOpContext) context).fileId());
                     case SCHEDULE_CREATE -> {
                         final var scheduleOutput = createScheduleOutputIfPresent(outputs);

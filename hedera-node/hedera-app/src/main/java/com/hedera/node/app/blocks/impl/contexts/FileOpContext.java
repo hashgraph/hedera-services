@@ -24,6 +24,14 @@ import com.hedera.node.app.blocks.impl.RecordTranslationContext;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 
+/**
+ * A {@link RecordTranslationContext} implementation with the id of an involved file.
+ * @param memo The memo for the transaction
+ * @param txnId The transaction ID
+ * @param transaction The transaction
+ * @param functionality The functionality of the transaction
+ * @param fileId The id of the involved file
+ */
 public record FileOpContext(
         @NonNull String memo,
         @NonNull TransactionID txnId,

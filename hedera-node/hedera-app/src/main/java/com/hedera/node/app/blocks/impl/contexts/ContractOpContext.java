@@ -24,6 +24,14 @@ import com.hedera.node.app.blocks.impl.RecordTranslationContext;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 
+/**
+ * A {@link RecordTranslationContext} implementation with the id of an involved contract.
+ * @param memo The memo for the transaction
+ * @param txnId The transaction ID
+ * @param transaction The transaction
+ * @param functionality The functionality of the transaction
+ * @param contractId The id of the involved contract
+ */
 public record ContractOpContext(
         @NonNull String memo,
         @NonNull TransactionID txnId,

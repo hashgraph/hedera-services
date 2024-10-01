@@ -212,6 +212,7 @@ public class BlockStreamBuilder
     }
     // The type of contract operation that was performed
     private ContractOpType contractOpType = null;
+    private Bytes evmAddress = Bytes.EMPTY;
     private Bytes ethereumHash = Bytes.EMPTY;
 
     private final List<TokenAssociation> automaticTokenAssociations = new LinkedList<>();
@@ -285,9 +286,13 @@ public class BlockStreamBuilder
             }
             requireNonNull(result);
             if (i < n && blockItems.get(i).hasTransactionOutput()) {
-                final var outputs = new TransactionOutput[n - i];
-                for (int j = i; j < n; j++) {
-                    outputs[j - i] = blockItems.get(j).transactionOutput();
+                int j = i;
+                while (j < n && blockItems.get(j++).hasTransactionOutput()) {
+                    // Find all the transaction outputs
+                }
+                final var outputs = new TransactionOutput[j - i];
+                for (int k = i; k < j; k++) {
+                    outputs[k - i] = blockItems.get(k).transactionOutput();
                 }
                 return translator.translate(translationContext, result, outputs);
             } else {
@@ -330,7 +335,7 @@ public class BlockStreamBuilder
                     ETHEREUM_TRANSACTION -> new ContractOpContext(
                     memo, transactionID, transaction, functionality, contractId);
             case CRYPTO_CREATE, CRYPTO_UPDATE -> new CryptoOpContext(
-                    memo, transactionID, transaction, functionality, accountId);
+                    memo, transactionID, transaction, functionality, accountId, evmAddress);
             case FILE_CREATE -> new FileOpContext(memo, transactionID, transaction, functionality, fileId);
             case NODE_CREATE -> new NodeOpContext(memo, transactionID, transaction, functionality, nodeId);
             case SCHEDULE_DELETE -> new ScheduleOpContext(memo, transactionID, transaction, functionality, scheduleId);
@@ -611,7 +616,7 @@ public class BlockStreamBuilder
     @Override
     @NonNull
     public BlockStreamBuilder evmAddress(@NonNull final Bytes evmAddress) {
-        // No-op
+        this.evmAddress = requireNonNull(evmAddress);
         return this;
     }
 
@@ -875,6 +880,8 @@ public class BlockStreamBuilder
         }
 
         transactionResultBuilder.scheduleRef((ScheduleID) null);
+        evmAddress = Bytes.EMPTY;
+        ethereumHash = Bytes.EMPTY;
         runningHash = Bytes.EMPTY;
         sequenceNumber = 0L;
         runningHashVersion = 0L;

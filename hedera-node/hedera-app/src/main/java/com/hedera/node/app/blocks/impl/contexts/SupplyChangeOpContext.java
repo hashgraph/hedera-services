@@ -22,6 +22,14 @@ import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.node.app.blocks.impl.RecordTranslationContext;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
+/**
+ * A {@link RecordTranslationContext} implementation with a new total supply for a token.
+ * @param memo The memo for the transaction
+ * @param txnId The transaction ID
+ * @param transaction The transaction
+ * @param functionality The functionality of the transaction
+ * @param newTotalSupply The new total supply for a token
+ */
 public record SupplyChangeOpContext(
         @NonNull String memo,
         @NonNull TransactionID txnId,

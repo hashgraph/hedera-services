@@ -23,6 +23,14 @@ import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.node.app.blocks.impl.RecordTranslationContext;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
+/**
+ * A {@link RecordTranslationContext} implementation with the id of an involved topic.
+ * @param memo The memo for the transaction
+ * @param txnId The transaction ID
+ * @param transaction The transaction
+ * @param functionality The functionality of the transaction
+ * @param topicId The id of the involved topic
+ */
 public record TopicOpContext(
         @NonNull String memo,
         @NonNull TransactionID txnId,

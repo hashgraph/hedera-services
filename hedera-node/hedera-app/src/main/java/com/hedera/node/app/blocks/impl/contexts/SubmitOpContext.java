@@ -23,6 +23,16 @@ import com.hedera.node.app.blocks.impl.RecordTranslationContext;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
+/**
+ * A {@link RecordTranslationContext} implementation with the metadata of an HCS message submission.
+ * @param memo The memo for the transaction
+ * @param txnId The transaction ID
+ * @param transaction The transaction
+ * @param functionality The functionality of the transaction
+ * @param runningHash The new running hash of the HCS topic
+ * @param runningHashVersion The running hash version of the HCS topic
+ * @param sequenceNumber The new sequence number of the HCS message
+ */
 public record SubmitOpContext(
         @NonNull String memo,
         @NonNull TransactionID txnId,
