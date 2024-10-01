@@ -36,6 +36,7 @@ import com.hedera.hapi.node.transaction.ConsensusCustomFee;
 import com.hedera.hapi.node.transaction.FixedFee;
 import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
 import com.hedera.node.app.spi.workflows.HandleContext;
+import com.hedera.node.config.data.LedgerConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -47,9 +48,15 @@ import java.util.stream.Collectors;
 
 public class ConsensusCustomFeeHelper {
 
-    public static CryptoTransferTransactionBody assessCustomFee(Topic topic, HandleContext context) {
+    public static List<CryptoTransferTransactionBody> assessCustomFee(Topic topic, HandleContext context) {
+        final List<CryptoTransferTransactionBody> transactionBodies = new ArrayList<>();
+
         final var payer = context.payer();
         final var topicStore = context.storeFactory().writableStore(WritableTopicStore.class);
+        final var ledgerConfig = context.configuration().getConfigData(LedgerConfig.class);
+
+        // todo: allowance validation will be changed, when the storage situation is clear.
+
         // lookup for  hbar allowance
         TopicCryptoAllowance hbarAllowance = null;
         for (final var allowance : topic.cryptoAllowances()) {
@@ -67,27 +74,52 @@ public class ConsensusCustomFeeHelper {
 
         final var tokenTransfers = new ArrayList<TokenTransferList>();
         List<AccountAmount> hbarTransfers = new ArrayList<>();
+        // we need to count the number of balance adjustments,
+        // and if needed to split custom fee transfers in to two separate dispatches
+        final var maxTransfers = ledgerConfig.transfersMaxLen() / 2;
+        var transferCounts = 0;
+
+        // build crypto transfer body for the first layer of custom fees,
+        // if there is a second layer it will be assessed in crypto transfer handler
         for (ConsensusCustomFee fee : topic.customFees()) {
             final var fixedFee = fee.fixedFeeOrThrow();
-            // build crypto transfer body for the first layer of custom fees,
-            // if there is a second layer it will be assessed in crypto transfer handler
             if (fixedFee.hasDenominatingTokenId()) {
                 final var tokenId = fixedFee.denominatingTokenId();
                 validateTokenAllowance(tokenAllowanceMap, fixedFee);
+
                 tokenTransfers.add(buildCustomFeeTokenTransferList(payer, fee.feeCollectorAccountId(), fixedFee));
+                // update allowance values
                 applyFungibleTokenAllowances(topic.topicIdOrThrow(), tokenAllowanceMap.get(tokenId), topicStore);
             } else {
                 validateHbarAllowance(hbarAllowance, fixedFee);
                 hbarTransfers = mergeTransfers(
                         hbarTransfers, buildCustomFeeHbarTransferList(payer, fee.feeCollectorAccountId(), fixedFee));
+                // update allowance values
                 applyCryptoAllowances(topic.topicIdOrThrow(), hbarAllowance, topicStore);
             }
-        }
-        final var syntheticBodyBuilder = tokenTransfers(tokenTransfers.toArray(TokenTransferList[]::new));
+            transferCounts++;
 
-        return syntheticBodyBuilder
+            if (transferCounts == maxTransfers) {
+                final var syntheticBodyBuilder = tokenTransfers(tokenTransfers.toArray(TokenTransferList[]::new));
+
+                transactionBodies.add(syntheticBodyBuilder
+                        .transfers(
+                                TransferList.newBuilder().accountAmounts(hbarTransfers.toArray(AccountAmount[]::new)))
+                        .build());
+
+                // reset lists and counter
+                transferCounts = 0;
+                tokenTransfers.clear();
+                hbarTransfers.clear();
+            }
+        }
+
+        final var syntheticBodyBuilder = tokenTransfers(tokenTransfers.toArray(TokenTransferList[]::new));
+        transactionBodies.add(syntheticBodyBuilder
                 .transfers(TransferList.newBuilder().accountAmounts(hbarTransfers.toArray(AccountAmount[]::new)))
-                .build();
+                .build());
+
+        return transactionBodies;
     }
 
     private static void validateTokenAllowance(
@@ -167,7 +199,7 @@ public class ConsensusCustomFeeHelper {
         final Map<AccountID, AccountAmount> consolidated = new LinkedHashMap<>();
         consolidateInto(consolidated, from);
         consolidateInto(consolidated, to);
-        return consolidated.values().stream().toList();
+        return new ArrayList<>(consolidated.values());
     }
 
     private static void consolidateInto(

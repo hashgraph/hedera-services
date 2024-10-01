@@ -17,26 +17,19 @@
 package com.hedera.services.bdd.suites.hip991;
 
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
-import static com.hedera.services.bdd.spec.keys.KeyShape.PREDEFINED_SHAPE;
-import static com.hedera.services.bdd.spec.keys.KeyShape.sigs;
-import static com.hedera.services.bdd.spec.keys.KeyShape.threshOf;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTopicInfo;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.approveTopicAllowance;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createTopic;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoDelete;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.submitMessageTo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedConsensusHbarFee;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedConsensusHtsFee;
-import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHtsFee;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeTests.expectedConsensusFixedHTSFee;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeTests.expectedConsensusFixedHbarFee;
-import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
@@ -46,8 +39,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETE
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_MUST_BE_POSITIVE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FEKL_CONTAINS_DUPLICATED_KEYS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CUSTOM_FEE_SCHEDULE_KEY;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_TRANSFER_LIST_SIZE_LIMIT_EXCEEDED;
 
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestLifecycle;
@@ -274,88 +265,90 @@ public class TopicCustomFeeTest extends TopicCustomFeeBase {
     @DisplayName("Submit message")
     class SubmitMessage {
 
-//        @HapiTest
-//        @DisplayName("submit")
-//        final Stream<DynamicTest> submitMessage() {
-//            final var collector = "collector";
-//            final var payer = "submitter";
-//            final var treasury = "treasury";
-//            final var token = "testToken";
-//            final var secondToken = "secondToken";
-//            final var denomToken = "denomToken";
-//            final var simpleKey = "simpleKey";
-//            final var simpleKey2 = "simpleKey2";
-//            final var invalidKey = "invalidKey";
-//            final var threshKey = "threshKey";
-//
-//            return hapiTest(
-//                    // create keys
-//                    newKeyNamed(invalidKey),
-//                    newKeyNamed(simpleKey),
-//                    newKeyNamed(simpleKey2),
-//                    newKeyNamed(threshKey)
-//                            .shape(threshOf(1, PREDEFINED_SHAPE, PREDEFINED_SHAPE)
-//                                    .signedWith(sigs(simpleKey2, simpleKey))),
-//                    // create accounts and denomination token
-//                    cryptoCreate(collector).balance(0L),
-//                    cryptoCreate(payer).balance(ONE_HUNDRED_HBARS),
-//                    cryptoCreate(treasury),
-//                    tokenCreate(denomToken)
-//                            .treasury(treasury)
-//                            .tokenType(TokenType.FUNGIBLE_COMMON)
-//                            .initialSupply(500),
-//                    tokenAssociate(collector, denomToken),
-//                    tokenAssociate(payer, denomToken),
-//                    tokenCreate(token)
-//                            .treasury(treasury)
-//                            .tokenType(TokenType.FUNGIBLE_COMMON)
-//                            .withCustom(fixedHtsFee(1, denomToken, collector))
-//                            .initialSupply(500),
-//                    tokenCreate(secondToken)
-//                            .treasury(treasury)
-//                            .tokenType(TokenType.FUNGIBLE_COMMON)
-//                            .initialSupply(500),
-//                    tokenAssociate(collector, token, secondToken),
-//                    tokenAssociate(payer, token, secondToken),
-//                    cryptoTransfer(
-//                            moving(2, token).between(treasury, payer),
-//                            moving(1, secondToken).between(treasury, payer),
-//                            moving(1, denomToken).between(treasury, payer)),
-//
-//                    // create topic with custom fees
-//                    createTopic(TOPIC)
-//                            //                            .withConsensusCustomFee(fixedConsensusHtsFee(1, token,
-//                            // collector))
-//                            //                            .withConsensusCustomFee(fixedConsensusHtsFee(1, secondToken,
-//                            // collector))
-//                            .withConsensusCustomFee(fixedConsensusHbarFee(ONE_HBAR, collector))
-//                            .feeExemptKeys(threshKey)
-//                            .hasKnownStatus(SUCCESS),
-//
-//                    // add allowance
-//                    approveTopicAllowance()
-//                            .payingWith(payer)
-//                            .addCryptoAllowance(payer, TOPIC, ONE_HUNDRED_HBARS, ONE_HBAR),
-//
-//                    // submit message
-//                    submitMessageTo(TOPIC)
-//                            .message("TEST")
-//                            .signedBy(invalidKey, payer)
-//                            .payingWith(payer)
-//                            .via("submit"),
-//
-//                    // check records
-//                    getTxnRecord("submit").andAllChildRecords().logged(),
-//
-//                    // assert balances
-//                    getAccountBalance(collector).hasTinyBars(ONE_HBAR));
-//            //                            .hasTokenBalance(token, 2)
-//            //                            .hasTokenBalance(denomToken,1)
-//            //                            .hasTokenBalance(secondToken, 1),
-//            //                    getAccountBalance(payer)
-//            //                            .hasTokenBalance(token, 0)
-//            //                            .hasTokenBalance(secondToken, 0));
-//        }
+        //        @HapiTest
+        //        @DisplayName("submit")
+        //        final Stream<DynamicTest> submitMessage() {
+        //            final var collector = "collector";
+        //            final var payer = "submitter";
+        //            final var treasury = "treasury";
+        //            final var token = "testToken";
+        //            final var secondToken = "secondToken";
+        //            final var denomToken = "denomToken";
+        //            final var simpleKey = "simpleKey";
+        //            final var simpleKey2 = "simpleKey2";
+        //            final var invalidKey = "invalidKey";
+        //            final var threshKey = "threshKey";
+        //
+        //            return hapiTest(
+        //                    // create keys
+        //                    newKeyNamed(invalidKey),
+        //                    newKeyNamed(simpleKey),
+        //                    newKeyNamed(simpleKey2),
+        //                    newKeyNamed(threshKey)
+        //                            .shape(threshOf(1, PREDEFINED_SHAPE, PREDEFINED_SHAPE)
+        //                                    .signedWith(sigs(simpleKey2, simpleKey))),
+        //                    // create accounts and denomination token
+        //                    cryptoCreate(collector).balance(0L),
+        //                    cryptoCreate(payer).balance(ONE_HUNDRED_HBARS),
+        //                    cryptoCreate(treasury),
+        //                    tokenCreate(denomToken)
+        //                            .treasury(treasury)
+        //                            .tokenType(TokenType.FUNGIBLE_COMMON)
+        //                            .initialSupply(500),
+        //                    tokenAssociate(collector, denomToken),
+        //                    tokenAssociate(payer, denomToken),
+        //                    tokenCreate(token)
+        //                            .treasury(treasury)
+        //                            .tokenType(TokenType.FUNGIBLE_COMMON)
+        //                            .withCustom(fixedHtsFee(1, denomToken, collector))
+        //                            .initialSupply(500),
+        //                    tokenCreate(secondToken)
+        //                            .treasury(treasury)
+        //                            .tokenType(TokenType.FUNGIBLE_COMMON)
+        //                            .initialSupply(500),
+        //                    tokenAssociate(collector, token, secondToken),
+        //                    tokenAssociate(payer, token, secondToken),
+        //                    cryptoTransfer(
+        //                            moving(2, token).between(treasury, payer),
+        //                            moving(1, secondToken).between(treasury, payer),
+        //                            moving(1, denomToken).between(treasury, payer)),
+        //
+        //                    // create topic with custom fees
+        //                    createTopic(TOPIC)
+        //                            //                            .withConsensusCustomFee(fixedConsensusHtsFee(1,
+        // token,
+        //                            // collector))
+        //                            //                            .withConsensusCustomFee(fixedConsensusHtsFee(1,
+        // secondToken,
+        //                            // collector))
+        //                            .withConsensusCustomFee(fixedConsensusHbarFee(ONE_HBAR, collector))
+        //                            .feeExemptKeys(threshKey)
+        //                            .hasKnownStatus(SUCCESS),
+        //
+        //                    // add allowance
+        //                    approveTopicAllowance()
+        //                            .payingWith(payer)
+        //                            .addCryptoAllowance(payer, TOPIC, ONE_HUNDRED_HBARS, ONE_HBAR),
+        //
+        //                    // submit message
+        //                    submitMessageTo(TOPIC)
+        //                            .message("TEST")
+        //                            .signedBy(invalidKey, payer)
+        //                            .payingWith(payer)
+        //                            .via("submit"),
+        //
+        //                    // check records
+        //                    getTxnRecord("submit").andAllChildRecords().logged(),
+        //
+        //                    // assert balances
+        //                    getAccountBalance(collector).hasTinyBars(ONE_HBAR));
+        //            //                            .hasTokenBalance(token, 2)
+        //            //                            .hasTokenBalance(denomToken,1)
+        //            //                            .hasTokenBalance(secondToken, 1),
+        //            //                    getAccountBalance(payer)
+        //            //                            .hasTokenBalance(token, 0)
+        //            //                            .hasTokenBalance(secondToken, 0));
+        //        }
 
         @Nested
         @DisplayName("Positive scenarios")
@@ -431,17 +424,10 @@ public class TopicCustomFeeTest extends TopicCustomFeeBase {
                         // create topic with 10 multilayer fees - 9 HTS + 1 HBAR
                         createTopicWith10Different2layerFees(),
                         approveTopicAllowanceForAllFees(),
-                        submitMessageTo(TOPIC).message("TEST").payingWith(SUBMITTER)
-                                // todo for now custom fee will fail, because of limitation in cryptoTransfer
-                                .hasKnownStatus(TOKEN_TRANSFER_LIST_SIZE_LIMIT_EXCEEDED)));
+                        submitMessageTo(TOPIC).message("TEST").payingWith(SUBMITTER),
                         // assert topic fee collector balance
-//                        assertAllCollectorsBalances()));
+                        assertAllCollectorsBalances()));
             }
-
-
-
-
-
 
             private SpecOperation[] associateAllTokensToCollectors() {
                 final var tokenName = MULTI_LAYER_FEE_PREFIX + "token_";
