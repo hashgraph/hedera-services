@@ -20,7 +20,6 @@ import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.metrics.RunningAverageMetric;
 import com.swirlds.metrics.api.Metrics;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.concurrent.TimeUnit;
 
 /**
  * This class encapsulates metrics for the Merkle root snapshot.

@@ -243,7 +243,7 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
             @NonNull final Platform platform,
             @NonNull final InitTrigger trigger,
             @Nullable final SoftwareVersion deserializedVersion) {
-        PlatformContext platformContext = platform.getContext();
+        final PlatformContext platformContext = platform.getContext();
         time = platformContext.getTime();
         metrics = platformContext.getMetrics();
         merkleCryptography = platformContext.getMerkleCryptography();
