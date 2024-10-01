@@ -132,14 +132,15 @@ public class RandomSignedStateGenerator {
         registerMerkleStateRootClassIds();
         if (state == null) {
             Platform platform = mock(Platform.class);
-            when(platform.getContext()).thenReturn(TestPlatformContextBuilder.create().build());
+            when(platform.getContext())
+                    .thenReturn(TestPlatformContextBuilder.create().build());
             if (useBlockingState) {
                 stateInstance = new BlockingSwirldState();
             } else {
                 stateInstance = new MerkleStateRoot(
                         FAKE_MERKLE_STATE_LIFECYCLES, version -> new BasicSoftwareVersion(version.major()));
             }
-            ((MerkleStateRoot)stateInstance).init(platform, InitTrigger.GENESIS, softwareVersion);
+            ((MerkleStateRoot) stateInstance).init(platform, InitTrigger.GENESIS, softwareVersion);
         } else {
             stateInstance = state;
         }
