@@ -169,7 +169,7 @@ public class SubProcessNetwork extends AbstractGrpcNetwork implements HederaNetw
                             // Begins by deleting the working directory
                             node.initWorkingDir(configTxt);
                         });
-                        assignNewPorts();
+                        assignNewMetadata(ReassignPorts.YES);
                         clients = null;
                         start();
                     }
@@ -203,26 +203,30 @@ public class SubProcessNetwork extends AbstractGrpcNetwork implements HederaNetw
     }
 
     /**
-     * Assigns new ports to all nodes in the network.
-     *
-     * <p>Overwrites the existing <i>config.txt</i> file for each node in the network with the new ports.
+     * Assigns updated metadata to nodes from the current <i>config.txt</i>.
+     * <p>Also reassigns ports and overwrites the existing <i>config.txt</i> file for each node in the
+     * network with new ports if requested to avoid port binding issues in test environments.
      */
-    public void assignNewPorts() {
-        log.info("Reinitializing ports for network '{}' starting from {}", name(), nextGrpcPort);
-        reinitializePorts();
-        log.info("  -> Network '{}' ports now starting from {}", name(), nextGrpcPort);
-        nodes.forEach(node -> {
-            final int nodeId = (int) node.getNodeId();
-            configTxt =
-                    withReassignedPorts(configTxt, nodeId, nextGossipPort + nodeId * 2, nextGossipTlsPort + nodeId * 2);
-            ((SubProcessNode) node)
-                    .reassignPorts(
-                            nextGrpcPort + nodeId * 2,
-                            nextNodeOperatorPort + nodeId * 2,
-                            nextGossipPort + nodeId * 2,
-                            nextGossipTlsPort + nodeId * 2,
-                            nextPrometheusPort + nodeId);
-        });
+    public void assignNewMetadata(@NonNull final ReassignPorts reassignPorts) {
+        requireNonNull(reassignPorts);
+        if (reassignPorts == ReassignPorts.YES) {
+            log.info("Reassigning ports for network '{}' starting from {}", name(), nextGrpcPort);
+            reinitializePorts();
+            log.info("  -> Network '{}' ports now starting from {}", name(), nextGrpcPort);
+            nodes.forEach(node -> {
+                final int nodeId = (int) node.getNodeId();
+                configTxt = withReassignedPorts(
+                        configTxt, nodeId, nextGossipPort + nodeId * 2, nextGossipTlsPort + nodeId * 2);
+                ((SubProcessNode) node)
+                        .reassignPorts(
+                                nextGrpcPort + nodeId * 2,
+                                nextNodeOperatorPort + nodeId * 2,
+                                nextGossipPort + nodeId * 2,
+                                nextGossipTlsPort + nodeId * 2,
+                                nextPrometheusPort + nodeId);
+            });
+        }
+        nodes.forEach(node -> ((SubProcessNode) node).reassignNodeAccountIdFrom(memoOfNode(node.getNodeId())));
         refreshNodeConfigTxt();
         HapiClients.tearDown();
         this.clients = HapiClients.clientsFor(this);

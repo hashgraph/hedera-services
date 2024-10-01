@@ -31,6 +31,7 @@ import com.hedera.node.config.data.GrpcConfig;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.data.NettyConfig;
 import com.hedera.node.config.types.Profile;
+import com.hedera.pbj.runtime.RpcMethodDefinition;
 import com.hedera.pbj.runtime.RpcServiceDefinition;
 import com.swirlds.metrics.api.Metrics;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -51,6 +52,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -143,38 +145,20 @@ public final class NettyGrpcServerManager implements GrpcServerManager {
 
         // Convert the various RPC service definitions into transaction or query endpoints using the
         // GrpcServiceBuilder.
-        services = rpcServiceDefinitions
-                .get()
-                .map(d -> {
-                    final var builder = new GrpcServiceBuilder(d.basePath(), ingestWorkflow, queryWorkflow);
-                    d.methods().forEach(m -> {
-                        if (Transaction.class.equals(m.requestType())) {
-                            builder.transaction(m.path());
-                        } else {
-                            builder.query(m.path());
-                        }
-                    });
-                    return builder.build(metrics, true);
-                })
-                .collect(Collectors.toUnmodifiableSet());
+        services =
+                buildServiceDefinitions(rpcServiceDefinitions, m -> true, ingestWorkflow, queryWorkflow, metrics, true);
 
         final var grpcConfig = configProvider.getConfiguration().getConfigData(GrpcConfig.class);
         if (grpcConfig.nodeOperatorPortEnabled()) {
             // Convert the various RPC service definitions into query endpoints permitting unpaid queries for node
             // operators
-            nodeOperatorServices = rpcServiceDefinitions
-                    .get()
-                    .filter(d -> d.methods().stream().anyMatch(m -> Query.class.equals(m.requestType())))
-                    .map(d -> {
-                        final var builder = new GrpcServiceBuilder(d.basePath(), null, queryWorkflow);
-                        d.methods().forEach(m -> {
-                            if (Query.class.equals(m.requestType())) {
-                                builder.query(m.path());
-                            }
-                        });
-                        return builder.build(metrics, false);
-                    })
-                    .collect(Collectors.toUnmodifiableSet());
+            nodeOperatorServices = buildServiceDefinitions(
+                    rpcServiceDefinitions,
+                    m -> Query.class.equals(m.requestType()),
+                    ingestWorkflow,
+                    queryWorkflow,
+                    metrics,
+                    false);
         }
     }
 
@@ -426,5 +410,28 @@ public final class NettyGrpcServerManager implements GrpcServerManager {
                 .build();
 
         builder.sslContext(sslContext);
+    }
+
+    private Set<ServerServiceDefinition> buildServiceDefinitions(
+            @NonNull final Supplier<Stream<RpcServiceDefinition>> rpcServiceDefinitions,
+            @NonNull final Predicate<RpcMethodDefinition> methodFilter,
+            @NonNull final IngestWorkflow ingestWorkflow,
+            @NonNull final QueryWorkflow queryWorkflow,
+            @NonNull final Metrics metrics,
+            boolean chargeQueries) {
+        return rpcServiceDefinitions
+                .get()
+                .map(d -> {
+                    final var builder = new GrpcServiceBuilder(d.basePath(), ingestWorkflow, queryWorkflow);
+                    d.methods().stream().filter(methodFilter).forEach(m -> {
+                        if (Transaction.class.equals(m.requestType())) {
+                            builder.transaction(m.path());
+                        } else {
+                            builder.query(m.path());
+                        }
+                    });
+                    return builder.build(metrics, chargeQueries);
+                })
+                .collect(Collectors.toUnmodifiableSet());
     }
 }

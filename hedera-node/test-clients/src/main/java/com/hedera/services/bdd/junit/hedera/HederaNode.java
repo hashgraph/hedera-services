@@ -128,8 +128,7 @@ public interface HederaNode {
      * @return this node's HAPI spec identifier
      */
     default String hapiSpecInfo() {
-        return getHost() + ":" + getGrpcPort() + ":" + getGrpcNodeOperatorPort() + ":0.0."
-                + getAccountId().accountNumOrThrow();
+        return getHost() + ":" + getGrpcPort() + ":0.0." + getAccountId().accountNumOrThrow();
     }
 
     /**

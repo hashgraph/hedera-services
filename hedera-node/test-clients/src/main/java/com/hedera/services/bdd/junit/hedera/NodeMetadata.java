@@ -73,7 +73,16 @@ public record NodeMetadata(
     public NodeMetadata withNewAccountId(@NonNull final AccountID accountId) {
         requireNonNull(accountId);
         return new NodeMetadata(
-                nodeId, name, accountId, host, grpcPort, gossipPort, gossipTlsPort, prometheusPort, workingDir);
+                nodeId,
+                name,
+                accountId,
+                host,
+                grpcPort,
+                grpcNodeOperatorPort,
+                gossipPort,
+                gossipTlsPort,
+                prometheusPort,
+                workingDir);
     }
 
     /**

@@ -55,28 +55,29 @@ public class NodeOperatorQueriesTest extends NodeOperatorQueriesBase {
             final AtomicLong initialPayerBalance = new AtomicLong();
             final AtomicLong newPayerBalance = new AtomicLong();
             final AtomicLong currentPayerBalance = new AtomicLong();
-            return hapiTest(
-                    withOpContext((spec, log) -> {
-                        // set initial payer balance variable
-                        final var initialBalance = getAccountBalance(PAYER).exposingBalanceTo(initialPayerBalance::set);
-                        // perform paid query, pay for the query with payer account
-                        // the grpc client performs the query to different ports
-                        final var firstQuery = getTokenInfo(FUNGIBLE_QUERY_TOKEN)
-                                .payingWith(PAYER)
-                                .signedBy(PAYER).logged();
-                        // get changed payer account balance
-                        final var newBalance = getAccountBalance(PAYER).exposingBalanceTo(newPayerBalance::set);
-                        // perform free query to local port with asNodeOperator() method
-                        final var secondQuery = getTokenInfo(FUNGIBLE_QUERY_TOKEN)
-                                .payingWith(PAYER)
-                                .signedBy(PAYER)
-                                .asNodeOperator().logged();
-                        // assert payer account balance is not changed
-                        final var currentBalance = getAccountBalance(PAYER).exposingBalanceTo(currentPayerBalance::set);
-                        allRunFor(spec, initialBalance, firstQuery, newBalance, secondQuery, currentBalance);
-                        assertNotEquals(initialPayerBalance.get(), newPayerBalance.get());
-                        assertEquals(newPayerBalance.get(), currentPayerBalance.get());
-                    }));
+            return hapiTest(withOpContext((spec, log) -> {
+                // set initial payer balance variable
+                final var initialBalance = getAccountBalance(PAYER).exposingBalanceTo(initialPayerBalance::set);
+                // perform paid query, pay for the query with payer account
+                // the grpc client performs the query to different ports
+                final var firstQuery = getTokenInfo(FUNGIBLE_QUERY_TOKEN)
+                        .payingWith(PAYER)
+                        .signedBy(PAYER)
+                        .logged();
+                // get changed payer account balance
+                final var newBalance = getAccountBalance(PAYER).exposingBalanceTo(newPayerBalance::set);
+                // perform free query to local port with asNodeOperator() method
+                final var secondQuery = getTokenInfo(FUNGIBLE_QUERY_TOKEN)
+                        .payingWith(PAYER)
+                        .signedBy(PAYER)
+                        .asNodeOperator()
+                        .logged();
+                // assert payer account balance is not changed
+                final var currentBalance = getAccountBalance(PAYER).exposingBalanceTo(currentPayerBalance::set);
+                allRunFor(spec, initialBalance, firstQuery, newBalance, secondQuery, currentBalance);
+                assertNotEquals(initialPayerBalance.get(), newPayerBalance.get());
+                assertEquals(newPayerBalance.get(), currentPayerBalance.get());
+            }));
         }
     }
 }
