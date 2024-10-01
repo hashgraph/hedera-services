@@ -46,7 +46,7 @@ public class MerkleRootSnapshotMetrics {
      * Update the metric tracking the average time required to write a Merkle tree to disk.
      * @param timeTakenMs the time taken to write the state to disk
      */
-    public void updateWriteStateToDiskTimeMetric(long timeTakenMs) {
-        writeMerkleRootToDiskTime.update(TimeUnit.MILLISECONDS.toMillis(timeTakenMs));
+    public void updateWriteStateToDiskTimeMetric(final long timeTakenMs) {
+        writeMerkleRootToDiskTime.update(timeTakenMs);
     }
 }

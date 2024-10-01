@@ -1101,7 +1101,7 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
     public void createSnapshot(@NonNull final Path targetPath) {
         throwIfMutable();
         throwIfDestroyed();
-        final Long startTime = time == null ? null : time.currentTimeMillis();
+        final long startTime = time.currentTimeMillis();
         MerkleTreeSnapshotWriter.createSnapshot(this, targetPath);
         if (snapshotMetrics != null && time != null) {
             snapshotMetrics.updateWriteStateToDiskTimeMetric(time.currentTimeMillis() - startTime);
