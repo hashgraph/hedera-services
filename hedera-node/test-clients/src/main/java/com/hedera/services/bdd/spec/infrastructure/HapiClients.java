@@ -16,6 +16,7 @@
 
 package com.hedera.services.bdd.spec.infrastructure;
 
+import static com.hedera.node.app.hapi.utils.CommonPbjConverters.pbjToProto;
 import static java.util.Objects.requireNonNull;
 
 import com.google.common.base.MoreObjects;
@@ -45,6 +46,7 @@ import io.netty.handler.ssl.SupportedCipherSuiteFilter;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentSkipListMap;
@@ -53,6 +55,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -62,7 +65,8 @@ public class HapiClients {
     // The deadline for the server to respond to a blocking unary call
     private static final long DEADLINE_SECS = 30L;
 
-    private final List<NodeConnectInfo> nodes;
+    private final List<HederaNode> nodes;
+    private final List<NodeConnectInfo> nodeInfos;
     /**
      * Id of node-{host, port} pairs to use for non-workflow operations
      */
@@ -148,41 +152,60 @@ public class HapiClients {
         stubSequences.putIfAbsent(channelUri, new AtomicInteger());
     }
 
-    private void ensureNodeOperatorChannelStubsInPool(@NonNull final NodeConnectInfo node) {
+    private void ensureNodeOperatorChannelStubsInPool(@NonNull final HederaNode node) {
         requireNonNull(node);
-        final var channelUri = node.nodeOperatorUri();
+        final var channelUri = uri(node.getHost(), node.getGrpcNodeOperatorPort());
         final var existingPool = channelPools.computeIfAbsent(channelUri, COPY_ON_WRITE_LIST_SUPPLIER);
         if (existingPool.size() < MAX_DESIRED_CHANNELS_PER_NODE) {
-            final var channel = createNettyChannel(false, node.getHost(), node.getNodeOperatorPort(), -1);
+            final var channel = createNettyChannel(false, node.getHost(), node.getGrpcNodeOperatorPort(), -1);
             requireNonNull(channel, "Cannot continue without Netty channel");
-            existingPool.add(ChannelStubs.from(channel, node, false));
+            existingPool.add(ChannelStubs.from(channel, new NodeConnectInfo(node.hapiSpecInfo()), false));
         }
         stubSequences.putIfAbsent(channelUri, new AtomicInteger());
     }
 
-    private HapiClients(final List<NodeConnectInfo> nodes) {
-        this.nodes = nodes;
-        stubIds = nodes.stream().collect(Collectors.toMap(NodeConnectInfo::getAccount, NodeConnectInfo::uri));
-        tlsStubIds = nodes.stream().collect(Collectors.toMap(NodeConnectInfo::getAccount, NodeConnectInfo::tlsUri));
-        nodeOperatorStubIds =
-                nodes.stream().collect(Collectors.toMap(NodeConnectInfo::getAccount, NodeConnectInfo::nodeOperatorUri));
-        nodes.forEach(node -> {
+    private HapiClients(Supplier<List<NodeConnectInfo>> nodeInfosSupplier) {
+        this.nodes = Collections.emptyList();
+        this.nodeInfos = nodeInfosSupplier.get();
+        stubIds = nodeInfos.stream().collect(Collectors.toMap(NodeConnectInfo::getAccount, NodeConnectInfo::uri));
+        tlsStubIds = nodeInfos.stream().collect(Collectors.toMap(NodeConnectInfo::getAccount, NodeConnectInfo::tlsUri));
+        nodeOperatorStubIds = Collections.emptyMap();
+        nodeInfos.forEach(node -> {
             ensureChannelStubsInPool(node, false);
             ensureChannelStubsInPool(node, true);
+        });
+    }
+
+    private HapiClients(final List<HederaNode> nodes) {
+        this.nodes = nodes;
+        this.nodeInfos = Collections.emptyList();
+        stubIds = nodes.stream()
+                .collect(Collectors.toMap(
+                        n -> pbjToProto(n.getAccountId(), com.hedera.hapi.node.base.AccountID.class, AccountID.class),
+                        n -> uri(n.getHost(), n.getGrpcPort())));
+        tlsStubIds = Collections.emptyMap();
+        nodeOperatorStubIds = nodes.stream()
+                .collect(Collectors.toMap(
+                        n -> pbjToProto(n.getAccountId(), com.hedera.hapi.node.base.AccountID.class, AccountID.class),
+                        n -> uri(n.getHost(), n.getGrpcNodeOperatorPort())));
+        nodes.forEach(node -> {
+            ensureChannelStubsInPool(new NodeConnectInfo(node.hapiSpecInfo()), false);
+            ensureChannelStubsInPool(new NodeConnectInfo(node.hapiSpecInfo()), true);
             ensureNodeOperatorChannelStubsInPool(node);
         });
     }
 
+    private String uri(String host, int port) {
+        return String.format("%s:%d", host, port);
+    }
+
     public static HapiClients clientsFor(HapiSpecSetup setup) {
-        return new HapiClients(setup.nodes());
+        return new HapiClients(() -> setup.nodes());
     }
 
     public static HapiClients clientsFor(@NonNull final HederaNetwork network) {
         requireNonNull(network);
-        return new HapiClients(network.nodes().stream()
-                .map(HederaNode::hapiSpecInfo)
-                .map(NodeConnectInfo::new)
-                .toList());
+        return new HapiClients(network.nodes());
     }
 
     public FileServiceBlockingStub getFileSvcStub(AccountID nodeId, boolean useTls, boolean asNodeOperator) {
