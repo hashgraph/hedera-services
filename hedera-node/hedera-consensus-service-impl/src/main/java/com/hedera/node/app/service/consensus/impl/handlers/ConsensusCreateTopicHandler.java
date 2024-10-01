@@ -24,10 +24,9 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.FEKL_CONTAINS_DUPLICATE
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_CUSTOM_FEE_SCHEDULE_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_KEY_IN_FEKL;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_KEY_IN_FEE_EXEMPT_KEY_LIST;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_ENTRIES_FOR_FEKL_EXCEEDED;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.MISSING_CUSTOM_FEES;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_ENTRIES_FOR_FEE_EXEMPT_KEY_LIST_EXCEEDED;
 import static com.hedera.node.app.hapi.utils.fee.ConsensusServiceFeeBuilder.getConsensusCreateTopicFee;
 import static com.hedera.node.app.service.consensus.impl.ConsensusServiceImpl.RUNNING_HASH_BYTE_ARRAY_SIZE;
 import static com.hedera.node.app.spi.validation.AttributeValidator.isImmutableKey;
@@ -122,8 +121,21 @@ public class ConsensusCreateTopicHandler implements TransactionHandler {
         final var op = handleContext.body().consensusCreateTopicOrThrow();
         final var topicStore = handleContext.storeFactory().writableStore(WritableTopicStore.class);
 
+        validateSemantics(op, handleContext);
+
         final var builder = new Topic.Builder();
-        validateSemantics(op, handleContext, builder);
+        if (op.hasAdminKey() && !isImmutableKey(op.adminKey())) {
+            builder.adminKey(op.adminKey());
+        }
+        if (op.hasSubmitKey()) {
+            builder.submitKey(op.submitKey());
+        }
+        if (op.hasFeeScheduleKey()) {
+            builder.feeScheduleKey(op.feeScheduleKey());
+        }
+        builder.feeExemptKeyList(op.feeExemptKeyList());
+        builder.customFees(op.customFees());
+        builder.memo(op.memo());
 
         final var impliedExpiry = handleContext.consensusNow().getEpochSecond()
                 + op.autoRenewPeriodOrElse(Duration.DEFAULT).seconds();
@@ -173,8 +185,7 @@ public class ConsensusCreateTopicHandler implements TransactionHandler {
         }
     }
 
-    private void validateSemantics(
-            ConsensusCreateTopicTransactionBody op, HandleContext handleContext, Topic.Builder builder) {
+    private void validateSemantics(ConsensusCreateTopicTransactionBody op, HandleContext handleContext) {
 
         final var configuration = handleContext.configuration();
         final var topicConfig = configuration.getConfigData(TopicsConfig.class);
@@ -186,40 +197,30 @@ public class ConsensusCreateTopicHandler implements TransactionHandler {
         // Validate admin and submit keys and set them. Empty key list is allowed and is used for immutable entities
         if (op.hasAdminKey() && !isImmutableKey(op.adminKey())) {
             handleContext.attributeValidator().validateKey(op.adminKey());
-            builder.adminKey(op.adminKey());
         }
 
         // submitKey() is not checked in preCheck()
         if (op.hasSubmitKey()) {
             handleContext.attributeValidator().validateKey(op.submitKey());
-            builder.submitKey(op.submitKey());
         }
 
         // validate hasFeeScheduleKey()
         if (op.hasFeeScheduleKey()) {
             handleContext.attributeValidator().validateKey(op.feeScheduleKey(), INVALID_CUSTOM_FEE_SCHEDULE_KEY);
-            builder.feeScheduleKey(op.feeScheduleKey());
         }
 
-        // validate size of the list and the keys
-        if (!op.feeExemptKeyList().isEmpty()) {
-            validateTrue(
-                    op.feeExemptKeyList().size() <= topicConfig.maxEntriesForFeeExemptKeyList(),
-                    MAX_ENTRIES_FOR_FEKL_EXCEEDED);
-            validateTrue(!op.customFees().isEmpty(), MISSING_CUSTOM_FEES);
-            op.feeExemptKeyList()
-                    .forEach(key -> handleContext.attributeValidator().validateKey(key, INVALID_KEY_IN_FEKL));
-            builder.feeExemptKeyList(op.feeExemptKeyList());
-        }
+        // validate fee exempt key list
+        validateTrue(
+                op.feeExemptKeyList().size() <= topicConfig.maxEntriesForFeeExemptKeyList(),
+                MAX_ENTRIES_FOR_FEE_EXEMPT_KEY_LIST_EXCEEDED);
+        op.feeExemptKeyList()
+                .forEach(
+                        key -> handleContext.attributeValidator().validateKey(key, INVALID_KEY_IN_FEE_EXEMPT_KEY_LIST));
 
         // validate custom fees
-        if (!op.customFees().isEmpty()) {
-            validateTrue(
-                    op.customFees().size() <= topicConfig.maxCustomFeeEntriesForTopics(), CUSTOM_FEES_LIST_TOO_LONG);
-            customFeesValidator.validate(
-                    accountStore, tokenRelStore, tokenStore, op.customFees(), handleContext.expiryValidator());
-            builder.customFees(op.customFees());
-        }
+        validateTrue(op.customFees().size() <= topicConfig.maxCustomFeeEntriesForTopics(), CUSTOM_FEES_LIST_TOO_LONG);
+        customFeesValidator.validate(
+                accountStore, tokenRelStore, tokenStore, op.customFees(), handleContext.expiryValidator());
 
         /* Validate if the current topic can be created */
         validateTrue(
@@ -227,7 +228,6 @@ public class ConsensusCreateTopicHandler implements TransactionHandler {
 
         /* Validate the topic memo */
         handleContext.attributeValidator().validateMemo(op.memo());
-        builder.memo(op.memo());
     }
 
     @NonNull
