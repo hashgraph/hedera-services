@@ -145,18 +145,22 @@ public class ConsensusSubmitMessageHandler implements TransactionHandler {
         }
         if (!topic.customFees().isEmpty() && !payerIsFeeExempted) {
             // validate and create synthetic body
-            final var syntheticBody = ConsensusCustomFeeHelper.assessCustomFee(topic, handleContext);
-            // dispatch crypto transfer
-            var record = handleContext.dispatchChildTransaction(
-                    TransactionBody.newBuilder().cryptoTransfer(syntheticBody).build(),
-                    ConsensusSubmitMessageStreamBuilder.class,
-                    null,
-                    handleContext.payer(),
-                    HandleContext.TransactionCategory.CHILD,
-                    HandleContext.ConsensusThrottling.OFF);
-            validateTrue(record.status().equals(SUCCESS), record.status());
-            // update total allowances
-            ConsensusCustomFeeHelper.adjustAllowance(syntheticBody);
+            final var syntheticBodies = ConsensusCustomFeeHelper.assessCustomFee(topic, handleContext);
+            for (final var syntheticBody : syntheticBodies) {
+                // dispatch crypto transfer
+                var record = handleContext.dispatchChildTransaction(
+                        TransactionBody.newBuilder()
+                                .cryptoTransfer(syntheticBody)
+                                .build(),
+                        ConsensusSubmitMessageStreamBuilder.class,
+                        null,
+                        handleContext.payer(),
+                        HandleContext.TransactionCategory.CHILD,
+                        HandleContext.ConsensusThrottling.OFF);
+                validateTrue(record.status().equals(SUCCESS), record.status());
+                // update total allowances
+                ConsensusCustomFeeHelper.adjustAllowance(syntheticBody);
+            }
         }
 
         try {
