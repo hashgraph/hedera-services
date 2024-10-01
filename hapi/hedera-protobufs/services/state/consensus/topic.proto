@@ -174,9 +174,9 @@ message Topic {
  */
 message TopicCryptoAllowance {
     /**
-     * The account ID of the spender.
+     * The account ID of the owner.
      */
-    AccountID spender_id = 1;
+    AccountID owner_id = 1;
     /**
      * The total amount of hbar allocated for the allowance.
      */
@@ -201,9 +201,9 @@ message TopicFungibleTokenAllowance {
      */
     TokenID token_id = 1;
     /**
-     * The account ID of the spender.
+     * The account ID of the owner.
      */
-    AccountID spender_id = 2;
+    AccountID owner_id = 2;
     /**
      * The total amount of fungible tokens allocated for the allowance.
      */
