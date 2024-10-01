@@ -128,8 +128,7 @@ public class StartupStateUtilsTests {
             @NonNull final PlatformContext platformContext,
             final long round,
             @Nullable final Hash epoch,
-            final boolean corrupted,
-            final boolean mutable)
+            final boolean corrupted)
             throws IOException {
 
         final SignedState signedState = new RandomSignedStateGenerator(random)
@@ -137,10 +136,8 @@ public class StartupStateUtilsTests {
                 .setEpoch(epoch)
                 .build();
 
-        if (mutable) {
-            // make the state immutable
-            signedState.getState().copy();
-        }
+        // make the state immutable
+        signedState.getState().copy();
 
         final Path savedStateDirectory =
                 signedStateFilePath.getSignedStateDirectory(mainClassName, selfId, swirldName, round);
@@ -188,7 +185,7 @@ public class StartupStateUtilsTests {
         SignedState latestState = null;
         for (int i = 0; i < stateCount; i++) {
             latestRound += random.nextInt(100, 200);
-            latestState = writeState(random, platformContext, latestRound, null, false, true);
+            latestState = writeState(random, platformContext, latestRound, null, false);
         }
 
         final SignedState loadedState = StartupStateUtils.loadStateFile(
@@ -219,7 +216,7 @@ public class StartupStateUtilsTests {
         for (int i = 0; i < stateCount; i++) {
             latestRound += random.nextInt(100, 200);
             final boolean corrupted = i == stateCount - 1;
-            writeState(random, platformContext, latestRound, null, corrupted, false);
+            writeState(random, platformContext, latestRound, null, corrupted);
         }
 
         assertThrows(SignedStateLoadingException.class, () -> StartupStateUtils.loadStateFile(
@@ -259,7 +256,7 @@ public class StartupStateUtilsTests {
         for (int i = 0; i < stateCount; i++) {
             latestRound += random.nextInt(100, 200);
             final boolean corrupted = (stateCount - i) <= invalidStateCount;
-            final SignedState state = writeState(random, platformContext, latestRound, null, corrupted, false);
+            final SignedState state = writeState(random, platformContext, latestRound, null, corrupted);
             if (!corrupted) {
                 latestUncorruptedState = state;
             }

@@ -224,6 +224,9 @@ class SignedStateFileReadWriteTest {
                 .withConfiguration(configuration)
                 .build();
 
+        // make immutable
+        signedState.getSwirldState().copy();
+
         writeSignedStateToDisk(
                 platformContext, new NodeId(0), directory, signedState, StateToDiskReason.PERIODIC_SNAPSHOT);
 
