@@ -48,6 +48,7 @@ import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.BlockRecordStreamConfig;
 import com.hedera.node.config.data.BlockStreamConfig;
 import com.hedera.node.config.data.VersionConfig;
+import com.hedera.node.config.types.BlockStreamWriterMode;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.state.service.PlatformStateService;
@@ -84,6 +85,7 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
     private final SemanticVersion hapiVersion;
     private final ExecutorService executor;
     private final Supplier<BlockItemWriter> writerSupplier;
+    private final BlockStreamWriterMode streamWriterType;
     private final BoundaryStateChangeListener boundaryStateChangeListener;
 
     private final BlockHashManager blockHashManager;
@@ -149,6 +151,7 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
         final var config = configProvider.getConfiguration();
         this.hapiVersion = hapiVersionFrom(config);
         this.roundsPerBlock = config.getConfigData(BlockStreamConfig.class).roundsPerBlock();
+        this.streamWriterType = config.getConfigData(BlockStreamConfig.class).writerMode();
         this.blockHashManager = new BlockHashManager(config);
         this.runningHashManager = new RunningHashManager();
         this.lastNonEmptyRoundNumber = initialStateHash.roundNum();
@@ -338,9 +341,10 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
                     .siblingHashes(siblingHashes.stream().flatMap(List::stream).toList());
             block.writer()
                     .writeItem(BlockItem.PROTOBUF.toBytes(
-                            BlockItem.newBuilder().blockProof(proof).build()))
-            // is this correct? it closes the stream on each block and opens a new one on the next block?
-            /*.closeBlock()*/ ;
+                            BlockItem.newBuilder().blockProof(proof).build()));
+            if (streamWriterType == BlockStreamWriterMode.FILE) {
+                block.writer().closeBlock();
+            }
             if (block.number() != blockNumber) {
                 siblingHashes.removeFirst();
             }
