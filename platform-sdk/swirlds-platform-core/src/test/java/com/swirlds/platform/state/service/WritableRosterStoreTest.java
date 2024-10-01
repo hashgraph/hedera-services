@@ -124,7 +124,7 @@ class WritableRosterStoreTest {
             "Test determine active roster during normal restart but with no active roster present in the state throws exception")
     void testDetermineActiveRosterDuringNormalRestartWithoutActiveRoster() {
         enableSoftwareUpgradeMode(false);
-        Exception exception = assertThrows(
+        final Exception exception = assertThrows(
                 NullPointerException.class, () -> rosterStateModifier.determineActiveRoster(version, initialState));
         assertEquals(
                 "Active Roster must be present in the state during normal network restart.", exception.getMessage());
@@ -195,7 +195,7 @@ class WritableRosterStoreTest {
      *
      * @param mode the mode to enable
      */
-    private void enableSoftwareUpgradeMode(boolean mode) {
+    private void enableSoftwareUpgradeMode(final boolean mode) {
         final SignedState state = mock(SignedState.class);
         final MerkleRoot stateMerkleRoot = mock(MerkleRoot.class);
         final PlatformStateAccessor platformState = mock(PlatformStateAccessor.class);
