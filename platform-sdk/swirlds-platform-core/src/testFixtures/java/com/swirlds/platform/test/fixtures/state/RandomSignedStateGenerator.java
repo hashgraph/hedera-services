@@ -38,7 +38,7 @@ import com.swirlds.platform.crypto.SignatureVerifier;
 import com.swirlds.platform.state.MerkleRoot;
 import com.swirlds.platform.state.MerkleStateRoot;
 import com.swirlds.platform.state.MinimumJudgeInfo;
-import com.swirlds.platform.state.PlatformStateAccessor;
+import com.swirlds.platform.state.PlatformStateModifier;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.SoftwareVersion;
@@ -188,7 +188,7 @@ public class RandomSignedStateGenerator {
             consensusSnapshotInstance = consensusSnapshot;
         }
 
-        final PlatformStateAccessor platformState = stateInstance.getWritablePlatformState();
+        final PlatformStateModifier platformState = stateInstance.getWritablePlatformState();
 
         platformState.bulkUpdate(v -> {
             v.setSnapshot(consensusSnapshotInstance);

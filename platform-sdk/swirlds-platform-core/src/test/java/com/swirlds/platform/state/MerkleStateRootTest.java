@@ -780,7 +780,7 @@ class MerkleStateRootTest extends MerkleTestBase {
         @DisplayName("Notifications are sent to onHandleConsensusRound when handleConsensusRound is called")
         void handleConsensusRoundCallback() {
             final var round = Mockito.mock(Round.class);
-            final var platformState = Mockito.mock(PlatformStateAccessor.class);
+            final var platformState = Mockito.mock(PlatformStateModifier.class);
             final var state = new MerkleStateRoot(lifecycles, softwareVersionSupplier);
 
             state.handleConsensusRound(round, platformState);
@@ -798,7 +798,7 @@ class MerkleStateRootTest extends MerkleTestBase {
 
             // The original no longer has the listener
             final var round = Mockito.mock(Round.class);
-            final var platformState = Mockito.mock(PlatformStateAccessor.class);
+            final var platformState = Mockito.mock(PlatformStateModifier.class);
             assertThrows(MutabilityException.class, () -> stateRoot.handleConsensusRound(round, platformState));
 
             // But the copy does
@@ -934,7 +934,7 @@ class MerkleStateRootTest extends MerkleTestBase {
         @Test
         @DisplayName("Test access to the platform state")
         void testAccessToPlatformStateData() {
-            PlatformStateAccessor randomPlatformState = randomPlatformState(stateRoot.getWritablePlatformState());
+            PlatformStateModifier randomPlatformState = randomPlatformState(stateRoot.getWritablePlatformState());
             stateRoot.updatePlatformState(randomPlatformState);
             ReadableSingletonState<PlatformState> readableSingletonState = stateRoot
                     .getReadableStates(PlatformStateService.NAME)
@@ -950,12 +950,12 @@ class MerkleStateRootTest extends MerkleTestBase {
         @Test
         @DisplayName("Test update of the platform state")
         void testUpdatePlatformStateData() {
-            PlatformStateAccessor randomPlatformState = randomPlatformState(stateRoot.getWritablePlatformState());
+            PlatformStateModifier randomPlatformState = randomPlatformState(stateRoot.getWritablePlatformState());
             stateRoot.updatePlatformState(randomPlatformState);
             WritableStates writableStates = stateRoot.getWritableStates(PlatformStateService.NAME);
             WritableSingletonState<PlatformState> writableSingletonState =
                     writableStates.getSingleton(V0540PlatformStateSchema.PLATFORM_STATE_KEY);
-            PlatformStateAccessor newPlatformState = randomPlatformState(stateRoot.getWritablePlatformState());
+            PlatformStateModifier newPlatformState = randomPlatformState(stateRoot.getWritablePlatformState());
             writableSingletonState.put(toPbjPlatformState(newPlatformState));
             ((CommittableWritableStates) writableStates).commit();
 

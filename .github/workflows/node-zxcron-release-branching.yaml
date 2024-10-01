@@ -40,6 +40,11 @@ jobs:
     outputs:
       triggered: ${{ steps.evaluate.outputs.triggered }}
     steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@f086349bfa2bd1361f7909c78558e816508cdc10 # v2.8.0
+        with:
+          egress-policy: audit
+
       - name: Checkout Code
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
 
@@ -84,10 +89,17 @@ jobs:
       branch-name: ${{ steps.branch-creation.outputs.branch-name }}
       tag-create: ${{ steps.branch-creation.outputs.tag-create }}
       tag-name: ${{ steps.branch-creation.outputs.tag-name }}
+
     env:
       GITHUB_TOKEN: ${{ secrets.GH_ACCESS_TOKEN }}
+
     if: ${{ needs.check-trigger.outputs.triggered == 'true' && !cancelled() }}
     steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@f086349bfa2bd1361f7909c78558e816508cdc10 # v2.8.0
+        with:
+          egress-policy: audit
+
       - name: Checkout Code
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
 
@@ -100,10 +112,17 @@ jobs:
     runs-on: network-node-linux-small-scheduler
     needs:
       - check-branch
+
     env:
       GITHUB_TOKEN: ${{ secrets.GH_ACCESS_TOKEN }}
+
     if: ${{ needs.check-branch.outputs.branch-create == 'true' && !cancelled() }}
     steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@f086349bfa2bd1361f7909c78558e816508cdc10 # v2.8.0
+        with:
+          egress-policy: audit
+
       - name: Checkout Code
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
         with:
@@ -191,8 +210,14 @@ jobs:
     needs:
       - check-branch
       - create-branch
+
     if: ${{ needs.check-branch.outputs.tag-create == 'true' && needs.create-branch.result == 'success' && !cancelled() }}
     steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@f086349bfa2bd1361f7909c78558e816508cdc10 # v2.8.0
+        with:
+          egress-policy: audit
+
       - name: Checkout Code
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
         with:
