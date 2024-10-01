@@ -152,8 +152,12 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
         this.blockHashManager = new BlockHashManager(config);
         this.runningHashManager = new RunningHashManager();
         this.lastNonEmptyRoundNumber = initialStateHash.roundNum();
-        endRoundStateHashes.put(lastNonEmptyRoundNumber, initialStateHash.hashFuture());
-        log.info("Initialized BlockStreamManager from round {}", lastNonEmptyRoundNumber);
+        final var hashFuture = initialStateHash.hashFuture();
+        endRoundStateHashes.put(lastNonEmptyRoundNumber, hashFuture);
+        log.info(
+                "Initialized BlockStreamManager from round {} with end-of-round hash {}",
+                lastNonEmptyRoundNumber,
+                hashFuture.isDone() ? hashFuture.join().toHex() : "<PENDING>");
     }
 
     @Override

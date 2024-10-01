@@ -63,6 +63,7 @@ public interface LifecycleTest {
     int MIXED_OPS_BURST_TPS = 50;
     Duration FREEZE_TIMEOUT = Duration.ofSeconds(90);
     Duration RESTART_TIMEOUT = Duration.ofSeconds(180);
+    //    Duration RESTART_TIMEOUT = Duration.ofSeconds(300);
     Duration SHUTDOWN_TIMEOUT = Duration.ofSeconds(60);
     Duration MIXED_OPS_BURST_DURATION = Duration.ofSeconds(10);
     Duration EXEC_IMMEDIATE_MF_TIMEOUT = Duration.ofSeconds(10);
@@ -157,11 +158,11 @@ public interface LifecycleTest {
      * Returns an operation that upgrades the network to the next configuration version using a fake upgrade ZIP,
      * running the given operation before the network is restarted.
      *
-     * @param preRestartOp an operation to run before the network is restarted
+     * @param preRestartOps operations to run before the network is restarted
      * @return the operation
      */
-    default SpecOperation upgradeToNextConfigVersion(@NonNull final SpecOperation preRestartOp) {
-        return sourcing(() -> upgradeToConfigVersion(CURRENT_CONFIG_VERSION.get() + 1, preRestartOp));
+    default SpecOperation upgradeToNextConfigVersion(@NonNull final SpecOperation... preRestartOps) {
+        return sourcing(() -> upgradeToConfigVersion(CURRENT_CONFIG_VERSION.get() + 1, preRestartOps));
     }
 
     /**
@@ -169,11 +170,11 @@ public interface LifecycleTest {
      * running the given operation before the network is restarted.
      *
      * @param version the configuration version to upgrade to
-     * @param preRestartOp an operation to run before the network is restarted
+     * @param preRestartOps  operations to run before the network is restarted
      * @return the operation
      */
-    default HapiSpecOperation upgradeToConfigVersion(final int version, @NonNull final SpecOperation preRestartOp) {
-        requireNonNull(preRestartOp);
+    default HapiSpecOperation upgradeToConfigVersion(final int version, @NonNull final SpecOperation... preRestartOps) {
+        requireNonNull(preRestartOps);
         return blockingOrder(
                 sourcing(() -> freezeUpgrade()
                         .startingIn(2)
@@ -181,7 +182,7 @@ public interface LifecycleTest {
                         .withUpdateFile(DEFAULT_UPGRADE_FILE_ID)
                         .havingHash(upgradeFileHashAt(FAKE_UPGRADE_ZIP_LOC))),
                 confirmFreezeAndShutdown(),
-                preRestartOp,
+                blockingOrder(preRestartOps),
                 FakeNmt.restartNetwork(version),
                 doAdhoc(() -> CURRENT_CONFIG_VERSION.set(version)),
                 waitForActiveNetwork(RESTART_TIMEOUT));
