@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.consensus.impl.validators;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_IS_CONTRACT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.ALLOWANCE_PER_MESSAGE_EXCEEDS_TOTAL_ALLOWANCE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.EMPTY_ALLOWANCES;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ALLOWANCE_SPENDER_ID;
@@ -104,11 +105,12 @@ public class ConsensusAllowancesValidator {
 
             // validate spender account
             final var spenderAccount = accountStore.getAccountById(ownerId);
-            validateTrue(TokenType.FUNGIBLE_COMMON.equals(token.tokenType()), NFT_IN_FUNGIBLE_TOKEN_ALLOWANCES);
-
-            // validate token amount
             final var amount = tokenAllowance.amount();
             validateSpender(amount, spenderAccount);
+
+
+            // validate token amount
+            validateTrue(TokenType.FUNGIBLE_COMMON.equals(token.tokenType()), NFT_IN_FUNGIBLE_TOKEN_ALLOWANCES);
             final var relation = tokenRelStore.get(ownerId, tokenId);
             validateTrue(relation != null, TOKEN_NOT_ASSOCIATED_TO_ACCOUNT);
 
@@ -124,8 +126,10 @@ public class ConsensusAllowancesValidator {
      * @param spenderAccount If the amount is not zero, then this must be non-null and not deleted.
      */
     private void validateSpender(final long amount, @Nullable final Account spenderAccount) {
+        validateTrue(spenderAccount!=null, INVALID_ALLOWANCE_SPENDER_ID);
+        validateFalse(spenderAccount.smartContract(), ACCOUNT_IS_CONTRACT);
         validateTrue(
-                amount == 0 || (spenderAccount != null && !spenderAccount.deleted()), INVALID_ALLOWANCE_SPENDER_ID);
+                amount == 0 || !spenderAccount.deleted(), INVALID_ALLOWANCE_SPENDER_ID);
     }
 
     /**
