@@ -17,10 +17,16 @@
 name: "ZXF: Deploy Production Release"
 on:
   push:
-    branches:
-      - develop
     tags:
       - "v[0-9]+.[0-9]+.[0-9]+-?*"
+  workflow_run:
+    workflows:
+      - "Node: Build Application"
+    branches:
+      - develop
+    types:
+      - completed
+
 
 defaults:
   run:
@@ -35,6 +41,11 @@ jobs:
       version: ${{ steps.tag.outputs.version }}
       prerelease: ${{ steps.tag.outputs.prerelease }}
     steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@f086349bfa2bd1361f7909c78558e816508cdc10 # v2.8.0
+        with:
+          egress-policy: audit
+
       - name: Install Semantic Version Tools
         run: |
           echo "::group::Download SemVer Binary"
@@ -110,7 +121,7 @@ jobs:
   release-branch:
     name: Release [Branch]
     uses: ./.github/workflows/node-zxc-build-release-artifact.yaml
-    if: ${{ github.event_name == 'push' && !startsWith(github.ref, 'refs/tags/v') }}
+    if: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success'}}
     with:
       version-policy: branch-commit
       trigger-env-deploy: integration
