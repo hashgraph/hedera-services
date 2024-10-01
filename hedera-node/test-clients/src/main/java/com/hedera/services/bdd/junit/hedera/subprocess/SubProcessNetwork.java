@@ -37,6 +37,7 @@ import com.hedera.services.bdd.junit.hedera.AbstractGrpcNetwork;
 import com.hedera.services.bdd.junit.hedera.HederaNetwork;
 import com.hedera.services.bdd.junit.hedera.HederaNode;
 import com.hedera.services.bdd.junit.hedera.NodeSelector;
+import com.hedera.services.bdd.junit.hedera.subprocess.SubProcessNode.ReassignPorts;
 import com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.TargetNetworkType;
@@ -356,6 +357,14 @@ public class SubProcessNetwork extends AbstractGrpcNetwork implements HederaNetw
                 throw new UncheckedIOException(e);
             }
         });
+    }
+
+    private String memoOfNode(final long id) {
+        return Arrays.stream(configTxt.split("\n"))
+                .filter(line -> line.startsWith("address, " + id))
+                .map(line -> line.substring(line.lastIndexOf(",") + 2))
+                .findFirst()
+                .orElseThrow();
     }
 
     private String consensusDabConfigTxt() {

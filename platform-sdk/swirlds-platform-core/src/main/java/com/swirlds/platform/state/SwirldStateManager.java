@@ -118,7 +118,7 @@ public class SwirldStateManager implements FreezePeriodChecker {
 
     /**
      * Handles the events in a consensus round. Implementations are responsible for invoking
-     * {@link SwirldState#handleConsensusRound(Round, PlatformStateAccessor)}.
+     * {@link SwirldState#handleConsensusRound(Round, PlatformStateModifier)}.
      *
      * @param round the round to handle
      */

@@ -16,6 +16,7 @@
 
 package com.hedera.services.bdd.junit.hedera.subprocess;
 
+import static com.hedera.node.app.hapi.utils.CommonPbjConverters.toPbj;
 import static com.hedera.services.bdd.junit.hedera.ExternalPath.APPLICATION_LOG;
 import static com.hedera.services.bdd.junit.hedera.ExternalPath.SWIRLDS_LOG;
 import static com.hedera.services.bdd.junit.hedera.subprocess.ConditionStatus.PENDING;
@@ -30,6 +31,7 @@ import static com.hedera.services.bdd.junit.hedera.subprocess.ProcessUtils.destr
 import static com.hedera.services.bdd.junit.hedera.subprocess.ProcessUtils.startSubProcessNodeFrom;
 import static com.hedera.services.bdd.junit.hedera.subprocess.StatusLookupAttempt.newLogAttempt;
 import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.recreateWorkingDir;
+import static com.hedera.services.bdd.spec.HapiPropertySource.asAccount;
 import static com.swirlds.platform.system.status.PlatformStatus.ACTIVE;
 import static java.util.Objects.requireNonNull;
 
@@ -205,6 +207,14 @@ public class SubProcessNode extends AbstractLocalNode<SubProcessNode> implements
         metadata = metadata.withNewPorts(grpcPort, grpcNodeOperatorPort, gossipPort, tlsGossipPort, prometheusPort);
     }
 
+    /**
+     * Reassigns the account ID used by this node.
+     * @param memo the memo containing the new account ID to use
+     */
+    public void reassignNodeAccountIdFrom(@NonNull final String memo) {
+        metadata = metadata.withNewAccountId(toPbj(asAccount(memo)));
+    }
+
     private boolean swirldsLogContains(@NonNull final String text) {
         try (var lines = Files.lines(getExternalPath(SWIRLDS_LOG))) {
             return lines.anyMatch(line -> line.contains(text));
@@ -236,5 +246,10 @@ public class SubProcessNode extends AbstractLocalNode<SubProcessNode> implements
         } catch (IOException e) {
             return newLogAttempt(null, e.getMessage());
         }
+    }
+
+    public enum ReassignPorts {
+        YES,
+        NO
     }
 }

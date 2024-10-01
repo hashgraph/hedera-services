@@ -37,7 +37,6 @@ import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
 import static com.hedera.services.bdd.suites.HapiSuite.NONSENSE_KEY;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
 import static com.hedera.services.bdd.suites.hip869.NodeCreateTest.generateX509Certificates;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.GOSSIP_ENDPOINTS_EXCEEDED_LIMIT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.GOSSIP_ENDPOINT_CANNOT_HAVE_FQDN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ADMIN_KEY;
@@ -271,7 +270,8 @@ public class NodeUpdateTest {
                             "Node grpcCertificateHash should be updated");
                     assertEquals(toPbj(updateOp.getAdminKey()), node.adminKey(), "Node adminKey should be updated");
                     assertEquals(toPbj(asAccount("0.0.100")), node.accountId());
-                }));
+                }),
+                overriding("nodes.updateAccountIdAllowed", "false"));
     }
 
     @HapiTest
@@ -291,7 +291,7 @@ public class NodeUpdateTest {
                         nodeUpdate("ntb")
                                 .payingWith("payer")
                                 .accountId("0.0.1000")
-                                .hasPrecheck(BUSY)
+                                .hasPrecheck(UPDATE_NODE_ACCOUNT_NOT_ALLOWED)
                                 .fee(ONE_HBAR)
                                 .via("updateNode"))
                 .when()

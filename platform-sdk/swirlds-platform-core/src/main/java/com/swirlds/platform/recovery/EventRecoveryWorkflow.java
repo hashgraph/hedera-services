@@ -53,6 +53,7 @@ import com.swirlds.platform.recovery.internal.RecoveryPlatform;
 import com.swirlds.platform.recovery.internal.StreamedRound;
 import com.swirlds.platform.state.MerkleRoot;
 import com.swirlds.platform.state.PlatformStateAccessor;
+import com.swirlds.platform.state.PlatformStateModifier;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.snapshot.SignedStateFileReader;
@@ -380,7 +381,7 @@ public final class EventRecoveryWorkflow {
         new DefaultEventHasher().hashEvent(lastEvent);
 
         final PlatformStateAccessor newReadablePlatformState = newState.getReadablePlatformState();
-        final PlatformStateAccessor newWritablePlatformState = newState.getWritablePlatformState();
+        final PlatformStateModifier newWritablePlatformState = newState.getWritablePlatformState();
         final PlatformStateAccessor previousReadablePlatformState =
                 previousState.get().getState().getReadablePlatformState();
 
@@ -478,7 +479,7 @@ public final class EventRecoveryWorkflow {
     static void applyTransactions(
             final SwirldState immutableState,
             final SwirldState mutableState,
-            final PlatformStateAccessor platformState,
+            final PlatformStateModifier platformState,
             final Round round) {
 
         mutableState.throwIfImmutable();
