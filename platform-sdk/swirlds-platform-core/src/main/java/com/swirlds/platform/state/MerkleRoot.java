@@ -57,12 +57,12 @@ public interface MerkleRoot extends MerkleInternal {
     PlatformStateModifier getWritablePlatformState();
 
     /**
-     * Gets the Roster state modifier.
+     * Gets the Roster state that is writable, to be called by users who need to modify the Roster state.
      *
-     * @return the Roster state modifier.
+     * @return the writable Roster state.
      */
     @NonNull
-    RosterStateModifier getRosterStateModifier();
+    RosterStateModifier getWritableRosterState();
 
     /**
      * Set the platform state.
