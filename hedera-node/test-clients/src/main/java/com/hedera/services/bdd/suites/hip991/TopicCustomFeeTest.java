@@ -33,7 +33,7 @@ import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
 import static com.hedera.services.bdd.suites.HapiSuite.flattened;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_MUST_BE_POSITIVE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FEKL_CONTAINS_DUPLICATED_KEYS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FEE_EXEMPT_KEY_LIST_CONTAINS_DUPLICATED_KEYS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CUSTOM_FEE_SCHEDULE_KEY;
 
 import com.hedera.services.bdd.junit.HapiTest;
@@ -186,7 +186,7 @@ public class TopicCustomFeeTest extends TopicCustomFeeBase {
                                 .submitKeyName(SUBMIT_KEY)
                                 .feeScheduleKeyName(FEE_SCHEDULE_KEY)
                                 .feeExemptKeys(testKey, testKey)
-                                .hasPrecheck(FEKL_CONTAINS_DUPLICATED_KEYS)));
+                                .hasPrecheck(FEE_EXEMPT_KEY_LIST_CONTAINS_DUPLICATED_KEYS)));
             }
 
             @HapiTest
