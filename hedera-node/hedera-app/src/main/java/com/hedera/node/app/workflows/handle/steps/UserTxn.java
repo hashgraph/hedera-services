@@ -27,6 +27,7 @@ import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.state.blockrecords.BlockInfo;
 import com.hedera.hapi.platform.state.PlatformState;
+import com.hedera.node.app.blocks.RecordTranslator;
 import com.hedera.node.app.blocks.impl.BoundaryStateChangeListener;
 import com.hedera.node.app.blocks.impl.KVStateChangeListener;
 import com.hedera.node.app.fees.ExchangeRateManager;
@@ -108,8 +109,8 @@ public record UserTxn(
             @NonNull final StoreMetricsService storeMetricsService,
             @NonNull final KVStateChangeListener kvStateChangeListener,
             @NonNull final BoundaryStateChangeListener boundaryStateChangeListener,
-            @NonNull final PreHandleWorkflow preHandleWorkflow) {
-
+            @NonNull final PreHandleWorkflow preHandleWorkflow,
+            @NonNull final RecordTranslator recordTranslator) {
         final TransactionType type;
         if (lastHandledConsensusTime.equals(Instant.EPOCH)) {
             type = GENESIS_TRANSACTION;
@@ -118,17 +119,17 @@ public record UserTxn(
         } else {
             type = ORDINARY_TRANSACTION;
         }
-        final var isGenesis = lastHandledConsensusTime.equals(Instant.EPOCH);
         final var config = configProvider.getConfiguration();
         final var consensusConfig = config.getConfigData(ConsensusConfig.class);
         final var blockStreamConfig = config.getConfigData(BlockStreamConfig.class);
         final var stack = SavepointStackImpl.newRootStack(
                 state,
-                isGenesis ? Integer.MAX_VALUE : consensusConfig.handleMaxPrecedingRecords(),
+                type != ORDINARY_TRANSACTION ? Integer.MAX_VALUE : consensusConfig.handleMaxPrecedingRecords(),
                 consensusConfig.handleMaxFollowingRecords(),
                 boundaryStateChangeListener,
                 kvStateChangeListener,
-                blockStreamConfig.streamMode());
+                blockStreamConfig.streamMode(),
+                recordTranslator);
         final var readableStoreFactory = new ReadableStoreFactory(stack);
         final var preHandleResult =
                 preHandleWorkflow.getCurrentPreHandleResult(creatorInfo, platformTxn, readableStoreFactory);

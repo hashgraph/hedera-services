@@ -44,7 +44,7 @@ public class StateHashedNotification extends AbstractNotification {
         }
     }
 
-    private StateHashedNotification(final long roundNumber, @NonNull final Hash hash) {
+    public StateHashedNotification(final long roundNumber, @NonNull final Hash hash) {
         this.roundNumber = roundNumber;
         this.hash = requireNonNull(hash);
     }

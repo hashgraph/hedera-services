@@ -29,6 +29,7 @@ import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.transaction.SignedTransaction;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.hapi.platform.event.EventTransaction;
+import com.hedera.node.app.blocks.RecordTranslator;
 import com.hedera.node.app.blocks.impl.BoundaryStateChangeListener;
 import com.hedera.node.app.blocks.impl.KVStateChangeListener;
 import com.hedera.node.app.fees.ExchangeRateManager;
@@ -87,6 +88,7 @@ public class StandaloneDispatchFactory {
     private final Authorizer authorizer;
     private final NetworkInfo networkInfo;
     private final ConfigProvider configProvider;
+    private final RecordTranslator recordTranslator;
     private final DispatchProcessor dispatchProcessor;
     private final PreHandleWorkflow preHandleWorkflow;
     private final ServiceScopeLookup serviceScopeLookup;
@@ -102,6 +104,7 @@ public class StandaloneDispatchFactory {
             @NonNull final Authorizer authorizer,
             @NonNull final NetworkInfo networkInfo,
             @NonNull final ConfigProvider configProvider,
+            @NonNull final RecordTranslator recordTranslator,
             @NonNull final DispatchProcessor dispatchProcessor,
             @NonNull final PreHandleWorkflow preHandleWorkflow,
             @NonNull final ServiceScopeLookup serviceScopeLookup,
@@ -114,6 +117,7 @@ public class StandaloneDispatchFactory {
         this.authorizer = requireNonNull(authorizer);
         this.networkInfo = requireNonNull(networkInfo);
         this.configProvider = requireNonNull(configProvider);
+        this.recordTranslator = requireNonNull(recordTranslator);
         this.dispatchProcessor = requireNonNull(dispatchProcessor);
         this.preHandleWorkflow = requireNonNull(preHandleWorkflow);
         this.childDispatchFactory = requireNonNull(childDispatchFactory);
@@ -147,7 +151,8 @@ public class StandaloneDispatchFactory {
                 consensusConfig.handleMaxFollowingRecords(),
                 new BoundaryStateChangeListener(),
                 new KVStateChangeListener(),
-                blockStreamConfig.streamMode());
+                blockStreamConfig.streamMode(),
+                recordTranslator);
         final var readableStoreFactory = new ReadableStoreFactory(stack);
         final var consensusTransaction = consensusTransactionFor(transactionBody);
         final var creatorInfo = creatorInfoFor(transactionBody);

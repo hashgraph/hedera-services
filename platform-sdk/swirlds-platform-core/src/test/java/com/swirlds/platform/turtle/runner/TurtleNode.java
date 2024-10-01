@@ -99,7 +99,7 @@ public class TurtleNode {
                 .build();
         final Supplier<MerkleRoot> genesisStateSupplier = TurtleTestingToolState::getStateRootNode;
         final var version = new BasicSoftwareVersion(1);
-        final var initialState = getInitialState(
+        final var reservedState = getInitialState(
                 platformContext,
                 version,
                 genesisStateSupplier,
@@ -108,6 +108,7 @@ public class TurtleNode {
                 "bar",
                 nodeId,
                 addressBook);
+        final var initialState = reservedState.state();
         final PlatformBuilder platformBuilder = PlatformBuilder.create(
                         "foo", "bar", new BasicSoftwareVersion(1), initialState, nodeId)
                 .withModel(model)

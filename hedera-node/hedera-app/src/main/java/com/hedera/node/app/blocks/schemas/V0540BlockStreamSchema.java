@@ -110,6 +110,7 @@ public class V0540BlockStreamSchema extends Schema {
                         .blockNumber(blockInfo.lastBlockNumber())
                         .trailingBlockHashes(trailingBlockHashes)
                         .trailingOutputHashes(appendedHashes(runningHashes))
+                        .blockEndTime(blockInfo.consTimeOfLastHandledTxn())
                         .build());
             }
         }

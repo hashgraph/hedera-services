@@ -33,6 +33,7 @@ import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.transaction.SignedTransaction;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.hapi.util.UnknownHederaFunctionality;
+import com.hedera.node.app.blocks.RecordTranslator;
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.fees.FeeAccumulator;
 import com.hedera.node.app.fees.FeeManager;
@@ -103,6 +104,7 @@ public class ChildDispatchFactory {
     private final ServiceScopeLookup serviceScopeLookup;
     private final StoreMetricsService storeMetricsService;
     private final ExchangeRateManager exchangeRateManager;
+    private final RecordTranslator recordTranslator;
 
     @Inject
     public ChildDispatchFactory(
@@ -113,7 +115,8 @@ public class ChildDispatchFactory {
             @NonNull final DispatchProcessor dispatchProcessor,
             @NonNull final ServiceScopeLookup serviceScopeLookup,
             @NonNull final StoreMetricsService storeMetricsService,
-            @NonNull final ExchangeRateManager exchangeRateManager) {
+            @NonNull final ExchangeRateManager exchangeRateManager,
+            @NonNull final RecordTranslator recordTranslator) {
         this.dispatcher = requireNonNull(dispatcher);
         this.authorizer = requireNonNull(authorizer);
         this.networkInfo = requireNonNull(networkInfo);
@@ -122,6 +125,7 @@ public class ChildDispatchFactory {
         this.serviceScopeLookup = requireNonNull(serviceScopeLookup);
         this.storeMetricsService = requireNonNull(storeMetricsService);
         this.exchangeRateManager = requireNonNull(exchangeRateManager);
+        this.recordTranslator = requireNonNull(recordTranslator);
     }
 
     /**
@@ -165,8 +169,8 @@ public class ChildDispatchFactory {
         final var childVerifier = getKeyVerifier(callback);
         final var childTxnInfo = getTxnInfoFrom(syntheticPayerId, txBody);
         final var streamMode = config.getConfigData(BlockStreamConfig.class).streamMode();
-        final var childStack =
-                SavepointStackImpl.newChildStack(stack, reversingBehavior, category, customizer, streamMode);
+        final var childStack = SavepointStackImpl.newChildStack(
+                stack, reversingBehavior, category, customizer, streamMode, recordTranslator);
         final var streamBuilder = initializedForChild(childStack.getBaseBuilder(StreamBuilder.class), childTxnInfo);
         return newChildDispatch(
                 streamBuilder,

@@ -83,7 +83,7 @@ public class BlockStreamBuilderTest {
                 .assessedCustomFees(List.of(assessedCustomFee))
                 .functionality(HederaFunctionality.CRYPTO_TRANSFER);
 
-        List<BlockItem> blockItems = itemsBuilder.build();
+        List<BlockItem> blockItems = itemsBuilder.build().blockItems();
         validateTransactionBlockItems(blockItems);
         validateTransactionResult(blockItems);
 
@@ -102,7 +102,7 @@ public class BlockStreamBuilderTest {
         }
         if (entropyOneOfType == TransactionRecord.EntropyOneOfType.PRNG_BYTES) {
             final var itemsBuilder = createBaseBuilder().entropyBytes(prngBytes);
-            List<BlockItem> blockItems = itemsBuilder.build();
+            List<BlockItem> blockItems = itemsBuilder.build().blockItems();
             validateTransactionBlockItems(blockItems);
             validateTransactionResult(blockItems);
 
@@ -113,7 +113,7 @@ public class BlockStreamBuilderTest {
             assertEquals(prngBytes, output.utilPrng().prngBytes());
         } else {
             final var itemsBuilder = createBaseBuilder().entropyNumber(ENTROPY_NUMBER);
-            List<BlockItem> blockItems = itemsBuilder.build();
+            List<BlockItem> blockItems = itemsBuilder.build().blockItems();
             validateTransactionBlockItems(blockItems);
             validateTransactionResult(blockItems);
 
@@ -131,7 +131,7 @@ public class BlockStreamBuilderTest {
                 .contractCallResult(contractCallResult)
                 .addContractStateChanges(contractStateChanges, false);
 
-        List<BlockItem> blockItems = itemsBuilder.build();
+        List<BlockItem> blockItems = itemsBuilder.build().blockItems();
         validateTransactionBlockItems(blockItems);
         validateTransactionResult(blockItems);
 

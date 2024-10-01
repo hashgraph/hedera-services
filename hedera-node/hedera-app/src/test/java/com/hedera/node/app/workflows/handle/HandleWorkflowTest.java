@@ -30,6 +30,7 @@ import com.hedera.node.app.blocks.impl.KVStateChangeListener;
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.fees.FeeManager;
 import com.hedera.node.app.records.BlockRecordManager;
+import com.hedera.node.app.service.token.impl.handlers.staking.StakeInfoHelper;
 import com.hedera.node.app.service.token.impl.handlers.staking.StakePeriodManager;
 import com.hedera.node.app.services.ServiceScopeLookup;
 import com.hedera.node.app.spi.authorization.Authorizer;
@@ -151,6 +152,9 @@ class HandleWorkflowTest {
     private KVStateChangeListener kvStateChangeListener;
 
     @Mock
+    private StakeInfoHelper stakeInfoHelper;
+
+    @Mock
     private BoundaryStateChangeListener boundaryStateChangeListener;
 
     private HandleWorkflow subject;
@@ -179,6 +183,7 @@ class HandleWorkflowTest {
                 initTrigger,
                 hollowAccountCompletions,
                 systemSetup,
+                stakeInfoHelper,
                 recordCache,
                 exchangeRateManager,
                 preHandleWorkflow,

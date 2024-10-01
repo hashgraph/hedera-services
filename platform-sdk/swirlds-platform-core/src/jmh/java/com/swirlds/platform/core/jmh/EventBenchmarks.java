@@ -16,11 +16,11 @@
 
 package com.swirlds.platform.core.jmh;
 
+import com.hedera.hapi.platform.event.GossipEvent;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.io.streams.MerkleDataInputStream;
 import com.swirlds.common.io.streams.MerkleDataOutputStream;
-import com.swirlds.platform.event.EventSerializationUtils;
 import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.event.hashing.EventHasher;
 import com.swirlds.platform.event.hashing.PbjStreamHasher;
@@ -96,8 +96,8 @@ public class EventBenchmarks {
         //
         // Benchmark                                (seed)   Mode  Cnt    Score    Error   Units
         // EventSerialization.serializeDeserialize       0  thrpt    3  962.486 ± 29.252  ops/ms
-        EventSerializationUtils.serializePlatformEvent(outStream, event, true);
-        bh.consume(EventSerializationUtils.deserializePlatformEvent(inStream, true));
+        outStream.writePbjRecord(event.getGossipEvent(), GossipEvent.PROTOBUF);
+        bh.consume(inStream.readPbjRecord(GossipEvent.PROTOBUF));
     }
 
     /*
