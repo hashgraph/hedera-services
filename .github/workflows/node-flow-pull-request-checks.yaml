@@ -191,7 +191,8 @@ jobs:
     needs:
       - dependency-check
       - spotless
-    if: ${{ github.event_name == 'workflow_dispatch' }}
+    # Add this if back in after CITR Pager duty reporting service is in place
+    # if: ${{ github.event_name == 'workflow_dispatch' }}
     with:
       custom-job-label: Standard
       enable-unit-tests: false
