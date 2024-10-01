@@ -28,6 +28,7 @@ import static com.hedera.node.config.types.StreamMode.BLOCKS;
 import static com.hedera.node.config.types.StreamMode.RECORDS;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.transaction.ExchangeRateSet;
 import com.hedera.node.app.blocks.RecordTranslator;
@@ -169,7 +170,7 @@ public class SavepointStackImpl implements HandleContext.SavepointStack, State {
         this.recordTranslator = requireNonNull(recordTranslator);
         builderSink = new BuilderSinkImpl(maxBuildersBeforeUser, maxBuildersAfterUser + 1);
         setupFirstSavepoint(USER);
-        baseBuilder = peek().createBuilder(REVERSIBLE, USER, NOOP_RECORD_CUSTOMIZER, true, streamMode);
+        baseBuilder = peek().createBuilder(REVERSIBLE, USER, NOOP_RECORD_CUSTOMIZER, streamMode, true);
         this.streamMode = requireNonNull(streamMode);
     }
 
@@ -200,7 +201,7 @@ public class SavepointStackImpl implements HandleContext.SavepointStack, State {
         this.kvStateChangeListener = null;
         this.roundStateChangeListener = null;
         setupFirstSavepoint(category);
-        baseBuilder = peek().createBuilder(reversingBehavior, category, customizer, true, streamMode);
+        baseBuilder = peek().createBuilder(reversingBehavior, category, customizer, streamMode, true);
     }
 
     @Override
@@ -336,15 +337,19 @@ public class SavepointStackImpl implements HandleContext.SavepointStack, State {
 
     @NonNull
     @Override
-    public <T> T addChildRecordBuilder(@NonNull Class<T> recordBuilderClass) {
-        final var result = createReversibleChildBuilder();
+    public <T> T addChildRecordBuilder(
+            @NonNull Class<T> recordBuilderClass, @NonNull final HederaFunctionality functionality) {
+        requireNonNull(functionality);
+        final var result = createReversibleChildBuilder().functionality(functionality);
         return castBuilder(result, recordBuilderClass);
     }
 
     @NonNull
     @Override
-    public <T> T addRemovableChildRecordBuilder(@NonNull Class<T> recordBuilderClass) {
-        final var result = createRemovableChildBuilder();
+    public <T> T addRemovableChildRecordBuilder(
+            @NonNull Class<T> recordBuilderClass, @NonNull final HederaFunctionality functionality) {
+        requireNonNull(functionality);
+        final var result = createRemovableChildBuilder().functionality(functionality);
         return castBuilder(result, recordBuilderClass);
     }
 
@@ -418,7 +423,7 @@ public class SavepointStackImpl implements HandleContext.SavepointStack, State {
      * @return the new stream builder
      */
     public StreamBuilder createRemovableChildBuilder() {
-        return peek().createBuilder(REMOVABLE, CHILD, NOOP_RECORD_CUSTOMIZER, false, streamMode);
+        return peek().createBuilder(REMOVABLE, CHILD, NOOP_RECORD_CUSTOMIZER, streamMode, false);
     }
 
     /**
@@ -427,7 +432,7 @@ public class SavepointStackImpl implements HandleContext.SavepointStack, State {
      * @return the new stream builder
      */
     public StreamBuilder createReversibleChildBuilder() {
-        return peek().createBuilder(REVERSIBLE, CHILD, NOOP_RECORD_CUSTOMIZER, false, streamMode);
+        return peek().createBuilder(REVERSIBLE, CHILD, NOOP_RECORD_CUSTOMIZER, streamMode, false);
     }
 
     /**
@@ -436,7 +441,7 @@ public class SavepointStackImpl implements HandleContext.SavepointStack, State {
      * @return the new stream builder
      */
     public StreamBuilder createIrreversiblePrecedingBuilder() {
-        return peek().createBuilder(IRREVERSIBLE, PRECEDING, NOOP_RECORD_CUSTOMIZER, false, streamMode);
+        return peek().createBuilder(IRREVERSIBLE, PRECEDING, NOOP_RECORD_CUSTOMIZER, streamMode, false);
     }
 
     /**

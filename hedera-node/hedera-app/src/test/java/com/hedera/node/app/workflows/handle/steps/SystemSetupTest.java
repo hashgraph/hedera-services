@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.workflows.handle.steps;
 
+import static com.hedera.hapi.node.base.HederaFunctionality.CRYPTO_CREATE;
 import static com.hedera.node.app.service.file.impl.schemas.V0490FileSchema.parseFeeSchedules;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
@@ -146,7 +147,7 @@ class SystemSetupTest {
     void setup() {
         given(context.readableStore(ReadableBlockRecordStore.class)).willReturn(blockStore);
         given(context.consensusTime()).willReturn(CONSENSUS_NOW);
-        given(context.addPrecedingChildRecordBuilder(GenesisAccountStreamBuilder.class))
+        given(context.addPrecedingChildRecordBuilder(GenesisAccountStreamBuilder.class, CRYPTO_CREATE))
                 .willReturn(genesisAccountRecordBuilder);
         given(context.readableStore(ReadableBlockRecordStore.class)).willReturn(blockStore);
 

@@ -25,11 +25,7 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 
 /**
  * A temporary wrapper class as we transition from the V6 record stream to the block stream;
- * includes at least one of,
- * <ol>
- *     <li>The V6 record stream items,</li>
- *     <li>The block stream output items</li>
- * </ol>
+ * includes at least one of the V6 record stream and/or the block stream output from a user transaction.
  *
  * @param blockRecordSource maybe the block stream output items
  * @param recordSource maybe record source derived from the V6 record stream items
@@ -49,7 +45,7 @@ public record HandleOutput(@Nullable BlockRecordSource blockRecordSource, @Nulla
         return requireNonNull(blockRecordSource);
     }
 
-    public @NonNull RecordSource preferredRecordSource() {
+    public @NonNull RecordSource preferringBlockRecordSource() {
         return blockRecordSource != null ? blockRecordSource : requireNonNull(recordSource);
     }
 }

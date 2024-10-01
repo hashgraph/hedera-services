@@ -16,18 +16,18 @@
 
 package com.hedera.node.app.blocks.impl.contexts;
 
-import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.base.TransactionID;
+import com.hedera.hapi.node.transaction.PendingAirdropRecord;
 import com.hedera.node.app.blocks.impl.RecordTranslationContext;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
+import java.util.List;
 
-public record CryptoCreateContext(
+public record AirdropOpContext(
         @NonNull String memo,
         @NonNull TransactionID txnId,
         @NonNull Transaction transaction,
         @NonNull HederaFunctionality functionality,
-        @Nullable AccountID accountId)
+        @NonNull List<PendingAirdropRecord> pendingAirdropRecords)
         implements RecordTranslationContext {}

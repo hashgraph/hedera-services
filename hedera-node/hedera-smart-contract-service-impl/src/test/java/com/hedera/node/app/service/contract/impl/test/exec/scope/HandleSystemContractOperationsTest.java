@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.contract.impl.test.exec.scope;
 
+import static com.hedera.hapi.node.base.HederaFunctionality.CONTRACT_CALL;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.AN_ED25519_KEY;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.A_NEW_ACCOUNT_ID;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.A_SECP256K1_KEY;
@@ -122,33 +123,6 @@ class HandleSystemContractOperationsTest {
     }
 
     @Test
-    void externalizeSuccessfulResultTest() {
-        var contractFunctionResult = SystemContractUtils.successResultOfZeroValueTraceable(
-                0,
-                org.apache.tuweni.bytes.Bytes.EMPTY,
-                100L,
-                org.apache.tuweni.bytes.Bytes.EMPTY,
-                AccountID.newBuilder().build());
-
-        // given
-        given(context.savepointStack()).willReturn(savepointStack);
-        given(savepointStack.addChildRecordBuilder(ContractCallStreamBuilder.class))
-                .willReturn(recordBuilder);
-        given(recordBuilder.transaction(Transaction.DEFAULT)).willReturn(recordBuilder);
-        given(recordBuilder.status(ResponseCodeEnum.SUCCESS)).willReturn(recordBuilder);
-        given(recordBuilder.contractID(any())).willReturn(recordBuilder);
-
-        // when
-        subject.externalizeResult(contractFunctionResult, ResponseCodeEnum.SUCCESS);
-
-        // then
-        verify(recordBuilder).contractID(any());
-        verify(recordBuilder).transaction(Transaction.DEFAULT);
-        verify(recordBuilder).status(ResponseCodeEnum.SUCCESS);
-        verify(recordBuilder).contractCallResult(contractFunctionResult);
-    }
-
-    @Test
     void externalizeSuccessfulResultWithTransactionBodyTest() {
         var transaction = Transaction.newBuilder()
                 .body(TransactionBody.newBuilder()
@@ -164,7 +138,7 @@ class HandleSystemContractOperationsTest {
 
         // given
         given(context.savepointStack()).willReturn(savepointStack);
-        given(savepointStack.addChildRecordBuilder(ContractCallStreamBuilder.class))
+        given(savepointStack.addChildRecordBuilder(ContractCallStreamBuilder.class, CONTRACT_CALL))
                 .willReturn(recordBuilder);
         given(recordBuilder.transaction(transaction)).willReturn(recordBuilder);
         given(recordBuilder.status(ResponseCodeEnum.SUCCESS)).willReturn(recordBuilder);
@@ -174,33 +148,6 @@ class HandleSystemContractOperationsTest {
 
         // then
         verify(recordBuilder).status(ResponseCodeEnum.SUCCESS);
-        verify(recordBuilder).contractCallResult(contractFunctionResult);
-    }
-
-    @Test
-    void externalizeFailedResultTest() {
-        var contractFunctionResult = SystemContractUtils.successResultOfZeroValueTraceable(
-                0,
-                org.apache.tuweni.bytes.Bytes.EMPTY,
-                100L,
-                org.apache.tuweni.bytes.Bytes.EMPTY,
-                AccountID.newBuilder().build());
-
-        // given
-        given(context.savepointStack()).willReturn(savepointStack);
-        given(savepointStack.addChildRecordBuilder(ContractCallStreamBuilder.class))
-                .willReturn(recordBuilder);
-        given(recordBuilder.transaction(Transaction.DEFAULT)).willReturn(recordBuilder);
-        given(recordBuilder.status(ResponseCodeEnum.FAIL_INVALID)).willReturn(recordBuilder);
-        given(recordBuilder.contractID(any())).willReturn(recordBuilder);
-
-        // when
-        subject.externalizeResult(contractFunctionResult, ResponseCodeEnum.FAIL_INVALID);
-
-        // then
-        verify(recordBuilder).contractID(any());
-        verify(recordBuilder).transaction(Transaction.DEFAULT);
-        verify(recordBuilder).status(ResponseCodeEnum.FAIL_INVALID);
         verify(recordBuilder).contractCallResult(contractFunctionResult);
     }
 

@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.token.impl.test.handlers.staking;
 
+import static com.hedera.hapi.node.base.HederaFunctionality.NODE_STAKE_UPDATE;
 import static com.hedera.node.app.service.token.Units.HBARS_TO_TINYBARS;
 import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.asAccount;
 import static com.hedera.node.app.service.token.impl.handlers.staking.EndOfStakingPeriodUpdater.calculateWeightFromStake;
@@ -433,7 +434,7 @@ public class EndOfStakingPeriodUpdaterTest {
                 .willReturn((WritableSingletonState) stakingRewardsState);
         stakingRewardsStore = new WritableNetworkStakingRewardsStore(states);
         given(context.writableStore(WritableNetworkStakingRewardsStore.class)).willReturn(stakingRewardsStore);
-        given(context.addPrecedingChildRecordBuilder(NodeStakeUpdateStreamBuilder.class))
+        given(context.addPrecedingChildRecordBuilder(NodeStakeUpdateStreamBuilder.class, NODE_STAKE_UPDATE))
                 .willReturn(nodeStakeUpdateRecordBuilder);
         given(context.knownNodeIds()).willReturn(Set.of(NODE_NUM_1.number(), NODE_NUM_2.number(), NODE_NUM_3.number()));
     }

@@ -20,15 +20,26 @@ import static com.hedera.hapi.node.base.HederaFunctionality.CONTRACT_CALL;
 import static com.hedera.hapi.node.base.HederaFunctionality.CONTRACT_CREATE;
 import static com.hedera.hapi.node.base.HederaFunctionality.ETHEREUM_TRANSACTION;
 
+import com.hedera.hapi.block.stream.output.CreateScheduleOutput;
 import com.hedera.hapi.block.stream.output.CryptoTransferOutput;
 import com.hedera.hapi.block.stream.output.EthereumOutput;
+import com.hedera.hapi.block.stream.output.SignScheduleOutput;
 import com.hedera.hapi.block.stream.output.TransactionOutput;
 import com.hedera.hapi.block.stream.output.TransactionResult;
+import com.hedera.hapi.block.stream.output.UtilPrngOutput;
 import com.hedera.hapi.node.contract.ContractFunctionResult;
 import com.hedera.hapi.node.transaction.TransactionReceipt;
 import com.hedera.hapi.node.transaction.TransactionRecord;
 import com.hedera.node.app.blocks.impl.RecordTranslationContext;
+import com.hedera.node.app.blocks.impl.contexts.AirdropOpContext;
 import com.hedera.node.app.blocks.impl.contexts.ContractOpContext;
+import com.hedera.node.app.blocks.impl.contexts.CryptoOpContext;
+import com.hedera.node.app.blocks.impl.contexts.FileOpContext;
+import com.hedera.node.app.blocks.impl.contexts.ScheduleOpContext;
+import com.hedera.node.app.blocks.impl.contexts.SubmitOpContext;
+import com.hedera.node.app.blocks.impl.contexts.SupplyChangeOpContext;
+import com.hedera.node.app.blocks.impl.contexts.TokenOpContext;
+import com.hedera.node.app.blocks.impl.contexts.TopicOpContext;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import javax.inject.Inject;
@@ -70,7 +81,7 @@ public class RecordTranslator {
         final var function = context.functionality();
         switch (function) {
             case CONTRACT_CALL, CONTRACT_CREATE, CONTRACT_DELETE, CONTRACT_UPDATE, ETHEREUM_TRANSACTION -> {
-                receiptBuilder.contractID(as(ContractOpContext.class, context).contractId());
+                receiptBuilder.contractID(((ContractOpContext) context).contractId());
                 if (function == CONTRACT_CALL) {
                     recordBuilder.contractCallResult(contractCallResultIfPresent(outputs));
                 } else if (function == CONTRACT_CREATE) {
@@ -88,29 +99,59 @@ public class RecordTranslator {
                     }
                 }
             }
-            case CRYPTO_TRANSFER -> {
-                final var cryptoOutput = cryptoTransferOutputIfPresent(outputs);
-                if (cryptoOutput != null) {
-                    recordBuilder.assessedCustomFees(cryptoOutput.assessedCustomFees());
-                }
-            }
             default -> {
                 final var synthResult = contractCallResultIfPresent(outputs);
                 if (synthResult != null) {
                     recordBuilder.contractCallResult(synthResult);
                 }
+                switch (function) {
+                    case CRYPTO_TRANSFER -> {
+                        final var cryptoOutput = cryptoTransferOutputIfPresent(outputs);
+                        if (cryptoOutput != null) {
+                            recordBuilder.assessedCustomFees(cryptoOutput.assessedCustomFees());
+                        }
+                    }
+                    case CRYPTO_CREATE, CRYPTO_UPDATE -> receiptBuilder.accountID(
+                            ((CryptoOpContext) context).accountId());
+                    case FILE_CREATE -> receiptBuilder.fileID(((FileOpContext) context).fileId());
+                    case SCHEDULE_CREATE -> {
+                        final var scheduleOutput = createScheduleOutputIfPresent(outputs);
+                        if (scheduleOutput != null) {
+                            receiptBuilder
+                                    .scheduleID(scheduleOutput.scheduleId())
+                                    .scheduledTransactionID(scheduleOutput.scheduledTransactionId());
+                        }
+                    }
+                    case SCHEDULE_DELETE -> receiptBuilder.scheduleID(((ScheduleOpContext) context).scheduleId());
+                    case SCHEDULE_SIGN -> {
+                        final var signOutput = signScheduleOutputIfPresent(outputs);
+                        if (signOutput != null) {
+                            receiptBuilder.scheduledTransactionID(signOutput.scheduledTransactionId());
+                        }
+                    }
+                    case CONSENSUS_SUBMIT_MESSAGE -> receiptBuilder
+                            .topicRunningHashVersion(((SubmitOpContext) context).runningHashVersion())
+                            .topicSequenceNumber(((SubmitOpContext) context).sequenceNumber())
+                            .topicRunningHash(((SubmitOpContext) context).runningHash());
+                    case TOKEN_AIRDROP -> recordBuilder.newPendingAirdrops(
+                            ((AirdropOpContext) context).pendingAirdropRecords());
+                    case TOKEN_MINT, TOKEN_BURN, TOKEN_ACCOUNT_WIPE -> receiptBuilder.newTotalSupply(
+                            ((SupplyChangeOpContext) context).newTotalSupply());
+                    case TOKEN_CREATE -> receiptBuilder.tokenID(((TokenOpContext) context).tokenId());
+                    case CONSENSUS_CREATE_TOPIC -> receiptBuilder.topicID(((TopicOpContext) context).topicId());
+                    case UTIL_PRNG -> {
+                        final var prngOutput = utilPrngOutputIfPresent(outputs);
+                        if (prngOutput != null) {
+                            switch (prngOutput.entropy().kind()) {
+                                case PRNG_BYTES -> recordBuilder.prngBytes(prngOutput.prngBytesOrThrow());
+                                case PRNG_NUMBER -> recordBuilder.prngNumber(prngOutput.prngNumberOrThrow());
+                            }
+                        }
+                    }
+                }
             }
         }
         return recordBuilder.receipt(receiptBuilder).build();
-    }
-
-    private static <T extends RecordTranslationContext> T as(
-            @NonNull final Class<T> type, @NonNull final RecordTranslationContext context) {
-        if (type.isInstance(context)) {
-            return type.cast(context);
-        }
-        throw new IllegalArgumentException(
-                "Context " + context.getClass().getSimpleName() + " is not of expected type " + type.getSimpleName());
     }
 
     private static @Nullable ContractFunctionResult contractCallResultIfPresent(
@@ -159,6 +200,44 @@ public class RecordTranslator {
         for (final var output : outputs) {
             if (output.hasCryptoTransfer()) {
                 return output.cryptoTransferOrThrow();
+            }
+        }
+        return null;
+    }
+
+    private static @Nullable CreateScheduleOutput createScheduleOutputIfPresent(
+            @Nullable final TransactionOutput... outputs) {
+        if (outputs == null) {
+            return null;
+        }
+        for (final var output : outputs) {
+            if (output.hasCreateSchedule()) {
+                return output.createScheduleOrThrow();
+            }
+        }
+        return null;
+    }
+
+    private static @Nullable SignScheduleOutput signScheduleOutputIfPresent(
+            @Nullable final TransactionOutput... outputs) {
+        if (outputs == null) {
+            return null;
+        }
+        for (final var output : outputs) {
+            if (output.hasSignSchedule()) {
+                return output.signScheduleOrThrow();
+            }
+        }
+        return null;
+    }
+
+    private static @Nullable UtilPrngOutput utilPrngOutputIfPresent(@Nullable final TransactionOutput... outputs) {
+        if (outputs == null) {
+            return null;
+        }
+        for (final var output : outputs) {
+            if (output.hasUtilPrng()) {
+                return output.utilPrngOrThrow();
             }
         }
         return null;

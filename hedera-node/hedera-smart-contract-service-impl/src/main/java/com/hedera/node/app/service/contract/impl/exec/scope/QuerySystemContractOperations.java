@@ -20,6 +20,7 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
+import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.Transaction;
@@ -69,7 +70,9 @@ public class QuerySystemContractOperations implements SystemContractOperations {
 
     @Override
     public ContractCallStreamBuilder externalizePreemptedDispatch(
-            @NonNull final TransactionBody syntheticBody, @NonNull final ResponseCodeEnum preemptingStatus) {
+            @NonNull final TransactionBody syntheticBody,
+            @NonNull final ResponseCodeEnum preemptingStatus,
+            @NonNull final HederaFunctionality functionality) {
         throw new UnsupportedOperationException("Cannot externalize preempted dispatch");
     }
 
@@ -81,9 +84,6 @@ public class QuerySystemContractOperations implements SystemContractOperations {
         throw new UnsupportedOperationException("Cannot compute a signature test");
     }
 
-    @Override
-    public void externalizeResult(@NonNull ContractFunctionResult result, @NonNull ResponseCodeEnum responseStatus) {}
-
     /**
      * {@inheritDoc}
      */
@@ -92,15 +92,16 @@ public class QuerySystemContractOperations implements SystemContractOperations {
             @NonNull final ContractFunctionResult result,
             @NonNull final ResponseCodeEnum responseStatus,
             @Nullable Transaction transaction) {
-        // no-op
+        // No-op
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public Transaction syntheticTransactionForNativeCall(Bytes input, ContractID contractID, boolean isViewCall) {
-        // no-op
+    public Transaction syntheticTransactionForNativeCall(
+            @NonNull final Bytes input, @NonNull final ContractID contractID, final boolean isViewCall) {
+        // No-op
         return null;
     }
 

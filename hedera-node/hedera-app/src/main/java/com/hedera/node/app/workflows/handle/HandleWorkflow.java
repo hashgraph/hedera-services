@@ -66,7 +66,6 @@ import com.hedera.node.app.state.HederaRecordCache;
 import com.hedera.node.app.state.HederaRecordCache.DueDiligenceFailure;
 import com.hedera.node.app.state.recordcache.BlockRecordSource;
 import com.hedera.node.app.state.recordcache.LegacyListRecordSource;
-import com.hedera.node.app.state.recordcache.ListRecordSource;
 import com.hedera.node.app.store.WritableStoreFactory;
 import com.hedera.node.app.throttle.NetworkUtilizationManager;
 import com.hedera.node.app.throttle.ThrottleServiceManager;
@@ -403,7 +402,7 @@ public class HandleWorkflow {
                     userTxn.creatorInfo().nodeId(),
                     userTxn.txnInfo().transactionID(),
                     dueDiligenceFailure,
-                    handleOutput.preferredRecordSource());
+                    handleOutput.preferringBlockRecordSource());
             return handleOutput;
         } catch (final Exception e) {
             logger.error("{} - exception thrown while handling user transaction", ALERT_MESSAGE, e);
@@ -441,8 +440,7 @@ public class HandleWorkflow {
             initializeBuilderInfo(failInvalidBuilder, userTxn.txnInfo(), exchangeRateManager.exchangeRates())
                     .status(FAIL_INVALID)
                     .consensusTimestamp(userTxn.consensusNow());
-            final var failInvalidRecord = failInvalidBuilder.build();
-            cacheableRecordSource = recordSource = new ListRecordSource(failInvalidRecord.transactionRecord());
+            cacheableRecordSource = recordSource = new LegacyListRecordSource(List.of(failInvalidBuilder.build()));
         } else {
             recordSource = null;
         }

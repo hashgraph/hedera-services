@@ -18,8 +18,9 @@ package com.hedera.node.app.blocks.impl;
 
 import static com.hedera.hapi.node.base.HederaFunctionality.CRYPTO_TRANSFER;
 import static com.hedera.hapi.node.base.HederaFunctionality.TOKEN_AIRDROP;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.IDENTICAL_SCHEDULE_ALREADY_CREATED;
 import static com.hedera.hapi.util.HapiUtils.asTimestamp;
-import static java.util.Collections.emptyList;
+import static com.hedera.node.app.service.token.impl.comparator.TokenComparators.PENDING_AIRDROP_ID_COMPARATOR;
 import static java.util.Collections.emptySet;
 import static java.util.Objects.requireNonNull;
 
@@ -65,9 +66,17 @@ import com.hedera.hapi.streams.ContractBytecode;
 import com.hedera.hapi.streams.ContractStateChanges;
 import com.hedera.hapi.streams.TransactionSidecarRecord;
 import com.hedera.node.app.blocks.RecordTranslator;
+import com.hedera.node.app.blocks.impl.contexts.AirdropOpContext;
 import com.hedera.node.app.blocks.impl.contexts.BaseOpContext;
 import com.hedera.node.app.blocks.impl.contexts.ContractOpContext;
-import com.hedera.node.app.blocks.impl.contexts.CryptoCreateContext;
+import com.hedera.node.app.blocks.impl.contexts.CryptoOpContext;
+import com.hedera.node.app.blocks.impl.contexts.FileOpContext;
+import com.hedera.node.app.blocks.impl.contexts.NodeOpContext;
+import com.hedera.node.app.blocks.impl.contexts.ScheduleOpContext;
+import com.hedera.node.app.blocks.impl.contexts.SubmitOpContext;
+import com.hedera.node.app.blocks.impl.contexts.SupplyChangeOpContext;
+import com.hedera.node.app.blocks.impl.contexts.TokenOpContext;
+import com.hedera.node.app.blocks.impl.contexts.TopicOpContext;
 import com.hedera.node.app.service.addressbook.impl.records.NodeCreateStreamBuilder;
 import com.hedera.node.app.service.consensus.impl.records.ConsensusCreateTopicStreamBuilder;
 import com.hedera.node.app.service.consensus.impl.records.ConsensusSubmitMessageStreamBuilder;
@@ -104,6 +113,7 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
 import java.util.AbstractMap;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
@@ -149,6 +159,8 @@ public class BlockStreamBuilder
     private static final Comparator<TokenAssociation> TOKEN_ASSOCIATION_COMPARATOR =
             Comparator.<TokenAssociation>comparingLong(a -> a.tokenIdOrThrow().tokenNum())
                     .thenComparingLong(a -> a.accountIdOrThrow().accountNumOrThrow());
+    private static final Comparator<PendingAirdropRecord> PENDING_AIRDROP_RECORD_COMPARATOR =
+            Comparator.comparing(PendingAirdropRecord::pendingAirdropIdOrThrow, PENDING_AIRDROP_ID_COMPARATOR);
 
     // Base transaction data
     private Transaction transaction;
@@ -173,6 +185,11 @@ public class BlockStreamBuilder
     private ResponseCodeEnum status = ResponseCodeEnum.OK;
     private List<Long> serialNumbers = new LinkedList<>();
     private long newTotalSupply = 0L;
+    private long nodeId;
+    private long sequenceNumber = 0L;
+    private Bytes runningHash = Bytes.EMPTY;
+    private long runningHashVersion = 0L;
+    private TransactionID scheduledTransactionId;
     // A set of ids that should be explicitly considered as in a "reward situation",
     // despite the canonical definition of a reward situation; needed for mono-service
     // fidelity only
@@ -198,6 +215,7 @@ public class BlockStreamBuilder
     private Bytes ethereumHash = Bytes.EMPTY;
 
     private final List<TokenAssociation> automaticTokenAssociations = new LinkedList<>();
+    private List<PendingAirdropRecord> pendingAirdropRecords = Collections.emptyList();
     private final TransactionResult.Builder transactionResultBuilder = TransactionResult.newBuilder();
     // Sidecar data, booleans are the migration flag
     private final List<AbstractMap.SimpleEntry<ContractStateChanges, Boolean>> contractStateChanges =
@@ -224,12 +242,13 @@ public class BlockStreamBuilder
     // CryptoCreate transactions as ContractCreate synthetic transactions
     private final ExternalizedRecordCustomizer customizer;
 
-    private TokenID tokenID;
+    private FileID fileId;
+    private TopicID topicId;
+    private TokenID tokenId;
     private AccountID accountId;
     private ContractID contractId;
-    private ScheduleID scheduleID;
+    private ScheduleID scheduleId;
     private boolean createsOrDeletesSchedule;
-    private TransactionID scheduledTransactionId;
 
     public BlockStreamBuilder(
             @NonNull final ReversingBehavior reversingBehavior,
@@ -310,7 +329,23 @@ public class BlockStreamBuilder
                     CONTRACT_UPDATE,
                     ETHEREUM_TRANSACTION -> new ContractOpContext(
                     memo, transactionID, transaction, functionality, contractId);
-            case CRYPTO_CREATE -> new CryptoCreateContext(memo, transactionID, transaction, functionality, accountId);
+            case CRYPTO_CREATE, CRYPTO_UPDATE -> new CryptoOpContext(
+                    memo, transactionID, transaction, functionality, accountId);
+            case FILE_CREATE -> new FileOpContext(memo, transactionID, transaction, functionality, fileId);
+            case NODE_CREATE -> new NodeOpContext(memo, transactionID, transaction, functionality, nodeId);
+            case SCHEDULE_DELETE -> new ScheduleOpContext(memo, transactionID, transaction, functionality, scheduleId);
+            case CONSENSUS_SUBMIT_MESSAGE -> new SubmitOpContext(
+                    memo, transactionID, transaction, functionality, runningHash, runningHashVersion, sequenceNumber);
+            case TOKEN_AIRDROP -> {
+                if (!pendingAirdropRecords.isEmpty()) {
+                    pendingAirdropRecords.sort(PENDING_AIRDROP_RECORD_COMPARATOR);
+                }
+                yield new AirdropOpContext(memo, transactionID, transaction, functionality, pendingAirdropRecords);
+            }
+            case TOKEN_MINT, TOKEN_BURN, TOKEN_ACCOUNT_WIPE -> new SupplyChangeOpContext(
+                    memo, transactionID, transaction, functionality, newTotalSupply);
+            case TOKEN_CREATE -> new TokenOpContext(memo, transactionID, transaction, functionality, tokenId);
+            case CONSENSUS_CREATE_TOPIC -> new TopicOpContext(memo, transactionID, transaction, functionality, topicId);
             default -> new BaseOpContext(memo, transactionID, transaction, functionality);
         };
     }
@@ -490,8 +525,7 @@ public class BlockStreamBuilder
     @Override
     @NonNull
     public BlockStreamBuilder tokenTransferLists(@NonNull final List<TokenTransferList> tokenTransferLists) {
-        requireNonNull(tokenTransferLists, "tokenTransferLists must not be null");
-        this.tokenTransferLists = tokenTransferLists;
+        this.tokenTransferLists = requireNonNull(tokenTransferLists);
         transactionResultBuilder.tokenTransferLists(tokenTransferLists);
         return this;
     }
@@ -510,6 +544,10 @@ public class BlockStreamBuilder
     @Override
     public BlockStreamBuilder addPendingAirdrop(@NonNull final PendingAirdropRecord pendingAirdropRecord) {
         requireNonNull(pendingAirdropRecord);
+        if (pendingAirdropRecords.isEmpty()) {
+            pendingAirdropRecords = new LinkedList<>();
+        }
+        pendingAirdropRecords.add(pendingAirdropRecord);
         return this;
     }
 
@@ -547,8 +585,7 @@ public class BlockStreamBuilder
     @Override
     @NonNull
     public BlockStreamBuilder paidStakingRewards(@NonNull final List<AccountAmount> paidStakingRewards) {
-        // These need not be externalized to block streams
-        requireNonNull(paidStakingRewards, "paidStakingRewards must not be null");
+        requireNonNull(paidStakingRewards);
         this.paidStakingRewards = paidStakingRewards;
         transactionResultBuilder.paidStakingRewards(paidStakingRewards);
         return this;
@@ -621,7 +658,7 @@ public class BlockStreamBuilder
     @Override
     @NonNull
     public BlockStreamBuilder fileID(@NonNull final FileID fileID) {
-        // No-op
+        this.fileId = fileID;
         return this;
     }
 
@@ -652,48 +689,47 @@ public class BlockStreamBuilder
     @Override
     @NonNull
     public BlockStreamBuilder topicID(@NonNull final TopicID topicID) {
-        // No-op
+        this.topicId = requireNonNull(topicID);
         return this;
     }
 
     @Override
     @NonNull
     public BlockStreamBuilder topicSequenceNumber(final long topicSequenceNumber) {
-        // No-op
+        this.sequenceNumber = topicSequenceNumber;
         return this;
     }
 
     @Override
     @NonNull
     public BlockStreamBuilder topicRunningHash(@NonNull final Bytes topicRunningHash) {
-        // No-op
+        this.runningHash = requireNonNull(topicRunningHash);
         return this;
     }
 
     @Override
     @NonNull
     public BlockStreamBuilder topicRunningHashVersion(final long topicRunningHashVersion) {
-        // TOD0: Need to confirm what the value should be
+        this.runningHashVersion = topicRunningHashVersion;
         return this;
     }
 
     @Override
     @NonNull
-    public BlockStreamBuilder tokenID(@NonNull final TokenID tokenID) {
-        requireNonNull(tokenID, "tokenID must not be null");
-        this.tokenID = tokenID;
+    public BlockStreamBuilder tokenID(@NonNull final TokenID tokenId) {
+        this.tokenId = requireNonNull(tokenId);
         return this;
     }
 
     @Override
     public TokenID tokenID() {
-        return tokenID;
+        return tokenId;
     }
 
     @Override
     @NonNull
-    public BlockStreamBuilder nodeID(long nodeId) {
-        // No-op
+    public BlockStreamBuilder nodeID(final long nodeId) {
+        this.nodeId = nodeId;
         return this;
     }
 
@@ -712,7 +748,7 @@ public class BlockStreamBuilder
     @NonNull
     public BlockStreamBuilder scheduleID(@NonNull final ScheduleID scheduleID) {
         this.createsOrDeletesSchedule = true;
-        this.scheduleID = requireNonNull(scheduleID);
+        this.scheduleId = requireNonNull(scheduleID);
         return this;
     }
 
@@ -816,6 +852,9 @@ public class BlockStreamBuilder
     public void nullOutSideEffectFields() {
         serialNumbers.clear();
         tokenTransferLists.clear();
+        if (!pendingAirdropRecords.isEmpty()) {
+            pendingAirdropRecords.clear();
+        }
         automaticTokenAssociations.clear();
         transferList = TransferList.DEFAULT;
         paidStakingRewards.clear();
@@ -823,8 +862,22 @@ public class BlockStreamBuilder
 
         newTotalSupply = 0L;
         transactionFee = 0L;
+
+        accountId = null;
+        contractId = null;
+        fileId = null;
+        tokenId = null;
+        topicId = null;
+        nodeId = 0L;
+        if (status != IDENTICAL_SCHEDULE_ALREADY_CREATED) {
+            scheduleId = null;
+            scheduledTransactionId = null;
+        }
+
         transactionResultBuilder.scheduleRef((ScheduleID) null);
-        transactionResultBuilder.automaticTokenAssociations(emptyList());
+        runningHash = Bytes.EMPTY;
+        sequenceNumber = 0L;
+        runningHashVersion = 0L;
     }
 
     @NonNull
@@ -886,7 +939,7 @@ public class BlockStreamBuilder
         if (createsOrDeletesSchedule && scheduledTransactionId != null) {
             items.add(itemWith(TransactionOutput.newBuilder()
                     .createSchedule(CreateScheduleOutput.newBuilder()
-                            .scheduleId(scheduleID)
+                            .scheduleId(scheduleId)
                             .scheduledTransactionId(scheduledTransactionId)
                             .build())));
         } else if (scheduledTransactionId != null) {
