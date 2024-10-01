@@ -1622,7 +1622,7 @@ enum ResponseCodeEnum {
     ALLOWANCE_PER_MESSAGE_EXCEEDS_TOTAL_ALLOWANCE = 374;
 
     /**
-     * Repeated AccountId/TopicId pair in the transaction body.
+     * Repeated TopicId/AccountId/TokenId pair in the transaction body.
      */
     REPEATED_ALLOWANCE_IN_TRANSACTION_BODY = 375;
 
@@ -1635,4 +1635,9 @@ enum ResponseCodeEnum {
      * The account receiving allowance is a smart contract.
      */
     ACCOUNT_IS_CONTRACT = 377;
+
+    /**
+     * The topic has no custom fees.
+     */
+    TOPIC_HAS_NO_CUSTOM_FEES = 378;
 }

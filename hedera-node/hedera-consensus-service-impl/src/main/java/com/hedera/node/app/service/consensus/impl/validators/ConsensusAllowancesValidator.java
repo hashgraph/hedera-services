@@ -27,6 +27,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.NFT_IN_FUNGIBLE_TOKEN_A
 import static com.hedera.hapi.node.base.ResponseCodeEnum.REPEATED_ALLOWANCE_IN_TRANSACTION_BODY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOPIC_DELETED;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.TOPIC_HAS_NO_CUSTOM_FEES;
 import static com.hedera.node.app.service.consensus.impl.util.ConsensusHandlerHelper.getIfUsable;
 import static com.hedera.node.app.spi.validation.Validations.mustExist;
 import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
@@ -133,9 +134,9 @@ public class ConsensusAllowancesValidator {
     }
 
     /**
-     * Validates that the topic exists and has not been deleted.
+     * Validates that the topic exists, has custom fees and has not been deleted.
      *
-     * @param topicID Validates that this is non-null and not deleted.
+     * @param topicID Validates that this is non-null, has custom fees and not deleted.
      */
     private void validateTopic(@Nullable final TopicID topicID, @NonNull final ReadableTopicStore topicStore) {
         requireNonNull(topicStore);
@@ -143,6 +144,7 @@ public class ConsensusAllowancesValidator {
         validateTrue(topicID != null, INVALID_TOPIC_ID);
         final var topic = getIfUsable(topicID, topicStore);
         validateFalse(topic.deleted(), TOPIC_DELETED);
+        validateFalse(topic.customFees().isEmpty(), TOPIC_HAS_NO_CUSTOM_FEES);
     }
 
     private static void validateCryptoAllowances(List<ConsensusCryptoFeeScheduleAllowance> cryptoAllowances)
