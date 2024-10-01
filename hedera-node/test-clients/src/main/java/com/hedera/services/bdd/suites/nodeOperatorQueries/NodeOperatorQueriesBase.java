@@ -25,7 +25,7 @@ import com.hedera.services.bdd.spec.SpecOperation;
 import java.util.ArrayList;
 import java.util.List;
 
-public class FreeQueriesBase {
+public class NodeOperatorQueriesBase {
 
     // node operator account
     protected static final String NODE_OPERATOR = "operator";

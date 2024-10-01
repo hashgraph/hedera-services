@@ -37,8 +37,8 @@ import org.junit.jupiter.api.Nested;
 
 // @Tag(QUERIES)
 @HapiTestLifecycle
-@DisplayName("Free Queries")
-public class FreeQueriesTest extends FreeQueriesBase {
+@DisplayName("Node Operator Queries")
+public class NodeOperatorQueriesTest extends NodeOperatorQueriesBase {
 
     @Nested
     @DisplayName("verify with paid query response")
@@ -50,7 +50,7 @@ public class FreeQueriesTest extends FreeQueriesBase {
         }
 
         @HapiTest
-        final Stream<DynamicTest> FreeQueryVerifyWithPaidQueryForAccountBalance() {
+        final Stream<DynamicTest> NodeOperatorQueryVerifyWithPaidQueryForAccountBalance() {
             // declare payer account balance variables
             final AtomicLong initialPayerBalance = new AtomicLong();
             final AtomicLong newPayerBalance = new AtomicLong();
@@ -63,14 +63,14 @@ public class FreeQueriesTest extends FreeQueriesBase {
                         // the grpc client performs the query to different ports
                         final var firstQuery = getTokenInfo(FUNGIBLE_QUERY_TOKEN)
                                 .payingWith(PAYER)
-                                .signedBy(PAYER);
+                                .signedBy(PAYER).logged();
                         // get changed payer account balance
                         final var newBalance = getAccountBalance(PAYER).exposingBalanceTo(newPayerBalance::set);
                         // perform free query to local port with asNodeOperator() method
                         final var secondQuery = getTokenInfo(FUNGIBLE_QUERY_TOKEN)
                                 .payingWith(PAYER)
                                 .signedBy(PAYER)
-                                .asNodeOperator();
+                                .asNodeOperator().logged();
                         // assert payer account balance is not changed
                         final var currentBalance = getAccountBalance(PAYER).exposingBalanceTo(currentPayerBalance::set);
                         allRunFor(spec, initialBalance, firstQuery, newBalance, secondQuery, currentBalance);
