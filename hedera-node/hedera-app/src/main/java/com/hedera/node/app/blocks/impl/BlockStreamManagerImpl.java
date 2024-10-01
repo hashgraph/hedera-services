@@ -339,8 +339,7 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
             block.writer()
                     .writeItem(BlockItem.PROTOBUF.toBytes(
                             BlockItem.newBuilder().blockProof(proof).build()))
-            // is this correct? it closes the stream on each block and opens a new one on the next block?
-            /*.closeBlock()*/ ;
+            .closeBlock() ;
             if (block.number() != blockNumber) {
                 siblingHashes.removeFirst();
             }
