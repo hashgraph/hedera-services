@@ -571,10 +571,6 @@ value for `N`, or they will ISS since they will assign different rosters to diff
 defined here, but will need some investigation. Unfortunately, this number appears to require "just being chosen" and
 cannot be deterministically dynamically computed based on network conditions.
 
-Note: when the roster is applied to some future round `latest_consensus_round + N + 1`, if such a round already exists
-in the hashgraph, then that round and any future rounds must be removed and the events reapplied in order given the new
-roster.
-
 #### State
 
 The Hashgraph module also includes a `state` section in the metadata of the round. This is used by the Execution layer
