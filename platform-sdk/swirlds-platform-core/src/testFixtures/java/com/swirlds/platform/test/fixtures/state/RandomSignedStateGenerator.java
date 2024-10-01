@@ -21,9 +21,8 @@ import static com.swirlds.common.test.fixtures.RandomUtils.randomHash;
 import static com.swirlds.common.test.fixtures.RandomUtils.randomSignature;
 import static com.swirlds.platform.test.fixtures.state.FakeMerkleStateLifecycles.FAKE_MERKLE_STATE_LIFECYCLES;
 import static com.swirlds.platform.test.fixtures.state.FakeMerkleStateLifecycles.registerMerkleStateRootClassIds;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
+import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.Signature;
@@ -42,8 +41,6 @@ import com.swirlds.platform.state.MinimumJudgeInfo;
 import com.swirlds.platform.state.PlatformStateAccessor;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.system.BasicSoftwareVersion;
-import com.swirlds.platform.system.InitTrigger;
-import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
@@ -131,16 +128,13 @@ public class RandomSignedStateGenerator {
         final MerkleRoot stateInstance;
         registerMerkleStateRootClassIds();
         if (state == null) {
-            Platform platform = mock(Platform.class);
-            when(platform.getContext())
-                    .thenReturn(TestPlatformContextBuilder.create().build());
             if (useBlockingState) {
                 stateInstance = new BlockingSwirldState();
             } else {
                 stateInstance = new MerkleStateRoot(
                         FAKE_MERKLE_STATE_LIFECYCLES, version -> new BasicSoftwareVersion(version.major()));
             }
-            ((MerkleStateRoot) stateInstance).init(platform, InitTrigger.GENESIS, softwareVersion);
+            ((MerkleStateRoot) stateInstance).setTime(Time.getCurrent());
         } else {
             stateInstance = state;
         }

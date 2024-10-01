@@ -1021,6 +1021,15 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
     }
 
     /**
+     * Sets the time for this state.
+     *
+     * @param time the time to set
+     */
+    public void setTime(final Time time) {
+        this.time = time;
+    }
+
+    /**
      * {@inheritDoc}
      */
     @NonNull
