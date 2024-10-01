@@ -107,6 +107,7 @@ public class Signature {
                 throw new IOException("unexpected class ID: " + classId);
             }
         }
+        in.readInt(); // ignore version
         final SignatureType signatureType = SignatureType.from(in.readInt(), RSA);
         final byte[] signatureBytes = in.readByteArray(signatureType.signatureLength(), true);
 
@@ -123,6 +124,7 @@ public class Signature {
         if (withClassId) {
             out.writeLong(CLASS_ID);
         }
+        out.writeInt(CLASS_VERSION);
         out.writeInt(signatureType.ordinal());
         out.writeByteArray(signatureBytes.toByteArray(), true);
     }
