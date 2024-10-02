@@ -91,7 +91,11 @@ public class WritableRosterStore implements RosterStateModifier {
                 .roundRosterPairs(currentRosterState.roundRosterPairs());
         this.rosterState.put(rosterStateBuilder.build());
 
-        // update the roster map and commit the changes
+        final Bytes currentCandidateRosterHash = currentRosterState.candidateRosterHash();
+        // remove existing candidate roster if present
+        this.rosterMap.remove(
+                ProtoBytes.newBuilder().value(currentCandidateRosterHash).build());
+
         this.rosterMap.put(ProtoBytes.newBuilder().value(candidateRosterHash).build(), candidateRoster);
         commit();
     }
@@ -119,13 +123,10 @@ public class WritableRosterStore implements RosterStateModifier {
                     lastUsedActiveRoster, "Active Roster must be present in the state during normal network restart.");
         }
 
-        // software upgrade is detected, we adopt the candidate roster
-        final Roster candidateRoster = Objects.requireNonNull(
-                rosterStateAccessor.getCandidateRoster(),
-                "Candidate Roster must be present in the state before attempting to adopt a roster.");
-        adoptCandidateRoster(initialState.get().getRound() + 1);
+        // software upgrade is detected, adopt the candidate roster as the active roster.
+        final Roster activeRoster = adoptCandidateRoster(initialState.get().getRound() + 1);
         commit();
-        return candidateRoster;
+        return activeRoster;
     }
 
     /**
@@ -140,7 +141,7 @@ public class WritableRosterStore implements RosterStateModifier {
     /**
      * {@inheritDoc}
      */
-    @NonNull
+    @Nullable
     @Override
     public Roster getActiveRoster() {
         return rosterStateAccessor.getActiveRoster();
@@ -151,7 +152,8 @@ public class WritableRosterStore implements RosterStateModifier {
      *
      * @param roundNumber the round number in which the candidate roster became active
      */
-    private void adoptCandidateRoster(final long roundNumber) {
+    @NonNull
+    private Roster adoptCandidateRoster(final long roundNumber) {
         final RosterState previousRosterState = rosterStateOrThrow();
         final Roster candidateRoster = rosterMap.get(ProtoBytes.newBuilder()
                 .value(previousRosterState.candidateRosterHash())
@@ -161,6 +163,7 @@ public class WritableRosterStore implements RosterStateModifier {
         }
 
         storeAsActive(candidateRoster, roundNumber);
+        return candidateRoster;
     }
 
     /**

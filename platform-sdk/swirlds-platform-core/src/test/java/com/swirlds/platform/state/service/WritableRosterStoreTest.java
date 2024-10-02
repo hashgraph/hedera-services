@@ -100,10 +100,8 @@ class WritableRosterStoreTest {
     void testAdoptCandidateRosterWhenCandidateRosterNotFound() {
         enableSoftwareUpgradeMode(true);
         final Exception exception = assertThrows(
-                NullPointerException.class, () -> rosterStateModifier.determineActiveRoster(version, initialState));
-        assertEquals(
-                "Candidate Roster must be present in the state before attempting to adopt a roster.",
-                exception.getMessage());
+                IllegalStateException.class, () -> rosterStateModifier.determineActiveRoster(version, initialState));
+        assertEquals("Candidate roster not found in the state.", exception.getMessage());
     }
 
     @Test

@@ -81,7 +81,7 @@ public class ReadableRosterStore implements RosterStateAccessor {
      * otherwise returns null.
      * @return the active roster
      */
-    @NonNull
+    @Nullable
     @Override
     public Roster getActiveRoster() {
         final RosterState rosterStateSingleton = rosterState.get();
