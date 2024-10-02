@@ -23,6 +23,8 @@ import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.common.wiring.model.WiringModel;
 import com.swirlds.common.wiring.model.WiringModelBuilder;
+import com.swirlds.config.api.ConfigurationBuilder;
+import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.platform.builder.ApplicationCallbacks;
 import com.swirlds.platform.builder.PlatformBuildingBlocks;
 import com.swirlds.platform.builder.PlatformComponentBuilder;
@@ -64,19 +66,44 @@ import com.swirlds.platform.state.signer.StateSigner;
 import com.swirlds.platform.state.snapshot.StateSnapshotManager;
 import com.swirlds.platform.system.events.BirthRoundMigrationShim;
 import com.swirlds.platform.system.status.StatusStateMachine;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 /**
  * Unit tests for {@link PlatformWiring}
  */
 class PlatformWiringTests {
-    @Test
-    @DisplayName("Assert that all input wires are bound to something")
-    void testBindings() {
-        final PlatformContext platformContext =
-                TestPlatformContextBuilder.create().build();
+    static Stream<PlatformContext> testContexts() {
+        return Stream.of(
+                TestPlatformContextBuilder.create()
+                        .withConfiguration(
+                                ConfigurationBuilder
+                                        .create()
+                                        .autoDiscoverExtensions()
+                                        .withConfigDataType(ComponentWiringConfig.class)
+                                        .withValue("platformWiring.inlinePces", "false")
+                                        .build()
+                        )
+                        .build(),
+                TestPlatformContextBuilder.create()
+                        .withConfiguration(
+                                ConfigurationBuilder
+                                        .create()
+                                        .autoDiscoverExtensions()
+                                        .withConfigDataType(ComponentWiringConfig.class)
+                                        .withValue("platformWiring.inlinePces", "true")
+                                        .build()
+                        )
+                        .build()
+        );
+    }
 
+    @ParameterizedTest
+    @MethodSource("testContexts")
+    @DisplayName("Assert that all input wires are bound to something")
+    void testBindings(final PlatformContext platformContext) {
         final ApplicationCallbacks applicationCallbacks = new ApplicationCallbacks(x -> {}, x -> {}, x -> {});
 
         final WiringModel model = WiringModelBuilder.create(platformContext).build();

@@ -126,6 +126,7 @@ public class PlatformWiring {
 
     private final PlatformContext platformContext;
     private final PlatformSchedulersConfig config;
+    private final boolean inlinePces;
 
     private final ComponentWiring<EventHasher, PlatformEvent> eventHasherWiring;
     private final PassThroughWiring<PlatformEvent> postHashCollectorWiring;
@@ -194,6 +195,7 @@ public class PlatformWiring {
         this.model = Objects.requireNonNull(model);
 
         config = platformContext.getConfiguration().getConfigData(PlatformSchedulersConfig.class);
+        inlinePces = platformContext.getConfiguration().getConfigData(ComponentWiringConfig.class).inlinePces();
         hashCollectorEnabled = config.hashCollectorEnabled();
 
         final AncientMode ancientMode = platformContext
@@ -263,8 +265,14 @@ public class PlatformWiring {
         pcesReplayerWiring = PcesReplayerWiring.create(model);
 
         pcesWriterWiring = new ComponentWiring<>(model, PcesWriter.class, config.pcesWriter());
-        roundDurabilityBufferWiring =
-                new ComponentWiring<>(model, RoundDurabilityBuffer.class, config.roundDurabilityBuffer());
+
+        if (inlinePces) {
+            // when using inline PCES, the round durability buffer is not needed
+            roundDurabilityBufferWiring = null;
+        } else {
+            roundDurabilityBufferWiring =
+                    new ComponentWiring<>(model, RoundDurabilityBuffer.class, config.roundDurabilityBuffer());
+        }
 
         eventWindowManagerWiring =
                 new ComponentWiring<>(model, EventWindowManager.class, DIRECT_THREADSAFE_CONFIGURATION);
@@ -610,21 +618,27 @@ public class PlatformWiring {
 
         consensusRoundOutputWire.solderTo(staleEventDetectorWiring.getInputWire(StaleEventDetector::addConsensusRound));
 
-        // The request to flush the keystone event for a round must be sent to the PCES writer before the consensus
-        // round is passed to the round handler. This prevents a deadlock scenario where the consensus round
-        // handler has a full queue and won't accept additional rounds, and is waiting on a keystone event to be
-        // durably flushed to disk. Meanwhile, the PCES writer hasn't even received the flush request yet, so the
-        // necessary keystone event is *never* flushed.
-        consensusRoundOutputWire.orderedSolderTo(List.of(
-                keystoneEventSequenceNumberTransformer.getInputWire(),
-                roundDurabilityBufferWiring.getInputWire(RoundDurabilityBuffer::addRound)));
+        if(inlinePces){
+            // with inline PCES, the round bypasses the round durability buffer and goes directly to the round handler
+            consensusRoundOutputWire.solderTo(transactionHandlerWiring.getInputWire(TransactionHandler::handleConsensusRound));
+        }else{
+            // The request to flush the keystone event for a round must be sent to the PCES writer before the consensus
+            // round is passed to the round handler. This prevents a deadlock scenario where the consensus round
+            // handler has a full queue and won't accept additional rounds, and is waiting on a keystone event to be
+            // durably flushed to disk. Meanwhile, the PCES writer hasn't even received the flush request yet, so the
+            // necessary keystone event is *never* flushed.
+            consensusRoundOutputWire.orderedSolderTo(List.of(
+                    keystoneEventSequenceNumberTransformer.getInputWire(),
+                    roundDurabilityBufferWiring.getInputWire(RoundDurabilityBuffer::addRound)));
+
+            final OutputWire<ConsensusRound> splitRoundDurabilityBufferOutput =
+                    roundDurabilityBufferWiring.getSplitOutput();
+            splitRoundDurabilityBufferOutput.solderTo(
+                    transactionHandlerWiring.getInputWire(TransactionHandler::handleConsensusRound));
+        }
+
         consensusRoundOutputWire.solderTo(
                 eventWindowManagerWiring.getInputWire(EventWindowManager::extractEventWindow));
-
-        final OutputWire<ConsensusRound> splitRoundDurabilityBufferOutput =
-                roundDurabilityBufferWiring.getSplitOutput();
-        splitRoundDurabilityBufferOutput.solderTo(
-                transactionHandlerWiring.getInputWire(TransactionHandler::handleConsensusRound));
 
         consensusEngineWiring
                 .getSplitAndTransformedOutput(ConsensusEngine::getCesEvents)
@@ -694,16 +708,18 @@ public class PlatformWiring {
         hashedStateOutputWire.solderTo(
                 stateSignatureCollectorWiring.getInputWire(StateSignatureCollector::addReservedState));
 
-        pcesWriterWiring
-                .getOutputWire()
-                .solderTo(
-                        roundDurabilityBufferWiring.getInputWire(RoundDurabilityBuffer::setLatestDurableSequenceNumber),
-                        INJECT);
-        model.buildHeartbeatWire(platformContext
-                        .getConfiguration()
-                        .getConfigData(PcesConfig.class)
-                        .roundDurabilityBufferHeartbeatPeriod())
-                .solderTo(roundDurabilityBufferWiring.getInputWire(RoundDurabilityBuffer::checkForStaleRounds), OFFER);
+        if(!inlinePces){
+            pcesWriterWiring
+                    .getOutputWire()
+                    .solderTo(
+                            roundDurabilityBufferWiring.getInputWire(RoundDurabilityBuffer::setLatestDurableSequenceNumber),
+                            INJECT);
+            model.buildHeartbeatWire(platformContext
+                            .getConfiguration()
+                            .getConfigData(PcesConfig.class)
+                            .roundDurabilityBufferHeartbeatPeriod())
+                    .solderTo(roundDurabilityBufferWiring.getInputWire(RoundDurabilityBuffer::checkForStaleRounds), OFFER);
+        }
 
         stateSnapshotManagerWiring
                 .getTransformedOutput(StateSnapshotManager::extractOldestMinimumGenerationOnDisk)
@@ -766,7 +782,9 @@ public class PlatformWiring {
         eventSignatureValidatorWiring.getInputWire(EventSignatureValidator::updateAddressBooks);
         eventWindowManagerWiring.getInputWire(EventWindowManager::updateEventWindow);
         orphanBufferWiring.getInputWire(OrphanBuffer::clear);
-        roundDurabilityBufferWiring.getInputWire(RoundDurabilityBuffer::clear);
+        if(roundDurabilityBufferWiring!=null){
+            roundDurabilityBufferWiring.getInputWire(RoundDurabilityBuffer::clear);
+        }
         pcesWriterWiring.getInputWire(PcesWriter::registerDiscontinuity);
         stateSignatureCollectorWiring.getInputWire(StateSignatureCollector::clear);
         issDetectorWiring.getInputWire(IssDetector::overridingState);
@@ -816,7 +834,9 @@ public class PlatformWiring {
         stateSignerWiring.bind(builder::buildStateSigner);
         pcesReplayerWiring.bind(pcesReplayer);
         pcesWriterWiring.bind(builder::buildPcesWriter);
-        roundDurabilityBufferWiring.bind(builder::buildRoundDurabilityBuffer);
+        if(roundDurabilityBufferWiring!=null){
+            roundDurabilityBufferWiring.bind(builder::buildRoundDurabilityBuffer);
+        }
         pcesSequencerWiring.bind(builder::buildPcesSequencer);
         eventCreationManagerWiring.bind(builder::buildEventCreationManager);
         selfEventSignerWiring.bind(builder::buildSelfEventSigner);
