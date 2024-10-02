@@ -69,7 +69,6 @@ class MerkleDbCompactionCoordinator {
      * Consequently, the compaction executor will be initialized using the configuration provided
      * by the first instance of MerkleDbCompactionCoordinator class that calls the relevant non-static method.
      * Subsequent calls will reuse the same executor, regardless of any new configurations provided.
-     * </br>
      * FUTURE WORK: it can be moved to MerkleDb.
      */
     static synchronized ExecutorService getCompactionExecutor(final @NonNull MerkleDbConfig merkleDbConfig) {

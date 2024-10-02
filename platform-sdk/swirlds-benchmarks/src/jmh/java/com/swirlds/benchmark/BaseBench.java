@@ -244,10 +244,6 @@ public abstract class BaseBench {
         return Utils.randomLong();
     }
 
-    public Configuration getConfig() {
-        return configuration;
-    }
-
     public <T extends Record> T getConfig(Class<T> configCls) {
         return configuration.getConfigData(configCls);
     }
