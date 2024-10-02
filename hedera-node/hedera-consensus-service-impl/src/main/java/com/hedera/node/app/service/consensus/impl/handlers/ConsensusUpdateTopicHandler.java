@@ -146,7 +146,7 @@ public class ConsensusUpdateTopicHandler implements TransactionHandler {
             }
         }
 
-        // If the fee schedule key is change then the transaction must also be signed by the new fee schedule key
+        // If the fee schedule key is changed then the transaction must also be signed by the new fee schedule key
         if (op.hasFeeScheduleKey()) {
             context.requireKeyOrThrow(op.feeScheduleKey(), INVALID_FEE_SCHEDULE_KEY);
         }
@@ -348,7 +348,7 @@ public class ConsensusUpdateTopicHandler implements TransactionHandler {
             @NonNull final AttributeValidator attributeValidator,
             @NonNull final ConsensusUpdateTopicTransactionBody op,
             @NonNull final Topic topic) {
-        if (op.feeExemptKeyList() == null) {
+        if (!op.hasFeeExemptKeyList()) {
             return;
         }
 
@@ -377,14 +377,14 @@ public class ConsensusUpdateTopicHandler implements TransactionHandler {
     private static void validateCustomFeesWhenSettingFeeExemptKeyList(
             ConsensusUpdateTopicTransactionBody op, Topic topic) {
         final var updatingTheCustomFees =
-                op.customFees() != null && !op.customFees().fees().isEmpty();
+                op.hasCustomFees() && !op.customFees().fees().isEmpty();
         final var topicAlreadyHasCustomFees = !topic.customFees().isEmpty();
         validateTrue(updatingTheCustomFees || topicAlreadyHasCustomFees, MISSING_CUSTOM_FEES);
     }
 
     private void validateMaybeCustomFees(
             @NonNull final HandleContext handleContext, @NonNull final ConsensusUpdateTopicTransactionBody op) {
-        if (op.customFees() == null) {
+        if (!op.hasCustomFees()) {
             return;
         }
 
