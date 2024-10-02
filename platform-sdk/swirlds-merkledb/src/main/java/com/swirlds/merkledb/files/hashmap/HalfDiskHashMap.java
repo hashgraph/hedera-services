@@ -166,7 +166,17 @@ public class HalfDiskHashMap implements AutoCloseable, Snapshotable, FileStatist
     /** Fork-join pool for HDHM.endWriting() */
     private static volatile ForkJoinPool flushingPool = null;
 
-    private ForkJoinPool getFlushingPool() {
+    /**
+     * This method is invoked from a non-static method and uses the provided configuration.
+     * Consequently, the flushing pool will be initialized using the configuration provided
+     * by the first instance of HalfDiskHashMap class that calls the relevant non-static method.
+     * Subsequent calls will reuse the same pool, regardless of any new configurations provided.
+     * </br>
+     * FUTURE WORK: it can be moved to MerkleDb.
+     */
+    private static ForkJoinPool getFlushingPool(final @NonNull MerkleDbConfig merkleDbConfig) {
+        requireNonNull(merkleDbConfig);
+
         ForkJoinPool pool = flushingPool;
         if (pool == null) {
             synchronized (HalfDiskHashMap.class) {
@@ -480,7 +490,7 @@ public class HalfDiskHashMap implements AutoCloseable, Snapshotable, FileStatist
                 final Iterator<IntObjectPair<BucketMutation>> it =
                         oneTransactionsData.keyValuesView().iterator();
                 fileCollection.startWriting();
-                final ForkJoinPool pool = getFlushingPool();
+                final ForkJoinPool pool = getFlushingPool(merkleDbConfig);
                 resetEndWriting(pool, size);
                 // Create a task to submit bucket processing tasks. This initial submit task
                 // is scheduled to run right away. Subsequent submit tasks will be run only

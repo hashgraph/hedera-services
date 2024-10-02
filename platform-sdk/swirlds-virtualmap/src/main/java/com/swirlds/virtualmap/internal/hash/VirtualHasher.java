@@ -100,13 +100,20 @@ public final class VirtualHasher<K extends VirtualKey, V extends VirtualValue> {
 
     private static volatile ForkJoinPool hashingPool = null;
 
-    private static ForkJoinPool getHashingPool(final @NonNull VirtualMapConfig vmConfig) {
+    /**
+     * This method is invoked from a non-static method, passing the provided configuration.
+     * Consequently, the hashing pool will be initialized using the configuration provided
+     * with the first call of the hash method. Subsequent calls will reuse the same pool.
+     */
+    private static ForkJoinPool getHashingPool(final @NonNull VirtualMapConfig virtualMapConfig) {
+        requireNonNull(virtualMapConfig);
+
         ForkJoinPool pool = hashingPool;
         if (pool == null) {
             synchronized (VirtualHasher.class) {
                 pool = hashingPool;
                 if (pool == null) {
-                    final int hashingThreadCount = vmConfig.getNumHashThreads();
+                    final int hashingThreadCount = virtualMapConfig.getNumHashThreads();
                     pool = new ForkJoinPool(hashingThreadCount);
                     hashingPool = pool;
                 }
