@@ -24,14 +24,11 @@ import static java.util.Objects.requireNonNull;
 
 import com.esaulpaugh.headlong.abi.BigIntegerType;
 import com.esaulpaugh.headlong.abi.TypeFactory;
-import com.hedera.node.app.hapi.utils.InvalidTransactionException;
 import com.hedera.node.app.service.contract.impl.utils.ConversionUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.math.BigInteger;
 import java.util.Optional;
 import javax.inject.Inject;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
@@ -39,7 +36,6 @@ import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 
 public class ExchangeRateSystemContract extends AbstractFullContract implements HederaSystemContract {
-    private static final Logger log = LogManager.getLogger(ExchangeRateSystemContract.class);
     private static final String PRECOMPILE_NAME = "ExchangeRate";
     private static final BigIntegerType WORD_DECODER = TypeFactory.create("uint256");
 
@@ -77,14 +73,7 @@ public class ExchangeRateSystemContract extends AbstractFullContract implements 
                     };
             requireNonNull(result);
             return new FullResult(PrecompileContractResult.success(result), gasRequirement, null);
-        } catch (InvalidTransactionException e) {
-            return new FullResult(
-                    PrecompileContractResult.halt(Bytes.EMPTY, Optional.of(ExceptionalHaltReason.INVALID_OPERATION)),
-                    gasRequirement,
-                    null);
         } catch (Exception e) {
-            // Log a warning as this error is unexpected
-            log.warn("Internal precompile failure", e);
             return new FullResult(
                     PrecompileContractResult.halt(Bytes.EMPTY, Optional.of(ExceptionalHaltReason.INVALID_OPERATION)),
                     gasRequirement,
