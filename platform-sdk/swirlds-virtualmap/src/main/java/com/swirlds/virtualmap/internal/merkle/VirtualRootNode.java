@@ -450,7 +450,7 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
         updateShouldBeFlushed();
         requireNonNull(dataSourceBuilder);
         if (dataSource == null) {
-            dataSource = dataSourceBuilder.build(state.getLabel(), true, configuration);
+            dataSource = dataSourceBuilder.build(state.getLabel(), true);
         }
         this.records = new RecordAccessorImpl<>(this.state, cache, keySerializer, valueSerializer, dataSource);
         if (statistics == null) {
@@ -1293,7 +1293,7 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
             throws IOException {
         final String label = in.readNormalisedString(MAX_LABEL_LENGTH);
         dataSourceBuilder = in.readSerializable();
-        dataSource = dataSourceBuilder.restore(label, inputDirectory, configuration);
+        dataSource = dataSourceBuilder.restore(label, inputDirectory);
         if (version < ClassVersion.VERSION_2_KEYVALUE_SERIALIZERS) {
             // In version 1, key and value serializers are stored in the data source
             keySerializer = dataSource.getKeySerializer();

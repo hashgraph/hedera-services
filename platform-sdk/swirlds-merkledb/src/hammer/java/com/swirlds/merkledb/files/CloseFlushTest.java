@@ -88,7 +88,7 @@ public class CloseFlushTest {
                     TestType.fixed_fixed.dataType().createDataSource(storeDir, "closeFlushTest", count, 0, false, true);
             // Create a custom data source builder, which creates a custom data source to capture
             // all exceptions happened in saveRecords()
-            final VirtualDataSourceBuilder builder = new CustomDataSourceBuilder(dataSource, exception);
+            final VirtualDataSourceBuilder builder = new CustomDataSourceBuilder(dataSource, exception, CONFIGURATION);
             VirtualMap<VirtualKey, ExampleByteArrayVirtualValue> map = new VirtualMap(
                     "closeFlushTest",
                     TestType.fixed_fixed.dataType().getKeySerializer(),
@@ -138,9 +138,15 @@ public class CloseFlushTest {
         private AtomicReference<Exception> exceptionSink = null;
 
         // Provided for deserialization
-        public CustomDataSourceBuilder() {}
+        public CustomDataSourceBuilder(final @NonNull Configuration configuration) {
+            super(configuration);
+        }
 
-        public CustomDataSourceBuilder(final VirtualDataSource delegate, AtomicReference<Exception> sink) {
+        public CustomDataSourceBuilder(
+                final VirtualDataSource delegate,
+                AtomicReference<Exception> sink,
+                final @NonNull Configuration configuration) {
+            super(configuration);
             this.delegate = delegate;
             this.exceptionSink = sink;
         }
@@ -151,8 +157,7 @@ public class CloseFlushTest {
         }
 
         @Override
-        public VirtualDataSource build(
-                final String label, final boolean withDbCompactionEnabled, final @NonNull Configuration configuration) {
+        public VirtualDataSource build(final String label, final boolean withDbCompactionEnabled) {
             return new VirtualDataSource() {
                 @Override
                 public void close() throws IOException {

@@ -111,7 +111,7 @@ public abstract class VirtualMapBaseBench extends BaseBench {
         MerkleDbTableConfig tableConfig = new MerkleDbTableConfig(
                         (short) 1, DigestType.SHA_384, getConfig(MerkleDbConfig.class))
                 .preferDiskIndices(false);
-        MerkleDbDataSourceBuilder dataSourceBuilder = new MerkleDbDataSourceBuilder(tableConfig);
+        MerkleDbDataSourceBuilder dataSourceBuilder = new MerkleDbDataSourceBuilder(tableConfig, configuration);
         return new VirtualMap<>(
                 label, new BenchmarkKeySerializer(), new BenchmarkValueSerializer(), dataSourceBuilder, configuration);
     }

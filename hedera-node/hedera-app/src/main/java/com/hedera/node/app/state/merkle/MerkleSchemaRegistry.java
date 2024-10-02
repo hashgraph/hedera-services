@@ -349,7 +349,8 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
                                                     platformConfiguration.getConfigData(MerkleDbConfig.class))
                                             .maxNumberOfKeys(def.maxKeysHint());
                                     final var label = StateUtils.computeLabel(serviceName, stateKey);
-                                    final var dsBuilder = new MerkleDbDataSourceBuilder(tableConfig);
+                                    final var dsBuilder =
+                                            new MerkleDbDataSourceBuilder(tableConfig, platformConfiguration);
                                     final var virtualMap = new VirtualMap<>(
                                             label, keySerializer, valueSerializer, dsBuilder, platformConfiguration);
                                     return virtualMap;
