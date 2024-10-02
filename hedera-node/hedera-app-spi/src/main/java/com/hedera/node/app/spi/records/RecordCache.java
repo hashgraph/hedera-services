@@ -73,6 +73,33 @@ public interface RecordCache {
             .thenComparing(rec -> rec.consensusTimestampOrElse(Timestamp.DEFAULT), TIMESTAMP_COMPARATOR);
 
     /**
+     * Returns true if the two transaction IDs are equal in all fields except for the nonce.
+     * @param aTxnId the first transaction ID
+     * @param bTxnId the second transaction ID
+     * @return true if the two transaction IDs are equal in all fields except for the nonce
+     */
+    static boolean matches(@NonNull final TransactionID aTxnId, @NonNull final TransactionID bTxnId) {
+        requireNonNull(aTxnId);
+        requireNonNull(bTxnId);
+        return aTxnId.accountIDOrElse(AccountID.DEFAULT).equals(bTxnId.accountIDOrElse(AccountID.DEFAULT))
+                && aTxnId.transactionValidStartOrElse(Timestamp.DEFAULT)
+                        .equals(bTxnId.transactionValidStartOrElse(Timestamp.DEFAULT))
+                && aTxnId.scheduled() == bTxnId.scheduled();
+    }
+
+    /**
+     * Returns true if the second transaction ID is a child of the first.
+     * @param aTxnId the first transaction ID
+     * @param bTxnId the second transaction ID
+     * @return true if the second transaction ID is a child of the first
+     */
+    static boolean isChild(@NonNull final TransactionID aTxnId, @NonNull final TransactionID bTxnId) {
+        requireNonNull(aTxnId);
+        requireNonNull(bTxnId);
+        return aTxnId.nonce() == 0 && bTxnId.nonce() != 0 && matches(aTxnId, bTxnId);
+    }
+
+    /**
      * Just the receipts for a {@link TransactionID} instead of the full history.
      */
     interface Receipts {
@@ -82,33 +109,6 @@ public interface RecordCache {
          */
         TransactionReceipt PENDING_RECEIPT =
                 TransactionReceipt.newBuilder().status(UNKNOWN).build();
-
-        /**
-         * Returns true if the two transaction IDs are equal in all fields except for the nonce.
-         * @param aTxnId the first transaction ID
-         * @param bTxnId the second transaction ID
-         * @return true if the two transaction IDs are equal in all fields except for the nonce
-         */
-        static boolean matches(@NonNull final TransactionID aTxnId, @NonNull final TransactionID bTxnId) {
-            requireNonNull(aTxnId);
-            requireNonNull(bTxnId);
-            return aTxnId.accountIDOrElse(AccountID.DEFAULT).equals(bTxnId.accountIDOrElse(AccountID.DEFAULT))
-                    && aTxnId.transactionValidStartOrElse(Timestamp.DEFAULT)
-                            .equals(bTxnId.transactionValidStartOrElse(Timestamp.DEFAULT))
-                    && aTxnId.scheduled() == bTxnId.scheduled();
-        }
-
-        /**
-         * Returns true if the second transaction ID is a child of the first.
-         * @param aTxnId the first transaction ID
-         * @param bTxnId the second transaction ID
-         * @return true if the second transaction ID is a child of the first
-         */
-        static boolean isChild(@NonNull final TransactionID aTxnId, @NonNull final TransactionID bTxnId) {
-            requireNonNull(aTxnId);
-            requireNonNull(bTxnId);
-            return aTxnId.nonce() == 0 && bTxnId.nonce() != 0 && matches(aTxnId, bTxnId);
-        }
 
         /**
          * The "priority" receipt for the transaction id, if known; or {@link Receipts#PENDING_RECEIPT} if there are no

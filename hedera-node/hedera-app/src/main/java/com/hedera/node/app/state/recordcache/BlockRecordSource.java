@@ -17,7 +17,7 @@
 package com.hedera.node.app.state.recordcache;
 
 import static com.hedera.node.app.blocks.HistoryTranslator.HISTORY_TRANSLATOR;
-import static com.hedera.node.app.spi.records.RecordCache.Receipts.isChild;
+import static com.hedera.node.app.spi.records.RecordCache.isChild;
 import static java.util.Objects.requireNonNull;
 
 import com.google.common.annotations.VisibleForTesting;

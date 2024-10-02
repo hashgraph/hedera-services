@@ -19,7 +19,7 @@ package com.hedera.node.app.state.recordcache;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.DUPLICATE_TRANSACTION;
 import static com.hedera.hapi.util.HapiUtils.TIMESTAMP_COMPARATOR;
 import static com.hedera.hapi.util.HapiUtils.isBefore;
-import static com.hedera.node.app.spi.records.RecordCache.Receipts.matches;
+import static com.hedera.node.app.spi.records.RecordCache.matches;
 import static com.hedera.node.app.state.HederaRecordCache.DuplicateCheckResult.NO_DUPLICATE;
 import static com.hedera.node.app.state.HederaRecordCache.DuplicateCheckResult.OTHER_NODE;
 import static com.hedera.node.app.state.HederaRecordCache.DuplicateCheckResult.SAME_NODE;
