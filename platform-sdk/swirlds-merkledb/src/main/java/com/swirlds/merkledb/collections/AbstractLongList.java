@@ -21,6 +21,7 @@ import static com.swirlds.merkledb.utilities.MerkleDbFileUtils.readFromFileChann
 import static java.lang.Math.max;
 import static java.lang.Math.min;
 import static java.lang.Math.toIntExact;
+import static java.util.Objects.requireNonNull;
 
 import com.swirlds.config.api.Configuration;
 import com.swirlds.merkledb.utilities.MerkleDbFileUtils;
@@ -127,6 +128,9 @@ public abstract class AbstractLongList<C> implements LongList {
      */
     protected final long reservedBufferLength;
 
+    /** Platform configuration */
+    protected Configuration configuration;
+
     /**
      * Construct a new LongList with the specified number of longs per chunk and maximum number of
      * longs.
@@ -164,23 +168,14 @@ public abstract class AbstractLongList<C> implements LongList {
      * positioned at the start of the data after the header at the end of this constructor.
      *
      * @param path File to read header from
-     * @param reservedBufferLength reserved buffer length
-     * @throws IOException If there was a problem reading the file
-     */
-    protected AbstractLongList(final Path path, final long reservedBufferLength) throws IOException {
-        this(path, reservedBufferLength, null);
-    }
-
-    /**
-     * When called from a LongListDisk, the configuration is needed to initialize temporary file.
-     *
-     * @param path File to read header from
-     * @param reservedBufferLength reserved buffer length
      * @param configuration platform configuration
      * @throws IOException If there was a problem reading the file
      */
-    protected AbstractLongList(final Path path, final long reservedBufferLength, final Configuration configuration)
+    protected AbstractLongList(
+            final Path path, final long reservedBufferLength, @NonNull final Configuration configuration)
             throws IOException {
+        requireNonNull(configuration);
+        this.configuration = configuration;
         final File file = path.toFile();
         this.reservedBufferLength = reservedBufferLength;
         if (!file.exists() || file.length() == 0) {
@@ -190,12 +185,7 @@ public abstract class AbstractLongList<C> implements LongList {
             maxLongs = DEFAULT_MAX_LONGS_TO_STORE;
             currentFileHeaderSize = FILE_HEADER_SIZE_V2;
             chunkList = new AtomicReferenceArray<>(calculateNumberOfChunks(maxLongs));
-            if (configuration != null) {
-                // LongListDisk initialization
-                onEmptyOrAbsentSourceFile(path, configuration);
-            } else {
-                onEmptyOrAbsentSourceFile(path);
-            }
+            onEmptyOrAbsentSourceFile(path);
         } else {
             try (final FileChannel fileChannel = FileChannel.open(path, StandardOpenOption.READ)) {
                 // read header from existing file
@@ -235,12 +225,7 @@ public abstract class AbstractLongList<C> implements LongList {
                 }
                 maxValidIndex.set(size.get() - 1);
                 chunkList = new AtomicReferenceArray<>(calculateNumberOfChunks(maxLongs));
-                if (configuration != null) {
-                    // LongListDisk initialization
-                    readBodyFromFileChannelOnInit(file.getName(), fileChannel, configuration);
-                } else {
-                    readBodyFromFileChannelOnInit(file.getName(), fileChannel);
-                }
+                readBodyFromFileChannelOnInit(file.getName(), fileChannel);
             }
         }
     }
@@ -252,22 +237,8 @@ public abstract class AbstractLongList<C> implements LongList {
      * @param fileChannel the file channel to read the list body from
      * @throws IOException if there was a problem reading the file
      */
-    protected void readBodyFromFileChannelOnInit(String sourceFileName, FileChannel fileChannel) throws IOException {
-        // do nothing
-    }
-
-    /**
-     * Used in a LongListDisk, the configuration is needed to initialize temporary file.
-     * @param sourceFileName the name of the file from which the list is initialized
-     * @param fileChannel the file channel to read the list body from
-     * @param configuration platform configuration
-     * @throws IOException if there was a problem reading the file
-     */
-    protected void readBodyFromFileChannelOnInit(
-            String sourceFileName, FileChannel fileChannel, final @NonNull Configuration configuration)
-            throws IOException {
-        // do nothing
-    }
+    protected abstract void readBodyFromFileChannelOnInit(String sourceFileName, FileChannel fileChannel)
+            throws IOException;
 
     /**
      * Called when the list is initialized from an empty or absent source file.
@@ -275,16 +246,6 @@ public abstract class AbstractLongList<C> implements LongList {
      * @throws IOException if there was a problem reading the file
      */
     protected void onEmptyOrAbsentSourceFile(Path path) throws IOException {
-        // do nothing
-    }
-
-    /**
-     * Used in a LongListDisk, the configuration is needed to initialize temporary file.
-     * @param path the path to the source file
-     * @param configuration platform configuration
-     * @throws IOException if there was a problem reading the file
-     */
-    protected void onEmptyOrAbsentSourceFile(Path path, final @NonNull Configuration configuration) throws IOException {
         // do nothing
     }
 

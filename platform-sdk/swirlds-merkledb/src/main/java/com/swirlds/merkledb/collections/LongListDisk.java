@@ -17,9 +17,10 @@
 package com.swirlds.merkledb.collections;
 
 import static java.lang.Math.toIntExact;
+import static java.nio.file.Files.exists;
 import static java.util.Objects.requireNonNull;
 
-import com.swirlds.common.io.utility.LegacyTemporaryFileBuilder;
+import com.swirlds.common.io.filesystem.FileSystemManager;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.merkledb.utilities.MerkleDbFileUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -29,6 +30,7 @@ import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.channels.FileChannel;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.Arrays;
@@ -134,15 +136,13 @@ public class LongListDisk extends AbstractLongList<Long> {
      * @param path the path to the source file
      */
     @Override
-    protected void onEmptyOrAbsentSourceFile(final Path path, final @NonNull Configuration configuration)
-            throws IOException {
+    protected void onEmptyOrAbsentSourceFile(final Path path) throws IOException {
         tempFile = createTempFile(path.toFile().getName(), configuration);
     }
 
     /** {@inheritDoc} */
     @Override
-    protected void readBodyFromFileChannelOnInit(
-            final String sourceFileName, final FileChannel fileChannel, final @NonNull Configuration configuration)
+    protected void readBodyFromFileChannelOnInit(final String sourceFileName, final FileChannel fileChannel)
             throws IOException {
         tempFile = createTempFile(sourceFileName, configuration);
         // create temporary file for writing
@@ -207,8 +207,11 @@ public class LongListDisk extends AbstractLongList<Long> {
     static Path createTempFile(final String sourceFileName, final @NonNull Configuration configuration)
             throws IOException {
         requireNonNull(configuration);
-        return LegacyTemporaryFileBuilder.buildTemporaryDirectory(STORE_POSTFIX, configuration)
-                .resolve(sourceFileName);
+        final Path directory = FileSystemManager.create(configuration).resolveNewTemp(STORE_POSTFIX);
+        if (!exists(directory)) {
+            Files.createDirectories(directory);
+        }
+        return directory.resolve(sourceFileName);
     }
 
     /** {@inheritDoc} */

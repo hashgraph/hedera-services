@@ -244,7 +244,8 @@ public final class MerkleDbDataSource implements VirtualDataSource {
             pathToDiskLocationInternalNodes =
                     new LongListDisk(dbPaths.pathToDiskLocationInternalNodesFile, database.getConfiguration());
         } else if (Files.exists(dbPaths.pathToDiskLocationInternalNodesFile) && !forceIndexRebuilding) {
-            pathToDiskLocationInternalNodes = new LongListOffHeap(dbPaths.pathToDiskLocationInternalNodesFile);
+            pathToDiskLocationInternalNodes =
+                    new LongListOffHeap(dbPaths.pathToDiskLocationInternalNodesFile, database.getConfiguration());
         } else {
             pathToDiskLocationInternalNodes = new LongListOffHeap();
         }
@@ -253,7 +254,8 @@ public final class MerkleDbDataSource implements VirtualDataSource {
             pathToDiskLocationLeafNodes =
                     new LongListDisk(dbPaths.pathToDiskLocationLeafNodesFile, database.getConfiguration());
         } else if (Files.exists(dbPaths.pathToDiskLocationLeafNodesFile) && !forceIndexRebuilding) {
-            pathToDiskLocationLeafNodes = new LongListOffHeap(dbPaths.pathToDiskLocationLeafNodesFile);
+            pathToDiskLocationLeafNodes =
+                    new LongListOffHeap(dbPaths.pathToDiskLocationLeafNodesFile, database.getConfiguration());
         } else {
             pathToDiskLocationLeafNodes = new LongListOffHeap(merkleDbConfig.reservedBufferLengthForLeafList());
         }

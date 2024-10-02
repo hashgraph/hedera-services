@@ -173,7 +173,7 @@ public final class VirtualMap<K extends VirtualKey, V extends VirtualValue> exte
 
     /** Platform configuration */
     @NonNull
-    private Configuration configuration;
+    private final Configuration configuration;
 
     /**
      * Required by the {@link com.swirlds.common.constructable.RuntimeConstructable} contract.
