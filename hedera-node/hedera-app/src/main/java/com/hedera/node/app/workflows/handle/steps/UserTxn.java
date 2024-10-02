@@ -27,7 +27,6 @@ import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.state.blockrecords.BlockInfo;
 import com.hedera.hapi.platform.state.PlatformState;
-import com.hedera.node.app.blocks.RecordTranslator;
 import com.hedera.node.app.blocks.impl.BoundaryStateChangeListener;
 import com.hedera.node.app.blocks.impl.KVStateChangeListener;
 import com.hedera.node.app.fees.ExchangeRateManager;
@@ -109,8 +108,7 @@ public record UserTxn(
             @NonNull final StoreMetricsService storeMetricsService,
             @NonNull final KVStateChangeListener kvStateChangeListener,
             @NonNull final BoundaryStateChangeListener boundaryStateChangeListener,
-            @NonNull final PreHandleWorkflow preHandleWorkflow,
-            @NonNull final RecordTranslator recordTranslator) {
+            @NonNull final PreHandleWorkflow preHandleWorkflow) {
         final TransactionType type;
         if (lastHandledConsensusTime.equals(Instant.EPOCH)) {
             type = GENESIS_TRANSACTION;
@@ -128,8 +126,7 @@ public record UserTxn(
                 consensusConfig.handleMaxFollowingRecords(),
                 boundaryStateChangeListener,
                 kvStateChangeListener,
-                blockStreamConfig.streamMode(),
-                recordTranslator);
+                blockStreamConfig.streamMode());
         final var readableStoreFactory = new ReadableStoreFactory(stack);
         final var preHandleResult =
                 preHandleWorkflow.getCurrentPreHandleResult(creatorInfo, platformTxn, readableStoreFactory);

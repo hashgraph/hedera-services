@@ -31,7 +31,6 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.transaction.ExchangeRateSet;
-import com.hedera.node.app.blocks.RecordTranslator;
 import com.hedera.node.app.blocks.impl.BlockStreamBuilder;
 import com.hedera.node.app.blocks.impl.BoundaryStateChangeListener;
 import com.hedera.node.app.blocks.impl.KVStateChangeListener;
@@ -93,8 +92,6 @@ public class SavepointStackImpl implements HandleContext.SavepointStack, State {
 
     private final StreamMode streamMode;
 
-    private final RecordTranslator recordTranslator;
-
     /**
      * Constructs the root {@link SavepointStackImpl} for the given state at the start of handling a user transaction.
      *
@@ -112,16 +109,14 @@ public class SavepointStackImpl implements HandleContext.SavepointStack, State {
             final int maxBuildersAfterUser,
             @NonNull final BoundaryStateChangeListener boundaryStateChangeListener,
             @NonNull final KVStateChangeListener kvStateChangeListener,
-            @NonNull final StreamMode streamMode,
-            @NonNull final RecordTranslator recordTranslator) {
+            @NonNull final StreamMode streamMode) {
         return new SavepointStackImpl(
                 state,
                 maxBuildersBeforeUser,
                 maxBuildersAfterUser,
                 boundaryStateChangeListener,
                 kvStateChangeListener,
-                streamMode,
-                recordTranslator);
+                streamMode);
     }
 
     /**
@@ -140,9 +135,8 @@ public class SavepointStackImpl implements HandleContext.SavepointStack, State {
             @NonNull final StreamBuilder.ReversingBehavior reversingBehavior,
             @NonNull final HandleContext.TransactionCategory category,
             @NonNull final ExternalizedRecordCustomizer customizer,
-            @NonNull final StreamMode streamMode,
-            @NonNull final RecordTranslator recordTranslator) {
-        return new SavepointStackImpl(root, reversingBehavior, category, customizer, streamMode, recordTranslator);
+            @NonNull final StreamMode streamMode) {
+        return new SavepointStackImpl(root, reversingBehavior, category, customizer, streamMode);
     }
 
     /**
@@ -154,7 +148,6 @@ public class SavepointStackImpl implements HandleContext.SavepointStack, State {
      * @param roundStateChangeListener the listener for the round state changes
      * @param kvStateChangeListener the listener for the key-value state changes
      * @param streamMode the stream mode
-     * @param recordTranslator the record translator
      */
     private SavepointStackImpl(
             @NonNull final State state,
@@ -162,12 +155,10 @@ public class SavepointStackImpl implements HandleContext.SavepointStack, State {
             final int maxBuildersAfterUser,
             @NonNull final BoundaryStateChangeListener roundStateChangeListener,
             @NonNull final KVStateChangeListener kvStateChangeListener,
-            @NonNull final StreamMode streamMode,
-            @NonNull final RecordTranslator recordTranslator) {
+            @NonNull final StreamMode streamMode) {
         this.state = requireNonNull(state);
         this.kvStateChangeListener = requireNonNull(kvStateChangeListener);
         this.roundStateChangeListener = requireNonNull(roundStateChangeListener);
-        this.recordTranslator = requireNonNull(recordTranslator);
         builderSink = new BuilderSinkImpl(maxBuildersBeforeUser, maxBuildersAfterUser + 1);
         setupFirstSavepoint(USER);
         baseBuilder = peek().createBuilder(REVERSIBLE, USER, NOOP_RECORD_CUSTOMIZER, streamMode, true);
@@ -189,12 +180,10 @@ public class SavepointStackImpl implements HandleContext.SavepointStack, State {
             @NonNull final StreamBuilder.ReversingBehavior reversingBehavior,
             @NonNull final HandleContext.TransactionCategory category,
             @NonNull final ExternalizedRecordCustomizer customizer,
-            @NonNull final StreamMode streamMode,
-            @NonNull final RecordTranslator recordTranslator) {
+            @NonNull final StreamMode streamMode) {
         requireNonNull(reversingBehavior);
         requireNonNull(customizer);
         requireNonNull(category);
-        this.recordTranslator = requireNonNull(recordTranslator);
         this.streamMode = requireNonNull(streamMode);
         this.state = requireNonNull(parent);
         this.builderSink = null;
@@ -523,7 +512,7 @@ public class SavepointStackImpl implements HandleContext.SavepointStack, State {
         BlockRecordSource blockRecordSource = null;
         if (streamMode != RECORDS) {
             requireNonNull(roundStateChangeListener).setBoundaryTimestamp(lastAssignedConsenusTime);
-            blockRecordSource = new BlockRecordSource(recordTranslator, outputs);
+            blockRecordSource = new BlockRecordSource(outputs);
         }
         final var recordSource = streamMode != BLOCKS ? new LegacyListRecordSource(records) : null;
         return new HandleOutput(blockRecordSource, recordSource);

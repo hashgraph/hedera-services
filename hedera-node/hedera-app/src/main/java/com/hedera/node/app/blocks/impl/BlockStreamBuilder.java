@@ -59,13 +59,14 @@ import com.hedera.hapi.node.transaction.ExchangeRateSet;
 import com.hedera.hapi.node.transaction.PendingAirdropRecord;
 import com.hedera.hapi.node.transaction.SignedTransaction;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.hapi.node.transaction.TransactionReceipt;
 import com.hedera.hapi.node.transaction.TransactionRecord;
 import com.hedera.hapi.platform.event.EventTransaction;
 import com.hedera.hapi.streams.ContractActions;
 import com.hedera.hapi.streams.ContractBytecode;
 import com.hedera.hapi.streams.ContractStateChanges;
 import com.hedera.hapi.streams.TransactionSidecarRecord;
-import com.hedera.node.app.blocks.RecordTranslator;
+import com.hedera.node.app.blocks.HistoryTranslator;
 import com.hedera.node.app.blocks.impl.contexts.AirdropOpContext;
 import com.hedera.node.app.blocks.impl.contexts.BaseOpContext;
 import com.hedera.node.app.blocks.impl.contexts.ContractOpContext;
@@ -261,11 +262,23 @@ public class BlockStreamBuilder
         this.category = requireNonNull(category);
     }
 
-    public record Output(@NonNull List<BlockItem> blockItems, @NonNull RecordTranslationContext translationContext) {
+    /**
+     * Encapsulates the output associated to a single logical {@link Transaction}, whether user or synthetic.
+     * @param blockItems the list of block items
+     * @param translationContext the translation context
+     */
+    public record Output(@NonNull List<BlockItem> blockItems, @NonNull TranslationContext translationContext) {
         public Output {
             requireNonNull(blockItems);
             requireNonNull(translationContext);
         }
+
+        /**
+         * A pair of transaction id and matching receipt.
+         * @param txnId the transaction id
+         * @param receipt the matching receipt
+         */
+        public record ScopedReceipt(TransactionID txnId, TransactionReceipt receipt) {}
 
         public void forEachItem(@NonNull final Consumer<BlockItem> action) {
             requireNonNull(action);
@@ -277,8 +290,29 @@ public class BlockStreamBuilder
          * @param translator the translator to use
          * @return the transaction record
          */
-        public TransactionRecord translatedWith(@NonNull final RecordTranslator translator) {
+        public TransactionRecord recordFrom(@NonNull final HistoryTranslator translator) {
             requireNonNull(translator);
+            return historyFrom(translator, HistoryType.RECORD);
+        }
+
+        /**
+         * Translates the block items into a transaction receipt.
+         * @param translator the translator to use
+         * @return the transaction record
+         */
+        public ScopedReceipt receiptFrom(@NonNull final HistoryTranslator translator) {
+            requireNonNull(translator);
+            return historyFrom(translator, HistoryType.SCOPED_RECEIPT);
+        }
+
+        private enum HistoryType {
+            SCOPED_RECEIPT,
+            RECORD
+        }
+
+        @SuppressWarnings("unchecked")
+        private <T extends Record> T historyFrom(
+                @NonNull final HistoryTranslator translator, @NonNull final HistoryType historyType) {
             int i = 0;
             final var n = blockItems.size();
             TransactionResult result = null;
@@ -295,9 +329,21 @@ public class BlockStreamBuilder
                 for (int k = i; k < j; k++) {
                     outputs[k - i] = blockItems.get(k).transactionOutput();
                 }
-                return translator.translate(translationContext, result, outputs);
+                return (T)
+                        switch (historyType) {
+                            case SCOPED_RECEIPT -> new ScopedReceipt(
+                                    translationContext.txnId(),
+                                    translator.translateReceipt(translationContext, result, outputs));
+                            case RECORD -> translator.translateRecord(translationContext, result, outputs);
+                        };
             } else {
-                return translator.translate(translationContext, result);
+                return (T)
+                        switch (historyType) {
+                            case SCOPED_RECEIPT -> new ScopedReceipt(
+                                    translationContext.txnId(),
+                                    translator.translateReceipt(translationContext, result));
+                            case RECORD -> translator.translateRecord(translationContext, result);
+                        };
             }
         }
     }
@@ -325,37 +371,6 @@ public class BlockStreamBuilder
                     .build());
         }
         return new Output(blockItems, translationContext());
-    }
-
-    private RecordTranslationContext translationContext() {
-        return switch (requireNonNull(functionality)) {
-            case CONTRACT_CALL,
-                    CONTRACT_CREATE,
-                    CONTRACT_DELETE,
-                    CONTRACT_UPDATE,
-                    ETHEREUM_TRANSACTION -> new ContractOpContext(
-                    memo, transactionID, transaction, functionality, contractId);
-            case CRYPTO_CREATE, CRYPTO_UPDATE -> new CryptoOpContext(
-                    memo, transactionID, transaction, functionality, accountId, evmAddress);
-            case FILE_CREATE -> new FileOpContext(memo, transactionID, transaction, functionality, fileId);
-            case NODE_CREATE -> new NodeOpContext(memo, transactionID, transaction, functionality, nodeId);
-            case SCHEDULE_DELETE -> new ScheduleOpContext(memo, transactionID, transaction, functionality, scheduleId);
-            case CONSENSUS_SUBMIT_MESSAGE -> new SubmitOpContext(
-                    memo, transactionID, transaction, functionality, runningHash, runningHashVersion, sequenceNumber);
-            case TOKEN_AIRDROP -> {
-                if (!pendingAirdropRecords.isEmpty()) {
-                    pendingAirdropRecords.sort(PENDING_AIRDROP_RECORD_COMPARATOR);
-                }
-                yield new AirdropOpContext(memo, transactionID, transaction, functionality, pendingAirdropRecords);
-            }
-            case TOKEN_MINT -> new MintOpContext(
-                    memo, transactionID, transaction, functionality, serialNumbers, newTotalSupply);
-            case TOKEN_BURN, TOKEN_ACCOUNT_WIPE -> new SupplyChangeOpContext(
-                    memo, transactionID, transaction, functionality, newTotalSupply);
-            case TOKEN_CREATE -> new TokenOpContext(memo, transactionID, transaction, functionality, tokenId);
-            case CONSENSUS_CREATE_TOPIC -> new TopicOpContext(memo, transactionID, transaction, functionality, topicId);
-            default -> new BaseOpContext(memo, transactionID, transaction, functionality);
-        };
     }
 
     @Override
@@ -1004,5 +1019,36 @@ public class BlockStreamBuilder
 
     private BlockItem itemWith(@NonNull final TransactionOutput.Builder output) {
         return BlockItem.newBuilder().transactionOutput(output).build();
+    }
+
+    private TranslationContext translationContext() {
+        return switch (requireNonNull(functionality)) {
+            case CONTRACT_CALL,
+                    CONTRACT_CREATE,
+                    CONTRACT_DELETE,
+                    CONTRACT_UPDATE,
+                    ETHEREUM_TRANSACTION -> new ContractOpContext(
+                    memo, transactionID, transaction, functionality, contractId);
+            case CRYPTO_CREATE, CRYPTO_UPDATE -> new CryptoOpContext(
+                    memo, transactionID, transaction, functionality, accountId, evmAddress);
+            case FILE_CREATE -> new FileOpContext(memo, transactionID, transaction, functionality, fileId);
+            case NODE_CREATE -> new NodeOpContext(memo, transactionID, transaction, functionality, nodeId);
+            case SCHEDULE_DELETE -> new ScheduleOpContext(memo, transactionID, transaction, functionality, scheduleId);
+            case CONSENSUS_SUBMIT_MESSAGE -> new SubmitOpContext(
+                    memo, transactionID, transaction, functionality, runningHash, runningHashVersion, sequenceNumber);
+            case TOKEN_AIRDROP -> {
+                if (!pendingAirdropRecords.isEmpty()) {
+                    pendingAirdropRecords.sort(PENDING_AIRDROP_RECORD_COMPARATOR);
+                }
+                yield new AirdropOpContext(memo, transactionID, transaction, functionality, pendingAirdropRecords);
+            }
+            case TOKEN_MINT -> new MintOpContext(
+                    memo, transactionID, transaction, functionality, serialNumbers, newTotalSupply);
+            case TOKEN_BURN, TOKEN_ACCOUNT_WIPE -> new SupplyChangeOpContext(
+                    memo, transactionID, transaction, functionality, newTotalSupply);
+            case TOKEN_CREATE -> new TokenOpContext(memo, transactionID, transaction, functionality, tokenId);
+            case CONSENSUS_CREATE_TOPIC -> new TopicOpContext(memo, transactionID, transaction, functionality, topicId);
+            default -> new BaseOpContext(memo, transactionID, transaction, functionality);
+        };
     }
 }

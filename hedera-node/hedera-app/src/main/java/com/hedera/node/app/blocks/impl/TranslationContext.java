@@ -30,7 +30,7 @@ import com.hedera.pbj.runtime.io.buffer.Bytes;
  * Base interface for objects that have extra context needed to easily translate a {@link TransactionResult} and,
  * optionally, a {@link TransactionOutput} into a {@link TransactionRecord} to be returned from a query.
  */
-public interface RecordTranslationContext {
+public interface TranslationContext {
     /**
      * Returns the memo of the transaction.
      * @return the memo

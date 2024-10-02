@@ -19,6 +19,7 @@ package com.hedera.node.app.state.recordcache;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.DUPLICATE_TRANSACTION;
 import static com.hedera.hapi.util.HapiUtils.TIMESTAMP_COMPARATOR;
 import static com.hedera.hapi.util.HapiUtils.isBefore;
+import static com.hedera.node.app.spi.records.RecordCache.Receipts.matches;
 import static com.hedera.node.app.state.HederaRecordCache.DuplicateCheckResult.NO_DUPLICATE;
 import static com.hedera.node.app.state.HederaRecordCache.DuplicateCheckResult.OTHER_NODE;
 import static com.hedera.node.app.state.HederaRecordCache.DuplicateCheckResult.SAME_NODE;
@@ -104,6 +105,12 @@ public class RecordCacheImpl implements HederaRecordCache {
     private static final History EMPTY_HISTORY = new History();
 
     /**
+     * This empty History is returned whenever a transaction is known to the deduplication cache, but not yet
+     * added to this cache.
+     */
+    private static final HistorySource EMPTY_HISTORY_SOURCE = new HistorySource();
+
+    /**
      * Used for looking up fee collection account for a node that failed due diligence. This must be looked up dynamically.
      */
     private final NetworkInfo networkInfo;
@@ -151,9 +158,59 @@ public class RecordCacheImpl implements HederaRecordCache {
      * @param nodeIds The set of node ids that have submitted a properly screened transaction
      * @param recordSources The sources of records for the relevant base {@link TransactionID}
      */
-    private record HistorySource(@NonNull Set<Long> nodeIds, @NonNull List<RecordSource> recordSources) {
+    private record HistorySource(@NonNull Set<Long> nodeIds, @NonNull List<RecordSource> recordSources)
+            implements Receipts {
         public HistorySource() {
             this(new HashSet<>(), new ArrayList<>());
+        }
+
+        @Override
+        public @NonNull TransactionReceipt priorityReceipt(@NonNull final TransactionID txnId) {
+            requireNonNull(txnId);
+            if (recordSources.isEmpty()) {
+                return PENDING_RECEIPT;
+            }
+            final var firstPriorityReceipt = recordSources.getFirst().receiptOf(txnId);
+            if (!NON_UNIQUE_FAILURES.contains(firstPriorityReceipt.status())) {
+                return firstPriorityReceipt;
+            } else {
+                for (int i = 1, n = recordSources.size(); i < n; i++) {
+                    final var nextPriorityReceipt = recordSources.get(i).receiptOf(txnId);
+                    if (!NON_UNIQUE_FAILURES.contains(nextPriorityReceipt.status())) {
+                        return nextPriorityReceipt;
+                    }
+                }
+            }
+            return firstPriorityReceipt;
+        }
+
+        @Override
+        public @Nullable TransactionReceipt childReceipt(@NonNull final TransactionID txnId) {
+            requireNonNull(txnId);
+            for (final var source : recordSources) {
+                try {
+                    return source.receiptOf(txnId);
+                } catch (IllegalArgumentException ignore) {
+                }
+            }
+            return null;
+        }
+
+        @Override
+        public @NonNull List<TransactionReceipt> duplicateReceipts(@NonNull final TransactionID txnId) {
+            requireNonNull(txnId);
+            final List<TransactionReceipt> receipts = new ArrayList<>();
+            recordSources.forEach(source -> receipts.add(source.receiptOf(txnId)));
+            receipts.remove(priorityReceipt(txnId));
+            return receipts;
+        }
+
+        @Override
+        public @NonNull List<TransactionReceipt> childReceipts(@NonNull final TransactionID txnId) {
+            requireNonNull(txnId);
+            final List<TransactionReceipt> receipts = new ArrayList<>();
+            recordSources.forEach(source -> receipts.addAll(source.childReceiptsOf(txnId)));
+            return receipts;
         }
 
         /**
@@ -251,7 +308,6 @@ public class RecordCacheImpl implements HederaRecordCache {
         requireNonNull(userTxnId);
         requireNonNull(recordSource);
         recordSource.forEachTxnOutcome((txnId, status) -> {
-            // Incorporate all receipts into state
             transactionReceipts.add(new TransactionReceiptEntry(nodeId, txnId, status));
             final var baseTxnId =
                     txnId.nonce() == 0 ? txnId : txnId.copyBuilder().nonce(0).build();
@@ -387,6 +443,15 @@ public class RecordCacheImpl implements HederaRecordCache {
                 : (deduplicationCache.contains(txnId) ? EMPTY_HISTORY : null);
     }
 
+    @Override
+    public @Nullable Receipts getReceipts(@NonNull final TransactionID txnId) {
+        requireNonNull(txnId);
+        final var historySource = historySources.get(txnId);
+        return historySource != null
+                ? historySource
+                : (deduplicationCache.contains(txnId) ? EMPTY_HISTORY_SOURCE : null);
+    }
+
     @NonNull
     @Override
     public List<TransactionRecord> getRecords(@NonNull final AccountID accountID) {
@@ -428,13 +493,6 @@ public class RecordCacheImpl implements HederaRecordCache {
         records.sort((a, b) -> TIMESTAMP_COMPARATOR.compare(
                 a.consensusTimestampOrElse(Timestamp.DEFAULT), b.consensusTimestampOrElse(Timestamp.DEFAULT)));
         return records;
-    }
-
-    private static boolean matches(@NonNull final TransactionID aTxnId, @NonNull final TransactionID bTxnId) {
-        return aTxnId.accountIDOrElse(AccountID.DEFAULT).equals(bTxnId.accountIDOrElse(AccountID.DEFAULT))
-                && aTxnId.transactionValidStartOrElse(Timestamp.DEFAULT)
-                        .equals(bTxnId.transactionValidStartOrElse(Timestamp.DEFAULT))
-                && aTxnId.scheduled() == bTxnId.scheduled();
     }
 
     /**

@@ -19,12 +19,12 @@ package com.hedera.node.app.blocks.impl.contexts;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.base.TransactionID;
-import com.hedera.node.app.blocks.impl.RecordTranslationContext;
+import com.hedera.node.app.blocks.impl.TranslationContext;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 
 /**
- * A {@link RecordTranslationContext} implementation with metadata for a token mint.
+ * A {@link TranslationContext} implementation with metadata for a token mint.
  * @param memo The memo for the transaction
  * @param txnId The transaction ID
  * @param transaction The transaction
@@ -39,4 +39,4 @@ public record MintOpContext(
         @NonNull HederaFunctionality functionality,
         @NonNull List<Long> serialNumbers,
         long newTotalSupply)
-        implements RecordTranslationContext {}
+        implements TranslationContext {}

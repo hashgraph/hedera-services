@@ -19,12 +19,12 @@ package com.hedera.node.app.blocks.impl.contexts;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.base.TransactionID;
-import com.hedera.node.app.blocks.impl.RecordTranslationContext;
+import com.hedera.node.app.blocks.impl.TranslationContext;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
- * A {@link RecordTranslationContext} implementation with the metadata of an HCS message submission.
+ * A {@link TranslationContext} implementation with the metadata of an HCS message submission.
  * @param memo The memo for the transaction
  * @param txnId The transaction ID
  * @param transaction The transaction
@@ -41,4 +41,4 @@ public record SubmitOpContext(
         @NonNull Bytes runningHash,
         long runningHashVersion,
         long sequenceNumber)
-        implements RecordTranslationContext {}
+        implements TranslationContext {}

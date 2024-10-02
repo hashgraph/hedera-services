@@ -20,11 +20,11 @@ import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.TopicID;
 import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.base.TransactionID;
-import com.hedera.node.app.blocks.impl.RecordTranslationContext;
+import com.hedera.node.app.blocks.impl.TranslationContext;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
- * A {@link RecordTranslationContext} implementation with the id of an involved topic.
+ * A {@link TranslationContext} implementation with the id of an involved topic.
  * @param memo The memo for the transaction
  * @param txnId The transaction ID
  * @param transaction The transaction
@@ -37,4 +37,4 @@ public record TopicOpContext(
         @NonNull Transaction transaction,
         @NonNull HederaFunctionality functionality,
         @NonNull TopicID topicId)
-        implements RecordTranslationContext {}
+        implements TranslationContext {}

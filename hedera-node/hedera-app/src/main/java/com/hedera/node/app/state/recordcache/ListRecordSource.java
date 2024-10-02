@@ -16,10 +16,12 @@
 
 package com.hedera.node.app.state.recordcache;
 
+import static com.hedera.node.app.spi.records.RecordCache.Receipts.isChild;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.TransactionID;
+import com.hedera.hapi.node.transaction.TransactionReceipt;
 import com.hedera.hapi.node.transaction.TransactionRecord;
 import com.hedera.node.app.spi.records.RecordSource;
 import com.hedera.node.config.data.BlockStreamConfig;
@@ -67,5 +69,25 @@ public class ListRecordSource implements RecordSource {
         requireNonNull(action);
         precomputedRecords.forEach(
                 r -> action.accept(r.transactionIDOrThrow(), r.receiptOrThrow().status()));
+    }
+
+    @Override
+    public TransactionReceipt receiptOf(@NonNull final TransactionID txnId) {
+        requireNonNull(txnId);
+        for (final var precomputed : precomputedRecords) {
+            if (txnId.equals(precomputed.transactionIDOrThrow())) {
+                return precomputed.receiptOrThrow();
+            }
+        }
+        throw new IllegalArgumentException();
+    }
+
+    @Override
+    public List<TransactionReceipt> childReceiptsOf(@NonNull TransactionID txnId) {
+        requireNonNull(txnId);
+        return precomputedRecords.stream()
+                .filter(r -> isChild(txnId, r.transactionIDOrThrow()))
+                .map(TransactionRecord::receiptOrThrow)
+                .toList();
     }
 }

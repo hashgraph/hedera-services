@@ -18,8 +18,10 @@ package com.hedera.node.app.spi.records;
 
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.TransactionID;
+import com.hedera.hapi.node.transaction.TransactionReceipt;
 import com.hedera.hapi.node.transaction.TransactionRecord;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.List;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
@@ -32,6 +34,17 @@ public interface RecordSource {
      * @param action the action to perform
      */
     void forEachTxnRecord(@NonNull Consumer<TransactionRecord> action);
+
+    /**
+     * Returns the priority receipt for the given transaction id.
+     * @throws IllegalArgumentException if the transaction id is unknown
+     */
+    TransactionReceipt receiptOf(@NonNull TransactionID txnId);
+
+    /**
+     * Returns all child receipts for the given transaction id.
+     */
+    List<TransactionReceipt> childReceiptsOf(@NonNull TransactionID txnId);
 
     /**
      * Perform the given action on each transaction id and corresponding status known to this source.

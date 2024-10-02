@@ -43,7 +43,6 @@ import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.transaction.ExchangeRateSet;
 import com.hedera.node.app.blocks.BlockStreamManager;
-import com.hedera.node.app.blocks.RecordTranslator;
 import com.hedera.node.app.blocks.impl.BlockStreamBuilder;
 import com.hedera.node.app.blocks.impl.BoundaryStateChangeListener;
 import com.hedera.node.app.blocks.impl.KVStateChangeListener;
@@ -137,7 +136,6 @@ public class HandleWorkflow {
     private final KVStateChangeListener kvStateChangeListener;
     private final BoundaryStateChangeListener boundaryStateChangeListener;
     private final List<StateChanges.Builder> migrationStateChanges;
-    private final RecordTranslator recordTranslator;
 
     @Inject
     public HandleWorkflow(
@@ -168,8 +166,7 @@ public class HandleWorkflow {
             @NonNull final StakePeriodManager stakePeriodManager,
             @NonNull final KVStateChangeListener kvStateChangeListener,
             @NonNull final BoundaryStateChangeListener boundaryStateChangeListener,
-            @NonNull final List<StateChanges.Builder> migrationStateChanges,
-            @NonNull final RecordTranslator recordTranslator) {
+            @NonNull final List<StateChanges.Builder> migrationStateChanges) {
         this.networkInfo = requireNonNull(networkInfo);
         this.nodeStakeUpdates = requireNonNull(nodeStakeUpdates);
         this.authorizer = requireNonNull(authorizer);
@@ -198,7 +195,6 @@ public class HandleWorkflow {
         this.kvStateChangeListener = requireNonNull(kvStateChangeListener);
         this.boundaryStateChangeListener = requireNonNull(boundaryStateChangeListener);
         this.migrationStateChanges = new ArrayList<>(migrationStateChanges);
-        this.recordTranslator = requireNonNull(recordTranslator);
     }
 
     /**
@@ -429,7 +425,7 @@ public class HandleWorkflow {
                     .status(FAIL_INVALID)
                     .consensusTimestamp(userTxn.consensusNow());
             outputs.add(failInvalidBuilder.build());
-            cacheableRecordSource = blockRecordSource = new BlockRecordSource(recordTranslator, outputs);
+            cacheableRecordSource = blockRecordSource = new BlockRecordSource(outputs);
         } else {
             blockRecordSource = null;
         }
@@ -605,7 +601,6 @@ public class HandleWorkflow {
                 storeMetricsService,
                 kvStateChangeListener,
                 boundaryStateChangeListener,
-                preHandleWorkflow,
-                recordTranslator);
+                preHandleWorkflow);
     }
 }

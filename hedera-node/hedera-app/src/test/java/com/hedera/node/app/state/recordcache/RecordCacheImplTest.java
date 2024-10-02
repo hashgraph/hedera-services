@@ -157,7 +157,7 @@ final class RecordCacheImplTest extends AppTestBase {
 
     private TransactionReceipt getReceipt(RecordCache cache, TransactionID txId) {
         final var history = cache.getHistory(txId);
-        return history == null ? null : history.userTransactionReceipt();
+        return history == null ? null : history.priorityReceipt();
     }
 
     private List<TransactionRecord> getRecords(RecordCache cache, TransactionID txId) {

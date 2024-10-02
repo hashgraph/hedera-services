@@ -20,11 +20,11 @@ import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.ScheduleID;
 import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.base.TransactionID;
-import com.hedera.node.app.blocks.impl.RecordTranslationContext;
+import com.hedera.node.app.blocks.impl.TranslationContext;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
- * A {@link RecordTranslationContext} implementation with the id of an involved schedule.
+ * A {@link TranslationContext} implementation with the id of an involved schedule.
  * @param memo The memo for the transaction
  * @param txnId The transaction ID
  * @param transaction The transaction
@@ -37,4 +37,4 @@ public record ScheduleOpContext(
         @NonNull Transaction transaction,
         @NonNull HederaFunctionality functionality,
         @NonNull ScheduleID scheduleId)
-        implements RecordTranslationContext {}
+        implements TranslationContext {}

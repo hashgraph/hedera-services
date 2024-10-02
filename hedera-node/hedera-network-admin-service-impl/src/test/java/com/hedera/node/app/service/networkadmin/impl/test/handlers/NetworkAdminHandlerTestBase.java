@@ -31,7 +31,6 @@ import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenSupplyType;
 import com.hedera.hapi.node.base.TokenType;
-import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.state.common.EntityIDPair;
 import com.hedera.hapi.node.state.token.Account;
@@ -53,8 +52,6 @@ import com.hedera.node.app.service.token.impl.ReadableTokenStoreImpl;
 import com.hedera.node.app.spi.fees.FeeCalculator;
 import com.hedera.node.app.state.DeduplicationCache;
 import com.hedera.node.app.state.HederaRecordCache;
-import com.hedera.node.app.state.SingleTransactionRecord;
-import com.hedera.node.app.state.SingleTransactionRecord.TransactionOutputs;
 import com.hedera.node.app.state.WorkingStateAccessor;
 import com.hedera.node.app.state.recordcache.DeduplicationCacheImpl;
 import com.hedera.node.app.state.recordcache.ListRecordSource;
@@ -153,6 +150,7 @@ public class NetworkAdminHandlerTestBase {
     protected TransactionRecord duplicate1;
     protected TransactionRecord duplicate2;
     protected TransactionRecord duplicate3;
+    protected TransactionRecord otherRecord;
     protected TransactionRecord recordOne;
     protected TransactionRecord recordTwo;
     protected TransactionRecord recordThree;
@@ -204,8 +202,8 @@ public class NetworkAdminHandlerTestBase {
         final var validStartTime = Instant.ofEpochMilli(123456789L); // aligned to millisecond boundary for convenience.
         transactionID = transactionID(validStartTime, 0);
         otherNonceOneTransactionID = transactionID(validStartTime.plusNanos(1), 1);
-        otherNonceTwoTransactionID = transactionID(validStartTime.plusNanos(2), 2);
-        otherNonceThreeTransactionID = transactionID(validStartTime.plusNanos(3), 3);
+        otherNonceTwoTransactionID = transactionID(validStartTime.plusNanos(1), 2);
+        otherNonceThreeTransactionID = transactionID(validStartTime.plusNanos(1), 3);
         transactionIDNotInCache = transactionID(validStartTime.plusNanos(5), 5);
 
         givenValidAccount(false, Collections.emptyList(), Collections.emptyList(), Collections.emptyList());
@@ -283,22 +281,28 @@ public class NetworkAdminHandlerTestBase {
                 .receipt(receipt)
                 .consensusTimestamp(asTimestamp(consensusTimestamp.plusMillis(3)))
                 .build();
+        final var otherTxnId = otherNonceOneTransactionID.copyBuilder().nonce(0).build();
+        otherRecord = TransactionRecord.newBuilder()
+                .transactionID(otherTxnId)
+                .receipt(receipt)
+                .consensusTimestamp(asTimestamp(consensusTimestamp.plusNanos(5)))
+                .build();
         recordOne = TransactionRecord.newBuilder()
                 .transactionID(otherNonceOneTransactionID)
                 .receipt(receipt)
-                .consensusTimestamp(asTimestamp(consensusTimestamp.plusNanos(1)))
+                .consensusTimestamp(asTimestamp(consensusTimestamp.plusNanos(6)))
                 .parentConsensusTimestamp(asTimestamp(consensusTimestamp))
                 .build();
         recordTwo = TransactionRecord.newBuilder()
                 .transactionID(otherNonceTwoTransactionID)
                 .receipt(receipt)
-                .consensusTimestamp(asTimestamp(consensusTimestamp.plusNanos(2)))
+                .consensusTimestamp(asTimestamp(consensusTimestamp.plusNanos(7)))
                 .parentConsensusTimestamp(asTimestamp(consensusTimestamp))
                 .build();
         recordThree = TransactionRecord.newBuilder()
                 .transactionID(otherNonceThreeTransactionID)
                 .receipt(receipt)
-                .consensusTimestamp(asTimestamp(consensusTimestamp.plusNanos(3)))
+                .consensusTimestamp(asTimestamp(consensusTimestamp.plusNanos(8)))
                 .parentConsensusTimestamp(asTimestamp(consensusTimestamp))
                 .build();
         cache.addRecordSource(
@@ -323,24 +327,9 @@ public class NetworkAdminHandlerTestBase {
                 new ListRecordSource(List.of(duplicate3)));
         cache.addRecordSource(
                 0,
-                recordOne.transactionIDOrThrow(),
+                otherTxnId,
                 HederaRecordCache.DueDiligenceFailure.NO,
-                new ListRecordSource(List.of(recordOne)));
-        cache.addRecordSource(
-                0,
-                recordTwo.transactionIDOrThrow(),
-                HederaRecordCache.DueDiligenceFailure.NO,
-                new ListRecordSource(List.of(recordTwo)));
-        cache.addRecordSource(
-                0,
-                recordThree.transactionIDOrThrow(),
-                HederaRecordCache.DueDiligenceFailure.NO,
-                new ListRecordSource(List.of(recordThree)));
-    }
-
-    private SingleTransactionRecord singleTransactionRecord(TransactionRecord record) {
-        return new SingleTransactionRecord(
-                Transaction.DEFAULT, record, List.of(), new TransactionOutputs(TokenType.FUNGIBLE_COMMON));
+                new ListRecordSource(List.of(otherRecord, recordOne, recordTwo, recordThree)));
     }
 
     protected MapReadableKVState<AccountID, Account> readableAccountState() {
@@ -501,14 +490,10 @@ public class NetworkAdminHandlerTestBase {
     }
 
     private TransactionID transactionID(Instant validStartTime, int nonce) {
-        return transactionID(validStartTime, 0, nonce);
-    }
-
-    private TransactionID transactionID(Instant validStartTime, int nanos, int nonce) {
         return TransactionID.newBuilder()
                 .transactionValidStart(Timestamp.newBuilder()
                         .seconds(validStartTime.getEpochSecond())
-                        .nanos(nanos))
+                        .nanos(validStartTime.getNano()))
                 .accountID(PAYER_ACCOUNT_ID)
                 .nonce(nonce)
                 .build();

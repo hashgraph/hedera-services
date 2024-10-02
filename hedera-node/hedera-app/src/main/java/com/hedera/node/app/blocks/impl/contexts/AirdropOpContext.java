@@ -20,12 +20,12 @@ import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.transaction.PendingAirdropRecord;
-import com.hedera.node.app.blocks.impl.RecordTranslationContext;
+import com.hedera.node.app.blocks.impl.TranslationContext;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 
 /**
- * A {@link RecordTranslationContext} implementation with the list of new pending airdrops.
+ * A {@link TranslationContext} implementation with the list of new pending airdrops.
  * @param memo The memo for the transaction
  * @param txnId The transaction ID
  * @param transaction The transaction
@@ -38,4 +38,4 @@ public record AirdropOpContext(
         @NonNull Transaction transaction,
         @NonNull HederaFunctionality functionality,
         @NonNull List<PendingAirdropRecord> pendingAirdropRecords)
-        implements RecordTranslationContext {}
+        implements TranslationContext {}

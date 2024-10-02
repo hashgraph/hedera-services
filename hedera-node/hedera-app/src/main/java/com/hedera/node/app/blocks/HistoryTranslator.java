@@ -30,7 +30,7 @@ import com.hedera.hapi.block.stream.output.UtilPrngOutput;
 import com.hedera.hapi.node.contract.ContractFunctionResult;
 import com.hedera.hapi.node.transaction.TransactionReceipt;
 import com.hedera.hapi.node.transaction.TransactionRecord;
-import com.hedera.node.app.blocks.impl.RecordTranslationContext;
+import com.hedera.node.app.blocks.impl.TranslationContext;
 import com.hedera.node.app.blocks.impl.contexts.AirdropOpContext;
 import com.hedera.node.app.blocks.impl.contexts.ContractOpContext;
 import com.hedera.node.app.blocks.impl.contexts.CryptoOpContext;
@@ -44,26 +44,79 @@ import com.hedera.node.app.blocks.impl.contexts.TokenOpContext;
 import com.hedera.node.app.blocks.impl.contexts.TopicOpContext;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import javax.inject.Inject;
-import javax.inject.Singleton;
+import java.util.function.Function;
+import java.util.function.Predicate;
 
 /**
  * Translates a {@link TransactionResult} and, optionally, one or more {@link TransactionOutput}s within a given
- * {@link RecordTranslationContext} into a {@link TransactionRecord} appropriate for returning from a query.
+ * {@link TranslationContext} into a {@link TransactionRecord} appropriate for returning from a query.
  */
-@Singleton
-public class RecordTranslator {
-    @Inject
-    public RecordTranslator() {
-        // Dagger2
-    }
+public class HistoryTranslator {
+    private static final Function<TransactionOutput, ContractFunctionResult> CONTRACT_CALL_EXTRACTOR =
+            output -> output.contractCallOrThrow().contractCallResultOrThrow();
+    private static final Function<TransactionOutput, ContractFunctionResult> CONTRACT_CREATE_EXTRACTOR =
+            output -> output.contractCreateOrThrow().contractCreateResultOrThrow();
 
-    public TransactionRecord translate(
-            @NonNull final RecordTranslationContext context,
+    public static final HistoryTranslator HISTORY_TRANSLATOR = new HistoryTranslator();
+
+    /**
+     * Translate the given {@link TransactionResult} and optional {@link TransactionOutput}s into a
+     * {@link TransactionRecord} appropriate for returning from a query.
+     * @param context the context of the transaction
+     * @param result the result of the transaction
+     * @param outputs the outputs of the transaction
+     * @return the translated receipt
+     */
+    public TransactionReceipt translateReceipt(
+            @NonNull final TranslationContext context,
             @NonNull final TransactionResult result,
             @Nullable final TransactionOutput... outputs) {
         final var receiptBuilder =
                 TransactionReceipt.newBuilder().status(result.status()).exchangeRate(result.exchangeRate());
+        final var function = context.functionality();
+        switch (function) {
+            case CONTRACT_CALL,
+                    CONTRACT_CREATE,
+                    CONTRACT_DELETE,
+                    CONTRACT_UPDATE,
+                    ETHEREUM_TRANSACTION -> receiptBuilder.contractID(((ContractOpContext) context).contractId());
+            case CRYPTO_CREATE, CRYPTO_UPDATE -> receiptBuilder.accountID(((CryptoOpContext) context).accountId());
+            case FILE_CREATE -> receiptBuilder.fileID(((FileOpContext) context).fileId());
+            case NODE_CREATE -> receiptBuilder.nodeId(((NodeOpContext) context).nodeId());
+            case SCHEDULE_CREATE -> {
+                final var scheduleOutput = createScheduleOutputIfPresent(outputs);
+                if (scheduleOutput != null) {
+                    receiptBuilder
+                            .scheduleID(scheduleOutput.scheduleId())
+                            .scheduledTransactionID(scheduleOutput.scheduledTransactionId());
+                }
+            }
+            case SCHEDULE_DELETE -> receiptBuilder.scheduleID(((ScheduleOpContext) context).scheduleId());
+            case SCHEDULE_SIGN -> {
+                final var signOutput = signScheduleOutputIfPresent(outputs);
+                if (signOutput != null) {
+                    receiptBuilder.scheduledTransactionID(signOutput.scheduledTransactionId());
+                }
+            }
+            case CONSENSUS_SUBMIT_MESSAGE -> receiptBuilder
+                    .topicRunningHashVersion(((SubmitOpContext) context).runningHashVersion())
+                    .topicSequenceNumber(((SubmitOpContext) context).sequenceNumber())
+                    .topicRunningHash(((SubmitOpContext) context).runningHash());
+            case TOKEN_MINT -> receiptBuilder
+                    .newTotalSupply(((MintOpContext) context).newTotalSupply())
+                    .serialNumbers(((MintOpContext) context).serialNumbers());
+            case TOKEN_BURN, TOKEN_ACCOUNT_WIPE -> receiptBuilder.newTotalSupply(
+                    ((SupplyChangeOpContext) context).newTotalSupply());
+            case TOKEN_CREATE -> receiptBuilder.tokenID(((TokenOpContext) context).tokenId());
+            case CONSENSUS_CREATE_TOPIC -> receiptBuilder.topicID(((TopicOpContext) context).topicId());
+        }
+        return receiptBuilder.build();
+    }
+
+    public TransactionRecord translateRecord(
+            @NonNull final TranslationContext context,
+            @NonNull final TransactionResult result,
+            @Nullable final TransactionOutput... outputs) {
         final var recordBuilder = TransactionRecord.newBuilder()
                 .transactionID(context.txnId())
                 .memo(context.memo())
@@ -79,7 +132,6 @@ public class RecordTranslator {
         final var function = context.functionality();
         switch (function) {
             case CONTRACT_CALL, CONTRACT_CREATE, CONTRACT_DELETE, CONTRACT_UPDATE, ETHEREUM_TRANSACTION -> {
-                receiptBuilder.contractID(((ContractOpContext) context).contractId());
                 if (function == CONTRACT_CALL) {
                     recordBuilder.contractCallResult(contractCallResultIfPresent(outputs));
                 } else if (function == CONTRACT_CREATE) {
@@ -109,40 +161,10 @@ public class RecordTranslator {
                             recordBuilder.assessedCustomFees(cryptoOutput.assessedCustomFees());
                         }
                     }
-                    case CRYPTO_CREATE, CRYPTO_UPDATE -> {
-                        receiptBuilder.accountID(((CryptoOpContext) context).accountId());
-                        recordBuilder.evmAddress(((CryptoOpContext) context).evmAddress());
-                    }
-                    case FILE_CREATE -> receiptBuilder.fileID(((FileOpContext) context).fileId());
-                    case NODE_CREATE -> receiptBuilder.nodeId(((NodeOpContext) context).nodeId());
-                    case SCHEDULE_CREATE -> {
-                        final var scheduleOutput = createScheduleOutputIfPresent(outputs);
-                        if (scheduleOutput != null) {
-                            receiptBuilder
-                                    .scheduleID(scheduleOutput.scheduleId())
-                                    .scheduledTransactionID(scheduleOutput.scheduledTransactionId());
-                        }
-                    }
-                    case SCHEDULE_DELETE -> receiptBuilder.scheduleID(((ScheduleOpContext) context).scheduleId());
-                    case SCHEDULE_SIGN -> {
-                        final var signOutput = signScheduleOutputIfPresent(outputs);
-                        if (signOutput != null) {
-                            receiptBuilder.scheduledTransactionID(signOutput.scheduledTransactionId());
-                        }
-                    }
-                    case CONSENSUS_SUBMIT_MESSAGE -> receiptBuilder
-                            .topicRunningHashVersion(((SubmitOpContext) context).runningHashVersion())
-                            .topicSequenceNumber(((SubmitOpContext) context).sequenceNumber())
-                            .topicRunningHash(((SubmitOpContext) context).runningHash());
+                    case CRYPTO_CREATE, CRYPTO_UPDATE -> recordBuilder.evmAddress(
+                            ((CryptoOpContext) context).evmAddress());
                     case TOKEN_AIRDROP -> recordBuilder.newPendingAirdrops(
                             ((AirdropOpContext) context).pendingAirdropRecords());
-                    case TOKEN_MINT -> receiptBuilder
-                            .newTotalSupply(((MintOpContext) context).newTotalSupply())
-                            .serialNumbers(((MintOpContext) context).serialNumbers());
-                    case TOKEN_BURN, TOKEN_ACCOUNT_WIPE -> receiptBuilder.newTotalSupply(
-                            ((SupplyChangeOpContext) context).newTotalSupply());
-                    case TOKEN_CREATE -> receiptBuilder.tokenID(((TokenOpContext) context).tokenId());
-                    case CONSENSUS_CREATE_TOPIC -> receiptBuilder.topicID(((TopicOpContext) context).topicId());
                     case UTIL_PRNG -> {
                         final var prngOutput = utilPrngOutputIfPresent(outputs);
                         if (prngOutput != null) {
@@ -155,93 +177,56 @@ public class RecordTranslator {
                 }
             }
         }
-        return recordBuilder.receipt(receiptBuilder).build();
+        return recordBuilder.receipt(translateReceipt(context, result, outputs)).build();
     }
 
     private static @Nullable ContractFunctionResult contractCallResultIfPresent(
             @Nullable final TransactionOutput... outputs) {
-        if (outputs == null) {
-            return null;
-        }
-        for (final var output : outputs) {
-            if (output.hasContractCall()) {
-                return output.contractCallOrThrow().contractCallResultOrThrow();
-            }
-        }
-        return null;
+        return outputValueIfPresent(TransactionOutput::hasContractCall, CONTRACT_CALL_EXTRACTOR, outputs);
     }
 
     private static @Nullable ContractFunctionResult contractCreateResultIfPresent(
             @Nullable final TransactionOutput... outputs) {
-        if (outputs == null) {
-            return null;
-        }
-        for (final var output : outputs) {
-            if (output.hasContractCreate()) {
-                return output.contractCreateOrThrow().contractCreateResultOrThrow();
-            }
-        }
-        return null;
+        return outputValueIfPresent(TransactionOutput::hasContractCreate, CONTRACT_CREATE_EXTRACTOR, outputs);
     }
 
     private static @Nullable EthereumOutput ethereumOutputIfPresent(@Nullable final TransactionOutput... outputs) {
-        if (outputs == null) {
-            return null;
-        }
-        for (final var output : outputs) {
-            if (output.hasEthereumCall()) {
-                return output.ethereumCallOrThrow();
-            }
-        }
-        return null;
+        return outputValueIfPresent(
+                TransactionOutput::hasEthereumCall, TransactionOutput::ethereumCallOrThrow, outputs);
     }
 
     private static @Nullable CryptoTransferOutput cryptoTransferOutputIfPresent(
             @Nullable final TransactionOutput... outputs) {
-        if (outputs == null) {
-            return null;
-        }
-        for (final var output : outputs) {
-            if (output.hasCryptoTransfer()) {
-                return output.cryptoTransferOrThrow();
-            }
-        }
-        return null;
+        return outputValueIfPresent(
+                TransactionOutput::hasCryptoTransfer, TransactionOutput::cryptoTransferOrThrow, outputs);
     }
 
     private static @Nullable CreateScheduleOutput createScheduleOutputIfPresent(
             @Nullable final TransactionOutput... outputs) {
-        if (outputs == null) {
-            return null;
-        }
-        for (final var output : outputs) {
-            if (output.hasCreateSchedule()) {
-                return output.createScheduleOrThrow();
-            }
-        }
-        return null;
+        return outputValueIfPresent(
+                TransactionOutput::hasCreateSchedule, TransactionOutput::createScheduleOrThrow, outputs);
     }
 
     private static @Nullable SignScheduleOutput signScheduleOutputIfPresent(
+            @Nullable final TransactionOutput... outputs) {
+        return outputValueIfPresent(
+                TransactionOutput::hasSignSchedule, TransactionOutput::signScheduleOrThrow, outputs);
+    }
+
+    private static @Nullable UtilPrngOutput utilPrngOutputIfPresent(@Nullable final TransactionOutput... outputs) {
+        return outputValueIfPresent(TransactionOutput::hasUtilPrng, TransactionOutput::utilPrngOrThrow, outputs);
+    }
+
+    private static <T> @Nullable T outputValueIfPresent(
+            @NonNull final Predicate<TransactionOutput> filter,
+            @NonNull final Function<TransactionOutput, T> extractor,
             @Nullable final TransactionOutput... outputs) {
         if (outputs == null) {
             return null;
         }
         for (final var output : outputs) {
-            if (output.hasSignSchedule()) {
-                return output.signScheduleOrThrow();
-            }
-        }
-        return null;
-    }
-
-    private static @Nullable UtilPrngOutput utilPrngOutputIfPresent(@Nullable final TransactionOutput... outputs) {
-        if (outputs == null) {
-            return null;
-        }
-        for (final var output : outputs) {
-            if (output.hasUtilPrng()) {
-                return output.utilPrngOrThrow();
+            if (filter.test(output)) {
+                return extractor.apply(output);
             }
         }
         return null;

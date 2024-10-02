@@ -279,17 +279,19 @@ class NetworkTransactionGetReceiptHandlerTest extends NetworkAdminHandlerTestBas
     void getsResponseIfOkResponseWithChildrenReceipt() {
         final var responseHeader =
                 ResponseHeader.newBuilder().nodeTransactionPrecheckCode(OK).build();
-        final var expectedReceipt = getExpectedReceipt();
-        final List<TransactionReceipt> expectedChildReceiptList = getExpectedChildReceiptList();
+        final List<TransactionReceipt> expectedChildReceiptList =
+                List.of(recordOne.receiptOrThrow(), recordTwo.receiptOrThrow(), recordThree.receiptOrThrow());
 
-        final var query = createGetTransactionReceiptQuery(transactionID, false, true);
+        final var txnId =
+                recordThree.transactionIDOrThrow().copyBuilder().nonce(0).build();
+        final var query = createGetTransactionReceiptQuery(txnId, false, true);
         when(context.query()).thenReturn(query);
         when(context.recordCache()).thenReturn(cache);
 
         final var response = networkTransactionGetReceiptHandler.findResponse(context, responseHeader);
         final var op = response.transactionGetReceiptOrThrow();
         assertEquals(OK, op.header().nodeTransactionPrecheckCode());
-        assertEquals(expectedReceipt, op.receipt());
+        assertEquals(recordThree.receiptOrThrow(), op.receipt());
         assertEquals(expectedChildReceiptList, op.childTransactionReceipts());
         assertEquals(
                 expectedChildReceiptList.size(), op.childTransactionReceipts().size());
@@ -301,10 +303,6 @@ class NetworkTransactionGetReceiptHandlerTest extends NetworkAdminHandlerTestBas
 
     private List<TransactionReceipt> getExpectedDuplicateList() {
         return List.of(duplicate1.receipt(), duplicate2.receipt(), duplicate3.receipt());
-    }
-
-    private List<TransactionReceipt> getExpectedChildReceiptList() {
-        return List.of(recordOne.receipt(), recordTwo.receipt(), recordThree.receipt());
     }
 
     private Query createGetTransactionReceiptQuery(
