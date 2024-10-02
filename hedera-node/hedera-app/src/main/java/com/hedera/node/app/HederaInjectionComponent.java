@@ -56,6 +56,7 @@ import com.hedera.node.app.workflows.handle.HandleWorkflow;
 import com.hedera.node.app.workflows.ingest.IngestWorkflow;
 import com.hedera.node.app.workflows.prehandle.PreHandleWorkflow;
 import com.hedera.node.app.workflows.query.QueryWorkflow;
+import com.hedera.node.app.workflows.query.annotations.UserQueries;
 import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.listeners.ReconnectCompleteListener;
@@ -117,6 +118,7 @@ public interface HederaInjectionComponent {
 
     IngestWorkflow ingestWorkflow();
 
+    @UserQueries
     QueryWorkflow queryWorkflow();
 
     BlockRecordManager blockRecordManager();
