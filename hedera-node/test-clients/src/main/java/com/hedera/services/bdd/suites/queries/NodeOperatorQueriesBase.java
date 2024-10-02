@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.services.bdd.suites.nodeOperatorQueries;
+package com.hedera.services.bdd.suites.queries;
 
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
@@ -25,6 +25,9 @@ import com.hedera.services.bdd.spec.SpecOperation;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * A class with setup for Node Operator Queries tests
+ */
 public class NodeOperatorQueriesBase {
 
     // node operator account
@@ -43,7 +46,7 @@ public class NodeOperatorQueriesBase {
      */
     protected static SpecOperation[] createAllAccountsAndTokens() {
 
-        final var t = new ArrayList<SpecOperation>(List.of(
+        final var createOperations = new ArrayList<SpecOperation>(List.of(
                 cryptoCreate(NODE_OPERATOR).balance(ONE_HUNDRED_HBARS),
                 cryptoCreate(OWNER).balance(0L),
                 cryptoCreate(QUERY_TEST_ACCOUNT).balance(ONE_HUNDRED_HBARS),
@@ -54,6 +57,6 @@ public class NodeOperatorQueriesBase {
                         .tokenType(FUNGIBLE_COMMON)
                         .initialSupply(100L)));
 
-        return t.toArray(new SpecOperation[0]);
+        return createOperations.toArray(new SpecOperation[0]);
     }
 }

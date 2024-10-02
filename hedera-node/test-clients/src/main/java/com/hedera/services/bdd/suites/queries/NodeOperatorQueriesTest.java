@@ -14,15 +14,13 @@
  * limitations under the License.
  */
 
-package com.hedera.services.bdd.suites.nodeOperatorQueries;
+package com.hedera.services.bdd.suites.queries;
 
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestLifecycle;
@@ -30,19 +28,25 @@ import com.hedera.services.bdd.junit.support.TestLifecycle;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Stream;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Nested;
 
-// @Tag(QUERIES)
 @HapiTestLifecycle
 @DisplayName("Node Operator Queries")
+/**
+ * A class with Node Operator Queries tests
+ */
 public class NodeOperatorQueriesTest extends NodeOperatorQueriesBase {
 
     @Nested
-    @DisplayName("verify with paid query response")
-    class PerformFreeQueryAndVerifyWithPaidQueryResponse {
+    @DisplayName("verify payer balance")
+    /**
+     * A class with Node Operator tests that verify the payer balance
+     */
+    class PerformNodeOperatorQueryAndVerifyPayerBalance {
 
         @BeforeAll
         static void beforeAll(@NonNull final TestLifecycle lifecycle) {
@@ -50,19 +54,16 @@ public class NodeOperatorQueriesTest extends NodeOperatorQueriesBase {
         }
 
         @HapiTest
-        final Stream<DynamicTest> NodeOperatorQueryVerifyWithPaidQueryForAccountBalance() {
-            // declare payer account balance variables
+        final Stream<DynamicTest> nodeOperatorQueryVerifyPayerBalanceForAccountBalance() {
             final AtomicLong initialPayerBalance = new AtomicLong();
             final AtomicLong newPayerBalance = new AtomicLong();
             final AtomicLong currentPayerBalance = new AtomicLong();
             return hapiTest(withOpContext((spec, log) -> {
-                // set initial payer balance variable
                 final var initialBalance = getAccountBalance(PAYER).exposingBalanceTo(initialPayerBalance::set);
                 // perform paid query, pay for the query with payer account
                 // the grpc client performs the query to different ports
                 final var firstQuery =
                         getAccountBalance(NODE_OPERATOR).payingWith(PAYER).signedBy(PAYER);
-                // get changed payer account balance
                 final var newBalance = getAccountBalance(PAYER).exposingBalanceTo(newPayerBalance::set);
                 // perform free query to local port with asNodeOperator() method
                 final var secondQuery = getAccountBalance(NODE_OPERATOR)
@@ -72,25 +73,22 @@ public class NodeOperatorQueriesTest extends NodeOperatorQueriesBase {
                 // assert payer account balance is not changed
                 final var currentBalance = getAccountBalance(PAYER).exposingBalanceTo(currentPayerBalance::set);
                 allRunFor(spec, initialBalance, firstQuery, newBalance, secondQuery, currentBalance);
-                assertEquals(initialPayerBalance.get(), newPayerBalance.get());
-                assertEquals(newPayerBalance.get(), currentPayerBalance.get());
+                Assertions.assertEquals(initialPayerBalance.get(), newPayerBalance.get(), "Balances are not equal!");
+                Assertions.assertEquals(newPayerBalance.get(), currentPayerBalance.get(), "Balances are not equal!");
             }));
         }
 
         @HapiTest
-        final Stream<DynamicTest> NodeOperatorQueryVerifyWithPaidQueryForAccountInfo() {
-            // declare payer account balance variables
+        final Stream<DynamicTest> nodeOperatorQueryVerifyPayerBalanceForAccountInfo() {
             final AtomicLong initialPayerBalance = new AtomicLong();
             final AtomicLong newPayerBalance = new AtomicLong();
             final AtomicLong currentPayerBalance = new AtomicLong();
             return hapiTest(withOpContext((spec, log) -> {
-                // set initial payer balance variable
                 final var initialBalance = getAccountBalance(PAYER).exposingBalanceTo(initialPayerBalance::set);
                 // perform paid query, pay for the query with payer account
                 // the grpc client performs the query to different ports
                 final var firstQuery =
                         getAccountInfo(NODE_OPERATOR).payingWith(PAYER).signedBy(PAYER);
-                // get changed payer account balance
                 final var newBalance = getAccountBalance(PAYER).exposingBalanceTo(newPayerBalance::set);
                 // perform free query to local port with asNodeOperator() method
                 final var secondQuery = getAccountInfo(NODE_OPERATOR)
@@ -100,8 +98,8 @@ public class NodeOperatorQueriesTest extends NodeOperatorQueriesBase {
                 // assert payer account balance is not changed
                 final var currentBalance = getAccountBalance(PAYER).exposingBalanceTo(currentPayerBalance::set);
                 allRunFor(spec, initialBalance, firstQuery, newBalance, secondQuery, currentBalance);
-                assertNotEquals(initialPayerBalance.get(), newPayerBalance.get());
-                assertEquals(newPayerBalance.get(), currentPayerBalance.get());
+                Assertions.assertNotEquals(initialPayerBalance.get(), newPayerBalance.get(), "Balances are equal!");
+                Assertions.assertEquals(newPayerBalance.get(), currentPayerBalance.get(), "Balances are not equal!");
             }));
         }
     }
