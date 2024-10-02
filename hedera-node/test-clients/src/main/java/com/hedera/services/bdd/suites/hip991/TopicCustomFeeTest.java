@@ -39,6 +39,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CUSTOM
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestLifecycle;
 import com.hedera.services.bdd.junit.support.TestLifecycle;
+import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hederahashgraph.api.proto.java.TokenType;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
@@ -99,8 +100,28 @@ public class TopicCustomFeeTest extends TopicCustomFeeBase {
             }
 
             @HapiTest
+            @DisplayName("Create topic with ECDSA feeScheduleKey")
+            // TOPIC_FEE_005
+            final Stream<DynamicTest> createTopicWithECDSAFeeScheduleKey() {
+                return hapiTest(
+                        createTopic(TOPIC).feeScheduleKeyName(FEE_SCHEDULE_KEY_ECDSA),
+                        getTopicInfo(TOPIC).hasFeeScheduleKey(FEE_SCHEDULE_KEY_ECDSA));
+            }
+
+            @HapiTest
+            @DisplayName("Create topic with threshold feeScheduleKey")
+            // TOPIC_FEE_006
+            final Stream<DynamicTest> createTopicWithThresholdFeeScheduleKey() {
+                final var threshKey = "threshKey";
+                return hapiTest(
+                        newKeyNamed(threshKey).shape(KeyShape.threshOf(1, KeyShape.SIMPLE, KeyShape.SIMPLE)),
+                        createTopic(TOPIC).feeScheduleKeyName(threshKey),
+                        getTopicInfo(TOPIC).hasFeeScheduleKey(threshKey));
+            }
+
+            @HapiTest
             @DisplayName("Create topic with 1 Hbar fixed fee")
-            // TOPIC_FEE_004
+            // TOPIC_FEE_008
             final Stream<DynamicTest> createTopicWithOneHbarFixedFee() {
                 final var collector = "collector";
                 return hapiTest(
@@ -119,7 +140,7 @@ public class TopicCustomFeeTest extends TopicCustomFeeBase {
 
             @HapiTest
             @DisplayName("Create topic with 1 HTS fixed fee")
-            // TOPIC_FEE_005
+            // TOPIC_FEE_009
             final Stream<DynamicTest> createTopicWithOneHTSFixedFee() {
                 final var collector = "collector";
                 return hapiTest(
@@ -142,7 +163,7 @@ public class TopicCustomFeeTest extends TopicCustomFeeBase {
 
             @HapiTest
             @DisplayName("Create topic with 10 keys in FEKL")
-            // TOPIC_FEE_020
+            // TOPIC_FEE_022
             final Stream<DynamicTest> createTopicWithFEKL() {
                 final var collector = "collector";
                 return hapiTest(flattened(
@@ -176,7 +197,7 @@ public class TopicCustomFeeTest extends TopicCustomFeeBase {
 
             @HapiTest
             @DisplayName("Create topic with duplicated signatures in FEKL")
-            // TOPIC_FEE_023
+            // TOPIC_FEE_029
             final Stream<DynamicTest> createTopicWithDuplicateSignatures() {
                 final var testKey = "testKey";
                 return hapiTest(flattened(
@@ -191,7 +212,7 @@ public class TopicCustomFeeTest extends TopicCustomFeeBase {
 
             @HapiTest
             @DisplayName("Create topic with 0 Hbar fixed fee")
-            // TOPIC_FEE_024
+            // TOPIC_FEE_030
             final Stream<DynamicTest> createTopicWithZeroHbarFixedFee() {
                 final var collector = "collector";
                 return hapiTest(
@@ -206,7 +227,7 @@ public class TopicCustomFeeTest extends TopicCustomFeeBase {
 
             @HapiTest
             @DisplayName("Create topic with 0 HTS fixed fee")
-            // TOPIC_FEE_025
+            // TOPIC_FEE_031
             final Stream<DynamicTest> createTopicWithZeroHTSFixedFee() {
                 final var collector = "collector";
                 return hapiTest(
@@ -225,7 +246,7 @@ public class TopicCustomFeeTest extends TopicCustomFeeBase {
 
             @HapiTest
             @DisplayName("Create topic with invalid fee schedule key")
-            // TOPIC_FEE_026
+            // TOPIC_FEE_032
             final Stream<DynamicTest> createTopicWithInvalidFeeScheduleKey() {
                 final var invalidKey = "invalidKey";
                 return hapiTest(
@@ -239,7 +260,7 @@ public class TopicCustomFeeTest extends TopicCustomFeeBase {
 
             @HapiTest
             @DisplayName("Create topic with custom fee and deleted collector")
-            // TOPIC_FEE_028
+            // TOPIC_FEE_033
             final Stream<DynamicTest> createTopicWithCustomFeeAndDeletedCollector() {
                 final var collector = "collector";
                 return hapiTest(
