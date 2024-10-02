@@ -71,6 +71,7 @@ import com.hedera.node.app.blocks.impl.contexts.BaseOpContext;
 import com.hedera.node.app.blocks.impl.contexts.ContractOpContext;
 import com.hedera.node.app.blocks.impl.contexts.CryptoOpContext;
 import com.hedera.node.app.blocks.impl.contexts.FileOpContext;
+import com.hedera.node.app.blocks.impl.contexts.MintOpContext;
 import com.hedera.node.app.blocks.impl.contexts.NodeOpContext;
 import com.hedera.node.app.blocks.impl.contexts.ScheduleOpContext;
 import com.hedera.node.app.blocks.impl.contexts.SubmitOpContext;
@@ -347,7 +348,9 @@ public class BlockStreamBuilder
                 }
                 yield new AirdropOpContext(memo, transactionID, transaction, functionality, pendingAirdropRecords);
             }
-            case TOKEN_MINT, TOKEN_BURN, TOKEN_ACCOUNT_WIPE -> new SupplyChangeOpContext(
+            case TOKEN_MINT -> new MintOpContext(
+                    memo, transactionID, transaction, functionality, serialNumbers, newTotalSupply);
+            case TOKEN_BURN, TOKEN_ACCOUNT_WIPE -> new SupplyChangeOpContext(
                     memo, transactionID, transaction, functionality, newTotalSupply);
             case TOKEN_CREATE -> new TokenOpContext(memo, transactionID, transaction, functionality, tokenId);
             case CONSENSUS_CREATE_TOPIC -> new TopicOpContext(memo, transactionID, transaction, functionality, topicId);

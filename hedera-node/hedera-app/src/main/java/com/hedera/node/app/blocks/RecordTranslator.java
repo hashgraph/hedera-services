@@ -35,6 +35,8 @@ import com.hedera.node.app.blocks.impl.contexts.AirdropOpContext;
 import com.hedera.node.app.blocks.impl.contexts.ContractOpContext;
 import com.hedera.node.app.blocks.impl.contexts.CryptoOpContext;
 import com.hedera.node.app.blocks.impl.contexts.FileOpContext;
+import com.hedera.node.app.blocks.impl.contexts.MintOpContext;
+import com.hedera.node.app.blocks.impl.contexts.NodeOpContext;
 import com.hedera.node.app.blocks.impl.contexts.ScheduleOpContext;
 import com.hedera.node.app.blocks.impl.contexts.SubmitOpContext;
 import com.hedera.node.app.blocks.impl.contexts.SupplyChangeOpContext;
@@ -112,6 +114,7 @@ public class RecordTranslator {
                         recordBuilder.evmAddress(((CryptoOpContext) context).evmAddress());
                     }
                     case FILE_CREATE -> receiptBuilder.fileID(((FileOpContext) context).fileId());
+                    case NODE_CREATE -> receiptBuilder.nodeId(((NodeOpContext) context).nodeId());
                     case SCHEDULE_CREATE -> {
                         final var scheduleOutput = createScheduleOutputIfPresent(outputs);
                         if (scheduleOutput != null) {
@@ -133,7 +136,10 @@ public class RecordTranslator {
                             .topicRunningHash(((SubmitOpContext) context).runningHash());
                     case TOKEN_AIRDROP -> recordBuilder.newPendingAirdrops(
                             ((AirdropOpContext) context).pendingAirdropRecords());
-                    case TOKEN_MINT, TOKEN_BURN, TOKEN_ACCOUNT_WIPE -> receiptBuilder.newTotalSupply(
+                    case TOKEN_MINT -> receiptBuilder
+                            .newTotalSupply(((MintOpContext) context).newTotalSupply())
+                            .serialNumbers(((MintOpContext) context).serialNumbers());
+                    case TOKEN_BURN, TOKEN_ACCOUNT_WIPE -> receiptBuilder.newTotalSupply(
                             ((SupplyChangeOpContext) context).newTotalSupply());
                     case TOKEN_CREATE -> receiptBuilder.tokenID(((TokenOpContext) context).tokenId());
                     case CONSENSUS_CREATE_TOPIC -> receiptBuilder.topicID(((TopicOpContext) context).topicId());

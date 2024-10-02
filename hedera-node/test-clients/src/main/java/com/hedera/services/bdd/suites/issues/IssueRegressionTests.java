@@ -216,24 +216,25 @@ public class IssueRegressionTests {
 
     @HapiTest
     final Stream<DynamicTest> duplicatedTxnsSameTypeDifferentNodesDetected() {
-        return defaultHapiSpec("duplicatedTxnsSameTypeDifferentNodesDetected")
-                .given(
-                        cryptoCreate("acct3").setNode("0.0.3").via("txnId1"),
-                        sleepFor(2000),
-                        cryptoCreate("acctWithDuplicateTxnId")
+        return hapiTest(
+                cryptoCreate("acct3").setNode("0.0.3").via("txnId1"),
+                sleepFor(2000),
+                cryptoCreate("acctWithDuplicateTxnId")
+                        .setNode("0.0.5")
+                        .txnId("txnId1")
+                        .hasPrecheck(DUPLICATE_TRANSACTION),
+                uncheckedSubmit(cryptoCreate("acctWithDuplicateTxnId")
                                 .setNode("0.0.5")
-                                .txnId("txnId1")
-                                .hasPrecheck(DUPLICATE_TRANSACTION),
-                        uncheckedSubmit(cryptoCreate("acctWithDuplicateTxnId")
-                                        .setNode("0.0.5")
-                                        .txnId("txnId1"))
-                                .setNode("0.0.5"))
-                .when(sleepFor(2000))
-                .then(getTxnRecord("txnId1")
+                                .txnId("txnId1"))
+                        .setNode("0.0.5"),
+                sleepFor(2000),
+                getTxnRecord("txnId1")
                         .andAnyDuplicates()
                         .assertingNothingAboutHashes()
                         .hasPriority(recordWith().status(SUCCESS))
-                        .hasDuplicates(inOrder(recordWith().status(DUPLICATE_TRANSACTION))));
+                        .hasDuplicates(inOrder(recordWith().status(DUPLICATE_TRANSACTION))),
+                sleepFor(181_000L),
+                cryptoCreate(CIVILIAN_PAYER));
     }
 
     @HapiTest

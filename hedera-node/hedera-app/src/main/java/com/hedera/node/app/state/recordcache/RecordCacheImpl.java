@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.state.recordcache;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.DUPLICATE_TRANSACTION;
 import static com.hedera.hapi.util.HapiUtils.TIMESTAMP_COMPARATOR;
 import static com.hedera.hapi.util.HapiUtils.isBefore;
 import static com.hedera.node.app.state.HederaRecordCache.DuplicateCheckResult.NO_DUPLICATE;
@@ -266,7 +267,7 @@ public class RecordCacheImpl implements HederaRecordCache {
                 historySource.recordSources.add(recordSource);
             }
             final AccountID effectivePayerId;
-            if (matches(txnId, userTxnId) && dueDiligenceFailure == DueDiligenceFailure.YES) {
+            if (dueDiligenceFailure == DueDiligenceFailure.YES && matches(txnId, userTxnId)) {
                 effectivePayerId = requireNonNull(networkInfo.nodeInfo(nodeId)).accountId();
             } else {
                 effectivePayerId = txnId.accountIDOrThrow();
@@ -354,9 +355,9 @@ public class RecordCacheImpl implements HederaRecordCache {
                         payerId = requireNonNull(networkInfo.nodeInfo(receipt.nodeId()))
                                 .accountId();
                         txnIds = payerTxnIds.computeIfAbsent(payerId, ignored -> new HashSet<>());
-                        if (!txnIds.remove(txnId)) {
+                        if (!txnIds.remove(txnId) && receipt.status() != DUPLICATE_TRANSACTION) {
                             logger.warn(
-                                    "TransactionID {} not cached for either payer or submitting node {}",
+                                    "Non-duplicate {} not cached for either payer or submitting node {}",
                                     txnId,
                                     payerId);
                         }
@@ -432,7 +433,8 @@ public class RecordCacheImpl implements HederaRecordCache {
     private static boolean matches(@NonNull final TransactionID aTxnId, @NonNull final TransactionID bTxnId) {
         return aTxnId.accountIDOrElse(AccountID.DEFAULT).equals(bTxnId.accountIDOrElse(AccountID.DEFAULT))
                 && aTxnId.transactionValidStartOrElse(Timestamp.DEFAULT)
-                        .equals(bTxnId.transactionValidStartOrElse(Timestamp.DEFAULT));
+                        .equals(bTxnId.transactionValidStartOrElse(Timestamp.DEFAULT))
+                && aTxnId.scheduled() == bTxnId.scheduled();
     }
 
     /**
