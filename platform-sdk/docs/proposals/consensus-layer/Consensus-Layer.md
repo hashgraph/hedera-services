@@ -13,6 +13,12 @@ Update the architecture for the consensus node to reduce complexity, improve per
 
 ---
 
+## Assumptions
+
+1. The proposed design assumes that the work to
+   [use a birth-round based definition of ancient](https://github.com/hashgraph/hedera-services/issues/13817) has been
+   completed
+
 ## Purpose and Context
 
 Much of the motivation for this design can come down to paying down technical debt and simplifying the overall design.
