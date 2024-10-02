@@ -42,6 +42,7 @@ import com.hedera.node.app.tss.impl.PlaceholderTssBaseService;
 import com.swirlds.base.time.Time;
 import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
+import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.constructable.RuntimeConstructable;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.CryptographyFactory;
@@ -221,18 +222,7 @@ public class ServicesMain implements SwirldMain {
         MerkleCryptoFactory.set(merkleCryptography);
 
         // Register with the ConstructableRegistry classes which need configuration.
-        ConstructableRegistry.getInstance()
-                .registerConstructable(new ClassConstructorPair(
-                        MerkleDbDataSourceBuilder.class, () -> new MerkleDbDataSourceBuilder(configuration)));
-        ConstructableRegistry.getInstance()
-                .registerConstructable(new ClassConstructorPair(VirtualMap.class, () -> new VirtualMap(configuration)));
-        ConstructableRegistry.getInstance()
-                .registerConstructable(new ClassConstructorPair(
-                        VirtualNodeCache.class,
-                        () -> new VirtualNodeCache(configuration.getConfigData(VirtualMapConfig.class))));
-        ConstructableRegistry.getInstance()
-                .registerConstructable(
-                        new ClassConstructorPair(VirtualRootNode.class, () -> new VirtualRootNode(configuration)));
+        setupConstructableRegistryWithConfiguration(configuration);
 
         // Create the platform context
         final var platformContext = PlatformContext.create(
@@ -375,6 +365,26 @@ public class ServicesMain implements SwirldMain {
             exitSystem(CONFIGURATION_ERROR);
             throw e;
         }
+    }
+
+    /**
+     * Add classes to the constructable registry which need the configuration.
+     * @param configuration configuration
+     */
+    private static void setupConstructableRegistryWithConfiguration(Configuration configuration)
+            throws ConstructableRegistryException {
+        ConstructableRegistry.getInstance()
+                .registerConstructable(new ClassConstructorPair(
+                        MerkleDbDataSourceBuilder.class, () -> new MerkleDbDataSourceBuilder(configuration)));
+        ConstructableRegistry.getInstance()
+                .registerConstructable(new ClassConstructorPair(VirtualMap.class, () -> new VirtualMap(configuration)));
+        ConstructableRegistry.getInstance()
+                .registerConstructable(new ClassConstructorPair(
+                        VirtualNodeCache.class,
+                        () -> new VirtualNodeCache(configuration.getConfigData(VirtualMapConfig.class))));
+        ConstructableRegistry.getInstance()
+                .registerConstructable(
+                        new ClassConstructorPair(VirtualRootNode.class, () -> new VirtualRootNode(configuration)));
     }
 
     private static Hedera newHedera() {
