@@ -42,10 +42,19 @@ public class MerkleRootSnapshotMetrics {
     }
 
     /**
+     * No-arg constructor constructs an object that does not track metrics.
+     */
+    public MerkleRootSnapshotMetrics() {
+        writeMerkleRootToDiskTime = null;
+    }
+
+    /**
      * Update the metric tracking the average time required to write a Merkle tree to disk.
      * @param timeTakenMs the time taken to write the state to disk
      */
     public void updateWriteStateToDiskTimeMetric(final long timeTakenMs) {
-        writeMerkleRootToDiskTime.update(timeTakenMs);
+        if (writeMerkleRootToDiskTime != null) {
+            writeMerkleRootToDiskTime.update(timeTakenMs);
+        }
     }
 }

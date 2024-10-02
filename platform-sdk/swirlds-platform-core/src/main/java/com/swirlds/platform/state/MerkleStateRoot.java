@@ -213,6 +213,7 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
         this.lifecycles = requireNonNull(lifecycles);
         this.registryRecord = RuntimeObjectRegistry.createRecord(getClass());
         this.versionFactory = requireNonNull(versionFactory);
+        this.snapshotMetrics = new MerkleRootSnapshotMetrics();
     }
 
     /**
@@ -1118,12 +1119,12 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
      */
     @Override
     public void createSnapshot(@NonNull final Path targetPath) {
+        requireNonNull(time);
+        requireNonNull(snapshotMetrics);
         throwIfMutable();
         throwIfDestroyed();
         final long startTime = time.currentTimeMillis();
         MerkleTreeSnapshotWriter.createSnapshot(this, targetPath);
-        if (snapshotMetrics != null && time != null) {
-            snapshotMetrics.updateWriteStateToDiskTimeMetric(time.currentTimeMillis() - startTime);
-        }
+        snapshotMetrics.updateWriteStateToDiskTimeMetric(time.currentTimeMillis() - startTime);
     }
 }
