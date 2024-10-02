@@ -417,8 +417,7 @@ public final class NettyGrpcServerManager implements GrpcServerManager {
             @NonNull final Predicate<RpcMethodDefinition> methodFilter,
             @NonNull final IngestWorkflow ingestWorkflow,
             @NonNull final QueryWorkflow queryWorkflow,
-            @NonNull final Metrics metrics,
-            boolean chargeQueries) {
+            @NonNull final Metrics metrics) {
         return rpcServiceDefinitions
                 .get()
                 .map(d -> {
@@ -430,7 +429,7 @@ public final class NettyGrpcServerManager implements GrpcServerManager {
                             builder.query(m.path());
                         }
                     });
-                    return builder.build(metrics, chargeQueries);
+                    return builder.build(metrics);
                 })
                 .collect(Collectors.toUnmodifiableSet());
     }

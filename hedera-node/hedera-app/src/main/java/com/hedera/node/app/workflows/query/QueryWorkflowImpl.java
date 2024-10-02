@@ -150,11 +150,11 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
         this.synchronizedThrottleAccumulator =
                 requireNonNull(synchronizedThrottleAccumulator, "hapiThrottling must not be null");
         this.instantSource = requireNonNull(instantSource);
+        this.shouldCharge = shouldCharge;
     }
 
     @Override
-    public void handleQuery(
-            @NonNull final Bytes requestBuffer, @NonNull final BufferedData responseBuffer, boolean shouldCharge) {
+    public void handleQuery(@NonNull final Bytes requestBuffer, @NonNull final BufferedData responseBuffer) {
         requireNonNull(requestBuffer);
         requireNonNull(responseBuffer);
 
