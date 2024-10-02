@@ -18,7 +18,7 @@ package com.hedera.services.bdd.suites.nodeOperatorQueries;
 
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenInfo;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -60,18 +60,43 @@ public class NodeOperatorQueriesTest extends NodeOperatorQueriesBase {
                 final var initialBalance = getAccountBalance(PAYER).exposingBalanceTo(initialPayerBalance::set);
                 // perform paid query, pay for the query with payer account
                 // the grpc client performs the query to different ports
-                final var firstQuery = getTokenInfo(FUNGIBLE_QUERY_TOKEN)
-                        .payingWith(PAYER)
-                        .signedBy(PAYER)
-                        .logged();
+                final var firstQuery =
+                        getAccountBalance(NODE_OPERATOR).payingWith(PAYER).signedBy(PAYER);
                 // get changed payer account balance
                 final var newBalance = getAccountBalance(PAYER).exposingBalanceTo(newPayerBalance::set);
                 // perform free query to local port with asNodeOperator() method
-                final var secondQuery = getTokenInfo(FUNGIBLE_QUERY_TOKEN)
+                final var secondQuery = getAccountBalance(NODE_OPERATOR)
                         .payingWith(PAYER)
                         .signedBy(PAYER)
-                        .asNodeOperator()
-                        .logged();
+                        .asNodeOperator();
+                // assert payer account balance is not changed
+                final var currentBalance = getAccountBalance(PAYER).exposingBalanceTo(currentPayerBalance::set);
+                allRunFor(spec, initialBalance, firstQuery, newBalance, secondQuery, currentBalance);
+                assertEquals(initialPayerBalance.get(), newPayerBalance.get());
+                assertEquals(newPayerBalance.get(), currentPayerBalance.get());
+            }));
+        }
+
+        @HapiTest
+        final Stream<DynamicTest> NodeOperatorQueryVerifyWithPaidQueryForAccountInfo() {
+            // declare payer account balance variables
+            final AtomicLong initialPayerBalance = new AtomicLong();
+            final AtomicLong newPayerBalance = new AtomicLong();
+            final AtomicLong currentPayerBalance = new AtomicLong();
+            return hapiTest(withOpContext((spec, log) -> {
+                // set initial payer balance variable
+                final var initialBalance = getAccountBalance(PAYER).exposingBalanceTo(initialPayerBalance::set);
+                // perform paid query, pay for the query with payer account
+                // the grpc client performs the query to different ports
+                final var firstQuery =
+                        getAccountInfo(NODE_OPERATOR).payingWith(PAYER).signedBy(PAYER);
+                // get changed payer account balance
+                final var newBalance = getAccountBalance(PAYER).exposingBalanceTo(newPayerBalance::set);
+                // perform free query to local port with asNodeOperator() method
+                final var secondQuery = getAccountInfo(NODE_OPERATOR)
+                        .payingWith(PAYER)
+                        .signedBy(PAYER)
+                        .asNodeOperator();
                 // assert payer account balance is not changed
                 final var currentBalance = getAccountBalance(PAYER).exposingBalanceTo(currentPayerBalance::set);
                 allRunFor(spec, initialBalance, firstQuery, newBalance, secondQuery, currentBalance);

@@ -42,11 +42,13 @@ public class NodeOperatorQueriesBase {
      * @return array of operations
      */
     protected static SpecOperation[] createAllAccountsAndTokens() {
+
         final var t = new ArrayList<SpecOperation>(List.of(
                 cryptoCreate(NODE_OPERATOR).balance(ONE_HUNDRED_HBARS),
                 cryptoCreate(OWNER).balance(0L),
                 cryptoCreate(QUERY_TEST_ACCOUNT).balance(ONE_HUNDRED_HBARS),
                 cryptoCreate(PAYER).balance(ONE_HUNDRED_HBARS),
+                //                        .exposingCreatedIdTo(payerId::set),
                 tokenCreate(FUNGIBLE_QUERY_TOKEN)
                         .treasury(OWNER)
                         .tokenType(FUNGIBLE_COMMON)
