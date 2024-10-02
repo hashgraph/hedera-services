@@ -334,8 +334,12 @@ public final class MerkleDb {
         return getTablesDir(baseDir).resolve(tableName + "-" + tableId);
     }
 
-    public MerkleDbConfig getConfig() {
-        return configuration.getConfigData(MerkleDbConfig.class);
+    /**
+     * Get Platform Configuration
+     * @return configuration platform configuration
+     */
+    public Configuration getConfiguration() {
+        return configuration;
     }
 
     /**
@@ -365,7 +369,7 @@ public final class MerkleDb {
         final int tableId = getNextTableId();
         tableConfigs.set(tableId, new TableMetadata(tableId, label, tableConfig));
         final MerkleDbDataSource dataSource =
-                new MerkleDbDataSource(this, label, tableId, tableConfig, configuration, dbCompactionEnabled);
+                new MerkleDbDataSource(this, label, tableId, tableConfig, dbCompactionEnabled);
         dataSources.set(tableId, dataSource);
         // New tables are always primary
         primaryTables.add(tableId);
@@ -404,7 +408,8 @@ public final class MerkleDb {
             final boolean makeCopyPrimary)
             throws IOException {
         final String label = dataSource.getTableName();
-        final MerkleDbTableConfig tableConfig = dataSource.getTableConfig().copy(getConfig());
+        final MerkleDbConfig merkleDbConfig = getConfiguration().getConfigData(MerkleDbConfig.class);
+        final MerkleDbTableConfig tableConfig = dataSource.getTableConfig().copy(merkleDbConfig);
         if (tableConfigs.get(tableId) != null) {
             throw new IllegalStateException("Table with ID " + tableId + " already exists");
         }
@@ -453,8 +458,7 @@ public final class MerkleDb {
                 return ds;
             }
             try {
-                return new MerkleDbDataSource(
-                        this, tableName, tableId, tableConfig, configuration, dbCompactionEnabled);
+                return new MerkleDbDataSource(this, tableName, tableId, tableConfig, dbCompactionEnabled);
             } catch (final IOException z) {
                 rethrowIO.set(z);
                 return null;
