@@ -894,6 +894,12 @@ public class TestHelpers {
      */
     public static Map<HederaEvmVersion, TransactionProcessor> processorsForAllCurrentEvmVersions(
             @NonNull final TransactionProcessor processor) {
-        return Map.of(HederaEvmVersion.VERSION_046, processor, HederaEvmVersion.VERSION_050, processor);
+        return Map.of(
+                HederaEvmVersion.VERSION_046,
+                processor,
+                HederaEvmVersion.VERSION_050,
+                processor,
+                HederaEvmVersion.VERSION_051,
+                processor);
     }
 }
