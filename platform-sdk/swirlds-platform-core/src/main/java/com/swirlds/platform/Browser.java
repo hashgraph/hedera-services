@@ -256,6 +256,9 @@ public class Browser {
             final var merkleCryptography = MerkleCryptographyFactory.create(configuration, CryptographyHolder.get());
             MerkleCryptoFactory.set(merkleCryptography);
 
+            // Register with the ConstructableRegistry classes which need configuration.
+            BootstrapUtils.setupConstructableRegistryWithConfiguration(configuration);
+
             // Create platform context
             final var platformContext = PlatformContext.create(
                     configuration,

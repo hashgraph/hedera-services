@@ -21,6 +21,7 @@ import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 import static com.swirlds.platform.system.SystemExitCode.NODE_ADDRESS_MISMATCH;
 import static com.swirlds.platform.system.SystemExitUtils.exitSystem;
 
+import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.platform.NodeId;
@@ -32,6 +33,7 @@ import com.swirlds.config.api.source.ConfigSource;
 import com.swirlds.config.extensions.export.ConfigExport;
 import com.swirlds.config.extensions.sources.LegacyFileConfigSource;
 import com.swirlds.logging.legacy.payload.NodeAddressMismatchPayload;
+import com.swirlds.merkledb.MerkleDbDataSourceBuilder;
 import com.swirlds.platform.ApplicationDefinition;
 import com.swirlds.platform.JVMPauseDetectorThread;
 import com.swirlds.platform.config.BasicConfig;
@@ -54,6 +56,10 @@ import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.SwirldMain;
 import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
+import com.swirlds.virtualmap.VirtualMap;
+import com.swirlds.virtualmap.config.VirtualMapConfig;
+import com.swirlds.virtualmap.internal.cache.VirtualNodeCache;
+import com.swirlds.virtualmap.internal.merkle.VirtualRootNode;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.awt.Dimension;
@@ -148,6 +154,26 @@ public final class BootstrapUtils {
         } catch (final ConstructableRegistryException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    /**
+     * Add classes to the constructable registry which need the configuration.
+     * @param configuration configuration
+     */
+    public static void setupConstructableRegistryWithConfiguration(Configuration configuration)
+            throws ConstructableRegistryException {
+        ConstructableRegistry.getInstance()
+                .registerConstructable(new ClassConstructorPair(
+                        MerkleDbDataSourceBuilder.class, () -> new MerkleDbDataSourceBuilder(configuration)));
+        ConstructableRegistry.getInstance()
+                .registerConstructable(new ClassConstructorPair(VirtualMap.class, () -> new VirtualMap(configuration)));
+        ConstructableRegistry.getInstance()
+                .registerConstructable(new ClassConstructorPair(
+                        VirtualNodeCache.class,
+                        () -> new VirtualNodeCache(configuration.getConfigData(VirtualMapConfig.class))));
+        ConstructableRegistry.getInstance()
+                .registerConstructable(
+                        new ClassConstructorPair(VirtualRootNode.class, () -> new VirtualRootNode(configuration)));
     }
 
     /**

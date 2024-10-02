@@ -16,7 +16,8 @@ open module com.swirlds.virtualmap {
             com.swirlds.virtualmap.test.fixtures,
             com.swirlds.common,
             com.swirlds.state.api.test.fixtures,
-            com.hedera.node.app;
+            com.hedera.node.app,
+            com.swirlds.platform.core;
 
     requires transitive com.swirlds.common;
     requires transitive com.swirlds.config.api;
