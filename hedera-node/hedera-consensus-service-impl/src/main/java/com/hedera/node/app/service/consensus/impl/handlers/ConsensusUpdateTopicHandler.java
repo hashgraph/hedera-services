@@ -255,7 +255,12 @@ public class ConsensusUpdateTopicHandler implements TransactionHandler {
             builder.autoRenewAccountId(resolvedExpiryMeta.autoRenewAccountId());
         }
         if (op.hasFeeScheduleKey()) {
-            builder.feeScheduleKey(op.feeScheduleKey());
+            final var newSubmitKey = op.feeScheduleKey();
+            if (newSubmitKey == null || isKeyRemoval(newSubmitKey)) {
+                builder.feeScheduleKey((Key) null);
+            } else {
+                builder.feeScheduleKey(newSubmitKey);
+            }
         }
         if (op.hasFeeExemptKeyList()) {
             builder.feeExemptKeyList(op.feeExemptKeyList().keys());

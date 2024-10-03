@@ -223,6 +223,11 @@ public class CustomFeeSpecs {
         return ConsensusCustomFee.newBuilder().setFixedFee(fixedBuilder).setFeeCollectorAccountId(collectorId);
     }
 
+    static ConsensusCustomFee.Builder baseConsensusFixedBuilderNoCollector(long amount) {
+        final var fixedBuilder = FixedFee.newBuilder().setAmount(amount);
+        return ConsensusCustomFee.newBuilder().setFixedFee(fixedBuilder);
+    }
+
     static ConsensusCustomFee.Builder baseConsensusFixedBuilder(long amount, AccountID collector) {
         final var fixedBuilder = FixedFee.newBuilder().setAmount(amount);
         return ConsensusCustomFee.newBuilder().setFixedFee(fixedBuilder).setFeeCollectorAccountId(collector);
@@ -231,6 +236,10 @@ public class CustomFeeSpecs {
     // consensus custom fee suppliers
     public static Function<HapiSpec, ConsensusCustomFee> fixedConsensusHbarFee(long amount, String collector) {
         return spec -> builtConsensusFixedHbar(amount, collector, spec);
+    }
+
+    public static Function<HapiSpec, ConsensusCustomFee> fixedConsensusHbarFeeNoCollector(long amount) {
+        return spec -> builtConsensusFixedHbarNoCollector(amount);
     }
 
     public static Function<HapiSpec, ConsensusCustomFee> fixedConsensusHbarFee(long amount, AccountID collector) {
@@ -245,6 +254,10 @@ public class CustomFeeSpecs {
     // builders
     static ConsensusCustomFee builtConsensusFixedHbar(long amount, String collector, HapiSpec spec) {
         return baseConsensusFixedBuilder(amount, collector, spec).build();
+    }
+
+    static ConsensusCustomFee builtConsensusFixedHbarNoCollector(long amount) {
+        return baseConsensusFixedBuilderNoCollector(amount).build();
     }
 
     static ConsensusCustomFee builtConsensusFixedHbar(long amount, AccountID collector) {
