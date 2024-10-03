@@ -39,7 +39,7 @@ import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.crypto.CryptoStatic;
 import com.swirlds.platform.crypto.SerializableX509Certificate;
 import com.swirlds.platform.state.MinimumJudgeInfo;
-import com.swirlds.platform.state.PlatformStateAccessor;
+import com.swirlds.platform.state.PlatformStateModifier;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.address.Address;
@@ -68,7 +68,7 @@ class PbjConverterTest {
 
     @Test
     void testToPbjPlatformState() {
-        final PlatformStateAccessor platformState = randomPlatformState(randotron);
+        final PlatformStateModifier platformState = randomPlatformState(randotron);
 
         final com.hedera.hapi.platform.state.PlatformState pbjPlatformState =
                 PbjConverter.toPbjPlatformState(platformState);
@@ -467,7 +467,7 @@ class PbjConverterTest {
         assertEquals(toPbjAddressBook(newValue.getAddressBook()), pbjState.addressBook());
     }
 
-    static PlatformStateAccessor randomPlatformState(Randotron randotron) {
+    static PlatformStateModifier randomPlatformState(Randotron randotron) {
         final PlatformStateValueAccumulator platformState = new PlatformStateValueAccumulator();
         platformState.setCreationSoftwareVersion(randomSoftwareVersion());
         platformState.setRoundsNonAncient(nextInt());

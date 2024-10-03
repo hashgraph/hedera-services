@@ -58,10 +58,10 @@ dependencies.constraints {
     api("com.google.jimfs:jimfs:1.2") {
         because("com.google.jimfs")
     }
-    api("com.google.protobuf:protobuf-java:3.25.4") {
+    api("com.google.protobuf:protobuf-java:4.28.2") {
         because("com.google.protobuf")
     }
-    api("com.google.protobuf:protobuf-java-util:3.25.4") {
+    api("com.google.protobuf:protobuf-java-util:4.28.2") {
         because("com.google.protobuf.util")
     }
     api("com.hedera.pbj:pbj-runtime:0.9.2") {

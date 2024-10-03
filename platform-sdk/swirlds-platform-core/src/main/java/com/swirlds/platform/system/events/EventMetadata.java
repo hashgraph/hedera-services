@@ -23,7 +23,6 @@ import com.hedera.hapi.util.HapiUtils;
 import com.swirlds.common.AbstractHashable;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.platform.NodeId;
-import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.transaction.TransactionWrapper;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -36,11 +35,6 @@ import java.util.stream.Stream;
  * Metadata for an event that can be derived from the event itself
  */
 public class EventMetadata extends AbstractHashable {
-    /**
-     * the software version of the node that created this event.
-     */
-    private final SoftwareVersion softwareVersion;
-
     /**
      * ID of this event's creator (translate before sending)
      */
@@ -78,7 +72,6 @@ public class EventMetadata extends AbstractHashable {
     /**
      * Create a EventMetadata object
      *
-     * @param softwareVersion the software version of the node that created this event.
      * @param creatorId       ID of this event's creator
      * @param selfParent      self parent event descriptor
      * @param otherParents    other parent event descriptors
@@ -86,7 +79,6 @@ public class EventMetadata extends AbstractHashable {
      * @param transactions    list of transactions included in this event instance
      */
     public EventMetadata(
-            @NonNull final SoftwareVersion softwareVersion,
             @NonNull final NodeId creatorId,
             @Nullable final EventDescriptorWrapper selfParent,
             @NonNull final List<EventDescriptorWrapper> otherParents,
@@ -94,7 +86,6 @@ public class EventMetadata extends AbstractHashable {
             @NonNull final List<EventTransaction> transactions) {
 
         Objects.requireNonNull(transactions, "The transactions must not be null");
-        this.softwareVersion = Objects.requireNonNull(softwareVersion, "The softwareVersion must not be null");
         this.creatorId = Objects.requireNonNull(creatorId, "The creatorId must not be null");
         this.selfParent = selfParent;
         this.otherParents = List.copyOf(otherParents); // checks for null values and makes a copy
@@ -111,11 +102,9 @@ public class EventMetadata extends AbstractHashable {
     /**
      * Create a EventMetadata object
      *
-     * @param softwareVersion the software version of the node that created this event.
      * @param gossipEvent     the gossip event to extract metadata from
      */
-    public EventMetadata(@NonNull final SoftwareVersion softwareVersion, @NonNull final GossipEvent gossipEvent) {
-        this.softwareVersion = Objects.requireNonNull(softwareVersion, "The softwareVersion must not be null");
+    public EventMetadata(@NonNull final GossipEvent gossipEvent) {
         Objects.requireNonNull(gossipEvent.eventCore(), "The eventCore must not be null");
         this.creatorId = new NodeId(gossipEvent.eventCore().creatorNodeId());
         this.allParents = gossipEvent.eventCore().parents().stream()
@@ -145,16 +134,6 @@ public class EventMetadata extends AbstractHashable {
                         .mapToLong(d -> d.eventDescriptor().generation())
                         .max()
                         .orElse(EventConstants.GENERATION_UNDEFINED);
-    }
-
-    /**
-     * Returns the software version of the node that created this event.
-     *
-     * @return the software version of the node that created this event
-     */
-    @NonNull
-    public SoftwareVersion getSoftwareVersion() {
-        return softwareVersion;
     }
 
     /**

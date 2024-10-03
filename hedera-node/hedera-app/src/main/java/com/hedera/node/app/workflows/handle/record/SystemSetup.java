@@ -136,7 +136,7 @@ public class SystemSetup {
 
         // We update the node details file from the address book that resulted from all pre-upgrade HAPI node changes
         final var nodeStore = dispatch.handleContext().storeFactory().readableStore(ReadableNodeStore.class);
-        fileService.updateNodeDetailsAfterFreeze(systemContext, nodeStore);
+        fileService.updateAddressBookAndNodeDetailsAfterFreeze(systemContext, nodeStore);
         dispatch.stack().commitFullStack();
 
         // And then we update the system files for fees schedules, throttles, override properties, and override
