@@ -1022,6 +1022,15 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
     }
 
     /**
+     * Sets the Snapshot Metrics for this state
+     *
+     * @param snapshotMetrics the metrics to set
+     */
+    public void setSnapshotMetrics(MerkleRootSnapshotMetrics snapshotMetrics) {
+        this.snapshotMetrics = snapshotMetrics;
+    }
+
+    /**
      * Sets the time for this state.
      *
      * @param time the time to set
