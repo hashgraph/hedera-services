@@ -21,6 +21,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
+import com.swirlds.config.api.Configuration;
 import com.swirlds.merkledb.config.MerkleDbConfig;
 import com.swirlds.merkledb.files.DataFileCompactor;
 import com.swirlds.merkledb.test.fixtures.ExampleLongKeyFixedSize;
@@ -42,14 +43,14 @@ class HalfDiskHashMapTest {
     @TempDir
     Path tempDirPath;
 
-    private MerkleDbConfig dbConfig = ConfigurationHolder.getConfigData(MerkleDbConfig.class);
+    private Configuration configuration = ConfigurationHolder.getInstance().get();
 
     // =================================================================================================================
     // Helper Methods
     private HalfDiskHashMap createNewTempMap(FilesTestType testType, int count) throws IOException {
         // create map
         HalfDiskHashMap map = new HalfDiskHashMap(
-                dbConfig, count, tempDirPath.resolve(testType.name()), "HalfDiskHashMapTest", null, null);
+                configuration, count, tempDirPath.resolve(testType.name()), "HalfDiskHashMapTest", null, false);
         map.printStats();
         return map;
     }
@@ -107,12 +108,7 @@ class HalfDiskHashMapTest {
         map.snapshot(tempSnapshotDir);
         // open snapshot and check data
         HalfDiskHashMap mapFromSnapshot = new HalfDiskHashMap(
-                ConfigurationHolder.getConfigData(MerkleDbConfig.class),
-                count,
-                tempSnapshotDir,
-                "HalfDiskHashMapTest",
-                null,
-                null);
+                ConfigurationHolder.getInstance().get(), count, tempSnapshotDir, "HalfDiskHashMapTest", null, false);
         mapFromSnapshot.printStats();
         checkData(testType, mapFromSnapshot, 1, count, 1);
         // check deletion
@@ -145,7 +141,7 @@ class HalfDiskHashMapTest {
         // create map
         final HalfDiskHashMap map = createNewTempMap(testType, 10_000);
         final DataFileCompactor dataFileCompactor = new DataFileCompactor(
-                dbConfig,
+                configuration.getConfigData(MerkleDbConfig.class),
                 "HalfDiskHashMapTest",
                 map.getFileCollection(),
                 map.getBucketIndexToBucketLocation(),

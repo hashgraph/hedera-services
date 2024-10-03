@@ -35,7 +35,6 @@ import com.hedera.pbj.runtime.io.stream.WritableStreamingData;
 import com.swirlds.base.units.UnitConstants;
 import com.swirlds.base.utility.ToStringBuilder;
 import com.swirlds.common.crypto.Hash;
-import com.swirlds.common.io.filesystem.FileSystemManager;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.config.api.Configuration;
@@ -165,9 +164,6 @@ public final class MerkleDbDataSource implements VirtualDataSource {
     /** Flag for if a snapshot is in progress */
     private final AtomicBoolean snapshotInProgress = new AtomicBoolean(false);
 
-    /** File system manager for disk-based indices */
-    private FileSystemManager fileSystemManager;
-
     /** The range of valid leaf paths for data currently stored by this data source. */
     private volatile KeyRange validLeafPathRange = INVALID_KEY_RANGE;
 
@@ -193,10 +189,6 @@ public final class MerkleDbDataSource implements VirtualDataSource {
         this.tableName = tableName;
         this.tableId = tableId;
         this.tableConfig = tableConfig;
-
-        if (tableConfig.isPreferDiskBasedIndices()) {
-            this.fileSystemManager = FileSystemManager.create(configuration);
-        }
 
         // create thread group with label
         final ThreadGroup threadGroup = new ThreadGroup("MerkleDb-" + tableName);
@@ -251,17 +243,18 @@ public final class MerkleDbDataSource implements VirtualDataSource {
 
         if (tableConfig.isPreferDiskBasedIndices()) {
             pathToDiskLocationInternalNodes =
-                    new LongListDisk(dbPaths.pathToDiskLocationInternalNodesFile, fileSystemManager);
+                    new LongListDisk(dbPaths.pathToDiskLocationInternalNodesFile, configuration);
         } else if (Files.exists(dbPaths.pathToDiskLocationInternalNodesFile) && !forceIndexRebuilding) {
-            pathToDiskLocationInternalNodes = new LongListOffHeap(dbPaths.pathToDiskLocationInternalNodesFile);
+            pathToDiskLocationInternalNodes =
+                    new LongListOffHeap(dbPaths.pathToDiskLocationInternalNodesFile, configuration);
         } else {
             pathToDiskLocationInternalNodes = new LongListOffHeap();
         }
         // path to disk location index, leaf nodes
         if (tableConfig.isPreferDiskBasedIndices()) {
-            pathToDiskLocationLeafNodes = new LongListDisk(dbPaths.pathToDiskLocationLeafNodesFile, fileSystemManager);
+            pathToDiskLocationLeafNodes = new LongListDisk(dbPaths.pathToDiskLocationLeafNodesFile, configuration);
         } else if (Files.exists(dbPaths.pathToDiskLocationLeafNodesFile) && !forceIndexRebuilding) {
-            pathToDiskLocationLeafNodes = new LongListOffHeap(dbPaths.pathToDiskLocationLeafNodesFile);
+            pathToDiskLocationLeafNodes = new LongListOffHeap(dbPaths.pathToDiskLocationLeafNodesFile, configuration);
         } else {
             pathToDiskLocationLeafNodes =
                     new LongListOffHeap(database.getConfig().reservedBufferLengthForLeafList());
@@ -328,12 +321,12 @@ public final class MerkleDbDataSource implements VirtualDataSource {
         // key to path store
         String keyToPathStoreName = tableName + "_objectkeytopath";
         keyToPath = new HalfDiskHashMap(
-                database.getConfig(),
+                configuration,
                 tableConfig.getMaxNumberOfKeys(),
                 dbPaths.keyToPathDirectory,
                 keyToPathStoreName,
                 tableName + ":objectKeyToPath",
-                fileSystemManager);
+                tableConfig.isPreferDiskBasedIndices());
         keyToPathFileCompactor = new DataFileCompactor(
                 database.getConfig(),
                 keyToPathStoreName,

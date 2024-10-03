@@ -19,11 +19,13 @@ package com.swirlds.merkledb.collections;
 import static com.swirlds.base.units.UnitConstants.MEBIBYTES_TO_BYTES;
 import static com.swirlds.merkledb.collections.AbstractLongList.DEFAULT_MAX_LONGS_TO_STORE;
 import static com.swirlds.merkledb.collections.AbstractLongList.DEFAULT_NUM_LONGS_PER_CHUNK;
+import static com.swirlds.merkledb.test.fixtures.MerkleDbTestUtils.config;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.swirlds.common.test.fixtures.io.ResourceLoader;
+import com.swirlds.config.api.Configuration;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.nio.file.Path;
@@ -60,8 +62,9 @@ class LongListOffHeapTest extends AbstractLongListTest<LongListOffHeap> {
     }
 
     @Override
-    protected LongListOffHeap createLongListFromFile(final Path file) throws IOException {
-        return new LongListOffHeap(file);
+    protected LongListOffHeap createLongListFromFile(final Path file, final Configuration configuration)
+            throws IOException {
+        return new LongListOffHeap(file, configuration);
     }
 
     @Test
@@ -76,7 +79,7 @@ class LongListOffHeapTest extends AbstractLongListTest<LongListOffHeap> {
             // write longList data
             list.writeToFile(file);
 
-            final LongListOffHeap listFromDisk = createLongListFromFile(file);
+            final LongListOffHeap listFromDisk = createLongListFromFile(file, config());
             assertEquals(list.dataCopy().size(), listFromDisk.dataCopy().size());
         }
     }
@@ -113,7 +116,7 @@ class LongListOffHeapTest extends AbstractLongListTest<LongListOffHeap> {
             // write longList data
             list.writeToFile(file);
 
-            final LongListOffHeap longListFromFile = createLongListFromFile(file);
+            final LongListOffHeap longListFromFile = createLongListFromFile(file, config());
 
             for (int i = 0; i < longListFromFile.size(); i++) {
                 assertEquals(list.get(i), longListFromFile.get(i));
@@ -138,7 +141,7 @@ class LongListOffHeapTest extends AbstractLongListTest<LongListOffHeap> {
             // write longList data
             list.writeToFile(file);
 
-            final LongListOffHeap longListFromFile = createLongListFromFile(file);
+            final LongListOffHeap longListFromFile = createLongListFromFile(file, config());
 
             for (int i = 0; i < longListFromFile.size(); i++) {
                 assertEquals(list.get(i), longListFromFile.get(i));
@@ -161,7 +164,7 @@ class LongListOffHeapTest extends AbstractLongListTest<LongListOffHeap> {
             list.writeToFile(file);
 
             // restoring the list from the file
-            try (LongListOffHeap longListFromFile = createLongListFromFile(file)) {
+            try (LongListOffHeap longListFromFile = createLongListFromFile(file, config())) {
 
                 for (int i = 0; i < longListFromFile.size(); i++) {
                     assertEquals(list.get(i), longListFromFile.get(i));
@@ -170,7 +173,7 @@ class LongListOffHeapTest extends AbstractLongListTest<LongListOffHeap> {
                 longListFromFile.writeToFile(file);
 
                 // restoring the list from the file again
-                try (LongListOffHeap longListFromFile2 = createLongListFromFile(file)) {
+                try (LongListOffHeap longListFromFile2 = createLongListFromFile(file, config())) {
                     for (int i = 0; i < longListFromFile2.size(); i++) {
                         assertEquals(longListFromFile.get(i), longListFromFile2.get(i));
                     }
@@ -207,7 +210,7 @@ class LongListOffHeapTest extends AbstractLongListTest<LongListOffHeap> {
     @Test
     void testFileFormatBackwardCompatibility_halfEmpty() throws URISyntaxException, IOException {
         final Path pathToList = ResourceLoader.getFile("test_data/LongListOffHeapHalfEmpty_10k_10pc_v1.ll");
-        try (final LongListOffHeap longListFromFile = createLongListFromFile(pathToList)) {
+        try (final LongListOffHeap longListFromFile = createLongListFromFile(pathToList, config())) {
             // half-empty
             for (int i = 0; i < 5_000; i++) {
                 assertEquals(0, longListFromFile.get(i));
@@ -224,7 +227,7 @@ class LongListOffHeapTest extends AbstractLongListTest<LongListOffHeap> {
         final Path pathToList = ResourceLoader.getFile("test_data/LongListOffHeap_unsupported_version.ll");
         assertThrows(IOException.class, () -> {
             //noinspection EmptyTryBlock
-            try (final LongListOffHeap ignored = new LongListOffHeap(pathToList)) {
+            try (final LongListOffHeap ignored = new LongListOffHeap(pathToList, config())) {
                 // no op
             }
         });
@@ -240,7 +243,7 @@ class LongListOffHeapTest extends AbstractLongListTest<LongListOffHeap> {
             assertEquals(1, list.get(bigIndex));
             final Path file = testDirectory.resolve("LongListLargeIndex.ll");
             list.writeToFile(file);
-            try (LongListOffHeap listFromFile = new LongListOffHeap(file)) {
+            try (LongListOffHeap listFromFile = new LongListOffHeap(file, config())) {
                 assertEquals(1, listFromFile.get(bigIndex));
             }
         }

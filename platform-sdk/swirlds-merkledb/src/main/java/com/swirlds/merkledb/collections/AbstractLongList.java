@@ -21,8 +21,9 @@ import static com.swirlds.merkledb.utilities.MerkleDbFileUtils.readFromFileChann
 import static java.lang.Math.max;
 import static java.lang.Math.min;
 import static java.lang.Math.toIntExact;
+import static java.util.Objects.requireNonNull;
 
-import com.swirlds.common.io.filesystem.FileSystemManager;
+import com.swirlds.config.api.Configuration;
 import com.swirlds.merkledb.utilities.MerkleDbFileUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.File;
@@ -127,7 +128,8 @@ public abstract class AbstractLongList<C> implements LongList {
      */
     protected final long reservedBufferLength;
 
-    protected final FileSystemManager fileSystemManager;
+    /** Platform configuration */
+    protected Configuration configuration;
 
     /**
      * Construct a new LongList with the specified number of longs per chunk and maximum number of
@@ -136,14 +138,8 @@ public abstract class AbstractLongList<C> implements LongList {
      * @param numLongsPerChunk number of longs to store in each chunk of memory allocated
      * @param maxLongs the maximum number of longs permissible for this LongList
      * @param reservedBufferLength reserved buffer length that the list should have before minimal index in the list
-     * @param fileSystemManager the file system manager to use
      */
-    protected AbstractLongList(
-            final int numLongsPerChunk,
-            final long maxLongs,
-            final long reservedBufferLength,
-            FileSystemManager fileSystemManager) {
-        this.fileSystemManager = fileSystemManager;
+    protected AbstractLongList(final int numLongsPerChunk, final long maxLongs, final long reservedBufferLength) {
         if (maxLongs < 0) {
             throw new IllegalArgumentException("The maximum number of longs must be non-negative, not " + maxLongs);
         }
@@ -173,12 +169,13 @@ public abstract class AbstractLongList<C> implements LongList {
      *
      * @param path File to read header from
      * @param reservedBufferLength reserved buffer length that the list should have before minimal index in the list
-     * @param fileSystemManager the file system manager to use
+     * @param configuration platform configuration
      * @throws IOException If there was a problem reading the file
      */
-    protected AbstractLongList(final Path path, final long reservedBufferLength, FileSystemManager fileSystemManager)
+    protected AbstractLongList(final Path path, final long reservedBufferLength, final Configuration configuration)
             throws IOException {
-        this.fileSystemManager = fileSystemManager;
+        requireNonNull(configuration);
+        this.configuration = configuration;
         final File file = path.toFile();
         this.reservedBufferLength = reservedBufferLength;
         if (!file.exists() || file.length() == 0) {

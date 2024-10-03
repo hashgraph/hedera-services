@@ -18,26 +18,23 @@ package com.swirlds.merkledb.collections;
 
 import static com.swirlds.common.test.fixtures.RandomUtils.nextLong;
 import static com.swirlds.merkledb.collections.LongList.IMPERMISSIBLE_VALUE;
+import static com.swirlds.merkledb.test.fixtures.MerkleDbTestUtils.config;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.parallel.ExecutionMode.SAME_THREAD;
 
-import com.swirlds.common.test.fixtures.TestFileSystemManager;
 import com.swirlds.common.test.fixtures.junit.tags.TestComponentTags;
 import java.lang.management.BufferPoolMXBean;
 import java.lang.management.ManagementFactory;
-import java.nio.file.Path;
 import java.util.Objects;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
-import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -47,16 +44,6 @@ class LongListValidRangeTest {
 
     public static final int MAX_LONGS = 1000;
     private AbstractLongList<?> list;
-
-    @TempDir
-    private static Path tempDir;
-
-    private static TestFileSystemManager testFileSystemManager;
-
-    @BeforeAll
-    static void setUp() {
-        testFileSystemManager = new TestFileSystemManager(tempDir);
-    }
 
     @Tag(TestComponentTags.VMAP)
     @ParameterizedTest
@@ -121,12 +108,10 @@ class LongListValidRangeTest {
     void testInvalidMemoryChunkNumber() {
         new LongListOffHeap(1, 32768, 1).close();
         new LongListHeap(1, 32768, 1).close();
-        new LongListDisk(1, 32768, 1, testFileSystemManager)
-                .resetTransferBuffer()
-                .close();
+        new LongListDisk(1, 32768, 1, config()).resetTransferBuffer().close();
         assertThrows(IllegalArgumentException.class, () -> new LongListOffHeap(1, 32769, 1));
         assertThrows(IllegalArgumentException.class, () -> new LongListHeap(1, 32769, 1));
-        assertThrows(IllegalArgumentException.class, () -> new LongListDisk(1, 32769, 1, testFileSystemManager));
+        assertThrows(IllegalArgumentException.class, () -> new LongListDisk(1, 32769, 1, config()));
     }
 
     @Tag(TestComponentTags.VMAP)
@@ -763,7 +748,7 @@ class LongListValidRangeTest {
         return Stream.of(
                 Arguments.of(new LongListOffHeap(longsPerChunk, MAX_LONGS, reservedBufferLength)),
                 Arguments.of(new LongListHeap(longsPerChunk, MAX_LONGS, reservedBufferLength)),
-                Arguments.of(new LongListDisk(longsPerChunk, MAX_LONGS, reservedBufferLength, testFileSystemManager)));
+                Arguments.of(new LongListDisk(longsPerChunk, MAX_LONGS, reservedBufferLength, config())));
     }
 
     private long maxValidIndex() {

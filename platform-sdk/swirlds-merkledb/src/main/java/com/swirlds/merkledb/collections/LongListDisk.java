@@ -20,6 +20,7 @@ import static java.lang.Math.toIntExact;
 import static java.nio.file.Files.exists;
 
 import com.swirlds.common.io.filesystem.FileSystemManager;
+import com.swirlds.config.api.Configuration;
 import com.swirlds.merkledb.utilities.MerkleDbFileUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
@@ -69,6 +70,8 @@ public class LongListDisk extends AbstractLongList<Long> {
      */
     private final Deque<Long> freeChunks;
 
+    private FileSystemManager fileSystemManager;
+
     static {
         TRANSFER_BUFFER_THREAD_LOCAL = new ThreadLocal<>();
         // it's initialized as 8 bytes (Long.BYTES) but likely it's going to be resized later
@@ -78,25 +81,21 @@ public class LongListDisk extends AbstractLongList<Long> {
 
     /**
      * Create a {@link LongListDisk} with default parameters.
-     * @param fileSystemManager file system manager to use for creating temporary files
      */
-    public LongListDisk(FileSystemManager fileSystemManager) {
-        this(
-                DEFAULT_NUM_LONGS_PER_CHUNK,
-                DEFAULT_MAX_LONGS_TO_STORE,
-                DEFAULT_RESERVED_BUFFER_LENGTH,
-                fileSystemManager);
+    public LongListDisk(final @NonNull Configuration configuration) {
+        this(DEFAULT_NUM_LONGS_PER_CHUNK, DEFAULT_MAX_LONGS_TO_STORE, DEFAULT_RESERVED_BUFFER_LENGTH, configuration);
     }
 
     LongListDisk(
             final int numLongsPerChunk,
             final long maxLongs,
             final long reservedBufferLength,
-            FileSystemManager fileSystemManager) {
-        super(numLongsPerChunk, maxLongs, reservedBufferLength, fileSystemManager);
+            final @NonNull Configuration configuration) {
+        super(numLongsPerChunk, maxLongs, reservedBufferLength);
+        this.fileSystemManager = FileSystemManager.create(configuration);
         try {
             currentFileChannel = FileChannel.open(
-                    createTempFile(DEFAULT_FILE_NAME, this.fileSystemManager),
+                    createTempFile(DEFAULT_FILE_NAME, fileSystemManager),
                     StandardOpenOption.CREATE,
                     StandardOpenOption.READ,
                     StandardOpenOption.WRITE);
@@ -111,15 +110,16 @@ public class LongListDisk extends AbstractLongList<Long> {
      * Create a {@link LongListDisk} on a file, if the file doesn't exist it will be created.
      *
      * @param file The file to read and write to
+     * @param configuration platform configuration
      * @throws IOException If there was a problem reading the file
      */
-    public LongListDisk(final Path file, FileSystemManager fileSystemManager) throws IOException {
-        this(file, DEFAULT_RESERVED_BUFFER_LENGTH, fileSystemManager);
+    public LongListDisk(final Path file, final @NonNull Configuration configuration) throws IOException {
+        this(file, DEFAULT_RESERVED_BUFFER_LENGTH, configuration);
     }
 
-    LongListDisk(final Path file, final long reservedBufferLength, FileSystemManager fileSystemManager)
+    LongListDisk(final Path file, final long reservedBufferLength, final @NonNull Configuration configuration)
             throws IOException {
-        super(file, reservedBufferLength, fileSystemManager);
+        super(file, reservedBufferLength, configuration);
         freeChunks = new ConcurrentLinkedDeque<>();
         // IDE complains that the tempFile is not initialized, but it's initialized in readBodyFromFileChannelOnInit
         // which is called from the constructor of the parent class
@@ -137,6 +137,7 @@ public class LongListDisk extends AbstractLongList<Long> {
      */
     @Override
     protected void onEmptyOrAbsentSourceFile(final Path path) throws IOException {
+        fileSystemManager = FileSystemManager.create(configuration);
         tempFile = createTempFile(path.toFile().getName(), fileSystemManager);
     }
 
@@ -145,6 +146,7 @@ public class LongListDisk extends AbstractLongList<Long> {
     protected void readBodyFromFileChannelOnInit(final String sourceFileName, final FileChannel fileChannel)
             throws IOException {
         // create temporary file for writing
+        fileSystemManager = FileSystemManager.create(configuration);
         tempFile = createTempFile(sourceFileName, fileSystemManager);
         // the warning is suppressed because the file is not supposed to be closed
         // as this implementation uses a file channel from it.
