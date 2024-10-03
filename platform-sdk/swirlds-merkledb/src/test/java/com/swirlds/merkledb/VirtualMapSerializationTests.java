@@ -432,10 +432,9 @@ class VirtualMapSerializationTests {
         final VirtualRootNode<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> copyOneMore = root.copy();
 
         final Hash originalHash = copyF.getHash();
-        System.err.println(originalHash);
 
         final ByteArrayOutputStream bout = new ByteArrayOutputStream();
-        final Path tmp = Files.createTempDirectory("inMemoryModeSerde");
+        final Path tmp = LegacyTemporaryFileBuilder.buildTemporaryDirectory("inMemoryModeSerde");
         try (final SerializableDataOutputStream out = new SerializableDataOutputStream(bout)) {
             state.serialize(out);
             copyF.serialize(out, tmp);
@@ -450,11 +449,9 @@ class VirtualMapSerializationTests {
             root.postInit(new VirtualStateAccessorImpl(state));
         }
 
-        final Hash restoredHash = root.getHash();
-        System.err.println(restoredHash);
-
         copyOneMore.release();
 
+        final Hash restoredHash = root.getHash();
         assertEquals(originalHash, restoredHash);
     }
 }
