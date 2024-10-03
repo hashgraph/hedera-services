@@ -1612,18 +1612,18 @@ enum ResponseCodeEnum {
     /**
     * The provided fee schedule key contains an invalid key.
     */
-    INVALID_FEE_SCHEDULE_KEY = 374;
+    INVALID_FEE_SCHEDULE_KEY = 373;
 
     /**
     * If a fee schedule key is not set when we create a topic
     * we cannot add it on update.
     */
-    FEE_SCHEDULE_KEY_CANNOT_BE_UPDATED = 375;
+    FEE_SCHEDULE_KEY_CANNOT_BE_UPDATED = 374;
 
     /**
     * If the topic's custom fees are updated the topic SHOULD have a
     * fee schedule key
      */
-    FEE_SCHEDULE_KEY_NOT_SET = 376;
+    FEE_SCHEDULE_KEY_NOT_SET = 375;
 
 }
