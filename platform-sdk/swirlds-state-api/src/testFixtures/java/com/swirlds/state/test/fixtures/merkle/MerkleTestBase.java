@@ -25,6 +25,7 @@ import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.crypto.DigestType;
+import com.swirlds.common.io.config.FileSystemManagerConfig;
 import com.swirlds.common.io.config.TemporaryFileConfig;
 import com.swirlds.common.io.streams.MerkleDataInputStream;
 import com.swirlds.common.io.streams.MerkleDataOutputStream;
@@ -93,6 +94,7 @@ public class MerkleTestBase extends StateTestBase {
             .withConfigDataType(MerkleDbConfig.class)
             .withConfigDataType(TemporaryFileConfig.class)
             .withConfigDataType(StateCommonConfig.class)
+            .withConfigDataType(FileSystemManagerConfig.class)
             .build();
 
     public static final String FIRST_SERVICE = "First-Service";

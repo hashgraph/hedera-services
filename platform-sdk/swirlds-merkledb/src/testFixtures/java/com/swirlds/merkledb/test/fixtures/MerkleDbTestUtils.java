@@ -27,6 +27,7 @@ import com.swirlds.common.config.StateCommonConfig;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.HashBuilder;
+import com.swirlds.common.io.config.FileSystemManagerConfig;
 import com.swirlds.common.io.config.TemporaryFileConfig;
 import com.swirlds.common.metrics.config.MetricsConfig;
 import com.swirlds.common.metrics.platform.DefaultPlatformMetrics;
@@ -79,6 +80,7 @@ public class MerkleDbTestUtils {
             .withConfigDataType(VirtualMapConfig.class)
             .withConfigDataType(TemporaryFileConfig.class)
             .withConfigDataType(StateCommonConfig.class)
+            .withConfigDataType(FileSystemManagerConfig.class)
             .build();
 
     /**
