@@ -19,17 +19,16 @@ package com.hedera.node.app.service.consensus.impl.handlers;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.AUTORENEW_ACCOUNT_NOT_ALLOWED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.CUSTOM_FEES_LIST_TOO_LONG;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.FEE_EXEMPT_KEY_LIST_CONTAINS_DUPLICATED_KEYS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.FEE_SCHEDULE_KEY_CANNOT_BE_UPDATED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.FEE_SCHEDULE_KEY_NOT_SET;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.FEKL_CONTAINS_DUPLICATED_KEYS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_CUSTOM_FEE_SCHEDULE_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_FEE_SCHEDULE_KEY;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_KEY_IN_FEKL;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_KEY_IN_FEE_EXEMPT_KEY_LIST;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_RENEWAL_PERIOD;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOPIC_ID;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_ENTRIES_FOR_FEKL_EXCEEDED;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.MISSING_CUSTOM_FEES;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_ENTRIES_FOR_FEE_EXEMPT_KEY_LIST_EXCEEDED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.UNAUTHORIZED;
 import static com.hedera.node.app.hapi.utils.fee.ConsensusServiceFeeBuilder.getConsensusUpdateTopicFee;
 import static com.hedera.node.app.hapi.utils.fee.ConsensusServiceFeeBuilder.getUpdateTopicRbsIncrease;
@@ -108,7 +107,9 @@ public class ConsensusUpdateTopicHandler implements TransactionHandler {
         if (op.feeExemptKeyList() != null) {
             final var uniqueKeysCount =
                     op.feeExemptKeyList().keys().stream().distinct().count();
-            validateTruePreCheck(uniqueKeysCount == op.feeExemptKeyList().keys().size(), FEKL_CONTAINS_DUPLICATED_KEYS);
+            validateTruePreCheck(
+                    uniqueKeysCount == op.feeExemptKeyList().keys().size(),
+                    FEE_EXEMPT_KEY_LIST_CONTAINS_DUPLICATED_KEYS);
         }
     }
 
@@ -273,7 +274,7 @@ public class ConsensusUpdateTopicHandler implements TransactionHandler {
         validateMaybeNewSubmitKey(attributeValidator, op);
         validateMaybeNewMemo(attributeValidator, op);
         validateMaybeNewFeeScheduleKey(attributeValidator, op, topic);
-        validateMaybeFeeExemptKeyList(handleContext, attributeValidator, op, topic);
+        validateMaybeFeeExemptKeyList(handleContext, attributeValidator, op);
         validateMaybeCustomFees(handleContext, op);
     }
 
@@ -358,9 +359,8 @@ public class ConsensusUpdateTopicHandler implements TransactionHandler {
     private void validateMaybeFeeExemptKeyList(
             @NonNull final HandleContext handleContext,
             @NonNull final AttributeValidator attributeValidator,
-            @NonNull final ConsensusUpdateTopicTransactionBody op,
-            @NonNull final Topic topic) {
-        if (op.feeExemptKeyList() == null) {
+            @NonNull final ConsensusUpdateTopicTransactionBody op) {
+        if (!op.hasFeeExemptKeyList()) {
             return;
         }
 
@@ -369,32 +369,15 @@ public class ConsensusUpdateTopicHandler implements TransactionHandler {
 
         validateTrue(
                 op.feeExemptKeyList().keys().size() <= topicConfig.maxEntriesForFeeExemptKeyList(),
-                MAX_ENTRIES_FOR_FEKL_EXCEEDED);
-        validateCustomFeesWhenSettingFeeExemptKeyList(op, topic);
-        op.feeExemptKeyList().keys().forEach(key -> attributeValidator.validateKey(key, INVALID_KEY_IN_FEKL));
-    }
-
-    /**
-     * If the fee exempt key list is set we should always have custom fees. This method is called when we are validating
-     * the fee exempt key list, so within this method we know that the list is changing.
-     * We are validating two cases:
-     * 1. If together with the key we are also updating(adding) the custom fees - this is a valid scenario
-     * 2. If we are not updating the custom fees we check if the topic already has custom fees - this is a valid scenario
-     * If we are not doing the second validation when we update the fee exempt key list we will always need to send
-     * the custom fees(even if they are not updated).
-     * In all other cases we are throwing MISSING_CUSTOM_FEES response code.
-     */
-    private static void validateCustomFeesWhenSettingFeeExemptKeyList(
-            ConsensusUpdateTopicTransactionBody op, Topic topic) {
-        final var updatingTheCustomFees =
-                op.customFees() != null && !op.customFees().fees().isEmpty();
-        final var topicAlreadyHasCustomFees = !topic.customFees().isEmpty();
-        validateTrue(updatingTheCustomFees || topicAlreadyHasCustomFees, MISSING_CUSTOM_FEES);
+                MAX_ENTRIES_FOR_FEE_EXEMPT_KEY_LIST_EXCEEDED);
+        op.feeExemptKeyList()
+                .keys()
+                .forEach(key -> attributeValidator.validateKey(key, INVALID_KEY_IN_FEE_EXEMPT_KEY_LIST));
     }
 
     private void validateMaybeCustomFees(
             @NonNull final HandleContext handleContext, @NonNull final ConsensusUpdateTopicTransactionBody op) {
-        if (op.customFees() == null) {
+        if (!op.hasCustomFees()) {
             return;
         }
 

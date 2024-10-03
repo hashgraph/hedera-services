@@ -1597,25 +1597,18 @@ enum ResponseCodeEnum {
     /**
     * The provided fee exempt key list size exceeded the limit.
     */
-    MAX_ENTRIES_FOR_FEKL_EXCEEDED = 370;
+    MAX_ENTRIES_FOR_FEE_EXEMPT_KEY_LIST_EXCEEDED = 370;
 
     /**
     * The provided fee exempt key list contains duplicated keys.
     */
-    FEKL_CONTAINS_DUPLICATED_KEYS = 371;
+    FEE_EXEMPT_KEY_LIST_CONTAINS_DUPLICATED_KEYS = 371;
 
     /**
     * The provided fee exempt key list contains an invalid key.
     */
-    INVALID_KEY_IN_FEKL = 372;
-
-    /**
-     * Custom fee list is missing.
-     * <p>
-     * Fee exempt key list MAY be set only if custom fee list is set.
-     */
-    MISSING_CUSTOM_FEES = 373;
-
+    INVALID_KEY_IN_FEE_EXEMPT_KEY_LIST = 372;
+    
     /**
     * The provided fee schedule key contains an invalid key.
     */
