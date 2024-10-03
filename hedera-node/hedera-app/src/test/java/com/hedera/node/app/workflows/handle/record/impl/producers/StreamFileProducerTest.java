@@ -18,7 +18,7 @@ package com.hedera.node.app.workflows.handle.record.impl.producers;
 
 import static com.hedera.node.app.records.RecordTestData.STARTING_RUNNING_HASH_OBJ;
 import static com.hedera.node.app.records.RecordTestData.TEST_BLOCKS;
-import static com.swirlds.platform.test.fixtures.state.TestSchema.CURRENT_VERSION;
+import static com.hedera.node.app.records.RecordTestData.VERSION;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -162,7 +162,7 @@ abstract class StreamFileProducerTest extends AppTestBase {
                 subject.writeRecordStreamItems(Stream.of(rec));
 
                 // Check the rolling hash
-                final var ser = BlockRecordFormatV6.INSTANCE.serialize(rec, 1, CURRENT_VERSION);
+                final var ser = BlockRecordFormatV6.INSTANCE.serialize(rec, 1, VERSION);
                 rollingHash = BlockRecordFormatV6.INSTANCE.computeNewRunningHash(rollingHash, List.of(ser));
                 assertThat(rollingHash).isEqualTo(subject.getRunningHash());
             }
@@ -176,7 +176,7 @@ abstract class StreamFileProducerTest extends AppTestBase {
             assertThat(writer.startConsensusTime).isEqualTo(consensusTime);
             assertThat(writer.closed).isTrue();
             assertThat(writer.endRunningHash.hash()).isEqualTo(finalRunningHash);
-            assertThat(writer.hapiProtoVersion).isEqualTo(CURRENT_VERSION);
+            assertThat(writer.hapiProtoVersion).isEqualTo(VERSION);
             assertThat(writer.records).hasSameSizeAs(records);
         }
 
@@ -234,7 +234,7 @@ abstract class StreamFileProducerTest extends AppTestBase {
                 final var records = TEST_BLOCKS.get(i);
                 assertThat(writer.blockNumber).isEqualTo(i + 1);
                 assertThat(writer.closed).isTrue();
-                assertThat(writer.hapiProtoVersion).isEqualTo(CURRENT_VERSION);
+                assertThat(writer.hapiProtoVersion).isEqualTo(VERSION);
                 assertThat(writer.records).hasSameSizeAs(records);
             }
         }
@@ -259,7 +259,7 @@ abstract class StreamFileProducerTest extends AppTestBase {
             final var writer = writers.get(0);
             assertThat(writer.blockNumber).isEqualTo(1);
             assertThat(writer.endRunningHash.hash()).isEqualTo(finalRunningHash);
-            assertThat(writer.hapiProtoVersion).isEqualTo(CURRENT_VERSION);
+            assertThat(writer.hapiProtoVersion).isEqualTo(VERSION);
             assertThat(writer.records).hasSize(3);
         }
     }
