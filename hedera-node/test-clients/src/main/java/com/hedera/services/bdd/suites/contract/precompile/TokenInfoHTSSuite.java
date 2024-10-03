@@ -262,7 +262,7 @@ public class TokenInfoHTSSuite {
                                                                                     spec, TokenKeyType.ADMIN_KEY),
                                                                             expirySecond,
                                                                             targetLedgerId.get(),
-                                                                            TokenKycStatus.Granted))))),
+                                                                            TokenKycStatus.Revoked))))),
                             childRecordsCheck(
                                     "TOKEN_INFO_TXN_V2",
                                     SUCCESS,
@@ -284,7 +284,7 @@ public class TokenInfoHTSSuite {
                                                                                     spec, TokenKeyType.ADMIN_KEY),
                                                                             expirySecond,
                                                                             targetLedgerId.get(),
-                                                                            TokenKycStatus.Granted))))));
+                                                                            TokenKycStatus.Revoked))))));
                 }));
     }
 
@@ -394,7 +394,7 @@ public class TokenInfoHTSSuite {
                                                                                     spec, TokenKeyType.ADMIN_KEY),
                                                                             expirySecond,
                                                                             targetLedgerId.get(),
-                                                                            TokenKycStatus.Granted))))),
+                                                                            TokenKycStatus.Revoked))))),
                             childRecordsCheck(
                                     "FUNGIBLE_TOKEN_INFO_TXN_V2",
                                     SUCCESS,
@@ -417,7 +417,7 @@ public class TokenInfoHTSSuite {
                                                                                     spec, TokenKeyType.ADMIN_KEY),
                                                                             expirySecond,
                                                                             targetLedgerId.get(),
-                                                                            TokenKycStatus.Granted))))));
+                                                                            TokenKycStatus.Revoked))))));
                 }));
     }
 
@@ -545,7 +545,7 @@ public class TokenInfoHTSSuite {
                                                                                     spec, TokenKeyType.ADMIN_KEY),
                                                                             expirySecond,
                                                                             targetLedgerId.get(),
-                                                                            TokenKycStatus.Granted))
+                                                                            TokenKycStatus.Revoked))
                                                             .withNftTokenInfo(nftTokenInfo)))),
                             childRecordsCheck(
                                     "NON_FUNGIBLE_TOKEN_INFO_TXN_V2",
@@ -566,7 +566,7 @@ public class TokenInfoHTSSuite {
                                                                                     spec, TokenKeyType.ADMIN_KEY),
                                                                             expirySecond,
                                                                             targetLedgerId.get(),
-                                                                            TokenKycStatus.Granted))
+                                                                            TokenKycStatus.Revoked))
                                                             .withNftTokenInfo(nftTokenInfo)))));
                 }));
     }
@@ -1219,7 +1219,7 @@ public class TokenInfoHTSSuite {
                                                                             .getKey(CONTRACT_KEY),
                                                                     expirySecond,
                                                                     targetLedgerId.get(),
-                                                                    TokenKycStatus.Granted))))));
+                                                                    TokenKycStatus.Revoked))))));
                 }));
     }
 
@@ -1330,7 +1330,7 @@ public class TokenInfoHTSSuite {
                                                                             .getKey(CONTRACT_KEY),
                                                                     expirySecond,
                                                                     targetLedgerId.get(),
-                                                                    TokenKycStatus.Granted))))));
+                                                                    TokenKycStatus.Revoked))))));
                 }));
     }
 
@@ -1453,7 +1453,7 @@ public class TokenInfoHTSSuite {
                                                                             .getKey(CONTRACT_KEY),
                                                                     expirySecond,
                                                                     targetLedgerId.get(),
-                                                                    TokenKycStatus.Granted))
+                                                                    TokenKycStatus.Revoked))
                                                             .withNftTokenInfo(nftTokenInfo)))));
                 }));
     }

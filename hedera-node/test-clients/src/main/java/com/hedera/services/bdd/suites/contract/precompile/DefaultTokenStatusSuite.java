@@ -24,6 +24,8 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocal;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.grantTokenKyc;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
@@ -116,11 +118,15 @@ public class DefaultTokenStatusSuite {
                         .kycKey(KYC_KEY)
                         .initialSupply(1_000)
                         .exposingCreatedIdTo(id -> vanillaTokenID.set(asToken(id))),
+                tokenAssociate(ACCOUNT, VANILLA_TOKEN),
+                grantTokenKyc(VANILLA_TOKEN, ACCOUNT),
                 tokenCreate("noKycToken")
                         .tokenType(FUNGIBLE_COMMON)
                         .treasury(TOKEN_TREASURY)
                         .initialSupply(1_000)
                         .exposingCreatedIdTo(id -> noKycTokenId.set(asToken(id))),
+                tokenAssociate(ACCOUNT, "noKycToken"),
+//                grantTokenKyc("noKycToken", ACCOUNT),
                 uploadInitCode(TOKEN_DEFAULT_KYC_FREEZE_STATUS_CONTRACT),
                 contractCreate(TOKEN_DEFAULT_KYC_FREEZE_STATUS_CONTRACT),
                 withOpContext((spec, opLog) -> allRunFor(
@@ -152,7 +158,7 @@ public class DefaultTokenStatusSuite {
                                         .contractCallResult(htsPrecompileResult()
                                                 .forFunction(FunctionType.GET_TOKEN_DEFAULT_KYC_STATUS)
                                                 .withStatus(SUCCESS)
-                                                .withTokenDefaultKycStatus(true)))),
+                                                .withTokenDefaultKycStatus(false)))),
                 childRecordsCheck(
                         "defaultKycStatus",
                         SUCCESS,
@@ -162,6 +168,6 @@ public class DefaultTokenStatusSuite {
                                         .contractCallResult(htsPrecompileResult()
                                                 .forFunction(FunctionType.GET_TOKEN_DEFAULT_KYC_STATUS)
                                                 .withStatus(SUCCESS)
-                                                .withTokenDefaultKycStatus(false)))));
+                                                .withTokenDefaultKycStatus(true)))));
     }
 }
