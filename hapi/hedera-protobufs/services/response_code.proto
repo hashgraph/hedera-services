@@ -1593,4 +1593,19 @@ enum ResponseCodeEnum {
      * airdrop and whether the sender can fulfill the offer.
      */
     INVALID_TOKEN_IN_PENDING_AIRDROP = 369;
+
+    /**
+    * The provided fee exempt key list size exceeded the limit.
+    */
+    MAX_ENTRIES_FOR_FEE_EXEMPT_KEY_LIST_EXCEEDED = 370;
+
+    /**
+    * The provided fee exempt key list contains duplicated keys.
+    */
+    FEE_EXEMPT_KEY_LIST_CONTAINS_DUPLICATED_KEYS = 371;
+
+    /**
+    * The provided fee exempt key list contains an invalid key.
+    */
+    INVALID_KEY_IN_FEE_EXEMPT_KEY_LIST = 372;
 }
