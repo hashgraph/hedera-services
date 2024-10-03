@@ -109,7 +109,6 @@ public class ConsensusAllowancesValidator {
             final var amount = tokenAllowance.amount();
             validateSpender(amount, spenderAccount);
 
-
             // validate token amount
             validateTrue(TokenType.FUNGIBLE_COMMON.equals(token.tokenType()), NFT_IN_FUNGIBLE_TOKEN_ALLOWANCES);
             final var relation = tokenRelStore.get(ownerId, tokenId);
@@ -127,10 +126,9 @@ public class ConsensusAllowancesValidator {
      * @param spenderAccount If the amount is not zero, then this must be non-null and not deleted.
      */
     private void validateSpender(final long amount, @Nullable final Account spenderAccount) {
-        validateTrue(spenderAccount!=null, INVALID_ALLOWANCE_SPENDER_ID);
+        validateTrue(spenderAccount != null, INVALID_ALLOWANCE_SPENDER_ID);
         validateFalse(spenderAccount.smartContract(), ACCOUNT_IS_CONTRACT);
-        validateTrue(
-                amount == 0 || !spenderAccount.deleted(), INVALID_ALLOWANCE_SPENDER_ID);
+        validateTrue(amount == 0 || !spenderAccount.deleted(), INVALID_ALLOWANCE_SPENDER_ID);
     }
 
     /**

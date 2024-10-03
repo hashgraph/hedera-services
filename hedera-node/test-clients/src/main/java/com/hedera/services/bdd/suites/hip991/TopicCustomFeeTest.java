@@ -298,8 +298,11 @@ public class TopicCustomFeeTest extends TopicCustomFeeBase {
                         createTopic(TOPIC)
                                 .adminKeyName(ADMIN_KEY)
                                 .submitKeyName(SUBMIT_KEY)
-                                .feeScheduleKeyName(FEE_SCHEDULE_KEY),
-                        approveTopicAllowance().payingWith(OWNER).addCryptoAllowance(OWNER, TOPIC, 100, 10));
+                                .feeScheduleKeyName(FEE_SCHEDULE_KEY)
+                                .withConsensusCustomFee(fixedConsensusHbarFee(ONE_HBAR, OWNER)),
+                        approveTopicAllowance()
+                                .addCryptoAllowance(OWNER, TOPIC, 100, 10)
+                                .payingWith(OWNER));
             }
         }
     }

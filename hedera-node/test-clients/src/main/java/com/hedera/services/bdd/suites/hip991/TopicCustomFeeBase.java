@@ -30,6 +30,7 @@ import java.util.ArrayList;
 
 public class TopicCustomFeeBase {
     protected static final String TOPIC = "topic";
+    protected static final String OWNER = "owner";
     protected static final String ADMIN_KEY = "adminKey";
     protected static final String SUBMIT_KEY = "submitKey";
     protected static final String FEE_SCHEDULE_KEY = "feeScheduleKey";
