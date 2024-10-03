@@ -20,7 +20,6 @@ import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_BLOCK
 import static com.hedera.node.app.blocks.impl.BlockImplUtils.combine;
 import static com.hedera.node.app.blocks.impl.ConcurrentStreamingTreeHasher.rootHashFrom;
 import static com.hedera.node.app.blocks.schemas.V0540BlockStreamSchema.BLOCK_STREAM_INFO_KEY;
-import static com.hedera.node.app.info.NodeInfoImpl.fromRosterEntry;
 import static com.hedera.node.app.info.UnavailableNetworkInfo.UNAVAILABLE_NETWORK_INFO;
 import static com.hedera.node.app.records.impl.BlockRecordInfoUtils.blockHashByBlockNumber;
 import static com.hedera.node.app.records.schemas.V0490BlockRecordSchema.BLOCK_INFO_STATE_KEY;
@@ -137,7 +136,6 @@ import com.swirlds.state.StateChangeListener;
 import com.swirlds.state.spi.ReadableKVState;
 import com.swirlds.state.spi.WritableSingletonStateBase;
 import com.swirlds.state.spi.info.NetworkInfo;
-import com.swirlds.state.spi.info.NodeInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.nio.charset.Charset;
@@ -538,7 +536,7 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener {
         }
     }
 
-    /**
+    /**act
      * Called by this class when we detect it is time to do migration. The {@code deserializedVersion} must not be newer
      * than the current software version. If it is prior to the current version, then each migration between the
      * {@code deserializedVersion} and the current version, including the current version, will be executed, thus
@@ -1061,20 +1059,6 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener {
                     "Fatal precondition violation in HederaNode#{}: digest factory does not support SHA-384", nodeId);
             System.exit(1);
         }
-    }
-
-    private NodeInfo extractSelfNodeInfo(@NonNull final Platform platform, final State state) {
-        final var selfId = platform.getSelfId();
-        final ReadableKVState<EntityNumber, Node> readableNodeState =
-                state.getReadableStates(AddressBookService.NAME).get(NODES_KEY);
-        final var roster = retrieve(state);
-        final var node = readableNodeState.get(
-                EntityNumber.newBuilder().number(selfId.id()).build());
-        final var rosterEntry = roster.rosterEntries().stream()
-                .filter(entry -> entry.nodeId() == selfId.id())
-                .findFirst()
-                .orElseThrow();
-        return fromRosterEntry(rosterEntry, node);
     }
 
     private MerkleStateRoot withListeners(@NonNull final MerkleStateRoot root) {

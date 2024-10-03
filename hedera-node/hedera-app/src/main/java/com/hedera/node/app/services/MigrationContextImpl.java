@@ -55,7 +55,6 @@ public record MigrationContextImpl(
         requireNonNull(previousStates);
         requireNonNull(newStates);
         requireNonNull(configuration);
-        requireNonNull(genesisNetworkInfo);
     }
 
     @Override

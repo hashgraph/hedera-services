@@ -77,11 +77,12 @@ public class V053AddressBookSchema extends Schema {
     @Override
     public void migrate(@NonNull final MigrationContext ctx) {
         requireNonNull(ctx);
+        final var networkInfo = ctx.genesisNetworkInfo();
+        if (networkInfo == null) {
+            throw new IllegalStateException("Genesis network info is not found");
+        }
         final WritableKVState<EntityNumber, Node> writableNodes =
                 ctx.newStates().get(NODES_KEY);
-
-        final var networkInfo = ctx.genesisNetworkInfo();
-        final var addressBook = networkInfo.addressBook();
         final var bootstrapConfig = ctx.configuration().getConfigData(BootstrapConfig.class);
 
         log.info("Started migrating nodes from address book");
@@ -92,6 +93,7 @@ public class V053AddressBookSchema extends Schema {
                 ? Key.newBuilder().ed25519(bootstrapConfig.genesisPublicKey()).build()
                 : adminKey;
         NodeAddress nodeDetail;
+        final var addressBook = networkInfo.addressBook();
         for (final var nodeInfo : addressBook) {
             final var nodeBuilder = Node.newBuilder()
                     .nodeId(nodeInfo.nodeId())

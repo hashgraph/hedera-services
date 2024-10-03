@@ -199,7 +199,6 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
         requireNonNull(state);
         requireNonNull(currentVersion);
         requireNonNull(config);
-        requireNonNull(genesisNetworkInfo);
         requireNonNull(metrics);
         requireNonNull(sharedValues);
         requireNonNull(migrationStateChanges);
