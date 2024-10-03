@@ -494,16 +494,25 @@ public class PlatformWiring {
         final OutputWire<PlatformEvent> splitOrphanBufferOutput = orphanBufferWiring.getSplitOutput();
 
         if(inlinePces){
-//            splitOrphanBufferOutput.solderTo(pcesInlineWriterWiring.getInputWire(PcesWriter::writeEvent));
-            splitOrphanBufferOutput.solderTo(consensusEngineWiring.getInputWire(ConsensusEngine::addEvent));
+            splitOrphanBufferOutput.solderTo(pcesInlineWriterWiring.getInputWire(InlinePcesWriter::writeEvent));
+            // make sure that an event is persisted before being sent to consensus, this avoids the situation where we
+            // reach consensus with events that might be lost due to a crash
+            pcesInlineWriterWiring.getOutputWire().solderTo(consensusEngineWiring.getInputWire(ConsensusEngine::addEvent));
+            // make sure events are persisted before being gossipped, this prevents accidental branching in the case
+            // where an event is created, gossipped, and then the node crashes before the event is persisted.
+            // after restart, a node will not be aware of this event, so it can create a branch
+            pcesInlineWriterWiring.getOutputWire().solderTo(gossipWiring.getEventInput(), INJECT);
+            // avoid using events as parents before they are persisted
+            pcesInlineWriterWiring.getOutputWire().solderTo(eventCreationManagerWiring.getInputWire(EventCreationManager::registerEvent));
         }else{
             splitOrphanBufferOutput.solderTo(pcesSequencerWiring.getInputWire(PcesSequencer::assignStreamSequenceNumber));
             pcesSequencerWiring.getOutputWire().solderTo(pcesWriterWiring.getInputWire(PcesWriter::writeEvent));
             pcesSequencerWiring.getOutputWire().solderTo(consensusEngineWiring.getInputWire(ConsensusEngine::addEvent));
+            // This must use injection to avoid cyclical back pressure
+            splitOrphanBufferOutput.solderTo(gossipWiring.getEventInput(), INJECT);
+            splitOrphanBufferOutput.solderTo(eventCreationManagerWiring.getInputWire(EventCreationManager::registerEvent));
         }
 
-
-        splitOrphanBufferOutput.solderTo(eventCreationManagerWiring.getInputWire(EventCreationManager::registerEvent));
         model.getHealthMonitorWire()
                 .solderTo(eventCreationManagerWiring.getInputWire(EventCreationManager::reportUnhealthyDuration));
 
@@ -511,10 +520,6 @@ public class PlatformWiring {
 
         model.getHealthMonitorWire()
                 .solderTo(transactionPoolWiring.getInputWire(TransactionPool::reportUnhealthyDuration));
-
-        // This must use injection to avoid cyclical back pressure. There is a risk of OOM if gossip can't ingest
-        // events fast enough, but we have no other choice until we implement the platform health monitor.
-        splitOrphanBufferOutput.solderTo(gossipWiring.getEventInput(), INJECT);
 
         splitOrphanBufferOutput.solderTo(branchDetectorWiring.getInputWire(BranchDetector::checkForBranches));
         branchDetectorWiring.getOutputWire().solderTo(branchReporterWiring.getInputWire(BranchReporter::reportBranch));
@@ -616,10 +621,18 @@ public class PlatformWiring {
 
         solderEventWindow();
 
+        pcesReplayerWiring.eventOutput().solderTo(pipelineInputWire);
+
+        final OutputWire<ConsensusRound> consensusRoundOutputWire = consensusEngineWiring.getSplitOutput();
+
+        consensusRoundOutputWire.solderTo(staleEventDetectorWiring.getInputWire(StaleEventDetector::addConsensusRound));
+
         if(inlinePces){
             pcesReplayerWiring
                     .doneStreamingPcesOutputWire()
                     .solderTo(pcesInlineWriterWiring.getInputWire(InlinePcesWriter::beginStreamingNewEvents));
+            // with inline PCES, the round bypasses the round durability buffer and goes directly to the round handler
+            consensusRoundOutputWire.solderTo(transactionHandlerWiring.getInputWire(TransactionHandler::handleConsensusRound));
         }else{
             pcesReplayerWiring
                     .doneStreamingPcesOutputWire()
@@ -633,19 +646,6 @@ public class PlatformWiring {
             keystoneEventSequenceNumberTransformer
                     .getOutputWire()
                     .solderTo(pcesWriterWiring.getInputWire(PcesWriter::submitFlushRequest));
-        }
-        pcesReplayerWiring.eventOutput().solderTo(pipelineInputWire);
-
-
-
-        final OutputWire<ConsensusRound> consensusRoundOutputWire = consensusEngineWiring.getSplitOutput();
-
-        consensusRoundOutputWire.solderTo(staleEventDetectorWiring.getInputWire(StaleEventDetector::addConsensusRound));
-
-        if(inlinePces){
-            // with inline PCES, the round bypasses the round durability buffer and goes directly to the round handler
-            consensusRoundOutputWire.solderTo(transactionHandlerWiring.getInputWire(TransactionHandler::handleConsensusRound));
-        }else{
             // The request to flush the keystone event for a round must be sent to the PCES writer before the consensus
             // round is passed to the round handler. This prevents a deadlock scenario where the consensus round
             // handler has a full queue and won't accept additional rounds, and is waiting on a keystone event to be
