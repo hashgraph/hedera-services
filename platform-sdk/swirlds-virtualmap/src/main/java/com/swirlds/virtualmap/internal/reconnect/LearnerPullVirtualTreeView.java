@@ -107,11 +107,6 @@ public final class LearnerPullVirtualTreeView<K extends VirtualKey, V extends Vi
     private boolean firstNodeResponse = true;
 
     /**
-     * True until we have handled our first leaf
-     */
-    private boolean firstLeaf = true;
-
-    /**
      * Create a new {@link LearnerPullVirtualTreeView}.
      *
      * @param root
@@ -228,10 +223,6 @@ public final class LearnerPullVirtualTreeView<K extends VirtualKey, V extends Vi
         traversalOrder.nodeReceived(path, isClean);
 
         if (isLeaf) {
-            if (firstLeaf) {
-                root.prepareForFirstLeaf();
-                firstLeaf = false;
-            }
             if (!isClean) {
                 final VirtualLeafRecord<K, V> leaf = in.readSerializable(false, VirtualLeafRecord::new);
                 mapStats.incrementLeafData(1, 0);

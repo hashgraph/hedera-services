@@ -26,7 +26,7 @@ import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.formatting.TextTable;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.state.MerkleRoot;
-import com.swirlds.platform.state.PlatformStateAccessor;
+import com.swirlds.platform.state.PlatformStateModifier;
 import com.swirlds.platform.state.address.AddressBookInitializer;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.system.SoftwareVersion;
@@ -405,7 +405,7 @@ public class AddressBookUtils {
             // Update the address book with the current address book read from config.txt.
             // Eventually we will not do this, and only transactions will be capable of
             // modifying the address book.
-            final PlatformStateAccessor platformState = state.getWritablePlatformState();
+            final PlatformStateModifier platformState = state.getWritablePlatformState();
             platformState.bulkUpdate(v -> {
                 v.setAddressBook(addressBookInitializer.getCurrentAddressBook().copy());
                 v.setPreviousAddressBook(

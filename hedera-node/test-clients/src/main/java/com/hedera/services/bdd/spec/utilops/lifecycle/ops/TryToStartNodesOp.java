@@ -22,6 +22,7 @@ import com.hedera.services.bdd.junit.hedera.HederaNode;
 import com.hedera.services.bdd.junit.hedera.NodeSelector;
 import com.hedera.services.bdd.junit.hedera.subprocess.SubProcessNetwork;
 import com.hedera.services.bdd.junit.hedera.subprocess.SubProcessNode;
+import com.hedera.services.bdd.junit.hedera.subprocess.SubProcessNode.ReassignPorts;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.utilops.lifecycle.AbstractLifecycleOp;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -36,11 +37,6 @@ public class TryToStartNodesOp extends AbstractLifecycleOp {
     private static final Logger log = LogManager.getLogger(TryToStartNodesOp.class);
 
     private final int configVersion;
-
-    public enum ReassignPorts {
-        YES,
-        NO
-    }
 
     private final ReassignPorts reassignPorts;
 
@@ -65,7 +61,7 @@ public class TryToStartNodesOp extends AbstractLifecycleOp {
             if (!(spec.targetNetworkOrThrow() instanceof SubProcessNetwork subProcessNetwork)) {
                 throw new IllegalStateException("Can only reassign ports for a SubProcessNetwork");
             }
-            subProcessNetwork.assignNewPorts();
+            subProcessNetwork.assignNewMetadata(ReassignPorts.YES);
         }
         return super.submitOp(spec);
     }
