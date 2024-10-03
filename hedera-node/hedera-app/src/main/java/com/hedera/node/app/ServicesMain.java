@@ -347,7 +347,7 @@ public class ServicesMain implements SwirldMain {
      * @param addressBookPath the relative path and file name of the address book.
      * @return the address book.
      */
-    public static AddressBook loadAddressBook(@NonNull final String addressBookPath) {
+    private static AddressBook loadAddressBook(@NonNull final String addressBookPath) {
         requireNonNull(addressBookPath);
         try {
             final LegacyConfigProperties props =

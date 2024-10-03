@@ -16,6 +16,8 @@
 
 package com.hedera.node.app.spi.fixtures.info;
 
+import static com.swirlds.platform.system.address.AddressBookUtils.endpointFor;
+
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ServiceEndpoint;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -37,37 +39,19 @@ public class FakeNetworkInfo implements NetworkInfo {
                     2L,
                     AccountID.newBuilder().accountNum(3).build(),
                     30,
-                    List.of(),
-                    //                    "333.333.333.333",
-                    //                    50233,
-                    //                    "3333333333333333333333333333333333333333333333333333333333333333",
-                    //                    "Alpha",
-                    //                    "127.0.0.1",
-                    //                    20,
+                    List.of(endpointFor("333.333.333.333", 50233), endpointFor("127.0.0.1", 20)),
                     Bytes.wrap("cert1")),
             fakeInfoWith(
                     4L,
                     AccountID.newBuilder().accountNum(4).build(),
                     40,
-                    List.of(),
-                    //                    "444.444.444.444",
-                    //                    50244,
-                    //                    "444444444444444444444444444444444444444444444444444444444444444",
-                    //                    "Bravo",
-                    //                    "127.0.0.2",
-                    //                    21,
+                    List.of(endpointFor("444.444.444.444", 50244), endpointFor("127.0.0.2", 21)),
                     Bytes.wrap("cert2")),
             fakeInfoWith(
                     8L,
                     AccountID.newBuilder().accountNum(5).build(),
                     50,
-                    List.of(),
-                    //                    "555.555.555.555",
-                    //                    50255,
-                    //                    "555555555555555555555555555555555555555555555555555555555555555",
-                    //                    "Charlie",
-                    //                    "127.0.0.3",
-                    //                    22,
+                    List.of(endpointFor("555.555.555.555", 50255), endpointFor("127.0.0.3", 22)),
                     Bytes.wrap("cert3")));
 
     @NonNull
