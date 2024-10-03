@@ -157,7 +157,7 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
     /**
      * Metrics for the snapshot creation process
      */
-    private MerkleRootSnapshotMetrics snapshotMetrics;
+    private MerkleRootSnapshotMetrics snapshotMetrics = new MerkleRootSnapshotMetrics();
 
     /**
      * Maintains information about each service, and each state of each service, known by this
@@ -213,7 +213,6 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
         this.lifecycles = requireNonNull(lifecycles);
         this.registryRecord = RuntimeObjectRegistry.createRecord(getClass());
         this.versionFactory = requireNonNull(versionFactory);
-        this.snapshotMetrics = new MerkleRootSnapshotMetrics();
     }
 
     /**
@@ -1019,15 +1018,6 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
     @Override
     public PlatformStateAccessor getReadablePlatformState() {
         return readablePlatformStateStore();
-    }
-
-    /**
-     * Sets the Snapshot Metrics for this state
-     *
-     * @param snapshotMetrics the metrics to set
-     */
-    public void setSnapshotMetrics(@NonNull final MerkleRootSnapshotMetrics snapshotMetrics) {
-        this.snapshotMetrics = snapshotMetrics;
     }
 
     /**

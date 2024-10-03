@@ -35,7 +35,6 @@ import com.swirlds.logging.legacy.payload.StateSavedToDiskPayload;
 import com.swirlds.platform.config.StateConfig;
 import com.swirlds.platform.recovery.emergencyfile.EmergencyRecoveryFile;
 import com.swirlds.platform.state.MerkleRoot;
-import com.swirlds.platform.state.MerkleRootSnapshotMetrics;
 import com.swirlds.platform.state.MerkleStateRoot;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.system.address.AddressBook;
@@ -152,7 +151,6 @@ public final class SignedStateFileWriter {
 
         final MerkleRoot state = signedState.getState();
         if (state instanceof MerkleStateRoot merkleStateRoot) {
-            merkleStateRoot.setSnapshotMetrics(new MerkleRootSnapshotMetrics());
             merkleStateRoot.setTime(platformContext.getTime());
         }
         state.createSnapshot(directory);
