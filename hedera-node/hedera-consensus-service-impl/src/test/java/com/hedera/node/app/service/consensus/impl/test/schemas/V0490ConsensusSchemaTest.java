@@ -27,6 +27,9 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+/**
+ * Unit tests for the initial mod-service schema for the consensus service.
+ */
 @ExtendWith(MockitoExtension.class)
 public class V0490ConsensusSchemaTest {
     private V0490ConsensusSchema subject;

@@ -17,6 +17,7 @@
 package com.swirlds.platform.state.service.schemas;
 
 import com.hedera.hapi.node.base.SemanticVersion;
+import com.hedera.hapi.platform.state.ConsensusSnapshot;
 import com.hedera.hapi.platform.state.PlatformState;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.state.spi.MigrationContext;
@@ -30,8 +31,8 @@ import java.util.Set;
  * registering {@link #GENESIS_PLATFORM_STATE} state if an instance of the state does not exist.
  */
 public class V0540PlatformStateSchema extends Schema {
-    public static final PlatformState GENESIS_PLATFORM_STATE =
-            new PlatformState(SemanticVersion.DEFAULT, 0, null, null, null, Bytes.EMPTY, 0L, 0L, null, null, null);
+    public static final PlatformState GENESIS_PLATFORM_STATE = new PlatformState(
+            SemanticVersion.DEFAULT, 0, ConsensusSnapshot.DEFAULT, null, null, Bytes.EMPTY, 0L, 0L, null, null, null);
     public static final String PLATFORM_STATE_KEY = "PLATFORM_STATE";
 
     private static final SemanticVersion VERSION =
