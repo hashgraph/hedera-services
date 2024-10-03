@@ -48,6 +48,7 @@ import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.consensus.ReadableTopicStore;
 import com.hedera.node.app.service.consensus.impl.handlers.ConsensusUpdateTopicHandler;
+import com.hedera.node.app.service.consensus.impl.validators.ConsensusCustomFeesValidator;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
 import com.hedera.node.app.spi.validation.AttributeValidator;
@@ -84,11 +85,14 @@ class ConsensusUpdateTopicHandlerTest extends ConsensusTestBase {
     @Mock
     private AttributeValidator attributeValidator;
 
+    @Mock
+    private ConsensusCustomFeesValidator customFeesValidator;
+
     private ConsensusUpdateTopicHandler subject;
 
     @BeforeEach
     void setUp() {
-        subject = new ConsensusUpdateTopicHandler();
+        subject = new ConsensusUpdateTopicHandler(customFeesValidator);
     }
 
     @Test

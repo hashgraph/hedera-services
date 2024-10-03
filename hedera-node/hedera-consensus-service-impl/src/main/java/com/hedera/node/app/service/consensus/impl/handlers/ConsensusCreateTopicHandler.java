@@ -220,7 +220,7 @@ public class ConsensusCreateTopicHandler implements TransactionHandler {
 
         // validate custom fees
         validateTrue(op.customFees().size() <= topicConfig.maxCustomFeeEntriesForTopics(), CUSTOM_FEES_LIST_TOO_LONG);
-        customFeesValidator.validateForCreation(
+        customFeesValidator.validate(
                 accountStore, tokenRelStore, tokenStore, op.customFees(), handleContext.expiryValidator());
 
         /* Validate if the current topic can be created */

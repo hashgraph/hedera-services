@@ -1608,4 +1608,16 @@ enum ResponseCodeEnum {
     * The provided fee exempt key list contains an invalid key.
     */
     INVALID_KEY_IN_FEE_EXEMPT_KEY_LIST = 372;
+    
+    /**
+    * The provided fee schedule key contains an invalid key.
+    */
+    INVALID_FEE_SCHEDULE_KEY = 374;
+
+    /**
+    * If a fee schedule key is not set when we create a topic
+    * we cannot add it on update.
+    */
+    FEE_SCHEDULE_KEY_CANNOT_BE_UPDATED = 375;
+    
 }
