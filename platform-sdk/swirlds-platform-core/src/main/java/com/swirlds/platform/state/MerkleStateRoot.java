@@ -1026,8 +1026,7 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
      *
      * @param snapshotMetrics the metrics to set
      */
-    @NonNull
-    public void setSnapshotMetrics(final MerkleRootSnapshotMetrics snapshotMetrics) {
+    public void setSnapshotMetrics(@NonNull final MerkleRootSnapshotMetrics snapshotMetrics) {
         this.snapshotMetrics = snapshotMetrics;
     }
 
