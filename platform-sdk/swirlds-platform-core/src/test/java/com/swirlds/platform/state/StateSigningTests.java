@@ -31,6 +31,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.platform.NodeId;
@@ -257,6 +258,94 @@ class StateSigningTests {
                 // This should have no effect
                 signedState.pruneInvalidSignatures();
                 assertEquals(expectedWeight, signedState.getSigningWeight());
+            }
+        }
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    @DisplayName("Signature Becomes Invalid Test")
+    void signatureBecomesInvalidTest(final boolean evenWeighting) {
+        final Random random = getRandomPrintSeed();
+
+        final int nodeCount = random.nextInt(10, 20);
+
+        final AddressBook addressBook = RandomAddressBookBuilder.create(random)
+                .withWeightDistributionStrategy(
+                        evenWeighting
+                                ? RandomAddressBookBuilder.WeightDistributionStrategy.BALANCED
+                                : RandomAddressBookBuilder.WeightDistributionStrategy.GAUSSIAN)
+                .withSize(nodeCount)
+                .build();
+
+        final SignedState signedState = new RandomSignedStateGenerator(random)
+                .setAddressBook(addressBook)
+                .setSignatures(new HashMap<>())
+                .build();
+
+        final Set<NodeId> signaturesAdded = new HashSet<>();
+        long expectedWeight = 0;
+
+        final SigSet sigSet = signedState.getSigSet();
+
+        // Randomize address order
+        final List<Address> nodes = new ArrayList<>(addressBook.getSize());
+        for (final Address address : addressBook) {
+            nodes.add(address);
+        }
+        Collections.shuffle(nodes, random);
+
+        final List<Signature> signatures = new ArrayList<>(nodeCount);
+        for (final Address address : nodes) {
+            final Signature signature = buildFakeSignature(
+                    address.getSigPublicKey(), signedState.getState().getHash());
+            final Signature mockSignature = mock(Signature.class);
+            when(mockSignature.getBytes()).thenReturn(signature.getBytes());
+            when(mockSignature.getType()).thenReturn(signature.getType());
+            signatures.add(mockSignature);
+        }
+
+        for (int index = 0; index < nodeCount; index++) {
+            final boolean alreadyComplete = signedState.isComplete();
+            signedState.addSignature(nodes.get(index).getNodeId(), signatures.get(index));
+            if (!alreadyComplete) {
+                signaturesAdded.add(nodes.get(index).getNodeId());
+                expectedWeight += nodes.get(index).getWeight();
+            }
+        }
+
+        assertTrue(signedState.isComplete());
+        assertEquals(signaturesAdded.size(), sigSet.size());
+        assertEquals(expectedWeight, signedState.getSigningWeight());
+
+        // Remove a node from the address book
+        final NodeId nodeRemovedFromAddressBook = nodes.get(0).getNodeId();
+        final long weightRemovedFromAddressBook = nodes.get(0).getWeight();
+        final AddressBook updatedAddressBook = signedState.getAddressBook().remove(nodeRemovedFromAddressBook);
+        signedState.getState().getWritablePlatformState().setAddressBook(updatedAddressBook);
+
+        // Tamper with a node's signature
+        final long weightWithModifiedSignature = nodes.get(1).getWeight();
+        final byte[] tamperedBytes = signatures.get(1).getBytes().toByteArray();
+        tamperedBytes[0] = 0;
+        when(signatures.get(1).getBytes()).thenReturn(Bytes.wrap(tamperedBytes));
+
+        signedState.pruneInvalidSignatures();
+
+        assertEquals(signaturesAdded.size() - 2, sigSet.size());
+        assertEquals(
+                expectedWeight - weightWithModifiedSignature - weightRemovedFromAddressBook,
+                signedState.getSigningWeight());
+
+        for (int index = 0; index < nodes.size(); index++) {
+            if (index == 0
+                    || index == 1
+                    || !signaturesAdded.contains(nodes.get(index).getNodeId())) {
+                assertNull(sigSet.getSignature(nodes.get(index).getNodeId()));
+            } else {
+                assertSame(
+                        signatures.get(index),
+                        sigSet.getSignature(nodes.get(index).getNodeId()));
             }
         }
     }
