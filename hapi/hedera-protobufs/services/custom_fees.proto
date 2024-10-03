@@ -205,11 +205,11 @@ message ConsensusCustomFee {
 /**
  * A wrapper around a consensus custom fee list.<br/>
  * This wrapper exists to enable an update transaction to differentiate between
- * a field that is not set and an empty list of custom fees.
+ *  a field that is not set and an empty list of custom fees.
  * <p>
  * An _unset_ field of this type SHALL NOT modify existing values.<br/>
  * A _set_ field of this type with an empty `fees` list SHALL remove any
- * existing values.
+ *  existing values.
  */
 message ConsensusCustomFeeList {
   /**
