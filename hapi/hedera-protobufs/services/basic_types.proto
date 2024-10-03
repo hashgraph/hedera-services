@@ -1837,3 +1837,47 @@ message ConsensusTokenFeeScheduleAllowance {
      */
     uint64 amount_per_message = 5;
 }
+
+/**
+ * A unique, composite, identifier for a topic allowance.
+ *
+ * Each topic allowance SHALL be uniquely identified by a TopicAllowanceId.
+ * A TopicAllowanceId SHALL be recorded when created and MUST be provided in any transaction
+ * that would modify that topic allowance (such as a `consensusApproveAllowance`).
+ */
+message TopicAllowanceId {
+    /**
+     * The token that the allowance pertains to.
+     */
+    TokenID tokenId = 1;
+
+    /**
+     * The account ID of the token owner (ie. the grantor of the allowance).
+     */
+    AccountID owner = 2;
+
+    /**
+     * The topic ID enabled to spend fees from the token allowance.
+     */
+    TopicID topicId = 3;
+}
+
+/**
+ * A single topic allowance value.
+ *
+ * This message SHALL record the allowance of hbars or fungible tokens that an account has approved
+ * for sending messages to a given topic.<br/>
+ *
+ * It is RECOMMENDED that implementations store topic allowance information as a key-value map
+ * from `TopicAllowanceId` to `TopicAllowanceValue`.
+ */
+message TopicAllowanceValue {
+    /**
+     * The total amount allocated for the allowance.
+     */
+    uint64 amount = 2;
+    /**
+     * The amount allocated per message.
+     */
+    uint64 amount_per_message = 3;
+}
