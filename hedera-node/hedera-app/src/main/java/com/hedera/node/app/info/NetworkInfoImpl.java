@@ -30,6 +30,7 @@ import com.swirlds.state.spi.info.NodeInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
+import java.util.Objects;
 import javax.inject.Singleton;
 
 /**
@@ -42,15 +43,15 @@ public class NetworkInfoImpl implements NetworkInfo {
     private final Bytes ledgerId;
     private final List<RosterEntry> rosterEntries;
     private final ReadableKVState<EntityNumber, Node> readableNodeState;
-    private final NodeInfo selfNodeInfo;
+    private final long selfId;
 
     public NetworkInfoImpl(
             @NonNull final List<RosterEntry> rosterEntries,
             @NonNull final ReadableKVState<EntityNumber, Node> nodeState,
-            @NonNull final NodeInfo selfNodeInfo,
+            final long selfId,
             @NonNull final ConfigProvider configProvider) {
         this.rosterEntries = rosterEntries;
-        this.selfNodeInfo = selfNodeInfo;
+        this.selfId = selfId;
         this.readableNodeState = nodeState;
         // Load the ledger ID from configuration
         final var config = configProvider.getConfiguration();
@@ -67,7 +68,7 @@ public class NetworkInfoImpl implements NetworkInfo {
     @NonNull
     @Override
     public NodeInfo selfNodeInfo() {
-        return selfNodeInfo;
+        return Objects.requireNonNull(nodeInfo(selfId));
     }
 
     @NonNull

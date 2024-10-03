@@ -345,7 +345,7 @@ public class AppTestBase extends TestBase implements TransactionFactory, Scenari
 
             final var platform = new FakePlatform(realSelfNodeInfo.nodeId(), new AddressBook(addresses));
             final var networkInfo = new NetworkInfoImpl(
-                    List.of(), new MapReadableKVState<>(NODES_KEY, Map.of()), selfNodeInfo, configProvider);
+                    List.of(), new MapReadableKVState<>(NODES_KEY, Map.of()), selfNodeInfo.nodeId(), configProvider);
 
             final var initialState = new FakeState();
             services.forEach(svc -> {

@@ -570,7 +570,7 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener {
         NetworkInfo genesisNetworkInfo = null;
         if (trigger == GENESIS) {
             if (genesisRoster == null) {
-                // This is only when using Browser and this path will be deleted soon
+                logger.warn("Starting from Browser is deprecated. Creating genesis Roster from platform addressBook");
                 genesisRoster = createRoster(platform.getAddressBook());
             }
             final var config = configProvider.getConfiguration();
@@ -893,11 +893,12 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener {
                 .consensusSnapshotOrThrow()
                 .round();
         final var initialStateHash = new InitialStateHash(initialStateHashFuture, roundNum);
-        final var selfNodeInfo = extractSelfNodeInfo(platform, state);
+
         final var rosterEntries = retrieve(state).rosterEntries();
         final ReadableKVState<EntityNumber, Node> nodeState =
                 state.getReadableStates(AddressBookService.NAME).get(NODES_KEY);
-        final var networkInfo = new NetworkInfoImpl(rosterEntries, nodeState, selfNodeInfo, configProvider);
+        final var networkInfo = new NetworkInfoImpl(
+                rosterEntries, nodeState, platform.getSelfId().id(), configProvider);
         // Fully qualified so as to not confuse javadoc
         daggerApp = com.hedera.node.app.DaggerHederaInjectionComponent.builder()
                 .configProviderImpl(configProvider)
@@ -906,7 +907,7 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener {
                 .contractServiceImpl(contractServiceImpl)
                 .initTrigger(trigger)
                 .softwareVersion(version.getPbjSemanticVersion())
-                .self(selfNodeInfo)
+                .self(networkInfo.selfNodeInfo())
                 .platform(platform)
                 .maxSignedTxnSize(MAX_SIGNED_TXN_SIZE)
                 .crypto(CryptographyHolder.get())
