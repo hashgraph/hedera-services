@@ -443,7 +443,7 @@ public class ProxyWorldUpdater implements HederaWorldUpdater {
      *
      * <p>We may not actually need this, as Besu only uses it in
      * {@code AbstractMessageProcessor.clearAccumulatedStateBesidesGasAndOutput()}, which seems to deal
-     * with side-effects of an Ethereum consensus bug.
+     * with side effects of an Ethereum consensus bug.
      *
      * @return the accounts that have been touched
      */

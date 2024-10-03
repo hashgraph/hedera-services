@@ -37,15 +37,29 @@ import org.hyperledger.besu.evm.tracing.OperationTracer;
  * Implementation of the {@link ContractService}.
  */
 public class ContractServiceImpl implements ContractService {
+    /**
+     * Minimum gas required for contract operations.
+     */
     public static final long INTRINSIC_GAS_LOWER_BOUND = 21_000L;
+    /**
+     * Constant to set as a memo on auto-account creation.
+     */
     public static final String LAZY_MEMO = "lazy-created account";
 
     private final ContractServiceComponent component;
 
+    /**
+     * @param appContext the current application context
+     */
     public ContractServiceImpl(@NonNull final AppContext appContext) {
         this(appContext, null, null);
     }
 
+    /**
+     * @param appContext the current application context
+     * @param verificationStrategies the current verification strategy used
+     * @param addOnTracers all operation tracer callbacks
+     */
     public ContractServiceImpl(
             @NonNull final AppContext appContext,
             @Nullable final VerificationStrategies verificationStrategies,
@@ -67,6 +81,9 @@ public class ContractServiceImpl implements ContractService {
         registry.register(new V0500ContractSchema());
     }
 
+    /**
+     * @return all contract transaction handlers
+     */
     public ContractHandlers handlers() {
         return component.handlers();
     }

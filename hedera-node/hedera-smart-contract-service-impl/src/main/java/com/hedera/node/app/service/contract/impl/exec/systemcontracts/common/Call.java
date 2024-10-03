@@ -41,7 +41,7 @@ public interface Call {
      *     <li>The "full result" of the call, including both its EVM-standard {@link PrecompileContractResult}
      *     and gas requirement (which is often difficult to compute without executing the call); as well as
      *     any {@link ContractCallStreamBuilder} created
-     *     as a side-effect of executing the system contract.</li>
+     *     as a side effect of executing the system contract.</li>
      *     <li>Any additional cost <i>beyond</i> the gas requirement.</li>
      * </ol>
      *

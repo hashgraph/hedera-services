@@ -37,6 +37,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+/**
+ * A base class which aims to combine common logic for all Contract handlers.
+ */
 @SuppressWarnings("NewClassNamingConvention")
 @ExtendWith(MockitoExtension.class)
 public class ContractHandlerTestBase implements TransactionFactory {

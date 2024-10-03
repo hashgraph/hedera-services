@@ -64,10 +64,15 @@ import org.hyperledger.besu.evm.log.LogsBloomFilter;
  * Some utility methods for converting between PBJ and Besu types and the various kinds of addresses and ids.
  */
 public class ConversionUtils {
+    /** The standard length as long of an address in Ethereum.*/
     public static final long EVM_ADDRESS_LENGTH_AS_LONG = 20L;
+    /** The standard length of an address in Ethereum.*/
     public static final int EVM_ADDRESS_LENGTH_AS_INT = 20;
+    /** The count of zero bytes in a long-zero address format.*/
     public static final int NUM_LONG_ZEROS = 12;
+    /** Fee schedule units per tinycent.*/
     public static final long FEE_SCHEDULE_UNITS_PER_TINYCENT = 1000;
+
     private static final BigInteger MIN_LONG_VALUE = BigInteger.valueOf(Long.MIN_VALUE);
     private static final BigInteger MAX_LONG_VALUE = BigInteger.valueOf(Long.MAX_VALUE);
 
@@ -724,6 +729,13 @@ public class ConversionUtils {
                 .longValueExact();
     }
 
+    /**
+     * Given an exchange rate and a tinybar amount, returns the equivalent tinycent amount.
+     *
+     * @param exchangeRate the exchange rate
+     * @param tinyBars the tinybar amount
+     * @return the equivalent tinycent amount
+     */
     public static long fromTinybarsToTinycents(final ExchangeRate exchangeRate, final long tinyBars) {
         return fromAToB(BigInteger.valueOf(tinyBars), exchangeRate.centEquiv(), exchangeRate.hbarEquiv())
                 .longValueExact();
@@ -806,6 +818,10 @@ public class ConversionUtils {
                 headlongAddressOf(key.delegatableContractIdOrElse(ZERO_CONTRACT_ID)));
     }
 
+    /**
+     * @param contents Ethereum content
+     * @return remove the leading 0x from an Ethereum content
+     */
     public static byte[] removeIfAnyLeading0x(com.hedera.pbj.runtime.io.buffer.Bytes contents) {
         final var hexPrefix = new byte[] {(byte) '0', (byte) 'x'};
         final var offset = contents.matchesPrefix(hexPrefix) ? hexPrefix.length : 0L;

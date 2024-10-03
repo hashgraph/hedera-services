@@ -202,7 +202,7 @@ class ScheduleSignHandlerTest extends ScheduleHandlerTestBase {
         // We leave out "other" key from the "valid" keys for that reason.
         final Set<Key> acceptedKeys = Set.of(payerKey, optionKey);
         final TestTransactionKeys accepted = new TestTransactionKeys(payerKey, acceptedKeys, Collections.emptySet());
-        // This is how you get side-effects replicated, by having the "Answer" called in place of the real method.
+        // This is how you get side effects replicated, by having the "Answer" called in place of the real method.
         given(keyVerifier.verificationFor(BDDMockito.any(Key.class), BDDMockito.any(VerificationAssistant.class)))
                 .will(new VerificationForAnswer(accepted));
         return acceptedKeys; // return the expected set of signatories after the transaction is handled.
@@ -214,7 +214,7 @@ class ScheduleSignHandlerTest extends ScheduleHandlerTestBase {
         // for signature verification to succeed, the "Answer" needs to be "valid" for all keys
         final Set<Key> allKeys = Set.of(payerKey, adminKey, schedulerKey, optionKey, otherKey);
         final TestTransactionKeys allRequired = new TestTransactionKeys(payerKey, allKeys, Collections.emptySet());
-        // This is how you get side-effects replicated, by having the "Answer" called in place of the real method.
+        // This is how you get side effects replicated, by having the "Answer" called in place of the real method.
         given(keyVerifier.verificationFor(BDDMockito.any(Key.class), BDDMockito.any(VerificationAssistant.class)))
                 .will(new VerificationForAnswer(allRequired));
     }

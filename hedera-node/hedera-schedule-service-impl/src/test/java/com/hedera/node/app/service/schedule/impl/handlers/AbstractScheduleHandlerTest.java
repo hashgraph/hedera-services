@@ -182,12 +182,12 @@ class AbstractScheduleHandlerTest extends ScheduleHandlerTestBase {
         BDDMockito.given(mockContext.allKeysForTransaction(any(), any())).willReturn(testKeys);
         final AccountID payerAccountId = schedulerAccount.accountId();
         BDDMockito.given(mockContext.payer()).willReturn(payerAccountId);
-        // This is how you get side-effects replicated, by having the "Answer" called in place of the real method.
+        // This is how you get side effects replicated, by having the "Answer" called in place of the real method.
         BDDMockito.given(keyVerifier.verificationFor(any(), any())).will(new VerificationForAnswer(testKeys));
         // For this test, Context must mock `payer()`, `allKeysForTransaction()`, and `verificationFor`
         // `verificationFor` is needed because we check verification in allKeysForTransaction to reduce
         // the required keys set (potentially to empty) during handle.  We must use an "Answer" for verification
-        // because verificationFor relies on side-effects for important results.
+        // because verificationFor relies on side effects for important results.
         // Run through the "standard" schedules to ensure we handle the common cases
         for (final Schedule next : listOfScheduledOptions) {
             final ScheduleKeysResult verificationResult = testHandler.allKeysForTransaction(next, mockContext);

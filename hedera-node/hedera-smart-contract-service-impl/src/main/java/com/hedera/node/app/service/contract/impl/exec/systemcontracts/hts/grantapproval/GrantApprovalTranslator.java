@@ -43,21 +43,13 @@ import javax.inject.Singleton;
 @Singleton
 public class GrantApprovalTranslator extends AbstractCallTranslator<HtsCallAttempt> {
 
-    /**
-     * Selector for approve(address,uint256) method.
-     */
+    /** Selector for approve(address,uint256) method. */
     public static final Function ERC_GRANT_APPROVAL = new Function("approve(address,uint256)", ReturnTypes.BOOL);
-    /**
-     * Selector for approve(address,uint256) method.
-     */
+    /** Selector for approve(address,uint256) method. */
     public static final Function ERC_GRANT_APPROVAL_NFT = new Function("approve(address,uint256)");
-    /**
-     * Selector for approve(address,address,uint256) method.
-     */
+    /** Selector for approve(address,address,uint256) method. */
     public static final Function GRANT_APPROVAL = new Function("approve(address,address,uint256)", "(int32,bool)");
-    /**
-     * Selector for approveNFT(address,address,uint256) method.
-     */
+    /** Selector for approveNFT(address,address,uint256) method. */
     public static final Function GRANT_APPROVAL_NFT =
             new Function("approveNFT(address,address,uint256)", ReturnTypes.INT_64);
 
