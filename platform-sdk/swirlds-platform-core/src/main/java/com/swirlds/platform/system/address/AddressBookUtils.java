@@ -58,8 +58,6 @@ import java.util.regex.Pattern;
  *     <li>memo field (optional)</li>
  * </ul>
  * Example: `address, 22, node22, node22, 1, 10.10.11.12, 5060, 212.25.36.123, 5060, memo for node 22`
- * <p>
- * The last line of the config.txt address book contains the nextNodeId value in the form of: `nextNodeId, 23`
  */
 public class AddressBookUtils {
 
@@ -132,37 +130,6 @@ public class AddressBookUtils {
             }
         }
         return addressBook;
-    }
-
-    /**
-     * Parse the next available node id from a single line of text.  The line must start with the keyword `nextNodeId`
-     * followed by a comma and then the node id.  The node id must be a positive integer greater than all nodeIds in the
-     * address book.
-     *
-     * @param nextNodeId the text to parse.
-     * @return the parsed node id.
-     * @throws ParseException if there is any problem with parsing the node id.
-     */
-    @NonNull
-    public static NodeId parseNextNodeId(@NonNull final String nextNodeId) throws ParseException {
-        Objects.requireNonNull(nextNodeId, "The nextNodeId must not be null.");
-        final String[] parts = nextNodeId.split(",");
-        if (parts.length != 2) {
-            throw new ParseException(
-                    "The nextNodeId [%s] does not have exactly 2 comma separated parts.".formatted(nextNodeId), 0);
-        }
-        final String nodeIdText = parts[1].trim();
-        try {
-            final long nodeId = Long.parseLong(nodeIdText);
-            if (nodeId < 0) {
-                throw new ParseException(
-                        "The nextNodeId [%s] does not have a positive integer node id.".formatted(nextNodeId), 1);
-            }
-            return new NodeId(nodeId);
-        } catch (final NumberFormatException e) {
-            throw new ParseException(
-                    "The nextNodeId [%s] does not have a positive integer node id.".formatted(nextNodeId), 1);
-        }
     }
 
     /**

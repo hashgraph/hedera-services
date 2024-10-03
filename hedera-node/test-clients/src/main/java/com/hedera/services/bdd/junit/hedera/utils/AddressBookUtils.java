@@ -85,7 +85,7 @@ public class AddressBookUtils {
                     .append("\n");
             maxNodeId = Math.max(node.getNodeId(), maxNodeId);
         }
-        sb.append("\nnextNodeId, ").append(maxNodeId + 1).append("\n");
+        sb.append("\n");
         return sb.toString();
     }
 
