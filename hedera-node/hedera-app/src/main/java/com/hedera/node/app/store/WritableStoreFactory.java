@@ -23,6 +23,7 @@ import com.hedera.node.app.ids.WritableEntityIdStore;
 import com.hedera.node.app.service.addressbook.AddressBookService;
 import com.hedera.node.app.service.addressbook.impl.WritableNodeStore;
 import com.hedera.node.app.service.consensus.ConsensusService;
+import com.hedera.node.app.service.consensus.impl.WritableTopicAllowanceStore;
 import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
 import com.hedera.node.app.service.contract.ContractService;
 import com.hedera.node.app.service.contract.impl.state.WritableContractStateStore;
@@ -69,6 +70,9 @@ public class WritableStoreFactory {
 
         // ConsensusService
         newMap.put(WritableTopicStore.class, new StoreEntry(ConsensusService.NAME, WritableTopicStore::new));
+        newMap.put(
+                WritableTopicAllowanceStore.class,
+                new StoreEntry(ConsensusService.NAME, WritableTopicAllowanceStore::new));
         // TokenService
         newMap.put(WritableAccountStore.class, new StoreEntry(TokenService.NAME, WritableAccountStore::new));
         newMap.put(WritableAirdropStore.class, new StoreEntry(TokenService.NAME, WritableAirdropStore::new));

@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.consensus.impl.test.handlers;
 
 import static com.hedera.node.app.service.consensus.impl.ConsensusServiceImpl.TOPICS_KEY;
+import static com.hedera.node.app.service.consensus.impl.ConsensusServiceImpl.TOPIC_ALLOWANCES_KEY;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mock.Strictness.LENIENT;
 import static org.mockito.Mockito.when;
@@ -27,6 +28,8 @@ import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.KeyList;
 import com.hedera.hapi.node.base.ThresholdKey;
 import com.hedera.hapi.node.base.TokenID;
+import com.hedera.hapi.node.base.TopicAllowanceId;
+import com.hedera.hapi.node.base.TopicAllowanceValue;
 import com.hedera.hapi.node.base.TopicID;
 import com.hedera.hapi.node.state.consensus.Topic;
 import com.hedera.hapi.node.state.token.Account;
@@ -34,8 +37,11 @@ import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.hapi.node.transaction.ConsensusCustomFee;
 import com.hedera.hapi.node.transaction.FixedFee;
+import com.hedera.node.app.service.consensus.ReadableTopicAllowanceStore;
 import com.hedera.node.app.service.consensus.ReadableTopicStore;
+import com.hedera.node.app.service.consensus.impl.ReadableTopicAllowanceStoreImpl;
 import com.hedera.node.app.service.consensus.impl.ReadableTopicStoreImpl;
+import com.hedera.node.app.service.consensus.impl.WritableTopicAllowanceStore;
 import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.ReadableTokenRelationStore;
@@ -156,8 +162,14 @@ public class ConsensusTestBase {
     protected MapReadableKVState<TopicID, Topic> readableTopicState;
     protected MapWritableKVState<TopicID, Topic> writableTopicState;
 
+    protected MapReadableKVState<TopicAllowanceId, TopicAllowanceValue> readableAllowanceState;
+    protected MapWritableKVState<TopicAllowanceId, TopicAllowanceValue> writableAllowanceState;
+
     protected ReadableTopicStore readableStore;
     protected WritableTopicStore writableStore;
+
+    protected ReadableTopicAllowanceStore readableAllowanceStore;
+    protected WritableTopicAllowanceStore writableAllowanceStore;
 
     @BeforeEach
     void commonSetUp() {
@@ -168,11 +180,19 @@ public class ConsensusTestBase {
     protected void refreshStoresWithCurrentTopicOnlyInReadable() {
         readableTopicState = readableTopicState();
         writableTopicState = emptyWritableTopicState();
+        readableAllowanceState = emptyReadableTopicAllowanceState();
+        writableAllowanceState = emptyWritableTopicAllowanceState();
         given(readableStates.<TopicID, Topic>get(TOPICS_KEY)).willReturn(readableTopicState);
         given(writableStates.<TopicID, Topic>get(TOPICS_KEY)).willReturn(writableTopicState);
+        given(readableStates.<TopicAllowanceId, TopicAllowanceValue>get(TOPIC_ALLOWANCES_KEY))
+                .willReturn(readableAllowanceState);
+        given(writableStates.<TopicAllowanceId, TopicAllowanceValue>get(TOPIC_ALLOWANCES_KEY))
+                .willReturn(writableAllowanceState);
         readableStore = new ReadableTopicStoreImpl(readableStates);
         final var configuration = HederaTestConfigBuilder.createConfig();
         writableStore = new WritableTopicStore(writableStates, configuration, storeMetricsService);
+        readableAllowanceStore = new ReadableTopicAllowanceStoreImpl(readableStates);
+        writableAllowanceStore = new WritableTopicAllowanceStore(writableStates, configuration, storeMetricsService);
         given(handleContext.storeFactory()).willReturn(storeFactory);
         given(storeFactory.writableStore(WritableTopicStore.class)).willReturn(writableStore);
     }
@@ -208,6 +228,18 @@ public class ConsensusTestBase {
     }
 
     @NonNull
+    protected MapReadableKVState<TopicAllowanceId, TopicAllowanceValue> emptyReadableTopicAllowanceState() {
+        return MapReadableKVState.<TopicAllowanceId, TopicAllowanceValue>builder(TOPIC_ALLOWANCES_KEY)
+                .build();
+    }
+
+    @NonNull
+    protected MapWritableKVState<TopicAllowanceId, TopicAllowanceValue> emptyWritableTopicAllowanceState() {
+        return MapWritableKVState.<TopicAllowanceId, TopicAllowanceValue>builder(TOPIC_ALLOWANCES_KEY)
+                .build();
+    }
+
+    @NonNull
     protected MapReadableKVState<TopicID, Topic> emptyReadableTopicState() {
         return MapReadableKVState.<TopicID, Topic>builder(TOPICS_KEY).build();
     }
@@ -231,10 +263,11 @@ public class ConsensusTestBase {
         when(storeFactory.readableStore(ReadableTokenStore.class)).thenReturn(tokenStore);
         when(storeFactory.readableStore(ReadableTokenRelationStore.class)).thenReturn(tokenRelStore);
         // Set up topic store
-        //        givenValidTopic();
         writableStore.put(topic);
         when(storeFactory.readableStore(ReadableTopicStore.class)).thenReturn(readableStore);
         when(storeFactory.writableStore(WritableTopicStore.class)).thenReturn(writableStore);
+        when(storeFactory.writableStore(WritableTopicAllowanceStore.class)).thenReturn(writableAllowanceStore);
+        when(storeFactory.readableStore(ReadableTopicAllowanceStore.class)).thenReturn(readableAllowanceStore);
     }
 
     protected void givenValidTopic() {

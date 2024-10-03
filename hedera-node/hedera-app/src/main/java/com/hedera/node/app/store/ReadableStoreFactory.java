@@ -26,7 +26,9 @@ import com.hedera.node.app.service.addressbook.AddressBookService;
 import com.hedera.node.app.service.addressbook.ReadableNodeStore;
 import com.hedera.node.app.service.addressbook.impl.ReadableNodeStoreImpl;
 import com.hedera.node.app.service.consensus.ConsensusService;
+import com.hedera.node.app.service.consensus.ReadableTopicAllowanceStore;
 import com.hedera.node.app.service.consensus.ReadableTopicStore;
+import com.hedera.node.app.service.consensus.impl.ReadableTopicAllowanceStoreImpl;
 import com.hedera.node.app.service.consensus.impl.ReadableTopicStoreImpl;
 import com.hedera.node.app.service.contract.ContractService;
 import com.hedera.node.app.service.contract.impl.state.ContractStateStore;
@@ -98,6 +100,9 @@ public class ReadableStoreFactory {
                 new StoreEntry(TokenService.NAME, ReadableNetworkStakingRewardsStoreImpl::new));
         // Topics
         newMap.put(ReadableTopicStore.class, new StoreEntry(ConsensusService.NAME, ReadableTopicStoreImpl::new));
+        newMap.put(
+                ReadableTopicAllowanceStore.class,
+                new StoreEntry(ConsensusService.NAME, ReadableTopicAllowanceStoreImpl::new));
         // Schedules
         newMap.put(ReadableScheduleStore.class, new StoreEntry(ScheduleService.NAME, ReadableScheduleStoreImpl::new));
         // Files

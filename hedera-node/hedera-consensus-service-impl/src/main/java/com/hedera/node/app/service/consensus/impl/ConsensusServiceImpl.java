@@ -18,6 +18,7 @@ package com.hedera.node.app.service.consensus.impl;
 
 import com.hedera.node.app.service.consensus.ConsensusService;
 import com.hedera.node.app.service.consensus.impl.schemas.V0490ConsensusSchema;
+import com.hedera.node.app.service.consensus.impl.schemas.V0560ConsensusSchema;
 import com.hedera.node.app.spi.RpcService;
 import com.swirlds.state.spi.SchemaRegistry;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -28,9 +29,11 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 public final class ConsensusServiceImpl implements ConsensusService {
     public static final int RUNNING_HASH_BYTE_ARRAY_SIZE = 48;
     public static final String TOPICS_KEY = "TOPICS";
+    public static final String TOPIC_ALLOWANCES_KEY = "TOPIC_ALLOWANCES";
 
     @Override
     public void registerSchemas(@NonNull SchemaRegistry registry) {
         registry.register(new V0490ConsensusSchema());
+        registry.register(new V0560ConsensusSchema());
     }
 }

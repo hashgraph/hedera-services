@@ -18,7 +18,7 @@ package com.hedera.node.app.service.consensus.impl.test.handlers;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mock.Strictness.LENIENT;
@@ -31,11 +31,9 @@ import static org.mockito.Mockito.when;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ConsensusCryptoFeeScheduleAllowance;
 import com.hedera.hapi.node.base.ConsensusTokenFeeScheduleAllowance;
-import com.hedera.hapi.node.base.TopicID;
+import com.hedera.hapi.node.base.TopicAllowanceId;
+import com.hedera.hapi.node.base.TopicAllowanceValue;
 import com.hedera.hapi.node.base.TransactionID;
-import com.hedera.hapi.node.state.consensus.Topic;
-import com.hedera.hapi.node.state.consensus.TopicCryptoAllowance;
-import com.hedera.hapi.node.state.consensus.TopicFungibleTokenAllowance;
 import com.hedera.hapi.node.token.ConsensusApproveAllowanceTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
@@ -44,7 +42,6 @@ import com.hedera.node.app.service.consensus.impl.validators.ConsensusAllowances
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
-import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -104,67 +101,43 @@ public class ConsensusApproveAllowanceTest extends ConsensusTestBase {
         given(handleContext.body()).willReturn(txn);
         final var topic = writableStore.getTopic(topicId);
         assertNotNull(topic);
-        assertThat(topic.cryptoAllowances()).isEmpty();
-        assertThat(topic.tokenAllowances()).isEmpty();
 
         subject.handle(handleContext);
 
-        final var modifiedTopic = writableStore.getTopic(topicId);
-        assertNotNull(modifiedTopic);
-        assertThat(modifiedTopic.cryptoAllowances()).hasSize(1);
-        assertThat(modifiedTopic.tokenAllowances()).hasSize(1);
+        final var topicAllowance = writableAllowanceStore.get(defaultAllowanceId());
+        final var topicFtAllowance = writableAllowanceStore.get(defaultFtAllowanceId());
+        assertNotNull(topicAllowance);
+        assertNotNull(topicFtAllowance);
 
-        assertThat(modifiedTopic.cryptoAllowances().getFirst().spenderId()).isEqualTo(ownerId);
-        assertThat(modifiedTopic.cryptoAllowances().getFirst().amount()).isEqualTo(100);
-        assertThat(modifiedTopic.cryptoAllowances().getFirst().amountPerMessage())
-                .isEqualTo(10);
-        assertThat(modifiedTopic.tokenAllowances().getFirst().spenderId()).isEqualTo(ownerId);
-        assertThat(modifiedTopic.tokenAllowances().getFirst().amount()).isEqualTo(100);
-        assertThat(modifiedTopic.tokenAllowances().getFirst().amountPerMessage())
-                .isEqualTo(10);
-        assertThat(modifiedTopic.tokenAllowances().getFirst().tokenId()).isEqualTo(fungibleTokenId);
+        assertThat(topicAllowance.amount()).isEqualTo(100);
+        assertThat(topicAllowance.amountPerMessage()).isEqualTo(10);
+        assertThat(topicFtAllowance.amount()).isEqualTo(100);
+        assertThat(topicFtAllowance.amountPerMessage()).isEqualTo(10);
     }
 
     @Test
     void handleWithZeroAllowanceShouldRemoveAllowanceFromStore() {
         setUpStores(handleContext);
-        // Mock topic store and a topic with an existing allowance
-        var topicFromStateId = TopicID.newBuilder().topicNum(1).build();
-        List<TopicCryptoAllowance> initialCryptoAllowances = new ArrayList<>();
-        List<TopicFungibleTokenAllowance> initialTokenAllowances = new ArrayList<>();
-
-        initialCryptoAllowances.add(TopicCryptoAllowance.newBuilder()
-                .spenderId(ownerId)
-                .amount(100L)
-                .amountPerMessage(10L)
-                .build());
-        initialTokenAllowances.add(TopicFungibleTokenAllowance.newBuilder()
-                .spenderId(ownerId)
-                .amount(100L)
-                .amountPerMessage(10L)
-                .tokenId(fungibleTokenId)
-                .build());
-
-        // Add the topic with the initial allowance
-        Topic topic = Topic.newBuilder()
-                .topicId(topicFromStateId)
-                .cryptoAllowances(initialCryptoAllowances)
-                .tokenAllowances(initialTokenAllowances)
-                .build();
-        writableStore.put(topic);
+        // Arrange
+        writableAllowanceStore.put(
+                defaultAllowanceId(),
+                TopicAllowanceValue.newBuilder().amountPerMessage(5).amount(50).build());
+        writableAllowanceStore.put(
+                defaultFtAllowanceId(),
+                TopicAllowanceValue.newBuilder().amountPerMessage(5).amount(50).build());
 
         // Create an allowance transaction with amount 0 (which should remove the allowance)
         ConsensusCryptoFeeScheduleAllowance zeroCryptoAllowance = ConsensusCryptoFeeScheduleAllowance.newBuilder()
                 .owner(ownerId)
                 .amount(0L) // Passing 0 to remove the allowance
                 .amountPerMessage(0L)
-                .topicId(topicFromStateId)
+                .topicId(topicId)
                 .build();
         ConsensusTokenFeeScheduleAllowance zeroTokenAllowance = ConsensusTokenFeeScheduleAllowance.newBuilder()
                 .owner(ownerId)
                 .amount(0L) // Passing 0 to remove the allowance
                 .amountPerMessage(0L)
-                .topicId(topicFromStateId)
+                .topicId(topicId)
                 .tokenId(fungibleTokenId)
                 .build();
         var allowanceTxnBody = consensusApproveAllowanceTransaction(
@@ -176,10 +149,10 @@ public class ConsensusApproveAllowanceTest extends ConsensusTestBase {
         subject.handle(handleContext);
 
         // Assert
-        Topic updatedTopic = writableStore.getTopic(topicFromStateId);
-        assertNotNull(updatedTopic);
-        assertTrue(updatedTopic.cryptoAllowances().isEmpty(), "Crypto allowance should be removed from the store");
-        assertTrue(updatedTopic.tokenAllowances().isEmpty(), "Token allowance should be removed from the store");
+        var cryptoAllowance = writableAllowanceStore.get(defaultAllowanceId());
+        var tokenAllowance = writableAllowanceStore.get(defaultFtAllowanceId());
+        assertNull(cryptoAllowance);
+        assertNull(tokenAllowance);
     }
 
     private TransactionBody consensusApproveAllowanceTransaction(
@@ -213,6 +186,18 @@ public class ConsensusApproveAllowanceTest extends ConsensusTestBase {
                 .tokenId(fungibleTokenId)
                 .topicId(topicId)
                 .owner(ownerId)
+                .build();
+    }
+
+    private TopicAllowanceId defaultAllowanceId() {
+        return TopicAllowanceId.newBuilder().owner(ownerId).topicId(topicId).build();
+    }
+
+    private TopicAllowanceId defaultFtAllowanceId() {
+        return TopicAllowanceId.newBuilder()
+                .owner(ownerId)
+                .topicId(topicId)
+                .tokenId(fungibleTokenId)
                 .build();
     }
 }
