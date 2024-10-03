@@ -39,6 +39,7 @@ import static com.hedera.services.bdd.suites.contract.Utils.asToken;
 import static com.hedera.services.bdd.suites.token.TokenAssociationSpecs.VANILLA_TOKEN;
 import static com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult.htsPrecompileResult;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_KYC_KEY;
 import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 
 import com.hedera.node.app.hapi.utils.contracts.ParsingConstants.FunctionType;
@@ -126,7 +127,7 @@ public class DefaultTokenStatusSuite {
                         .initialSupply(1_000)
                         .exposingCreatedIdTo(id -> noKycTokenId.set(asToken(id))),
                 tokenAssociate(ACCOUNT, "noKycToken"),
-//                grantTokenKyc("noKycToken", ACCOUNT),
+                grantTokenKyc("noKycToken", ACCOUNT).hasKnownStatus(TOKEN_HAS_NO_KYC_KEY),
                 uploadInitCode(TOKEN_DEFAULT_KYC_FREEZE_STATUS_CONTRACT),
                 contractCreate(TOKEN_DEFAULT_KYC_FREEZE_STATUS_CONTRACT),
                 withOpContext((spec, opLog) -> allRunFor(
