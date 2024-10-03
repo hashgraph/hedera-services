@@ -117,12 +117,26 @@ extraJavaModuleInfo {
         requireAllDefinedDependencies()
         requires("java.logging")
     }
+    module("io.helidon.common:helidon-common", "io.helidon.common") {
+        exportAllPackages()
+        requireAllDefinedDependencies()
+        requires("java.logging")
+    }
     module("io.helidon.grpc:helidon-grpc-client", "io.helidon.grpc.client") {
         exportAllPackages()
         requireAllDefinedDependencies()
         requires("java.logging")
     }
-
+    module("io.helidon.webclient:helidon-webclient", "io.helidon.webclient") {
+        exportAllPackages()
+        requireAllDefinedDependencies()
+        requires("java.logging")
+    }
+    module("io.helidon.microprofile.grpc:helidon-microprofile-grpc-client", "io.helidon.microprofile.grpc.client") {
+        exportAllPackages()
+        requireAllDefinedDependencies()
+        requires("java.logging")
+    }
     module("com.github.spotbugs:spotbugs-annotations", "com.github.spotbugs.annotations")
     module("com.google.code.findbugs:jsr305", "java.annotation")
     module("com.google.errorprone:error_prone_annotations", "com.google.errorprone.annotations")

@@ -28,6 +28,21 @@ dependencies {
 }
 
 dependencies.constraints {
+    api("io.helidon.grpc:helidon-grpc-core:4.1.1") {
+        because("io.helidon.grpc.core")
+    }
+    api("io.helidon.grpc:helidon-grpc-client:4.1.1") {
+        because("io.helidon.grpc.client")
+    }
+    api("io.helidon.webclient:helidon-webclient:4.1.1") {
+        because("io.helidon.webclient")
+    }
+    api("io.helidon.microprofile.grpc:helidon-microprofile-grpc-client:4.1.1") {
+        because("io.helidon.microprofile.grpc.client")
+    }
+    api("io.helidon.common:helidon-common:4.1.1") {
+        because("io.helidon.common")
+    }
     api("org.awaitility:awaitility:4.2.0") {
         because("awaitility")
     }
@@ -87,12 +102,6 @@ dependencies.constraints {
     }
     api("io.grpc:grpc-stub:1.64.0") {
         because("io.grpc.stub")
-    }
-    api("io.helidon.grpc:helidon-grpc-core:3.2.9") {
-        because("io.helidon.grpc.core")
-    }
-    api("io.helidon.grpc:helidon-grpc-client:3.2.9") {
-        because("io.helidon.grpc.client")
     }
     api("com.esaulpaugh:headlong:6.1.1") {
         because("headlong")
