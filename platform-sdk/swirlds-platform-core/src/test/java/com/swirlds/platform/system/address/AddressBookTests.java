@@ -95,7 +95,9 @@ class AddressBookTests {
 
         if (!addressBook.isEmpty()) {
             final Address lastAddress = addressBook.getAddress(addressBook.getNodeId(addressBook.getSize() - 1));
-            assertTrue(lastAddress.getNodeId().compareTo(addressBook.getNextNodeId()) < 0, "incorrect next node ID");
+            assertTrue(
+                    lastAddress.getNodeId().compareTo(addressBook.getNextAvailableNodeId()) < 0,
+                    "incorrect next node ID");
         } else {
             assertEquals(0, size, "address book expected to be empty");
         }
@@ -146,7 +148,7 @@ class AddressBookTests {
                 "should not be able to set negative weight");
         assertThrows(
                 NoSuchElementException.class,
-                () -> addressBook.updateWeight(addressBook.getNextNodeId(), 1),
+                () -> addressBook.updateWeight(addressBook.getNextAvailableNodeId(), 1),
                 "should not be able to set weight for non-existent node");
     }
 
@@ -160,7 +162,7 @@ class AddressBookTests {
     @NonNull
     private static Address buildNextAddress(@NonNull final Random random, @NonNull final AddressBook addressBook) {
         return RandomAddressBuilder.create(random)
-                .withNodeId(new NodeId(addressBook.getNextNodeId().id() + random.nextInt(0, 3)))
+                .withNodeId(new NodeId(addressBook.getNextAvailableNodeId().id() + random.nextInt(0, 3)))
                 .build();
     }
 
@@ -352,7 +354,7 @@ class AddressBookTests {
         final AddressBook addressBook = generator.build();
 
         // The address book has gaps. Make sure we can't insert anything into those gaps.
-        for (int i = 0; i < addressBook.getNextNodeId().id(); i++) {
+        for (int i = 0; i < addressBook.getNextAvailableNodeId().id(); i++) {
 
             final Address address = buildNextAddress(randotron, addressBook).copySetNodeId(new NodeId(i));
 
@@ -482,7 +484,7 @@ class AddressBookTests {
         final AddressBook addressBook2 = addressBook.copy();
         final Address address = addressBook2.getAddress(addressBook2.getNodeId(0));
         addressBook2.remove(address.getNodeId());
-        addressBook2.add(address.copySetNodeId(addressBook.getNextNodeId()));
+        addressBook2.add(address.copySetNodeId(addressBook.getNextAvailableNodeId()));
         assertThrows(
                 IllegalStateException.class,
                 () -> AddressBookUtils.verifyReconnectAddressBooks(addressBook, addressBook2));

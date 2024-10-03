@@ -287,6 +287,13 @@ public class AddressBook implements Iterable<Address>, SelfSerializable, Hashabl
     }
 
     /**
+     *  @return the next available node id for use in the address book.
+     */
+    public NodeId getNextAvailableNodeId() {
+        return getSize() == 0 ? NodeId.FIRST_NODE_ID : getNodeId(getSize() - 1).getOffset(1);
+    }
+
+    /**
      * This method and its internal field are deprecated and no longer supported. The existence of this method and its
      * internal field remains for compatibility with protobuf serialization.  The returned value is either the last
      * value set by {@link #setNextNodeId(NodeId)} or the result of increasing the value to 1+ the node id of a new
@@ -452,9 +459,6 @@ public class AddressBook implements Iterable<Address>, SelfSerializable, Hashabl
         if (addresses.size() >= MAX_ADDRESSES) {
             throw new IllegalStateException("Address book is only permitted to hold " + MAX_ADDRESSES + " entries");
         }
-
-        // The next node ID is deprecated, but legacy code expects the value to be higher than the highest node ID.
-        nextNodeId = addressNodeId.getOffset(1);
 
         addresses.put(address.getNodeId(), address);
         publicKeyToId.put(address.getNickname(), address.getNodeId());
