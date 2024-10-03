@@ -10,7 +10,7 @@
  */
 syntax = "proto3";
 
-package proto;
+package com.hedera.hapi.platform.event;
 
 /*
  * Copyright (C) 2024 Hedera Hashgraph, LLC
@@ -28,8 +28,8 @@ package proto;
  * limitations under the License.
  */
 
-option java_package = "com.hederahashgraph.api.proto.java";
-// <<<pbj.java_package = "com.hedera.hapi.node.tss">>> This comment is special code for setting PBJ Compiler java package
+option java_package = "com.hedera.hapi.platform.event.legacy";
+// <<<pbj.java_package = "com.hedera.hapi.platform.event">>> This comment is special code for setting PBJ Compiler java package
 option java_multiple_files = true;
 
 /**
