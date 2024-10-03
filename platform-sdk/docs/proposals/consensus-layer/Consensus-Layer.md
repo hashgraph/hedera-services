@@ -676,10 +676,6 @@ with the initial roster for the starting round.
 Called by the Execution layer when it destroys an existing Consensus instance. This is particularly needed to shut down
 network connections held by Gossip, but could be used to stop executors, background tasks, etc. as necessary.
 
-#### changeRoster
-
-Called by the Execution layer when a new roster is prepared and ready for use. 
-
 #### onBehind
 
 Called by Consensus to notify Execution that the Consensus system is very far behind in processing relative to its
@@ -691,13 +687,23 @@ Execution will use this call to initiate a reconnect procedure.
 Called by Consensus to notify Execution of information about bad nodes. This can include both when a node goes "bad",
 or when it is back in the good graces of the Sheriff.
 
-#### onNewEvent
+#### badNode
 
-Called by the Event Intake module of Consensus to give the Execution layer a chance to fill the event with transactions.
-Note that in the current system the control in inverted -- transactions are submitted by Execution to Consensus, which
-buffers them and includes them in events. As per this design, Consensus will reach out to Execution to ask it for all
-transactions that should be included in the next event, allowing the Execution layer (the application) to decide which
-transactions to include.
+Called by Execution to notify Consensus of information about bad nodes. The information to be passed here pertains to
+coordinated enforcement decisions that the network has come to consensus on.
+
+#### getTransactionsForEvent
+
+Called by the Event Creator module of Consensus to give the Execution layer a chance to provide transactions for an
+event. Note that, in the current system, the control is inverted -- transactions are submitted by Execution to
+Consensus, which buffers them and includes them in events. As per this new design, Consensus will reach out to Execution
+to ask it for all transactions that should be included in the next event, allowing the Execution layer (the application)
+to decide which transactions to include.
+
+#### nextRound
+
+Called by the Execution layer when it is ready to receive another round from the Consensus layer. This call may contain
+a new roster, if one is prepared and ready for use.
 
 #### onStaleEvent
 
