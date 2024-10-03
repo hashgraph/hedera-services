@@ -76,7 +76,6 @@ import com.swirlds.state.spi.CommittableWritableStates;
 import com.swirlds.state.spi.WritableStates;
 import com.swirlds.state.spi.info.NetworkInfo;
 import com.swirlds.state.spi.info.NodeInfo;
-import com.swirlds.state.spi.info.SelfNodeInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
@@ -303,22 +302,20 @@ class TransactionExecutorsTest {
 
             @NonNull
             @Override
-            public SelfNodeInfo selfNodeInfo() {
-                throw new UnsupportedOperationException("Not implemented");
+            public NodeInfo selfNodeInfo() {
+                return new NodeInfoImpl(0, AccountID.DEFAULT, 0, List.of(), Bytes.EMPTY);
             }
 
             @NonNull
             @Override
             public List<NodeInfo> addressBook() {
-                return StreamSupport.stream(addressBook.spliterator(), false)
-                        .map(NodeInfoImpl::fromAddress)
-                        .toList();
+                return List.of(new NodeInfoImpl(0, AccountID.DEFAULT, 0, List.of(), Bytes.EMPTY));
             }
 
             @Nullable
             @Override
             public NodeInfo nodeInfo(final long nodeId) {
-                throw new UnsupportedOperationException("Not implemented");
+                return new NodeInfoImpl(0, AccountID.DEFAULT, 0, List.of(), Bytes.EMPTY);
             }
 
             @Override

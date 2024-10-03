@@ -59,7 +59,6 @@ import com.hedera.node.app.config.BootstrapConfigProviderImpl;
 import com.hedera.node.app.config.ConfigProviderImpl;
 import com.hedera.node.app.fees.FeeService;
 import com.hedera.node.app.ids.EntityIdService;
-import com.hedera.node.app.info.NodeInfoImpl;
 import com.hedera.node.app.records.BlockRecordService;
 import com.hedera.node.app.roster.RosterServiceImpl;
 import com.hedera.node.app.service.addressbook.impl.AddressBookServiceImpl;
@@ -111,7 +110,6 @@ import com.swirlds.state.spi.CommittableWritableStates;
 import com.swirlds.state.spi.Service;
 import com.swirlds.state.spi.info.NetworkInfo;
 import com.swirlds.state.spi.info.NodeInfo;
-import com.swirlds.state.spi.info.SelfNodeInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
@@ -128,7 +126,6 @@ import java.util.TreeMap;
 import java.util.concurrent.Executors;
 import java.util.function.Function;
 import java.util.regex.Pattern;
-import java.util.stream.StreamSupport;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Assertions;
@@ -546,16 +543,18 @@ public class StateChangesValidator implements BlockStreamValidator {
 
             @NonNull
             @Override
-            public SelfNodeInfo selfNodeInfo() {
+            public NodeInfo selfNodeInfo() {
                 throw new UnsupportedOperationException("Not implemented");
             }
 
             @NonNull
             @Override
             public List<NodeInfo> addressBook() {
-                return StreamSupport.stream(addressBook.spliterator(), false)
-                        .map(NodeInfoImpl::fromAddress)
-                        .toList();
+                return List.of();
+                // TODO: Implement this
+                //                return StreamSupport.stream(addressBook.spliterator(), false)
+                ////                        .map(NodeInfoImpl::fromRosterEntry)
+                //                        .toList();
             }
 
             @Nullable

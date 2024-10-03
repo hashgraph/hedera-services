@@ -35,7 +35,7 @@ public interface NetworkInfo {
     Bytes ledgerId();
 
     @NonNull
-    SelfNodeInfo selfNodeInfo();
+    NodeInfo selfNodeInfo();
 
     @NonNull
     List<NodeInfo> addressBook();

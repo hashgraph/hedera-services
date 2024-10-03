@@ -26,6 +26,7 @@ import static com.swirlds.platform.builder.internal.StaticPlatformBuilder.getMet
 import static com.swirlds.platform.builder.internal.StaticPlatformBuilder.setupGlobalMetrics;
 import static com.swirlds.platform.config.internal.PlatformConfigUtils.checkConfiguration;
 import static com.swirlds.platform.crypto.CryptoStatic.initNodeSecurity;
+import static com.swirlds.platform.roster.RosterRetriever.buildRoster;
 import static com.swirlds.platform.state.signed.StartupStateUtils.getInitialState;
 import static com.swirlds.platform.system.SystemExitCode.CONFIGURATION_ERROR;
 import static com.swirlds.platform.system.SystemExitCode.NODE_ADDRESS_MISMATCH;
@@ -36,6 +37,7 @@ import static com.swirlds.platform.util.BootstrapUtils.checkNodesToRun;
 import static com.swirlds.platform.util.BootstrapUtils.getNodesToRun;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.node.app.services.OrderedServiceMigrator;
 import com.hedera.node.app.services.ServicesRegistryImpl;
 import com.hedera.node.app.tss.impl.PlaceholderTssBaseService;
@@ -241,15 +243,17 @@ public class ServicesMain implements SwirldMain {
                 initializeAddressBook(selfId, version, initialState, bootstrapAddressBook, platformContext);
 
         // Follow the Inversion of Control pattern by injecting all needed dependencies into the PlatformBuilder.
+        final var roster = createRoster(addressBook);
         final var platformBuilder = PlatformBuilder.create(
                         Hedera.APP_NAME, Hedera.SWIRLD_NAME, version, initialState, selfId)
                 .withPlatformContext(platformContext)
                 .withConfiguration(configuration)
                 .withAddressBook(addressBook)
-                .withRoster(createRoster(addressBook))
+                .withRoster(roster)
                 .withKeysAndCerts(keysAndCerts);
 
         hedera.setInitialStateHash(stateHash);
+        hedera.setRoster(roster);
         // IMPORTANT: A surface-level reading of this method will undersell the centrality
         // of the Hedera instance. It is actually omnipresent throughout both the startup
         // and runtime phases of the application.
@@ -343,7 +347,7 @@ public class ServicesMain implements SwirldMain {
      * @param addressBookPath the relative path and file name of the address book.
      * @return the address book.
      */
-    private static AddressBook loadAddressBook(@NonNull final String addressBookPath) {
+    public static AddressBook loadAddressBook(@NonNull final String addressBookPath) {
         requireNonNull(addressBookPath);
         try {
             final LegacyConfigProperties props =
@@ -355,6 +359,17 @@ public class ServicesMain implements SwirldMain {
             exitSystem(CONFIGURATION_ERROR);
             throw e;
         }
+    }
+
+    /**
+     * Loads the roster from the specified path.
+     *
+     * @param bootstrapRosterPath the relative path and file name of the address book.
+     * @return the roster.
+     */
+    public static Roster loadRoster(@NonNull final String bootstrapRosterPath) {
+        final var addressBook = loadAddressBook(bootstrapRosterPath);
+        return buildRoster(addressBook);
     }
 
     private static Hedera newHedera() {

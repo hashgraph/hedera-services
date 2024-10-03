@@ -19,7 +19,6 @@ package com.hedera.node.app.info;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.state.spi.info.NetworkInfo;
 import com.swirlds.state.spi.info.NodeInfo;
-import com.swirlds.state.spi.info.SelfNodeInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
@@ -40,7 +39,7 @@ public enum UnavailableNetworkInfo implements NetworkInfo {
 
     @NonNull
     @Override
-    public SelfNodeInfo selfNodeInfo() {
+    public NodeInfo selfNodeInfo() {
         throw new UnsupportedOperationException("Self node info is not available");
     }
 

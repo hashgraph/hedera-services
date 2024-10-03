@@ -16,14 +16,20 @@
 
 package com.hedera.node.app.info;
 
+import static com.hedera.node.app.info.NodeInfoImpl.fromRosterEntry;
+
+import com.hedera.hapi.node.state.addressbook.Node;
+import com.hedera.hapi.node.state.common.EntityNumber;
+import com.hedera.hapi.node.state.roster.RosterEntry;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.LedgerConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.swirlds.platform.system.Platform;
+import com.swirlds.state.spi.ReadableKVState;
 import com.swirlds.state.spi.info.NetworkInfo;
-import com.swirlds.state.spi.info.SelfNodeInfo;
+import com.swirlds.state.spi.info.NodeInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import javax.inject.Inject;
+import edu.umd.cs.findbugs.annotations.Nullable;
+import java.util.List;
 import javax.inject.Singleton;
 
 /**
@@ -32,15 +38,20 @@ import javax.inject.Singleton;
  * that precede loading configuration sources from state.
  */
 @Singleton
-public class NetworkInfoImpl extends AbstractNetworkInfoImpl implements NetworkInfo {
+public class NetworkInfoImpl implements NetworkInfo {
     private final Bytes ledgerId;
+    private final List<RosterEntry> rosterEntries;
+    private final ReadableKVState<EntityNumber, Node> readableNodeState;
+    private final NodeInfo selfNodeInfo;
 
-    @Inject
     public NetworkInfoImpl(
-            @NonNull final SelfNodeInfo selfNode,
-            @NonNull final Platform platform,
+            @NonNull final List<RosterEntry> rosterEntries,
+            @NonNull final ReadableKVState<EntityNumber, Node> nodeState,
+            @NonNull final NodeInfo selfNodeInfo,
             @NonNull final ConfigProvider configProvider) {
-        super(selfNode, platform);
+        this.rosterEntries = rosterEntries;
+        this.selfNodeInfo = selfNodeInfo;
+        this.readableNodeState = nodeState;
         // Load the ledger ID from configuration
         final var config = configProvider.getConfiguration();
         final var ledgerConfig = config.getConfigData(LedgerConfig.class);
@@ -51,5 +62,42 @@ public class NetworkInfoImpl extends AbstractNetworkInfoImpl implements NetworkI
     @Override
     public Bytes ledgerId() {
         return ledgerId;
+    }
+
+    @NonNull
+    @Override
+    public NodeInfo selfNodeInfo() {
+        return selfNodeInfo;
+    }
+
+    @NonNull
+    @Override
+    public List<NodeInfo> addressBook() {
+        return rosterEntries.stream()
+                .map(entry -> fromRosterEntry(
+                        entry,
+                        readableNodeState.get(
+                                EntityNumber.newBuilder().number(entry.nodeId()).build())))
+                .toList();
+    }
+
+    @Nullable
+    @Override
+    public NodeInfo nodeInfo(final long nodeId) {
+        final var rosterEntry = rosterEntries.stream()
+                .filter(entry -> entry.nodeId() == nodeId)
+                .findFirst()
+                .orElse(null);
+        final var node =
+                readableNodeState.get(EntityNumber.newBuilder().number(nodeId).build());
+        if (rosterEntry == null || node == null) {
+            return null;
+        }
+        return fromRosterEntry(rosterEntry, node);
+    }
+
+    @Override
+    public boolean containsNode(final long nodeId) {
+        return rosterEntries.stream().anyMatch(entry -> entry.nodeId() == nodeId);
     }
 }

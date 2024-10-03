@@ -22,7 +22,7 @@ app,		HederaNode.jar
 # app, 		PlatformTestingDemo.jar, FCM1KFreeze.json
 # ** END REMOVE FROM SDK RELEASES **
 
- address,   0, A, Alice,    1, 127.0.0.1, 50204, 127.0.0.1, 50204, 0.0.3
+ address,   0, A, Alice,    1, 127.0.0.1, 50204, 127.0.0.1, 50204
 # address,  1, B, Bob,      1, 127.0.0.1, 50205, 127.0.0.1, 50205, 0.0.4
 
 # address,  2, C, Carol,    1, 127.0.0.1, 50206, 127.0.0.1, 50206, 0.0.5

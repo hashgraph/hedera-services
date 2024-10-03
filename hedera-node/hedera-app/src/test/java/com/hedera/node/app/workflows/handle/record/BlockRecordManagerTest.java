@@ -28,6 +28,7 @@ import static com.hedera.node.app.records.impl.producers.formats.v6.RecordStream
 import static com.hedera.node.app.records.schemas.V0490BlockRecordSchema.BLOCK_INFO_STATE_KEY;
 import static com.hedera.node.app.records.schemas.V0490BlockRecordSchema.RUNNING_HASHES_STATE_KEY;
 import static com.swirlds.platform.state.service.PlatformStateService.PLATFORM_STATE_SERVICE;
+import static com.swirlds.state.spi.HapiUtils.asAccountString;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 
@@ -182,12 +183,8 @@ final class BlockRecordManagerTest extends AppTestBase {
         final var merkleState = app.workingStateAccessor().getState();
         final var producer = concurrent
                 ? new StreamFileProducerConcurrent(
-                        app.networkInfo().selfNodeInfo(),
-                        blockRecordFormat,
-                        blockRecordWriterFactory,
-                        ForkJoinPool.commonPool())
-                : new StreamFileProducerSingleThreaded(
-                        app.networkInfo().selfNodeInfo(), blockRecordFormat, blockRecordWriterFactory);
+                        blockRecordFormat, blockRecordWriterFactory, ForkJoinPool.commonPool(), app.hapiVersion())
+                : new StreamFileProducerSingleThreaded(blockRecordFormat, blockRecordWriterFactory, app.hapiVersion());
         Bytes finalRunningHash;
         try (final var blockRecordManager = new BlockRecordManagerImpl(
                 app.configProvider(), app.workingStateAccessor().getState(), producer)) {
@@ -240,7 +237,9 @@ final class BlockRecordManagerTest extends AppTestBase {
                 app.configProvider().getConfiguration().getConfigData(BlockRecordStreamConfig.class);
         validateRecordStreamFiles(
                 fs.getPath(recordStreamConfig.logDir())
-                        .resolve("record" + app.networkInfo().selfNodeInfo().memo()),
+                        .resolve("record"
+                                + asAccountString(
+                                        app.networkInfo().selfNodeInfo().accountId())),
                 recordStreamConfig,
                 USER_PUBLIC_KEY,
                 TEST_BLOCKS,
@@ -272,8 +271,8 @@ final class BlockRecordManagerTest extends AppTestBase {
 
         final Random random = new Random(82792874);
         final var merkleState = app.workingStateAccessor().getState();
-        final var producer = new StreamFileProducerSingleThreaded(
-                app.networkInfo().selfNodeInfo(), blockRecordFormat, blockRecordWriterFactory);
+        final var producer =
+                new StreamFileProducerSingleThreaded(blockRecordFormat, blockRecordWriterFactory, app.hapiVersion());
         Bytes finalRunningHash;
         try (final var blockRecordManager = new BlockRecordManagerImpl(
                 app.configProvider(), app.workingStateAccessor().getState(), producer)) {
@@ -369,7 +368,9 @@ final class BlockRecordManagerTest extends AppTestBase {
                 app.configProvider().getConfiguration().getConfigData(BlockRecordStreamConfig.class);
         validateRecordStreamFiles(
                 fs.getPath(recordStreamConfig.logDir())
-                        .resolve("record" + app.networkInfo().selfNodeInfo().memo()),
+                        .resolve("record"
+                                + asAccountString(
+                                        app.networkInfo().selfNodeInfo().accountId())),
                 recordStreamConfig,
                 USER_PUBLIC_KEY,
                 TEST_BLOCKS,

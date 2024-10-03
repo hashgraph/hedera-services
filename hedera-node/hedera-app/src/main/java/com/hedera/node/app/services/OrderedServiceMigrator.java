@@ -68,12 +68,11 @@ public class OrderedServiceMigrator implements ServiceMigrator {
             @Nullable final SoftwareVersion previousVersion,
             @NonNull final SoftwareVersion currentVersion,
             @NonNull final Configuration config,
-            @NonNull final NetworkInfo networkInfo,
+            @Nullable final NetworkInfo genesisNetworkInfo,
             @NonNull final Metrics metrics) {
         requireNonNull(state);
         requireNonNull(currentVersion);
         requireNonNull(config);
-        requireNonNull(networkInfo);
         requireNonNull(metrics);
 
         final Map<String, Object> sharedValues = new HashMap<>();
@@ -92,7 +91,7 @@ public class OrderedServiceMigrator implements ServiceMigrator {
                 deserializedPbjVersion,
                 currentVersion.getPbjSemanticVersion(),
                 config,
-                networkInfo,
+                genesisNetworkInfo,
                 metrics,
                 // We call with null here because we're migrating the entity ID service itself
                 null,
@@ -129,7 +128,7 @@ public class OrderedServiceMigrator implements ServiceMigrator {
                             deserializedPbjVersion,
                             currentVersion.getPbjSemanticVersion(),
                             config,
-                            networkInfo,
+                            genesisNetworkInfo,
                             metrics,
                             entityIdStore,
                             sharedValues,

@@ -24,18 +24,14 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.NodeAddressBook;
 import com.hedera.node.app.info.NodeInfoImpl;
-import com.hedera.node.app.info.SelfNodeInfoImpl;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.FilesConfig;
 import com.hedera.node.config.data.LedgerConfig;
-import com.hedera.node.config.data.VersionConfig;
 import com.hedera.pbj.runtime.ParseException;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.swirlds.config.api.Configuration;
 import com.swirlds.state.State;
 import com.swirlds.state.spi.info.NetworkInfo;
 import com.swirlds.state.spi.info.NodeInfo;
-import com.swirlds.state.spi.info.SelfNodeInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
@@ -51,7 +47,7 @@ import org.apache.logging.log4j.Logger;
  * If the executor is to handle such transactions as if on a live network with this state, the node details file
  * must be present in the state and reflect the network's active address book.
  * <p>
- * The {@link NetworkInfo#selfNodeInfo()} implementation, however, returns a {@link SelfNodeInfo} that is a complete
+ * The {@link NetworkInfo#selfNodeInfo()} implementation, however, returns a {@link NodeInfo} that is a complete
  * mock other than the software version, since the self-identity of the node executing a transaction clearly cannot
  * change <i>how</i> the transaction is executed.
  */
@@ -61,7 +57,7 @@ public class StateNetworkInfo implements NetworkInfo {
 
     private final Bytes ledgerId;
     private final ConfigProvider configProvider;
-    private final SelfNodeInfo selfNodeInfo;
+    private final NodeInfo selfNodeInfo;
 
     @Nullable
     private List<NodeInfo> nodeInfos;
@@ -71,7 +67,7 @@ public class StateNetworkInfo implements NetworkInfo {
         this.configProvider = requireNonNull(configProvider);
         final var config = configProvider.getConfiguration();
         this.ledgerId = config.getConfigData(LedgerConfig.class).id();
-        this.selfNodeInfo = mockSelfNodeInfo(config);
+        this.selfNodeInfo = new NodeInfoImpl(0, AccountID.DEFAULT, 0, List.of(), Bytes.EMPTY);
     }
 
     /**
@@ -91,17 +87,7 @@ public class StateNetworkInfo implements NetworkInfo {
             final var nodeAddressBook = NodeAddressBook.PROTOBUF.parse(nodeDetails);
             nodeInfos = nodeAddressBook.nodeAddress().stream()
                     .<NodeInfo>map(address -> new NodeInfoImpl(
-                            address.nodeId(),
-                            address.nodeAccountIdOrThrow(),
-                            address.stake(),
-                            "",
-                            -1,
-                            "",
-                            -1,
-                            address.rsaPubKey(),
-                            address.description(),
-                            Bytes.EMPTY,
-                            ""))
+                            address.nodeId(), address.nodeAccountIdOrThrow(), address.stake(), List.of(), Bytes.EMPTY))
                     .toList();
         } catch (ParseException e) {
             log.warn("Failed to parse node details", e);
@@ -117,7 +103,7 @@ public class StateNetworkInfo implements NetworkInfo {
 
     @NonNull
     @Override
-    public SelfNodeInfo selfNodeInfo() {
+    public NodeInfo selfNodeInfo() {
         return selfNodeInfo;
     }
 
@@ -143,17 +129,5 @@ public class StateNetworkInfo implements NetworkInfo {
 
     private @NonNull List<NodeInfo> nodeInfosOrThrow() {
         return requireNonNull(nodeInfos, "Not initialized");
-    }
-
-    /**
-     * Returns a {@link SelfNodeInfo} that is a complete mock other than the software version present in the
-     * given configuration.
-     * @param config the configuration to use
-     * @return a mock self node info
-     */
-    private static SelfNodeInfo mockSelfNodeInfo(@NonNull final Configuration config) {
-        final var versionConfig = config.getConfigData(VersionConfig.class);
-        return new SelfNodeInfoImpl(
-                0, AccountID.DEFAULT, 0, "", -1, "", -1, "", "", Bytes.EMPTY, versionConfig.hapiVersion(), "");
     }
 }

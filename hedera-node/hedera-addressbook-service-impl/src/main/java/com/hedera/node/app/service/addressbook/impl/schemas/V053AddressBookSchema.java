@@ -41,7 +41,6 @@ import com.swirlds.state.spi.Schema;
 import com.swirlds.state.spi.StateDefinition;
 import com.swirlds.state.spi.WritableKVState;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
@@ -81,7 +80,7 @@ public class V053AddressBookSchema extends Schema {
         final WritableKVState<EntityNumber, Node> writableNodes =
                 ctx.newStates().get(NODES_KEY);
 
-        final var networkInfo = ctx.networkInfo();
+        final var networkInfo = ctx.genesisNetworkInfo();
         final var addressBook = networkInfo.addressBook();
         final var bootstrapConfig = ctx.configuration().getConfigData(BootstrapConfig.class);
 
@@ -97,10 +96,8 @@ public class V053AddressBookSchema extends Schema {
             final var nodeBuilder = Node.newBuilder()
                     .nodeId(nodeInfo.nodeId())
                     .accountId(nodeInfo.accountId())
-                    .description(nodeInfo.selfName())
-                    .gossipEndpoint(List.of(
-                            endpointFor(nodeInfo.internalHostName(), nodeInfo.internalPort()),
-                            endpointFor(nodeInfo.externalHostName(), nodeInfo.externalPort())))
+                    .description("node" + (nodeInfo.nodeId() + 1))
+                    .gossipEndpoint(nodeInfo.gossipEndpoints())
                     .gossipCaCertificate(nodeInfo.sigCertBytes())
                     .weight(nodeInfo.stake())
                     .adminKey(finalAdminKey);
