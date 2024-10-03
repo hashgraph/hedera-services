@@ -16,7 +16,7 @@
 
 package com.hedera.node.app.workflows.handle.record.impl.producers;
 
-import static com.swirlds.platform.test.fixtures.state.TestSchema.CURRENT_VERSION;
+import static com.hedera.node.app.records.RecordTestData.VERSION;
 
 import com.hedera.node.app.records.impl.BlockRecordStreamProducer;
 import com.hedera.node.app.records.impl.producers.BlockRecordWriterFactory;
@@ -28,6 +28,6 @@ final class StreamFileProducerSingleThreadedTest extends StreamFileProducerTest 
 
     @Override
     BlockRecordStreamProducer createStreamProducer(@NonNull final BlockRecordWriterFactory factory) {
-        return new StreamFileProducerSingleThreaded(BlockRecordFormatV6.INSTANCE, factory, CURRENT_VERSION);
+        return new StreamFileProducerSingleThreaded(BlockRecordFormatV6.INSTANCE, factory, VERSION);
     }
 }
