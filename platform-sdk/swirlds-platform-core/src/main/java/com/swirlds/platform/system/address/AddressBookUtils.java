@@ -64,7 +64,6 @@ import java.util.regex.Pattern;
 public class AddressBookUtils {
 
     public static final String ADDRESS_KEYWORD = "address";
-    public static final String NEXT_NODE_ID_KEYWORD = "nextNodeId";
     private static final Pattern IPV4_ADDRESS_PATTERN =
             Pattern.compile("^((25[0-5]|(2[0-4]|1\\d|[1-9]|)\\d)\\.?\\b){4}$");
 
@@ -98,7 +97,7 @@ public class AddressBookUtils {
                     memo);
         }
         final String addresses = table.render();
-        return addresses + "\n" + NEXT_NODE_ID_KEYWORD + ", " + addressBook.getNextNodeId();
+        return addresses;
     }
 
     /**
@@ -112,7 +111,6 @@ public class AddressBookUtils {
     public static AddressBook parseAddressBookText(@NonNull final String addressBookText) throws ParseException {
         Objects.requireNonNull(addressBookText, "The addressBookText must not be null.");
         final AddressBook addressBook = new AddressBook();
-        boolean nextNodeIdParsed = false;
         for (final String line : addressBookText.split("\\r?\\n")) {
             final String trimmedLine = line.trim();
             if (trimmedLine.isEmpty()
@@ -126,22 +124,12 @@ public class AddressBookUtils {
                 if (address != null) {
                     addressBook.add(address);
                 }
-            } else if (trimmedLine.startsWith(NEXT_NODE_ID_KEYWORD)) {
-                final NodeId nodeId = parseNextNodeId(trimmedLine);
-                addressBook.setNextNodeId(nodeId);
-                nextNodeIdParsed = true;
             } else {
                 throw new ParseException(
-                        "The line [%s] does not start with `%s` or `%s`."
-                                .formatted(
-                                        line.substring(0, Math.min(line.length(), 30)),
-                                        ADDRESS_KEYWORD,
-                                        NEXT_NODE_ID_KEYWORD),
+                        "The line [%s] does not start with `%s`."
+                                .formatted(line.substring(0, Math.min(line.length(), 30)), ADDRESS_KEYWORD),
                         0);
             }
-        }
-        if (!nextNodeIdParsed) {
-            throw new ParseException("The address book text does not contain a `nextNodeId` line.", 0);
         }
         return addressBook;
     }
@@ -162,10 +150,6 @@ public class AddressBookUtils {
         if (parts.length != 2) {
             throw new ParseException(
                     "The nextNodeId [%s] does not have exactly 2 comma separated parts.".formatted(nextNodeId), 0);
-        }
-        if (!parts[0].trim().equals(NEXT_NODE_ID_KEYWORD)) {
-            throw new ParseException(
-                    "The nextNodeId [%s] does not start with the keyword `nextNodeId`.".formatted(nextNodeId), 0);
         }
         final String nodeIdText = parts[1].trim();
         try {
@@ -282,9 +266,6 @@ public class AddressBookUtils {
     public static void verifyReconnectAddressBooks(
             @NonNull final AddressBook addressBook1, @NonNull final AddressBook addressBook2)
             throws IllegalStateException {
-        if (!addressBook1.getNextNodeId().equals(addressBook2.getNextNodeId())) {
-            throw new IllegalStateException("The next node ids are not the same.");
-        }
         final int addressCount = addressBook1.getSize();
         if (addressCount != addressBook2.getSize()) {
             throw new IllegalStateException("The address books do not have the same number of addresses.");

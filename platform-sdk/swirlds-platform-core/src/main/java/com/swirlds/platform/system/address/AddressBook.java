@@ -92,6 +92,10 @@ public class AddressBook implements Iterable<Address>, SelfSerializable, Hashabl
     private long round = UNKNOWN_ROUND;
 
     /**
+     * DEPRECATED FIELD as of v0.56.0 It remains for compatibility with protobuf serialization.  It's value will always
+     * be > the highest node ID of address in the address book, but constraints will no longer be checked when changing
+     * address books.
+     * <p>
      * The node ID of the next address that can be added must be greater than or equal to this value.
      * <p>
      * INVARIANT: that nextNodeId is greater than the node ids of all addresses in the address book.
@@ -153,6 +157,7 @@ public class AddressBook implements Iterable<Address>, SelfSerializable, Hashabl
         }
 
         this.round = that.round;
+        // the next node id is deprecated, but the value is copied here for compatibility with protobuf serialization
         this.nextNodeId = that.nextNodeId;
     }
 
@@ -282,16 +287,28 @@ public class AddressBook implements Iterable<Address>, SelfSerializable, Hashabl
     }
 
     /**
-     * Get the next available node ID. When adding a new address, it must always have a node ID equal to this value.
+     * This method and its internal field are deprecated and no longer supported. The existence of this method and its
+     * internal field remains for compatibility with protobuf serialization.  The returned value is either the last
+     * value set by {@link #setNextNodeId(NodeId)} or the result of increasing the value to 1+ the node id of a new
+     * address when adding a new address to the address book.  The comments below reflect the old usage
+     * of the method.
+     * <p>
+     * Get the next available node ID.
      *
      * @return the next available node ID
      */
+    @Deprecated(forRemoval = true, since = "0.56.0")
     @NonNull
     public NodeId getNextNodeId() {
         return nextNodeId;
     }
 
     /**
+     * This method and its internal field are deprecated and no longer supported. The set value updates the internal
+     * field, but is no longer checked against other data in the address book.  The existence of this method and its
+     * internal field remains for compatibility with protobuf serialization.  The comments below reflect the old usage
+     * of the method and are no longer accurate.
+     *
      * <p>
      * Set the expected next node ID to be added to this address book.
      * </p>
@@ -306,16 +323,9 @@ public class AddressBook implements Iterable<Address>, SelfSerializable, Hashabl
      * @param newNextNodeId the next node ID for the address book
      * @return this object
      */
+    @Deprecated(forRemoval = true, since = "0.56.0")
     @NonNull
     public AddressBook setNextNodeId(@NonNull final NodeId newNextNodeId) {
-        Objects.requireNonNull(newNextNodeId);
-        if (newNextNodeId.compareTo(this.nextNodeId) < 0) {
-            throw new IllegalArgumentException("The provided nextNodeId %s is less than the current nextNodeId %s"
-                    .formatted(newNextNodeId, this.nextNodeId));
-        }
-        // the newNextNodeId is greater than all address node ids in the address book is true because it is
-        // greater than or equal to the current nextNodeId which is greater than all address node ids.
-
         this.nextNodeId = newNextNodeId;
         return this;
     }
@@ -423,22 +433,27 @@ public class AddressBook implements Iterable<Address>, SelfSerializable, Hashabl
     }
 
     /**
-     * Add a new address.
+     * Add a new address at the end of the address book.
      *
      * @param address the address to add
      */
     private void addNewAddress(@NonNull final Address address) {
         final NodeId addressNodeId = address.getNodeId();
-        final int nodeIdComparison = addressNodeId.compareTo(nextNodeId);
+        final int addressBookSize = getSize();
+        final NodeId nextAvailable = addressBookSize == 0
+                ? NodeId.FIRST_NODE_ID
+                : getNodeId(getSize() - 1).getOffset(1);
+        final int nodeIdComparison = addressNodeId.compareTo(nextAvailable);
         if (nodeIdComparison < 0) {
             throw new IllegalArgumentException("Can not add address with node ID " + address.getNodeId()
                     + ", the next address to be added is required have a node ID greater or equal to "
-                    + nextNodeId);
+                    + nextAvailable);
         }
         if (addresses.size() >= MAX_ADDRESSES) {
             throw new IllegalStateException("Address book is only permitted to hold " + MAX_ADDRESSES + " entries");
         }
 
+        // The next node ID is deprecated, but legacy code expects the value to be higher than the highest node ID.
         nextNodeId = addressNodeId.getOffset(1);
 
         addresses.put(address.getNodeId(), address);
@@ -454,10 +469,8 @@ public class AddressBook implements Iterable<Address>, SelfSerializable, Hashabl
     /**
      * Add an address to the address book, replacing the existing address with the same ID if one is present.
      *
-     * @param address the address for that member, may not be null, must have a node ID greater or equal to
-     *                {@link #nextNodeId} if the address is not currently in the address book
+     * @param address the address for that member, may not be null
      * @return this object
-     * @throws IllegalStateException if a new address is added that has a node ID that is less than {@link #nextNodeId}
      */
     @NonNull
     public AddressBook add(@NonNull final Address address) {
@@ -603,9 +616,8 @@ public class AddressBook implements Iterable<Address>, SelfSerializable, Hashabl
         }
 
         final AddressBook that = (AddressBook) o;
-        return Objects.equals(addresses, that.addresses)
-                && getRound() == that.getRound()
-                && Objects.equals(getNextNodeId(), that.getNextNodeId());
+        return Objects.equals(addresses, that.addresses) && getRound() == that.getRound();
+        // The nextNodeId field has been removed from the equality check
     }
 
     /**

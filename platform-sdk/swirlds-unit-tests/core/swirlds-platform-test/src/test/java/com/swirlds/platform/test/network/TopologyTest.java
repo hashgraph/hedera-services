@@ -126,7 +126,8 @@ class TopologyTest {
         final AddressBook addressBook =
                 RandomAddressBookBuilder.create(randotron).withSize(numNodes).build();
         for (int thisNode = 0; thisNode < numNodes; thisNode++) {
-            final NodeId outOfBoundsId = addressBook.getNextNodeId();
+            final NodeId outOfBoundsId =
+                    addressBook.getNodeId(addressBook.getSize() - 1).getOffset(1);
             final NodeId thisNodeId = addressBook.getNodeId(thisNode);
 
             final List<PeerInfo> peers = Utilities.createPeerInfoList(addressBook, thisNodeId);

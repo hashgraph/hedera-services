@@ -391,24 +391,6 @@ class AddressBookTests {
     }
 
     @Test
-    @DisplayName("setNextNodeId() Test")
-    void setNextNodeIdTest() {
-        final RandomAddressBookBuilder generator = RandomAddressBookBuilder.create(getRandomPrintSeed());
-        final AddressBook addressBook = generator.build();
-
-        final NodeId nextId = addressBook.getNextNodeId();
-        addressBook.setNextNodeId(nextId.getOffset(10));
-
-        assertEquals(nextId.getOffset(10), addressBook.getNextNodeId(), "node ID should have been updated");
-
-        final NodeId lastNodeId = addressBook.getNodeId(addressBook.getSize() - 1);
-        assertThrows(
-                IllegalArgumentException.class,
-                () -> addressBook.setNextNodeId(lastNodeId.getOffset(-1)),
-                "the next node ID should not be able to be set to a value less than or equal to the last node id in the address book");
-    }
-
-    @Test
     @DisplayName("Roundtrip address book serialization and deserialization compatible with config.txt")
     void roundTripSerializeAndDeserializeCompatibleWithConfigTxt() throws ParseException {
         final RandomAddressBookBuilder generator = RandomAddressBookBuilder.create(getRandomPrintSeed());
@@ -495,21 +477,12 @@ class AddressBookTests {
                 IllegalStateException.class,
                 () -> AddressBookUtils.verifyReconnectAddressBooks(
                         addressBook, addressBook.copy().remove(addressBook.getNodeId(0))));
-        // test exception on nextNodeId mismatch
-        assertThrows(
-                IllegalStateException.class,
-                () -> AddressBookUtils.verifyReconnectAddressBooks(
-                        addressBook,
-                        addressBook
-                                .copy()
-                                .setNextNodeId(addressBook.getNextNodeId().getOffset(5))));
 
         // test exception on node id mismatch
         final AddressBook addressBook2 = addressBook.copy();
         final Address address = addressBook2.getAddress(addressBook2.getNodeId(0));
         addressBook2.remove(address.getNodeId());
         addressBook2.add(address.copySetNodeId(addressBook.getNextNodeId()));
-        addressBook.setNextNodeId(addressBook2.getNextNodeId());
         assertThrows(
                 IllegalStateException.class,
                 () -> AddressBookUtils.verifyReconnectAddressBooks(addressBook, addressBook2));
