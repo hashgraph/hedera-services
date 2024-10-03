@@ -26,7 +26,14 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  * Standard implementation of the {@link ConsensusService} {@link RpcService}.
  */
 public final class ConsensusServiceImpl implements ConsensusService {
+    /**
+     * Topic running hash
+     */
     public static final int RUNNING_HASH_BYTE_ARRAY_SIZE = 48;
+
+    /**
+     * Topics state key
+     */
     public static final String TOPICS_KEY = "TOPICS";
 
     @Override

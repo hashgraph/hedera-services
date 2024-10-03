@@ -23,12 +23,6 @@ plugins {
 // tasks from the 'build' group
 defaultTasks("tasks")
 
-tasks.named<TaskReportTask>("tasks") {
-    if (!isDetail) {
-        displayGroup = "build"
-    }
-}
-
 tasks.register("qualityGate") {
     group = "build"
     description = "Apply spotless rules and run all quality checks."
