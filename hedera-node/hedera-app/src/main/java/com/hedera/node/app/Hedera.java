@@ -102,6 +102,7 @@ import com.hedera.node.app.workflows.query.QueryWorkflow;
 import com.hedera.node.config.Utils;
 import com.hedera.node.config.data.BlockStreamConfig;
 import com.hedera.node.config.data.HederaConfig;
+import com.hedera.node.config.data.LedgerConfig;
 import com.hedera.node.config.data.VersionConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.constructable.ClassConstructorPair;
@@ -572,7 +573,9 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener {
                 // This is only when using Browser and this path will be deleted soon
                 genesisRoster = createRoster(platform.getAddressBook());
             }
-            genesisNetworkInfo = new GenesisNetworkInfo(genesisRoster, configProvider);
+            final var config = configProvider.getConfiguration();
+            final var ledgerConfig = config.getConfigData(LedgerConfig.class);
+            genesisNetworkInfo = new GenesisNetworkInfo(genesisRoster, ledgerConfig.id());
         }
         final List<StateChanges.Builder> migrationStateChanges = new ArrayList<>();
         if (isNotEmbedded()) {

@@ -20,8 +20,6 @@ import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.
 
 import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.hapi.node.state.roster.RosterEntry;
-import com.hedera.node.app.config.ConfigProviderImpl;
-import com.hedera.node.config.data.LedgerConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.state.spi.info.NetworkInfo;
 import com.swirlds.state.spi.info.NodeInfo;
@@ -38,11 +36,9 @@ public class GenesisNetworkInfo implements NetworkInfo {
     private final Roster genesisRoster;
     private final Bytes ledgerId;
 
-    public GenesisNetworkInfo(final Roster genesisRoster, final ConfigProviderImpl configProvider) {
+    public GenesisNetworkInfo(final Roster genesisRoster, final Bytes ledgerId) {
         this.genesisRoster = genesisRoster;
-        final var config = configProvider.getConfiguration();
-        final var ledgerConfig = config.getConfigData(LedgerConfig.class);
-        ledgerId = ledgerConfig.id();
+        this.ledgerId = ledgerId;
     }
 
     @NonNull
