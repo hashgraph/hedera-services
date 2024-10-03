@@ -23,5 +23,5 @@ import com.swirlds.config.api.ConfigProperty;
 @ConfigData("topics")
 public record TopicsConfig(
         @ConfigProperty(defaultValue = "1000000") @NetworkProperty long maxNumber,
-        @ConfigProperty(defaultValue = "10") @NetworkProperty int maxCustoFeeEntriesForTopics,
+        @ConfigProperty(defaultValue = "10") @NetworkProperty int maxCustomFeeEntriesForTopics,
         @ConfigProperty(defaultValue = "10") @NetworkProperty int maxEntriesForFeeExemptKeyList) {}

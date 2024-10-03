@@ -16,28 +16,52 @@
 
 package com.hedera.services.bdd.suites.hip991;
 
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.SpecOperation;
+import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.TokenType;
 import java.util.ArrayList;
 
 public class TopicCustomFeeBase {
     protected static final String TOPIC = "topic";
-    protected static final String OWNER = "owner";
-    protected static final String FUNGIBLE_TOKEN = "fungibleToken";
     protected static final String ADMIN_KEY = "adminKey";
     protected static final String SUBMIT_KEY = "submitKey";
     protected static final String FEE_SCHEDULE_KEY = "feeScheduleKey";
+    protected static final String FEE_SCHEDULE_KEY2 = "feeScheduleKey2";
+    protected static final String FEE_SCHEDULE_KEY_ECDSA = "feeScheduleKeyECDSA";
     protected static final String FEE_EXEMPT_KEY_PREFIX = "feeExemptKey_";
+    protected static final String TOKEN = "TOKEN";
+    protected static final String COLLECTOR = "COLLECTOR";
 
     // This key is truly invalid, as all Ed25519 public keys must be 32 bytes long
     protected static final Key STRUCTURALLY_INVALID_KEY =
             Key.newBuilder().setEd25519(ByteString.fromHex("ff")).build();
 
     protected static SpecOperation[] setupBaseKeys() {
-        return new SpecOperation[] {newKeyNamed(ADMIN_KEY), newKeyNamed(SUBMIT_KEY), newKeyNamed(FEE_SCHEDULE_KEY)};
+        return new SpecOperation[] {
+            newKeyNamed(ADMIN_KEY),
+            newKeyNamed(SUBMIT_KEY),
+            newKeyNamed(FEE_SCHEDULE_KEY),
+            newKeyNamed(FEE_SCHEDULE_KEY_ECDSA).shape(KeyShape.SECP256K1)
+        };
+    }
+
+    protected static SpecOperation[] setupBaseForUpdate() {
+        return new SpecOperation[] {
+            newKeyNamed(ADMIN_KEY),
+            newKeyNamed(SUBMIT_KEY),
+            newKeyNamed(FEE_SCHEDULE_KEY),
+            newKeyNamed(FEE_SCHEDULE_KEY2),
+            cryptoCreate(COLLECTOR),
+            tokenCreate(TOKEN).tokenType(TokenType.FUNGIBLE_COMMON).initialSupply(500),
+            tokenAssociate(COLLECTOR, TOKEN)
+        };
     }
 
     protected static SpecOperation[] newNamedKeysForFEKL(int count) {

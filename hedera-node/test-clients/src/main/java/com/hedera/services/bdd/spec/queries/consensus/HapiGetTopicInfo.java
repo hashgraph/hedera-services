@@ -67,7 +67,10 @@ public class HapiGetTopicInfo extends HapiQueryOp<HapiGetTopicInfo> {
     private Optional<String> autoRenewAccount = Optional.empty();
     private Optional<String> feeScheduleKey = Optional.empty();
     private final List<String> expectedFeeExemptKeyList = new ArrayList<>();
+    private boolean expectFeeExemptKeyListEmpty = false;
     private final List<BiConsumer<HapiSpec, List<ConsensusCustomFee>>> expectedFees = new ArrayList<>();
+    private boolean expectNoFees = false;
+    private Optional<Integer> expectCustomFeeSize = Optional.empty();
     private boolean saveRunningHash = false;
     private Optional<LongConsumer> seqNoInfoObserver = Optional.empty();
 
@@ -168,8 +171,23 @@ public class HapiGetTopicInfo extends HapiQueryOp<HapiGetTopicInfo> {
         return this;
     }
 
-    public HapiGetTopicInfo hasCustom(BiConsumer<HapiSpec, List<ConsensusCustomFee>> feeAssertion) {
+    public HapiGetTopicInfo hasCustomFee(BiConsumer<HapiSpec, List<ConsensusCustomFee>> feeAssertion) {
         expectedFees.add(feeAssertion);
+        return this;
+    }
+
+    public HapiGetTopicInfo hasNoCustomFee() {
+        expectNoFees = true;
+        return this;
+    }
+
+    public HapiGetTopicInfo hasCustomFeeSize(int size) {
+        expectCustomFeeSize = Optional.of(size);
+        return this;
+    }
+
+    public HapiGetTopicInfo hasEmptyFeeExemptKeyList() {
+        expectFeeExemptKeyListEmpty = true;
         return this;
     }
 
@@ -227,6 +245,11 @@ public class HapiGetTopicInfo extends HapiQueryOp<HapiGetTopicInfo> {
             assertFalse(info.hasFeeScheduleKey(), "Should have no fee schedule key!");
         }
         final var actualFees = info.getCustomFeesList();
+        if (expectNoFees) {
+            assertTrue(actualFees.isEmpty(), "Should have no custom fees");
+        }
+        expectCustomFeeSize.ifPresent(
+                integer -> assertEquals((int) integer, actualFees.size(), "Custom fee size should be " + integer));
         for (var expectedFee : expectedFees) {
             expectedFee.accept(spec, actualFees);
         }
@@ -235,6 +258,9 @@ public class HapiGetTopicInfo extends HapiQueryOp<HapiGetTopicInfo> {
             assertTrue(
                     actualFeeExemptKeys.contains(spec.registry().getKey(expectedKey)),
                     "Doesn't contain free messages key!");
+        }
+        if (expectFeeExemptKeyListEmpty) {
+            assertTrue(actualFeeExemptKeys.isEmpty(), "Should have no keys in fee except key list");
         }
         expectedLedgerId.ifPresent(id -> Assertions.assertEquals(id, info.getLedgerId()));
     }
