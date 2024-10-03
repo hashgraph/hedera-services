@@ -86,8 +86,8 @@ public record PlatformSchedulersConfig(
                 TaskSchedulerConfiguration stateSigner,
         @ConfigProperty(defaultValue = "SEQUENTIAL_THREAD CAPACITY(500) UNHANDLED_TASK_METRIC")
                 TaskSchedulerConfiguration pcesWriter,
-        @ConfigProperty(defaultValue = "SEQUENTIAL CAPACITY(500) UNHANDLED_TASK_METRIC") //TODO ask Oleg about type
-        TaskSchedulerConfiguration pcesInlineWriter,
+        @ConfigProperty(defaultValue = "SEQUENTIAL CAPACITY(500) UNHANDLED_TASK_METRIC") // TODO ask Oleg about type
+                TaskSchedulerConfiguration pcesInlineWriter,
         @ConfigProperty(defaultValue = "DIRECT") TaskSchedulerConfiguration pcesSequencer,
         @ConfigProperty(defaultValue = "CONCURRENT CAPACITY(500) FLUSHABLE UNHANDLED_TASK_METRIC")
                 TaskSchedulerConfiguration applicationTransactionPrehandler,

@@ -24,7 +24,6 @@ import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.common.wiring.model.WiringModel;
 import com.swirlds.common.wiring.model.WiringModelBuilder;
 import com.swirlds.config.api.ConfigurationBuilder;
-import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.platform.builder.ApplicationCallbacks;
 import com.swirlds.platform.builder.PlatformBuildingBlocks;
 import com.swirlds.platform.builder.PlatformComponentBuilder;
@@ -78,24 +77,17 @@ class PlatformWiringTests {
     static Stream<PlatformContext> testContexts() {
         return Stream.of(
                 TestPlatformContextBuilder.create()
-                        .withConfiguration(
-                                ConfigurationBuilder
-                                        .create()
-                                        .autoDiscoverExtensions()
-                                        .withValue("platformWiring.inlinePces", "false")
-                                        .build()
-                        )
+                        .withConfiguration(ConfigurationBuilder.create()
+                                .autoDiscoverExtensions()
+                                .withValue("platformWiring.inlinePces", "false")
+                                .build())
                         .build(),
                 TestPlatformContextBuilder.create()
-                        .withConfiguration(
-                                ConfigurationBuilder
-                                        .create()
-                                        .autoDiscoverExtensions()
-                                        .withValue("platformWiring.inlinePces", "true")
-                                        .build()
-                        )
-                        .build()
-        );
+                        .withConfiguration(ConfigurationBuilder.create()
+                                .autoDiscoverExtensions()
+                                .withValue("platformWiring.inlinePces", "true")
+                                .build())
+                        .build());
     }
 
     @ParameterizedTest

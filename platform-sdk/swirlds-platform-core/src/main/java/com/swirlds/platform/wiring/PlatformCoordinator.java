@@ -198,7 +198,7 @@ public class PlatformCoordinator {
         flushIntakePipeline();
         stateHasherWiring.flush();
         stateSignatureCollectorWiring.flush();
-        if(roundDurabilityBufferWiring!=null){
+        if (roundDurabilityBufferWiring != null) {
             roundDurabilityBufferWiring.flush();
         }
         transactionHandlerWiring.flush();
@@ -222,8 +222,10 @@ public class PlatformCoordinator {
                 .getInputWire(StateSignatureCollector::clear)
                 .inject(NoInput.getInstance());
         eventCreationManagerWiring.getInputWire(EventCreationManager::clear).inject(NoInput.getInstance());
-        if(roundDurabilityBufferWiring!=null){
-            roundDurabilityBufferWiring.getInputWire(RoundDurabilityBuffer::clear).inject(NoInput.getInstance());
+        if (roundDurabilityBufferWiring != null) {
+            roundDurabilityBufferWiring
+                    .getInputWire(RoundDurabilityBuffer::clear)
+                    .inject(NoInput.getInstance());
         }
         staleEventDetectorWiring.getInputWire(StaleEventDetector::clear).inject(NoInput.getInstance());
         transactionPoolWiring.getInputWire(TransactionPool::clear).inject(NoInput.getInstance());
