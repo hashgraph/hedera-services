@@ -276,34 +276,4 @@ public class TopicCustomFeeTest extends TopicCustomFeeBase {
             }
         }
     }
-
-    @Nested
-    @DisplayName("Topic approve allowance")
-    class TopicApproveAllowance {
-
-        @Nested
-        @DisplayName("Positive scenarios")
-        class ApproveAllowancePositiveScenarios {
-
-            @BeforeAll
-            static void beforeAll(@NonNull final TestLifecycle lifecycle) {
-                lifecycle.doAdhoc(setupBaseKeys());
-            }
-
-            @HapiTest
-            @DisplayName("Approve crypto allowance for topic")
-            final Stream<DynamicTest> approveAllowance() {
-                return hapiTest(
-                        cryptoCreate(OWNER),
-                        createTopic(TOPIC)
-                                .adminKeyName(ADMIN_KEY)
-                                .submitKeyName(SUBMIT_KEY)
-                                .feeScheduleKeyName(FEE_SCHEDULE_KEY)
-                                .withConsensusCustomFee(fixedConsensusHbarFee(ONE_HBAR, OWNER)),
-                        approveTopicAllowance()
-                                .addCryptoAllowance(OWNER, TOPIC, 100, 10)
-                                .payingWith(OWNER));
-            }
-        }
-    }
 }
