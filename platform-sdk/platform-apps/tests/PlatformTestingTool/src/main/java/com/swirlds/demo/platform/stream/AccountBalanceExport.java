@@ -18,6 +18,7 @@ package com.swirlds.demo.platform.stream;
 
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.platform.NodeId;
@@ -214,8 +215,8 @@ public class AccountBalanceExport {
         byte[] fileHash = getFileHash(balanceFileName);
         Signature signature = platform.sign(fileHash);
 
-        String sigFileName =
-                generateSigFile(balanceFileName, signature.getBytes().toByteArray(), fileHash);
+        final String sigFileName =
+                generateSigFile(balanceFileName, signature.getBytes(), fileHash);
         if (sigFileName != null) {
             if (logger.isDebugEnabled()) {
                 logger.debug("Generated signature file for {}", balanceFileName);
@@ -227,11 +228,12 @@ public class AccountBalanceExport {
      * Create a signature file for a RecordStream/AccountBalance file;
      * This signature file contains the Hash of the file to be signed, and a signature signed by the node's Key
      *
-     * @param fileName
-     * @param signature
-     * @param fileHash
+     * @param fileName       the name of the file to be signed
+     * @param signatureBytes the signature bytes
+     * @param fileHash       the hash of the file to be signed
      */
-    public static String generateSigFile(String fileName, byte[] signature, byte[] fileHash) {
+    private static String generateSigFile(final String fileName, final Bytes signatureBytes, byte[] fileHash) {
+        final byte[] signature = signatureBytes.toByteArray();
         try {
             String newFileName = fileName + "_sig";
 
