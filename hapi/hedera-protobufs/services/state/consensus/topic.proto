@@ -52,8 +52,6 @@ option java_multiple_files = true;
  *   8. (Optional) A fee schedule key whose signature must be active for the topic's custom fees to be updated.
  *   9. (Optional) A list of keys that can submit messages without paying custom fees.
  *   10. (Optional) A list of custom fees to be assessed for each message submitted to the topic.
- *   11. (Optional) A list of crypto allowances for the topic.
- *   12. (Optional) A list of fungible token allowances for the topic.
  */
 message Topic {
     /**
