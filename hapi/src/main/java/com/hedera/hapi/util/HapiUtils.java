@@ -234,6 +234,8 @@ public class HapiUtils {
             case TOKEN_AIRDROP -> HederaFunctionality.TOKEN_AIRDROP;
             case TOKEN_CANCEL_AIRDROP -> HederaFunctionality.TOKEN_CANCEL_AIRDROP;
             case TOKEN_CLAIM_AIRDROP -> HederaFunctionality.TOKEN_CLAIM_AIRDROP;
+            case TSS_MESSAGE -> HederaFunctionality.TSS_MESSAGE;
+            case TSS_VOTE -> HederaFunctionality.TSS_VOTE;
             case UNSET -> throw new UnknownHederaFunctionality();
         };
     }

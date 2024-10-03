@@ -127,7 +127,7 @@ public class ConcurrentStreamingTreeHasher implements StreamingTreeHasher {
         final var maxDepth = maxDepthFor(penultimateStatus.numLeaves() + 1);
         for (int i = 0; i < maxDepth; i++) {
             final var rightmostHash = penultimateStatus.rightmostHashes().get(i);
-            if (rightmostHash == Bytes.EMPTY) {
+            if (rightmostHash.length() == 0) {
                 hash = BlockImplUtils.combine(hash, HashCombiner.EMPTY_HASHES[i]);
             } else {
                 hash = BlockImplUtils.combine(rightmostHash.toByteArray(), hash);
