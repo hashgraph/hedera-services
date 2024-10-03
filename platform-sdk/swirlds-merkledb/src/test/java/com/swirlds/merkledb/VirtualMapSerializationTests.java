@@ -23,6 +23,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.crypto.DigestType;
@@ -35,14 +36,20 @@ import com.swirlds.common.io.utility.LegacyTemporaryFileBuilder;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.common.merkle.route.MerkleRoute;
+import com.swirlds.config.api.Configuration;
+import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.merkledb.test.fixtures.ExampleFixedSizeVirtualValue;
 import com.swirlds.merkledb.test.fixtures.ExampleFixedSizeVirtualValueSerializer;
 import com.swirlds.merkledb.test.fixtures.ExampleLongKeyFixedSize;
 import com.swirlds.virtualmap.VirtualMap;
+import com.swirlds.virtualmap.config.VirtualMapConfig_;
 import com.swirlds.virtualmap.datasource.VirtualDataSourceBuilder;
 import com.swirlds.virtualmap.internal.merkle.VirtualInternalNode;
 import com.swirlds.virtualmap.internal.merkle.VirtualLeafNode;
+import com.swirlds.virtualmap.internal.merkle.VirtualMapState;
 import com.swirlds.virtualmap.internal.merkle.VirtualRootNode;
+import com.swirlds.virtualmap.internal.merkle.VirtualRootNode.ClassVersion;
+import com.swirlds.virtualmap.internal.merkle.VirtualStateAccessorImpl;
 import com.swirlds.virtualmap.serialize.KeySerializer;
 import com.swirlds.virtualmap.serialize.ValueSerializer;
 import java.io.ByteArrayInputStream;
@@ -356,5 +363,98 @@ class VirtualMapSerializationTests {
         copy1.release();
 
         MILLISECONDS.sleep(100); // Hack. Release methods may not have finished their work yet.
+    }
+
+    @Test
+    void inMemoryModeSerde() throws IOException {
+        final Configuration configuration = new TestConfigBuilder()
+                .withValue(VirtualMapConfig_.COPY_FLUSH_THRESHOLD, 1_000_000)
+                .getOrCreateConfig();
+        ConfigurationHolder.getInstance().setConfiguration(configuration);
+
+        VirtualRootNode<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> root =
+                new VirtualRootNode<>(KEY_SERIALIZER, VALUE_SERIALIZER, constructBuilder());
+        VirtualMapState state = new VirtualMapState("label");
+        root.postInit(new VirtualStateAccessorImpl(state));
+
+        // Copy 0
+        for (int i = 0; i < 100; i++) {
+            final ExampleLongKeyFixedSize key = new ExampleLongKeyFixedSize(i);
+            final ExampleFixedSizeVirtualValue value = new ExampleFixedSizeVirtualValue(1000000 + i);
+            root.put(key, value);
+        }
+
+        // Copy 1
+        final VirtualRootNode<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> copy1 = root.copy();
+        state = state.copy();
+        copy1.postInit(new VirtualStateAccessorImpl(state));
+        root.release();
+        root = copy1;
+        for (int i = 100; i < 200; i++) {
+            final ExampleLongKeyFixedSize key = new ExampleLongKeyFixedSize(i);
+            final ExampleFixedSizeVirtualValue value = new ExampleFixedSizeVirtualValue(1000000 + i);
+            root.put(key, value);
+        }
+        // Add more entries to copy 1 to force it to flush
+        for (int i = 100000; i < 120000; i++) {
+            final ExampleLongKeyFixedSize key = new ExampleLongKeyFixedSize(i);
+            final ExampleFixedSizeVirtualValue value = new ExampleFixedSizeVirtualValue(1000000 + i);
+            root.put(key, value);
+        }
+
+        final int nCopies = 100;
+        for (int copyNo = 2; copyNo < nCopies; copyNo++) {
+            final VirtualRootNode<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> copy = root.copy();
+            state = state.copy();
+            copy.postInit(new VirtualStateAccessorImpl(state));
+            root.release();
+            root = copy;
+            for (int i = 0; i < 100; i++) {
+                final int toAdd = copyNo * 100 + i;
+                final ExampleLongKeyFixedSize keyToAdd = new ExampleLongKeyFixedSize(toAdd);
+                final ExampleFixedSizeVirtualValue value = new ExampleFixedSizeVirtualValue(1000000 + toAdd);
+                root.put(keyToAdd, value);
+                final int toRemove = (copyNo - 2) * 100 + i;
+                final ExampleLongKeyFixedSize keytoRemove = new ExampleLongKeyFixedSize(toRemove);
+                final ExampleFixedSizeVirtualValue removed = root.remove(keytoRemove);
+                assertNotNull(removed);
+            }
+        }
+
+        // Final copy
+        final VirtualRootNode<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> copyF = root.copy();
+        state = state.copy();
+        copyF.postInit(new VirtualStateAccessorImpl(state));
+        root.release();
+        root = copyF;
+
+        // And one more to make sure copyF is immutable and can be serialized
+        final VirtualRootNode<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> copyOneMore = root.copy();
+
+        final Hash originalHash = copyF.getHash();
+        System.err.println(originalHash);
+
+        final ByteArrayOutputStream bout = new ByteArrayOutputStream();
+        final Path tmp = Files.createTempDirectory("inMemoryModeSerde");
+        try (final SerializableDataOutputStream out = new SerializableDataOutputStream(bout)) {
+            state.serialize(out);
+            copyF.serialize(out, tmp);
+        }
+
+        final ByteArrayInputStream bin = new ByteArrayInputStream(bout.toByteArray());
+        state = new VirtualMapState();
+        root = new VirtualRootNode<>(KEY_SERIALIZER, VALUE_SERIALIZER, constructBuilder());
+        try (final SerializableDataInputStream in = new SerializableDataInputStream(bin)) {
+            state.deserialize(in, 1);
+            root.deserialize(in, tmp, ClassVersion.CURRENT_VERSION);
+            root.postInit(new VirtualStateAccessorImpl(state));
+        }
+
+        final Hash restoredHash = root.getHash();
+        System.err.println(restoredHash);
+
+        copyOneMore.release();
+
+        assertEquals(originalHash, restoredHash);
     }
 }
