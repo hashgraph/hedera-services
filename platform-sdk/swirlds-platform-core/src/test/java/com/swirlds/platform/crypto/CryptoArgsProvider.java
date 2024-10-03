@@ -27,10 +27,7 @@ import com.swirlds.platform.roster.RosterUtils;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
 import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder.WeightDistributionStrategy;
-import com.swirlds.platform.util.BootstrapUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
-
-import java.io.IOException;
 import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.security.KeyStoreException;
@@ -61,8 +58,7 @@ public class CryptoArgsProvider {
         start = Instant.now();
         return Stream.of(
                 Arguments.of(addressBookAndCerts.addressBook(), addressBookAndCerts.nodeIdKeysAndCertsMap()),
-                Arguments.of(genAB, genC)
-        );
+                Arguments.of(genAB, genC));
     }
 
     public static AddressBook createAddressBook(final int size) {
@@ -73,10 +69,10 @@ public class CryptoArgsProvider {
 
         for (int i = 0; i < addresses.getSize(); i++) {
             final NodeId nodeId = addresses.getNodeId(i);
-            addresses.add(
-                    addresses.getAddress(nodeId)
-                            .copySetSelfName(RosterUtils.formatNodeName(nodeId.id()))
-                            .copySetHostnameInternal("127.0.0.1"));
+            addresses.add(addresses
+                    .getAddress(nodeId)
+                    .copySetSelfName(RosterUtils.formatNodeName(nodeId.id()))
+                    .copySetHostnameInternal("127.0.0.1"));
         }
 
         return addresses;
@@ -103,13 +99,13 @@ public class CryptoArgsProvider {
             throws URISyntaxException, UnrecoverableKeyException, KeyLoadingException, KeyStoreException,
                     NoSuchAlgorithmException, KeyGeneratingException, NoSuchProviderException {
         final AddressBook createdAB = createAddressBook(size);
-        final Map<NodeId, KeysAndCerts> loadedC =
-                EnhancedKeyStoreLoader.using(createdAB, configure(ResourceLoader.getFile("preGeneratedPEMKeysAndCerts/")))
-                        .scan()
-                        .generateIfNecessary()
-                        .verify()
-                        .injectInAddressBook()
-                        .keysAndCerts();
+        final Map<NodeId, KeysAndCerts> loadedC = EnhancedKeyStoreLoader.using(
+                        createdAB, configure(ResourceLoader.getFile("preGeneratedPEMKeysAndCerts/")))
+                .scan()
+                .generateIfNecessary()
+                .verify()
+                .injectInAddressBook()
+                .keysAndCerts();
         return new AddressBookAndCerts(createdAB, loadedC);
     }
 }
