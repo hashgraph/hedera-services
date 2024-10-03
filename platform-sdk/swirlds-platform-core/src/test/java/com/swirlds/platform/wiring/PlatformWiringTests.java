@@ -82,7 +82,6 @@ class PlatformWiringTests {
                                 ConfigurationBuilder
                                         .create()
                                         .autoDiscoverExtensions()
-                                        .withConfigDataType(ComponentWiringConfig.class)
                                         .withValue("platformWiring.inlinePces", "false")
                                         .build()
                         )
@@ -92,7 +91,6 @@ class PlatformWiringTests {
                                 ConfigurationBuilder
                                         .create()
                                         .autoDiscoverExtensions()
-                                        .withConfigDataType(ComponentWiringConfig.class)
                                         .withValue("platformWiring.inlinePces", "true")
                                         .build()
                         )
