@@ -215,8 +215,7 @@ public class AccountBalanceExport {
         byte[] fileHash = getFileHash(balanceFileName);
         Signature signature = platform.sign(fileHash);
 
-        final String sigFileName =
-                generateSigFile(balanceFileName, signature.getBytes(), fileHash);
+        final String sigFileName = generateSigFile(balanceFileName, signature.getBytes(), fileHash);
         if (sigFileName != null) {
             if (logger.isDebugEnabled()) {
                 logger.debug("Generated signature file for {}", balanceFileName);
