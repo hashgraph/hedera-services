@@ -22,6 +22,7 @@ import static com.hedera.node.app.records.RecordTestData.SIGNER;
 import static com.hedera.node.app.records.RecordTestData.STARTING_RUNNING_HASH_OBJ;
 import static com.hedera.node.app.records.RecordTestData.TEST_BLOCKS;
 import static com.hedera.node.app.records.RecordTestData.VERSION;
+import static com.swirlds.state.spi.HapiUtils.asAccountString;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -104,7 +105,8 @@ final class BlockRecordWriterV6Test extends AppTestBase {
         hapiVersion = app.hapiVersion();
         writer = new BlockRecordWriterV6(config, selfNodeInfo, SIGNER, fileSystem);
         final var ext = compress ? ".rcd.gz" : ".rcd";
-        final var recordDir = fileSystem.getPath(config.logDir(), "record" + selfNodeInfo.memo() + "/");
+        final var recordDir =
+                fileSystem.getPath(config.logDir(), "record" + asAccountString(selfNodeInfo.accountId()) + "/");
         recordPath = recordDir.resolve("2018-08-24T16_25_42.000000890Z" + ext);
         sigPath = recordDir.resolve("2018-08-24T16_25_42.000000890Z.rcd_sig");
     }
@@ -167,7 +169,8 @@ final class BlockRecordWriterV6Test extends AppTestBase {
         void recordDirectoryCouldNotBeCreated() throws IOException {
             // Given a "logDir" in the config that points not to a directory, but to a pre-existing FILE (!!!)
             final var config = buildAndGetConfig();
-            final var recordDir = fileSystem.getPath(config.logDir(), "record" + selfNodeInfo.memo() + "/");
+            final var recordDir =
+                    fileSystem.getPath(config.logDir(), "record" + asAccountString(selfNodeInfo.accountId()) + "/");
             Files.createDirectories(recordDir.getParent());
             Files.createFile(recordDir);
 
@@ -218,7 +221,8 @@ final class BlockRecordWriterV6Test extends AppTestBase {
             app = appBuilder.build();
             config = app.configProvider().getConfiguration().getConfigData(BlockRecordStreamConfig.class);
             hapiVersion = app.hapiVersion();
-            final var recordDir = fileSystem.getPath(config.logDir(), "record" + selfNodeInfo.memo() + "/");
+            final var recordDir =
+                    fileSystem.getPath(config.logDir(), "record" + asAccountString(selfNodeInfo.accountId()) + "/");
             Files.createDirectories(recordDir);
 
             // When we create a new writer and initialize it

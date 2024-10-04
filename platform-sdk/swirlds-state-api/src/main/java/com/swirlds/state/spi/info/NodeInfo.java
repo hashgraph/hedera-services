@@ -17,7 +17,14 @@
 package com.swirlds.state.spi.info;
 
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.ServiceEndpoint;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.common.utility.CommonUtils;
+import java.io.ByteArrayInputStream;
+import java.security.cert.CertificateException;
+import java.security.cert.CertificateFactory;
+import java.security.cert.X509Certificate;
+import java.util.List;
 
 /**
  * Summarizes useful information about the nodes in the AddressBook from the Platform. In
@@ -55,32 +62,6 @@ public interface NodeInfo {
     AccountID accountId();
 
     /**
-     * Convenience method to get the memo of this node's account which is in the address book.
-     *
-     * @return this node's account memo
-     */
-    String memo();
-
-    /**
-     * The host name of this node, as known by the external world. This is an IP address.
-     *
-     * @return The host name (IP Address) of this node
-     */
-    String externalHostName();
-
-    /**
-     * The port the node is listening on.
-     * @return the port. Non-negative.
-     */
-    int externalPort();
-
-    /**
-     * The public key of this node, as a hex-encoded string.
-     * @return the public key
-     */
-    String hexEncodedPublicKey();
-
-    /**
      * The stake weight of this node.
      * @return the stake weight
      */
@@ -93,21 +74,30 @@ public interface NodeInfo {
     Bytes sigCertBytes();
 
     /**
-     * The host name of this node, as known by the internal world. This is an IP address.
+     * The list of service endpoints of this node, as known by the internal and external worlds.
+     * This has an IP address and port.
      *
      * @return The host name (IP Address) of this node
      */
-    String internalHostName();
+    List<ServiceEndpoint> gossipEndpoints();
 
     /**
-     * The internal port the node is listening on.
-     * @return the port. Non-negative.
+     * The public key of this node, as a hex-encoded string. It is extracted from the certificate bytes.
+     *
+     * @return the public key
      */
-    int internalPort();
+    default String hexEncodedPublicKey() {
+        try {
+            CertificateFactory certificateFactory = CertificateFactory.getInstance("X.509");
 
-    /**
-     * The "self name" of this node.
-     * @return the self name
-     */
-    String selfName();
+            // Convert the byte array to an InputStream and generate the X509Certificate object
+            X509Certificate certificate = (X509Certificate) certificateFactory.generateCertificate(
+                    new ByteArrayInputStream(sigCertBytes().toByteArray()));
+
+            // Return the public key from the certificate
+            return CommonUtils.hex(certificate.getPublicKey().getEncoded());
+        } catch (CertificateException e) {
+            throw new IllegalStateException("Error extracting public key from certificate", e);
+        }
+    }
 }

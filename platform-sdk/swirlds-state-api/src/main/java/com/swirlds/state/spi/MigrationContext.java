@@ -63,7 +63,8 @@ public interface MigrationContext {
      *
      * @return The {@link NetworkInfo} of the network at the time of migration.
      */
-    NetworkInfo networkInfo();
+    @Nullable
+    NetworkInfo genesisNetworkInfo();
 
     /**
      * Consumes and returns the next entity number. For use by migrations that need to create entities.
