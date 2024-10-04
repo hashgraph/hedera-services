@@ -17,6 +17,7 @@
 package com.hedera.node.app.workflows.handle;
 
 import static com.hedera.hapi.node.base.HederaFunctionality.ETHEREUM_TRANSACTION;
+import static com.hedera.hapi.node.base.HederaFunctionality.NODE_UPDATE;
 import static com.hedera.hapi.node.base.HederaFunctionality.SYSTEM_DELETE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.AUTHORIZATION_FAILED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.ENTITY_NOT_ALLOWED_TO_DELETE;
@@ -47,6 +48,7 @@ import com.hedera.node.app.workflows.handle.steps.PlatformStateUpdates;
 import com.hedera.node.app.workflows.handle.steps.SystemFileUpdates;
 import com.hedera.node.app.workflows.handle.throttle.DispatchUsageManager;
 import com.hedera.node.app.workflows.handle.throttle.ThrottleException;
+import com.swirlds.state.spi.info.NetworkInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import javax.inject.Inject;
@@ -73,6 +75,7 @@ public class DispatchProcessor {
     private final ExchangeRateManager exchangeRateManager;
     private final TransactionDispatcher dispatcher;
     private final EthereumTransactionHandler ethereumTransactionHandler;
+    private final NetworkInfo networkInfo;
 
     @Inject
     public DispatchProcessor(
@@ -84,7 +87,8 @@ public class DispatchProcessor {
             @NonNull final DispatchUsageManager dispatchUsageManager,
             @NonNull final ExchangeRateManager exchangeRateManager,
             @NonNull final TransactionDispatcher dispatcher,
-            @NonNull final EthereumTransactionHandler ethereumTransactionHandler) {
+            @NonNull final EthereumTransactionHandler ethereumTransactionHandler,
+            final NetworkInfo networkInfo) {
         this.authorizer = requireNonNull(authorizer);
         this.validator = requireNonNull(validator);
         this.recordFinalizer = requireNonNull(recordFinalizer);
@@ -94,6 +98,7 @@ public class DispatchProcessor {
         this.exchangeRateManager = requireNonNull(exchangeRateManager);
         this.dispatcher = requireNonNull(dispatcher);
         this.ethereumTransactionHandler = requireNonNull(ethereumTransactionHandler);
+        this.networkInfo = requireNonNull(networkInfo);
     }
 
     /**
@@ -182,6 +187,10 @@ public class DispatchProcessor {
 
         // Notify if platform state was updated
         platformStateUpdates.handleTxBody(dispatch.stack(), dispatch.txnInfo().txBody());
+
+        if (dispatch.txnInfo().functionality() == NODE_UPDATE) {
+            networkInfo.updateFrom(dispatch.stack());
+        }
     }
 
     /**

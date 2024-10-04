@@ -16,6 +16,7 @@
 
 package com.swirlds.state.spi;
 
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
@@ -95,5 +96,9 @@ public final class HapiUtils {
             out.writeBoolean(true);
             out.writeNormalisedString(semVerPart);
         }
+    }
+
+    public static String asAccountString(final AccountID accountID) {
+        return String.format("%d.%d.%d", accountID.shardNum(), accountID.realmNum(), accountID.accountNum());
     }
 }

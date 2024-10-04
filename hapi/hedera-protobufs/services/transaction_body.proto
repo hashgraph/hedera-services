@@ -89,8 +89,8 @@ import "node_create.proto";
 import "node_update.proto";
 import "node_delete.proto";
 
-import "event/tss_message_transaction.proto";
-import "event/tss_vote_transaction.proto";
+import "auxiliary/tss_message_transaction.proto";
+import "auxiliary/tss_vote_transaction.proto";
 
 /**
  * A single transaction. All transaction types are possible here.

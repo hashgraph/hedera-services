@@ -64,7 +64,7 @@ import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.state.State;
 import com.swirlds.state.spi.info.NetworkInfo;
-import com.swirlds.state.spi.info.SelfNodeInfo;
+import com.swirlds.state.spi.info.NodeInfo;
 import dagger.BindsInstance;
 import dagger.Component;
 import java.nio.charset.Charset;
@@ -166,7 +166,7 @@ public interface HederaInjectionComponent {
         Builder platform(Platform platform);
 
         @BindsInstance
-        Builder self(final SelfNodeInfo self);
+        Builder self(final NodeInfo self);
 
         @BindsInstance
         Builder maxSignedTxnSize(@MaxSignedTxnSize final int maxSignedTxnSize);
@@ -197,6 +197,9 @@ public interface HederaInjectionComponent {
 
         @BindsInstance
         Builder initialStateHash(InitialStateHash initialStateHash);
+
+        @BindsInstance
+        Builder networkInfo(NetworkInfo networkInfo);
 
         HederaInjectionComponent build();
     }
