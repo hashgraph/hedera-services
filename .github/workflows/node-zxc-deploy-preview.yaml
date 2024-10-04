@@ -60,7 +60,13 @@ jobs:
     runs-on: network-node-linux-large
     outputs:
       version: ${{ steps.effective-version.outputs.number }}
+
     steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@f086349bfa2bd1361f7909c78558e816508cdc10 # v2.8.0
+        with:
+          egress-policy: audit
+
       - name: Install Semantic Version Tools
         run: |
           echo "::group::Download SemVer Binary"

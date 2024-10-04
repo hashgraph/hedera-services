@@ -35,6 +35,7 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.block.stream.BlockItem;
 import com.hedera.hapi.block.stream.input.EventHeader;
+import com.hedera.hapi.block.stream.input.RoundHeader;
 import com.hedera.hapi.block.stream.output.StateChanges;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.SemanticVersion;
@@ -204,6 +205,9 @@ public class HandleWorkflow {
         final var blockStreamConfig = configProvider.getConfiguration().getConfigData(BlockStreamConfig.class);
         if (blockStreamConfig.streamBlocks()) {
             blockStreamManager.startRound(round, state);
+            blockStreamManager.writeItem(BlockItem.newBuilder()
+                    .roundHeader(new RoundHeader(round.getRoundNum()))
+                    .build());
             if (!migrationStateChanges.isEmpty()) {
                 migrationStateChanges.forEach(builder -> blockStreamManager.writeItem(BlockItem.newBuilder()
                         .stateChanges(builder.consensusTimestamp(blockStreamManager.blockTimestamp())
