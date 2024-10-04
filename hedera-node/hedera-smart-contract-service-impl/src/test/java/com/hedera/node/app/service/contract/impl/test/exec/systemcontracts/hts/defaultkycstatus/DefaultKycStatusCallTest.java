@@ -43,7 +43,7 @@ class DefaultKycStatusCallTest extends CallTestBase {
         assertEquals(
                 Bytes.wrap(DefaultKycStatusTranslator.DEFAULT_KYC_STATUS
                         .getOutputs()
-                        .encodeElements(SUCCESS.protoOrdinal(), false)
+                        .encodeElements(SUCCESS.protoOrdinal(), true)
                         .array()),
                 result.getOutput());
     }
