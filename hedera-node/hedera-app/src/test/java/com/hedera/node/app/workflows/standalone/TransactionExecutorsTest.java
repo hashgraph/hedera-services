@@ -330,6 +330,11 @@ class TransactionExecutorsTest {
             public boolean containsNode(final long nodeId) {
                 return addressBook.contains(new NodeId(nodeId));
             }
+
+            @Override
+            public void updateFrom(final State state) {
+                throw new UnsupportedOperationException("Not implemented");
+            }
         };
     }
 

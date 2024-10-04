@@ -46,10 +46,17 @@ public interface NetworkInfo {
 
     /**
      * Returns true if the network contains a node with the given ID.
+     *
      * @param nodeId the ID of the node to check for
      * @return true if the network contains a node with the given ID
      */
     boolean containsNode(long nodeId);
 
+    /**
+     * Updates the network information from the given state. This method is called when the
+     * state is updated using node updates.
+     *
+     * @param state the state to update from
+     */
     void updateFrom(State state);
 }
