@@ -65,13 +65,13 @@ final class BlockStreamServiceTest {
     }
 
     private void givenEnabledSubject() {
-        final var testConfig = HederaTestConfigBuilder.create()
-                .withValue("blockStream.streamMode", "BOTH")
-                .getOrCreateConfig();
-        subject = new BlockStreamService(testConfig);
+        subject = new BlockStreamService(DEFAULT_CONFIG);
     }
 
     private void givenDisabledSubject() {
-        subject = new BlockStreamService(DEFAULT_CONFIG);
+        final var testConfig = HederaTestConfigBuilder.create()
+                .withValue("blockStream.streamMode", "RECORDS")
+                .getOrCreateConfig();
+        subject = new BlockStreamService(testConfig);
     }
 }

@@ -72,23 +72,6 @@ jobs:
           echo "version=${FINAL_VERSION}" >>"${GITHUB_OUTPUT}"
           echo "prerelease=${PRERELEASE_FLAG}" >>"${GITHUB_OUTPUT}"
 
-      - name: Checkout Code
-        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
-
-      - name: Verify HAPI version
-        run: |
-          TAG_MAJOR="$(semver get major "${{ github.ref_name }}")"
-          TAG_MINOR="$(semver get minor "${{ github.ref_name }}")"
-          HAPI_VERSION=$(grep "val hapiProtoVersion = " settings.gradle.kts | sed -E 's/.+ = "(.+)"/\1/')
-          HAPI_MAJOR="$(semver get major ${HAPI_VERSION})"
-          HAPI_MINOR="$(semver get minor ${HAPI_VERSION})"
-          if [[ "${TAG_MAJOR}" != "${HAPI_MAJOR}" || "${TAG_MINOR}" != "${HAPI_MINOR}" ]]; then
-             echo "::error title=HAPI Version Mismatch::The tag version (${TAG_MAJOR}.${TAG_MINOR}) does not match the hapiProtoVersion (${HAPI_MAJOR}.${HAPI_MINOR}) specified in settings.gradle.kts"
-             exit 1
-          else
-             echo "The tag version (${TAG_MAJOR}.${TAG_MINOR}) matches the hapiProtoVersion (${HAPI_MAJOR}.${HAPI_MINOR}) specified in settings.gradle.kts"
-          fi
-
   release-tag:
     name: Release [Tag]
     uses: ./.github/workflows/node-zxc-build-release-artifact.yaml

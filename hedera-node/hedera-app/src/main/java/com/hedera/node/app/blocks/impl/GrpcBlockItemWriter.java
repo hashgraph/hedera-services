@@ -30,6 +30,7 @@ import com.hedera.node.app.blocks.BlockItemWriter;
 import com.hedera.node.config.data.BlockStreamConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import io.grpc.Status;
@@ -48,9 +49,11 @@ public class GrpcBlockItemWriter implements BlockItemWriter {
     private static final String INVALID_MESSAGE = "Invalid protocol buffer converting %s from PBJ to protoc for %s";
 
     private final BlockStreamServiceGrpc.BlockStreamServiceStub asyncStub;
-    private final ManagedChannel channel;
-    private StreamObserver<PublishStreamRequest> requestObserver;
 
+    @Nullable
+    private ManagedChannel channel;
+
+    private StreamObserver<PublishStreamRequest> requestObserver;
     private long blockNumber;
 
     /** The state of this writer */
@@ -95,21 +98,6 @@ public class GrpcBlockItemWriter implements BlockItemWriter {
         requestObserver = asyncStub.publishBlockStream(new StreamObserver<>() {
             @Override
             public void onNext(PublishStreamResponse streamResponse) {
-                // close the stream if error stream response occurs - source handshake design
-                // https://github.com/hashgraph/hedera-block-node/issues/120
-                /*if (streamResponse.getStatus().getStatus() == STREAM_ITEMS_UNKNOWN) {
-                 */
-                /*, STREAM_ITEMS_SUCCESS, STREAM_ITEMS_BEHIND*/
-                /*
-                    onNext(PublishStreamResponse.newBuilder()
-                            .setStatus(EndOfStream.newBuilder()
-                                    .setStatus(STREAM_ITEMS_UNKNOWN)
-                                    .build())
-                            .build());
-
-                    closeBlock();
-                }*/
-
                 if (streamResponse.hasAcknowledgement()) {
                     final Acknowledgement acknowledgement = streamResponse.getAcknowledgement();
                     if (acknowledgement.hasBlockAck()) {
@@ -133,7 +121,10 @@ public class GrpcBlockItemWriter implements BlockItemWriter {
             @Override
             public void onCompleted() {
                 try {
-                    channel.shutdown().awaitTermination(10, TimeUnit.MILLISECONDS);
+                    if (channel != null) {
+                        channel.shutdown().awaitTermination(10, TimeUnit.MILLISECONDS);
+                        channel = null;
+                    }
                 } catch (InterruptedException e) {
                     throw new RuntimeException(e);
                 }
@@ -198,7 +189,10 @@ public class GrpcBlockItemWriter implements BlockItemWriter {
     @VisibleForTesting
     public void closeChannel() {
         try {
-            channel.shutdown().awaitTermination(10, TimeUnit.MILLISECONDS);
+            if (channel != null) {
+                channel.shutdown().awaitTermination(10, TimeUnit.MILLISECONDS);
+                channel = null;
+            }
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }
