@@ -20,6 +20,9 @@ import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.event.PlatformEvent;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
+/**
+ * A no-op implementation of {@link InlinePcesWriter} that does nothing, just returns the event it receives.
+ */
 public class NoOpInlinePcesWriter implements InlinePcesWriter {
     @Override
     public void beginStreamingNewEvents() {}
