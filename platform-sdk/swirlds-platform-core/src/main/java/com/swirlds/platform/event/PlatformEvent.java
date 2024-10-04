@@ -102,11 +102,21 @@ public class PlatformEvent implements ConsensusEvent, Hashable {
      * @param signature     the signature for the event
      */
     public PlatformEvent(@NonNull final UnsignedEvent unsignedEvent, @NonNull final byte[] signature) {
+        this(unsignedEvent, Bytes.wrap(signature));
+    }
+
+    /**
+     * Construct a new instance from an unsigned event and a signature.
+     *
+     * @param unsignedEvent the unsigned event
+     * @param signature     the signature for the event
+     */
+    public PlatformEvent(@NonNull final UnsignedEvent unsignedEvent, @NonNull final Bytes signature) {
         this(
                 new GossipEvent(
                         Objects.requireNonNull(unsignedEvent, "The unsignedEvent must not be null")
                                 .getEventCore(),
-                        Bytes.wrap(Objects.requireNonNull(signature, "The signature must not be null")),
+                        Objects.requireNonNull(signature, "The signature must not be null"),
                         unsignedEvent.getEventTransactions()),
                 unsignedEvent.getMetadata());
     }
