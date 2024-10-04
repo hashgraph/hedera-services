@@ -343,8 +343,6 @@ public class AppTestBase extends TestBase implements TransactionFactory, Scenari
             final var addressBook = new AddressBook(addresses);
             final var platform = new FakePlatform(realSelfNodeInfo.nodeId(), addressBook);
             final var initialState = new FakeState();
-            //            final var networkInfo = new NetworkInfoImpl(initialState,
-            //                    selfNodeInfo.nodeId(), configProvider);
             final var networkInfo = new GenesisNetworkInfo(createRoster(addressBook), Bytes.fromHex("03"));
             services.forEach(svc -> {
                 final var reg = new FakeSchemaRegistry();

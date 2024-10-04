@@ -34,6 +34,7 @@ import static com.swirlds.platform.state.service.schemas.V0540PlatformStateSchem
 import static com.swirlds.platform.system.InitTrigger.EVENT_STREAM_RECOVERY;
 import static com.swirlds.platform.system.InitTrigger.GENESIS;
 import static com.swirlds.platform.system.InitTrigger.RECONNECT;
+import static com.swirlds.platform.system.address.AddressBookUtils.createRoster;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.CompletableFuture.completedFuture;
@@ -45,7 +46,6 @@ import com.hedera.hapi.block.stream.output.StateChanges;
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.state.blockrecords.BlockInfo;
 import com.hedera.hapi.node.state.blockstream.BlockStreamInfo;
-import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.hapi.platform.state.PlatformState;
 import com.hedera.hapi.util.HapiUtils;
 import com.hedera.node.app.blocks.BlockStreamManager;
@@ -289,11 +289,6 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener {
      */
     @Nullable
     private CompletableFuture<Bytes> initialStateHashFuture;
-    /**
-     * The roster used on genesis. This is set in {@link ServicesMain} on platform initialization.
-     * This is used to construct the {@link GenesisNetworkInfo} object.
-     */
-    private Roster genesisRoster;
 
     /*==================================================================================================================
     *
@@ -529,7 +524,7 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener {
         }
     }
 
-    /**act
+    /**
      * Called by this class when we detect it is time to do migration. The {@code deserializedVersion} must not be newer
      * than the current software version. If it is prior to the current version, then each migration between the
      * {@code deserializedVersion} and the current version, including the current version, will be executed, thus
@@ -564,6 +559,10 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener {
         if (trigger == GENESIS) {
             final var config = configProvider.getConfiguration();
             final var ledgerConfig = config.getConfigData(LedgerConfig.class);
+            final var readableStore =
+                    new ReadablePlatformStateStore(state.getReadableStates(PlatformStateService.NAME));
+            final var genesisRoster = createRoster(requireNonNull(readableStore.getAddressBook()));
+
             genesisNetworkInfo = new GenesisNetworkInfo(genesisRoster, ledgerConfig.id());
         }
         final List<StateChanges.Builder> migrationStateChanges = new ArrayList<>();
@@ -1060,14 +1059,6 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener {
      */
     private boolean isNotEmbedded() {
         return instantSource == InstantSource.system();
-    }
-
-    /**
-     * Sets roster used on genesis.
-     * @param roster the roster to set
-     */
-    public void setRoster(final Roster roster) {
-        this.genesisRoster = roster;
     }
 
     private class ReadReconnectStartingStateHash implements ReconnectCompleteListener {

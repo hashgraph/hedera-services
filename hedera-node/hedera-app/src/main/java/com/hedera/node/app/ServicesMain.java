@@ -250,9 +250,6 @@ public class ServicesMain implements SwirldMain {
                 .withKeysAndCerts(keysAndCerts);
 
         hedera.setInitialStateHash(stateHash);
-        // FUTURE: This is needed because platform still doesn't have an API to read
-        // Roster set on it. This will be removed once platform has an API to read Roster.
-        hedera.setRoster(roster);
         // IMPORTANT: A surface-level reading of this method will undersell the centrality
         // of the Hedera instance. It is actually omnipresent throughout both the startup
         // and runtime phases of the application.

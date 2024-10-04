@@ -58,7 +58,14 @@ public class OrderedServiceMigrator implements ServiceMigrator {
 
     /**
      * Migrates the services registered with the {@link ServicesRegistry}
-     *
+     * @param state            The state to migrate
+     * @param servicesRegistry The services registry to use for the migrations
+     * @param previousVersion The previous version of the state
+     * @param currentVersion The current version of the state
+     * @param config The configuration to use for the migrations
+     * @param genesisNetworkInfo The network information to use for the migrations.
+     *                           This is only used in genesis case
+     * @param metrics The metrics to use for the migrations
      * @return The list of state changes that occurred during the migrations
      */
     @Override

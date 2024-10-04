@@ -102,6 +102,8 @@ public class GenesisNetworkInfo implements NetworkInfo {
 
     /**
      * Builds a node info from a roster entry from the given roster.
+     * Since this is only used in the genesis case, the account ID is generated from the node ID
+     * by adding 3 to it, as a default case.
      *
      * @param entry The roster entry
      * @return The node info
