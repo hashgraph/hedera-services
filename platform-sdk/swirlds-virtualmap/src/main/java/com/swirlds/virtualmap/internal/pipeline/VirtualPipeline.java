@@ -519,9 +519,10 @@ public class VirtualPipeline {
             }
             boolean flushed = false;
             if ((next == copies.getFirst()) && shouldBeFlushed(copy)) {
+                logger.debug(VIRTUAL_MERKLE_STATS.getMarker(), "Try to flush {}", copy.getFastCopyVersion());
                 flushed = tryFlush(copy);
                 if (flushed) {
-                    logger.debug(VIRTUAL_MERKLE_STATS.getMarker(), "Try to flush {}", copy.getFastCopyVersion());
+                    logger.debug(VIRTUAL_MERKLE_STATS.getMarker(), "Flushed {}", copy.getFastCopyVersion());
                     copies.remove(next);
                 }
             }
@@ -529,6 +530,7 @@ public class VirtualPipeline {
                 assert !copy.isMerged();
                 logger.debug(VIRTUAL_MERKLE_STATS.getMarker(), "Merge {}", copy.getFastCopyVersion());
                 merge(next);
+                logger.debug(VIRTUAL_MERKLE_STATS.getMarker(), "Merged {}", copy.getFastCopyVersion());
                 copies.remove(next);
             }
             statistics.setPipelineSize(copies.getSize());
