@@ -34,7 +34,6 @@ import static com.swirlds.platform.state.service.schemas.V0540PlatformStateSchem
 import static com.swirlds.platform.system.InitTrigger.EVENT_STREAM_RECOVERY;
 import static com.swirlds.platform.system.InitTrigger.GENESIS;
 import static com.swirlds.platform.system.InitTrigger.RECONNECT;
-import static com.swirlds.platform.system.address.AddressBookUtils.createRoster;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.CompletableFuture.completedFuture;
@@ -563,10 +562,6 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener {
         // the migration code is using the network info values.
         NetworkInfo genesisNetworkInfo = null;
         if (trigger == GENESIS) {
-            if (genesisRoster == null) {
-                logger.warn("Starting from Browser is deprecated. Creating genesis Roster from platform addressBook");
-                genesisRoster = createRoster(platform.getAddressBook());
-            }
             final var config = configProvider.getConfiguration();
             final var ledgerConfig = config.getConfigData(LedgerConfig.class);
             genesisNetworkInfo = new GenesisNetworkInfo(genesisRoster, ledgerConfig.id());
@@ -874,10 +869,6 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener {
             // from the immutable state in the ReconnectCompleteNotification
             initialStateHashFuture = new CompletableFuture<>();
             notifications.register(ReconnectCompleteListener.class, new ReadReconnectStartingStateHash(notifications));
-        }
-        if (initialStateHashFuture == null) {
-            logger.warn("Starting from Browser is deprecated. Setting initial start hash to empty hash.");
-            initialStateHashFuture = completedFuture(Bytes.wrap(new byte[48]));
         }
         // For other triggers the initial state hash must have been set already
         requireNonNull(initialStateHashFuture);

@@ -22,6 +22,7 @@ import static com.hedera.services.bdd.junit.hedera.ExternalPath.ADDRESS_BOOK;
 import static com.swirlds.platform.state.service.PbjConverter.toPbjAddressBook;
 import static com.swirlds.platform.state.service.schemas.V0540PlatformStateSchema.PLATFORM_STATE_KEY;
 import static com.swirlds.platform.system.InitTrigger.GENESIS;
+import static com.swirlds.platform.system.address.AddressBookUtils.createRoster;
 import static com.swirlds.platform.system.status.PlatformStatus.ACTIVE;
 import static com.swirlds.platform.system.status.PlatformStatus.FREEZE_COMPLETE;
 import static java.util.Objects.requireNonNull;
@@ -138,6 +139,9 @@ public abstract class AbstractEmbeddedHedera implements EmbeddedHedera {
         ((CommittableWritableStates) writableStates).commit();
 
         hedera.setInitialStateHash(FAKE_START_OF_STATE_HASH);
+        // FUTURE: Remove this once platform has an API to read Roster
+        hedera.setRoster(createRoster(addressBook));
+
         hedera.onStateInitialized(state, fakePlatform(), GENESIS, null);
         hedera.init(fakePlatform(), defaultNodeId);
         fakePlatform().start();
