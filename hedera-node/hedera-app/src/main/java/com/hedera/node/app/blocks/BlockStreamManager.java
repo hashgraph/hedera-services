@@ -43,10 +43,9 @@ public interface BlockStreamManager extends BlockRecordInfo, BiConsumer<byte[], 
     /**
      * Enumerates the types of block boundaries that can be encountered when starting a new round.
      */
-    enum BoundaryType {
-        NO_BOUNDARY,
-        GENESIS_BOUNDARY,
-        BLOCK_BOUNDARY
+    enum Boundary {
+        NONE,
+        BLOCK
     }
 
     /**
@@ -65,7 +64,7 @@ public interface BlockStreamManager extends BlockRecordInfo, BiConsumer<byte[], 
      * @return the type of block boundary encountered
      * @throws IllegalStateException if the last block hash was not explicitly initialized
      */
-    BoundaryType startRound(@NonNull Round round, @NonNull State state);
+    Boundary startRound(@NonNull Round round, @NonNull State state);
 
     /**
      * Updates both the internal state of the block stream manager and the durable state of the network

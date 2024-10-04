@@ -18,11 +18,11 @@ package com.hedera.node.app.workflows.handle;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.BUSY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.FAIL_INVALID;
-import static com.hedera.node.app.blocks.BlockStreamManager.BoundaryType.BLOCK_BOUNDARY;
-import static com.hedera.node.app.blocks.BlockStreamManager.BoundaryType.GENESIS_BOUNDARY;
-import static com.hedera.node.app.blocks.BlockStreamManager.BoundaryType.NO_BOUNDARY;
+import static com.hedera.node.app.blocks.BlockStreamManager.Boundary.BLOCK;
+import static com.hedera.node.app.blocks.BlockStreamManager.Boundary.NONE;
 import static com.hedera.node.app.blocks.schemas.V0540BlockStreamSchema.BLOCK_STREAM_INFO_KEY;
 import static com.hedera.node.app.records.schemas.V0490BlockRecordSchema.BLOCK_INFO_STATE_KEY;
+import static com.hedera.node.app.service.file.impl.schemas.V0490FileSchema.BLOBS_KEY;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.USER;
 import static com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer.NOOP_RECORD_CUSTOMIZER;
 import static com.hedera.node.app.spi.workflows.record.StreamBuilder.ReversingBehavior.REVERSIBLE;
@@ -39,6 +39,7 @@ import static com.hedera.node.app.workflows.handle.TransactionType.POST_UPGRADE_
 import static com.hedera.node.app.workflows.prehandle.PreHandleResult.Status.NODE_DUE_DILIGENCE_FAILURE;
 import static com.hedera.node.config.types.StreamMode.BLOCKS;
 import static com.hedera.node.config.types.StreamMode.RECORDS;
+import static com.swirlds.platform.state.service.schemas.V0540PlatformStateSchema.PLATFORM_STATE_KEY;
 import static com.swirlds.platform.system.InitTrigger.EVENT_STREAM_RECOVERY;
 import static com.swirlds.state.spi.HapiUtils.SEMANTIC_VERSION_COMPARATOR;
 import static java.util.Objects.requireNonNull;
@@ -56,7 +57,7 @@ import com.hedera.hapi.node.transaction.ExchangeRateSet;
 import com.hedera.hapi.platform.state.PlatformState;
 import com.hedera.hapi.util.HapiUtils;
 import com.hedera.node.app.blocks.BlockStreamManager;
-import com.hedera.node.app.blocks.BlockStreamManager.BoundaryType;
+import com.hedera.node.app.blocks.BlockStreamManager.Boundary;
 import com.hedera.node.app.blocks.BlockStreamService;
 import com.hedera.node.app.blocks.impl.BlockStreamBuilder;
 import com.hedera.node.app.blocks.impl.BoundaryStateChangeListener;
@@ -65,6 +66,7 @@ import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.fees.FeeManager;
 import com.hedera.node.app.records.BlockRecordManager;
 import com.hedera.node.app.records.BlockRecordService;
+import com.hedera.node.app.service.file.FileService;
 import com.hedera.node.app.service.schedule.ScheduleService;
 import com.hedera.node.app.service.schedule.WritableScheduleStore;
 import com.hedera.node.app.service.token.TokenService;
@@ -100,7 +102,6 @@ import com.hedera.node.config.data.BlockStreamConfig;
 import com.hedera.node.config.types.StreamMode;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.platform.state.service.PlatformStateService;
-import com.swirlds.platform.state.service.schemas.V0540PlatformStateSchema;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.events.ConsensusEvent;
@@ -236,7 +237,7 @@ public class HandleWorkflow {
         logStartRound(round);
         cacheWarmer.warm(state, round);
         // Ignored downstream if streamMode is RECORDS
-        var boundaryType = NO_BOUNDARY;
+        var boundaryType = NONE;
         if (streamMode != RECORDS) {
             boundaryType = blockStreamManager.startRound(round, state);
             blockStreamManager.writeItem(BlockItem.newBuilder()
@@ -261,7 +262,7 @@ public class HandleWorkflow {
     }
 
     private void handleEvents(
-            @NonNull final State state, @NonNull final Round round, @NonNull final BoundaryType boundaryType) {
+            @NonNull final State state, @NonNull final Round round, @NonNull final Boundary boundary) {
         final var userTransactionsHandled = new AtomicBoolean(false);
         var firstTransaction = true;
         for (final var event : round) {
@@ -299,7 +300,7 @@ public class HandleWorkflow {
                                 event,
                                 creator,
                                 platformTxn,
-                                streamMode != RECORDS && firstTransaction ? boundaryType : NO_BOUNDARY);
+                                streamMode != RECORDS && firstTransaction ? boundary : NONE);
                         firstTransaction = false;
                     }
                 } catch (final Exception e) {
@@ -337,29 +338,28 @@ public class HandleWorkflow {
      * @param event the {@link ConsensusEvent} that this transaction belongs to
      * @param creator the {@link NodeInfo} of the creator of the transaction
      * @param txn the {@link ConsensusTransaction} to be handled
-     * @param boundaryType if set, the type of boundary that this transaction crossed
+     * @param boundary if set, the type of boundary that this transaction crossed
      */
     private void handlePlatformTransaction(
             @NonNull final State state,
             @NonNull final ConsensusEvent event,
             @NonNull final NodeInfo creator,
             @NonNull final ConsensusTransaction txn,
-            @NonNull BoundaryType boundaryType) {
+            @NonNull Boundary boundary) {
         final var handleStart = System.nanoTime();
 
         // Always use platform-assigned time for user transaction, c.f. https://hips.hedera.com/hip/hip-993
         final var consensusNow = txn.getConsensusTimestamp();
         stakePeriodManager.setCurrentStakePeriodFor(consensusNow);
         if (streamMode != BLOCKS) {
-            final var isGenesis = Instant.EPOCH.equals(blockRecordManager.consTimeOfLastHandledTxn());
             // This changes blockRecordManager.consTimeOfLastHandledTxn() as a side-effect,
             // hence the check for genesis on the preceding line
             final var isBoundary = blockRecordManager.startUserTransaction(consensusNow, state);
             if (streamMode == RECORDS) {
-                boundaryType = isGenesis ? GENESIS_BOUNDARY : isBoundary ? BLOCK_BOUNDARY : NO_BOUNDARY;
+                boundary = isBoundary ? BLOCK : NONE;
             }
         }
-        final var userTxn = newUserTxn(state, event, creator, txn, consensusNow, boundaryType);
+        final var userTxn = newUserTxn(state, event, creator, txn, consensusNow, boundary);
         final var handleOutput = execute(userTxn);
         if (streamMode != BLOCKS) {
             final var records = ((LegacyListRecordSource) handleOutput.recordSourceOrThrow()).precomputedRecords();
@@ -427,6 +427,8 @@ public class HandleWorkflow {
                 logPreDispatch(userTxn);
                 final var dispatch = dispatchFor(userTxn);
                 if (userTxn.type() == GENESIS_TRANSACTION) {
+                    logger.info(
+                            "Doing genesis setup before {}", userTxn.txnInfo().transactionID());
                     systemSetup.doGenesisSetup(dispatch);
                 } else if (userTxn.type() == POST_UPGRADE_TRANSACTION) {
                     systemSetup.doPostUpgradeSetup(dispatch);
@@ -623,7 +625,7 @@ public class HandleWorkflow {
      * @param creator the creator of the transaction
      * @param txn the consensus transaction
      * @param consensusNow the consensus time
-     * @param boundaryType the block boundary type
+     * @param boundary the block boundary type
      * @return the new user transaction
      */
     private UserTxn newUserTxn(
@@ -632,14 +634,11 @@ public class HandleWorkflow {
             @NonNull final NodeInfo creator,
             @NonNull final ConsensusTransaction txn,
             @NonNull final Instant consensusNow,
-            @NonNull final BoundaryType boundaryType) {
+            @NonNull final Boundary boundary) {
         final var type =
-                switch (boundaryType) {
-                    case NO_BOUNDARY -> ORDINARY_TRANSACTION;
-                    case GENESIS_BOUNDARY -> GENESIS_TRANSACTION;
-                    case BLOCK_BOUNDARY -> isUpgradeBoundary(state)
-                            ? POST_UPGRADE_TRANSACTION
-                            : BLOCK_BOUNDARY_TRANSACTION;
+                switch (boundary) {
+                    case NONE -> ORDINARY_TRANSACTION;
+                    case BLOCK -> typeOfBoundary(state);
                 };
         return UserTxn.from(
                 state,
@@ -656,31 +655,38 @@ public class HandleWorkflow {
     }
 
     /**
-     * Returns whether the given state indicates this transaction is the first after an upgrade.
-     *
-     * @param state the Hedera state
-     * @return whether the given state indicates this transaction is the first after an upgrade
+     * Returns the type of transaction encountering the given state at a block boundary.
+     * @param state the boundary state
+     * @return the type of the boundary transaction
      */
-    private boolean isUpgradeBoundary(@NonNull final State state) {
+    private TransactionType typeOfBoundary(@NonNull final State state) {
+        final var files = state.getReadableStates(FileService.NAME).get(BLOBS_KEY);
+        // The files map is empty only at genesis
+        if (files.size() == 0) {
+            return GENESIS_TRANSACTION;
+        }
         final var platformState = state.getReadableStates(PlatformStateService.NAME)
-                .<PlatformState>getSingleton(V0540PlatformStateSchema.PLATFORM_STATE_KEY)
+                .<PlatformState>getSingleton(PLATFORM_STATE_KEY)
                 .get();
         requireNonNull(platformState);
         if (platformState.freezeTime() == null
                 || !platformState.freezeTimeOrThrow().equals(platformState.lastFrozenTime())) {
-            return false;
+            return BLOCK_BOUNDARY_TRANSACTION;
         } else {
+            final boolean firstPostUpgrade;
             if (streamMode != RECORDS) {
                 final var blockStreamInfo = state.getReadableStates(BlockStreamService.NAME)
                         .<BlockStreamInfo>getSingleton(BLOCK_STREAM_INFO_KEY)
                         .get();
-                return !version.equals(requireNonNull(blockStreamInfo).creationSoftwareVersion());
+                firstPostUpgrade =
+                        !version.equals(requireNonNull(blockStreamInfo).creationSoftwareVersion());
             } else {
                 final var blockInfo = state.getReadableStates(BlockRecordService.NAME)
                         .<BlockInfo>getSingleton(BLOCK_INFO_STATE_KEY)
                         .get();
-                return !requireNonNull(blockInfo).migrationRecordsStreamed();
+                firstPostUpgrade = !requireNonNull(blockInfo).migrationRecordsStreamed();
             }
+            return firstPostUpgrade ? POST_UPGRADE_TRANSACTION : BLOCK_BOUNDARY_TRANSACTION;
         }
     }
 }

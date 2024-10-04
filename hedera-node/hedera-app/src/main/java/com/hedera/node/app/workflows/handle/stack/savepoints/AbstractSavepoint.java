@@ -128,6 +128,10 @@ public abstract class AbstractSavepoint extends BuilderSinkImpl implements Savep
                     case BOTH -> new PairedStreamBuilder(reversingBehavior, customizer, txnCategory);
                 };
         if (!customizer.shouldSuppressRecord()) {
+            // Other code is a bit simpler when we always put the base builder for a stack in its
+            // "following" list, even if the stack is child stack for a preceding child dispatch;
+            // the base builder will still end up in the correct relative position in the parent
+            // sink because of how FirstChildSavepoint implements #commitBuilders()
             if (txnCategory == PRECEDING && !isBaseBuilder) {
                 addPrecedingOrThrow(builder);
             } else {

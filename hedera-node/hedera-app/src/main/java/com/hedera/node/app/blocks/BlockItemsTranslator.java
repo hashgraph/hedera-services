@@ -20,13 +20,8 @@ import static com.hedera.hapi.node.base.HederaFunctionality.CONTRACT_CALL;
 import static com.hedera.hapi.node.base.HederaFunctionality.CONTRACT_CREATE;
 import static com.hedera.hapi.node.base.HederaFunctionality.ETHEREUM_TRANSACTION;
 
-import com.hedera.hapi.block.stream.output.CreateScheduleOutput;
-import com.hedera.hapi.block.stream.output.CryptoTransferOutput;
-import com.hedera.hapi.block.stream.output.EthereumOutput;
-import com.hedera.hapi.block.stream.output.SignScheduleOutput;
 import com.hedera.hapi.block.stream.output.TransactionOutput;
 import com.hedera.hapi.block.stream.output.TransactionResult;
-import com.hedera.hapi.block.stream.output.UtilPrngOutput;
 import com.hedera.hapi.node.contract.ContractFunctionResult;
 import com.hedera.hapi.node.transaction.TransactionReceipt;
 import com.hedera.hapi.node.transaction.TransactionRecord;
@@ -49,15 +44,16 @@ import java.util.function.Predicate;
 
 /**
  * Translates a {@link TransactionResult} and, optionally, one or more {@link TransactionOutput}s within a given
- * {@link TranslationContext} into a {@link TransactionRecord} appropriate for returning from a query.
+ * {@link TranslationContext} into a {@link TransactionRecord} or {@link TransactionReceipt} appropriate for returning
+ * from a query.
  */
-public class HistoryTranslator {
+public class BlockItemsTranslator {
     private static final Function<TransactionOutput, ContractFunctionResult> CONTRACT_CALL_EXTRACTOR =
             output -> output.contractCallOrThrow().contractCallResultOrThrow();
     private static final Function<TransactionOutput, ContractFunctionResult> CONTRACT_CREATE_EXTRACTOR =
             output -> output.contractCreateOrThrow().contractCreateResultOrThrow();
 
-    public static final HistoryTranslator HISTORY_TRANSLATOR = new HistoryTranslator();
+    public static final BlockItemsTranslator BLOCK_ITEMS_TRANSLATOR = new BlockItemsTranslator();
 
     /**
      * Translate the given {@link TransactionResult} and optional {@link TransactionOutput}s into a
@@ -84,7 +80,8 @@ public class HistoryTranslator {
             case FILE_CREATE -> receiptBuilder.fileID(((FileOpContext) context).fileId());
             case NODE_CREATE -> receiptBuilder.nodeId(((NodeOpContext) context).nodeId());
             case SCHEDULE_CREATE -> {
-                final var scheduleOutput = createScheduleOutputIfPresent(outputs);
+                final var scheduleOutput = outputValueIfPresent(
+                        TransactionOutput::hasCreateSchedule, TransactionOutput::createScheduleOrThrow, outputs);
                 if (scheduleOutput != null) {
                     receiptBuilder
                             .scheduleID(scheduleOutput.scheduleId())
@@ -93,7 +90,8 @@ public class HistoryTranslator {
             }
             case SCHEDULE_DELETE -> receiptBuilder.scheduleID(((ScheduleOpContext) context).scheduleId());
             case SCHEDULE_SIGN -> {
-                final var signOutput = signScheduleOutputIfPresent(outputs);
+                final var signOutput = outputValueIfPresent(
+                        TransactionOutput::hasSignSchedule, TransactionOutput::signScheduleOrThrow, outputs);
                 if (signOutput != null) {
                     receiptBuilder.scheduledTransactionID(signOutput.scheduledTransactionId());
                 }
@@ -113,6 +111,14 @@ public class HistoryTranslator {
         return receiptBuilder.build();
     }
 
+    /**
+     * Translate the given {@link TransactionResult} and optional {@link TransactionOutput}s into a
+     * {@link TransactionRecord} appropriate for returning from a query.
+     * @param context the context of the transaction
+     * @param result the result of the transaction
+     * @param outputs the outputs of the transaction
+     * @return the translated record
+     */
     public TransactionRecord translateRecord(
             @NonNull final TranslationContext context,
             @NonNull final TransactionResult result,
@@ -133,11 +139,14 @@ public class HistoryTranslator {
         switch (function) {
             case CONTRACT_CALL, CONTRACT_CREATE, CONTRACT_DELETE, CONTRACT_UPDATE, ETHEREUM_TRANSACTION -> {
                 if (function == CONTRACT_CALL) {
-                    recordBuilder.contractCallResult(contractCallResultIfPresent(outputs));
+                    recordBuilder.contractCallResult(
+                            outputValueIfPresent(TransactionOutput::hasContractCall, CONTRACT_CALL_EXTRACTOR, outputs));
                 } else if (function == CONTRACT_CREATE) {
-                    recordBuilder.contractCreateResult(contractCreateResultIfPresent(outputs));
+                    recordBuilder.contractCreateResult(outputValueIfPresent(
+                            TransactionOutput::hasContractCreate, CONTRACT_CREATE_EXTRACTOR, outputs));
                 } else if (function == ETHEREUM_TRANSACTION) {
-                    final var ethOutput = ethereumOutputIfPresent(outputs);
+                    final var ethOutput = outputValueIfPresent(
+                            TransactionOutput::hasEthereumCall, TransactionOutput::ethereumCallOrThrow, outputs);
                     if (ethOutput != null) {
                         recordBuilder.ethereumHash(ethOutput.ethereumHash());
                         switch (ethOutput.ethResult().kind()) {
@@ -150,13 +159,17 @@ public class HistoryTranslator {
                 }
             }
             default -> {
-                final var synthResult = contractCallResultIfPresent(outputs);
+                final var synthResult =
+                        outputValueIfPresent(TransactionOutput::hasContractCall, CONTRACT_CALL_EXTRACTOR, outputs);
                 if (synthResult != null) {
                     recordBuilder.contractCallResult(synthResult);
                 }
                 switch (function) {
                     case CRYPTO_TRANSFER -> {
-                        final var cryptoOutput = cryptoTransferOutputIfPresent(outputs);
+                        final var cryptoOutput = outputValueIfPresent(
+                                TransactionOutput::hasCryptoTransfer,
+                                TransactionOutput::cryptoTransferOrThrow,
+                                outputs);
                         if (cryptoOutput != null) {
                             recordBuilder.assessedCustomFees(cryptoOutput.assessedCustomFees());
                         }
@@ -166,7 +179,8 @@ public class HistoryTranslator {
                     case TOKEN_AIRDROP -> recordBuilder.newPendingAirdrops(
                             ((AirdropOpContext) context).pendingAirdropRecords());
                     case UTIL_PRNG -> {
-                        final var prngOutput = utilPrngOutputIfPresent(outputs);
+                        final var prngOutput = outputValueIfPresent(
+                                TransactionOutput::hasUtilPrng, TransactionOutput::utilPrngOrThrow, outputs);
                         if (prngOutput != null) {
                             switch (prngOutput.entropy().kind()) {
                                 case PRNG_BYTES -> recordBuilder.prngBytes(prngOutput.prngBytesOrThrow());
@@ -178,43 +192,6 @@ public class HistoryTranslator {
             }
         }
         return recordBuilder.receipt(translateReceipt(context, result, outputs)).build();
-    }
-
-    private static @Nullable ContractFunctionResult contractCallResultIfPresent(
-            @Nullable final TransactionOutput... outputs) {
-        return outputValueIfPresent(TransactionOutput::hasContractCall, CONTRACT_CALL_EXTRACTOR, outputs);
-    }
-
-    private static @Nullable ContractFunctionResult contractCreateResultIfPresent(
-            @Nullable final TransactionOutput... outputs) {
-        return outputValueIfPresent(TransactionOutput::hasContractCreate, CONTRACT_CREATE_EXTRACTOR, outputs);
-    }
-
-    private static @Nullable EthereumOutput ethereumOutputIfPresent(@Nullable final TransactionOutput... outputs) {
-        return outputValueIfPresent(
-                TransactionOutput::hasEthereumCall, TransactionOutput::ethereumCallOrThrow, outputs);
-    }
-
-    private static @Nullable CryptoTransferOutput cryptoTransferOutputIfPresent(
-            @Nullable final TransactionOutput... outputs) {
-        return outputValueIfPresent(
-                TransactionOutput::hasCryptoTransfer, TransactionOutput::cryptoTransferOrThrow, outputs);
-    }
-
-    private static @Nullable CreateScheduleOutput createScheduleOutputIfPresent(
-            @Nullable final TransactionOutput... outputs) {
-        return outputValueIfPresent(
-                TransactionOutput::hasCreateSchedule, TransactionOutput::createScheduleOrThrow, outputs);
-    }
-
-    private static @Nullable SignScheduleOutput signScheduleOutputIfPresent(
-            @Nullable final TransactionOutput... outputs) {
-        return outputValueIfPresent(
-                TransactionOutput::hasSignSchedule, TransactionOutput::signScheduleOrThrow, outputs);
-    }
-
-    private static @Nullable UtilPrngOutput utilPrngOutputIfPresent(@Nullable final TransactionOutput... outputs) {
-        return outputValueIfPresent(TransactionOutput::hasUtilPrng, TransactionOutput::utilPrngOrThrow, outputs);
     }
 
     private static <T> @Nullable T outputValueIfPresent(

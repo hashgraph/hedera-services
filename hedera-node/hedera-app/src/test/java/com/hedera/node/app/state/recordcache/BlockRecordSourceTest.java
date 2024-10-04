@@ -20,7 +20,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import com.hedera.hapi.block.stream.BlockItem;
-import com.hedera.node.app.blocks.HistoryTranslator;
+import com.hedera.node.app.blocks.BlockItemsTranslator;
 import com.hedera.node.app.blocks.impl.BlockStreamBuilder;
 import com.hedera.node.app.blocks.impl.TranslationContext;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -34,7 +34,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class BlockRecordSourceTest {
     @Mock
-    private HistoryTranslator recordTranslator;
+    private BlockItemsTranslator recordTranslator;
 
     @Mock
     private Consumer<BlockItem> action;

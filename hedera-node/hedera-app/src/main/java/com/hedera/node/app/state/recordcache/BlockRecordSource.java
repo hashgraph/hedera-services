@@ -16,7 +16,7 @@
 
 package com.hedera.node.app.state.recordcache;
 
-import static com.hedera.node.app.blocks.HistoryTranslator.HISTORY_TRANSLATOR;
+import static com.hedera.node.app.blocks.BlockItemsTranslator.BLOCK_ITEMS_TRANSLATOR;
 import static com.hedera.node.app.spi.records.RecordCache.isChild;
 import static java.util.Objects.requireNonNull;
 
@@ -26,9 +26,9 @@ import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.transaction.TransactionReceipt;
 import com.hedera.hapi.node.transaction.TransactionRecord;
-import com.hedera.node.app.blocks.HistoryTranslator;
+import com.hedera.node.app.blocks.BlockItemsTranslator;
 import com.hedera.node.app.blocks.impl.BlockStreamBuilder;
-import com.hedera.node.app.blocks.impl.BlockStreamBuilder.Output.ScopedReceipt;
+import com.hedera.node.app.blocks.impl.BlockStreamBuilder.Output.IdentifiedReceipt;
 import com.hedera.node.app.blocks.impl.TranslationContext;
 import com.hedera.node.app.spi.records.RecordSource;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -43,24 +43,24 @@ import java.util.function.Consumer;
  * lists of {@link BlockItem}s and corresponding {@link TranslationContext}s.
  */
 public class BlockRecordSource implements RecordSource {
-    private final HistoryTranslator historyTranslator;
+    private final BlockItemsTranslator blockItemsTranslator;
     private final List<BlockStreamBuilder.Output> outputs;
 
     @Nullable
     private List<TransactionRecord> computedRecords;
 
     @Nullable
-    private List<ScopedReceipt> computedReceipts;
+    private List<IdentifiedReceipt> computedReceipts;
 
     public BlockRecordSource(@NonNull final List<BlockStreamBuilder.Output> outputs) {
-        this(HISTORY_TRANSLATOR, outputs);
+        this(BLOCK_ITEMS_TRANSLATOR, outputs);
     }
 
     @VisibleForTesting
     public BlockRecordSource(
-            @NonNull final HistoryTranslator historyTranslator,
+            @NonNull final BlockItemsTranslator blockItemsTranslator,
             @NonNull final List<BlockStreamBuilder.Output> outputs) {
-        this.historyTranslator = requireNonNull(historyTranslator);
+        this.blockItemsTranslator = requireNonNull(blockItemsTranslator);
         this.outputs = requireNonNull(outputs);
     }
 
@@ -109,12 +109,12 @@ public class BlockRecordSource implements RecordSource {
         return receipts;
     }
 
-    private List<ScopedReceipt> computedReceipts() {
+    private List<IdentifiedReceipt> computedReceipts() {
         if (computedReceipts == null) {
             // Mutate the list of outputs before making it visible to another traversing thread via computedRecords
-            final List<ScopedReceipt> computation = new ArrayList<>();
+            final List<IdentifiedReceipt> computation = new ArrayList<>();
             for (final var output : outputs) {
-                computation.add(output.receiptFrom(historyTranslator));
+                computation.add(output.toIdentifiedReceipt(blockItemsTranslator));
             }
             computedReceipts = computation;
         }
@@ -126,7 +126,7 @@ public class BlockRecordSource implements RecordSource {
             // Mutate the list of outputs before making it visible to another traversing thread via computedRecords
             final List<TransactionRecord> computation = new ArrayList<>();
             for (final var output : outputs) {
-                computation.add(output.recordFrom(historyTranslator));
+                computation.add(output.toRecord(blockItemsTranslator));
             }
             computedRecords = computation;
         }

@@ -66,7 +66,7 @@ import com.hedera.hapi.streams.ContractActions;
 import com.hedera.hapi.streams.ContractBytecode;
 import com.hedera.hapi.streams.ContractStateChanges;
 import com.hedera.hapi.streams.TransactionSidecarRecord;
-import com.hedera.node.app.blocks.HistoryTranslator;
+import com.hedera.node.app.blocks.BlockItemsTranslator;
 import com.hedera.node.app.blocks.impl.contexts.AirdropOpContext;
 import com.hedera.node.app.blocks.impl.contexts.BaseOpContext;
 import com.hedera.node.app.blocks.impl.contexts.ContractOpContext;
@@ -274,11 +274,11 @@ public class BlockStreamBuilder
         }
 
         /**
-         * A pair of transaction id and matching receipt.
+         * A receipt with its originating {@link TransactionID}.
          * @param txnId the transaction id
          * @param receipt the matching receipt
          */
-        public record ScopedReceipt(TransactionID txnId, TransactionReceipt receipt) {}
+        public record IdentifiedReceipt(TransactionID txnId, TransactionReceipt receipt) {}
 
         public void forEachItem(@NonNull final Consumer<BlockItem> action) {
             requireNonNull(action);
@@ -290,9 +290,9 @@ public class BlockStreamBuilder
          * @param translator the translator to use
          * @return the transaction record
          */
-        public TransactionRecord recordFrom(@NonNull final HistoryTranslator translator) {
+        public TransactionRecord toRecord(@NonNull final BlockItemsTranslator translator) {
             requireNonNull(translator);
-            return historyFrom(translator, HistoryType.RECORD);
+            return toView(translator, View.RECORD);
         }
 
         /**
@@ -300,19 +300,18 @@ public class BlockStreamBuilder
          * @param translator the translator to use
          * @return the transaction record
          */
-        public ScopedReceipt receiptFrom(@NonNull final HistoryTranslator translator) {
+        public IdentifiedReceipt toIdentifiedReceipt(@NonNull final BlockItemsTranslator translator) {
             requireNonNull(translator);
-            return historyFrom(translator, HistoryType.SCOPED_RECEIPT);
+            return toView(translator, View.IDENTIFIED_RECEIPT);
         }
 
-        private enum HistoryType {
-            SCOPED_RECEIPT,
+        private enum View {
+            IDENTIFIED_RECEIPT,
             RECORD
         }
 
         @SuppressWarnings("unchecked")
-        private <T extends Record> T historyFrom(
-                @NonNull final HistoryTranslator translator, @NonNull final HistoryType historyType) {
+        private <T extends Record> T toView(@NonNull final BlockItemsTranslator translator, @NonNull final View view) {
             int i = 0;
             final var n = blockItems.size();
             TransactionResult result = null;
@@ -330,16 +329,16 @@ public class BlockStreamBuilder
                     outputs[k - i] = blockItems.get(k).transactionOutput();
                 }
                 return (T)
-                        switch (historyType) {
-                            case SCOPED_RECEIPT -> new ScopedReceipt(
+                        switch (view) {
+                            case IDENTIFIED_RECEIPT -> new IdentifiedReceipt(
                                     translationContext.txnId(),
                                     translator.translateReceipt(translationContext, result, outputs));
                             case RECORD -> translator.translateRecord(translationContext, result, outputs);
                         };
             } else {
                 return (T)
-                        switch (historyType) {
-                            case SCOPED_RECEIPT -> new ScopedReceipt(
+                        switch (view) {
+                            case IDENTIFIED_RECEIPT -> new IdentifiedReceipt(
                                     translationContext.txnId(),
                                     translator.translateReceipt(translationContext, result));
                             case RECORD -> translator.translateRecord(translationContext, result);

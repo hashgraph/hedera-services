@@ -18,9 +18,8 @@ package com.hedera.node.app.blocks.impl;
 
 import static com.hedera.hapi.node.base.BlockHashAlgorithm.SHA2_384;
 import static com.hedera.hapi.util.HapiUtils.asInstant;
-import static com.hedera.node.app.blocks.BlockStreamManager.BoundaryType.BLOCK_BOUNDARY;
-import static com.hedera.node.app.blocks.BlockStreamManager.BoundaryType.GENESIS_BOUNDARY;
-import static com.hedera.node.app.blocks.BlockStreamManager.BoundaryType.NO_BOUNDARY;
+import static com.hedera.node.app.blocks.BlockStreamManager.Boundary.BLOCK;
+import static com.hedera.node.app.blocks.BlockStreamManager.Boundary.NONE;
 import static com.hedera.node.app.blocks.impl.BlockImplUtils.appendHash;
 import static com.hedera.node.app.blocks.impl.BlockImplUtils.combine;
 import static com.hedera.node.app.blocks.schemas.V0540BlockStreamSchema.BLOCK_STREAM_INFO_KEY;
@@ -174,7 +173,7 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
     }
 
     @Override
-    public BoundaryType startRound(@NonNull final Round round, @NonNull final State state) {
+    public Boundary startRound(@NonNull final Round round, @NonNull final State state) {
         if (lastBlockHash == null) {
             throw new IllegalStateException("Last block hash must be initialized before starting a round");
         }
@@ -214,9 +213,9 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
                     .build());
 
             writer.openBlock(blockNumber);
-            return lastBlockTime == EPOCH ? GENESIS_BOUNDARY : BLOCK_BOUNDARY;
+            return BLOCK;
         } else {
-            return NO_BOUNDARY;
+            return NONE;
         }
     }
 
