@@ -72,33 +72,36 @@ public class BlockContentsValidator implements BlockStreamValidator {
             Assertions.fail("Block does not start with a block header");
         }
 
+        // A block SHALL start with a `header`.
+        if (!blockItems.getFirst().hasBlockHeader()) {
+            Assertions.fail("Block does not start with a block header");
+        }
+
         // A block SHALL end with a `state_proof`.
         if (!blockItems.getLast().hasBlockProof()) {
             Assertions.fail("Block does not end with a block proof");
         }
 
-        // For the first block the `block_header` might be followed by `event_header` or `state_changes`, due to state
-        // migration.
-        if (isFirst) {
-            if (!blockItems.get(1).hasEventHeader() && !blockItems.get(1).hasStateChanges()) {
-                Assertions.fail("First block header not followed by event header or state changes");
-            }
-            return;
-        }
-
-        // In general, a `block_header` SHALL be followed by an `event_header`, but for hapiTestRestart we get
+        // In general, a `block_header` SHALL be followed by an `round_header`, but for hapiTestRestart we get
         // state change singleton update for BLOCK_INFO_VALUE because the post-restart State initialization changes
         // state before any event has reached consensus
-        if (!blockItems.get(1).hasEventHeader() && !blockItems.get(1).hasStateChanges()) {
-            Assertions.fail("Block header not followed by an event header or state changes");
+        if (!blockItems.get(1).hasRoundHeader()) {
+            Assertions.fail("Block header not followed by an round header");
+        }
+
+        // In general, a `round_header` SHALL be followed by an `event_header`, but for hapiTestRestart we get
+        // state change singleton update for BLOCK_INFO_VALUE because the post-restart State initialization changes
+        // state before any event has reached consensus
+        if (!blockItems.get(2).hasEventHeader() && !blockItems.get(2).hasStateChanges()) {
+            Assertions.fail("Round header not followed by an event header or state changes");
         }
 
         if (blockItems.stream().noneMatch(BlockItem::hasEventTransaction)) { // block without a user transaction
             // A block with no user transactions contains a `block_header`, `event_headers`, `state_changes` and
             // `state_proof`.
             if (blockItems.stream()
-                    .skip(1)
-                    .limit(blockItems.size() - 2L)
+                    .skip(2) // skip block_header and round_header
+                    .limit(blockItems.size() - 3L) // skip state_proof
                     .anyMatch(item -> !item.hasEventHeader() && !item.hasStateChanges())) {
                 Assertions.fail(
                         "Block with no user transactions should contain items of type `block_header`, `event_headers`, `state_changes` or `state_proof`");
