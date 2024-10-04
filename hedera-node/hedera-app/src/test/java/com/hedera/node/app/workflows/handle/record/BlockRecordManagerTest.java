@@ -34,11 +34,13 @@ import static org.mockito.Mockito.mock;
 
 import com.google.common.jimfs.Configuration;
 import com.google.common.jimfs.Jimfs;
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.state.blockrecords.BlockInfo;
 import com.hedera.hapi.node.state.blockrecords.RunningHashes;
 import com.hedera.node.app.blocks.impl.BlockStreamManagerImpl;
 import com.hedera.node.app.fixtures.AppTestBase;
+import com.hedera.node.app.info.NodeInfoImpl;
 import com.hedera.node.app.records.BlockRecordService;
 import com.hedera.node.app.records.impl.BlockRecordManagerImpl;
 import com.hedera.node.app.records.impl.BlockRecordStreamProducer;
@@ -137,7 +139,7 @@ final class BlockRecordManagerTest extends AppTestBase {
                 .commit();
 
         blockRecordWriterFactory = new BlockRecordWriterFactoryImpl(
-                app.configProvider(), app.networkInfo().selfNodeInfo(), SIGNER, fs);
+                app.configProvider(), new NodeInfoImpl(0, AccountID.newBuilder().accountNum(3).build(), 10, List.of(), Bytes.EMPTY), SIGNER, fs);
     }
 
     @AfterEach

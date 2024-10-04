@@ -23,7 +23,6 @@ import static com.hedera.node.app.blocks.schemas.V0540BlockStreamSchema.BLOCK_ST
 import static com.hedera.node.app.info.UnavailableNetworkInfo.UNAVAILABLE_NETWORK_INFO;
 import static com.hedera.node.app.records.impl.BlockRecordInfoUtils.blockHashByBlockNumber;
 import static com.hedera.node.app.records.schemas.V0490BlockRecordSchema.BLOCK_INFO_STATE_KEY;
-import static com.hedera.node.app.service.addressbook.AddressBookHelper.NODES_KEY;
 import static com.hedera.node.app.state.merkle.VersionUtils.isSoOrdered;
 import static com.hedera.node.app.statedumpers.DumpCheckpoint.MOD_POST_EVENT_STREAM_REPLAY;
 import static com.hedera.node.app.statedumpers.DumpCheckpoint.selectedDumpCheckpoints;
@@ -46,10 +45,8 @@ import com.hedera.hapi.block.stream.output.SingletonUpdateChange;
 import com.hedera.hapi.block.stream.output.StateChange;
 import com.hedera.hapi.block.stream.output.StateChanges;
 import com.hedera.hapi.node.base.SemanticVersion;
-import com.hedera.hapi.node.state.addressbook.Node;
 import com.hedera.hapi.node.state.blockrecords.BlockInfo;
 import com.hedera.hapi.node.state.blockstream.BlockStreamInfo;
-import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.hapi.platform.state.PlatformState;
 import com.hedera.hapi.util.HapiUtils;
@@ -66,10 +63,9 @@ import com.hedera.node.app.fees.FeeService;
 import com.hedera.node.app.ids.EntityIdService;
 import com.hedera.node.app.info.CurrentPlatformStatusImpl;
 import com.hedera.node.app.info.GenesisNetworkInfo;
-import com.hedera.node.app.info.NetworkInfoImpl;
+import com.hedera.node.app.info.StateNetworkInfo;
 import com.hedera.node.app.records.BlockRecordService;
 import com.hedera.node.app.roster.RosterServiceImpl;
-import com.hedera.node.app.service.addressbook.AddressBookService;
 import com.hedera.node.app.service.addressbook.impl.AddressBookServiceImpl;
 import com.hedera.node.app.service.consensus.impl.ConsensusServiceImpl;
 import com.hedera.node.app.service.contract.impl.ContractServiceImpl;
@@ -133,7 +129,6 @@ import com.swirlds.platform.system.state.notifications.StateHashedListener;
 import com.swirlds.platform.system.transaction.Transaction;
 import com.swirlds.state.State;
 import com.swirlds.state.StateChangeListener;
-import com.swirlds.state.spi.ReadableKVState;
 import com.swirlds.state.spi.WritableSingletonStateBase;
 import com.swirlds.state.spi.info.NetworkInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -565,6 +560,8 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener {
                         .orElse(null)),
                 () -> HapiUtils.toString(version.getPbjSemanticVersion()),
                 () -> trigger);
+        // This is set only when the trigger is genesis. Because, only in those cases
+        // the migration code is using the network info values.
         NetworkInfo genesisNetworkInfo = null;
         if (trigger == GENESIS) {
             if (genesisRoster == null) {
@@ -891,12 +888,7 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener {
                 .consensusSnapshotOrThrow()
                 .round();
         final var initialStateHash = new InitialStateHash(initialStateHashFuture, roundNum);
-
-        final var rosterEntries = retrieve(state).rosterEntries();
-        final ReadableKVState<EntityNumber, Node> nodeState =
-                state.getReadableStates(AddressBookService.NAME).get(NODES_KEY);
-        final var networkInfo = new NetworkInfoImpl(
-                rosterEntries, nodeState, platform.getSelfId().id(), configProvider);
+        final var networkInfo = new StateNetworkInfo(state, platform.getSelfId().id(), configProvider);
         // Fully qualified so as to not confuse javadoc
         daggerApp = com.hedera.node.app.DaggerHederaInjectionComponent.builder()
                 .configProviderImpl(configProvider)
@@ -1080,6 +1072,10 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener {
         return instantSource == InstantSource.system();
     }
 
+    /**
+     * Sets roster used on genesis.
+     * @param roster the roster to set
+     */
     public void setRoster(final Roster roster) {
         this.genesisRoster = roster;
     }

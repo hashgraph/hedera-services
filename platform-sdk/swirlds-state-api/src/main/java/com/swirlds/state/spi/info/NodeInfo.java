@@ -97,7 +97,7 @@ public interface NodeInfo {
             // Return the public key from the certificate
             return CommonUtils.hex(certificate.getPublicKey().getEncoded());
         } catch (CertificateException e) {
-            return "";
+           throw new IllegalStateException("Error extracting public key from certificate", e);
         }
     }
 }

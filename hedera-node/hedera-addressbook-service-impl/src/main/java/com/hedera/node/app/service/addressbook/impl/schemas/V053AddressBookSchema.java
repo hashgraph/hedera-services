@@ -98,6 +98,7 @@ public class V053AddressBookSchema extends Schema {
             final var nodeBuilder = Node.newBuilder()
                     .nodeId(nodeInfo.nodeId())
                     .accountId(nodeInfo.accountId())
+                    // Default node description hard coded to the values used currently
                     .description("node" + (nodeInfo.nodeId() + 1))
                     .gossipEndpoint(nodeInfo.gossipEndpoints())
                     .gossipCaCertificate(nodeInfo.sigCertBytes())

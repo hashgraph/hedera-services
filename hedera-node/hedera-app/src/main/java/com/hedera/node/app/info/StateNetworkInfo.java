@@ -17,20 +17,25 @@
 package com.hedera.node.app.info;
 
 import static com.hedera.node.app.info.NodeInfoImpl.fromRosterEntry;
+import static com.hedera.node.app.service.addressbook.AddressBookHelper.NODES_KEY;
+import static com.swirlds.platform.roster.RosterRetriever.retrieve;
 
 import com.hedera.hapi.node.state.addressbook.Node;
 import com.hedera.hapi.node.state.common.EntityNumber;
-import com.hedera.hapi.node.state.roster.RosterEntry;
+import com.hedera.node.app.service.addressbook.AddressBookService;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.LedgerConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.state.State;
 import com.swirlds.state.spi.ReadableKVState;
 import com.swirlds.state.spi.info.NetworkInfo;
 import com.swirlds.state.spi.info.NodeInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+
+import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Objects;
+import java.util.Map;
 import javax.inject.Singleton;
 
 /**
@@ -39,20 +44,17 @@ import javax.inject.Singleton;
  * that precede loading configuration sources from state.
  */
 @Singleton
-public class NetworkInfoImpl implements NetworkInfo {
+public class StateNetworkInfo implements NetworkInfo {
     private final Bytes ledgerId;
-    private final List<RosterEntry> rosterEntries;
-    private final ReadableKVState<EntityNumber, Node> readableNodeState;
+    private final Map<Long, NodeInfo> nodeInfos;
     private final long selfId;
 
-    public NetworkInfoImpl(
-            @NonNull final List<RosterEntry> rosterEntries,
-            @NonNull final ReadableKVState<EntityNumber, Node> nodeState,
+    public StateNetworkInfo(
+            @NonNull final State state,
             final long selfId,
             @NonNull final ConfigProvider configProvider) {
-        this.rosterEntries = rosterEntries;
         this.selfId = selfId;
-        this.readableNodeState = nodeState;
+        this.nodeInfos = buildNodeInfoMap(state);
         // Load the ledger ID from configuration
         final var config = configProvider.getConfiguration();
         final var ledgerConfig = config.getConfigData(LedgerConfig.class);
@@ -68,37 +70,46 @@ public class NetworkInfoImpl implements NetworkInfo {
     @NonNull
     @Override
     public NodeInfo selfNodeInfo() {
-        return Objects.requireNonNull(nodeInfo(selfId));
+        return nodeInfos.get(selfId);
     }
 
     @NonNull
     @Override
     public List<NodeInfo> addressBook() {
-        return rosterEntries.stream()
-                .map(entry -> fromRosterEntry(
-                        entry,
-                        readableNodeState.get(
-                                EntityNumber.newBuilder().number(entry.nodeId()).build())))
-                .toList();
+        return List.copyOf(nodeInfos.values());
     }
 
     @Nullable
     @Override
     public NodeInfo nodeInfo(final long nodeId) {
-        final var rosterEntry = rosterEntries.stream()
-                .filter(entry -> entry.nodeId() == nodeId)
-                .findFirst()
-                .orElse(null);
-        final var node =
-                readableNodeState.get(EntityNumber.newBuilder().number(nodeId).build());
-        if (rosterEntry == null || node == null) {
-            return null;
-        }
-        return fromRosterEntry(rosterEntry, node);
+        return nodeInfos.get(nodeId);
     }
 
     @Override
     public boolean containsNode(final long nodeId) {
-        return rosterEntries.stream().anyMatch(entry -> entry.nodeId() == nodeId);
+        return nodeInfos.containsKey(nodeId);
+    }
+
+    /**
+     * Build a map of node information from the state. The map is keyed by node ID.
+     * The node information is retrieved from the address book service. If the node
+     * information is not found in the address book service, it is not included in the map.
+     *
+     * @param state the state to retrieve the node information from
+     * @return a map of node information
+     */
+    private Map<Long, NodeInfo> buildNodeInfoMap(final State state) {
+        final var nodeInfos = new LinkedHashMap<Long, NodeInfo>();
+        final var rosterEntries = retrieve(state).rosterEntries();
+        final ReadableKVState<EntityNumber, Node> nodeState =
+                state.getReadableStates(AddressBookService.NAME).get(NODES_KEY);
+        for (final var rosterEntry : rosterEntries) {
+            final var node = nodeState.get(
+                    EntityNumber.newBuilder().number(rosterEntry.nodeId()).build());
+            if (node != null) {
+                nodeInfos.put(rosterEntry.nodeId(), fromRosterEntry(rosterEntry, node));
+            }
+        }
+        return nodeInfos;
     }
 }

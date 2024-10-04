@@ -52,8 +52,8 @@ import org.apache.logging.log4j.Logger;
  * change <i>how</i> the transaction is executed.
  */
 @Singleton
-public class StateNetworkInfo implements NetworkInfo {
-    private static final Logger log = LogManager.getLogger(StateNetworkInfo.class);
+public class StandaloneNetworkInfo implements NetworkInfo {
+    private static final Logger log = LogManager.getLogger(StandaloneNetworkInfo.class);
 
     private final Bytes ledgerId;
     private final ConfigProvider configProvider;
@@ -63,7 +63,7 @@ public class StateNetworkInfo implements NetworkInfo {
     private List<NodeInfo> nodeInfos;
 
     @Inject
-    public StateNetworkInfo(@NonNull final ConfigProvider configProvider) {
+    public StandaloneNetworkInfo(@NonNull final ConfigProvider configProvider) {
         this.configProvider = requireNonNull(configProvider);
         final var config = configProvider.getConfiguration();
         this.ledgerId = config.getConfigData(LedgerConfig.class).id();

@@ -25,7 +25,10 @@ import com.swirlds.state.spi.info.NetworkInfo;
 import com.swirlds.state.spi.info.NodeInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import javax.inject.Singleton;
 
 /**
@@ -33,47 +36,70 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class GenesisNetworkInfo implements NetworkInfo {
-    private final Roster genesisRoster;
+    private final Map<Long, NodeInfo> nodeInfos;
     private final Bytes ledgerId;
 
+    /**
+     * Constructs a new {@link GenesisNetworkInfo} instance.
+     *
+     * @param genesisRoster The genesis roster
+     * @param ledgerId      The ledger ID
+     */
     public GenesisNetworkInfo(final Roster genesisRoster, final Bytes ledgerId) {
-        this.genesisRoster = genesisRoster;
+        this.nodeInfos = buildNodeInfoMap(genesisRoster);
         this.ledgerId = ledgerId;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @NonNull
     @Override
     public Bytes ledgerId() {
         return ledgerId;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @NonNull
     @Override
     public NodeInfo selfNodeInfo() {
         throw new UnsupportedOperationException("Not implemented");
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @NonNull
     @Override
     public List<NodeInfo> addressBook() {
-        return genesisRoster.rosterEntries().stream().map(this::fromRosterEntry).toList();
+        return List.copyOf(nodeInfos.values());
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Nullable
     @Override
     public NodeInfo nodeInfo(final long nodeId) {
-        return genesisRoster.rosterEntries().stream()
-                .filter(entry -> entry.nodeId() == nodeId)
-                .findFirst()
-                .map(this::fromRosterEntry)
-                .orElse(null);
+        return nodeInfos.get(nodeId);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public boolean containsNode(final long nodeId) {
-        return genesisRoster.rosterEntries().stream().anyMatch(entry -> entry.nodeId() == nodeId);
+        return nodeInfos.containsKey(nodeId);
     }
 
+    /**
+     * Builds a node info from a roster entry from the given roster.
+     *
+     * @param entry The roster entry
+     * @return The node info
+     */
     private NodeInfo fromRosterEntry(RosterEntry entry) {
         return new NodeInfoImpl(
                 entry.nodeId(),
@@ -81,5 +107,22 @@ public class GenesisNetworkInfo implements NetworkInfo {
                 entry.weight(),
                 entry.gossipEndpoint(),
                 entry.gossipCaCertificate());
+    }
+
+    /**
+     * Builds a map of node information from the given roster. The map is keyed by node ID.
+     * The node information is retrieved from the roster entry.
+     * If the node information is not found in the roster entry, it is not included in the map.
+     *
+     * @param roster The roster to retrieve the node information from
+     * @return A map of node information
+     */
+    private Map<Long, NodeInfo> buildNodeInfoMap(final Roster roster) {
+        final var nodeInfos = new LinkedHashMap<Long, NodeInfo>();
+        final var rosterEntries = roster.rosterEntries();
+        for (final var rosterEntry : rosterEntries) {
+            nodeInfos.put(rosterEntry.nodeId(), fromRosterEntry(rosterEntry));
+        }
+        return nodeInfos;
     }
 }

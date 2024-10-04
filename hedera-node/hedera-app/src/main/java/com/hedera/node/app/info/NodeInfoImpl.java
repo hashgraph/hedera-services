@@ -37,9 +37,9 @@ public record NodeInfoImpl(
     public static NodeInfo fromRosterEntry(@NonNull final RosterEntry rosterEntry, @NonNull final Node node) {
         return new NodeInfoImpl(
                 rosterEntry.nodeId(),
-                node.accountId(),
+                node.accountIdOrThrow(),
                 rosterEntry.weight(),
                 rosterEntry.gossipEndpoint(),
-                node.gossipCaCertificate());
+                rosterEntry.gossipCaCertificate());
     }
 }
