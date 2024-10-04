@@ -257,7 +257,7 @@ public class ReadableFreezeUpgradeActions {
             @NonNull final String desc,
             @NonNull final String marker,
             @Nullable final Timestamp now,
-            @Nullable List<ActiveNode> nodes) {
+            @Nullable final List<ActiveNode> nodes) {
         try {
             final var artifactsDir = artifactsLoc.toFile();
             final var keysDir = keysLoc.toFile();

@@ -94,8 +94,7 @@ public class AddressBookUtils {
                     address.getPortExternal() + (hasMemo ? "," : ""),
                     memo);
         }
-        final String addresses = table.render();
-        return addresses;
+        return table.render();
     }
 
     /**

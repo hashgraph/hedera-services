@@ -82,10 +82,10 @@ public class AddressBookUtils {
                     .append(", ")
                     .append("0.0.")
                     .append(node.getAccountId().accountNumOrThrow())
-                    .append("\n");
+                    .append('\n');
             maxNodeId = Math.max(node.getNodeId(), maxNodeId);
         }
-        sb.append("\n");
+        sb.append('\n');
         return sb.toString();
     }
 
