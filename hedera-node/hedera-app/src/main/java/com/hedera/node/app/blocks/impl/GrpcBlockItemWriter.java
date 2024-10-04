@@ -54,7 +54,6 @@ public class GrpcBlockItemWriter implements BlockItemWriter {
     private ManagedChannel channel;
 
     private StreamObserver<PublishStreamRequest> requestObserver;
-
     private long blockNumber;
 
     /** The state of this writer */
@@ -86,7 +85,6 @@ public class GrpcBlockItemWriter implements BlockItemWriter {
 
         channel = ManagedChannelBuilder.forAddress(blockStreamConfig.address(), blockStreamConfig.port())
                 .usePlaintext()
-                .keepAliveTimeout(10, TimeUnit.SECONDS)
                 .build();
         asyncStub = BlockStreamServiceGrpc.newStub(channel);
     }
