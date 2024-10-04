@@ -224,8 +224,8 @@ class RandotronTests {
         final Signature signature2 = random2.nextSignature();
 
         assertNotEquals(signature1, signature2);
-        assertEquals(384, signature1.getSignatureBytes().length);
-        assertEquals(384, signature2.getSignatureBytes().length);
+        assertEquals(384, signature1.getBytes().length());
+        assertEquals(384, signature2.getBytes().length());
     }
 
     @Test
@@ -235,8 +235,8 @@ class RandotronTests {
         final Signature signature2 = random1Duplicate.nextSignature();
 
         assertEquals(signature1, signature2);
-        assertEquals(384, signature1.getSignatureBytes().length);
-        assertEquals(384, signature2.getSignatureBytes().length);
+        assertEquals(384, signature1.getBytes().length());
+        assertEquals(384, signature2.getBytes().length());
     }
 
     @Test

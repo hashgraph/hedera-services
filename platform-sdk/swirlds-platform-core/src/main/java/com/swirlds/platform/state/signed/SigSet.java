@@ -182,7 +182,7 @@ public class SigSet implements FastCopyable, Iterable<NodeId>, SelfSerializable 
 
         for (final NodeId nodeId : sortedIds) {
             out.writeSerializable(nodeId, false);
-            out.writeSerializable(signatures.get(nodeId), false);
+            signatures.get(nodeId).serialize(out, false);
         }
     }
 
@@ -204,7 +204,7 @@ public class SigSet implements FastCopyable, Iterable<NodeId>, SelfSerializable 
             } else {
                 nodeId = in.readSerializable(false, NodeId::new);
             }
-            final Signature signature = in.readSerializable(false, Signature::new);
+            final Signature signature = Signature.deserialize(in, false);
             signatures.put(nodeId, signature);
         }
     }
