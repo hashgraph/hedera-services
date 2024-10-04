@@ -40,7 +40,6 @@ import static com.hedera.node.app.workflows.handle.TransactionType.POST_UPGRADE_
 import static com.hedera.node.app.workflows.prehandle.PreHandleResult.Status.NODE_DUE_DILIGENCE_FAILURE;
 import static com.hedera.node.config.types.StreamMode.BLOCKS;
 import static com.hedera.node.config.types.StreamMode.RECORDS;
-import static com.swirlds.platform.state.service.schemas.V0540PlatformStateSchema.PLATFORM_STATE_KEY;
 import static com.swirlds.platform.system.InitTrigger.EVENT_STREAM_RECOVERY;
 import static com.swirlds.state.spi.HapiUtils.SEMANTIC_VERSION_COMPARATOR;
 import static java.util.Objects.requireNonNull;
@@ -55,7 +54,6 @@ import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.state.blockrecords.BlockInfo;
 import com.hedera.hapi.node.state.blockstream.BlockStreamInfo;
 import com.hedera.hapi.node.transaction.ExchangeRateSet;
-import com.hedera.hapi.platform.state.PlatformState;
 import com.hedera.hapi.util.HapiUtils;
 import com.hedera.node.app.blocks.BlockStreamManager;
 import com.hedera.node.app.blocks.BlockStreamManager.Boundary;
@@ -102,7 +100,6 @@ import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.BlockStreamConfig;
 import com.hedera.node.config.types.StreamMode;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.swirlds.platform.state.service.PlatformStateService;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.events.ConsensusEvent;
@@ -682,14 +679,6 @@ public class HandleWorkflow {
                     .get();
             firstPostUpgrade = impliesPostUpgradeWorkPending(requireNonNull(blockStreamInfo), version);
         } else {
-            final var platformState = state.getReadableStates(PlatformStateService.NAME)
-                    .<PlatformState>getSingleton(PLATFORM_STATE_KEY)
-                    .get();
-            requireNonNull(platformState);
-            if (platformState.freezeTime() == null
-                    || !platformState.freezeTimeOrThrow().equals(platformState.lastFrozenTime())) {
-                return BLOCK_BOUNDARY_TRANSACTION;
-            }
             final var blockInfo = state.getReadableStates(BlockRecordService.NAME)
                     .<BlockInfo>getSingleton(BLOCK_INFO_STATE_KEY)
                     .get();

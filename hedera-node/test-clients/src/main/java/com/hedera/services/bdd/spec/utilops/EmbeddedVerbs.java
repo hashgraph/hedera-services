@@ -32,7 +32,6 @@ import com.hedera.services.bdd.spec.utilops.embedded.MutateNodeOp;
 import com.hedera.services.bdd.spec.utilops.embedded.ViewAccountOp;
 import com.hedera.services.bdd.spec.utilops.embedded.ViewNodeOp;
 import com.hedera.services.bdd.spec.utilops.embedded.ViewPendingAirdropOp;
-import com.swirlds.platform.state.service.WritablePlatformStateStore;
 import com.swirlds.state.spi.CommittableWritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
@@ -116,15 +115,10 @@ public final class EmbeddedVerbs {
     public static SpecOperation simulatePostUpgradeTransaction() {
         return withOpContext((spec, opLog) -> {
             if (spec.targetNetworkOrThrow() instanceof EmbeddedNetwork embeddedNetwork) {
+                // Ensure there are no in-flight transactions that will overwrite our state changes
+                spec.sleepConsensusTime(Duration.ofSeconds(1));
                 final var embeddedHedera = embeddedNetwork.embeddedHederaOrThrow();
                 final var fakeState = embeddedHedera.state();
-                // First make the freeze and last freeze times non-null and identical
-                final var aTime = spec.consensusTime();
-                // This store immediately commits mutations, hence no cast and call to commit
-                final var writablePlatformStateStore =
-                        new WritablePlatformStateStore(fakeState.getWritableStates("PlatformStateService"));
-                writablePlatformStateStore.setLastFrozenTime(aTime);
-                writablePlatformStateStore.setFreezeTime(aTime);
                 final var streamMode = spec.startupProperties().getStreamMode("blockStream.streamMode");
                 if (streamMode == RECORDS) {
                     // Mark the migration records as not streamed

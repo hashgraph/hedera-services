@@ -213,7 +213,7 @@ class BlockStreamManagerImplTest {
                         Bytes.fromHex(
                                 "84910d7e7710b482680de1e81865de39396de9c536ab265cf3253bf378bc50ed2f6c5a3ec19a25c51ee170347f13b28d")),
                 Timestamp.DEFAULT,
-                false,
+                true,
                 SemanticVersion.DEFAULT,
                 EPOCH);
         final var actualBlockInfo = infoRef.get();
@@ -321,7 +321,7 @@ class BlockStreamManagerImplTest {
                         Bytes.fromHex(
                                 "84910d7e7710b482680de1e81865de39396de9c536ab265cf3253bf378bc50ed2f6c5a3ec19a25c51ee170347f13b28d")),
                 Timestamp.DEFAULT,
-                false,
+                true,
                 SemanticVersion.DEFAULT,
                 EPOCH);
         final var actualBlockInfo = infoRef.get();

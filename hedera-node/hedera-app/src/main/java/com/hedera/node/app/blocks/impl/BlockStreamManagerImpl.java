@@ -406,6 +406,7 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
 
     /**
      * Determines if post-upgrade work is pending based on the given block stream info and version.
+     *
      * @param blockStreamInfo the block stream info
      * @param version the version
      * @return true if post-upgrade work is pending, false otherwise
@@ -414,7 +415,10 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
             @NonNull final BlockStreamInfo blockStreamInfo, @NonNull final SemanticVersion version) {
         requireNonNull(version);
         requireNonNull(blockStreamInfo);
-        return !version.equals(blockStreamInfo.creationSoftwareVersion()) || !blockStreamInfo.postUpgradeWorkDone();
+        // The genesis block never has post-upgrade work pending
+        return !EPOCH.equals(blockStreamInfo.blockTimeOrElse(EPOCH))
+                && (!version.equals(blockStreamInfo.creationSoftwareVersion())
+                        || !blockStreamInfo.postUpgradeWorkDone());
     }
 
     private void schedulePendingWork() {

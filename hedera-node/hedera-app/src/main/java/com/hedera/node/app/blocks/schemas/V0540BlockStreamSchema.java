@@ -55,9 +55,10 @@ import java.util.function.Consumer;
  * </ol>
  */
 public class V0540BlockStreamSchema extends Schema {
-    public static final String BLOCK_STREAM_INFO_KEY = "BLOCK_STREAM_INFO";
     private static final String SHARED_BLOCK_RECORD_INFO = "SHARED_BLOCK_RECORD_INFO";
     private static final String SHARED_RUNNING_HASHES = "SHARED_RUNNING_HASHES";
+
+    public static final String BLOCK_STREAM_INFO_KEY = "BLOCK_STREAM_INFO";
 
     /**
      * The version of the schema.
