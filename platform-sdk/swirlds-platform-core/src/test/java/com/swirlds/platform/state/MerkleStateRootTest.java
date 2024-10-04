@@ -53,6 +53,7 @@ import com.swirlds.common.merkle.crypto.MerkleCryptographyFactory;
 import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.platform.state.service.PlatformStateService;
+import com.swirlds.platform.state.service.ReadablePlatformStateStore;
 import com.swirlds.platform.state.service.WritablePlatformStateStore;
 import com.swirlds.platform.state.service.schemas.V0540PlatformStateSchema;
 import com.swirlds.platform.system.InitTrigger;
@@ -778,7 +779,7 @@ class MerkleStateRootTest extends MerkleTestBase {
         @DisplayName("Notifications are sent to onHandleConsensusRound when handleConsensusRound is called")
         void handleConsensusRoundCallback() {
             final var round = Mockito.mock(Round.class);
-            final var platformState = Mockito.mock(PlatformStateAccessor.class);
+            final var platformState = Mockito.mock(PlatformStateModifier.class);
             final var state = new MerkleStateRoot(lifecycles, softwareVersionSupplier);
 
             state.handleConsensusRound(round, platformState);
@@ -796,7 +797,7 @@ class MerkleStateRootTest extends MerkleTestBase {
 
             // The original no longer has the listener
             final var round = Mockito.mock(Round.class);
-            final var platformState = Mockito.mock(PlatformStateAccessor.class);
+            final var platformState = Mockito.mock(PlatformStateModifier.class);
             assertThrows(MutabilityException.class, () -> stateRoot.handleConsensusRound(round, platformState));
 
             // But the copy does
@@ -926,13 +927,13 @@ class MerkleStateRootTest extends MerkleTestBase {
         @Test
         @DisplayName("Platform state should be registered by default")
         void platformStateIsRegisteredByDefault() {
-            assertThat(stateRoot.getPlatformState()).isNotNull();
+            assertThat(stateRoot.getWritablePlatformState()).isNotNull();
         }
 
         @Test
         @DisplayName("Test access to the platform state")
         void testAccessToPlatformStateData() {
-            PlatformStateAccessor randomPlatformState = randomPlatformState(stateRoot.getPlatformState());
+            PlatformStateModifier randomPlatformState = randomPlatformState(stateRoot.getWritablePlatformState());
             stateRoot.updatePlatformState(randomPlatformState);
             ReadableSingletonState<PlatformState> readableSingletonState = stateRoot
                     .getReadableStates(PlatformStateService.NAME)
@@ -948,16 +949,16 @@ class MerkleStateRootTest extends MerkleTestBase {
         @Test
         @DisplayName("Test update of the platform state")
         void testUpdatePlatformStateData() {
-            PlatformStateAccessor randomPlatformState = randomPlatformState(stateRoot.getPlatformState());
+            PlatformStateModifier randomPlatformState = randomPlatformState(stateRoot.getWritablePlatformState());
             stateRoot.updatePlatformState(randomPlatformState);
             WritableStates writableStates = stateRoot.getWritableStates(PlatformStateService.NAME);
             WritableSingletonState<PlatformState> writableSingletonState =
                     writableStates.getSingleton(V0540PlatformStateSchema.PLATFORM_STATE_KEY);
-            PlatformStateAccessor newPlatformState = randomPlatformState(stateRoot.getPlatformState());
+            PlatformStateModifier newPlatformState = randomPlatformState(stateRoot.getWritablePlatformState());
             writableSingletonState.put(toPbjPlatformState(newPlatformState));
             ((CommittableWritableStates) writableStates).commit();
 
-            PlatformStateAccessor stateAccessor = stateRoot.getPlatformState();
+            PlatformStateAccessor stateAccessor = stateRoot.getReadablePlatformState();
             assertThat(stateAccessor.getAddressBook()).isEqualTo(newPlatformState.getAddressBook());
             assertThat(stateAccessor.getRound())
                     .isEqualTo(newPlatformState.getSnapshot().round());
@@ -1020,8 +1021,10 @@ class MerkleStateRootTest extends MerkleTestBase {
             assertFalse(stateRoot.isImmutable());
 
             // MerkleStateRoot registers the platform state as a singleton upon the first request to it
-            assertInstanceOf(WritablePlatformStateStore.class, stateRoot.getPlatformState());
-            assertEquals(toPbjPlatformState(platformState), toPbjPlatformState(stateRoot.getPlatformState()));
+            assertInstanceOf(WritablePlatformStateStore.class, stateRoot.getWritablePlatformState());
+            assertInstanceOf(ReadablePlatformStateStore.class, stateRoot.getReadablePlatformState());
+            assertEquals(toPbjPlatformState(platformState), toPbjPlatformState(stateRoot.getWritablePlatformState()));
+            assertEquals(toPbjPlatformState(platformState), toPbjPlatformState(stateRoot.getReadablePlatformState()));
         }
 
         @Test
@@ -1059,8 +1062,8 @@ class MerkleStateRootTest extends MerkleTestBase {
             assertFalse(stateRoot.isImmutable());
 
             // MerkleStateRoot registers the platform state as a singleton upon the first request to it
-            assertInstanceOf(WritablePlatformStateStore.class, stateRoot.getPlatformState());
-            assertEquals(toPbjPlatformState(platformState), toPbjPlatformState(stateRoot.getPlatformState()));
+            assertInstanceOf(WritablePlatformStateStore.class, stateRoot.getWritablePlatformState());
+            assertEquals(toPbjPlatformState(platformState), toPbjPlatformState(stateRoot.getWritablePlatformState()));
         }
 
         @Test

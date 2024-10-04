@@ -69,6 +69,7 @@ import com.hedera.node.config.data.StatsConfig;
 import com.hedera.node.config.data.TokensConfig;
 import com.hedera.node.config.data.TopicsConfig;
 import com.hedera.node.config.data.TraceabilityConfig;
+import com.hedera.node.config.data.TssConfig;
 import com.hedera.node.config.data.UtilPrngConfig;
 import com.hedera.node.config.data.VersionConfig;
 import com.hedera.node.config.types.CongestionMultipliers;
@@ -186,6 +187,7 @@ public final class HederaTestConfigBuilder {
                 .withConfigDataType(UtilPrngConfig.class)
                 .withConfigDataType(VersionConfig.class)
                 .withConfigDataType(NodesConfig.class)
+                .withConfigDataType(TssConfig.class)
                 .withConfigDataType(BlockStreamConfig.class)
                 .withConverter(CongestionMultipliers.class, new CongestionMultipliersConverter())
                 .withConverter(EntityScaleFactors.class, new EntityScaleFactorsConverter())

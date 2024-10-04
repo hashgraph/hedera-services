@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.blocks.impl;
 
+import static com.swirlds.state.spi.HapiUtils.asAccountString;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.block.stream.schema.BlockSchema;
@@ -26,7 +27,7 @@ import com.hedera.pbj.runtime.ProtoConstants;
 import com.hedera.pbj.runtime.ProtoWriterTools;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.pbj.runtime.io.stream.WritableStreamingData;
-import com.swirlds.state.spi.info.SelfNodeInfo;
+import com.swirlds.state.spi.info.NodeInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.BufferedOutputStream;
 import java.io.IOException;
@@ -86,7 +87,7 @@ public class FileBlockItemWriter implements BlockItemWriter {
      */
     public FileBlockItemWriter(
             @NonNull final ConfigProvider configProvider,
-            @NonNull final SelfNodeInfo nodeInfo,
+            @NonNull final NodeInfo nodeInfo,
             @NonNull final FileSystem fileSystem) {
         requireNonNull(configProvider, "The supplied argument 'configProvider' cannot be null!");
         requireNonNull(nodeInfo, "The supplied argument 'nodeInfo' cannot be null!");
@@ -99,7 +100,7 @@ public class FileBlockItemWriter implements BlockItemWriter {
 
         // Compute directory for block files
         final Path blockDir = fileSystem.getPath(blockStreamConfig.blockFileDir());
-        nodeScopedBlockDir = blockDir.resolve("block-" + nodeInfo.memo());
+        nodeScopedBlockDir = blockDir.resolve("block-" + asAccountString(nodeInfo.accountId()));
 
         // Create parent directories if needed for the record file itself.
         try {

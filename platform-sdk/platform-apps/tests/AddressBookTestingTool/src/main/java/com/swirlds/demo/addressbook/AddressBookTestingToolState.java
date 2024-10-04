@@ -45,6 +45,7 @@ import com.swirlds.common.utility.ByteUtils;
 import com.swirlds.common.utility.StackTrace;
 import com.swirlds.platform.config.AddressBookConfig;
 import com.swirlds.platform.state.PlatformStateAccessor;
+import com.swirlds.platform.state.PlatformStateModifier;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.Round;
@@ -182,7 +183,7 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
      * {@inheritDoc}
      */
     @Override
-    public void handleConsensusRound(@NonNull final Round round, @NonNull final PlatformStateAccessor platformState) {
+    public void handleConsensusRound(@NonNull final Round round, @NonNull final PlatformStateModifier platformState) {
         Objects.requireNonNull(round, "the round cannot be null");
         Objects.requireNonNull(platformState, "the platform state cannot be null");
         throwIfImmutable();

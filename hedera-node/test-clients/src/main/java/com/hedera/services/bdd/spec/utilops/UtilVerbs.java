@@ -153,14 +153,13 @@ import com.hedera.services.bdd.spec.utilops.mod.SubmitModificationsOp;
 import com.hedera.services.bdd.spec.utilops.mod.TxnModification;
 import com.hedera.services.bdd.spec.utilops.pauses.HapiSpecSleep;
 import com.hedera.services.bdd.spec.utilops.pauses.HapiSpecWaitUntil;
-import com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode;
-import com.hedera.services.bdd.spec.utilops.records.SnapshotMode;
-import com.hedera.services.bdd.spec.utilops.records.SnapshotModeOp;
 import com.hedera.services.bdd.spec.utilops.streams.LogContainmentOp;
 import com.hedera.services.bdd.spec.utilops.streams.LogValidationOp;
 import com.hedera.services.bdd.spec.utilops.streams.StreamValidationOp;
+import com.hedera.services.bdd.spec.utilops.streams.assertions.AbstractEventualStreamAssertion;
 import com.hedera.services.bdd.spec.utilops.streams.assertions.AssertingBiConsumer;
-import com.hedera.services.bdd.spec.utilops.streams.assertions.EventualAssertion;
+import com.hedera.services.bdd.spec.utilops.streams.assertions.BlockStreamAssertion;
+import com.hedera.services.bdd.spec.utilops.streams.assertions.EventualBlockStreamAssertion;
 import com.hedera.services.bdd.spec.utilops.streams.assertions.EventualRecordStreamAssertion;
 import com.hedera.services.bdd.spec.utilops.streams.assertions.RecordStreamAssertion;
 import com.hedera.services.bdd.spec.utilops.streams.assertions.SelectedItemsAssertion;
@@ -1065,18 +1064,36 @@ public class UtilVerbs {
     }
 
     /* Stream validation. */
-    public static EventualAssertion streamMustInclude(final Function<HapiSpec, RecordStreamAssertion> assertion) {
-        return new EventualRecordStreamAssertion(assertion);
-    }
-
-    public static EventualAssertion streamMustIncludeNoFailuresFrom(
-            final Function<HapiSpec, RecordStreamAssertion> assertion) {
+    public static EventualRecordStreamAssertion recordStreamMustIncludeNoFailuresFrom(
+            @NonNull final Function<HapiSpec, RecordStreamAssertion> assertion) {
         return EventualRecordStreamAssertion.eventuallyAssertingNoFailures(assertion);
     }
 
-    public static EventualAssertion streamMustIncludePassFrom(
-            final Function<HapiSpec, RecordStreamAssertion> assertion) {
+    public static EventualRecordStreamAssertion recordStreamMustIncludePassFrom(
+            @NonNull final Function<HapiSpec, RecordStreamAssertion> assertion) {
         return EventualRecordStreamAssertion.eventuallyAssertingExplicitPass(assertion);
+    }
+
+    /**
+     * Returns an operation that asserts that the block stream must include no failures from the given assertion
+     * before its timeout elapses.
+     * @param assertion the assertion to apply to the block stream
+     * @return the operation that asserts no block stream problems
+     */
+    public static EventualBlockStreamAssertion blockStreamMustIncludeNoFailuresFrom(
+            @NonNull final Function<HapiSpec, BlockStreamAssertion> assertion) {
+        return EventualBlockStreamAssertion.eventuallyAssertingNoFailures(assertion);
+    }
+
+    /**
+     * Returns an operation that asserts that the block stream must include a pass from the given assertion
+     * before its timeout elapses.
+     * @param assertion the assertion to apply to the block stream
+     * @return the operation that asserts a passing block stream
+     */
+    public static AbstractEventualStreamAssertion blockStreamMustIncludePassFrom(
+            @NonNull final Function<HapiSpec, BlockStreamAssertion> assertion) {
+        return EventualBlockStreamAssertion.eventuallyAssertingExplicitPass(assertion);
     }
 
     public static RunnableOp verify(@NonNull final Runnable runnable) {
@@ -1570,21 +1587,6 @@ public class UtilVerbs {
             burstLatch.await();
             burstNo.getAndIncrement();
         }
-    }
-
-    /**
-     * Returns a {@link SnapshotModeOp} that either takes or fuzzy-matches a snapshot of generated records
-     * from the current spec.
-     *
-     * <p><b>IMPORTANT:</b> If multiple {@link SnapshotModeOp} operations are used in a single spec, all
-     * but the last will be a no-op.
-     *
-     * @param mode the snapshot mode to use
-     * @return a {@link SnapshotModeOp} that either takes or fuzzy-matches a snapshot of generated records
-     */
-    public static SnapshotModeOp snapshotMode(
-            @NonNull final SnapshotMode mode, @NonNull final SnapshotMatchMode... matchModes) {
-        return new SnapshotModeOp(mode, matchModes);
     }
 
     public static HapiSpecOperation updateLargeFile(

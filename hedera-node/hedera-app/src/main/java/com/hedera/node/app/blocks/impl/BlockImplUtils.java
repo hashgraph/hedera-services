@@ -215,6 +215,22 @@ public class BlockImplUtils {
         return Bytes.wrap(newBytes);
     }
 
+    /**
+     * Hashes the given left and right hashes.
+     * @param leftHash the left hash
+     * @param rightHash the right hash
+     * @return the combined hash
+     */
+    public static Bytes combine(@NonNull final Bytes leftHash, @NonNull final Bytes rightHash) {
+        return Bytes.wrap(combine(leftHash.toByteArray(), rightHash.toByteArray()));
+    }
+
+    /**
+     * Hashes the given left and right hashes.
+     * @param leftHash the left hash
+     * @param rightHash the right hash
+     * @return the combined hash
+     */
     public static byte[] combine(final byte[] leftHash, final byte[] rightHash) {
         try {
             final var digest = MessageDigest.getInstance(DigestType.SHA_384.algorithmName());

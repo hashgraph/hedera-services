@@ -17,75 +17,127 @@
 package com.hedera.node.app.blocks.schemas;
 
 import static com.hedera.node.app.blocks.schemas.V0540BlockStreamSchema.BLOCK_STREAM_INFO_KEY;
+import static com.hedera.node.app.fixtures.AppTestBase.DEFAULT_CONFIG;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.Mock.Strictness.LENIENT;
+import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.verifyNoInteractions;
 
+import com.hedera.hapi.node.base.SemanticVersion;
+import com.hedera.hapi.node.base.Timestamp;
+import com.hedera.hapi.node.state.blockrecords.BlockInfo;
+import com.hedera.hapi.node.state.blockrecords.RunningHashes;
 import com.hedera.hapi.node.state.blockstream.BlockStreamInfo;
-import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
-import com.swirlds.config.api.Configuration;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.state.spi.MigrationContext;
-import com.swirlds.state.spi.StateDefinition;
 import com.swirlds.state.spi.WritableSingletonState;
 import com.swirlds.state.spi.WritableStates;
-import java.util.Set;
+import java.util.List;
+import java.util.Map;
+import java.util.function.Consumer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 public class V0540BlockStreamSchemaTest {
-    @Mock(strictness = LENIENT)
-    private MigrationContext mockCtx;
+    @Mock
+    private MigrationContext migrationContext;
 
-    @Mock(strictness = LENIENT)
-    private WritableSingletonState<Object> mockBlockStreamInfo;
+    @Mock
+    private WritableStates writableStates;
 
-    @Mock(strictness = LENIENT)
-    private WritableStates mockWritableStates;
+    @Mock
+    private Consumer<Bytes> migratedBlockHashConsumer;
 
-    public static final Configuration DEFAULT_CONFIG = HederaTestConfigBuilder.createConfig();
+    @Mock
+    private WritableSingletonState<BlockStreamInfo> state;
 
-    private V0540BlockStreamSchema schema;
+    private V0540BlockStreamSchema subject;
 
     @BeforeEach
     void setUp() {
-        schema = new V0540BlockStreamSchema();
-        when(mockCtx.newStates()).thenReturn(mockWritableStates);
-        when(mockWritableStates.getSingleton(BLOCK_STREAM_INFO_KEY)).thenReturn(mockBlockStreamInfo);
+        subject = new V0540BlockStreamSchema(migratedBlockHashConsumer);
     }
 
     @Test
-    void testVersion() {
-        assertEquals(0, schema.getVersion().major());
-        assertEquals(54, schema.getVersion().minor());
-        assertEquals(0, schema.getVersion().patch());
+    void versionIsV0540() {
+        assertEquals(new SemanticVersion(0, 54, 0, "", ""), subject.getVersion());
     }
 
     @Test
-    void testStatesToCreate() {
-        Set<StateDefinition> statesToCreate = schema.statesToCreate(DEFAULT_CONFIG);
-        assertNotNull(statesToCreate);
-        assertEquals(1, statesToCreate.size());
-        assertTrue(statesToCreate.stream().anyMatch(state -> state.stateKey().equals(BLOCK_STREAM_INFO_KEY)));
+    void createsOneSingleton() {
+        final var stateDefs = subject.statesToCreate(DEFAULT_CONFIG);
+        assertEquals(1, stateDefs.size());
+        final var def = stateDefs.iterator().next();
+        assertTrue(def.singleton());
+        assertEquals(BLOCK_STREAM_INFO_KEY, def.stateKey());
     }
 
     @Test
-    void testMigration() {
-        when(mockCtx.previousVersion()).thenReturn(null);
+    void createsDefaultInfoAtGenesis() {
+        given(migrationContext.newStates()).willReturn(writableStates);
+        given(writableStates.<BlockStreamInfo>getSingleton(BLOCK_STREAM_INFO_KEY))
+                .willReturn(state);
 
-        schema.migrate(mockCtx);
+        subject.migrate(migrationContext);
 
-        ArgumentCaptor<BlockStreamInfo> captor = ArgumentCaptor.forClass(BlockStreamInfo.class);
-        verify(mockBlockStreamInfo).put(captor.capture());
+        verify(state).put(BlockStreamInfo.DEFAULT);
+    }
 
-        BlockStreamInfo blockInfoCapture = captor.getValue();
-        assertEquals(BlockStreamInfo.DEFAULT, blockInfoCapture);
+    @Test
+    void assumesMigrationIfNotGenesisAndStateIsNull() {
+        final var blockInfo = new BlockInfo(
+                666L,
+                new Timestamp(1_234_567L, 0),
+                Bytes.fromHex("abcd".repeat(24 * 256)),
+                new Timestamp(1_234_567L, 890),
+                false,
+                new Timestamp(1_234_567L, 123));
+        final var sharedValues = Map.<String, Object>of(
+                "SHARED_BLOCK_RECORD_INFO",
+                blockInfo,
+                "SHARED_RUNNING_HASHES",
+                new RunningHashes(
+                        Bytes.fromHex("aa".repeat(48)),
+                        Bytes.fromHex("bb".repeat(48)),
+                        Bytes.fromHex("cc".repeat(48)),
+                        Bytes.fromHex("dd".repeat(48))));
+        given(migrationContext.newStates()).willReturn(writableStates);
+        given(migrationContext.previousVersion()).willReturn(SemanticVersion.DEFAULT);
+        given(writableStates.<BlockStreamInfo>getSingleton(BLOCK_STREAM_INFO_KEY))
+                .willReturn(state);
+        given(migrationContext.sharedValues()).willReturn(sharedValues);
+
+        subject.migrate(migrationContext);
+
+        verify(migratedBlockHashConsumer).accept(Bytes.fromHex("abcd".repeat(24)));
+        final var expectedInfo = new BlockStreamInfo(
+                blockInfo.lastBlockNumber(),
+                blockInfo.firstConsTimeOfLastBlock(),
+                Bytes.fromHex("dd".repeat(48) + "cc".repeat(48) + "bb".repeat(48) + "aa".repeat(48)),
+                Bytes.fromHex("abcd".repeat(24 * 255)),
+                Bytes.EMPTY,
+                Bytes.EMPTY,
+                0,
+                List.of(),
+                blockInfo.consTimeOfLastHandledTxn());
+        verify(state).put(expectedInfo);
+    }
+
+    @Test
+    void migrationIsNoopIfNotGenesisAndInfoIsNonNull() {
+        given(migrationContext.newStates()).willReturn(writableStates);
+        given(migrationContext.previousVersion()).willReturn(SemanticVersion.DEFAULT);
+        given(writableStates.<BlockStreamInfo>getSingleton(BLOCK_STREAM_INFO_KEY))
+                .willReturn(state);
+        given(state.get()).willReturn(BlockStreamInfo.DEFAULT);
+
+        subject.migrate(migrationContext);
+
+        verifyNoInteractions(migratedBlockHashConsumer);
     }
 }

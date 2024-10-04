@@ -27,7 +27,6 @@ import com.hedera.node.app.annotations.CommonExecutor;
 import com.hedera.node.app.records.impl.BlockRecordStreamProducer;
 import com.hedera.node.app.state.SingleTransactionRecord;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.swirlds.state.spi.info.SelfNodeInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
@@ -85,20 +84,19 @@ public final class StreamFileProducerConcurrent implements BlockRecordStreamProd
     /**
      * Construct {@link StreamFileProducerConcurrent}
      *
-     * @param nodeInfo the current node information
-     * @param format The format to use for the record stream
-     * @param writerFactory the factory used to create new {@link BlockRecordWriter} instances
+     * @param format          The format to use for the record stream
+     * @param writerFactory   the factory used to create new {@link BlockRecordWriter} instances
      * @param executorService The executor service to use for background threads
      */
     @Inject
     public StreamFileProducerConcurrent(
-            @NonNull final SelfNodeInfo nodeInfo,
             @NonNull final BlockRecordFormat format,
             @NonNull final BlockRecordWriterFactory writerFactory,
-            @CommonExecutor @NonNull final ExecutorService executorService) {
+            @CommonExecutor @NonNull final ExecutorService executorService,
+            @NonNull final SemanticVersion hapiVersion) {
         this.writerFactory = requireNonNull(writerFactory);
         this.format = requireNonNull(format);
-        hapiVersion = nodeInfo.hapiVersion();
+        this.hapiVersion = requireNonNull(hapiVersion);
         this.executorService = requireNonNull(executorService);
     }
 

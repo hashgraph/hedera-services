@@ -58,7 +58,14 @@ public class OrderedServiceMigrator implements ServiceMigrator {
 
     /**
      * Migrates the services registered with the {@link ServicesRegistry}
-     *
+     * @param state            The state to migrate
+     * @param servicesRegistry The services registry to use for the migrations
+     * @param previousVersion The previous version of the state
+     * @param currentVersion The current version of the state
+     * @param config The configuration to use for the migrations
+     * @param genesisNetworkInfo The network information to use for the migrations.
+     *                           This is only used in genesis case
+     * @param metrics The metrics to use for the migrations
      * @return The list of state changes that occurred during the migrations
      */
     @Override
@@ -68,12 +75,11 @@ public class OrderedServiceMigrator implements ServiceMigrator {
             @Nullable final SoftwareVersion previousVersion,
             @NonNull final SoftwareVersion currentVersion,
             @NonNull final Configuration config,
-            @NonNull final NetworkInfo networkInfo,
+            @Nullable final NetworkInfo genesisNetworkInfo,
             @NonNull final Metrics metrics) {
         requireNonNull(state);
         requireNonNull(currentVersion);
         requireNonNull(config);
-        requireNonNull(networkInfo);
         requireNonNull(metrics);
 
         final Map<String, Object> sharedValues = new HashMap<>();
@@ -92,7 +98,7 @@ public class OrderedServiceMigrator implements ServiceMigrator {
                 deserializedPbjVersion,
                 currentVersion.getPbjSemanticVersion(),
                 config,
-                networkInfo,
+                genesisNetworkInfo,
                 metrics,
                 // We call with null here because we're migrating the entity ID service itself
                 null,
@@ -129,7 +135,7 @@ public class OrderedServiceMigrator implements ServiceMigrator {
                             deserializedPbjVersion,
                             currentVersion.getPbjSemanticVersion(),
                             config,
-                            networkInfo,
+                            genesisNetworkInfo,
                             metrics,
                             entityIdStore,
                             sharedValues,

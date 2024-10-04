@@ -18,29 +18,45 @@ package com.hedera.node.app;
 
 import static com.swirlds.common.io.utility.FileUtils.getAbsolutePath;
 import static com.swirlds.common.io.utility.FileUtils.rethrowIO;
+import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.platform.builder.PlatformBuildConstants.DEFAULT_CONFIG_FILE_NAME;
 import static com.swirlds.platform.builder.PlatformBuildConstants.DEFAULT_SETTINGS_FILE_NAME;
+import static com.swirlds.platform.builder.internal.StaticPlatformBuilder.getMetricsProvider;
+import static com.swirlds.platform.builder.internal.StaticPlatformBuilder.setupGlobalMetrics;
+import static com.swirlds.platform.config.internal.PlatformConfigUtils.checkConfiguration;
+import static com.swirlds.platform.crypto.CryptoStatic.initNodeSecurity;
+import static com.swirlds.platform.state.signed.StartupStateUtils.getInitialState;
 import static com.swirlds.platform.system.SystemExitCode.CONFIGURATION_ERROR;
 import static com.swirlds.platform.system.SystemExitCode.NODE_ADDRESS_MISMATCH;
 import static com.swirlds.platform.system.SystemExitUtils.exitSystem;
+import static com.swirlds.platform.system.address.AddressBookUtils.createRoster;
+import static com.swirlds.platform.system.address.AddressBookUtils.initializeAddressBook;
 import static com.swirlds.platform.util.BootstrapUtils.checkNodesToRun;
 import static com.swirlds.platform.util.BootstrapUtils.getNodesToRun;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.services.OrderedServiceMigrator;
 import com.hedera.node.app.services.ServicesRegistryImpl;
+import com.hedera.node.app.tss.impl.PlaceholderTssBaseService;
 import com.swirlds.base.time.Time;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.RuntimeConstructable;
+import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.CryptographyFactory;
+import com.swirlds.common.crypto.CryptographyHolder;
+import com.swirlds.common.io.filesystem.FileSystemManager;
 import com.swirlds.common.io.utility.FileUtils;
+import com.swirlds.common.io.utility.RecycleBin;
+import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
+import com.swirlds.common.merkle.crypto.MerkleCryptographyFactory;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.config.extensions.sources.SystemEnvironmentConfigSource;
 import com.swirlds.config.extensions.sources.SystemPropertiesConfigSource;
 import com.swirlds.platform.CommandLineArgs;
+import com.swirlds.platform.ParameterProvider;
 import com.swirlds.platform.builder.PlatformBuilder;
 import com.swirlds.platform.config.legacy.ConfigurationException;
 import com.swirlds.platform.config.legacy.LegacyConfigProperties;
@@ -154,7 +170,7 @@ public class ServicesMain implements SwirldMain {
 
         // Determine which node to run locally
         // Load config.txt address book file and parse address book
-        final AddressBook addressBook = loadAddressBook(DEFAULT_CONFIG_FILE_NAME);
+        final AddressBook diskAddressBook = loadAddressBook(DEFAULT_CONFIG_FILE_NAME);
         // parse command line arguments
         final CommandLineArgs commandLineArgs = CommandLineArgs.parse(args);
 
@@ -169,7 +185,7 @@ public class ServicesMain implements SwirldMain {
         // get the list of configured nodes from the address book
         // for each node in the address book, check if it has a local IP (local to this computer)
         // additionally if a command line arg is supplied then limit matching nodes to that node id
-        final List<NodeId> nodesToRun = getNodesToRun(addressBook, commandLineArgs.localNodesToStart());
+        final List<NodeId> nodesToRun = getNodesToRun(diskAddressBook, commandLineArgs.localNodesToStart());
         // hard exit if no nodes are configured to run
         checkNodesToRun(nodesToRun);
 
@@ -178,20 +194,62 @@ public class ServicesMain implements SwirldMain {
         final SoftwareVersion version = hedera.getSoftwareVersion();
         logger.info("Starting node {} with version {}", selfId, version);
 
-        final PlatformBuilder platformBuilder = PlatformBuilder.create(
-                Hedera.APP_NAME,
-                Hedera.SWIRLD_NAME,
+        final var configuration = buildConfiguration();
+        final var keysAndCerts =
+                initNodeSecurity(diskAddressBook, configuration).get(selfId);
+
+        setupGlobalMetrics(configuration);
+        final var metrics = getMetricsProvider().createPlatformMetrics(selfId);
+        final var time = Time.getCurrent();
+        final var fileSystemManager = FileSystemManager.create(configuration);
+        final var recycleBin =
+                RecycleBin.create(metrics, configuration, getStaticThreadManager(), time, fileSystemManager, selfId);
+
+        final var cryptography = CryptographyFactory.create();
+        CryptographyHolder.set(cryptography);
+        // the AddressBook is not changed after this point, so we calculate the hash now
+        cryptography.digestSync(diskAddressBook);
+
+        // Initialize the Merkle cryptography
+        final var merkleCryptography = MerkleCryptographyFactory.create(configuration, cryptography);
+        MerkleCryptoFactory.set(merkleCryptography);
+
+        // Create the platform context
+        final var platformContext = PlatformContext.create(
+                configuration,
+                Time.getCurrent(),
+                metrics,
+                cryptography,
+                FileSystemManager.create(configuration),
+                recycleBin,
+                merkleCryptography);
+        // Create initial state for the platform
+        final var reservedState = getInitialState(
+                platformContext,
                 version,
                 hedera::newMerkleStateRoot,
                 SignedStateFileUtils::readState,
-                selfId);
+                Hedera.APP_NAME,
+                Hedera.SWIRLD_NAME,
+                selfId,
+                diskAddressBook);
+        final var initialState = reservedState.state();
+        final var stateHash = reservedState.hash();
 
-        // Add additional configuration to the platform
-        final Configuration configuration = buildConfiguration();
-        platformBuilder.withConfiguration(configuration);
-        platformBuilder.withCryptography(CryptographyFactory.create());
-        platformBuilder.withTime(Time.getCurrent());
+        // Initialize the address book and set on platform builder
+        final var addressBook = initializeAddressBook(selfId, version, initialState, diskAddressBook, platformContext);
 
+        // Follow the Inversion of Control pattern by injecting all needed dependencies into the PlatformBuilder.
+        final var roster = createRoster(addressBook);
+        final var platformBuilder = PlatformBuilder.create(
+                        Hedera.APP_NAME, Hedera.SWIRLD_NAME, version, initialState, selfId)
+                .withPlatformContext(platformContext)
+                .withConfiguration(configuration)
+                .withAddressBook(addressBook)
+                .withRoster(roster)
+                .withKeysAndCerts(keysAndCerts);
+
+        hedera.setInitialStateHash(stateHash);
         // IMPORTANT: A surface-level reading of this method will undersell the centrality
         // of the Hedera instance. It is actually omnipresent throughout both the startup
         // and runtime phases of the application.
@@ -233,13 +291,15 @@ public class ServicesMain implements SwirldMain {
                 .withSource(SystemPropertiesConfigSource.getInstance());
         rethrowIO(() ->
                 BootstrapUtils.setupConfigBuilder(configurationBuilder, getAbsolutePath(DEFAULT_SETTINGS_FILE_NAME)));
-        return configurationBuilder.build();
+        final Configuration configuration = configurationBuilder.build();
+        checkConfiguration(configuration);
+        return configuration;
     }
 
     /**
      * Selects the node to run locally from either the command line arguments or the address book.
      *
-     * @param nodesToRun the list of nodes configured to run based on the address book.
+     * @param nodesToRun        the list of nodes configured to run based on the address book.
      * @param localNodesToStart the node ids specified on the command line.
      * @return the node which should be run locally.
      * @throws ConfigurationException if more than one node would be started or the requested node is not configured.
@@ -288,6 +348,7 @@ public class ServicesMain implements SwirldMain {
         try {
             final LegacyConfigProperties props =
                     LegacyConfigPropertiesLoader.loadConfigFile(FileUtils.getAbsolutePath(addressBookPath));
+            props.appConfig().ifPresent(c -> ParameterProvider.getInstance().setParameters(c.params()));
             return props.getAddressBook();
         } catch (final Exception e) {
             logger.error(EXCEPTION.getMarker(), "Error loading address book", e);
@@ -301,6 +362,7 @@ public class ServicesMain implements SwirldMain {
                 ConstructableRegistry.getInstance(),
                 ServicesRegistryImpl::new,
                 new OrderedServiceMigrator(),
-                InstantSource.system());
+                InstantSource.system(),
+                PlaceholderTssBaseService::new);
     }
 }

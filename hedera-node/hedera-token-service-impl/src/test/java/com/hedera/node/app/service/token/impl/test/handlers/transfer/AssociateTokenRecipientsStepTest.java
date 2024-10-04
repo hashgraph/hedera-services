@@ -21,6 +21,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.lenient;
 
 import com.hedera.hapi.node.base.AccountAmount;
 import com.hedera.hapi.node.base.AccountID;
@@ -115,7 +116,9 @@ public class AssociateTokenRecipientsStepTest extends StepsBase {
                 .build();
         given(handleContext.configuration()).willReturn(configuration);
         given(handleContext.expiryValidator()).willReturn(expiryValidator);
-        given(expiryValidator.expirationStatus(any(), anyBoolean(), anyLong())).willReturn(ResponseCodeEnum.OK);
+        lenient()
+                .when(expiryValidator.expirationStatus(any(), anyBoolean(), anyLong()))
+                .thenReturn(ResponseCodeEnum.OK);
         given(handleContext.savepointStack()).willReturn(stack);
     }
 

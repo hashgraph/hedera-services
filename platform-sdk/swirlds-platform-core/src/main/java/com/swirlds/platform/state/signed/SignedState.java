@@ -213,7 +213,7 @@ public class SignedState implements SignedStateInfo {
      */
     @Override
     public long getRound() {
-        return state.getPlatformState().getRound();
+        return state.getReadablePlatformState().getRound();
     }
 
     /**
@@ -222,7 +222,7 @@ public class SignedState implements SignedStateInfo {
      * @return true if this is the genesis state
      */
     public boolean isGenesisState() {
-        return state.getPlatformState().getRound() == GENESIS_ROUND;
+        return state.getReadablePlatformState().getRound() == GENESIS_ROUND;
     }
 
     /**
@@ -241,6 +241,7 @@ public class SignedState implements SignedStateInfo {
     public void setSigSet(@NonNull final SigSet sigSet) {
         this.sigSet = Objects.requireNonNull(sigSet);
         signingWeight = 0;
+        state.initPlatformState();
         if (!isGenesisState()) {
             // Only non-genesis states will have signing weight
             final AddressBook addressBook = getAddressBook();
@@ -258,7 +259,7 @@ public class SignedState implements SignedStateInfo {
     @Override
     public @NonNull AddressBook getAddressBook() {
         return Objects.requireNonNull(
-                getState().getPlatformState().getAddressBook(),
+                getState().getReadablePlatformState().getAddressBook(),
                 "address book stored in this signed state is null, this should never happen");
     }
 
@@ -455,7 +456,7 @@ public class SignedState implements SignedStateInfo {
      * @return the consensus timestamp for this signed state.
      */
     public @NonNull Instant getConsensusTimestamp() {
-        return state.getPlatformState().getConsensusTimestamp();
+        return state.getReadablePlatformState().getConsensusTimestamp();
     }
 
     /**

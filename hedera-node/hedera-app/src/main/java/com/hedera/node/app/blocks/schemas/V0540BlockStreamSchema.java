@@ -17,6 +17,7 @@
 package com.hedera.node.app.blocks.schemas;
 
 import static com.hedera.node.app.blocks.impl.BlockImplUtils.appendHash;
+import static com.hedera.node.app.records.impl.BlockRecordInfoUtils.blockHashByBlockNumber;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.SemanticVersion;
@@ -30,25 +31,20 @@ import com.swirlds.state.spi.Schema;
 import com.swirlds.state.spi.StateDefinition;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Set;
+import java.util.function.Consumer;
 
 /**
- * Defines the schema for two forms of state,
+ * Defines the schema for state with two notable properties:
  * <ol>
- *     <li>State needed for a new or reconnected node to construct the next block exactly as will
+ *     <li>It is needed for a new or reconnected node to construct the next block exactly as will
  *     nodes already in the network.</li>
- *     <li>State derived from the block stream, and hence the natural provenance of the same service
+ *     <li>It is derived from the block stream, and hence the natural provenance of the same service
  *     that is managing and producing blocks.</li>
  * </ol>
  * <p>
- * The two pieces of state in the first category are,
+ * The particular items with these properties are,
  * <ol>
  *     <li>The <b>number of the last completed block</b>, which each node must increment in the next block.</li>
- *     <li>The <b>hash of the last completed block</b>, which each node must include in the header and proof
- *     of the next block.</li>
- * </ol>
- * <p>
- * State in the second category has three parts,
- * <ol>
  *     <li>The <b>first consensus time of the last finished block</b>, for comparison with the consensus
  *     time at the start of the current block. Depending on the elapsed period between these times,
  *     the network may deterministically choose to purge expired entities, adjust node stakes and
@@ -69,11 +65,14 @@ public class V0540BlockStreamSchema extends Schema {
     private static final SemanticVersion VERSION =
             SemanticVersion.newBuilder().major(0).minor(54).patch(0).build();
 
+    private final Consumer<Bytes> migratedBlockHashConsumer;
+
     /**
      * Schema constructor.
      */
-    public V0540BlockStreamSchema() {
+    public V0540BlockStreamSchema(@NonNull final Consumer<Bytes> migratedBlockHashConsumer) {
         super(VERSION);
+        this.migratedBlockHashConsumer = requireNonNull(migratedBlockHashConsumer);
     }
 
     @Override
@@ -94,21 +93,34 @@ public class V0540BlockStreamSchema extends Schema {
                         (BlockInfo) requireNonNull(ctx.sharedValues().get(SHARED_BLOCK_RECORD_INFO));
                 final RunningHashes runningHashes =
                         (RunningHashes) requireNonNull(ctx.sharedValues().get(SHARED_RUNNING_HASHES));
+                // Note that it is impossible to put the hash of block N into a state that includes
+                // the state changes from block N, because the hash of block N is a function of exactly
+                // those state changes---so act of putting the hash in state would change it; as a result,
+                // the correct way to migrate from a record stream-based state is to save its last
+                // block hash as the last block hash of the new state; and create a BlockStreamInfo with
+                // the remaining block hashes
+                final var lastBlockHash =
+                        requireNonNull(blockHashByBlockNumber(blockInfo, blockInfo.lastBlockNumber()));
+                migratedBlockHashConsumer.accept(lastBlockHash);
+                final var trailingBlockHashes = blockInfo
+                        .blockHashes()
+                        .slice(lastBlockHash.length(), blockInfo.blockHashes().length() - lastBlockHash.length());
                 state.put(BlockStreamInfo.newBuilder()
                         .blockTime(blockInfo.firstConsTimeOfLastBlock())
                         .blockNumber(blockInfo.lastBlockNumber())
-                        .trailingBlockHashes(blockInfo.blockHashes())
+                        .trailingBlockHashes(trailingBlockHashes)
                         .trailingOutputHashes(appendedHashes(runningHashes))
+                        .blockEndTime(blockInfo.consTimeOfLastHandledTxn())
                         .build());
             }
         }
     }
 
     private Bytes appendedHashes(final RunningHashes runningHashes) {
-        Bytes appendedHashes = Bytes.EMPTY;
-        appendedHashes = appendHash(runningHashes.nMinus3RunningHash(), appendedHashes, 4);
-        appendedHashes = appendHash(runningHashes.nMinus2RunningHash(), appendedHashes, 4);
-        appendedHashes = appendHash(runningHashes.nMinus1RunningHash(), appendedHashes, 4);
-        return appendHash(runningHashes.runningHash(), appendedHashes, 4);
+        var hashes = Bytes.EMPTY;
+        hashes = appendHash(runningHashes.nMinus3RunningHash(), hashes, 4);
+        hashes = appendHash(runningHashes.nMinus2RunningHash(), hashes, 4);
+        hashes = appendHash(runningHashes.nMinus1RunningHash(), hashes, 4);
+        return appendHash(runningHashes.runningHash(), hashes, 4);
     }
 }
