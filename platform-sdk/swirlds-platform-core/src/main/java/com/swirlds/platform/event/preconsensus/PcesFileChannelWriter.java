@@ -44,7 +44,7 @@ public class PcesFileChannelWriter implements PcesFileWriter {
     /**
      * Create a new writer that writes events to a file using a {@link FileChannel}.
      *
-     * @param filePath the path to the file to write to
+     * @param filePath       the path to the file to write to
      * @param syncEveryEvent if true, the file will be synced after every event is written
      * @throws IOException if an error occurs while opening the file
      */
@@ -61,20 +61,23 @@ public class PcesFileChannelWriter implements PcesFileWriter {
 
     @Override
     public void writeVersion(final int version) throws IOException {
-        buffer.clear();
         buffer.putInt(version);
-        flipAndWrite();
+        flipWriteClear();
     }
 
     @Override
     public void writeEvent(@NonNull final GossipEvent event) throws IOException {
-        buffer.clear();
         buffer.putInt(GossipEvent.PROTOBUF.measureRecord(event));
         GossipEvent.PROTOBUF.write(event, writableSequentialData);
-        flipAndWrite();
+        flipWriteClear();
     }
 
-    private void flipAndWrite() throws IOException {
+    /**
+     * Writes the data in the buffer to the file. This method expects that the buffer will have data that is written to
+     * it. The buffer will be flipped so that it can be read from, the data will be written to the file, and the buffer
+     * will be cleared so that it can be used again.
+     */
+    private void flipWriteClear() throws IOException {
         buffer.flip();
         final int bytesWritten = channel.write(buffer);
         fileSize += bytesWritten;
@@ -82,6 +85,7 @@ public class PcesFileChannelWriter implements PcesFileWriter {
             throw new IOException(
                     "Failed to write data to file. Wrote " + bytesWritten + " bytes out of " + buffer.limit());
         }
+        buffer.clear();
     }
 
     @Override

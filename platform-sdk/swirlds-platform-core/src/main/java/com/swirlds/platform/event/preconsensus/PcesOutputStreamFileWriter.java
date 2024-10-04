@@ -20,17 +20,23 @@ import com.hedera.hapi.platform.event.GossipEvent;
 import com.swirlds.common.io.extendable.ExtendableOutputStream;
 import com.swirlds.common.io.extendable.extensions.CountingStreamExtension;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
+import com.swirlds.logging.legacy.LogMarker;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.BufferedOutputStream;
 import java.io.FileDescriptor;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.SyncFailedException;
 import java.nio.file.Path;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * Writes events to a file using an output stream.
  */
 public class PcesOutputStreamFileWriter implements PcesFileWriter {
+    private static final Logger logger = LogManager.getLogger(PcesOutputStreamFileWriter.class);
+
     /** The output stream to write to */
     private final SerializableDataOutputStream out;
     /** The file descriptor of the file being written to */
@@ -66,7 +72,13 @@ public class PcesOutputStreamFileWriter implements PcesFileWriter {
         out.writePbjRecord(event, GossipEvent.PROTOBUF);
         if (syncEveryEvent) {
             out.flush();
-            fileDescriptor.sync();
+            try {
+                fileDescriptor.sync();
+            } catch (final SyncFailedException e) {
+                logger.error(
+                        LogMarker.EXCEPTION.getMarker(), "Failed to sync file after writing event", e
+                );
+            }
         }
     }
 
