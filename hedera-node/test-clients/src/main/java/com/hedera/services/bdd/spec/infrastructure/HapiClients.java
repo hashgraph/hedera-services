@@ -208,18 +208,54 @@ public class HapiClients {
         return new HapiClients(network.nodes());
     }
 
+    /**
+     * Retrieves a blocking stub for the FIleService based on the provided parameters.
+     *
+     * This method obtains a stub from the pool, identified by the given AccountID,
+     * TLS usage, and node operator status. It sets a deadline for the stub's
+     * operations to ensure they complete within a specified time frame.
+     *
+     * @param nodeId the node for which the stub is requested
+     * @param useTls whether to use TLS for secure communication
+     * @param asNodeOperator whether to obtain the stub as a node operator
+     * @return a blocking stub for the FileService with a specified deadline
+     */
     public FileServiceBlockingStub getFileSvcStub(AccountID nodeId, boolean useTls, boolean asNodeOperator) {
         return nextStubsFromPool(stubId(nodeId, useTls, asNodeOperator))
                 .fileSvcStubs()
                 .withDeadlineAfter(DEADLINE_SECS, TimeUnit.SECONDS);
     }
 
+    /**
+     * Retrieves a blocking stub for the TokenService based on the provided parameters.
+     *
+     * This method obtains a stub from the pool, identified by the given AccountID,
+     * TLS usage, and node operator status. It sets a deadline for the stub's
+     * operations to ensure they complete within a specified time frame.
+     *
+     * @param nodeId the node for which the stub is requested
+     * @param useTls whether to use TLS for secure communication
+     * @param asNodeOperator whether to obtain the stub as a node operator
+     * @return a blocking stub for the TokenService with a specified deadline
+     */
     public TokenServiceBlockingStub getTokenSvcStub(AccountID nodeId, boolean useTls, boolean asNodeOperator) {
         return nextStubsFromPool(stubId(nodeId, useTls, asNodeOperator))
                 .tokenSvcStubs()
                 .withDeadlineAfter(DEADLINE_SECS, TimeUnit.SECONDS);
     }
 
+    /**
+     * Retrieves a blocking stub for the AddressBookService based on the provided parameters.
+     *
+     * This method returns a stub for making synchronous AddressBookService RPC calls,
+     * identified by the given AccountID, with options for using TLS and acting as a node operator.
+     * It sets a deadline for the stub's operations to ensure they complete within a specified time frame.
+     *
+     * @param nodeId the node for which the stub is requested
+     * @param useTls whether to use TLS for secure communication
+     * @param asNodeOperator whether to obtain the stub as a node operator
+     * @return a blocking stub for the AddressBookService with a specified deadline
+     */
     public AddressBookServiceBlockingStub getAddressBookSvcStub(
             AccountID nodeId, boolean useTls, boolean asNodeOperator) {
         return nextStubsFromPool(stubId(nodeId, useTls, asNodeOperator))
@@ -227,42 +263,126 @@ public class HapiClients {
                 .withDeadlineAfter(DEADLINE_SECS, TimeUnit.SECONDS);
     }
 
+    /**
+     * Retrieves a blocking stub for the CryptoService based on the provided parameters.
+     *
+     * This method returns a stub for making synchronous CryptoService RPC calls,
+     * identified by the given AccountID, with options for using TLS and acting as a node operator.
+     * It sets a deadline for the stub's operations to ensure they complete within a specified time frame.
+     *
+     * @param nodeId the node for which the stub is requested
+     * @param useTls whether to use TLS for secure communication
+     * @param asNodeOperator whether to obtain the stub as a node operator
+     * @return a blocking stub for the CryptoService with a specified deadline
+     */
     public CryptoServiceBlockingStub getCryptoSvcStub(AccountID nodeId, boolean useTls, boolean asNodeOperator) {
         return nextStubsFromPool(stubId(nodeId, useTls, asNodeOperator))
                 .cryptoSvcStubs()
                 .withDeadlineAfter(DEADLINE_SECS, TimeUnit.SECONDS);
     }
 
+    /**
+     * Retrieves a blocking stub for the FreezeService based on the provided parameters.
+     *
+     * This method returns a stub for making synchronous FreezeService RPC calls,
+     * identified by the given AccountID, with options for using TLS and acting as a node operator.
+     * It sets a deadline for the stub's operations to ensure they complete within a specified time frame.
+     *
+     * @param nodeId the node for which the stub is requested
+     * @param useTls whether to use TLS for secure communication
+     * @param asNodeOperator whether to obtain the stub as a node operator
+     * @return a blocking stub for the FreezeService with a specified deadline
+     */
     public FreezeServiceBlockingStub getFreezeSvcStub(AccountID nodeId, boolean useTls, boolean asNodeOperator) {
         return nextStubsFromPool(stubId(nodeId, useTls, asNodeOperator))
                 .freezeSvcStubs()
                 .withDeadlineAfter(DEADLINE_SECS, TimeUnit.SECONDS);
     }
 
+    /**
+     * Retrieves a blocking stub for the SmartContractService based on the provided parameters.
+     *
+     * This method returns a stub for making synchronous SmartContractService RPC calls,
+     * identified by the given AccountID, with options for using TLS and acting as a node operator.
+     * It sets a deadline for the stub's operations to ensure they complete within a specified time frame.
+     *
+     * @param nodeId the node for which the stub is requested
+     * @param useTls whether to use TLS for secure communication
+     * @param asNodeOperator whether to obtain the stub as a node operator
+     * @return a blocking stub for the SmartContractService with a specified deadline
+     */
     public SmartContractServiceBlockingStub getScSvcStub(AccountID nodeId, boolean useTls, boolean asNodeOperator) {
         return nextStubsFromPool(stubId(nodeId, useTls, asNodeOperator))
                 .scSvcStubs()
                 .withDeadlineAfter(DEADLINE_SECS, TimeUnit.SECONDS);
     }
 
+    /**
+     * Retrieves a blocking stub for the ConsensusService based on the provided parameters.
+     *
+     * This method returns a stub for making synchronous ConsensusService RPC calls,
+     * identified by the given AccountID, with options for using TLS and acting as a node operator.
+     * It sets a deadline for the stub's operations to ensure they complete within a specified time frame.
+     *
+     * @param nodeId the node for which the stub is requested
+     * @param useTls whether to use TLS for secure communication
+     * @param asNodeOperator whether to obtain the stub as a node operator
+     * @return a blocking stub for the ConsensusService with a specified deadline
+     */
     public ConsensusServiceBlockingStub getConsSvcStub(AccountID nodeId, boolean useTls, boolean asNodeOperator) {
         return nextStubsFromPool(stubId(nodeId, useTls, asNodeOperator))
                 .consSvcStubs()
                 .withDeadlineAfter(DEADLINE_SECS, TimeUnit.SECONDS);
     }
 
+    /**
+     * Retrieves a blocking stub for the NetworkService based on the provided parameters.
+     *
+     * This method returns a stub for making synchronous NetworkService RPC calls,
+     * identified by the given AccountID, with options for using TLS and acting as a node operator.
+     * It sets a deadline for the stub's operations to ensure they complete within a specified time frame.
+     *
+     * @param nodeId the node for which the stub is requested
+     * @param useTls whether to use TLS for secure communication
+     * @param asNodeOperator whether to obtain the stub as a node operator
+     * @return a blocking stub for the NetworkService with a specified deadline
+     */
     public NetworkServiceBlockingStub getNetworkSvcStub(AccountID nodeId, boolean useTls, boolean asNodeOperator) {
         return nextStubsFromPool(stubId(nodeId, useTls, asNodeOperator))
                 .networkSvcStubs()
                 .withDeadlineAfter(DEADLINE_SECS, TimeUnit.SECONDS);
     }
 
+    /**
+     * Retrieves a blocking stub for the ScheduleService based on the provided parameters.
+     *
+     * This method returns a stub for making synchronous ScheduleService RPC calls,
+     * identified by the given AccountID, with options for using TLS and acting as a node operator.
+     * It sets a deadline for the stub's operations to ensure they complete within a specified time frame.
+     *
+     * @param nodeId the node for which the stub is requested
+     * @param useTls whether to use TLS for secure communication
+     * @param asNodeOperator whether to obtain the stub as a node operator
+     * @return a blocking stub for the ScheduleService with a specified deadline
+     */
     public ScheduleServiceBlockingStub getScheduleSvcStub(AccountID nodeId, boolean useTls, boolean asNodeOperator) {
         return nextStubsFromPool(stubId(nodeId, useTls, asNodeOperator))
                 .scheduleSvcStubs()
                 .withDeadlineAfter(DEADLINE_SECS, TimeUnit.SECONDS);
     }
 
+    /**
+     * Retrieves a blocking stub for the UtilService based on the provided parameters.
+     *
+     * This method returns a stub for making synchronous UtilService RPC calls,
+     * identified by the given AccountID, with options for using TLS and acting as a node operator.
+     * It sets a deadline for the stub's operations to ensure they complete within a specified time frame.
+     *
+     * @param nodeId the node for which the stub is requested
+     * @param useTls whether to use TLS for secure communication
+     * @param asNodeOperator whether to obtain the stub as a node operator
+     * @return a blocking stub for the UtilService with a specified deadline
+     */
     public UtilServiceGrpc.UtilServiceBlockingStub getUtilSvcStub(
             AccountID nodeId, boolean useTls, boolean asNodeOperator) {
         return nextStubsFromPool(stubId(nodeId, useTls, asNodeOperator))

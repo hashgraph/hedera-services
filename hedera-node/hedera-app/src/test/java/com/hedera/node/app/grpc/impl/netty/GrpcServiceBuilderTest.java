@@ -104,7 +104,7 @@ final class GrpcServiceBuilderTest {
     @Test
     @DisplayName("The build method will return a ServiceDescriptor")
     void serviceDescriptorIsNotNullOnNoopBuilder() {
-        assertNotNull(builder.build(metrics, true));
+        assertNotNull(builder.build(metrics, true), "Object is Null!");
     }
 
     /**
