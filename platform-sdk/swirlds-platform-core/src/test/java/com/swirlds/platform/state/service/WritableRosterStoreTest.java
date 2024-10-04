@@ -24,7 +24,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import com.google.common.collect.Lists;
 import com.hedera.hapi.node.base.ServiceEndpoint;
 import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.hapi.node.state.roster.Roster;
@@ -45,6 +44,7 @@ import com.swirlds.state.spi.WritableSingletonState;
 import com.swirlds.state.spi.WritableStates;
 import com.swirlds.state.test.fixtures.MapWritableKVState;
 import java.lang.reflect.Field;
+import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -124,7 +124,7 @@ class WritableRosterStoreTest {
     @Test
     @DisplayName("Test that an exception is thrown if stored active rosters are ever > MAXIMUM_ROSTER_HISTORY_SIZE")
     void testMaximumRostersMoreThan2ThrowsException() throws NoSuchFieldException, IllegalAccessException {
-        final List<RoundRosterPair> activeRosters = Lists.newArrayList();
+        final List<RoundRosterPair> activeRosters = new ArrayList<>();
         activeRosters.add(new RoundRosterPair(
                 1, RosterUtils.hash(createValidTestRoster(1)).getBytes()));
         activeRosters.add(new RoundRosterPair(
