@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.records.impl;
 
+import static com.hedera.hapi.util.HapiUtils.asInstant;
 import static com.hedera.node.app.records.BlockRecordService.EPOCH;
 import static com.hedera.node.app.records.impl.BlockRecordInfoUtils.HASH_SIZE;
 import static com.hedera.node.app.records.schemas.V0490BlockRecordSchema.BLOCK_INFO_STATE_KEY;
@@ -32,7 +33,6 @@ import com.hedera.node.app.records.BlockRecordService;
 import com.hedera.node.app.state.SingleTransactionRecord;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.BlockRecordStreamConfig;
-import com.hedera.node.config.data.BlockStreamConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
@@ -89,9 +89,7 @@ public final class BlockRecordManagerImpl implements BlockRecordManager {
     /**
      * True when we have completed event recovery. This is not yet implemented properly.
      */
-    private boolean eventRecoveryCompleted = false;
-
-    private final ConfigProvider configProvider;
+    private boolean eventRecoveryCompleted;
 
     /**
      * Construct BlockRecordManager
@@ -106,7 +104,6 @@ public final class BlockRecordManagerImpl implements BlockRecordManager {
             @NonNull final State state,
             @NonNull final BlockRecordStreamProducer streamFileProducer) {
         requireNonNull(state);
-        this.configProvider = requireNonNull(configProvider);
         this.streamFileProducer = requireNonNull(streamFileProducer);
 
         // FUTURE: check if we were started in event recover mode and if event recovery needs to be completed before we
@@ -223,12 +220,6 @@ public final class BlockRecordManagerImpl implements BlockRecordManager {
         return false;
     }
 
-    @Override
-    public void markMigrationRecordsStreamed() {
-        lastBlockInfo =
-                lastBlockInfo.copyBuilder().migrationRecordsStreamed(true).build();
-    }
-
     /**
      * We need this to preserve unit test expectations written that assumed a bug in the original implementation,
      * in which the first consensus time of the current block was not in state.
@@ -271,7 +262,6 @@ public final class BlockRecordManagerImpl implements BlockRecordManager {
         // Update running hashes in state with the latest running hash and the previous 3 running hashes.
         final var states = state.getWritableStates(BlockRecordService.NAME);
         final var runningHashesState = states.<RunningHashes>getSingleton(RUNNING_HASHES_STATE_KEY);
-        final var blockRecordInfoState = states.<BlockInfo>getSingleton(BLOCK_INFO_STATE_KEY);
         final var existingRunningHashes = runningHashesState.get();
         assert existingRunningHashes != null : "This cannot be null because genesis migration sets it";
         final var runningHashes = new RunningHashes(
@@ -282,11 +272,6 @@ public final class BlockRecordManagerImpl implements BlockRecordManager {
         runningHashesState.put(runningHashes);
         // Commit the changes to the merkle tree.
         ((WritableSingletonStateBase<RunningHashes>) runningHashesState).commit();
-
-        final var blockStreamConfig = configProvider.getConfiguration().getConfigData(BlockStreamConfig.class);
-        if (blockStreamConfig.streamBlocks()) {
-            // FUTURE: Add runningHash state changes block item and block info block item to the stream
-        }
     }
 
     public long lastBlockNo() {
@@ -335,6 +320,15 @@ public final class BlockRecordManagerImpl implements BlockRecordManager {
         return lastHandledTxn != null
                 ? Instant.ofEpochSecond(lastHandledTxn.seconds(), lastHandledTxn.nanos())
                 : Instant.EPOCH;
+    }
+
+    @Override
+    public @NonNull Instant lastBlockTime() {
+        final var then = asInstant(lastBlockInfo.firstConsTimeOfLastBlockOrThrow());
+        if (Instant.EPOCH.equals(then)) {
+            throw new IllegalStateException("No blocks have been created yet");
+        }
+        return then;
     }
 
     @Override
@@ -429,7 +423,7 @@ public final class BlockRecordManagerImpl implements BlockRecordManager {
      */
     private BlockInfo infoOfJustFinished(
             @NonNull final BlockInfo lastBlockInfo,
-            @NonNull final long justFinishedBlockNumber,
+            final long justFinishedBlockNumber,
             @NonNull final Bytes hashOfJustFinishedBlock,
             @NonNull final Instant currentBlockFirstTransactionTime) {
         // compute new block hashes bytes

@@ -291,7 +291,7 @@ class NetworkTransactionGetReceiptHandlerTest extends NetworkAdminHandlerTestBas
         final var response = networkTransactionGetReceiptHandler.findResponse(context, responseHeader);
         final var op = response.transactionGetReceiptOrThrow();
         assertEquals(OK, op.header().nodeTransactionPrecheckCode());
-        assertEquals(recordThree.receiptOrThrow(), op.receipt());
+        assertEquals(otherRecord.receiptOrThrow(), op.receipt());
         assertEquals(expectedChildReceiptList, op.childTransactionReceipts());
         assertEquals(
                 expectedChildReceiptList.size(), op.childTransactionReceipts().size());

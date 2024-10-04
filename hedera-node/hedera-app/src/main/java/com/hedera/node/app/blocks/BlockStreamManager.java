@@ -23,6 +23,7 @@ import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.state.notifications.StateHashedListener;
 import com.swirlds.state.State;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.time.Instant;
 import java.util.function.BiConsumer;
 
 /**
@@ -40,6 +41,15 @@ public interface BlockStreamManager extends BlockRecordInfo, BiConsumer<byte[], 
     Bytes ZERO_BLOCK_HASH = Bytes.wrap(new byte[48]);
 
     /**
+     * Enumerates the types of block boundaries that can be encountered when starting a new round.
+     */
+    enum BoundaryType {
+        NO_BOUNDARY,
+        GENESIS_BOUNDARY,
+        BLOCK_BOUNDARY
+    }
+
+    /**
      * Initializes the block stream manager after a restart or during reconnect with the hash of the last block
      * incorporated in the state used in the restart or reconnect. (At genesis, this hash should be the
      * {@link #ZERO_BLOCK_HASH}.)
@@ -49,11 +59,13 @@ public interface BlockStreamManager extends BlockRecordInfo, BiConsumer<byte[], 
 
     /**
      * Updates the internal state of the block stream manager to reflect the start of a new round.
+     *
      * @param round the round that has just started
      * @param state the state of the network at the beginning of the round
+     * @return the type of block boundary encountered
      * @throws IllegalStateException if the last block hash was not explicitly initialized
      */
-    void startRound(@NonNull Round round, @NonNull State state);
+    BoundaryType startRound(@NonNull Round round, @NonNull State state);
 
     /**
      * Updates both the internal state of the block stream manager and the durable state of the network
@@ -70,4 +82,12 @@ public interface BlockStreamManager extends BlockRecordInfo, BiConsumer<byte[], 
      * @throws IllegalStateException if the stream is closed
      */
     void writeItem(@NonNull BlockItem item);
+
+    /**
+     * Get the consensus time of the previous block.
+     * @return the consensus time of the previous block
+     * @throws IllegalStateException if no blocks have been created yet
+     */
+    @NonNull
+    Instant lastBlockTime();
 }

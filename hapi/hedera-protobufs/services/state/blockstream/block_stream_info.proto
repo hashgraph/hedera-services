@@ -30,6 +30,7 @@ package com.hedera.hapi.node.state.blockstream;
  * limitations under the License.
  */
 
+import "basic_types.proto";
 import "timestamp.proto";
 
 option java_package = "com.hederahashgraph.api.proto.java";
@@ -73,7 +74,7 @@ message BlockStreamInfo {
      * A concatenation of hash values.<br/>
      * This combines several trailing output block item hashes and
      * is used as a seed value for a pseudo-random number generator.<br/>
-     * This is also requiried to implement the EVM `PREVRANDAO` opcode.
+     * This is also required to implement the EVM `PREVRANDAO` opcode.
      * This MUST contain at least 256 bits of entropy.
      */
     bytes trailing_output_hashes = 3;
@@ -131,4 +132,11 @@ message BlockStreamInfo {
      * the current block.
      */
     proto.Timestamp block_end_time = 9;
+
+    /**
+     * A version describing the version of application software.
+     * <p>
+     * This SHALL be the software version that created this block.
+     */
+    proto.SemanticVersion creation_software_version = 10;
 }

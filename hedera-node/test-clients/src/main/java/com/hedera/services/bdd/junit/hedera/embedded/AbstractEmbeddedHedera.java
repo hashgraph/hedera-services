@@ -51,6 +51,7 @@ import com.swirlds.platform.listeners.PlatformStatusChangeNotification;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
+import com.swirlds.platform.system.state.notifications.StateHashedNotification;
 import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
@@ -87,6 +88,8 @@ public abstract class AbstractEmbeddedHedera implements EmbeddedHedera {
     protected static final PlatformStatusChangeNotification FREEZE_COMPLETE_NOTIFICATION =
             new PlatformStatusChangeNotification(FREEZE_COMPLETE);
 
+    private final boolean blockStreamEnabled;
+
     protected final Map<AccountID, NodeId> nodeIds;
     protected final Map<NodeId, com.hedera.hapi.node.base.AccountID> accountIds;
     protected final FakeState state = new FakeState();
@@ -116,6 +119,7 @@ public abstract class AbstractEmbeddedHedera implements EmbeddedHedera {
                 this::now,
                 () -> tssBaseService);
         version = (ServicesSoftwareVersion) hedera.getSoftwareVersion();
+        blockStreamEnabled = hedera.isBlockStreamEnabled();
         Runtime.getRuntime().addShutdownHook(new Thread(executorService::shutdownNow));
     }
 
@@ -192,6 +196,16 @@ public abstract class AbstractEmbeddedHedera implements EmbeddedHedera {
                     case PRESENT -> version.getPbjSemanticVersion();
                     case FUTURE -> LATER_SEMVER;
                 });
+    }
+
+    /**
+     * If block stream is enabled, notify the block stream manager of the state hash at the end of the round.
+     * @param roundNumber the round number
+     */
+    protected void notifyBlockStreamManagerIfEnabled(final long roundNumber) {
+        if (blockStreamEnabled) {
+            hedera.blockStreamManager().notify(new StateHashedNotification(roundNumber, FAKE_START_OF_STATE_HASH));
+        }
     }
 
     protected abstract TransactionResponse submit(

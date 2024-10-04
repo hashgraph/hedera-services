@@ -100,7 +100,7 @@ public interface RecordCache {
     }
 
     /**
-     * Just the receipts for a {@link TransactionID} instead of the full history.
+     * Just the receipts for a source of one or more {@link TransactionID}s instead of the full records.
      */
     interface Receipts {
         /**

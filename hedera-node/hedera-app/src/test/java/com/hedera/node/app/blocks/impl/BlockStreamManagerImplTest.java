@@ -210,7 +210,8 @@ class BlockStreamManagerImplTest {
                                 "be03f18885e3fb5e26dae1ad95d6559b62092d2162342f376712fd00fa045aaedda06811a1548a916a26878752900473"),
                         Bytes.fromHex(
                                 "84910d7e7710b482680de1e81865de39396de9c536ab265cf3253bf378bc50ed2f6c5a3ec19a25c51ee170347f13b28d")),
-                Timestamp.DEFAULT);
+                Timestamp.DEFAULT,
+                SemanticVersion.DEFAULT);
         final var actualBlockInfo = infoRef.get();
         assertEquals(expectedBlockInfo, actualBlockInfo);
         verify(tssBaseService).requestLedgerSignature(blockHashCaptor.capture());
@@ -315,7 +316,8 @@ class BlockStreamManagerImplTest {
                                 "be03f18885e3fb5e26dae1ad95d6559b62092d2162342f376712fd00fa045aaedda06811a1548a916a26878752900473"),
                         Bytes.fromHex(
                                 "84910d7e7710b482680de1e81865de39396de9c536ab265cf3253bf378bc50ed2f6c5a3ec19a25c51ee170347f13b28d")),
-                Timestamp.DEFAULT);
+                Timestamp.DEFAULT,
+                SemanticVersion.DEFAULT);
         final var actualBlockInfo = infoRef.get();
         assertEquals(expectedBlockInfo, actualBlockInfo);
         verify(tssBaseService).requestLedgerSignature(blockHashCaptor.capture());

@@ -111,6 +111,7 @@ public class V0540BlockStreamSchema extends Schema {
                         .trailingBlockHashes(trailingBlockHashes)
                         .trailingOutputHashes(appendedHashes(runningHashes))
                         .blockEndTime(blockInfo.consTimeOfLastHandledTxn())
+                        .creationSoftwareVersion(ctx.previousVersion())
                         .build());
             }
         }

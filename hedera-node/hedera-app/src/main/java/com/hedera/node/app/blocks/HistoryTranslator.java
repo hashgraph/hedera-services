@@ -61,7 +61,7 @@ public class HistoryTranslator {
 
     /**
      * Translate the given {@link TransactionResult} and optional {@link TransactionOutput}s into a
-     * {@link TransactionRecord} appropriate for returning from a query.
+     * {@link TransactionReceipt} appropriate for returning from a query.
      * @param context the context of the transaction
      * @param result the result of the transaction
      * @param outputs the outputs of the transaction

@@ -18,10 +18,14 @@ package com.hedera.node.app.blocks.impl;
 
 import static com.hedera.hapi.node.base.BlockHashAlgorithm.SHA2_384;
 import static com.hedera.hapi.util.HapiUtils.asInstant;
+import static com.hedera.node.app.blocks.BlockStreamManager.BoundaryType.BLOCK_BOUNDARY;
+import static com.hedera.node.app.blocks.BlockStreamManager.BoundaryType.GENESIS_BOUNDARY;
+import static com.hedera.node.app.blocks.BlockStreamManager.BoundaryType.NO_BOUNDARY;
 import static com.hedera.node.app.blocks.impl.BlockImplUtils.appendHash;
 import static com.hedera.node.app.blocks.impl.BlockImplUtils.combine;
 import static com.hedera.node.app.blocks.schemas.V0540BlockStreamSchema.BLOCK_STREAM_INFO_KEY;
 import static com.hedera.node.app.hapi.utils.CommonUtils.noThrowSha384HashOf;
+import static com.hedera.node.app.records.BlockRecordService.EPOCH;
 import static com.hedera.node.app.records.impl.BlockRecordInfoUtils.HASH_SIZE;
 import static com.swirlds.platform.state.SwirldStateManagerUtils.isInFreezePeriod;
 import static java.util.Objects.requireNonNull;
@@ -81,6 +85,7 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
 
     private final int roundsPerBlock;
     private final TssBaseService tssBaseService;
+    private final SemanticVersion version;
     private final SemanticVersion hapiVersion;
     private final ExecutorService executor;
     private final Supplier<BlockItemWriter> writerSupplier;
@@ -89,6 +94,8 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
     private final BlockHashManager blockHashManager;
     private final RunningHashManager runningHashManager;
 
+    // The block time of the last block before the current one
+    private Timestamp lastBlockTime = EPOCH;
     // All this state is scoped to producing the current block
     private long blockNumber;
     // Set to the round number of the last round handled before entering a freeze period
@@ -147,6 +154,7 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
         this.boundaryStateChangeListener = requireNonNull(boundaryStateChangeListener);
         requireNonNull(configProvider);
         final var config = configProvider.getConfiguration();
+        this.version = versionFrom(config);
         this.hapiVersion = hapiVersionFrom(config);
         this.roundsPerBlock = config.getConfigData(BlockStreamConfig.class).roundsPerBlock();
         this.blockHashManager = new BlockHashManager(config);
@@ -166,7 +174,7 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
     }
 
     @Override
-    public void startRound(@NonNull final Round round, @NonNull final State state) {
+    public BoundaryType startRound(@NonNull final Round round, @NonNull final State state) {
         if (lastBlockHash == null) {
             throw new IllegalStateException("Last block hash must be initialized before starting a round");
         }
@@ -187,6 +195,7 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
             boundaryStateChangeListener.setBoundaryTimestamp(blockTimestamp);
 
             final var blockStreamInfo = blockStreamInfoFrom(state);
+            lastBlockTime = blockStreamInfo.blockTimeOrElse(EPOCH);
             blockHashManager.startBlock(blockStreamInfo, lastBlockHash);
             runningHashManager.startBlock(blockStreamInfo);
 
@@ -205,6 +214,9 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
                     .build());
 
             writer.openBlock(blockNumber);
+            return lastBlockTime == EPOCH ? GENESIS_BOUNDARY : BLOCK_BOUNDARY;
+        } else {
+            return NO_BOUNDARY;
         }
     }
 
@@ -237,7 +249,8 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
                     blockStartStateHash,
                     outputTreeStatus.numLeaves(),
                     outputTreeStatus.rightmostHashes(),
-                    boundaryStateChangeListener.boundaryTimestampOrThrow()));
+                    boundaryStateChangeListener.boundaryTimestampOrThrow(),
+                    version));
             ((CommittableWritableStates) writableState).commit();
 
             // Flush the block stream info change
@@ -273,6 +286,15 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
         if (pendingItems.size() == CHUNK_SIZE) {
             schedulePendingWork();
         }
+    }
+
+    @Override
+    public @NonNull Instant lastBlockTime() {
+        final var then = asInstant(lastBlockTime);
+        if (Instant.EPOCH.equals(then)) {
+            throw new IllegalStateException("No blocks have been created yet");
+        }
+        return then;
     }
 
     @Override
@@ -433,6 +455,10 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
             }
             return null;
         }
+    }
+
+    private SemanticVersion versionFrom(@NonNull final Configuration config) {
+        return config.getConfigData(VersionConfig.class).servicesVersion();
     }
 
     private SemanticVersion hapiVersionFrom(@NonNull final Configuration config) {

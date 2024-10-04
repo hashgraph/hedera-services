@@ -29,6 +29,7 @@ import static com.hedera.node.app.statedumpers.DumpCheckpoint.selectedDumpCheckp
 import static com.hedera.node.app.statedumpers.StateDumper.dumpModChildrenFrom;
 import static com.hedera.node.app.util.HederaAsciiArt.HEDERA;
 import static com.hedera.node.app.workflows.handle.metric.UnavailableMetrics.UNAVAILABLE_METRICS;
+import static com.hedera.node.config.types.StreamMode.RECORDS;
 import static com.swirlds.platform.state.service.PlatformStateService.PLATFORM_STATE_SERVICE;
 import static com.swirlds.platform.state.service.schemas.V0540PlatformStateSchema.PLATFORM_STATE_KEY;
 import static com.swirlds.platform.system.InitTrigger.EVENT_STREAM_RECOVERY;
@@ -367,10 +368,9 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener {
                         PLATFORM_STATE_SERVICE)
                 .forEach(servicesRegistry::register);
         try {
-            final var blockStreamsEnabled =
-                    bootstrapConfig.getConfigData(BlockStreamConfig.class).streamBlocks();
             final Supplier<MerkleStateRoot> baseSupplier =
                     () -> new MerkleStateRoot(new MerkleStateLifecyclesImpl(this), ServicesSoftwareVersion::new);
+            final var blockStreamsEnabled = isBlockStreamEnabled();
             stateRootSupplier = blockStreamsEnabled ? () -> withListeners(baseSupplier.get()) : baseSupplier;
             onSealConsensusRound = blockStreamsEnabled ? this::manageBlockEndRound : (round, state) -> {};
             // And the factory for the MerkleStateRoot class id must be our constructor
@@ -781,7 +781,7 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener {
 
     /*==================================================================================================================
     *
-    * Workflows for use by embedded Hedera
+    * Exposed for use by embedded Hedera
     *
     =================================================================================================================*/
     public IngestWorkflow ingestWorkflow() {
@@ -798,6 +798,14 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener {
 
     public BlockStreamManager blockStreamManager() {
         return daggerApp.blockStreamManager();
+    }
+
+    public boolean isBlockStreamEnabled() {
+        return bootstrapConfigProvider
+                        .getConfiguration()
+                        .getConfigData(BlockStreamConfig.class)
+                        .streamMode()
+                != RECORDS;
     }
 
     /*==================================================================================================================
@@ -967,13 +975,6 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener {
         final var penultimateOutputTreeStatus = new StreamingTreeHasher.Status(
                 blockStreamInfo.numPrecedingOutputItems(), blockStreamInfo.rightmostPrecedingOutputTreeHashes());
         return rootHashFrom(penultimateOutputTreeStatus, BlockItem.PROTOBUF.toBytes(lastStateChanges));
-    }
-
-    private boolean isBlockStreamEnabled() {
-        return bootstrapConfigProvider
-                .getConfiguration()
-                .getConfigData(BlockStreamConfig.class)
-                .streamBlocks();
     }
 
     private static ServicesSoftwareVersion getNodeStartupVersion(@NonNull final Configuration config) {

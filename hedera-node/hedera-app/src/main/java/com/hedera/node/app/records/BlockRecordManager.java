@@ -109,13 +109,16 @@ public interface BlockRecordManager extends BlockRecordInfo, AutoCloseable {
     void close();
 
     /**
-     * Notifies the block record manager that any startup migration records have been streamed.
-     */
-    void markMigrationRecordsStreamed();
-
-    /**
      * Get the consensus time of the latest handled transaction, or EPOCH if no transactions have been handled yet
      */
     @NonNull
     Instant consTimeOfLastHandledTxn();
+
+    /**
+     * Get the consensus time of the previous block.
+     * @return the consensus time of the previous block
+     * @throws IllegalStateException if no blocks have been created yet
+     */
+    @NonNull
+    Instant lastBlockTime();
 }

@@ -23,11 +23,8 @@ import com.hedera.hapi.node.base.SemanticVersion;
 import com.swirlds.state.spi.MigrationContext;
 import com.swirlds.state.spi.Schema;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 public class V0540BlockRecordSchema extends Schema {
-    private static final Logger logger = LogManager.getLogger(V0540BlockRecordSchema.class);
     /**
      * The version of the schema.
      */
