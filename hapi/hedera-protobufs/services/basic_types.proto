@@ -1786,22 +1786,31 @@ message PendingAirdropValue {
  */
 message ConsensusCryptoFeeScheduleAllowance {
     /**
-     * The account ID of the hbar owner (ie. the grantor of the allowance).
+     * An account ID of the hbar owner.<br/>
+     * This is the account that has approved the allowance.<br/>
+     * This field is REQUIRED.
      */
     AccountID owner = 1;
 
     /**
+     * A topic ID that the allowance pertains to.<br/>
      * The topic ID enabled to spend fees from the hbar allowance.
+     * The topic SHOULD have custom fees enabled.<br/>
+     * This field is REQUIRED.
      */
-    TopicID topicId = 2;
+    TopicID topic_id = 2;
 
     /**
-     * The maximum amount of the spender's allowance in tinybars.
+     * A maximum amount of the spender's allowance in tinybars.<br/>
+     * This is the maximum amount of hbars that the spender is allowed to spend.<br/>
+     * If this field SHALL set to `0`, the allowance is considered to be revoked.
      */
     uint64 amount = 3;
 
     /**
-     * The maximum amount of the spender's token allowance per message.
+     * A maximum amount of the spender's allowance in tinybars per message.<br/>
+     * This is the maximum amount of hbars that the spender is allowed to spend per message.<br/>
+     * This field value SHALL NOT be greater than the `amount` field.
      */
     uint64 amount_per_message = 4;
 }
@@ -1813,27 +1822,38 @@ message ConsensusCryptoFeeScheduleAllowance {
  */
 message ConsensusTokenFeeScheduleAllowance {
     /**
-     * The token that the allowance pertains to.
+     * A token ID of the token for the allowance.<br/>
+     * This field SHALL point only to fungible tokens.<br/>
+     * This field is REQUIRED.
      */
-    TokenID tokenId = 1;
+    TokenID token_id = 1;
 
     /**
-     * The account ID of the token owner (ie. the grantor of the allowance).
+     * An account ID of the hbar owner.<br/>
+     * This is the account that has approved the allowance.<br/>
+     * This field is REQUIRED.
      */
     AccountID owner = 2;
 
     /**
-     * The topic ID enabled to spend fees from the token allowance.
+     * A topic ID that the allowance pertains to.<br/>
+     * The topic ID enabled to spend fees from the hbar allowance.
+     * The topic SHOULD have custom fees enabled.<br/>
+     * This field is REQUIRED.
      */
-    TopicID topicId = 3;
+    TopicID topic_id = 3;
 
     /**
-     * The maximum amount of the spender's token allowance.
+     * A maximum amount of the spender's allowance in tinybars.<br/>
+     * This is the maximum amount of hbars that the spender is allowed to spend.<br/>
+     * If this field SHALL set to `0`, the allowance is considered to be revoked.
      */
     uint64 amount = 4;
 
     /**
-     * The maximum amount of the spender's token allowance per message.
+     * A maximum amount of the spender's allowance in tinybars per message.<br/>
+     * This is the maximum amount of hbars that the spender is allowed to spend per message.<br/>
+     * This field value SHALL NOT be greater than the `amount` field.
      */
     uint64 amount_per_message = 5;
 }
@@ -1841,43 +1861,55 @@ message ConsensusTokenFeeScheduleAllowance {
 /**
  * A unique, composite, identifier for a topic allowance.
  *
- * Each topic allowance SHALL be uniquely identified by a TopicAllowanceId.
- * A TopicAllowanceId SHALL be recorded when created and MUST be provided in any transaction
- * that would modify that topic allowance (such as a `consensusApproveAllowance`).
+ * Each topic allowance SHALL be uniquely identified by a TopicAllowanceId.<br/>
+ * This identifier SHALL be recorded when created.<br/>
+ * This identifier MUST be provided in any transaction that would modify
+ * that identified topic allowance (such as a `consensusApproveAllowance`).
+ *
  */
 message TopicAllowanceId {
     /**
-     * The token that the allowance pertains to.
+     * A token that the allowance pertains to.<br/>
+     * This field SHALL point only to fungible tokens.<br/>
+     * This field SHOULD be null for hbar allowances.
      */
-    TokenID tokenId = 1;
+    TokenID token_id = 1;
 
     /**
-     * The account ID of the token owner (ie. the grantor of the allowance).
+     * A account ID of the token owner (ie. the grantor of the allowance).<br/>
+     * This is the account that has approved the allowance.<br/>
+     * This field is REQUIRED.
      */
     AccountID owner = 2;
 
     /**
-     * The topic ID enabled to spend fees from the token allowance.
+     * A topic ID that the allowance pertains to.<br/>
+     * This is the topic that the allowance is approved for.<br/>
+     * This topic SHOULD have custom fees enabled.<br/>
+     * This field is REQUIRED.
      */
-    TopicID topicId = 3;
+    TopicID topic_id = 3;
 }
 
 /**
  * A single topic allowance value.
  *
- * This message SHALL record the allowance of hbars or fungible tokens that an account has approved
- * for sending messages to a given topic.<br/>
- *
- * It is RECOMMENDED that implementations store topic allowance information as a key-value map
- * from `TopicAllowanceId` to `TopicAllowanceValue`.
+ * This message SHALL record the allowance of hbars or fungible tokens that an
+ * account has approved for sending messages to a given topic.<br/>
+ * It is RECOMMENDED that implementations store topic allowance information as
+ * a key-value map from `TopicAllowanceId` to `TopicAllowanceValue`.
  */
 message TopicAllowanceValue {
     /**
-     * The total amount allocated for the allowance.
+     * An amount representing the total allowance granted.<br/>
+     * This represents both hbar/fungible token allowance, depending on the 'TopicAllowanceId'.<br/>
+     * If this field SHALL be set to `0`, the allowance is considered to be revoked.
      */
     uint64 amount = 2;
     /**
-     * The amount allocated per message.
+     * An amount representing limit of allowance spend per message.<br/>
+     * This represents both hbar/fungible token allowance, depending on the 'TopicAllowanceId'.<br/>
+     * This field value SHALL NOT be greater than the 'amount' field.
      */
     uint64 amount_per_message = 3;
 }
