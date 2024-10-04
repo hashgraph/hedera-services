@@ -75,9 +75,7 @@ public class PcesOutputStreamFileWriter implements PcesFileWriter {
             try {
                 fileDescriptor.sync();
             } catch (final SyncFailedException e) {
-                logger.error(
-                        LogMarker.EXCEPTION.getMarker(), "Failed to sync file after writing event", e
-                );
+                logger.error(LogMarker.EXCEPTION.getMarker(), "Failed to sync file after writing event", e);
             }
         }
     }
