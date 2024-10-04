@@ -92,7 +92,7 @@ public class AddressBook implements Iterable<Address>, SelfSerializable, Hashabl
     private long round = UNKNOWN_ROUND;
 
     /**
-     * DEPRECATED FIELD as of v0.56.0 It remains for compatibility with protobuf serialization.  It's value will always
+     * DEPRECATED FIELD as of v0.56.0 It remains for compatibility with protobuf serialization.  Its value will always
      * be > the highest node ID of address in the address book, but constraints will no longer be checked when changing
      * address books.
      * <p>
