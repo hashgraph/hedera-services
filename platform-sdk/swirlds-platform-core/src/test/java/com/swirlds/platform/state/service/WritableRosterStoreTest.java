@@ -16,33 +16,35 @@
 
 package com.swirlds.platform.state.service;
 
+import static com.swirlds.platform.state.service.WritableRosterStore.MAXIMUM_ROSTER_HISTORY_SIZE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import com.google.common.collect.Lists;
 import com.hedera.hapi.node.base.ServiceEndpoint;
 import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.hapi.node.state.roster.RosterEntry;
 import com.hedera.hapi.node.state.roster.RosterState;
+import com.hedera.hapi.node.state.roster.RosterState.Builder;
+import com.hedera.hapi.node.state.roster.RoundRosterPair;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.RosterStateId;
-import com.swirlds.platform.state.MerkleRoot;
-import com.swirlds.platform.state.PlatformStateAccessor;
+import com.swirlds.platform.roster.InvalidRosterException;
+import com.swirlds.platform.roster.RosterUtils;
 import com.swirlds.platform.state.RosterStateAccessor;
 import com.swirlds.platform.state.RosterStateModifier;
-import com.swirlds.platform.state.signed.ReservedSignedState;
-import com.swirlds.platform.state.signed.SignedState;
-import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.state.merkle.singleton.SingletonNode;
 import com.swirlds.state.merkle.singleton.WritableSingletonStateImpl;
 import com.swirlds.state.spi.WritableKVState;
+import com.swirlds.state.spi.WritableSingletonState;
 import com.swirlds.state.spi.WritableStates;
 import com.swirlds.state.test.fixtures.MapWritableKVState;
+import java.lang.reflect.Field;
 import java.util.LinkedList;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -54,9 +56,6 @@ class WritableRosterStoreTest {
     private final WritableStates writableStates = mock(WritableStates.class);
     private RosterStateModifier rosterStateModifier;
     private RosterStateAccessor rosterStateAccessor;
-
-    private final SoftwareVersion version = mock(SoftwareVersion.class);
-    private final ReservedSignedState initialState = mock(ReservedSignedState.class);
 
     @BeforeEach
     void setUp() {
@@ -80,98 +79,99 @@ class WritableRosterStoreTest {
     @Test
     @DisplayName("Test that a stored candidate roster can be successfully retrieved")
     void testSetCandidateRosterReturnsSame() {
-        final Roster roster1 = createValidRoster(1);
+        final Roster roster1 = createValidTestRoster(1);
         rosterStateModifier.setCandidateRoster(roster1);
-
         assertEquals(rosterStateAccessor.getCandidateRoster(), roster1);
 
-        final Roster roster2 = createValidRoster(2);
+        final Roster roster2 = createValidTestRoster(2);
         rosterStateModifier.setCandidateRoster(roster2);
         assertEquals(roster2, rosterStateAccessor.getCandidateRoster());
     }
 
     @Test
-    void testSetCandidateRosterWhenRosterIsNull() {
+    void testInvalidRosterThrowsException() {
         assertThrows(NullPointerException.class, () -> rosterStateModifier.setCandidateRoster(null));
+        assertThrows(InvalidRosterException.class, () -> rosterStateModifier.setCandidateRoster(Roster.DEFAULT));
+        assertThrows(InvalidRosterException.class, () -> rosterStateModifier.setActiveRoster(Roster.DEFAULT, 1));
     }
 
     @Test
-    @DisplayName("Tests that adopting a candidate roster throws an exception when the candidate roster is null.")
-    void testAdoptCandidateRosterWhenCandidateRosterNotFound() {
-        enableSoftwareUpgradeMode(true);
-        final Exception exception = assertThrows(
-                IllegalStateException.class, () -> rosterStateModifier.determineActiveRoster(version, initialState));
-        assertEquals("Candidate roster not found in the state.", exception.getMessage());
-    }
-
-    @Test
-    @DisplayName("Tests that adopting a candidate roster returns the candidate roster as the active roster.")
-    void testAdoptCandidateRosterWithValidCandidateRoster() {
-        enableSoftwareUpgradeMode(true);
-        final Roster candidateRoster = createValidRoster(1);
-        rosterStateModifier.setCandidateRoster(candidateRoster);
-        assertEquals(rosterStateAccessor.getCandidateRoster(), candidateRoster);
+    @DisplayName("Tests that setting an active roster returns the active roster when getActiveRoster is called.")
+    void testGetCandidateRosterWithValidCandidateRoster() {
+        final Roster activeRoster = createValidTestRoster(1);
         assertNull(rosterStateAccessor.getActiveRoster());
+        rosterStateModifier.setActiveRoster(activeRoster, 2);
+        assertSame(rosterStateAccessor.getActiveRoster(), activeRoster);
+    }
 
-        rosterStateModifier.determineActiveRoster(version, initialState);
-        assertSame(candidateRoster, rosterStateAccessor.getActiveRoster());
+    @Test
+    @DisplayName("Test that the oldest roster is removed when a third roster is set")
+    void testOldestActiveRosterRemoved() {
+        Roster roster = createValidTestRoster(3);
+        rosterStateModifier.setActiveRoster(roster, 1);
+        assertSame(rosterStateAccessor.getActiveRoster(), roster);
+
+        roster = createValidTestRoster(1);
+        rosterStateModifier.setActiveRoster(roster, 2);
+        assertSame(rosterStateAccessor.getActiveRoster(), roster);
+
+        // set a 3rd candidate roster and adopt it
+        roster = createValidTestRoster(2);
+        rosterStateModifier.setActiveRoster(roster, 3);
+        assertSame(rosterStateAccessor.getActiveRoster(), roster);
+    }
+
+    @Test
+    @DisplayName("Test that an exception is thrown if stored active rosters are ever > MAXIMUM_ROSTER_HISTORY_SIZE")
+    void testMaximumRostersMoreThan2ThrowsException() throws NoSuchFieldException, IllegalAccessException {
+        final List<RoundRosterPair> activeRosters = Lists.newArrayList();
+        activeRosters.add(new RoundRosterPair(
+                1, RosterUtils.hash(createValidTestRoster(1)).getBytes()));
+        activeRosters.add(new RoundRosterPair(
+                2, RosterUtils.hash(createValidTestRoster(2)).getBytes()));
+        activeRosters.add(new RoundRosterPair(
+                3, RosterUtils.hash(createValidTestRoster(3)).getBytes()));
+
+        final Builder rosterStateBuilder =
+                RosterState.newBuilder().candidateRosterHash(Bytes.EMPTY).roundRosterPairs(activeRosters);
+
+        final Field field = WritableRosterStore.class.getDeclaredField("rosterState");
+        field.setAccessible(true);
+        final WritableSingletonState<RosterState> rosterState =
+                (WritableSingletonState<RosterState>) field.get(rosterStateModifier);
+        rosterState.put(rosterStateBuilder.build());
+
+        final Exception exception = assertThrows(
+                IllegalStateException.class, () -> rosterStateModifier.setActiveRoster(createValidTestRoster(4), 4));
+        assertEquals(
+                "Active rosters in the Roster state cannot be more than  " + MAXIMUM_ROSTER_HISTORY_SIZE,
+                exception.getMessage());
     }
 
     @Test
     @DisplayName(
-            "Test determine active roster during normal restart but with no active roster present in the state throws exception")
-    void testDetermineActiveRosterDuringNormalRestartWithoutActiveRoster() {
-        enableSoftwareUpgradeMode(false);
-        final Exception exception = assertThrows(
-                NullPointerException.class, () -> rosterStateModifier.determineActiveRoster(version, initialState));
-        assertEquals(
-                "Active Roster must be present in the state during normal network restart.", exception.getMessage());
-    }
+            "Test that when a roster hash collision occurs between a newly set active roster "
+                    + "and another active roster in history, the other roster isn't removed from the state when remove is called")
+    void testRosterHashCollisions() {
+        final Roster roster1 = createValidTestRoster(3);
+        rosterStateModifier.setActiveRoster(roster1, 1);
+        assertSame(rosterStateAccessor.getActiveRoster(), roster1);
 
-    @Test
-    @DisplayName("Test determine active roster during normal restart but with an active roster present")
-    void testDetermineActiveRosterDuringNormalRestartWithActiveRoster() {
-        final Roster candidateRoster = createValidRoster(2);
-        rosterStateModifier.setCandidateRoster(candidateRoster);
-        // enable network upgrade and adopt the candidate roster.
-        enableSoftwareUpgradeMode(true);
-        rosterStateModifier.determineActiveRoster(version, initialState);
+        final Roster roster2 = createValidTestRoster(1);
+        rosterStateModifier.setActiveRoster(roster2, 2);
+        assertSame(rosterStateAccessor.getActiveRoster(), roster2);
 
-        enableSoftwareUpgradeMode(false);
-        // Normal restart. Assert that the active roster is the same one we adopted earlier
-        assertSame(rosterStateModifier.determineActiveRoster(version, initialState), candidateRoster);
-        assertSame(rosterStateModifier.getActiveRoster(), candidateRoster);
-    }
-
-    @Test
-    @DisplayName("Test that the oldest roster is removed after 3 software upgrades")
-    void testDetermineActiveRosterWithExisting2PreviousRosters() {
-        // set a 1st candidate roster and adopt it
-        enableSoftwareUpgradeMode(true);
-        rosterStateModifier.setCandidateRoster(createValidRoster(3));
-        rosterStateModifier.determineActiveRoster(version, initialState);
-
-        // set a 2nd candidate roster and adopt it
-        enableSoftwareUpgradeMode(true);
-        rosterStateModifier.setCandidateRoster(createValidRoster(1));
-        rosterStateModifier.determineActiveRoster(version, initialState);
-
-        // set a 3rd candidate roster and adopt it
-        enableSoftwareUpgradeMode(true);
-        final Roster latestCandidateRoster = createValidRoster(2);
-        rosterStateModifier.setCandidateRoster(latestCandidateRoster);
-
-        assertSame(rosterStateModifier.determineActiveRoster(version, initialState), latestCandidateRoster);
-        assertSame(rosterStateModifier.getActiveRoster(), latestCandidateRoster);
+        rosterStateModifier.setActiveRoster(roster1, 3);
+        assertSame(rosterStateAccessor.getActiveRoster(), roster1);
     }
 
     /**
-     * Creates a valid roster with the given number of entries for testing.
+     * Creates a valid test roster with the given number of entries.
      *
      * @param entries the number of entries
      * @return a valid roster
      */
-    private Roster createValidRoster(final int entries) {
+    private Roster createValidTestRoster(final int entries) {
         final List<RosterEntry> entriesList = new LinkedList<>();
         for (int i = 0; i < entries; i++) {
             entriesList.add(RosterEntry.newBuilder()
@@ -186,23 +186,5 @@ class WritableRosterStoreTest {
                     .build());
         }
         return Roster.newBuilder().rosterEntries(entriesList).build();
-    }
-
-    /**
-     * Fakes software upgrade mode by setting the software version to a higher version than the current version.
-     *
-     * @param mode the mode to enable
-     */
-    private void enableSoftwareUpgradeMode(final boolean mode) {
-        final SignedState state = mock(SignedState.class);
-        final MerkleRoot stateMerkleRoot = mock(MerkleRoot.class);
-        final PlatformStateAccessor platformState = mock(PlatformStateAccessor.class);
-        when(initialState.get()).thenReturn(state);
-        when(state.getRound()).thenReturn(1L);
-        when(state.getState()).thenReturn(stateMerkleRoot);
-        when(stateMerkleRoot.getWritableRosterState()).thenReturn(rosterStateModifier);
-        when(stateMerkleRoot.getReadablePlatformState()).thenReturn(platformState);
-        when(platformState.getCreationSoftwareVersion()).thenReturn(version);
-        when(version.compareTo(any())).thenReturn(mode ? 1 : 0);
     }
 }

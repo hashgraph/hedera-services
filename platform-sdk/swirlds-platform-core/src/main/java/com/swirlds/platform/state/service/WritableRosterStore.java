@@ -16,7 +16,6 @@
 
 package com.swirlds.platform.state.service;
 
-import static com.swirlds.platform.util.BootstrapUtils.detectSoftwareUpgrade;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.state.primitives.ProtoBytes;
@@ -31,8 +30,6 @@ import com.swirlds.platform.roster.RosterUtils;
 import com.swirlds.platform.roster.RosterValidator;
 import com.swirlds.platform.state.RosterStateAccessor;
 import com.swirlds.platform.state.RosterStateModifier;
-import com.swirlds.platform.state.signed.ReservedSignedState;
-import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.state.spi.CommittableWritableStates;
 import com.swirlds.state.spi.WritableKVState;
 import com.swirlds.state.spi.WritableSingletonState;
@@ -50,6 +47,7 @@ public class WritableRosterStore implements RosterStateModifier {
 
     private final WritableStates writableStates;
     private final RosterStateAccessor rosterStateAccessor;
+
     /**
      * The roster state singleton. This is the state that holds the candidate roster hash and the list of pairs of
      * active roster hashes and the round number in which those rosters became active.
@@ -61,6 +59,10 @@ public class WritableRosterStore implements RosterStateModifier {
 
     private final WritableKVState<ProtoBytes, Roster> rosterMap;
 
+    /**
+     * The maximum number of active rosters to keep in the roster state.
+     */
+    static final int MAXIMUM_ROSTER_HISTORY_SIZE = 2;
     /**
      * Constructs a new {@link WritableRosterStore} instance.
      *
@@ -83,50 +85,17 @@ public class WritableRosterStore implements RosterStateModifier {
         Objects.requireNonNull(candidateRoster);
         RosterValidator.validate(candidateRoster);
 
-        // update the roster state
-        final RosterState currentRosterState = rosterStateOrThrow();
-        final Bytes candidateRosterHash = RosterUtils.hash(candidateRoster).getBytes();
+        final Bytes incomingCandidateRosterHash =
+                RosterUtils.hash(candidateRoster).getBytes();
+
+        // update the roster state/map
+        final RosterState previousRosterState = rosterStateOrThrow();
         final Builder rosterStateBuilder = RosterState.newBuilder()
-                .candidateRosterHash(candidateRosterHash)
-                .roundRosterPairs(currentRosterState.roundRosterPairs());
-        this.rosterState.put(rosterStateBuilder.build());
-
-        final Bytes currentCandidateRosterHash = currentRosterState.candidateRosterHash();
-        // remove existing candidate roster if present
-        this.rosterMap.remove(
-                ProtoBytes.newBuilder().value(currentCandidateRosterHash).build());
-
-        this.rosterMap.put(ProtoBytes.newBuilder().value(candidateRosterHash).build(), candidateRoster);
-        commit();
-    }
-
-    /**
-     * Determines the initial active roster based on the given software version and initial state.
-     * The active roster is obtained by adopting the candidate roster if a software upgrade is detected.
-     * Otherwise, the active roster is retrieved from the state or an exception is thrown if not found.
-     *
-     * @param version the software version of the current node
-     * @param initialState the initial state of the platform
-     * @return the active roster which will be used by the platform
-     */
-    @NonNull
-    @Override
-    public Roster determineActiveRoster(
-            @NonNull final SoftwareVersion version, @NonNull final ReservedSignedState initialState) {
-        final boolean softwareUpgrade = detectSoftwareUpgrade(version, initialState.get());
-
-        if (!softwareUpgrade) {
-            final Roster lastUsedActiveRoster = rosterStateAccessor.getActiveRoster();
-            // not in software upgrade mode (i.e., normal restart), return the
-            // active roster present in the state or throw if not found.
-            return Objects.requireNonNull(
-                    lastUsedActiveRoster, "Active Roster must be present in the state during normal network restart.");
-        }
-
-        // software upgrade is detected, adopt the candidate roster as the active roster.
-        final Roster activeRoster = adoptCandidateRoster(initialState.get().getRound() + 1);
-        commit();
-        return activeRoster;
+                .candidateRosterHash(incomingCandidateRosterHash)
+                .roundRosterPairs(previousRosterState.roundRosterPairs());
+        final Bytes previousCandidateRosterHash = previousRosterState.candidateRosterHash();
+        removeRoster(previousCandidateRosterHash);
+        storeRoster(candidateRoster, incomingCandidateRosterHash, rosterStateBuilder);
     }
 
     /**
@@ -148,68 +117,37 @@ public class WritableRosterStore implements RosterStateModifier {
     }
 
     /**
-     * Adopts the candidate roster present in the state as the active roster.
-     *
-     * @param roundNumber the round number in which the candidate roster became active
-     */
-    @NonNull
-    private Roster adoptCandidateRoster(final long roundNumber) {
-        final RosterState previousRosterState = rosterStateOrThrow();
-        final Roster candidateRoster = rosterMap.get(ProtoBytes.newBuilder()
-                .value(previousRosterState.candidateRosterHash())
-                .build());
-        if (candidateRoster == null) {
-            throw new IllegalStateException("Candidate roster not found in the state.");
-        }
-
-        storeAsActive(candidateRoster, roundNumber);
-        return candidateRoster;
-    }
-
-    /**
      * Stores this roster as the active roster.
      *
-     * @param roster        a roster to set as active
-     * @param round        the round in which this roster became active
+     * @param roster     a roster to set as active
+     * @param round     the round in which this roster became active
      */
-    private void storeAsActive(@NonNull final Roster roster, final long round) {
+    public void setActiveRoster(@NonNull final Roster roster, final long round) {
         Objects.requireNonNull(roster);
         RosterValidator.validate(roster);
 
-        final RosterState previousRosterState = rosterStateOrThrow();
-
         // update the roster state
+        final RosterState previousRosterState = rosterStateOrThrow();
         final List<RoundRosterPair> roundRosterPairs = new LinkedList<>(previousRosterState.roundRosterPairs());
         final Bytes activeRosterHash = RosterUtils.hash(roster).getBytes();
         roundRosterPairs.addFirst(new RoundRosterPair(round, activeRosterHash));
 
-        // remove the formerly previous active roster, i.e., the roster that was active before the last two adopted
-        // rosters, if any.
-        if (roundRosterPairs.size() > 2) {
-            final RoundRosterPair lastRemovedStillInState = roundRosterPairs.removeLast();
+        if (roundRosterPairs.size() > MAXIMUM_ROSTER_HISTORY_SIZE) {
+            final RoundRosterPair lastRemovedRoster = roundRosterPairs.removeLast();
+            removeRoster(lastRemovedRoster.activeRosterHash());
 
-            // remove the roster from the map if it is still present in the Roster state for whatever reason.
-            final boolean rosterStateDuplicateFound = roundRosterPairs.stream()
-                    .anyMatch(peer -> peer.activeRosterHash().equals(lastRemovedStillInState.activeRosterHash()));
-
-            if (!rosterStateDuplicateFound) {
-                this.rosterMap.remove(ProtoBytes.newBuilder()
-                        .value(lastRemovedStillInState.activeRosterHash())
-                        .build());
-            }
-
-            // At this phase of the implementation,
-            // the roster state should not contain more than 3 active rosters at most.
+            // At this phase of the implementation, the roster state has a fixed size limit for active rosters.
             // Future implementations (e.g. DAB) can modify this.
-            if (roundRosterPairs.size() > 3) {
+            if (roundRosterPairs.size() > MAXIMUM_ROSTER_HISTORY_SIZE) {
+                // additional safety check to ensure that the roster state does not contain more than set limit.
                 throw new IllegalStateException(
-                        "The roster state should not contain more than maximum of 3 active rosters.");
+                        "Active rosters in the Roster state cannot be more than  " + MAXIMUM_ROSTER_HISTORY_SIZE);
             }
         }
 
         final Builder rosterStateBuilder =
                 RosterState.newBuilder().candidateRosterHash(Bytes.EMPTY).roundRosterPairs(roundRosterPairs);
-        this.rosterState.put(rosterStateBuilder.build());
+        storeRoster(roster, activeRosterHash, rosterStateBuilder);
     }
 
     /**
@@ -223,11 +161,36 @@ public class WritableRosterStore implements RosterStateModifier {
     }
 
     /**
-     * Commits the changes to the state.
+     * Stores the roster in the roster state, roster map and commits the changes.
+     *
+     * @param rosterToStore              the roster to store
+     * @param rosterHash                   the hash of the roster
+     * @param rosterStateBuilder       the roster state builder
      */
-    private void commit() {
+    private void storeRoster(
+            @NonNull final Roster rosterToStore,
+            @NonNull final Bytes rosterHash,
+            @NonNull final Builder rosterStateBuilder) {
+
+        this.rosterState.put(rosterStateBuilder.build());
+        this.rosterMap.put(ProtoBytes.newBuilder().value(rosterHash).build(), rosterToStore);
+
         if (writableStates instanceof final CommittableWritableStates committableWritableStates) {
             committableWritableStates.commit();
+        }
+    }
+
+    /**
+     * This method removes a roster from the roster map, but only if it doesn't match any of the active roster hashes in
+     * the roster state. The check ensures we don't inadvertently remove a roster still in use.
+     *
+     * @param rosterHash the hash of the roster
+     */
+    private void removeRoster(@NonNull final Bytes rosterHash) {
+        final List<RoundRosterPair> activeRosterHistory = rosterStateOrThrow().roundRosterPairs();
+        if (activeRosterHistory.stream()
+                .noneMatch(rosterPair -> rosterPair.activeRosterHash().equals(rosterHash))) {
+            this.rosterMap.remove(ProtoBytes.newBuilder().value(rosterHash).build());
         }
     }
 }

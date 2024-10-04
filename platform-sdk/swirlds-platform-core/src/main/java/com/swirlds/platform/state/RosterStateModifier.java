@@ -17,8 +17,6 @@
 package com.swirlds.platform.state;
 
 import com.hedera.hapi.node.state.roster.Roster;
-import com.swirlds.platform.state.signed.ReservedSignedState;
-import com.swirlds.platform.system.SoftwareVersion;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
@@ -27,21 +25,16 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 public interface RosterStateModifier extends RosterStateAccessor {
 
     /**
-     * Sets the candidate roster.
-     * This will be called to inform the platform of a new candidate roster.
+     * Sets the candidate roster. This will be called to inform the platform of a new candidate roster.
      *
      * @param candidateRoster a candidate roster to set
      */
     void setCandidateRoster(@NonNull final Roster candidateRoster);
 
     /**
-     * Determines the initial active roster based on the network start-up state.
+     * Sets the Active roster. This will be called to store a new Active Roster in the state
      *
-     * @param version the software version of the current node
-     * @param initialState the initial state of the platform
-     * @return the active roster which will be used by the platform
+     * @param roster an active roster to set
      */
-    @NonNull
-    Roster determineActiveRoster(
-            @NonNull final SoftwareVersion version, @NonNull final ReservedSignedState initialState);
+    void setActiveRoster(@NonNull final Roster roster, final long round);
 }
