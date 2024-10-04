@@ -141,12 +141,9 @@ public final class EmbeddedVerbs {
                     final var writableStates = fakeState.getWritableStates("BlockStreamService");
                     final var state = writableStates.<BlockStreamInfo>getSingleton("BLOCK_STREAM_INFO");
                     final var blockStreamInfo = requireNonNull(state.get());
-                    final var version = blockStreamInfo.creationSoftwareVersionOrThrow();
                     state.put(blockStreamInfo
                             .copyBuilder()
-                            .creationSoftwareVersion(version.copyBuilder()
-                                    .minor(version.minor() - 1)
-                                    .build())
+                            .postUpgradeWorkDone(false)
                             .build());
                     ((CommittableWritableStates) writableStates).commit();
                 }

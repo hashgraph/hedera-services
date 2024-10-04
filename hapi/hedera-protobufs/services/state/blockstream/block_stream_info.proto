@@ -30,8 +30,8 @@ package com.hedera.hapi.node.state.blockstream;
  * limitations under the License.
  */
 
-import "basic_types.proto";
 import "timestamp.proto";
+import "basic_types.proto";
 
 option java_package = "com.hederahashgraph.api.proto.java";
 // <<<pbj.java_package = "com.hedera.hapi.node.state.blockstream">>> This comment is special code for setting PBJ Compiler java package
@@ -134,9 +134,25 @@ message BlockStreamInfo {
     proto.Timestamp block_end_time = 9;
 
     /**
-     * A version describing the version of application software.
+     * Whether the post-upgrade work has been done.
      * <p>
-     * This SHALL be the software version that created this block.
+     * This MUST be false if and only if the network just restarted
+     * after an upgrade and has not yet done the post-upgrade work.
      */
-    proto.SemanticVersion creation_software_version = 10;
+    bool post_upgrade_work_done = 10;
+
+    /**
+     * A version describing the version of application software.
+    * <p>
+    * This SHALL be the software version that created this block.
+    */
+    proto.SemanticVersion creation_software_version = 11;
+
+    /**
+     * The time stamp at which the last interval process was done.
+     * <p>
+     * This field SHALL hold the consensus time for the last time
+     * at which an interval of time-dependent events were processed.
+     */
+    proto.Timestamp last_interval_process_time = 12;
 }

@@ -232,9 +232,7 @@ public class IssueRegressionTests {
                         .andAnyDuplicates()
                         .assertingNothingAboutHashes()
                         .hasPriority(recordWith().status(SUCCESS))
-                        .hasDuplicates(inOrder(recordWith().status(DUPLICATE_TRANSACTION))),
-                sleepFor(181_000L),
-                cryptoCreate(CIVILIAN_PAYER));
+                        .hasDuplicates(inOrder(recordWith().status(DUPLICATE_TRANSACTION))));
     }
 
     @HapiTest

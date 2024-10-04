@@ -113,12 +113,4 @@ public interface BlockRecordManager extends BlockRecordInfo, AutoCloseable {
      */
     @NonNull
     Instant consTimeOfLastHandledTxn();
-
-    /**
-     * Get the consensus time of the previous block.
-     * @return the consensus time of the previous block
-     * @throws IllegalStateException if no blocks have been created yet
-     */
-    @NonNull
-    Instant lastBlockTime();
 }

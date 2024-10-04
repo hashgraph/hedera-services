@@ -24,6 +24,7 @@ import static com.hedera.node.app.blocks.impl.BlockImplUtils.combine;
 import static com.hedera.node.app.blocks.schemas.V0540BlockStreamSchema.BLOCK_STREAM_INFO_KEY;
 import static com.hedera.node.app.fixtures.AppTestBase.DEFAULT_CONFIG;
 import static com.hedera.node.app.hapi.utils.CommonUtils.noThrowSha384HashOf;
+import static com.hedera.node.app.records.BlockRecordService.EPOCH;
 import static com.swirlds.platform.state.service.schemas.V0540PlatformStateSchema.PLATFORM_STATE_KEY;
 import static java.util.concurrent.CompletableFuture.completedFuture;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -156,7 +157,8 @@ class BlockStreamManagerImplTest {
                 configProvider,
                 tssBaseService,
                 boundaryStateChangeListener,
-                hashInfo);
+                hashInfo,
+                SemanticVersion.DEFAULT);
         assertThrows(IllegalStateException.class, () -> subject.startRound(round, state));
     }
 
@@ -211,7 +213,9 @@ class BlockStreamManagerImplTest {
                         Bytes.fromHex(
                                 "84910d7e7710b482680de1e81865de39396de9c536ab265cf3253bf378bc50ed2f6c5a3ec19a25c51ee170347f13b28d")),
                 Timestamp.DEFAULT,
-                SemanticVersion.DEFAULT);
+                false,
+                SemanticVersion.DEFAULT,
+                EPOCH);
         final var actualBlockInfo = infoRef.get();
         assertEquals(expectedBlockInfo, actualBlockInfo);
         verify(tssBaseService).requestLedgerSignature(blockHashCaptor.capture());
@@ -317,7 +321,9 @@ class BlockStreamManagerImplTest {
                         Bytes.fromHex(
                                 "84910d7e7710b482680de1e81865de39396de9c536ab265cf3253bf378bc50ed2f6c5a3ec19a25c51ee170347f13b28d")),
                 Timestamp.DEFAULT,
-                SemanticVersion.DEFAULT);
+                false,
+                SemanticVersion.DEFAULT,
+                EPOCH);
         final var actualBlockInfo = infoRef.get();
         assertEquals(expectedBlockInfo, actualBlockInfo);
         verify(tssBaseService).requestLedgerSignature(blockHashCaptor.capture());
@@ -426,7 +432,8 @@ class BlockStreamManagerImplTest {
                 configProvider,
                 tssBaseService,
                 boundaryStateChangeListener,
-                hashInfo);
+                hashInfo,
+                SemanticVersion.DEFAULT);
         given(state.getReadableStates(BlockStreamService.NAME)).willReturn(readableStates);
         given(state.getReadableStates(PlatformStateService.NAME)).willReturn(readableStates);
         infoRef.set(blockStreamInfo);

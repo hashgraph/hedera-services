@@ -109,7 +109,7 @@ public class StreamValidationOp extends UtilOp {
                 spec,
                 freezeOnly().payingWith(GENESIS).startingIn(2).seconds(),
                 // Wait for the final stream files to be created
-                sleepFor(8 * BUFFER_MS));
+                sleepFor(10 * BUFFER_MS));
         readMaybeBlockStreamsFor(spec)
                 .ifPresentOrElse(
                         blocks -> {

@@ -16,7 +16,6 @@
 
 package com.hedera.node.app.records.impl;
 
-import static com.hedera.hapi.util.HapiUtils.asInstant;
 import static com.hedera.node.app.records.BlockRecordService.EPOCH;
 import static com.hedera.node.app.records.impl.BlockRecordInfoUtils.HASH_SIZE;
 import static com.hedera.node.app.records.schemas.V0490BlockRecordSchema.BLOCK_INFO_STATE_KEY;
@@ -320,15 +319,6 @@ public final class BlockRecordManagerImpl implements BlockRecordManager {
         return lastHandledTxn != null
                 ? Instant.ofEpochSecond(lastHandledTxn.seconds(), lastHandledTxn.nanos())
                 : Instant.EPOCH;
-    }
-
-    @Override
-    public @NonNull Instant lastBlockTime() {
-        final var then = asInstant(lastBlockInfo.firstConsTimeOfLastBlockOrThrow());
-        if (Instant.EPOCH.equals(then)) {
-            throw new IllegalStateException("No blocks have been created yet");
-        }
-        return then;
     }
 
     @Override

@@ -20,6 +20,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.BUSY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.FAIL_INVALID;
 import static com.hedera.node.app.blocks.BlockStreamManager.Boundary.BLOCK;
 import static com.hedera.node.app.blocks.BlockStreamManager.Boundary.NONE;
+import static com.hedera.node.app.blocks.impl.BlockStreamManagerImpl.impliesPostUpgradeWorkPending;
 import static com.hedera.node.app.blocks.schemas.V0540BlockStreamSchema.BLOCK_STREAM_INFO_KEY;
 import static com.hedera.node.app.records.schemas.V0490BlockRecordSchema.BLOCK_INFO_STATE_KEY;
 import static com.hedera.node.app.service.file.impl.schemas.V0490FileSchema.BLOBS_KEY;
@@ -361,6 +362,9 @@ public class HandleWorkflow {
         }
         final var userTxn = newUserTxn(state, event, creator, txn, consensusNow, boundary);
         final var handleOutput = execute(userTxn);
+        if (streamMode != RECORDS && userTxn.type() == POST_UPGRADE_TRANSACTION) {
+            blockStreamManager.confirmPostUpgradeWork();
+        }
         if (streamMode != BLOCKS) {
             final var records = ((LegacyListRecordSource) handleOutput.recordSourceOrThrow()).precomputedRecords();
             blockRecordManager.endUserTransaction(records.stream(), state);
@@ -417,20 +421,20 @@ public class HandleWorkflow {
                 if (streamMode != BLOCKS) {
                     blockRecordManager.advanceConsensusClock(userTxn.consensusNow(), userTxn.state());
                 }
-                if (userTxn.isFirstAcrossBlockBoundary()) {
-                    if (streamMode != RECORDS) {
-                        doBlockBoundaryWork(userTxn, blockStreamManager.lastBlockTime());
-                    } else {
-                        doBlockBoundaryWork(userTxn, blockRecordManager.lastBlockTime());
+                if (streamMode != RECORDS) {
+                    if (processInterval(userTxn, blockStreamManager.lastIntervalProcessTime())) {
+                        blockStreamManager.setLastIntervalProcessTime(userTxn.consensusNow());
                     }
+                } else {
+                    processInterval(userTxn, blockRecordManager.consTimeOfLastHandledTxn());
                 }
                 logPreDispatch(userTxn);
                 final var dispatch = dispatchFor(userTxn);
                 if (userTxn.type() == GENESIS_TRANSACTION) {
-                    logger.info(
-                            "Doing genesis setup before {}", userTxn.txnInfo().transactionID());
+                    logger.info("Doing genesis setup @ {}", userTxn.consensusNow());
                     systemSetup.doGenesisSetup(dispatch);
                 } else if (userTxn.type() == POST_UPGRADE_TRANSACTION) {
+                    logger.info("Doing post-upgrade setup @ {}", userTxn.consensusNow());
                     systemSetup.doPostUpgradeSetup(dispatch);
                 }
                 hollowAccountCompletions.completeHollowAccounts(userTxn, dispatch);
@@ -597,23 +601,28 @@ public class HandleWorkflow {
     }
 
     /**
-     * Expire schedules that are due to be executed between the last handled
-     * transaction time and the current consensus time.
+     * Process all time-based events that are due since the last processing time.
      *
      * @param userTxn the user transaction
+     * @param lastProcessTime an upper bound on the last time that time-based events were processed
+     * @return true if the interval was processed
      */
-    private void doBlockBoundaryWork(@NonNull final UserTxn userTxn, @NonNull final Instant lastBlockTime) {
-        if (userTxn.consensusNow().getEpochSecond() > lastBlockTime.getEpochSecond()) {
-            final var firstSecondToExpire = lastBlockTime.getEpochSecond();
-            // Since the new block's time is no later than this transaction's consensus time, we can be sure
-            // we will purge any expired schedules in this second as part of work at the next block boundary
-            final var lastSecondToExpire = userTxn.consensusNow().getEpochSecond() - 1;
-            final var scheduleStore = new WritableStoreFactory(
-                            userTxn.stack(), ScheduleService.NAME, userTxn.config(), storeMetricsService)
-                    .getStore(WritableScheduleStore.class);
-            scheduleStore.purgeExpiredSchedulesBetween(firstSecondToExpire, lastSecondToExpire);
-            userTxn.stack().commitSystemStateChanges();
+    private boolean processInterval(@NonNull final UserTxn userTxn, final Instant lastProcessTime) {
+        // If we have never processed an interval, treat this time as the last processed time
+        if (Instant.EPOCH.equals(lastProcessTime)) {
+            return true;
+        } else if (lastProcessTime.getEpochSecond() >= userTxn.consensusNow().getEpochSecond()) {
+            return false;
         }
+        // There is at least one unprocessed second since the last processing time
+        final var startSecond = lastProcessTime.getEpochSecond();
+        final var endSecond = userTxn.consensusNow().getEpochSecond() - 1;
+        final var scheduleStore = new WritableStoreFactory(
+                        userTxn.stack(), ScheduleService.NAME, userTxn.config(), storeMetricsService)
+                .getStore(WritableScheduleStore.class);
+        scheduleStore.purgeExpiredSchedulesBetween(startSecond, endSecond);
+        userTxn.stack().commitSystemStateChanges();
+        return true;
     }
 
     /**
@@ -656,6 +665,7 @@ public class HandleWorkflow {
 
     /**
      * Returns the type of transaction encountering the given state at a block boundary.
+     *
      * @param state the boundary state
      * @return the type of the boundary transaction
      */
@@ -665,28 +675,26 @@ public class HandleWorkflow {
         if (files.size() == 0) {
             return GENESIS_TRANSACTION;
         }
-        final var platformState = state.getReadableStates(PlatformStateService.NAME)
-                .<PlatformState>getSingleton(PLATFORM_STATE_KEY)
-                .get();
-        requireNonNull(platformState);
-        if (platformState.freezeTime() == null
-                || !platformState.freezeTimeOrThrow().equals(platformState.lastFrozenTime())) {
-            return BLOCK_BOUNDARY_TRANSACTION;
+        final boolean firstPostUpgrade;
+        if (streamMode != RECORDS) {
+            final var blockStreamInfo = state.getReadableStates(BlockStreamService.NAME)
+                    .<BlockStreamInfo>getSingleton(BLOCK_STREAM_INFO_KEY)
+                    .get();
+            firstPostUpgrade = impliesPostUpgradeWorkPending(requireNonNull(blockStreamInfo), version);
         } else {
-            final boolean firstPostUpgrade;
-            if (streamMode != RECORDS) {
-                final var blockStreamInfo = state.getReadableStates(BlockStreamService.NAME)
-                        .<BlockStreamInfo>getSingleton(BLOCK_STREAM_INFO_KEY)
-                        .get();
-                firstPostUpgrade =
-                        !version.equals(requireNonNull(blockStreamInfo).creationSoftwareVersion());
-            } else {
-                final var blockInfo = state.getReadableStates(BlockRecordService.NAME)
-                        .<BlockInfo>getSingleton(BLOCK_INFO_STATE_KEY)
-                        .get();
-                firstPostUpgrade = !requireNonNull(blockInfo).migrationRecordsStreamed();
+            final var platformState = state.getReadableStates(PlatformStateService.NAME)
+                    .<PlatformState>getSingleton(PLATFORM_STATE_KEY)
+                    .get();
+            requireNonNull(platformState);
+            if (platformState.freezeTime() == null
+                    || !platformState.freezeTimeOrThrow().equals(platformState.lastFrozenTime())) {
+                return BLOCK_BOUNDARY_TRANSACTION;
             }
-            return firstPostUpgrade ? POST_UPGRADE_TRANSACTION : BLOCK_BOUNDARY_TRANSACTION;
+            final var blockInfo = state.getReadableStates(BlockRecordService.NAME)
+                    .<BlockInfo>getSingleton(BLOCK_INFO_STATE_KEY)
+                    .get();
+            firstPostUpgrade = !requireNonNull(blockInfo).migrationRecordsStreamed();
         }
+        return firstPostUpgrade ? POST_UPGRADE_TRANSACTION : BLOCK_BOUNDARY_TRANSACTION;
     }
 }

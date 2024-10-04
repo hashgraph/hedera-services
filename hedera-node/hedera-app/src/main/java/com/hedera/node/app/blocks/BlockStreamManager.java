@@ -67,6 +67,24 @@ public interface BlockStreamManager extends BlockRecordInfo, BiConsumer<byte[], 
     Boundary startRound(@NonNull Round round, @NonNull State state);
 
     /**
+     * Confirms that the post-upgrade work has been completed.
+     */
+    void confirmPostUpgradeWork();
+
+    /**
+     * Sets the last interval process time.
+     * @param lastIntervalProcessTime the last interval process time
+     */
+    void setLastIntervalProcessTime(@NonNull Instant lastIntervalProcessTime);
+
+    /**
+     * Get the consensus time at which an interval was last processed.
+     * @return the consensus time at which an interval was last processed
+     */
+    @NonNull
+    Instant lastIntervalProcessTime();
+
+    /**
      * Updates both the internal state of the block stream manager and the durable state of the network
      * to reflect the end of the last-started round.
      *
@@ -81,12 +99,4 @@ public interface BlockStreamManager extends BlockRecordInfo, BiConsumer<byte[], 
      * @throws IllegalStateException if the stream is closed
      */
     void writeItem(@NonNull BlockItem item);
-
-    /**
-     * Get the consensus time of the previous block.
-     * @return the consensus time of the previous block
-     * @throws IllegalStateException if no blocks have been created yet
-     */
-    @NonNull
-    Instant lastBlockTime();
 }
