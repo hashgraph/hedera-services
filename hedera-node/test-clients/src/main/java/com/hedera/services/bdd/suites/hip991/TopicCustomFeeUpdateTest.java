@@ -68,13 +68,11 @@ import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.DynamicTest;
+import org.junit.jupiter.api.Nested;
 
 @HapiTestLifecycle
 @DisplayName("Topic custom fees update")
 public class TopicCustomFeeUpdateTest extends TopicCustomFeeBase {
-
-    // TODO: separate into inner classes?
-    // TODO: remove all TOPIC_FEE_0.. comments
 
     private static final long FIFTY_BILLION = 50_000_000_000L;
 
@@ -83,126 +81,125 @@ public class TopicCustomFeeUpdateTest extends TopicCustomFeeBase {
         lifecycle.doAdhoc(setupBaseForUpdate());
     }
 
-    @HapiTest
-    @DisplayName("the custom fee to 50 billion(max HBAR) + 1")
-    // TOPIC_FEE_045
-    final Stream<DynamicTest> updateTheCustomFeeTo50BillionPlusOne() {
-        return hapiTest(flattened(
+    @Nested
+    @DisplayName("Positive scenarios")
+    class TopicCreatePositiveScenarios {
+
+        @HapiTest
+        @DisplayName("the custom fee to 50 billion(max HBAR) + 1")
+        final Stream<DynamicTest> updateTheCustomFeeTo50BillionPlusOne() {
+            return hapiTest(flattened(
                 // Create a topic and verify custom fee is correct
                 createTopic(TOPIC)
-                        .adminKeyName(ADMIN_KEY)
-                        .feeScheduleKeyName(FEE_SCHEDULE_KEY)
-                        .withConsensusCustomFee(fixedConsensusHtsFee(1, TOKEN, COLLECTOR)),
+                    .adminKeyName(ADMIN_KEY)
+                    .feeScheduleKeyName(FEE_SCHEDULE_KEY)
+                    .withConsensusCustomFee(fixedConsensusHtsFee(1, TOKEN, COLLECTOR)),
                 getTopicInfo(TOPIC).hasCustomFee(expectedConsensusFixedHTSFee(1, TOKEN, COLLECTOR)),
 
                 // Update the custom fee to 50 billion(max HBAR) + 1
                 updateTopic(TOPIC)
-                        .withConsensusCustomFee(fixedConsensusHbarFee(FIFTY_BILLION + 1, COLLECTOR))
-                        .signedByPayerAnd(ADMIN_KEY, FEE_SCHEDULE_KEY),
+                    .withConsensusCustomFee(fixedConsensusHbarFee(FIFTY_BILLION + 1, COLLECTOR))
+                    .signedByPayerAnd(ADMIN_KEY, FEE_SCHEDULE_KEY),
                 getTopicInfo(TOPIC).hasCustomFee(expectedConsensusFixedHbarFee(FIFTY_BILLION + 1, COLLECTOR))));
-    }
+        }
 
-    @HapiTest
-    @DisplayName("the fee schedule key")
-    // TOPIC_FEE_046
-    final Stream<DynamicTest> updateFeeScheduleKey() {
-        return hapiTest(flattened(
+        @HapiTest
+        @DisplayName("the fee schedule key")
+        final Stream<DynamicTest> updateFeeScheduleKey() {
+            return hapiTest(flattened(
                 // Create a topic and verify that the keys are correct
                 createTopic(TOPIC).adminKeyName(ADMIN_KEY).feeScheduleKeyName(FEE_SCHEDULE_KEY),
                 getTopicInfo(TOPIC).hasAdminKey(ADMIN_KEY).hasFeeScheduleKey(FEE_SCHEDULE_KEY),
 
                 // Update the fee schedule and verify that it's updated
-                updateTopic(TOPIC).feeScheduleKeyName(FEE_SCHEDULE_KEY2).signedByPayerAnd(ADMIN_KEY, FEE_SCHEDULE_KEY2),
+                updateTopic(TOPIC)
+                    .feeScheduleKeyName(FEE_SCHEDULE_KEY2)
+                    .signedByPayerAnd(ADMIN_KEY, FEE_SCHEDULE_KEY2),
                 getTopicInfo(TOPIC).hasFeeScheduleKey(FEE_SCHEDULE_KEY2)));
-    }
+        }
 
-    @HapiTest
-    @DisplayName("the custom fee from FT to HBAR")
-    // TOPIC_FEE_047
-    final Stream<DynamicTest> updateCustomFeeFromFTToHBAR() {
-        return hapiTest(flattened(
+        @HapiTest
+        @DisplayName("the custom fee from FT to HBAR")
+        final Stream<DynamicTest> updateCustomFeeFromFTToHBAR() {
+            return hapiTest(flattened(
                 // Create a topic and verify custom fee is correct
                 createTopic(TOPIC)
-                        .adminKeyName(ADMIN_KEY)
-                        .feeScheduleKeyName(FEE_SCHEDULE_KEY)
-                        .withConsensusCustomFee(fixedConsensusHtsFee(1, TOKEN, COLLECTOR)),
+                    .adminKeyName(ADMIN_KEY)
+                    .feeScheduleKeyName(FEE_SCHEDULE_KEY)
+                    .withConsensusCustomFee(fixedConsensusHtsFee(1, TOKEN, COLLECTOR)),
                 getTopicInfo(TOPIC).hasCustomFee(expectedConsensusFixedHTSFee(1, TOKEN, COLLECTOR)),
 
                 // Update the custom fee and verify that it's updated
                 updateTopic(TOPIC)
-                        .withConsensusCustomFee(fixedConsensusHbarFee(1, COLLECTOR))
-                        .signedByPayerAnd(ADMIN_KEY, FEE_SCHEDULE_KEY),
+                    .withConsensusCustomFee(fixedConsensusHbarFee(1, COLLECTOR))
+                    .signedByPayerAnd(ADMIN_KEY, FEE_SCHEDULE_KEY),
                 getTopicInfo(TOPIC).hasCustomFee(expectedConsensusFixedHbarFee(1, COLLECTOR))));
-    }
+        }
 
-    @HapiTest
-    @DisplayName("the custom fee from HBAR to FT")
-    // TOPIC_FEE_048
-    final Stream<DynamicTest> updateCustomFeeFromHBARToFT() {
-        return hapiTest(flattened(
+        @HapiTest
+        @DisplayName("the custom fee from HBAR to FT")
+        final Stream<DynamicTest> updateCustomFeeFromHBARToFT() {
+            return hapiTest(flattened(
                 // Create a topic and verify custom fee is correct
                 createTopic(TOPIC)
-                        .adminKeyName(ADMIN_KEY)
-                        .feeScheduleKeyName(FEE_SCHEDULE_KEY)
-                        .withConsensusCustomFee(fixedConsensusHbarFee(1, COLLECTOR)),
+                    .adminKeyName(ADMIN_KEY)
+                    .feeScheduleKeyName(FEE_SCHEDULE_KEY)
+                    .withConsensusCustomFee(fixedConsensusHbarFee(1, COLLECTOR)),
                 getTopicInfo(TOPIC).hasCustomFee(expectedConsensusFixedHbarFee(1, COLLECTOR)),
 
                 // Update the custom fee and verify that it's updated
                 updateTopic(TOPIC)
-                        .withConsensusCustomFee(fixedConsensusHtsFee(1, TOKEN, COLLECTOR))
-                        .signedByPayerAnd(ADMIN_KEY, FEE_SCHEDULE_KEY),
+                    .withConsensusCustomFee(fixedConsensusHtsFee(1, TOKEN, COLLECTOR))
+                    .signedByPayerAnd(ADMIN_KEY, FEE_SCHEDULE_KEY),
                 getTopicInfo(TOPIC).hasCustomFee(expectedConsensusFixedHTSFee(1, TOKEN, COLLECTOR))));
-    }
+        }
 
-    @HapiTest
-    @DisplayName("to remove the custom fees")
-    // TOPIC_FEE_049
-    final Stream<DynamicTest> updateToRemoveCustomFees() {
-        return hapiTest(flattened(
+        @HapiTest
+        @DisplayName("to remove the custom fees")
+        final Stream<DynamicTest> updateToRemoveCustomFees() {
+            return hapiTest(flattened(
                 // Create a topic and verify custom fee is correct
                 createTopic(TOPIC)
-                        .adminKeyName(ADMIN_KEY)
-                        .feeScheduleKeyName(FEE_SCHEDULE_KEY)
-                        .withConsensusCustomFee(fixedConsensusHbarFee(1, COLLECTOR)),
+                    .adminKeyName(ADMIN_KEY)
+                    .feeScheduleKeyName(FEE_SCHEDULE_KEY)
+                    .withConsensusCustomFee(fixedConsensusHbarFee(1, COLLECTOR)),
                 getTopicInfo(TOPIC).hasCustomFee(expectedConsensusFixedHbarFee(1, COLLECTOR)),
 
                 // Update the topic removing the custom fee
                 updateTopic(TOPIC).withEmptyCustomFee().signedByPayerAnd(ADMIN_KEY, FEE_SCHEDULE_KEY),
                 getTopicInfo(TOPIC).hasNoCustomFee()));
-    }
+        }
 
-    @HapiTest
-    @DisplayName("to remove one of the two custom fees")
-    // TOPIC_FEE_050
-    final Stream<DynamicTest> updateCustomFeesToRemoveOneOfTwo() {
-        return hapiTest(flattened(
+        @HapiTest
+        @DisplayName("to remove one of the two custom fees")
+        final Stream<DynamicTest> updateCustomFeesToRemoveOneOfTwo() {
+            return hapiTest(flattened(
                 // Create a topic with two custom fees
                 createTopic(TOPIC)
-                        .adminKeyName(ADMIN_KEY)
-                        .feeScheduleKeyName(FEE_SCHEDULE_KEY)
-                        .withConsensusCustomFee(fixedConsensusHbarFee(1, COLLECTOR))
-                        .withConsensusCustomFee(fixedConsensusHtsFee(1, TOKEN, COLLECTOR)),
+                    .adminKeyName(ADMIN_KEY)
+                    .feeScheduleKeyName(FEE_SCHEDULE_KEY)
+                    .withConsensusCustomFee(fixedConsensusHbarFee(1, COLLECTOR))
+                    .withConsensusCustomFee(fixedConsensusHtsFee(1, TOKEN, COLLECTOR)),
                 getTopicInfo(TOPIC)
-                        .hasCustomFee(expectedConsensusFixedHbarFee(1, COLLECTOR))
-                        .hasCustomFee(expectedConsensusFixedHTSFee(1, TOKEN, COLLECTOR)),
+                    .hasCustomFee(expectedConsensusFixedHbarFee(1, COLLECTOR))
+                    .hasCustomFee(expectedConsensusFixedHTSFee(1, TOKEN, COLLECTOR)),
 
                 // Update to remove one of the fees
                 updateTopic(TOPIC)
-                        .withConsensusCustomFee(fixedConsensusHbarFee(1, COLLECTOR))
-                        .signedByPayerAnd(ADMIN_KEY, FEE_SCHEDULE_KEY),
+                    .withConsensusCustomFee(fixedConsensusHbarFee(1, COLLECTOR))
+                    .signedByPayerAnd(ADMIN_KEY, FEE_SCHEDULE_KEY),
                 getTopicInfo(TOPIC).hasCustomFeeSize(1).hasCustomFee(expectedConsensusFixedHbarFee(1, COLLECTOR))));
-    }
+        }
 
-    @HapiTest
-    @DisplayName("to reach the limit of 10 custom fees")
-    // TOPIC_FEE_051
-    final Stream<DynamicTest> updateCustomFeesToReachTheLimit() {
-        return hapiTest(
+        @HapiTest
+        @DisplayName("to reach the limit of 10 custom fees")
+        final Stream<DynamicTest> updateCustomFeesToReachTheLimit() {
+            return hapiTest(
                 // Create a topic with one custom fees
                 createTopic(TOPIC)
-                        .adminKeyName(ADMIN_KEY)
-                        .feeScheduleKeyName(FEE_SCHEDULE_KEY)
-                        .withConsensusCustomFee(fixedConsensusHbarFee(1, COLLECTOR)),
+                    .adminKeyName(ADMIN_KEY)
+                    .feeScheduleKeyName(FEE_SCHEDULE_KEY)
+                    .withConsensusCustomFee(fixedConsensusHbarFee(1, COLLECTOR)),
                 getTopicInfo(TOPIC).hasCustomFee(expectedConsensusFixedHbarFee(1, COLLECTOR)),
 
                 // Update the topic to add 9 more custom fees(reaching the limit of 10 custom fees)
@@ -216,78 +213,54 @@ public class TopicCustomFeeUpdateTest extends TopicCustomFeeBase {
                 cryptoCreate("collector9"),
                 cryptoCreate("collector10"),
                 updateTopic(TOPIC)
-                        .withConsensusCustomFee(fixedConsensusHbarFee(1, COLLECTOR))
-                        .withConsensusCustomFee(fixedConsensusHbarFee(1, "collector2"))
-                        .withConsensusCustomFee(fixedConsensusHbarFee(1, "collector3"))
-                        .withConsensusCustomFee(fixedConsensusHbarFee(1, "collector4"))
-                        .withConsensusCustomFee(fixedConsensusHbarFee(1, "collector5"))
-                        .withConsensusCustomFee(fixedConsensusHbarFee(1, "collector6"))
-                        .withConsensusCustomFee(fixedConsensusHbarFee(1, "collector7"))
-                        .withConsensusCustomFee(fixedConsensusHbarFee(1, "collector8"))
-                        .withConsensusCustomFee(fixedConsensusHbarFee(1, "collector9"))
-                        .withConsensusCustomFee(fixedConsensusHbarFee(1, "collector10"))
-                        .signedByPayerAnd(ADMIN_KEY, FEE_SCHEDULE_KEY),
+                    .withConsensusCustomFee(fixedConsensusHbarFee(1, COLLECTOR))
+                    .withConsensusCustomFee(fixedConsensusHbarFee(1, "collector2"))
+                    .withConsensusCustomFee(fixedConsensusHbarFee(1, "collector3"))
+                    .withConsensusCustomFee(fixedConsensusHbarFee(1, "collector4"))
+                    .withConsensusCustomFee(fixedConsensusHbarFee(1, "collector5"))
+                    .withConsensusCustomFee(fixedConsensusHbarFee(1, "collector6"))
+                    .withConsensusCustomFee(fixedConsensusHbarFee(1, "collector7"))
+                    .withConsensusCustomFee(fixedConsensusHbarFee(1, "collector8"))
+                    .withConsensusCustomFee(fixedConsensusHbarFee(1, "collector9"))
+                    .withConsensusCustomFee(fixedConsensusHbarFee(1, "collector10"))
+                    .signedByPayerAnd(ADMIN_KEY, FEE_SCHEDULE_KEY),
 
                 // Verify that the topic consist of all the custom fees
                 getTopicInfo(TOPIC)
-                        .hasCustomFee(expectedConsensusFixedHbarFee(1, COLLECTOR))
-                        .hasCustomFee(expectedConsensusFixedHbarFee(1, "collector2"))
-                        .hasCustomFee(expectedConsensusFixedHbarFee(1, "collector3"))
-                        .hasCustomFee(expectedConsensusFixedHbarFee(1, "collector4"))
-                        .hasCustomFee(expectedConsensusFixedHbarFee(1, "collector5"))
-                        .hasCustomFee(expectedConsensusFixedHbarFee(1, "collector6"))
-                        .hasCustomFee(expectedConsensusFixedHbarFee(1, "collector7"))
-                        .hasCustomFee(expectedConsensusFixedHbarFee(1, "collector8"))
-                        .hasCustomFee(expectedConsensusFixedHbarFee(1, "collector9"))
-                        .hasCustomFee(expectedConsensusFixedHbarFee(1, "collector10")));
-    }
+                    .hasCustomFee(expectedConsensusFixedHbarFee(1, COLLECTOR))
+                    .hasCustomFee(expectedConsensusFixedHbarFee(1, "collector2"))
+                    .hasCustomFee(expectedConsensusFixedHbarFee(1, "collector3"))
+                    .hasCustomFee(expectedConsensusFixedHbarFee(1, "collector4"))
+                    .hasCustomFee(expectedConsensusFixedHbarFee(1, "collector5"))
+                    .hasCustomFee(expectedConsensusFixedHbarFee(1, "collector6"))
+                    .hasCustomFee(expectedConsensusFixedHbarFee(1, "collector7"))
+                    .hasCustomFee(expectedConsensusFixedHbarFee(1, "collector8"))
+                    .hasCustomFee(expectedConsensusFixedHbarFee(1, "collector9"))
+                    .hasCustomFee(expectedConsensusFixedHbarFee(1, "collector10")));
+        }
 
-    @HapiTest
-    @DisplayName("to add a custom fee with a hollow account as a collector")
-    // TOPIC_FEE_052
-    final Stream<DynamicTest> updateToAddCustomFeeWithHollowAsCollector() {
-        final var hollowAccount = "hollowAccount";
-        return hapiTest(
+        @HapiTest
+        @DisplayName("to add a custom fee with a hollow account as a collector")
+        final Stream<DynamicTest> updateToAddCustomFeeWithHollowAsCollector() {
+            final var hollowAccount = "hollowAccount";
+            return hapiTest(
                 // Create a topic without custom fees
                 createTopic(TOPIC).adminKeyName(ADMIN_KEY).feeScheduleKeyName(FEE_SCHEDULE_KEY),
                 createHollow(1, i -> hollowAccount),
 
                 // Update the topic to have the hollow account as a collector
                 updateTopic(TOPIC)
-                        .withConsensusCustomFee(fixedConsensusHbarFee(1, hollowAccount))
-                        .signedByPayerAnd(ADMIN_KEY, FEE_SCHEDULE_KEY),
+                    .withConsensusCustomFee(fixedConsensusHbarFee(1, hollowAccount))
+                    .signedByPayerAnd(ADMIN_KEY, FEE_SCHEDULE_KEY),
                 getTopicInfo(TOPIC).hasCustomFee(expectedConsensusFixedHbarFee(1, hollowAccount)));
-    }
+        }
 
-    // TODO: talk with Ani - rename the test in notion from TOPIC_FEE_057 to TOPIC_FEE_047
-    // TODO: INVALID_CUSTOM_FEE_COLLECTOR instead of success
-    // TODO: move to the negative cases
-    @HapiTest
-    @DisplayName("to add a custom fee with a invalid collector")
-    // TOPIC_FEE_053
-    final Stream<DynamicTest> updateToAddCustomFeeWithInvalidCollector() {
-        final byte[] publicKey = CommonUtils.unhex("0000000000000000000000000000000000000000000000000000000000000000");
-        final ByteString evmAddress = ByteStringUtils.wrapUnsafely(recoverAddressFromPubKey(publicKey));
-        final var accountId = HapiPropertySource.asAccount(evmAddress);
+        @HapiTest
+        @DisplayName("to add a custom fee with a contract as a collector")
+        final Stream<DynamicTest> updateToAddCustomFeeWithContractAsCollector() {
+            final var contract = "CallingContract";
 
-        return hapiTest(
-                // Create a topic without custom fees
-                createTopic(TOPIC).adminKeyName(ADMIN_KEY).feeScheduleKeyName(FEE_SCHEDULE_KEY),
-
-                // Update the topic to have an empty address as a collector
-                updateTopic(TOPIC)
-                        .withConsensusCustomFee(fixedConsensusHbarFee(1, accountId))
-                        .signedByPayerAnd(ADMIN_KEY, FEE_SCHEDULE_KEY)
-                        .hasKnownStatus(INVALID_CUSTOM_FEE_COLLECTOR));
-    }
-
-    @HapiTest
-    @DisplayName("to add a custom fee with a contract as a collector")
-    // TOPIC_FEE_054
-    final Stream<DynamicTest> updateToAddCustomFeeWithContractAsCollector() {
-        final var contract = "CallingContract";
-
-        return hapiTest(
+            return hapiTest(
                 // Create a topic without custom fees
                 createTopic(TOPIC).adminKeyName(ADMIN_KEY).feeScheduleKeyName(FEE_SCHEDULE_KEY),
                 uploadInitCode(contract),
@@ -295,24 +268,23 @@ public class TopicCustomFeeUpdateTest extends TopicCustomFeeBase {
 
                 // Update the topic to have contract as a collector
                 updateTopic(TOPIC)
-                        .withConsensusCustomFee(fixedConsensusHbarFee(1, contract))
-                        .signedByPayerAnd(ADMIN_KEY, FEE_SCHEDULE_KEY),
+                    .withConsensusCustomFee(fixedConsensusHbarFee(1, contract))
+                    .signedByPayerAnd(ADMIN_KEY, FEE_SCHEDULE_KEY),
                 getTopicInfo(TOPIC).hasCustomFee(expectedConsensusFixedHbarFee(1, contract)));
-    }
+        }
 
-    @HapiTest
-    @DisplayName("to empty the custom fees with deleted collector")
-    // TOPIC_FEE_055
-    final Stream<DynamicTest> updateToEmptyCustomFeesWithDeletedCollector() {
-        final var collector = "collector";
-        return hapiTest(
+        @HapiTest
+        @DisplayName("to empty the custom fees with deleted collector")
+        final Stream<DynamicTest> updateToEmptyCustomFeesWithDeletedCollector() {
+            final var collector = "collector";
+            return hapiTest(
                 cryptoCreate(collector),
 
                 // Create a topic with custom fees
                 createTopic(TOPIC)
-                        .adminKeyName(ADMIN_KEY)
-                        .feeScheduleKeyName(FEE_SCHEDULE_KEY)
-                        .withConsensusCustomFee(fixedConsensusHbarFee(1, collector)),
+                    .adminKeyName(ADMIN_KEY)
+                    .feeScheduleKeyName(FEE_SCHEDULE_KEY)
+                    .withConsensusCustomFee(fixedConsensusHbarFee(1, collector)),
 
                 // Delete the collector account
                 cryptoDelete(collector),
@@ -320,27 +292,12 @@ public class TopicCustomFeeUpdateTest extends TopicCustomFeeBase {
                 // Delete the custom fee
                 updateTopic(TOPIC).withEmptyCustomFee().signedByPayerAnd(ADMIN_KEY, FEE_SCHEDULE_KEY),
                 getTopicInfo(TOPIC).hasNoCustomFee());
-    }
+        }
 
-    // TODO: when fee schedule was not set on create - we shouldn't be able to set it on update? Talk with Ani
-    @HapiTest
-    @DisplayName("the fee schedule key when it was empty on create")
-    // TOPIC_FEE_056
-    final Stream<DynamicTest> updateTheFeeScheduleKeyWhenWasEmpty() {
-        return hapiTest(
-                // Create a topic without custom fees
-                createTopic(TOPIC).adminKeyName(ADMIN_KEY),
-                updateTopic(TOPIC)
-                        .feeScheduleKeyName(FEE_SCHEDULE_KEY)
-                        .signedByPayerAnd(ADMIN_KEY, FEE_SCHEDULE_KEY)
-                        .hasKnownStatus(FEE_SCHEDULE_KEY_CANNOT_BE_UPDATED));
-    }
-
-    @HapiTest
-    @DisplayName("the fee schedule key to empty")
-    // TOPIC_FEE_057
-    final Stream<DynamicTest> updateTheFeeScheduleKeyToEmpty() {
-        return hapiTest(flattened(
+        @HapiTest
+        @DisplayName("the fee schedule key to empty")
+        final Stream<DynamicTest> updateTheFeeScheduleKeyToEmpty() {
+            return hapiTest(flattened(
                 // Create a topic and verify that the keys are correct
                 createTopic(TOPIC).adminKeyName(ADMIN_KEY).feeScheduleKeyName(FEE_SCHEDULE_KEY),
                 getTopicInfo(TOPIC).hasAdminKey(ADMIN_KEY).hasFeeScheduleKey(FEE_SCHEDULE_KEY),
@@ -348,13 +305,12 @@ public class TopicCustomFeeUpdateTest extends TopicCustomFeeBase {
                 // Update the fee schedule to remove the fee schedule key
                 updateTopic(TOPIC).withEmptyFeeScheduleKey().signedByPayerAnd(ADMIN_KEY, FEE_SCHEDULE_KEY),
                 getTopicInfo(TOPIC).hasNoFeeScheduleKey()));
-    }
+        }
 
-    @HapiTest
-    @DisplayName("the FeeExemptKeyList")
-    // TOPIC_FEE_058
-    final Stream<DynamicTest> updateFeeExemptKeyList() {
-        return hapiTest(flattened(
+        @HapiTest
+        @DisplayName("the FeeExemptKeyList")
+        final Stream<DynamicTest> updateFeeExemptKeyList() {
+            return hapiTest(flattened(
                 // Create a topic with no feeExemptKeyList
                 createTopic(TOPIC).adminKeyName(ADMIN_KEY).feeScheduleKeyName(FEE_SCHEDULE_KEY),
 
@@ -363,96 +319,92 @@ public class TopicCustomFeeUpdateTest extends TopicCustomFeeBase {
 
                 // Update the topic to add feeExemptKeyList keys
                 updateTopic(TOPIC)
-                        .withConsensusCustomFee(fixedConsensusHbarFee(1, COLLECTOR))
-                        .feeExemptKeys(feeExemptKeyNames(10))
-                        .signedByPayerAnd(ADMIN_KEY, FEE_SCHEDULE_KEY),
+                    .withConsensusCustomFee(fixedConsensusHbarFee(1, COLLECTOR))
+                    .feeExemptKeys(feeExemptKeyNames(10))
+                    .signedByPayerAnd(ADMIN_KEY, FEE_SCHEDULE_KEY),
                 getTopicInfo(TOPIC)
-                        .hasCustomFee(expectedConsensusFixedHbarFee(1, COLLECTOR))
-                        .hasFeeExemptKeys(List.of(feeExemptKeyNames(10)))));
-    }
+                    .hasCustomFee(expectedConsensusFixedHbarFee(1, COLLECTOR))
+                    .hasFeeExemptKeys(List.of(feeExemptKeyNames(10)))));
+        }
 
-    @HapiTest
-    @DisplayName("add one more fee exempt key")
-    // TOPIC_FEE_059
-    final Stream<DynamicTest> updateToAddOneMoreFeeExemptKey() {
-        final var key = "key";
-        final var key2 = "key2";
-        return hapiTest(flattened(
+        @HapiTest
+        @DisplayName("add one more fee exempt key")
+        final Stream<DynamicTest> updateToAddOneMoreFeeExemptKey() {
+            final var key = "key";
+            final var key2 = "key2";
+            return hapiTest(flattened(
                 newKeyNamed(key),
 
                 // Create a topic with a single key in feeExemptKeyList
                 createTopic(TOPIC)
-                        .withConsensusCustomFee(fixedConsensusHbarFee(1, COLLECTOR))
-                        .feeExemptKeys(key)
-                        .adminKeyName(ADMIN_KEY),
+                    .withConsensusCustomFee(fixedConsensusHbarFee(1, COLLECTOR))
+                    .feeExemptKeys(key)
+                    .adminKeyName(ADMIN_KEY),
                 getTopicInfo(TOPIC)
-                        .hasCustomFee(expectedConsensusFixedHbarFee(1, COLLECTOR))
-                        .hasFeeExemptKeys(List.of(key)),
+                    .hasCustomFee(expectedConsensusFixedHbarFee(1, COLLECTOR))
+                    .hasFeeExemptKeys(List.of(key)),
 
                 // Update the topic to add one more key
                 newKeyNamed(key2),
                 updateTopic(TOPIC).feeExemptKeys(key, key2).signedByPayerAnd(ADMIN_KEY),
                 getTopicInfo(TOPIC)
-                        .hasCustomFee(expectedConsensusFixedHbarFee(1, COLLECTOR))
-                        .hasFeeExemptKeys(List.of(key, key2))));
-    }
+                    .hasCustomFee(expectedConsensusFixedHbarFee(1, COLLECTOR))
+                    .hasFeeExemptKeys(List.of(key, key2))));
+        }
 
-    @HapiTest
-    @DisplayName("to remove one of the keys in fee except key list")
-    // TOPIC_FEE_060
-    final Stream<DynamicTest> updateToRemoveOneOfTheKeysFromFeeExemptKeysList() {
-        final var key = "key";
-        final var key2 = "key2";
+        @HapiTest
+        @DisplayName("to remove one of the keys in fee except key list")
+        final Stream<DynamicTest> updateToRemoveOneOfTheKeysFromFeeExemptKeysList() {
+            final var key = "key";
+            final var key2 = "key2";
 
-        return hapiTest(flattened(
+            return hapiTest(flattened(
                 newKeyNamed(key),
                 newKeyNamed(key2),
 
                 // Create a topic with two keys in feeExemptKeyList
                 createTopic(TOPIC)
-                        .withConsensusCustomFee(fixedConsensusHbarFee(1, COLLECTOR))
-                        .feeExemptKeys(key, key2)
-                        .adminKeyName(ADMIN_KEY),
+                    .withConsensusCustomFee(fixedConsensusHbarFee(1, COLLECTOR))
+                    .feeExemptKeys(key, key2)
+                    .adminKeyName(ADMIN_KEY),
                 getTopicInfo(TOPIC).hasFeeExemptKeys(List.of(key, key2)),
 
                 // Update the topic to remove one of the keys
                 updateTopic(TOPIC).feeExemptKeys(key2).signedByPayerAnd(ADMIN_KEY),
                 getTopicInfo(TOPIC).hasFeeExemptKeys(List.of(key2))));
-    }
+        }
 
-    @HapiTest
-    @DisplayName("to remove all keys from fee exempt key list key")
-    // TOPIC_FEE_061
-    final Stream<DynamicTest> updateToRemoveAllFeeExemptKeyListKeys() {
-        final var key = "key";
-        final var key2 = "key2";
+        @HapiTest
+        @DisplayName("to remove all keys from fee exempt key list key")
+        final Stream<DynamicTest> updateToRemoveAllFeeExemptKeyListKeys() {
+            final var key = "key";
+            final var key2 = "key2";
 
-        return hapiTest(flattened(
+            return hapiTest(flattened(
                 newKeyNamed(key),
                 newKeyNamed(key2),
 
                 // Create a topic with two keys in feeExemptKeyList
                 createTopic(TOPIC)
-                        .withConsensusCustomFee(fixedConsensusHbarFee(1, COLLECTOR))
-                        .feeExemptKeys(key, key2)
-                        .adminKeyName(ADMIN_KEY),
+                    .withConsensusCustomFee(fixedConsensusHbarFee(1, COLLECTOR))
+                    .feeExemptKeys(key, key2)
+                    .adminKeyName(ADMIN_KEY),
                 getTopicInfo(TOPIC).hasFeeExemptKeys(List.of(key, key2)),
 
                 // Update the topic to remove all the fee except keys
                 updateTopic(TOPIC).withEmptyFeeExemptKeyList().signedByPayerAnd(ADMIN_KEY),
                 getTopicInfo(TOPIC).hasEmptyFeeExemptKeyList()));
-    }
+        }
 
-    @HapiTest
-    @DisplayName("to replace all fee exempt keys")
-    // TOPIC_FEE_062
-    final Stream<DynamicTest> updateToReplaceAllKeys() {
-        final var key = "key";
-        final var key2 = "key2";
-        final var key3 = "key3";
-        final var key4 = "key4";
+        @HapiTest
+        @DisplayName("to replace all fee exempt keys")
+        final Stream<DynamicTest> updateToReplaceAllKeys() {
+            final var key = "key";
+            final var key2 = "key2";
+            final var key3 = "key3";
+            final var key4 = "key4";
 
-        return hapiTest(flattened(
+            return hapiTest(flattened(
                 newKeyNamed(key),
                 newKeyNamed(key2),
                 newKeyNamed(key3),
@@ -460,62 +412,172 @@ public class TopicCustomFeeUpdateTest extends TopicCustomFeeBase {
 
                 // Create a topic with two keys in feeExemptKeyList
                 createTopic(TOPIC)
-                        .withConsensusCustomFee(fixedConsensusHbarFee(1, COLLECTOR))
-                        .feeExemptKeys(key, key2)
-                        .adminKeyName(ADMIN_KEY),
+                    .withConsensusCustomFee(fixedConsensusHbarFee(1, COLLECTOR))
+                    .feeExemptKeys(key, key2)
+                    .adminKeyName(ADMIN_KEY),
                 getTopicInfo(TOPIC).hasFeeExemptKeys(List.of(key, key2)),
 
                 // Update the topic to remove all the fee except keys
                 updateTopic(TOPIC).feeExemptKeys(key3, key4).signedByPayerAnd(ADMIN_KEY),
                 getTopicInfo(TOPIC).hasFeeExemptKeys(List.of(key3, key4))));
-    }
+        }
 
-    @HapiTest
-    @DisplayName("a topic that contains deleted key")
-    // TOPIC_FEE_063
-    final Stream<DynamicTest> updateTopicWhenKeyInFeeExemptKeyListIsDeleted() {
-        final var alice = "alice";
-        return hapiTest(
+        @HapiTest
+        @DisplayName("a topic that contains deleted key")
+        final Stream<DynamicTest> updateTopicWhenKeyInFeeExemptKeyListIsDeleted() {
+            final var alice = "alice";
+            return hapiTest(
                 cryptoCreate(alice),
 
                 // Create a topic with fee exempt key alice
                 createTopic(TOPIC)
-                        .withConsensusCustomFee(fixedConsensusHbarFee(1, COLLECTOR))
-                        .feeExemptKeys(alice)
-                        .adminKeyName(ADMIN_KEY),
+                    .withConsensusCustomFee(fixedConsensusHbarFee(1, COLLECTOR))
+                    .feeExemptKeys(alice)
+                    .adminKeyName(ADMIN_KEY),
 
                 // Delete alice
                 cryptoDelete(alice),
 
                 // Do a dummy update and verify that it updates successfully
                 updateTopic(TOPIC).memo("dummy change").signedByPayerAnd(ADMIN_KEY));
-    }
+        }
 
-    @HapiTest
-    @DisplayName("to update the fee schedule key")
-    // TOPIC_FEE_064
-    final Stream<DynamicTest> updateTheFeeScheduleKey() {
-        return hapiTest(
+        @HapiTest
+        @DisplayName("to update the fee schedule key")
+        final Stream<DynamicTest> updateTheFeeScheduleKey() {
+            return hapiTest(
                 // Create a topic and verify that the keys are correct
                 createTopic(TOPIC).adminKeyName(ADMIN_KEY).feeScheduleKeyName(FEE_SCHEDULE_KEY),
                 getTopicInfo(TOPIC).hasAdminKey(ADMIN_KEY).hasFeeScheduleKey(FEE_SCHEDULE_KEY),
 
                 // Update the fee schedule and sign with the new key
-                updateTopic(TOPIC).feeScheduleKeyName(FEE_SCHEDULE_KEY2).signedByPayerAnd(ADMIN_KEY, FEE_SCHEDULE_KEY2),
+                updateTopic(TOPIC)
+                    .feeScheduleKeyName(FEE_SCHEDULE_KEY2)
+                    .signedByPayerAnd(ADMIN_KEY, FEE_SCHEDULE_KEY2),
                 getTopicInfo(TOPIC).hasFeeScheduleKey(FEE_SCHEDULE_KEY2));
+        }
+
+        @HapiTest
+        @DisplayName("to add a custom fee to a topic without")
+        final Stream<DynamicTest> updateToAddACustomFee() {
+            return hapiTest(
+                // create a topic without a custom fee
+                createTopic(TOPIC).adminKeyName(ADMIN_KEY).feeScheduleKeyName(FEE_SCHEDULE_KEY),
+
+                // Update the topic to add a custom fee
+                updateTopic(TOPIC)
+                    .withConsensusCustomFee(fixedConsensusHbarFee(1, COLLECTOR))
+                    .signedByPayerAnd(ADMIN_KEY, FEE_SCHEDULE_KEY),
+                getTopicInfo(TOPIC).hasCustomFee(expectedConsensusFixedHbarFee(1, COLLECTOR)));
+        }
+
+        @HapiTest
+        @DisplayName("to remove the fee schedule key and the custom fee should not be deleted")
+        final Stream<DynamicTest> updateToRemoveTheFeeScheduleKeyCustomFeeShouldStay() {
+            return hapiTest(
+                // Create a topic with a fee schedule key and a custom fee
+                createTopic(TOPIC)
+                    .adminKeyName(ADMIN_KEY)
+                    .feeScheduleKeyName(FEE_SCHEDULE_KEY)
+                    .withConsensusCustomFee(fixedConsensusHbarFee(1, COLLECTOR)),
+
+                // Update the fee schedule to remove the fee schedule key
+                updateTopic(TOPIC).withEmptyFeeScheduleKey().signedByPayerAnd(ADMIN_KEY, FEE_SCHEDULE_KEY),
+                getTopicInfo(TOPIC)
+                    .hasNoFeeScheduleKey()
+                    .hasCustomFee(expectedConsensusFixedHbarFee(1, COLLECTOR)));
+        }
+
+        // TODO: talk with Ani - this will be success because we are not setting anything and we ignore the field
+        @HapiTest
+        @DisplayName("to remove the fee schedule key that doesn't exists")
+        final Stream<DynamicTest> removeTheFeeScheduleKeyWhenItDoNotExists() {
+            return hapiTest(flattened(
+                // Create a topic
+                createTopic(TOPIC).adminKeyName(ADMIN_KEY),
+
+                // Update the custom fee to add custom fee
+                updateTopic(TOPIC).withEmptyFeeScheduleKey().signedByPayerAnd(ADMIN_KEY)));
+        }
+
+        @HapiTest
+        @DisplayName("to add the same exempt key")
+        final Stream<DynamicTest> updateToAddTheSameExemptKey() {
+            final var exemptKey = "exemptKey";
+            return hapiTest(
+                // Create a topic with a fee exempt key
+                newKeyNamed(exemptKey),
+                createTopic(TOPIC).adminKeyName(ADMIN_KEY).feeExemptKeys(exemptKey),
+
+                // Update topic to add the same exempt key
+                updateTopic(TOPIC).feeExemptKeys(exemptKey).signedByPayerAnd(ADMIN_KEY),
+                getTopicInfo(TOPIC).hasFeeExemptKeys(List.of(exemptKey)));
+        }
+
+        @HapiTest
+        @DisplayName(
+            "fee schedule key and custom fee - should sign with admin_key, old fee schedule key and new fee schedule key")
+        final Stream<DynamicTest> updateFeeScheduleKeyAndCustomFeeSignWithAdminAndTwoFeeScheduleKeys() {
+            return hapiTest(
+                createTopic(TOPIC).adminKeyName(ADMIN_KEY).feeScheduleKeyName(FEE_SCHEDULE_KEY),
+
+                // Update the fee schedule key and custom fee
+                updateTopic(TOPIC)
+                    .feeScheduleKeyName(FEE_SCHEDULE_KEY2)
+                    .withConsensusCustomFee(fixedConsensusHbarFee(1, COLLECTOR))
+                    .signedByPayerAnd(ADMIN_KEY, FEE_SCHEDULE_KEY, FEE_SCHEDULE_KEY2));
+        }
     }
 
-    // TODO: talk with Ani - when there is a invalid key it cannot sign the transaction. Thus throwing INVALID_SIGNATURE
-    @HapiTest
-    @DisplayName("to update the fee schedule key with zero address key")
-    // TOPIC_FEE_065
-    final Stream<DynamicTest> updateFeeScheduleKeyWithZeroAddressKey() {
-        final var zeroAddressKeyName = "zeroAddressKey";
-        final var zeroAddressKey = Key.newBuilder()
+    @Nested
+    @DisplayName("Negative scenarios")
+    class TopicCreateNegativeScenarios {
+
+        // TODO: talk with Ani - rename the test in notion from TOPIC_FEE_057 to TOPIC_FEE_047
+        // TODO: INVALID_CUSTOM_FEE_COLLECTOR instead of success
+        @HapiTest
+        @DisplayName("to add a custom fee with a invalid collector")
+        final Stream<DynamicTest> updateToAddCustomFeeWithInvalidCollector() {
+            final byte[] publicKey =
+                CommonUtils.unhex("0000000000000000000000000000000000000000000000000000000000000000");
+            final ByteString evmAddress = ByteStringUtils.wrapUnsafely(recoverAddressFromPubKey(publicKey));
+            final var accountId = HapiPropertySource.asAccount(evmAddress);
+
+            return hapiTest(
+                // Create a topic without custom fees
+                createTopic(TOPIC).adminKeyName(ADMIN_KEY).feeScheduleKeyName(FEE_SCHEDULE_KEY),
+
+                // Update the topic to have an empty address as a collector
+                updateTopic(TOPIC)
+                    .withConsensusCustomFee(fixedConsensusHbarFee(1, accountId))
+                    .signedByPayerAnd(ADMIN_KEY, FEE_SCHEDULE_KEY)
+                    .hasKnownStatus(INVALID_CUSTOM_FEE_COLLECTOR));
+        }
+
+        // TODO: when fee schedule was not set on create - we shouldn't be able to set it on update? Talk with Ani
+        @HapiTest
+        @DisplayName("the fee schedule key when it was empty on create")
+        final Stream<DynamicTest> updateTheFeeScheduleKeyWhenWasEmpty() {
+            return hapiTest(
+                // Create a topic without custom fees
+                createTopic(TOPIC).adminKeyName(ADMIN_KEY),
+                updateTopic(TOPIC)
+                    .feeScheduleKeyName(FEE_SCHEDULE_KEY)
+                    .signedByPayerAnd(ADMIN_KEY, FEE_SCHEDULE_KEY)
+                    .hasKnownStatus(FEE_SCHEDULE_KEY_CANNOT_BE_UPDATED));
+        }
+
+        // TODO: talk with Ani - when there is a invalid key it cannot sign the transaction. Thus throwing
+        // INVALID_SIGNATURE
+        @HapiTest
+        @DisplayName("to update the fee schedule key with zero address key")
+        final Stream<DynamicTest> updateFeeScheduleKeyWithZeroAddressKey() {
+            final var zeroAddressKeyName = "zeroAddressKey";
+            final var zeroAddressKey = Key.newBuilder()
                 .setEd25519(ByteString.fromHex("0000000000000000000000000000000000000000000000000000000000000000"))
                 .build();
 
-        return hapiTest(
+            return hapiTest(
                 // Create a topic with a fee schedule key
                 createTopic(TOPIC).adminKeyName(ADMIN_KEY).feeScheduleKeyName(FEE_SCHEDULE_KEY),
 
@@ -524,48 +586,16 @@ public class TopicCustomFeeUpdateTest extends TopicCustomFeeBase {
 
                 // Update the topic to use the zero address key as fee schedule key
                 updateTopic(TOPIC)
-                        .feeScheduleKeyName(zeroAddressKeyName)
-                        .signedByPayerAnd(ADMIN_KEY)
-                        .hasKnownStatus(INVALID_SIGNATURE));
-    }
+                    .feeScheduleKeyName(zeroAddressKeyName)
+                    .signedByPayerAnd(ADMIN_KEY)
+                    .hasKnownStatus(INVALID_SIGNATURE));
+        }
 
-    @HapiTest
-    @DisplayName("to add a custom fee to a topic without")
-    // TOPIC_FEE_066
-    final Stream<DynamicTest> updateToAddACustomFee() {
-        return hapiTest(
-                // create a topic without a custom fee
-                createTopic(TOPIC).adminKeyName(ADMIN_KEY).feeScheduleKeyName(FEE_SCHEDULE_KEY),
-
-                // Update the topic to add a custom fee
-                updateTopic(TOPIC)
-                        .withConsensusCustomFee(fixedConsensusHbarFee(1, COLLECTOR))
-                        .signedByPayerAnd(ADMIN_KEY, FEE_SCHEDULE_KEY),
-                getTopicInfo(TOPIC).hasCustomFee(expectedConsensusFixedHbarFee(1, COLLECTOR)));
-    }
-
-    @HapiTest
-    @DisplayName("to remove the fee schedule key and the custom fee should not be deleted")
-    // TOPIC_FEE_068
-    final Stream<DynamicTest> updateToRemoveTheFeeScheduleKeyCustomFeeShouldStay() {
-        return hapiTest(
-                // Create a topic with a fee schedule key and a custom fee
-                createTopic(TOPIC)
-                        .adminKeyName(ADMIN_KEY)
-                        .feeScheduleKeyName(FEE_SCHEDULE_KEY)
-                        .withConsensusCustomFee(fixedConsensusHbarFee(1, COLLECTOR)),
-
-                // Update the fee schedule to remove the fee schedule key
-                updateTopic(TOPIC).withEmptyFeeScheduleKey().signedByPayerAnd(ADMIN_KEY, FEE_SCHEDULE_KEY),
-                getTopicInfo(TOPIC).hasNoFeeScheduleKey().hasCustomFee(expectedConsensusFixedHbarFee(1, COLLECTOR)));
-    }
-
-    // TODO: Talk with Ani - this should throw FEE_SCHEDULE_KEY_CANNOT_BE_UPDATED
-    @HapiTest
-    @DisplayName("to delete the fee schedule key and then setting the same key back")
-    // TOPIC_FEE_069
-    final Stream<DynamicTest> updateToDeleteTheFeeScheduleKeyAndSettingItBack() {
-        return hapiTest(
+        // TODO: Talk with Ani - this should throw FEE_SCHEDULE_KEY_CANNOT_BE_UPDATED
+        @HapiTest
+        @DisplayName("to delete the fee schedule key and then setting the same key back")
+        final Stream<DynamicTest> updateToDeleteTheFeeScheduleKeyAndSettingItBack() {
+            return hapiTest(
                 // Create a topic with fee schedule key
                 createTopic(TOPIC).feeScheduleKeyName(FEE_SCHEDULE_KEY).adminKeyName(ADMIN_KEY),
 
@@ -574,21 +604,20 @@ public class TopicCustomFeeUpdateTest extends TopicCustomFeeBase {
 
                 // Try to add the fee schedule key back
                 updateTopic(TOPIC)
-                        .feeScheduleKeyName(FEE_SCHEDULE_KEY)
-                        .signedByPayerAnd(ADMIN_KEY, FEE_SCHEDULE_KEY)
-                        .hasKnownStatus(FEE_SCHEDULE_KEY_CANNOT_BE_UPDATED));
-    }
+                    .feeScheduleKeyName(FEE_SCHEDULE_KEY)
+                    .signedByPayerAnd(ADMIN_KEY, FEE_SCHEDULE_KEY)
+                    .hasKnownStatus(FEE_SCHEDULE_KEY_CANNOT_BE_UPDATED));
+        }
 
-    @HapiTest
-    @DisplayName("to update the fee schedule key with zero address key sign with the old key")
-    // TOPIC_FEE_070
-    final Stream<DynamicTest> updateTheFeeScheduleKeyWithZeroAddressSignWithOldKey() {
-        final var zeroAddressKeyName = "zeroAddressKey";
-        final var zeroAddressKey = Key.newBuilder()
+        @HapiTest
+        @DisplayName("to update the fee schedule key with zero address key sign with the old key")
+        final Stream<DynamicTest> updateTheFeeScheduleKeyWithZeroAddressSignWithOldKey() {
+            final var zeroAddressKeyName = "zeroAddressKey";
+            final var zeroAddressKey = Key.newBuilder()
                 .setEd25519(ByteString.fromHex("0000000000000000000000000000000000000000000000000000000000000000"))
                 .build();
 
-        return hapiTest(
+            return hapiTest(
                 // Create a topic with a fee schedule key
                 createTopic(TOPIC).adminKeyName(ADMIN_KEY).feeScheduleKeyName(FEE_SCHEDULE_KEY),
 
@@ -597,66 +626,62 @@ public class TopicCustomFeeUpdateTest extends TopicCustomFeeBase {
 
                 // Update the topic to use the zero address key as fee schedule key
                 updateTopic(TOPIC)
-                        .feeScheduleKeyName(zeroAddressKeyName)
-                        .signedByPayerAnd(ADMIN_KEY, FEE_SCHEDULE_KEY)
-                        .hasKnownStatus(INVALID_SIGNATURE));
-    }
+                    .feeScheduleKeyName(zeroAddressKeyName)
+                    .signedByPayerAnd(ADMIN_KEY, FEE_SCHEDULE_KEY)
+                    .hasKnownStatus(INVALID_SIGNATURE));
+        }
 
-    // TODO: talk with Ani - if we remove the fee schedule key - can only the admin sign?
-    @HapiTest
-    @DisplayName("to remove the fee schedule key without the fee schedule key to sign")
-    // TOPIC_FEE_071
-    final Stream<DynamicTest> updateToRemoveTheFeeScheduleKeyWithoutFeeScheduleToSign() {
-        return hapiTest(
+        // TODO: talk with Ani - if we remove the fee schedule key - can only the admin sign?
+        @HapiTest
+        @DisplayName("to remove the fee schedule key without the fee schedule key to sign")
+        final Stream<DynamicTest> updateToRemoveTheFeeScheduleKeyWithoutFeeScheduleToSign() {
+            return hapiTest(
                 // Create a topic with a fee schedule key and a custom fee
                 createTopic(TOPIC).adminKeyName(ADMIN_KEY).feeScheduleKeyName(FEE_SCHEDULE_KEY),
 
                 // Update the fee schedule to remove the fee schedule key
                 updateTopic(TOPIC).withEmptyFeeScheduleKey().signedByPayerAnd(ADMIN_KEY),
                 getTopicInfo(TOPIC).hasNoFeeScheduleKey());
-    }
+        }
 
-    @HapiTest
-    @DisplayName("fee schedule key and sign with the old one")
-    // TOPIC_FEE_073
-    final Stream<DynamicTest> updateFeeScheduleKeySignWithOld() {
-        return hapiTest(flattened(
+        @HapiTest
+        @DisplayName("fee schedule key and sign with the old one")
+        final Stream<DynamicTest> updateFeeScheduleKeySignWithOld() {
+            return hapiTest(flattened(
                 // Create a topic and verify that the keys are correct
                 createTopic(TOPIC).adminKeyName(ADMIN_KEY).feeScheduleKeyName(FEE_SCHEDULE_KEY),
                 getTopicInfo(TOPIC).hasAdminKey(ADMIN_KEY).hasFeeScheduleKey(FEE_SCHEDULE_KEY),
 
                 // Update the fee schedule and sign with the old key
                 updateTopic(TOPIC)
-                        .feeScheduleKeyName(FEE_SCHEDULE_KEY2)
-                        .signedByPayerAnd(ADMIN_KEY, FEE_SCHEDULE_KEY)
-                        .hasKnownStatus(INVALID_SIGNATURE)));
-    }
+                    .feeScheduleKeyName(FEE_SCHEDULE_KEY2)
+                    .signedByPayerAnd(ADMIN_KEY, FEE_SCHEDULE_KEY)
+                    .hasKnownStatus(INVALID_SIGNATURE)));
+        }
 
-    @HapiTest
-    @DisplayName("to remove the fee schedule key without the admin key to sign")
-    // TOPIC_FEE_074
-    final Stream<DynamicTest> updateToRemoveTheFeeScheduleKeyWithoutAdminToSign() {
-        return hapiTest(
+        @HapiTest
+        @DisplayName("to remove the fee schedule key without the admin key to sign")
+        final Stream<DynamicTest> updateToRemoveTheFeeScheduleKeyWithoutAdminToSign() {
+            return hapiTest(
                 // Create a topic with a fee schedule key and a custom fee
                 createTopic(TOPIC).adminKeyName(ADMIN_KEY).feeScheduleKeyName(FEE_SCHEDULE_KEY),
 
                 // Update the fee schedule to remove the fee schedule key
                 updateTopic(TOPIC)
-                        .withEmptyFeeScheduleKey()
-                        .signedByPayerAnd(FEE_SCHEDULE_KEY)
-                        .hasKnownStatus(INVALID_SIGNATURE));
-    }
+                    .withEmptyFeeScheduleKey()
+                    .signedByPayerAnd(FEE_SCHEDULE_KEY)
+                    .hasKnownStatus(INVALID_SIGNATURE));
+        }
 
-    @HapiTest
-    @DisplayName("to reach the limit + 1 custom fees")
-    // TOPIC_FEE_075
-    final Stream<DynamicTest> updateCustomFeesToReachTheLimitPlusOne() {
-        return hapiTest(
+        @HapiTest
+        @DisplayName("to reach the limit + 1 custom fees")
+        final Stream<DynamicTest> updateCustomFeesToReachTheLimitPlusOne() {
+            return hapiTest(
                 // Create a topic with one custom fees
                 createTopic(TOPIC)
-                        .adminKeyName(ADMIN_KEY)
-                        .feeScheduleKeyName(FEE_SCHEDULE_KEY)
-                        .withConsensusCustomFee(fixedConsensusHbarFee(1, COLLECTOR)),
+                    .adminKeyName(ADMIN_KEY)
+                    .feeScheduleKeyName(FEE_SCHEDULE_KEY)
+                    .withConsensusCustomFee(fixedConsensusHbarFee(1, COLLECTOR)),
                 getTopicInfo(TOPIC).hasCustomFee(expectedConsensusFixedHbarFee(1, COLLECTOR)),
 
                 // Update the topic to add 10 more custom fees(reaching the limit + 1 custom fees)
@@ -671,220 +696,199 @@ public class TopicCustomFeeUpdateTest extends TopicCustomFeeBase {
                 cryptoCreate("collector10"),
                 cryptoCreate("collector11"),
                 updateTopic(TOPIC)
-                        .withConsensusCustomFee(fixedConsensusHbarFee(1, COLLECTOR))
-                        .withConsensusCustomFee(fixedConsensusHbarFee(1, "collector2"))
-                        .withConsensusCustomFee(fixedConsensusHbarFee(1, "collector3"))
-                        .withConsensusCustomFee(fixedConsensusHbarFee(1, "collector4"))
-                        .withConsensusCustomFee(fixedConsensusHbarFee(1, "collector5"))
-                        .withConsensusCustomFee(fixedConsensusHbarFee(1, "collector6"))
-                        .withConsensusCustomFee(fixedConsensusHbarFee(1, "collector7"))
-                        .withConsensusCustomFee(fixedConsensusHbarFee(1, "collector8"))
-                        .withConsensusCustomFee(fixedConsensusHbarFee(1, "collector9"))
-                        .withConsensusCustomFee(fixedConsensusHbarFee(1, "collector10"))
-                        .withConsensusCustomFee(fixedConsensusHbarFee(1, "collector11"))
-                        .signedByPayerAnd(ADMIN_KEY, FEE_SCHEDULE_KEY)
-                        .hasKnownStatus(CUSTOM_FEES_LIST_TOO_LONG));
-    }
+                    .withConsensusCustomFee(fixedConsensusHbarFee(1, COLLECTOR))
+                    .withConsensusCustomFee(fixedConsensusHbarFee(1, "collector2"))
+                    .withConsensusCustomFee(fixedConsensusHbarFee(1, "collector3"))
+                    .withConsensusCustomFee(fixedConsensusHbarFee(1, "collector4"))
+                    .withConsensusCustomFee(fixedConsensusHbarFee(1, "collector5"))
+                    .withConsensusCustomFee(fixedConsensusHbarFee(1, "collector6"))
+                    .withConsensusCustomFee(fixedConsensusHbarFee(1, "collector7"))
+                    .withConsensusCustomFee(fixedConsensusHbarFee(1, "collector8"))
+                    .withConsensusCustomFee(fixedConsensusHbarFee(1, "collector9"))
+                    .withConsensusCustomFee(fixedConsensusHbarFee(1, "collector10"))
+                    .withConsensusCustomFee(fixedConsensusHbarFee(1, "collector11"))
+                    .signedByPayerAnd(ADMIN_KEY, FEE_SCHEDULE_KEY)
+                    .hasKnownStatus(CUSTOM_FEES_LIST_TOO_LONG));
+        }
 
-    @HapiTest
-    @DisplayName("the custom fee without having a custom fee and a schedule key")
-    // TOPIC_FEE_076
-    final Stream<DynamicTest> updateCustomFeeWithoutHavingCustomFeeAndScheduleKey() {
-        return hapiTest(flattened(
+        @HapiTest
+        @DisplayName("the custom fee without having a custom fee and a schedule key")
+        final Stream<DynamicTest> updateCustomFeeWithoutHavingCustomFeeAndScheduleKey() {
+            return hapiTest(flattened(
                 // Create a topic
                 createTopic(TOPIC).adminKeyName(ADMIN_KEY),
 
                 // Update the custom fee to add custom fee
                 updateTopic(TOPIC)
-                        .withConsensusCustomFee(fixedConsensusHbarFee(1, COLLECTOR))
-                        .signedByPayerAnd(ADMIN_KEY)
-                        .hasKnownStatus(FEE_SCHEDULE_KEY_NOT_SET)));
-    }
+                    .withConsensusCustomFee(fixedConsensusHbarFee(1, COLLECTOR))
+                    .signedByPayerAnd(ADMIN_KEY)
+                    .hasKnownStatus(FEE_SCHEDULE_KEY_NOT_SET)));
+        }
 
-    // TODO: talk with Ani - this will be success because we are not setting anything and we ignore the field
-    @HapiTest
-    @DisplayName("to remove the fee schedule key that doesn't exists")
-    // TOPIC_FEE_078
-    final Stream<DynamicTest> removeTheFeeScheduleKeyWhenItDoNotExists() {
-        return hapiTest(flattened(
-                // Create a topic
-                createTopic(TOPIC).adminKeyName(ADMIN_KEY),
-
-                // Update the custom fee to add custom fee
-                updateTopic(TOPIC).withEmptyFeeScheduleKey().signedByPayerAnd(ADMIN_KEY)));
-    }
-
-    @HapiTest
-    @DisplayName("to remove the custom fees sign with admin key only")
-    // TOPIC_FEE_079
-    final Stream<DynamicTest> removeCustomFeeSignWithAdminOnly() {
-        return hapiTest(flattened(
+        @HapiTest
+        @DisplayName("to remove the custom fees sign with admin key only")
+        final Stream<DynamicTest> removeCustomFeeSignWithAdminOnly() {
+            return hapiTest(flattened(
                 // Create a topic and verify custom fee is correct
                 createTopic(TOPIC)
-                        .adminKeyName(ADMIN_KEY)
-                        .feeScheduleKeyName(FEE_SCHEDULE_KEY)
-                        .withConsensusCustomFee(fixedConsensusHtsFee(1, TOKEN, COLLECTOR)),
+                    .adminKeyName(ADMIN_KEY)
+                    .feeScheduleKeyName(FEE_SCHEDULE_KEY)
+                    .withConsensusCustomFee(fixedConsensusHtsFee(1, TOKEN, COLLECTOR)),
 
                 // Update the custom fee and verify that it's updated
                 updateTopic(TOPIC)
-                        .withEmptyCustomFee()
-                        .signedByPayerAnd(ADMIN_KEY)
-                        .hasKnownStatus(INVALID_SIGNATURE)));
-    }
+                    .withEmptyCustomFee()
+                    .signedByPayerAnd(ADMIN_KEY)
+                    .hasKnownStatus(INVALID_SIGNATURE)));
+        }
 
-    @HapiTest
-    @DisplayName("the custom fee with no fee schedule key")
-    // TOPIC_FEE_082
-    final Stream<DynamicTest> updateTheCustomFeeWithNoFeeScheduleKey() {
-        return hapiTest(
+        @HapiTest
+        @DisplayName("the custom fee with no fee schedule key")
+        final Stream<DynamicTest> updateTheCustomFeeWithNoFeeScheduleKey() {
+            return hapiTest(
                 // Create a topic without custom fees
                 createTopic(TOPIC).adminKeyName(ADMIN_KEY),
                 updateTopic(TOPIC)
-                        .withConsensusCustomFee(fixedConsensusHbarFee(1, COLLECTOR))
-                        .signedByPayerAnd(ADMIN_KEY)
-                        .hasKnownStatus(FEE_SCHEDULE_KEY_NOT_SET));
-    }
+                    .withConsensusCustomFee(fixedConsensusHbarFee(1, COLLECTOR))
+                    .signedByPayerAnd(ADMIN_KEY)
+                    .hasKnownStatus(FEE_SCHEDULE_KEY_NOT_SET));
+        }
 
-    @HapiTest
-    @DisplayName("to add a custom fee without a fee collector")
-    // TOPIC_FEE_083
-    final Stream<DynamicTest> updateToAddCustomFeeWithoutFeeCollector() {
-        return hapiTest(
+        @HapiTest
+        @DisplayName("to add a custom fee without a fee collector")
+        final Stream<DynamicTest> updateToAddCustomFeeWithoutFeeCollector() {
+            return hapiTest(
                 // Create a topic with fee schedule key
                 createTopic(TOPIC).feeScheduleKeyName(FEE_SCHEDULE_KEY).adminKeyName(ADMIN_KEY),
 
                 // Update the topic with custom fee without a fee collector
                 updateTopic(TOPIC)
-                        .withConsensusCustomFee(fixedConsensusHbarFeeNoCollector(1))
-                        .signedByPayerAnd(ADMIN_KEY, FEE_SCHEDULE_KEY)
-                        .hasKnownStatus(INVALID_CUSTOM_FEE_COLLECTOR));
-    }
+                    .withConsensusCustomFee(fixedConsensusHbarFeeNoCollector(1))
+                    .signedByPayerAnd(ADMIN_KEY, FEE_SCHEDULE_KEY)
+                    .hasKnownStatus(INVALID_CUSTOM_FEE_COLLECTOR));
+        }
 
-    // TODO: the exposingCreatedIdTo is not working and I cannot get the generated token id for some reason figure out
-    // why
-    //    @HapiTest
-    //    // TODO: rename
-    //    @DisplayName("the custom fe")
-    //    // TOPIC_FEE_084
-    //    final Stream<DynamicTest> updateCustomFeesWithInvalidTokenId() {
-    //        final var tokenToDeleted = "tokenToDeleted";
-    //
-    //        // final AtomicReference<TokenID> tbdTokenID = new AtomicReference<>();
-    //        final AtomicReference<String> tbdTokenID = new AtomicReference<>();
-    //
-    //        return hapiTest(flattened(
-    //
-    //            withOpContext((spec, opLog) -> {
-    //                    allRunFor(spec,
-    // tokenCreate(tokenToDeleted).tokenType(TokenType.FUNGIBLE_COMMON).initialSupply(500)
-    //                        .exposingCreatedIdTo(tbdTokenID::set));
-    //                }
-    //            ),
-    //
-    //            //.exposingCreatedIdTo(id -> tbdTokenID.set(asToken(id))),
-    //            tokenDelete("0.0." + tbdTokenID.get())
-    //
-    //        ));
-    //
-    ////            // Create a topic and verify custom fee is correct
-    ////            createTopic(TOPIC)
-    ////                .adminKeyName(ADMIN_KEY)
-    ////                .feeScheduleKeyName(FEE_SCHEDULE_KEY)
-    ////                .withConsensusCustomFee(fixedConsensusHtsFee(1, TOKEN, COLLECTOR)),
-    ////            getTopicInfo(TOPIC).hasCustomFee(expectedConsensusFixedHTSFee(1, TOKEN, COLLECTOR)),
-    //
-    ////            updateTopic(TOPIC)
-    ////                .withConsensusCustomFee(fixedConsensusHtsFee(1, tokenToDeleted, COLLECTOR))
-    ////                .signedByPayerAnd(ADMIN_KEY, FEE_SCHEDULE_KEY)
-    ////                .hasKnownStatus(INVALID_TOKEN_ID_IN_CUSTOM_FEES)));
-    //    }
+        // TODO: the exposingCreatedIdTo is not working and I cannot get the generated token id for some reason figure
+        // out
+        // why
+        //    @HapiTest
+        //    // TODO: rename
+        //    @DisplayName("the custom fe")
+        //
+        //    final Stream<DynamicTest> updateCustomFeesWithInvalidTokenId() {
+        //        final var tokenToDeleted = "tokenToDeleted";
+        //
+        //        // final AtomicReference<TokenID> tbdTokenID = new AtomicReference<>();
+        //        final AtomicReference<String> tbdTokenID = new AtomicReference<>();
+        //
+        //        return hapiTest(flattened(
+        //
+        //            withOpContext((spec, opLog) -> {
+        //                    allRunFor(spec,
+        // tokenCreate(tokenToDeleted).tokenType(TokenType.FUNGIBLE_COMMON).initialSupply(500)
+        //                        .exposingCreatedIdTo(tbdTokenID::set));
+        //                }
+        //            ),
+        //
+        //            //.exposingCreatedIdTo(id -> tbdTokenID.set(asToken(id))),
+        //            tokenDelete("0.0." + tbdTokenID.get())
+        //
+        //        ));
+        //
+        ////            // Create a topic and verify custom fee is correct
+        ////            createTopic(TOPIC)
+        ////                .adminKeyName(ADMIN_KEY)
+        ////                .feeScheduleKeyName(FEE_SCHEDULE_KEY)
+        ////                .withConsensusCustomFee(fixedConsensusHtsFee(1, TOKEN, COLLECTOR)),
+        ////            getTopicInfo(TOPIC).hasCustomFee(expectedConsensusFixedHTSFee(1, TOKEN, COLLECTOR)),
+        //
+        ////            updateTopic(TOPIC)
+        ////                .withConsensusCustomFee(fixedConsensusHtsFee(1, tokenToDeleted, COLLECTOR))
+        ////                .signedByPayerAnd(ADMIN_KEY, FEE_SCHEDULE_KEY)
+        ////                .hasKnownStatus(INVALID_TOKEN_ID_IN_CUSTOM_FEES)));
+        //    }
 
-    // TODO: 85 - implemented when figure out the above
-    // TODO: 86 - implemented when figure out the above
+        // TODO: 85 - implemented when figure out the above
+        // TODO: 86 - implemented when figure out the above
 
-    @HapiTest
-    @DisplayName("the custom fee with 0 for the amount")
-    // TOPIC_FEE_089
-    final Stream<DynamicTest> updateCustomFeeWith0ForAmount() {
-        return hapiTest(
+        @HapiTest
+        @DisplayName("the custom fee with 0 for the amount")
+        final Stream<DynamicTest> updateCustomFeeWith0ForAmount() {
+            return hapiTest(
                 createTopic(TOPIC)
-                        .adminKeyName(ADMIN_KEY)
-                        .feeScheduleKeyName(FEE_SCHEDULE_KEY)
-                        .withConsensusCustomFee(fixedConsensusHbarFee(1, COLLECTOR)),
+                    .adminKeyName(ADMIN_KEY)
+                    .feeScheduleKeyName(FEE_SCHEDULE_KEY)
+                    .withConsensusCustomFee(fixedConsensusHbarFee(1, COLLECTOR)),
                 updateTopic(TOPIC)
-                        .withConsensusCustomFee(fixedConsensusHbarFee(0, COLLECTOR))
-                        .signedByPayerAnd(FEE_SCHEDULE_KEY, ADMIN_KEY)
-                        .hasKnownStatus(CUSTOM_FEE_MUST_BE_POSITIVE));
-    }
+                    .withConsensusCustomFee(fixedConsensusHbarFee(0, COLLECTOR))
+                    .signedByPayerAnd(FEE_SCHEDULE_KEY, ADMIN_KEY)
+                    .hasKnownStatus(CUSTOM_FEE_MUST_BE_POSITIVE));
+        }
 
-    @HapiTest
-    @DisplayName("the custom fee with multiple custom fees one of them with 0 for the amount")
-    // TOPIC_FEE_090
-    final Stream<DynamicTest> updateCustomFeeWithMultipleFeesOneOfThemWith0ForAmount() {
-        return hapiTest(
+        @HapiTest
+        @DisplayName("the custom fee with multiple custom fees one of them with 0 for the amount")
+        final Stream<DynamicTest> updateCustomFeeWithMultipleFeesOneOfThemWith0ForAmount() {
+            return hapiTest(
                 createTopic(TOPIC)
-                        .adminKeyName(ADMIN_KEY)
-                        .feeScheduleKeyName(FEE_SCHEDULE_KEY)
-                        .withConsensusCustomFee(fixedConsensusHbarFee(1, COLLECTOR)),
+                    .adminKeyName(ADMIN_KEY)
+                    .feeScheduleKeyName(FEE_SCHEDULE_KEY)
+                    .withConsensusCustomFee(fixedConsensusHbarFee(1, COLLECTOR)),
                 updateTopic(TOPIC)
-                        .withConsensusCustomFee(fixedConsensusHbarFee(1, COLLECTOR))
-                        .withConsensusCustomFee(fixedConsensusHbarFee(0, COLLECTOR))
-                        .withConsensusCustomFee(fixedConsensusHbarFee(2, COLLECTOR))
-                        .signedByPayerAnd(FEE_SCHEDULE_KEY, ADMIN_KEY)
-                        .hasKnownStatus(CUSTOM_FEE_MUST_BE_POSITIVE));
-    }
+                    .withConsensusCustomFee(fixedConsensusHbarFee(1, COLLECTOR))
+                    .withConsensusCustomFee(fixedConsensusHbarFee(0, COLLECTOR))
+                    .withConsensusCustomFee(fixedConsensusHbarFee(2, COLLECTOR))
+                    .signedByPayerAnd(FEE_SCHEDULE_KEY, ADMIN_KEY)
+                    .hasKnownStatus(CUSTOM_FEE_MUST_BE_POSITIVE));
+        }
 
-    // TODO: Talk with Ani: not associated with the token? Not the topic. Currently we are not associating the fee
-    // collector to the topic
-    @HapiTest
-    @DisplayName("the custom fee collector that is not associated with the token")
-    // TOPIC_FEE_091
-    final Stream<DynamicTest> updateCustomFeeCollectorThatIsNotAssociatedWithToken() {
-        final var collector3 = "collector3";
-        return hapiTest(
+        // TODO: Talk with Ani: not associated with the token? Not the topic. Currently we are not associating the fee
+        // collector to the topic
+        @HapiTest
+        @DisplayName("the custom fee collector that is not associated with the token")
+        final Stream<DynamicTest> updateCustomFeeCollectorThatIsNotAssociatedWithToken() {
+            final var collector3 = "collector3";
+            return hapiTest(
                 createTopic(TOPIC)
-                        .adminKeyName(ADMIN_KEY)
-                        .feeScheduleKeyName(FEE_SCHEDULE_KEY)
-                        .withConsensusCustomFee(fixedConsensusHbarFee(1, COLLECTOR)),
+                    .adminKeyName(ADMIN_KEY)
+                    .feeScheduleKeyName(FEE_SCHEDULE_KEY)
+                    .withConsensusCustomFee(fixedConsensusHbarFee(1, COLLECTOR)),
 
                 // Updating the topic's custom fees with a collector not associated with the token
                 cryptoCreate(collector3),
                 updateTopic(TOPIC)
-                        .withConsensusCustomFee(fixedConsensusHtsFee(1, TOKEN, collector3))
-                        .signedByPayerAnd(ADMIN_KEY, FEE_SCHEDULE_KEY)
-                        .hasKnownStatus(TOKEN_NOT_ASSOCIATED_TO_FEE_COLLECTOR));
-    }
+                    .withConsensusCustomFee(fixedConsensusHtsFee(1, TOKEN, collector3))
+                    .signedByPayerAnd(ADMIN_KEY, FEE_SCHEDULE_KEY)
+                    .hasKnownStatus(TOKEN_NOT_ASSOCIATED_TO_FEE_COLLECTOR));
+        }
 
-    // TODO: Talk with Ani: not frozen for the token? It should be frozen for the token
-    @HapiTest
-    @DisplayName("the custom fee with frozen collector")
-    // TOPIC_FEE_093
-    final Stream<DynamicTest> updateCustomFeeWithFrozenCollector() {
-        final var collector4 = "collector4";
-        return hapiTest(
+        // TODO: Talk with Ani: not frozen for the token? It should be frozen for the token
+        @HapiTest
+        @DisplayName("the custom fee with frozen collector")
+        final Stream<DynamicTest> updateCustomFeeWithFrozenCollector() {
+            final var collector4 = "collector4";
+            return hapiTest(
                 createTopic(TOPIC)
-                        .adminKeyName(ADMIN_KEY)
-                        .feeScheduleKeyName(FEE_SCHEDULE_KEY)
-                        .withConsensusCustomFee(fixedConsensusHbarFee(1, COLLECTOR)),
+                    .adminKeyName(ADMIN_KEY)
+                    .feeScheduleKeyName(FEE_SCHEDULE_KEY)
+                    .withConsensusCustomFee(fixedConsensusHbarFee(1, COLLECTOR)),
 
                 // Update the token with a custom fee with frozen collector
                 cryptoCreate(collector4),
                 tokenAssociate(collector4, TOKEN),
                 tokenFreeze(TOKEN, collector4),
                 updateTopic(TOPIC)
-                        .withConsensusCustomFee(fixedConsensusHtsFee(1, TOKEN, collector4))
-                        .signedByPayerAnd(ADMIN_KEY, FEE_SCHEDULE_KEY)
-                        .hasKnownStatus(ACCOUNT_FROZEN_FOR_TOKEN));
-    }
+                    .withConsensusCustomFee(fixedConsensusHtsFee(1, TOKEN, collector4))
+                    .signedByPayerAnd(ADMIN_KEY, FEE_SCHEDULE_KEY)
+                    .hasKnownStatus(ACCOUNT_FROZEN_FOR_TOKEN));
+        }
 
-    @HapiTest
-    @DisplayName("the custom fee with deleted collector")
-    // TOPIC_FEE_094
-    final Stream<DynamicTest> updateCustomFeeWithDeletedCollector() {
-        final var token = "token";
-        final var tokenAdmin = "tokenAdmin";
-        final var collector5 = "collector5";
-        return hapiTest(
+        @HapiTest
+        @DisplayName("the custom fee with deleted collector")
+        final Stream<DynamicTest> updateCustomFeeWithDeletedCollector() {
+            final var token = "token";
+            final var tokenAdmin = "tokenAdmin";
+            final var collector5 = "collector5";
+            return hapiTest(
                 createTopic(TOPIC).adminKeyName(ADMIN_KEY).feeScheduleKeyName(FEE_SCHEDULE_KEY),
 
                 // Create a token and delete it
@@ -895,19 +899,18 @@ public class TopicCustomFeeUpdateTest extends TopicCustomFeeBase {
                 // Update the topic to set the deleted token as a custom fee
                 cryptoCreate(collector5),
                 updateTopic(TOPIC)
-                        .withConsensusCustomFee(fixedConsensusHtsFee(1, token, collector5))
-                        .signedByPayerAnd(ADMIN_KEY, FEE_SCHEDULE_KEY)
-                        .hasKnownStatus(INVALID_TOKEN_ID_IN_CUSTOM_FEES));
-    }
+                    .withConsensusCustomFee(fixedConsensusHtsFee(1, token, collector5))
+                    .signedByPayerAnd(ADMIN_KEY, FEE_SCHEDULE_KEY)
+                    .hasKnownStatus(INVALID_TOKEN_ID_IN_CUSTOM_FEES));
+        }
 
-    @HapiTest
-    @DisplayName("the custom fee with paused collector")
-    // TOPIC_FEE_094
-    final Stream<DynamicTest> updateCustomFeeWithPausedCollector() {
-        final var token = "token";
-        final var tokenAdmin = "tokenAdmin";
-        final var collector5 = "collector5";
-        return hapiTest(
+        @HapiTest
+        @DisplayName("the custom fee with paused collector")
+        final Stream<DynamicTest> updateCustomFeeWithPausedCollector() {
+            final var token = "token";
+            final var tokenAdmin = "tokenAdmin";
+            final var collector5 = "collector5";
+            return hapiTest(
                 createTopic(TOPIC).adminKeyName(ADMIN_KEY).feeScheduleKeyName(FEE_SCHEDULE_KEY),
 
                 // Create a token and pause it
@@ -918,181 +921,142 @@ public class TopicCustomFeeUpdateTest extends TopicCustomFeeBase {
                 // Update the topic to set the paused token as a custom fee
                 cryptoCreate(collector5),
                 updateTopic(TOPIC)
-                        .withConsensusCustomFee(fixedConsensusHtsFee(1, token, collector5))
-                        .signedByPayerAnd(ADMIN_KEY, FEE_SCHEDULE_KEY)
-                        .hasKnownStatus(INVALID_TOKEN_ID_IN_CUSTOM_FEES));
-    }
+                    .withConsensusCustomFee(fixedConsensusHtsFee(1, token, collector5))
+                    .signedByPayerAnd(ADMIN_KEY, FEE_SCHEDULE_KEY)
+                    .hasKnownStatus(INVALID_TOKEN_ID_IN_CUSTOM_FEES));
+        }
 
-    // TODO: Talk with Ani: to remove 95
+        // TODO: Talk with Ani: to remove 95
 
-    @HapiTest
-    @DisplayName("with no admin key")
-    // TOPIC_FEE_096
-    final Stream<DynamicTest> updateWithNoAdminKey() {
-        return hapiTest(flattened(
+        @HapiTest
+        @DisplayName("with no admin key")
+        final Stream<DynamicTest> updateWithNoAdminKey() {
+            return hapiTest(flattened(
                 // Create a topic without an admin key
                 createTopic(TOPIC).feeScheduleKeyName(FEE_SCHEDULE_KEY),
 
                 // Update the FEKL list without signing with an admin key
                 newNamedKeysForFEKL(2),
                 updateTopic(TOPIC)
-                        .feeExemptKeys(feeExemptKeyNames(2))
-                        .signedByPayerAnd(FEE_SCHEDULE_KEY)
-                        .hasKnownStatus(UNAUTHORIZED)));
-    }
+                    .feeExemptKeys(feeExemptKeyNames(2))
+                    .signedByPayerAnd(FEE_SCHEDULE_KEY)
+                    .hasKnownStatus(UNAUTHORIZED)));
+        }
 
-    @HapiTest
-    @DisplayName("the custom fee signed with the wrong fee schedule key")
-    // TOPIC_FEE_098
-    final Stream<DynamicTest> updateCustomFeeSingledWithTheWrongFeeScheduleKey() {
-        return hapiTest(flattened(
+        @HapiTest
+        @DisplayName("the custom fee signed with the wrong fee schedule key")
+        final Stream<DynamicTest> updateCustomFeeSingledWithTheWrongFeeScheduleKey() {
+            return hapiTest(flattened(
                 createTopic(TOPIC).adminKeyName(ADMIN_KEY).feeScheduleKeyName(FEE_SCHEDULE_KEY),
 
                 // Update the fee schedule and sign with the wrong key
                 updateTopic(TOPIC)
-                        .withConsensusCustomFee(fixedConsensusHbarFee(1, COLLECTOR))
-                        .signedByPayerAnd(ADMIN_KEY, FEE_SCHEDULE_KEY2)
-                        .hasKnownStatus(INVALID_SIGNATURE)));
-    }
+                    .withConsensusCustomFee(fixedConsensusHbarFee(1, COLLECTOR))
+                    .signedByPayerAnd(ADMIN_KEY, FEE_SCHEDULE_KEY2)
+                    .hasKnownStatus(INVALID_SIGNATURE)));
+        }
 
-    @HapiTest
-    @DisplayName("the custom fee without signing with the fee schedule key")
-    // TOPIC_FEE_099
-    final Stream<DynamicTest> updateCustomFeeWithoutSigningWithFeeScheduleKey() {
-        return hapiTest(flattened(
+        @HapiTest
+        @DisplayName("the custom fee without signing with the fee schedule key")
+        final Stream<DynamicTest> updateCustomFeeWithoutSigningWithFeeScheduleKey() {
+            return hapiTest(flattened(
                 createTopic(TOPIC).adminKeyName(ADMIN_KEY).feeScheduleKeyName(FEE_SCHEDULE_KEY),
 
                 // Update the fee schedule and sign with the wrong key
                 updateTopic(TOPIC)
-                        .withConsensusCustomFee(fixedConsensusHbarFee(1, COLLECTOR))
-                        .signedByPayerAnd(ADMIN_KEY)
-                        .hasKnownStatus(INVALID_SIGNATURE)));
-    }
+                    .withConsensusCustomFee(fixedConsensusHbarFee(1, COLLECTOR))
+                    .signedByPayerAnd(ADMIN_KEY)
+                    .hasKnownStatus(INVALID_SIGNATURE)));
+        }
 
-    // TODO: this is positive test - move it
-    @HapiTest
-    @DisplayName("to add the same exempt key")
-    // TOPIC_FEE_100
-    final Stream<DynamicTest> updateToAddTheSameExemptKey() {
-        final var exemptKey = "exemptKey";
-        return hapiTest(
-                // Create a topic with a fee exempt key
-                newKeyNamed(exemptKey),
-                createTopic(TOPIC).adminKeyName(ADMIN_KEY).feeExemptKeys(exemptKey),
-
-                // Update topic to add the same exempt key
-                updateTopic(TOPIC).feeExemptKeys(exemptKey).signedByPayerAnd(ADMIN_KEY),
-                getTopicInfo(TOPIC).hasFeeExemptKeys(List.of(exemptKey)));
-    }
-
-    @HapiTest
-    @DisplayName("with custom fee exceeding the finite token's max supply")
-    // TOPIC_FEE_101
-    final Stream<DynamicTest> updateWithCustomFeeExceedingFiniteTokenMaxSupply() {
-        final var finiteToken = "finiteToken";
-        return hapiTest(
+        @HapiTest
+        @DisplayName("with custom fee exceeding the finite token's max supply")
+        final Stream<DynamicTest> updateWithCustomFeeExceedingFiniteTokenMaxSupply() {
+            final var finiteToken = "finiteToken";
+            return hapiTest(
                 createTopic(TOPIC).adminKeyName(ADMIN_KEY).feeScheduleKeyName(FEE_SCHEDULE_KEY),
 
                 // Create a topic with finite amount
                 tokenCreate(finiteToken)
-                        .tokenType(TokenType.FUNGIBLE_COMMON)
-                        .supplyType(TokenSupplyType.FINITE)
-                        .initialSupply(0)
-                        .maxSupply(100),
+                    .tokenType(TokenType.FUNGIBLE_COMMON)
+                    .supplyType(TokenSupplyType.FINITE)
+                    .initialSupply(0)
+                    .maxSupply(100),
 
                 // Update the topic amount exceeding the finite token's max supply
                 updateTopic(TOPIC)
-                        .withConsensusCustomFee(fixedConsensusHtsFee(101, finiteToken, COLLECTOR))
-                        .signedByPayerAnd(ADMIN_KEY, FEE_SCHEDULE_KEY)
-                        .hasKnownStatus(AMOUNT_EXCEEDS_TOKEN_MAX_SUPPLY));
-    }
+                    .withConsensusCustomFee(fixedConsensusHtsFee(101, finiteToken, COLLECTOR))
+                    .signedByPayerAnd(ADMIN_KEY, FEE_SCHEDULE_KEY)
+                    .hasKnownStatus(AMOUNT_EXCEEDS_TOKEN_MAX_SUPPLY));
+        }
 
-    @HapiTest
-    @DisplayName("with custom fee amount to Long.MAX_VALUE + 1")
-    // TOPIC_FEE_102
-    final Stream<DynamicTest> updateCustomFeeAmountToMaxValuePlusOne() {
-        final var finiteToken = "finiteToken";
-        return hapiTest(
+        @HapiTest
+        @DisplayName("with custom fee amount to Long.MAX_VALUE + 1")
+        final Stream<DynamicTest> updateCustomFeeAmountToMaxValuePlusOne() {
+            final var finiteToken = "finiteToken";
+            return hapiTest(
                 createTopic(TOPIC).adminKeyName(ADMIN_KEY).feeScheduleKeyName(FEE_SCHEDULE_KEY),
 
                 // Create a topic with finite amount
                 tokenCreate(finiteToken)
-                        .tokenType(TokenType.FUNGIBLE_COMMON)
-                        .supplyType(TokenSupplyType.FINITE)
-                        .initialSupply(0)
-                        .maxSupply(100),
+                    .tokenType(TokenType.FUNGIBLE_COMMON)
+                    .supplyType(TokenSupplyType.FINITE)
+                    .initialSupply(0)
+                    .maxSupply(100),
 
                 // Update the topic amount to MAX_VALUE + 1(overflowing the max and essentially passing a negative
                 // value)
                 updateTopic(TOPIC)
-                        .withConsensusCustomFee(fixedConsensusHtsFee(Long.MAX_VALUE + 1, finiteToken, COLLECTOR))
-                        .signedByPayerAnd(ADMIN_KEY, FEE_SCHEDULE_KEY)
-                        .hasKnownStatus(CUSTOM_FEE_MUST_BE_POSITIVE));
-    }
+                    .withConsensusCustomFee(fixedConsensusHtsFee(Long.MAX_VALUE + 1, finiteToken, COLLECTOR))
+                    .signedByPayerAnd(ADMIN_KEY, FEE_SCHEDULE_KEY)
+                    .hasKnownStatus(CUSTOM_FEE_MUST_BE_POSITIVE));
+        }
 
-    @HapiTest
-    @DisplayName("the custom fees with deleted collector")
-    // TOPIC_FEE_103
-    final Stream<DynamicTest> updateTheCustomFeesWithDeletedCollector() {
-        final var collector5 = "collector5";
-        return hapiTest(
+        @HapiTest
+        @DisplayName("the custom fees with deleted collector")
+        final Stream<DynamicTest> updateTheCustomFeesWithDeletedCollector() {
+            final var collector5 = "collector5";
+            return hapiTest(
                 cryptoCreate(collector5),
                 createTopic(TOPIC)
-                        .withConsensusCustomFee(fixedConsensusHbarFee(1, collector5))
-                        .adminKeyName(ADMIN_KEY)
-                        .feeScheduleKeyName(FEE_SCHEDULE_KEY),
+                    .withConsensusCustomFee(fixedConsensusHbarFee(1, collector5))
+                    .adminKeyName(ADMIN_KEY)
+                    .feeScheduleKeyName(FEE_SCHEDULE_KEY),
                 cryptoDelete(collector5),
 
                 // Update the topic to have the deleted collector
                 updateTopic(TOPIC)
-                        .withConsensusCustomFee(fixedConsensusHbarFee(2, collector5))
-                        .signedByPayerAnd(ADMIN_KEY, FEE_SCHEDULE_KEY)
-                        .hasKnownStatus(ACCOUNT_DELETED));
-    }
+                    .withConsensusCustomFee(fixedConsensusHbarFee(2, collector5))
+                    .signedByPayerAnd(ADMIN_KEY, FEE_SCHEDULE_KEY)
+                    .hasKnownStatus(ACCOUNT_DELETED));
+        }
 
-    // TODO: positive test - move
-    @HapiTest
-    @DisplayName(
-            "fee schedule key and custom fee - should sign with admin_key, old fee schedule key and new fee schedule key")
-    // TOPIC_FEE_0
-    final Stream<DynamicTest> updateFeeScheduleKeyAndCustomFeeSignWithAdminAndTwoFeeScheduleKeys() {
-        return hapiTest(
+        @HapiTest
+        @DisplayName("fee schedule key and custom fee - do not sign with admin key")
+        final Stream<DynamicTest> updateFeeScheduleKeyAndCustomFeeDoNotSignWithAdminKey() {
+            return hapiTest(
                 createTopic(TOPIC).adminKeyName(ADMIN_KEY).feeScheduleKeyName(FEE_SCHEDULE_KEY),
 
                 // Update the fee schedule key and custom fee
                 updateTopic(TOPIC)
-                        .feeScheduleKeyName(FEE_SCHEDULE_KEY2)
-                        .withConsensusCustomFee(fixedConsensusHbarFee(1, COLLECTOR))
-                        .signedByPayerAnd(ADMIN_KEY, FEE_SCHEDULE_KEY, FEE_SCHEDULE_KEY2));
-    }
+                    .feeScheduleKeyName(FEE_SCHEDULE_KEY2)
+                    .withConsensusCustomFee(fixedConsensusHbarFee(1, COLLECTOR))
+                    .signedByPayerAnd(FEE_SCHEDULE_KEY, FEE_SCHEDULE_KEY2)
+                    .hasKnownStatus(INVALID_SIGNATURE));
+        }
 
-    @HapiTest
-    @DisplayName("fee schedule key and custom fee - do not sign with admin key")
-    // TOPIC_FEE_204
-    final Stream<DynamicTest> updateFeeScheduleKeyAndCustomFeeDoNotSignWithAdminKey() {
-        return hapiTest(
+        @HapiTest
+        @DisplayName("fee schedule key and custom fee - should sign with admin_key only")
+        final Stream<DynamicTest> updateFeeScheduleKeyAndCustomFeeSignWithAdminOnly() {
+            return hapiTest(
                 createTopic(TOPIC).adminKeyName(ADMIN_KEY).feeScheduleKeyName(FEE_SCHEDULE_KEY),
 
                 // Update the fee schedule key and custom fee
                 updateTopic(TOPIC)
-                        .feeScheduleKeyName(FEE_SCHEDULE_KEY2)
-                        .withConsensusCustomFee(fixedConsensusHbarFee(1, COLLECTOR))
-                        .signedByPayerAnd(FEE_SCHEDULE_KEY, FEE_SCHEDULE_KEY2)
-                        .hasKnownStatus(INVALID_SIGNATURE));
-    }
-
-    @HapiTest
-    @DisplayName("fee schedule key and custom fee - should sign with admin_key only")
-    // TOPIC_FEE_205
-    final Stream<DynamicTest> updateFeeScheduleKeyAndCustomFeeSignWithAdminOnly() {
-        return hapiTest(
-                createTopic(TOPIC).adminKeyName(ADMIN_KEY).feeScheduleKeyName(FEE_SCHEDULE_KEY),
-
-                // Update the fee schedule key and custom fee
-                updateTopic(TOPIC)
-                        .feeScheduleKeyName(FEE_SCHEDULE_KEY2)
-                        .withConsensusCustomFee(fixedConsensusHbarFee(1, COLLECTOR))
-                        .signedByPayerAnd(ADMIN_KEY)
-                        .hasKnownStatus(INVALID_SIGNATURE));
+                    .feeScheduleKeyName(FEE_SCHEDULE_KEY2)
+                    .withConsensusCustomFee(fixedConsensusHbarFee(1, COLLECTOR))
+                    .signedByPayerAnd(ADMIN_KEY)
+                    .hasKnownStatus(INVALID_SIGNATURE));
+        }
     }
 }
