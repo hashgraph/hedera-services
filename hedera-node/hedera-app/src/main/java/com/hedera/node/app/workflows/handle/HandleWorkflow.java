@@ -237,9 +237,9 @@ public class HandleWorkflow {
         logStartRound(round);
         cacheWarmer.warm(state, round);
         // Ignored downstream if streamMode is RECORDS
-        var boundaryType = NONE;
+        var boundary = NONE;
         if (streamMode != RECORDS) {
-            boundaryType = blockStreamManager.startRound(round, state);
+            boundary = blockStreamManager.startRound(round, state);
             blockStreamManager.writeItem(BlockItem.newBuilder()
                     .roundHeader(new RoundHeader(round.getRoundNum()))
                     .build());
@@ -253,7 +253,7 @@ public class HandleWorkflow {
         }
         recordCache.resetRoundReceipts();
         try {
-            handleEvents(state, round, boundaryType);
+            handleEvents(state, round, boundary);
         } finally {
             // Even if there is an exception somewhere, we need to commit the receipts of any handled transactions
             // to the state so these transactions cannot be replayed in future rounds
