@@ -48,11 +48,10 @@ public class GrpcBlockItemWriter implements BlockItemWriter {
     private static final Logger logger = LogManager.getLogger(GrpcBlockItemWriter.class);
     private static final String INVALID_MESSAGE = "Invalid protocol buffer converting %s from PBJ to protoc for %s";
 
-    private final BlockStreamServiceGrpc.BlockStreamServiceStub asyncStub;
-
     @Nullable
     private ManagedChannel channel;
 
+    private final BlockStreamServiceGrpc.BlockStreamServiceStub asyncStub;
     private StreamObserver<PublishStreamRequest> requestObserver;
     private long blockNumber;
 
