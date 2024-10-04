@@ -52,11 +52,11 @@ module com.hedera.node.app {
     requires io.helidon.common.context;
     requires io.helidon.common.config;
     requires io.helidon.common.mapper;
-    requires io.helidon.grpc.core;
-    requires io.helidon.microprofile.grpc.client;
     requires io.helidon.http;
     requires io.helidon.tracing;
     requires io.helidon.webclient;
+    requires io.helidon.webclient.api;
+    requires io.helidon.webclient.http1;
     requires io.helidon.webclient.grpc;
     requires io.prometheus.simpleclient;
     requires org.apache.commons.lang3;
@@ -64,7 +64,6 @@ module com.hedera.node.app {
     requires static com.github.spotbugs.annotations;
     requires static com.google.auto.service;
     requires static java.compiler;
-    requires io.helidon.grpc.api;
     // javax.annotation.processing.Generated
 
     exports com.hedera.node.app;
@@ -122,7 +121,6 @@ module com.hedera.node.app {
     exports com.hedera.node.app.roster;
     exports com.hedera.node.app.tss;
     exports com.hedera.node.app.tss.impl;
-    exports com.hedera.node.app.blocks.impl.grpc;
 
     provides ConfigurationExtension with
             ServicesConfigExtension;

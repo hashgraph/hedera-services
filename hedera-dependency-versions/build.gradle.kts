@@ -37,12 +37,15 @@ dependencies.constraints {
     api("io.helidon.webclient:helidon-webclient:4.1.1") {
         because("io.helidon.webclient")
     }
-    api("io.helidon.microprofile.grpc:helidon-microprofile-grpc-client:4.1.1") {
+    api("io.helidon.webclient:helidon-webclient-grpc:4.1.1") {
+        because("io.helidon.webclient.grpc")
+    }
+    /*api("io.helidon.microprofile.grpc:helidon-microprofile-grpc-client:4.1.1") {
         because("io.helidon.microprofile.grpc.client")
     }
     api("io.helidon.common:helidon-common:4.1.1") {
         because("io.helidon.common")
-    }
+    }*/
     api("org.awaitility:awaitility:4.2.0") {
         because("awaitility")
     }

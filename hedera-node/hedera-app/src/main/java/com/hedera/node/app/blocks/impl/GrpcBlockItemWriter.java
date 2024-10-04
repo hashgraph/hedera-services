@@ -31,6 +31,7 @@ import com.hedera.node.config.data.BlockStreamConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import io.grpc.CallOptions;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import io.grpc.Status;
@@ -38,6 +39,12 @@ import io.grpc.stub.StreamObserver;
 import java.util.concurrent.TimeUnit;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import io.helidon.webclient.grpc.GrpcClient;
+import io.helidon.webclient.grpc.GrpcServiceDescriptor;
+import io.helidon.webclient.grpc.GrpcClientMethodDescriptor;
+import io.grpc.MethodDescriptor;
+import io.grpc.protobuf.ProtoUtils;
+import io.helidon.grpc.core.MethodHandler;
 
 /**
  * Implements the bidirectional streaming RPC for the publishBlockStream rpc in BlockStreamService
@@ -86,7 +93,17 @@ public class GrpcBlockItemWriter implements BlockItemWriter {
         channel = ManagedChannelBuilder.forAddress(blockStreamConfig.address(), blockStreamConfig.port())
                 .usePlaintext()
                 .build();
-        asyncStub = BlockStreamServiceGrpc.newStub(channel);
+
+        GrpcClient client = GrpcClient.builder().baseUri("http://localhost:8080").build();
+        asyncStub = BlockStreamServiceGrpc.newStub(client.channel());
+
+        MethodDescriptor<PublishStreamRequest, PublishStreamResponse> methodDescriptor = BlockStreamServiceGrpc.getPublishBlockStreamMethod();
+//        GrpcClientMethodDescriptor descriptor = GrpcClientMethodDescriptor.bidirectional
+//                (BlockStreamServiceGrpc.getPublishBlockStreamMethod().getServiceName(),
+//                        BlockStreamServiceGrpc.getPublishBlockStreamMethod().getBareMethodName()).build();
+//        GrpcServiceDescriptor serviceDescriptor = GrpcServiceDescriptor.builder()
+//                .serviceName(methodDescriptor.getServiceName())
+//                .putMethod("publishBlockStreams", descriptor).build();
     }
 
     @Override
@@ -123,7 +140,6 @@ public class GrpcBlockItemWriter implements BlockItemWriter {
                 try {
                     if (channel != null) {
                         channel.shutdown().awaitTermination(10, TimeUnit.MILLISECONDS);
-                        channel = null;
                     }
                 } catch (InterruptedException e) {
                     throw new RuntimeException(e);
@@ -191,7 +207,6 @@ public class GrpcBlockItemWriter implements BlockItemWriter {
         try {
             if (channel != null) {
                 channel.shutdown().awaitTermination(10, TimeUnit.MILLISECONDS);
-                channel = null;
             }
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
