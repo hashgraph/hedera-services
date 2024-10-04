@@ -36,7 +36,10 @@
 			"ContractGetRecords",
 			"ContractCallLocal",
 			"TransactionGetRecord",
-			"GetVersionInfo"
+			"GetVersionInfo",
+			"NodeCreate",
+			"NodeUpdate",
+			"NodeDelete"
 		  ]
 		},
 		{
@@ -104,7 +107,8 @@
 		{
 		  "opsPerSec": 2000,
 		  "operations": [
-			"CryptoCreate"
+			"CryptoCreate",
+			  "NodeCreate"
 		  ]
 		},
 		{

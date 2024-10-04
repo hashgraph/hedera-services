@@ -20,7 +20,6 @@ import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticT
 
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
-import com.swirlds.common.crypto.ImmutableHash;
 import com.swirlds.common.test.fixtures.stream.CountDownLatchStream;
 import com.swirlds.common.test.fixtures.stream.ObjectForTestStream;
 import com.swirlds.common.test.fixtures.stream.ObjectForTestStreamGenerator;
@@ -48,7 +47,7 @@ public class TestStreamManager {
      */
     private final HashCalculatorForStream<ObjectForTestStream> hashCalculator;
     /** initial running Hash of records */
-    private Hash initialHash = new ImmutableHash(new byte[DigestType.SHA_384.digestLength()]);
+    private Hash initialHash = new Hash(new byte[DigestType.SHA_384.digestLength()]);
 
     public TestStreamManager(final CountDownLatch countDownLatch, final int expectedCount) {
         CountDownLatchStream<ObjectForTestStream> countDownLatchStream =

@@ -19,6 +19,7 @@ package com.hedera.services.bdd.spec.utilops;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.services.bdd.junit.hedera.NodeSelector;
+import com.hedera.services.bdd.junit.hedera.subprocess.SubProcessNode;
 import com.hedera.services.bdd.junit.hedera.subprocess.UpgradeConfigTxt;
 import com.hedera.services.bdd.spec.utilops.lifecycle.ops.ShutdownWithinOp;
 import com.hedera.services.bdd.spec.utilops.lifecycle.ops.TryToStartNodesOp;
@@ -48,7 +49,7 @@ public class FakeNmt {
      * @return the operation that restarts the network
      */
     public static TryToStartNodesOp restartNetwork(final int configVersion) {
-        return new TryToStartNodesOp(NodeSelector.allNodes(), configVersion, TryToStartNodesOp.ReassignPorts.YES);
+        return new TryToStartNodesOp(NodeSelector.allNodes(), configVersion, SubProcessNode.ReassignPorts.YES);
     }
 
     /**
@@ -72,7 +73,7 @@ public class FakeNmt {
      * @param upgradeConfigTxt the source of the new <i>config.txt</i> file
      * @return the operation that removes the node
      */
-    public static AddNodeOp addNode(@NonNull final long nodeId, @NonNull final UpgradeConfigTxt upgradeConfigTxt) {
+    public static AddNodeOp addNode(final long nodeId, @NonNull final UpgradeConfigTxt upgradeConfigTxt) {
         return new AddNodeOp(nodeId, upgradeConfigTxt);
     }
 
@@ -82,7 +83,7 @@ public class FakeNmt {
      * @return the operation that restarts the network
      */
     public static TryToStartNodesOp restartNetwork() {
-        return new TryToStartNodesOp(NodeSelector.allNodes(), 0, TryToStartNodesOp.ReassignPorts.YES);
+        return new TryToStartNodesOp(NodeSelector.allNodes(), 0, SubProcessNode.ReassignPorts.YES);
     }
 
     /**
