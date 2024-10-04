@@ -10,7 +10,7 @@
  */
 syntax = "proto3";
 
-package com.hedera.hapi.services.auxiliary;
+package com.hedera.hapi.services.auxiliary.tss;
 
 /*
  * Copyright (C) 2024 Hedera Hashgraph, LLC
@@ -28,8 +28,8 @@ package com.hedera.hapi.services.auxiliary;
  * limitations under the License.
  */
 
-option java_package = "com.hedera.hapi.services.auxiliary.legacy";
-// <<<pbj.java_package = "com.hedera.hapi.services.auxiliary">>> This comment is special code for setting PBJ Compiler java package
+option java_package = "com.hedera.hapi.services.auxiliary.tss.legacy";
+// <<<pbj.java_package = "com.hedera.hapi.services.auxiliary.tss">>> This comment is special code for setting PBJ Compiler java package
 
 option java_multiple_files = true;
 
