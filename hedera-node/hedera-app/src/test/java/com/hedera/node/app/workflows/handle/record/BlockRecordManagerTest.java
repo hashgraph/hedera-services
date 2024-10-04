@@ -85,13 +85,18 @@ import org.mockito.junit.jupiter.MockitoExtension;
 final class BlockRecordManagerTest extends AppTestBase {
     private static final Timestamp CONSENSUS_TIME =
             Timestamp.newBuilder().seconds(1_234_567L).nanos(13579).build();
-    /** Make it small enough to trigger roll over code with the number of test blocks we have */
+    /**
+     * Make it small enough to trigger roll over code with the number of test blocks we have
+     */
     private static final int NUM_BLOCK_HASHES_TO_KEEP = 4;
 
     private static final Timestamp FIRST_CONS_TIME_OF_LAST_BLOCK = new Timestamp(1682899224, 38693760);
     private static final Instant FORCED_BLOCK_SWITCH_TIME = Instant.ofEpochSecond(1682899224L, 38693760);
-
-    /** Temporary in memory file system used for testing */
+    private static final NodeInfoImpl NODE_INFO =
+            new NodeInfoImpl(0, AccountID.newBuilder().accountNum(3).build(), 10, List.of(), Bytes.EMPTY);
+    /**
+     * Temporary in memory file system used for testing
+     */
     private FileSystem fs;
 
     private App app;
@@ -138,11 +143,7 @@ final class BlockRecordManagerTest extends AppTestBase {
                         V0540PlatformStateSchema.PLATFORM_STATE_KEY, V0540PlatformStateSchema.GENESIS_PLATFORM_STATE)
                 .commit();
 
-        blockRecordWriterFactory = new BlockRecordWriterFactoryImpl(
-                app.configProvider(),
-                new NodeInfoImpl(0, AccountID.newBuilder().accountNum(3).build(), 10, List.of(), Bytes.EMPTY),
-                SIGNER,
-                fs);
+        blockRecordWriterFactory = new BlockRecordWriterFactoryImpl(app.configProvider(), NODE_INFO, SIGNER, fs);
     }
 
     @AfterEach
@@ -241,10 +242,7 @@ final class BlockRecordManagerTest extends AppTestBase {
         final var recordStreamConfig =
                 app.configProvider().getConfiguration().getConfigData(BlockRecordStreamConfig.class);
         validateRecordStreamFiles(
-                fs.getPath(recordStreamConfig.logDir())
-                        .resolve("record"
-                                + asAccountString(
-                                        app.networkInfo().selfNodeInfo().accountId())),
+                fs.getPath(recordStreamConfig.logDir()).resolve("record" + asAccountString(NODE_INFO.accountId())),
                 recordStreamConfig,
                 USER_PUBLIC_KEY,
                 TEST_BLOCKS,
@@ -372,10 +370,7 @@ final class BlockRecordManagerTest extends AppTestBase {
         final var recordStreamConfig =
                 app.configProvider().getConfiguration().getConfigData(BlockRecordStreamConfig.class);
         validateRecordStreamFiles(
-                fs.getPath(recordStreamConfig.logDir())
-                        .resolve("record"
-                                + asAccountString(
-                                        app.networkInfo().selfNodeInfo().accountId())),
+                fs.getPath(recordStreamConfig.logDir()).resolve("record" + asAccountString(NODE_INFO.accountId())),
                 recordStreamConfig,
                 USER_PUBLIC_KEY,
                 TEST_BLOCKS,

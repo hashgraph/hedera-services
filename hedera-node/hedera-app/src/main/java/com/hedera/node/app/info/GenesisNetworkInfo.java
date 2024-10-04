@@ -32,7 +32,8 @@ import java.util.Map;
 import javax.inject.Singleton;
 
 /**
- * Provides information about the network, including the ledger ID, which may be
+ * Provides information about the network, including the ledger ID. This is constructed from the
+ * genesis roster on disk.
  */
 @Singleton
 public class GenesisNetworkInfo implements NetworkInfo {
