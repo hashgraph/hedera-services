@@ -1061,7 +1061,7 @@ public final class VirtualNodeCache<K extends VirtualKey, V extends VirtualValue
      */
     public void garbageCollect(final long firstLeafPath, final long lastLeafPath) {
         final Stream<Mutation<Long, Hash>> filteredHashes = dirtyHashes.stream()
-                .filter(mutation -> (mutation.key >= firstLeafPath) && (mutation.key <= lastLeafPath))
+                .filter(mutation -> mutation.key <= lastLeafPath)
                 .filter(mutation -> !mutation.isFiltered())
                 .peek(mutation -> mutation.next = null);
         dirtyHashes = new ConcurrentArray<>(filteredHashes);
