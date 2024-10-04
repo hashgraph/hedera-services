@@ -127,6 +127,11 @@ public class StandaloneNetworkInfo implements NetworkInfo {
         return nodeInfo(nodeId) != null;
     }
 
+    @Override
+    public void updateFrom(final State state) {
+        throw new UnsupportedOperationException("Not implemented");
+    }
+
     private @NonNull List<NodeInfo> nodeInfosOrThrow() {
         return requireNonNull(nodeInfos, "Not initialized");
     }

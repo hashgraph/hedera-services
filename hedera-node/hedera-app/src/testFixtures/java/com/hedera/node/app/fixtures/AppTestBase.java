@@ -237,11 +237,7 @@ public class AppTestBase extends TestBase implements TransactionFactory, Scenari
         private Set<Service> services = new LinkedHashSet<>();
         private TestConfigBuilder configBuilder = HederaTestConfigBuilder.create();
         private NodeInfo selfNodeInfo = new NodeInfoImpl(
-                0,
-                AccountID.newBuilder().shardNum(0).realmNum(0).accountNum(8).build(),
-                10,
-                List.of(),
-                Bytes.EMPTY);
+                0, AccountID.newBuilder().shardNum(0).realmNum(0).accountNum(8).build(), 10, List.of(), Bytes.EMPTY);
         private Set<NodeInfo> nodes = new LinkedHashSet<>();
 
         private TestAppBuilder() {}
@@ -347,8 +343,8 @@ public class AppTestBase extends TestBase implements TransactionFactory, Scenari
             final var addressBook = new AddressBook(addresses);
             final var platform = new FakePlatform(realSelfNodeInfo.nodeId(), addressBook);
             final var initialState = new FakeState();
-//            final var networkInfo = new NetworkInfoImpl(initialState,
-//                    selfNodeInfo.nodeId(), configProvider);
+            //            final var networkInfo = new NetworkInfoImpl(initialState,
+            //                    selfNodeInfo.nodeId(), configProvider);
             final var networkInfo = new GenesisNetworkInfo(createRoster(addressBook), Bytes.fromHex("03"));
             services.forEach(svc -> {
                 final var reg = new FakeSchemaRegistry();

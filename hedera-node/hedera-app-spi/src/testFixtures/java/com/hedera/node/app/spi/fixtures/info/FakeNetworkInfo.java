@@ -22,6 +22,7 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ServiceEndpoint;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.state.State;
 import com.swirlds.state.spi.info.NetworkInfo;
 import com.swirlds.state.spi.info.NodeInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -81,6 +82,11 @@ public class FakeNetworkInfo implements NetworkInfo {
     @Override
     public boolean containsNode(final long nodeId) {
         return FAKE_NODE_INFO_IDS.contains(new NodeId(nodeId));
+    }
+
+    @Override
+    public void updateFrom(final State state) {
+        throw new UnsupportedOperationException("Not implemented");
     }
 
     private static NodeInfo fakeInfoWith(

@@ -32,7 +32,6 @@ import com.swirlds.state.spi.info.NetworkInfo;
 import com.swirlds.state.spi.info.NodeInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -50,9 +49,7 @@ public class StateNetworkInfo implements NetworkInfo {
     private final long selfId;
 
     public StateNetworkInfo(
-            @NonNull final State state,
-            final long selfId,
-            @NonNull final ConfigProvider configProvider) {
+            @NonNull final State state, final long selfId, @NonNull final ConfigProvider configProvider) {
         this.selfId = selfId;
         this.nodeInfos = buildNodeInfoMap(state);
         // Load the ledger ID from configuration
@@ -88,6 +85,12 @@ public class StateNetworkInfo implements NetworkInfo {
     @Override
     public boolean containsNode(final long nodeId) {
         return nodeInfos.containsKey(nodeId);
+    }
+
+    @Override
+    public void updateFrom(@NonNull final State state) {
+        nodeInfos.clear();
+        nodeInfos.putAll(buildNodeInfoMap(state));
     }
 
     /**

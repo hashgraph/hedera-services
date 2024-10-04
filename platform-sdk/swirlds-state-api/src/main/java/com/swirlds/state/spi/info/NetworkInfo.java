@@ -17,6 +17,7 @@
 package com.swirlds.state.spi.info;
 
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.state.State;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
@@ -49,4 +50,6 @@ public interface NetworkInfo {
      * @return true if the network contains a node with the given ID
      */
     boolean containsNode(long nodeId);
+
+    void updateFrom(State state);
 }

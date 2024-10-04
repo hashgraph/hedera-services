@@ -139,7 +139,10 @@ final class BlockRecordManagerTest extends AppTestBase {
                 .commit();
 
         blockRecordWriterFactory = new BlockRecordWriterFactoryImpl(
-                app.configProvider(), new NodeInfoImpl(0, AccountID.newBuilder().accountNum(3).build(), 10, List.of(), Bytes.EMPTY), SIGNER, fs);
+                app.configProvider(),
+                new NodeInfoImpl(0, AccountID.newBuilder().accountNum(3).build(), 10, List.of(), Bytes.EMPTY),
+                SIGNER,
+                fs);
     }
 
     @AfterEach

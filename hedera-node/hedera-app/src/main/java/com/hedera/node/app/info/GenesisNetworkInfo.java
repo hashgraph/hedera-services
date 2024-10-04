@@ -21,11 +21,11 @@ import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.
 import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.hapi.node.state.roster.RosterEntry;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.state.State;
 import com.swirlds.state.spi.info.NetworkInfo;
 import com.swirlds.state.spi.info.NodeInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -92,6 +92,11 @@ public class GenesisNetworkInfo implements NetworkInfo {
     @Override
     public boolean containsNode(final long nodeId) {
         return nodeInfos.containsKey(nodeId);
+    }
+
+    @Override
+    public void updateFrom(final State state) {
+        throw new UnsupportedOperationException("Not implemented");
     }
 
     /**

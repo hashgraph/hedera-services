@@ -26,7 +26,6 @@ import static com.swirlds.platform.builder.internal.StaticPlatformBuilder.getMet
 import static com.swirlds.platform.builder.internal.StaticPlatformBuilder.setupGlobalMetrics;
 import static com.swirlds.platform.config.internal.PlatformConfigUtils.checkConfiguration;
 import static com.swirlds.platform.crypto.CryptoStatic.initNodeSecurity;
-import static com.swirlds.platform.roster.RosterRetriever.buildRoster;
 import static com.swirlds.platform.state.signed.StartupStateUtils.getInitialState;
 import static com.swirlds.platform.system.SystemExitCode.CONFIGURATION_ERROR;
 import static com.swirlds.platform.system.SystemExitCode.NODE_ADDRESS_MISMATCH;
@@ -37,7 +36,6 @@ import static com.swirlds.platform.util.BootstrapUtils.checkNodesToRun;
 import static com.swirlds.platform.util.BootstrapUtils.getNodesToRun;
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.node.app.services.OrderedServiceMigrator;
 import com.hedera.node.app.services.ServicesRegistryImpl;
 import com.hedera.node.app.tss.impl.PlaceholderTssBaseService;
@@ -239,8 +237,7 @@ public class ServicesMain implements SwirldMain {
         final var stateHash = reservedState.hash();
 
         // Initialize the address book and set on platform builder
-        final var addressBook =
-                initializeAddressBook(selfId, version, initialState, diskAddressBook, platformContext);
+        final var addressBook = initializeAddressBook(selfId, version, initialState, diskAddressBook, platformContext);
 
         // Follow the Inversion of Control pattern by injecting all needed dependencies into the PlatformBuilder.
         final var roster = createRoster(addressBook);

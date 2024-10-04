@@ -17,6 +17,7 @@
 package com.hedera.node.app.info;
 
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.state.State;
 import com.swirlds.state.spi.info.NetworkInfo;
 import com.swirlds.state.spi.info.NodeInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -58,5 +59,10 @@ public enum UnavailableNetworkInfo implements NetworkInfo {
     @Override
     public boolean containsNode(final long nodeId) {
         throw new UnsupportedOperationException("Node info is not available");
+    }
+
+    @Override
+    public void updateFrom(final State state) {
+        throw new UnsupportedOperationException("Not implemented");
     }
 }
