@@ -124,6 +124,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.math.BigInteger;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -798,6 +799,7 @@ public class TokenAirdropTest extends TokenAirdropBase {
         private static final long HBAR_FEE = 1000L;
         private static final long HTS_FEE = 100L;
         private static final long TOKEN_TOTAL = 1_000_000L;
+        private static final long initialBalance = 100 * ONE_HUNDRED_HBARS;
 
         @BeforeAll
         static void beforeAll(@NonNull final TestLifecycle lifecycle) {
@@ -992,7 +994,7 @@ public class TokenAirdropTest extends TokenAirdropBase {
         }
 
         @HapiTest
-        @DisplayName("NFT with royalty fee")
+        @DisplayName("NFT with royalty fee with fallback")
         @Order(7)
         final Stream<DynamicTest> nftWithRoyaltyFeesPaidByReceiverFails() {
             return defaultHapiSpec("should fail - TOKEN_AIRDROP_WITH_FALLBACK_ROYALTY")
@@ -1010,53 +1012,155 @@ public class TokenAirdropTest extends TokenAirdropBase {
         @HapiTest
         @DisplayName("NFT with royalty fee with fee collector as receiver")
         final Stream<DynamicTest> nftWithRoyaltyFeesPaidByReceiverWithFeeCollectorReceiver() {
+            // declare collector account balance variables
+            final AtomicLong currentCollectorBalance = new AtomicLong();
+            final AtomicLong newCollectorBalance = new AtomicLong();
             return hapiTest(
-                    cryptoCreate(OWNER),
+                    // set initial collector balance variable
+                    getAccountBalance(HTS_COLLECTOR).exposingBalanceTo(currentCollectorBalance::set),
+                    cryptoCreate(OWNER).balance(initialBalance),
                     tokenAssociate(OWNER, NFT_WITH_ROYALTY_FEE),
                     cryptoTransfer(
                             movingUnique(NFT_WITH_ROYALTY_FEE, 2L).between(TREASURY_FOR_CUSTOM_FEE_TOKENS, OWNER)),
                     tokenAirdrop(movingUnique(NFT_WITH_ROYALTY_FEE, 2L).between(OWNER, HTS_COLLECTOR))
-                            .signedByPayerAnd(HTS_COLLECTOR, OWNER));
+                            .signedByPayerAnd(HTS_COLLECTOR, OWNER)
+                            .payingWith(OWNER)
+                            .via("NFT with royalty fee airdrop to collector"),
+                    // assert owner balance
+                    withOpContext((spec, log) -> {
+                        final var record = getTxnRecord("NFT with royalty fee airdrop to collector");
+                        allRunFor(spec, record);
+                        final var txFee = record.getResponseRecord().getTransactionFee();
+                        // the transaction fee should be charged
+                        final var ownerBalance = getAccountBalance(OWNER)
+                                .hasTinyBars(initialBalance - txFee)
+                                .hasTokenBalance(NFT_WITH_ROYALTY_FEE, 0);
+                        allRunFor(spec, ownerBalance);
+                    }),
+                    // set new collector balance variable
+                    getAccountBalance(HTS_COLLECTOR)
+                            .exposingBalanceTo(newCollectorBalance::set)
+                            .hasTokenBalance(NFT_WITH_ROYALTY_FEE, 1),
+                    // assert collector balance is not changed
+                    withOpContext((spec, log) ->
+                            Assertions.assertEquals(currentCollectorBalance.get(), newCollectorBalance.get())),
+                    validateChargedUsd("NFT with royalty fee airdrop to collector", 0.001, 20));
         }
 
         @HapiTest
-        @DisplayName("FT with royalty fee with fee collector as receiver")
+        @DisplayName("FT with HTS fee with fee collector as receiver")
         final Stream<DynamicTest> ftWithRoyaltyFeesPaidByReceiverWithFeeCollectorReceiver() {
+            // declare collector account balance variables
+            final AtomicLong currentCollectorBalance = new AtomicLong();
+            final AtomicLong newCollectorBalance = new AtomicLong();
             return hapiTest(
-                    cryptoCreate(OWNER),
+                    // set initial collector balance variable
+                    getAccountBalance(HTS_COLLECTOR).exposingBalanceTo(currentCollectorBalance::set),
+                    cryptoCreate(OWNER).balance(initialBalance),
                     tokenAssociate(OWNER, FT_WITH_HTS_FIXED_FEE),
                     tokenAssociate(OWNER, DENOM_TOKEN),
                     cryptoTransfer(
                             moving(HTS_FEE, DENOM_TOKEN).between(TREASURY_FOR_CUSTOM_FEE_TOKENS, OWNER),
                             moving(HTS_FEE, FT_WITH_HTS_FIXED_FEE).between(TREASURY_FOR_CUSTOM_FEE_TOKENS, OWNER)),
                     tokenAirdrop(moving(50, FT_WITH_HTS_FIXED_FEE).between(OWNER, HTS_COLLECTOR))
-                            .signedByPayerAnd(HTS_COLLECTOR, OWNER));
+                            .signedByPayerAnd(HTS_COLLECTOR, OWNER)
+                            .payingWith(OWNER)
+                            .via("FT with HTS fee airdrop to collector"),
+                    // assert owner balance
+                    withOpContext((spec, log) -> {
+                        final var record = getTxnRecord("FT with HTS fee airdrop to collector");
+                        allRunFor(spec, record);
+                        final var txFee = record.getResponseRecord().getTransactionFee();
+                        // the transaction fee should be charged
+                        final var ownerBalance = getAccountBalance(OWNER)
+                                .hasTinyBars(initialBalance - txFee)
+                                .hasTokenBalance(FT_WITH_HTS_FIXED_FEE, HTS_FEE - 50);
+                        allRunFor(spec, ownerBalance);
+                    }),
+                    // set new collector balance variable
+                    getAccountBalance(HTS_COLLECTOR)
+                            .exposingBalanceTo(newCollectorBalance::set)
+                            .hasTokenBalance(FT_WITH_HTS_FIXED_FEE, HTS_FEE + 50)
+                            .hasTokenBalance(DENOM_TOKEN, 3 * HTS_FEE),
+                    withOpContext((spec, log) ->
+                            Assertions.assertEquals(currentCollectorBalance.get(), newCollectorBalance.get())),
+                    validateChargedUsd("FT with HTS fee airdrop to collector", 0.002, 20));
         }
 
         @HapiTest
         @DisplayName("NFT with royalty fee with treasury as receiver")
         final Stream<DynamicTest> nftWithRoyaltyFeesPaidByReceiverWithTreasuryReceiver() {
+            // declare treasury account balance variables
+            final AtomicLong currentTreasuryBalance = new AtomicLong();
+            final AtomicLong newTreasuryBalance = new AtomicLong();
             return hapiTest(
-                    cryptoCreate(OWNER),
+                    // set initial treasury balance variable
+                    getAccountBalance(TREASURY_FOR_CUSTOM_FEE_TOKENS).exposingBalanceTo(currentTreasuryBalance::set),
+                    cryptoCreate(OWNER).balance(initialBalance),
                     tokenAssociate(OWNER, NFT_WITH_ROYALTY_FEE),
                     cryptoTransfer(
                             movingUnique(NFT_WITH_ROYALTY_FEE, 3L).between(TREASURY_FOR_CUSTOM_FEE_TOKENS, OWNER)),
                     tokenAirdrop(movingUnique(NFT_WITH_ROYALTY_FEE, 3L).between(OWNER, TREASURY_FOR_CUSTOM_FEE_TOKENS))
-                            .signedByPayerAnd(TREASURY_FOR_CUSTOM_FEE_TOKENS, OWNER));
+                            .signedByPayerAnd(TREASURY_FOR_CUSTOM_FEE_TOKENS, OWNER)
+                            .payingWith(OWNER)
+                            .via("NFT with royalty fee airdrop to treasury"),
+                    // set new treasury balance variable
+                    getAccountBalance(TREASURY_FOR_CUSTOM_FEE_TOKENS)
+                            .exposingBalanceTo(newTreasuryBalance::set)
+                            .hasTokenBalance(NFT_WITH_ROYALTY_FEE, 99),
+                    // assert owner balance
+                    withOpContext((spec, log) -> {
+                        final var record = getTxnRecord("NFT with royalty fee airdrop to treasury");
+                        allRunFor(spec, record);
+                        final var txFee = record.getResponseRecord().getTransactionFee();
+                        // the transaction fee should be charged
+                        final var ownerBalance = getAccountBalance(OWNER)
+                                .hasTinyBars(initialBalance - txFee)
+                                .hasTokenBalance(NFT_WITH_ROYALTY_FEE, 0);
+                        allRunFor(spec, ownerBalance);
+                        // assert treasury balance is not changed
+                        Assertions.assertEquals(currentTreasuryBalance.get(), newTreasuryBalance.get());
+                    }),
+                    validateChargedUsd("NFT with royalty fee airdrop to treasury", 0.001, 20));
         }
 
         @HapiTest
-        @DisplayName("FT with royalty fee with treasury as receiver")
+        @DisplayName("FT with HTS fee with treasury as receiver")
         final Stream<DynamicTest> ftWithRoyaltyFeesPaidByReceiverWithTreasuryReceiver() {
+            // declare treasury account balance variables
+            final AtomicLong currentTreasuryBalance = new AtomicLong();
+            final AtomicLong newTreasuryBalance = new AtomicLong();
             return hapiTest(
-                    cryptoCreate(OWNER),
+                    // set initial treasury balance variable
+                    getAccountBalance(TREASURY_FOR_CUSTOM_FEE_TOKENS).exposingBalanceTo(currentTreasuryBalance::set),
+                    cryptoCreate(OWNER).balance(initialBalance),
                     tokenAssociate(OWNER, FT_WITH_HTS_FIXED_FEE),
                     tokenAssociate(OWNER, DENOM_TOKEN),
                     cryptoTransfer(
                             moving(HTS_FEE, DENOM_TOKEN).between(TREASURY_FOR_CUSTOM_FEE_TOKENS, OWNER),
                             moving(HTS_FEE, FT_WITH_HTS_FIXED_FEE).between(TREASURY_FOR_CUSTOM_FEE_TOKENS, OWNER)),
                     tokenAirdrop(moving(50, FT_WITH_HTS_FIXED_FEE).between(OWNER, TREASURY_FOR_CUSTOM_FEE_TOKENS))
-                            .signedByPayerAnd(TREASURY_FOR_CUSTOM_FEE_TOKENS, OWNER));
+                            .signedByPayerAnd(TREASURY_FOR_CUSTOM_FEE_TOKENS, OWNER)
+                            .payingWith(OWNER)
+                            .via("FT with HTS fee airdrop to treasury"),
+                    // set new treasury balance variable
+                    getAccountBalance(TREASURY_FOR_CUSTOM_FEE_TOKENS)
+                            .exposingBalanceTo(newTreasuryBalance::set)
+                            .hasTokenBalance(FT_WITH_HTS_FIXED_FEE, TOKEN_TOTAL - 2 * HTS_FEE + 50),
+                    // assert owner balance
+                    withOpContext((spec, log) -> {
+                        final var record = getTxnRecord("FT with HTS fee airdrop to treasury");
+                        allRunFor(spec, record);
+                        final var txFee = record.getResponseRecord().getTransactionFee();
+                        // the transaction fee should be charged
+                        final var ownerBalance = getAccountBalance(OWNER)
+                                .hasTinyBars(initialBalance - txFee)
+                                .hasTokenBalance(FT_WITH_HTS_FIXED_FEE, HTS_FEE - 50);
+                        allRunFor(spec, ownerBalance);
+                        // assert treasury balance is not changed
+                        Assertions.assertEquals(currentTreasuryBalance.get(), newTreasuryBalance.get());
+                    }),
+                    validateChargedUsd("FT with HTS fee airdrop to treasury", 0.002, 20));
         }
 
         // When a receiver is a custom fee collector it should be exempt from the custom fee
@@ -1070,19 +1174,35 @@ public class TokenAirdropTest extends TokenAirdropBase {
                             .between(TREASURY_FOR_CUSTOM_FEE_TOKENS, NFT_ALL_COLLECTORS_EXEMPT_OWNER)),
                     tokenAirdrop(movingUnique(NFT_ALL_COLLECTORS_EXEMPT_TOKEN, 1L)
                                     .between(NFT_ALL_COLLECTORS_EXEMPT_OWNER, NFT_ALL_COLLECTORS_EXEMPT_RECEIVER))
-                            .signedByPayerAnd(NFT_ALL_COLLECTORS_EXEMPT_RECEIVER, NFT_ALL_COLLECTORS_EXEMPT_OWNER));
+                            .signedByPayerAnd(NFT_ALL_COLLECTORS_EXEMPT_RECEIVER, NFT_ALL_COLLECTORS_EXEMPT_OWNER)
+                            .payingWith(NFT_ALL_COLLECTORS_EXEMPT_OWNER)
+                            .via("NFT allCollectorsExempt airdrop"),
+                    getAccountBalance(NFT_ALL_COLLECTORS_EXEMPT_OWNER)
+                            .hasTokenBalance(NFT_ALL_COLLECTORS_EXEMPT_TOKEN, 0),
+                    getAccountBalance(NFT_ALL_COLLECTORS_EXEMPT_RECEIVER)
+                            .hasTokenBalance(NFT_ALL_COLLECTORS_EXEMPT_TOKEN, 1),
+                    getAccountBalance(NFT_ALL_COLLECTORS_EXEMPT_COLLECTOR).hasTinyBars(ONE_HUNDRED_HBARS),
+                    getAccountBalance(NFT_ALL_COLLECTORS_EXEMPT_RECEIVER).hasTinyBars(ONE_HUNDRED_HBARS));
         }
 
         // When a receiver is a custom fee collector it should be exempt from the custom fee
         @HapiTest
-        @DisplayName("FT with royalty fee and allCollectorsExempt=true airdrop to NFT collector")
+        @DisplayName("FT with fixed hBar fee and allCollectorsExempt=true airdrop to FT collector")
         final Stream<DynamicTest> ftWithARoyaltyFeeAndAllCollectorsExemptTrueAirdropToCollector() {
             return hapiTest(
                     cryptoTransfer(moving(50, FT_ALL_COLLECTORS_EXEMPT_TOKEN)
                             .between(TREASURY_FOR_CUSTOM_FEE_TOKENS, FT_ALL_COLLECTORS_EXEMPT_OWNER)),
                     tokenAirdrop(moving(50, FT_ALL_COLLECTORS_EXEMPT_TOKEN)
                                     .between(FT_ALL_COLLECTORS_EXEMPT_OWNER, FT_ALL_COLLECTORS_EXEMPT_RECEIVER))
-                            .signedByPayerAnd(FT_ALL_COLLECTORS_EXEMPT_RECEIVER, FT_ALL_COLLECTORS_EXEMPT_OWNER));
+                            .signedByPayerAnd(FT_ALL_COLLECTORS_EXEMPT_RECEIVER, FT_ALL_COLLECTORS_EXEMPT_OWNER)
+                            .payingWith(FT_ALL_COLLECTORS_EXEMPT_OWNER)
+                            .via("FT allCollectorsExempt airdrop"),
+                    getAccountBalance(FT_ALL_COLLECTORS_EXEMPT_OWNER)
+                            .hasTokenBalance(FT_ALL_COLLECTORS_EXEMPT_TOKEN, 0),
+                    getAccountBalance(FT_ALL_COLLECTORS_EXEMPT_RECEIVER)
+                            .hasTokenBalance(FT_ALL_COLLECTORS_EXEMPT_TOKEN, 50),
+                    getAccountBalance(FT_ALL_COLLECTORS_EXEMPT_COLLECTOR).hasTinyBars(100),
+                    getAccountBalance(FT_ALL_COLLECTORS_EXEMPT_RECEIVER).hasTinyBars(ONE_HUNDRED_HBARS + 100));
         }
 
         // AIRDROP_27

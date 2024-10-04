@@ -23,6 +23,9 @@ module com.hedera.node.hapi {
     exports com.hedera.hapi.node.token;
     exports com.hedera.hapi.node.token.codec;
     exports com.hedera.hapi.node.token.schema;
+    exports com.hedera.hapi.node.tss;
+    exports com.hedera.hapi.node.tss.codec;
+    exports com.hedera.hapi.node.tss.schema;
     exports com.hedera.hapi.node.transaction;
     exports com.hedera.hapi.node.transaction.codec;
     exports com.hedera.hapi.node.transaction.schema;
@@ -62,6 +65,7 @@ module com.hedera.node.hapi {
     exports com.hedera.hapi.platform.state;
     exports com.hedera.hapi.node.state.roster;
     exports com.hedera.hapi.block.stream.schema;
+    exports com.hedera.hapi.node.state.tss;
     exports com.hedera.hapi.block.protoc;
     exports com.hedera.hapi.block.stream.protoc;
     exports com.hedera.hapi.block;
