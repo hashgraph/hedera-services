@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.addressbook.impl.schemas;
 
 import static com.hedera.node.app.service.addressbook.AddressBookHelper.NODES_KEY;
+import static com.swirlds.platform.roster.RosterUtils.formatNodeName;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -99,7 +100,7 @@ public class V053AddressBookSchema extends Schema {
                     .nodeId(nodeInfo.nodeId())
                     .accountId(nodeInfo.accountId())
                     // Default node description hard coded to the values used currently
-                    .description("node" + (nodeInfo.nodeId() + 1))
+                    .description(formatNodeName(nodeInfo.nodeId()))
                     .gossipEndpoint(nodeInfo.gossipEndpoints())
                     .gossipCaCertificate(nodeInfo.sigCertBytes())
                     .weight(nodeInfo.stake())
