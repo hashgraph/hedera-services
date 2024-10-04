@@ -86,8 +86,9 @@ public class BlockContentsValidator implements BlockStreamValidator {
             return;
         }
 
-        // TODO: In general, a `block_header` SHALL be followed by an `event_header`, but for hapiTestRestart we get
-        // state change singleton update for BLOCK_INFO_VALUE
+        // In general, a `block_header` SHALL be followed by an `event_header`, but for hapiTestRestart we get
+        // state change singleton update for BLOCK_INFO_VALUE because the post-restart State initialization changes
+        // state before any event has reached consensus
         if (!blockItems.get(1).hasEventHeader() && !blockItems.get(1).hasStateChanges()) {
             Assertions.fail("Block header not followed by an event header or state changes");
         }
@@ -107,12 +108,6 @@ public class BlockContentsValidator implements BlockStreamValidator {
         }
 
         for (int i = 0; i < blockItems.size(); i++) {
-            // TODO: An `event_header` SHALL be followed by one or more `event_transaction` items. -> looks like we can
-            // have multiple event headers in a row e.g. hapiTestToken
-            //            if (blockItems.get(i).hasEventHeader() && !blockItems.get(i + 1).hasEventTransaction()) {
-            //                Assertions.fail("Event header not followed by an event transaction");
-            //            }
-
             // An `event_transaction` SHALL be followed by a `transaction_result`.
             if (blockItems.get(i).hasEventTransaction()
                     && !blockItems.get(i + 1).hasTransactionResult()) {
