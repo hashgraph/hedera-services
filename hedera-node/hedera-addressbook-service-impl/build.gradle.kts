@@ -21,8 +21,6 @@ plugins {
 
 description = "Default Hedera AddressBook Service Implementation"
 
-dependencies { implementation(project(":swirlds-platform-core")) }
-
 mainModuleInfo { annotationProcessor("dagger.compiler") }
 
 testModuleInfo {
