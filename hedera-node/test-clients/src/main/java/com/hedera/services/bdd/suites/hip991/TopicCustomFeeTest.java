@@ -29,6 +29,7 @@ import static com.hedera.services.bdd.spec.transactions.token.CustomFeeTests.exp
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeTests.expectedConsensusFixedHbarFee;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_BILLION_HBARS;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
 import static com.hedera.services.bdd.suites.HapiSuite.flattened;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
@@ -40,6 +41,7 @@ import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestLifecycle;
 import com.hedera.services.bdd.junit.support.TestLifecycle;
 import com.hedera.services.bdd.spec.keys.KeyShape;
+import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import com.hederahashgraph.api.proto.java.TokenType;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
@@ -60,6 +62,7 @@ public class TopicCustomFeeTest extends TopicCustomFeeBase {
         @Nested
         @DisplayName("Positive scenarios")
         class TopicCreatePositiveScenarios {
+            private final String COLLECTOR = "collector";
 
             @BeforeAll
             static void beforeAll(@NonNull final TestLifecycle lifecycle) {
@@ -123,42 +126,105 @@ public class TopicCustomFeeTest extends TopicCustomFeeBase {
             @DisplayName("Create topic with 1 Hbar fixed fee")
             // TOPIC_FEE_008
             final Stream<DynamicTest> createTopicWithOneHbarFixedFee() {
-                final var collector = "collector";
                 return hapiTest(
-                        cryptoCreate(collector),
+                        cryptoCreate(COLLECTOR),
                         createTopic(TOPIC)
                                 .adminKeyName(ADMIN_KEY)
                                 .submitKeyName(SUBMIT_KEY)
                                 .feeScheduleKeyName(FEE_SCHEDULE_KEY)
-                                .withConsensusCustomFee(fixedConsensusHbarFee(ONE_HBAR, collector)),
+                                .withConsensusCustomFee(fixedConsensusHbarFee(ONE_HBAR, COLLECTOR)),
                         getTopicInfo(TOPIC)
                                 .hasAdminKey(ADMIN_KEY)
                                 .hasSubmitKey(SUBMIT_KEY)
                                 .hasFeeScheduleKey(FEE_SCHEDULE_KEY)
-                                .hasCustomFee(expectedConsensusFixedHbarFee(ONE_HBAR, collector)));
+                                .hasCustomFee(expectedConsensusFixedHbarFee(ONE_HBAR, COLLECTOR)));
             }
 
             @HapiTest
             @DisplayName("Create topic with 1 HTS fixed fee")
             // TOPIC_FEE_009
             final Stream<DynamicTest> createTopicWithOneHTSFixedFee() {
-                final var collector = "collector";
                 return hapiTest(
-                        cryptoCreate(collector),
+                        cryptoCreate(COLLECTOR),
                         tokenCreate("testToken")
                                 .tokenType(TokenType.FUNGIBLE_COMMON)
                                 .initialSupply(500),
-                        tokenAssociate(collector, "testToken"),
+                        tokenAssociate(COLLECTOR, "testToken"),
                         createTopic(TOPIC)
                                 .adminKeyName(ADMIN_KEY)
                                 .submitKeyName(SUBMIT_KEY)
                                 .feeScheduleKeyName(FEE_SCHEDULE_KEY)
-                                .withConsensusCustomFee(fixedConsensusHtsFee(1, "testToken", collector)),
+                                .withConsensusCustomFee(fixedConsensusHtsFee(1, "testToken", COLLECTOR)),
                         getTopicInfo(TOPIC)
                                 .hasAdminKey(ADMIN_KEY)
                                 .hasSubmitKey(SUBMIT_KEY)
                                 .hasFeeScheduleKey(FEE_SCHEDULE_KEY)
-                                .hasCustomFee(expectedConsensusFixedHTSFee(1, "testToken", collector)));
+                                .hasCustomFee(expectedConsensusFixedHTSFee(1, "testToken", COLLECTOR)));
+            }
+
+            @HapiTest
+            @DisplayName("Create topic with 1 HBAR fixed fee with max amount")
+            // TOPIC_FEE_010
+            final Stream<DynamicTest> createTopicMaxHbarAmount() {
+                return hapiTest(
+                        cryptoCreate(COLLECTOR),
+                        createTopic(TOPIC)
+                                .adminKeyName(ADMIN_KEY)
+                                .submitKeyName(SUBMIT_KEY)
+                                .feeScheduleKeyName(FEE_SCHEDULE_KEY)
+                                .withConsensusCustomFee(fixedConsensusHbarFee(50 * ONE_BILLION_HBARS, COLLECTOR)),
+                        getTopicInfo(TOPIC)
+                                .hasAdminKey(ADMIN_KEY)
+                                .hasSubmitKey(SUBMIT_KEY)
+                                .hasFeeScheduleKey(FEE_SCHEDULE_KEY)
+                                .hasCustomFee(expectedConsensusFixedHbarFee(50 * ONE_BILLION_HBARS, COLLECTOR)));
+            }
+
+            @HapiTest
+            @DisplayName("Create topic with 1 HTS fixed with max supply")
+            // TOPIC_FEE_011
+            final Stream<DynamicTest> createTopicMaxTokenSupplyFee() {
+                var maxSupply = 10_000;
+                return hapiTest(
+                        cryptoCreate(COLLECTOR),
+                        tokenCreate("finiteToken")
+                                .supplyType(TokenSupplyType.FINITE)
+                                .tokenType(TokenType.FUNGIBLE_COMMON)
+                                .initialSupply(500)
+                                .maxSupply(maxSupply),
+                        tokenAssociate(COLLECTOR, "finiteToken"),
+                        createTopic(TOPIC)
+                                .adminKeyName(ADMIN_KEY)
+                                .submitKeyName(SUBMIT_KEY)
+                                .feeScheduleKeyName(FEE_SCHEDULE_KEY)
+                                .withConsensusCustomFee(fixedConsensusHtsFee(maxSupply, "finiteToken", COLLECTOR)),
+                        getTopicInfo(TOPIC)
+                                .hasAdminKey(ADMIN_KEY)
+                                .hasSubmitKey(SUBMIT_KEY)
+                                .hasFeeScheduleKey(FEE_SCHEDULE_KEY)
+                                .hasCustomFee(expectedConsensusFixedHTSFee(maxSupply, "finiteToken", COLLECTOR)));
+            }
+
+            @HapiTest
+            @DisplayName("Create topic with 1 HTS fixed with max supply")
+            // TOPIC_FEE_012
+            final Stream<DynamicTest> createTopicTokenFeeMaxLong() {
+                return hapiTest(
+                        cryptoCreate(COLLECTOR),
+                        tokenCreate("finiteToken")
+                                .tokenType(TokenType.FUNGIBLE_COMMON)
+                                .initialSupply(500),
+                        tokenAssociate(COLLECTOR, "finiteToken"),
+                        createTopic(TOPIC)
+                                .adminKeyName(ADMIN_KEY)
+                                .submitKeyName(SUBMIT_KEY)
+                                .feeScheduleKeyName(FEE_SCHEDULE_KEY)
+                                .withConsensusCustomFee(fixedConsensusHtsFee(Long.MAX_VALUE, "finiteToken", COLLECTOR)),
+                        getTopicInfo(TOPIC)
+                                .hasAdminKey(ADMIN_KEY)
+                                .hasSubmitKey(SUBMIT_KEY)
+                                .hasFeeScheduleKey(FEE_SCHEDULE_KEY)
+                                .hasCustomFee(expectedConsensusFixedHTSFee(Long.MAX_VALUE, "finiteToken", COLLECTOR)));
             }
 
             @HapiTest
