@@ -288,7 +288,6 @@ public class DabEnabledUpgradeTest implements LifecycleTest {
                     // Now make some changes that should not be incorporated in this upgrade
                     nodeDelete("5"),
                     nodeDelete("2"),
-                    nodeUpdate("0").accountId(classicFeeCollectorIdLiteralFor(900)),
                     validateUpgradeAddressBooks(NodeSelector.allNodes(), DabEnabledUpgradeTest::validateMultipartEdits),
                     upgradeToNextConfigVersion(
                             FakeNmt.removeNode(NodeSelector.byNodeId(4L), DAB_GENERATED),

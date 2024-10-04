@@ -16,15 +16,15 @@
 
 package com.hedera.node.app.spi.fixtures.info;
 
-import static com.swirlds.platform.test.fixtures.state.TestSchema.CURRENT_VERSION;
+import static com.swirlds.platform.system.address.AddressBookUtils.endpointFor;
 
 import com.hedera.hapi.node.base.AccountID;
-import com.hedera.hapi.node.base.SemanticVersion;
+import com.hedera.hapi.node.base.ServiceEndpoint;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.state.State;
 import com.swirlds.state.spi.info.NetworkInfo;
 import com.swirlds.state.spi.info.NodeInfo;
-import com.swirlds.state.spi.info.SelfNodeInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
@@ -40,34 +40,19 @@ public class FakeNetworkInfo implements NetworkInfo {
                     2L,
                     AccountID.newBuilder().accountNum(3).build(),
                     30,
-                    "333.333.333.333",
-                    50233,
-                    "3333333333333333333333333333333333333333333333333333333333333333",
-                    "Alpha",
-                    "127.0.0.1",
-                    20,
+                    List.of(endpointFor("333.333.333.333", 50233), endpointFor("127.0.0.1", 20)),
                     Bytes.wrap("cert1")),
             fakeInfoWith(
                     4L,
                     AccountID.newBuilder().accountNum(4).build(),
                     40,
-                    "444.444.444.444",
-                    50244,
-                    "444444444444444444444444444444444444444444444444444444444444444",
-                    "Bravo",
-                    "127.0.0.2",
-                    21,
+                    List.of(endpointFor("444.444.444.444", 50244), endpointFor("127.0.0.2", 21)),
                     Bytes.wrap("cert2")),
             fakeInfoWith(
                     8L,
                     AccountID.newBuilder().accountNum(5).build(),
                     50,
-                    "555.555.555.555",
-                    50255,
-                    "555555555555555555555555555555555555555555555555555555555555555",
-                    "Charlie",
-                    "127.0.0.3",
-                    22,
+                    List.of(endpointFor("555.555.555.555", 50255), endpointFor("127.0.0.3", 22)),
                     Bytes.wrap("cert3")));
 
     @NonNull
@@ -78,74 +63,8 @@ public class FakeNetworkInfo implements NetworkInfo {
 
     @NonNull
     @Override
-    public SelfNodeInfo selfNodeInfo() {
-        return new SelfNodeInfo() {
-            @NonNull
-            @Override
-            public SemanticVersion hapiVersion() {
-                return CURRENT_VERSION;
-            }
-
-            @Override
-            public boolean zeroStake() {
-                return FAKE_NODE_INFOS.get(0).zeroStake();
-            }
-
-            @Override
-            public long nodeId() {
-                return FAKE_NODE_INFOS.get(0).nodeId();
-            }
-
-            @Override
-            public AccountID accountId() {
-                return FAKE_NODE_INFOS.get(0).accountId();
-            }
-
-            @Override
-            public String memo() {
-                return FAKE_NODE_INFOS.get(0).memo();
-            }
-
-            @Override
-            public String externalHostName() {
-                return FAKE_NODE_INFOS.get(0).externalHostName();
-            }
-
-            @Override
-            public int externalPort() {
-                return FAKE_NODE_INFOS.get(0).externalPort();
-            }
-
-            @Override
-            public String hexEncodedPublicKey() {
-                return FAKE_NODE_INFOS.get(0).hexEncodedPublicKey();
-            }
-
-            @Override
-            public long stake() {
-                return FAKE_NODE_INFOS.get(0).stake();
-            }
-
-            @Override
-            public String internalHostName() {
-                return FAKE_NODE_INFOS.get(0).internalHostName();
-            }
-
-            @Override
-            public int internalPort() {
-                return FAKE_NODE_INFOS.get(0).internalPort();
-            }
-
-            @Override
-            public Bytes sigCertBytes() {
-                return FAKE_NODE_INFOS.get(0).sigCertBytes();
-            }
-
-            @Override
-            public String selfName() {
-                return FAKE_NODE_INFOS.getFirst().selfName();
-            }
-        };
+    public NodeInfo selfNodeInfo() {
+        return FAKE_NODE_INFOS.get(0);
     }
 
     @NonNull
@@ -165,16 +84,16 @@ public class FakeNetworkInfo implements NetworkInfo {
         return FAKE_NODE_INFO_IDS.contains(new NodeId(nodeId));
     }
 
+    @Override
+    public void updateFrom(final State state) {
+        throw new UnsupportedOperationException("Not implemented");
+    }
+
     private static NodeInfo fakeInfoWith(
             final long nodeId,
             @NonNull final AccountID nodeAccountId,
             long stake,
-            @NonNull String externalHostName,
-            int externalPort,
-            @NonNull String hexEncodedPublicKey,
-            @NonNull String memo,
-            @NonNull String internalHostName,
-            @NonNull int internalPort,
+            List<ServiceEndpoint> gossipEndpoints,
             @Nullable Bytes sigCertBytes) {
         return new NodeInfo() {
             @Override
@@ -183,28 +102,8 @@ public class FakeNetworkInfo implements NetworkInfo {
             }
 
             @Override
-            public String memo() {
-                return memo;
-            }
-
-            @Override
             public AccountID accountId() {
                 return nodeAccountId;
-            }
-
-            @Override
-            public String externalHostName() {
-                return externalHostName;
-            }
-
-            @Override
-            public int externalPort() {
-                return externalPort;
-            }
-
-            @Override
-            public String hexEncodedPublicKey() {
-                return hexEncodedPublicKey;
             }
 
             @Override
@@ -213,23 +112,13 @@ public class FakeNetworkInfo implements NetworkInfo {
             }
 
             @Override
-            public String internalHostName() {
-                return internalHostName;
-            }
-
-            @Override
-            public int internalPort() {
-                return internalPort;
-            }
-
-            @Override
             public Bytes sigCertBytes() {
                 return sigCertBytes;
             }
 
             @Override
-            public String selfName() {
-                return memo;
+            public List<ServiceEndpoint> gossipEndpoints() {
+                return gossipEndpoints;
             }
         };
     }

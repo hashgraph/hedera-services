@@ -26,6 +26,7 @@ import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.loadAdd
 import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.workingDirFor;
 import static com.hedera.services.bdd.spec.TargetNetworkType.SUBPROCESS_NETWORK;
 import static com.swirlds.platform.state.service.PlatformStateService.PLATFORM_STATE_SERVICE;
+import static com.swirlds.platform.system.address.AddressBookUtils.createRoster;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.block.stream.Block;
@@ -48,7 +49,7 @@ import com.hedera.node.app.config.BootstrapConfigProviderImpl;
 import com.hedera.node.app.config.ConfigProviderImpl;
 import com.hedera.node.app.fees.FeeService;
 import com.hedera.node.app.ids.EntityIdService;
-import com.hedera.node.app.info.NodeInfoImpl;
+import com.hedera.node.app.info.GenesisNetworkInfo;
 import com.hedera.node.app.records.BlockRecordService;
 import com.hedera.node.app.roster.RosterServiceImpl;
 import com.hedera.node.app.service.addressbook.impl.AddressBookServiceImpl;
@@ -69,6 +70,7 @@ import com.hedera.node.app.state.recordcache.RecordCacheService;
 import com.hedera.node.app.throttle.CongestionThrottleService;
 import com.hedera.node.app.version.ServicesSoftwareVersion;
 import com.hedera.node.config.VersionedConfiguration;
+import com.hedera.node.config.converter.BytesConverter;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.data.VersionConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -97,9 +99,6 @@ import com.swirlds.platform.system.events.Event;
 import com.swirlds.state.State;
 import com.swirlds.state.spi.CommittableWritableStates;
 import com.swirlds.state.spi.Service;
-import com.swirlds.state.spi.info.NetworkInfo;
-import com.swirlds.state.spi.info.NodeInfo;
-import com.swirlds.state.spi.info.SelfNodeInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
@@ -117,7 +116,6 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.function.Function;
 import java.util.regex.Pattern;
-import java.util.stream.StreamSupport;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Assertions;
@@ -153,8 +151,9 @@ public class StateChangesValidator implements BlockStreamValidator {
                 Bytes.fromHex(
                         "bc49350852851a2c737ef6b5db24da8ba108401952ec207a1a5a4230de8d8a626da1f3663f0560bd6cf401c601b08896"),
                 node0Dir.resolve("output/swirlds.log"),
-                node0Dir.resolve("config.txt"),
-                node0Dir.resolve("data/config/application.properties"));
+                node0Dir.resolve("genesis-config.txt"),
+                node0Dir.resolve("data/config/application.properties"),
+                Bytes.fromHex("03"));
         final var blocks =
                 BlockStreamAccess.BLOCK_STREAM_ACCESS.readBlocks(node0Dir.resolve("data/block-streams/block-0.0.3"));
         validator.validateBlocks(blocks);
@@ -203,7 +202,9 @@ public class StateChangesValidator implements BlockStreamValidator {
                     rootHash,
                     node0.getExternalPath(SWIRLDS_LOG),
                     genesisConfigTxt,
-                    node0.getExternalPath(APPLICATION_PROPERTIES));
+                    node0.getExternalPath(APPLICATION_PROPERTIES),
+                    requireNonNull(new BytesConverter()
+                            .convert(spec.startupProperties().get("ledger.id"))));
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
@@ -213,7 +214,8 @@ public class StateChangesValidator implements BlockStreamValidator {
             @NonNull final Bytes expectedRootHash,
             @NonNull final Path pathToNode0SwirldsLog,
             @NonNull final Path pathToAddressBook,
-            @NonNull final Path pathToOverrideProperties) {
+            @NonNull final Path pathToOverrideProperties,
+            @NonNull final Bytes ledgerId) {
         this.expectedRootHash = requireNonNull(expectedRootHash);
         this.pathToNode0SwirldsLog = requireNonNull(pathToNode0SwirldsLog);
 
@@ -228,7 +230,8 @@ public class StateChangesValidator implements BlockStreamValidator {
         final var versionConfig = bootstrapConfig.getConfigData(VersionConfig.class);
         final var servicesVersion = versionConfig.servicesVersion();
         final var addressBook = loadAddressBookWithDeterministicCerts(pathToAddressBook);
-        final var networkInfo = fakeNetworkInfoFrom(addressBook);
+        final var roster = createRoster(addressBook);
+        final var networkInfo = new GenesisNetworkInfo(roster, ledgerId);
 
         final var migrator = new OrderedServiceMigrator();
         final var configVersion =
@@ -467,41 +470,6 @@ public class StateChangesValidator implements BlockStreamValidator {
                         new RosterServiceImpl(),
                         PLATFORM_STATE_SERVICE)
                 .forEach(servicesRegistry::register);
-    }
-
-    private NetworkInfo fakeNetworkInfoFrom(@NonNull final AddressBook addressBook) {
-        return new NetworkInfo() {
-            @NonNull
-            @Override
-            public Bytes ledgerId() {
-                throw new UnsupportedOperationException("Not implemented");
-            }
-
-            @NonNull
-            @Override
-            public SelfNodeInfo selfNodeInfo() {
-                throw new UnsupportedOperationException("Not implemented");
-            }
-
-            @NonNull
-            @Override
-            public List<NodeInfo> addressBook() {
-                return StreamSupport.stream(addressBook.spliterator(), false)
-                        .map(NodeInfoImpl::fromAddress)
-                        .toList();
-            }
-
-            @Nullable
-            @Override
-            public NodeInfo nodeInfo(final long nodeId) {
-                throw new UnsupportedOperationException("Not implemented");
-            }
-
-            @Override
-            public boolean containsNode(final long nodeId) {
-                return addressBook.contains(new NodeId(nodeId));
-            }
-        };
     }
 
     private SignatureVerifier fakeSignatureVerifier() {
