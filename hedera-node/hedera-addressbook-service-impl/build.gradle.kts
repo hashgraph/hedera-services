@@ -21,6 +21,8 @@ plugins {
 
 description = "Default Hedera AddressBook Service Implementation"
 
+dependencies { implementation(project(":swirlds-platform-core")) }
+
 mainModuleInfo { annotationProcessor("dagger.compiler") }
 
 testModuleInfo {
@@ -29,7 +31,6 @@ testModuleInfo {
     requires("com.hedera.node.app.service.token.impl")
     requires("com.hedera.node.config.test.fixtures")
     requires("com.swirlds.config.extensions.test.fixtures")
-    requires("com.swirlds.platform.core")
     requires("com.swirlds.platform.core.test.fixtures")
     requires("com.swirlds.state.api.test.fixtures")
     requires("com.hedera.node.app.spi.test.fixtures")
