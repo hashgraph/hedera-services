@@ -163,7 +163,7 @@ public class PlatformCoordinator {
         eventDeduplicatorWiring.flush();
         eventSignatureValidatorWiring.flush();
         orphanBufferWiring.flush();
-        if(pcesInlineWriterWiring != null) {
+        if (pcesInlineWriterWiring != null) {
             pcesInlineWriterWiring.flush();
         }
         gossipWiring.flush();
