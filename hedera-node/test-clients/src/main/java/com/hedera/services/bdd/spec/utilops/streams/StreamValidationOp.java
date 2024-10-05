@@ -16,6 +16,7 @@
 
 package com.hedera.services.bdd.spec.utilops.streams;
 
+import static com.hedera.node.config.types.StreamMode.RECORDS;
 import static com.hedera.services.bdd.junit.hedera.ExternalPath.BLOCK_STREAMS_DIR;
 import static com.hedera.services.bdd.junit.hedera.ExternalPath.RECORD_STREAMS_DIR;
 import static com.hedera.services.bdd.junit.support.BlockStreamAccess.BLOCK_STREAM_ACCESS;
@@ -104,6 +105,10 @@ public class StreamValidationOp extends UtilOp {
                             dataRef.set(data);
                         },
                         () -> Assertions.fail("No record stream data found"));
+        // If there are no block streams to validate, we are done
+        if (spec.startupProperties().getStreamMode("blockStream.streamMode") == RECORDS) {
+            return false;
+        }
         // Freeze the network
         allRunFor(
                 spec,
