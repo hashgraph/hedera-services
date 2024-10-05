@@ -19,6 +19,7 @@ package com.hedera.node.app.blocks;
 import static com.hedera.hapi.node.base.HederaFunctionality.CONTRACT_CALL;
 import static com.hedera.hapi.node.base.HederaFunctionality.CONTRACT_CREATE;
 import static com.hedera.hapi.node.base.HederaFunctionality.ETHEREUM_TRANSACTION;
+import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.block.stream.output.TransactionOutput;
 import com.hedera.hapi.block.stream.output.TransactionResult;
@@ -66,7 +67,10 @@ public class BlockItemsTranslator {
     public TransactionReceipt translateReceipt(
             @NonNull final TranslationContext context,
             @NonNull final TransactionResult result,
-            @Nullable final TransactionOutput... outputs) {
+            @NonNull final TransactionOutput... outputs) {
+        requireNonNull(context);
+        requireNonNull(result);
+        requireNonNull(outputs);
         final var receiptBuilder =
                 TransactionReceipt.newBuilder().status(result.status()).exchangeRate(result.exchangeRate());
         final var function = context.functionality();
@@ -122,7 +126,10 @@ public class BlockItemsTranslator {
     public TransactionRecord translateRecord(
             @NonNull final TranslationContext context,
             @NonNull final TransactionResult result,
-            @Nullable final TransactionOutput... outputs) {
+            @NonNull final TransactionOutput... outputs) {
+        requireNonNull(context);
+        requireNonNull(result);
+        requireNonNull(outputs);
         final var recordBuilder = TransactionRecord.newBuilder()
                 .transactionID(context.txnId())
                 .memo(context.memo())
@@ -197,10 +204,7 @@ public class BlockItemsTranslator {
     private static <T> @Nullable T outputValueIfPresent(
             @NonNull final Predicate<TransactionOutput> filter,
             @NonNull final Function<TransactionOutput, T> extractor,
-            @Nullable final TransactionOutput... outputs) {
-        if (outputs == null) {
-            return null;
-        }
+            @NonNull final TransactionOutput... outputs) {
         for (final var output : outputs) {
             if (filter.test(output)) {
                 return extractor.apply(output);
