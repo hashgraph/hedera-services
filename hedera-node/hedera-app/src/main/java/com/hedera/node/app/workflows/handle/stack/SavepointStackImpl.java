@@ -459,6 +459,7 @@ public class SavepointStackImpl implements HandleContext.SavepointStack, State {
             @NonNull final Instant consensusTime, @NonNull final ExchangeRateSet exchangeRates) {
         final List<BlockStreamBuilder.Output> outputs = streamMode != RECORDS ? new LinkedList<>() : null;
         final List<SingleTransactionRecord> records = streamMode != BLOCKS ? new ArrayList<>() : null;
+        final List<RecordSource.IdentifiedReceipt> receipts = streamMode != BLOCKS ? new ArrayList<>() : null;
 
         var lastAssignedConsenusTime = consensusTime;
         final var builders = requireNonNull(builderSink).allBuilders();
@@ -499,7 +500,13 @@ public class SavepointStackImpl implements HandleContext.SavepointStack, State {
                 }
             }
             switch (streamMode) {
-                case RECORDS -> records.add(((RecordStreamBuilder) builder).build());
+                case RECORDS -> {
+                    final var nextRecord = ((RecordStreamBuilder) builder).build();
+                    records.add(nextRecord);
+                    receipts.add(new RecordSource.IdentifiedReceipt(
+                            nextRecord.transactionRecord().transactionIDOrThrow(),
+                            nextRecord.transactionRecord().receiptOrThrow()));
+                }
                 case BLOCKS -> requireNonNull(outputs).add(((BlockStreamBuilder) builder).build());
                 case BOTH -> {
                     final var pairedBuilder = (PairedStreamBuilder) builder;
@@ -514,7 +521,7 @@ public class SavepointStackImpl implements HandleContext.SavepointStack, State {
             requireNonNull(roundStateChangeListener).setBoundaryTimestamp(lastAssignedConsenusTime);
             blockRecordSource = new BlockRecordSource(outputs);
         }
-        final var recordSource = streamMode != BLOCKS ? new LegacyListRecordSource(records) : null;
+        final var recordSource = streamMode != BLOCKS ? new LegacyListRecordSource(records, receipts) : null;
         return new HandleOutput(blockRecordSource, recordSource);
     }
 

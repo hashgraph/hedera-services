@@ -307,7 +307,9 @@ public class RecordCacheImpl implements HederaRecordCache {
             @NonNull final RecordSource recordSource) {
         requireNonNull(userTxnId);
         requireNonNull(recordSource);
-        recordSource.forEachTxnOutcome((txnId, status) -> {
+        for (final var identifiedReceipt : recordSource.identifiedReceipts()) {
+            final var txnId = identifiedReceipt.txnId();
+            final var status = identifiedReceipt.receipt().status();
             transactionReceipts.add(new TransactionReceiptEntry(nodeId, txnId, status));
             final var baseTxnId =
                     txnId.nonce() == 0 ? txnId : txnId.copyBuilder().nonce(0).build();
@@ -331,7 +333,7 @@ public class RecordCacheImpl implements HederaRecordCache {
             payerTxnIds
                     .computeIfAbsent(effectivePayerId, ignored -> new HashSet<>())
                     .add(txnId);
-        });
+        }
     }
 
     @Override

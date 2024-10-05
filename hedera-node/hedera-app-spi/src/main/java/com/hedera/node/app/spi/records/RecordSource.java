@@ -16,19 +16,37 @@
 
 package com.hedera.node.app.spi.records;
 
-import com.hedera.hapi.node.base.ResponseCodeEnum;
+import static java.util.Objects.requireNonNull;
+
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.transaction.TransactionReceipt;
 import com.hedera.hapi.node.transaction.TransactionRecord;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
-import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 /**
- * A source of {@link TransactionRecord}s for one or more {@link TransactionID}'s.
+ * A source of {@link TransactionRecord}s and {@link TransactionReceipt}s for one or more {@link TransactionID}'s.
  */
 public interface RecordSource {
+    /**
+     * A receipt with its originating {@link TransactionID}.
+     * @param txnId the transaction id
+     * @param receipt the matching receipt
+     */
+    record IdentifiedReceipt(@NonNull TransactionID txnId, @NonNull TransactionReceipt receipt) {
+        public IdentifiedReceipt {
+            requireNonNull(txnId);
+            requireNonNull(receipt);
+        }
+    }
+
+    /**
+     * Returns all identified receipts known to this source.
+     * @return the receipts
+     */
+    List<IdentifiedReceipt> identifiedReceipts();
+
     /**
      * Perform the given action on each transaction record known to this source.
      * @param action the action to perform
@@ -45,10 +63,4 @@ public interface RecordSource {
      * Returns all child receipts for the given transaction id.
      */
     List<TransactionReceipt> childReceiptsOf(@NonNull TransactionID txnId);
-
-    /**
-     * Perform the given action on each transaction id and corresponding status known to this source.
-     * @param action the action to perform
-     */
-    void forEachTxnOutcome(@NonNull BiConsumer<TransactionID, ResponseCodeEnum> action);
 }

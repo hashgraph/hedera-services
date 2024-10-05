@@ -19,7 +19,6 @@ package com.hedera.node.app.state.recordcache;
 import static com.hedera.node.app.spi.records.RecordCache.isChild;
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.transaction.TransactionReceipt;
 import com.hedera.hapi.node.transaction.TransactionRecord;
@@ -29,7 +28,6 @@ import com.hedera.node.config.types.StreamMode;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 /**
@@ -39,9 +37,11 @@ import java.util.function.Consumer;
  */
 public class ListRecordSource implements RecordSource {
     private final List<TransactionRecord> precomputedRecords;
+    private final List<IdentifiedReceipt> identifiedReceipts;
 
     public ListRecordSource() {
         this.precomputedRecords = new ArrayList<>();
+        this.identifiedReceipts = new ArrayList<>();
     }
 
     public ListRecordSource(@NonNull final TransactionRecord precomputedRecord) {
@@ -51,6 +51,11 @@ public class ListRecordSource implements RecordSource {
     public ListRecordSource(@NonNull final List<TransactionRecord> precomputedRecords) {
         requireNonNull(precomputedRecords);
         this.precomputedRecords = requireNonNull(precomputedRecords);
+        identifiedReceipts = new ArrayList<>();
+        for (final var precomputed : precomputedRecords) {
+            identifiedReceipts.add(
+                    new IdentifiedReceipt(precomputed.transactionIDOrThrow(), precomputed.receiptOrThrow()));
+        }
     }
 
     public void incorporate(@NonNull final TransactionRecord precomputedRecord) {
@@ -59,16 +64,14 @@ public class ListRecordSource implements RecordSource {
     }
 
     @Override
-    public void forEachTxnRecord(@NonNull final Consumer<TransactionRecord> action) {
-        requireNonNull(action);
-        precomputedRecords.forEach(action);
+    public List<IdentifiedReceipt> identifiedReceipts() {
+        return identifiedReceipts;
     }
 
     @Override
-    public void forEachTxnOutcome(@NonNull final BiConsumer<TransactionID, ResponseCodeEnum> action) {
+    public void forEachTxnRecord(@NonNull final Consumer<TransactionRecord> action) {
         requireNonNull(action);
-        precomputedRecords.forEach(
-                r -> action.accept(r.transactionIDOrThrow(), r.receiptOrThrow().status()));
+        precomputedRecords.forEach(action);
     }
 
     @Override

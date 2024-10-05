@@ -19,7 +19,6 @@ package com.hedera.node.app.state.recordcache;
 import static com.hedera.node.app.spi.records.RecordCache.isChild;
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.transaction.TransactionReceipt;
 import com.hedera.hapi.node.transaction.TransactionRecord;
@@ -29,7 +28,6 @@ import com.hedera.node.config.data.BlockStreamConfig;
 import com.hedera.node.config.types.StreamMode;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
-import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 /**
@@ -37,11 +35,9 @@ import java.util.function.Consumer;
  * {@link BlockStreamConfig#streamMode()} is {@link StreamMode#RECORDS} since in this case the
  * {@link SingleTransactionRecord} objects are already constructed for streaming.
  */
-public record LegacyListRecordSource(@NonNull List<SingleTransactionRecord> precomputedRecords)
+public record LegacyListRecordSource(
+        @NonNull List<SingleTransactionRecord> precomputedRecords, @NonNull List<IdentifiedReceipt> identifiedReceipts)
         implements RecordSource {
-    public LegacyListRecordSource {
-        requireNonNull(precomputedRecords);
-    }
 
     @Override
     public @NonNull List<SingleTransactionRecord> precomputedRecords() {
@@ -52,14 +48,6 @@ public record LegacyListRecordSource(@NonNull List<SingleTransactionRecord> prec
     public void forEachTxnRecord(@NonNull final Consumer<TransactionRecord> action) {
         requireNonNull(action);
         precomputedRecords.forEach(r -> action.accept(r.transactionRecord()));
-    }
-
-    @Override
-    public void forEachTxnOutcome(@NonNull BiConsumer<TransactionID, ResponseCodeEnum> action) {
-        requireNonNull(action);
-        precomputedRecords.forEach(r -> action.accept(
-                r.transactionRecord().transactionIDOrThrow(),
-                r.transactionRecord().receiptOrThrow().status()));
     }
 
     @Override

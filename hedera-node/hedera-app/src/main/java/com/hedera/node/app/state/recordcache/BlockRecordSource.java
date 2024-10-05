@@ -22,20 +22,17 @@ import static java.util.Objects.requireNonNull;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.hedera.hapi.block.stream.BlockItem;
-import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.transaction.TransactionReceipt;
 import com.hedera.hapi.node.transaction.TransactionRecord;
 import com.hedera.node.app.blocks.BlockItemsTranslator;
 import com.hedera.node.app.blocks.impl.BlockStreamBuilder;
-import com.hedera.node.app.blocks.impl.BlockStreamBuilder.Output.IdentifiedReceipt;
 import com.hedera.node.app.blocks.impl.TranslationContext;
 import com.hedera.node.app.spi.records.RecordSource;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 /**
@@ -52,10 +49,20 @@ public class BlockRecordSource implements RecordSource {
     @Nullable
     private List<IdentifiedReceipt> computedReceipts;
 
+    /**
+     * Constructs a {@link BlockRecordSource} from a list of {@link BlockStreamBuilder.Output}s.
+     * @param outputs the outputs
+     */
     public BlockRecordSource(@NonNull final List<BlockStreamBuilder.Output> outputs) {
         this(BLOCK_ITEMS_TRANSLATOR, outputs);
     }
 
+    /**
+     * Constructs a {@link BlockRecordSource} from a list of {@link BlockStreamBuilder.Output}s, also
+     * specifying the {@link BlockItemsTranslator} to use for creating receipts and records.
+     * @param blockItemsTranslator the translator
+     * @param outputs the outputs
+     */
     @VisibleForTesting
     public BlockRecordSource(
             @NonNull final BlockItemsTranslator blockItemsTranslator,
@@ -75,15 +82,14 @@ public class BlockRecordSource implements RecordSource {
     }
 
     @Override
-    public void forEachTxnRecord(@NonNull final Consumer<TransactionRecord> action) {
-        requireNonNull(action);
-        computedRecords().forEach(action);
+    public List<IdentifiedReceipt> identifiedReceipts() {
+        return computedReceipts();
     }
 
     @Override
-    public void forEachTxnOutcome(@NonNull final BiConsumer<TransactionID, ResponseCodeEnum> action) {
+    public void forEachTxnRecord(@NonNull final Consumer<TransactionRecord> action) {
         requireNonNull(action);
-        computedReceipts().forEach(r -> action.accept(r.txnId(), r.receipt().status()));
+        computedRecords().forEach(action);
     }
 
     @Override
@@ -111,7 +117,7 @@ public class BlockRecordSource implements RecordSource {
 
     private List<IdentifiedReceipt> computedReceipts() {
         if (computedReceipts == null) {
-            // Mutate the list of outputs before making it visible to another traversing thread via computedRecords
+            // Mutate the list of outputs before making it visible to another traversing thread
             final List<IdentifiedReceipt> computation = new ArrayList<>();
             for (final var output : outputs) {
                 computation.add(output.toIdentifiedReceipt(blockItemsTranslator));
@@ -123,7 +129,7 @@ public class BlockRecordSource implements RecordSource {
 
     private List<TransactionRecord> computedRecords() {
         if (computedRecords == null) {
-            // Mutate the list of outputs before making it visible to another traversing thread via computedRecords
+            // Mutate the list of outputs before making it visible to another traversing thread
             final List<TransactionRecord> computation = new ArrayList<>();
             for (final var output : outputs) {
                 computation.add(output.toRecord(blockItemsTranslator));

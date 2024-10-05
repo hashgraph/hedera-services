@@ -30,6 +30,7 @@ import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.annotations.QueryScope;
 import com.hedera.node.app.service.contract.impl.records.ContractCallStreamBuilder;
 import com.hedera.node.app.spi.workflows.QueryContext;
+import com.hedera.node.app.spi.workflows.record.StreamBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.InstantSource;
@@ -56,15 +57,12 @@ public class QuerySystemContractOperations implements SystemContractOperations {
         this.instantSource = requireNonNull(instantSource);
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
-    public @NonNull <T> T dispatch(
+    public @NonNull <T extends StreamBuilder> T dispatch(
             @NonNull final TransactionBody syntheticTransaction,
             @NonNull final VerificationStrategy strategy,
-            @NonNull AccountID syntheticPayerId,
-            @NonNull Class<T> recordBuilderClass) {
+            @NonNull final AccountID syntheticPayerId,
+            @NonNull final Class<T> recordBuilderClass) {
         throw new UnsupportedOperationException("Cannot dispatch synthetic transaction");
     }
 
@@ -76,17 +74,11 @@ public class QuerySystemContractOperations implements SystemContractOperations {
         throw new UnsupportedOperationException("Cannot externalize preempted dispatch");
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public @NonNull Predicate<Key> activeSignatureTestWith(@NonNull final VerificationStrategy strategy) {
         throw new UnsupportedOperationException("Cannot compute a signature test");
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public void externalizeResult(
             @NonNull final ContractFunctionResult result,
@@ -95,19 +87,13 @@ public class QuerySystemContractOperations implements SystemContractOperations {
         // No-op
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public Transaction syntheticTransactionForNativeCall(
             @NonNull final Bytes input, @NonNull final ContractID contractID, final boolean isViewCall) {
-        // No-op
-        return null;
+        // Ignored since externalizeResult() is a no-op
+        return Transaction.DEFAULT;
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     @NonNull
     public ExchangeRate currentExchangeRate() {

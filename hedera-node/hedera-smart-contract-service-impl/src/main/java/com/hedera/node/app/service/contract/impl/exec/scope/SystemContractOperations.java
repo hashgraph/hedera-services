@@ -26,6 +26,7 @@ import com.hedera.hapi.node.contract.ContractFunctionResult;
 import com.hedera.hapi.node.transaction.ExchangeRate;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.records.ContractCallStreamBuilder;
+import com.hedera.node.app.spi.workflows.record.StreamBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.function.Predicate;
 import org.apache.tuweni.bytes.Bytes;
@@ -46,7 +47,7 @@ public interface SystemContractOperations {
      * @return the result of the dispatch
      */
     @NonNull
-    <T> T dispatch(
+    <T extends StreamBuilder> T dispatch(
             @NonNull TransactionBody syntheticBody,
             @NonNull VerificationStrategy strategy,
             @NonNull AccountID syntheticPayerId,

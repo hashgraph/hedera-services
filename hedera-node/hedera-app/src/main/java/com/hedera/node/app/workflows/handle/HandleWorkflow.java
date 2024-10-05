@@ -415,15 +415,18 @@ public class HandleWorkflow {
                     }
                 }
                 updateNodeStakes(userTxn);
+                var lastRecordManagerTime = Instant.EPOCH;
                 if (streamMode != BLOCKS) {
+                    lastRecordManagerTime = blockRecordManager.consTimeOfLastHandledTxn();
+                    // This updates consTimeOfLastHandledTxn as a side-effect
                     blockRecordManager.advanceConsensusClock(userTxn.consensusNow(), userTxn.state());
                 }
-                if (streamMode != RECORDS) {
+                if (streamMode == RECORDS) {
+                    processInterval(userTxn, lastRecordManagerTime);
+                } else {
                     if (processInterval(userTxn, blockStreamManager.lastIntervalProcessTime())) {
                         blockStreamManager.setLastIntervalProcessTime(userTxn.consensusNow());
                     }
-                } else {
-                    processInterval(userTxn, blockRecordManager.consTimeOfLastHandledTxn());
                 }
                 logPreDispatch(userTxn);
                 final var dispatch = dispatchFor(userTxn);
@@ -462,9 +465,25 @@ public class HandleWorkflow {
      * @return the failure record
      */
     private HandleOutput failInvalidStreamItems(@NonNull final UserTxn userTxn) {
-        userTxn.stack().rollbackFullStack();
-        RecordSource cacheableRecordSource = null;
         // The stack for the user txn should never be committed
+        userTxn.stack().rollbackFullStack();
+
+        RecordSource cacheableRecordSource = null;
+        final RecordSource recordSource;
+        if (streamMode != BLOCKS) {
+            final var failInvalidBuilder = new RecordStreamBuilder(REVERSIBLE, NOOP_RECORD_CUSTOMIZER, USER);
+            initializeBuilderInfo(failInvalidBuilder, userTxn.txnInfo(), exchangeRateManager.exchangeRates())
+                    .status(FAIL_INVALID)
+                    .consensusTimestamp(userTxn.consensusNow());
+            final var failInvalidRecord = failInvalidBuilder.build();
+            cacheableRecordSource = recordSource = new LegacyListRecordSource(
+                    List.of(failInvalidRecord),
+                    List.of(new RecordSource.IdentifiedReceipt(
+                            failInvalidRecord.transactionRecord().transactionIDOrThrow(),
+                            failInvalidRecord.transactionRecord().receiptOrThrow())));
+        } else {
+            recordSource = null;
+        }
         final BlockRecordSource blockRecordSource;
         if (streamMode != RECORDS) {
             final List<BlockStreamBuilder.Output> outputs = new LinkedList<>();
@@ -478,16 +497,6 @@ public class HandleWorkflow {
             blockRecordSource = null;
         }
 
-        final RecordSource recordSource;
-        if (streamMode != BLOCKS) {
-            final var failInvalidBuilder = new RecordStreamBuilder(REVERSIBLE, NOOP_RECORD_CUSTOMIZER, USER);
-            initializeBuilderInfo(failInvalidBuilder, userTxn.txnInfo(), exchangeRateManager.exchangeRates())
-                    .status(FAIL_INVALID)
-                    .consensusTimestamp(userTxn.consensusNow());
-            cacheableRecordSource = recordSource = new LegacyListRecordSource(List.of(failInvalidBuilder.build()));
-        } else {
-            recordSource = null;
-        }
         recordCache.addRecordSource(
                 userTxn.creatorInfo().nodeId(),
                 userTxn.txnInfo().transactionID(),
