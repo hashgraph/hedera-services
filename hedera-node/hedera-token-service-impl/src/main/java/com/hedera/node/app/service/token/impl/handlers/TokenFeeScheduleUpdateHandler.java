@@ -24,6 +24,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_HAS_NO_FEE_SCHEDU
 import static com.hedera.node.app.hapi.fees.usage.SingletonEstimatorUtils.ESTIMATOR_UTILS;
 import static com.hedera.node.app.hapi.fees.usage.token.TokenOpsUsage.LONG_BASIC_ENTITY_ID_SIZE;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
+import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -192,8 +193,9 @@ public class TokenFeeScheduleUpdateHandler implements TransactionHandler {
         final var effConsTime =
                 body.transactionIDOrThrow().transactionValidStartOrThrow().seconds();
         final var lifetime = Math.max(0, token == null ? 0 : token.expirationSecond() - effConsTime);
+        final List<CustomFee> customFees = token == null ? emptyList() : token.customFees();
 
-        final var existingFeeReprBytes = currentFeeScheduleSize(token.customFees(), tokenOpsUsage);
+        final var existingFeeReprBytes = currentFeeScheduleSize(customFees, tokenOpsUsage);
         final var rbsDelta = ESTIMATOR_UTILS.changeInBsUsage(existingFeeReprBytes, lifetime, newReprBytes, lifetime);
         return feeContext
                 .feeCalculatorFactory()
