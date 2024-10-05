@@ -48,7 +48,6 @@ module com.hedera.node.app {
     requires io.netty.handler;
     requires io.netty.transport.classes.epoll;
     requires io.netty.transport;
-    requires jdk.accessibility;
     requires org.apache.commons.lang3;
     requires org.hyperledger.besu.datatypes;
     requires static com.github.spotbugs.annotations;
