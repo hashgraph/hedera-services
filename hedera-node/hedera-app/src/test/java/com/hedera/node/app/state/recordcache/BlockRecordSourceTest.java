@@ -96,6 +96,11 @@ class BlockRecordSourceTest {
     }
 
     @Test
+    void hasDefaultBlockItemTranslator() {
+        assertDoesNotThrow(() -> new BlockRecordSource(List.of()));
+    }
+
+    @Test
     void forEachTxnRecordIncludesRecordsFromAllOutputs() {
         given(recordTranslator.translateRecord(
                         translationContext,
