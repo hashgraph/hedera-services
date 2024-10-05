@@ -71,7 +71,6 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
-import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.base.NodeAddressBook;
 import com.hedera.hapi.node.base.ServiceEndpoint;
@@ -131,7 +130,6 @@ public class SystemFileExportsTest {
                 cryptoCreate("firstUser"),
                 overriding("nodes.updateAccountIdAllowed", "true"),
                 sourcing(() -> blockingOrder(nOps(CLASSIC_HAPI_TEST_NETWORK_SIZE, i -> nodeUpdate("" + i)
-                        .accountId("0.0." + (i + ACCOUNT_ID_OFFSET))
                         .description(DESCRIPTION_PREFIX + i)
                         .serviceEndpoint(endpointsFor(i))
                         .grpcCertificateHash(grpcCertHashes[i])
@@ -157,7 +155,6 @@ public class SystemFileExportsTest {
                 cryptoCreate("firstUser"),
                 overriding("nodes.updateAccountIdAllowed", "true"),
                 sourcing(() -> blockingOrder(nOps(CLASSIC_HAPI_TEST_NETWORK_SIZE, i -> nodeUpdate("" + i)
-                        .accountId("0.0." + (i + ACCOUNT_ID_OFFSET))
                         .description(DESCRIPTION_PREFIX + i)
                         .serviceEndpoint(endpointsFor(i))
                         .grpcCertificateHash(grpcCertHashes[i])
@@ -457,11 +454,6 @@ public class SystemFileExportsTest {
                             actualCertHash,
                             "node" + address.nodeId() + " has wrong cert hash");
 
-                    final var expectedAccountID = AccountID.newBuilder()
-                            .accountNum(address.nodeId() + ACCOUNT_ID_OFFSET)
-                            .build();
-                    assertEquals(expectedAccountID, address.nodeAccountId());
-
                     final var expectedDescription = DESCRIPTION_PREFIX + address.nodeId();
                     assertEquals(expectedDescription, address.description());
 
@@ -503,11 +495,6 @@ public class SystemFileExportsTest {
                             grpcCertHashes[(int) address.nodeId()],
                             actualCertHash,
                             "node" + address.nodeId() + " has wrong cert hash");
-
-                    final var expectedAccountID = AccountID.newBuilder()
-                            .accountNum(address.nodeId() + ACCOUNT_ID_OFFSET)
-                            .build();
-                    assertEquals(expectedAccountID, address.nodeAccountId());
 
                     final var expectedServiceEndpoint = endpointsFor((int) address.nodeId());
                     assertEquals(expectedServiceEndpoint, address.serviceEndpoint());

@@ -31,7 +31,7 @@ import com.hedera.node.app.workflows.handle.HandleWorkflowModule;
 import com.hedera.node.app.workflows.prehandle.PreHandleWorkflowInjectionModule;
 import com.hedera.node.app.workflows.standalone.impl.StandaloneDispatchFactory;
 import com.hedera.node.app.workflows.standalone.impl.StandaloneModule;
-import com.hedera.node.app.workflows.standalone.impl.StateNetworkInfo;
+import com.hedera.node.app.workflows.standalone.impl.StandaloneNetworkInfo;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.state.State;
 import dagger.BindsInstance;
@@ -40,7 +40,7 @@ import java.util.function.Consumer;
 import javax.inject.Singleton;
 
 /**
- * A component that provides DI for construction of {@link StandaloneDispatchFactory}, {@link StateNetworkInfo}, and
+ * A component that provides DI for construction of {@link StandaloneDispatchFactory}, {@link StandaloneNetworkInfo}, and
  * {@link DispatchProcessor} instances needed to execute standalone transactions against a {@link State}.
  */
 @Singleton
@@ -80,7 +80,7 @@ public interface ExecutorComponent {
 
     DispatchProcessor dispatchProcessor();
 
-    StateNetworkInfo stateNetworkInfo();
+    StandaloneNetworkInfo stateNetworkInfo();
 
     ExchangeRateManager exchangeRateManager();
 
