@@ -28,6 +28,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.freezeUpgrade;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.noOp;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.prepareUpgrade;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.purgeUpgradeArtifacts;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.runBackgroundTrafficUntilFreezeComplete;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.updateSpecialFile;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.waitForActive;
@@ -175,6 +176,7 @@ public interface LifecycleTest {
     default HapiSpecOperation upgradeToConfigVersion(final int version, @NonNull final SpecOperation preRestartOp) {
         requireNonNull(preRestartOp);
         return blockingOrder(
+                runBackgroundTrafficUntilFreezeComplete(),
                 sourcing(() -> freezeUpgrade()
                         .startingIn(2)
                         .seconds()
