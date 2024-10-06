@@ -314,7 +314,9 @@ public class HandleWorkflow {
         // Inform the BlockRecordManager that the round is complete, so it can update running-hashes in state
         // that have been being computed in background threads. The running hash has to be included in
         // state, but we want to synchronize with background threads as infrequently as possible. So once per
-        // round is the minimum we can do.
+        // round is the minimum we can do. Note the BlockStreamManager#endRound() method is called in Hedera's
+        // implementation of SwirldState#sealConsensusRound(), since the BlockStreamManager cannot do its
+        // end-of-block work until the platform has finished all its state changes.
         if (userTransactionsHandled.get() && streamMode != BLOCKS) {
             blockRecordManager.endRound(state);
         }
