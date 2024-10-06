@@ -342,6 +342,7 @@ public class HandleWorkflow {
         final var blockStreamConfig = userTxn.config().getConfigData(BlockStreamConfig.class);
         try {
             if (isOlderSoftwareEvent(userTxn)) {
+                advanceConsensusClock(userTxn, blockStreamConfig);
                 initializeBuilderInfo(userTxn.baseBuilder(), userTxn.txnInfo(), exchangeRateManager.exchangeRates())
                         .status(BUSY);
                 // Flushes the BUSY builder to the stream, no other side effects
@@ -369,11 +370,7 @@ public class HandleWorkflow {
                     }
                 }
                 updateNodeStakes(userTxn);
-                if (blockStreamConfig.streamRecords()) {
-                    // For POST_UPGRADE_TRANSACTION, also commits to state that the post-upgrade work is done
-                    blockRecordManager.advanceConsensusClock(userTxn.consensusNow(), userTxn.state());
-                }
-                expireSchedules(userTxn);
+                advanceConsensusClock(userTxn, blockStreamConfig);
                 logPreDispatch(userTxn);
                 final var dispatch = dispatchFor(userTxn, blockStreamConfig);
                 if (userTxn.type() == GENESIS_TRANSACTION) {
@@ -400,6 +397,20 @@ public class HandleWorkflow {
             logger.error("{} - exception thrown while handling user transaction", ALERT_MESSAGE, e);
             return failInvalidStreamItems(userTxn);
         }
+    }
+
+    /**
+     * Advances the consensus clock in state when streaming records; also expires any schedules.
+     * @param userTxn the user transaction
+     * @param blockStreamConfig the block stream configuration
+     */
+    private void advanceConsensusClock(
+            @NonNull final UserTxn userTxn, @NonNull final BlockStreamConfig blockStreamConfig) {
+        if (blockStreamConfig.streamRecords()) {
+            // For POST_UPGRADE_TRANSACTION, also commits to state that the post-upgrade work is done
+            blockRecordManager.advanceConsensusClock(userTxn.consensusNow(), userTxn.state());
+        }
+        expireSchedules(userTxn);
     }
 
     /**
