@@ -218,7 +218,9 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalLong;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
@@ -564,6 +566,36 @@ public class UtilVerbs {
 
     public static WaitForStatusOp waitForFrozenNetwork(@NonNull final Duration timeout) {
         return new WaitForStatusOp(NodeSelector.allNodes(), FREEZE_COMPLETE, timeout);
+    }
+
+    /**
+     * Returns an operation that initiates background traffic running until the target network's
+     * first node has reached {@link com.swirlds.platform.system.status.PlatformStatus#FREEZE_COMPLETE}.
+     * @return the operation
+     */
+    public static SpecOperation runBackgroundTrafficUntilFreezeComplete() {
+        return withOpContext((spec, opLog) -> {
+            opLog.info("Starting background traffic until freeze complete");
+            final var stopTraffic = new AtomicBoolean();
+            CompletableFuture.runAsync(() -> {
+                while (!stopTraffic.get()) {
+                    allRunFor(
+                            spec,
+                            cryptoTransfer(tinyBarsFromTo(GENESIS, STAKING_REWARD, 1))
+                                    .deferStatusResolution()
+                                    .hasAnyStatusAtAll()
+                                    .noLogging());
+                }
+            });
+            spec.targetNetworkOrThrow()
+                    .nodes()
+                    .getFirst()
+                    .statusFuture(FREEZE_COMPLETE, (status) -> {})
+                    .thenRun(() -> {
+                        stopTraffic.set(true);
+                        opLog.info("Stopping background traffic after freeze complete");
+                    });
+        });
     }
 
     public static HapiSpecSleep sleepFor(long timeMs) {
