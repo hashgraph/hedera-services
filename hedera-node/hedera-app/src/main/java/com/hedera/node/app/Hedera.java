@@ -531,7 +531,7 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener {
                 configProvider.getConfiguration(),
                 networkInfo,
                 metrics));
-        if (isUpgrade && !trigger.equals(RECONNECT)) {
+        if (isUpgrade && trigger != RECONNECT && trigger != GENESIS) {
             unmarkMigrationRecordsStreamed(state);
         }
         logger.info("Migration complete");

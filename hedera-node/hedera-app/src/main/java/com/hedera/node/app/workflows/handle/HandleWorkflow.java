@@ -349,6 +349,7 @@ public class HandleWorkflow {
                 }
                 updateNodeStakes(userTxn);
                 if (blockStreamConfig.streamRecords()) {
+                    // For POST_UPGRADE_TRANSACTION, also commits to state that the post-upgrade work is done
                     blockRecordManager.advanceConsensusClock(userTxn.consensusNow(), userTxn.state());
                 }
                 expireSchedules(userTxn);
@@ -358,6 +359,9 @@ public class HandleWorkflow {
                     systemSetup.doGenesisSetup(dispatch);
                 } else if (userTxn.type() == POST_UPGRADE_TRANSACTION) {
                     systemSetup.doPostUpgradeSetup(dispatch);
+                    if (blockStreamConfig.streamRecords()) {
+                        blockRecordManager.markMigrationRecordsStreamed();
+                    }
                 }
                 hollowAccountCompletions.completeHollowAccounts(userTxn, dispatch);
                 dispatchProcessor.processDispatch(dispatch);
