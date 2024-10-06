@@ -26,13 +26,17 @@ import static com.hedera.services.bdd.junit.hedera.utils.AddressBookUtils.nodeId
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.dsl.operations.transactions.TouchBalancesOperation.touchBalanceOf;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getVersionInfo;
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.sysFileUpdateTo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.nodeCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.nodeDelete;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.ensureStakingActivated;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.given;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.selectedItems;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.streamMustIncludePassFrom;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateUpgradeAddressBooks;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.waitUntilStartOfNextStakingPeriod;
+import static com.hedera.services.bdd.spec.utilops.streams.assertions.VisibleItemsValidator.EXISTENCE_ONLY_VALIDATOR;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_BILLION_HBARS;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_MILLION_HBARS;
 import static com.hedera.services.bdd.suites.hip869.NodeCreateTest.generateX509Certificates;
@@ -124,6 +128,8 @@ public class DabEnabledUpgradeTest implements LifecycleTest {
         final Stream<DynamicTest> sameNodesTest() {
             final AtomicReference<SemanticVersion> startVersion = new AtomicReference<>();
             return hapiTest(
+                    streamMustIncludePassFrom(
+                            selectedItems(EXISTENCE_ONLY_VALIDATOR, 1, sysFileUpdateTo("files.nodeDetails"))),
                     getVersionInfo().exposingServicesVersionTo(startVersion::set),
                     prepareFakeUpgrade(),
                     validateUpgradeAddressBooks(DabEnabledUpgradeTest::hasClassicAddressMetadata),

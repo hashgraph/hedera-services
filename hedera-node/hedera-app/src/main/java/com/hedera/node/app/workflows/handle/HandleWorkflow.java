@@ -347,6 +347,10 @@ public class HandleWorkflow {
                     // (FUTURE) Once all genesis setup is done via dispatch, remove this method
                     systemSetup.externalizeInitSideEffects(
                             userTxn.tokenContextImpl(), exchangeRateManager.exchangeRates());
+                } else if (userTxn.type() == POST_UPGRADE_TRANSACTION) {
+                    if (blockStreamConfig.streamRecords()) {
+                        blockRecordManager.markMigrationRecordsStreamed();
+                    }
                 }
                 updateNodeStakes(userTxn);
                 advanceConsensusClock(userTxn, blockStreamConfig);
@@ -356,9 +360,6 @@ public class HandleWorkflow {
                     systemSetup.doGenesisSetup(dispatch);
                 } else if (userTxn.type() == POST_UPGRADE_TRANSACTION) {
                     systemSetup.doPostUpgradeSetup(dispatch);
-                    if (blockStreamConfig.streamRecords()) {
-                        blockRecordManager.markMigrationRecordsStreamed();
-                    }
                 }
                 hollowAccountCompletions.completeHollowAccounts(userTxn, dispatch);
                 dispatchProcessor.processDispatch(dispatch);
