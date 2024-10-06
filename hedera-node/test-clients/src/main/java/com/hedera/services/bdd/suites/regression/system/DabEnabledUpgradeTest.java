@@ -34,6 +34,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.nodeCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.nodeDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.nodeUpdate;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.doingContextual;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.ensureStakingActivated;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.given;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.recordStreamMustIncludePassFrom;
@@ -60,6 +61,7 @@ import com.hedera.services.bdd.junit.hedera.NodeSelector;
 import com.hedera.services.bdd.junit.support.TestLifecycle;
 import com.hedera.services.bdd.spec.dsl.annotations.Account;
 import com.hedera.services.bdd.spec.dsl.entities.SpecAccount;
+import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.spec.utilops.FakeNmt;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.SemanticVersion;
@@ -146,8 +148,9 @@ public class DabEnabledUpgradeTest implements LifecycleTest {
                     validateUpgradeAddressBooks(DabEnabledUpgradeTest::hasClassicAddressMetadata),
                     upgradeToNextConfigVersion(),
                     assertExpectedConfigVersion(startVersion::get),
-                    // Ensure we have a post-upgrade transaction to trigger system file exports
-                    cryptoCreate("somebodyNew"));
+                    // Ensure we have a post-upgrade transaction in a new period to trigger
+                    // system file exports while still streaming records
+                    doingContextual(TxnUtils::triggerAndCloseAtLeastOneFileIfNotInterrupted));
         }
     }
 
