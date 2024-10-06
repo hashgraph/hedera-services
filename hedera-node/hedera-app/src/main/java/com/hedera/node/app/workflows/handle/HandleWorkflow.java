@@ -364,9 +364,13 @@ public class HandleWorkflow {
                         streamBuilder.exchangeRate(exchangeRateManager.exchangeRates());
                         userTxn.stack().commitTransaction(streamBuilder);
                     }
+                    if (blockStreamConfig.streamRecords()) {
+                        blockRecordManager.markMigrationRecordsStreamed();
+                    }
                 }
                 updateNodeStakes(userTxn);
                 if (blockStreamConfig.streamRecords()) {
+                    // For POST_UPGRADE_TRANSACTION, also commits to state that the post-upgrade work is done
                     blockRecordManager.advanceConsensusClock(userTxn.consensusNow(), userTxn.state());
                 }
                 expireSchedules(userTxn);

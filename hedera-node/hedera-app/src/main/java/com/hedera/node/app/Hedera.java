@@ -573,7 +573,8 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener {
                 metrics));
         kvStateChangeListener.reset();
         boundaryStateChangeListener.reset();
-        if (isUpgrade && !trigger.equals(RECONNECT)) {
+        // For specifically a non-genesis upgrade, set in state that post-upgrade work is pending
+        if (isUpgrade && trigger != RECONNECT && trigger != GENESIS) {
             unmarkMigrationRecordsStreamed(state);
             migrationStateChanges.add(
                     StateChanges.newBuilder().stateChanges(boundaryStateChangeListener.allStateChanges()));
