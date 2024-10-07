@@ -16,7 +16,7 @@ pcli diagram \
     -s 'Heartbeat:heartbeat:❤️' \
     -s 'TransactionPrehandler:futures:🔮' \
     -s 'pcesReplayer:done streaming pces:✅' \
-    -s 'OrphanBufferSplitter:events to gossip:📬' \
+    -s 'InlinePcesWriter:events to gossip:📬' \
     -s 'extractOldestMinimumGenerationOnDisk:minimum identifier to store:📀' \
     -s 'StaleEventDetectorRouter:non-validated events:🍎' \
     -s 'Mystery Input:mystery data:❔' \
