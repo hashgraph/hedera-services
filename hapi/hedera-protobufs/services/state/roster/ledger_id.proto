@@ -131,11 +131,17 @@ message RosterSignatures {
 message NodeSignature {
   /**
    * The node id of the node that created the _RSA_ signature.
+   * This value MUST be set.<br/>
+   * This value MUST NOT be empty.<br/>
+   * This value is REQUIRED.
    */
   uint64 node_id = 1;
 
   /**
    * The bytes of an _RSA_ signature.
+   * This value MUST be set.<br/>
+   * This value MUST NOT be empty.<br/>
+   * This value MUST contain a valid signature.
    */
   bytes node_signature = 2;
 }
