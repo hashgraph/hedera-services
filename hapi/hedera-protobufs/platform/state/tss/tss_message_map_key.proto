@@ -33,8 +33,8 @@ option java_package = "com.hedera.hapi.platform.state.tss.legacy";
 option java_multiple_files = true;
 
 /**
-  * A key for use in the TssMessageMaps.<br/>
-  * This key is used to uniquely identify entries in the TssMessageMaps.
+  * A key for use in the Threshold Signature Scheme (TSS) TssMessageMaps.<br/>
+  * This key SHALL be used to uniquely identify entries in the Message Maps.
   */
 message TssMessageMapKey {
 

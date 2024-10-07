@@ -38,20 +38,26 @@ option java_package = "com.hederahashgraph.api.proto.java";
 option java_multiple_files = true;
 
 /**
- * A ledger identifier.<br/>
- * This message identifies a ledger and can be used to verify ledger signatures.
- * A LedgerId may change, but does so only in rare circumstances.
+ * A ledger identifier.
+ *
+ * This message identifies a ledger and SHALL be used to verify ledger
+ * signatures in a Threshold Signature Scheme (TSS).
+ *
+ * A LedgerId MAY change, but does so only in rare circumstances.
  *
  * A ledger identifier SHALL be a public key defined according to the TSS
- * process.<br/>
+ * process.
+ *
  * A ledger identifier SHOULD NOT change, but MAY do so in rare circumstances.
- * Clients SHOULD always check for the correct ledger identifier, according to the
- * network roster, before attempting to verify any state proof or other ledger
- * signature.
+ *
+ * Clients SHOULD always check for the correct ledger identifier, according to
+ * the network roster, before attempting to verify any state proof or other
+ * ledger signature.
  *
  * ### Block Stream Effects
- * Every Block Stream `BlockProof` item SHALL be signed via TSS and MUST be
- * verified with the ledger identifier current at the _start_ of that block.
+ * Every block in the Block Stream `BlockProof` SHALL be signed via TSS and
+ * MUST be verified with the ledger identifier current at the _start_ of that
+ * block.
  * If the ledger identifier changes, the new value MUST be used to validate
  * Block Proof items after the change.
  * A change to the ledger identifier SHALL be reported in a State Change for
@@ -61,8 +67,10 @@ option java_multiple_files = true;
 message LedgerId {
 
   /**
-   * A public key.<br/>
-   * This key both identifies the ledger and can be used to verify ledger signatures.
+   * A public key.
+   * <p>
+   * This key both identifies the ledger and can be used to verify ledger
+   * signatures.
    * <p>
    * This value MUST be set.<br/>
    * This value MUST NOT be empty.<br/>
@@ -71,26 +79,28 @@ message LedgerId {
   bytes ledger_id = 1;
 
   /**
-   * A round number.<br/>
-   * This identifies when this ledger id becomes active.
+   * A round number.
    * <p>
+   * This identifies when this ledger id becomes active.<br/>
    * This value is REQUIRED.
    */
   uint64 round = 2;
 
   /**
-   * A signature from the prior ledger key.<br/>
-   * This signature is the _previous_ ledger ID signing _this_ ledger ID.
+   * A signature from the prior ledger key.
    * <p>
-   * This value MAY be unset, if there is no prior ledger ID. </br>
+   * This signature is the _previous_ ledger ID signing _this_ ledger ID.<br/>
+   * This value MAY be unset, if there is no prior ledger ID.</br>
    * This value SHOULD be set if a prior ledger ID exists
    * to generate the signature.
    */
   bytes ledger_signature = 3;
 
   /**
-   * The signatures from nodes in the active roster signing the new ledger id.<br/>
-   * These signatures establish a chain of trust from the network to the new ledger id.
+   * The signatures from nodes in the active roster signing the new ledger id.
+   * <p>
+   * These signatures establish a chain of trust from the network to the new
+   * ledger id.
    * <p>
    * This value MUST be present when the ledger signature of a previous ledger
    * id is absent.

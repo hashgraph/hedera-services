@@ -33,8 +33,9 @@ option java_package = "com.hedera.hapi.platform.state.tss.legacy";
 option java_multiple_files = true;
 
  /**
-  * A key for use in the TssVoteMaps.<br/>
-  * This key is used to uniquely identify entries in the TssVoteMaps.
+  * A key for use in the Threshold Signature Scheme (TSS) TssVoteMaps.
+  *
+  * This key SHALL be used to uniquely identify entries in the Vote Maps.
   */
 message TssVoteMapKey {
 
@@ -48,7 +49,7 @@ message TssVoteMapKey {
   bytes roster_hash = 1;
 
   /* The node id of the node that created the TssVote.
-  * <br/>
+  * <p>>
   * This id uniquely identifies the node.
   * <p>
   * This value MUST be set.<br/>
