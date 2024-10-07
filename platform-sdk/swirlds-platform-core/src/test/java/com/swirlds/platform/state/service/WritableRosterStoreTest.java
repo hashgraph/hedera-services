@@ -18,6 +18,7 @@ package com.swirlds.platform.state.service;
 
 import static com.swirlds.platform.state.service.WritableRosterStore.MAXIMUM_ROSTER_HISTORY_SIZE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -47,6 +48,7 @@ import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Objects;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -81,11 +83,14 @@ class WritableRosterStoreTest {
     void testSetCandidateRosterReturnsSame() {
         final Roster roster1 = createValidTestRoster(1);
         rosterStateModifier.setCandidateRoster(roster1);
-        assertEquals(rosterStateAccessor.getCandidateRoster(), roster1);
+        assertEquals(
+                rosterStateAccessor.getCandidateRoster(),
+                roster1,
+                "Candidate roster should be the same as the one set");
 
         final Roster roster2 = createValidTestRoster(2);
         rosterStateModifier.setCandidateRoster(roster2);
-        assertEquals(roster2, rosterStateAccessor.getCandidateRoster());
+        assertEquals(roster2, rosterStateAccessor.getCandidateRoster(), "Candidate roster should be roster2");
     }
 
     @Test
@@ -99,26 +104,40 @@ class WritableRosterStoreTest {
     @DisplayName("Tests that setting an active roster returns the active roster when getActiveRoster is called.")
     void testGetCandidateRosterWithValidCandidateRoster() {
         final Roster activeRoster = createValidTestRoster(1);
-        assertNull(rosterStateAccessor.getActiveRoster());
+        assertNull(rosterStateAccessor.getActiveRoster(), "Active roster should be null initially");
         rosterStateModifier.setActiveRoster(activeRoster, 2);
-        assertSame(rosterStateAccessor.getActiveRoster(), activeRoster);
+        assertSame(
+                rosterStateAccessor.getActiveRoster(),
+                activeRoster,
+                "Returned active roster should be the same as the one set");
     }
 
     @Test
     @DisplayName("Test that the oldest roster is removed when a third roster is set")
-    void testOldestActiveRosterRemoved() {
-        Roster roster = createValidTestRoster(3);
-        rosterStateModifier.setActiveRoster(roster, 1);
-        assertSame(rosterStateAccessor.getActiveRoster(), roster);
+    void testOldestActiveRosterRemoved() throws NoSuchFieldException, IllegalAccessException {
+        final Roster roster1 = createValidTestRoster(3);
+        rosterStateModifier.setActiveRoster(roster1, 1);
+        assertSame(
+                rosterStateAccessor.getActiveRoster(),
+                roster1,
+                "Returned active roster should be the same as the one set");
 
-        roster = createValidTestRoster(1);
-        rosterStateModifier.setActiveRoster(roster, 2);
-        assertSame(rosterStateAccessor.getActiveRoster(), roster);
+        final Roster roster2 = createValidTestRoster(1);
+        rosterStateModifier.setActiveRoster(roster2, 2);
+        assertSame(
+                rosterStateAccessor.getActiveRoster(),
+                roster2,
+                "Returned active roster should be the same as the one set");
 
         // set a 3rd candidate roster and adopt it
-        roster = createValidTestRoster(2);
-        rosterStateModifier.setActiveRoster(roster, 3);
-        assertSame(rosterStateAccessor.getActiveRoster(), roster);
+        final Roster roster3 = createValidTestRoster(2);
+        rosterStateModifier.setActiveRoster(roster3, 3);
+        final WritableSingletonState<RosterState> rosterState = getRosterState();
+        assertEquals(
+                2, Objects.requireNonNull(rosterState.get()).roundRosterPairs().size());
+        assertFalse(Objects.requireNonNull(rosterState.get())
+                .roundRosterPairs()
+                .contains(new RoundRosterPair(2, RosterUtils.hash(roster1).getBytes())));
     }
 
     @Test
@@ -134,11 +153,7 @@ class WritableRosterStoreTest {
 
         final Builder rosterStateBuilder =
                 RosterState.newBuilder().candidateRosterHash(Bytes.EMPTY).roundRosterPairs(activeRosters);
-
-        final Field field = WritableRosterStore.class.getDeclaredField("rosterState");
-        field.setAccessible(true);
-        final WritableSingletonState<RosterState> rosterState =
-                (WritableSingletonState<RosterState>) field.get(rosterStateModifier);
+        final WritableSingletonState<RosterState> rosterState = getRosterState();
         rosterState.put(rosterStateBuilder.build());
 
         final Exception exception = assertThrows(
@@ -155,14 +170,23 @@ class WritableRosterStoreTest {
     void testRosterHashCollisions() {
         final Roster roster1 = createValidTestRoster(3);
         rosterStateModifier.setActiveRoster(roster1, 1);
-        assertSame(rosterStateAccessor.getActiveRoster(), roster1);
+        assertSame(
+                rosterStateAccessor.getActiveRoster(),
+                roster1,
+                "Returned active roster should be the same as the one set");
 
         final Roster roster2 = createValidTestRoster(1);
         rosterStateModifier.setActiveRoster(roster2, 2);
-        assertSame(rosterStateAccessor.getActiveRoster(), roster2);
+        assertSame(
+                rosterStateAccessor.getActiveRoster(),
+                roster2,
+                "Returned active roster should be the same as the one set");
 
         rosterStateModifier.setActiveRoster(roster1, 3);
-        assertSame(rosterStateAccessor.getActiveRoster(), roster1);
+        assertSame(
+                rosterStateAccessor.getActiveRoster(),
+                roster1,
+                "3rd active roster with hash collision with first returns the first roster");
     }
 
     /**
@@ -186,5 +210,18 @@ class WritableRosterStoreTest {
                     .build());
         }
         return Roster.newBuilder().rosterEntries(entriesList).build();
+    }
+
+    /**
+     * Gets the roster state from the WritableRosterStore via reflection for testing purposes only.
+     *
+     * @return the roster state
+     * @throws NoSuchFieldException   if the field is not found
+     * @throws IllegalAccessException if the field is not accessible
+     */
+    private WritableSingletonState<RosterState> getRosterState() throws NoSuchFieldException, IllegalAccessException {
+        final Field field = WritableRosterStore.class.getDeclaredField("rosterState");
+        field.setAccessible(true);
+        return (WritableSingletonState<RosterState>) field.get(rosterStateModifier);
     }
 }
