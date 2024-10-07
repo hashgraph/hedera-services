@@ -219,7 +219,7 @@ jobs:
           comment_mode: errors # only comment if we could not find or parse the JUnit XML files
 
       - name: Upload Unit Test Report Artifacts
-        uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 # v4.3.1
+        uses: actions/upload-artifact@604373da6381bf24206979c74d06a550515601b9 # v4.4.1
         if: ${{ inputs.enable-unit-tests && steps.gradle-build.conclusion == 'success' && !cancelled() }}
         with:
           name: Unit Test Report
@@ -241,7 +241,7 @@ jobs:
           comment_mode: errors # only comment if we could not find or parse the JUnit XML files
 
       - name: Upload Unit Test (Timing Sensitive) Report Artifacts
-        uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 # v4.3.1
+        uses: actions/upload-artifact@604373da6381bf24206979c74d06a550515601b9 # v4.4.1
         if: ${{ inputs.enable-timing-sensitive-tests && steps.gradle-build.conclusion == 'success' && !cancelled() }}
         with:
           name: Unit Test Report (Timing Sensitive)
@@ -263,7 +263,7 @@ jobs:
           comment_mode: errors # only comment if we could not find or parse the JUnit XML files
 
       - name: Upload Unit Test (Time Consuming) Report Artifacts
-        uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 # v4.3.1
+        uses: actions/upload-artifact@604373da6381bf24206979c74d06a550515601b9 # v4.4.1
         if: ${{ inputs.enable-time-consuming-tests && steps.gradle-build.conclusion == 'success' && !cancelled() }}
         with:
           name: Unit Test Report (Time Consuming)
@@ -285,7 +285,7 @@ jobs:
           comment_mode: errors # only comment if we could not find or parse the JUnit XML files
 
       - name: Upload Hammer Test Report Artifacts
-        uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 # v4.3.1
+        uses: actions/upload-artifact@604373da6381bf24206979c74d06a550515601b9 # v4.4.1
         if: ${{ inputs.enable-hammer-tests && steps.gradle-build.conclusion == 'success' && !cancelled() }}
         with:
           name: Hammer Test Report
@@ -311,7 +311,7 @@ jobs:
           comment_mode: errors # only comment if we could not find or parse the JUnit XML files
 
       - name: Upload HAPI Test (Misc) Report Artifacts
-        uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 # v4.3.1
+        uses: actions/upload-artifact@604373da6381bf24206979c74d06a550515601b9 # v4.4.1
         if: ${{ inputs.enable-hapi-tests-misc && steps.gradle-build.conclusion == 'success' && !cancelled() }}
         with:
           name: HAPI Test (Misc) Reports
@@ -319,7 +319,7 @@ jobs:
           retention-days: 7
 
       - name: Upload HAPI Test (Misc) Network Logs
-        uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 # v4.3.1
+        uses: actions/upload-artifact@604373da6381bf24206979c74d06a550515601b9 # v4.4.1
         if: ${{ inputs.enable-hapi-tests-misc && inputs.enable-network-log-capture && steps.gradle-hapi-misc.conclusion == 'failure' && !cancelled() }}
         with:
           name: HAPI Test (Misc) Network Logs
@@ -345,7 +345,7 @@ jobs:
           comment_mode: errors # only comment if we could not find or parse the JUnit XML files
 
       - name: Upload HAPI Test (Crypto) Report Artifacts
-        uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 # v4.3.1
+        uses: actions/upload-artifact@604373da6381bf24206979c74d06a550515601b9 # v4.4.1
         if: ${{ inputs.enable-hapi-tests-crypto && steps.gradle-build.conclusion == 'success' && !cancelled() }}
         with:
           name: HAPI Test (Crypto) Report
@@ -353,7 +353,7 @@ jobs:
           retention-days: 7
 
       - name: Upload HAPI Test (crypto) Network Logs
-        uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 # v4.3.1
+        uses: actions/upload-artifact@604373da6381bf24206979c74d06a550515601b9 # v4.4.1
         if: ${{ inputs.enable-hapi-tests-crypto && inputs.enable-network-log-capture && steps.gradle-hapi-crypto.conclusion == 'failure' && !cancelled() }}
         with:
           name: HAPI Test (Crypto) Network Logs
@@ -379,7 +379,7 @@ jobs:
           comment_mode: errors # only comment if we could not find or parse the JUnit XML files
 
       - name: Upload HAPI Test (Token) Report Artifacts
-        uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 # v4.3.1
+        uses: actions/upload-artifact@604373da6381bf24206979c74d06a550515601b9 # v4.4.1
         if: ${{ inputs.enable-hapi-tests-token && steps.gradle-build.conclusion == 'success' && !cancelled() }}
         with:
           name: HAPI Test (Token) Report
@@ -387,7 +387,7 @@ jobs:
           retention-days: 7
 
       - name: Upload HAPI Test (Token) Network Logs
-        uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 # v4.3.1
+        uses: actions/upload-artifact@604373da6381bf24206979c74d06a550515601b9 # v4.4.1
         if: ${{ inputs.enable-hapi-tests-token && inputs.enable-network-log-capture && steps.gradle-hapi-token.conclusion == 'failure' && !cancelled() }}
         with:
           name: HAPI Test (Token) Network Logs
@@ -413,7 +413,7 @@ jobs:
           comment_mode: errors # only comment if we could not find or parse the JUnit XML files
 
       - name: Upload HAPI Test (Smart Contract) Report Artifacts
-        uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 # v4.3.1
+        uses: actions/upload-artifact@604373da6381bf24206979c74d06a550515601b9 # v4.4.1
         if: ${{ inputs.enable-hapi-tests-smart-contract && steps.gradle-build.conclusion == 'success' && !cancelled() }}
         with:
           name: HAPI Test (Smart Contract) Report
@@ -421,7 +421,7 @@ jobs:
           retention-days: 7
 
       - name: Upload HAPI Test (Smart Contract) Network Logs
-        uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 # v4.3.1
+        uses: actions/upload-artifact@604373da6381bf24206979c74d06a550515601b9 # v4.4.1
         if: ${{ inputs.enable-hapi-tests-smart-contract && inputs.enable-network-log-capture && steps.gradle-hapi-smart-contract.conclusion == 'failure' && !cancelled() }}
         with:
           name: HAPI Test (Smart Contract) Network Logs
@@ -447,7 +447,7 @@ jobs:
           comment_mode: errors # only comment if we could not find or parse the JUnit XML files
 
       - name: Upload HAPI Test (Time Consuming) Report Artifacts
-        uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 # v4.3.1
+        uses: actions/upload-artifact@604373da6381bf24206979c74d06a550515601b9 # v4.4.1
         if: ${{ inputs.enable-hapi-tests-time-consuming && steps.gradle-build.conclusion == 'success' && !cancelled() }}
         with:
           name: HAPI Test (Time Consuming) Report
@@ -455,7 +455,7 @@ jobs:
           retention-days: 7
 
       - name: Upload HAPI Test (Time Consuming) Network Logs
-        uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 # v4.3.1
+        uses: actions/upload-artifact@604373da6381bf24206979c74d06a550515601b9 # v4.4.1
         if: ${{ inputs.enable-hapi-tests-time-consuming && inputs.enable-network-log-capture && steps.gradle-hapi-time-consuming.conclusion == 'failure' && !cancelled() }}
         with:
           name: HAPI Test (Time Consuming) Network Logs
@@ -481,7 +481,7 @@ jobs:
           comment_mode: errors # only comment if we could not find or parse the JUnit XML files
 
       - name: Upload HAPI Test (Restart) Report Artifacts
-        uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 # v4.3.1
+        uses: actions/upload-artifact@604373da6381bf24206979c74d06a550515601b9 # v4.4.1
         if: ${{ inputs.enable-hapi-tests-restart && steps.gradle-build.conclusion == 'success' && !cancelled() }}
         with:
           name: HAPI Test (Restart) Report
@@ -489,7 +489,7 @@ jobs:
           retention-days: 7
 
       - name: Upload HAPI Test (Restart) Network Logs
-        uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 # v4.3.1
+        uses: actions/upload-artifact@604373da6381bf24206979c74d06a550515601b9 # v4.4.1
         if: ${{ inputs.enable-hapi-tests-restart && inputs.enable-network-log-capture && steps.gradle-hapi-restart.conclusion == 'failure' && !cancelled() }}
         with:
           name: HAPI Test (Restart) Network Logs
@@ -516,7 +516,7 @@ jobs:
           comment_mode: errors # only comment if we could not find or parse the JUnit XML files
 
       - name: Upload HAPI Test (Node Death Reconnect) Report Artifacts
-        uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 # v4.3.1
+        uses: actions/upload-artifact@604373da6381bf24206979c74d06a550515601b9 # v4.4.1
         if: ${{ inputs.enable-hapi-tests-nd-reconnect && steps.gradle-build.conclusion == 'failure' && !cancelled() }}
         with:
           name: HAPI Test (Node Death Reconnect) Report
@@ -524,7 +524,7 @@ jobs:
           retention-days: 7
 
       - name: Upload HAPI Test (Node Death Reconnect) Network Logs
-        uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 # v4.3.1
+        uses: actions/upload-artifact@604373da6381bf24206979c74d06a550515601b9 # v4.4.1
         if: ${{ inputs.enable-hapi-tests-nd-reconnect && inputs.enable-network-log-capture && steps.gradle-hapi-nd-reconnect.conclusion == 'failure' && !cancelled() }}
         with:
           name: HAPI Test (Node Death Reconnect) Network Logs
@@ -547,7 +547,7 @@ jobs:
         run: bash <(curl -Ls https://coverage.codacy.com/get.sh) report -l Java -r gradle/reports/build/reports/jacoco/testCodeCoverageReport/testCodeCoverageReport.xml
 
       - name: Upload Test Reports
-        uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 # v4.3.1
+        uses: actions/upload-artifact@604373da6381bf24206979c74d06a550515601b9 # v4.4.1
         if: ${{ inputs.enable-unit-tests && !cancelled() }}
         with:
           name: Test Reports
