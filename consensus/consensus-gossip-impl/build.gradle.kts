@@ -19,4 +19,4 @@ plugins {
     id("com.hedera.gradle.services-publish")
 }
 
-description = "Default Consensus Gossip Iplmentation"
+description = "Default Consensus Gossip Implementation"
