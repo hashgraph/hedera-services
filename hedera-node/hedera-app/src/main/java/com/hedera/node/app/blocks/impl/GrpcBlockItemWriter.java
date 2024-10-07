@@ -32,7 +32,6 @@ import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import io.grpc.Status;
 import io.grpc.stub.StreamObserver;
-import io.helidon.common.socket.SocketOptions;
 import io.helidon.common.tls.Tls;
 import io.helidon.webclient.grpc.GrpcClient;
 import io.helidon.webclient.grpc.GrpcClientMethodDescriptor;
@@ -88,8 +87,6 @@ public class GrpcBlockItemWriter implements BlockItemWriter {
         try {
             client = GrpcClient.builder()
                     .tls(Tls.builder().enabled(false).build())
-                    .socketOptions(SocketOptions.builder()
-                            .build())
                     .baseUri(new URI(
                             null, null, blockStreamConfig.address(), blockStreamConfig.port(), null, null, null))
                     .protocolConfig(GrpcClientProtocolConfig.builder()
