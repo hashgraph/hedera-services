@@ -114,6 +114,7 @@ public class NodeUpdateTest {
                         .adminKey(WRONG_LENGTH_EDDSA_KEY)
                         .signedBy(GENESIS)
                         .hasPrecheck(INVALID_ADMIN_KEY));
+
     }
 
     @HapiTest
