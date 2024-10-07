@@ -1781,8 +1781,11 @@ message PendingAirdropValue {
 
 /**
  * An approved allowance of hbar transfers for a spender.<br/>
- * This message SHALL be used to record the allowance of hbars that an account has approved
+ * This message records the allowance of hbars that an account has approved
  * for sending messages to a given topic.
+ *
+ * This message MUST specify `owner`, `topic_id`, `amount` and `amount_per_message'.
+ * The `amount_per_message` field value SHALL NOT be greater than the `amount` field.
  */
 message ConsensusCryptoFeeScheduleAllowance {
     /**
@@ -1802,8 +1805,9 @@ message ConsensusCryptoFeeScheduleAllowance {
 
     /**
      * A maximum amount of the spender's allowance in tinybars.<br/>
-     * This is the maximum amount of hbars that the spender is allowed to spend.<br/>
-     * If this field SHALL set to `0`, the allowance is considered to be revoked.
+     * This is the maximum amount of hbars that the spender is allowed to spend.
+     * <p>
+     * If this field is `0`, the allowance SHALL be interpreted as revoked.
      */
     uint64 amount = 3;
 
@@ -1817,8 +1821,11 @@ message ConsensusCryptoFeeScheduleAllowance {
 
 /**
  * An approved allowance of hbar transfers for a spender.<br/>
- * This message SHALL be used to record the allowance of fungible tokens
+ * This message records the allowance of fungible tokens
  * that an account has approved for sending messages to a given topic.
+ *
+ * * This message MUST specify `owner`, `topic_id`, `token_id`, `amount` and `amount_per_message'.
+ * The 'amount_per_message' field value SHALL NOT be greater than the 'amount' field.
  */
 message ConsensusTokenFeeScheduleAllowance {
     /**
@@ -1844,15 +1851,16 @@ message ConsensusTokenFeeScheduleAllowance {
     TopicID topic_id = 3;
 
     /**
-     * A maximum amount of the spender's allowance in tinybars.<br/>
-     * This is the maximum amount of hbars that the spender is allowed to spend.<br/>
-     * If this field SHALL set to `0`, the allowance is considered to be revoked.
+     * A maximum amount of the spender's allowance in given fungible token.<br/>
+     * This is the maximum amount of tokens that the spender is allowed to spend.
+     * <p>
+     * If this field is `0`, the allowance SHALL be interpreted as revoked.
      */
     uint64 amount = 4;
 
     /**
-     * A maximum amount of the spender's allowance in tinybars per message.<br/>
-     * This is the maximum amount of hbars that the spender is allowed to spend per message.<br/>
+     * A maximum amount of the spender's allowance in given fungible token per message.<br/>
+     * This is the maximum amount of tokens that the spender is allowed to spend per message.<br/>
      * This field value SHALL NOT be greater than the `amount` field.
      */
     uint64 amount_per_message = 5;
@@ -1902,14 +1910,18 @@ message TopicAllowanceId {
 message TopicAllowanceValue {
     /**
      * An amount representing the total allowance granted.<br/>
-     * This represents both hbar/fungible token allowance, depending on the 'TopicAllowanceId'.<br/>
-     * If this field SHALL be set to `0`, the allowance is considered to be revoked.
+     * This represents both hbar/fungible token allowance, depending on
+     * the 'TopicAllowanceId'.
+     * <p>
+     * If this field is set to `0`, the allowance SHALL be interpreted as revoked.
      */
-    uint64 amount = 2;
+    uint64 amount = 1;
     /**
      * An amount representing limit of allowance spend per message.<br/>
-     * This represents both hbar/fungible token allowance, depending on the 'TopicAllowanceId'.<br/>
+     * This represents both hbar/fungible token allowance, depending on
+     * the 'TopicAllowanceId'.
+     * <p>
      * This field value SHALL NOT be greater than the 'amount' field.
      */
-    uint64 amount_per_message = 3;
+    uint64 amount_per_message = 2;
 }
