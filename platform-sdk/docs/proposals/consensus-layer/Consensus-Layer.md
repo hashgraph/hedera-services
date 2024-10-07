@@ -6,7 +6,7 @@
 
 Update the architecture for the consensus node to reduce complexity, improve performance, and improve stability.
 
-| Metadata           | Entities                                                 | 
+|      Metadata      |                         Entities                         |
 |--------------------|----------------------------------------------------------|
 | Designers          | Richard Bair, Jasper Potts, Oleg Mazurov, Austin Littley |
 | Functional Impacts | Consensus Node                                           |
@@ -33,9 +33,9 @@ load. This work is also necessary to prepare for autonomous node operation, and 
 3. The two fundamental modules are "consensus" and "execution". The Consensus module takes transactions and produces
    rounds. Everything required to make that happen (gossip, event validation, hashgraph, event creation, etc.) is part
    of the Consensus module. It is a library, and instances of the classes and interfaces within this library are created
-   and managed by the Execution module. The Consensus module does not persist state in the merkle tree, has no main 
+   and managed by the Execution module. The Consensus module does not persist state in the merkle tree, has no main
    method, and has minimal dependencies.
-4. The Execution module is a mixture of what we have called "services" and some parts of "platform". The responsibility 
+4. The Execution module is a mixture of what we have called "services" and some parts of "platform". The responsibility
    for reconnect, state saving, lifecycle, etc. will be merged with modules making up the base of the application,
    dramatically simplifying the interaction between "consensus" and "execution".
 5. Maintaining high availability under unpredictable conditions ("liveness under stress"), will be designed based on a
@@ -111,7 +111,7 @@ A hashgraph is a directed acyclic graph (or DAG), made up of _events_. Each even
 events. When the hashgraph consensus algorithm runs, it collects events into _consensus rounds_. One or more rounds is
 grouped together by the Execution layer, executed, and used to form a block in the blockchain.
 
-Each event contains an ordered list of _transactions_. 
+Each event contains an ordered list of _transactions_.
 
 Nodes create events. Each event in the hashgraph has a _creator_. The creator is the node that created the event. Each
 event also has a _birth round_. This is the most recent round number known by the creator at the time it created the
