@@ -38,7 +38,7 @@ public class ConcurrentStreamingTreeHasher implements StreamingTreeHasher {
     /**
      * The number of leaves to hash in parallel before combining the resulting hashes.
      */
-    private static final int HASHING_CHUNK_SIZE = 16;
+    private static final int DEFAULT_BATCH_SIZE = 8;
 
     /**
      * The base {@link HashCombiner} that combines the hashes of the leaves of the tree, at depth zero.
@@ -48,6 +48,10 @@ public class ConcurrentStreamingTreeHasher implements StreamingTreeHasher {
      * The {@link ExecutorService} used to parallelize the hashing and combining of the leaves of the tree.
      */
     private final ExecutorService executorService;
+    /**
+     * The size of the batches of leaves to hash in parallel.
+     */
+    private final int hashingBatchSize;
 
     /**
      * The number of leaves added to the tree.
@@ -71,7 +75,12 @@ public class ConcurrentStreamingTreeHasher implements StreamingTreeHasher {
     private CompletableFuture<Void> hashed = CompletableFuture.completedFuture(null);
 
     public ConcurrentStreamingTreeHasher(@NonNull final ExecutorService executorService) {
+        this(executorService, DEFAULT_BATCH_SIZE);
+    }
+
+    public ConcurrentStreamingTreeHasher(@NonNull final ExecutorService executorService, final int hashingBatchSize) {
         this.executorService = requireNonNull(executorService);
+        this.hashingBatchSize = hashingBatchSize;
     }
 
     @Override
@@ -82,7 +91,7 @@ public class ConcurrentStreamingTreeHasher implements StreamingTreeHasher {
         }
         numLeaves++;
         pendingLeaves.add(leaf);
-        if (pendingLeaves.size() == HASHING_CHUNK_SIZE) {
+        if (pendingLeaves.size() == hashingBatchSize) {
             schedulePendingWork();
         }
     }

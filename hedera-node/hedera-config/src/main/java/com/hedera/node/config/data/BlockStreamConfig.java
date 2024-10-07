@@ -36,4 +36,6 @@ public record BlockStreamConfig(
         @ConfigProperty(defaultValue = "FILE") @NodeProperty BlockStreamWriterMode writerMode,
         @ConfigProperty(defaultValue = "data/block-streams") @NodeProperty String blockFileDir,
         @ConfigProperty(defaultValue = "true") @NetworkProperty boolean compressFilesOnCreation,
+        @ConfigProperty(defaultValue = "8") @NetworkProperty int hatchingBatchSize,
+        @ConfigProperty(defaultValue = "8") @NetworkProperty int serializationBatchSize,
         @ConfigProperty(defaultValue = "1") @NetworkProperty int roundsPerBlock) {}

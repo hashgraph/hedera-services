@@ -83,9 +83,9 @@ import org.apache.logging.log4j.Logger;
 public class BlockStreamManagerImpl implements BlockStreamManager {
     private static final Logger log = LogManager.getLogger(BlockStreamManagerImpl.class);
 
-    private static final int CHUNK_SIZE = 8;
-
     private final int roundsPerBlock;
+    private final int hashingBatchSize;
+    private final int serializationBatchSize;
     private final TssBaseService tssBaseService;
     private final SemanticVersion version;
     private final SemanticVersion hapiVersion;
@@ -161,7 +161,10 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
         requireNonNull(configProvider);
         final var config = configProvider.getConfiguration();
         this.hapiVersion = hapiVersionFrom(config);
-        this.roundsPerBlock = config.getConfigData(BlockStreamConfig.class).roundsPerBlock();
+        final var blockStreamConfig = config.getConfigData(BlockStreamConfig.class);
+        this.roundsPerBlock = blockStreamConfig.roundsPerBlock();
+        this.hashingBatchSize = blockStreamConfig.hatchingBatchSize();
+        this.serializationBatchSize = blockStreamConfig.serializationBatchSize();
         this.blockHashManager = new BlockHashManager(config);
         this.runningHashManager = new RunningHashManager();
         this.lastNonEmptyRoundNumber = initialStateHash.roundNum();
@@ -205,8 +208,8 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
             blockHashManager.startBlock(blockStreamInfo, lastBlockHash);
             runningHashManager.startBlock(blockStreamInfo);
 
-            inputTreeHasher = new ConcurrentStreamingTreeHasher(executor);
-            outputTreeHasher = new ConcurrentStreamingTreeHasher(executor);
+            inputTreeHasher = new ConcurrentStreamingTreeHasher(executor, hashingBatchSize);
+            outputTreeHasher = new ConcurrentStreamingTreeHasher(executor, hashingBatchSize);
             blockNumber = blockStreamInfo.blockNumber() + 1;
             pendingItems = new ArrayList<>();
 
@@ -312,7 +315,7 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
     @Override
     public void writeItem(@NonNull final BlockItem item) {
         pendingItems.add(item);
-        if (pendingItems.size() == CHUNK_SIZE) {
+        if (pendingItems.size() == serializationBatchSize) {
             schedulePendingWork();
         }
     }
