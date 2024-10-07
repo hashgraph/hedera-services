@@ -163,7 +163,7 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
         this.hapiVersion = hapiVersionFrom(config);
         final var blockStreamConfig = config.getConfigData(BlockStreamConfig.class);
         this.roundsPerBlock = blockStreamConfig.roundsPerBlock();
-        this.hashingBatchSize = blockStreamConfig.hatchingBatchSize();
+        this.hashingBatchSize = blockStreamConfig.hashingBatchSize();
         this.serializationBatchSize = blockStreamConfig.serializationBatchSize();
         this.blockHashManager = new BlockHashManager(config);
         this.runningHashManager = new RunningHashManager();
