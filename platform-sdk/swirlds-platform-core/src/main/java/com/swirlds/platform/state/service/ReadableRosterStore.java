@@ -16,8 +16,6 @@
 
 package com.swirlds.platform.state.service;
 
-import static java.util.Objects.requireNonNull;
-
 import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.hapi.node.state.roster.RosterState;
@@ -56,8 +54,8 @@ public class ReadableRosterStore implements RosterStateAccessor {
      */
     public ReadableRosterStore(@NonNull final ReadableStates readableStates) {
         Objects.requireNonNull(readableStates);
-        this.rosterState = requireNonNull(readableStates).getSingleton(RosterStateId.ROSTER_STATES_KEY);
-        this.rosterMap = requireNonNull(readableStates).get(RosterStateId.ROSTER_KEY);
+        this.rosterState = readableStates.getSingleton(RosterStateId.ROSTER_STATES_KEY);
+        this.rosterMap = readableStates.get(RosterStateId.ROSTER_KEY);
     }
 
     @Nullable
@@ -76,7 +74,7 @@ public class ReadableRosterStore implements RosterStateAccessor {
      * Returns the active roster iff:
      *      the roster state singleton is not null
      *      the list of round roster pairs is not empty
-     *      the first round roster pair is not null
+     *      the first round roster pair exists
      *      the active roster hash is present in the roster map
      * otherwise returns null.
      * @return the active roster

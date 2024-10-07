@@ -63,6 +63,7 @@ public class WritableRosterStore implements RosterStateModifier {
      * The maximum number of active rosters to keep in the roster state.
      */
     static final int MAXIMUM_ROSTER_HISTORY_SIZE = 2;
+
     /**
      * Constructs a new {@link WritableRosterStore} instance.
      *
@@ -145,8 +146,9 @@ public class WritableRosterStore implements RosterStateModifier {
             }
         }
 
-        final Builder rosterStateBuilder =
-                RosterState.newBuilder().candidateRosterHash(Bytes.EMPTY).roundRosterPairs(roundRosterPairs);
+        final Builder rosterStateBuilder = RosterState.newBuilder()
+                .candidateRosterHash(previousRosterState.candidateRosterHash())
+                .roundRosterPairs(roundRosterPairs);
         storeRoster(roster, activeRosterHash, rosterStateBuilder);
     }
 
@@ -181,7 +183,7 @@ public class WritableRosterStore implements RosterStateModifier {
     }
 
     /**
-     * This method removes a roster from the roster map, but only if it doesn't match any of the active roster hashes in
+     * Removes a roster from the roster map, but only if it doesn't match any of the active roster hashes in
      * the roster state. The check ensures we don't inadvertently remove a roster still in use.
      *
      * @param rosterHash the hash of the roster
