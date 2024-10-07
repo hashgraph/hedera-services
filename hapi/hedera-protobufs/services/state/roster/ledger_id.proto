@@ -1,5 +1,10 @@
 /**
  * # Ledger ID
+ * A Ledger ID is a Threshold Signature Scheme (TSS) public key that
+ * identifies the ledger.  A Ledger ID is intended to be long-lived, but
+ * may change under rare circumstances.  The Ledger ID for a particular
+ * distributed ledger can be used to validate the signature of that ledger
+ * in, for example, a block stream "block proof".
  *
  * ### Keywords
  * The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT",
@@ -33,7 +38,25 @@ option java_package = "com.hederahashgraph.api.proto.java";
 option java_multiple_files = true;
 
 /**
- * A public key that identifies the ledger and can be used to verify ledger signatures.
+ * A ledger identifier.<br/>
+ * This message identifies a ledger and can be used to verify ledger signatures.
+ * A LedgerId may change, but does so only in rare circumstances.
+ *
+ * A ledger identifier SHALL be a public key defined according to the TSS
+ * process.<br/>
+ * A ledger identifier SHOULD NOT change, but MAY do so in rare circumstances.
+ * Clients SHOULD always check for the correct ledger identifier, according to the
+ * network roster, before attempting to verify any state proof or other ledger
+ * signature.
+ *
+ * ### Block Stream Effects
+ * Every Block Stream `BlockProof` item SHALL be signed via TSS and MUST be
+ * verified with the ledger identifier current at the _start_ of that block.
+ * If the ledger identifier changes, the new value MUST be used to validate
+ * Block Proof items after the change.
+ * A change to the ledger identifier SHALL be reported in a State Change for
+ * the block containing that change, which SHALL be verified with the _prior_
+ * ledger identifier.
  */
 message LedgerId {
 

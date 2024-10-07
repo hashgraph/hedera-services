@@ -51,6 +51,17 @@ public record NodeMetadata(
     }
 
     /**
+     * Create a new instance with the same values as this instance, but a different account id.
+     * @param accountId the new account id
+     * @return a new instance with the same values as this instance, but a different account id
+     */
+    public NodeMetadata withNewAccountId(@NonNull final AccountID accountId) {
+        requireNonNull(accountId);
+        return new NodeMetadata(
+                nodeId, name, accountId, host, grpcPort, gossipPort, gossipTlsPort, prometheusPort, workingDir);
+    }
+
+    /**
      * Returns the working directory for this node, or throws an exception if the working directory is null.
      *
      * @return the working directory for this node

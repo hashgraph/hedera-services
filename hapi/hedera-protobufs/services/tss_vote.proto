@@ -1,0 +1,80 @@
+/**
+ * # Tss Vote Transaction
+ *
+ * ### Keywords
+ * The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT",
+ * "SHOULD", "SHOULD NOT", "RECOMMENDED", "MAY", and "OPTIONAL" in this
+ * document are to be interpreted as described in
+ * [RFC2119](https://www.ietf.org/rfc/rfc2119) and clarified in
+ * [RFC8174](https://www.ietf.org/rfc/rfc8174).
+ */
+syntax = "proto3";
+
+package proto;
+
+/*
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+option java_package = "com.hederahashgraph.api.proto.java";
+// <<<pbj.java_package = "com.hedera.hapi.node.tss">>> This comment is special code for setting PBJ Compiler java package
+option java_multiple_files = true;
+
+/**
+ * A transaction used to vote on the validity of TssMessages for a candidate roster.
+ */
+message TssVoteTransactionBody {
+
+  /**
+   * A hash of the roster containing the node generating this TssVote.
+   */
+  bytes source_roster_hash = 1;
+
+  /**
+   * A hash of the roster that this TssVote is for.
+   */
+  bytes target_roster_hash = 2;
+
+  /**
+   * An identifier (and public key) computed from the TssMessages for the target roster.
+   */
+  bytes ledger_id = 3;
+
+  /**
+   * A signature produced by the node.<br/>
+   * This is produced using the node RSA signing key to sign the ledger_id.<br/>
+   * This signature is used to establish a chain of trust in the ledger id.
+   */
+  bytes node_signature = 4;
+
+  /**
+   * A bit vector of message statuses.<br/>
+   * Each bit in this vector indicates receipt (1) or non-receipt (0) of a
+   * _valid_ `TssMessage` for a corresponding `TssMessageTransaction`.
+   * <p>
+   * #### Example<br/>
+   * <ul><li>The least significant bit of byte[0] SHALL be sequence 0.</li>
+   *     <li>The most significant bit of byte[0] SHALL be sequence 7.</li>
+   *     <li>The least significant bit of byte[1] SHALL be sequence 8.</li>
+   *     <li>The most significant bit of byte[0] SHALL be sequence 15.</li>
+   * </ul>
+   * A bit SHALL be set if the `TssMessage` for the `TssMessageTransaction`
+   * with a sequence number matching that bit index has been
+   * received, and is valid.<br/>
+   * A bit SHALL NOT be set if the `TssMessage` has not been received or was
+   * received but not valid.
+   */
+  bytes tss_vote = 5;
+}

@@ -17,8 +17,10 @@
 package com.hedera.node.app.tss.impl;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.Mockito.verify;
 
+import com.hedera.node.app.tss.schemas.V0560TSSSchema;
 import com.swirlds.state.spi.SchemaRegistry;
 import java.util.ArrayList;
 import java.util.List;
@@ -80,8 +82,8 @@ class TssBaseServiceImplTest {
     }
 
     @Test
-    void placeholderRegistersNoSchemasYet() {
+    void placeholderRegistersSchemas() {
         subject.registerSchemas(registry);
-        verifyNoInteractions(registry);
+        verify(registry).register(argThat(s -> s instanceof V0560TSSSchema));
     }
 }

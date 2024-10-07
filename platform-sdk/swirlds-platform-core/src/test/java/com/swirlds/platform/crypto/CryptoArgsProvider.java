@@ -16,14 +16,20 @@
 
 package com.swirlds.platform.crypto;
 
+import com.swirlds.common.crypto.config.CryptoConfig;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.common.test.fixtures.io.ResourceLoader;
+import com.swirlds.config.api.Configuration;
+import com.swirlds.config.api.ConfigurationBuilder;
+import com.swirlds.platform.config.PathsConfig;
+import com.swirlds.platform.roster.RosterUtils;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
 import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder.WeightDistributionStrategy;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.net.URISyntaxException;
+import java.nio.file.Path;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
@@ -41,8 +47,7 @@ public class CryptoArgsProvider {
     private static final char[] PASSWORD = "password".toCharArray();
 
     /**
-     * @return 3 sets of arguments, 1 generated, 1 loaded from files, and 1 that generates agreement keys if they are
-     * not loaded from files.
+     * @return 2 sets of arguments, 1 generated, 1 loaded from files.
      */
     static Stream<Arguments> basicTestArgs() throws Exception {
         Instant start = Instant.now();
@@ -51,11 +56,9 @@ public class CryptoArgsProvider {
         final AddressBook genAB = createAddressBook(NUMBER_OF_ADDRESSES);
         final Map<NodeId, KeysAndCerts> genC = CryptoStatic.generateKeysAndCerts(genAB);
         start = Instant.now();
-        final AddressBookAndCerts addressBookAndCerts2 = createAddressBookLoadSigKeysCreateAgrKeys(NUMBER_OF_ADDRESSES);
         return Stream.of(
                 Arguments.of(addressBookAndCerts.addressBook(), addressBookAndCerts.nodeIdKeysAndCertsMap()),
-                Arguments.of(genAB, genC),
-                Arguments.of(addressBookAndCerts2.addressBook(), addressBookAndCerts2.nodeIdKeysAndCertsMap()));
+                Arguments.of(genAB, genC));
     }
 
     public static AddressBook createAddressBook(final int size) {
@@ -66,11 +69,24 @@ public class CryptoArgsProvider {
 
         for (int i = 0; i < addresses.getSize(); i++) {
             final NodeId nodeId = addresses.getNodeId(i);
-            addresses.add(
-                    addresses.getAddress(nodeId).copySetSelfName(memberName(i)).copySetHostnameInternal("127.0.0.1"));
+            addresses.add(addresses
+                    .getAddress(nodeId)
+                    .copySetSelfName(RosterUtils.formatNodeName(nodeId.id()))
+                    .copySetHostnameInternal("127.0.0.1"));
         }
 
         return addresses;
+    }
+
+    private static Configuration configure(final Path keyDirectory) {
+        final ConfigurationBuilder builder = ConfigurationBuilder.create();
+
+        builder.withConfigDataTypes(PathsConfig.class, CryptoConfig.class);
+
+        builder.withValue("paths.keysDirPath", keyDirectory.toAbsolutePath().toString());
+        builder.withValue("crypto.password", new String(PASSWORD));
+
+        return builder.build();
     }
 
     /**
@@ -83,38 +99,13 @@ public class CryptoArgsProvider {
             throws URISyntaxException, UnrecoverableKeyException, KeyLoadingException, KeyStoreException,
                     NoSuchAlgorithmException, KeyGeneratingException, NoSuchProviderException {
         final AddressBook createdAB = createAddressBook(size);
-        final Map<NodeId, KeysAndCerts> loadedC =
-                CryptoStatic.loadKeysAndCerts(createdAB, ResourceLoader.getFile("preGeneratedKeysAndCerts/"), PASSWORD);
+        final Map<NodeId, KeysAndCerts> loadedC = EnhancedKeyStoreLoader.using(
+                        createdAB, configure(ResourceLoader.getFile("preGeneratedPEMKeysAndCerts/")))
+                .scan()
+                .generateIfNecessary()
+                .verify()
+                .injectInAddressBook()
+                .keysAndCerts();
         return new AddressBookAndCerts(createdAB, loadedC);
-    }
-
-    /**
-     * returns a record with the addressBook and signing keys loaded from file with generated agreement keys.
-     *
-     * @param size the size of the required address book
-     */
-    @NonNull
-    public static AddressBookAndCerts createAddressBookLoadSigKeysCreateAgrKeys(final int size)
-            throws URISyntaxException, UnrecoverableKeyException, KeyLoadingException, KeyStoreException,
-                    NoSuchAlgorithmException, KeyGeneratingException, NoSuchProviderException {
-        final AddressBook createdAB = createAddressBook(size);
-        final Map<NodeId, KeysAndCerts> loadedC = CryptoStatic.loadKeysAndCerts(
-                createdAB, ResourceLoader.getFile("preGenKeysAndCertsNoAgrKey/"), PASSWORD);
-        return new AddressBookAndCerts(createdAB, loadedC);
-    }
-
-    private static String memberName(int num) {
-        final int base = 26;
-        final int padding = 4;
-        final StringBuilder res = new StringBuilder();
-        int rem;
-        while (num > 0) {
-            rem = num % base;
-            final char c = (char) ('a' + rem);
-            res.append(c);
-            num /= base;
-        }
-        res.append("a".repeat(Math.max(0, padding - res.length())));
-        return res.reverse().toString();
     }
 }
