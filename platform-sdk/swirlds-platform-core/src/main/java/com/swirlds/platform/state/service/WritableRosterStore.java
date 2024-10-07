@@ -77,9 +77,7 @@ public class WritableRosterStore implements RosterStateModifier {
     }
 
     /**
-     * Set the candidate roster if valid and doesn't yet exist in the state.
-     *
-     * @param candidateRoster a candidate roster to set.
+     * {@inheritDoc}
      */
     @Override
     public void setCandidateRoster(@NonNull final Roster candidateRoster) {
@@ -91,12 +89,11 @@ public class WritableRosterStore implements RosterStateModifier {
 
         // update the roster state/map
         final RosterState previousRosterState = rosterStateOrThrow();
-        final Builder rosterStateBuilder = RosterState.newBuilder()
-                .candidateRosterHash(incomingCandidateRosterHash)
-                .roundRosterPairs(previousRosterState.roundRosterPairs());
         final Bytes previousCandidateRosterHash = previousRosterState.candidateRosterHash();
+        final Builder newRosterState =
+                previousRosterState.copyBuilder().candidateRosterHash(incomingCandidateRosterHash);
         removeRoster(previousCandidateRosterHash);
-        storeRoster(candidateRoster, incomingCandidateRosterHash, rosterStateBuilder);
+        storeRoster(candidateRoster, incomingCandidateRosterHash, newRosterState);
     }
 
     /**
@@ -118,10 +115,7 @@ public class WritableRosterStore implements RosterStateModifier {
     }
 
     /**
-     * Stores this roster as the active roster.
-     *
-     * @param roster     a roster to set as active
-     * @param round     the round in which this roster became active
+     * {@inheritDoc}
      */
     public void setActiveRoster(@NonNull final Roster roster, final long round) {
         Objects.requireNonNull(roster);
@@ -153,10 +147,11 @@ public class WritableRosterStore implements RosterStateModifier {
             }
         }
 
-        final Builder rosterStateBuilder = RosterState.newBuilder()
+        final Builder newRosterState = previousRosterState
+                .copyBuilder()
                 .candidateRosterHash(previousRosterState.candidateRosterHash())
                 .roundRosterPairs(roundRosterPairs);
-        storeRoster(roster, activeRosterHash, rosterStateBuilder);
+        storeRoster(roster, activeRosterHash, newRosterState);
     }
 
     /**
@@ -170,7 +165,7 @@ public class WritableRosterStore implements RosterStateModifier {
     }
 
     /**
-     * Stores the roster in the roster state, roster map and commits the changes.
+     * Stores the roster in the roster map, updates the roster store with the provided builder, and commits the changes.
      *
      * @param rosterToStore              the roster to store
      * @param rosterHash                   the hash of the roster

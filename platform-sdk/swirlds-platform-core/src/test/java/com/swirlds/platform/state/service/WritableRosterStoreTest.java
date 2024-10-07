@@ -79,7 +79,6 @@ class WritableRosterStoreTest {
     }
 
     @Test
-    @DisplayName("Test that a stored candidate roster can be successfully retrieved")
     void testSetCandidateRosterReturnsSame() {
         final Roster roster1 = createValidTestRoster(1);
         rosterStateModifier.setCandidateRoster(roster1);
@@ -111,7 +110,6 @@ class WritableRosterStoreTest {
     }
 
     @Test
-    @DisplayName("Tests that setting an active roster returns the active roster when getActiveRoster is called.")
     void testGetCandidateRosterWithValidCandidateRoster() {
         final Roster activeRoster = createValidTestRoster(1);
         assertNull(rosterStateAccessor.getActiveRoster(), "Active roster should be null initially");
@@ -123,21 +121,15 @@ class WritableRosterStoreTest {
     }
 
     @Test
-    @DisplayName("Test that the oldest roster is removed when a third roster is set")
+    @DisplayName("Test Oldest Active Roster Cleanup")
     void testOldestActiveRosterRemoved() throws NoSuchFieldException, IllegalAccessException {
         final Roster roster1 = createValidTestRoster(3);
         rosterStateModifier.setActiveRoster(roster1, 1);
-        assertSame(
-                rosterStateAccessor.getActiveRoster(),
-                roster1,
-                "Returned active roster should be the same as the one set");
+        assertSame(rosterStateAccessor.getActiveRoster(), roster1, "Returned active roster should be roster1");
 
         final Roster roster2 = createValidTestRoster(1);
         rosterStateModifier.setActiveRoster(roster2, 2);
-        assertSame(
-                rosterStateAccessor.getActiveRoster(),
-                roster2,
-                "Returned active roster should be the same as the one set");
+        assertSame(rosterStateAccessor.getActiveRoster(), roster2, "Returned active roster should be roster2");
 
         // set a 3rd candidate roster and adopt it
         final Roster roster3 = createValidTestRoster(2);
@@ -151,7 +143,7 @@ class WritableRosterStoreTest {
     }
 
     @Test
-    @DisplayName("Test that an exception is thrown if stored active rosters are ever > MAXIMUM_ROSTER_HISTORY_SIZE")
+    @DisplayName("Test Max Roster List Size Exceeded")
     void testMaximumRostersMoreThan2ThrowsException() throws NoSuchFieldException, IllegalAccessException {
         final List<RoundRosterPair> activeRosters = new ArrayList<>();
         activeRosters.add(new RoundRosterPair(
@@ -174,9 +166,7 @@ class WritableRosterStoreTest {
     }
 
     @Test
-    @DisplayName(
-            "Test that when a roster hash collision occurs between a newly set active roster "
-                    + "and another active roster in history, the other roster isn't removed from the state when remove is called")
+    @DisplayName("Duplicate Roster Hash")
     void testRosterHashCollisions() {
         final Roster roster1 = createValidTestRoster(3);
         rosterStateModifier.setActiveRoster(roster1, 1);
