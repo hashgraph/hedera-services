@@ -1,5 +1,5 @@
 /**
- * # Tss Vote Map Key
+ * # Tss Message Map Key
  *
  * ### Keywords
  * The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT",
@@ -10,7 +10,7 @@
  */
 syntax = "proto3";
 
-package com.hedera.hapi.platform.state.tss;
+package com.hedera.hapi.node.state.tss;
 
 /*
  * Copyright (C) 2024 Hedera Hashgraph, LLC
@@ -28,32 +28,31 @@ package com.hedera.hapi.platform.state.tss;
  * limitations under the License.
  */
 
-option java_package = "com.hedera.hapi.platform.state.tss.legacy";
-// <<<pbj.java_package = "com.hedera.hapi.platform.state.tss">>> This comment is special code for setting PBJ Compiler java package
+option java_package = "com.hedera.hapi.node.state.tss.legacy";
+// <<<pbj.java_package = "com.hedera.hapi.node.state.tss">>> This comment is special code for setting PBJ Compiler java package
 option java_multiple_files = true;
 
- /**
-  * A key for use in the Threshold Signature Scheme (TSS) TssVoteMaps.
-  *
-  * This key SHALL be used to uniquely identify entries in the Vote Maps.
+/**
+  * A key for use in the Threshold Signature Scheme (TSS) TssMessageMaps.<br/>
+  * This key SHALL be used to uniquely identify entries in the Message Maps.
   */
-message TssVoteMapKey {
+message TssMessageMapKey {
 
   /**
-   * A hash of the target roster for the associated value in the map. <br/>
-   * This hash uniquely identifies the target roster.
+   * A hash that uniquely identifies the target roster for the associated value
+   * in the map.
    * <p>
    * This value MUST be set.<br/>
+   * This value MUST NOT be empty.<br/>
    * This value MUST contain a valid hash.
    */
   bytes roster_hash = 1;
 
-  /* The node id of the node that created the TssVote.
-  * <p>
-  * This id uniquely identifies the node.
-  * <p>
-  * This value MUST be set.<br/>
-  * This value MUST be a valid node id.
-  */
-  uint64 node_id = 2;
+  /**
+   * A number representing consensus order.<br/>
+   * This declares the order in which the mapped value came to consensus.
+   * <p>This value MUST be set.<br/>
+   * This value MUST be a valid sequence number.
+   */
+  uint64 sequence_number = 2;
 }

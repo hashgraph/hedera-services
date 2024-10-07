@@ -17,8 +17,8 @@
 package com.hedera.node.app.tss.schemas;
 
 import com.hedera.hapi.node.base.SemanticVersion;
-import com.hedera.hapi.platform.state.tss.TssMessageMapKey;
-import com.hedera.hapi.platform.state.tss.TssVoteMapKey;
+import com.hedera.hapi.node.state.tss.TssMessageMapKey;
+import com.hedera.hapi.node.state.tss.TssVoteMapKey;
 import com.hedera.hapi.services.auxiliary.tss.TssMessageTransactionBody;
 import com.hedera.hapi.services.auxiliary.tss.TssVoteTransactionBody;
 import com.swirlds.state.spi.Schema;
