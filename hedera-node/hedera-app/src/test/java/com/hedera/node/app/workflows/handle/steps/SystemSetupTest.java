@@ -40,7 +40,6 @@ import com.hedera.hapi.node.base.TransferList;
 import com.hedera.hapi.node.state.blockrecords.BlockInfo;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.transaction.ExchangeRateSet;
-import com.hedera.node.app.records.ReadableBlockRecordStore;
 import com.hedera.node.app.service.addressbook.ReadableNodeStore;
 import com.hedera.node.app.service.file.impl.FileServiceImpl;
 import com.hedera.node.app.service.file.impl.schemas.V0490FileSchema;
@@ -104,9 +103,6 @@ class SystemSetupTest {
     @Mock(strictness = Mock.Strictness.LENIENT)
     private TokenContext context;
 
-    @Mock(strictness = Mock.Strictness.LENIENT)
-    private ReadableBlockRecordStore blockStore;
-
     @Mock
     private SyntheticAccountCreator syntheticAccountCreator;
 
@@ -145,13 +141,9 @@ class SystemSetupTest {
 
     @BeforeEach
     void setup() {
-        given(context.readableStore(ReadableBlockRecordStore.class)).willReturn(blockStore);
         given(context.consensusTime()).willReturn(CONSENSUS_NOW);
         given(context.addPrecedingChildRecordBuilder(GenesisAccountStreamBuilder.class, CRYPTO_CREATE))
                 .willReturn(genesisAccountRecordBuilder);
-        given(context.readableStore(ReadableBlockRecordStore.class)).willReturn(blockStore);
-
-        given(blockStore.getLastBlockInfo()).willReturn(defaultStartupBlockInfo());
 
         subject = new SystemSetup(fileService, syntheticAccountCreator);
     }

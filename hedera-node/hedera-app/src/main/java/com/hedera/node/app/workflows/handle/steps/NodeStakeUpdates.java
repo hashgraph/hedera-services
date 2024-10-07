@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.workflows.handle.steps;
 
+import static com.hedera.node.config.types.StreamMode.RECORDS;
 import static com.swirlds.common.stream.LinkedObjectStreamUtilities.getPeriod;
 import static java.time.ZoneOffset.UTC;
 import static java.util.Objects.requireNonNull;
@@ -27,6 +28,7 @@ import com.hedera.node.app.service.token.impl.handlers.staking.EndOfStakingPerio
 import com.hedera.node.app.service.token.records.TokenContext;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.node.config.data.StakingConfig;
+import com.hedera.node.config.types.StreamMode;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -66,25 +68,37 @@ public class NodeStakeUpdates {
      * to catch up on updates and distributions when first coming online.
      *
      * @param stack the savepoint stack
-     * @param isGenesis whether the current transaction is the genesis transaction
      * @param tokenContext the token context
+     * @param streamMode the stream mode
+     * @param isGenesis whether the current transaction is the genesis transaction
+     * @param lastIntervalProcessTime if known, the last instant when time-based events were processed
      */
     public void process(
             @NonNull final SavepointStackImpl stack,
             @NonNull final TokenContext tokenContext,
-            final boolean isGenesis) {
-        requireNonNull(stack, "stack must not be null");
-        requireNonNull(tokenContext, "tokenContext must not be null");
-        final var blockStore = tokenContext.readableStore(ReadableBlockRecordStore.class);
+            @NonNull final StreamMode streamMode,
+            final boolean isGenesis,
+            @NonNull final Instant lastIntervalProcessTime) {
+        requireNonNull(stack);
+        requireNonNull(tokenContext);
+        requireNonNull(streamMode);
+        requireNonNull(lastIntervalProcessTime);
         var shouldExport = isGenesis;
         if (!shouldExport) {
             final var consensusTime = tokenContext.consensusTime();
-            final var lastHandleTime = blockStore.getLastBlockInfo().consTimeOfLastHandledTxnOrThrow();
-            if (consensusTime.getEpochSecond() > lastHandleTime.seconds()) {
-                shouldExport = isNextStakingPeriod(
-                        consensusTime,
-                        Instant.ofEpochSecond(lastHandleTime.seconds(), lastHandleTime.nanos()),
-                        tokenContext);
+            if (streamMode == RECORDS) {
+                final var blockStore = tokenContext.readableStore(ReadableBlockRecordStore.class);
+                final var lastHandleTime = blockStore.getLastBlockInfo().consTimeOfLastHandledTxnOrThrow();
+                if (consensusTime.getEpochSecond() > lastHandleTime.seconds()) {
+                    shouldExport = isNextStakingPeriod(
+                            consensusTime,
+                            Instant.ofEpochSecond(lastHandleTime.seconds(), lastHandleTime.nanos()),
+                            tokenContext);
+                }
+            } else {
+                if (consensusTime.getEpochSecond() > lastIntervalProcessTime.getEpochSecond()) {
+                    shouldExport = isNextStakingPeriod(consensusTime, lastIntervalProcessTime, tokenContext);
+                }
             }
         }
         if (shouldExport) {

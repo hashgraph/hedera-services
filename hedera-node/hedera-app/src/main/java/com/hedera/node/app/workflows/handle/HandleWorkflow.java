@@ -582,7 +582,11 @@ public class HandleWorkflow {
     private void updateNodeStakes(@NonNull final UserTxn userTxn) {
         try {
             nodeStakeUpdates.process(
-                    userTxn.stack(), userTxn.tokenContextImpl(), userTxn.type() == GENESIS_TRANSACTION);
+                    userTxn.stack(),
+                    userTxn.tokenContextImpl(),
+                    streamMode,
+                    userTxn.type() == GENESIS_TRANSACTION,
+                    blockStreamManager.lastIntervalProcessTime());
         } catch (final Exception e) {
             // We don't propagate a failure here to avoid a catastrophic scenario
             // where we are "stuck" trying to process node stake updates and never
@@ -613,18 +617,18 @@ public class HandleWorkflow {
         // If we have never processed an interval, treat this time as the last processed time
         if (Instant.EPOCH.equals(lastProcessTime)) {
             return true;
-        } else if (lastProcessTime.getEpochSecond() >= userTxn.consensusNow().getEpochSecond()) {
-            return false;
+        } else if (lastProcessTime.getEpochSecond() < userTxn.consensusNow().getEpochSecond()) {
+            // There is at least one unprocessed second since the last processing time
+            final var startSecond = lastProcessTime.getEpochSecond();
+            final var endSecond = userTxn.consensusNow().getEpochSecond() - 1;
+            final var scheduleStore = new WritableStoreFactory(
+                            userTxn.stack(), ScheduleService.NAME, userTxn.config(), storeMetricsService)
+                    .getStore(WritableScheduleStore.class);
+            scheduleStore.purgeExpiredSchedulesBetween(startSecond, endSecond);
+            userTxn.stack().commitSystemStateChanges();
+            return true;
         }
-        // There is at least one unprocessed second since the last processing time
-        final var startSecond = lastProcessTime.getEpochSecond();
-        final var endSecond = userTxn.consensusNow().getEpochSecond() - 1;
-        final var scheduleStore = new WritableStoreFactory(
-                        userTxn.stack(), ScheduleService.NAME, userTxn.config(), storeMetricsService)
-                .getStore(WritableScheduleStore.class);
-        scheduleStore.purgeExpiredSchedulesBetween(startSecond, endSecond);
-        userTxn.stack().commitSystemStateChanges();
-        return true;
+        return false;
     }
 
     /**
