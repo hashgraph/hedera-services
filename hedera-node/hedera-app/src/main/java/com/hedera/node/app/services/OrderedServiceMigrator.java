@@ -58,7 +58,15 @@ public class OrderedServiceMigrator implements ServiceMigrator {
 
     /**
      * Migrates the services registered with the {@link ServicesRegistry}
-     *
+     * @param state            The state to migrate
+     * @param servicesRegistry The services registry to use for the migrations
+     * @param previousVersion The previous version of the state
+     * @param currentVersion The current version of the state
+     * @param nodeConfiguration The configuration to use for the migrations
+     * @param platformConfiguration The configuration to use for the migrations
+     * @param genesisNetworkInfo The network information to use for the migrations.
+     *                           This is only used in genesis case
+     * @param metrics The metrics to use for the migrations
      * @return The list of state changes that occurred during the migrations
      */
     @Override
@@ -69,12 +77,11 @@ public class OrderedServiceMigrator implements ServiceMigrator {
             @NonNull final SoftwareVersion currentVersion,
             @NonNull final Configuration nodeConfiguration,
             @Nullable final Configuration platformConfiguration,
-            @NonNull final NetworkInfo networkInfo,
+            @Nullable final NetworkInfo genesisNetworkInfo,
             @NonNull final Metrics metrics) {
         requireNonNull(state);
         requireNonNull(currentVersion);
         requireNonNull(nodeConfiguration);
-        requireNonNull(networkInfo);
         requireNonNull(metrics);
 
         final Map<String, Object> sharedValues = new HashMap<>();
@@ -94,7 +101,7 @@ public class OrderedServiceMigrator implements ServiceMigrator {
                 currentVersion.getPbjSemanticVersion(),
                 nodeConfiguration,
                 platformConfiguration,
-                networkInfo,
+                genesisNetworkInfo,
                 metrics,
                 // We call with null here because we're migrating the entity ID service itself
                 null,
@@ -132,7 +139,7 @@ public class OrderedServiceMigrator implements ServiceMigrator {
                             currentVersion.getPbjSemanticVersion(),
                             nodeConfiguration,
                             platformConfiguration,
-                            networkInfo,
+                            genesisNetworkInfo,
                             metrics,
                             entityIdStore,
                             sharedValues,

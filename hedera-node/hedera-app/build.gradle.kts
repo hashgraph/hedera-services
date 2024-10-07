@@ -132,18 +132,10 @@ tasks.assemble {
 // Create the "run" task for running a Hedera consensus node
 tasks.register<JavaExec>("run") {
     group = "application"
-    dependsOn(tasks.assemble)
-    workingDir = nodeWorkingDir.get().asFile
-    jvmArgs = listOf("-cp", "data/lib/*")
-    mainClass.set("com.swirlds.platform.Browser")
-}
-
-tasks.register<JavaExec>("modrun") {
-    group = "build"
     description = "Run a Hedera consensus node instance."
     dependsOn(tasks.assemble)
     workingDir = nodeWorkingDir.get().asFile
-    jvmArgs = listOf("-cp", "data/lib/*:data/apps/*", "-Dhedera.workflows.enabled=true")
+    jvmArgs = listOf("-cp", "data/lib/*:data/apps/*")
     mainClass.set("com.hedera.node.app.ServicesMain")
 }
 

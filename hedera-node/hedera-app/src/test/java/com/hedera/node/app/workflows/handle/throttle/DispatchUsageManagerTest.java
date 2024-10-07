@@ -63,7 +63,7 @@ import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.state.spi.ReadableStates;
 import com.swirlds.state.spi.info.NetworkInfo;
-import com.swirlds.state.spi.info.SelfNodeInfo;
+import com.swirlds.state.spi.info.NodeInfo;
 import java.time.Instant;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -132,7 +132,7 @@ class DispatchUsageManagerTest {
     private NetworkInfo networkInfo;
 
     @Mock
-    private SelfNodeInfo selfNodeInfo;
+    private NodeInfo selfNodeInfo;
 
     @Mock
     private ReadableStoreFactory readableStoreFactory;

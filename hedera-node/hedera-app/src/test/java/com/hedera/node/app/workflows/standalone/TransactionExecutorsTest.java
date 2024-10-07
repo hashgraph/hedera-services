@@ -66,9 +66,11 @@ import com.hedera.node.config.data.FilesConfig;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.data.VersionConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.common.crypto.internal.CryptoUtils;
 import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.platform.crypto.CryptoStatic;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
 import com.swirlds.state.State;
@@ -76,13 +78,17 @@ import com.swirlds.state.spi.CommittableWritableStates;
 import com.swirlds.state.spi.WritableStates;
 import com.swirlds.state.spi.info.NetworkInfo;
 import com.swirlds.state.spi.info.NodeInfo;
-import com.swirlds.state.spi.info.SelfNodeInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.io.UncheckedIOException;
+import java.security.KeyPair;
+import java.security.KeyPairGenerator;
+import java.security.SecureRandom;
+import java.security.cert.CertificateEncodingException;
+import java.security.cert.X509Certificate;
 import java.time.Instant;
 import java.time.InstantSource;
 import java.util.List;
@@ -304,27 +310,31 @@ class TransactionExecutorsTest {
 
             @NonNull
             @Override
-            public SelfNodeInfo selfNodeInfo() {
-                throw new UnsupportedOperationException("Not implemented");
+            public NodeInfo selfNodeInfo() {
+                return new NodeInfoImpl(0, AccountID.DEFAULT, 0, List.of(), getCertBytes(randomX509Certificate()));
             }
 
             @NonNull
             @Override
             public List<NodeInfo> addressBook() {
-                return StreamSupport.stream(addressBook.spliterator(), false)
-                        .map(NodeInfoImpl::fromAddress)
-                        .toList();
+                return List.of(
+                        new NodeInfoImpl(0, AccountID.DEFAULT, 0, List.of(), getCertBytes(randomX509Certificate())));
             }
 
             @Nullable
             @Override
             public NodeInfo nodeInfo(final long nodeId) {
-                throw new UnsupportedOperationException("Not implemented");
+                return new NodeInfoImpl(0, AccountID.DEFAULT, 0, List.of(), Bytes.EMPTY);
             }
 
             @Override
             public boolean containsNode(final long nodeId) {
                 return addressBook.contains(new NodeId(nodeId));
+            }
+
+            @Override
+            public void updateFrom(final State state) {
+                throw new UnsupportedOperationException("Not implemented");
             }
         };
     }
@@ -337,6 +347,29 @@ class TransactionExecutorsTest {
             }
         } catch (IOException e) {
             throw new UncheckedIOException(e);
+        }
+    }
+
+    public static X509Certificate randomX509Certificate() {
+        try {
+            final SecureRandom secureRandom = CryptoUtils.getDetRandom();
+
+            final KeyPairGenerator rsaKeyGen = KeyPairGenerator.getInstance("RSA");
+            rsaKeyGen.initialize(3072, secureRandom);
+            final KeyPair rsaKeyPair1 = rsaKeyGen.generateKeyPair();
+
+            final String name = "CN=Bob";
+            return CryptoStatic.generateCertificate(name, rsaKeyPair1, name, rsaKeyPair1, secureRandom);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private static Bytes getCertBytes(X509Certificate certificate) {
+        try {
+            return Bytes.wrap(certificate.getEncoded());
+        } catch (CertificateEncodingException e) {
+            throw new RuntimeException(e);
         }
     }
 }

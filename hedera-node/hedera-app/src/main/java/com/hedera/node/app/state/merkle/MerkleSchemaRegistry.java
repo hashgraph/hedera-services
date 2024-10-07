@@ -180,7 +180,7 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
      * previousVersion}.
      * @param nodeConfiguration The system configuration to use at the time of migration
      * @param platformConfiguration The platform configuration to use for subsequent object initializations
-     * @param networkInfo The network information to use at the time of migration
+     * @param genesisNetworkInfo The network information to use at the time of migration
      * @param sharedValues A map of shared values for cross-service migration patterns
      * @param migrationStateChanges Tracker for state changes during migration
      * @throws IllegalArgumentException if the {@code currentVersion} is not at least the
@@ -194,7 +194,7 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
             @NonNull final SemanticVersion currentVersion,
             @NonNull final Configuration nodeConfiguration,
             @Nullable final Configuration platformConfiguration,
-            @NonNull final NetworkInfo networkInfo,
+            @Nullable final NetworkInfo genesisNetworkInfo,
             @NonNull final Metrics metrics,
             @Nullable final WritableEntityIdStore entityIdStore,
             @NonNull final Map<String, Object> sharedValues,
@@ -202,7 +202,6 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
         requireNonNull(state);
         requireNonNull(currentVersion);
         requireNonNull(nodeConfiguration);
-        requireNonNull(networkInfo);
         requireNonNull(metrics);
         requireNonNull(sharedValues);
         requireNonNull(migrationStateChanges);
@@ -263,7 +262,7 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
                     previousStates,
                     newStates,
                     nodeConfiguration,
-                    networkInfo,
+                    genesisNetworkInfo,
                     entityIdStore,
                     previousVersion,
                     sharedValues);

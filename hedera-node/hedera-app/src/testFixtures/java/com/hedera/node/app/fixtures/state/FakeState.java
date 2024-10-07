@@ -66,7 +66,11 @@ public class FakeState implements State {
      */
     public FakeState addService(@NonNull final String serviceName, @NonNull final Map<String, ?> dataSources) {
         final var serviceStates = this.states.computeIfAbsent(serviceName, k -> new ConcurrentHashMap<>());
-        serviceStates.putAll(dataSources);
+        dataSources.forEach((k, b) -> {
+            if (!serviceStates.containsKey(k)) {
+                serviceStates.put(k, b);
+            }
+        });
         // Purge any readable or writable states whose state definitions are now stale,
         // since they don't include the new data sources we just added
         readableStates.remove(serviceName);
