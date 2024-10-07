@@ -45,6 +45,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AMOUNT_EXCEEDS
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEES_LIST_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_DENOMINATION_MUST_BE_FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_MUST_BE_POSITIVE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FEE_EXEMPT_KEY_LIST_CONTAINS_DUPLICATED_KEYS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FEE_SCHEDULE_KEY_CANNOT_BE_UPDATED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FEE_SCHEDULE_KEY_NOT_SET;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CUSTOM_FEE_COLLECTOR;
@@ -1085,6 +1086,19 @@ public class TopicCustomFeeUpdateTest extends TopicCustomFeeBase {
                             .withConsensusCustomFee(fixedConsensusHbarFee(1, COLLECTOR))
                             .signedByPayerAnd(ADMIN_KEY)
                             .hasKnownStatus(INVALID_SIGNATURE));
+        }
+
+        @HapiTest
+        @DisplayName("with duplicated fee exempt keys")
+        final Stream<DynamicTest> updateWithDuplicatedFeeExemptKeys() {
+            final var key = "key";
+            return hapiTest(
+                    createTopic(TOPIC).adminKeyName(ADMIN_KEY).feeScheduleKeyName(FEE_SCHEDULE_KEY),
+                    newKeyNamed(key),
+                    updateTopic(TOPIC)
+                            .feeExemptKeys(key, key)
+                            .signedByPayerAnd(ADMIN_KEY)
+                            .hasPrecheck(FEE_EXEMPT_KEY_LIST_CONTAINS_DUPLICATED_KEYS));
         }
     }
 }
