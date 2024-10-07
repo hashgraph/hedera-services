@@ -133,7 +133,7 @@ public class WritableRosterStore implements RosterStateModifier {
         final Bytes activeRosterHash = RosterUtils.hash(roster).getBytes();
         if (!roundRosterPairs.isEmpty()) {
             final RoundRosterPair activeRosterPair = roundRosterPairs.getFirst();
-            if (round <= activeRosterPair.roundNumber() || round < 0) {
+            if (round < 0 || round <= activeRosterPair.roundNumber()) {
                 throw new IllegalArgumentException(
                         "incoming round number must be greater than the round number of the current active roster.");
             }
