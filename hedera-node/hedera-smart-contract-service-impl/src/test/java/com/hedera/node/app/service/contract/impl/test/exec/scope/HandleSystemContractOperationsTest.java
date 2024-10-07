@@ -17,12 +17,15 @@
 package com.hedera.node.app.service.contract.impl.test.exec.scope;
 
 import static com.hedera.hapi.node.base.HederaFunctionality.CONTRACT_CALL;
+import static com.hedera.hapi.node.base.HederaFunctionality.CRYPTO_TRANSFER;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.AN_ED25519_KEY;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.A_NEW_ACCOUNT_ID;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.A_SECP256K1_KEY;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.CHILD;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -120,6 +123,21 @@ class HandleSystemContractOperationsTest {
         assertTrue(test.test(AN_ED25519_KEY));
         assertFalse(test.test(TestHelpers.A_SECP256K1_KEY));
         assertFalse(test.test(TestHelpers.B_SECP256K1_KEY));
+    }
+
+    @Test
+    void externalizesPreemptedAsExpected() {
+        given(context.savepointStack()).willReturn(savepointStack);
+        given(savepointStack.addChildRecordBuilder(ContractCallStreamBuilder.class, CRYPTO_TRANSFER))
+                .willReturn(recordBuilder);
+        given(recordBuilder.transaction(any())).willReturn(recordBuilder);
+        given(recordBuilder.status(any())).willReturn(recordBuilder);
+
+        final var preemptedBuilder =
+                subject.externalizePreemptedDispatch(TransactionBody.DEFAULT, ACCOUNT_DELETED, CRYPTO_TRANSFER);
+
+        assertSame(recordBuilder, preemptedBuilder);
+        verify(recordBuilder).status(ACCOUNT_DELETED);
     }
 
     @Test

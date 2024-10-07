@@ -32,6 +32,7 @@ import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.CompletableFuture.completedFuture;
 import static java.util.concurrent.CompletableFuture.supplyAsync;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.hedera.hapi.block.stream.BlockItem;
 import com.hedera.hapi.block.stream.BlockProof;
 import com.hedera.hapi.block.stream.MerkleSiblingHash;
@@ -254,6 +255,11 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
     }
 
     @Override
+    public boolean isPostUpgradeWorkPending() {
+        return postUpgradeStatus == PostUpgradeStatus.PENDING;
+    }
+
+    @Override
     public @NonNull Instant lastIntervalProcessTime() {
         return lastIntervalProcessTime;
     }
@@ -411,7 +417,8 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
      * @param version the version
      * @return true if post-upgrade work is pending, false otherwise
      */
-    public static boolean impliesPostUpgradeWorkPending(
+    @VisibleForTesting
+    static boolean impliesPostUpgradeWorkPending(
             @NonNull final BlockStreamInfo blockStreamInfo, @NonNull final SemanticVersion version) {
         requireNonNull(version);
         requireNonNull(blockStreamInfo);

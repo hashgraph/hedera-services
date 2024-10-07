@@ -72,6 +72,12 @@ public interface BlockStreamManager extends BlockRecordInfo, BiConsumer<byte[], 
     void confirmPostUpgradeWork();
 
     /**
+     * Returns whether post-upgrade work is pending.
+     * @return whether post-upgrade work is pending
+     */
+    boolean isPostUpgradeWorkPending();
+
+    /**
      * Sets the last interval process time.
      * @param lastIntervalProcessTime the last interval process time
      */

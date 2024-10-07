@@ -242,7 +242,9 @@ class BlockStreamManagerImplTest {
 
         // Start the round that will be block N
         subject.startRound(round, state);
+        assertTrue(subject.isPostUpgradeWorkPending());
         subject.confirmPostUpgradeWork();
+        assertFalse(subject.isPostUpgradeWorkPending());
         // We don't fail hard on duplicate calls to confirm post-upgrade work
         assertDoesNotThrow(() -> subject.confirmPostUpgradeWork());
 

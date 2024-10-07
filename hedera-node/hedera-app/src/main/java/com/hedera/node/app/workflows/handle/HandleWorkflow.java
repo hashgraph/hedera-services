@@ -20,8 +20,6 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.BUSY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.FAIL_INVALID;
 import static com.hedera.node.app.blocks.BlockStreamManager.Boundary.BLOCK;
 import static com.hedera.node.app.blocks.BlockStreamManager.Boundary.NONE;
-import static com.hedera.node.app.blocks.impl.BlockStreamManagerImpl.impliesPostUpgradeWorkPending;
-import static com.hedera.node.app.blocks.schemas.V0540BlockStreamSchema.BLOCK_STREAM_INFO_KEY;
 import static com.hedera.node.app.records.schemas.V0490BlockRecordSchema.BLOCK_INFO_STATE_KEY;
 import static com.hedera.node.app.service.file.impl.schemas.V0490FileSchema.BLOBS_KEY;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.USER;
@@ -52,12 +50,10 @@ import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.state.blockrecords.BlockInfo;
-import com.hedera.hapi.node.state.blockstream.BlockStreamInfo;
 import com.hedera.hapi.node.transaction.ExchangeRateSet;
 import com.hedera.hapi.util.HapiUtils;
 import com.hedera.node.app.blocks.BlockStreamManager;
 import com.hedera.node.app.blocks.BlockStreamManager.Boundary;
-import com.hedera.node.app.blocks.BlockStreamService;
 import com.hedera.node.app.blocks.impl.BlockStreamBuilder;
 import com.hedera.node.app.blocks.impl.BoundaryStateChangeListener;
 import com.hedera.node.app.blocks.impl.KVStateChangeListener;
@@ -352,8 +348,6 @@ public class HandleWorkflow {
         final var consensusNow = txn.getConsensusTimestamp();
         stakePeriodManager.setCurrentStakePeriodFor(consensusNow);
         if (streamMode != BLOCKS) {
-            // This changes blockRecordManager.consTimeOfLastHandledTxn() as a side-effect,
-            // hence the check for genesis on the preceding line
             final var isBoundary = blockRecordManager.startUserTransaction(consensusNow, state);
             if (streamMode == RECORDS) {
                 boundary = isBoundary ? BLOCK : NONE;
@@ -361,9 +355,6 @@ public class HandleWorkflow {
         }
         final var userTxn = newUserTxn(state, event, creator, txn, consensusNow, boundary);
         final var handleOutput = execute(userTxn);
-        if (streamMode != RECORDS && userTxn.type() == POST_UPGRADE_TRANSACTION) {
-            blockStreamManager.confirmPostUpgradeWork();
-        }
         if (streamMode != BLOCKS) {
             final var records = ((LegacyListRecordSource) handleOutput.recordSourceOrThrow()).precomputedRecords();
             blockRecordManager.endUserTransaction(records.stream(), state);
@@ -438,6 +429,9 @@ public class HandleWorkflow {
                 } else if (userTxn.type() == POST_UPGRADE_TRANSACTION) {
                     logger.info("Doing post-upgrade setup @ {}", userTxn.consensusNow());
                     systemSetup.doPostUpgradeSetup(dispatch);
+                    if (streamMode != RECORDS) {
+                        blockStreamManager.confirmPostUpgradeWork();
+                    }
                 }
                 hollowAccountCompletions.completeHollowAccounts(userTxn, dispatch);
                 dispatchProcessor.processDispatch(dispatch);
@@ -685,10 +679,7 @@ public class HandleWorkflow {
         }
         final boolean firstPostUpgrade;
         if (streamMode != RECORDS) {
-            final var blockStreamInfo = state.getReadableStates(BlockStreamService.NAME)
-                    .<BlockStreamInfo>getSingleton(BLOCK_STREAM_INFO_KEY)
-                    .get();
-            firstPostUpgrade = impliesPostUpgradeWorkPending(requireNonNull(blockStreamInfo), version);
+            firstPostUpgrade = blockStreamManager.isPostUpgradeWorkPending();
         } else {
             final var blockInfo = state.getReadableStates(BlockRecordService.NAME)
                     .<BlockInfo>getSingleton(BLOCK_INFO_STATE_KEY)
