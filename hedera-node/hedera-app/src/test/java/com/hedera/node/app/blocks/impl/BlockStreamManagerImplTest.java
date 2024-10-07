@@ -17,22 +17,20 @@
 package com.hedera.node.app.blocks.impl;
 
 import static com.hedera.hapi.util.HapiUtils.asTimestamp;
-import static com.hedera.node.app.blocks.BlockStreamManager.Boundary.BLOCK;
-import static com.hedera.node.app.blocks.BlockStreamManager.Boundary.NONE;
+import static com.hedera.node.app.blocks.BlockStreamManager.PendingWork.NONE;
+import static com.hedera.node.app.blocks.BlockStreamManager.PendingWork.POST_UPGRADE_WORK;
 import static com.hedera.node.app.blocks.BlockStreamManager.ZERO_BLOCK_HASH;
 import static com.hedera.node.app.blocks.BlockStreamService.FAKE_RESTART_BLOCK_HASH;
 import static com.hedera.node.app.blocks.impl.BlockImplUtils.appendHash;
 import static com.hedera.node.app.blocks.impl.BlockImplUtils.combine;
-import static com.hedera.node.app.blocks.impl.BlockStreamManagerImpl.impliesPostUpgradeWorkPending;
+import static com.hedera.node.app.blocks.impl.BlockStreamManagerImpl.classifyPendingWork;
 import static com.hedera.node.app.blocks.schemas.V0540BlockStreamSchema.BLOCK_STREAM_INFO_KEY;
 import static com.hedera.node.app.fixtures.AppTestBase.DEFAULT_CONFIG;
 import static com.hedera.node.app.hapi.utils.CommonUtils.noThrowSha384HashOf;
-import static com.hedera.node.app.records.BlockRecordService.EPOCH;
 import static com.swirlds.platform.state.service.schemas.V0540PlatformStateSchema.PLATFORM_STATE_KEY;
 import static java.util.concurrent.CompletableFuture.completedFuture;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
@@ -57,6 +55,7 @@ import com.hedera.hapi.node.state.blockstream.BlockStreamInfo;
 import com.hedera.hapi.platform.event.EventTransaction;
 import com.hedera.hapi.platform.state.PlatformState;
 import com.hedera.node.app.blocks.BlockItemWriter;
+import com.hedera.node.app.blocks.BlockStreamManager;
 import com.hedera.node.app.blocks.BlockStreamService;
 import com.hedera.node.app.blocks.InitialStateHash;
 import com.hedera.node.app.tss.TssBaseService;
@@ -156,42 +155,48 @@ class BlockStreamManagerImplTest {
     }
 
     @Test
-    void genesisBlockHasNoPostUpgradeWork() {
-        assertFalse(impliesPostUpgradeWorkPending(BlockStreamInfo.DEFAULT, SemanticVersion.DEFAULT));
+    void classifiesPendingGenesisWorkByIntervalTime() {
+        assertSame(
+                BlockStreamManager.PendingWork.GENESIS_WORK,
+                classifyPendingWork(BlockStreamInfo.DEFAULT, SemanticVersion.DEFAULT));
     }
 
     @Test
-    void nonGenesisBlockOfPriorVersionHasPostUpgradeWork() {
-        assertTrue(impliesPostUpgradeWorkPending(
-                BlockStreamInfo.newBuilder()
-                        .creationSoftwareVersion(
-                                SemanticVersion.newBuilder().major(1).build())
-                        .blockTime(new Timestamp(1234567, 890))
-                        .build(),
-                SemanticVersion.newBuilder().major(2).build()));
+    void classifiesPriorVersionHasPostUpgradeWorkWithDifferentVersionButIntervalTime() {
+        assertSame(
+                POST_UPGRADE_WORK,
+                classifyPendingWork(
+                        BlockStreamInfo.newBuilder()
+                                .creationSoftwareVersion(
+                                        SemanticVersion.newBuilder().major(1).build())
+                                .lastIntervalProcessTime(new Timestamp(1234567, 890))
+                                .build(),
+                        CREATION_VERSION));
     }
 
     @Test
-    void nonGenesisBlockOfSameVersionWithWorkNotDoneStillHasPostUpgradeWork() {
-        assertTrue(impliesPostUpgradeWorkPending(
-                BlockStreamInfo.newBuilder()
-                        .creationSoftwareVersion(
-                                SemanticVersion.newBuilder().major(1).build())
-                        .blockTime(new Timestamp(1234567, 890))
-                        .build(),
-                SemanticVersion.newBuilder().major(1).build()));
+    void classifiesNonGenesisBlockOfSameVersionWithWorkNotDoneStillHasPostUpgradeWork() {
+        assertEquals(
+                POST_UPGRADE_WORK,
+                classifyPendingWork(
+                        BlockStreamInfo.newBuilder()
+                                .creationSoftwareVersion(CREATION_VERSION)
+                                .lastIntervalProcessTime(new Timestamp(1234567, 890))
+                                .build(),
+                        CREATION_VERSION));
     }
 
     @Test
-    void nonGenesisBlockOfSameVersionWithWorkDoneHasNoPostUpgradeWork() {
-        assertFalse(impliesPostUpgradeWorkPending(
-                BlockStreamInfo.newBuilder()
-                        .postUpgradeWorkDone(true)
-                        .creationSoftwareVersion(
-                                SemanticVersion.newBuilder().major(1).build())
-                        .blockTime(new Timestamp(1234567, 890))
-                        .build(),
-                SemanticVersion.newBuilder().major(1).build()));
+    void classifiesNonGenesisBlockOfSameVersionWithWorkDoneAsNoWork() {
+        assertSame(
+                NONE,
+                classifyPendingWork(
+                        BlockStreamInfo.newBuilder()
+                                .postUpgradeWorkDone(true)
+                                .creationSoftwareVersion(CREATION_VERSION)
+                                .lastIntervalProcessTime(new Timestamp(1234567, 890))
+                                .build(),
+                        CREATION_VERSION));
     }
 
     @Test
@@ -242,11 +247,11 @@ class BlockStreamManagerImplTest {
 
         // Start the round that will be block N
         subject.startRound(round, state);
-        assertTrue(subject.isPostUpgradeWorkPending());
-        subject.confirmPostUpgradeWork();
-        assertFalse(subject.isPostUpgradeWorkPending());
+        assertSame(POST_UPGRADE_WORK, subject.pendingWork());
+        subject.confirmPendingWorkFinished();
+        assertSame(NONE, subject.pendingWork());
         // We don't fail hard on duplicate calls to confirm post-upgrade work
-        assertDoesNotThrow(() -> subject.confirmPostUpgradeWork());
+        assertDoesNotThrow(() -> subject.confirmPendingWorkFinished());
 
         // Assert the internal state of the subject has changed as expected and the writer has been opened
         verify(boundaryStateChangeListener).setBoundaryTimestamp(CONSENSUS_NOW);
@@ -283,7 +288,7 @@ class BlockStreamManagerImplTest {
                 Timestamp.DEFAULT,
                 true,
                 SemanticVersion.DEFAULT,
-                EPOCH);
+                CONSENSUS_THEN);
         final var actualBlockInfo = infoRef.get();
         assertEquals(expectedBlockInfo, actualBlockInfo);
         verify(tssBaseService).requestLedgerSignature(blockHashCaptor.capture());
@@ -309,9 +314,7 @@ class BlockStreamManagerImplTest {
         subject.initLastBlockHash(FAKE_RESTART_BLOCK_HASH);
 
         // Start the round that will be block N
-        assertEquals(BLOCK, subject.startRound(round, state));
-        // Confirm calling twice doesn't recreate the writer
-        assertEquals(NONE, subject.startRound(round, state));
+        subject.startRound(round, state);
 
         // Assert the internal state of the subject has changed as expected and the writer has been opened
         verify(boundaryStateChangeListener).setBoundaryTimestamp(CONSENSUS_NOW);
@@ -389,7 +392,7 @@ class BlockStreamManagerImplTest {
                 Timestamp.DEFAULT,
                 false,
                 SemanticVersion.DEFAULT,
-                EPOCH);
+                CONSENSUS_THEN);
         final var actualBlockInfo = infoRef.get();
         assertEquals(expectedBlockInfo, actualBlockInfo);
         verify(tssBaseService).requestLedgerSignature(blockHashCaptor.capture());
@@ -533,7 +536,7 @@ class BlockStreamManagerImplTest {
                 .creationSoftwareVersion(creationVersion)
                 .trailingBlockHashes(appendHash(N_MINUS_2_BLOCK_HASH, Bytes.EMPTY, 256))
                 .trailingOutputHashes(resultHashes)
-                .blockTime(CONSENSUS_THEN)
+                .lastIntervalProcessTime(CONSENSUS_THEN)
                 .build();
     }
 

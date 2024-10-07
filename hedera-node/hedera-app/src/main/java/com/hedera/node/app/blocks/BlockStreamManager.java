@@ -41,11 +41,21 @@ public interface BlockStreamManager extends BlockRecordInfo, BiConsumer<byte[], 
     Bytes ZERO_BLOCK_HASH = Bytes.wrap(new byte[48]);
 
     /**
-     * Enumerates the types of block boundaries that can be encountered when starting a new round.
+     * The types of work that may be identified as pending within a block.
      */
-    enum Boundary {
+    enum PendingWork {
+        /**
+         * No work is pending.
+         */
         NONE,
-        BLOCK
+        /**
+         * Genesis work is pending.
+         */
+        GENESIS_WORK,
+        /**
+         * Post-upgrade work is pending.
+         */
+        POST_UPGRADE_WORK
     }
 
     /**
@@ -61,21 +71,22 @@ public interface BlockStreamManager extends BlockRecordInfo, BiConsumer<byte[], 
      *
      * @param round the round that has just started
      * @param state the state of the network at the beginning of the round
-     * @return the type of block boundary encountered
      * @throws IllegalStateException if the last block hash was not explicitly initialized
      */
-    Boundary startRound(@NonNull Round round, @NonNull State state);
+    void startRound(@NonNull Round round, @NonNull State state);
 
     /**
      * Confirms that the post-upgrade work has been completed.
      */
-    void confirmPostUpgradeWork();
+    void confirmPendingWorkFinished();
 
     /**
      * Returns whether post-upgrade work is pending.
+     *
      * @return whether post-upgrade work is pending
      */
-    boolean isPostUpgradeWorkPending();
+    @NonNull
+    PendingWork pendingWork();
 
     /**
      * Sets the last interval process time.

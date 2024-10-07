@@ -31,10 +31,6 @@ public enum TransactionType {
      */
     POST_UPGRADE_TRANSACTION,
     /**
-     * The first transaction in a block.
-     */
-    BLOCK_BOUNDARY_TRANSACTION,
-    /**
      * All other transactions.
      */
     ORDINARY_TRANSACTION,

@@ -18,8 +18,6 @@ package com.hedera.node.app.workflows.handle;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.BUSY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.FAIL_INVALID;
-import static com.hedera.node.app.blocks.BlockStreamManager.Boundary.BLOCK;
-import static com.hedera.node.app.blocks.BlockStreamManager.Boundary.NONE;
 import static com.hedera.node.app.records.schemas.V0490BlockRecordSchema.BLOCK_INFO_STATE_KEY;
 import static com.hedera.node.app.service.file.impl.schemas.V0490FileSchema.BLOBS_KEY;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.USER;
@@ -31,7 +29,6 @@ import static com.hedera.node.app.state.logging.TransactionStateLogger.logStartU
 import static com.hedera.node.app.state.logging.TransactionStateLogger.logStartUserTransactionPreHandleResultP2;
 import static com.hedera.node.app.state.logging.TransactionStateLogger.logStartUserTransactionPreHandleResultP3;
 import static com.hedera.node.app.state.merkle.VersionUtils.isSoOrdered;
-import static com.hedera.node.app.workflows.handle.TransactionType.BLOCK_BOUNDARY_TRANSACTION;
 import static com.hedera.node.app.workflows.handle.TransactionType.GENESIS_TRANSACTION;
 import static com.hedera.node.app.workflows.handle.TransactionType.ORDINARY_TRANSACTION;
 import static com.hedera.node.app.workflows.handle.TransactionType.POST_UPGRADE_TRANSACTION;
@@ -53,7 +50,6 @@ import com.hedera.hapi.node.state.blockrecords.BlockInfo;
 import com.hedera.hapi.node.transaction.ExchangeRateSet;
 import com.hedera.hapi.util.HapiUtils;
 import com.hedera.node.app.blocks.BlockStreamManager;
-import com.hedera.node.app.blocks.BlockStreamManager.Boundary;
 import com.hedera.node.app.blocks.impl.BlockStreamBuilder;
 import com.hedera.node.app.blocks.impl.BoundaryStateChangeListener;
 import com.hedera.node.app.blocks.impl.KVStateChangeListener;
@@ -227,13 +223,10 @@ public class HandleWorkflow {
      * @param round the next {@link Round} that needs to be processed
      */
     public void handleRound(@NonNull final State state, @NonNull final Round round) {
-        // We only close the round with the block record manager after user transactions
         logStartRound(round);
         cacheWarmer.warm(state, round);
-        // Ignored downstream if streamMode is RECORDS
-        var boundary = NONE;
         if (streamMode != RECORDS) {
-            boundary = blockStreamManager.startRound(round, state);
+            blockStreamManager.startRound(round, state);
             blockStreamManager.writeItem(BlockItem.newBuilder()
                     .roundHeader(new RoundHeader(round.getRoundNum()))
                     .build());
@@ -247,7 +240,7 @@ public class HandleWorkflow {
         }
         recordCache.resetRoundReceipts();
         try {
-            handleEvents(state, round, boundary);
+            handleEvents(state, round);
         } finally {
             // Even if there is an exception somewhere, we need to commit the receipts of any handled transactions
             // to the state so these transactions cannot be replayed in future rounds
@@ -255,10 +248,8 @@ public class HandleWorkflow {
         }
     }
 
-    private void handleEvents(
-            @NonNull final State state, @NonNull final Round round, @NonNull final Boundary boundary) {
+    private void handleEvents(@NonNull final State state, @NonNull final Round round) {
         final var userTransactionsHandled = new AtomicBoolean(false);
-        var firstTransaction = true;
         for (final var event : round) {
             if (streamMode != RECORDS) {
                 streamMetadata(event);
@@ -289,13 +280,7 @@ public class HandleWorkflow {
                     // skip system transactions
                     if (!platformTxn.isSystem()) {
                         userTransactionsHandled.set(true);
-                        handlePlatformTransaction(
-                                state,
-                                event,
-                                creator,
-                                platformTxn,
-                                streamMode != RECORDS && firstTransaction ? boundary : NONE);
-                        firstTransaction = false;
+                        handlePlatformTransaction(state, event, creator, platformTxn);
                     }
                 } catch (final Exception e) {
                     logger.fatal(
@@ -334,26 +319,31 @@ public class HandleWorkflow {
      * @param event the {@link ConsensusEvent} that this transaction belongs to
      * @param creator the {@link NodeInfo} of the creator of the transaction
      * @param txn the {@link ConsensusTransaction} to be handled
-     * @param boundary if set, the type of boundary that this transaction crossed
      */
     private void handlePlatformTransaction(
             @NonNull final State state,
             @NonNull final ConsensusEvent event,
             @NonNull final NodeInfo creator,
-            @NonNull final ConsensusTransaction txn,
-            @NonNull Boundary boundary) {
+            @NonNull final ConsensusTransaction txn) {
         final var handleStart = System.nanoTime();
 
         // Always use platform-assigned time for user transaction, c.f. https://hips.hedera.com/hip/hip-993
         final var consensusNow = txn.getConsensusTimestamp();
+        var type = ORDINARY_TRANSACTION;
         stakePeriodManager.setCurrentStakePeriodFor(consensusNow);
         if (streamMode != BLOCKS) {
             final var isBoundary = blockRecordManager.startUserTransaction(consensusNow, state);
-            if (streamMode == RECORDS) {
-                boundary = isBoundary ? BLOCK : NONE;
+            if (streamMode == RECORDS && isBoundary) {
+                type = typeOfBoundary(state);
             }
         }
-        final var userTxn = newUserTxn(state, event, creator, txn, consensusNow, boundary);
+        if (streamMode != RECORDS) {
+            type = switch (blockStreamManager.pendingWork()) {
+                case GENESIS_WORK -> GENESIS_TRANSACTION;
+                case POST_UPGRADE_WORK -> POST_UPGRADE_TRANSACTION;
+                default -> ORDINARY_TRANSACTION;};
+        }
+        final var userTxn = newUserTxn(state, event, creator, txn, consensusNow, type);
         final var handleOutput = execute(userTxn);
         if (streamMode != BLOCKS) {
             final var records = ((LegacyListRecordSource) handleOutput.recordSourceOrThrow()).precomputedRecords();
@@ -423,14 +413,16 @@ public class HandleWorkflow {
                 }
                 logPreDispatch(userTxn);
                 final var dispatch = dispatchFor(userTxn);
-                if (userTxn.type() == GENESIS_TRANSACTION) {
-                    logger.info("Doing genesis setup @ {}", userTxn.consensusNow());
-                    systemSetup.doGenesisSetup(dispatch);
-                } else if (userTxn.type() == POST_UPGRADE_TRANSACTION) {
-                    logger.info("Doing post-upgrade setup @ {}", userTxn.consensusNow());
-                    systemSetup.doPostUpgradeSetup(dispatch);
+                if (userTxn.type() != ORDINARY_TRANSACTION) {
+                    if (userTxn.type() == GENESIS_TRANSACTION) {
+                        logger.info("Doing genesis setup @ {}", userTxn.consensusNow());
+                        systemSetup.doGenesisSetup(dispatch);
+                    } else if (userTxn.type() == POST_UPGRADE_TRANSACTION) {
+                        logger.info("Doing post-upgrade setup @ {}", userTxn.consensusNow());
+                        systemSetup.doPostUpgradeSetup(dispatch);
+                    }
                     if (streamMode != RECORDS) {
-                        blockStreamManager.confirmPostUpgradeWork();
+                        blockStreamManager.confirmPendingWorkFinished();
                     }
                 }
                 hollowAccountCompletions.completeHollowAccounts(userTxn, dispatch);
@@ -640,7 +632,7 @@ public class HandleWorkflow {
      * @param creator the creator of the transaction
      * @param txn the consensus transaction
      * @param consensusNow the consensus time
-     * @param boundary the block boundary type
+     * @param type the trnasaction type
      * @return the new user transaction
      */
     private UserTxn newUserTxn(
@@ -649,12 +641,7 @@ public class HandleWorkflow {
             @NonNull final NodeInfo creator,
             @NonNull final ConsensusTransaction txn,
             @NonNull final Instant consensusNow,
-            @NonNull final Boundary boundary) {
-        final var type =
-                switch (boundary) {
-                    case NONE -> ORDINARY_TRANSACTION;
-                    case BLOCK -> typeOfBoundary(state);
-                };
+            @NonNull final TransactionType type) {
         return UserTxn.from(
                 state,
                 event,
@@ -681,15 +668,9 @@ public class HandleWorkflow {
         if (files.size() == 0) {
             return GENESIS_TRANSACTION;
         }
-        final boolean firstPostUpgrade;
-        if (streamMode != RECORDS) {
-            firstPostUpgrade = blockStreamManager.isPostUpgradeWorkPending();
-        } else {
-            final var blockInfo = state.getReadableStates(BlockRecordService.NAME)
-                    .<BlockInfo>getSingleton(BLOCK_INFO_STATE_KEY)
-                    .get();
-            firstPostUpgrade = !requireNonNull(blockInfo).migrationRecordsStreamed();
-        }
-        return firstPostUpgrade ? POST_UPGRADE_TRANSACTION : BLOCK_BOUNDARY_TRANSACTION;
+        final var blockInfo = state.getReadableStates(BlockRecordService.NAME)
+                .<BlockInfo>getSingleton(BLOCK_INFO_STATE_KEY)
+                .get();
+        return !requireNonNull(blockInfo).migrationRecordsStreamed() ? POST_UPGRADE_TRANSACTION : ORDINARY_TRANSACTION;
     }
 }
