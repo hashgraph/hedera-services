@@ -350,14 +350,11 @@ public class ConsensusUpdateTopicHandler implements TransactionHandler {
             @NonNull final AttributeValidator attributeValidator,
             @NonNull final ConsensusUpdateTopicTransactionBody op,
             @NonNull final Topic topic) {
-        if (op.hasFeeScheduleKey()
-                && !KeyOneOfType.UNSET.equals(op.feeScheduleKey().key().kind())) {
-            validateTrue(
-                    topic.hasFeeScheduleKey()
-                            && !KeyOneOfType.UNSET.equals(
-                                    topic.feeScheduleKey().key().kind()),
-                    FEE_SCHEDULE_KEY_CANNOT_BE_UPDATED);
-            attributeValidator.validateKey(op.feeScheduleKey(), INVALID_CUSTOM_FEE_SCHEDULE_KEY);
+        if (op.hasFeeScheduleKey()) {
+            validateTrue(topic.hasFeeScheduleKey(), FEE_SCHEDULE_KEY_CANNOT_BE_UPDATED);
+            if (!KeyOneOfType.UNSET.equals(op.feeScheduleKey().key().kind())) {
+                attributeValidator.validateKey(op.feeScheduleKey(), INVALID_CUSTOM_FEE_SCHEDULE_KEY);
+            }
         }
     }
 

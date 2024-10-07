@@ -497,7 +497,10 @@ public class TopicCustomFeeUpdateTest extends TopicCustomFeeBase {
                     createTopic(TOPIC).adminKeyName(ADMIN_KEY),
 
                     // Update the custom fee to add custom fee
-                    updateTopic(TOPIC).withEmptyFeeScheduleKey().signedByPayerAnd(ADMIN_KEY)));
+                    updateTopic(TOPIC)
+                            .withEmptyFeeScheduleKey()
+                            .signedByPayerAnd(ADMIN_KEY)
+                            .hasKnownStatus(FEE_SCHEDULE_KEY_CANNOT_BE_UPDATED)));
         }
 
         @HapiTest
@@ -599,8 +602,7 @@ public class TopicCustomFeeUpdateTest extends TopicCustomFeeBase {
                     // Try to add the fee schedule key back
                     updateTopic(TOPIC)
                             .feeScheduleKeyName(FEE_SCHEDULE_KEY)
-                            .signedByPayerAnd(ADMIN_KEY, FEE_SCHEDULE_KEY)
-                            .hasKnownStatus(FEE_SCHEDULE_KEY_CANNOT_BE_UPDATED));
+                            .signedByPayerAnd(ADMIN_KEY, FEE_SCHEDULE_KEY));
         }
 
         @HapiTest
