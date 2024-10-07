@@ -14,6 +14,9 @@
  * limitations under the License.
  */
 
-plugins { id("com.hedera.gradle.services") }
+plugins {
+    id("com.hedera.gradle.services")
+    id("com.hedera.gradle.services-publish")
+}
 
 description = "Default Consensus Gossip Iplmentation"

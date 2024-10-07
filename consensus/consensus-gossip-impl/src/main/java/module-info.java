@@ -1,1 +1,6 @@
-module com.hedera.consensus.app.consensus.gossip.impl {}
+module com.hedera.consensus.gossip.impl {
+
+    exports com.hedera.service.gossip.impl;
+
+    requires transitive com.hedera.service.gossip;
+}

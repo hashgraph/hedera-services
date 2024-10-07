@@ -1,1 +1,4 @@
-module com.hedera.consensus.app.consensus.gossip {}
+module com.hedera.service.gossip {
+
+    exports com.hedera.service.gossip;
+}
