@@ -40,7 +40,6 @@ option java_multiple_files = true;
  *   the node generating this TssVote
  * - A `TssVoteTransactionBody` MUST identify the hash of the roster that the
  *   TSS messages is for
-
  *  - If the candidate roster has received enough yes votes, the candidate
  *    roster SHALL be adopted.
  *  - Switching to the candidate roster MUST not happen until enough nodes have
@@ -74,7 +73,8 @@ message TssVoteTransactionBody {
   /**
    * A signature produced by the node.
    * <p>
-   * This is produced using the node RSA signing key to sign the ledger_id.<br/>
+   * This signature SHALL be produced using the node RSA signing key to sign
+   * the ledger_id.<br/>
    * This signature SHALL be used to establish a chain of trust in the ledger id.
    */
   bytes node_signature = 4;
