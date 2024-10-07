@@ -29,7 +29,6 @@ public record ContractsConfig(
         @ConfigProperty(defaultValue = "31536000") @NetworkProperty long referenceSlotLifetime,
         @ConfigProperty(defaultValue = "100") @NetworkProperty int freeStorageTierLimit,
         @ConfigProperty(defaultValue = "0til100M,2000til450M") @NetworkProperty String storageSlotPriceTiers,
-        // @ConfigProperty(defaultValue = "") KnownBlockValues knownBlockHash,
         @ConfigProperty(value = "keys.legacyActivations", defaultValue = "1058134by[1062784]")
                 String keysLegacyActivations,
         @ConfigProperty(value = "localCall.estRetBytes", defaultValue = "4096") @NetworkProperty
@@ -58,11 +57,6 @@ public record ContractsConfig(
                 long precompileExchangeRateGasCost,
         @ConfigProperty(value = "precompile.htsDefaultGasCost", defaultValue = "10000") @NetworkProperty
                 long precompileHtsDefaultGasCost,
-
-        // Default value of `sigVerificationCost` from fee schedule's CryptoTransfer servicedata vpt field
-        // FUTURE: Fees for system contracts need to be in the fee schedule
-        // @ConfigProperty(value = "precompile.unsupportedCustomFeeReceiverDebits", defaultValue = "")
-        // Set<CustomFeeType> precompileUnsupportedCustomFeeReceiverDebits,
         @ConfigProperty(value = "precompile.atomicCryptoTransfer.enabled", defaultValue = "true") @NetworkProperty
                 boolean precompileAtomicCryptoTransferEnabled,
         @ConfigProperty(value = "systemContract.accountService.enabled", defaultValue = "true") @NetworkProperty
