@@ -35,6 +35,13 @@ javaModules {
         module("swirlds-unit-tests/core/swirlds-platform-test") // nested module is not found automatically
     }
 
+    directory("consensus") {
+        group = "com.hedera.hashgraph"
+
+        module("consensus-gossip") { artifact = "app-consensus-gossip" }
+        module("consensus-gossip-impl") { artifact = "app-consensus-gossip-impl" }
+    }
+
     // The Hedera services modules
     directory("hedera-node") {
         group = "com.hedera.hashgraph"
