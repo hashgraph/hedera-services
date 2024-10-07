@@ -58,6 +58,9 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class ConsensusCreateTopicHandler implements TransactionHandler {
+    /**
+     * Default constructor for injection.
+     */
     @Inject
     public ConsensusCreateTopicHandler() {
         // Exists for injection

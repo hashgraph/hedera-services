@@ -46,7 +46,7 @@ public record MigrationContextImpl(
         @NonNull ReadableStates previousStates,
         @NonNull WritableStates newStates,
         @NonNull Configuration configuration,
-        @NonNull NetworkInfo networkInfo,
+        @Nullable NetworkInfo genesisNetworkInfo,
         @Nullable WritableEntityIdStore writableEntityIdStore,
         @Nullable SemanticVersion previousVersion,
         @NonNull Map<String, Object> sharedValues)
@@ -55,7 +55,6 @@ public record MigrationContextImpl(
         requireNonNull(previousStates);
         requireNonNull(newStates);
         requireNonNull(configuration);
-        requireNonNull(networkInfo);
     }
 
     @Override

@@ -25,6 +25,7 @@ import static com.hedera.node.app.blocks.schemas.V0540BlockStreamSchema.BLOCK_ST
 import static com.hedera.node.app.fixtures.AppTestBase.DEFAULT_CONFIG;
 import static com.hedera.node.app.hapi.utils.CommonUtils.noThrowSha384HashOf;
 import static com.swirlds.platform.state.service.schemas.V0540PlatformStateSchema.PLATFORM_STATE_KEY;
+import static java.util.concurrent.CompletableFuture.completedFuture;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -44,19 +45,23 @@ import com.hedera.hapi.block.stream.RecordFileItem;
 import com.hedera.hapi.block.stream.output.StateChanges;
 import com.hedera.hapi.block.stream.output.TransactionResult;
 import com.hedera.hapi.node.base.SemanticVersion;
+import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.state.blockstream.BlockStreamInfo;
 import com.hedera.hapi.platform.event.EventTransaction;
 import com.hedera.hapi.platform.state.PlatformState;
 import com.hedera.node.app.blocks.BlockItemWriter;
 import com.hedera.node.app.blocks.BlockStreamService;
+import com.hedera.node.app.blocks.InitialStateHash;
 import com.hedera.node.app.tss.TssBaseService;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.VersionedConfigImpl;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.ParseException;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.common.crypto.Hash;
 import com.swirlds.platform.state.service.PlatformStateService;
 import com.swirlds.platform.system.Round;
+import com.swirlds.platform.system.state.notifications.StateHashedNotification;
 import com.swirlds.state.State;
 import com.swirlds.state.spi.CommittableWritableStates;
 import com.swirlds.state.spi.ReadableStates;
@@ -65,6 +70,7 @@ import com.swirlds.state.spi.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
+import java.util.List;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -83,6 +89,7 @@ class BlockStreamManagerImplTest {
     private static final long N_MINUS_1_BLOCK_NO = 665L;
     private static final long N_BLOCK_NO = 666L;
     private static final Instant CONSENSUS_NOW = Instant.ofEpochSecond(1_234_567L);
+    private static final Hash FAKE_START_OF_BLOCK_STATE_HASH = new Hash(new byte[48]);
     private static final Bytes N_MINUS_2_BLOCK_HASH = Bytes.wrap(noThrowSha384HashOf(new byte[] {(byte) 0xAA}));
     private static final Bytes FIRST_FAKE_SIGNATURE = Bytes.fromHex("ff".repeat(48));
     private static final Bytes SECOND_FAKE_SIGNATURE = Bytes.fromHex("ee".repeat(48));
@@ -95,9 +102,13 @@ class BlockStreamManagerImplTest {
             BlockItem.newBuilder().stateChanges(StateChanges.DEFAULT).build();
     private static final BlockItem FAKE_RECORD_FILE_ITEM =
             BlockItem.newBuilder().recordFile(RecordFileItem.DEFAULT).build();
+    private final InitialStateHash hashInfo = new InitialStateHash(completedFuture(ZERO_BLOCK_HASH), 0);
 
     @Mock
     private TssBaseService tssBaseService;
+
+    @Mock
+    private StateHashedNotification notification;
 
     @Mock
     private ConfigProvider configProvider;
@@ -140,7 +151,12 @@ class BlockStreamManagerImplTest {
     void requiresLastHashToBeInitialized() {
         given(configProvider.getConfiguration()).willReturn(new VersionedConfigImpl(DEFAULT_CONFIG, 1));
         subject = new BlockStreamManagerImpl(
-                () -> aWriter, ForkJoinPool.commonPool(), configProvider, tssBaseService, boundaryStateChangeListener);
+                () -> aWriter,
+                ForkJoinPool.commonPool(),
+                configProvider,
+                tssBaseService,
+                boundaryStateChangeListener,
+                hashInfo);
         assertThrows(IllegalStateException.class, () -> subject.startRound(round, state));
     }
 
@@ -153,6 +169,8 @@ class BlockStreamManagerImplTest {
                 aWriter);
         givenEndOfRoundSetup();
         final ArgumentCaptor<byte[]> blockHashCaptor = ArgumentCaptor.forClass(byte[].class);
+        given(boundaryStateChangeListener.boundaryTimestampOrThrow()).willReturn(Timestamp.DEFAULT);
+        given(round.getRoundNum()).willReturn(ROUND_NO);
 
         // Initialize the last (N-1) block hash
         subject.initLastBlockHash(FAKE_RESTART_BLOCK_HASH);
@@ -161,7 +179,7 @@ class BlockStreamManagerImplTest {
         subject.startRound(round, state);
 
         // Assert the internal state of the subject has changed as expected and the writer has been opened
-        verify(boundaryStateChangeListener).setLastUsedConsensusTime(CONSENSUS_NOW);
+        verify(boundaryStateChangeListener).setBoundaryTimestamp(CONSENSUS_NOW);
         verify(aWriter).openBlock(N_BLOCK_NO);
         assertEquals(N_MINUS_2_BLOCK_HASH, subject.blockHashByBlockNumber(N_MINUS_2_BLOCK_NO));
         assertEquals(FAKE_RESTART_BLOCK_HASH, subject.blockHashByBlockNumber(N_MINUS_1_BLOCK_NO));
@@ -182,7 +200,17 @@ class BlockStreamManagerImplTest {
                 N_BLOCK_NO,
                 asTimestamp(CONSENSUS_NOW),
                 appendHash(combine(ZERO_BLOCK_HASH, FAKE_RESULT_HASH), appendHash(ZERO_BLOCK_HASH, Bytes.EMPTY, 4), 4),
-                appendHash(FAKE_RESTART_BLOCK_HASH, appendHash(N_MINUS_2_BLOCK_HASH, Bytes.EMPTY, 256), 256));
+                appendHash(FAKE_RESTART_BLOCK_HASH, appendHash(N_MINUS_2_BLOCK_HASH, Bytes.EMPTY, 256), 256),
+                Bytes.fromHex(
+                        "edde6b2beddb2fda438665bbe6df0a639c518e6d5352e7276944b70777d437d28d1b22813ed70f5b8a3a3cbaf08aa9a8"),
+                ZERO_BLOCK_HASH,
+                3,
+                List.of(
+                        Bytes.fromHex(
+                                "be03f18885e3fb5e26dae1ad95d6559b62092d2162342f376712fd00fa045aaedda06811a1548a916a26878752900473"),
+                        Bytes.fromHex(
+                                "84910d7e7710b482680de1e81865de39396de9c536ab265cf3253bf378bc50ed2f6c5a3ec19a25c51ee170347f13b28d")),
+                Timestamp.DEFAULT);
         final var actualBlockInfo = infoRef.get();
         assertEquals(expectedBlockInfo, actualBlockInfo);
         verify(tssBaseService).requestLedgerSignature(blockHashCaptor.capture());
@@ -215,7 +243,7 @@ class BlockStreamManagerImplTest {
         subject.startRound(round, state);
 
         // Assert the internal state of the subject has changed as expected and the writer has been opened
-        verify(boundaryStateChangeListener).setLastUsedConsensusTime(CONSENSUS_NOW);
+        verify(boundaryStateChangeListener).setBoundaryTimestamp(CONSENSUS_NOW);
         verify(aWriter).openBlock(N_BLOCK_NO);
         assertEquals(N_MINUS_2_BLOCK_HASH, subject.blockHashByBlockNumber(N_MINUS_2_BLOCK_NO));
         assertEquals(FAKE_RESTART_BLOCK_HASH, subject.blockHashByBlockNumber(N_MINUS_1_BLOCK_NO));
@@ -243,6 +271,7 @@ class BlockStreamManagerImplTest {
                 aWriter);
         givenEndOfRoundSetup();
         given(round.getRoundNum()).willReturn(ROUND_NO);
+        given(boundaryStateChangeListener.boundaryTimestampOrThrow()).willReturn(Timestamp.DEFAULT);
         final ArgumentCaptor<byte[]> blockHashCaptor = ArgumentCaptor.forClass(byte[].class);
 
         // Initialize the last (N-1) block hash
@@ -252,7 +281,7 @@ class BlockStreamManagerImplTest {
         subject.startRound(round, state);
 
         // Assert the internal state of the subject has changed as expected and the writer has been opened
-        verify(boundaryStateChangeListener).setLastUsedConsensusTime(CONSENSUS_NOW);
+        verify(boundaryStateChangeListener).setBoundaryTimestamp(CONSENSUS_NOW);
         verify(aWriter).openBlock(N_BLOCK_NO);
         assertEquals(N_MINUS_2_BLOCK_HASH, subject.blockHashByBlockNumber(N_MINUS_2_BLOCK_NO));
         assertEquals(FAKE_RESTART_BLOCK_HASH, subject.blockHashByBlockNumber(N_MINUS_1_BLOCK_NO));
@@ -276,7 +305,17 @@ class BlockStreamManagerImplTest {
                 N_BLOCK_NO,
                 asTimestamp(CONSENSUS_NOW),
                 appendHash(combine(Bytes.fromHex("dd".repeat(48)), FAKE_RESULT_HASH), resultHashes, 4),
-                appendHash(FAKE_RESTART_BLOCK_HASH, appendHash(N_MINUS_2_BLOCK_HASH, Bytes.EMPTY, 256), 256));
+                appendHash(FAKE_RESTART_BLOCK_HASH, appendHash(N_MINUS_2_BLOCK_HASH, Bytes.EMPTY, 256), 256),
+                Bytes.fromHex(
+                        "edde6b2beddb2fda438665bbe6df0a639c518e6d5352e7276944b70777d437d28d1b22813ed70f5b8a3a3cbaf08aa9a8"),
+                ZERO_BLOCK_HASH,
+                3,
+                List.of(
+                        Bytes.fromHex(
+                                "be03f18885e3fb5e26dae1ad95d6559b62092d2162342f376712fd00fa045aaedda06811a1548a916a26878752900473"),
+                        Bytes.fromHex(
+                                "84910d7e7710b482680de1e81865de39396de9c536ab265cf3253bf378bc50ed2f6c5a3ec19a25c51ee170347f13b28d")),
+                Timestamp.DEFAULT);
         final var actualBlockInfo = infoRef.get();
         assertEquals(expectedBlockInfo, actualBlockInfo);
         verify(tssBaseService).requestLedgerSignature(blockHashCaptor.capture());
@@ -310,6 +349,7 @@ class BlockStreamManagerImplTest {
                 .when(bWriter)
                 .writeItem(any());
         final ArgumentCaptor<byte[]> blockHashCaptor = ArgumentCaptor.forClass(byte[].class);
+        given(round.getRoundNum()).willReturn(ROUND_NO);
 
         // Initialize the last (N-1) block hash
         subject.initLastBlockHash(FAKE_RESTART_BLOCK_HASH);
@@ -325,6 +365,11 @@ class BlockStreamManagerImplTest {
         subject.endRound(state, ROUND_NO);
 
         // Start the round that will be block N+1
+        given(round.getRoundNum()).willReturn(ROUND_NO + 1);
+        given(notification.round()).willReturn(ROUND_NO);
+        given(notification.hash()).willReturn(FAKE_START_OF_BLOCK_STATE_HASH);
+        // Notify the subject of the required start-of-state hash
+        subject.notify(notification);
         subject.startRound(round, state);
         // Write some items to the block
         subject.writeItem(FAKE_EVENT_TRANSACTION);
@@ -378,8 +423,8 @@ class BlockStreamManagerImplTest {
                 ForkJoinPool.commonPool(),
                 configProvider,
                 tssBaseService,
-                boundaryStateChangeListener);
-        subject.appendRealHashes();
+                boundaryStateChangeListener,
+                hashInfo);
         given(state.getReadableStates(BlockStreamService.NAME)).willReturn(readableStates);
         given(state.getReadableStates(PlatformStateService.NAME)).willReturn(readableStates);
         infoRef.set(blockStreamInfo);

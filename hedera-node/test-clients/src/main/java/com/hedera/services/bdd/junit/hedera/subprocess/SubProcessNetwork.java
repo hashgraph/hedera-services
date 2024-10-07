@@ -37,6 +37,7 @@ import com.hedera.services.bdd.junit.hedera.AbstractGrpcNetwork;
 import com.hedera.services.bdd.junit.hedera.HederaNetwork;
 import com.hedera.services.bdd.junit.hedera.HederaNode;
 import com.hedera.services.bdd.junit.hedera.NodeSelector;
+import com.hedera.services.bdd.junit.hedera.subprocess.SubProcessNode.ReassignPorts;
 import com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.TargetNetworkType;
@@ -167,7 +168,7 @@ public class SubProcessNetwork extends AbstractGrpcNetwork implements HederaNetw
                             // Begins by deleting the working directory
                             node.initWorkingDir(configTxt);
                         });
-                        assignNewPorts();
+                        assignNewMetadata(ReassignPorts.YES);
                         clients = null;
                         start();
                     }
@@ -201,25 +202,29 @@ public class SubProcessNetwork extends AbstractGrpcNetwork implements HederaNetw
     }
 
     /**
-     * Assigns new ports to all nodes in the network.
-     *
-     * <p>Overwrites the existing <i>config.txt</i> file for each node in the network with the new ports.
+     * Assigns updated metadata to nodes from the current <i>config.txt</i>.
+     * <p>Also reassigns ports and overwrites the existing <i>config.txt</i> file for each node in the
+     * network with new ports if requested to avoid port binding issues in test environments.
      */
-    public void assignNewPorts() {
-        log.info("Reinitializing ports for network '{}' starting from {}", name(), nextGrpcPort);
-        reinitializePorts();
-        log.info("  -> Network '{}' ports now starting from {}", name(), nextGrpcPort);
-        nodes.forEach(node -> {
-            final int nodeId = (int) node.getNodeId();
-            configTxt =
-                    withReassignedPorts(configTxt, nodeId, nextGossipPort + nodeId * 2, nextGossipTlsPort + nodeId * 2);
-            ((SubProcessNode) node)
-                    .reassignPorts(
-                            nextGrpcPort + nodeId * 2,
-                            nextGossipPort + nodeId * 2,
-                            nextGossipTlsPort + nodeId * 2,
-                            nextPrometheusPort + nodeId);
-        });
+    public void assignNewMetadata(@NonNull final ReassignPorts reassignPorts) {
+        requireNonNull(reassignPorts);
+        if (reassignPorts == ReassignPorts.YES) {
+            log.info("Reassigning ports for network '{}' starting from {}", name(), nextGrpcPort);
+            reinitializePorts();
+            log.info("  -> Network '{}' ports now starting from {}", name(), nextGrpcPort);
+            nodes.forEach(node -> {
+                final int nodeId = (int) node.getNodeId();
+                configTxt = withReassignedPorts(
+                        configTxt, nodeId, nextGossipPort + nodeId * 2, nextGossipTlsPort + nodeId * 2);
+                ((SubProcessNode) node)
+                        .reassignPorts(
+                                nextGrpcPort + nodeId * 2,
+                                nextGossipPort + nodeId * 2,
+                                nextGossipTlsPort + nodeId * 2,
+                                nextPrometheusPort + nodeId);
+            });
+        }
+        nodes.forEach(node -> ((SubProcessNode) node).reassignNodeAccountIdFrom(memoOfNode(node.getNodeId())));
         refreshNodeConfigTxt();
         HapiClients.tearDown();
         this.clients = HapiClients.clientsFor(this);
@@ -352,6 +357,14 @@ public class SubProcessNetwork extends AbstractGrpcNetwork implements HederaNetw
                 throw new UncheckedIOException(e);
             }
         });
+    }
+
+    private String memoOfNode(final long id) {
+        return Arrays.stream(configTxt.split("\n"))
+                .filter(line -> line.startsWith("address, " + id))
+                .map(line -> line.substring(line.lastIndexOf(",") + 2))
+                .findFirst()
+                .orElseThrow();
     }
 
     private String consensusDabConfigTxt() {

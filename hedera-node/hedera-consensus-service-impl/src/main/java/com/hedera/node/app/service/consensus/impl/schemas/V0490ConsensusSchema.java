@@ -42,6 +42,9 @@ public class V0490ConsensusSchema extends Schema {
 
     private static final long MAX_TOPICS = 1_000_000_000L;
 
+    /**
+     * Constructor for this schema.
+     */
     public V0490ConsensusSchema() {
         super(VERSION);
     }

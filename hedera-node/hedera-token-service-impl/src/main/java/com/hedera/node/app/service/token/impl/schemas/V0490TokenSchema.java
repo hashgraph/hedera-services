@@ -39,6 +39,7 @@ import com.hedera.node.config.data.LedgerConfig;
 import com.hedera.node.config.data.StakingConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.state.spi.MigrationContext;
+import com.swirlds.state.spi.Schema;
 import com.swirlds.state.spi.StateDefinition;
 import com.swirlds.state.spi.WritableKVState;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -54,7 +55,7 @@ import org.apache.logging.log4j.Logger;
 /**
  * Initial mod-service schema for the token service.
  */
-public class V0490TokenSchema extends StakingInfoManagementSchema {
+public class V0490TokenSchema extends Schema {
     private static final Logger log = LogManager.getLogger(V0490TokenSchema.class);
 
     // These need to be big so databases are created at right scale. If they are too small then the on disk hash map
@@ -239,7 +240,7 @@ public class V0490TokenSchema extends StakingInfoManagementSchema {
         final var config = ctx.configuration();
         final var ledgerConfig = config.getConfigData(LedgerConfig.class);
         final var stakingConfig = config.getConfigData(StakingConfig.class);
-        final var addressBook = ctx.networkInfo().addressBook();
+        final var addressBook = ctx.genesisNetworkInfo().addressBook();
         final var numberOfNodes = addressBook.size();
 
         final long maxStakePerNode = ledgerConfig.totalTinyBarFloat() / numberOfNodes;
