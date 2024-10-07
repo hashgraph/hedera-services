@@ -488,7 +488,6 @@ public class TopicCustomFeeUpdateTest extends TopicCustomFeeBase {
                     .hasCustomFee(expectedConsensusFixedHbarFee(1, COLLECTOR)));
         }
 
-        // TODO: talk with Ani - this will be success because we are not setting anything and we ignore the field
         @HapiTest
         @DisplayName("to remove the fee schedule key that doesn't exists")
         final Stream<DynamicTest> removeTheFeeScheduleKeyWhenItDoNotExists() {
@@ -533,8 +532,6 @@ public class TopicCustomFeeUpdateTest extends TopicCustomFeeBase {
     @DisplayName("Negative scenarios")
     class TopicCreateNegativeScenarios {
 
-        // TODO: talk with Ani - rename the test in notion from TOPIC_FEE_057 to TOPIC_FEE_047
-        // TODO: INVALID_CUSTOM_FEE_COLLECTOR instead of success
         @HapiTest
         @DisplayName("to add a custom fee with a invalid collector")
         final Stream<DynamicTest> updateToAddCustomFeeWithInvalidCollector() {
@@ -554,7 +551,6 @@ public class TopicCustomFeeUpdateTest extends TopicCustomFeeBase {
                     .hasKnownStatus(INVALID_CUSTOM_FEE_COLLECTOR));
         }
 
-        // TODO: when fee schedule was not set on create - we shouldn't be able to set it on update? Talk with Ani
         @HapiTest
         @DisplayName("the fee schedule key when it was empty on create")
         final Stream<DynamicTest> updateTheFeeScheduleKeyWhenWasEmpty() {
@@ -567,8 +563,6 @@ public class TopicCustomFeeUpdateTest extends TopicCustomFeeBase {
                     .hasKnownStatus(FEE_SCHEDULE_KEY_CANNOT_BE_UPDATED));
         }
 
-        // TODO: talk with Ani - when there is a invalid key it cannot sign the transaction. Thus throwing
-        // INVALID_SIGNATURE
         @HapiTest
         @DisplayName("to update the fee schedule key with zero address key")
         final Stream<DynamicTest> updateFeeScheduleKeyWithZeroAddressKey() {
@@ -591,7 +585,6 @@ public class TopicCustomFeeUpdateTest extends TopicCustomFeeBase {
                     .hasKnownStatus(INVALID_SIGNATURE));
         }
 
-        // TODO: Talk with Ani - this should throw FEE_SCHEDULE_KEY_CANNOT_BE_UPDATED
         @HapiTest
         @DisplayName("to delete the fee schedule key and then setting the same key back")
         final Stream<DynamicTest> updateToDeleteTheFeeScheduleKeyAndSettingItBack() {
@@ -631,7 +624,6 @@ public class TopicCustomFeeUpdateTest extends TopicCustomFeeBase {
                     .hasKnownStatus(INVALID_SIGNATURE));
         }
 
-        // TODO: talk with Ani - if we remove the fee schedule key - can only the admin sign?
         @HapiTest
         @DisplayName("to remove the fee schedule key without the fee schedule key to sign")
         final Stream<DynamicTest> updateToRemoveTheFeeScheduleKeyWithoutFeeScheduleToSign() {
@@ -841,8 +833,6 @@ public class TopicCustomFeeUpdateTest extends TopicCustomFeeBase {
                     .hasKnownStatus(CUSTOM_FEE_MUST_BE_POSITIVE));
         }
 
-        // TODO: Talk with Ani: not associated with the token? Not the topic. Currently we are not associating the fee
-        // collector to the topic
         @HapiTest
         @DisplayName("the custom fee collector that is not associated with the token")
         final Stream<DynamicTest> updateCustomFeeCollectorThatIsNotAssociatedWithToken() {
@@ -861,7 +851,6 @@ public class TopicCustomFeeUpdateTest extends TopicCustomFeeBase {
                     .hasKnownStatus(TOKEN_NOT_ASSOCIATED_TO_FEE_COLLECTOR));
         }
 
-        // TODO: Talk with Ani: not frozen for the token? It should be frozen for the token
         @HapiTest
         @DisplayName("the custom fee with frozen collector")
         final Stream<DynamicTest> updateCustomFeeWithFrozenCollector() {
@@ -925,8 +914,6 @@ public class TopicCustomFeeUpdateTest extends TopicCustomFeeBase {
                     .signedByPayerAnd(ADMIN_KEY, FEE_SCHEDULE_KEY)
                     .hasKnownStatus(INVALID_TOKEN_ID_IN_CUSTOM_FEES));
         }
-
-        // TODO: Talk with Ani: to remove 95
 
         @HapiTest
         @DisplayName("with no admin key")
