@@ -19,7 +19,6 @@ package com.hedera.services.bdd.junit.support.validators.block;
 import static com.hedera.node.app.blocks.impl.BlockImplUtils.combine;
 import static com.hedera.node.app.hapi.utils.CommonUtils.noThrowSha384HashOf;
 import static com.hedera.node.app.info.UnavailableNetworkInfo.UNAVAILABLE_NETWORK_INFO;
-import static com.hedera.node.app.workflows.handle.metric.UnavailableMetrics.UNAVAILABLE_METRICS;
 import static com.hedera.services.bdd.junit.hedera.ExternalPath.APPLICATION_PROPERTIES;
 import static com.hedera.services.bdd.junit.hedera.ExternalPath.SAVED_STATES_DIR;
 import static com.hedera.services.bdd.junit.hedera.ExternalPath.SWIRLDS_LOG;
@@ -90,6 +89,7 @@ import com.hedera.services.bdd.junit.hedera.subprocess.SubProcessNetwork;
 import com.hedera.services.bdd.junit.support.BlockStreamAccess;
 import com.hedera.services.bdd.junit.support.BlockStreamValidator;
 import com.hedera.services.bdd.spec.HapiSpec;
+import com.swirlds.common.RosterStateId;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
@@ -246,7 +246,9 @@ public class StateChangesValidator implements BlockStreamValidator {
         final var configVersion =
                 bootstrapConfig.getConfigData(HederaConfig.class).configVersion();
         final var currentVersion = new ServicesSoftwareVersion(servicesVersion, configVersion);
-        final var lifecycles = newPlatformInitLifecycle(bootstrapConfig, currentVersion, migrator, servicesRegistry);
+        final var metrics = new NoOpMetrics();
+        final var lifecycles =
+                newPlatformInitLifecycle(bootstrapConfig, currentVersion, migrator, servicesRegistry, metrics);
         this.state = new MerkleStateRoot(lifecycles, version -> new ServicesSoftwareVersion(version, configVersion));
         initGenesisPlatformState(
                 new FakePlatformContext(new NodeId(0), Executors.newSingleThreadScheduledExecutor()),
@@ -265,7 +267,7 @@ public class StateChangesValidator implements BlockStreamValidator {
                 new ServicesSoftwareVersion(servicesVersion, configVersion),
                 new ConfigProviderImpl().getConfiguration(),
                 networkInfo,
-                new NoOpMetrics());
+                metrics);
 
         logger.info("Registered all Service and migrated state definitions to version {}", servicesVersion);
     }
@@ -638,19 +640,21 @@ public class StateChangesValidator implements BlockStreamValidator {
             @NonNull final Configuration bootstrapConfig,
             @NonNull final SoftwareVersion currentVersion,
             @NonNull final OrderedServiceMigrator serviceMigrator,
-            @NonNull final ServicesRegistryImpl servicesRegistry) {
+            @NonNull final ServicesRegistryImpl servicesRegistry,
+            @NonNull final NoOpMetrics metrics) {
         return new MerkleStateLifecycles() {
             @Override
             public List<StateChanges.Builder> initPlatformState(@NonNull final State state) {
                 final var deserializedVersion = serviceMigrator.creationVersionOf(state);
                 return serviceMigrator.doMigrations(
                         state,
-                        servicesRegistry.subRegistryFor(EntityIdService.NAME, PlatformStateService.NAME),
+                        servicesRegistry.subRegistryFor(
+                                EntityIdService.NAME, PlatformStateService.NAME, RosterStateId.NAME),
                         deserializedVersion == null ? null : new ServicesSoftwareVersion(deserializedVersion),
                         currentVersion,
                         bootstrapConfig,
                         UNAVAILABLE_NETWORK_INFO,
-                        UNAVAILABLE_METRICS);
+                        metrics);
             }
 
             @Override
