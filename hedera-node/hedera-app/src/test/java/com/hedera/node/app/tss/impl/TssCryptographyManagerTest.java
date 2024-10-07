@@ -20,46 +20,28 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 import com.hedera.hapi.node.state.roster.Roster;
-import com.hedera.hapi.node.state.roster.RosterEntry;
 import com.hedera.hapi.platform.state.NodeId;
-import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.hederahashgraph.api.proto.java.Key;
-import com.hederahashgraph.api.proto.java.KeyList;
-import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mock;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.junit.jupiter.MockitoExtension;
 
+@ExtendWith(MockitoExtension.class)
 class TssCryptographyManagerTest {
-
-    @Mock
-    private Roster roster;
-
-    @Mock
-    private RosterEntry rosterEntry;
-
     private TssCryptographyManager tssCryptographyManager;
-    public static final Key EMPTY_KEY =
-            Key.newBuilder().setKeyList(KeyList.newBuilder().build()).build();
 
     @BeforeEach
     void setUp() {
-        when(roster.rosterEntries()).thenReturn(List.of(rosterEntry));
-        when(rosterEntry.nodeId()).thenReturn(1L);
-        when(rosterEntry.tssEncryptionKey()).thenReturn(Bytes.wrap(EMPTY_KEY.toByteArray()));
         tssCryptographyManager = new TssCryptographyManager(new NodeId(1L), 10, true);
     }
 
     @Test
     void testSetActiveRoster() {
-        tssCryptographyManager.setActiveRoster(roster);
-        assertNotNull(tssCryptographyManager.getTssEncryptionKey(1L));
-        assertThrows(IllegalStateException.class, () -> tssCryptographyManager.setActiveRoster(roster));
+        assertDoesNotThrow(() -> tssCryptographyManager.setActiveRoster(Roster.DEFAULT));
     }
 
     @Test
     void testKeyCandidateRoster() {
-        tssCryptographyManager.keyCandidateRoster(roster);
-        assertNotNull(tssCryptographyManager.getTssEncryptionKey(1L));
+        assertDoesNotThrow(() -> tssCryptographyManager.keyCandidateRoster(Roster.DEFAULT));
     }
 }

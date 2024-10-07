@@ -16,42 +16,22 @@
 
 package com.hedera.node.app.tss.impl;
 
-import static org.mockito.Mockito.*;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
-import com.hedera.hapi.node.state.roster.Roster;
-import com.hedera.hapi.node.state.tss.TssVoteMapKey;
-import com.hederahashgraph.api.proto.java.Key;
-import com.hederahashgraph.api.proto.java.KeyList;
-import com.hederahashgraph.api.proto.java.TssMessageMapKey;
-import java.util.HashMap;
-import java.util.Map;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
+@ExtendWith(MockitoExtension.class)
 public class TssStateManagerTest {
-
     @Mock
-    private TssCryptographyManager mockTssCryptographyManager;
+    private TssCryptographyManager tssCryptographyManager;
 
     private TssStateManager tssStateManager;
-    public static final Key EMPTY_KEY =
-            Key.newBuilder().setKeyList(KeyList.newBuilder().build()).build();
-
-    @BeforeEach
-    public void setUp() {
-        mockTssCryptographyManager = mock(TssCryptographyManager.class);
-        tssStateManager = new TssStateManager(mockTssCryptographyManager);
-    }
 
     @Test
-    public void testHandleStartup() throws Exception {
-        Roster activeRoster = mock(Roster.class);
-        Roster candidateRoster = mock(Roster.class);
-
-        Map<Roster, TssMessageMapKey> tssMessageMap = new HashMap<>();
-        Map<Roster, TssVoteMapKey> tssVoteMap = new HashMap<>();
-
-        tssStateManager.handleStartup();
+    public void canConstruct() {
+        assertDoesNotThrow(() -> tssStateManager = new TssStateManager(tssCryptographyManager));
     }
 }

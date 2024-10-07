@@ -19,13 +19,15 @@ package com.hedera.node.app.tss.impl;
 import com.hedera.hapi.node.state.roster.LedgerId;
 import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.hederahashgraph.api.proto.java.TssMessage;
 import com.hederahashgraph.api.proto.java.TssMessageMapKey;
-import com.hederahashgraph.api.proto.java.TssMessageTransaction;
+import com.hederahashgraph.api.proto.java.TssVote;
 import com.hederahashgraph.api.proto.java.TssVoteMapKey;
-import com.hederahashgraph.api.proto.java.TssVoteTransaction;
 import com.swirlds.common.exceptions.NotImplementedException;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 
 public class TssStateManager {
 
@@ -35,10 +37,10 @@ public class TssStateManager {
     private LedgerId ledgerId;
     private TssCryptographyManager tssCryptographyManager;
 
-    public TssStateManager(TssCryptographyManager tssCryptographyManager) {
+    public TssStateManager(@NonNull final TssCryptographyManager tssCryptographyManager) {
+        this.tssCryptographyManager = Objects.requireNonNull(tssCryptographyManager);
         this.tssMessageMap = new HashMap<>();
         this.tssVoteMap = new HashMap<>();
-        this.tssCryptographyManager = tssCryptographyManager;
     }
 
     public void handleStartup() {
@@ -100,7 +102,7 @@ public class TssStateManager {
         throw new NotImplementedException();
     }
 
-    public void handleTssMessageTransaction(TssMessageTransaction transaction) {
+    public void handleTssMessageTransaction(@NonNull final TssMessage tssMessage) {
         throw new NotImplementedException();
     }
 
@@ -108,7 +110,7 @@ public class TssStateManager {
         throw new NotImplementedException();
     }
 
-    public void handleTssVoteTransaction(TssVoteTransaction transaction) {
+    public void handleTssVoteTransaction(@NonNull final TssVote tssVote) {
         throw new NotImplementedException();
     }
 
