@@ -131,6 +131,13 @@ public class WritableRosterStore implements RosterStateModifier {
         final RosterState previousRosterState = rosterStateOrThrow();
         final List<RoundRosterPair> roundRosterPairs = new LinkedList<>(previousRosterState.roundRosterPairs());
         final Bytes activeRosterHash = RosterUtils.hash(roster).getBytes();
+        if (!roundRosterPairs.isEmpty()) {
+            final RoundRosterPair activeRosterPair = roundRosterPairs.getFirst();
+            if (round <= activeRosterPair.roundNumber()) {
+                throw new IllegalArgumentException(
+                        "incoming round number must be greater than the round number of the current active roster.");
+            }
+        }
         roundRosterPairs.addFirst(new RoundRosterPair(round, activeRosterHash));
 
         if (roundRosterPairs.size() > MAXIMUM_ROSTER_HISTORY_SIZE) {

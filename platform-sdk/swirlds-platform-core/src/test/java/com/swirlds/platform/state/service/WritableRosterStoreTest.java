@@ -101,6 +101,16 @@ class WritableRosterStoreTest {
     }
 
     @Test
+    void testInvalidRoundNumberThrowsException() {
+        rosterStateModifier.setActiveRoster(createValidTestRoster(2), 1);
+        assertThrows(
+                IllegalArgumentException.class, () -> rosterStateModifier.setActiveRoster(createValidTestRoster(1), 0));
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> rosterStateModifier.setActiveRoster(createValidTestRoster(1), -1));
+    }
+
+    @Test
     @DisplayName("Tests that setting an active roster returns the active roster when getActiveRoster is called.")
     void testGetCandidateRosterWithValidCandidateRoster() {
         final Roster activeRoster = createValidTestRoster(1);
