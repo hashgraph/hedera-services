@@ -834,10 +834,8 @@ public class BlockStreamBuilder
 
     @NonNull
     @Override
-    public BlockStreamBuilder congestionMultiplier(long congestionMultiplier) {
-        if (congestionMultiplier != 0) {
-            transactionResultBuilder.congestionPricingMultiplier(congestionMultiplier);
-        }
+    public BlockStreamBuilder congestionMultiplier(final long congestionMultiplier) {
+        transactionResultBuilder.congestionPricingMultiplier(congestionMultiplier);
         return this;
     }
 

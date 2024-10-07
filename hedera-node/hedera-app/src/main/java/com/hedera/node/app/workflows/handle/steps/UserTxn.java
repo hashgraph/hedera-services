@@ -17,7 +17,6 @@
 package com.hedera.node.app.workflows.handle.steps;
 
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.USER;
-import static com.hedera.node.app.workflows.handle.TransactionType.BLOCK_BOUNDARY_TRANSACTION;
 import static com.hedera.node.app.workflows.handle.TransactionType.GENESIS_TRANSACTION;
 import static com.hedera.node.app.workflows.handle.TransactionType.POST_UPGRADE_TRANSACTION;
 import static com.hedera.node.config.types.StreamMode.RECORDS;
@@ -90,6 +89,21 @@ public record UserTxn(
         @NonNull Configuration config,
         @NonNull NodeInfo creatorInfo) {
 
+    /**
+     * Creates a new {@link UserTxn} instance from the given parameters.
+     * @param state the state the transaction will be applied to
+     * @param event the consensus event containing the transaction
+     * @param creatorInfo the node information of the creator
+     * @param platformTxn the transaction itself
+     * @param consensusNow the current consensus time
+     * @param type the type of the transaction
+     * @param configProvider the configuration provider
+     * @param storeMetricsService the store metrics service
+     * @param kvStateChangeListener the key-value state change listener
+     * @param boundaryStateChangeListener the boundary state change listener
+     * @param preHandleWorkflow the pre-handle workflow
+     * @return the new user transaction
+     */
     public static UserTxn from(
             // @UserTxnScope
             @NonNull final State state,
@@ -247,13 +261,5 @@ public record UserTxn(
      */
     public StreamBuilder baseBuilder() {
         return stack.getBaseBuilder(StreamBuilder.class);
-    }
-
-    /**
-     * Returns whether this transaction is the first across a block boundary.
-     * @return {@code true} if this transaction is the first across a block boundary, otherwise {@code false}
-     */
-    public boolean isFirstAcrossBlockBoundary() {
-        return type == POST_UPGRADE_TRANSACTION || type == BLOCK_BOUNDARY_TRANSACTION;
     }
 }
