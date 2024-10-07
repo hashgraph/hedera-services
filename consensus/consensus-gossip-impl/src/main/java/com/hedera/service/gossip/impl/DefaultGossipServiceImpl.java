@@ -22,4 +22,4 @@ import com.hedera.service.gossip.DefaultGossipService;
  *
  * Default implementation for the mock gossip service
  * */
-interface DefaultGossipServiceImpl extends DefaultGossipService {}
+public final class DefaultGossipServiceImpl implements DefaultGossipService {}
