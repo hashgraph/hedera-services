@@ -27,6 +27,10 @@ import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.swirlds.virtualmap.serialize.KeySerializer;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
+/**
+ * Virtual key serializer for {@link SingleLongKey} keys. Keys are serialized as a single
+ * unit64 protobuf field.
+ */
 public class SingleLongKeySerializer implements KeySerializer<SingleLongKey> {
 
     private static final long CLASS_ID = 0xbbbe23fdbce1007dL;
@@ -61,38 +65,50 @@ public class SingleLongKeySerializer implements KeySerializer<SingleLongKey> {
 
     @Override
     public int getSerializedSize(@NonNull final SingleLongKey key) {
-        return ProtoWriterTools.sizeOfTag(FIELD) + ProtoWriterTools.sizeOfVarInt64(key.getValue());
+        int size = 0;
+        if (key.getValue() != 0) {
+            size += ProtoWriterTools.sizeOfTag(FIELD) + ProtoWriterTools.sizeOfVarInt64(key.getValue());
+        }
+        return size;
     }
 
     @Override
     public int getTypicalSerializedSize() {
-        return 1 /* tag */ + 4 /* avg long size */;
+        return 1 /* tag */ + 4 /* avg var long size */;
     }
 
     // Key serialization
 
     @Override
     public void serialize(@NonNull final SingleLongKey key, final @NonNull WritableSequentialData out) {
-        ProtoWriterTools.writeTag(out, FIELD);
-        out.writeVarLong(key.getValue(), false);
+        if (key.getValue() != 0) {
+            ProtoWriterTools.writeTag(out, FIELD);
+            out.writeVarLong(key.getValue(), false);
+        }
     }
 
     // Key deserialization
 
     @Override
     public SingleLongKey deserialize(@NonNull final ReadableSequentialData in) {
-        final int tag = in.readVarInt(false);
-        final int number = tag >>> ProtoParserTools.TAG_FIELD_OFFSET;
-        final int type = tag & ProtoConstants.TAG_WIRE_TYPE_MASK;
-        if ((number != FIELD.number()) || (type != ProtoConstants.WIRE_TYPE_VARINT_OR_ZIGZAG.ordinal())) {
-            throw new RuntimeException("Unknown tag: " + tag);
+        long value = 0;
+        if (in.hasRemaining()) {
+            final int tag = in.readVarInt(false);
+            final int number = tag >>> ProtoParserTools.TAG_FIELD_OFFSET;
+            final int type = tag & ProtoConstants.TAG_WIRE_TYPE_MASK;
+            if ((number != FIELD.number()) || (type != ProtoConstants.WIRE_TYPE_VARINT_OR_ZIGZAG.ordinal())) {
+                throw new RuntimeException("Unknown tag: " + tag);
+            }
+            value = in.readVarLong(false);
         }
-        final long value = in.readVarLong(false);
         return new SingleLongKey(value);
     }
 
     @Override
     public boolean equals(@NonNull final BufferedData in, @NonNull final SingleLongKey keyToCompare) {
+        if (!in.hasRemaining()) {
+            return keyToCompare.getValue() == 0;
+        }
         final int tag = in.readVarInt(false);
         final int number = tag >>> ProtoParserTools.TAG_FIELD_OFFSET;
         if (number != FIELD.number()) {

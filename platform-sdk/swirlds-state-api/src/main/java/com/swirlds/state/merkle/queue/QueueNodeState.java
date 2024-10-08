@@ -47,10 +47,23 @@ public final class QueueNodeState extends PartialMerkleLeaf implements Labeled, 
     /** Zero-arg constructor. */
     public QueueNodeState() {}
 
+    /**
+     * Creates a new queue node state with a given label. Queue head and tail indices
+     * are both set to 1.
+     *
+     * @param label the queue node label
+     */
     public QueueNodeState(@NonNull final String label) {
         this(label, 1, 1);
     }
 
+    /**
+     * Creates a new queue node state with a given label, head and tail indices.
+     *
+     * @param label the queue node label
+     * @param head the head index
+     * @param tail the tail index
+     */
     public QueueNodeState(@NonNull final String label, final long head, final long tail) {
         this.label = label;
         this.head = head;
@@ -104,22 +117,37 @@ public final class QueueNodeState extends PartialMerkleLeaf implements Labeled, 
         return label;
     }
 
+    /**
+     * Gets the head index.
+     */
     public long getHead() {
         return head;
     }
 
+    /**
+     * Gets the head index and increments it by one. May not be atomic.
+     */
     public long getHeadAndIncrement() {
         return head++;
     }
 
+    /**
+     * Gets the tail index.
+     */
     public long getTail() {
         return tail;
     }
 
+    /**
+     * Gets the tail index and increments it by one. May not be atomic.
+     */
     public long getTailAndIncrement() {
         return tail++;
     }
 
+    /**
+     * Returns if this queue node state is empty, i.e. if the head and tail indexes are equal.
+     */
     public boolean isEmpty() {
         return head == tail;
     }

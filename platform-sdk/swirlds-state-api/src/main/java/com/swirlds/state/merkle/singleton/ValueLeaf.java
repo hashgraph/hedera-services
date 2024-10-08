@@ -32,8 +32,11 @@ import java.io.IOException;
 /**
  * A Merkle leaf that stores an arbitrary value with delegated serialization based on the {@link
  * #classId}.
+ *
+ * @param <T> value type
  */
 public class ValueLeaf<T> extends PartialMerkleLeaf implements MerkleLeaf {
+
     /**
      * {@deprecated} Needed for ConstructableRegistry, TO BE REMOVED ASAP
      */
@@ -70,7 +73,7 @@ public class ValueLeaf<T> extends PartialMerkleLeaf implements MerkleLeaf {
      * Create a new instance with the given value.
      *
      * @param singletonClassId The class ID of the object
-     * @param codec   The codec to use for serialization
+     * @param codec The codec to use for serialization
      * @param value The value.
      */
     public ValueLeaf(final long singletonClassId, @NonNull Codec<T> codec, @Nullable final T value) {
@@ -141,6 +144,11 @@ public class ValueLeaf<T> extends PartialMerkleLeaf implements MerkleLeaf {
         this.val = value;
     }
 
+    /**
+     * Gets the codec used for serialization and deserialization.
+     *
+     * @return The codec
+     */
     public Codec<T> getCodec() {
         return codec;
     }

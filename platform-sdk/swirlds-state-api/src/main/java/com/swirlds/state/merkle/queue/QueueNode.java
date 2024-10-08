@@ -54,9 +54,9 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
- * A merkle node with a string (the label) as the left child, and the merkle node value as the right
- * child. We actually support a raw type (any type!) as the value, and we serialize it and put it
- * into a simple merkle node.
+ * A merkle node used as a backing store for queue states. The node has two children. The left
+ * one is a {@link QueueNodeState}, it contains the label and queue head/tail indices. The
+ * right one is a {@link VirtualMap}, it is used to store queue items.
  *
  * @param <E> The element type
  */

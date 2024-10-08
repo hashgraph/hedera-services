@@ -22,6 +22,9 @@ import com.swirlds.virtualmap.VirtualKey;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 
+/**
+ * A virtual key type that holds a single long value.
+ */
 public class SingleLongKey implements VirtualKey {
 
     // Class ID
@@ -37,10 +40,16 @@ public class SingleLongKey implements VirtualKey {
     // Required for deserialization
     public SingleLongKey() {}
 
+    /**
+     * Creates a key with a given long value.
+     */
     public SingleLongKey(long value) {
         this.value = value;
     }
 
+    /**
+     * Gets the key value.
+     */
     public long getValue() {
         return value;
     }
