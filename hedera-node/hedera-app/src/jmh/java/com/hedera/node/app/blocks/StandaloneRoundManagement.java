@@ -40,6 +40,7 @@ import com.hedera.node.app.config.ConfigProviderImpl;
 import com.hedera.node.app.fixtures.state.FakeState;
 import com.hedera.node.app.tss.impl.PlaceholderTssBaseService;
 import com.hedera.node.config.ConfigProvider;
+import com.hedera.node.config.data.BlockStreamConfig;
 import com.hedera.pbj.runtime.OneOf;
 import com.hedera.pbj.runtime.ParseException;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -52,11 +53,7 @@ import com.swirlds.platform.system.events.ConsensusEvent;
 import com.swirlds.platform.system.state.notifications.StateHashedNotification;
 import com.swirlds.state.spi.Schema;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.UncheckedIOException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -65,27 +62,10 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ForkJoinPool;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.zip.GZIPInputStream;
-import org.openjdk.jmh.annotations.Benchmark;
-import org.openjdk.jmh.annotations.BenchmarkMode;
-import org.openjdk.jmh.annotations.Fork;
-import org.openjdk.jmh.annotations.Level;
-import org.openjdk.jmh.annotations.Measurement;
-import org.openjdk.jmh.annotations.Mode;
-import org.openjdk.jmh.annotations.OutputTimeUnit;
-import org.openjdk.jmh.annotations.Param;
-import org.openjdk.jmh.annotations.Scope;
-import org.openjdk.jmh.annotations.Setup;
-import org.openjdk.jmh.annotations.State;
-import org.openjdk.jmh.annotations.Warmup;
 
-@State(Scope.Benchmark)
-@Fork(value = 1)
-@Warmup(iterations = 1)
-@Measurement(iterations = 3)
-public class BlockStreamManagerBenchmark {
+public class StandaloneRoundManagement {
     private static final long FIRST_ROUND_NO = 123L;
     private static final Bytes FAKE_START_OF_BLOCK_STATE_HASH = Bytes.fromHex("ab".repeat(48));
     private static final Hash FAKE_STATE_HASH = new Hash(FAKE_START_OF_BLOCK_STATE_HASH.toByteArray());
@@ -94,18 +74,17 @@ public class BlockStreamManagerBenchmark {
     private static final Timestamp FAKE_CONSENSUS_TIME = new Timestamp(1_234_567L, 890);
     private static final SemanticVersion VERSION = new SemanticVersion(0, 56, 0, "", "");
 
-    public static void main(String... args) throws Exception {
-        org.openjdk.jmh.Main.main(new String[] {"com.hedera.node.app.blocks.BlockStreamManagerBenchmark.manageRound"});
-    }
+    private static final int NUM_ROUNDS = 10000;
+    private static final int NUM_EVENTS = 10;
+    private static final int NUM_TXNS_PER_EVENT = 100;
 
     private final Round round = new FakeRound();
     private final ConfigProvider configProvider =
-            new ConfigProviderImpl(false, null, Map.of("blockStream.serializationBatchSize", "8"));
+            new ConfigProviderImpl(false, null, Map.of("blockStream.serializationBatchSize", "5102"));
     private final List<BlockItem> roundItems = new ArrayList<>();
     private final PlaceholderTssBaseService tssBaseService = new PlaceholderTssBaseService();
     private final BlockStreamManagerImpl subject = new BlockStreamManagerImpl(
             NoopBlockItemWriter::new,
-            //            BaosBlockItemWriter::new,
             ForkJoinPool.commonPool(),
             configProvider,
             tssBaseService,
@@ -113,18 +92,19 @@ public class BlockStreamManagerBenchmark {
             new InitialStateHash(completedFuture(FAKE_START_OF_BLOCK_STATE_HASH), FIRST_ROUND_NO - 1),
             VERSION);
 
-    @Param({"10"})
-    private int numEvents;
-
-    @Param({"100"})
-    private int numTxnsPerEvent;
-
     private long roundNum = FIRST_ROUND_NO;
     private FakeState state;
     private BlockItem boundaryStateChanges;
     private PlatformState platformState;
 
-    @Setup(Level.Trial)
+    public static void main(@NonNull final String[] args) throws IOException, ParseException {
+        final var sim = new StandaloneRoundManagement();
+        sim.setup();
+        for (int i = 0; i < NUM_ROUNDS; i++) {
+            sim.manageRound();
+        }
+    }
+
     public void setup() throws IOException, ParseException {
         loadSampleItems();
         state = new FakeState();
@@ -133,11 +113,13 @@ public class BlockStreamManagerBenchmark {
         subject.initLastBlockHash(ZERO_BLOCK_HASH);
         tssBaseService.setExecutor(ForkJoinPool.commonPool());
         tssBaseService.registerLedgerSignatureConsumer(subject);
+        System.out.println("serializationBatchSize = "
+                + configProvider
+                        .getConfiguration()
+                        .getConfigData(BlockStreamConfig.class)
+                        .serializationBatchSize());
     }
 
-    @Benchmark
-    @BenchmarkMode(Mode.Throughput)
-    @OutputTimeUnit(TimeUnit.SECONDS)
     public void manageRound() {
         subject.startRound(round, state);
         roundItems.forEach(subject::writeItem);
@@ -199,9 +181,9 @@ public class BlockStreamManagerBenchmark {
                 }
                 roundItems.add(requireNonNull(blockHeader));
                 roundItems.add(requireNonNull(roundHeader));
-                for (int i = 0; i < numEvents; i++) {
+                for (int i = 0; i < NUM_EVENTS; i++) {
                     roundItems.add(requireNonNull(sampleEventHeader));
-                    for (int j = 0; j < numTxnsPerEvent; j++) {
+                    for (int j = 0; j < NUM_TXNS_PER_EVENT; j++) {
                         roundItems.add(requireNonNull(sampleEventTxn));
                         roundItems.add(requireNonNull(sampleTxnResult));
                         roundItems.add(requireNonNull(sampleTxnStateChanges));
@@ -250,6 +232,23 @@ public class BlockStreamManagerBenchmark {
         }
     }
 
+    private static class NoopBlockItemWriter implements BlockItemWriter {
+        @Override
+        public void openBlock(final long blockNumber) {
+            // No-op
+        }
+
+        @Override
+        public BlockItemWriter writeItem(@NonNull final Bytes serializedItem) {
+            return this;
+        }
+
+        @Override
+        public void closeBlock() {
+            // No-op
+        }
+    }
+
     private class FakeRound implements Round {
         @NonNull
         @Override
@@ -282,69 +281,6 @@ public class BlockStreamManagerBenchmark {
         @Override
         public Instant getConsensusTimestamp() {
             return FAKE_CONSENSUS_NOW;
-        }
-    }
-
-    private static class NoopBlockItemWriter implements BlockItemWriter {
-        @Override
-        public void openBlock(final long blockNumber) {
-            // No-op
-        }
-
-        @Override
-        public BlockItemWriter writeItem(@NonNull final Bytes serializedItem) {
-            return this;
-        }
-
-        @Override
-        public void closeBlock() {
-            // No-op
-        }
-    }
-
-    private static class BaosBlockItemWriter implements BlockItemWriter {
-        private static final int BLOCKS_TO_CHECK = 10;
-        private static final String BLOCKS_DIR = "orig-blocks";
-
-        private static int numBlocksToWrite = BLOCKS_TO_CHECK;
-
-        private ByteArrayOutputStream baos;
-
-        @Override
-        public void openBlock(final long blockNumber) {
-            baos = new ByteArrayOutputStream();
-        }
-
-        @Override
-        public BlockItemWriter writeItem(@NonNull final Bytes serializedItem) {
-            try {
-                baos.write(serializedItem.toByteArray());
-            } catch (IOException e) {
-                throw new UncheckedIOException(e);
-            }
-            return this;
-        }
-
-        @Override
-        public void closeBlock() {
-            if (numBlocksToWrite > 0) {
-                final var blockNo = BLOCKS_TO_CHECK - numBlocksToWrite + 1;
-                final var path = Paths.get(BLOCKS_DIR, "block" + blockNo + ".blk");
-                try {
-                    Files.createDirectories(path.getParent());
-                } catch (IOException e) {
-                    throw new UncheckedIOException(e);
-                }
-                try (final var fout = Files.newOutputStream(path)) {
-                    baos.writeTo(fout);
-                } catch (IOException e) {
-                    throw new UncheckedIOException(e);
-                }
-                numBlocksToWrite--;
-                if (numBlocksToWrite == 0) {
-                    System.exit(0);
-                }
-            }
         }
     }
 }
