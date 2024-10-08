@@ -212,7 +212,7 @@ the event creation rate, it starts to create events with more and more transacti
 rate. This will lead to fewer overall events, allowing it to do less work. If the node is still not able to keep up,
 eventually it will refuse to accept any additional transactions from users. If enough nodes in the network are stressed,
 then the overall transaction ingestion rate of the network will be reduced, further reducing the amount of work each
-node has to do. Eventually, and equilibrium is reached.
+node has to do. Eventually, an equilibrium is reached.
 
 If the rate at which the network is creating events slows, Alice will be able to catch up by retrieving those previously
 dropped events through gossip, and will be able to process them and catch up. Or, in the last extremity where Alice has
