@@ -47,6 +47,7 @@ public class TopicCustomFeeBase {
     protected static final String TOKEN_TREASURY = "tokenTreasury";
     protected static final String DENOM_TREASURY = "denomTreasury";
     protected static final String BASE_TOKEN = "baseToken";
+    protected static final String SECOND_TOKEN = "secondToken";
 
     /* tokens with multilayer fees */
     protected static final String TOKEN_PREFIX = "token_";
@@ -69,8 +70,13 @@ public class TopicCustomFeeBase {
                     .tokenType(TokenType.FUNGIBLE_COMMON)
                     .treasury(TOKEN_TREASURY)
                     .initialSupply(500L),
-            tokenAssociate(SUBMITTER, BASE_TOKEN),
-            cryptoTransfer(moving(500L, BASE_TOKEN).between(TOKEN_TREASURY, SUBMITTER))
+            tokenCreate(SECOND_TOKEN)
+                    .treasury(TOKEN_TREASURY)
+                    .initialSupply(500L),
+            tokenAssociate(SUBMITTER, BASE_TOKEN, SECOND_TOKEN),
+            cryptoTransfer(
+                    moving(500L, BASE_TOKEN).between(TOKEN_TREASURY, SUBMITTER),
+                    moving(500L, SECOND_TOKEN).between(TOKEN_TREASURY, SUBMITTER)),
         };
     }
 

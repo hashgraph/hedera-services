@@ -156,7 +156,7 @@ public class ConsensusAllowancesValidator {
             validateTruePreCheck(hbarAllowance.amount() >= 0, NEGATIVE_ALLOWANCE_AMOUNT);
             validateTruePreCheck(hbarAllowance.amountPerMessage() >= 0, NEGATIVE_ALLOWANCE_AMOUNT);
             validateTruePreCheck(
-                    hbarAllowance.amount() > hbarAllowance.amountPerMessage(),
+                    hbarAllowance.amount() >= hbarAllowance.amountPerMessage(),
                     ALLOWANCE_PER_MESSAGE_EXCEEDS_TOTAL_ALLOWANCE);
             // Add the unique (AccountID, TopicID) pair to the map
             uniqueMap.put(hbarAllowance.owner(), hbarAllowance.topicId());
@@ -192,7 +192,7 @@ public class ConsensusAllowancesValidator {
             validateTruePreCheck(tokenAllowance.amount() >= 0, NEGATIVE_ALLOWANCE_AMOUNT);
             validateTruePreCheck(tokenAllowance.amountPerMessage() >= 0, NEGATIVE_ALLOWANCE_AMOUNT);
             validateTruePreCheck(
-                    tokenAllowance.amount() > tokenAllowance.amountPerMessage(),
+                    tokenAllowance.amount() >= tokenAllowance.amountPerMessage(),
                     ALLOWANCE_PER_MESSAGE_EXCEEDS_TOTAL_ALLOWANCE);
         }
     }
