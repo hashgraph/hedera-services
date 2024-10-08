@@ -34,8 +34,6 @@ module com.hedera.node.app {
     requires com.hedera.node.app.service.file;
     requires com.hedera.node.app.service.network.admin;
     requires com.hedera.node.app.service.util;
-    requires com.hedera.cryptography.pairings.signatures;
-    requires com.hedera.cryptography.tss;
     requires com.swirlds.base;
     requires com.swirlds.config.extensions;
     requires com.swirlds.logging;
@@ -45,6 +43,8 @@ module com.hedera.node.app {
     requires com.google.common;
     requires com.google.errorprone.annotations;
     requires com.google.protobuf;
+    requires com.hedera.cryptography.pairings.signatures;
+    requires com.hedera.cryptography.tss;
     requires io.grpc.netty;
     requires io.grpc;
     requires io.netty.handler;
@@ -52,10 +52,10 @@ module com.hedera.node.app {
     requires io.netty.transport;
     requires org.apache.commons.lang3;
     requires org.hyperledger.besu.datatypes;
+    requires org.jetbrains.annotations;
     requires static com.github.spotbugs.annotations;
     requires static com.google.auto.service;
     requires static java.compiler;
-    requires org.jetbrains.annotations;
     // javax.annotation.processing.Generated
 
     exports com.hedera.node.app;
