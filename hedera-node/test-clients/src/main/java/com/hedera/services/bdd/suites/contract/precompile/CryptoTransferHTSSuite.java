@@ -1779,4 +1779,48 @@ public class CryptoTransferHTSSuite {
                 cryptoTransfer(moving(200L, FUNGIBLE_TOKEN).between(TOKEN_TREASURY, SENDER)),
                 opsArray));
     }
+
+    @HapiTest
+    final Stream<DynamicTest> cryptoTransferTryFor11() {
+        return hapiTest(
+                tokenCreate("token").initialSupply(100000L),
+                tokenCreate("token2").initialSupply(100000L),
+                cryptoCreate("sender").balance(1_000_000_000_000L),
+                cryptoCreate("receiver1").balance(1_000_000_000_000L),
+                cryptoCreate("receiver2").balance(1_000_000_000_000L),
+                cryptoCreate("receiver3").balance(1_000_000_000_000L),
+                cryptoCreate("receiver4").balance(1_000_000_000_000L),
+                cryptoCreate("receiver5").balance(1_000_000_000_000L),
+                cryptoCreate("receiver6").balance(1_000_000_000_000L),
+                cryptoCreate("receiver7").balance(1_000_000_000_000L),
+                cryptoCreate("receiver8").balance(1_000_000_000_000L),
+                cryptoCreate("receiver9").balance(1_000_000_000_000L),
+                cryptoCreate("receiver10").balance(1_000_000_000_000L),
+                cryptoCreate("receiver11").balance(1_000_000_000_000L),
+                tokenAssociate("sender", "token"),
+                tokenAssociate("receiver1", "token"),
+                tokenAssociate("receiver2", "token"),
+                tokenAssociate("receiver3", "token"),
+                tokenAssociate("receiver4", "token"),
+                tokenAssociate("receiver5", "token"),
+                tokenAssociate("receiver6", "token"),
+                tokenAssociate("receiver7", "token"),
+                tokenAssociate("receiver8", "token"),
+                tokenAssociate("receiver9", "token"),
+                tokenAssociate("receiver10", "token"),
+                tokenAssociate("receiver11", "token"),
+                cryptoTransfer(moving(10L, "token")
+                        .distributing(
+                                "sender",
+                                "receiver1",
+                                "receiver2",
+                                "receiver3",
+                                "receiver4",
+                                "receiver5",
+                                "receiver6",
+                                "receiver7",
+                                "receiver8",
+                                "receiver9",
+                                "receiver10")));
+    }
 }
