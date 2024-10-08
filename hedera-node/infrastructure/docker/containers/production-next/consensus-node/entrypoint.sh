@@ -107,6 +107,9 @@ if [[ ! -d "${SCRIPT_PATH}/${LOG_DIR_NAME}" ]]; then
  mkdir -p "${SCRIPT_PATH}/${LOG_DIR_NAME}"
 fi
 
+# Assign default value for optional scripts to run before and after consensus service
+: ${RUN_BEFORE:=entrypoint-run-before.sh} ${RUN_AFTER:=entrypoint-run-after.sh}
+
 cat <<EOF
 
 
@@ -146,6 +149,13 @@ echo ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> BEGIN JAVA VERSION >>>>>>>>>>>>>
 echo "<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< END JAVA VERSION   <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
 echo
 
+if [ -f "${RUN_BEFORE}" ]; then
+  echo ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> BEGIN RUN BEFORE >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"
+  . "${RUN_BEFORE}"
+  echo "<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< END RUN BEFORE   <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
+  echo
+fi
+
 echo ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> BEGIN WAITING FOR FILES >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"
 ## In Kubernetes environments intermittent failures have been observed due to the fragile config.txt/settings.txt loading
 ## code when the file is not immediately available. This can occur due to various reasons including Persistent Volumes
@@ -178,8 +188,15 @@ while true; do
   fi
 done
 echo "<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< END NODE OUTPUT   <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
-
 echo
+
+if [ -f "${RUN_AFTER}" ]; then
+  echo ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> BEGIN RUN AFTER >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"
+  . "${RUN_AFTER}"
+  echo "<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< END RUN AFTER   <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
+  echo
+fi
+
 echo ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> BEGIN EXIT CODE >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"
 printf "Process Exit Code: %s\n" "${EC}"
 echo "<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< END EXIT CODE   <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
