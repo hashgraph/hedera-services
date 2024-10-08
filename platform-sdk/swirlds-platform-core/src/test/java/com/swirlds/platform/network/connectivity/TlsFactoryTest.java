@@ -88,7 +88,8 @@ class TlsFactoryTest extends ConnectivityTestBase {
         // create a new address book with keys and new set of nodes
         final AddressBookAndCerts updatedAddressBookAndCerts = CryptoArgsProvider.loadAddressBookWithKeys(6);
         final AddressBook updatedAddressBook = updatedAddressBookAndCerts.addressBook();
-        final Address address = addressBook.getAddress(nodeA).copySetNodeId(updatedAddressBook.getNextNodeId());
+        final Address address =
+                addressBook.getAddress(nodeA).copySetNodeId(updatedAddressBook.getNextAvailableNodeId());
         updatedAddressBook.add(address); // ensure node A is in new addressBook
         final Map<NodeId, KeysAndCerts> updatedKeysAndCerts = updatedAddressBookAndCerts.nodeIdKeysAndCertsMap();
         assertTrue(updatedAddressBook.getSize() > 1, "Address book must contain at least 2 nodes");

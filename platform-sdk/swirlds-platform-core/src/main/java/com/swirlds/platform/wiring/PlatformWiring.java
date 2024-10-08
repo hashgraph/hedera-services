@@ -62,6 +62,8 @@ import com.swirlds.platform.event.creation.EventCreationManager;
 import com.swirlds.platform.event.deduplication.EventDeduplicator;
 import com.swirlds.platform.event.hashing.EventHasher;
 import com.swirlds.platform.event.orphan.OrphanBuffer;
+import com.swirlds.platform.event.preconsensus.InlinePcesWriter;
+import com.swirlds.platform.event.preconsensus.NoOpInlinePcesWriter;
 import com.swirlds.platform.event.preconsensus.PcesConfig;
 import com.swirlds.platform.event.preconsensus.PcesReplayer;
 import com.swirlds.platform.event.preconsensus.PcesSequencer;
@@ -126,6 +128,7 @@ public class PlatformWiring {
 
     private final PlatformContext platformContext;
     private final PlatformSchedulersConfig config;
+    private final boolean inlinePces;
 
     private final ComponentWiring<EventHasher, PlatformEvent> eventHasherWiring;
     private final PassThroughWiring<PlatformEvent> postHashCollectorWiring;
@@ -140,6 +143,7 @@ public class PlatformWiring {
     private final ComponentWiring<StateSigner, StateSignatureTransaction> stateSignerWiring;
     private final PcesReplayerWiring pcesReplayerWiring;
     private final ComponentWiring<PcesWriter, Long> pcesWriterWiring;
+    private final ComponentWiring<InlinePcesWriter, PlatformEvent> pcesInlineWriterWiring;
     private final ComponentWiring<RoundDurabilityBuffer, List<ConsensusRound>> roundDurabilityBufferWiring;
     private final ComponentWiring<PcesSequencer, PlatformEvent> pcesSequencerWiring;
     private final ComponentWiring<TransactionPrehandler, Void> applicationTransactionPrehandlerWiring;
@@ -194,6 +198,10 @@ public class PlatformWiring {
         this.model = Objects.requireNonNull(model);
 
         config = platformContext.getConfiguration().getConfigData(PlatformSchedulersConfig.class);
+        inlinePces = platformContext
+                .getConfiguration()
+                .getConfigData(ComponentWiringConfig.class)
+                .inlinePces();
         hashCollectorEnabled = config.hashCollectorEnabled();
 
         final AncientMode ancientMode = platformContext
@@ -242,7 +250,6 @@ public class PlatformWiring {
         eventCreationManagerWiring =
                 new ComponentWiring<>(model, EventCreationManager.class, config.eventCreationManager());
         selfEventSignerWiring = new ComponentWiring<>(model, SelfEventSigner.class, config.selfEventSigner());
-        pcesSequencerWiring = new ComponentWiring<>(model, PcesSequencer.class, config.pcesSequencer());
 
         applicationTransactionPrehandlerWiring =
                 new ComponentWiring<>(model, TransactionPrehandler.class, config.applicationTransactionPrehandler());
@@ -262,9 +269,19 @@ public class PlatformWiring {
 
         pcesReplayerWiring = PcesReplayerWiring.create(model);
 
-        pcesWriterWiring = new ComponentWiring<>(model, PcesWriter.class, config.pcesWriter());
-        roundDurabilityBufferWiring =
-                new ComponentWiring<>(model, RoundDurabilityBuffer.class, config.roundDurabilityBuffer());
+        if (inlinePces) {
+            // when using inline PCES, we don't need these components
+            roundDurabilityBufferWiring = null;
+            pcesSequencerWiring = null;
+            pcesWriterWiring = null;
+            pcesInlineWriterWiring = new ComponentWiring<>(model, InlinePcesWriter.class, config.pcesInlineWriter());
+        } else {
+            roundDurabilityBufferWiring =
+                    new ComponentWiring<>(model, RoundDurabilityBuffer.class, config.roundDurabilityBuffer());
+            pcesSequencerWiring = new ComponentWiring<>(model, PcesSequencer.class, config.pcesSequencer());
+            pcesWriterWiring = new ComponentWiring<>(model, PcesWriter.class, config.pcesWriter());
+            pcesInlineWriterWiring = null;
+        }
 
         eventWindowManagerWiring =
                 new ComponentWiring<>(model, EventWindowManager.class, DIRECT_THREADSAFE_CONFIGURATION);
@@ -334,7 +351,8 @@ public class PlatformWiring {
                 transactionPoolWiring,
                 statusStateMachineWiring,
                 branchDetectorWiring,
-                branchReporterWiring);
+                branchReporterWiring,
+                pcesInlineWriterWiring);
 
         wire();
     }
@@ -407,8 +425,13 @@ public class PlatformWiring {
                 eventSignatureValidatorWiring.getInputWire(EventSignatureValidator::setEventWindow), INJECT);
         eventWindowOutputWire.solderTo(orphanBufferWiring.getInputWire(OrphanBuffer::setEventWindow), INJECT);
         eventWindowOutputWire.solderTo(gossipWiring.getEventWindowInput(), INJECT);
-        eventWindowOutputWire.solderTo(
-                pcesWriterWiring.getInputWire(PcesWriter::updateNonAncientEventBoundary), INJECT);
+        if (inlinePces) {
+            eventWindowOutputWire.solderTo(
+                    pcesInlineWriterWiring.getInputWire(InlinePcesWriter::updateNonAncientEventBoundary), INJECT);
+        } else {
+            eventWindowOutputWire.solderTo(
+                    pcesWriterWiring.getInputWire(PcesWriter::updateNonAncientEventBoundary), INJECT);
+        }
         eventWindowOutputWire.solderTo(
                 eventCreationManagerWiring.getInputWire(EventCreationManager::setEventWindow), INJECT);
         eventWindowOutputWire.solderTo(
@@ -473,12 +496,33 @@ public class PlatformWiring {
                 .getOutputWire()
                 .solderTo(orphanBufferWiring.getInputWire(OrphanBuffer::handleEvent));
         final OutputWire<PlatformEvent> splitOrphanBufferOutput = orphanBufferWiring.getSplitOutput();
-        splitOrphanBufferOutput.solderTo(pcesSequencerWiring.getInputWire(PcesSequencer::assignStreamSequenceNumber));
-        pcesSequencerWiring.getOutputWire().solderTo(pcesWriterWiring.getInputWire(PcesWriter::writeEvent));
 
-        pcesSequencerWiring.getOutputWire().solderTo(consensusEngineWiring.getInputWire(ConsensusEngine::addEvent));
+        if (inlinePces) {
+            splitOrphanBufferOutput.solderTo(pcesInlineWriterWiring.getInputWire(InlinePcesWriter::writeEvent));
+            // make sure that an event is persisted before being sent to consensus, this avoids the situation where we
+            // reach consensus with events that might be lost due to a crash
+            pcesInlineWriterWiring
+                    .getOutputWire()
+                    .solderTo(consensusEngineWiring.getInputWire(ConsensusEngine::addEvent));
+            // make sure events are persisted before being gossipped, this prevents accidental branching in the case
+            // where an event is created, gossipped, and then the node crashes before the event is persisted.
+            // after restart, a node will not be aware of this event, so it can create a branch
+            pcesInlineWriterWiring.getOutputWire().solderTo(gossipWiring.getEventInput(), INJECT);
+            // avoid using events as parents before they are persisted
+            pcesInlineWriterWiring
+                    .getOutputWire()
+                    .solderTo(eventCreationManagerWiring.getInputWire(EventCreationManager::registerEvent));
+        } else {
+            splitOrphanBufferOutput.solderTo(
+                    pcesSequencerWiring.getInputWire(PcesSequencer::assignStreamSequenceNumber));
+            pcesSequencerWiring.getOutputWire().solderTo(pcesWriterWiring.getInputWire(PcesWriter::writeEvent));
+            pcesSequencerWiring.getOutputWire().solderTo(consensusEngineWiring.getInputWire(ConsensusEngine::addEvent));
+            // This must use injection to avoid cyclical back pressure
+            splitOrphanBufferOutput.solderTo(gossipWiring.getEventInput(), INJECT);
+            splitOrphanBufferOutput.solderTo(
+                    eventCreationManagerWiring.getInputWire(EventCreationManager::registerEvent));
+        }
 
-        splitOrphanBufferOutput.solderTo(eventCreationManagerWiring.getInputWire(EventCreationManager::registerEvent));
         model.getHealthMonitorWire()
                 .solderTo(eventCreationManagerWiring.getInputWire(EventCreationManager::reportUnhealthyDuration));
 
@@ -486,10 +530,6 @@ public class PlatformWiring {
 
         model.getHealthMonitorWire()
                 .solderTo(transactionPoolWiring.getInputWire(TransactionPool::reportUnhealthyDuration));
-
-        // This must use injection to avoid cyclical back pressure. There is a risk of OOM if gossip can't ingest
-        // events fast enough, but we have no other choice until we implement the platform health monitor.
-        splitOrphanBufferOutput.solderTo(gossipWiring.getEventInput(), INJECT);
 
         splitOrphanBufferOutput.solderTo(branchDetectorWiring.getInputWire(BranchDetector::checkForBranches));
         branchDetectorWiring.getOutputWire().solderTo(branchReporterWiring.getInputWire(BranchReporter::reportBranch));
@@ -591,40 +631,49 @@ public class PlatformWiring {
 
         solderEventWindow();
 
-        pcesReplayerWiring
-                .doneStreamingPcesOutputWire()
-                .solderTo(pcesWriterWiring.getInputWire(PcesWriter::beginStreamingNewEvents));
         pcesReplayerWiring.eventOutput().solderTo(pipelineInputWire);
-
-        // Create the transformer that extracts keystone event sequence number from consensus rounds.
-        // This is done here instead of in ConsensusEngineWiring, since the transformer needs to be soldered with
-        // specified ordering, relative to the wire carrying consensus rounds to the round handler
-        final WireTransformer<ConsensusRound, Long> keystoneEventSequenceNumberTransformer = new WireTransformer<>(
-                model, "getKeystoneEventSequenceNumber", "rounds", round -> round.getKeystoneEvent()
-                        .getStreamSequenceNumber());
-        keystoneEventSequenceNumberTransformer
-                .getOutputWire()
-                .solderTo(pcesWriterWiring.getInputWire(PcesWriter::submitFlushRequest));
 
         final OutputWire<ConsensusRound> consensusRoundOutputWire = consensusEngineWiring.getSplitOutput();
 
         consensusRoundOutputWire.solderTo(staleEventDetectorWiring.getInputWire(StaleEventDetector::addConsensusRound));
 
-        // The request to flush the keystone event for a round must be sent to the PCES writer before the consensus
-        // round is passed to the round handler. This prevents a deadlock scenario where the consensus round
-        // handler has a full queue and won't accept additional rounds, and is waiting on a keystone event to be
-        // durably flushed to disk. Meanwhile, the PCES writer hasn't even received the flush request yet, so the
-        // necessary keystone event is *never* flushed.
-        consensusRoundOutputWire.orderedSolderTo(List.of(
-                keystoneEventSequenceNumberTransformer.getInputWire(),
-                roundDurabilityBufferWiring.getInputWire(RoundDurabilityBuffer::addRound)));
+        if (inlinePces) {
+            pcesReplayerWiring
+                    .doneStreamingPcesOutputWire()
+                    .solderTo(pcesInlineWriterWiring.getInputWire(InlinePcesWriter::beginStreamingNewEvents));
+            // with inline PCES, the round bypasses the round durability buffer and goes directly to the round handler
+            consensusRoundOutputWire.solderTo(
+                    transactionHandlerWiring.getInputWire(TransactionHandler::handleConsensusRound));
+        } else {
+            pcesReplayerWiring
+                    .doneStreamingPcesOutputWire()
+                    .solderTo(pcesWriterWiring.getInputWire(PcesWriter::beginStreamingNewEvents));
+            // Create the transformer that extracts keystone event sequence number from consensus rounds.
+            // This is done here instead of in ConsensusEngineWiring, since the transformer needs to be soldered with
+            // specified ordering, relative to the wire carrying consensus rounds to the round handler
+            final WireTransformer<ConsensusRound, Long> keystoneEventSequenceNumberTransformer = new WireTransformer<>(
+                    model, "getKeystoneEventSequenceNumber", "rounds", round -> round.getKeystoneEvent()
+                            .getStreamSequenceNumber());
+            keystoneEventSequenceNumberTransformer
+                    .getOutputWire()
+                    .solderTo(pcesWriterWiring.getInputWire(PcesWriter::submitFlushRequest));
+            // The request to flush the keystone event for a round must be sent to the PCES writer before the consensus
+            // round is passed to the round handler. This prevents a deadlock scenario where the consensus round
+            // handler has a full queue and won't accept additional rounds, and is waiting on a keystone event to be
+            // durably flushed to disk. Meanwhile, the PCES writer hasn't even received the flush request yet, so the
+            // necessary keystone event is *never* flushed.
+            consensusRoundOutputWire.orderedSolderTo(List.of(
+                    keystoneEventSequenceNumberTransformer.getInputWire(),
+                    roundDurabilityBufferWiring.getInputWire(RoundDurabilityBuffer::addRound)));
+
+            final OutputWire<ConsensusRound> splitRoundDurabilityBufferOutput =
+                    roundDurabilityBufferWiring.getSplitOutput();
+            splitRoundDurabilityBufferOutput.solderTo(
+                    transactionHandlerWiring.getInputWire(TransactionHandler::handleConsensusRound));
+        }
+
         consensusRoundOutputWire.solderTo(
                 eventWindowManagerWiring.getInputWire(EventWindowManager::extractEventWindow));
-
-        final OutputWire<ConsensusRound> splitRoundDurabilityBufferOutput =
-                roundDurabilityBufferWiring.getSplitOutput();
-        splitRoundDurabilityBufferOutput.solderTo(
-                transactionHandlerWiring.getInputWire(TransactionHandler::handleConsensusRound));
 
         consensusEngineWiring
                 .getSplitAndTransformedOutput(ConsensusEngine::getCesEvents)
@@ -694,20 +743,31 @@ public class PlatformWiring {
         hashedStateOutputWire.solderTo(
                 stateSignatureCollectorWiring.getInputWire(StateSignatureCollector::addReservedState));
 
-        pcesWriterWiring
-                .getOutputWire()
-                .solderTo(
-                        roundDurabilityBufferWiring.getInputWire(RoundDurabilityBuffer::setLatestDurableSequenceNumber),
-                        INJECT);
-        model.buildHeartbeatWire(platformContext
-                        .getConfiguration()
-                        .getConfigData(PcesConfig.class)
-                        .roundDurabilityBufferHeartbeatPeriod())
-                .solderTo(roundDurabilityBufferWiring.getInputWire(RoundDurabilityBuffer::checkForStaleRounds), OFFER);
+        if (inlinePces) {
+            stateSnapshotManagerWiring
+                    .getTransformedOutput(StateSnapshotManager::extractOldestMinimumGenerationOnDisk)
+                    .solderTo(
+                            pcesInlineWriterWiring.getInputWire(InlinePcesWriter::setMinimumAncientIdentifierToStore),
+                            INJECT);
+        } else {
+            pcesWriterWiring
+                    .getOutputWire()
+                    .solderTo(
+                            roundDurabilityBufferWiring.getInputWire(
+                                    RoundDurabilityBuffer::setLatestDurableSequenceNumber),
+                            INJECT);
+            model.buildHeartbeatWire(platformContext
+                            .getConfiguration()
+                            .getConfigData(PcesConfig.class)
+                            .roundDurabilityBufferHeartbeatPeriod())
+                    .solderTo(
+                            roundDurabilityBufferWiring.getInputWire(RoundDurabilityBuffer::checkForStaleRounds),
+                            OFFER);
+            stateSnapshotManagerWiring
+                    .getTransformedOutput(StateSnapshotManager::extractOldestMinimumGenerationOnDisk)
+                    .solderTo(pcesWriterWiring.getInputWire(PcesWriter::setMinimumAncientIdentifierToStore), INJECT);
+        }
 
-        stateSnapshotManagerWiring
-                .getTransformedOutput(StateSnapshotManager::extractOldestMinimumGenerationOnDisk)
-                .solderTo(pcesWriterWiring.getInputWire(PcesWriter::setMinimumAncientIdentifierToStore), INJECT);
         stateSnapshotManagerWiring
                 .getTransformedOutput(StateSnapshotManager::toStateWrittenToDiskAction)
                 .solderTo(statusStateMachineWiring.getInputWire(StatusStateMachine::submitStatusAction));
@@ -766,8 +826,12 @@ public class PlatformWiring {
         eventSignatureValidatorWiring.getInputWire(EventSignatureValidator::updateAddressBooks);
         eventWindowManagerWiring.getInputWire(EventWindowManager::updateEventWindow);
         orphanBufferWiring.getInputWire(OrphanBuffer::clear);
-        roundDurabilityBufferWiring.getInputWire(RoundDurabilityBuffer::clear);
-        pcesWriterWiring.getInputWire(PcesWriter::registerDiscontinuity);
+        if (inlinePces) {
+            pcesInlineWriterWiring.getInputWire(InlinePcesWriter::registerDiscontinuity);
+        } else {
+            roundDurabilityBufferWiring.getInputWire(RoundDurabilityBuffer::clear);
+            pcesWriterWiring.getInputWire(PcesWriter::registerDiscontinuity);
+        }
         stateSignatureCollectorWiring.getInputWire(StateSignatureCollector::clear);
         issDetectorWiring.getInputWire(IssDetector::overridingState);
         issDetectorWiring.getInputWire(IssDetector::signalEndOfPreconsensusReplay);
@@ -815,9 +879,13 @@ public class PlatformWiring {
         stateSnapshotManagerWiring.bind(builder::buildStateSnapshotManager);
         stateSignerWiring.bind(builder::buildStateSigner);
         pcesReplayerWiring.bind(pcesReplayer);
-        pcesWriterWiring.bind(builder::buildPcesWriter);
-        roundDurabilityBufferWiring.bind(builder::buildRoundDurabilityBuffer);
-        pcesSequencerWiring.bind(builder::buildPcesSequencer);
+        if (inlinePces) {
+            pcesInlineWriterWiring.bind(new NoOpInlinePcesWriter());
+        } else {
+            roundDurabilityBufferWiring.bind(builder::buildRoundDurabilityBuffer);
+            pcesSequencerWiring.bind(builder::buildPcesSequencer);
+            pcesWriterWiring.bind(builder::buildPcesWriter);
+        }
         eventCreationManagerWiring.bind(builder::buildEventCreationManager);
         selfEventSignerWiring.bind(builder::buildSelfEventSigner);
         stateSignatureCollectorWiring.bind(stateSignatureCollector);
@@ -942,7 +1010,9 @@ public class PlatformWiring {
      */
     @NonNull
     public InputWire<Long> getPcesMinimumGenerationToStoreInput() {
-        return pcesWriterWiring.getInputWire(PcesWriter::setMinimumAncientIdentifierToStore);
+        return inlinePces
+                ? pcesInlineWriterWiring.getInputWire(InlinePcesWriter::setMinimumAncientIdentifierToStore)
+                : pcesWriterWiring.getInputWire(PcesWriter::setMinimumAncientIdentifierToStore);
     }
 
     /**
@@ -952,7 +1022,9 @@ public class PlatformWiring {
      */
     @NonNull
     public InputWire<Long> getPcesWriterRegisterDiscontinuityInput() {
-        return pcesWriterWiring.getInputWire(PcesWriter::registerDiscontinuity);
+        return inlinePces
+                ? pcesInlineWriterWiring.getInputWire(InlinePcesWriter::registerDiscontinuity)
+                : pcesWriterWiring.getInputWire(PcesWriter::registerDiscontinuity);
     }
 
     /**

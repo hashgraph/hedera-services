@@ -37,7 +37,7 @@
 # Hedera Node Modules
 /hedera-node/hapi*/                             @hashgraph/hedera-base @hashgraph/hedera-services
 /hedera-node/hedera-admin*/                     @hashgraph/hedera-base @hashgraph/hedera-services
-/hedera-node/hedera-app*/                       @hashgraph/hedera-base
+/hedera-node/hedera-app*/                       @hashgraph/hedera-base @hashgraph/hedera-services
 /hedera-node/hedera-consensus*/                 @hashgraph/hedera-base @hashgraph/hedera-services
 /hedera-node/hedera-file*/                      @hashgraph/hedera-base @hashgraph/hedera-services
 /hedera-node/hedera-network*/                   @hashgraph/hedera-base @hashgraph/hedera-services

@@ -80,6 +80,7 @@ import com.hedera.node.app.workflows.handle.steps.SystemFileUpdates;
 import com.hedera.node.app.workflows.handle.throttle.DispatchUsageManager;
 import com.hedera.node.app.workflows.handle.throttle.ThrottleException;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.state.spi.info.NetworkInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
@@ -164,6 +165,9 @@ class DispatchProcessorTest {
     @Mock
     private FeeAccumulator feeAccumulator;
 
+    @Mock
+    private NetworkInfo networkInfo;
+
     private DispatchProcessor subject;
 
     @BeforeEach
@@ -177,7 +181,8 @@ class DispatchProcessorTest {
                 dispatchUsageManager,
                 exchangeRateManager,
                 dispatcher,
-                ethereumTransactionHandler);
+                ethereumTransactionHandler,
+                networkInfo);
         given(dispatch.stack()).willReturn(stack);
         given(dispatch.recordBuilder()).willReturn(recordBuilder);
     }

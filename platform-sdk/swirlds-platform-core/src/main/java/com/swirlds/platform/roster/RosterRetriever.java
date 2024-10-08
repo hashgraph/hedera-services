@@ -16,6 +16,8 @@
 
 package com.swirlds.platform.roster;
 
+import static java.util.Objects.requireNonNull;
+
 import com.hedera.hapi.node.base.ServiceEndpoint;
 import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.hapi.node.state.roster.Roster;
@@ -72,7 +74,7 @@ public final class RosterRetriever {
         // So use an AddressBook from the PlatformState to build a roster:
         final ReadablePlatformStateStore readablePlatformStateStore =
                 new ReadablePlatformStateStore(state.getReadableStates(PlatformStateService.NAME));
-        return buildRoster(readablePlatformStateStore.getAddressBook());
+        return buildRoster(requireNonNull(readablePlatformStateStore.getAddressBook()));
     }
 
     /**
