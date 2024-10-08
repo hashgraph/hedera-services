@@ -21,7 +21,11 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.blocks.StreamingTreeHasher;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.common.crypto.DigestType;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.nio.ByteBuffer;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -32,7 +36,7 @@ import java.util.concurrent.ExecutorService;
  * using a concurrent algorithm that hashes leaves in parallel and combines the resulting hashes in parallel.
  * <p>
  * <b>Important:</b> This class is not thread-safe, and client code must not make concurrent calls to
- * {@link #addLeaf(Bytes)} or {@link #rootHash()}.
+ * {@link StreamingTreeHasher#addLeaf(ByteBuffer)} or {@link #rootHash()}.
  */
 public class ConcurrentStreamingTreeHasher implements StreamingTreeHasher {
     /**
@@ -68,7 +72,7 @@ public class ConcurrentStreamingTreeHasher implements StreamingTreeHasher {
     /**
      * Leaves added but not yet scheduled to be hashed.
      */
-    private List<Bytes> pendingLeaves = new ArrayList<>();
+    private List<ByteBuffer> pendingLeaves = new ArrayList<>();
     /**
      * A future that completes after all leaves not in the pending list have been hashed and combined.
      */
@@ -84,7 +88,7 @@ public class ConcurrentStreamingTreeHasher implements StreamingTreeHasher {
     }
 
     @Override
-    public void addLeaf(@NonNull final Bytes leaf) {
+    public void addLeaf(@NonNull final ByteBuffer leaf) {
         requireNonNull(leaf);
         if (rootHashRequested) {
             throw new IllegalStateException("Cannot add leaves after requesting the root hash");
@@ -149,9 +153,16 @@ public class ConcurrentStreamingTreeHasher implements StreamingTreeHasher {
         final var scheduledWork = pendingLeaves;
         final var pendingHashes = CompletableFuture.supplyAsync(
                 () -> {
+                    final MessageDigest digest;
+                    try {
+                        digest = MessageDigest.getInstance(DigestType.SHA_384.algorithmName());
+                    } catch (NoSuchAlgorithmException e) {
+                        throw new IllegalStateException(e);
+                    }
                     final List<byte[]> result = new ArrayList<>();
                     for (final var leaf : scheduledWork) {
-                        result.add(noThrowSha384HashOf(leaf.toByteArray()));
+                        digest.update(leaf);
+                        result.add(digest.digest());
                     }
                     return result;
                 },

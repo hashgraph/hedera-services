@@ -29,8 +29,11 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.blocks.impl.ConcurrentStreamingTreeHasher;
+import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -66,14 +69,17 @@ public class HashingBenchmark {
     @Param({"10000"})
     private int numLeaves;
 
-    private List<Bytes> leaves;
+    private List<ByteBuffer> leaves;
     private Bytes expectedAnswer;
 
     @Setup(Level.Trial)
-    public void setup() {
+    public void setup() throws IOException {
         leaves = new ArrayList<>(numLeaves);
         for (int i = 0; i < numLeaves; i++) {
-            leaves.add(BlockItem.PROTOBUF.toBytes(randomBlockItem()));
+            final var item = randomBlockItem();
+            final var buffer = ByteBuffer.allocate(BlockItem.PROTOBUF.measureRecord(item));
+            BlockItem.PROTOBUF.write(item, BufferedData.wrap(buffer));
+            leaves.add(buffer);
         }
         expectedAnswer = hashNaively(leaves);
     }

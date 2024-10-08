@@ -30,6 +30,7 @@ import com.hedera.node.config.data.BlockStreamConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.state.spi.info.NodeInfo;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -150,7 +151,7 @@ public class FileBlockItemWriterTest {
         fileBlockItemWriter.openBlock(1);
 
         // Create a Bytes object and write it
-        Bytes bytes = Bytes.wrap(new byte[] {1, 2, 3, 4, 5});
+        final var bytes = ByteBuffer.wrap(new byte[] {1, 2, 3, 4, 5});
         byte[] expectedBytes = {10, 5, 1, 2, 3, 4, 5};
         fileBlockItemWriter.writeItem(bytes);
 
@@ -181,7 +182,7 @@ public class FileBlockItemWriterTest {
         FileBlockItemWriter fileBlockItemWriter = new FileBlockItemWriter(configProvider, selfNodeInfo, fileSystem);
 
         // Create a Bytes object and write it
-        Bytes bytes = Bytes.wrap(new byte[] {1, 2, 3, 4, 5});
+        final var bytes = ByteBuffer.wrap(new byte[] {1, 2, 3, 4, 5});
 
         assertThatThrownBy(() -> fileBlockItemWriter.writeItem(bytes), "Cannot write item before opening a block")
                 .isInstanceOf(IllegalStateException.class);

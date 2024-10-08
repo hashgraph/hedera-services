@@ -115,6 +115,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -337,8 +338,10 @@ public class StateChangesValidator implements BlockStreamValidator {
             final StreamingTreeHasher outputTreeHasher) {
         final var itemSerialized = BlockItem.PROTOBUF.toBytes(item);
         switch (item.item().kind()) {
-            case EVENT_HEADER, EVENT_TRANSACTION -> inputTreeHasher.addLeaf(itemSerialized);
-            case TRANSACTION_RESULT, TRANSACTION_OUTPUT, STATE_CHANGES -> outputTreeHasher.addLeaf(itemSerialized);
+            case EVENT_HEADER, EVENT_TRANSACTION -> inputTreeHasher.addLeaf(
+                    ByteBuffer.wrap(itemSerialized.toByteArray()));
+            case TRANSACTION_RESULT, TRANSACTION_OUTPUT, STATE_CHANGES -> outputTreeHasher.addLeaf(
+                    ByteBuffer.wrap(itemSerialized.toByteArray()));
             default -> {
                 // Other items are not part of the input/output trees
             }

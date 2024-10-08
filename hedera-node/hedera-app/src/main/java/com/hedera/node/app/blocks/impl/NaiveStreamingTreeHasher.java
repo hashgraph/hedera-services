@@ -22,6 +22,7 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.node.app.blocks.StreamingTreeHasher;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
@@ -31,10 +32,10 @@ import java.util.concurrent.CompletableFuture;
 public class NaiveStreamingTreeHasher implements StreamingTreeHasher {
     private static final byte[] EMPTY_HASH = noThrowSha384HashOf(new byte[0]);
 
-    private final List<Bytes> leaves = new ArrayList<>();
+    private final List<ByteBuffer> leaves = new ArrayList<>();
     private boolean rootHashRequested = false;
 
-    public static Bytes hashNaively(@NonNull final List<Bytes> leaves) {
+    public static Bytes hashNaively(@NonNull final List<ByteBuffer> leaves) {
         final var hasher = new NaiveStreamingTreeHasher();
         for (final var item : leaves) {
             hasher.addLeaf(item);
@@ -43,7 +44,7 @@ public class NaiveStreamingTreeHasher implements StreamingTreeHasher {
     }
 
     @Override
-    public void addLeaf(@NonNull final Bytes leaf) {
+    public void addLeaf(@NonNull final ByteBuffer leaf) {
         if (rootHashRequested) {
             throw new IllegalStateException("Root hash already requested");
         }
@@ -58,7 +59,7 @@ public class NaiveStreamingTreeHasher implements StreamingTreeHasher {
         }
         Queue<byte[]> leafHashes = new LinkedList<>();
         for (final var leaf : leaves) {
-            leafHashes.add(noThrowSha384HashOf(leaf.toByteArray()));
+            leafHashes.add(noThrowSha384HashOf(leaf.array()));
         }
         final int n = leafHashes.size();
         if ((n & (n - 1)) != 0) {

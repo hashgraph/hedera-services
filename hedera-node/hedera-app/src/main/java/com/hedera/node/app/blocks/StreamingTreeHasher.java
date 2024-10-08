@@ -18,6 +18,7 @@ package com.hedera.node.app.blocks;
 
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
@@ -45,7 +46,7 @@ public interface StreamingTreeHasher {
      * @param leaf the leaf to add
      * @throws IllegalStateException if the root hash has already been requested
      */
-    void addLeaf(@NonNull Bytes leaf);
+    void addLeaf(@NonNull ByteBuffer leaf);
 
     /**
      * Returns a future that completes with the root hash of the tree of items. Once called, this hasher will not accept

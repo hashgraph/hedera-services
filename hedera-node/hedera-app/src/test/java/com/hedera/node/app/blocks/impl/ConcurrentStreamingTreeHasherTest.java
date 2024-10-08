@@ -23,6 +23,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.hedera.node.app.blocks.StreamingTreeHasher.Status;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import java.nio.ByteBuffer;
 import java.util.SplittableRandom;
 import java.util.concurrent.ForkJoinPool;
 import org.junit.jupiter.api.Test;
@@ -39,12 +40,12 @@ class ConcurrentStreamingTreeHasherTest {
     @ParameterizedTest
     @ValueSource(ints = {0, 1, 3, 5, 32, 69, 100, 123, 234})
     void testAddLeafAndRootHash(final int numLeaves) {
-        Bytes lastLeaf = null;
+        ByteBuffer lastLeaf = null;
         var status = Status.EMPTY;
         for (int i = 1; i <= numLeaves; i++) {
             final var contents = new byte[LEAF_SIZE];
             RANDOM.nextBytes(contents);
-            final var leaf = Bytes.wrap(contents);
+            final var leaf = ByteBuffer.wrap(contents);
             subject.addLeaf(leaf);
             comparison.addLeaf(leaf);
             if (i == numLeaves - 1) {
@@ -59,15 +60,16 @@ class ConcurrentStreamingTreeHasherTest {
         assertEquals(expected, actual);
         if (lastLeaf != null) {
             requireNonNull(status);
-            final var recalculated = rootHashFrom(status, lastLeaf);
+            final var recalculated = rootHashFrom(status, Bytes.wrap(lastLeaf.array()));
             assertEquals(expected, recalculated);
         }
     }
 
     @Test
     void testAddLeafAfterRootHashRequested() {
-        subject.addLeaf(Bytes.wrap(new byte[48]));
+        final var leaf = ByteBuffer.allocate(48);
+        subject.addLeaf(leaf);
         subject.rootHash();
-        assertThrows(IllegalStateException.class, () -> subject.addLeaf(Bytes.EMPTY));
+        assertThrows(IllegalStateException.class, () -> subject.addLeaf(leaf));
     }
 }

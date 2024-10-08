@@ -119,11 +119,11 @@ public class SerializationBenchmark {
     public void serializeItem(@NonNull final Blackhole blackhole) throws IOException {
         final var item = SAMPLE_ITEMS.get(blockType);
 
-        //        final var serializedItems = new ArrayList<Bytes>(numItems);
-        //        for (int i = 0; i < numItems; i++) {
-        //            serializedItems.add(BlockItem.PROTOBUF.toBytes(item));
-        //        }
-        //        blackhole.consume(serializedItems);
+        //                final var serializedItems = new ArrayList<Bytes>(numItems);
+        //                for (int i = 0; i < numItems; i++) {
+        //                    serializedItems.add(BlockItem.PROTOBUF.toBytes(item));
+        //                }
+        //                blackhole.consume(serializedItems);
 
         final var outputStream = BufferedData.wrap(buffer);
         for (int i = 0; i < numItems; i++) {

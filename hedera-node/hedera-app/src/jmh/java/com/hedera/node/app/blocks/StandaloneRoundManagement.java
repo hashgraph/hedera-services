@@ -54,6 +54,7 @@ import com.swirlds.platform.system.state.notifications.StateHashedNotification;
 import com.swirlds.state.spi.Schema;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -80,7 +81,7 @@ public class StandaloneRoundManagement {
 
     private final Round round = new FakeRound();
     private final ConfigProvider configProvider =
-            new ConfigProviderImpl(false, null, Map.of("blockStream.serializationBatchSize", "5102"));
+            new ConfigProviderImpl(false, null, Map.of("blockStream.serializationBatchSize", "32"));
     private final List<BlockItem> roundItems = new ArrayList<>();
     private final PlaceholderTssBaseService tssBaseService = new PlaceholderTssBaseService();
     private final BlockStreamManagerImpl subject = new BlockStreamManagerImpl(
@@ -239,7 +240,7 @@ public class StandaloneRoundManagement {
         }
 
         @Override
-        public BlockItemWriter writeItem(@NonNull final Bytes serializedItem) {
+        public BlockItemWriter writeItem(@NonNull final ByteBuffer serializedItem) {
             return this;
         }
 

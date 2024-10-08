@@ -16,8 +16,8 @@
 
 package com.hedera.node.app.blocks;
 
-import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.nio.ByteBuffer;
 
 /**
  * Writes serialized block items to a destination stream.
@@ -35,7 +35,7 @@ public interface BlockItemWriter {
      *
      * @param serializedItem the serialized item to write
      */
-    BlockItemWriter writeItem(@NonNull Bytes serializedItem);
+    BlockItemWriter writeItem(@NonNull ByteBuffer serializedItem);
 
     /**
      * Closes the block.

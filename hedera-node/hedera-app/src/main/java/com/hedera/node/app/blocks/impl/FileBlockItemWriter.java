@@ -25,7 +25,6 @@ import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.BlockStreamConfig;
 import com.hedera.pbj.runtime.ProtoConstants;
 import com.hedera.pbj.runtime.ProtoWriterTools;
-import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.pbj.runtime.io.stream.WritableStreamingData;
 import com.swirlds.state.spi.info.NodeInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -34,6 +33,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.io.UncheckedIOException;
 import java.math.BigInteger;
+import java.nio.ByteBuffer;
 import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -157,9 +157,10 @@ public class FileBlockItemWriter implements BlockItemWriter {
      * {@inheritDoc}
      */
     @Override
-    public FileBlockItemWriter writeItem(@NonNull Bytes serializedItem) {
+    public FileBlockItemWriter writeItem(@NonNull final ByteBuffer serializedItem) {
         requireNonNull(serializedItem, "The supplied argument 'serializedItem' cannot be null!");
-        if (serializedItem.length() <= 0) throw new IllegalArgumentException("Item must be non-empty");
+        final var bytes = serializedItem.array();
+        if (bytes.length == 0) throw new IllegalArgumentException("Item must be non-empty");
         if (state != State.OPEN) {
             throw new IllegalStateException(
                     "Cannot write to a FileBlockItemWriter that is not open for block: " + this.blockNumber);
@@ -168,9 +169,9 @@ public class FileBlockItemWriter implements BlockItemWriter {
         // Write the ITEMS tag.
         ProtoWriterTools.writeTag(writableStreamingData, BlockSchema.ITEMS, ProtoConstants.WIRE_TYPE_DELIMITED);
         // Write the length of the item.
-        writableStreamingData.writeVarInt((int) serializedItem.length(), false);
+        writableStreamingData.writeVarInt(bytes.length, false);
         // Write the item bytes themselves.
-        serializedItem.writeTo(writableStreamingData);
+        writableStreamingData.writeBytes(bytes);
         return this;
     }
 
