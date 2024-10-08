@@ -24,7 +24,6 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.FEE_SCHEDULE_KEY_CANNOT
 import static com.hedera.hapi.node.base.ResponseCodeEnum.FEE_SCHEDULE_KEY_NOT_SET;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_CUSTOM_FEE_SCHEDULE_KEY;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_FEE_SCHEDULE_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_KEY_IN_FEE_EXEMPT_KEY_LIST;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_RENEWAL_PERIOD;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOPIC_ID;
@@ -150,7 +149,7 @@ public class ConsensusUpdateTopicHandler implements TransactionHandler {
         // If the fee schedule key is changed then the transaction must also be signed by the new fee schedule key
         if (op.hasFeeScheduleKey()
                 && !KeyOneOfType.UNSET.equals(op.feeScheduleKey().key().kind())) {
-            context.requireKeyOrThrow(op.feeScheduleKey(), INVALID_FEE_SCHEDULE_KEY);
+            context.requireKeyOrThrow(op.feeScheduleKey(), INVALID_CUSTOM_FEE_SCHEDULE_KEY);
         }
 
         // If we change the custom fees the topic needs to have a fee schedule key, and it needs to sign the transaction
