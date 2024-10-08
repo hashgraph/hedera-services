@@ -1,17 +1,37 @@
+/*
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.hedera.node.app.blocks;
+
+import static com.hedera.pbj.runtime.ProtoWriterTools.writeMessage;
 
 import com.hedera.hapi.block.stream.Block;
 import com.hedera.hapi.block.stream.BlockItem;
 import com.hedera.hapi.block.stream.output.StateChanges;
-import com.hedera.hapi.block.stream.output.TransactionResult;
 import com.hedera.hapi.block.stream.schema.BlockItemSchema;
-import com.hedera.hapi.streams.HashObject;
-import com.hedera.node.app.blocks.impl.ConcurrentStreamingTreeHasher;
 import com.hedera.pbj.runtime.ParseException;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.hedera.pbj.runtime.io.stream.WritableStreamingData;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
+import java.util.zip.GZIPInputStream;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Fork;
@@ -26,33 +46,21 @@ import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.annotations.Warmup;
 import org.openjdk.jmh.infra.Blackhole;
 
-import java.io.BufferedOutputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.nio.file.Files;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.concurrent.ForkJoinPool;
-import java.util.concurrent.TimeUnit;
-import java.util.zip.GZIPInputStream;
-
-import static com.hedera.hapi.streams.schema.RecordStreamFileSchema.END_OBJECT_RUNNING_HASH;
-import static com.hedera.node.app.blocks.impl.NaiveStreamingTreeHasher.hashNaively;
-import static com.hedera.pbj.runtime.ProtoWriterTools.writeMessage;
-
 @State(Scope.Benchmark)
 @Fork(value = 1)
 @Warmup(iterations = 1)
 @Measurement(iterations = 3)
 public class SerializationBenchmark {
     public static void main(String... args) throws Exception {
-        org.openjdk.jmh.Main.main(new String[]{"com.hedera.node.app.blocks.SerializationBenchmark.serializeItem"});
+        org.openjdk.jmh.Main.main(new String[] {"com.hedera.node.app.blocks.SerializationBenchmark.serializeItem"});
     }
 
     public enum BlockType {
-        TRANSACTION, TRANSACTION_RESULT, TRANSACTION_OUTPUT, KV_STATE_CHANGES, SINGLETON_STATE_CHANGES
+        TRANSACTION,
+        TRANSACTION_RESULT,
+        TRANSACTION_OUTPUT,
+        KV_STATE_CHANGES,
+        SINGLETON_STATE_CHANGES
     }
 
     private static final String SAMPLE_BLOCK = "sample.blk.gz";
@@ -80,7 +88,8 @@ public class SerializationBenchmark {
                         case TRANSACTION_RESULT -> SAMPLE_ITEMS.put(BlockType.TRANSACTION_RESULT, item);
                         case TRANSACTION_OUTPUT -> SAMPLE_ITEMS.put(BlockType.TRANSACTION_OUTPUT, item);
                         case STATE_CHANGES -> {
-                            final var stateChanges = item.stateChangesOrThrow().stateChanges().getFirst();
+                            final var stateChanges =
+                                    item.stateChangesOrThrow().stateChanges().getFirst();
                             if (stateChanges.hasMapUpdate()) {
                                 SAMPLE_ITEMS.put(BlockType.KV_STATE_CHANGES, item);
                             } else if (stateChanges.hasSingletonUpdate()) {
@@ -89,7 +98,8 @@ public class SerializationBenchmark {
                         }
                     }
                 }
-                SAMPLE_ITEMS.forEach((type, item) -> SAMPLE_ITEM_SIZES.put(type, (int) BlockItem.PROTOBUF.toBytes(item).length()));
+                SAMPLE_ITEMS.forEach((type, item) -> SAMPLE_ITEM_SIZES.put(
+                        type, (int) BlockItem.PROTOBUF.toBytes(item).length()));
             }
         }
         final var item = SAMPLE_ITEMS.get(blockType);
@@ -109,11 +119,11 @@ public class SerializationBenchmark {
     public void serializeItem(@NonNull final Blackhole blackhole) throws IOException {
         final var item = SAMPLE_ITEMS.get(blockType);
 
-//        final var serializedItems = new ArrayList<Bytes>(numItems);
-//        for (int i = 0; i < numItems; i++) {
-//            serializedItems.add(BlockItem.PROTOBUF.toBytes(item));
-//        }
-//        blackhole.consume(serializedItems);
+        //        final var serializedItems = new ArrayList<Bytes>(numItems);
+        //        for (int i = 0; i < numItems; i++) {
+        //            serializedItems.add(BlockItem.PROTOBUF.toBytes(item));
+        //        }
+        //        blackhole.consume(serializedItems);
 
         final var outputStream = BufferedData.wrap(buffer);
         for (int i = 0; i < numItems; i++) {
