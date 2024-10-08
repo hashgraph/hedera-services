@@ -23,7 +23,10 @@ module com.hedera.node.app.service.consensus.impl {
     exports com.hedera.node.app.service.consensus.impl to
             com.hedera.node.app,
             com.hedera.node.test.clients;
-    exports com.hedera.node.app.service.consensus.impl.handlers;
+    exports com.hedera.node.app.service.consensus.impl.handlers to
+            com.hedera.node.app;
+    exports com.hedera.node.app.service.consensus.impl.handlers.customfee to
+            com.hedera.node.app;
     exports com.hedera.node.app.service.consensus.impl.records;
     exports com.hedera.node.app.service.consensus.impl.schemas;
     exports com.hedera.node.app.service.consensus.impl.validators;

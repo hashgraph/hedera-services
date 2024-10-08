@@ -22,7 +22,7 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
-import com.hedera.node.app.service.consensus.impl.ConsensusAllowanceUpdater;
+import com.hedera.node.app.service.consensus.impl.handlers.customfee.ConsensusAllowanceUpdater;
 import com.hedera.node.app.service.consensus.impl.validators.ConsensusAllowancesValidator;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
