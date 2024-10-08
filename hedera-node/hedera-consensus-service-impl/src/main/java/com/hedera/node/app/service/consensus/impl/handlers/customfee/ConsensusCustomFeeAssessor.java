@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.service.consensus.impl;
+package com.hedera.node.app.service.consensus.impl.handlers.customfee;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.AMOUNT_EXCEEDS_ALLOWANCE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SPENDER_DOES_NOT_HAVE_ALLOWANCE;
@@ -32,13 +32,11 @@ import com.hedera.hapi.node.state.consensus.TopicFungibleTokenAllowance;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.hapi.node.transaction.ConsensusCustomFee;
 import com.hedera.hapi.node.transaction.FixedFee;
+import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.config.data.LedgerConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
-
-import javax.inject.Inject;
-import javax.inject.Singleton;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -46,6 +44,8 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 
 @Singleton
 public class ConsensusCustomFeeAssessor {
@@ -98,7 +98,7 @@ public class ConsensusCustomFeeAssessor {
         // if there is a second layer it will be assessed in crypto transfer handler
         for (ConsensusCustomFee fee : topic.customFees()) {
             // check if payer is treasury or collector
-            if(context.payer().equals(fee.feeCollectorAccountId())) {
+            if (context.payer().equals(fee.feeCollectorAccountId())) {
                 continue;
             }
 
@@ -106,14 +106,15 @@ public class ConsensusCustomFeeAssessor {
             if (fixedFee.hasDenominatingTokenId()) {
                 final var tokenId = fixedFee.denominatingTokenIdOrThrow();
                 final var tokenTreasury = tokenStore.get(tokenId).treasuryAccountIdOrThrow();
-                if(context.payer().equals(tokenTreasury)) {
+                if (context.payer().equals(tokenTreasury)) {
                     continue;
                 }
 
                 validateTokenAllowance(tokenAllowanceMap, fixedFee);
                 tokenTransfers.add(buildCustomFeeTokenTransferList(payer, fee.feeCollectorAccountId(), fixedFee));
                 // update allowance values
-                allowanceUpdater.applyFungibleTokenAllowances(topic.topicIdOrThrow(), tokenAllowanceMap.get(tokenId), topicStore);
+                allowanceUpdater.applyFungibleTokenAllowances(
+                        topic.topicIdOrThrow(), tokenAllowanceMap.get(tokenId), topicStore);
             } else {
                 validateHbarAllowance(hbarAllowance, fixedFee);
                 hbarTransfers = mergeTransfers(
@@ -138,7 +139,7 @@ public class ConsensusCustomFeeAssessor {
             }
         }
 
-        if(tokenTransfers.isEmpty() && hbarTransfers.isEmpty()) {
+        if (tokenTransfers.isEmpty() && hbarTransfers.isEmpty()) {
             return transactionBodies;
         }
 
@@ -169,8 +170,7 @@ public class ConsensusCustomFeeAssessor {
         // extract the code for updating the allowance amounts from ConsensusApproveAllowanceHandler and reuse it here
     }
 
-    private List<AccountAmount> buildCustomFeeHbarTransferList(
-            AccountID payer, AccountID collector, FixedFee fee) {
+    private List<AccountAmount> buildCustomFeeHbarTransferList(AccountID payer, AccountID collector, FixedFee fee) {
         return List.of(
                 AccountAmount.newBuilder()
                         .accountID(payer)
@@ -182,8 +182,7 @@ public class ConsensusCustomFeeAssessor {
                         .build());
     }
 
-    private TokenTransferList buildCustomFeeTokenTransferList(
-            AccountID payer, AccountID collector, FixedFee fee) {
+    private TokenTransferList buildCustomFeeTokenTransferList(AccountID payer, AccountID collector, FixedFee fee) {
         return TokenTransferList.newBuilder()
                 .token(fee.denominatingTokenId())
                 .transfers(
@@ -198,8 +197,7 @@ public class ConsensusCustomFeeAssessor {
                 .build();
     }
 
-    private CryptoTransferTransactionBody.Builder tokenTransfers(
-            @NonNull TokenTransferList... tokenTransferLists) {
+    private CryptoTransferTransactionBody.Builder tokenTransfers(@NonNull TokenTransferList... tokenTransferLists) {
         if (repeatsTokenId(tokenTransferLists)) {
             final Map<TokenID, TokenTransferList> consolidatedTokenTransfers = new LinkedHashMap<>();
             for (final var tokenTransferList : tokenTransferLists) {

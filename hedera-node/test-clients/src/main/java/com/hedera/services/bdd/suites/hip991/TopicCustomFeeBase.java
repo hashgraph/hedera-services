@@ -115,7 +115,6 @@ public class TopicCustomFeeBase {
         return specOperations.toArray(new SpecOperation[0]);
     }
 
-
     /**
      *
      *
@@ -125,7 +124,8 @@ public class TopicCustomFeeBase {
      * @param createTreasury
      * @return
      */
-    protected static List<SpecOperation> createTokenWith2LayerFee(String owner, String tokenName, boolean createTreasury) {
+    protected static List<SpecOperation> createTokenWith2LayerFee(
+            String owner, String tokenName, boolean createTreasury) {
         final var specOperations = new ArrayList<SpecOperation>();
         final var collectorName = COLLECTOR_PREFIX + tokenName;
         final var denomToken = DENOM_TOKEN_PREFIX + tokenName;

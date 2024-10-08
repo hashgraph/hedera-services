@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.service.consensus.impl;
+package com.hedera.node.app.service.consensus.impl.handlers.customfee;
 
 import static com.hedera.node.app.service.consensus.impl.util.ConsensusHandlerHelper.getIfUsable;
 import static java.util.Objects.requireNonNull;
@@ -26,12 +26,12 @@ import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TopicID;
 import com.hedera.hapi.node.state.consensus.TopicCryptoAllowance;
 import com.hedera.hapi.node.state.consensus.TopicFungibleTokenAllowance;
+import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
 import edu.umd.cs.findbugs.annotations.NonNull;
-
-import javax.inject.Inject;
-import javax.inject.Singleton;
 import java.util.ArrayList;
 import java.util.List;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 
 // todo update this class when allowances are done!!!
 @Singleton
@@ -44,7 +44,6 @@ public class ConsensusAllowanceUpdater {
     public ConsensusAllowanceUpdater() {
         // Needed for Dagger injection
     }
-
 
     /**
      * Applies all changes needed for Crypto allowances from the transaction.
@@ -237,8 +236,7 @@ public class ConsensusAllowanceUpdater {
      * @param spenderNum spender account number
      * @return index of the allowance if it exists, otherwise -1
      */
-    private int lookupSpender(
-            final List<TopicCryptoAllowance> topicCryptoAllowances, final AccountID spenderNum) {
+    private int lookupSpender(final List<TopicCryptoAllowance> topicCryptoAllowances, final AccountID spenderNum) {
         for (int i = 0; i < topicCryptoAllowances.size(); i++) {
             final var allowance = topicCryptoAllowances.get(i);
             if (allowance.spenderIdOrThrow().equals(spenderNum)) {
