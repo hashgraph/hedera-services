@@ -21,6 +21,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHbarFee;
+import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHtsFee;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
@@ -32,6 +33,7 @@ import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.TokenType;
 import java.util.ArrayList;
+import java.util.List;
 
 public class TopicCustomFeeBase {
     protected static final String TOPIC = "topic";
@@ -49,8 +51,14 @@ public class TopicCustomFeeBase {
     /*        Submit message entities        */
     protected static final String SUBMITTER = "submitter";
     protected static final String TOKEN_TREASURY = "tokenTreasury";
+    protected static final String DENOM_TREASURY = "denomTreasury";
     protected static final String BASE_TOKEN = "baseToken";
-    protected static final String MULTI_LAYER_FEE_PREFIX = "multiLayerFeePrefix_";
+
+    /* tokens with multilayer fees */
+    protected static final String TOKEN_PREFIX = "token_";
+    protected static final String COLLECTOR_PREFIX = "collector_";
+    protected static final String DENOM_TOKEN_PREFIX = "denomToken_";
+
     // This key is truly invalid, as all Ed25519 public keys must be 32 bytes long
     protected static final Key STRUCTURALLY_INVALID_KEY =
             Key.newBuilder().setEd25519(ByteString.fromHex("ff")).build();
@@ -90,28 +98,63 @@ public class TopicCustomFeeBase {
     }
 
     /**
-     * Create and transfer multiple tokens with fixed hbar custom fee to account.
-     * @param account account to transfer tokens
+     * Create and transfer multiple tokens with 2 layer custom fees to given account.
+     *
+     * @param owner account to transfer tokens
      * @param numberOfTokens the count of tokens to be transferred
      * @return array of spec operations
      */
-    protected SpecOperation[] transferMultiLayerFeeTokensTo(String account, int numberOfTokens) {
-        final var treasury = MULTI_LAYER_FEE_PREFIX + TOKEN_TREASURY;
-        final var list = new ArrayList<SpecOperation>();
-        list.add(cryptoCreate(treasury));
+    protected SpecOperation[] createMultipleTokensWith2LayerFees(String owner, int numberOfTokens) {
+        final var specOperations = new ArrayList<SpecOperation>();
+        specOperations.add(cryptoCreate(DENOM_TREASURY));
+        specOperations.add(cryptoCreate(TOKEN_TREASURY));
         for (int i = 0; i < numberOfTokens; i++) {
-            final var tokenName = MULTI_LAYER_FEE_PREFIX + "token_" + i;
-            final var collectorName = MULTI_LAYER_FEE_PREFIX + "collector_" + i;
-            list.add(cryptoCreate(collectorName).balance(0L));
-            list.add(tokenCreate(tokenName)
-                    .tokenType(TokenType.FUNGIBLE_COMMON)
-                    .treasury(treasury)
-                    .initialSupply(500L)
-                    .withCustom(fixedHbarFee(ONE_HBAR, collectorName)));
-            list.add(tokenAssociate(account, tokenName));
-            list.add(cryptoTransfer(moving(500L, tokenName).between(treasury, account)));
+            final var tokenName = TOKEN_PREFIX + i;
+            specOperations.addAll(createTokenWith2LayerFee(owner, tokenName, false));
         }
-        return list.toArray(new SpecOperation[0]);
+        return specOperations.toArray(new SpecOperation[0]);
+    }
+
+
+    /**
+     *
+     *
+     *
+     * @param owner
+     * @param tokenName
+     * @param createTreasury
+     * @return
+     */
+    protected static List<SpecOperation> createTokenWith2LayerFee(String owner, String tokenName, boolean createTreasury) {
+        final var specOperations = new ArrayList<SpecOperation>();
+        final var collectorName = COLLECTOR_PREFIX + tokenName;
+        final var denomToken = DENOM_TOKEN_PREFIX + tokenName;
+        // if we generate multiple tokens, there will be no need to create treasury every time we create new token
+        if (createTreasury) {
+            specOperations.add(cryptoCreate(DENOM_TREASURY));
+            specOperations.add(cryptoCreate(TOKEN_TREASURY));
+        }
+        // create first common collector
+        specOperations.add(cryptoCreate(collectorName).balance(0L));
+        // create denomination token with hbar fee
+        specOperations.add(tokenCreate(denomToken)
+                .tokenType(TokenType.FUNGIBLE_COMMON)
+                .treasury(DENOM_TREASURY)
+                .withCustom(fixedHbarFee(ONE_HBAR, collectorName)));
+        // associate the denomination token with the collector
+        specOperations.add(tokenAssociate(collectorName, denomToken));
+        // create the token with fixed HTS fee
+        specOperations.add(tokenCreate(tokenName)
+                .tokenType(TokenType.FUNGIBLE_COMMON)
+                .treasury(TOKEN_TREASURY)
+                .withCustom(fixedHtsFee(1, denomToken, collectorName)));
+        // associate the owner with the two new tokens
+        specOperations.add(tokenAssociate(owner, tokenName));
+        specOperations.add(tokenAssociate(owner, denomToken));
+        // transfer the tokens to the owner
+        specOperations.add(cryptoTransfer(moving(100L, tokenName).between(TOKEN_TREASURY, owner)));
+        specOperations.add(cryptoTransfer(moving(100L, denomToken).between(DENOM_TREASURY, owner)));
+        return specOperations;
     }
 
     protected static SpecOperation[] newNamedKeysForFEKL(int count) {

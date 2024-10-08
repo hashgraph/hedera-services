@@ -46,7 +46,7 @@ import com.hedera.node.app.hapi.utils.CommonPbjConverters;
 import com.hedera.node.app.service.consensus.ReadableTopicStore;
 import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
 import com.hedera.node.app.service.consensus.impl.records.ConsensusSubmitMessageStreamBuilder;
-import com.hedera.node.app.service.consensus.impl.util.ConsensusCustomFeeHelper;
+import com.hedera.node.app.service.consensus.impl.ConsensusCustomFeeAssessor;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -75,10 +75,11 @@ import javax.inject.Singleton;
 @Singleton
 public class ConsensusSubmitMessageHandler implements TransactionHandler {
     public static final long RUNNING_HASH_VERSION = 3L;
+    private final ConsensusCustomFeeAssessor customFeeAssessor;
 
     @Inject
-    public ConsensusSubmitMessageHandler() {
-        // Exists for injection
+    public ConsensusSubmitMessageHandler(@NonNull ConsensusCustomFeeAssessor customFeeAssessor) {
+        this.customFeeAssessor = requireNonNull(customFeeAssessor);
     }
 
     @Override
@@ -145,7 +146,7 @@ public class ConsensusSubmitMessageHandler implements TransactionHandler {
         }
         if (!topic.customFees().isEmpty() && !payerIsFeeExempted) {
             // validate and create synthetic body
-            final var syntheticBodies = ConsensusCustomFeeHelper.assessCustomFee(topic, handleContext);
+            final var syntheticBodies = customFeeAssessor.assessCustomFee(topic, handleContext);
             for (final var syntheticBody : syntheticBodies) {
                 // dispatch crypto transfer
                 var record = handleContext.dispatchChildTransaction(
@@ -159,7 +160,7 @@ public class ConsensusSubmitMessageHandler implements TransactionHandler {
                         HandleContext.ConsensusThrottling.OFF);
                 validateTrue(record.status().equals(SUCCESS), record.status());
                 // update total allowances
-                ConsensusCustomFeeHelper.adjustAllowance(syntheticBody);
+                customFeeAssessor.adjustAllowance(syntheticBody);
             }
         }
 

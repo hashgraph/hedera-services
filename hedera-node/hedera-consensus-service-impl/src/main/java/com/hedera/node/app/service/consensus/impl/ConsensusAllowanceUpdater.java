@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.service.consensus.impl.util;
+package com.hedera.node.app.service.consensus.impl;
 
 import static com.hedera.node.app.service.consensus.impl.util.ConsensusHandlerHelper.getIfUsable;
 import static java.util.Objects.requireNonNull;
@@ -26,12 +26,26 @@ import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TopicID;
 import com.hedera.hapi.node.state.consensus.TopicCryptoAllowance;
 import com.hedera.hapi.node.state.consensus.TopicFungibleTokenAllowance;
-import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
 import edu.umd.cs.findbugs.annotations.NonNull;
+
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.util.ArrayList;
 import java.util.List;
 
-public class ConsensusApproveAllowanceHelper {
+// todo update this class when allowances are done!!!
+@Singleton
+public class ConsensusAllowanceUpdater {
+
+    /**
+     * Constructs a {@link ConsensusAllowanceUpdater} instance.
+     */
+    @Inject
+    public ConsensusAllowanceUpdater() {
+        // Needed for Dagger injection
+    }
+
+
     /**
      * Applies all changes needed for Crypto allowances from the transaction.
      * If the topic already has an allowance, the allowance value will be replaced with values
@@ -39,7 +53,7 @@ public class ConsensusApproveAllowanceHelper {
      * @param topicCryptoAllowances the list of crypto allowances
      * @param topicStore the topic store
      */
-    public static void applyCryptoAllowances(
+    public void applyCryptoAllowances(
             @NonNull final List<ConsensusCryptoFeeScheduleAllowance> topicCryptoAllowances,
             @NonNull final WritableTopicStore topicStore) {
         requireNonNull(topicCryptoAllowances);
@@ -62,7 +76,7 @@ public class ConsensusApproveAllowanceHelper {
         }
     }
 
-    public static void applyCryptoAllowances(
+    public void applyCryptoAllowances(
             @NonNull final TopicID topicId,
             @NonNull final TopicCryptoAllowance allowance,
             @NonNull final WritableTopicStore topicStore) {
@@ -89,7 +103,7 @@ public class ConsensusApproveAllowanceHelper {
      * @param amount the amount
      * @param spenderId the spender id
      */
-    private static void updateCryptoAllowance(
+    private void updateCryptoAllowance(
             final List<TopicCryptoAllowance> mutableAllowances,
             final long amount,
             final long amountPerMessage,
@@ -127,7 +141,7 @@ public class ConsensusApproveAllowanceHelper {
      * @param tokenAllowances the list of token allowances
      * @param topicStore the topic store
      */
-    public static void applyFungibleTokenAllowances(
+    public void applyFungibleTokenAllowances(
             @NonNull final List<ConsensusTokenFeeScheduleAllowance> tokenAllowances,
             @NonNull final WritableTopicStore topicStore) {
         requireNonNull(tokenAllowances);
@@ -154,7 +168,7 @@ public class ConsensusApproveAllowanceHelper {
     /*
      *
      */
-    public static void applyFungibleTokenAllowances(
+    public void applyFungibleTokenAllowances(
             @NonNull final TopicID topicId,
             @NonNull final TopicFungibleTokenAllowance allowance,
             @NonNull final WritableTopicStore topicStore) {
@@ -185,7 +199,7 @@ public class ConsensusApproveAllowanceHelper {
      * @param spenderId the spender number
      * @param tokenId the token number
      */
-    private static void updateTokenAllowance(
+    private void updateTokenAllowance(
             final List<TopicFungibleTokenAllowance> mutableAllowances,
             final long amount,
             final long amountPerMessage,
@@ -223,7 +237,7 @@ public class ConsensusApproveAllowanceHelper {
      * @param spenderNum spender account number
      * @return index of the allowance if it exists, otherwise -1
      */
-    private static int lookupSpender(
+    private int lookupSpender(
             final List<TopicCryptoAllowance> topicCryptoAllowances, final AccountID spenderNum) {
         for (int i = 0; i < topicCryptoAllowances.size(); i++) {
             final var allowance = topicCryptoAllowances.get(i);
@@ -242,7 +256,7 @@ public class ConsensusApproveAllowanceHelper {
      * @param tokenId token number
      * @return index of the allowance if it exists, otherwise -1
      */
-    private static int lookupSpenderAndToken(
+    private int lookupSpenderAndToken(
             final List<TopicFungibleTokenAllowance> topicTokenAllowances,
             final AccountID spenderId,
             final TokenID tokenId) {
