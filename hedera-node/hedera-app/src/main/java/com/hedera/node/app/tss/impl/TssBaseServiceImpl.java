@@ -48,10 +48,17 @@ public class TssBaseServiceImpl implements TssBaseService {
     private final List<BiConsumer<byte[], byte[]>> consumers = new CopyOnWriteArrayList<>();
 
     private ExecutorService executor;
+    private TssCryptographyManager tssCryptoManager;
+    private TssStateManager tssStateManager;
 
     @Inject
     public void setExecutor(@NonNull final ExecutorService executor) {
         this.executor = requireNonNull(executor);
+    }
+
+    @Inject
+    public void setTssCryptoManager(@NonNull final TssCryptographyManager tssCryptoManager) {
+        this.tssCryptoManager = requireNonNull(tssCryptoManager);
     }
 
     @Override
@@ -103,5 +110,8 @@ public class TssBaseServiceImpl implements TssBaseService {
      * @param candidateRoster The candidate roster to set.
      */
     @Override
-    public void setCandidateRoster(@NonNull Roster candidateRoster) {}
+    public void setCandidateRoster(@NonNull final Roster candidateRoster) {
+        requireNonNull(candidateRoster);
+       tssCryptoManager.keyCandidateRoster(candidateRoster);
+    }
 }

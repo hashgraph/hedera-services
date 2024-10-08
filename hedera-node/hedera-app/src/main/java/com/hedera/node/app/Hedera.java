@@ -23,6 +23,7 @@ import static com.hedera.node.app.blocks.schemas.V0540BlockStreamSchema.BLOCK_ST
 import static com.hedera.node.app.info.UnavailableNetworkInfo.UNAVAILABLE_NETWORK_INFO;
 import static com.hedera.node.app.records.impl.BlockRecordInfoUtils.blockHashByBlockNumber;
 import static com.hedera.node.app.records.schemas.V0490BlockRecordSchema.BLOCK_INFO_STATE_KEY;
+import static com.hedera.node.app.service.addressbook.AddressBookHelper.NODES_KEY;
 import static com.hedera.node.app.state.merkle.VersionUtils.isSoOrdered;
 import static com.hedera.node.app.statedumpers.DumpCheckpoint.MOD_POST_EVENT_STREAM_REPLAY;
 import static com.hedera.node.app.statedumpers.DumpCheckpoint.selectedDumpCheckpoints;
@@ -44,8 +45,12 @@ import com.hedera.hapi.block.stream.output.SingletonUpdateChange;
 import com.hedera.hapi.block.stream.output.StateChange;
 import com.hedera.hapi.block.stream.output.StateChanges;
 import com.hedera.hapi.node.base.SemanticVersion;
+import com.hedera.hapi.node.state.addressbook.Node;
 import com.hedera.hapi.node.state.blockrecords.BlockInfo;
 import com.hedera.hapi.node.state.blockstream.BlockStreamInfo;
+import com.hedera.hapi.node.state.common.EntityNumber;
+import com.hedera.hapi.node.state.roster.Roster;
+import com.hedera.hapi.node.state.roster.RosterEntry;
 import com.hedera.hapi.platform.state.PlatformState;
 import com.hedera.hapi.util.HapiUtils;
 import com.hedera.node.app.blocks.BlockStreamManager;
@@ -64,6 +69,7 @@ import com.hedera.node.app.info.GenesisNetworkInfo;
 import com.hedera.node.app.info.StateNetworkInfo;
 import com.hedera.node.app.records.BlockRecordService;
 import com.hedera.node.app.roster.RosterServiceImpl;
+import com.hedera.node.app.roster.WritableRosterStoreImpl;
 import com.hedera.node.app.service.addressbook.impl.AddressBookServiceImpl;
 import com.hedera.node.app.service.consensus.impl.ConsensusServiceImpl;
 import com.hedera.node.app.service.contract.impl.ContractServiceImpl;
@@ -126,6 +132,7 @@ import com.swirlds.platform.system.state.notifications.StateHashedListener;
 import com.swirlds.platform.system.transaction.Transaction;
 import com.swirlds.state.State;
 import com.swirlds.state.StateChangeListener;
+import com.swirlds.state.spi.ReadableKVState;
 import com.swirlds.state.spi.WritableSingletonStateBase;
 import com.swirlds.state.spi.info.NetworkInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -135,8 +142,10 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.InstantSource;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
@@ -460,6 +469,22 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener {
                 UNAVAILABLE_METRICS);
     }
 
+    private Roster constructFromAddressBook(@NonNull final ReadableKVState<EntityNumber, Node> nodesState) {
+        final var rosterEntries = new ArrayList<RosterEntry>();
+        for (final Iterator<EntityNumber> it = nodesState.keys(); it.hasNext(); ) {
+            final var nodeNumber = it.next();
+            final var nodeDetail = nodesState.get(nodeNumber);
+            final var entry = RosterEntry.newBuilder()
+                    .nodeId(nodeDetail.nodeId())
+                    .weight(nodeDetail.weight())
+                    .gossipCaCertificate(nodeDetail.gossipCaCertificate())
+                    .gossipEndpoint(nodeDetail.serviceEndpoint())
+                    .build();
+            rosterEntries.add(entry);
+        }
+        return Roster.newBuilder().rosterEntries(rosterEntries).build();
+    }
+
     /**
      * Invoked by the platform when the state should be initialized. This happens <b>BEFORE</b>
      * {@link SwirldMain#init(Platform, NodeId)} and after {@link #newMerkleStateRoot()}.
@@ -508,19 +533,46 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener {
                 throw new IllegalStateException("Deserialized state not created with Hedera software");
             }
         }
-        if (version.compareTo(deserializedVersion) < 0) {
+        final int versionComparison = version.compareTo(deserializedVersion);
+        if (versionComparison < 0) {
             logger.fatal(
                     "Fatal error, state source version {} is higher than node software version {}",
                     deserializedVersion,
                     version);
             throw new IllegalStateException("Cannot downgrade from " + deserializedVersion + " to " + version);
+        } else if (versionComparison > 0) {
+            maybeInitNewCandidateRoster(trigger, state);
         }
+
         try {
             migrateAndInitialize(state, deserializedVersion, trigger, metrics);
         } catch (final Throwable t) {
             logger.fatal("Critical failure during initialization", t);
             throw new IllegalStateException("Critical failure during initialization", t);
         }
+    }
+
+    private void maybeInitNewCandidateRoster(@NonNull final InitTrigger trigger, @NonNull final State state) {
+        // Construct a new candidate roster from the address book
+        final var addressState = state.getReadableStates(AddressBookServiceImpl.NAME);
+        final ReadableKVState<EntityNumber, Node> nodesState = addressState.get(NODES_KEY);
+        final var newCandidateRoster = constructFromAddressBook(nodesState);
+
+        final var rosterStore = new WritableRosterStoreImpl(
+                state.getReadableStates(RosterServiceImpl.NAME));
+        if (trigger != GENESIS && trigger != EVENT_STREAM_RECOVERY) {
+           final var preUpgradeCandidateRoster = rosterStore.getCandidateRoster();
+           if (Objects.equals(preUpgradeCandidateRoster, newCandidateRoster)) {
+               // The rosters are identical. We want to keep the key material already generated (instead of throwing it away and starting over), so we don't need to do anything further.
+               return;
+           }
+        }
+
+        // Store the new roster and declare its candidacy in state
+        rosterStore.putRoster(newCandidateRoster, true);
+
+        // Notify the TSS base service of the new candidate
+        tssBaseServiceSupplier.get().setCandidateRoster(newCandidateRoster);
     }
 
     /**
