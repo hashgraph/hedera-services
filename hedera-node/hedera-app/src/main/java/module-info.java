@@ -34,6 +34,8 @@ module com.hedera.node.app {
     requires com.hedera.node.app.service.file;
     requires com.hedera.node.app.service.network.admin;
     requires com.hedera.node.app.service.util;
+    requires com.hedera.cryptography.pairings.signatures;
+    requires com.hedera.cryptography.tss;
     requires com.swirlds.base;
     requires com.swirlds.config.extensions;
     requires com.swirlds.logging;
@@ -53,6 +55,7 @@ module com.hedera.node.app {
     requires static com.github.spotbugs.annotations;
     requires static com.google.auto.service;
     requires static java.compiler;
+    requires org.jetbrains.annotations;
     // javax.annotation.processing.Generated
 
     exports com.hedera.node.app;
