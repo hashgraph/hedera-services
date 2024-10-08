@@ -113,11 +113,9 @@ public class BlockStreamManagerBenchmark {
             VERSION);
 
     @Param({"10"})
-    //    @Param({"1"})
     private int numEvents;
 
     @Param({"100"})
-    //    @Param({"1"})
     private int numTxnsPerEvent;
 
     private long roundNum = FIRST_ROUND_NO;
