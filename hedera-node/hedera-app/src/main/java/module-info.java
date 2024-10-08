@@ -21,6 +21,8 @@ module com.hedera.node.app {
     requires transitive com.swirlds.metrics.api;
     requires transitive com.swirlds.platform.core;
     requires transitive com.swirlds.state.api;
+    requires transitive com.hedera.cryptography.pairings.signatures;
+    requires transitive com.hedera.cryptography.tss;
     requires transitive com.hedera.pbj.runtime;
     requires transitive dagger;
     requires transitive io.grpc.stub;
@@ -43,8 +45,6 @@ module com.hedera.node.app {
     requires com.google.common;
     requires com.google.errorprone.annotations;
     requires com.google.protobuf;
-    requires com.hedera.cryptography.pairings.signatures;
-    requires com.hedera.cryptography.tss;
     requires io.grpc.netty;
     requires io.grpc;
     requires io.netty.handler;
@@ -52,10 +52,10 @@ module com.hedera.node.app {
     requires io.netty.transport;
     requires org.apache.commons.lang3;
     requires org.hyperledger.besu.datatypes;
-    requires org.jetbrains.annotations;
     requires static com.github.spotbugs.annotations;
     requires static com.google.auto.service;
     requires static java.compiler;
+    requires static org.jetbrains.annotations;
     // javax.annotation.processing.Generated
 
     exports com.hedera.node.app;
