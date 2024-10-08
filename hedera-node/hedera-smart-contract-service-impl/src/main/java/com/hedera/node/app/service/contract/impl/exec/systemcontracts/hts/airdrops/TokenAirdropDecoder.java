@@ -78,8 +78,12 @@ public class TokenAirdropDecoder {
             tokenTransferList.token(token);
             final var tokenAmountsTuple = (Tuple[]) transfer.get(TOKEN_TRANSFERS);
             final var nftAmountsTuple = (Tuple[]) transfer.get(NFT_AMOUNT);
-            validateFalse(tokenAmountsTuple.length > ledgerConfig.tokenTransfersMaxLen(), TOKEN_REFERENCE_LIST_SIZE_LIMIT_EXCEEDED);
-            validateFalse(nftAmountsTuple.length > ledgerConfig.nftTransfersMaxLen(), TOKEN_REFERENCE_LIST_SIZE_LIMIT_EXCEEDED);
+            validateFalse(
+                    tokenAmountsTuple.length > ledgerConfig.tokenTransfersMaxLen(),
+                    TOKEN_REFERENCE_LIST_SIZE_LIMIT_EXCEEDED);
+            validateFalse(
+                    nftAmountsTuple.length > ledgerConfig.nftTransfersMaxLen(),
+                    TOKEN_REFERENCE_LIST_SIZE_LIMIT_EXCEEDED);
             if (tokenAmountsTuple.length > 0) {
                 final var aaList = new ArrayList<AccountAmount>();
                 Arrays.stream(tokenAmountsTuple).forEach(tokenAmount -> {
