@@ -17,13 +17,12 @@
 package com.hedera.node.app.service.consensus.impl.handlers;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ALLOWANCE_OWNER_ID;
-import static com.hedera.node.app.service.consensus.impl.util.ConsensusApproveAllowanceHelper.applyCryptoAllowances;
-import static com.hedera.node.app.service.consensus.impl.util.ConsensusApproveAllowanceHelper.applyFungibleTokenAllowances;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
+import com.hedera.node.app.service.consensus.impl.ConsensusAllowanceUpdater;
 import com.hedera.node.app.service.consensus.impl.validators.ConsensusAllowancesValidator;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
@@ -42,15 +41,19 @@ import javax.inject.Singleton;
 @Singleton
 public class ConsensusApproveAllowanceHandler implements TransactionHandler {
     private final ConsensusAllowancesValidator validator;
+    private final ConsensusAllowanceUpdater updater;
 
     /**
      * Default constructor for injection.
      * @param allowancesValidator allowances validator
      */
     @Inject
-    public ConsensusApproveAllowanceHandler(@NonNull final ConsensusAllowancesValidator allowancesValidator) {
+    public ConsensusApproveAllowanceHandler(
+            @NonNull final ConsensusAllowancesValidator allowancesValidator,
+            @NonNull final ConsensusAllowanceUpdater allowanceUpdater) {
         requireNonNull(allowancesValidator);
         this.validator = allowancesValidator;
+        this.updater = allowanceUpdater;
     }
 
     @Override
@@ -119,7 +122,7 @@ public class ConsensusApproveAllowanceHandler implements TransactionHandler {
         final var tokenAllowances = op.consensusTokenFeeScheduleAllowances();
 
         /* --- Apply changes to state --- */
-        applyCryptoAllowances(cryptoAllowances, topicStore);
-        applyFungibleTokenAllowances(tokenAllowances, topicStore);
+        updater.applyCryptoAllowances(cryptoAllowances, topicStore);
+        updater.applyFungibleTokenAllowances(tokenAllowances, topicStore);
     }
 }

@@ -40,6 +40,7 @@ import com.hedera.hapi.node.token.ConsensusApproveAllowanceTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
 import com.hedera.node.app.service.consensus.impl.handlers.ConsensusApproveAllowanceHandler;
+import com.hedera.node.app.service.consensus.impl.ConsensusAllowanceUpdater;
 import com.hedera.node.app.service.consensus.impl.validators.ConsensusAllowancesValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.PreCheckException;
@@ -58,7 +59,7 @@ public class ConsensusApproveAllowanceTest extends ConsensusTestBase {
 
     @BeforeEach
     void setUp() {
-        subject = new ConsensusApproveAllowanceHandler(new ConsensusAllowancesValidator());
+        subject = new ConsensusApproveAllowanceHandler(new ConsensusAllowancesValidator(), new ConsensusAllowanceUpdater());
         refreshStoresWithCurrentTopicOnlyInReadable();
         given(handleContext.savepointStack()).willReturn(stack);
     }
