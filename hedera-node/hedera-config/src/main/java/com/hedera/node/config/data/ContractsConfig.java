@@ -109,4 +109,4 @@ public record ContractsConfig(
                 boolean chargeGasOnEvmHandleException,
         @ConfigProperty(value = "evm.nonExtantContractsFail", defaultValue = "0") @NetworkProperty
                 Set<Long> evmNonExtantContractsFail,
-        @ConfigProperty(value = "evm.version", defaultValue = "v0.50") @NetworkProperty String evmVersion) {}
+        @ConfigProperty(value = "evm.version", defaultValue = "v0.51") @NetworkProperty String evmVersion) {}

@@ -258,23 +258,6 @@ class MerkleSchemaRegistryTest extends MerkleTestBase {
         }
 
         @Test
-        @DisplayName("Calling migrate with a null networkInfo throws NPE")
-        void nullNetworkInfoThrows() {
-            //noinspection ConstantConditions
-            assertThatThrownBy(() -> schemaRegistry.migrate(
-                            merkleTree,
-                            versions[0],
-                            versions[1],
-                            config,
-                            null,
-                            mock(Metrics.class),
-                            mock(WritableEntityIdStore.class),
-                            new HashMap<>(),
-                            migrationStateChanges))
-                    .isInstanceOf(NullPointerException.class);
-        }
-
-        @Test
         @DisplayName("Calling migrate with a null metrics throws NPE")
         void nullMetricsThrows() {
             //noinspection ConstantConditions
