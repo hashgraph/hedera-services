@@ -82,10 +82,7 @@ message TssVoteTransactionBody {
   /**
    * A bit vector of message statuses.
    * <p>
-   * Each bit in this vector indicates receipt (1) or non-receipt (0) of a
-   * _valid_ `TssMessage` for a corresponding `TssMessageTransaction`.
-   * <p>
-   * #### Example<br/>
+   * #### Example
    * <ul><li>The least significant bit of byte[0] SHALL be the 0th item in the sequence.</li>
    *     <li>The most significant bit of byte[0] SHALL be the 7th item in the sequence.</li>
    *     <li>The least significant bit of byte[1] SHALL be the 8th item in the sequence.</li>

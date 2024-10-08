@@ -48,8 +48,7 @@ message TssVoteMapKey {
    */
   bytes roster_hash = 1;
 
-  /* The node id of the node that created the TssVote.
-  * <p>
+  /* The node id of the node that created the TssVote.</br>
   * This id uniquely identifies the node.
   * <p>
   * This value MUST be set.<br/>

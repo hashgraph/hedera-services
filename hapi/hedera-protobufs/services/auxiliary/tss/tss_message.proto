@@ -33,8 +33,10 @@ option java_package = "com.hedera.hapi.services.auxiliary.tss.legacy";
 
 option java_multiple_files = true;
 
-/** A transaction body to to send a Threshold Signature Scheme (TSS) Message to
-  * the network for a candidate roster.
+/** A transaction body to to send a Threshold Signature Scheme (TSS)
+  * Message.<br/>
+  * This is a wrapper around several different TSS message types that a node
+  * might communicate with other nodes in the network.
   *
   * - A `TssMessageTransactionBody` MUST identify the hash of the roster
   *   containing the node generating this TssMessage
@@ -46,10 +48,10 @@ option java_multiple_files = true;
 message TssMessageTransactionBody {
 
   /**
-   * A hash of the roster containing the node generating the TssMessage.
-   * <p>>
-   * This hash uniquely identifies the source roster.
-   * <br/>
+   * A hash of the roster containing the node generating the TssMessage.</br>
+   * This hash uniquely identifies the source roster, which will include
+   * an entry for the node generating this TssMessage.
+   * <p>
    * This value MUST be set.<br/>
    * This value MUST NOT be empty.<br/>
    * This value MUST contain a valid hash.
@@ -67,10 +69,9 @@ message TssMessageTransactionBody {
 
   /**
    * An index to order shares.
-   % <p>
+   * <p>
    * A share index SHALL establish a global ordering of shares across all
-   * shares in the network.
-   * <br/>
+   * shares in the network.<br/>
    * A share index MUST correspond to the index of the public share in the list
    * returned from the TSS library when the share was created for the source
    * roster.

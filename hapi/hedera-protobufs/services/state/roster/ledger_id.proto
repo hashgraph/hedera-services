@@ -38,18 +38,14 @@ option java_package = "com.hederahashgraph.api.proto.java";
 option java_multiple_files = true;
 
 /**
- * A ledger identifier.
- *
- * This message identifies a ledger and SHALL be used to verify ledger
+ * A ledger identifier.<br/>
+ * This message identifies a ledger and is used to verify ledger
  * signatures in a Threshold Signature Scheme (TSS).
  *
- * A LedgerId MAY change, but does so only in rare circumstances.
- *
  * A ledger identifier SHALL be a public key defined according to the TSS
- * process.
- *
- * A ledger identifier SHOULD NOT change, but MAY do so in rare circumstances.
- *
+ * process.<br/>
+ * A ledger identifier SHOULD NOT change, but MAY do so in rare
+ * circumstances.<br/>
  * Clients SHOULD always check for the correct ledger identifier, according to
  * the network roster, before attempting to verify any state proof or other
  * ledger signature.
@@ -67,8 +63,7 @@ option java_multiple_files = true;
 message LedgerId {
 
   /**
-   * A public key.
-   * <p>
+   * A public key.<br/>
    * This key both identifies the ledger and can be used to verify ledger
    * signatures.
    * <p>
@@ -79,16 +74,14 @@ message LedgerId {
   bytes ledger_id = 1;
 
   /**
-   * A round number.
-   * <p>
+   * A round number.<br/>
    * This identifies when this ledger id becomes active.<br/>
    * This value is REQUIRED.
    */
   uint64 round = 2;
 
   /**
-   * A signature from the prior ledger key.
-   * <p>
+   * A signature from the prior ledger key.<br/>
    * This signature is the _previous_ ledger ID signing _this_ ledger ID.<br/>
    * This value MAY be unset, if there is no prior ledger ID.</br>
    * This value SHOULD be set if a prior ledger ID exists
@@ -97,8 +90,8 @@ message LedgerId {
   bytes ledger_signature = 3;
 
   /**
-   * The signatures from nodes in the active roster signing the new ledger id.
-   * <p>
+   * The signatures from nodes in the active roster signing the new
+   * ledger id.<br/>
    * These signatures establish a chain of trust from the network to the new
    * ledger id.
    * <p>
