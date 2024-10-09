@@ -16,13 +16,15 @@
 
 name: "ZXC: [Node] Deploy Release Artifacts"
 on:
-  workflow_run:
-    workflows:
-      - "ZXC: [Node] Deploy Release Artifacts"
-    types:
-      - completed
-    branches:
-      - develop
+  workflow_dispatch:
+
+#  workflow_run:
+#    workflows:
+#      - "ZXC: [Node] Deploy Release Artifacts"
+#    types:
+#      - completed
+#    branches:
+#      - develop
 
 jobs:
   jenkins-checks:
