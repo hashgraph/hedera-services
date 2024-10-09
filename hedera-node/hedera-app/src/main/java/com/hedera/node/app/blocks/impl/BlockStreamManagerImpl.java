@@ -334,8 +334,8 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
         // no two consecutive transactions ever get the same seed
         schedulePendingWork();
         writeFuture.join();
-        final var seed = runningHashManager.nMinus3HashFuture.join();
-        return seed == null ? null : Bytes.wrap(seed);
+        final var seed = runningHashManager.nMinus3Hash;
+        return seed == null ? null : Bytes.wrap(runningHashManager.nMinus3Hash);
     }
 
     @Override
@@ -470,7 +470,7 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
                 @NonNull BufferedData data,
                 @NonNull ByteBuffer inputHashes,
                 @NonNull ByteBuffer outputHashes,
-                @NonNull List<byte[]> resultHashes) {}
+                @NonNull ByteBuffer resultHashes) {}
 
         public ScheduledWork(@NonNull final List<BlockItem> items) {
             this.items = requireNonNull(items);
@@ -487,19 +487,26 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
             var size = 0;
             var numInputs = 0;
             var numOutputs = 0;
+            var numResults = 0;
             for (final var item : items) {
                 // Plus 8 bytes for the preceding tag and length
                 size += BlockItem.PROTOBUF.measureRecord(item) + 8;
-                switch (item.item().kind()) {
+                final var kind = item.item().kind();
+                switch (kind) {
                     case EVENT_HEADER, EVENT_TRANSACTION -> numInputs++;
-                    case TRANSACTION_RESULT, TRANSACTION_OUTPUT, STATE_CHANGES -> numOutputs++;
+                    case TRANSACTION_RESULT, TRANSACTION_OUTPUT, STATE_CHANGES -> {
+                        numOutputs++;
+                        if (kind == TRANSACTION_RESULT) {
+                            numResults++;
+                        }
+                    }
                 }
             }
             final var inputHashes = ByteBuffer.allocate(numInputs * HASH_SIZE);
             final var outputHashes = ByteBuffer.allocate(numOutputs * HASH_SIZE);
+            final var resultHashes = ByteBuffer.allocate(numResults * HASH_SIZE);
             final var serializedItems = ByteBuffer.allocate(size);
             final var data = BufferedData.wrap(serializedItems);
-            final List<byte[]> resultHashes = new ArrayList<>();
             final var digest = sha384DigestOrThrow();
             for (final var item : items) {
                 writeTag(data, BlockSchema.ITEMS, WIRE_TYPE_DELIMITED);
@@ -517,7 +524,7 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
                             case TRANSACTION_RESULT, TRANSACTION_OUTPUT, STATE_CHANGES -> outputHashes.put(hash);
                         }
                         if (kind == TRANSACTION_RESULT) {
-                            resultHashes.add(hash);
+                            resultHashes.put(hash);
                         }
                     }
                     default -> {
@@ -526,7 +533,7 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
                 }
             }
             data.flip();
-            return new Output(data, inputHashes.flip(), outputHashes.flip(), resultHashes);
+            return new Output(data, inputHashes.flip(), outputHashes.flip(), resultHashes.flip());
         }
     }
 
@@ -546,7 +553,9 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
         while (output.outputHashes().hasRemaining()) {
             outputTreeHasher.addLeaf(output.outputHashes());
         }
-        output.resultHashes.forEach(runningHashManager::nextResultHash);
+        while (output.resultHashes().hasRemaining()) {
+            runningHashManager.nextResultHash(output.resultHashes());
+        }
         return null;
     }
 
@@ -554,16 +563,14 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
         return config.getConfigData(VersionConfig.class).hapiVersion();
     }
 
-    private class RunningHashManager {
-        CompletableFuture<byte[]> nMinus3HashFuture;
-        CompletableFuture<byte[]> nMinus2HashFuture;
-        CompletableFuture<byte[]> nMinus1HashFuture;
-        CompletableFuture<byte[]> hashFuture;
+    private static class RunningHashManager {
+        byte[] nMinus3Hash;
+        byte[] nMinus2Hash;
+        byte[] nMinus1Hash;
+        byte[] hash;
 
         Bytes latestHashes() {
-            final var all = new byte[][] {
-                nMinus3HashFuture.join(), nMinus2HashFuture.join(), nMinus1HashFuture.join(), hashFuture.join()
-            };
+            final var all = new byte[][] { nMinus3Hash, nMinus2Hash, nMinus1Hash, hash };
             int numMissing = 0;
             while (numMissing < all.length && all[numMissing] == null) {
                 numMissing++;
@@ -583,11 +590,10 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
         void startBlock(@NonNull final BlockStreamInfo blockStreamInfo) {
             final var hashes = blockStreamInfo.trailingOutputHashes();
             final var n = (int) (hashes.length() / HASH_SIZE);
-            nMinus3HashFuture = completedFuture(n < 4 ? null : hashes.toByteArray(0, HASH_SIZE));
-            nMinus2HashFuture = completedFuture(n < 3 ? null : hashes.toByteArray((n - 3) * HASH_SIZE, HASH_SIZE));
-            nMinus1HashFuture = completedFuture(n < 2 ? null : hashes.toByteArray((n - 2) * HASH_SIZE, HASH_SIZE));
-            hashFuture =
-                    completedFuture(n < 1 ? new byte[HASH_SIZE] : hashes.toByteArray((n - 1) * HASH_SIZE, HASH_SIZE));
+            nMinus3Hash = n < 4 ? null : hashes.toByteArray(0, HASH_SIZE);
+            nMinus2Hash = n < 3 ? null : hashes.toByteArray((n - 3) * HASH_SIZE, HASH_SIZE);
+            nMinus1Hash = n < 2 ? null : hashes.toByteArray((n - 2) * HASH_SIZE, HASH_SIZE);
+            hash = n < 1 ? new byte[HASH_SIZE] : hashes.toByteArray((n - 1) * HASH_SIZE, HASH_SIZE);
         }
 
         /**
@@ -595,12 +601,17 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
          *
          * @param hash the serialized output block item
          */
-        void nextResultHash(@NonNull final byte[] hash) {
+        void nextResultHash(@NonNull final ByteBuffer hash) {
             requireNonNull(hash);
-            nMinus3HashFuture = nMinus2HashFuture;
-            nMinus2HashFuture = nMinus1HashFuture;
-            nMinus1HashFuture = hashFuture;
-            hashFuture = hashFuture.thenCombine(CompletableFuture.completedFuture(hash), BlockImplUtils::combine);
+            nMinus3Hash = nMinus2Hash;
+            nMinus2Hash = nMinus1Hash;
+            nMinus1Hash = this.hash;
+            final var digest = sha384DigestOrThrow();
+            digest.update(this.hash);
+            final var resultHash = new byte[HASH_SIZE];
+            hash.get(resultHash);
+            digest.update(resultHash);
+            this.hash = digest.digest();
         }
     }
 
