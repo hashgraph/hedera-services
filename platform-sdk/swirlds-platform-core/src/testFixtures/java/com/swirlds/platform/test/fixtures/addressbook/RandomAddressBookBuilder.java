@@ -129,7 +129,6 @@ public class RandomAddressBookBuilder {
     @NonNull
     public AddressBook build() {
         final AddressBook addressBook = new AddressBook();
-        addressBook.setNextNodeId(nextNodeId);
         addressBook.setRound(Math.abs(random.nextLong()));
 
         if (maximumWeight == null && size > 0) {
