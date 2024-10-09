@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.blocks.impl;
 
+import static com.hedera.node.app.blocks.StreamingTreeHasher.HASH_LENGTH;
 import static com.hedera.node.app.blocks.impl.ConcurrentStreamingTreeHasher.rootHashFrom;
 import static java.util.Objects.requireNonNull;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -31,7 +32,6 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
 class ConcurrentStreamingTreeHasherTest {
-    private static final int LEAF_SIZE = 48;
     private static final SplittableRandom RANDOM = new SplittableRandom();
 
     private final NaiveStreamingTreeHasher comparison = new NaiveStreamingTreeHasher();
@@ -40,27 +40,27 @@ class ConcurrentStreamingTreeHasherTest {
     @ParameterizedTest
     @ValueSource(ints = {0, 1, 3, 5, 32, 69, 100, 123, 234})
     void testAddLeafAndRootHash(final int numLeaves) {
-        ByteBuffer lastLeaf = null;
+        ByteBuffer lastLeafHash = null;
         var status = Status.EMPTY;
         for (int i = 1; i <= numLeaves; i++) {
-            final var contents = new byte[LEAF_SIZE];
-            RANDOM.nextBytes(contents);
-            final var leaf = ByteBuffer.wrap(contents);
-            subject.addLeaf(leaf);
-            comparison.addLeaf(leaf);
+            final var hash = new byte[HASH_LENGTH];
+            RANDOM.nextBytes(hash);
+            final var leafHash = ByteBuffer.wrap(hash);
+            subject.addLeaf(ByteBuffer.wrap(hash));
+            comparison.addLeaf(ByteBuffer.wrap(hash));
             if (i == numLeaves - 1) {
                 status = subject.status();
             } else if (i == numLeaves) {
-                lastLeaf = leaf;
+                lastLeafHash = leafHash;
             }
         }
 
         final var actual = subject.rootHash().join();
         final var expected = comparison.rootHash().join();
         assertEquals(expected, actual);
-        if (lastLeaf != null) {
+        if (lastLeafHash != null) {
             requireNonNull(status);
-            final var recalculated = rootHashFrom(status, Bytes.wrap(lastLeaf.array()));
+            final var recalculated = rootHashFrom(status, Bytes.wrap(lastLeafHash.array()));
             assertEquals(expected, recalculated);
         }
     }

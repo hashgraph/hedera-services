@@ -21,11 +21,8 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.blocks.StreamingTreeHasher;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.swirlds.common.crypto.DigestType;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.nio.ByteBuffer;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -42,7 +39,7 @@ public class ConcurrentStreamingTreeHasher implements StreamingTreeHasher {
     /**
      * The number of leaves to hash in parallel before combining the resulting hashes.
      */
-    private static final int DEFAULT_BATCH_SIZE = 8;
+    private static final int DEFAULT_HASH_COMBINE_BATCH_SIZE = 8;
 
     /**
      * The base {@link HashCombiner} that combines the hashes of the leaves of the tree, at depth zero.
@@ -53,9 +50,12 @@ public class ConcurrentStreamingTreeHasher implements StreamingTreeHasher {
      */
     private final ExecutorService executorService;
     /**
-     * The size of the batches of leaves to hash in parallel.
+     * The size of the batches of hashes to schedule for combination.
+     * <p><b>Important:</b> This must be an even number so we can safely assume that any odd number
+     * of scheduled hashes to combine can be padded with appropriately nested combination of hashes
+     * whose descendants are all empty leaves.
      */
-    private final int hashingBatchSize;
+    private final int hashCombineBatchSize;
 
     /**
      * The number of leaves added to the tree.
@@ -69,45 +69,37 @@ public class ConcurrentStreamingTreeHasher implements StreamingTreeHasher {
      * Whether the tree has been finalized by requesting the root hash.
      */
     private boolean rootHashRequested = false;
-    /**
-     * Leaves added but not yet scheduled to be hashed.
-     */
-    private List<ByteBuffer> pendingLeaves = new ArrayList<>();
-    /**
-     * A future that completes after all leaves not in the pending list have been hashed and combined.
-     */
-    private CompletableFuture<Void> hashed = CompletableFuture.completedFuture(null);
 
     public ConcurrentStreamingTreeHasher(@NonNull final ExecutorService executorService) {
-        this(executorService, DEFAULT_BATCH_SIZE);
+        this(executorService, DEFAULT_HASH_COMBINE_BATCH_SIZE);
     }
 
-    public ConcurrentStreamingTreeHasher(@NonNull final ExecutorService executorService, final int hashingBatchSize) {
+    public ConcurrentStreamingTreeHasher(
+            @NonNull final ExecutorService executorService, final int hashCombineBatchSize) {
         this.executorService = requireNonNull(executorService);
-        this.hashingBatchSize = hashingBatchSize;
+        this.hashCombineBatchSize = hashCombineBatchSize;
     }
 
     @Override
-    public void addLeaf(@NonNull final ByteBuffer leaf) {
-        requireNonNull(leaf);
+    public void addLeaf(@NonNull final ByteBuffer hash) {
+        requireNonNull(hash);
         if (rootHashRequested) {
             throw new IllegalStateException("Cannot add leaves after requesting the root hash");
         }
-        numLeaves++;
-        pendingLeaves.add(leaf);
-        if (pendingLeaves.size() == hashingBatchSize) {
-            schedulePendingWork();
+        if (hash.remaining() < HASH_LENGTH) {
+            throw new IllegalArgumentException("Buffer has less than " + HASH_LENGTH + " bytes remaining");
         }
+        numLeaves++;
+        final var bytes = new byte[HASH_LENGTH];
+        hash.slice(0, HASH_LENGTH).get(bytes);
+        combiner.combine(bytes);
     }
 
     @Override
     public CompletableFuture<Bytes> rootHash() {
         rootHashRequested = true;
-        if (!pendingLeaves.isEmpty()) {
-            schedulePendingWork();
-        }
         maxDepth = maxDepthFor(numLeaves);
-        return hashed.thenCompose(ignore -> combiner.finalCombination());
+        return combiner.finalCombination();
     }
 
     @Override
@@ -115,28 +107,24 @@ public class ConcurrentStreamingTreeHasher implements StreamingTreeHasher {
         if (numLeaves == 0) {
             return Status.EMPTY;
         } else {
-            schedulePendingWork();
-            final var n = numLeaves;
-            return hashed.thenApply(ignore -> {
-                        final var rightmostHashes = new ArrayList<Bytes>();
-                        combiner.flushAvailable(rightmostHashes, maxDepthFor(n + 1));
-                        return new Status(n, rightmostHashes);
-                    })
-                    .join();
+            final var rightmostHashes = new ArrayList<Bytes>();
+            combiner.flushAvailable(rightmostHashes, maxDepthFor(numLeaves + 1));
+            return new Status(numLeaves, rightmostHashes);
         }
     }
 
     /**
      * Computes the root hash of a perfect binary Merkle tree of {@link Bytes} leaves (padded on the right with
-     * empty leaves to reach a power of two), given the penultimate status of the tree and the last leaf added to
-     * the tree.
+     * empty leaves to reach a power of two), given the penultimate status of the tree and the hash of the last
+     * leaf added to the tree.
+     *
      * @param penultimateStatus the penultimate status of the tree
-     * @param lastLeaf the last leaf added to the tree
+     * @param lastLeafHash the last leaf hash added to the tree
      * @return the root hash of the tree
      */
-    public static Bytes rootHashFrom(@NonNull final Status penultimateStatus, @NonNull final Bytes lastLeaf) {
-        requireNonNull(lastLeaf);
-        var hash = noThrowSha384HashOf(lastLeaf.toByteArray());
+    public static Bytes rootHashFrom(@NonNull final Status penultimateStatus, @NonNull final Bytes lastLeafHash) {
+        requireNonNull(lastLeafHash);
+        var hash = lastLeafHash.toByteArray();
         final var maxDepth = maxDepthFor(penultimateStatus.numLeaves() + 1);
         for (int i = 0; i < maxDepth; i++) {
             final var rightmostHash = penultimateStatus.rightmostHashes().get(i);
@@ -149,39 +137,8 @@ public class ConcurrentStreamingTreeHasher implements StreamingTreeHasher {
         return Bytes.wrap(hash);
     }
 
-    private void schedulePendingWork() {
-        final var scheduledWork = pendingLeaves;
-        final var pendingHashes = CompletableFuture.supplyAsync(
-                () -> {
-                    final MessageDigest digest;
-                    try {
-                        digest = MessageDigest.getInstance(DigestType.SHA_384.algorithmName());
-                    } catch (NoSuchAlgorithmException e) {
-                        throw new IllegalStateException(e);
-                    }
-                    final List<byte[]> result = new ArrayList<>();
-                    for (final var leaf : scheduledWork) {
-                        digest.update(leaf);
-                        result.add(digest.digest());
-                    }
-                    return result;
-                },
-                executorService);
-        hashed = hashed.thenCombine(pendingHashes, (ignore, hashes) -> {
-            hashes.forEach(combiner::combine);
-            return null;
-        });
-        pendingLeaves = new ArrayList<>();
-    }
-
     private class HashCombiner {
         private static final int MAX_DEPTH = 24;
-        /**
-         * <b>IMPORTANT</b> - This must be an even number so we can safely assume that any odd number
-         * of scheduled hashes to combine can be padded with appropriately nested combination of hashes
-         * whose descendants are all empty leaves.
-         */
-        private static final int COMBINATION_CHUNK_SIZE = 32;
 
         private static final byte[][] EMPTY_HASHES = new byte[MAX_DEPTH][];
 
@@ -207,7 +164,7 @@ public class ConcurrentStreamingTreeHasher implements StreamingTreeHasher {
 
         public void combine(@NonNull final byte[] hash) {
             pendingHashes.add(hash);
-            if (pendingHashes.size() == COMBINATION_CHUNK_SIZE) {
+            if (pendingHashes.size() == hashCombineBatchSize) {
                 schedulePendingWork();
             }
         }

@@ -18,6 +18,7 @@ package com.hedera.services.bdd.junit.support.validators.block;
 
 import static com.hedera.node.app.blocks.impl.BlockImplUtils.combine;
 import static com.hedera.node.app.hapi.utils.CommonUtils.noThrowSha384HashOf;
+import static com.hedera.node.app.hapi.utils.CommonUtils.sha384DigestOrThrow;
 import static com.hedera.node.app.info.UnavailableNetworkInfo.UNAVAILABLE_NETWORK_INFO;
 import static com.hedera.node.app.workflows.handle.metric.UnavailableMetrics.UNAVAILABLE_METRICS;
 import static com.hedera.services.bdd.junit.hedera.ExternalPath.APPLICATION_PROPERTIES;
@@ -337,11 +338,12 @@ public class StateChangesValidator implements BlockStreamValidator {
             final StreamingTreeHasher inputTreeHasher,
             final StreamingTreeHasher outputTreeHasher) {
         final var itemSerialized = BlockItem.PROTOBUF.toBytes(item);
+        final var digest = sha384DigestOrThrow();
         switch (item.item().kind()) {
             case EVENT_HEADER, EVENT_TRANSACTION -> inputTreeHasher.addLeaf(
-                    ByteBuffer.wrap(itemSerialized.toByteArray()));
+                    ByteBuffer.wrap(digest.digest(itemSerialized.toByteArray())));
             case TRANSACTION_RESULT, TRANSACTION_OUTPUT, STATE_CHANGES -> outputTreeHasher.addLeaf(
-                    ByteBuffer.wrap(itemSerialized.toByteArray()));
+                    ByteBuffer.wrap(digest.digest(itemSerialized.toByteArray())));
             default -> {
                 // Other items are not part of the input/output trees
             }

@@ -17,6 +17,7 @@
 package com.hedera.node.app.blocks;
 
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.common.crypto.DigestType;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.nio.ByteBuffer;
 import java.util.List;
@@ -28,6 +29,8 @@ import java.util.concurrent.CompletableFuture;
  * a perfect binary tree.
  */
 public interface StreamingTreeHasher {
+    int HASH_LENGTH = DigestType.SHA_384.digestLength();
+
     /**
      * Describes the status of the tree hash computation.
      * @param numLeaves the number of leaves added to the tree
@@ -42,11 +45,12 @@ public interface StreamingTreeHasher {
     }
 
     /**
-     * Adds a leaf to the implicit tree of items.
-     * @param leaf the leaf to add
+     * Adds a leaf hash to the implicit tree of items.
+     * @param hash the leaf hash to add
      * @throws IllegalStateException if the root hash has already been requested
+     * @throws IllegalArgumentException if the buffer does not an array or at least {@link #HASH_LENGTH} bytes remaining
      */
-    void addLeaf(@NonNull ByteBuffer leaf);
+    void addLeaf(@NonNull ByteBuffer hash);
 
     /**
      * Returns a future that completes with the root hash of the tree of items. Once called, this hasher will not accept

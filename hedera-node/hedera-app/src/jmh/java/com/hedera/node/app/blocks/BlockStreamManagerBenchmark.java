@@ -105,8 +105,8 @@ public class BlockStreamManagerBenchmark {
     private final List<BlockItem> roundItems = new ArrayList<>();
     private final PlaceholderTssBaseService tssBaseService = new PlaceholderTssBaseService();
     private final BlockStreamManagerImpl subject = new BlockStreamManagerImpl(
-            NoopBlockItemWriter::new,
-            //            BaosBlockItemWriter::new,
+            //            NoopBlockItemWriter::new,
+            BaosBlockItemWriter::new,
             ForkJoinPool.commonPool(),
             configProvider,
             tssBaseService,
@@ -305,7 +305,7 @@ public class BlockStreamManagerBenchmark {
 
     private static class BaosBlockItemWriter implements BlockItemWriter {
         private static final int BLOCKS_TO_CHECK = 10;
-        private static final String BLOCKS_DIR = "orig-blocks";
+        private static final String BLOCKS_DIR = "other-blocks";
 
         private static int numBlocksToWrite = BLOCKS_TO_CHECK;
 

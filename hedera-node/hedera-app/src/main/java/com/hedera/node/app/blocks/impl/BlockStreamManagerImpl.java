@@ -26,6 +26,7 @@ import static com.hedera.node.app.blocks.impl.BlockImplUtils.appendHash;
 import static com.hedera.node.app.blocks.impl.BlockImplUtils.combine;
 import static com.hedera.node.app.blocks.schemas.V0540BlockStreamSchema.BLOCK_STREAM_INFO_KEY;
 import static com.hedera.node.app.hapi.utils.CommonUtils.noThrowSha384HashOf;
+import static com.hedera.node.app.hapi.utils.CommonUtils.sha384DigestOrThrow;
 import static com.hedera.node.app.records.BlockRecordService.EPOCH;
 import static com.hedera.node.app.records.impl.BlockRecordInfoUtils.HASH_SIZE;
 import static com.hedera.pbj.runtime.ProtoWriterTools.writeMessage;
@@ -97,7 +98,7 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
     private static final Logger log = LogManager.getLogger(BlockStreamManagerImpl.class);
 
     private final int roundsPerBlock;
-    private final int hashingBatchSize;
+    private final int hashCombineBatchSize;
     private final int serializationBatchSize;
     private final TssBaseService tssBaseService;
     private final SemanticVersion version;
@@ -177,7 +178,7 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
         this.hapiVersion = hapiVersionFrom(config);
         final var blockStreamConfig = config.getConfigData(BlockStreamConfig.class);
         this.roundsPerBlock = blockStreamConfig.roundsPerBlock();
-        this.hashingBatchSize = blockStreamConfig.hashingBatchSize();
+        this.hashCombineBatchSize = blockStreamConfig.hashCombineBatchSize();
         this.serializationBatchSize = blockStreamConfig.serializationBatchSize();
         this.blockHashManager = new BlockHashManager(config);
         this.runningHashManager = new RunningHashManager();
@@ -222,8 +223,8 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
             blockHashManager.startBlock(blockStreamInfo, lastBlockHash);
             runningHashManager.startBlock(blockStreamInfo);
 
-            inputTreeHasher = new ConcurrentStreamingTreeHasher(executor, hashingBatchSize);
-            outputTreeHasher = new ConcurrentStreamingTreeHasher(executor, hashingBatchSize);
+            inputTreeHasher = new ConcurrentStreamingTreeHasher(executor, hashCombineBatchSize);
+            outputTreeHasher = new ConcurrentStreamingTreeHasher(executor, hashCombineBatchSize);
             blockNumber = blockStreamInfo.blockNumber() + 1;
             pendingItems = new ArrayList<>();
 
@@ -520,22 +521,24 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
          * @return {@code null}
          */
         public Void combineSerializedItems(@Nullable Void ignore, @NonNull final List<ByteBuffer> serializedItems) {
+            final var digest = sha384DigestOrThrow();
             for (int i = 0, n = scheduledWork.size(); i < n; i++) {
                 final var item = scheduledWork.get(i);
                 final var serializedItem = serializedItems.get(i);
+                final var bytes = new byte[serializedItem.remaining()];
+                serializedItem.slice(0, serializedItem.remaining()).get(bytes);
                 final var kind = item.item().kind();
                 switch (kind) {
-                    case EVENT_HEADER, EVENT_TRANSACTION -> inputTreeHasher.addLeaf(serializedItem);
-                    case TRANSACTION_RESULT, TRANSACTION_OUTPUT, STATE_CHANGES -> outputTreeHasher.addLeaf(
-                            serializedItem);
+                    case EVENT_HEADER, EVENT_TRANSACTION -> inputTreeHasher.addLeaf(ByteBuffer.wrap(digest.digest(bytes)));
+                    case TRANSACTION_RESULT, TRANSACTION_OUTPUT, STATE_CHANGES -> outputTreeHasher.addLeaf(ByteBuffer.wrap(digest.digest(bytes)));
                     default -> {
                         // Other items are not part of the input/output trees
                     }
                 }
                 if (kind == BlockItem.ItemOneOfType.TRANSACTION_RESULT) {
-                    runningHashManager.nextResult(serializedItem);
+                    runningHashManager.nextResult(bytes);
                 }
-                writer.writeItem(serializedItem);
+                writer.writeItem(ByteBuffer.wrap(bytes));
             }
             return null;
         }
@@ -586,13 +589,13 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
          *
          * @param bytes the serialized output block item
          */
-        void nextResult(@NonNull final ByteBuffer bytes) {
+        void nextResult(@NonNull final byte[] bytes) {
             requireNonNull(bytes);
             nMinus3HashFuture = nMinus2HashFuture;
             nMinus2HashFuture = nMinus1HashFuture;
             nMinus1HashFuture = hashFuture;
             hashFuture = hashFuture.thenCombineAsync(
-                    supplyAsync(() -> noThrowSha384HashOf(bytes.array()), executor), BlockImplUtils::combine, executor);
+                    supplyAsync(() -> noThrowSha384HashOf(bytes), executor), BlockImplUtils::combine, executor);
         }
     }
 

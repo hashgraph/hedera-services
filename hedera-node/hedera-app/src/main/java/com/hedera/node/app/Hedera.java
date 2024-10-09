@@ -20,6 +20,7 @@ import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_BLOCK
 import static com.hedera.node.app.blocks.impl.BlockImplUtils.combine;
 import static com.hedera.node.app.blocks.impl.ConcurrentStreamingTreeHasher.rootHashFrom;
 import static com.hedera.node.app.blocks.schemas.V0540BlockStreamSchema.BLOCK_STREAM_INFO_KEY;
+import static com.hedera.node.app.hapi.utils.CommonUtils.noThrowSha384HashOf;
 import static com.hedera.node.app.info.UnavailableNetworkInfo.UNAVAILABLE_NETWORK_INFO;
 import static com.hedera.node.app.records.impl.BlockRecordInfoUtils.blockHashByBlockNumber;
 import static com.hedera.node.app.records.schemas.V0490BlockRecordSchema.BLOCK_INFO_STATE_KEY;
@@ -984,7 +985,8 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener {
         // store from the pending output tree to recompute its final root hash
         final var penultimateOutputTreeStatus = new StreamingTreeHasher.Status(
                 blockStreamInfo.numPrecedingOutputItems(), blockStreamInfo.rightmostPrecedingOutputTreeHashes());
-        return rootHashFrom(penultimateOutputTreeStatus, BlockItem.PROTOBUF.toBytes(lastStateChanges));
+        final var lastLeafHash = noThrowSha384HashOf(BlockItem.PROTOBUF.toBytes(lastStateChanges));
+        return rootHashFrom(penultimateOutputTreeStatus, lastLeafHash);
     }
 
     private static ServicesSoftwareVersion getNodeStartupVersion(@NonNull final Configuration config) {

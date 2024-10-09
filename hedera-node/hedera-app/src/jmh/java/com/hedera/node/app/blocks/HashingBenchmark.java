@@ -17,7 +17,7 @@
 package com.hedera.node.app.blocks;
 
 import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_ACCOUNTS;
-import static com.hedera.node.app.blocks.impl.NaiveStreamingTreeHasher.hashNaively;
+import static com.hedera.node.app.hapi.utils.CommonUtils.sha384DigestOrThrow;
 
 import com.hedera.hapi.block.stream.BlockItem;
 import com.hedera.hapi.block.stream.output.MapChangeKey;
@@ -29,7 +29,7 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.blocks.impl.ConcurrentStreamingTreeHasher;
-import com.hedera.pbj.runtime.io.buffer.BufferedData;
+import com.hedera.node.app.blocks.impl.NaiveStreamingTreeHasher;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
@@ -67,31 +67,31 @@ public class HashingBenchmark {
     }
 
     @Param({"10000"})
-    private int numLeaves;
+    private int numLeafHashes;
 
-    private List<ByteBuffer> leaves;
+    private List<ByteBuffer> leafHashes;
     private Bytes expectedAnswer;
 
     @Setup(Level.Trial)
     public void setup() throws IOException {
-        leaves = new ArrayList<>(numLeaves);
-        for (int i = 0; i < numLeaves; i++) {
+        final var digest = sha384DigestOrThrow();
+        leafHashes = new ArrayList<>(numLeafHashes);
+        for (int i = 0; i < numLeafHashes; i++) {
             final var item = randomBlockItem();
-            final var buffer = ByteBuffer.allocate(BlockItem.PROTOBUF.measureRecord(item));
-            BlockItem.PROTOBUF.write(item, BufferedData.wrap(buffer));
-            leaves.add(buffer);
+            final var hash = digest.digest(BlockItem.PROTOBUF.toBytes(item).toByteArray());
+            leafHashes.add(ByteBuffer.wrap(hash));
         }
-        expectedAnswer = hashNaively(leaves);
+        expectedAnswer = NaiveStreamingTreeHasher.computeRootHash(leafHashes);
     }
 
     @Benchmark
     @BenchmarkMode(Mode.Throughput)
     @OutputTimeUnit(TimeUnit.SECONDS)
     public void hashItemTree(@NonNull final Blackhole blackhole) {
-        //        final var subject = new NaiveStreamingTreeHasher();
+//                final var subject = new NaiveStreamingTreeHasher();
         final var subject = new ConcurrentStreamingTreeHasher(ForkJoinPool.commonPool());
-        for (final var item : leaves) {
-            subject.addLeaf(item);
+        for (final var hash : leafHashes) {
+            subject.addLeaf(hash);
         }
         final var rootHash = subject.rootHash().join();
         if (!rootHash.equals(expectedAnswer)) {

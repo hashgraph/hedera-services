@@ -29,57 +29,68 @@ import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.CompletableFuture;
 
+/**
+ * A naive implementation of {@link StreamingTreeHasher} that computes the root hash of a perfect binary Merkle tree of
+ * {@link ByteBuffer} leaves. Used to test the correctness of more efficient implementations.
+ */
 public class NaiveStreamingTreeHasher implements StreamingTreeHasher {
     private static final byte[] EMPTY_HASH = noThrowSha384HashOf(new byte[0]);
 
-    private final List<ByteBuffer> leaves = new ArrayList<>();
+    private final List<byte[]> leafHashes = new ArrayList<>();
     private boolean rootHashRequested = false;
 
-    public static Bytes hashNaively(@NonNull final List<ByteBuffer> leaves) {
+    /**
+     * Computes the root hash of a perfect binary Merkle tree of {@link ByteBuffer} leaves using a naive algorithm.
+     * @param leafHashes the leaf hashes of the tree
+     * @return the root hash of the tree
+     */
+    public static Bytes computeRootHash(@NonNull final List<ByteBuffer> leafHashes) {
         final var hasher = new NaiveStreamingTreeHasher();
-        for (final var item : leaves) {
-            hasher.addLeaf(item);
+        for (final var hash : leafHashes) {
+            hasher.addLeaf(hash);
         }
         return hasher.rootHash().join();
     }
 
     @Override
-    public void addLeaf(@NonNull final ByteBuffer leaf) {
+    public void addLeaf(@NonNull final ByteBuffer hash) {
         if (rootHashRequested) {
             throw new IllegalStateException("Root hash already requested");
         }
-        leaves.add(leaf);
+        if (hash.remaining() < HASH_LENGTH) {
+            throw new IllegalArgumentException("Buffer has less than " + HASH_LENGTH + " bytes remaining");
+        }
+        final var bytes = new byte[HASH_LENGTH];
+        hash.slice(0, HASH_LENGTH).get(bytes);
+        leafHashes.add(bytes);
     }
 
     @Override
     public CompletableFuture<Bytes> rootHash() {
         rootHashRequested = true;
-        if (leaves.isEmpty()) {
+        if (leafHashes.isEmpty()) {
             return CompletableFuture.completedFuture(Bytes.wrap(EMPTY_HASH));
         }
-        Queue<byte[]> leafHashes = new LinkedList<>();
-        for (final var leaf : leaves) {
-            leafHashes.add(noThrowSha384HashOf(leaf.array()));
-        }
-        final int n = leafHashes.size();
+        Queue<byte[]> hashes = new LinkedList<>(leafHashes);
+        final int n = hashes.size();
         if ((n & (n - 1)) != 0) {
             final var paddedN = Integer.highestOneBit(n) << 1;
-            while (leafHashes.size() < paddedN) {
-                leafHashes.add(EMPTY_HASH);
+            while (hashes.size() < paddedN) {
+                hashes.add(EMPTY_HASH);
             }
         }
-        while (leafHashes.size() > 1) {
+        while (hashes.size() > 1) {
             final Queue<byte[]> newLeafHashes = new LinkedList<>();
-            while (!leafHashes.isEmpty()) {
-                final byte[] left = leafHashes.poll();
-                final byte[] right = leafHashes.poll();
+            while (!hashes.isEmpty()) {
+                final byte[] left = hashes.poll();
+                final byte[] right = hashes.poll();
                 final byte[] combined = new byte[left.length + requireNonNull(right).length];
                 System.arraycopy(left, 0, combined, 0, left.length);
                 System.arraycopy(right, 0, combined, left.length, right.length);
                 newLeafHashes.add(noThrowSha384HashOf(combined));
             }
-            leafHashes = newLeafHashes;
+            hashes = newLeafHashes;
         }
-        return CompletableFuture.completedFuture(Bytes.wrap(requireNonNull(leafHashes.poll())));
+        return CompletableFuture.completedFuture(Bytes.wrap(requireNonNull(hashes.poll())));
     }
 }
