@@ -443,13 +443,15 @@ class VirtualRootNodeTest extends VirtualTestBase {
         final VirtualRootNode<TestKey, TestValue> copy0 = root;
         VirtualMapState state = new VirtualMapState("label");
         copy0.postInit(new VirtualStateAccessorImpl(state));
-
         for (int i = 0; i < 100; i++) {
             final TestKey key = new TestKey(i);
             final TestValue value = new TestValue(1000000 + i);
             root.put(key, value);
         }
 
+        // Here is the test: in every copy, add 100 elements. In the same copy, delete all elements
+        // added in the previous copy. Every copy will contain no more than 200 elements, therefore
+        // its effective size will be small, so none of the copies should be flushed to disk
         final int nCopies = 10000;
         final VirtualRootNode[] copies = new VirtualRootNode[nCopies];
         copies[0] = root;
@@ -474,8 +476,126 @@ class VirtualRootNodeTest extends VirtualTestBase {
         // The last two copies should not be checked: the last one is mutable, the one before is not
         // mergeable until its next copy is immutable
         for (int i = 0; i < nCopies - 2; i++) {
+            // Copies must be merged, not flushed
             assertEventuallyTrue(copies[i]::isMerged, Duration.ofSeconds(16), "copy " + i + " should be merged");
         }
+    }
+
+    @Test
+    void inMemoryModeSomeFlushesTest() {
+        final Configuration configuration = new TestConfigBuilder()
+                .withValue(VirtualMapConfig_.COPY_FLUSH_THRESHOLD, 1_000_000)
+                .getOrCreateConfig();
+        ConfigurationHolder.getInstance().setConfiguration(configuration);
+
+        VirtualRootNode<TestKey, TestValue> root =
+                new VirtualRootNode<>(TestKeySerializer.INSTANCE, TestValueSerializer.INSTANCE, new InMemoryBuilder());
+
+        final int nCopies = 1000;
+        final VirtualRootNode[] copies = new VirtualRootNode[nCopies];
+
+        final VirtualRootNode<TestKey, TestValue> copy0 = root;
+        copies[0] = copy0;
+        VirtualMapState state = new VirtualMapState("label");
+        copy0.postInit(new VirtualStateAccessorImpl(state));
+        for (int i = 0; i < 100; i++) {
+            final TestKey key = new TestKey(i);
+            final TestValue value = new TestValue(1000000 + i);
+            root.put(key, value);
+        }
+
+        final VirtualRootNode<TestKey, TestValue> copy1 = root.copy();
+        copies[1] = copy1;
+        state = state.copy();
+        copy1.postInit(new VirtualStateAccessorImpl(state));
+        root.release();
+        root = copy1;
+        for (int i = 100; i < 200; i++) {
+            final TestKey key = new TestKey(i);
+            final TestValue value = new TestValue(1000000 + i);
+            root.put(key, value);
+        }
+
+        // Here is the test: in every copy, add 100 elements. In the same copy, delete all elements
+        // added in the previous copy. In the same copy, re-add the same elements that were added
+        // two copies ago. It will cause copies to grow in size, so eventually some copies must be
+        // flushed
+        for (int copyNo = 2; copyNo < nCopies; copyNo++) {
+            final VirtualRootNode<TestKey, TestValue> copy = root.copy();
+            copies[copyNo] = copy;
+            state = state.copy();
+            copy.postInit(new VirtualStateAccessorImpl(state));
+            root.release();
+            root = copy;
+            for (int i = 0; i < 100; i++) {
+                // Add
+                final int toAdd = copyNo * 100 + i;
+                final TestKey keyToAdd = new TestKey(toAdd);
+                final TestValue value = new TestValue(1000000 + toAdd);
+                root.put(keyToAdd, value);
+                // Remove
+                final int toRemove = (copyNo - 1) * 100 + i;
+                final TestKey keytoRemove = new TestKey(toRemove);
+                root.remove(keytoRemove);
+                // Re-add
+                final int toReAdd = (copyNo - 2) * 100 + i;
+                final TestKey keytoReAdd = new TestKey(toReAdd);
+                final TestValue valueToReAdd = new TestValue(1000000 + toReAdd);
+                root.put(keytoReAdd, valueToReAdd);
+            }
+        }
+
+        // The last two copies should not be checked: the last one is mutable, the one before is not
+        // mergeable until its next copy is immutable
+        int merged = 0;
+        int flushed = 0;
+        for (int i = 0; i < nCopies - 2; i++) {
+            final VirtualRootNode<TestKey, TestValue> copy = copies[i];
+            // Copies must be merged, not flushed
+            assertEventuallyTrue(
+                    () -> copy.isMerged() || copy.isFlushed(),
+                    Duration.ofSeconds(8),
+                    "copy " + i + " should be merged or flushed");
+            if (copy.isMerged()) {
+                merged++;
+            }
+            if (copy.isFlushed()) {
+                flushed++;
+            }
+        }
+        assertTrue(merged > 0, "At least one copy must be merged");
+        assertTrue(flushed > 0, "At least one copy must be flushed");
+        assertTrue(merged > flushed, "More copies must be merged than flushed");
+
+        // All values from copies 0 to nCopies - 2 should be available (re-added)
+        for (int copyNo = 0; copyNo < nCopies - 2; copyNo++) {
+            for (int i = 0; i < 100; i++) {
+                final int toCheck = copyNo * 100 + i;
+                final TestKey keyToCheck = new TestKey(toCheck);
+                final TestValue value = root.get(keyToCheck);
+                assertNotNull(value);
+                final int expected = 1000000 + toCheck;
+                assertEquals("Value " + expected, value.value());
+            }
+        }
+        // Values from copy nCopies - 2 should not be there (removed)
+        for (int i = 0; i < 100; i++) {
+            final int toCheck = (nCopies - 2) * 100 + i;
+            final TestKey keyToCheck = new TestKey(toCheck);
+            final TestValue value = root.get(keyToCheck);
+            assertNull(value);
+        }
+        // Values from copy nCopies - 1 should be there (added)
+        for (int i = 0; i < 100; i++) {
+            final int toCheck = (nCopies - 1) * 100 + i;
+            final TestKey keyToCheck = new TestKey(toCheck);
+            final TestValue value = root.get(keyToCheck);
+            assertNotNull(value);
+            final int expected = 1000000 + toCheck;
+            assertEquals("Value " + expected, value.value());
+        }
+
+        root.release();
     }
 
     @Test

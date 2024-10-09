@@ -1518,7 +1518,7 @@ public final class VirtualNodeCache<K extends VirtualKey, V extends VirtualValue
             assert mutation.version <= this.fastCopyVersion.get()
                     : "Trying to serialize pathToDirtyInternalIndex with a version ahead";
             out.writeLong(mutation.version);
-            out.writeBoolean(mutation.isDeleted());
+            out.writeByte(mutation.getFlags());
             if (!mutation.isDeleted()) {
                 out.writeSerializable(mutation.value, true);
             }
@@ -1542,9 +1542,11 @@ public final class VirtualNodeCache<K extends VirtualKey, V extends VirtualValue
         for (int index = 0; index < sizeOfMap; index++) {
             final long key = in.readLong();
             final long mutationVersion = in.readLong();
-            final boolean deleted = in.readBoolean();
+            final byte flags = in.readByte();
+            final boolean isNew = Mutation.getFlag(flags, Mutation.FLAG_BIT_NEW);
+            final boolean isDeleted = Mutation.getFlag(flags, Mutation.FLAG_BIT_DELETED);
             Hash hash = null;
-            if (!deleted) {
+            if (!isDeleted) {
                 if (version == ClassVersion.ORIGINAL) {
                     // skip path
                     in.readLong();
@@ -1552,7 +1554,10 @@ public final class VirtualNodeCache<K extends VirtualKey, V extends VirtualValue
                 hash = in.readSerializable();
             }
             final Mutation<Long, Hash> mutation = new Mutation<>(null, key, hash, mutationVersion);
-            mutation.setDeleted(deleted);
+            if (isNew) {
+                mutation.setNew();
+            }
+            mutation.setDeleted(isDeleted);
             map.put(key, mutation);
             dirtyHashes.add(mutation);
         }
@@ -1718,7 +1723,11 @@ public final class VirtualNodeCache<K extends VirtualKey, V extends VirtualValue
             this.version = version;
         }
 
-        boolean getFlag(int bit) {
+        byte getFlags() {
+            return flags;
+        }
+
+        static boolean getFlag(final byte flags, final int bit) {
             return ((0xFF & flags) & (1 << bit)) != 0;
         }
 
@@ -1732,7 +1741,7 @@ public final class VirtualNodeCache<K extends VirtualKey, V extends VirtualValue
         }
 
         boolean isDeleted() {
-            return getFlag(FLAG_BIT_DELETED);
+            return getFlag(flags, FLAG_BIT_DELETED);
         }
 
         void setDeleted(final boolean deleted) {
@@ -1740,7 +1749,7 @@ public final class VirtualNodeCache<K extends VirtualKey, V extends VirtualValue
         }
 
         boolean isFiltered() {
-            return getFlag(FLAG_BIT_FILTERED);
+            return getFlag(flags, FLAG_BIT_FILTERED);
         }
 
         void setFiltered() {
@@ -1748,7 +1757,7 @@ public final class VirtualNodeCache<K extends VirtualKey, V extends VirtualValue
         }
 
         boolean isNew() {
-            return getFlag(FLAG_BIT_NEW);
+            return getFlag(flags, FLAG_BIT_NEW);
         }
 
         void setNew() {
