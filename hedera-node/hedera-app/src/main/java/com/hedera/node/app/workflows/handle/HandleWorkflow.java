@@ -77,11 +77,11 @@ import com.hedera.node.app.state.recordcache.LegacyListRecordSource;
 import com.hedera.node.app.store.WritableStoreFactory;
 import com.hedera.node.app.throttle.NetworkUtilizationManager;
 import com.hedera.node.app.throttle.ThrottleServiceManager;
+import com.hedera.node.app.workflows.OpWorkflowMetrics;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.app.workflows.handle.cache.CacheWarmer;
 import com.hedera.node.app.workflows.handle.dispatch.ChildDispatchFactory;
-import com.hedera.node.app.workflows.handle.metric.HandleWorkflowMetrics;
 import com.hedera.node.app.workflows.handle.record.RecordStreamBuilder;
 import com.hedera.node.app.workflows.handle.record.SystemSetup;
 import com.hedera.node.app.workflows.handle.steps.HollowAccountCompletions;
@@ -134,7 +134,7 @@ public class HandleWorkflow {
     private final BlockRecordManager blockRecordManager;
     private final BlockStreamManager blockStreamManager;
     private final CacheWarmer cacheWarmer;
-    private final HandleWorkflowMetrics handleWorkflowMetrics;
+    private final OpWorkflowMetrics opWorkflowMetrics;
     private final ThrottleServiceManager throttleServiceManager;
     private final SemanticVersion version;
     private final InitTrigger initTrigger;
@@ -168,7 +168,7 @@ public class HandleWorkflow {
             @NonNull final BlockRecordManager blockRecordManager,
             @NonNull final BlockStreamManager blockStreamManager,
             @NonNull final CacheWarmer cacheWarmer,
-            @NonNull final HandleWorkflowMetrics handleWorkflowMetrics,
+            @NonNull final OpWorkflowMetrics opWorkflowMetrics,
             @NonNull final ThrottleServiceManager throttleServiceManager,
             @NonNull final SemanticVersion version,
             @NonNull final InitTrigger initTrigger,
@@ -196,7 +196,7 @@ public class HandleWorkflow {
         this.blockRecordManager = requireNonNull(blockRecordManager);
         this.blockStreamManager = requireNonNull(blockStreamManager);
         this.cacheWarmer = requireNonNull(cacheWarmer);
-        this.handleWorkflowMetrics = requireNonNull(handleWorkflowMetrics);
+        this.opWorkflowMetrics = requireNonNull(opWorkflowMetrics);
         this.throttleServiceManager = requireNonNull(throttleServiceManager);
         this.version = requireNonNull(version);
         this.initTrigger = requireNonNull(initTrigger);
@@ -352,8 +352,7 @@ public class HandleWorkflow {
         if (streamMode != RECORDS) {
             handleOutput.blockRecordSourceOrThrow().forEachItem(blockStreamManager::writeItem);
         }
-        handleWorkflowMetrics.updateTransactionDuration(
-                userTxn.functionality(), (int) (System.nanoTime() - handleStart));
+        opWorkflowMetrics.updateDuration(userTxn.functionality(), (int) (System.nanoTime() - handleStart));
     }
 
     /**
@@ -508,7 +507,7 @@ public class HandleWorkflow {
      */
     private void updateWorkflowMetrics(@NonNull final UserTxn userTxn) {
         if (userTxn.type() == GENESIS_TRANSACTION || userTxn.consensusNow().getEpochSecond() > lastMetricUpdateSecond) {
-            handleWorkflowMetrics.switchConsensusSecond();
+            opWorkflowMetrics.switchConsensusSecond();
             lastMetricUpdateSecond = userTxn.consensusNow().getEpochSecond();
         }
     }

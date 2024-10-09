@@ -208,7 +208,7 @@ public final class BlockRecordManagerImpl implements BlockRecordManager {
                                   Starting: #{} @ {}""",
                         justFinishedBlockNumber,
                         lastBlockInfo.firstConsTimeOfCurrentBlock(),
-                        new Hash(lastBlockHashBytes.toByteArray(), DigestType.SHA_384),
+                        new Hash(lastBlockHashBytes, DigestType.SHA_384),
                         justFinishedBlockNumber + 1,
                         consensusTime);
             }
