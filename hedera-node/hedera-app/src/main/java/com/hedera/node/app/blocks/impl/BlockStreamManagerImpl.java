@@ -51,6 +51,7 @@ import com.hedera.node.app.blocks.BlockStreamManager;
 import com.hedera.node.app.blocks.BlockStreamService;
 import com.hedera.node.app.blocks.InitialStateHash;
 import com.hedera.node.app.blocks.StreamingTreeHasher;
+import com.hedera.node.app.hapi.utils.CommonUtils;
 import com.hedera.node.app.records.impl.BlockRecordInfoUtils;
 import com.hedera.node.app.tss.TssBaseService;
 import com.hedera.node.config.ConfigProvider;
@@ -582,6 +583,10 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
     }
 
     private static class RunningHashManager {
+        private static final ThreadLocal<byte[]> HASHES = ThreadLocal.withInitial(() -> new byte[HASH_SIZE]);
+        private static final ThreadLocal<MessageDigest> DIGESTS =
+                ThreadLocal.withInitial(CommonUtils::sha384DigestOrThrow);
+
         byte[] nMinus3Hash;
         byte[] nMinus2Hash;
         byte[] nMinus1Hash;
@@ -624,9 +629,9 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
             nMinus3Hash = nMinus2Hash;
             nMinus2Hash = nMinus1Hash;
             nMinus1Hash = this.hash;
-            final var digest = sha384DigestOrThrow();
+            final var digest = DIGESTS.get();
             digest.update(this.hash);
-            final var resultHash = new byte[HASH_SIZE];
+            final var resultHash = HASHES.get();
             hash.get(resultHash);
             digest.update(resultHash);
             this.hash = digest.digest();

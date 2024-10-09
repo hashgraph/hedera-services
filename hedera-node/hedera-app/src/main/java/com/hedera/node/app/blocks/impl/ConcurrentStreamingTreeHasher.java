@@ -17,13 +17,14 @@
 package com.hedera.node.app.blocks.impl;
 
 import static com.hedera.node.app.hapi.utils.CommonUtils.noThrowSha384HashOf;
-import static com.hedera.node.app.hapi.utils.CommonUtils.sha384DigestOrThrow;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.blocks.StreamingTreeHasher;
+import com.hedera.node.app.hapi.utils.CommonUtils;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.nio.ByteBuffer;
+import java.security.MessageDigest;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -139,6 +140,8 @@ public class ConcurrentStreamingTreeHasher implements StreamingTreeHasher {
     }
 
     private class HashCombiner {
+        private static final ThreadLocal<MessageDigest> DIGESTS =
+                ThreadLocal.withInitial(CommonUtils::sha384DigestOrThrow);
         private static final int MAX_DEPTH = 24;
 
         private static final byte[][] EMPTY_HASHES = new byte[MAX_DEPTH][];
@@ -205,7 +208,7 @@ public class ConcurrentStreamingTreeHasher implements StreamingTreeHasher {
             final var pendingCombination = CompletableFuture.supplyAsync(
                     () -> {
                         final List<byte[]> result = new ArrayList<>();
-                        final var digest = sha384DigestOrThrow();
+                        final var digest = DIGESTS.get();
                         for (int i = 0, m = scheduledWork.size(); i < m; i += 2) {
                             final var left = scheduledWork.get(i);
                             final var right = i + 1 < m ? scheduledWork.get(i + 1) : EMPTY_HASHES[depth];
