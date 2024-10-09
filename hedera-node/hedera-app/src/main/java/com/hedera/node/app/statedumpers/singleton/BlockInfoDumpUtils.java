@@ -107,18 +107,17 @@ public class BlockInfoDumpUtils {
                         blockInfo.firstConsTimeOfCurrentBlock().seconds(),
                         blockInfo.firstConsTimeOfCurrentBlock().nanos());
 
-        var runningHash = Bytes.EMPTY.equals(runningHashes.runningHash())
-                ? null
-                : new Hash(runningHashes.runningHash().toByteArray());
+        var runningHash =
+                Bytes.EMPTY.equals(runningHashes.runningHash()) ? null : new Hash(runningHashes.runningHash());
         var nMinus1RunningHash = Bytes.EMPTY.equals(runningHashes.nMinus1RunningHash())
                 ? null
-                : new Hash(runningHashes.nMinus1RunningHash().toByteArray());
+                : new Hash(runningHashes.nMinus1RunningHash());
         var nMinus2RunningHash = Bytes.EMPTY.equals(runningHashes.nMinus2RunningHash())
                 ? null
-                : new Hash(runningHashes.nMinus2RunningHash().toByteArray());
+                : new Hash(runningHashes.nMinus2RunningHash());
         var nMinus3RunningHash = Bytes.EMPTY.equals(runningHashes.nMinus3RunningHash())
                 ? null
-                : new Hash(runningHashes.nMinus3RunningHash().toByteArray());
+                : new Hash(runningHashes.nMinus3RunningHash());
 
         return new BBMBlockInfoAndRunningHashes(
                 blockInfo.lastBlockNumber(),
