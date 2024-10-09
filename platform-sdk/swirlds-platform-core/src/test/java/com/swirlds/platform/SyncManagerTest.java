@@ -31,8 +31,6 @@ import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
-import com.swirlds.platform.eventhandling.EventConfig;
-import com.swirlds.platform.eventhandling.EventConfig_;
 import com.swirlds.platform.gossip.FallenBehindManagerImpl;
 import com.swirlds.platform.gossip.sync.SyncManagerImpl;
 import com.swirlds.platform.network.PeerInfo;
@@ -70,7 +68,8 @@ class SyncManagerTest {
 
             transactionPoolNexus = spy(new TransactionPoolNexus(platformContext));
 
-            this.addressBook = RandomAddressBookBuilder.create(random).withSize(41).build();
+            this.addressBook =
+                    RandomAddressBookBuilder.create(random).withSize(41).build();
             this.selfId = addressBook.getNodeId(0);
 
             configuration = new TestConfigBuilder()
@@ -89,8 +88,7 @@ class SyncManagerTest {
                             topology,
                             mock(StatusActionSubmitter.class),
                             () -> {},
-                            reconnectConfig)
-            );
+                            reconnectConfig));
         }
     }
 

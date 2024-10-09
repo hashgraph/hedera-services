@@ -26,7 +26,6 @@ import com.swirlds.platform.gossip.FallenBehindManager;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 import java.util.Objects;
-import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -47,8 +46,7 @@ public class SyncManagerImpl implements FallenBehindManager {
      * @param fallenBehindManager     the fallen behind manager
      */
     public SyncManagerImpl(
-            @NonNull final PlatformContext platformContext,
-            @NonNull final FallenBehindManager fallenBehindManager) {
+            @NonNull final PlatformContext platformContext, @NonNull final FallenBehindManager fallenBehindManager) {
 
         this.fallenBehindManager = Objects.requireNonNull(fallenBehindManager);
 

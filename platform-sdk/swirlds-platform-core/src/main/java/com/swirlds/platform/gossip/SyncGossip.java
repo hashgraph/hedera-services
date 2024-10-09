@@ -37,7 +37,6 @@ import com.swirlds.platform.config.ThreadConfig;
 import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.crypto.KeysAndCerts;
 import com.swirlds.platform.event.PlatformEvent;
-import com.swirlds.platform.eventhandling.EventConfig;
 import com.swirlds.platform.gossip.permits.SyncPermitProvider;
 import com.swirlds.platform.gossip.shadowgraph.Shadowgraph;
 import com.swirlds.platform.gossip.shadowgraph.ShadowgraphSynchronizer;
@@ -210,9 +209,7 @@ public class SyncGossip implements ConnectionTracker, Gossip {
                 () -> getReconnectController().start(),
                 platformContext.getConfiguration().getConfigData(ReconnectConfig.class));
 
-        syncManager = new SyncManagerImpl(
-                platformContext,
-                fallenBehindManager);
+        syncManager = new SyncManagerImpl(platformContext, fallenBehindManager);
 
         final ReconnectConfig reconnectConfig =
                 platformContext.getConfiguration().getConfigData(ReconnectConfig.class);

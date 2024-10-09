@@ -32,7 +32,6 @@ import com.swirlds.platform.builder.PlatformBuilder;
 import com.swirlds.platform.builder.PlatformComponentBuilder;
 import com.swirlds.platform.config.BasicConfig_;
 import com.swirlds.platform.crypto.KeysAndCerts;
-import com.swirlds.platform.eventhandling.EventConfig_;
 import com.swirlds.platform.state.MerkleRoot;
 import com.swirlds.platform.state.snapshot.SignedStateFileUtils;
 import com.swirlds.platform.system.BasicSoftwareVersion;
