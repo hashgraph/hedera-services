@@ -84,7 +84,6 @@ public class TurtleNode {
             @NonNull final SimulatedNetwork network) {
 
         final Configuration configuration = new TestConfigBuilder()
-                .withValue(EventConfig_.USE_OLD_STYLE_INTAKE_QUEUE, false)
                 .withValue(PlatformSchedulersConfig_.CONSENSUS_EVENT_STREAM, "NO_OP")
                 .withValue(BasicConfig_.JVM_PAUSE_DETECTOR_SLEEP_MS, "0")
                 .getOrCreateConfig();

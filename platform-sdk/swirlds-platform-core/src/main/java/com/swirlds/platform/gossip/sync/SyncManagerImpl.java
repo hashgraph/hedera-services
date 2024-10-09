@@ -22,7 +22,6 @@ import static com.swirlds.metrics.api.Metrics.INTERNAL_CATEGORY;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.metrics.FunctionGauge;
 import com.swirlds.common.platform.NodeId;
-import com.swirlds.platform.eventhandling.EventConfig;
 import com.swirlds.platform.gossip.FallenBehindManager;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
@@ -38,30 +37,20 @@ public class SyncManagerImpl implements FallenBehindManager {
 
     private static final Logger logger = LogManager.getLogger(SyncManagerImpl.class);
 
-    private final EventConfig eventConfig;
-
     /** This object holds data on how nodes are connected to each other. */
     private final FallenBehindManager fallenBehindManager;
-
-    /**
-     * True if gossip has been artificially halted.
-     */
-    private final AtomicBoolean gossipHalted = new AtomicBoolean(false);
 
     /**
      * Creates a new SyncManager
      *
      * @param platformContext         the platform context
      * @param fallenBehindManager     the fallen behind manager
-     * @param eventConfig             the event config
      */
     public SyncManagerImpl(
             @NonNull final PlatformContext platformContext,
-            @NonNull final FallenBehindManager fallenBehindManager,
-            @NonNull final EventConfig eventConfig) {
+            @NonNull final FallenBehindManager fallenBehindManager) {
 
         this.fallenBehindManager = Objects.requireNonNull(fallenBehindManager);
-        this.eventConfig = Objects.requireNonNull(eventConfig);
 
         platformContext
                 .getMetrics()
@@ -80,32 +69,11 @@ public class SyncManagerImpl implements FallenBehindManager {
     }
 
     /**
-     * A method called by the sync listener to determine whether a sync should be accepted or not
-     *
-     * @return true if the sync should be accepted, false otherwise
-     */
-    public boolean shouldAcceptSync() {
-        // don't gossip if halted
-        return !gossipHalted.get();
-    }
-
-    /**
-     * A method called by the sync caller to determine whether a sync should be initiated or not
-     *
-     * @return true if the sync should be initiated, false otherwise
-     */
-    public boolean shouldInitiateSync() {
-        // don't gossip if halted
-        return !gossipHalted.get();
-    }
-
-    /**
      * Observers halt requested dispatches. Causes gossip to permanently stop (until node reboot).
      *
      * @param reason the reason why gossip is being stopped
      */
     public void haltRequestedObserver(final String reason) {
-        gossipHalted.set(true);
         logger.info(FREEZE.getMarker(), "Gossip frozen, reason: {}", reason);
     }
 

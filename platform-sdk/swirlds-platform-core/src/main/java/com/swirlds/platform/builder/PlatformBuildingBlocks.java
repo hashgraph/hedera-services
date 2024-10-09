@@ -68,8 +68,6 @@ import java.util.function.Supplier;
  *                                               into gossip event storage, per peer
  * @param randomBuilder                          a builder for creating random number generators
  * @param transactionPoolNexus                   provides transactions to be added to new events
- * @param intakeQueueSizeSupplierSupplier        supplies a method which supplies the size of the intake queue. This
- *                                               hack is required due to the lack of a platform health monitor.
  * @param isInFreezePeriodReference              a reference to a predicate that determines if a timestamp is in the
  *                                               freeze period, this can be deleted as soon as the CES is retired.
  * @param latestImmutableStateProviderReference  a reference to a method that supplies the latest immutable state. Input

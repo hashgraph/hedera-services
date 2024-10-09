@@ -212,8 +212,7 @@ public class SyncGossip implements ConnectionTracker, Gossip {
 
         syncManager = new SyncManagerImpl(
                 platformContext,
-                fallenBehindManager,
-                platformContext.getConfiguration().getConfigData(EventConfig.class));
+                fallenBehindManager);
 
         final ReconnectConfig reconnectConfig =
                 platformContext.getConfiguration().getConfigData(ReconnectConfig.class);
