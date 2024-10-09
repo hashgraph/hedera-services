@@ -98,7 +98,7 @@ public class TokenAirdropValidator {
             @NonNull final ReadableTokenStore tokenStore,
             @NonNull final ReadableTokenRelationStore tokenRelStore,
             @NonNull final ReadableNftStore nftStore) {
-        var legerConfig = context.configuration().getConfigData(LedgerConfig.class);
+        var ledgerConfig = context.configuration().getConfigData(LedgerConfig.class);
         var totalFungibleTransfers = 0;
         var totalNftTransfers = 0;
         for (final var xfers : op.tokenTransfers()) {
@@ -121,7 +121,7 @@ public class TokenAirdropValidator {
 
                 // Verify that the current total number of (counted) fungible transfers does not exceed the limit
                 validateTrue(
-                        totalFungibleTransfers <= legerConfig.tokenTransfersMaxLen(),
+                        totalFungibleTransfers <= ledgerConfig.tokenTransfersMaxLen(),
                         TOKEN_TRANSFER_LIST_SIZE_LIMIT_EXCEEDED);
             }
 
@@ -146,7 +146,7 @@ public class TokenAirdropValidator {
 
                 totalNftTransfers += xfers.nftTransfers().size();
                 // Verify that the current total number of (counted) nft transfers does not exceed the limit
-                validateTrue(totalNftTransfers <= legerConfig.nftTransfersMaxLen(), BATCH_SIZE_LIMIT_EXCEEDED);
+                validateTrue(totalNftTransfers <= ledgerConfig.nftTransfersMaxLen(), BATCH_SIZE_LIMIT_EXCEEDED);
             }
         }
     }
