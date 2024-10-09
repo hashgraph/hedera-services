@@ -153,7 +153,8 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
     }
 
     @Override
-    public void handleQuery(@NonNull final Bytes requestBuffer, @NonNull final BufferedData responseBuffer) {
+    public void handleQuery(
+            @NonNull final Bytes requestBuffer, @NonNull final BufferedData responseBuffer, boolean shouldCharge) {
         requireNonNull(requestBuffer);
         requireNonNull(responseBuffer);
 
@@ -190,7 +191,7 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
                 Transaction allegedPayment;
                 TransactionBody txBody;
                 AccountID payerID = null;
-                if (paymentRequired) {
+                if (shouldCharge && paymentRequired) {
                     allegedPayment = queryHeader.paymentOrElse(Transaction.DEFAULT);
                     final var configuration = configProvider.getConfiguration();
 
@@ -257,7 +258,7 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
                 handler.validate(context);
 
                 // 5. Check query throttles
-                if (synchronizedThrottleAccumulator.shouldThrottle(function, query, payerID)) {
+                if (shouldCharge && synchronizedThrottleAccumulator.shouldThrottle(function, query, payerID)) {
                     throw new PreCheckException(BUSY);
                 }
 

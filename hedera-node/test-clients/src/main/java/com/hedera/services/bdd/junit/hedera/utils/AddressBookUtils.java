@@ -109,6 +109,7 @@ public class AddressBookUtils {
             @NonNull final String host,
             @Nullable String scope,
             final int nextGrpcPort,
+            final int nextNodeOperatorPort,
             final int nextGossipPort,
             final int nextGossipTlsPort,
             final int nextPrometheusPort) {
@@ -122,6 +123,7 @@ public class AddressBookUtils {
                         .build(),
                 host,
                 nextGrpcPort + nodeId * 2,
+                nextNodeOperatorPort + nodeId * 2,
                 nextGossipPort + nodeId * 2,
                 nextGossipTlsPort + nodeId * 2,
                 nextPrometheusPort + nodeId,

@@ -20,11 +20,17 @@ import static com.hedera.services.bdd.spec.transactions.TxnUtils.isIdLiteral;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.isNumericLiteral;
 
 import com.google.common.base.MoreObjects;
+import com.hedera.services.bdd.junit.hedera.HederaNode;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import java.util.stream.Stream;
 
+/**
+ * Node connection information.
+ * @deprecated get node connection info directly from a {@link HederaNode} object instead
+ */
+@Deprecated(forRemoval = true)
 public class NodeConnectInfo {
     public static int NEXT_DEFAULT_ACCOUNT_NUM = 3;
     private static final int DEFAULT_PORT = 50211;
@@ -57,6 +63,7 @@ public class NodeConnectInfo {
         } else {
             tlsPort = DEFAULT_TLS_PORT;
         }
+
         account = Stream.of(aspects)
                 .filter(TxnUtils::isIdLiteral)
                 .map(HapiPropertySource::asAccount)
