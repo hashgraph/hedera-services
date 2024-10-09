@@ -39,12 +39,12 @@ import java.util.concurrent.ExecutorService;
  */
 public class ConcurrentStreamingTreeHasher implements StreamingTreeHasher {
     /**
-     * The number of leaves to hash in parallel before combining the resulting hashes.
+     * The default number of leaves to batch before combining the resulting hashes.
      */
     private static final int DEFAULT_HASH_COMBINE_BATCH_SIZE = 8;
 
     /**
-     * The base {@link HashCombiner} that combines the hashes of the leaves of the tree, at depth zero.
+     * The base {@link HashCombiner} that combines the hashes of the leaves of the tree, at height zero.
      */
     private final HashCombiner combiner = new HashCombiner(0);
     /**
@@ -64,9 +64,9 @@ public class ConcurrentStreamingTreeHasher implements StreamingTreeHasher {
      */
     private int numLeaves;
     /**
-     * Set once before the root hash is requested, to the depth of the tree implied by the number of leaves.
+     * Set once before the root hash is requested, to the height of the tree implied by the number of leaves.
      */
-    private int maxDepth;
+    private int rootHeight;
     /**
      * Whether the tree has been finalized by requesting the root hash.
      */
@@ -79,6 +79,9 @@ public class ConcurrentStreamingTreeHasher implements StreamingTreeHasher {
     public ConcurrentStreamingTreeHasher(
             @NonNull final ExecutorService executorService, final int hashCombineBatchSize) {
         this.executorService = requireNonNull(executorService);
+        if (hashCombineBatchSize % 2 == 1) {
+            throw new IllegalArgumentException("Hash combine batch size must be an even number");
+        }
         this.hashCombineBatchSize = hashCombineBatchSize;
     }
 
@@ -100,7 +103,7 @@ public class ConcurrentStreamingTreeHasher implements StreamingTreeHasher {
     @Override
     public CompletableFuture<Bytes> rootHash() {
         rootHashRequested = true;
-        maxDepth = maxDepthFor(numLeaves);
+        rootHeight = rootHeightFor(numLeaves);
         return combiner.finalCombination();
     }
 
@@ -110,7 +113,7 @@ public class ConcurrentStreamingTreeHasher implements StreamingTreeHasher {
             return Status.EMPTY;
         } else {
             final var rightmostHashes = new ArrayList<Bytes>();
-            combiner.flushAvailable(rightmostHashes, maxDepthFor(numLeaves + 1));
+            combiner.flushAvailable(rightmostHashes, rootHeightFor(numLeaves + 1));
             return new Status(numLeaves, rightmostHashes);
         }
     }
@@ -127,8 +130,8 @@ public class ConcurrentStreamingTreeHasher implements StreamingTreeHasher {
     public static Bytes rootHashFrom(@NonNull final Status penultimateStatus, @NonNull final Bytes lastLeafHash) {
         requireNonNull(lastLeafHash);
         var hash = lastLeafHash.toByteArray();
-        final var maxDepth = maxDepthFor(penultimateStatus.numLeaves() + 1);
-        for (int i = 0; i < maxDepth; i++) {
+        final var rootHeight = rootHeightFor(penultimateStatus.numLeaves() + 1);
+        for (int i = 0; i < rootHeight; i++) {
             final var rightmostHash = penultimateStatus.rightmostHashes().get(i);
             if (rightmostHash.length() == 0) {
                 hash = BlockImplUtils.combine(hash, HashCombiner.EMPTY_HASHES[i]);
@@ -143,7 +146,7 @@ public class ConcurrentStreamingTreeHasher implements StreamingTreeHasher {
         private static final ThreadLocal<MessageDigest> DIGESTS =
                 ThreadLocal.withInitial(CommonUtils::sha384DigestOrThrow);
         private static final int MAX_DEPTH = 24;
-        private static final int MIN_TO_SCHEDULE = 8;
+        private static final int MIN_TO_SCHEDULE = 16;
 
         private static final byte[][] EMPTY_HASHES = new byte[MAX_DEPTH][];
 
@@ -154,17 +157,17 @@ public class ConcurrentStreamingTreeHasher implements StreamingTreeHasher {
             }
         }
 
-        private final int depth;
+        private final int height;
 
         private HashCombiner delegate;
         private List<byte[]> pendingHashes = new ArrayList<>();
         private CompletableFuture<Void> combination = CompletableFuture.completedFuture(null);
 
-        private HashCombiner(final int depth) {
-            if (depth >= MAX_DEPTH) {
-                throw new IllegalArgumentException("Cannot combine hashes at depth " + depth);
+        private HashCombiner(final int height) {
+            if (height >= MAX_DEPTH) {
+                throw new IllegalArgumentException("Cannot combine hashes at height " + height);
             }
-            this.depth = depth;
+            this.height = height;
         }
 
         public void combine(@NonNull final byte[] hash) {
@@ -175,7 +178,7 @@ public class ConcurrentStreamingTreeHasher implements StreamingTreeHasher {
         }
 
         public CompletableFuture<Bytes> finalCombination() {
-            if (depth == maxDepth) {
+            if (height == rootHeight) {
                 final var rootHash = pendingHashes.isEmpty() ? EMPTY_HASHES[0] : pendingHashes.getFirst();
                 return CompletableFuture.completedFuture(Bytes.wrap(rootHash));
             } else {
@@ -186,8 +189,8 @@ public class ConcurrentStreamingTreeHasher implements StreamingTreeHasher {
             }
         }
 
-        public void flushAvailable(@NonNull final List<Bytes> rightmostHashes, final int stopDepth) {
-            if (depth < stopDepth) {
+        public void flushAvailable(@NonNull final List<Bytes> rightmostHashes, final int stopHeight) {
+            if (height < stopHeight) {
                 final var newPendingHash = pendingHashes.size() % 2 == 0 ? null : pendingHashes.removeLast();
                 schedulePendingWork();
                 combination.join();
@@ -197,13 +200,13 @@ public class ConcurrentStreamingTreeHasher implements StreamingTreeHasher {
                 } else {
                     rightmostHashes.add(Bytes.EMPTY);
                 }
-                delegate.flushAvailable(rightmostHashes, stopDepth);
+                delegate.flushAvailable(rightmostHashes, stopHeight);
             }
         }
 
         private void schedulePendingWork() {
             if (delegate == null) {
-                delegate = new HashCombiner(depth + 1);
+                delegate = new HashCombiner(height + 1);
             }
             final CompletableFuture<List<byte[]>> pendingCombination;
             if (pendingHashes.size() < MIN_TO_SCHEDULE) {
@@ -224,7 +227,7 @@ public class ConcurrentStreamingTreeHasher implements StreamingTreeHasher {
             final var digest = DIGESTS.get();
             for (int i = 0, m = hashes.size(); i < m; i += 2) {
                 final var left = hashes.get(i);
-                final var right = i + 1 < m ? hashes.get(i + 1) : EMPTY_HASHES[depth];
+                final var right = i + 1 < m ? hashes.get(i + 1) : EMPTY_HASHES[height];
                 digest.update(left);
                 digest.update(right);
                 result.add(digest.digest());
@@ -233,7 +236,7 @@ public class ConcurrentStreamingTreeHasher implements StreamingTreeHasher {
         }
     }
 
-    private static int maxDepthFor(final int numLeaves) {
+    private static int rootHeightFor(final int numLeaves) {
         final var numPerfectLeaves = containingPowerOfTwo(numLeaves);
         return numPerfectLeaves == 0 ? 0 : Integer.numberOfTrailingZeros(numPerfectLeaves);
     }

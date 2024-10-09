@@ -299,7 +299,7 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
             // Serialize and hash the final block item
             final var finalWork = new ScheduledWork(List.of(boundaryStateChangeListener.flushChanges()));
             final var finalOutput = finalWork.computeOutput();
-            // Ensure we only write and incorporates the final hash after all preceding work is done
+            // Ensure we only write and incorporate the final hash after all preceding work is done
             writeFuture.join();
             combineOutput(null, finalOutput);
             final var outputHash = outputTreeHasher.rootHash().join();
