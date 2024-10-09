@@ -17,6 +17,7 @@
 package com.hedera.node.app.blocks.impl;
 
 import static com.hedera.node.app.hapi.utils.CommonUtils.noThrowSha384HashOf;
+import static com.hedera.node.app.hapi.utils.CommonUtils.sha384DigestOrThrow;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.blocks.StreamingTreeHasher;
@@ -204,10 +205,13 @@ public class ConcurrentStreamingTreeHasher implements StreamingTreeHasher {
             final var pendingCombination = CompletableFuture.supplyAsync(
                     () -> {
                         final List<byte[]> result = new ArrayList<>();
+                        final var digest = sha384DigestOrThrow();
                         for (int i = 0, m = scheduledWork.size(); i < m; i += 2) {
                             final var left = scheduledWork.get(i);
                             final var right = i + 1 < m ? scheduledWork.get(i + 1) : EMPTY_HASHES[depth];
-                            result.add(BlockImplUtils.combine(left, right));
+                            digest.update(left);
+                            digest.update(right);
+                            result.add(digest.digest());
                         }
                         return result;
                     },
