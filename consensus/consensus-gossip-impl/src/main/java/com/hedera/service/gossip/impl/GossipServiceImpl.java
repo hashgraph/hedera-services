@@ -14,10 +14,12 @@
  * limitations under the License.
  */
 
-package com.hedera.service.gossip;
+package com.hedera.service.gossip.impl;
+
+import com.hedera.service.gossip.GossipService;
 
 /*
  *
- * Default mock gossip service
+ * Implementation for the mock gossip service
  * */
-public interface DefaultGossipService {}
+public final class GossipServiceImpl implements GossipService {}
