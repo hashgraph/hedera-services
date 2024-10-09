@@ -143,6 +143,7 @@ public class ConcurrentStreamingTreeHasher implements StreamingTreeHasher {
         private static final ThreadLocal<MessageDigest> DIGESTS =
                 ThreadLocal.withInitial(CommonUtils::sha384DigestOrThrow);
         private static final int MAX_DEPTH = 24;
+        private static final int MIN_TO_SCHEDULE = 8;
 
         private static final byte[][] EMPTY_HASHES = new byte[MAX_DEPTH][];
 
@@ -204,26 +205,31 @@ public class ConcurrentStreamingTreeHasher implements StreamingTreeHasher {
             if (delegate == null) {
                 delegate = new HashCombiner(depth + 1);
             }
-            final var scheduledWork = pendingHashes;
-            final var pendingCombination = CompletableFuture.supplyAsync(
-                    () -> {
-                        final List<byte[]> result = new ArrayList<>();
-                        final var digest = DIGESTS.get();
-                        for (int i = 0, m = scheduledWork.size(); i < m; i += 2) {
-                            final var left = scheduledWork.get(i);
-                            final var right = i + 1 < m ? scheduledWork.get(i + 1) : EMPTY_HASHES[depth];
-                            digest.update(left);
-                            digest.update(right);
-                            result.add(digest.digest());
-                        }
-                        return result;
-                    },
-                    executorService);
+            final CompletableFuture<List<byte[]>> pendingCombination;
+            if (pendingHashes.size() < MIN_TO_SCHEDULE) {
+                pendingCombination = CompletableFuture.completedFuture(combine(pendingHashes));
+            } else {
+                final var hashes = pendingHashes;
+                pendingCombination = CompletableFuture.supplyAsync(() -> combine(hashes), executorService);
+            }
             combination = combination.thenCombine(pendingCombination, (ignore, combined) -> {
                 combined.forEach(delegate::combine);
                 return null;
             });
             pendingHashes = new ArrayList<>();
+        }
+
+        private List<byte[]> combine(@NonNull final List<byte[]> hashes) {
+            final List<byte[]> result = new ArrayList<>();
+            final var digest = DIGESTS.get();
+            for (int i = 0, m = hashes.size(); i < m; i += 2) {
+                final var left = hashes.get(i);
+                final var right = i + 1 < m ? hashes.get(i + 1) : EMPTY_HASHES[depth];
+                digest.update(left);
+                digest.update(right);
+                result.add(digest.digest());
+            }
+            return result;
         }
     }
 

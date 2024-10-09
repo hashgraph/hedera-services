@@ -104,13 +104,13 @@ public class BlockStreamManagerBenchmark {
             false,
             null,
             Map.of(
-                    "blockStream.hashCombineBatchSize", "32",
+                    "blockStream.hashCombineBatchSize", "64",
                     "blockStream.serializationBatchSize", "32"));
     private final List<BlockItem> roundItems = new ArrayList<>();
     private final PlaceholderTssBaseService tssBaseService = new PlaceholderTssBaseService();
     private final BlockStreamManagerImpl subject = new BlockStreamManagerImpl(
             NoopBlockItemWriter::new,
-            //                        BaosBlockItemWriter::new,
+            //                                    BaosBlockItemWriter::new,
             ForkJoinPool.commonPool(),
             configProvider,
             tssBaseService,
