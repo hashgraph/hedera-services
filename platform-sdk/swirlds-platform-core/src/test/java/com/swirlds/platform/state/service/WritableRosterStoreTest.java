@@ -103,11 +103,8 @@ class WritableRosterStoreTest {
     void testInvalidRoundNumberThrowsException() {
         rosterStateModifier.setActiveRoster(createValidTestRoster(2), 1);
         final Roster roster = createValidTestRoster(1);
-        assertThrows(
-                IllegalArgumentException.class, () -> rosterStateModifier.setActiveRoster(roster, 0));
-        assertThrows(
-                IllegalArgumentException.class,
-                () -> rosterStateModifier.setActiveRoster(roster, -1));
+        assertThrows(IllegalArgumentException.class, () -> rosterStateModifier.setActiveRoster(roster, 0));
+        assertThrows(IllegalArgumentException.class, () -> rosterStateModifier.setActiveRoster(roster, -1));
     }
 
     /**
@@ -169,8 +166,8 @@ class WritableRosterStoreTest {
         rosterState.put(rosterStateBuilder.build());
 
         final Roster roster = createValidTestRoster(4);
-        final Exception exception = assertThrows(
-                IllegalStateException.class, () -> rosterStateModifier.setActiveRoster(roster, 4));
+        final Exception exception =
+                assertThrows(IllegalStateException.class, () -> rosterStateModifier.setActiveRoster(roster, 4));
         assertEquals(
                 "Active rosters in the Roster state cannot be more than  " + MAXIMUM_ROSTER_HISTORY_SIZE,
                 exception.getMessage());
