@@ -25,7 +25,9 @@ import java.util.List;
 public record StatsConfig(
         @ConfigProperty(defaultValue = "<GAS>,ThroughputLimits,CreationLimits") @NodeProperty
                 List<String> consThrottlesToSample,
-        @ConfigProperty(defaultValue = "<GAS>,ThroughputLimits,OffHeapQueryLimits,CreationLimits,FreeQueryLimits,BalanceQueryLimits")
+        @ConfigProperty(
+                        defaultValue =
+                                "<GAS>,ThroughputLimits,OffHeapQueryLimits,CreationLimits,FreeQueryLimits,BalanceQueryLimits")
                 @NodeProperty
                 List<String> hapiThrottlesToSample,
         @ConfigProperty(defaultValue = "0") @NodeProperty int executionTimesToTrack,
