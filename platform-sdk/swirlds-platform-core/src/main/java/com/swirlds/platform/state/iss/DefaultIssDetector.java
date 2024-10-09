@@ -364,8 +364,8 @@ public class DefaultIssDetector implements IssDetector {
             return null;
         }
 
-        final boolean decided = roundValidator.reportHashFromNetwork(
-                signerId, nodeWeight, new Hash(signaturePayload.hash().toByteArray()));
+        final boolean decided =
+                roundValidator.reportHashFromNetwork(signerId, nodeWeight, new Hash(signaturePayload.hash()));
         if (decided) {
             return checkValidity(roundValidator);
         }
