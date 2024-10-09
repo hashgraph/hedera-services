@@ -191,20 +191,16 @@ class ConsensusDeleteTopicTest extends ConsensusTestBase {
         final var txn = newDeleteTxn();
         given(handleContext.body()).willReturn(txn);
 
-        topic = new Topic(
-                topicId,
-                sequenceNumber,
-                expirationTime,
-                autoRenewSecs,
-                AccountID.newBuilder().accountNum(10L).build(),
-                false,
-                Bytes.wrap(runningHash),
-                memo,
-                null,
-                null,
-                null,
-                null,
-                null);
+        topic = Topic.newBuilder()
+                .topicId(topicId)
+                .sequenceNumber(sequenceNumber)
+                .expirationSecond(expirationTime)
+                .autoRenewPeriod(autoRenewSecs)
+                .autoRenewAccountId(AccountID.newBuilder().accountNum(10L).build())
+                .deleted(false)
+                .runningHash(Bytes.wrap(runningHash))
+                .memo(memo)
+                .build();
 
         writableTopicState = writableTopicStateWithOneKey();
         given(writableStates.<TopicID, Topic>get(TOPICS_KEY)).willReturn(writableTopicState);

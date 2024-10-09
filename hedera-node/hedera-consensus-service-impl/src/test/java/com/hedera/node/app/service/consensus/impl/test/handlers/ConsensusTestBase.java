@@ -211,34 +211,31 @@ public class ConsensusTestBase {
 
     protected void givenValidTopic(
             AccountID autoRenewAccountId, boolean deleted, boolean withAdminKey, boolean withSubmitKey) {
-        topic = new Topic(
-                topicId,
-                sequenceNumber,
-                expirationTime,
-                autoRenewSecs,
-                autoRenewAccountId,
-                deleted,
-                Bytes.wrap(runningHash),
-                memo,
-                withAdminKey ? key : null,
-                withSubmitKey ? key : null,
-                feeScheduleKey,
-                List.of(key, anotherKey),
-                customFees);
-        topicNoKeys = new Topic(
-                topicId,
-                sequenceNumber,
-                expirationTime,
-                autoRenewSecs,
-                autoRenewAccountId,
-                deleted,
-                Bytes.wrap(runningHash),
-                memo,
-                null,
-                null,
-                feeScheduleKey,
-                List.of(key, anotherKey),
-                customFees);
+        topic = Topic.newBuilder()
+                .topicId(topicId)
+                .sequenceNumber(sequenceNumber)
+                .expirationSecond(expirationTime)
+                .autoRenewPeriod(autoRenewSecs)
+                .autoRenewAccountId(autoRenewAccountId)
+                .deleted(deleted)
+                .runningHash(Bytes.wrap(runningHash))
+                .memo(memo)
+                .adminKey(withAdminKey ? key : null)
+                .submitKey(withSubmitKey ? key : null)
+                .feeScheduleKey(feeScheduleKey)
+                .feeExemptKeyList(List.of(key, anotherKey))
+                .customFees(customFees)
+                .build();
+        topicNoKeys = Topic.newBuilder()
+                .topicId(topicId)
+                .sequenceNumber(sequenceNumber)
+                .expirationSecond(expirationTime)
+                .autoRenewPeriod(autoRenewSecs)
+                .autoRenewAccountId(autoRenewAccountId)
+                .deleted(deleted)
+                .runningHash(Bytes.wrap(runningHash))
+                .memo(memo)
+                .build();
     }
 
     protected Topic createTopic() {
