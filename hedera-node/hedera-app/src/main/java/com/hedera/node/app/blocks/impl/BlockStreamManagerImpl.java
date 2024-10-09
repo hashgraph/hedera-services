@@ -71,8 +71,11 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
+import java.security.DigestException;
+import java.security.MessageDigest;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
@@ -493,7 +496,7 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
             for (var i = 0; i < n; i++) {
                 final var item = items.get(i);
                 sizes[i] = BlockItem.PROTOBUF.measureRecord(item);
-                // Plus 8 bytes for the preceding tag and length
+                // Plus (at most) 8 bytes for the preceding tag and length
                 size += (sizes[i] + 8);
                 final var kind = item.item().kind();
                 switch (kind) {
@@ -506,12 +509,14 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
                     }
                 }
             }
-            final var inputHashes = ByteBuffer.allocate(numInputs * HASH_SIZE);
-            final var outputHashes = ByteBuffer.allocate(numOutputs * HASH_SIZE);
+            final var inputHashes = new byte[numInputs * HASH_SIZE];
+            final var outputHashes = new byte[numOutputs * HASH_SIZE];
             final var resultHashes = ByteBuffer.allocate(numResults * HASH_SIZE);
             final var serializedItems = ByteBuffer.allocate(size);
             final var data = BufferedData.wrap(serializedItems);
             final var digest = sha384DigestOrThrow();
+            var j = 0;
+            var k = 0;
             for (var i = 0; i < n; i++) {
                 final var item = items.get(i);
                 writeTag(data, BlockSchema.ITEMS, WIRE_TYPE_DELIMITED);
@@ -522,14 +527,14 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
                 final var kind = item.item().kind();
                 switch (kind) {
                     case EVENT_HEADER, EVENT_TRANSACTION, TRANSACTION_RESULT, TRANSACTION_OUTPUT, STATE_CHANGES -> {
-                        digest.update(serializedItems.slice(pre, post - pre));
-                        final var hash = digest.digest();
+                        digest.update(serializedItems.array(), pre, post - pre);
                         switch (kind) {
-                            case EVENT_HEADER, EVENT_TRANSACTION -> inputHashes.put(hash);
-                            case TRANSACTION_RESULT, TRANSACTION_OUTPUT, STATE_CHANGES -> outputHashes.put(hash);
+                            case EVENT_HEADER, EVENT_TRANSACTION -> finish(digest, inputHashes, j++ * HASH_SIZE);
+                            case TRANSACTION_RESULT, TRANSACTION_OUTPUT, STATE_CHANGES -> finish(
+                                    digest, outputHashes, k++ * HASH_SIZE);
                         }
                         if (kind == TRANSACTION_RESULT) {
-                            resultHashes.put(hash);
+                            resultHashes.put(Arrays.copyOfRange(outputHashes, (k - 1) * HASH_SIZE, k * HASH_SIZE));
                         }
                     }
                     default -> {
@@ -538,7 +543,15 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
                 }
             }
             data.flip();
-            return new Output(data, inputHashes.flip(), outputHashes.flip(), resultHashes.flip());
+            return new Output(data, ByteBuffer.wrap(inputHashes), ByteBuffer.wrap(outputHashes), resultHashes.flip());
+        }
+
+        private void finish(@NonNull final MessageDigest digest, final byte[] hashes, final int offset) {
+            try {
+                digest.digest(hashes, offset, HASH_SIZE);
+            } catch (DigestException e) {
+                throw new IllegalArgumentException(e);
+            }
         }
     }
 

@@ -75,7 +75,7 @@ public class StandaloneRoundManagement {
     private static final Timestamp FAKE_CONSENSUS_TIME = new Timestamp(1_234_567L, 890);
     private static final SemanticVersion VERSION = new SemanticVersion(0, 56, 0, "", "");
 
-    private static final int NUM_ROUNDS = 10000;
+    private static final int NUM_ROUNDS = 50000;
     private static final int NUM_EVENTS = 10;
     private static final int NUM_TXNS_PER_EVENT = 100;
 
