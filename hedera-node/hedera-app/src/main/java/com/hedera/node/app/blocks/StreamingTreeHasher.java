@@ -45,10 +45,11 @@ public interface StreamingTreeHasher {
     }
 
     /**
-     * Adds a leaf hash to the implicit tree of items.
+     * Adds a leaf hash to the implicit tree of items from the given buffer. The buffer's new position
+     * will be the current position plus {@link #HASH_LENGTH}.
      * @param hash the leaf hash to add
      * @throws IllegalStateException if the root hash has already been requested
-     * @throws IllegalArgumentException if the buffer does not an array or at least {@link #HASH_LENGTH} bytes remaining
+     * @throws IllegalArgumentException if the buffer does not have at least {@link #HASH_LENGTH} bytes remaining
      */
     void addLeaf(@NonNull ByteBuffer hash);
 

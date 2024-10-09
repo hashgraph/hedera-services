@@ -91,7 +91,7 @@ public class ConcurrentStreamingTreeHasher implements StreamingTreeHasher {
         }
         numLeaves++;
         final var bytes = new byte[HASH_LENGTH];
-        hash.slice(0, HASH_LENGTH).get(bytes);
+        hash.get(bytes);
         combiner.combine(bytes);
     }
 

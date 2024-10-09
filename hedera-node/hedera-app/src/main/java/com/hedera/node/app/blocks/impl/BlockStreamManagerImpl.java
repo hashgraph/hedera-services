@@ -468,8 +468,8 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
 
         public record Output(
                 @NonNull BufferedData data,
-                @NonNull List<byte[]> inputHashes,
-                @NonNull List<byte[]> outputHashes,
+                @NonNull ByteBuffer inputHashes,
+                @NonNull ByteBuffer outputHashes,
                 @NonNull List<byte[]> resultHashes) {}
 
         public ScheduledWork(@NonNull final List<BlockItem> items) {
@@ -485,30 +485,36 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
          */
         public Output computeOutput() {
             var size = 0;
+            var numInputs = 0;
+            var numOutputs = 0;
             for (final var item : items) {
                 // Plus 8 bytes for the preceding tag and length
                 size += BlockItem.PROTOBUF.measureRecord(item) + 8;
+                switch (item.item().kind()) {
+                    case EVENT_HEADER, EVENT_TRANSACTION -> numInputs++;
+                    case TRANSACTION_RESULT, TRANSACTION_OUTPUT, STATE_CHANGES -> numOutputs++;
+                }
             }
-            final var buffer = ByteBuffer.allocate(size);
-            final var data = BufferedData.wrap(buffer);
-            final List<byte[]> inputHashes = new ArrayList<>();
-            final List<byte[]> outputHashes = new ArrayList<>();
+            final var inputHashes = ByteBuffer.allocate(numInputs * HASH_SIZE);
+            final var outputHashes = ByteBuffer.allocate(numOutputs * HASH_SIZE);
+            final var serializedItems = ByteBuffer.allocate(size);
+            final var data = BufferedData.wrap(serializedItems);
             final List<byte[]> resultHashes = new ArrayList<>();
             final var digest = sha384DigestOrThrow();
             for (final var item : items) {
                 writeTag(data, BlockSchema.ITEMS, WIRE_TYPE_DELIMITED);
                 data.writeVarInt(BlockItem.PROTOBUF.measureRecord(item), false);
-                final var pre = buffer.position();
+                final var pre = serializedItems.position();
                 writeItemToBuffer(item, data);
-                final var post = buffer.position();
+                final var post = serializedItems.position();
                 final var kind = item.item().kind();
                 switch (kind) {
                     case EVENT_HEADER, EVENT_TRANSACTION, TRANSACTION_RESULT, TRANSACTION_OUTPUT, STATE_CHANGES -> {
-                        digest.update(buffer.slice(pre, post - pre));
+                        digest.update(serializedItems.slice(pre, post - pre));
                         final var hash = digest.digest();
                         switch (kind) {
-                            case EVENT_HEADER, EVENT_TRANSACTION -> inputHashes.add(hash);
-                            case TRANSACTION_RESULT, TRANSACTION_OUTPUT, STATE_CHANGES -> outputHashes.add(hash);
+                            case EVENT_HEADER, EVENT_TRANSACTION -> inputHashes.put(hash);
+                            case TRANSACTION_RESULT, TRANSACTION_OUTPUT, STATE_CHANGES -> outputHashes.put(hash);
                         }
                         if (kind == TRANSACTION_RESULT) {
                             resultHashes.add(hash);
@@ -520,7 +526,7 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
                 }
             }
             data.flip();
-            return new Output(data, inputHashes, outputHashes, resultHashes);
+            return new Output(data, inputHashes.flip(), outputHashes.flip(), resultHashes);
         }
     }
 
@@ -534,8 +540,12 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
      */
     private Void combineOutput(@Nullable Void ignore, @NonNull final ScheduledWork.Output output) {
         writer.writeItems(output.data());
-        output.inputHashes.forEach(hash -> inputTreeHasher.addLeaf(ByteBuffer.wrap(hash)));
-        output.outputHashes.forEach(hash -> outputTreeHasher.addLeaf(ByteBuffer.wrap(hash)));
+        while (output.inputHashes().hasRemaining()) {
+            inputTreeHasher.addLeaf(output.inputHashes());
+        }
+        while (output.outputHashes().hasRemaining()) {
+            outputTreeHasher.addLeaf(output.outputHashes());
+        }
         output.resultHashes.forEach(runningHashManager::nextResultHash);
         return null;
     }
@@ -590,8 +600,7 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
             nMinus3HashFuture = nMinus2HashFuture;
             nMinus2HashFuture = nMinus1HashFuture;
             nMinus1HashFuture = hashFuture;
-            hashFuture = hashFuture.thenCombineAsync(
-                    supplyAsync(() -> hash, executor), BlockImplUtils::combine, executor);
+            hashFuture = hashFuture.thenCombine(CompletableFuture.completedFuture(hash), BlockImplUtils::combine);
         }
     }
 

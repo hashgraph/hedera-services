@@ -151,9 +151,9 @@ public class FileBlockItemWriterTest {
         fileBlockItemWriter.openBlock(1);
 
         // Create a Bytes object and write it
-        final var bytes = ByteBuffer.wrap(new byte[] {1, 2, 3, 4, 5});
+        final var bytes = new byte[] {1, 2, 3, 4, 5};
         byte[] expectedBytes = {10, 5, 1, 2, 3, 4, 5};
-        fileBlockItemWriter.writePbjItem(bytes);
+        fileBlockItemWriter.writeItem(bytes);
 
         // Close the block
         fileBlockItemWriter.closeBlock();
@@ -182,9 +182,9 @@ public class FileBlockItemWriterTest {
         FileBlockItemWriter fileBlockItemWriter = new FileBlockItemWriter(configProvider, selfNodeInfo, fileSystem);
 
         // Create a Bytes object and write it
-        final var bytes = ByteBuffer.wrap(new byte[] {1, 2, 3, 4, 5});
+        final var bytes = new byte[] {1, 2, 3, 4, 5};
 
-        assertThatThrownBy(() -> fileBlockItemWriter.writePbjItem(bytes), "Cannot write item before opening a block")
+        assertThatThrownBy(() -> fileBlockItemWriter.writeItem(bytes), "Cannot write item before opening a block")
                 .isInstanceOf(IllegalStateException.class);
     }
 

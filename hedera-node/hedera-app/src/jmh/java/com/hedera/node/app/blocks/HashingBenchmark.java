@@ -69,7 +69,7 @@ public class HashingBenchmark {
     @Param({"10000"})
     private int numLeafHashes;
 
-    private List<ByteBuffer> leafHashes;
+    private List<byte[]> leafHashes;
     private Bytes expectedAnswer;
 
     @Setup(Level.Trial)
@@ -79,7 +79,7 @@ public class HashingBenchmark {
         for (int i = 0; i < numLeafHashes; i++) {
             final var item = randomBlockItem();
             final var hash = digest.digest(BlockItem.PROTOBUF.toBytes(item).toByteArray());
-            leafHashes.add(ByteBuffer.wrap(hash));
+            leafHashes.add(hash);
         }
         expectedAnswer = NaiveStreamingTreeHasher.computeRootHash(leafHashes);
     }
@@ -91,7 +91,7 @@ public class HashingBenchmark {
         //                final var subject = new NaiveStreamingTreeHasher();
         final var subject = new ConcurrentStreamingTreeHasher(ForkJoinPool.commonPool());
         for (final var hash : leafHashes) {
-            subject.addLeaf(hash);
+            subject.addLeaf(ByteBuffer.wrap(hash));
         }
         final var rootHash = subject.rootHash().join();
         if (!rootHash.equals(expectedAnswer)) {

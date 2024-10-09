@@ -44,10 +44,10 @@ public class NaiveStreamingTreeHasher implements StreamingTreeHasher {
      * @param leafHashes the leaf hashes of the tree
      * @return the root hash of the tree
      */
-    public static Bytes computeRootHash(@NonNull final List<ByteBuffer> leafHashes) {
+    public static Bytes computeRootHash(@NonNull final List<byte[]> leafHashes) {
         final var hasher = new NaiveStreamingTreeHasher();
         for (final var hash : leafHashes) {
-            hasher.addLeaf(hash);
+            hasher.addLeaf(ByteBuffer.wrap(hash));
         }
         return hasher.rootHash().join();
     }
@@ -61,7 +61,7 @@ public class NaiveStreamingTreeHasher implements StreamingTreeHasher {
             throw new IllegalArgumentException("Buffer has less than " + HASH_LENGTH + " bytes remaining");
         }
         final var bytes = new byte[HASH_LENGTH];
-        hash.slice(0, HASH_LENGTH).get(bytes);
+        hash.get(bytes);
         leafHashes.add(bytes);
     }
 
