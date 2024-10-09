@@ -102,13 +102,17 @@ class WritableRosterStoreTest {
     @Test
     void testInvalidRoundNumberThrowsException() {
         rosterStateModifier.setActiveRoster(createValidTestRoster(2), 1);
+        final Roster roster = createValidTestRoster(1);
         assertThrows(
-                IllegalArgumentException.class, () -> rosterStateModifier.setActiveRoster(createValidTestRoster(1), 0));
+                IllegalArgumentException.class, () -> rosterStateModifier.setActiveRoster(roster, 0));
         assertThrows(
                 IllegalArgumentException.class,
-                () -> rosterStateModifier.setActiveRoster(createValidTestRoster(1), -1));
+                () -> rosterStateModifier.setActiveRoster(roster, -1));
     }
 
+    /**
+     * Tests that setting an active roster returns the active roster when getActiveRoster is called.
+     */
     @Test
     void testGetCandidateRosterWithValidCandidateRoster() {
         final Roster activeRoster = createValidTestRoster(1);
@@ -120,6 +124,9 @@ class WritableRosterStoreTest {
                 "Returned active roster should be the same as the one set");
     }
 
+    /**
+     * Test that the oldest roster is removed when a third roster is set
+     */
     @Test
     @DisplayName("Test Oldest Active Roster Cleanup")
     void testOldestActiveRosterRemoved() throws NoSuchFieldException, IllegalAccessException {
@@ -142,6 +149,9 @@ class WritableRosterStoreTest {
                 .contains(new RoundRosterPair(2, RosterUtils.hash(roster1).getBytes())));
     }
 
+    /**
+     * Test that an exception is thrown if stored active rosters are ever > MAXIMUM_ROSTER_HISTORY_SIZE
+     */
     @Test
     @DisplayName("Test Max Roster List Size Exceeded")
     void testMaximumRostersMoreThan2ThrowsException() throws NoSuchFieldException, IllegalAccessException {
@@ -158,13 +168,18 @@ class WritableRosterStoreTest {
         final WritableSingletonState<RosterState> rosterState = getRosterState();
         rosterState.put(rosterStateBuilder.build());
 
+        final Roster roster = createValidTestRoster(4);
         final Exception exception = assertThrows(
-                IllegalStateException.class, () -> rosterStateModifier.setActiveRoster(createValidTestRoster(4), 4));
+                IllegalStateException.class, () -> rosterStateModifier.setActiveRoster(roster, 4));
         assertEquals(
                 "Active rosters in the Roster state cannot be more than  " + MAXIMUM_ROSTER_HISTORY_SIZE,
                 exception.getMessage());
     }
 
+    /**
+     * Test that when a roster hash collision occurs between a newly set active roster and another active roster in
+     * history, the other roster isn't removed from the state when remove is called
+     */
     @Test
     @DisplayName("Duplicate Roster Hash")
     void testRosterHashCollisions() {
