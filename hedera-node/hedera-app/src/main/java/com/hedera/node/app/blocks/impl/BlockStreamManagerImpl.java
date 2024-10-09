@@ -23,6 +23,7 @@ import static com.hedera.hapi.util.HapiUtils.asTimestamp;
 import static com.hedera.node.app.blocks.BlockStreamManager.PendingWork.GENESIS_WORK;
 import static com.hedera.node.app.blocks.BlockStreamManager.PendingWork.NONE;
 import static com.hedera.node.app.blocks.BlockStreamManager.PendingWork.POST_UPGRADE_WORK;
+import static com.hedera.node.app.blocks.BlockStreamManager.ZERO_BLOCK_HASH;
 import static com.hedera.node.app.blocks.impl.BlockImplUtils.appendHash;
 import static com.hedera.node.app.blocks.impl.BlockImplUtils.combine;
 import static com.hedera.node.app.blocks.schemas.V0540BlockStreamSchema.BLOCK_STREAM_INFO_KEY;
@@ -180,7 +181,7 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
         this.runningHashManager = new RunningHashManager();
         this.lastNonEmptyRoundNumber = initialStateHash.roundNum();
         final var hashFuture = initialStateHash.hashFuture();
-        endRoundStateHashes.put(lastNonEmptyRoundNumber, hashFuture);
+//        endRoundStateHashes.put(lastNonEmptyRoundNumber, hashFuture);
         log.info(
                 "Initialized BlockStreamManager from round {} with end-of-round hash {}",
                 lastNonEmptyRoundNumber,
@@ -198,7 +199,7 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
             throw new IllegalStateException("Last block hash must be initialized before starting a round");
         }
         // If the platform handled this round, it must eventually hash its end state
-        endRoundStateHashes.put(round.getRoundNum(), new CompletableFuture<>());
+//        endRoundStateHashes.put(round.getRoundNum(), new CompletableFuture<>());
 
         final var platformState = state.getReadableStates(PlatformStateService.NAME)
                 .<PlatformState>getSingleton(V0540PlatformStateSchema.PLATFORM_STATE_KEY)
@@ -270,10 +271,11 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
             writeFuture.join();
             final var inputHash = inputTreeHasher.rootHash().join();
             // This block's starting state hash is the end state hash of the last non-empty round
-            final var blockStartStateHash = requireNonNull(endRoundStateHashes.get(lastNonEmptyRoundNumber))
-                    .join();
+//            final var blockStartStateHash = requireNonNull(endRoundStateHashes.get(lastNonEmptyRoundNumber))
+//                    .join();
+            final var blockStartStateHash = ZERO_BLOCK_HASH;
             // Now forget that hash, since it's been used
-            endRoundStateHashes.remove(lastNonEmptyRoundNumber);
+//            endRoundStateHashes.remove(lastNonEmptyRoundNumber);
             // And update the last non-empty round number to this round
             lastNonEmptyRoundNumber = roundNum;
             final var outputTreeStatus = outputTreeHasher.status();
@@ -685,9 +687,9 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
 
     @Override
     public void notify(@NonNull final StateHashedNotification notification) {
-        endRoundStateHashes
-                .get(notification.round())
-                .complete(notification.hash().getBytes());
+//        endRoundStateHashes
+//                .get(notification.round())
+//                .complete(notification.hash().getBytes());
     }
 
     private static void writeItemToBuffer(@NonNull final BlockItem item, @NonNull final BufferedData bufferedData) {
