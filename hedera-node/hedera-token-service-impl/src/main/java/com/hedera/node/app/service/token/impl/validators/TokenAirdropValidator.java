@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.token.impl.validators;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.BATCH_SIZE_LIMIT_EXCEEDED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.EMPTY_TOKEN_TRANSFER_BODY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_TOKEN_BALANCE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
@@ -24,7 +25,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SENDER_DOES_NOT_OWN_NFT_SERIAL_NO;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_AIRDROP_WITH_FALLBACK_ROYALTY;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_REFERENCE_LIST_SIZE_LIMIT_EXCEEDED;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_TRANSFER_LIST_SIZE_LIMIT_EXCEEDED;
 import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.getIfUsable;
 import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.getIfUsableForAliasedId;
 import static com.hedera.node.app.service.token.impl.validators.CryptoTransferValidator.validateTokenTransfers;
@@ -48,7 +49,7 @@ import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.handlers.transfer.customfees.CustomFeeExemptions;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.PreCheckException;
-import com.hedera.node.config.data.TokensConfig;
+import com.hedera.node.config.data.LedgerConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 import javax.inject.Inject;
@@ -97,11 +98,9 @@ public class TokenAirdropValidator {
             @NonNull final ReadableTokenStore tokenStore,
             @NonNull final ReadableTokenRelationStore tokenRelStore,
             @NonNull final ReadableNftStore nftStore) {
-        var tokensConfig = context.configuration().getConfigData(TokensConfig.class);
-        validateTrue(
-                op.tokenTransfers().size() <= tokensConfig.maxAllowedAirdropTransfersPerTx(),
-                TOKEN_REFERENCE_LIST_SIZE_LIMIT_EXCEEDED);
-
+        var legerConfig = context.configuration().getConfigData(LedgerConfig.class);
+        var totalFungibleTransfers = 0;
+        var totalNftTransfers = 0;
         for (final var xfers : op.tokenTransfers()) {
             final var tokenId = xfers.tokenOrThrow();
             final var token = getIfUsable(tokenId, tokenStore);
@@ -118,6 +117,12 @@ public class TokenAirdropValidator {
                 // 1. Validate token associations
                 validateFungibleTransfers(
                         context.payer(), senderAccount, tokenId, senderAccountAmount.get(), tokenRelStore);
+                totalFungibleTransfers += xfers.transfers().size();
+
+                // Verify that the current total number of (counted) fungible transfers does not exceed the limit
+                validateTrue(
+                        totalFungibleTransfers <= legerConfig.tokenTransfersMaxLen(),
+                        TOKEN_TRANSFER_LIST_SIZE_LIMIT_EXCEEDED);
             }
 
             // process non-fungible tokens transfers if any
@@ -137,14 +142,11 @@ public class TokenAirdropValidator {
                 final var senderId = nftTransfer.orElseThrow().senderAccountIDOrThrow();
                 final var senderAccount = accountStore.getAliasedAccountById(senderId);
                 validateTrue(senderAccount != null, INVALID_ACCOUNT_ID);
-                validateNftTransfers(
-                        context.payer(),
-                        senderAccount,
-                        tokenId,
-                        xfers.nftTransfers(),
-                        tokenRelStore,
-                        tokenStore,
-                        nftStore);
+                validateNftTransfers(senderAccount, tokenId, xfers.nftTransfers(), tokenRelStore, tokenStore, nftStore);
+
+                totalNftTransfers += xfers.nftTransfers().size();
+                // Verify that the current total number of (counted) nft transfers does not exceed the limit
+                validateTrue(totalNftTransfers <= legerConfig.nftTransfersMaxLen(), BATCH_SIZE_LIMIT_EXCEEDED);
             }
         }
     }
@@ -184,7 +186,6 @@ public class TokenAirdropValidator {
     }
 
     private void validateNftTransfers(
-            @NonNull final AccountID payer,
             @NonNull final Account senderAccount,
             @NonNull final TokenID tokenId,
             @NonNull final List<NftTransfer> nftTransfers,

@@ -101,7 +101,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PENDING_NFT_AI
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_AIRDROP_WITH_FALLBACK_ROYALTY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_IS_PAUSED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_REFERENCE_LIST_SIZE_LIMIT_EXCEEDED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_TRANSFER_LIST_SIZE_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
@@ -113,6 +113,7 @@ import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestLifecycle;
 import com.hedera.services.bdd.junit.LeakyHapiTest;
 import com.hedera.services.bdd.junit.support.TestLifecycle;
+import com.hedera.services.bdd.spec.SpecOperation;
 import com.hedera.services.bdd.spec.keys.SigControl;
 import com.hedera.services.bdd.spec.transactions.token.HapiTokenCreate;
 import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
@@ -122,11 +123,13 @@ import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import com.swirlds.common.utility.CommonUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.math.BigInteger;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.IntStream;
+import java.util.stream.LongStream;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
@@ -1604,7 +1607,7 @@ public class TokenAirdropTest extends TokenAirdropBase {
                                     defaultMovementOfToken("FUNGIBLE10"),
                                     defaultMovementOfToken("FUNGIBLE11"))
                             .payingWith(OWNER)
-                            .hasKnownStatus(TOKEN_REFERENCE_LIST_SIZE_LIMIT_EXCEEDED));
+                            .hasKnownStatus(TOKEN_TRANSFER_LIST_SIZE_LIMIT_EXCEEDED));
         }
 
         @HapiTest
@@ -2001,7 +2004,7 @@ public class TokenAirdropTest extends TokenAirdropBase {
                                     moving(10L, FUNGIBLE_TOKEN_J).between(ALICE, STEVE),
                                     moving(10L, FUNGIBLE_TOKEN_K).between(ALICE, STEVE))
                             .signedByPayerAnd(ALICE)
-                            .hasKnownStatus(TOKEN_REFERENCE_LIST_SIZE_LIMIT_EXCEEDED));
+                            .hasKnownStatus(TOKEN_TRANSFER_LIST_SIZE_LIMIT_EXCEEDED));
         }
 
         @HapiTest
@@ -2182,6 +2185,44 @@ public class TokenAirdropTest extends TokenAirdropBase {
             return hapiTest(tokenAirdrop(moving(10, FUNGIBLE_TOKEN).between(OWNER, evmAddress))
                     .payingWith(OWNER)
                     .hasKnownStatus(INVALID_ACCOUNT_ID));
+        }
+
+        @HapiTest
+        @DisplayName("pending airdrop 1 token to more than 10 accounts")
+        final Stream<DynamicTest> pendingAirdropOneTokenToMoreThan10Accounts() {
+            final var accountNames = generateAccountNames(10);
+            return hapiTest(flattened(
+                    // create 10 accounts with 0 auto associations
+                    createAccounts(accountNames, 0),
+                    tokenAirdrop(distributeTokens(FUNGIBLE_TOKEN, OWNER, accountNames))
+                            .payingWith(OWNER)
+                            .hasKnownStatus(TOKEN_TRANSFER_LIST_SIZE_LIMIT_EXCEEDED)));
+        }
+
+        private static ArrayList<String> generateAccountNames(int count) {
+            final var accountNames = new ArrayList<String>(count);
+            for (int i = 0; i < count; i++) {
+                accountNames.add(String.format("account%d", i));
+            }
+            return accountNames;
+        }
+
+        private static ArrayList<SpecOperation> createAccounts(
+                ArrayList<String> accountNames, int numberOfAutoAssociations) {
+            final var specOps = new ArrayList<SpecOperation>(accountNames.size());
+            for (String accountName : accountNames) {
+                specOps.add(cryptoCreate(accountName).maxAutomaticTokenAssociations(numberOfAutoAssociations));
+            }
+            return specOps;
+        }
+
+        private static TokenMovement distributeTokens(String token, String sender, ArrayList<String> accountNames) {
+            return moving(accountNames.size(), token).distributing(sender, accountNames.toArray(new String[0]));
+        }
+
+        private static TokenMovement distributeNFT(String token, String sender, String receiver) {
+            final long[] serials = LongStream.rangeClosed(1, 10).toArray();
+            return TokenMovement.movingUnique(token, serials).between(sender, receiver);
         }
     }
 
