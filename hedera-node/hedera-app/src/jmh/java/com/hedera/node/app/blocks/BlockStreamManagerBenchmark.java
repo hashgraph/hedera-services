@@ -55,7 +55,6 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.time.Instant;
@@ -101,7 +100,9 @@ public class BlockStreamManagerBenchmark {
 
     private final Round round = new FakeRound();
     private final ConfigProvider configProvider =
-            new ConfigProviderImpl(false, null, Map.of("blockStream.serializationBatchSize", "32"));
+            new ConfigProviderImpl(false, null, Map.of(
+                    "blockStream.hashCombineBatchSize", "32",
+                    "blockStream.serializationBatchSize", "32"));
     private final List<BlockItem> roundItems = new ArrayList<>();
     private final PlaceholderTssBaseService tssBaseService = new PlaceholderTssBaseService();
     private final BlockStreamManagerImpl subject = new BlockStreamManagerImpl(
@@ -293,7 +294,7 @@ public class BlockStreamManagerBenchmark {
         }
 
         @Override
-        public BlockItemWriter writeItem(@NonNull final ByteBuffer serializedItem) {
+        public BlockItemWriter writeItem(@NonNull final byte[] bytes) {
             return this;
         }
 
@@ -317,9 +318,9 @@ public class BlockStreamManagerBenchmark {
         }
 
         @Override
-        public BlockItemWriter writeItem(@NonNull final ByteBuffer serializedItem) {
+        public BlockItemWriter writeItem(@NonNull final byte[] bytes) {
             try {
-                baos.write(serializedItem.array());
+                baos.write(bytes);
             } catch (IOException e) {
                 throw new UncheckedIOException(e);
             }

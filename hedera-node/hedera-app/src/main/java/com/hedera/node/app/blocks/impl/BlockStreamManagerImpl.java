@@ -387,9 +387,7 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
                     .blockSignature(blockSignature)
                     .siblingHashes(siblingHashes.stream().flatMap(List::stream).toList());
             final var proofItem = BlockItem.newBuilder().blockProof(proof).build();
-            final var buffer = ByteBuffer.allocate(BlockItem.PROTOBUF.measureRecord(proofItem));
-            writeItemToBuffer(proofItem, BufferedData.wrap(buffer));
-            block.writer().writeItem(buffer).closeBlock();
+            block.writer().writePbjItem(BlockItem.PROTOBUF.toBytes(proofItem)).closeBlock();
             if (block.number() != blockNumber) {
                 siblingHashes.removeFirst();
             }
@@ -515,7 +513,7 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
      * @return {@code null}
      */
     private Void combineOutput(@Nullable Void ignore, @NonNull final ScheduledWork.Output output) {
-        output.serializedItems.forEach(bytes -> writer.writeItem(ByteBuffer.wrap(bytes)));
+        output.serializedItems.forEach(writer::writeItem);
         output.inputHashes.forEach(hash -> inputTreeHasher.addLeaf(ByteBuffer.wrap(hash)));
         output.outputHashes.forEach(hash -> outputTreeHasher.addLeaf(ByteBuffer.wrap(hash)));
         output.serializedResults.forEach(runningHashManager::nextResult);

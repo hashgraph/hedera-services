@@ -54,7 +54,6 @@ import com.swirlds.platform.system.state.notifications.StateHashedNotification;
 import com.swirlds.state.spi.Schema;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -240,7 +239,7 @@ public class StandaloneRoundManagement {
         }
 
         @Override
-        public BlockItemWriter writeItem(@NonNull final ByteBuffer serializedItem) {
+        public BlockItemWriter writeItem(@NonNull final byte[] bytes) {
             return this;
         }
 

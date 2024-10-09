@@ -420,7 +420,7 @@ class BlockStreamManagerImplTest {
                     return bWriter;
                 })
                 .when(bWriter)
-                .writeItem(any());
+                .writePbjItem(any());
         final ArgumentCaptor<byte[]> blockHashCaptor = ArgumentCaptor.forClass(byte[].class);
         given(round.getRoundNum()).willReturn(ROUND_NO);
 
@@ -517,7 +517,7 @@ class BlockStreamManagerImplTest {
                     return aWriter;
                 })
                 .when(aWriter)
-                .writeItem(any());
+                .writePbjItem(any());
         given(state.getWritableStates(BlockStreamService.NAME)).willReturn(writableStates);
         given(writableStates.<BlockStreamInfo>getSingleton(BLOCK_STREAM_INFO_KEY))
                 .willReturn(blockStreamInfoState);

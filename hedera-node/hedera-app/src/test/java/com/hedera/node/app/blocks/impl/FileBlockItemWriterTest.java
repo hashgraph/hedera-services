@@ -153,7 +153,7 @@ public class FileBlockItemWriterTest {
         // Create a Bytes object and write it
         final var bytes = ByteBuffer.wrap(new byte[] {1, 2, 3, 4, 5});
         byte[] expectedBytes = {10, 5, 1, 2, 3, 4, 5};
-        fileBlockItemWriter.writeItem(bytes);
+        fileBlockItemWriter.writePbjItem(bytes);
 
         // Close the block
         fileBlockItemWriter.closeBlock();
@@ -184,7 +184,7 @@ public class FileBlockItemWriterTest {
         // Create a Bytes object and write it
         final var bytes = ByteBuffer.wrap(new byte[] {1, 2, 3, 4, 5});
 
-        assertThatThrownBy(() -> fileBlockItemWriter.writeItem(bytes), "Cannot write item before opening a block")
+        assertThatThrownBy(() -> fileBlockItemWriter.writePbjItem(bytes), "Cannot write item before opening a block")
                 .isInstanceOf(IllegalStateException.class);
     }
 

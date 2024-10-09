@@ -33,7 +33,6 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.io.UncheckedIOException;
 import java.math.BigInteger;
-import java.nio.ByteBuffer;
 import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -157,9 +156,8 @@ public class FileBlockItemWriter implements BlockItemWriter {
      * {@inheritDoc}
      */
     @Override
-    public FileBlockItemWriter writeItem(@NonNull final ByteBuffer serializedItem) {
-        requireNonNull(serializedItem, "The supplied argument 'serializedItem' cannot be null!");
-        final var bytes = serializedItem.array();
+    public FileBlockItemWriter writeItem(@NonNull final byte[] bytes) {
+        requireNonNull(bytes, "The supplied argument 'serializedItem' cannot be null!");
         if (bytes.length == 0) throw new IllegalArgumentException("Item must be non-empty");
         if (state != State.OPEN) {
             throw new IllegalStateException(
