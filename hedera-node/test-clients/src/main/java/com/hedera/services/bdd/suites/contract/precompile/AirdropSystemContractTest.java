@@ -21,6 +21,8 @@ import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NFT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER;
 
 import com.esaulpaugh.headlong.abi.Address;
 import com.hedera.services.bdd.junit.HapiTest;
@@ -244,7 +246,7 @@ public class AirdropSystemContractTest {
     }
 
     @HapiTest
-    @Order(15)
+    @Order(6)
     @DisplayName("Airdrop 10 token and NFT")
     public Stream<DynamicTest> airdrop10TokenAndNft(
             @NonNull @FungibleToken(initialSupply = 1_000_000L) final SpecFungibleToken token1,
@@ -422,6 +424,70 @@ public class AirdropSystemContractTest {
                     receiver10.getBalance().andAssert(balance -> balance.hasTokenBalance(nft5.name(), 0L)),
                     receiver11.getBalance().andAssert(balance -> balance.hasTokenBalance(nft6.name(), 0L)));
         }));
+    }
+
+    @HapiTest
+    @Order(8)
+    @DisplayName("Airdrop fails when the sender does not have enough balance")
+    public Stream<DynamicTest> airdropFailsWhenSenderDoesNotHaveEnoughBalance(
+            @NonNull @Account(maxAutoAssociations = -1) final SpecAccount receiver,
+            @NonNull @FungibleToken(initialSupply = 1_000_000L) final SpecFungibleToken token) {
+        return hapiTest(
+                sender.associateTokens(token),
+                airdropContract
+                        .call("tokenAirdrop", token, sender, receiver, 10L)
+                        .gas(1500000)
+                        .andAssert(txn -> txn.hasKnownStatus(CONTRACT_REVERT_EXECUTED)));
+    }
+
+    @HapiTest
+    @Order(9)
+    @DisplayName("Airdrop fails when the receiver does not have a valid account")
+    public Stream<DynamicTest> airdropFailsWhenReceiverDoesNotHaveValidAccount(
+            @NonNull @FungibleToken(initialSupply = 1_000_000L) final SpecFungibleToken token,
+            @NonNull @FungibleToken(initialSupply = 1_000_000L) final SpecFungibleToken tokenAsReceiver) {
+        return hapiTest(
+                sender.associateTokens(token),
+                airdropContract
+                        .call("tokenAirdrop", token, sender, tokenAsReceiver, 10L)
+                        .gas(1500000)
+                        .andAssert(txn -> txn.hasKnownStatus(CONTRACT_REVERT_EXECUTED)));
+    }
+
+    @HapiTest
+    @Order(10)
+    @DisplayName("Airdrop fails when the token does not exist")
+    public Stream<DynamicTest> airdropFailsWhenTokenDoesNotExist(
+            @NonNull @Account(maxAutoAssociations = -1) final SpecAccount receiver,
+            @NonNull @Account final SpecAccount accountAsToken) {
+        return hapiTest(airdropContract
+                .call("tokenAirdrop", accountAsToken, sender, receiver, 10L)
+                .gas(1500000)
+                .andAssert(txn -> txn.hasKnownStatus(CONTRACT_REVERT_EXECUTED)));
+    }
+
+    @HapiTest
+    @Order(11)
+    @DisplayName("Airdrop fails with nft serials out of bound")
+    public Stream<DynamicTest> failToUpdateNFTsMetadata(
+            @NonNull @NonFungibleToken(numPreMints = 1) final SpecNonFungibleToken nft,
+            @NonNull @Account(maxAutoAssociations = -1) final SpecAccount receiver) {
+        return hapiTest(
+                sender.associateTokens(nft),
+                airdropContract
+                        .call("nftAirdrop", nft, sender, receiver, Long.MAX_VALUE)
+                        .gas(1500000)
+                        .andAssert(txn -> txn.hasKnownStatuses(CONTRACT_REVERT_EXECUTED, INVALID_NFT_ID)),
+                airdropContract
+                        .call("nftAirdrop", nft, sender, receiver, 0L)
+                        .gas(1500000)
+                        .andAssert(
+                                txn -> txn.hasKnownStatuses(CONTRACT_REVERT_EXECUTED, INVALID_TOKEN_NFT_SERIAL_NUMBER)),
+                airdropContract
+                        .call("nftAirdrop", nft, sender, receiver, -1L)
+                        .gas(1500000)
+                        .andAssert(txn ->
+                                txn.hasKnownStatuses(CONTRACT_REVERT_EXECUTED, INVALID_TOKEN_NFT_SERIAL_NUMBER)));
     }
 
     private Address[] prepareReceiverAddresses(@NonNull HapiSpec spec, @NonNull SpecAccount... receivers) {
