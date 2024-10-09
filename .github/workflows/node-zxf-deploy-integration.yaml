@@ -14,22 +14,23 @@
 # limitations under the License.
 ##
 
-name: "ZXC: [Node] Deploy Release Artifacts"
+name: "ZXF: [Node] Deploy Integration Network Release"
 on:
   workflow_dispatch:
 
-#  workflow_run:
-#    workflows:
-#      - "ZXC: [Node] Deploy Release Artifacts"
-#    types:
-#      - completed
-#    branches:
-#      - develop
+  workflow_run:
+    workflows:
+      - "ZXC: [Node] Deploy Release Artifacts"
+    types:
+      - completed
+    branches:
+      - develop
 
 jobs:
   jenkins-checks:
     name: Build Artifact
-    runs-on: network-node-linux-large
+    runs-on: network-node-linux-medium
+    if: ${{ false }}
 
     steps:
       - name: Harden Runner
