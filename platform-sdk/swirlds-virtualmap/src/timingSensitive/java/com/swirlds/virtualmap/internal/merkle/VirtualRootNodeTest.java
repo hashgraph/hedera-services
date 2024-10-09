@@ -431,7 +431,7 @@ class VirtualRootNodeTest extends VirtualTestBase {
     }
 
     @Test
-    void inMemoryModeNoFlushTest() {
+    void inMemoryAddRemoveNoFlushTest() {
         final Configuration configuration = new TestConfigBuilder()
                 .withValue(VirtualMapConfig_.COPY_FLUSH_THRESHOLD, 1_000_000)
                 .getOrCreateConfig();
@@ -482,7 +482,7 @@ class VirtualRootNodeTest extends VirtualTestBase {
     }
 
     @Test
-    void inMemoryModeSomeFlushesTest() {
+    void inMemoryAddRemoveSomeFlushesTest() {
         final Configuration configuration = new TestConfigBuilder()
                 .withValue(VirtualMapConfig_.COPY_FLUSH_THRESHOLD, 1_000_000)
                 .getOrCreateConfig();
@@ -596,6 +596,47 @@ class VirtualRootNodeTest extends VirtualTestBase {
         }
 
         root.release();
+    }
+
+    @Test
+    void inMemoryUpdateNoFlushTest() {
+        final Configuration configuration = new TestConfigBuilder()
+                .withValue(VirtualMapConfig_.COPY_FLUSH_THRESHOLD, 1_000_000)
+                .getOrCreateConfig();
+        ConfigurationHolder.getInstance().setConfiguration(configuration);
+
+        VirtualRootNode<TestKey, TestValue> root =
+                new VirtualRootNode<>(TestKeySerializer.INSTANCE, TestValueSerializer.INSTANCE, new InMemoryBuilder());
+        VirtualMapState state = new VirtualMapState("label");
+        root.postInit(new VirtualStateAccessorImpl(state));
+
+        // Here is the test: add/update 1000 elements in every copy. Number of mutations in the
+        // node cache will grow, but total number of entities in the map will not. Without in-memory
+        // maps, it would result in some flushes, and with in-memory support, all copies should be
+        // GC'ed and then merged
+        final int nCopies = 1000;
+        final VirtualRootNode[] copies = new VirtualRootNode[nCopies];
+        copies[0] = root;
+        for (int copyNo = 1; copyNo < nCopies; copyNo++) {
+            final VirtualRootNode<TestKey, TestValue> copy = root.copy();
+            copies[copyNo] = copy;
+            state = state.copy();
+            copy.postInit(new VirtualStateAccessorImpl(state));
+            root.release();
+            root = copy;
+            for (int i = 0; i < 1000; i++) {
+                final TestKey keyToAdd = new TestKey(i);
+                final TestValue value = new TestValue(1000000 + i);
+                root.put(keyToAdd, value);
+            }
+        }
+
+        // The last two copies should not be checked: the last one is mutable, the one before is not
+        // mergeable until its next copy is immutable
+        for (int i = 0; i < nCopies - 2; i++) {
+            // Copies must be merged, not flushed
+            assertEventuallyTrue(copies[i]::isMerged, Duration.ofSeconds(16), "copy " + i + " should be merged");
+        }
     }
 
     @Test
