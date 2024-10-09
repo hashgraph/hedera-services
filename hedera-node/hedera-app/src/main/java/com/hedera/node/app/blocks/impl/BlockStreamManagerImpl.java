@@ -26,7 +26,6 @@ import static com.hedera.node.app.blocks.BlockStreamManager.PendingWork.POST_UPG
 import static com.hedera.node.app.blocks.impl.BlockImplUtils.appendHash;
 import static com.hedera.node.app.blocks.impl.BlockImplUtils.combine;
 import static com.hedera.node.app.blocks.schemas.V0540BlockStreamSchema.BLOCK_STREAM_INFO_KEY;
-import static com.hedera.node.app.hapi.utils.CommonUtils.noThrowSha384HashOf;
 import static com.hedera.node.app.hapi.utils.CommonUtils.sha384DigestOrThrow;
 import static com.hedera.node.app.records.BlockRecordService.EPOCH;
 import static com.hedera.node.app.records.impl.BlockRecordInfoUtils.HASH_SIZE;
@@ -471,7 +470,7 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
                 @NonNull BufferedData data,
                 @NonNull List<byte[]> inputHashes,
                 @NonNull List<byte[]> outputHashes,
-                @NonNull List<byte[]> serializedResults) {}
+                @NonNull List<byte[]> resultHashes) {}
 
         public ScheduledWork(@NonNull final List<BlockItem> items) {
             this.items = requireNonNull(items);
@@ -494,7 +493,7 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
             final var data = BufferedData.wrap(buffer);
             final List<byte[]> inputHashes = new ArrayList<>();
             final List<byte[]> outputHashes = new ArrayList<>();
-            final List<byte[]> serializedResults = new ArrayList<>();
+            final List<byte[]> resultHashes = new ArrayList<>();
             final var digest = sha384DigestOrThrow();
             for (final var item : items) {
                 writeTag(data, BlockSchema.ITEMS, WIRE_TYPE_DELIMITED);
@@ -505,17 +504,14 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
                 final var kind = item.item().kind();
                 switch (kind) {
                     case EVENT_HEADER, EVENT_TRANSACTION, TRANSACTION_RESULT, TRANSACTION_OUTPUT, STATE_CHANGES -> {
-                        final var bytes = new byte[post - pre];
-                        buffer.position(pre);
-                        buffer.get(bytes);
-                        buffer.position(post);
-                        final var hash = digest.digest(bytes);
+                        digest.update(buffer.slice(pre, post - pre));
+                        final var hash = digest.digest();
                         switch (kind) {
                             case EVENT_HEADER, EVENT_TRANSACTION -> inputHashes.add(hash);
                             case TRANSACTION_RESULT, TRANSACTION_OUTPUT, STATE_CHANGES -> outputHashes.add(hash);
                         }
                         if (kind == TRANSACTION_RESULT) {
-                            serializedResults.add(bytes);
+                            resultHashes.add(hash);
                         }
                     }
                     default -> {
@@ -524,7 +520,7 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
                 }
             }
             data.flip();
-            return new Output(data, inputHashes, outputHashes, serializedResults);
+            return new Output(data, inputHashes, outputHashes, resultHashes);
         }
     }
 
@@ -540,7 +536,7 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
         writer.writeItems(output.data());
         output.inputHashes.forEach(hash -> inputTreeHasher.addLeaf(ByteBuffer.wrap(hash)));
         output.outputHashes.forEach(hash -> outputTreeHasher.addLeaf(ByteBuffer.wrap(hash)));
-        output.serializedResults.forEach(runningHashManager::nextResult);
+        output.resultHashes.forEach(runningHashManager::nextResultHash);
         return null;
     }
 
@@ -587,15 +583,15 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
         /**
          * Updates the running hashes for the given serialized output block item.
          *
-         * @param bytes the serialized output block item
+         * @param hash the serialized output block item
          */
-        void nextResult(@NonNull final byte[] bytes) {
-            requireNonNull(bytes);
+        void nextResultHash(@NonNull final byte[] hash) {
+            requireNonNull(hash);
             nMinus3HashFuture = nMinus2HashFuture;
             nMinus2HashFuture = nMinus1HashFuture;
             nMinus1HashFuture = hashFuture;
             hashFuture = hashFuture.thenCombineAsync(
-                    supplyAsync(() -> noThrowSha384HashOf(bytes), executor), BlockImplUtils::combine, executor);
+                    supplyAsync(() -> hash, executor), BlockImplUtils::combine, executor);
         }
     }
 
