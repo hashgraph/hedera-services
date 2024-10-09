@@ -113,6 +113,7 @@ class EnhancedKeyStoreLoaderTest {
         assertThat(keyDirectory).exists().isDirectory().isReadable().isNotEmptyDirectory();
 
         assertThat(loader).isNotNull();
+        assertThatCode(loader::migrate).doesNotThrowAnyException();
         assertThatCode(loader::scan).doesNotThrowAnyException();
         assertThatCode(loader::generateIfNecessary).doesNotThrowAnyException();
         assertThatCode(loader::verify).doesNotThrowAnyException();
@@ -159,6 +160,7 @@ class EnhancedKeyStoreLoaderTest {
         assertThat(keyDirectory).exists().isDirectory().isReadable().isNotEmptyDirectory();
 
         assertThat(loader).isNotNull();
+        assertThatCode(loader::migrate).doesNotThrowAnyException();
         assertThatCode(loader::scan).doesNotThrowAnyException();
         assertThatCode(loader::verify).isInstanceOf(KeyLoadingException.class);
         assertThatCode(loader::injectInAddressBook).isInstanceOf(KeyLoadingException.class);
@@ -183,6 +185,7 @@ class EnhancedKeyStoreLoaderTest {
         assertThat(keyDirectory).exists().isDirectory().isReadable().isNotEmptyDirectory();
 
         assertThat(loader).isNotNull();
+        assertThatCode(loader::migrate).doesNotThrowAnyException();
         assertThatCode(loader::scan).doesNotThrowAnyException();
         assertThatCode(loader::verify).isInstanceOf(KeyLoadingException.class);
         assertThatCode(loader::injectInAddressBook).doesNotThrowAnyException();
