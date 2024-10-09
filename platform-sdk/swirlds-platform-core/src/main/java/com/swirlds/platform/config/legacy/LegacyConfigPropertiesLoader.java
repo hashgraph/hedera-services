@@ -18,7 +18,6 @@ package com.swirlds.platform.config.legacy;
 
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 
-import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
@@ -50,8 +49,6 @@ public final class LegacyConfigPropertiesLoader {
 
     private static final String APP_PROPERTY_NAME = "app";
     private static final String ADDRESS_PROPERTY_NAME = "address";
-    private static final String NEXT_NODE_ID_PROPERTY_NAME = "nextNodeId";
-    private static final String NEXT_NODE_ID_PROPERTY_NAME_LOWERCASE = "nextnodeid";
     private static final String SWIRLD_PROPERTY_NAME = "swirld";
 
     public static final String ERROR_CONFIG_TXT_NOT_FOUND_BUT_EXISTS =
@@ -85,7 +82,6 @@ public final class LegacyConfigPropertiesLoader {
 
         try (final Scanner scanner = new Scanner(configPath, StandardCharsets.UTF_8)) {
             final AddressBook addressBook = new AddressBook();
-            boolean nextNodeIdParsed = false;
             long lineNumber = 0;
             while (scanner.hasNextLine()) {
                 final String line = readNextLine(scanner);
@@ -129,29 +125,9 @@ public final class LegacyConfigPropertiesLoader {
                                 onError(ERROR_ADDRESS_NOT_ENOUGH_PARAMETERS);
                             }
                         }
-                        case NEXT_NODE_ID_PROPERTY_NAME_LOWERCASE -> {
-                            try {
-                                if (!parsOriginalCase[0].equals(AddressBookUtils.NEXT_NODE_ID_KEYWORD)) {
-                                    onError(ERROR_PROPERTY_NOT_KNOWN.formatted(pars[0]));
-                                } else {
-                                    final NodeId nextNodeId = new NodeId(Long.parseLong(pars[1]));
-                                    if (nextNodeId.compareTo(addressBook.getNextNodeId()) < 0) {
-                                        onError(ERROR_NEXT_NODE_NOT_GREATER_THAN_HIGHEST_ADDRESS);
-                                    }
-                                    addressBook.setNextNodeId(nextNodeId);
-                                    nextNodeIdParsed = true;
-                                }
-                            } catch (final NumberFormatException ex) {
-                                onError(ERROR_NO_PARAMETER.formatted(NEXT_NODE_ID_PROPERTY_NAME));
-                            }
-                        }
                         default -> onError(ERROR_PROPERTY_NOT_KNOWN.formatted(pars[0]));
                     }
                 }
-            }
-            if (!nextNodeIdParsed) {
-                onError(ERROR_NO_PARAMETER.formatted(NEXT_NODE_ID_PROPERTY_NAME));
-                throw new ConfigurationException("config.txt did not have a `nextNodeId` property. (Case Sensitive)");
             }
             if (addressBook.getSize() > 0) {
                 configurationProperties.setAddressBook(addressBook);
