@@ -266,7 +266,7 @@ public class SwirldsPlatform implements Platform {
             final SyncGossip gossip = (SyncGossip) builder.buildGossip();
             intakeQueueSizeSupplier = () -> gossip.getOldStyleIntakeQueueSize();
         } else {
-            intakeQueueSizeSupplier = platformWiring.getIntakeQueueSizeSupplier();
+            intakeQueueSizeSupplier = () -> 0;//TODO
         }
 
         blocks.intakeQueueSizeSupplierSupplier().set(intakeQueueSizeSupplier);
