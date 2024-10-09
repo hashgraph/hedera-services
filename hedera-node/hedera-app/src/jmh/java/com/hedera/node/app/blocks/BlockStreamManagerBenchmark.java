@@ -105,8 +105,8 @@ public class BlockStreamManagerBenchmark {
     private final List<BlockItem> roundItems = new ArrayList<>();
     private final PlaceholderTssBaseService tssBaseService = new PlaceholderTssBaseService();
     private final BlockStreamManagerImpl subject = new BlockStreamManagerImpl(
-            //            NoopBlockItemWriter::new,
-            BaosBlockItemWriter::new,
+                        NoopBlockItemWriter::new,
+//            BaosBlockItemWriter::new,
             ForkJoinPool.commonPool(),
             configProvider,
             tssBaseService,

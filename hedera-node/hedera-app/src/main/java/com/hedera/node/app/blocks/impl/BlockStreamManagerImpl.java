@@ -426,8 +426,8 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
 
     private void schedulePendingWork() {
         final var scheduledWork = new ScheduledWork(pendingItems);
-        final var pendingSerialization = CompletableFuture.supplyAsync(scheduledWork::serializeItems, executor);
-        writeFuture = writeFuture.thenCombine(pendingSerialization, scheduledWork::combineSerializedItems);
+        final var pendingOutput = CompletableFuture.supplyAsync(scheduledWork::computeOutput, executor);
+        writeFuture = writeFuture.thenCombine(pendingOutput, this::combineOutput);
         pendingItems = new ArrayList<>();
     }
 
@@ -462,63 +462,64 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
      *     </li>
      * </ol>
      */
-    private class ScheduledWork {
-        private final List<BlockItem> scheduledWork;
+    private static class ScheduledWork {
+        private final List<BlockItem> items;
 
-        public ScheduledWork(@NonNull final List<BlockItem> scheduledWork) {
-            this.scheduledWork = requireNonNull(scheduledWork);
+        public record Output(
+                @NonNull List<byte[]> serializedItems,
+                @NonNull List<byte[]> inputHashes,
+                @NonNull List<byte[]> outputHashes,
+                @NonNull List<byte[]> serializedResults) {}
+
+        public ScheduledWork(@NonNull final List<BlockItem> items) {
+            this.items = requireNonNull(items);
         }
 
         /**
-         * Serializes the scheduled work items to bytes using the {@link BlockItem#PROTOBUF} codec.
-         *
-         * @return the serialized items
+         * Serializes the scheduled work items to bytes using the {@link BlockItem#PROTOBUF} codec and
+         * computes the associated input/output hashes, returning the serialized items and hashes bundled
+         * into an {@link Output}.
+         * @return the output of doing the scheduled work
          */
-        public List<ByteBuffer> serializeItems() {
-            final List<ByteBuffer> serializedItems = new ArrayList<>(scheduledWork.size());
-
-            for (final var item : scheduledWork) {
-                final var bytes = BlockItem.PROTOBUF.toBytes(item);
-                final var buffer = ByteBuffer.wrap(bytes.toByteArray());
-                serializedItems.add(buffer);
-            }
-
-            return serializedItems;
-        }
-
-        /**
-         * Given the serialized items, schedules the hashes of the input/output items and running hash
-         * for the {@link TransactionResult}s to be incorporated in the input/output trees and running hash
-         * respectively; and writes the serialized bytes to the {@link BlockItemWriter}.
-         *
-         * @param ignore ignored, needed for type compatibility with {@link CompletableFuture#thenCombine}
-         * @param serializedItems the serialized items to be processed
-         * @return {@code null}
-         */
-        public Void combineSerializedItems(@Nullable Void ignore, @NonNull final List<ByteBuffer> serializedItems) {
+        public Output computeOutput() {
+            final List<byte[]> serializedItems = new ArrayList<>(items.size());
+            final List<byte[]> inputHashes = new ArrayList<>();
+            final List<byte[]> outputHashes = new ArrayList<>();
+            final List<byte[]> serializedResults = new ArrayList<>();
             final var digest = sha384DigestOrThrow();
-            for (int i = 0, n = scheduledWork.size(); i < n; i++) {
-                final var item = scheduledWork.get(i);
-                final var serializedItem = serializedItems.get(i);
-                final var bytes = new byte[serializedItem.remaining()];
-                serializedItem.slice(0, serializedItem.remaining()).get(bytes);
+            for (final var item : items) {
+                final var bytes = BlockItem.PROTOBUF.toBytes(item).toByteArray();
+                serializedItems.add(bytes);
                 final var kind = item.item().kind();
                 switch (kind) {
-                    case EVENT_HEADER, EVENT_TRANSACTION -> inputTreeHasher.addLeaf(
-                            ByteBuffer.wrap(digest.digest(bytes)));
-                    case TRANSACTION_RESULT, TRANSACTION_OUTPUT, STATE_CHANGES -> outputTreeHasher.addLeaf(
-                            ByteBuffer.wrap(digest.digest(bytes)));
+                    case EVENT_HEADER, EVENT_TRANSACTION -> inputHashes.add(digest.digest(bytes));
+                    case TRANSACTION_RESULT, TRANSACTION_OUTPUT, STATE_CHANGES -> outputHashes.add(digest.digest(bytes));
                     default -> {
                         // Other items are not part of the input/output trees
                     }
                 }
                 if (kind == BlockItem.ItemOneOfType.TRANSACTION_RESULT) {
-                    runningHashManager.nextResult(bytes);
+                    serializedResults.add(bytes);
                 }
-                writer.writeItem(ByteBuffer.wrap(bytes));
             }
-            return null;
+            return new Output(serializedItems, inputHashes, outputHashes, serializedResults);
         }
+    }
+
+    /**
+     * Given the output of a {@link ScheduledWork} instance, writes the output's serialized items and
+     * incorporates its input/output hashes into the corresponding trees and running hash.
+     *
+     * @param ignore ignored, needed for type compatibility with {@link CompletableFuture#thenCombine}
+     * @param output the output to be combined
+     * @return {@code null}
+     */
+    private Void combineOutput(@Nullable Void ignore, @NonNull final ScheduledWork.Output output) {
+        output.serializedItems.forEach(bytes -> writer.writeItem(ByteBuffer.wrap(bytes)));
+        output.inputHashes.forEach(hash -> inputTreeHasher.addLeaf(ByteBuffer.wrap(hash)));
+        output.outputHashes.forEach(hash -> outputTreeHasher.addLeaf(ByteBuffer.wrap(hash)));
+        output.serializedResults.forEach(runningHashManager::nextResult);
+        return null;
     }
 
     private SemanticVersion hapiVersionFrom(@NonNull final Configuration config) {
