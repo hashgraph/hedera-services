@@ -16,12 +16,12 @@
 
 package com.hedera.node.app.service.token.impl.test.handlers;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.BATCH_SIZE_LIMIT_EXCEEDED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.EMPTY_TOKEN_TRANSFER_ACCOUNT_AMOUNTS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.EMPTY_TOKEN_TRANSFER_BODY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_AMOUNTS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_REFERENCE_LIST_SIZE_LIMIT_EXCEEDED;
 import static com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler.asToken;
 import static com.hedera.node.app.service.token.impl.test.handlers.transfer.AirDropTransferType.NFT_AIRDROP;
 import static com.hedera.node.app.service.token.impl.test.handlers.transfer.AirDropTransferType.TOKEN_AIRDROP;
@@ -39,6 +39,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.NftTransfer;
 import com.hedera.hapi.node.base.PendingAirdropId;
 import com.hedera.hapi.node.base.PendingAirdropValue;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
@@ -379,13 +380,10 @@ class TokenAirdropHandlerTest extends CryptoTransferHandlerTestBase {
         tokenAirdropHandler = new TokenAirdropHandler(tokenAirdropValidator, validator);
         given(handleContext.savepointStack()).willReturn(stack);
         given(stack.getBaseBuilder(TokenAirdropStreamBuilder.class)).willReturn(tokenAirdropRecordBuilder);
-        var tokenWithNoCustomFees =
-                fungibleToken.copyBuilder().customFees(Collections.emptyList()).build();
         var nftWithNoCustomFees = nonFungibleToken
                 .copyBuilder()
                 .customFees(Collections.emptyList())
                 .build();
-        writableTokenStore.put(tokenWithNoCustomFees);
         writableTokenStore.put(nftWithNoCustomFees);
         given(storeFactory.writableStore(WritableTokenStore.class)).willReturn(writableTokenStore);
         given(storeFactory.readableStore(ReadableTokenStore.class)).willReturn(writableTokenStore);
@@ -396,26 +394,13 @@ class TokenAirdropHandlerTest extends CryptoTransferHandlerTestBase {
                 .build();
         givenAirdropTxn(txn, payerId);
 
-        given(handleContext.dispatchRemovablePrecedingTransaction(
-                        any(), eq(TokenAirdropStreamBuilder.class), eq(null), eq(payerId), any()))
-                .will((invocation) -> {
-                    var pendingAirdropId = PendingAirdropId.newBuilder().build();
-                    var pendingAirdropValue = PendingAirdropValue.newBuilder().build();
-                    var pendingAirdropRecord = PendingAirdropRecord.newBuilder()
-                            .pendingAirdropId(pendingAirdropId)
-                            .pendingAirdropValue(pendingAirdropValue)
-                            .build();
-
-                    return tokenAirdropRecordBuilder.addPendingAirdrop(pendingAirdropRecord);
-                });
-
         given(handleContext.expiryValidator()).willReturn(expiryValidator);
         given(handleContext.feeCalculatorFactory()).willReturn(feeCalculatorFactory);
         given(handleContext.tryToChargePayer(anyLong())).willReturn(true);
 
         Assertions.assertThatThrownBy(() -> tokenAirdropHandler.handle(handleContext))
                 .isInstanceOf(HandleException.class)
-                .has(responseCode(TOKEN_REFERENCE_LIST_SIZE_LIMIT_EXCEEDED));
+                .has(responseCode(BATCH_SIZE_LIMIT_EXCEEDED));
     }
 
     @Test
@@ -575,9 +560,12 @@ class TokenAirdropHandlerTest extends CryptoTransferHandlerTestBase {
 
         for (int i = 0; i <= MAX_TOKEN_TRANSFERS; i++) {
             result.add(TokenTransferList.newBuilder()
-                    .token(TOKEN_2468)
-                    .transfers(ACCT_4444_PLUS_10)
-                    .nftTransfers(SERIAL_1_FROM_3333_TO_4444, SERIAL_1_FROM_3333_TO_4444)
+                    .token(nonFungibleTokenId)
+                    .nftTransfers(NftTransfer.newBuilder()
+                            .serialNumber(1)
+                            .senderAccountID(ownerId)
+                            .receiverAccountID(tokenReceiverId)
+                            .build())
                     .build());
         }
 
