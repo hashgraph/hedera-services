@@ -296,8 +296,7 @@ public class SyncGossip implements ConnectionTracker, Gossip {
                 currentPlatformStatus::get,
                 hangingThreadDuration,
                 protocolConfig,
-                reconnectConfig
-        );
+                reconnectConfig);
 
         thingsToStart.add(() -> syncProtocolThreads.forEach(StoppableThread::start));
     }

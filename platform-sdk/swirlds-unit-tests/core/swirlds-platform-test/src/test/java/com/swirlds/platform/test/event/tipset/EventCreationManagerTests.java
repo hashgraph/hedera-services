@@ -36,9 +36,7 @@ import com.swirlds.platform.system.events.UnsignedEvent;
 import com.swirlds.platform.system.status.PlatformStatus;
 import java.time.Duration;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicLong;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 class EventCreationManagerTests {
@@ -63,9 +61,7 @@ class EventCreationManagerTests {
                 .withTime(time)
                 .build();
 
-
-        manager = new DefaultEventCreationManager(
-                platformContext, mock(TransactionPoolNexus.class), creator);
+        manager = new DefaultEventCreationManager(platformContext, mock(TransactionPoolNexus.class), creator);
 
         manager.updatePlatformStatus(PlatformStatus.ACTIVE);
     }

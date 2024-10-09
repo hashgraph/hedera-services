@@ -505,9 +505,7 @@ public class PlatformComponentBuilder {
                     blocks.transactionPoolNexus());
 
             eventCreationManager = new DefaultEventCreationManager(
-                    blocks.platformContext(),
-                    blocks.transactionPoolNexus(),
-                    eventCreator);
+                    blocks.platformContext(), blocks.transactionPoolNexus(), eventCreator);
         }
         return eventCreationManager;
     }
