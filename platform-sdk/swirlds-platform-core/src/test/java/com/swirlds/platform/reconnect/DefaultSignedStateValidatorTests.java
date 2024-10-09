@@ -322,7 +322,7 @@ class DefaultSignedStateValidatorTests {
             if (signature.getByte(0) == 0) {
                 return false;
             }
-            final Hash hash = new Hash(data.toByteArray(), stateHash.getDigestType());
+            final Hash hash = new Hash(data, stateHash.getDigestType());
 
             return hash.equals(stateHash);
         };
