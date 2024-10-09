@@ -56,7 +56,7 @@ public class BlockContentsValidator implements BlockStreamValidator {
     public void validateBlocks(@NonNull final List<Block> blocks) {
         for (int i = 0; i < blocks.size(); i++) {
             try {
-                validate(blocks.get(i), i == 0);
+                validate(blocks.get(i));
             } catch (AssertionError err) {
                 logger.error("Error validating block {}", blocks.get(i));
                 throw err;
@@ -64,7 +64,7 @@ public class BlockContentsValidator implements BlockStreamValidator {
         }
     }
 
-    private static void validate(Block block, boolean isFirst) {
+    private static void validate(Block block) {
         final var blockItems = block.items();
 
         // A block SHALL start with a `header`.
@@ -82,9 +82,7 @@ public class BlockContentsValidator implements BlockStreamValidator {
             Assertions.fail("Block does not end with a block proof");
         }
 
-        // In general, a `block_header` SHALL be followed by an `round_header`, but for hapiTestRestart we get
-        // state change singleton update for BLOCK_INFO_VALUE because the post-restart State initialization changes
-        // state before any event has reached consensus
+        // In general, a `block_header` SHALL be followed by an `round_header`
         if (!blockItems.get(1).hasRoundHeader()) {
             Assertions.fail("Block header not followed by an round header");
         }
