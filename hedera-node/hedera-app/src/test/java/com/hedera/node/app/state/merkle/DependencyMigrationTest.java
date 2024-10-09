@@ -128,20 +128,6 @@ class DependencyMigrationTest extends MerkleTestBase {
         }
 
         @Test
-        void networkInfoRequired() {
-            final var subject = new OrderedServiceMigrator();
-            Assertions.assertThatThrownBy(() -> subject.doMigrations(
-                            merkleTree,
-                            servicesRegistry,
-                            null,
-                            new ServicesSoftwareVersion(CURRENT_VERSION),
-                            VERSIONED_CONFIG,
-                            null,
-                            mock(Metrics.class)))
-                    .isInstanceOf(NullPointerException.class);
-        }
-
-        @Test
         void metricsRequired() {
             final var subject = new OrderedServiceMigrator();
             Assertions.assertThatThrownBy(() -> subject.doMigrations(

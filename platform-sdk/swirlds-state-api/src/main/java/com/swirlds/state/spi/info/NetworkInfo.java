@@ -17,6 +17,7 @@
 package com.swirlds.state.spi.info;
 
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.state.State;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
@@ -35,7 +36,7 @@ public interface NetworkInfo {
     Bytes ledgerId();
 
     @NonNull
-    SelfNodeInfo selfNodeInfo();
+    NodeInfo selfNodeInfo();
 
     @NonNull
     List<NodeInfo> addressBook();
@@ -45,8 +46,17 @@ public interface NetworkInfo {
 
     /**
      * Returns true if the network contains a node with the given ID.
+     *
      * @param nodeId the ID of the node to check for
      * @return true if the network contains a node with the given ID
      */
     boolean containsNode(long nodeId);
+
+    /**
+     * Updates the network information from the given state. This method is called when the
+     * state is updated using node updates.
+     *
+     * @param state the state to update from
+     */
+    void updateFrom(State state);
 }
