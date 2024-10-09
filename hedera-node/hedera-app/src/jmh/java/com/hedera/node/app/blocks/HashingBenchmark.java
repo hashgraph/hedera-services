@@ -88,7 +88,7 @@ public class HashingBenchmark {
     @BenchmarkMode(Mode.Throughput)
     @OutputTimeUnit(TimeUnit.SECONDS)
     public void hashItemTree(@NonNull final Blackhole blackhole) {
-//                final var subject = new NaiveStreamingTreeHasher();
+        //                final var subject = new NaiveStreamingTreeHasher();
         final var subject = new ConcurrentStreamingTreeHasher(ForkJoinPool.commonPool());
         for (final var hash : leafHashes) {
             subject.addLeaf(hash);

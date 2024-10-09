@@ -29,7 +29,6 @@ import static com.hedera.node.app.hapi.utils.CommonUtils.noThrowSha384HashOf;
 import static com.hedera.node.app.hapi.utils.CommonUtils.sha384DigestOrThrow;
 import static com.hedera.node.app.records.BlockRecordService.EPOCH;
 import static com.hedera.node.app.records.impl.BlockRecordInfoUtils.HASH_SIZE;
-import static com.hedera.pbj.runtime.ProtoWriterTools.writeMessage;
 import static com.swirlds.platform.state.SwirldStateManagerUtils.isInFreezePeriod;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.CompletableFuture.completedFuture;
@@ -39,17 +38,11 @@ import com.google.common.annotations.VisibleForTesting;
 import com.hedera.hapi.block.stream.BlockItem;
 import com.hedera.hapi.block.stream.BlockProof;
 import com.hedera.hapi.block.stream.MerkleSiblingHash;
-import com.hedera.hapi.block.stream.input.EventHeader;
-import com.hedera.hapi.block.stream.input.RoundHeader;
 import com.hedera.hapi.block.stream.output.BlockHeader;
-import com.hedera.hapi.block.stream.output.StateChanges;
-import com.hedera.hapi.block.stream.output.TransactionOutput;
 import com.hedera.hapi.block.stream.output.TransactionResult;
-import com.hedera.hapi.block.stream.schema.BlockItemSchema;
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.state.blockstream.BlockStreamInfo;
-import com.hedera.hapi.platform.event.EventTransaction;
 import com.hedera.hapi.platform.state.PlatformState;
 import com.hedera.node.app.blocks.BlockItemWriter;
 import com.hedera.node.app.blocks.BlockStreamManager;
@@ -81,12 +74,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
-import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.LinkedBlockingQueue;
 import java.util.function.Supplier;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -107,7 +98,6 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
     private final Supplier<BlockItemWriter> writerSupplier;
     private final BoundaryStateChangeListener boundaryStateChangeListener;
 
-    private final BufferPool bufferPool = new BufferPool();
     private final BlockHashManager blockHashManager;
     private final RunningHashManager runningHashManager;
 
@@ -322,7 +312,6 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
             // Update in-memory state to prepare for the next block
             lastBlockHash = blockHash;
             writer = null;
-            bufferPool.releaseAll();
 
             tssBaseService.requestLedgerSignature(blockHash.toByteArray());
         }
@@ -494,20 +483,6 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
                 serializedItems.add(buffer);
             }
 
-            //            var size = 0;
-            //            for (final var item : scheduledWork) {
-            //                size += BlockItem.PROTOBUF.measureRecord(item);
-            //            }
-            //            final var buffer = bufferPool.acquire(size);
-            //            final var bufferedData = BufferedData.wrap(buffer);
-            //            var position = 0;
-            //            for (final var item : scheduledWork) {
-            //                writeItemToBuffer(item, bufferedData);
-            //                final var newPosition = buffer.position();
-            //                serializedItems.add(buffer.slice(position, newPosition - position));
-            //                position = newPosition;
-            //            }
-
             return serializedItems;
         }
 
@@ -529,8 +504,10 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
                 serializedItem.slice(0, serializedItem.remaining()).get(bytes);
                 final var kind = item.item().kind();
                 switch (kind) {
-                    case EVENT_HEADER, EVENT_TRANSACTION -> inputTreeHasher.addLeaf(ByteBuffer.wrap(digest.digest(bytes)));
-                    case TRANSACTION_RESULT, TRANSACTION_OUTPUT, STATE_CHANGES -> outputTreeHasher.addLeaf(ByteBuffer.wrap(digest.digest(bytes)));
+                    case EVENT_HEADER, EVENT_TRANSACTION -> inputTreeHasher.addLeaf(
+                            ByteBuffer.wrap(digest.digest(bytes)));
+                    case TRANSACTION_RESULT, TRANSACTION_OUTPUT, STATE_CHANGES -> outputTreeHasher.addLeaf(
+                            ByteBuffer.wrap(digest.digest(bytes)));
                     default -> {
                         // Other items are not part of the input/output trees
                     }
@@ -651,93 +628,9 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
                 .complete(notification.hash().getBytes());
     }
 
-    private static class BufferPool {
-        private final Queue<ByteBuffer> buffers = new ConcurrentLinkedQueue<>();
-        private final Map<Integer, BlockingQueue<ByteBuffer>> pools = new ConcurrentHashMap<>();
-
-        public ByteBuffer acquire(final int requiredSize) {
-            final int size = containingPowerOfTwo(requiredSize);
-            final var queue = pools.computeIfAbsent(size, s -> new LinkedBlockingQueue<>());
-            var buffer = queue.poll();
-            if (buffer == null) {
-                buffer = allocate(size);
-            }
-            return buffer;
-        }
-
-        public void releaseAll() {
-            for (final var buffer : buffers) {
-                pools.computeIfAbsent(buffer.clear().capacity(), s -> new LinkedBlockingQueue<>())
-                        .add(buffer);
-            }
-        }
-
-        private ByteBuffer allocate(final int size) {
-            final var buffer = ByteBuffer.allocate(size);
-            buffers.add(buffer);
-            return buffer;
-        }
-
-        private static int containingPowerOfTwo(final int n) {
-            if ((n & (n - 1)) == 0) {
-                return n;
-            }
-            return Integer.highestOneBit(n) << 1;
-        }
-    }
-
     private static void writeItemToBuffer(@NonNull final BlockItem item, @NonNull final BufferedData bufferedData) {
         try {
-            switch (item.item().kind()) {
-                case BLOCK_HEADER -> writeMessage(
-                        bufferedData,
-                        BlockItemSchema.BLOCK_HEADER,
-                        item.blockHeaderOrThrow(),
-                        BlockHeader.PROTOBUF::write,
-                        BlockHeader.PROTOBUF::measureRecord);
-                case EVENT_HEADER -> writeMessage(
-                        bufferedData,
-                        BlockItemSchema.EVENT_HEADER,
-                        item.eventHeaderOrThrow(),
-                        EventHeader.PROTOBUF::write,
-                        EventHeader.PROTOBUF::measureRecord);
-                case ROUND_HEADER -> writeMessage(
-                        bufferedData,
-                        BlockItemSchema.ROUND_HEADER,
-                        item.roundHeaderOrThrow(),
-                        RoundHeader.PROTOBUF::write,
-                        RoundHeader.PROTOBUF::measureRecord);
-                case EVENT_TRANSACTION -> writeMessage(
-                        bufferedData,
-                        BlockItemSchema.EVENT_TRANSACTION,
-                        item.eventTransactionOrThrow(),
-                        EventTransaction.PROTOBUF::write,
-                        EventTransaction.PROTOBUF::measureRecord);
-                case TRANSACTION_RESULT -> writeMessage(
-                        bufferedData,
-                        BlockItemSchema.TRANSACTION_RESULT,
-                        item.transactionResultOrThrow(),
-                        TransactionResult.PROTOBUF::write,
-                        TransactionResult.PROTOBUF::measureRecord);
-                case TRANSACTION_OUTPUT -> writeMessage(
-                        bufferedData,
-                        BlockItemSchema.TRANSACTION_OUTPUT,
-                        item.transactionOutputOrThrow(),
-                        TransactionOutput.PROTOBUF::write,
-                        TransactionOutput.PROTOBUF::measureRecord);
-                case STATE_CHANGES -> writeMessage(
-                        bufferedData,
-                        BlockItemSchema.STATE_CHANGES,
-                        item.stateChangesOrThrow(),
-                        StateChanges.PROTOBUF::write,
-                        StateChanges.PROTOBUF::measureRecord);
-                case BLOCK_PROOF -> writeMessage(
-                        bufferedData,
-                        BlockItemSchema.BLOCK_PROOF,
-                        item.blockProofOrThrow(),
-                        BlockProof.PROTOBUF::write,
-                        BlockProof.PROTOBUF::measureRecord);
-            }
+            BlockItem.PROTOBUF.write(item, bufferedData);
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
