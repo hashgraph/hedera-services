@@ -41,11 +41,6 @@ public class SyncManagerImpl implements FallenBehindManager {
 
     private final EventConfig eventConfig;
 
-    /**
-     * Supplies the event intake queue size.
-     */
-    private final LongSupplier intakeQueueSizeSupplier;
-
     /** This object holds data on how nodes are connected to each other. */
     private final FallenBehindManager fallenBehindManager;
 
@@ -58,17 +53,13 @@ public class SyncManagerImpl implements FallenBehindManager {
      * Creates a new SyncManager
      *
      * @param platformContext         the platform context
-     * @param intakeQueueSizeSupplier a supplier for the size of the event intake queue
      * @param fallenBehindManager     the fallen behind manager
      * @param eventConfig             the event config
      */
     public SyncManagerImpl(
             @NonNull final PlatformContext platformContext,
-            @NonNull final LongSupplier intakeQueueSizeSupplier,
             @NonNull final FallenBehindManager fallenBehindManager,
             @NonNull final EventConfig eventConfig) {
-
-        this.intakeQueueSizeSupplier = Objects.requireNonNull(intakeQueueSizeSupplier);
 
         this.fallenBehindManager = Objects.requireNonNull(fallenBehindManager);
         this.eventConfig = Objects.requireNonNull(eventConfig);
@@ -96,16 +87,7 @@ public class SyncManagerImpl implements FallenBehindManager {
      */
     public boolean shouldAcceptSync() {
         // don't gossip if halted
-        if (gossipHalted.get()) {
-            return false;
-        }
-
-        // we shouldn't sync if the event intake queue is too big
-        final long intakeQueueSize = intakeQueueSizeSupplier.getAsLong();
-        if (intakeQueueSize > eventConfig.eventIntakeQueueThrottleSize()) {
-            return false;
-        }
-        return true;
+        return !gossipHalted.get();
     }
 
     /**
@@ -115,12 +97,7 @@ public class SyncManagerImpl implements FallenBehindManager {
      */
     public boolean shouldInitiateSync() {
         // don't gossip if halted
-        if (gossipHalted.get()) {
-            return false;
-        }
-
-        // we shouldn't sync if the event intake queue is too big
-        return intakeQueueSizeSupplier.getAsLong() <= eventConfig.eventIntakeQueueThrottleSize();
+        return !gossipHalted.get();
     }
 
     /**

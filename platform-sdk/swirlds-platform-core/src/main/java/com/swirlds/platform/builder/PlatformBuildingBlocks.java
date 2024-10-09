@@ -111,7 +111,6 @@ public record PlatformBuildingBlocks(
         @NonNull IntakeEventCounter intakeEventCounter,
         @NonNull RandomBuilder randomBuilder,
         @NonNull TransactionPoolNexus transactionPoolNexus,
-        @NonNull AtomicReference<LongSupplier> intakeQueueSizeSupplierSupplier,
         @NonNull AtomicReference<Predicate<Instant>> isInFreezePeriodReference,
         @NonNull AtomicReference<Function<String, ReservedSignedState>> latestImmutableStateProviderReference,
         @NonNull PcesFileTracker initialPcesFiles,
@@ -137,7 +136,6 @@ public record PlatformBuildingBlocks(
         requireNonNull(intakeEventCounter);
         requireNonNull(randomBuilder);
         requireNonNull(transactionPoolNexus);
-        requireNonNull(intakeQueueSizeSupplierSupplier);
         requireNonNull(isInFreezePeriodReference);
         requireNonNull(latestImmutableStateProviderReference);
         requireNonNull(initialPcesFiles);

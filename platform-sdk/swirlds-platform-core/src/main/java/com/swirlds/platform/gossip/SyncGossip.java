@@ -22,10 +22,7 @@ import com.swirlds.base.state.Startable;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.platform.NodeId;
-import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.common.threading.framework.StoppableThread;
-import com.swirlds.common.threading.framework.config.QueueThreadConfiguration;
-import com.swirlds.common.threading.framework.config.QueueThreadMetricsConfiguration;
 import com.swirlds.common.threading.framework.config.StoppableThreadConfiguration;
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.common.threading.pool.CachedPoolParallelExecutor;
@@ -104,7 +101,6 @@ public class SyncGossip implements ConnectionTracker, Gossip {
 
     private boolean started = false;
 
-    private final PlatformContext platformContext;
     private final ReconnectController reconnectController;
 
     private final AtomicBoolean gossipHalted = new AtomicBoolean(false);
@@ -141,13 +137,6 @@ public class SyncGossip implements ConnectionTracker, Gossip {
     private Consumer<PlatformEvent> receivedEventHandler;
 
     /**
-     * The old style intake queue (if enabled), null if not enabled.
-     */
-    private QueueThread<PlatformEvent> oldStyleIntakeQueue;
-
-    private final ThreadManager threadManager;
-
-    /**
      * Builds the gossip engine, depending on which flavor is requested in the configuration.
      *
      * @param platformContext               the platform context
@@ -156,7 +145,6 @@ public class SyncGossip implements ConnectionTracker, Gossip {
      * @param addressBook                   the current address book
      * @param selfId                        this node's ID
      * @param appVersion                    the version of the app
-     * @param intakeQueueSizeSupplier       a supplier for the size of the event intake queue
      * @param swirldStateManager            manages the mutable state
      * @param latestCompleteState           holds the latest signed state that has enough signatures to be verifiable
      * @param statusActionSubmitter         for submitting updates to the platform status manager
@@ -171,17 +159,12 @@ public class SyncGossip implements ConnectionTracker, Gossip {
             @NonNull final AddressBook addressBook,
             @NonNull final NodeId selfId,
             @NonNull final SoftwareVersion appVersion,
-            @NonNull final LongSupplier intakeQueueSizeSupplier,
             @NonNull final SwirldStateManager swirldStateManager,
             @NonNull final Supplier<ReservedSignedState> latestCompleteState,
             @NonNull final StatusActionSubmitter statusActionSubmitter,
             @NonNull final Consumer<SignedState> loadReconnectState,
             @NonNull final Runnable clearAllPipelinesForReconnect,
             @NonNull final IntakeEventCounter intakeEventCounter) {
-
-        this.platformContext = Objects.requireNonNull(platformContext);
-
-        this.threadManager = Objects.requireNonNull(threadManager);
 
         shadowgraph = new Shadowgraph(platformContext, addressBook, intakeEventCounter);
 
@@ -229,7 +212,6 @@ public class SyncGossip implements ConnectionTracker, Gossip {
 
         syncManager = new SyncManagerImpl(
                 platformContext,
-                intakeQueueSizeSupplier,
                 fallenBehindManager,
                 platformContext.getConfiguration().getConfigData(EventConfig.class));
 
@@ -274,8 +256,6 @@ public class SyncGossip implements ConnectionTracker, Gossip {
                 stateConfig);
         this.intakeEventCounter = Objects.requireNonNull(intakeEventCounter);
 
-        final EventConfig eventConfig = platformContext.getConfiguration().getConfigData(EventConfig.class);
-
         syncConfig = platformContext.getConfiguration().getConfigData(SyncConfig.class);
 
         final ParallelExecutor shadowgraphExecutor = new CachedPoolParallelExecutor(threadManager, "node-sync");
@@ -311,14 +291,13 @@ public class SyncGossip implements ConnectionTracker, Gossip {
                 threadManager,
                 selfId,
                 appVersion,
-                intakeQueueSizeSupplier,
                 latestCompleteState,
                 syncMetrics,
                 currentPlatformStatus::get,
                 hangingThreadDuration,
                 protocolConfig,
-                reconnectConfig,
-                eventConfig);
+                reconnectConfig
+        );
 
         thingsToStart.add(() -> syncProtocolThreads.forEach(StoppableThread::start));
     }
@@ -328,14 +307,12 @@ public class SyncGossip implements ConnectionTracker, Gossip {
             final ThreadManager threadManager,
             final NodeId selfId,
             final SoftwareVersion appVersion,
-            final LongSupplier intakeQueueSizeSupplier,
             final Supplier<ReservedSignedState> getLatestCompleteState,
             final SyncMetrics syncMetrics,
             final Supplier<PlatformStatus> platformStatusSupplier,
             final Duration hangingThreadDuration,
             final ProtocolConfig protocolConfig,
-            final ReconnectConfig reconnectConfig,
-            final EventConfig eventConfig) {
+            final ReconnectConfig reconnectConfig) {
 
         final ProtocolFactory syncProtocolFactory = new SyncProtocolFactory(
                 platformContext,
@@ -344,7 +321,6 @@ public class SyncGossip implements ConnectionTracker, Gossip {
                 syncPermitProvider,
                 intakeEventCounter,
                 gossipHalted::get,
-                () -> intakeQueueSizeSupplier.getAsLong() >= eventConfig.eventIntakeQueueThrottleSize(),
                 Duration.ZERO,
                 syncMetrics,
                 platformStatusSupplier);
@@ -501,42 +477,6 @@ public class SyncGossip implements ConnectionTracker, Gossip {
         systemHealthInput.bindConsumer(syncPermitProvider::reportUnhealthyDuration);
         platformStatusInput.bindConsumer(currentPlatformStatus::set);
 
-        final boolean useOldStyleIntakeQueue = platformContext
-                .getConfiguration()
-                .getConfigData(EventConfig.class)
-                .useOldStyleIntakeQueue();
-
-        if (useOldStyleIntakeQueue) {
-            oldStyleIntakeQueue = new QueueThreadConfiguration<PlatformEvent>(threadManager)
-                    .setCapacity(10_000)
-                    .setThreadName("old_style_intake_queue")
-                    .setComponent("platform")
-                    .setHandler(eventOutput::forward)
-                    .setMetricsConfiguration(
-                            new QueueThreadMetricsConfiguration(platformContext.getMetrics()).enableMaxSizeMetric())
-                    .build();
-            thingsToStart.add(oldStyleIntakeQueue);
-
-            receivedEventHandler = event -> {
-                try {
-                    oldStyleIntakeQueue.put(event);
-                } catch (final InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                    throw new RuntimeException("interrupted while attempting to enqueue event from gossip", e);
-                }
-            };
-
-        } else {
-            receivedEventHandler = eventOutput::forward;
-        }
-    }
-
-    /**
-     * Get the size of the old style intake queue.
-     *
-     * @return the size of the old style intake queue
-     */
-    public int getOldStyleIntakeQueueSize() {
-        return oldStyleIntakeQueue.size();
+        receivedEventHandler = eventOutput::forward;
     }
 }

@@ -78,28 +78,21 @@ public class DefaultEventCreationManager implements EventCreationManager {
      *
      * @param platformContext      the platform context
      * @param transactionPoolNexus provides transactions to be added to new events
-     * @param eventIntakeQueueSize supplies the size of the event intake queue
      * @param creator              creates events
      */
     public DefaultEventCreationManager(
             @NonNull final PlatformContext platformContext,
             @NonNull final TransactionPoolNexus transactionPoolNexus,
-            @NonNull final LongSupplier eventIntakeQueueSize,
             @NonNull final EventCreator creator) {
 
         this.creator = Objects.requireNonNull(creator);
 
         final EventCreationConfig config = platformContext.getConfiguration().getConfigData(EventCreationConfig.class);
-        final boolean useLegacyBackpressure = config.useLegacyBackpressure();
 
         final List<EventCreationRule> rules = new ArrayList<>();
         rules.add(new MaximumRateRule(platformContext));
         rules.add(new PlatformStatusRule(this::getPlatformStatus, transactionPoolNexus));
-        if (useLegacyBackpressure) {
-            rules.add(new BackpressureRule(platformContext, eventIntakeQueueSize));
-        } else {
-            rules.add(new PlatformHealthRule(config.maximumPermissibleUnhealthyDuration(), this::getUnhealthyDuration));
-        }
+        rules.add(new PlatformHealthRule(config.maximumPermissibleUnhealthyDuration(), this::getUnhealthyDuration));
 
         this.eventCreationRules = AggregateEventCreationRules.of(rules);
 

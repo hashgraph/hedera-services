@@ -42,7 +42,6 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 class EventCreationManagerTests {
-    private AtomicLong intakeQueueSize;
     private EventCreator creator;
     private List<UnsignedEvent> eventsToCreate;
     private FakeTime time;
@@ -64,10 +63,9 @@ class EventCreationManagerTests {
                 .withTime(time)
                 .build();
 
-        intakeQueueSize = new AtomicLong(0);
 
         manager = new DefaultEventCreationManager(
-                platformContext, mock(TransactionPoolNexus.class), intakeQueueSize::get, creator);
+                platformContext, mock(TransactionPoolNexus.class), creator);
 
         manager.updatePlatformStatus(PlatformStatus.ACTIVE);
     }
@@ -110,32 +108,6 @@ class EventCreationManagerTests {
         time.tick(Duration.ofSeconds(1));
 
         manager.updatePlatformStatus(PlatformStatus.ACTIVE);
-        final UnsignedEvent e1 = manager.maybeCreateEvent();
-        assertNotNull(e1);
-        verify(creator, times(2)).maybeCreateEvent();
-        assertSame(eventsToCreate.get(1), e1);
-    }
-
-    /**
-     * This form of backpressure is not currently enabled.
-     */
-    @Disabled
-    @Test
-    void backpressurePreventsCreation() {
-        final UnsignedEvent e0 = manager.maybeCreateEvent();
-        verify(creator, times(1)).maybeCreateEvent();
-        assertNotNull(e0);
-        assertSame(eventsToCreate.get(0), e0);
-
-        time.tick(Duration.ofSeconds(1));
-        intakeQueueSize.set(11);
-
-        assertNull(manager.maybeCreateEvent());
-        verify(creator, times(1)).maybeCreateEvent();
-
-        time.tick(Duration.ofSeconds(1));
-        intakeQueueSize.set(9);
-
         final UnsignedEvent e1 = manager.maybeCreateEvent();
         assertNotNull(e1);
         verify(creator, times(2)).maybeCreateEvent();

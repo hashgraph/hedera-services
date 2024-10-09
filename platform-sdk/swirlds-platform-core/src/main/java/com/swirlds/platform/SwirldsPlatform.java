@@ -256,20 +256,6 @@ public class SwirldsPlatform implements Platform {
 
         final EventWindowManager eventWindowManager = new DefaultEventWindowManager();
 
-        final boolean useOldStyleIntakeQueue = platformContext
-                .getConfiguration()
-                .getConfigData(EventConfig.class)
-                .useOldStyleIntakeQueue();
-
-        final LongSupplier intakeQueueSizeSupplier;
-        if (useOldStyleIntakeQueue) {
-            final SyncGossip gossip = (SyncGossip) builder.buildGossip();
-            intakeQueueSizeSupplier = () -> gossip.getOldStyleIntakeQueueSize();
-        } else {
-            intakeQueueSizeSupplier = () -> 0;//TODO
-        }
-
-        blocks.intakeQueueSizeSupplierSupplier().set(intakeQueueSizeSupplier);
         blocks.isInFreezePeriodReference().set(swirldStateManager::isInFreezePeriod);
 
         final BirthRoundMigrationShim birthRoundMigrationShim = buildBirthRoundMigrationShim(initialState, ancientMode);
