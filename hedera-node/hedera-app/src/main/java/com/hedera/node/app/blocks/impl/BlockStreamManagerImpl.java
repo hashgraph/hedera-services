@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.blocks.impl;
 
+import static com.hedera.hapi.block.stream.BlockItem.ItemOneOfType.TRANSACTION_RESULT;
 import static com.hedera.hapi.node.base.BlockHashAlgorithm.SHA2_384;
 import static com.hedera.hapi.util.HapiUtils.asInstant;
 import static com.hedera.hapi.util.HapiUtils.asTimestamp;
@@ -29,6 +30,8 @@ import static com.hedera.node.app.hapi.utils.CommonUtils.noThrowSha384HashOf;
 import static com.hedera.node.app.hapi.utils.CommonUtils.sha384DigestOrThrow;
 import static com.hedera.node.app.records.BlockRecordService.EPOCH;
 import static com.hedera.node.app.records.impl.BlockRecordInfoUtils.HASH_SIZE;
+import static com.hedera.pbj.runtime.ProtoConstants.WIRE_TYPE_DELIMITED;
+import static com.hedera.pbj.runtime.ProtoWriterTools.writeTag;
 import static com.swirlds.platform.state.SwirldStateManagerUtils.isInFreezePeriod;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.CompletableFuture.completedFuture;
@@ -40,6 +43,7 @@ import com.hedera.hapi.block.stream.BlockProof;
 import com.hedera.hapi.block.stream.MerkleSiblingHash;
 import com.hedera.hapi.block.stream.output.BlockHeader;
 import com.hedera.hapi.block.stream.output.TransactionResult;
+import com.hedera.hapi.block.stream.schema.BlockSchema;
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.state.blockstream.BlockStreamInfo;
@@ -464,7 +468,7 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
         private final List<BlockItem> items;
 
         public record Output(
-                @NonNull List<byte[]> serializedItems,
+                @NonNull BufferedData data,
                 @NonNull List<byte[]> inputHashes,
                 @NonNull List<byte[]> outputHashes,
                 @NonNull List<byte[]> serializedResults) {}
@@ -477,30 +481,50 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
          * Serializes the scheduled work items to bytes using the {@link BlockItem#PROTOBUF} codec and
          * computes the associated input/output hashes, returning the serialized items and hashes bundled
          * into an {@link Output}.
+         *
          * @return the output of doing the scheduled work
          */
         public Output computeOutput() {
-            final List<byte[]> serializedItems = new ArrayList<>(items.size());
+            var size = 0;
+            for (final var item : items) {
+                // Plus 8 bytes for the preceding tag and length
+                size += BlockItem.PROTOBUF.measureRecord(item) + 8;
+            }
+            final var buffer = ByteBuffer.allocate(size);
+            final var data = BufferedData.wrap(buffer);
             final List<byte[]> inputHashes = new ArrayList<>();
             final List<byte[]> outputHashes = new ArrayList<>();
             final List<byte[]> serializedResults = new ArrayList<>();
             final var digest = sha384DigestOrThrow();
             for (final var item : items) {
-                final var bytes = BlockItem.PROTOBUF.toBytes(item).toByteArray();
-                serializedItems.add(bytes);
+                writeTag(data, BlockSchema.ITEMS, WIRE_TYPE_DELIMITED);
+                data.writeVarInt(BlockItem.PROTOBUF.measureRecord(item), false);
+                final var pre = buffer.position();
+                writeItemToBuffer(item, data);
+                final var post = buffer.position();
                 final var kind = item.item().kind();
                 switch (kind) {
-                    case EVENT_HEADER, EVENT_TRANSACTION -> inputHashes.add(digest.digest(bytes));
-                    case TRANSACTION_RESULT, TRANSACTION_OUTPUT, STATE_CHANGES -> outputHashes.add(digest.digest(bytes));
+                    case EVENT_HEADER, EVENT_TRANSACTION, TRANSACTION_RESULT, TRANSACTION_OUTPUT, STATE_CHANGES -> {
+                        final var bytes = new byte[post - pre];
+                        buffer.position(pre);
+                        buffer.get(bytes);
+                        buffer.position(post);
+                        final var hash = digest.digest(bytes);
+                        switch (kind) {
+                            case EVENT_HEADER, EVENT_TRANSACTION -> inputHashes.add(hash);
+                            case TRANSACTION_RESULT, TRANSACTION_OUTPUT, STATE_CHANGES -> outputHashes.add(hash);
+                        }
+                        if (kind == TRANSACTION_RESULT) {
+                            serializedResults.add(bytes);
+                        }
+                    }
                     default -> {
-                        // Other items are not part of the input/output trees
+                        // Other items have no special processing to do
                     }
                 }
-                if (kind == BlockItem.ItemOneOfType.TRANSACTION_RESULT) {
-                    serializedResults.add(bytes);
-                }
             }
-            return new Output(serializedItems, inputHashes, outputHashes, serializedResults);
+            data.flip();
+            return new Output(data, inputHashes, outputHashes, serializedResults);
         }
     }
 
@@ -513,7 +537,7 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
      * @return {@code null}
      */
     private Void combineOutput(@Nullable Void ignore, @NonNull final ScheduledWork.Output output) {
-        output.serializedItems.forEach(writer::writeItem);
+        writer.writeItems(output.data());
         output.inputHashes.forEach(hash -> inputTreeHasher.addLeaf(ByteBuffer.wrap(hash)));
         output.outputHashes.forEach(hash -> outputTreeHasher.addLeaf(ByteBuffer.wrap(hash)));
         output.serializedResults.forEach(runningHashManager::nextResult);

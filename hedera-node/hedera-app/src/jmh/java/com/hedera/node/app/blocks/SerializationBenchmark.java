@@ -16,14 +16,9 @@
 
 package com.hedera.node.app.blocks;
 
-import static com.hedera.pbj.runtime.ProtoWriterTools.writeMessage;
-
 import com.hedera.hapi.block.stream.Block;
 import com.hedera.hapi.block.stream.BlockItem;
-import com.hedera.hapi.block.stream.output.StateChanges;
-import com.hedera.hapi.block.stream.schema.BlockItemSchema;
 import com.hedera.pbj.runtime.ParseException;
-import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
@@ -68,8 +63,8 @@ public class SerializationBenchmark {
     private static final Map<BlockType, BlockItem> SAMPLE_ITEMS = new HashMap<>();
     private static final Map<BlockType, Integer> SAMPLE_ITEM_SIZES = new HashMap<>();
 
-        @Param({"TRANSACTION_RESULT"})
-//    @Param({"SINGLETON_STATE_CHANGES"})
+    @Param({"TRANSACTION_RESULT"})
+    //    @Param({"SINGLETON_STATE_CHANGES"})
     private BlockType blockType;
 
     @Param({"1000"})
@@ -120,21 +115,21 @@ public class SerializationBenchmark {
     public void serializeItem(@NonNull final Blackhole blackhole) throws IOException {
         final var item = SAMPLE_ITEMS.get(blockType);
 
-                        final var serializedItems = new ArrayList<Bytes>(numItems);
-                        for (int i = 0; i < numItems; i++) {
-                            serializedItems.add(BlockItem.PROTOBUF.toBytes(item));
-                        }
-                        blackhole.consume(serializedItems);
+        final var serializedItems = new ArrayList<Bytes>(numItems);
+        for (int i = 0; i < numItems; i++) {
+            serializedItems.add(BlockItem.PROTOBUF.toBytes(item));
+        }
+        blackhole.consume(serializedItems);
 
-//        final var outputStream = BufferedData.wrap(buffer);
-//        for (int i = 0; i < numItems; i++) {
-//            BlockItem.PROTOBUF.write(item, outputStream);
-//        }
-//        final var bytes = buffer.array();
-//        if (buffer.position() != (int) expectedAnswer.length()) {
-//            throw new IllegalStateException();
-//        }
-//        buffer.rewind();
-//        blackhole.consume(bytes);
+        //        final var outputStream = BufferedData.wrap(buffer);
+        //        for (int i = 0; i < numItems; i++) {
+        //            BlockItem.PROTOBUF.write(item, outputStream);
+        //        }
+        //        final var bytes = buffer.array();
+        //        if (buffer.position() != (int) expectedAnswer.length()) {
+        //            throw new IllegalStateException();
+        //        }
+        //        buffer.rewind();
+        //        blackhole.consume(bytes);
     }
 }

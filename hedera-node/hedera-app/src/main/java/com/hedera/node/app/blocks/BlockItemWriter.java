@@ -16,10 +16,11 @@
 
 package com.hedera.node.app.blocks;
 
+import static java.util.Objects.requireNonNull;
+
+import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
-
-import static java.util.Objects.requireNonNull;
 
 /**
  * Writes serialized block items to a destination stream.
@@ -48,6 +49,13 @@ public interface BlockItemWriter {
      * @param bytes the serialized item to write
      */
     BlockItemWriter writeItem(@NonNull byte[] bytes);
+
+    /**
+     * Writes a pre-serialized sequence of items to the destination stream.
+     *
+     * @param data the serialized item to write
+     */
+    BlockItemWriter writeItems(@NonNull BufferedData data);
 
     /**
      * Closes the block.

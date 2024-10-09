@@ -43,6 +43,7 @@ import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.BlockStreamConfig;
 import com.hedera.pbj.runtime.OneOf;
 import com.hedera.pbj.runtime.ParseException;
+import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.platform.state.service.PlatformStateService;
@@ -240,6 +241,11 @@ public class StandaloneRoundManagement {
 
         @Override
         public BlockItemWriter writeItem(@NonNull final byte[] bytes) {
+            return this;
+        }
+
+        @Override
+        public BlockItemWriter writeItems(@NonNull final BufferedData data) {
             return this;
         }
 

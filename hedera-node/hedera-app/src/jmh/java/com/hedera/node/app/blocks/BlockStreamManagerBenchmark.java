@@ -42,6 +42,7 @@ import com.hedera.node.app.tss.impl.PlaceholderTssBaseService;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.pbj.runtime.OneOf;
 import com.hedera.pbj.runtime.ParseException;
+import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.platform.state.service.PlatformStateService;
@@ -99,15 +100,17 @@ public class BlockStreamManagerBenchmark {
     }
 
     private final Round round = new FakeRound();
-    private final ConfigProvider configProvider =
-            new ConfigProviderImpl(false, null, Map.of(
+    private final ConfigProvider configProvider = new ConfigProviderImpl(
+            false,
+            null,
+            Map.of(
                     "blockStream.hashCombineBatchSize", "32",
                     "blockStream.serializationBatchSize", "32"));
     private final List<BlockItem> roundItems = new ArrayList<>();
     private final PlaceholderTssBaseService tssBaseService = new PlaceholderTssBaseService();
     private final BlockStreamManagerImpl subject = new BlockStreamManagerImpl(
-                        NoopBlockItemWriter::new,
-//            BaosBlockItemWriter::new,
+            NoopBlockItemWriter::new,
+//                        BaosBlockItemWriter::new,
             ForkJoinPool.commonPool(),
             configProvider,
             tssBaseService,
@@ -299,6 +302,11 @@ public class BlockStreamManagerBenchmark {
         }
 
         @Override
+        public BlockItemWriter writeItems(@NonNull BufferedData data) {
+            return this;
+        }
+
+        @Override
         public void closeBlock() {
             // No-op
         }
@@ -323,6 +331,19 @@ public class BlockStreamManagerBenchmark {
                 baos.write(bytes);
             } catch (IOException e) {
                 throw new UncheckedIOException(e);
+            }
+            return this;
+        }
+
+        @Override
+        public BlockItemWriter writeItems(@NonNull final BufferedData data) {
+            try {
+                final var block = Block.PROTOBUF.parse(data);
+                for (final var item : block.items()) {
+                    writePbjItem(BlockItem.PROTOBUF.toBytes(item));
+                }
+            } catch (ParseException e) {
+                throw new IllegalArgumentException(e);
             }
             return this;
         }
