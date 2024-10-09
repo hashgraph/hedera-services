@@ -34,7 +34,6 @@ import static com.hedera.pbj.runtime.ProtoWriterTools.writeTag;
 import static com.swirlds.platform.state.SwirldStateManagerUtils.isInFreezePeriod;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.CompletableFuture.completedFuture;
-import static java.util.concurrent.CompletableFuture.supplyAsync;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.hedera.hapi.block.stream.BlockItem;
@@ -293,10 +292,12 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
                     asTimestamp(lastIntervalProcessTime)));
             ((CommittableWritableStates) writableState).commit();
 
-            // Flush the block stream info change
-            pendingItems.add(boundaryStateChangeListener.flushChanges());
-            schedulePendingWork();
+            // Serialize and hash the final block item
+            final var finalWork = new ScheduledWork(List.of(boundaryStateChangeListener.flushChanges()));
+            final var finalOutput = finalWork.computeOutput();
+            // Ensure we only write and incorporates the final hash after all preceding work is done
             writeFuture.join();
+            combineOutput(null, finalOutput);
             final var outputHash = outputTreeHasher.rootHash().join();
             final var leftParent = combine(lastBlockHash, inputHash);
             final var rightParent = combine(outputHash, blockStartStateHash);
@@ -570,7 +571,7 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
         byte[] hash;
 
         Bytes latestHashes() {
-            final var all = new byte[][] { nMinus3Hash, nMinus2Hash, nMinus1Hash, hash };
+            final var all = new byte[][] {nMinus3Hash, nMinus2Hash, nMinus1Hash, hash};
             int numMissing = 0;
             while (numMissing < all.length && all[numMissing] == null) {
                 numMissing++;
