@@ -316,7 +316,6 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
             // Update in-memory state to prepare for the next block
             lastBlockHash = blockHash;
             writer = null;
-
             tssBaseService.requestLedgerSignature(blockHash.toByteArray());
         }
     }
@@ -489,9 +488,13 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
             var numInputs = 0;
             var numOutputs = 0;
             var numResults = 0;
-            for (final var item : items) {
+            final var n = items.size();
+            final var sizes = new int[n];
+            for (var i = 0; i < n; i++) {
+                final var item = items.get(i);
+                sizes[i] = BlockItem.PROTOBUF.measureRecord(item);
                 // Plus 8 bytes for the preceding tag and length
-                size += BlockItem.PROTOBUF.measureRecord(item) + 8;
+                size += (sizes[i] + 8);
                 final var kind = item.item().kind();
                 switch (kind) {
                     case EVENT_HEADER, EVENT_TRANSACTION -> numInputs++;
@@ -509,9 +512,10 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
             final var serializedItems = ByteBuffer.allocate(size);
             final var data = BufferedData.wrap(serializedItems);
             final var digest = sha384DigestOrThrow();
-            for (final var item : items) {
+            for (var i = 0; i < n; i++) {
+                final var item = items.get(i);
                 writeTag(data, BlockSchema.ITEMS, WIRE_TYPE_DELIMITED);
-                data.writeVarInt(BlockItem.PROTOBUF.measureRecord(item), false);
+                data.writeVarInt(sizes[i], false);
                 final var pre = serializedItems.position();
                 writeItemToBuffer(item, data);
                 final var post = serializedItems.position();
