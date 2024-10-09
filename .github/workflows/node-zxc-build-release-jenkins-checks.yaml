@@ -55,12 +55,12 @@ jobs:
         run: |
           INTEGRATION_TRIGGERED="$(jq '.jobs."build-upgrade-integration".triggered' <<<"${JSON_RESPONSE}")"
           DOCKER_TRIGGERED="$(jq '.jobs."build-upgrade-integration-docker".triggered' <<<"${JSON_RESPONSE}")"
-          
+
           if [[ "${INTEGRATION_TRIGGERED}" != true ]]; then
             echo "::error title=Jenkins Trigger Failure::Failed to trigger the 'build-upgrade-integration' job via the Jenkins 'integration' pipeline!"
             exit 1
           fi
-          
+
           if [[ "${DOCKER_TRIGGERED}" != true ]]; then
             echo "::error title=Jenkins Trigger Failure::Failed to trigger the 'build-upgrade-integration-docker' job via the Jenkins 'integration' pipeline!"
             exit 1
