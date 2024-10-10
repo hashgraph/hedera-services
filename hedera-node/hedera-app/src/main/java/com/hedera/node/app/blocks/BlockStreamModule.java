@@ -20,7 +20,7 @@ import com.hedera.node.app.blocks.impl.BlockStreamManagerImpl;
 import com.hedera.node.app.blocks.impl.FileBlockItemWriter;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.BlockStreamConfig;
-import com.swirlds.state.spi.info.SelfNodeInfo;
+import com.swirlds.state.spi.info.NodeInfo;
 import dagger.Binds;
 import dagger.Module;
 import dagger.Provides;
@@ -39,7 +39,7 @@ public interface BlockStreamModule {
     @Singleton
     static Supplier<BlockItemWriter> bindBlockItemWriterSupplier(
             @NonNull final ConfigProvider configProvider,
-            @NonNull final SelfNodeInfo selfNodeInfo,
+            @NonNull final NodeInfo selfNodeInfo,
             @NonNull final FileSystem fileSystem) {
         final var config = configProvider.getConfiguration();
         final var blockStreamConfig = config.getConfigData(BlockStreamConfig.class);

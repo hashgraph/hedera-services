@@ -20,6 +20,7 @@ import static com.hedera.node.app.hapi.utils.CommonUtils.noThrowSha384HashOf;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.tss.TssBaseService;
+import com.hedera.node.app.tss.schemas.V0560TSSSchema;
 import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.state.spi.SchemaRegistry;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -54,7 +55,8 @@ public class PlaceholderTssBaseService implements TssBaseService {
 
     @Override
     public void registerSchemas(@NonNull final SchemaRegistry registry) {
-        // FUTURE - add required schemas
+        requireNonNull(registry);
+        registry.register(new V0560TSSSchema());
     }
 
     @Override
