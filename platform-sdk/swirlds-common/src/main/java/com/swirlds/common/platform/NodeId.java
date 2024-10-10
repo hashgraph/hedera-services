@@ -76,7 +76,7 @@ public class NodeId implements Comparable<NodeId>, SelfSerializable {
      * @param id the ID number
      * @throws IllegalArgumentException if the ID number is negative
      */
-    public NodeId(final long id) {
+    protected NodeId(final long id) {
         if (id < LOWEST_NODE_NUMBER) {
             throw new IllegalArgumentException("id must be non-negative");
         }
