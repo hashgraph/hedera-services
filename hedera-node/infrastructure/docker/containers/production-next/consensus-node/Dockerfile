@@ -238,6 +238,9 @@ COPY sdk/data/lib/* /opt/hgcapp/services-hedera/HapiApp2.0/data/lib/
 # Add the entrypoint script
 ADD entrypoint.sh /opt/hgcapp/services-hedera/HapiApp2.0/
 
+# Add s6-rc configuration
+COPY etc/s6-overlay/s6-rc.d /etc/s6-overlay/s6-rc.d/
+
 # Ensure proper file permissions
 RUN chmod -R +x /opt/hgcapp/services-hedera/HapiApp2.0/entrypoint.sh && \
     chown -R 2000:2000 /opt/hgcapp/services-hedera/HapiApp2.0
@@ -294,4 +297,3 @@ EXPOSE 50111/tcp 50211/tcp 50212/tcp
 USER 2000
 WORKDIR "/opt/hgcapp"
 ENTRYPOINT ["/init"]
-CMD ["/opt/hgcapp/services-hedera/HapiApp2.0/entrypoint.sh"]
