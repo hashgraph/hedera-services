@@ -42,7 +42,7 @@ final class NodeIdCache {
     }
 
     /**
-     * Fetch a NodeId value from the cache, or create a NodeId.of object.
+     * Fetch a NodeId value from the cache, or create a new NodeId object.
      * The caller MUST NOT mutate the returned object even though the NodeId class is technically mutable.
      *
      * @param id a node id value
