@@ -38,7 +38,7 @@ jobs:
   tag-for-xts:
     name: Tag for XTS promotion
     runs-on: network-node-linux-medium
-    if: ${{ github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.ref_type == 'branch' }}
+    if: ${{ (github.event.workflow_run.conclusion == 'success' || github.event.workflow_run.conclusion == 'skipped') && github.event.workflow_run.ref_type == 'branch' }}
     steps:
       - name: Harden Runner
         uses: step-security/harden-runner@f086349bfa2bd1361f7909c78558e816508cdc10 # v2.8.0
