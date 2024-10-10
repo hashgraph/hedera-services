@@ -85,7 +85,7 @@ class SyncProtocolFactoryTests {
 
     @BeforeEach
     void setup() {
-        peerId = new NodeId(1);
+        peerId = NodeId.of(1);
         shadowGraphSynchronizer = mock(ShadowgraphSynchronizer.class);
         fallenBehindManager = mock(FallenBehindManager.class);
 
@@ -101,7 +101,7 @@ class SyncProtocolFactoryTests {
         // node is not fallen behind
         Mockito.when(fallenBehindManager.hasFallenBehind()).thenReturn(false);
         // only peer with ID 1 is needed for fallen behind
-        Mockito.when(fallenBehindManager.getNeededForFallenBehind()).thenReturn(List.of(new NodeId(1L)));
+        Mockito.when(fallenBehindManager.getNeededForFallenBehind()).thenReturn(List.of(NodeId.of(1L)));
     }
 
     @Test
@@ -294,7 +294,7 @@ class SyncProtocolFactoryTests {
                 sleepAfterSync,
                 syncMetrics,
                 () -> ACTIVE);
-        final Protocol protocol = syncProtocolFactory.build(new NodeId(6));
+        final Protocol protocol = syncProtocolFactory.build(NodeId.of(6));
 
         assertEquals(2, countAvailablePermits(permitProvider));
         assertTrue(protocol.shouldInitiate());

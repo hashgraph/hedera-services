@@ -57,7 +57,7 @@ public class BrowseCommand extends AbstractCommand {
                     + "specified by repeating the parameter `-l #1 -l #2 -l #3`.")
     private void setLocalNodes(@NonNull final Long... localNodes) {
         for (final Long nodeId : localNodes) {
-            this.localNodes.add(new NodeId(nodeId));
+            this.localNodes.add(NodeId.of(nodeId));
         }
     }
 

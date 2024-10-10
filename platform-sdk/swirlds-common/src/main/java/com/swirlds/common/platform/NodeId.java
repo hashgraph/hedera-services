@@ -48,10 +48,22 @@ public class NodeId implements Comparable<NodeId>, SelfSerializable {
     public static final long LOWEST_NODE_NUMBER = 0L;
 
     /** The first NodeId. */
-    public static final NodeId FIRST_NODE_ID = new NodeId(LOWEST_NODE_NUMBER);
+    public static final NodeId FIRST_NODE_ID = NodeId.of(LOWEST_NODE_NUMBER);
 
     /** The ID number. */
     private long id;
+
+    /**
+     * Return a potentially cached NodeId instance for a given node id value.
+     * The caller MUST NOT mutate the returned object even though the NodeId class is technically mutable.
+     * If the caller needs to mutate the instance, then it must use the regular NodeId(long) constructor instead.
+     *
+     * @param id a node id value
+     * @return a NodeId instance
+     */
+    public static NodeId of(final long id) {
+        return NodeIdCache.getOrCreate(id);
+    }
 
     /**
      * Constructs an empty NodeId objects, used in deserialization only.
@@ -116,7 +128,7 @@ public class NodeId implements Comparable<NodeId>, SelfSerializable {
             throw new IllegalArgumentException("the new NodeId, %d, must not be below the minimum value of %d."
                     .formatted(newValue, LOWEST_NODE_NUMBER));
         }
-        return new NodeId(newValue);
+        return NodeId.of(newValue);
     }
 
     /**
@@ -168,7 +180,7 @@ public class NodeId implements Comparable<NodeId>, SelfSerializable {
             }
             throw new IOException("id must be non-negative");
         }
-        return new NodeId(longValue);
+        return NodeId.of(longValue);
     }
 
     /**

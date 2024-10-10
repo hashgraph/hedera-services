@@ -83,7 +83,7 @@ public abstract class AbstractEmbeddedHedera implements EmbeddedHedera {
     private static final SemanticVersion LATER_SEMVER =
             SemanticVersion.newBuilder().major(999).build();
 
-    protected static final NodeId MISSING_NODE_ID = new NodeId(666L);
+    protected static final NodeId MISSING_NODE_ID = NodeId.of(666L);
     protected static final int MAX_PLATFORM_TXN_SIZE = 1024 * 6;
     protected static final int MAX_QUERY_RESPONSE_SIZE = 1024 * 1024 * 2;
     protected static final Hash FAKE_START_OF_STATE_HASH = new Hash(new byte[48]);

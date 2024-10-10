@@ -328,7 +328,7 @@ class TransactionExecutorsTest {
 
             @Override
             public boolean containsNode(final long nodeId) {
-                return addressBook.contains(new NodeId(nodeId));
+                return addressBook.contains(NodeId.of(nodeId));
             }
 
             @Override

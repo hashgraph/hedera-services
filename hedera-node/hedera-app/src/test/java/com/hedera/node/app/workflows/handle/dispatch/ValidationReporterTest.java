@@ -87,7 +87,7 @@ class ValidationReporterTest {
             AccountID.newBuilder().accountNum(1_234).build();
     private static final AccountID CREATOR_ACCOUNT_ID =
             AccountID.newBuilder().accountNum(3).build();
-    private static final NodeId CREATOR_NODE_ID = new NodeId(0L);
+    private static final NodeId CREATOR_NODE_ID = NodeId.of(0L);
 
     @Mock
     private NodeInfo creatorInfo;

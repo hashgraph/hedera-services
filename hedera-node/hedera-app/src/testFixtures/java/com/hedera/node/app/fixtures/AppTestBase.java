@@ -136,7 +136,7 @@ public class AppTestBase extends TestBase implements TransactionFactory, Scenari
     private final SemanticVersion hapiVersion =
             SemanticVersion.newBuilder().major(1).minor(2).patch(3).build();
     /** Represents "this node" in our tests. */
-    protected final NodeId nodeSelfId = new NodeId(7);
+    protected final NodeId nodeSelfId = NodeId.of(7);
     /** The AccountID of "this node" in our tests. */
     protected final AccountID nodeSelfAccountId =
             AccountID.newBuilder().shardNum(0).realmNum(0).accountNum(8).build();
@@ -337,7 +337,7 @@ public class AppTestBase extends TestBase implements TransactionFactory, Scenari
             final ConfigProvider configProvider = () -> new VersionedConfigImpl(configBuilder.getOrCreateConfig(), 1);
             final var addresses = nodes.stream()
                     .map(nodeInfo -> new Address()
-                            .copySetNodeId(new NodeId(nodeInfo.nodeId()))
+                            .copySetNodeId(NodeId.of(nodeInfo.nodeId()))
                             .copySetWeight(nodeInfo.zeroStake() ? 0 : 10))
                     .toList();
             final var addressBook = new AddressBook(addresses);
