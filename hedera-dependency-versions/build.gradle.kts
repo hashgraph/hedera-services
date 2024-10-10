@@ -55,7 +55,7 @@ dependencies.constraints {
     api("com.google.guava:guava:31.1-jre") {
         because("com.google.common")
     }
-    api("com.google.jimfs:jimfs:1.2") {
+    api("com.google.jimfs:jimfs:1.3.0") {
         because("com.google.jimfs")
     }
     api("com.google.protobuf:protobuf-java:4.28.2") {
