@@ -149,8 +149,11 @@ public class WritableRosterStore implements RosterStateModifier {
 
         final Builder newRosterState = previousRosterState
                 .copyBuilder()
-                .candidateRosterHash(previousRosterState.candidateRosterHash())
+                .candidateRosterHash(Bytes.EMPTY)
                 .roundRosterPairs(roundRosterPairs);
+        // since a new active roster is being set, the existing candidate roster is no longer valid
+        // so we remove it if it meets removal criteria.
+        removeRoster(previousRosterState.candidateRosterHash());
         storeRoster(roster, activeRosterHash, newRosterState);
     }
 

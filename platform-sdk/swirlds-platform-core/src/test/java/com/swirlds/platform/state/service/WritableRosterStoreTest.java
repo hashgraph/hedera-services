@@ -121,6 +121,25 @@ class WritableRosterStoreTest {
                 "Returned active roster should be the same as the one set");
     }
 
+    @Test
+    void testSetActiveRosterRemovesExistingCandidateRoster() {
+        final Roster activeRoster = createValidTestRoster(1);
+        final Roster candidateRoster = createValidTestRoster(2);
+        rosterStateModifier.setCandidateRoster(candidateRoster);
+        assertSame(
+                rosterStateAccessor.getCandidateRoster(),
+                candidateRoster,
+                "Candidate roster should be the same as one we've just set");
+        rosterStateModifier.setActiveRoster(activeRoster, 1);
+        assertSame(
+                rosterStateAccessor.getActiveRoster(),
+                activeRoster,
+                "Returned active roster should be the same as we've just set");
+        assertNull(
+                rosterStateAccessor.getCandidateRoster(),
+                "No candidate roster should exist in the state immediately after setting a new active roster");
+    }
+
     /**
      * Test that the oldest roster is removed when a third roster is set
      */
