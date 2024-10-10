@@ -33,7 +33,7 @@ final class NodeIdCache {
     /** Maximum node id to cache. MUST BE non-negative, &gt;= MIN, and reasonably small. */
     private static final int MAX = 63;
 
-    private static NodeId[] CACHE = new NodeId[MAX - MIN + 1];
+    private static final NodeId[] CACHE = new NodeId[MAX - MIN + 1];
 
     static {
         for (int id = MIN; id <= MAX; id++) {
