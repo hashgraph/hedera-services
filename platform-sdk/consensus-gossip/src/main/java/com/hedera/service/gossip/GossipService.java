@@ -17,6 +17,6 @@
 package com.hedera.service.gossip;
 
 /**
- * Mock gossip service
+ * Mock gossip service.
  */
 public interface GossipService {}

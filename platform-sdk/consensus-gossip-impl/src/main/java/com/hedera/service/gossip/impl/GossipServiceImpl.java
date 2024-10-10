@@ -19,6 +19,6 @@ package com.hedera.service.gossip.impl;
 import com.hedera.service.gossip.GossipService;
 
 /**
- * Implementation for the mock gossip service
+ * Implementation for the mock gossip service.
  */
 public final class GossipServiceImpl implements GossipService {}
