@@ -31,6 +31,7 @@ import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PAYER;
 import static com.hedera.services.bdd.suites.HapiSuite.FUNDING;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileUpdate;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PLATFORM_TRANSACTION_NOT_CREATED;
 import static com.swirlds.common.stream.LinkedObjectStreamUtilities.getPeriod;
@@ -39,6 +40,7 @@ import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
+import static java.util.stream.Collectors.toSet;
 
 import com.google.common.primitives.Ints;
 import com.google.common.primitives.Longs;
@@ -47,6 +49,7 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.TextFormat;
 import com.hedera.node.app.hapi.fees.usage.SigUsage;
 import com.hedera.node.app.hapi.utils.fee.SigValueObj;
+import com.hedera.node.app.hapi.utils.forensics.RecordStreamEntry;
 import com.hedera.pbj.runtime.JsonCodec;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.HapiSpec;
@@ -60,6 +63,7 @@ import com.hedera.services.bdd.spec.transactions.contract.HapiContractCall;
 import com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer;
 import com.hedera.services.bdd.spec.utilops.streams.InterruptibleRunnable;
 import com.hedera.services.bdd.suites.contract.Utils;
+import com.hedera.services.stream.proto.RecordStreamItem;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -103,7 +107,9 @@ import java.util.OptionalLong;
 import java.util.SplittableRandom;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.BiPredicate;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -781,6 +787,48 @@ public class TxnUtils {
             }
         } catch (IOException e) {
             throw new UncheckedIOException(e);
+        }
+    }
+
+    /**
+     * Predicate that checks if a given {@link RecordStreamItem} is a system file update relative to the given spec.
+     * @param spec the spec to use for the check
+     * @param item the item to check
+     * @return {@code true} if the item is a system file update, {@code false} otherwise
+     */
+    public static boolean isSysFileUpdate(@NonNull final HapiSpec spec, @NonNull final RecordStreamItem item) {
+        final var firstUserNum = spec.startupProperties().getLong("hedera.firstUserEntity");
+        return filterForSysFileUpdate(spec, item, id -> id.getFileNum() < firstUserNum);
+    }
+
+    /**
+     * Returns a predicate that checks if a given {@link RecordStreamItem} is a system file update targeting a
+     * particular system file relative to the given spec.
+     * @param sysFileProperties the name(s) of the system file properties to screen for
+     * @return a predicate testing if the item is a system file update to a given file
+     */
+    public static BiPredicate<HapiSpec, RecordStreamItem> sysFileUpdateTo(@NonNull final String... sysFileProperties) {
+        requireNonNull(sysFileProperties);
+        return (spec, item) -> {
+            final var sysFileNums = Arrays.stream(sysFileProperties)
+                    .map(spec.startupProperties()::getLong)
+                    .collect(toSet());
+            return filterForSysFileUpdate(spec, item, id -> sysFileNums.contains(id.getFileNum()));
+        };
+    }
+
+    private static boolean filterForSysFileUpdate(
+            @NonNull final HapiSpec spec,
+            @NonNull final RecordStreamItem item,
+            @NonNull final Predicate<FileID> idFilter) {
+        final var txnId = item.getRecord().getTransactionID();
+        final var sysAdminNum = spec.startupProperties().getLong("accounts.systemAdmin");
+        if (txnId.getAccountID().getAccountNum() != sysAdminNum) {
+            return false;
+        } else {
+            final var entry = RecordStreamEntry.from(item);
+            return entry.function() == FileUpdate
+                    && idFilter.test(entry.body().getFileUpdate().getFileID());
         }
     }
 }

@@ -374,7 +374,9 @@ public class TokenClaimAirdropTest extends TokenAirdropBase {
                 inParallel(
                         mapNTokens(token -> createFT(token, DEFAULT_PAYER, 1000L), SpecOperation.class, "ft", 1, 10)),
                 tokenAirdrop(mapNTokens(
-                        token -> moving(1, token).between(DEFAULT_PAYER, recipient), TokenMovement.class, "ft", 1, 10)),
+                        token -> moving(1, token).between(DEFAULT_PAYER, recipient), TokenMovement.class, "ft", 1, 5)),
+                tokenAirdrop(mapNTokens(
+                        token -> moving(1, token).between(DEFAULT_PAYER, recipient), TokenMovement.class, "ft", 6, 10)),
                 claimAndFailToReclaim(() -> tokenClaimAirdrop(mapNTokens(
                                 token -> pendingAirdrop(DEFAULT_PAYER, recipient, token), Function.class, "ft", 1, 10))
                         .payingWith(recipient)),
@@ -407,7 +409,8 @@ public class TokenClaimAirdropTest extends TokenAirdropBase {
                         moving(1, FUNGIBLE_TOKEN_2).between(DEFAULT_PAYER, BOB),
                         moving(1, FUNGIBLE_TOKEN_3).between(DEFAULT_PAYER, BOB),
                         moving(1, FUNGIBLE_TOKEN_4).between(DEFAULT_PAYER, BOB),
-                        movingUnique(NON_FUNGIBLE_TOKEN, 1).between(DEFAULT_PAYER, BOB),
+                        movingUnique(NON_FUNGIBLE_TOKEN, 1).between(DEFAULT_PAYER, BOB)),
+                tokenAirdrop(
                         moving(1, FUNGIBLE_TOKEN_6).between(DEFAULT_PAYER, CAROL),
                         moving(1, FUNGIBLE_TOKEN_7).between(DEFAULT_PAYER, CAROL),
                         moving(1, FUNGIBLE_TOKEN_8).between(DEFAULT_PAYER, CAROL),
@@ -476,7 +479,9 @@ public class TokenClaimAirdropTest extends TokenAirdropBase {
                                 moving(1, FUNGIBLE_TOKEN_2).between(ALICE, CAROL),
                                 moving(1, FUNGIBLE_TOKEN_3).between(ALICE, YULIA),
                                 moving(1, FUNGIBLE_TOKEN_4).between(ALICE, TOM),
-                                moving(1, FUNGIBLE_TOKEN_5).between(ALICE, STEVE),
+                                moving(1, FUNGIBLE_TOKEN_5).between(ALICE, STEVE))
+                        .payingWith(ALICE),
+                tokenAirdrop(
                                 moving(1, FUNGIBLE_TOKEN_6).between(ALICE, BOB),
                                 moving(1, FUNGIBLE_TOKEN_7).between(ALICE, CAROL),
                                 moving(1, FUNGIBLE_TOKEN_8).between(ALICE, YULIA),

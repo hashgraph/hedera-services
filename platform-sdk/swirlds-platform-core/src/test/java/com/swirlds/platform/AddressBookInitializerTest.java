@@ -417,7 +417,7 @@ class AddressBookInitializerTest {
                         .add(configAddressBook
                                 .get()
                                 .getAddress(configAddressBook.get().getNodeId(0))
-                                .copySetNodeId(configAddressBook.get().getNextNodeId())));
+                                .copySetNodeId(configAddressBook.get().getNextAvailableNodeId())));
                 break;
             case 7:
                 stub.thenAnswer(foo -> copyWithWeightChanges(configAddressBook.get(), 7));

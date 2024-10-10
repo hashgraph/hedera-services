@@ -239,9 +239,7 @@ public final class PbjConverter {
 
         return new ConsensusSnapshot(
                 consensusSnapshot.round(),
-                consensusSnapshot.judgeHashes().stream()
-                        .map(v -> new Hash(v.toByteArray()))
-                        .collect(toList()),
+                consensusSnapshot.judgeHashes().stream().map(Hash::new).collect(toList()),
                 consensusSnapshot.minimumJudgeInfoList().stream()
                         .map(PbjConverter::fromPbjMinimumJudgeInfo)
                         .collect(toList()),

@@ -31,6 +31,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.platform.NodeId;
@@ -41,7 +42,6 @@ import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
 import com.swirlds.platform.test.fixtures.state.RandomSignedStateGenerator;
-import com.swirlds.platform.test.fixtures.state.manager.SignatureVerificationTestUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.security.PublicKey;
 import java.security.cert.X509Certificate;
@@ -297,8 +297,12 @@ class StateSigningTests {
 
         final List<Signature> signatures = new ArrayList<>(nodeCount);
         for (final Address address : nodes) {
-            signatures.add(SignatureVerificationTestUtils.buildFakeSignature(
-                    address.getSigPublicKey(), signedState.getState().getHash()));
+            final Signature signature = buildFakeSignature(
+                    address.getSigPublicKey(), signedState.getState().getHash());
+            final Signature mockSignature = mock(Signature.class);
+            when(mockSignature.getBytes()).thenReturn(signature.getBytes());
+            when(mockSignature.getType()).thenReturn(signature.getType());
+            signatures.add(mockSignature);
         }
 
         for (int index = 0; index < nodeCount; index++) {
@@ -322,7 +326,9 @@ class StateSigningTests {
 
         // Tamper with a node's signature
         final long weightWithModifiedSignature = nodes.get(1).getWeight();
-        signatures.get(1).getSignatureBytes()[0] = 0;
+        final byte[] tamperedBytes = signatures.get(1).getBytes().toByteArray();
+        tamperedBytes[0] = 0;
+        when(signatures.get(1).getBytes()).thenReturn(Bytes.wrap(tamperedBytes));
 
         signedState.pruneInvalidSignatures();
 

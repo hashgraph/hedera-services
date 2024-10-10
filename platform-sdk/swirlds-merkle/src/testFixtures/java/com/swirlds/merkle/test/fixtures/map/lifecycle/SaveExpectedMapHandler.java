@@ -236,7 +236,7 @@ public class SaveExpectedMapHandler {
             final String digestString = node.get("digestType").asText();
             final DigestType digestType = DigestType.valueOf(digestString);
             final String hex = node.get("bytes").asText();
-            return new Hash(Bytes.fromHex(hex).toByteArray(), digestType);
+            return new Hash(Bytes.fromHex(hex), digestType);
         }
     }
 }
