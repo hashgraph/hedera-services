@@ -70,7 +70,7 @@ As a decentralized network, each node can make no assumptions about the other no
 faster, or slower. They may have superior or inferior network connections. They may be far away from each other or
 colocated. Each of those parameters may change over time. They may be running modified software or the official builds.
 They may be honest, or dishonest. Each node must assume that just more than 2/3 of the other nodes are honest, but must
-also assume that any particular node may be dishonest.
+also assume that any particular node, other than itself, may be dishonest.
 
 The network must also _as a whole_ remain resilient and operational regardless of the transaction load supplied to the
 network. Nodes that are unable to keep up with the transaction load must be able to fail gracefully and rejoin the
@@ -115,10 +115,12 @@ Each event contains an ordered list of _transactions_.
 
 Nodes create events. Each event in the hashgraph has a _creator_. The creator is the node that created the event. Each
 event also has a _birth round_. This is the most recent round number known by the creator at the time it created the
-event. When a node creates an event, it fills that event with the transactions it knows about. Each creator creates
-a single event at a time, with some interval between event creations (say, every 50ms), and some maximum network-wide
-configuration for the number of events per second per creator. Each event will have as a "self-parent" the previous
-event created by that creator, and one or more "other parent" events created by other creators.
+event. When a node creates an event, it fills that event with some, or all, of the transactions it knows about. Each
+creator creates a single event at a time, with some interval between event creations (say, every 50ms), and some maximum
+network-wide configuration for the number of events per second per creator. Each event will have as a "self-parent" the
+previous event created by that creator, assuming the creator remembers its previous event, and that event isn't ancient.
+Each event will additionally have one or more "other parent" events created by other creators, apart from the edge cases
+of network genesis and single node networks, where there may be zero other parents.
 
 Any given node has a system clock, and this clock provides the node with the current _wall clock time_. This is the
 current "real" time, as the node understands it. Since we cannot trust the clock of any particular node, we cannot trust
@@ -128,8 +130,9 @@ the transactions within the event).
 
 Each node has a _roster_ listing all other nodes, their public cryptographic keys, their consensus weights (since the
 network is a proof-of-stake network, different nodes may have different "weights" when voting for consensus), etc. The
-cryptographic keys are used to verify that an event created by a creator was truly created by that creator. The roster can
-change over time, so it is vital that the correct roster be used for verifying each event.
+cryptographic keys are used to verify that an event created by a creator was truly created by that creator. The roster
+can change over time, so it is vital that the correct roster be used for verifying each event. The correct roster to use
+for verifying an event is the roster that was active during that event's birth round.
 
 ![Hashgraph](hashgraph.png)
 
@@ -143,26 +146,29 @@ has as a self-parent `B2`, and an other-parent of `A2`. Events `A1`, `A2`, `A3`,
 Each node has its own copy of the hashgraph. Since events are being gossiped asynchronously throughout the network,
 newer events (those at the top of the graph) may be known to some nodes, and not to others. Broken or dishonest nodes
 may work to prevent some events from being known to all nodes, and thus there may be some differences in the hashgraph
-of each node. But the hashgraph algorithm will, with probability 1, deterministically come to consensus given just over
-2/3 of the nodes are honest.
+of each node. But the hashgraph algorithm will, with probability 1, come to consensus given just over 2/3 of the nodes
+are honest.
 
 #### The Road to Finality
 
 A transaction is submitted to a node in the network. This node, upon verifying the integrity of the transaction, will
-include this transaction in the next event it creates. This new event is assigned a _birth round_ matching the most
-recent round number of the hashgraph on the node that created the event. This birth round lets other nodes in the
-network know how far along in processing the hashgraph this node was at the time the event was created.
+include this transaction in a future event it creates. This new event is assigned a _birth round_ matching the most
+recent round number of the hashgraph on the node that created the event. This birth round is used to determine which
+roster should be used to verify the event, and lets other nodes in the network know how far along in processing the
+hashgraph this node was at the time the event was created.
 
 The event is then gossiped, or distributed throughout the network. Each node that receives this event validates it and
 inserts it into their own copy of the hashgraph. Eventually, the hashgraph algorithm runs on each node (which may
-happen at different wall clock times!) and the event is included in a round. Every honest node will always include the
-event in the same round.
+happen at different wall clock times!) and the event will either become stale, or be included in a round. Every honest
+node will always come to the same conclusion, and either determine that the event is stale, or include the event in the
+same round.
 
 Each round is then passed to the Execution layer, where the transactions in the round are executed, and the state is
 transitioned accordingly. For example, hbars may be transferred from one account to another. At the end of some
 deterministic number of rounds, the Execution layer will create a block. The block hash will be signed and all the
 nodes together will work to sign the block (using an algorithm known as TSS). The block is then exported from the
-node.
+node. In cases where a block signature can't be created in time, then validity will propagate backwards from a signature
+on a future block.
 
 Once the block is exported from the node, the transaction execution is truly final. Since the network together signed
 the block, users have an iron-clad guarantee that the contents of the block represent the consensus result of executing
@@ -180,8 +186,8 @@ under stress will eventually run out of memory and crash. If there are no events
 memory used by Consensus. It is therefore critical that the number of events be bounded within any given node,
 even if the node is running slower than other nodes in the network. Each node must maintain _at least_ all non-ancient
 events, and should maintain additional non-expired events (though these could be stored on disk to remove them from
-the memory requirement of the node). In addition, _birth round filtering_ limits the number of very old or far future
-events that a node will accept (see [Birth-Round Filtering](#birth-round-filtering)).
+the memory requirement of the node). In addition, _birth round filtering_ prevents a node from accepting very old or far
+future events (see [Birth-Round Filtering](#birth-round-filtering)).
 
 #### CPU Pressure
 
@@ -214,9 +220,9 @@ eventually it will refuse to accept any additional transactions from users. If e
 then the overall transaction ingestion rate of the network will be reduced, further reducing the amount of work each
 node has to do. Eventually, an equilibrium is reached.
 
-If the rate at which the network is creating events slows, Alice will be able to catch up by retrieving those previously
-dropped events through gossip, and will be able to process them and catch up. Or, in the last extremity where Alice has
-fallen too far behind, Alice will wait for some time and reconnect.
+If the rate at which the network is creating events slows, Alice will be able to catch up by retrieving all required
+events through gossip, and will be able to process them and catch up. Or, in the last extremity where Alice has fallen
+too far behind, Alice will wait for some time and reconnect.
 
 In addition, the Gossip module reports to the Execution layer health information about each node in the network, as
 well as its own health. Health in this case can simply be the highest birth-round received per node in the network. The
