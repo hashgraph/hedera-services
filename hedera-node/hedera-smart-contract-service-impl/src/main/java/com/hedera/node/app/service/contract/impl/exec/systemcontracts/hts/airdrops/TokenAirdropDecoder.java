@@ -29,7 +29,6 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.Addres
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
 import com.hedera.node.app.service.contract.impl.utils.ConversionUtils;
 import com.hedera.node.config.data.LedgerConfig;
-import com.hedera.node.config.data.TokensConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -59,9 +58,6 @@ public class TokenAirdropDecoder {
     public TransactionBody decodeAirdrop(@NonNull final HtsCallAttempt attempt) {
         final var call = TokenAirdropTranslator.TOKEN_AIRDROP.decodeCall(attempt.inputBytes());
         final var transferList = (Tuple[]) call.get(0);
-        final var maxAirdropsAllowed =
-                attempt.configuration().getConfigData(TokensConfig.class).maxAllowedAirdropTransfersPerTx();
-        validateFalse(transferList.length > maxAirdropsAllowed, TOKEN_REFERENCE_LIST_SIZE_LIMIT_EXCEEDED);
         final var ledgerConfig = attempt.configuration().getConfigData(LedgerConfig.class);
         final var tokenAirdrop = bodyForAirdrop(transferList, attempt.addressIdConverter(), ledgerConfig);
         return TransactionBody.newBuilder().tokenAirdrop(tokenAirdrop).build();
@@ -72,18 +68,13 @@ public class TokenAirdropDecoder {
             @NonNull final AddressIdConverter addressIdConverter,
             @NonNull final LedgerConfig ledgerConfig) {
         final var transferBuilderList = new ArrayList<TokenTransferList>();
+        validateSemantics(transferList, ledgerConfig);
         Arrays.stream(transferList).forEach(transfer -> {
             final var tokenTransferList = TokenTransferList.newBuilder();
             final var token = ConversionUtils.asTokenId(transfer.get(TOKEN));
             tokenTransferList.token(token);
             final var tokenAmountsTuple = (Tuple[]) transfer.get(TOKEN_TRANSFERS);
             final var nftAmountsTuple = (Tuple[]) transfer.get(NFT_AMOUNT);
-            validateFalse(
-                    tokenAmountsTuple.length > ledgerConfig.tokenTransfersMaxLen(),
-                    TOKEN_REFERENCE_LIST_SIZE_LIMIT_EXCEEDED);
-            validateFalse(
-                    nftAmountsTuple.length > ledgerConfig.nftTransfersMaxLen(),
-                    TOKEN_REFERENCE_LIST_SIZE_LIMIT_EXCEEDED);
             if (tokenAmountsTuple.length > 0) {
                 final var aaList = new ArrayList<AccountAmount>();
                 Arrays.stream(tokenAmountsTuple).forEach(tokenAmount -> {
@@ -116,5 +107,20 @@ public class TokenAirdropDecoder {
         return TokenAirdropTransactionBody.newBuilder()
                 .tokenTransfers(transferBuilderList)
                 .build();
+    }
+
+    private static void validateSemantics(
+            @NonNull final Tuple[] transferList, @NonNull final LedgerConfig ledgerConfig) {
+        var fungibleBalanceChanges = 0;
+        var nftBalanceChanges = 0;
+        for (final var airdrop : transferList) {
+            fungibleBalanceChanges += ((Tuple[]) airdrop.get(1)).length;
+            nftBalanceChanges += ((Tuple[]) airdrop.get(2)).length;
+            validateFalse(
+                    fungibleBalanceChanges > ledgerConfig.tokenTransfersMaxLen(),
+                    TOKEN_REFERENCE_LIST_SIZE_LIMIT_EXCEEDED);
+            validateFalse(
+                    nftBalanceChanges > ledgerConfig.nftTransfersMaxLen(), TOKEN_REFERENCE_LIST_SIZE_LIMIT_EXCEEDED);
+        }
     }
 }

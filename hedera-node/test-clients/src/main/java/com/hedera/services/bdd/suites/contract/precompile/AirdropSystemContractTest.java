@@ -21,7 +21,10 @@ import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TOKEN_BALANCE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NFT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER;
 
 import com.esaulpaugh.headlong.abi.Address;
@@ -409,7 +412,7 @@ public class AirdropSystemContractTest {
                                     10L,
                                     serials)
                             .gas(1550000)
-                            .andAssert(txn -> txn.hasKnownStatus(CONTRACT_REVERT_EXECUTED)));
+                            .andAssert(txn -> txn.hasKnownStatuses(CONTRACT_REVERT_EXECUTED)));
             allRunFor(
                     spec,
                     receiver1.getBalance().andAssert(balance -> balance.hasTokenBalance(token1.name(), 0L)),
@@ -437,7 +440,7 @@ public class AirdropSystemContractTest {
                 airdropContract
                         .call("tokenAirdrop", token, sender, receiver, 10L)
                         .gas(1500000)
-                        .andAssert(txn -> txn.hasKnownStatus(CONTRACT_REVERT_EXECUTED)));
+                        .andAssert(txn -> txn.hasKnownStatuses(CONTRACT_REVERT_EXECUTED, INSUFFICIENT_TOKEN_BALANCE)));
     }
 
     @HapiTest
@@ -448,10 +451,11 @@ public class AirdropSystemContractTest {
             @NonNull @FungibleToken(initialSupply = 1_000_000L) final SpecFungibleToken tokenAsReceiver) {
         return hapiTest(
                 sender.associateTokens(token),
+                token.treasury().transferUnitsTo(sender, 500_000L, token),
                 airdropContract
                         .call("tokenAirdrop", token, sender, tokenAsReceiver, 10L)
                         .gas(1500000)
-                        .andAssert(txn -> txn.hasKnownStatus(CONTRACT_REVERT_EXECUTED)));
+                        .andAssert(txn -> txn.hasKnownStatuses(CONTRACT_REVERT_EXECUTED, INVALID_ACCOUNT_ID)));
     }
 
     @HapiTest
@@ -463,7 +467,7 @@ public class AirdropSystemContractTest {
         return hapiTest(airdropContract
                 .call("tokenAirdrop", accountAsToken, sender, receiver, 10L)
                 .gas(1500000)
-                .andAssert(txn -> txn.hasKnownStatus(CONTRACT_REVERT_EXECUTED)));
+                .andAssert(txn -> txn.hasKnownStatuses(CONTRACT_REVERT_EXECUTED, INVALID_TOKEN_ID)));
     }
 
     @HapiTest
