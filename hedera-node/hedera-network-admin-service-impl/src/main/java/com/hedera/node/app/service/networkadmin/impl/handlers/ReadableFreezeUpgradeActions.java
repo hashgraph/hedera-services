@@ -17,7 +17,6 @@
 package com.hedera.node.app.service.networkadmin.impl.handlers;
 
 import static com.hedera.node.app.hapi.utils.CommonUtils.noThrowSha384HashOf;
-import static com.hedera.node.app.service.addressbook.AddressBookHelper.getNextNodeID;
 import static com.hedera.node.app.service.addressbook.AddressBookHelper.writeCertificatePemFile;
 import static com.swirlds.common.io.utility.FileUtils.getAbsolutePath;
 import static com.swirlds.common.utility.CommonUtils.nameToAlias;
@@ -231,10 +230,9 @@ public class ReadableFreezeUpgradeActions {
         // we spin off a separate thread to avoid blocking handleTransaction
         // if we block handle, there could be a dramatic spike in E2E latency at the time of PREPARE_UPGRADE
         final var activeNodes = desc.equals(PREPARE_UPGRADE_DESC) ? allActiveNodes() : null;
-        final var nextNodeId = getNextNodeID(nodeStore);
         return runAsync(
                 () -> extractAndReplaceArtifacts(
-                        artifactsLoc, keysLoc, archiveData, size, desc, marker, now, activeNodes, nextNodeId),
+                        artifactsLoc, keysLoc, archiveData, size, desc, marker, now, activeNodes),
                 executor);
     }
 
@@ -259,8 +257,7 @@ public class ReadableFreezeUpgradeActions {
             @NonNull final String desc,
             @NonNull final String marker,
             @Nullable final Timestamp now,
-            @Nullable List<ActiveNode> nodes,
-            long nextNodeId) {
+            @Nullable final List<ActiveNode> nodes) {
         try {
             final var artifactsDir = artifactsLoc.toFile();
             final var keysDir = keysLoc.toFile();
@@ -275,7 +272,7 @@ public class ReadableFreezeUpgradeActions {
             UnzipUtility.unzip(archiveData.toByteArray(), artifactsLoc);
             log.info("Finished unzipping {} bytes for {} update into {}", size, desc, artifactsLoc);
             if (nodes != null && nodesConfig.enableDAB()) {
-                generateConfigPem(artifactsLoc, keysLoc, nodes, nextNodeId);
+                generateConfigPem(artifactsLoc, keysLoc, nodes);
                 log.info("Finished generating config.txt and pem files into {}", artifactsLoc);
             }
             writeSecondMarker(marker, now);
@@ -291,8 +288,7 @@ public class ReadableFreezeUpgradeActions {
     private void generateConfigPem(
             @NonNull final Path artifactsLoc,
             @NonNull final Path keysLoc,
-            @NonNull final List<ActiveNode> activeNodes,
-            long nextNodeId) {
+            @NonNull final List<ActiveNode> activeNodes) {
         requireNonNull(artifactsLoc, "Cannot generate config.txt without a valid artifacts location");
         requireNonNull(keysLoc, "Cannot generate pem files without a valid keys location");
         requireNonNull(activeNodes, "Cannot generate config.txt without a valid list of active nodes");
@@ -306,7 +302,6 @@ public class ReadableFreezeUpgradeActions {
         try (final var fw = new FileWriter(configTxt.toFile());
                 final var bw = new BufferedWriter(fw)) {
             activeNodes.forEach(node -> writeConfigLineAndPem(node, bw, keysLoc));
-            bw.write("nextNodeId, " + nextNodeId);
             bw.flush();
         } catch (final IOException e) {
             log.error("Failed to generate {} with exception : {}", configTxt, e);

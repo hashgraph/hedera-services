@@ -13,8 +13,6 @@ syntax = "proto3";
 package com.hedera.hapi.node.state.tss;
 
 /*
- * Hedera Network Services Protobuf
- *
  * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -30,14 +28,15 @@ package com.hedera.hapi.node.state.tss;
  * limitations under the License.
  */
 
-option java_package = "com.hederahashgraph.api.proto.java";
+option java_package = "com.hedera.hapi.node.state.tss.legacy";
 // <<<pbj.java_package = "com.hedera.hapi.node.state.tss">>> This comment is special code for setting PBJ Compiler java package
 option java_multiple_files = true;
 
 /**
-  * A key for use in the TssMessageMaps.<br/>
-  * This key is used to uniquely identify entries in the TssMessageMaps.
-  */
+ * A key for use in the Threshold Signature Scheme (TSS) TssMessageMaps.
+ *
+ * This key SHALL be used to uniquely identify entries in the Message Maps.
+ */
 message TssMessageMapKey {
 
   /**
