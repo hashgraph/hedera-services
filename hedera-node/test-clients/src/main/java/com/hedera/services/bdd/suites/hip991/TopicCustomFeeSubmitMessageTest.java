@@ -468,20 +468,19 @@ public class TopicCustomFeeSubmitMessageTest extends TopicCustomFeeBase {
                             .payingWith(SUBMITTER),
                     submitMessageTo(TOPIC).message("TEST").signedByPayerAnd(feeScheduleKey),
                     getAccountBalance(collector).hasTinyBars(0L));
-
         }
 
         @HapiTest
         @DisplayName("Collector submits a message to a topic with fee of 1 FT.")
+        // TOPIC_FEE_125
         final Stream<DynamicTest> collectorSubmitMessageToTopicWithFTFee() {
             final var collector = "collector";
             return hapiTest(
                     cryptoCreate(collector).balance(ONE_HBAR),
                     tokenAssociate(collector, BASE_TOKEN),
-                    createTopic(TOPIC)
-                            .withConsensusCustomFee(fixedConsensusHtsFee(1, BASE_TOKEN, collector)),
+                    createTopic(TOPIC).withConsensusCustomFee(fixedConsensusHtsFee(1, BASE_TOKEN, collector)),
                     approveTopicAllowance()
-                            .addTokenAllowance(collector, BASE_TOKEN,TOPIC, 1, 1)
+                            .addTokenAllowance(collector, BASE_TOKEN, TOPIC, 1, 1)
                             .payingWith(collector),
                     submitMessageTo(TOPIC).message("TEST").payingWith(collector),
                     getAccountBalance(collector).hasTokenBalance(BASE_TOKEN, 0L));
@@ -489,23 +488,28 @@ public class TopicCustomFeeSubmitMessageTest extends TopicCustomFeeBase {
 
         @HapiTest
         @DisplayName("Collector submits a message to a topic with fee of 1 HBAR.")
+        // TOPIC_FEE_126
         final Stream<DynamicTest> collectorSubmitMessageToTopicWithHbarFee() {
             final var collector = "collector";
             return hapiTest(
                     cryptoCreate(collector).balance(ONE_HBAR),
-                    createTopic(TOPIC)
-                            .withConsensusCustomFee(fixedConsensusHbarFee(ONE_HBAR, collector)),
+                    createTopic(TOPIC).withConsensusCustomFee(fixedConsensusHbarFee(ONE_HBAR, collector)),
                     approveTopicAllowance()
                             .addCryptoAllowance(collector, TOPIC, ONE_HUNDRED_HBARS, ONE_HBAR)
-                            .payingWith(collector),
+                            .payingWith(collector)
+                            .via("approveAllowance"),
                     submitMessageTo(TOPIC).message("TEST").payingWith(collector).via("submit"),
                     // assert collector's tinyBars balance
                     withOpContext((spec, log) -> {
-                        final var transactionRecord = getTxnRecord("submit");
-                        allRunFor(spec, transactionRecord);
-                        final var transactionFee = transactionRecord.getResponseRecord().getTransactionFee();
-                        // todo When we add fee for approveAllowance transaction we must take it into account here!!
-                        getAccountBalance(collector).hasTinyBars(ONE_HBAR - transactionFee);
+                        final var submitTxnRecord = getTxnRecord("submit");
+                        final var allowanceTxnRecord = getTxnRecord("approveAllowance");
+                        allRunFor(spec, submitTxnRecord, allowanceTxnRecord);
+                        final var transactionTxnFee =
+                                submitTxnRecord.getResponseRecord().getTransactionFee();
+                        final var allowanceTxnFee =
+                                allowanceTxnRecord.getResponseRecord().getTransactionFee();
+                        getAccountBalance(collector)
+                                .hasTinyBars(ONE_HUNDRED_HBARS - transactionTxnFee - allowanceTxnFee);
                     }));
         }
 
@@ -535,6 +539,5 @@ public class TopicCustomFeeSubmitMessageTest extends TopicCustomFeeBase {
                     getAccountBalance(collector).hasTokenBalance(BASE_TOKEN, 0L),
                     getAccountBalance(secondCollector).hasTokenBalance(SECOND_TOKEN, 1L));
         }
-
     }
 }
