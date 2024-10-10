@@ -409,7 +409,9 @@ public final class MerkleDb {
             throws IOException {
         final String label = dataSource.getTableName();
         final MerkleDbConfig merkleDbConfig = getConfiguration().getConfigData(MerkleDbConfig.class);
-        final MerkleDbTableConfig tableConfig = dataSource.getTableConfig().copy(merkleDbConfig);
+        final MerkleDbTableConfig tableConfig = dataSource
+                .getTableConfig()
+                .copy(merkleDbConfig.maxNumOfKeys(), merkleDbConfig.hashesRamToDiskThreshold());
         if (tableConfigs.get(tableId) != null) {
             throw new IllegalStateException("Table with ID " + tableId + " already exists");
         }

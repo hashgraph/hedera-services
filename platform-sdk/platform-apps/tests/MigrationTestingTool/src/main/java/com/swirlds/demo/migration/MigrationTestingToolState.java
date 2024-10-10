@@ -210,8 +210,12 @@ public class MigrationTestingToolState extends PartialNaryMerkleInternal impleme
                 .withConfigDataType(StateCommonConfig.class)
                 .build();
         setMerkleMap(new MerkleMap<>());
+        final MerkleDbConfig merkleDbConfig = configuration.getConfigData(MerkleDbConfig.class);
         final MerkleDbTableConfig tableConfig = new MerkleDbTableConfig(
-                (short) 1, DigestType.SHA_384, configuration.getConfigData(MerkleDbConfig.class));
+                (short) 1,
+                DigestType.SHA_384,
+                merkleDbConfig.maxNumOfKeys(),
+                merkleDbConfig.hashesRamToDiskThreshold());
         // to make it work for the multiple node in one JVM case, we need reset the default instance path every time
         // we create another instance of MerkleDB.
         MerkleDb.resetDefaultInstancePath();

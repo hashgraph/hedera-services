@@ -110,8 +110,12 @@ class MerkleDbSnapshotTest {
     }
 
     private static MerkleDbTableConfig fixedConfig() {
+        final MerkleDbConfig merkleDbConfig = CONFIGURATION.getConfigData(MerkleDbConfig.class);
         return new MerkleDbTableConfig(
-                (short) 1, DigestType.SHA_384, CONFIGURATION.getConfigData(MerkleDbConfig.class));
+                (short) 1,
+                DigestType.SHA_384,
+                merkleDbConfig.maxNumOfKeys(),
+                merkleDbConfig.hashesRamToDiskThreshold());
     }
 
     private void verify(final MerkleInternal stateRoot) {

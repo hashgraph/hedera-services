@@ -342,10 +342,13 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
                                             md.stateDefinition().valueCodec());
                                     // MAX_IN_MEMORY_HASHES (ramToDiskThreshold) = 8388608
                                     // PREFER_DISK_BASED_INDICES = false
+                                    final MerkleDbConfig merkleDbConfig =
+                                            platformConfiguration.getConfigData(MerkleDbConfig.class);
                                     final var tableConfig = new MerkleDbTableConfig(
                                                     (short) 1,
                                                     DigestType.SHA_384,
-                                                    platformConfiguration.getConfigData(MerkleDbConfig.class))
+                                                    merkleDbConfig.maxNumOfKeys(),
+                                                    merkleDbConfig.hashesRamToDiskThreshold())
                                             .maxNumberOfKeys(def.maxKeysHint());
                                     final var label = StateUtils.computeLabel(serviceName, stateKey);
                                     final var dsBuilder =

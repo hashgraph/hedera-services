@@ -224,7 +224,10 @@ public enum TestType {
             final MerkleDb database = MerkleDb.getInstance(dbPath, CONFIGURATION);
             final MerkleDbConfig merkleDbConfig = database.getConfiguration().getConfigData(MerkleDbConfig.class);
             final MerkleDbTableConfig tableConfig = new MerkleDbTableConfig(
-                            (short) 1, DigestType.SHA_384, merkleDbConfig)
+                            (short) 1,
+                            DigestType.SHA_384,
+                            merkleDbConfig.maxNumOfKeys(),
+                            merkleDbConfig.hashesRamToDiskThreshold())
                     .preferDiskIndices(preferDiskBasedIndexes)
                     .maxNumberOfKeys(size * 10L)
                     .hashesRamToDiskThreshold(hashesRamToDiskThreshold);
