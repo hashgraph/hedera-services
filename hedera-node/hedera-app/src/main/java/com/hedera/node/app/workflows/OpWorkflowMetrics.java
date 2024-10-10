@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.workflows.handle.metric;
+package com.hedera.node.app.workflows;
 
 import static java.util.Objects.requireNonNull;
 
@@ -34,10 +34,10 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 
 /**
- * A class to handle the metrics for the handle-workflow
+ * A class to handle the metrics for all operations (transactions and queries)
  */
 @Singleton
-public class HandleWorkflowMetrics {
+public class OpWorkflowMetrics {
 
     private static final BinaryOperator<Integer> AVERAGE = (sum, count) -> count == 0 ? 0 : sum / count;
 
@@ -53,12 +53,12 @@ public class HandleWorkflowMetrics {
     private long gasUsedThisConsensusSecond = 0L;
 
     /**
-     * Constructor for the HandleWorkflowMetrics
+     * Constructor for the OpWorkflowMetrics
      *
      * @param metrics the {@link Metrics} object where all metrics will be registered
      */
     @Inject
-    public HandleWorkflowMetrics(@NonNull final Metrics metrics, @NonNull final ConfigProvider configProvider) {
+    public OpWorkflowMetrics(@NonNull final Metrics metrics, @NonNull final ConfigProvider configProvider) {
         requireNonNull(metrics, "metrics must not be null");
         requireNonNull(configProvider, "configProvider must not be null");
 
@@ -88,9 +88,9 @@ public class HandleWorkflowMetrics {
      * Update the metrics for the given functionality
      *
      * @param functionality the {@link HederaFunctionality} for which the metrics will be updated
-     * @param duration the duration of the transaction in {@code ns}
+     * @param duration the duration of the operation in {@code ns}
      */
-    public void updateTransactionDuration(@NonNull final HederaFunctionality functionality, final int duration) {
+    public void updateDuration(@NonNull final HederaFunctionality functionality, final int duration) {
         requireNonNull(functionality, "functionality must not be null");
         if (functionality == HederaFunctionality.NONE) {
             return;

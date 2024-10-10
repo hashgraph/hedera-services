@@ -52,6 +52,7 @@ import com.hedera.node.app.spi.workflows.QueryContext;
 import com.hedera.node.app.spi.workflows.QueryHandler;
 import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.app.throttle.SynchronizedThrottleAccumulator;
+import com.hedera.node.app.workflows.OpWorkflowMetrics;
 import com.hedera.node.app.workflows.ingest.IngestChecker;
 import com.hedera.node.app.workflows.ingest.SubmissionManager;
 import com.hedera.node.config.ConfigProvider;
@@ -101,6 +102,7 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
     private final FeeManager feeManager;
     private final SynchronizedThrottleAccumulator synchronizedThrottleAccumulator;
     private final InstantSource instantSource;
+    private final OpWorkflowMetrics workflowMetrics;
 
     /**
      * Constructor of {@code QueryWorkflowImpl}
@@ -135,7 +137,8 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
             @NonNull final ExchangeRateManager exchangeRateManager,
             @NonNull final FeeManager feeManager,
             @NonNull final SynchronizedThrottleAccumulator synchronizedThrottleAccumulator,
-            @NonNull final InstantSource instantSource) {
+            @NonNull final InstantSource instantSource,
+            @NonNull final OpWorkflowMetrics workflowMetrics) {
         this.stateAccessor = requireNonNull(stateAccessor, "stateAccessor must not be null");
         this.submissionManager = requireNonNull(submissionManager, "submissionManager must not be null");
         this.ingestChecker = requireNonNull(ingestChecker, "ingestChecker must not be null");
@@ -150,10 +153,13 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
         this.synchronizedThrottleAccumulator =
                 requireNonNull(synchronizedThrottleAccumulator, "hapiThrottling must not be null");
         this.instantSource = requireNonNull(instantSource);
+        this.workflowMetrics = requireNonNull(workflowMetrics);
     }
 
     @Override
     public void handleQuery(@NonNull final Bytes requestBuffer, @NonNull final BufferedData responseBuffer) {
+        final long queryStart = System.nanoTime();
+
         requireNonNull(requestBuffer);
         requireNonNull(responseBuffer);
 
@@ -295,6 +301,8 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
             logger.warn("Unexpected IO exception while writing protobuf", e);
             throw new StatusRuntimeException(Status.INTERNAL);
         }
+
+        workflowMetrics.updateDuration(function, (int) (System.nanoTime() - queryStart));
     }
 
     private Query parseQuery(Bytes requestBuffer) {
