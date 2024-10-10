@@ -35,14 +35,26 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Arrays;
 import javax.inject.Inject;
 
+/**
+ * Translates ERC-721 {@code updateTokenExpiryInfo()} calls to the HTS system contract.
+ */
 public class UpdateExpiryTranslator extends AbstractCallTranslator<HtsCallAttempt> {
+    /**
+     * Selector for updateTokenExpiryInfo(address, EXPIRY) method.
+     */
     public static final Function UPDATE_TOKEN_EXPIRY_INFO_V1 =
             new Function("updateTokenExpiryInfo(address," + EXPIRY + ")", ReturnTypes.INT);
+    /**
+     * Selector for updateTokenExpiryInfo(address, EXPIRY_V2) method.
+     */
     public static final Function UPDATE_TOKEN_EXPIRY_INFO_V2 =
             new Function("updateTokenExpiryInfo(address," + EXPIRY_V2 + ")", ReturnTypes.INT);
 
     private final UpdateDecoder decoder;
 
+    /**
+     * @param decoder the decoder used for token update calls
+     */
     @Inject
     public UpdateExpiryTranslator(UpdateDecoder decoder) {
         this.decoder = decoder;

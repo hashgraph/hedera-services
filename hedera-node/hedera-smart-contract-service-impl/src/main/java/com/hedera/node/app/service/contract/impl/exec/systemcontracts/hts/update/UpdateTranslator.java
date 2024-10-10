@@ -43,15 +43,21 @@ public class UpdateTranslator extends AbstractCallTranslator<HtsCallAttempt> {
             "(string,string,address,string,bool,int64,bool," + TOKEN_KEY + ARRAY_BRACKETS + "," + EXPIRY + ")";
     private static final String HEDERA_TOKEN_STRUCT_V3 =
             "(string,string,address,string,bool,int64,bool," + TOKEN_KEY + ARRAY_BRACKETS + "," + EXPIRY_V2 + ")";
+    /** Selector for updateTokenInfo(address, HEDERA_TOKEN_STRUCT) method. */
     public static final Function TOKEN_UPDATE_INFO_FUNCTION_V1 =
             new Function(UPDATE_TOKEN_INFO_STRING + HEDERA_TOKEN_STRUCT + ")", ReturnTypes.INT);
+    /** Selector for updateTokenInfo(address, HEDERA_TOKEN_STRUCT_V2) method. */
     public static final Function TOKEN_UPDATE_INFO_FUNCTION_V2 =
             new Function(UPDATE_TOKEN_INFO_STRING + HEDERA_TOKEN_STRUCT_V2 + ")", ReturnTypes.INT);
+    /** Selector for updateTokenInfo(address, HEDERA_TOKEN_STRUCT_V3) method. */
     public static final Function TOKEN_UPDATE_INFO_FUNCTION_V3 =
             new Function(UPDATE_TOKEN_INFO_STRING + HEDERA_TOKEN_STRUCT_V3 + ")", ReturnTypes.INT);
 
     private final UpdateDecoder decoder;
 
+    /**
+     * @param decoder the decoder to use for token update info calls
+     */
     @Inject
     public UpdateTranslator(UpdateDecoder decoder) {
         // Dagger2

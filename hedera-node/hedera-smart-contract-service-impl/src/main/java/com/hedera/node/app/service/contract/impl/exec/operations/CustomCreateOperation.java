@@ -25,7 +25,14 @@ import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 
+/**
+ * A Hedera customization of the Besu {@link org.hyperledger.besu.evm.operation.CreateOperation}.
+ */
 public class CustomCreateOperation extends AbstractCustomCreateOperation {
+    /**
+     * Constructor for custom create operations.
+     * @param gasCalculator the gas calculator to use
+     */
     public CustomCreateOperation(@NonNull final GasCalculator gasCalculator) {
         super(CREATE.opcode(), "ħCREATE", 3, 1, gasCalculator);
     }

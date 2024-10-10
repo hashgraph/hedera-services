@@ -36,6 +36,7 @@ import javax.inject.Inject;
  * Translates {@code delete} calls to the HTS system contract.
  */
 public class DeleteTranslator extends AbstractCallTranslator<HtsCallAttempt> {
+    /** Selector for deleteToken(address) method. */
     public static final Function DELETE_TOKEN = new Function("deleteToken(address)", ReturnTypes.INT);
 
     /**

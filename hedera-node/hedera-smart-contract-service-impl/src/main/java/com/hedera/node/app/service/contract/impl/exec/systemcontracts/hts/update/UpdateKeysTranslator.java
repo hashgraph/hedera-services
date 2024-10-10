@@ -35,11 +35,15 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
 
 public class UpdateKeysTranslator extends AbstractCallTranslator<HtsCallAttempt> {
+    /** Selector for updateTokenKeys(address, TOKEN_KEY[]) method. */
     public static final Function TOKEN_UPDATE_KEYS_FUNCTION =
             new Function("updateTokenKeys(address," + TOKEN_KEY + ARRAY_BRACKETS + ")", ReturnTypes.INT);
 
     private final UpdateDecoder decoder;
 
+    /**
+     * @param decoder the decoder to use for token update keys calls
+     */
     @Inject
     public UpdateKeysTranslator(UpdateDecoder decoder) {
         this.decoder = decoder;

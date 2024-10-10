@@ -40,7 +40,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 /**
  * A base class which aims to combine common logic for all Contract handlers.
  */
-@SuppressWarnings("NewClassNamingConvention")
+@SuppressWarnings({"NewClassNamingConvention", "MissingJavadoc"})
 @ExtendWith(MockitoExtension.class)
 public class ContractHandlerTestBase implements TransactionFactory {
     private static final Function<String, Key.Builder> KEY_BUILDER =
@@ -51,6 +51,7 @@ public class ContractHandlerTestBase implements TransactionFactory {
 
     private static final String C_NAME = "cccccccccccccccccccccccccccccccc";
 
+    @SuppressWarnings("MissingJavadoc")
     public static final Key A_THRESHOLD_KEY = Key.newBuilder()
             .thresholdKey(ThresholdKey.newBuilder()
                     .threshold(2)
@@ -61,6 +62,8 @@ public class ContractHandlerTestBase implements TransactionFactory {
                                     KEY_BUILDER.apply(C_NAME).build())
                             .build()))
             .build();
+
+    @SuppressWarnings("MissingJavadoc")
     public static final Key A_COMPLEX_KEY = Key.newBuilder()
             .thresholdKey(ThresholdKey.newBuilder()
                     .threshold(2)
@@ -70,6 +73,8 @@ public class ContractHandlerTestBase implements TransactionFactory {
                                     KEY_BUILDER.apply(B_NAME).build(),
                                     A_THRESHOLD_KEY)))
             .build();
+
+    @SuppressWarnings("MissingJavadoc")
     public static final Key B_COMPLEX_KEY = Key.newBuilder()
             .thresholdKey(ThresholdKey.newBuilder()
                     .threshold(2)
@@ -79,6 +84,8 @@ public class ContractHandlerTestBase implements TransactionFactory {
                                     KEY_BUILDER.apply(B_NAME).build(),
                                     A_COMPLEX_KEY)))
             .build();
+
+    @SuppressWarnings("MissingJavadoc")
     public static final Key C_COMPLEX_KEY = Key.newBuilder()
             .thresholdKey(ThresholdKey.newBuilder()
                     .threshold(2)
@@ -88,6 +95,7 @@ public class ContractHandlerTestBase implements TransactionFactory {
                                     KEY_BUILDER.apply(B_NAME).build(),
                                     B_COMPLEX_KEY)))
             .build();
+
     protected final AccountID payer = asAccount("0.0.3");
     protected final AccountID autoRenewAccountId = asAccount("0.0.10001");
     protected final Key payerKey = A_COMPLEX_KEY;

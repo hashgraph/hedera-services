@@ -30,11 +30,17 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.math.BigInteger;
 import javax.inject.Inject;
 
+/**
+ * Translates {@code getTokenKey()} calls to the HTS system contract.
+ */
 public class TokenKeyTranslator extends AbstractCallTranslator<HtsCallAttempt> {
-
+    /** Selector for getTokenKey(address,uint) method. */
     public static final Function TOKEN_KEY =
             new Function("getTokenKey(address,uint)", ReturnTypes.RESPONSE_CODE_TOKEN_KEY);
 
+    /**
+     * Default constructor for injection.
+     */
     @Inject
     public TokenKeyTranslator() {
         // Dagger2

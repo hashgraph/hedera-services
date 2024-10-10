@@ -21,6 +21,7 @@ import org.apache.tuweni.bytes.Bytes;
 /**
  * Helper class that contains ABI constants
  */
+@SuppressWarnings("ALL")
 public final class AbiConstants {
     private AbiConstants() {
         throw new UnsupportedOperationException("Utility class");

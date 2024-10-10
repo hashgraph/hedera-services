@@ -32,9 +32,18 @@ import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 
+/**
+ * Implements the token redirect {@code getTokenDefaultKycStatus()} call of the HTS system contract.
+ */
 public class DefaultKycStatusCall extends AbstractNonRevertibleTokenViewCall {
     private final boolean isStaticCall;
 
+    /**
+     * @param gasCalculator the gas calculator to use
+     * @param enhancement the enhancement to use
+     * @param isStaticCall whether this is a static call
+     * @param token the token against the call is executed
+     */
     public DefaultKycStatusCall(
             @NonNull final SystemContractGasCalculator gasCalculator,
             @NonNull final HederaWorldUpdater.Enhancement enhancement,

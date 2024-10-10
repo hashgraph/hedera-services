@@ -78,6 +78,13 @@ public class GrantRevokeKycTranslator extends AbstractCallTranslator<HtsCallAtte
                 NOOP_CUSTOMIZER);
     }
 
+    /**
+     * @param body the transaction body to be dispatched
+     * @param systemContractGasCalculator the gas calculator for the system contract
+     * @param enhancement the enhancement to use
+     * @param payerId the payer of the transaction
+     * @return the gas requirement for grant kyc calls to HTS system contract
+     */
     public static long grantGasRequirement(
             @NonNull final TransactionBody body,
             @NonNull final SystemContractGasCalculator systemContractGasCalculator,
@@ -86,6 +93,13 @@ public class GrantRevokeKycTranslator extends AbstractCallTranslator<HtsCallAtte
         return systemContractGasCalculator.gasRequirement(body, DispatchType.GRANT_KYC, payerId);
     }
 
+    /**
+     * @param body the transaction body to be dispatched
+     * @param systemContractGasCalculator the gas calculator for the system contract
+     * @param enhancement the enhancement to use
+     * @param payerId the payer of the transaction
+     * @return the gas requirement for revoke kyc calls to HTS system contract
+     */
     public static long revokeGasRequirement(
             @NonNull final TransactionBody body,
             @NonNull final SystemContractGasCalculator systemContractGasCalculator,

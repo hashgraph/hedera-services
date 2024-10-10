@@ -24,6 +24,7 @@ package com.hedera.node.app.service.contract.impl.exec.operations;
  * <p>Please see <a href="https://ethereum.org/en/developers/docs/evm/opcodes/">here</a>
  * for a review of the EVM opcodes.
  */
+@SuppressWarnings("ALL")
 public enum CustomizedOpcodes {
     LOG0(0xA0),
     LOG1(0xA1),
