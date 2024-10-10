@@ -39,6 +39,7 @@ import com.swirlds.common.test.fixtures.merkle.util.MerkleTestUtils;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.virtualmap.VirtualMap;
+import com.swirlds.virtualmap.config.VirtualMapConfig;
 import com.swirlds.virtualmap.datasource.VirtualDataSource;
 import com.swirlds.virtualmap.datasource.VirtualDataSourceBuilder;
 import com.swirlds.virtualmap.datasource.VirtualHashRecord;
@@ -126,8 +127,8 @@ public abstract class VirtualMapReconnectTestBase {
         registry.registerConstructable(new ClassConstructorPair(BrokenBuilder.class, BrokenBuilder::new));
         registry.registerConstructable(new ClassConstructorPair(VirtualMapState.class, VirtualMapState::new));
         registry.registerConstructable(new ClassConstructorPair(VirtualMap.class, () -> new VirtualMap(CONFIGURATION)));
-        registry.registerConstructable(
-                new ClassConstructorPair(VirtualRootNode.class, () -> new VirtualRootNode(CONFIGURATION)));
+        registry.registerConstructable(new ClassConstructorPair(
+                VirtualRootNode.class, () -> new VirtualRootNode(CONFIGURATION.getConfigData(VirtualMapConfig.class))));
     }
 
     protected MerkleInternal createTreeForMap(VirtualMap<TestKey, TestValue> map) {

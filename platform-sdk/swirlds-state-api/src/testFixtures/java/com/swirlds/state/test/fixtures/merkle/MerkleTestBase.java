@@ -281,8 +281,9 @@ public class MerkleTestBase extends StateTestBase {
                             MerkleDbDataSourceBuilder.class, () -> new MerkleDbDataSourceBuilder(CONFIGURATION)));
             registry.registerConstructable(
                     new ClassConstructorPair(VirtualMap.class, () -> new VirtualMap(CONFIGURATION)));
-            registry.registerConstructable(
-                    new ClassConstructorPair(VirtualRootNode.class, () -> new VirtualRootNode<>(CONFIGURATION)));
+            registry.registerConstructable(new ClassConstructorPair(
+                    VirtualRootNode.class,
+                    () -> new VirtualRootNode<>(CONFIGURATION.getConfigData(VirtualMapConfig.class))));
             registry.registerConstructable(new ClassConstructorPair(
                     VirtualNodeCache.class,
                     () -> new VirtualNodeCache<>(CONFIGURATION.getConfigData(VirtualMapConfig.class))));

@@ -160,8 +160,9 @@ public class VirtualMapReconnectTestBase {
         registry.registerConstructable(new ClassConstructorPair(DummyMerkleLeaf.class, DummyMerkleLeaf::new));
         registry.registerConstructable(new ClassConstructorPair(Lesson.class, Lesson::new));
         registry.registerConstructable(new ClassConstructorPair(VirtualMap.class, () -> new VirtualMap(CONFIGURATION)));
-        registry.registerConstructable(
-                new ClassConstructorPair(VirtualRootNode.class, () -> new VirtualRootNode<>(CONFIGURATION)));
+        registry.registerConstructable(new ClassConstructorPair(
+                VirtualRootNode.class,
+                () -> new VirtualRootNode<>(CONFIGURATION.getConfigData(VirtualMapConfig.class))));
         registry.registerConstructable(new ClassConstructorPair(TestKey.class, TestKey::new));
         registry.registerConstructable(new ClassConstructorPair(TestValue.class, TestValue::new));
 

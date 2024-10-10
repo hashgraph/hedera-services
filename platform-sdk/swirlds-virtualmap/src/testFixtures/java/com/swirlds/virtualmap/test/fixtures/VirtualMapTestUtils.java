@@ -52,7 +52,10 @@ public final class VirtualMapTestUtils {
 
     public static VirtualRootNode<TestKey, TestValue> createRoot(final Configuration configuration) {
         final VirtualRootNode<TestKey, TestValue> root = new VirtualRootNode<>(
-                TestKeySerializer.INSTANCE, TestValueSerializer.INSTANCE, new InMemoryBuilder(), configuration);
+                TestKeySerializer.INSTANCE,
+                TestValueSerializer.INSTANCE,
+                new InMemoryBuilder(),
+                configuration.getConfigData(VirtualMapConfig.class));
         root.postInit(new DummyVirtualStateAccessor());
         return root;
     }

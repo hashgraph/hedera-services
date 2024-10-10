@@ -172,8 +172,9 @@ public final class BootstrapUtils {
                         VirtualNodeCache.class,
                         () -> new VirtualNodeCache(configuration.getConfigData(VirtualMapConfig.class))));
         ConstructableRegistry.getInstance()
-                .registerConstructable(
-                        new ClassConstructorPair(VirtualRootNode.class, () -> new VirtualRootNode(configuration)));
+                .registerConstructable(new ClassConstructorPair(
+                        VirtualRootNode.class,
+                        () -> new VirtualRootNode(configuration.getConfigData(VirtualMapConfig.class))));
     }
 
     /**

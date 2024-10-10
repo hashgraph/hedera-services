@@ -36,6 +36,7 @@ import com.swirlds.common.utility.RuntimeObjectRegistry;
 import com.swirlds.common.utility.ValueReference;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.metrics.api.Metrics;
+import com.swirlds.virtualmap.config.VirtualMapConfig;
 import com.swirlds.virtualmap.constructable.constructors.VirtualMapConstructor;
 import com.swirlds.virtualmap.datasource.VirtualDataSource;
 import com.swirlds.virtualmap.datasource.VirtualDataSourceBuilder;
@@ -208,7 +209,7 @@ public final class VirtualMap<K extends VirtualKey, V extends VirtualValue> exte
                         keySerializer,
                         valueSerializer,
                         requireNonNull(dataSourceBuilder),
-                        requireNonNull(configuration)));
+                        requireNonNull(configuration.getConfigData(VirtualMapConfig.class))));
     }
 
     /**
@@ -389,7 +390,8 @@ public final class VirtualMap<K extends VirtualKey, V extends VirtualValue> exte
                 () -> new SerializableDataInputStream(new BufferedInputStream(new FileInputStream(inputFile.toFile()))),
                 (final MerkleDataInputStream stream) -> {
                     virtualMapState.setValue(stream.readSerializable());
-                    virtualRootNode.setValue(new VirtualRootNode<>(configuration));
+                    virtualRootNode.setValue(
+                            new VirtualRootNode<>(configuration.getConfigData(VirtualMapConfig.class)));
                     virtualRootNode.getValue().deserialize(stream, inputFile.getParent(), stream.readInt());
                     return null;
                 });

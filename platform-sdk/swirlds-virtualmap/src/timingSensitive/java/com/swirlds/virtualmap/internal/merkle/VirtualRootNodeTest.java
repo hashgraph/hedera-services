@@ -103,8 +103,11 @@ class VirtualRootNodeTest extends VirtualTestBase {
         final InMemoryDataSource ds = new InMemoryDataSource("mapWithExistingHashedDataHasNonNullRootHash");
         final VirtualDataSourceBuilder builder = new InMemoryBuilder();
 
-        final VirtualRootNode<TestKey, TestValue> fcm =
-                new VirtualRootNode<>(TestKeySerializer.INSTANCE, TestValueSerializer.INSTANCE, builder, CONFIGURATION);
+        final VirtualRootNode<TestKey, TestValue> fcm = new VirtualRootNode<>(
+                TestKeySerializer.INSTANCE,
+                TestValueSerializer.INSTANCE,
+                builder,
+                CONFIGURATION.getConfigData(VirtualMapConfig.class));
         fcm.postInit(new DummyVirtualStateAccessor());
         fcm.enableFlush();
         fcm.put(A_KEY, APPLE);
@@ -117,8 +120,11 @@ class VirtualRootNodeTest extends VirtualTestBase {
         fcm.release();
         fcm.waitUntilFlushed();
 
-        final VirtualRootNode<TestKey, TestValue> fcm2 =
-                new VirtualRootNode<>(TestKeySerializer.INSTANCE, TestValueSerializer.INSTANCE, builder, CONFIGURATION);
+        final VirtualRootNode<TestKey, TestValue> fcm2 = new VirtualRootNode<>(
+                TestKeySerializer.INSTANCE,
+                TestValueSerializer.INSTANCE,
+                builder,
+                CONFIGURATION.getConfigData(VirtualMapConfig.class));
         fcm2.postInit(copy.getState());
         assertNotNull(fcm2.getChild(0), "child should not be null");
         assertEquals(expectedHash, fcm2.getChild(0).getHash(), "hash should match expected");

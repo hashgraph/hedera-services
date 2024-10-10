@@ -16,10 +16,10 @@
 
 package com.swirlds.virtualmap.constructable.constructors;
 
-import com.swirlds.config.api.Configuration;
+import com.swirlds.virtualmap.config.VirtualMapConfig;
 import com.swirlds.virtualmap.internal.merkle.VirtualRootNode;
 
 @FunctionalInterface
 public interface VirtualRootNodeConstructor {
-    VirtualRootNode create(Configuration configuration);
+    VirtualRootNode create(VirtualMapConfig virtualMapConfig);
 }
