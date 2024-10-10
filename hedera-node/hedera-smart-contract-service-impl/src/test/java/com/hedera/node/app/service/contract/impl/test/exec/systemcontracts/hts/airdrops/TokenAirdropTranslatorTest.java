@@ -16,18 +16,25 @@
 
 package com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.hts.airdrops;
 
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.airdrops.TokenAirdropTranslator.TOKEN_AIRDROP;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.SENDER_ID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.when;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.gas.DispatchType;
 import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
+import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AddressIdConverter;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.DispatchForResponseCodeHtsCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.airdrops.TokenAirdropDecoder;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.airdrops.TokenAirdropTranslator;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
+import com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.common.CallTestBase;
 import com.hedera.node.config.data.ContractsConfig;
 import com.swirlds.config.api.Configuration;
 import org.junit.jupiter.api.BeforeEach;
@@ -37,7 +44,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class TokenAirdropTranslatorTest {
+class TokenAirdropTranslatorTest extends CallTestBase {
 
     @Mock
     private TokenAirdropDecoder decoder;
@@ -61,6 +68,12 @@ class TokenAirdropTranslatorTest {
     private HederaWorldUpdater.Enhancement enhancement;
 
     @Mock
+    private AddressIdConverter addressIdConverter;
+
+    @Mock
+    private VerificationStrategy verificationStrategy;
+
+    @Mock
     private AccountID payerId;
 
     private TokenAirdropTranslator translator;
@@ -75,8 +88,7 @@ class TokenAirdropTranslatorTest {
         when(attempt.configuration()).thenReturn(configuration);
         when(configuration.getConfigData(ContractsConfig.class)).thenReturn(contractsConfig);
         when(contractsConfig.systemContractAirdropTokensEnabled()).thenReturn(true);
-        when(attempt.isSelectorIfConfigEnabled(TokenAirdropTranslator.TOKEN_AIRDROP, true))
-                .thenReturn(true);
+        when(attempt.isSelectorIfConfigEnabled(TOKEN_AIRDROP, true)).thenReturn(true);
 
         boolean result = translator.matches(attempt);
 
@@ -88,8 +100,7 @@ class TokenAirdropTranslatorTest {
         when(attempt.configuration()).thenReturn(configuration);
         when(configuration.getConfigData(ContractsConfig.class)).thenReturn(contractsConfig);
         when(contractsConfig.systemContractAirdropTokensEnabled()).thenReturn(false);
-        when(attempt.isSelectorIfConfigEnabled(TokenAirdropTranslator.TOKEN_AIRDROP, false))
-                .thenReturn(false);
+        when(attempt.isSelectorIfConfigEnabled(TOKEN_AIRDROP, false)).thenReturn(false);
 
         boolean result = translator.matches(attempt);
 
@@ -109,10 +120,13 @@ class TokenAirdropTranslatorTest {
 
     @Test
     void callFromCreatesCorrectCall() {
-        when(decoder.decodeAirdrop(attempt)).thenReturn(transactionBody);
+        given(attempt.enhancement()).willReturn(mockEnhancement());
+        given(attempt.addressIdConverter()).willReturn(addressIdConverter);
+        given(addressIdConverter.convertSender(any())).willReturn(SENDER_ID);
+        given(attempt.defaultVerificationStrategy()).willReturn(verificationStrategy);
+        given(attempt.systemContractGasCalculator()).willReturn(gasCalculator);
 
-        var call = translator.callFrom(attempt);
-
+        final var call = translator.callFrom(attempt);
         assertEquals(DispatchForResponseCodeHtsCall.class, call.getClass());
     }
 }
