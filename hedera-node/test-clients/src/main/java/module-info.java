@@ -77,6 +77,7 @@ module com.hedera.node.test.clients {
     requires transitive com.fasterxml.jackson.annotation;
     requires transitive com.google.common;
     requires transitive com.google.protobuf;
+    requires transitive com.hedera.pbj.runtime;
     requires transitive headlong;
     requires transitive io.grpc;
     requires transitive net.i2p.crypto.eddsa;
@@ -99,7 +100,9 @@ module com.hedera.node.test.clients {
     requires com.hedera.node.app.spi;
     requires com.swirlds.base.test.fixtures;
     requires com.swirlds.config.extensions.test.fixtures;
+    requires com.swirlds.merkledb;
     requires com.swirlds.platform.core.test.fixtures;
+    requires com.swirlds.virtualmap;
     requires com.fasterxml.jackson.core;
     requires com.fasterxml.jackson.databind;
     requires com.github.docker.java.api;
@@ -122,6 +125,5 @@ module com.hedera.node.test.clients {
     requires org.yaml.snakeyaml;
     requires tuweni.units;
     requires static com.github.spotbugs.annotations;
-    requires static com.hedera.pbj.runtime;
     requires static org.junit.platform.engine;
 }

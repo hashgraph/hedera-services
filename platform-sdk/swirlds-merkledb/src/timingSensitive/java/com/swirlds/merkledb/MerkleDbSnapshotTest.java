@@ -67,7 +67,6 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.CleanupMode;
 import org.junit.jupiter.api.io.TempDir;
 
 class MerkleDbSnapshotTest {
@@ -83,7 +82,7 @@ class MerkleDbSnapshotTest {
     private static final ValueSerializer<ExampleFixedSizeVirtualValue> valueSerializer =
             new ExampleFixedSizeVirtualValueSerializer();
 
-    @TempDir(cleanup = CleanupMode.NEVER)
+    @TempDir
     private Path tempDirectory;
 
     private TestFileSystemManager testFileSystemManager;
@@ -110,13 +109,21 @@ class MerkleDbSnapshotTest {
     }
 
     @AfterEach
-    public void afterTest() {
+    public void afterTest() throws IOException {
         // check db count
         AssertionUtils.assertEventuallyEquals(
                 0L,
                 MerkleDbDataSource::getCountOfOpenDatabases,
                 Duration.ofSeconds(1),
                 "Expected no open dbs. Actual number of open dbs: " + MerkleDbDataSource.getCountOfOpenDatabases());
+
+        if (Files.exists(tempDirectory)) {
+            Files.walk(tempDirectory).map(Path::toFile).forEach(file -> {
+                if (!file.delete()) {
+                    file.deleteOnExit();
+                }
+            });
+        }
     }
 
     private static MerkleDbTableConfig fixedConfig() {
