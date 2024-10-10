@@ -74,15 +74,13 @@ public class MerkleDbTestUtils {
      */
     private static final long DIRECT_MEMORY_BASE_USAGE = 4 * UnitConstants.MEBIBYTES_TO_BYTES;
 
-    public static Configuration config() {
-        return ConfigurationBuilder.create()
-                .withConfigDataType(MerkleDbConfig.class)
-                .withConfigDataType(VirtualMapConfig.class)
-                .withConfigDataType(TemporaryFileConfig.class)
-                .withConfigDataType(StateCommonConfig.class)
-                .withConfigDataType(FileSystemManagerConfig.class)
-                .build();
-    }
+    public static final Configuration CONFIGURATION = ConfigurationBuilder.create()
+            .withConfigDataType(MerkleDbConfig.class)
+            .withConfigDataType(VirtualMapConfig.class)
+            .withConfigDataType(TemporaryFileConfig.class)
+            .withConfigDataType(StateCommonConfig.class)
+            .withConfigDataType(FileSystemManagerConfig.class)
+            .build();
 
     /**
      * Run a callable test in the background and then make sure no direct memory is leaked and not

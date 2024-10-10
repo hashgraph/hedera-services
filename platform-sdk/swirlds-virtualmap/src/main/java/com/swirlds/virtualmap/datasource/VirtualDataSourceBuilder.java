@@ -17,7 +17,6 @@
 package com.swirlds.virtualmap.datasource;
 
 import com.swirlds.common.io.SelfSerializable;
-import com.swirlds.config.api.Configuration;
 import java.nio.file.Path;
 
 /**
@@ -41,11 +40,10 @@ public interface VirtualDataSourceBuilder extends SelfSerializable {
      * @param withDbCompactionEnabled
      * 		If true then the new database will have background compaction enabled, false and the
      * 		new database will not have background compaction enabled
-     * @param configuration The configuration to use.
      * @return
      * 		An opened {@link VirtualDataSource}.
      */
-    VirtualDataSource build(String label, final boolean withDbCompactionEnabled, Configuration configuration);
+    VirtualDataSource build(String label, final boolean withDbCompactionEnabled);
 
     /**
      * Builds a new {@link VirtualDataSource} using the configuration of this builder by creating
@@ -94,9 +92,8 @@ public interface VirtualDataSourceBuilder extends SelfSerializable {
      * 		The label. Cannot be null. This label must be posix compliant
      * @param source
      * 		The base path of the database from which to copy all the database files. Cannot be null
-     * @param configuration The configuration to use.
      * @return
      * 		An opened {@link VirtualDataSource}
      */
-    VirtualDataSource restore(String label, Path source, Configuration configuration);
+    VirtualDataSource restore(String label, Path source);
 }

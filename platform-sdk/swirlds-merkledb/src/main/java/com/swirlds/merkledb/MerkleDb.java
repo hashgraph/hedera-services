@@ -390,7 +390,8 @@ public final class MerkleDb {
             final boolean makeCopyPrimary)
             throws IOException {
         final String label = dataSource.getTableName();
-        final MerkleDbTableConfig tableConfig = dataSource.getTableConfig().copy();
+        final MerkleDbConfig merkleDbConfig = configuration.getConfigData(MerkleDbConfig.class);
+        final MerkleDbTableConfig tableConfig = dataSource.getTableConfig().copy(merkleDbConfig);
         if (tableConfigs.get(tableId) != null) {
             throw new IllegalStateException("Table with ID " + tableId + " already exists");
         }

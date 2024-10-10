@@ -16,6 +16,7 @@
 
 package com.swirlds.virtualmap;
 
+import static com.swirlds.virtualmap.test.fixtures.VirtualMapTestUtils.CONFIGURATION;
 import static com.swirlds.virtualmap.test.fixtures.VirtualMapTestUtils.createMap;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -44,7 +45,7 @@ class VirtualMapLifecycleTests {
 
     private static final Random RANDOM = new SecureRandom();
 
-    private static final VirtualMap<TestKey, TestValue> TERMINATE_QUERY = new VirtualMap<>();
+    private static final VirtualMap<TestKey, TestValue> TERMINATE_QUERY = new VirtualMap<>(CONFIGURATION);
 
     /**
      * This hammer test will have one thread querying maps while another thread is modifying

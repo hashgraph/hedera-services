@@ -21,7 +21,7 @@ import static com.swirlds.state.merkle.StateUtils.computeClassId;
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.pbj.runtime.Codec;
 import com.swirlds.common.config.StateCommonConfig;
-import com.swirlds.common.config.singleton.ConfigurationHolder;
+import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.crypto.DigestType;
@@ -32,6 +32,7 @@ import com.swirlds.common.io.streams.MerkleDataOutputStream;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.common.merkle.crypto.MerkleCryptography;
+import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.merkledb.MerkleDb;
@@ -50,6 +51,8 @@ import com.swirlds.state.merkle.singleton.SingletonNode;
 import com.swirlds.state.test.fixtures.StateTestBase;
 import com.swirlds.virtualmap.VirtualMap;
 import com.swirlds.virtualmap.config.VirtualMapConfig;
+import com.swirlds.virtualmap.internal.cache.VirtualNodeCache;
+import com.swirlds.virtualmap.internal.merkle.VirtualRootNode;
 import com.swirlds.virtualmap.serialize.KeySerializer;
 import com.swirlds.virtualmap.serialize.ValueSerializer;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -86,16 +89,13 @@ import org.junit.jupiter.params.provider.Arguments;
  */
 public class MerkleTestBase extends StateTestBase {
 
-    static {
-        ConfigurationHolder holder = ConfigurationHolder.getInstance();
-        holder.setConfiguration(ConfigurationBuilder.create()
-                .withConfigDataType(VirtualMapConfig.class)
-                .withConfigDataType(MerkleDbConfig.class)
-                .withConfigDataType(TemporaryFileConfig.class)
-                .withConfigDataType(StateCommonConfig.class)
-                .withConfigDataType(FileSystemManagerConfig.class)
-                .build());
-    }
+    protected final Configuration CONFIGURATION = ConfigurationBuilder.create()
+            .withConfigDataType(VirtualMapConfig.class)
+            .withConfigDataType(MerkleDbConfig.class)
+            .withConfigDataType(TemporaryFileConfig.class)
+            .withConfigDataType(StateCommonConfig.class)
+            .withConfigDataType(FileSystemManagerConfig.class)
+            .build();
 
     public static final String FIRST_SERVICE = "First-Service";
     public static final String SECOND_SERVICE = "Second-Service";
@@ -276,6 +276,17 @@ public class MerkleTestBase extends StateTestBase {
             registry.registerConstructables("com.swirlds.common");
             registry.registerConstructables("com.swirlds.merkle");
             registry.registerConstructables("com.swirlds.merkle.tree");
+            ConstructableRegistry.getInstance()
+                    .registerConstructable(new ClassConstructorPair(
+                            MerkleDbDataSourceBuilder.class, () -> new MerkleDbDataSourceBuilder(CONFIGURATION)));
+            registry.registerConstructable(
+                    new ClassConstructorPair(VirtualMap.class, () -> new VirtualMap<>(CONFIGURATION)));
+            registry.registerConstructable(new ClassConstructorPair(
+                    VirtualRootNode.class,
+                    () -> new VirtualRootNode<>(CONFIGURATION.getConfigData(VirtualMapConfig.class))));
+            registry.registerConstructable(new ClassConstructorPair(
+                    VirtualNodeCache.class,
+                    () -> new VirtualNodeCache<>(CONFIGURATION.getConfigData(VirtualMapConfig.class))));
         } catch (ConstructableRegistryException ex) {
             throw new AssertionError(ex);
         }
@@ -303,12 +314,13 @@ public class MerkleTestBase extends StateTestBase {
                 new OnDiskKeySerializer<>(keySerializerClassId, keyClassId, keyCodec);
         final ValueSerializer<OnDiskValue<String>> valueSerializer =
                 new OnDiskValueSerializer<>(valueSerializerClassId, valueClassId, valueCodec);
-        final var merkleDbTableConfig = new MerkleDbTableConfig((short) 1, DigestType.SHA_384);
+        final var merkleDbTableConfig = new MerkleDbTableConfig(
+                (short) 1, DigestType.SHA_384, CONFIGURATION.getConfigData(MerkleDbConfig.class));
         merkleDbTableConfig.hashesRamToDiskThreshold(0);
         merkleDbTableConfig.maxNumberOfKeys(100);
         merkleDbTableConfig.preferDiskIndices(true);
-        final var builder = new MerkleDbDataSourceBuilder(virtualDbPath, merkleDbTableConfig);
-        return new VirtualMap<>(label, keySerializer, valueSerializer, builder);
+        final var builder = new MerkleDbDataSourceBuilder(virtualDbPath, merkleDbTableConfig, CONFIGURATION);
+        return new VirtualMap<>(label, keySerializer, valueSerializer, builder, CONFIGURATION);
     }
 
     /** A convenience method for creating {@link SemanticVersion}. */

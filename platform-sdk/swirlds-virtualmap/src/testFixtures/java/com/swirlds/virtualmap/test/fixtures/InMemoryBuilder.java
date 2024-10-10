@@ -18,7 +18,6 @@ package com.swirlds.virtualmap.test.fixtures;
 
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
-import com.swirlds.config.api.Configuration;
 import com.swirlds.virtualmap.datasource.VirtualDataSource;
 import com.swirlds.virtualmap.datasource.VirtualDataSourceBuilder;
 import java.io.IOException;
@@ -59,8 +58,7 @@ public class InMemoryBuilder implements VirtualDataSourceBuilder {
      * {@inheritDoc}
      */
     @Override
-    public InMemoryDataSource build(
-            final String label, final boolean withDbCompactionEnabled, final Configuration configuration) {
+    public InMemoryDataSource build(final String label, final boolean withDbCompactionEnabled) {
         return databases.computeIfAbsent(label, (s) -> createDataSource(label));
     }
 
@@ -89,7 +87,7 @@ public class InMemoryBuilder implements VirtualDataSourceBuilder {
      * {@inheritDoc}
      */
     @Override
-    public VirtualDataSource restore(final String label, final Path from, final Configuration configuration) {
+    public VirtualDataSource restore(final String label, final Path from) {
         // FUTURE WORK: determine if there really is something that needs to be done here.
         return null;
     }

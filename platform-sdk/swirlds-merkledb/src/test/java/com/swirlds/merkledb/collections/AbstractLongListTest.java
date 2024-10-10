@@ -19,8 +19,8 @@ package com.swirlds.merkledb.collections;
 import static com.swirlds.base.units.UnitConstants.BYTES_TO_MEBIBYTES;
 import static com.swirlds.base.units.UnitConstants.MEBIBYTES_TO_BYTES;
 import static com.swirlds.merkledb.collections.AbstractLongList.FILE_HEADER_SIZE_V2;
+import static com.swirlds.merkledb.test.fixtures.MerkleDbTestUtils.CONFIGURATION;
 import static com.swirlds.merkledb.test.fixtures.MerkleDbTestUtils.checkDirectMemoryIsCleanedUpToLessThanBaseUsage;
-import static com.swirlds.merkledb.test.fixtures.MerkleDbTestUtils.config;
 import static com.swirlds.merkledb.test.fixtures.MerkleDbTestUtils.getDirectMemoryUsedBytes;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -141,7 +141,7 @@ abstract class AbstractLongListTest<T extends AbstractLongList<?>> {
             assertEquals(i, readValue, "Longs don't match for " + i + " got [" + readValue + "] should be [" + i + "]");
         }
         // now try and construct a new LongList reading from the file
-        try (final LongList longList2 = createLongListFromFile(file, config())) {
+        try (final LongList longList2 = createLongListFromFile(file, CONFIGURATION)) {
             // now check data and other attributes
             assertEquals(longList.capacity(), longList2.capacity(), "Unexpected value for longList2.capacity()");
             assertEquals(longList.size(), longList2.size(), "Unexpected value for longList2.size()");

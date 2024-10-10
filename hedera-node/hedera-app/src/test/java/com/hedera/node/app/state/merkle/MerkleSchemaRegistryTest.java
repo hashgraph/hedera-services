@@ -30,10 +30,12 @@ import com.hedera.node.config.data.HederaConfig;
 import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
+import com.swirlds.common.io.config.FileSystemManagerConfig;
 import com.swirlds.common.io.config.FileSystemManagerConfig_;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.merkledb.MerkleDb;
+import com.swirlds.merkledb.config.MerkleDbConfig;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.state.MerkleStateLifecycles;
 import com.swirlds.platform.state.MerkleStateRoot;
@@ -47,6 +49,7 @@ import com.swirlds.state.spi.StateDefinition;
 import com.swirlds.state.spi.WritableKVState;
 import com.swirlds.state.spi.WritableSingletonState;
 import com.swirlds.state.spi.info.NetworkInfo;
+import com.swirlds.virtualmap.config.VirtualMapConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.nio.file.Path;
 import java.util.HashMap;
@@ -80,7 +83,7 @@ class MerkleSchemaRegistryTest extends MerkleTestBase {
     private NetworkInfo networkInfo;
 
     @BeforeEach
-    void setUp() {
+    void setUp(@TempDir Path tempDir) {
         // We don't need a real registry, and the unit tests are much
         // faster if we use a mocked one
         registry = mock(ConstructableRegistry.class);
@@ -89,6 +92,20 @@ class MerkleSchemaRegistryTest extends MerkleTestBase {
         networkInfo = mock(NetworkInfo.class);
         final var hederaConfig = mock(HederaConfig.class);
         lenient().when(config.getConfigData(HederaConfig.class)).thenReturn(hederaConfig);
+        final var merkleDbConfig = mock(MerkleDbConfig.class);
+        lenient().when(config.getConfigData(MerkleDbConfig.class)).thenReturn(merkleDbConfig);
+        final var virtualMapConfig = mock(VirtualMapConfig.class);
+        lenient().when(config.getConfigData(VirtualMapConfig.class)).thenReturn(virtualMapConfig);
+        lenient().when(virtualMapConfig.maximumVirtualMapSize()).thenReturn(Long.valueOf(Integer.MAX_VALUE));
+        final var fileSystemManagerConfig = mock(FileSystemManagerConfig.class);
+        lenient().when(config.getConfigData(FileSystemManagerConfig.class)).thenReturn(fileSystemManagerConfig);
+        lenient().when(fileSystemManagerConfig.rootPath()).thenReturn(tempDir.toString());
+        lenient()
+                .when(fileSystemManagerConfig.tmpDir())
+                .thenReturn(tempDir.toString() + "/" + FileSystemManagerConfig.DEFAULT_TMP_DIR_NAME);
+        lenient()
+                .when(fileSystemManagerConfig.userDataDir())
+                .thenReturn(tempDir.toString() + "/" + FileSystemManagerConfig.DEFAULT_DATA_DIR_NAME);
     }
 
     @Nested
