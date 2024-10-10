@@ -32,6 +32,7 @@ import com.hedera.node.app.spi.authorization.Authorizer;
 import com.hedera.node.app.spi.records.RecordCache;
 import com.hedera.node.app.state.WorkingStateAccessor;
 import com.hedera.node.app.throttle.SynchronizedThrottleAccumulator;
+import com.hedera.node.app.workflows.OpWorkflowMetrics;
 import com.hedera.node.app.workflows.ingest.IngestChecker;
 import com.hedera.node.app.workflows.ingest.SubmissionManager;
 import com.hedera.node.app.workflows.query.annotations.OperatorQueries;
@@ -71,7 +72,8 @@ public interface QueryWorkflowInjectionModule {
             @NonNull final ExchangeRateManager exchangeRateManager,
             @NonNull final FeeManager feeManager,
             @NonNull final SynchronizedThrottleAccumulator synchronizedThrottleAccumulator,
-            @NonNull final InstantSource instantSource) {
+            @NonNull final InstantSource instantSource,
+            @NonNull final OpWorkflowMetrics opWorkflowMetrics) {
         return new QueryWorkflowImpl(
                 stateAccessor,
                 submissionManager,
@@ -86,6 +88,7 @@ public interface QueryWorkflowInjectionModule {
                 feeManager,
                 synchronizedThrottleAccumulator,
                 instantSource,
+                opWorkflowMetrics,
                 true);
     }
 
@@ -105,7 +108,8 @@ public interface QueryWorkflowInjectionModule {
             @NonNull final ExchangeRateManager exchangeRateManager,
             @NonNull final FeeManager feeManager,
             @NonNull final SynchronizedThrottleAccumulator synchronizedThrottleAccumulator,
-            @NonNull final InstantSource instantSource) {
+            @NonNull final InstantSource instantSource,
+            @NonNull final OpWorkflowMetrics opWorkflowMetrics) {
         return new QueryWorkflowImpl(
                 stateAccessor,
                 submissionManager,
@@ -120,6 +124,7 @@ public interface QueryWorkflowInjectionModule {
                 feeManager,
                 synchronizedThrottleAccumulator,
                 instantSource,
+                opWorkflowMetrics,
                 false);
     }
 

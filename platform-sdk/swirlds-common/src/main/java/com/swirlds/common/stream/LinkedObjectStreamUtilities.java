@@ -293,13 +293,13 @@ public final class LinkedObjectStreamUtilities {
                 // read OBJECT_STREAM_SIG_VERSION
                 inputStream.readInt();
                 // read entireHash
-                Hash entireHash = inputStream.readSerializable();
+                final Hash entireHash = inputStream.readSerializable();
                 // read entireSignature
-                Signature entireSignature = inputStream.readSerializable();
+                final Signature entireSignature = Signature.deserialize(inputStream, true);
                 // read metaHash
-                Hash metaHash = inputStream.readSerializable();
+                final Hash metaHash = inputStream.readSerializable();
                 // read metaSignature
-                Signature metaSignature = inputStream.readSerializable();
+                final Signature metaSignature = Signature.deserialize(inputStream, true);
 
                 return Pair.of(Pair.of(entireHash, entireSignature), Pair.of(metaHash, metaSignature));
             }
