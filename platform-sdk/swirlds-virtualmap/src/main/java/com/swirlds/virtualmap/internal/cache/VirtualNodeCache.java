@@ -266,7 +266,7 @@ public final class VirtualNodeCache<K extends VirtualKey, V extends VirtualValue
      * this field stores the number of filtered mutations in {@link #dirtyLeaves}. This number
      * affects cache's estimated size.
      */
-    private final AtomicLong filteredLeavesCount = new AtomicLong(-1);
+    private final AtomicLong filteredLeavesCount = new AtomicLong(0);
 
     /**
      * A set of leaf path changes that occurred in this version of the cache. This is separate
@@ -283,7 +283,7 @@ public final class VirtualNodeCache<K extends VirtualKey, V extends VirtualValue
      * this field stores the number of filtered mutations in {@link #dirtyLeafPaths}. This number
      * affects cache's estimated size.
      */
-    private final AtomicLong filteredLeafPathsCount = new AtomicLong(-1);
+    private final AtomicLong filteredLeafPathsCount = new AtomicLong(0);
 
     /**
      * A set of all modifications to node hashes that occurred in this version of the cache.
@@ -300,7 +300,7 @@ public final class VirtualNodeCache<K extends VirtualKey, V extends VirtualValue
      * this field stores the number of filtered mutations in {@link #dirtyHashes}. This number
      * affects cache's estimated size.
      */
-    private final AtomicLong filteredHashesCount = new AtomicLong(-1);
+    private final AtomicLong filteredHashesCount = new AtomicLong(0);
 
     /**
      * Indicates if this virtual cache instance contains mutations from older cache versions
