@@ -114,7 +114,6 @@ class SyncProtocolFactoryTests {
                 permitProvider,
                 mock(IntakeEventCounter.class),
                 () -> false,
-                () -> false,
                 sleepAfterSync,
                 syncMetrics,
                 () -> ACTIVE);
@@ -135,7 +134,6 @@ class SyncProtocolFactoryTests {
                 fallenBehindManager,
                 permitProvider,
                 mock(IntakeEventCounter.class),
-                () -> false,
                 () -> false,
                 Duration.ofMillis(100),
                 syncMetrics,
@@ -174,7 +172,6 @@ class SyncProtocolFactoryTests {
                 permitProvider,
                 mock(IntakeEventCounter.class),
                 () -> false,
-                () -> false,
                 sleepAfterSync,
                 syncMetrics,
                 () -> BEHIND);
@@ -194,7 +191,6 @@ class SyncProtocolFactoryTests {
                 fallenBehindManager,
                 permitProvider,
                 mock(IntakeEventCounter.class),
-                () -> false,
                 () -> false,
                 sleepAfterSync,
                 syncMetrics,
@@ -221,7 +217,6 @@ class SyncProtocolFactoryTests {
                 permitProvider,
                 mock(IntakeEventCounter.class),
                 () -> true,
-                () -> true,
                 sleepAfterSync,
                 syncMetrics,
                 () -> ACTIVE);
@@ -245,7 +240,6 @@ class SyncProtocolFactoryTests {
                 permitProvider,
                 mock(IntakeEventCounter.class),
                 () -> false,
-                () -> false,
                 sleepAfterSync,
                 syncMetrics,
                 () -> ACTIVE);
@@ -268,7 +262,6 @@ class SyncProtocolFactoryTests {
                 permitProvider,
                 mock(IntakeEventCounter.class),
                 () -> false,
-                () -> false,
                 sleepAfterSync,
                 syncMetrics,
                 () -> ACTIVE);
@@ -289,7 +282,6 @@ class SyncProtocolFactoryTests {
                 fallenBehindManager,
                 permitProvider,
                 mock(IntakeEventCounter.class),
-                () -> false,
                 () -> false,
                 sleepAfterSync,
                 syncMetrics,
@@ -316,7 +308,6 @@ class SyncProtocolFactoryTests {
                 permitProvider,
                 mock(IntakeEventCounter.class),
                 () -> false,
-                () -> false,
                 sleepAfterSync,
                 syncMetrics,
                 () -> ACTIVE);
@@ -337,7 +328,6 @@ class SyncProtocolFactoryTests {
                 fallenBehindManager,
                 permitProvider,
                 mock(IntakeEventCounter.class),
-                () -> false,
                 () -> false,
                 Duration.ofMillis(100),
                 syncMetrics,
@@ -377,7 +367,6 @@ class SyncProtocolFactoryTests {
                 permitProvider,
                 mock(IntakeEventCounter.class),
                 () -> false,
-                () -> false,
                 sleepAfterSync,
                 syncMetrics,
                 () -> BEHIND);
@@ -406,7 +395,6 @@ class SyncProtocolFactoryTests {
                 permitProvider,
                 mock(IntakeEventCounter.class),
                 () -> false,
-                () -> false,
                 sleepAfterSync,
                 syncMetrics,
                 () -> ACTIVE);
@@ -425,7 +413,6 @@ class SyncProtocolFactoryTests {
                 fallenBehindManager,
                 permitProvider,
                 mock(IntakeEventCounter.class),
-                () -> true,
                 () -> true,
                 sleepAfterSync,
                 syncMetrics,
@@ -450,7 +437,6 @@ class SyncProtocolFactoryTests {
                 permitProvider,
                 mock(IntakeEventCounter.class),
                 () -> false,
-                () -> false,
                 sleepAfterSync,
                 syncMetrics,
                 () -> ACTIVE);
@@ -470,7 +456,6 @@ class SyncProtocolFactoryTests {
                 fallenBehindManager,
                 permitProvider,
                 mock(IntakeEventCounter.class),
-                () -> false,
                 () -> false,
                 sleepAfterSync,
                 syncMetrics,
@@ -494,7 +479,6 @@ class SyncProtocolFactoryTests {
                 permitProvider,
                 mock(IntakeEventCounter.class),
                 () -> false,
-                () -> false,
                 sleepAfterSync,
                 syncMetrics,
                 () -> ACTIVE);
@@ -516,7 +500,6 @@ class SyncProtocolFactoryTests {
                 fallenBehindManager,
                 permitProvider,
                 mock(IntakeEventCounter.class),
-                () -> false,
                 () -> false,
                 sleepAfterSync,
                 syncMetrics,
@@ -540,7 +523,6 @@ class SyncProtocolFactoryTests {
                 permitProvider,
                 mock(IntakeEventCounter.class),
                 () -> false,
-                () -> false,
                 sleepAfterSync,
                 syncMetrics,
                 () -> ACTIVE);
@@ -563,7 +545,6 @@ class SyncProtocolFactoryTests {
                 fallenBehindManager,
                 permitProvider,
                 mock(IntakeEventCounter.class),
-                () -> false,
                 () -> false,
                 sleepAfterSync,
                 syncMetrics,
@@ -594,7 +575,6 @@ class SyncProtocolFactoryTests {
                 permitProvider,
                 mock(IntakeEventCounter.class),
                 () -> false,
-                () -> false,
                 sleepAfterSync,
                 syncMetrics,
                 () -> ACTIVE);
@@ -623,7 +603,6 @@ class SyncProtocolFactoryTests {
                 permitProvider,
                 mock(IntakeEventCounter.class),
                 () -> false,
-                () -> false,
                 sleepAfterSync,
                 syncMetrics,
                 () -> ACTIVE);
@@ -650,7 +629,6 @@ class SyncProtocolFactoryTests {
                 fallenBehindManager,
                 permitProvider,
                 mock(IntakeEventCounter.class),
-                () -> false,
                 () -> false,
                 sleepAfterSync,
                 syncMetrics,
