@@ -187,7 +187,7 @@ public final class BlockRecordManagerImpl implements BlockRecordManager {
         // Also check to see if this is the first transaction we're handling after a freeze restart. If so, we also
         // start a new block.
         final var isFirstTransactionAfterFreezeRestart = platformState.freezeTime() != null
-                && platformState.freezeTimeOrThrow().equals(platformState.freezeTime());
+                && platformState.freezeTimeOrThrow().equals(platformState.lastFrozenTime());
         if (isFirstTransactionAfterFreezeRestart) {
             new WritablePlatformStateStore(state.getWritableStates(PlatformStateService.NAME)).setFreezeTime(null);
         }
@@ -212,7 +212,7 @@ public final class BlockRecordManagerImpl implements BlockRecordManager {
                                   Starting: #{} @ {}""",
                         justFinishedBlockNumber,
                         lastBlockInfo.firstConsTimeOfCurrentBlock(),
-                        new Hash(lastBlockHashBytes.toByteArray(), DigestType.SHA_384),
+                        new Hash(lastBlockHashBytes, DigestType.SHA_384),
                         justFinishedBlockNumber + 1,
                         consensusTime);
             }

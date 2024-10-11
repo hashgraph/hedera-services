@@ -24,7 +24,6 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.platform.state.PlatformState;
-import com.swirlds.base.state.MutabilityException;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.state.PlatformStateAccessor;
@@ -35,7 +34,6 @@ import com.swirlds.state.spi.ReadableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
-import java.util.function.Consumer;
 import java.util.function.Function;
 
 /**
@@ -123,7 +121,7 @@ public class ReadablePlatformStateStore implements PlatformStateAccessor {
     @Nullable
     public Hash getLegacyRunningEventHash() {
         final var hash = stateOrThrow().legacyRunningEventHash();
-        return hash.length() == 0 ? null : new Hash(hash.toByteArray());
+        return hash.length() == 0 ? null : new Hash(hash);
     }
 
     /**
@@ -213,118 +211,6 @@ public class ReadablePlatformStateStore implements PlatformStateAccessor {
     @Override
     public long getLowestJudgeGenerationBeforeBirthRoundMode() {
         return stateOrThrow().lowestJudgeGenerationBeforeBirthRoundMode();
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void setCreationSoftwareVersion(@NonNull final SoftwareVersion creationVersion) {
-        throw new MutabilityException("Platform state is read-only");
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void setAddressBook(@Nullable AddressBook addressBook) {
-        throw new MutabilityException("Platform state is read-only");
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void setPreviousAddressBook(@Nullable AddressBook addressBook) {
-        throw new MutabilityException("Platform state is read-only");
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void setRound(long round) {
-        throw new MutabilityException("Platform state is read-only");
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void setLegacyRunningEventHash(@Nullable Hash legacyRunningEventHash) {
-        throw new MutabilityException("Platform state is read-only");
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void setConsensusTimestamp(@NonNull Instant consensusTimestamp) {
-        throw new MutabilityException("Platform state is read-only");
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void setRoundsNonAncient(int roundsNonAncient) {
-        throw new MutabilityException("Platform state is read-only");
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void setSnapshot(@NonNull ConsensusSnapshot snapshot) {
-        throw new MutabilityException("Platform state is read-only");
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void setFreezeTime(@Nullable Instant freezeTime) {
-        throw new MutabilityException("Platform state is read-only");
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void setLastFrozenTime(@Nullable Instant lastFrozenTime) {
-        throw new MutabilityException("Platform state is read-only");
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void setFirstVersionInBirthRoundMode(SoftwareVersion firstVersionInBirthRoundMode) {
-        throw new MutabilityException("Platform state is read-only");
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void setLastRoundBeforeBirthRoundMode(long lastRoundBeforeBirthRoundMode) {
-        throw new MutabilityException("Platform state is read-only");
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void setLowestJudgeGenerationBeforeBirthRoundMode(long lowestJudgeGenerationBeforeBirthRoundMode) {
-        throw new MutabilityException("Platform state is read-only");
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void bulkUpdate(@NonNull Consumer<PlatformStateAccessor> updater) {
-        throw new MutabilityException("Platform state is read-only");
     }
 
     private @NonNull PlatformState stateOrThrow() {

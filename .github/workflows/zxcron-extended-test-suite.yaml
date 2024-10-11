@@ -1,0 +1,271 @@
+##
+# Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+##
+
+name: "ZXCron: Extended Test Suite"
+on:
+  workflow_dispatch:
+  schedule:
+    # Runs Extended Test Suite every three hours
+    - cron: '0 */3 * * *'
+
+permissions:
+  contents: write
+
+defaults:
+  run:
+    shell: bash
+
+env:
+  XTS_CANDIDATE_TAG: "xts-candidate"
+
+jobs:
+  fetch-xts-candidate:
+    name: Fetch XTS Candidate Tag
+    runs-on: network-node-linux-medium
+    outputs:
+      xts_tag_exists: ${{ steps.check_tags_exist.outputs.xts_tag_exists }}
+      xts_tag_commit: ${{ steps.check_tags_exist.outputs.xts_tag_commit }}
+    steps:
+      # Checkout the latest from dev
+      - name: Checkout Code
+        uses: actions/checkout@eef61447b9ff4aafe5dcd4e0bbf5d482be7e7871 # v4.2.1
+        with:
+          fetch-depth: '0'
+
+      # Check if the xts-candidate tag exists
+      # the command git branch --contains xts_tag_commit | grep -q <default branch>
+      # will return an exit code of 1 if the tag commit is not found on the develop
+      # branch.
+      - name: Check for tags
+        id: check_tags_exist
+        run: |
+          TAG=${XTS_CANDIDATE_TAG}
+          if [ $(git tag -l "${TAG}") ]; then
+            echo "xts_tag_exists=true" >> $GITHUB_OUTPUT
+            XTS_COMMIT=`git rev-list -n 1 ${XTS_CANDIDATE_TAG}`
+            git branch --contains ${XTS_COMMIT} | grep -q develop
+            echo "xts_tag_commit=`${XTS_COMMIT}`" >> $GITHUB_OUTPUT
+            git tag -d ${XTS_CANDIDATE_TAG}
+            git push --delete origin ${XTS_CANDIDATE_TAG}
+          else
+            gh run cancel ${{ github.run_id }}
+          fi
+
+  extended-test-suite:
+    name: Execute eXtended Test Suite
+    uses: ./.github/workflows/node-zxc-compile-application-code.yaml
+    needs: fetch-xts-candidate
+    if: ${{ needs.fetch-xts-candidate.result == 'success' && needs.fetch-xts-candidate.outputs.xts_tag_exists == 'true' }}
+    with:
+      custom-job-label: Execute eXtended Test Suite
+      enable-timing-sensitive-tests: true
+      enable-time-consuming-tests: true
+      enable-hammer-tests: true
+      enable-hapi-tests-time-consuming: true
+      enable-network-log-capture: true
+      ref: ${{ needs.fetch-xts-candidate.outputs.xts_tag_commit }}
+    secrets:
+      access-token: ${{ secrets.GITHUB_TOKEN }}
+      gradle-cache-username: ${{ secrets.GRADLE_CACHE_USERNAME }}
+      gradle-cache-password: ${{ secrets.GRADLE_CACHE_PASSWORD }}
+
+  abbreviated-panel:
+    name: JRS Panel
+    uses: ./.github/workflows/zxc-jrs-regression.yaml
+    needs: fetch-xts-candidate
+    if: ${{ needs.fetch-xts-candidate.result == 'success' && needs.fetch-xts-candidate.outputs.xts_tag_exists == 'true' }}
+    with:
+      custom-job-name: "Platform SDK"
+      panel-config: "configs/suites/GCP-PRCheck-Abbrev-4N.json"
+      ref: ${{ needs.fetch-xts-candidate.outputs.xts_tag_commit }} # pass the xts-candidate tag to the JRS panel for checkout
+      branch-name: ${{ github.head_ref || github.ref_name }}
+      base-branch-name: ${{ github.base_ref || '' }}
+      slack-results-channel: "regression-test"
+      slack-summary-channel: "regression-test"
+      use-branch-for-slack-channel: false
+    secrets:
+      access-token: ${{ secrets.PLATFORM_GH_ACCESS_TOKEN }}
+      gradle-cache-username: ${{ secrets.GRADLE_CACHE_USERNAME }}
+      gradle-cache-password: ${{ secrets.GRADLE_CACHE_PASSWORD }}
+      jrs-ssh-user-name: ${{ secrets.PLATFORM_JRS_SSH_USER_NAME }}
+      jrs-ssh-key-file: ${{ secrets.PLATFORM_JRS_SSH_KEY_FILE }}
+      gcp-project-number: ${{ secrets.PLATFORM_GCP_PROJECT_NUMBER }}
+      gcp-sa-key-contents: ${{ secrets.PLATFORM_GCP_KEY_FILE }}
+      slack-api-token: ${{ secrets.PLATFORM_SLACK_API_TOKEN }}
+      grafana-agent-username: ${{ secrets.GRAFANA_AGENT_USERNAME }}
+      grafana-agent-password: ${{ secrets.GRAFANA_AGENT_PASSWORD }}
+
+  hedera-node-jrs-panel:
+    name: Hedera Node JRS Panel
+    uses: ./.github/workflows/zxc-jrs-regression.yaml
+    needs: fetch-xts-candidate
+    if: ${{ needs.fetch-xts-candidate.result == 'success' && needs.fetch-xts-candidate.outputs.xts_tag_exists == 'true' }}
+    with:
+      custom-job-name: "Abbrev Update Test"
+      ref: ${{ needs.fetch-xts-candidate.outputs.xts_tag_commit }} # pass the xts-candidate tag to the JRS panel for checkout
+      branch-name: ${{ github.head_ref || github.ref_name }}
+      hedera-tests-enabled: true
+      use-branch-for-slack-channel: false
+      panel-config: "configs/services/suites/daily/GCP-Daily-Services-Abbrev-Update-4N-2C.json"
+    secrets:
+      access-token: ${{ secrets.PLATFORM_GH_ACCESS_TOKEN }}
+      jrs-ssh-user-name: ${{ secrets.PLATFORM_JRS_SSH_USER_NAME }}
+      jrs-ssh-key-file: ${{ secrets.PLATFORM_JRS_SSH_KEY_FILE }}
+      gcp-project-number: ${{ secrets.PLATFORM_GCP_PROJECT_NUMBER }}
+      gcp-sa-key-contents: ${{ secrets.PLATFORM_GCP_KEY_FILE }}
+      slack-api-token: ${{ secrets.PLATFORM_SLACK_API_TOKEN }}
+      gradle-cache-username: ${{ secrets.GRADLE_CACHE_USERNAME }}
+      gradle-cache-password: ${{ secrets.GRADLE_CACHE_PASSWORD }}
+      grafana-agent-username: ${{ secrets.GRAFANA_AGENT_USERNAME }}
+      grafana-agent-password: ${{ secrets.GRAFANA_AGENT_PASSWORD }}
+
+  tag-for-promotion:
+    name: Tag as XTS-Passing
+    runs-on: network-node-linux-medium
+    needs:
+      - abbreviated-panel
+      - extended-test-suite
+      - fetch-xts-candidate
+      - hedera-node-jrs-panel
+    if: ${{ needs.extended-test-suite.result == 'success' }}
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@f086349bfa2bd1361f7909c78558e816508cdc10 # v2.8.0
+        with:
+          egress-policy: audit
+
+      - name: Checkout Tagged Code
+        id: checkout_tagged_code
+        if: ${{ needs.fetch-xts-candidate.outputs.xts_tag_exists == 'true' }}
+        uses: actions/checkout@eef61447b9ff4aafe5dcd4e0bbf5d482be7e7871 # v4.2.1
+        with:
+          ref: ${{ needs.fetch-xts-candidate.outputs.xts_tag_commit }} # this becomes an input to the reusable flow
+
+      # Now that the XTS suite has run we should be able to tag for promotion
+      - name: Tag for XTS promotion
+        run: |
+          EPOCH_TIME=`date -j -f "%a %b %d %T %Z %Y" "\`LC_ALL=C date\`" "+%s"`
+          TAG=xts-pass-${EPOCH_TIME}
+          git tag --annotate ${TAG}
+          git push --set-upstream origin --tags
+
+  report-failure:
+    name: Report XTS preparation failure
+    runs-on: network-node-linux-medium
+    needs:
+      - abbreviated-panel
+      - extended-test-suite
+      - fetch-xts-candidate
+      - hedera-node-jrs-panel
+      - tag-for-promotion
+
+    if: ${{ needs.abbreviated-panel.result != 'success' ||
+            needs.extended-test-suite.result != 'success' ||
+            needs.fetch-xts-candidate.result != 'success' ||
+            needs.hedera-node-jrs-panel.result != 'success' ||
+            needs.tag-for-promotion.result != 'success' }}
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@f086349bfa2bd1361f7909c78558e816508cdc10 # v2.8.0
+        with:
+          egress-policy: audit
+
+      - name: Report failure (slack)
+        uses: slackapi/slack-github-action@6c661ce58804a1a20f6dc5fbee7f0381b469e001 # v1.25.0
+        env:
+          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_CITR_WEBHOOK }}
+        with:
+          payload: |
+            {
+              "attachments": [
+                {
+                  "color": "#7647cd",
+                  "blocks": [
+                    {
+                      "type": "header",
+                      "text": {
+                        "type": "plain_text",
+                        "text": ":grey_exclamation: Hedera Services - eXtended Test Suite Error Report",
+                        "emoji": true
+                      }
+                    },
+                    {
+                      "type": "divider"
+                    },
+                    {
+                      "type": "section",
+                      "text": {
+                        "type": "mrkdwn",
+                        "text": "*XTS Job Resulted in failure. See status below.*"
+                      },
+                      "fields": [
+                        {
+                          "type": "plain_text",
+                          "text": "Fetch XTS Candidate Tag"
+                        },
+                        {
+                          "type": "plain_text",
+                          "text": "${{ needs.fetch-xts-candidate.result }}"
+                        },
+                        {
+                          "type": "plain_text",
+                          "text": "Execute eXtended Test Suite"
+                        },
+                        {
+                          "type": "plain_text",
+                          "text": "${{ needs.extended-test-suite.result }}"
+                        },
+                        {
+                          "type": "plain_text",
+                          "text": "JRS Panel"
+                        },
+                        {
+                          "type": "plain_text",
+                          "text": "${{ needs.abbreviated-panel.result }}"
+                        },
+                        {
+                          "type": "plain_text",
+                          "text": "Hedera Node JRS Panel"
+                        },
+                        {
+                          "type": "plain_text",
+                          "text": "${{ needs.hedera-node-jrs-panel.result }}"
+                        },
+                        {
+                          "type": "plain_text",
+                          "text": "Tag as XTS-Passing"
+                        },
+                        {
+                          "type": "plain_text",
+                          "text": "${{ needs.tag-for-promotion.result }}"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "divider"
+                    },
+                    {
+                      "type": "section",
+                      "text": {
+                        "type": "mrkdwn",
+                        "text": "*Source Commit*: \n<${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}>"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }

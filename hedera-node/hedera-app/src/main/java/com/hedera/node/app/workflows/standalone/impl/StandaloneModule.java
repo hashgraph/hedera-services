@@ -39,7 +39,7 @@ import javax.inject.Singleton;
 public interface StandaloneModule {
     @Binds
     @Singleton
-    NetworkInfo bindNetworkInfo(@NonNull StateNetworkInfo simulatedNetworkInfo);
+    NetworkInfo bindNetworkInfo(@NonNull StandaloneNetworkInfo simulatedNetworkInfo);
 
     @Binds
     @Singleton

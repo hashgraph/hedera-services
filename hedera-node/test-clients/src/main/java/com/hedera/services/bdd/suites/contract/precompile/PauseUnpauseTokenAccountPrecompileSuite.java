@@ -18,6 +18,7 @@ package com.hedera.services.bdd.suites.contract.precompile;
 
 import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.keys.KeyShape.CONTRACT;
@@ -40,8 +41,6 @@ import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
-import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_CONTRACT_CALL_RESULTS;
-import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_FUNCTION_PARAMETERS;
 import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
 import static com.hedera.services.bdd.suites.HapiSuite.TOKEN_TREASURY;
@@ -392,24 +391,20 @@ public class PauseUnpauseTokenAccountPrecompileSuite {
     final Stream<DynamicTest> noAccountKeyReverts() {
         final AtomicReference<AccountID> accountID = new AtomicReference<>();
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
-        return defaultHapiSpec(
-                        "noAccountKeyReverts",
-                        NONDETERMINISTIC_FUNCTION_PARAMETERS,
-                        NONDETERMINISTIC_CONTRACT_CALL_RESULTS)
-                .given(
-                        newKeyNamed(MULTI_KEY),
-                        cryptoCreate(ACCOUNT).balance(100 * ONE_HBAR).exposingCreatedIdTo(accountID::set),
-                        cryptoCreate(TOKEN_TREASURY),
-                        tokenCreate(VANILLA_TOKEN)
-                                .tokenType(FUNGIBLE_COMMON)
-                                .treasury(TOKEN_TREASURY)
-                                .freezeKey(MULTI_KEY)
-                                .initialSupply(1_000)
-                                .exposingCreatedIdTo(id -> vanillaTokenID.set(asToken(id))),
-                        uploadInitCode(PAUSE_UNPAUSE_CONTRACT),
-                        contractCreate(PAUSE_UNPAUSE_CONTRACT),
-                        tokenAssociate(ACCOUNT, VANILLA_TOKEN))
-                .when(withOpContext((spec, opLog) -> allRunFor(
+        return hapiTest(
+                newKeyNamed(MULTI_KEY),
+                cryptoCreate(ACCOUNT).balance(100 * ONE_HBAR).exposingCreatedIdTo(accountID::set),
+                cryptoCreate(TOKEN_TREASURY),
+                tokenCreate(VANILLA_TOKEN)
+                        .tokenType(FUNGIBLE_COMMON)
+                        .treasury(TOKEN_TREASURY)
+                        .freezeKey(MULTI_KEY)
+                        .initialSupply(1_000)
+                        .exposingCreatedIdTo(id -> vanillaTokenID.set(asToken(id))),
+                uploadInitCode(PAUSE_UNPAUSE_CONTRACT),
+                contractCreate(PAUSE_UNPAUSE_CONTRACT),
+                tokenAssociate(ACCOUNT, VANILLA_TOKEN),
+                withOpContext((spec, opLog) -> allRunFor(
                         spec,
                         contractCall(
                                         PAUSE_UNPAUSE_CONTRACT,
@@ -426,23 +421,22 @@ public class PauseUnpauseTokenAccountPrecompileSuite {
                                 .payingWith(ACCOUNT)
                                 .gas(GAS_TO_OFFER)
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
-                                .via(UNPAUSE_TX))))
-                .then(
-                        childRecordsCheck(
-                                PAUSE_TX,
-                                CONTRACT_REVERT_EXECUTED,
-                                recordWith()
-                                        .status(TOKEN_HAS_NO_PAUSE_KEY)
-                                        .contractCallResult(resultWith()
-                                                .contractCallResult(
-                                                        htsPrecompileResult().withStatus(TOKEN_HAS_NO_PAUSE_KEY)))),
-                        childRecordsCheck(
-                                UNPAUSE_TX,
-                                CONTRACT_REVERT_EXECUTED,
-                                recordWith()
-                                        .status(TOKEN_HAS_NO_PAUSE_KEY)
-                                        .contractCallResult(resultWith()
-                                                .contractCallResult(
-                                                        htsPrecompileResult().withStatus(TOKEN_HAS_NO_PAUSE_KEY)))));
+                                .via(UNPAUSE_TX))),
+                childRecordsCheck(
+                        PAUSE_TX,
+                        CONTRACT_REVERT_EXECUTED,
+                        recordWith()
+                                .status(TOKEN_HAS_NO_PAUSE_KEY)
+                                .contractCallResult(resultWith()
+                                        .contractCallResult(
+                                                htsPrecompileResult().withStatus(TOKEN_HAS_NO_PAUSE_KEY)))),
+                childRecordsCheck(
+                        UNPAUSE_TX,
+                        CONTRACT_REVERT_EXECUTED,
+                        recordWith()
+                                .status(TOKEN_HAS_NO_PAUSE_KEY)
+                                .contractCallResult(resultWith()
+                                        .contractCallResult(
+                                                htsPrecompileResult().withStatus(TOKEN_HAS_NO_PAUSE_KEY)))));
     }
 }

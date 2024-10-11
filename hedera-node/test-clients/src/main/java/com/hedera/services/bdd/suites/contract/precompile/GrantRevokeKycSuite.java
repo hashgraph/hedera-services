@@ -18,6 +18,7 @@ package com.hedera.services.bdd.suites.contract.precompile;
 
 import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.keys.KeyShape.CONTRACT;
@@ -41,7 +42,6 @@ import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
-import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_FUNCTION_PARAMETERS;
 import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
@@ -97,25 +97,24 @@ public class GrantRevokeKycSuite {
         final AtomicReference<TokenID> tokenWithoutKeyID = new AtomicReference<>();
         final var invalidTokenID = TokenID.newBuilder().build();
 
-        return defaultHapiSpec("GrantRevokeKycFail", NONDETERMINISTIC_FUNCTION_PARAMETERS)
-                .given(
-                        newKeyNamed(KYC_KEY),
-                        newKeyNamed(NON_KYC_KEY),
-                        cryptoCreate(ACCOUNT).balance(100 * ONE_HBAR).exposingCreatedIdTo(accountID::set),
-                        cryptoCreate(SECOND_ACCOUNT).exposingCreatedIdTo(secondAccountID::set),
-                        cryptoCreate(TOKEN_TREASURY),
-                        tokenCreate(TOKEN_WITHOUT_KEY).exposingCreatedIdTo(id -> tokenWithoutKeyID.set(asToken(id))),
-                        tokenCreate(VANILLA_TOKEN)
-                                .tokenType(FUNGIBLE_COMMON)
-                                .treasury(TOKEN_TREASURY)
-                                .kycKey(KYC_KEY)
-                                .initialSupply(1_000)
-                                .exposingCreatedIdTo(id -> vanillaTokenID.set(asToken(id))),
-                        uploadInitCode(GRANT_REVOKE_KYC_CONTRACT),
-                        contractCreate(GRANT_REVOKE_KYC_CONTRACT),
-                        tokenAssociate(ACCOUNT, VANILLA_TOKEN),
-                        tokenAssociate(SECOND_ACCOUNT, VANILLA_TOKEN))
-                .when(withOpContext((spec, log) -> allRunFor(
+        return hapiTest(
+                newKeyNamed(KYC_KEY),
+                newKeyNamed(NON_KYC_KEY),
+                cryptoCreate(ACCOUNT).balance(100 * ONE_HBAR).exposingCreatedIdTo(accountID::set),
+                cryptoCreate(SECOND_ACCOUNT).exposingCreatedIdTo(secondAccountID::set),
+                cryptoCreate(TOKEN_TREASURY),
+                tokenCreate(TOKEN_WITHOUT_KEY).exposingCreatedIdTo(id -> tokenWithoutKeyID.set(asToken(id))),
+                tokenCreate(VANILLA_TOKEN)
+                        .tokenType(FUNGIBLE_COMMON)
+                        .treasury(TOKEN_TREASURY)
+                        .kycKey(KYC_KEY)
+                        .initialSupply(1_000)
+                        .exposingCreatedIdTo(id -> vanillaTokenID.set(asToken(id))),
+                uploadInitCode(GRANT_REVOKE_KYC_CONTRACT),
+                contractCreate(GRANT_REVOKE_KYC_CONTRACT),
+                tokenAssociate(ACCOUNT, VANILLA_TOKEN),
+                tokenAssociate(SECOND_ACCOUNT, VANILLA_TOKEN),
+                withOpContext((spec, log) -> allRunFor(
                         spec,
                         contractCall(
                                         GRANT_REVOKE_KYC_CONTRACT,
@@ -198,72 +197,71 @@ public class GrantRevokeKycSuite {
                                 .hasRetryPrecheckFrom(BUSY)
                                 .via("GrantKycWrongTokenTx")
                                 .gas(GAS_TO_OFFER)
-                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED))))
-                .then(
-                        childRecordsCheck(
-                                "RevokeKycAccountWithoutKeyTx",
-                                CONTRACT_REVERT_EXECUTED,
-                                recordWith()
-                                        .status(INVALID_SIGNATURE)
-                                        .contractCallResult(resultWith()
-                                                .contractCallResult(
-                                                        htsPrecompileResult().withStatus(INVALID_SIGNATURE)))),
-                        childRecordsCheck(
-                                "GrantKycAccountWithoutKeyTx",
-                                CONTRACT_REVERT_EXECUTED,
-                                recordWith()
-                                        .status(INVALID_SIGNATURE)
-                                        .contractCallResult(resultWith()
-                                                .contractCallResult(
-                                                        htsPrecompileResult().withStatus(INVALID_SIGNATURE)))),
-                        childRecordsCheck(
-                                "GrantKycAccountKeyNotMatchingTokenKeyTx",
-                                CONTRACT_REVERT_EXECUTED,
-                                recordWith()
-                                        .status(INVALID_SIGNATURE)
-                                        .contractCallResult(resultWith()
-                                                .contractCallResult(
-                                                        htsPrecompileResult().withStatus(INVALID_SIGNATURE)))),
-                        childRecordsCheck(
-                                "RevokeKycAccountKeyNotMatchingTokenKeyTx",
-                                CONTRACT_REVERT_EXECUTED,
-                                recordWith()
-                                        .status(INVALID_SIGNATURE)
-                                        .contractCallResult(resultWith()
-                                                .contractCallResult(
-                                                        htsPrecompileResult().withStatus(INVALID_SIGNATURE)))),
-                        childRecordsCheck(
-                                "GrantKycTokenWithoutKeyTx",
-                                CONTRACT_REVERT_EXECUTED,
-                                recordWith()
-                                        .status(TOKEN_HAS_NO_KYC_KEY)
-                                        .contractCallResult(resultWith()
-                                                .contractCallResult(
-                                                        htsPrecompileResult().withStatus(TOKEN_HAS_NO_KYC_KEY)))),
-                        childRecordsCheck(
-                                "RevokeKycTokenWithoutKeyTx",
-                                CONTRACT_REVERT_EXECUTED,
-                                recordWith()
-                                        .status(TOKEN_HAS_NO_KYC_KEY)
-                                        .contractCallResult(resultWith()
-                                                .contractCallResult(
-                                                        htsPrecompileResult().withStatus(TOKEN_HAS_NO_KYC_KEY)))),
-                        childRecordsCheck(
-                                "RevokeKycWrongTokenTx",
-                                CONTRACT_REVERT_EXECUTED,
-                                recordWith()
-                                        .status(INVALID_TOKEN_ID)
-                                        .contractCallResult(resultWith()
-                                                .contractCallResult(
-                                                        htsPrecompileResult().withStatus(INVALID_TOKEN_ID)))),
-                        childRecordsCheck(
-                                "GrantKycWrongTokenTx",
-                                CONTRACT_REVERT_EXECUTED,
-                                recordWith()
-                                        .status(INVALID_TOKEN_ID)
-                                        .contractCallResult(resultWith()
-                                                .contractCallResult(
-                                                        htsPrecompileResult().withStatus(INVALID_TOKEN_ID)))));
+                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED))),
+                childRecordsCheck(
+                        "RevokeKycAccountWithoutKeyTx",
+                        CONTRACT_REVERT_EXECUTED,
+                        recordWith()
+                                .status(INVALID_SIGNATURE)
+                                .contractCallResult(resultWith()
+                                        .contractCallResult(
+                                                htsPrecompileResult().withStatus(INVALID_SIGNATURE)))),
+                childRecordsCheck(
+                        "GrantKycAccountWithoutKeyTx",
+                        CONTRACT_REVERT_EXECUTED,
+                        recordWith()
+                                .status(INVALID_SIGNATURE)
+                                .contractCallResult(resultWith()
+                                        .contractCallResult(
+                                                htsPrecompileResult().withStatus(INVALID_SIGNATURE)))),
+                childRecordsCheck(
+                        "GrantKycAccountKeyNotMatchingTokenKeyTx",
+                        CONTRACT_REVERT_EXECUTED,
+                        recordWith()
+                                .status(INVALID_SIGNATURE)
+                                .contractCallResult(resultWith()
+                                        .contractCallResult(
+                                                htsPrecompileResult().withStatus(INVALID_SIGNATURE)))),
+                childRecordsCheck(
+                        "RevokeKycAccountKeyNotMatchingTokenKeyTx",
+                        CONTRACT_REVERT_EXECUTED,
+                        recordWith()
+                                .status(INVALID_SIGNATURE)
+                                .contractCallResult(resultWith()
+                                        .contractCallResult(
+                                                htsPrecompileResult().withStatus(INVALID_SIGNATURE)))),
+                childRecordsCheck(
+                        "GrantKycTokenWithoutKeyTx",
+                        CONTRACT_REVERT_EXECUTED,
+                        recordWith()
+                                .status(TOKEN_HAS_NO_KYC_KEY)
+                                .contractCallResult(resultWith()
+                                        .contractCallResult(
+                                                htsPrecompileResult().withStatus(TOKEN_HAS_NO_KYC_KEY)))),
+                childRecordsCheck(
+                        "RevokeKycTokenWithoutKeyTx",
+                        CONTRACT_REVERT_EXECUTED,
+                        recordWith()
+                                .status(TOKEN_HAS_NO_KYC_KEY)
+                                .contractCallResult(resultWith()
+                                        .contractCallResult(
+                                                htsPrecompileResult().withStatus(TOKEN_HAS_NO_KYC_KEY)))),
+                childRecordsCheck(
+                        "RevokeKycWrongTokenTx",
+                        CONTRACT_REVERT_EXECUTED,
+                        recordWith()
+                                .status(INVALID_TOKEN_ID)
+                                .contractCallResult(resultWith()
+                                        .contractCallResult(
+                                                htsPrecompileResult().withStatus(INVALID_TOKEN_ID)))),
+                childRecordsCheck(
+                        "GrantKycWrongTokenTx",
+                        CONTRACT_REVERT_EXECUTED,
+                        recordWith()
+                                .status(INVALID_TOKEN_ID)
+                                .contractCallResult(resultWith()
+                                        .contractCallResult(
+                                                htsPrecompileResult().withStatus(INVALID_TOKEN_ID)))));
     }
 
     @HapiTest

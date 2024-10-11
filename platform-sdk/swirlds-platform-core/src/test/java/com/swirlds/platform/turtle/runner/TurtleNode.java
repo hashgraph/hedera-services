@@ -32,7 +32,6 @@ import com.swirlds.platform.builder.PlatformBuilder;
 import com.swirlds.platform.builder.PlatformComponentBuilder;
 import com.swirlds.platform.config.BasicConfig_;
 import com.swirlds.platform.crypto.KeysAndCerts;
-import com.swirlds.platform.eventhandling.EventConfig_;
 import com.swirlds.platform.state.MerkleRoot;
 import com.swirlds.platform.state.snapshot.SignedStateFileUtils;
 import com.swirlds.platform.system.BasicSoftwareVersion;
@@ -84,7 +83,6 @@ public class TurtleNode {
             @NonNull final SimulatedNetwork network) {
 
         final Configuration configuration = new TestConfigBuilder()
-                .withValue(EventConfig_.USE_OLD_STYLE_INTAKE_QUEUE, false)
                 .withValue(PlatformSchedulersConfig_.CONSENSUS_EVENT_STREAM, "NO_OP")
                 .withValue(BasicConfig_.JVM_PAUSE_DETECTOR_SLEEP_MS, "0")
                 .getOrCreateConfig();
@@ -99,7 +97,7 @@ public class TurtleNode {
                 .build();
         final Supplier<MerkleRoot> genesisStateSupplier = TurtleTestingToolState::getStateRootNode;
         final var version = new BasicSoftwareVersion(1);
-        final var initialState = getInitialState(
+        final var reservedState = getInitialState(
                 platformContext,
                 version,
                 genesisStateSupplier,
@@ -108,6 +106,7 @@ public class TurtleNode {
                 "bar",
                 nodeId,
                 addressBook);
+        final var initialState = reservedState.state();
         final PlatformBuilder platformBuilder = PlatformBuilder.create(
                         "foo", "bar", new BasicSoftwareVersion(1), initialState, nodeId)
                 .withModel(model)

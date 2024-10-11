@@ -35,7 +35,6 @@ import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
 import static com.hedera.services.bdd.suites.HapiSuite.NONSENSE_KEY;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.GOSSIP_ENDPOINTS_EXCEEDED_LIMIT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.GOSSIP_ENDPOINT_CANNOT_HAVE_FQDN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
@@ -495,15 +494,16 @@ public class NodeCreateTest {
     }
 
     @HapiTest
-    final Stream<DynamicTest> failsAtIngestForUnAuthorizedTxns() {
+    final Stream<DynamicTest> failsAtIngestForUnAuthorizedTxns() throws CertificateEncodingException {
         final String description = "His vorpal blade went snicker-snack!";
         return hapiTest(
                 cryptoCreate("payer").balance(ONE_HUNDRED_HBARS),
                 nodeCreate("ntb")
                         .payingWith("payer")
                         .description(description)
+                        .gossipCaCertificate(gossipCertificates.getFirst().getEncoded())
                         .fee(ONE_HBAR)
-                        .hasPrecheck(BUSY)
+                        .hasKnownStatus(UNAUTHORIZED)
                         .via("nodeCreation"));
     }
 

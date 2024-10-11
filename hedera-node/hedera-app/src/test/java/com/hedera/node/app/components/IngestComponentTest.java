@@ -17,6 +17,8 @@
 package com.hedera.node.app.components;
 
 import static com.hedera.node.app.fixtures.AppTestBase.DEFAULT_CONFIG;
+import static com.swirlds.platform.system.address.AddressBookUtils.endpointFor;
+import static java.util.concurrent.CompletableFuture.completedFuture;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
@@ -25,12 +27,13 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.node.app.DaggerHederaInjectionComponent;
 import com.hedera.node.app.HederaInjectionComponent;
+import com.hedera.node.app.blocks.InitialStateHash;
 import com.hedera.node.app.blocks.impl.BoundaryStateChangeListener;
 import com.hedera.node.app.blocks.impl.KVStateChangeListener;
 import com.hedera.node.app.config.BootstrapConfigProviderImpl;
 import com.hedera.node.app.config.ConfigProviderImpl;
 import com.hedera.node.app.fixtures.state.FakeState;
-import com.hedera.node.app.info.SelfNodeInfoImpl;
+import com.hedera.node.app.info.NodeInfoImpl;
 import com.hedera.node.app.service.contract.impl.ContractServiceImpl;
 import com.hedera.node.app.service.file.impl.FileServiceImpl;
 import com.hedera.node.app.services.AppContextImpl;
@@ -51,6 +54,7 @@ import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.status.PlatformStatus;
+import com.swirlds.state.spi.info.NetworkInfo;
 import java.time.InstantSource;
 import java.util.ArrayDeque;
 import java.util.List;
@@ -79,19 +83,12 @@ class IngestComponentTest {
         final Metrics metrics = new NoOpMetrics();
         lenient().when(platformContext.getConfiguration()).thenReturn(configuration);
 
-        final var selfNodeInfo = new SelfNodeInfoImpl(
+        final var selfNodeInfo = new NodeInfoImpl(
                 1L,
                 AccountID.newBuilder().accountNum(1001).build(),
                 10,
-                "127.0.0.1",
-                50211,
-                "127.0.0.4",
-                23456,
-                "0123456789012345678901234567890123456789012345678901234567890123",
-                "Node7",
-                Bytes.wrap("cert7"),
-                SemanticVersion.newBuilder().major(1).build(),
-                "Node7");
+                List.of(endpointFor("127.0.0.1", 50211), endpointFor("127.0.0.1", 23456)),
+                Bytes.wrap("cert7"));
 
         final var configProvider = new ConfigProviderImpl(false);
         final var appContext = new AppContextImpl(
@@ -119,6 +116,8 @@ class IngestComponentTest {
                 .boundaryStateChangeListener(new BoundaryStateChangeListener())
                 .migrationStateChanges(List.of())
                 .tssBaseService(tssBaseService)
+                .initialStateHash(new InitialStateHash(completedFuture(Bytes.EMPTY), 0))
+                .networkInfo(mock(NetworkInfo.class))
                 .build();
 
         final var state = new FakeState();

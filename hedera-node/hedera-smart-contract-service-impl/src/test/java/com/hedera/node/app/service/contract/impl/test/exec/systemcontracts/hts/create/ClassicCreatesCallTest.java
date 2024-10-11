@@ -312,7 +312,7 @@ public class ClassicCreatesCallTest extends CallTestBase {
 
     private void commonGivens(long baseCost, long value, boolean shouldBePreempted) {
         given(frame.getValue()).willReturn(Wei.of(value));
-        given(gasCalculator.canonicalPriceInTinybars(any(), any())).willReturn(baseCost);
+        given(gasCalculator.feeCalculatorPriceInTinyBars(any(), any())).willReturn(baseCost);
         stack.push(frame);
         given(addressIdConverter.convert(asHeadlongAddress(FRAME_SENDER_ADDRESS)))
                 .willReturn(A_NEW_ACCOUNT_ID);

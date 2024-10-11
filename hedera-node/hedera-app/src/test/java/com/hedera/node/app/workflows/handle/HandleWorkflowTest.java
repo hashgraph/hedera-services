@@ -29,6 +29,7 @@ import com.hedera.node.app.blocks.impl.KVStateChangeListener;
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.fees.FeeManager;
 import com.hedera.node.app.records.BlockRecordManager;
+import com.hedera.node.app.service.token.impl.handlers.staking.StakeInfoHelper;
 import com.hedera.node.app.service.token.impl.handlers.staking.StakePeriodManager;
 import com.hedera.node.app.services.ServiceScopeLookup;
 import com.hedera.node.app.spi.authorization.Authorizer;
@@ -36,10 +37,10 @@ import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.state.HederaRecordCache;
 import com.hedera.node.app.throttle.NetworkUtilizationManager;
 import com.hedera.node.app.throttle.ThrottleServiceManager;
+import com.hedera.node.app.workflows.OpWorkflowMetrics;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.app.workflows.handle.cache.CacheWarmer;
 import com.hedera.node.app.workflows.handle.dispatch.ChildDispatchFactory;
-import com.hedera.node.app.workflows.handle.metric.HandleWorkflowMetrics;
 import com.hedera.node.app.workflows.handle.record.SystemSetup;
 import com.hedera.node.app.workflows.handle.steps.HollowAccountCompletions;
 import com.hedera.node.app.workflows.handle.steps.NodeStakeUpdates;
@@ -111,7 +112,7 @@ class HandleWorkflowTest {
     private CacheWarmer cacheWarmer;
 
     @Mock
-    private HandleWorkflowMetrics handleWorkflowMetrics;
+    private OpWorkflowMetrics opWorkflowMetrics;
 
     @Mock
     private ThrottleServiceManager throttleServiceManager;
@@ -147,6 +148,9 @@ class HandleWorkflowTest {
     private KVStateChangeListener kvStateChangeListener;
 
     @Mock
+    private StakeInfoHelper stakeInfoHelper;
+
+    @Mock
     private BoundaryStateChangeListener boundaryStateChangeListener;
 
     private HandleWorkflow subject;
@@ -169,12 +173,13 @@ class HandleWorkflowTest {
                 blockRecordManager,
                 blockStreamManager,
                 cacheWarmer,
-                handleWorkflowMetrics,
+                opWorkflowMetrics,
                 throttleServiceManager,
                 version,
                 initTrigger,
                 hollowAccountCompletions,
                 systemSetup,
+                stakeInfoHelper,
                 recordCache,
                 exchangeRateManager,
                 preHandleWorkflow,

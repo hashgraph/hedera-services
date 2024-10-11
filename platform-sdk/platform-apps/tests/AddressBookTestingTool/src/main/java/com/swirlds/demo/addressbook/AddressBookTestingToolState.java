@@ -45,6 +45,7 @@ import com.swirlds.common.utility.ByteUtils;
 import com.swirlds.common.utility.StackTrace;
 import com.swirlds.platform.config.AddressBookConfig;
 import com.swirlds.platform.state.PlatformStateAccessor;
+import com.swirlds.platform.state.PlatformStateModifier;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.Round;
@@ -182,7 +183,7 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
      * {@inheritDoc}
      */
     @Override
-    public void handleConsensusRound(@NonNull final Round round, @NonNull final PlatformStateAccessor platformState) {
+    public void handleConsensusRound(@NonNull final Round round, @NonNull final PlatformStateModifier platformState) {
         Objects.requireNonNull(round, "the round cannot be null");
         Objects.requireNonNull(platformState, "the platform state cannot be null");
         throwIfImmutable();
@@ -673,14 +674,7 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
                     "The new address book contains new nodes instead of only having nodes removed. {}",
                     StackTrace.getStackTrace());
         }
-        final boolean nextNodeIdEqual = newAddressBook.getNextNodeId().compareTo(oldAddressBook.getNextNodeId()) == 0;
-        if (!nextNodeIdEqual) {
-            logger.error(
-                    EXCEPTION.getMarker(),
-                    "The new address book has a different nextNodeId value than the old address book. {}",
-                    StackTrace.getStackTrace());
-        }
-        return sizesCorrespond && atLeastOneNodeRemoved && nextNodeIdEqual;
+        return sizesCorrespond && atLeastOneNodeRemoved;
     }
 
     /**
@@ -718,14 +712,7 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
                     "The new address book has nodes removed instead of only having nodes added. {}",
                     StackTrace.getStackTrace());
         }
-        final boolean nextNodeIdGreater = newAddressBook.getNextNodeId().compareTo(oldAddressBook.getNextNodeId()) > 0;
-        if (!nextNodeIdGreater) {
-            logger.error(
-                    EXCEPTION.getMarker(),
-                    "The new address book has a nextNodeId value that is not greater than the old address book. {}",
-                    StackTrace.getStackTrace());
-        }
-        return sizesCorrespond && atLeastOneNodeAdded && nextNodeIdGreater;
+        return sizesCorrespond && atLeastOneNodeAdded;
     }
 
     /**

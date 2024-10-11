@@ -83,6 +83,24 @@ public record ContractsConfig(
                 boolean systemContractAccountServiceIsAuthorizedRawEnabled,
         @ConfigProperty(value = "systemContract.updateCustomFees.enabled", defaultValue = "true") @NetworkProperty
                 boolean systemContractUpdateCustomFeesEnabled,
+        @ConfigProperty(value = "systemContract.tokenInfo.v2.enabled", defaultValue = "false") @NetworkProperty
+                boolean systemContractTokenInfoV2Enabled,
+        @ConfigProperty(value = "systemContract.precisionLossFixForGas.enabled", defaultValue = "true") @NetworkProperty
+                boolean isGasPrecisionLossFixEnabled,
+        @ConfigProperty(value = "systemContract.canonicalViewGas.enabled", defaultValue = "true") @NetworkProperty
+                boolean isCanonicalViewGasEnabled,
+        @ConfigProperty(value = "systemContract.updateNFTsMetadata.enabled", defaultValue = "false") @NetworkProperty
+                boolean systemContractUpdateNFTsMetadataEnabled,
+        @ConfigProperty(value = "systemContract.airdropTokens.enabled", defaultValue = "false")
+                boolean systemContractAirdropTokensEnabled,
+        @ConfigProperty(value = "systemContract.cancelAirdrops.enabled", defaultValue = "false")
+                boolean systemContractCancelAirdropsEnabled,
+        @ConfigProperty(value = "systemContract.claimAirdrops.enabled", defaultValue = "false")
+                boolean systemContractClaimAirdropsEnabled,
+        @ConfigProperty(value = "systemContract.rejectTokens.enabled", defaultValue = "false")
+                boolean systemContractRejectTokensEnabled,
+        @ConfigProperty(value = "systemContract.setUnlimitedAutoAssociations.enabled", defaultValue = "false")
+                boolean systemContractSetUnlimitedAutoAssociationsEnabled,
         @ConfigProperty(value = "evm.version.dynamic", defaultValue = "false") @NetworkProperty
                 boolean evmVersionDynamic,
         @ConfigProperty(value = "evm.allowCallsToNonContractAccounts", defaultValue = "true") @NetworkProperty
@@ -91,4 +109,4 @@ public record ContractsConfig(
                 boolean chargeGasOnEvmHandleException,
         @ConfigProperty(value = "evm.nonExtantContractsFail", defaultValue = "0") @NetworkProperty
                 Set<Long> evmNonExtantContractsFail,
-        @ConfigProperty(value = "evm.version", defaultValue = "v0.50") @NetworkProperty String evmVersion) {}
+        @ConfigProperty(value = "evm.version", defaultValue = "v0.51") @NetworkProperty String evmVersion) {}

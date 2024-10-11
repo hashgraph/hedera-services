@@ -26,7 +26,7 @@ import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.formatting.TextTable;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.state.MerkleRoot;
-import com.swirlds.platform.state.PlatformStateAccessor;
+import com.swirlds.platform.state.PlatformStateModifier;
 import com.swirlds.platform.state.address.AddressBookInitializer;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.system.SoftwareVersion;
@@ -58,13 +58,10 @@ import java.util.regex.Pattern;
  *     <li>memo field (optional)</li>
  * </ul>
  * Example: `address, 22, node22, node22, 1, 10.10.11.12, 5060, 212.25.36.123, 5060, memo for node 22`
- * <p>
- * The last line of the config.txt address book contains the nextNodeId value in the form of: `nextNodeId, 23`
  */
 public class AddressBookUtils {
 
     public static final String ADDRESS_KEYWORD = "address";
-    public static final String NEXT_NODE_ID_KEYWORD = "nextNodeId";
     private static final Pattern IPV4_ADDRESS_PATTERN =
             Pattern.compile("^((25[0-5]|(2[0-4]|1\\d|[1-9]|)\\d)\\.?\\b){4}$");
 
@@ -97,8 +94,7 @@ public class AddressBookUtils {
                     address.getPortExternal() + (hasMemo ? "," : ""),
                     memo);
         }
-        final String addresses = table.render();
-        return addresses + "\n" + NEXT_NODE_ID_KEYWORD + ", " + addressBook.getNextNodeId();
+        return table.render();
     }
 
     /**
@@ -112,7 +108,6 @@ public class AddressBookUtils {
     public static AddressBook parseAddressBookText(@NonNull final String addressBookText) throws ParseException {
         Objects.requireNonNull(addressBookText, "The addressBookText must not be null.");
         final AddressBook addressBook = new AddressBook();
-        boolean nextNodeIdParsed = false;
         for (final String line : addressBookText.split("\\r?\\n")) {
             final String trimmedLine = line.trim();
             if (trimmedLine.isEmpty()
@@ -126,59 +121,14 @@ public class AddressBookUtils {
                 if (address != null) {
                     addressBook.add(address);
                 }
-            } else if (trimmedLine.startsWith(NEXT_NODE_ID_KEYWORD)) {
-                final NodeId nodeId = parseNextNodeId(trimmedLine);
-                addressBook.setNextNodeId(nodeId);
-                nextNodeIdParsed = true;
             } else {
                 throw new ParseException(
-                        "The line [%s] does not start with `%s` or `%s`."
-                                .formatted(
-                                        line.substring(0, Math.min(line.length(), 30)),
-                                        ADDRESS_KEYWORD,
-                                        NEXT_NODE_ID_KEYWORD),
+                        "The line [%s] does not start with `%s`."
+                                .formatted(line.substring(0, Math.min(line.length(), 30)), ADDRESS_KEYWORD),
                         0);
             }
         }
-        if (!nextNodeIdParsed) {
-            throw new ParseException("The address book text does not contain a `nextNodeId` line.", 0);
-        }
         return addressBook;
-    }
-
-    /**
-     * Parse the next available node id from a single line of text.  The line must start with the keyword `nextNodeId`
-     * followed by a comma and then the node id.  The node id must be a positive integer greater than all nodeIds in the
-     * address book.
-     *
-     * @param nextNodeId the text to parse.
-     * @return the parsed node id.
-     * @throws ParseException if there is any problem with parsing the node id.
-     */
-    @NonNull
-    public static NodeId parseNextNodeId(@NonNull final String nextNodeId) throws ParseException {
-        Objects.requireNonNull(nextNodeId, "The nextNodeId must not be null.");
-        final String[] parts = nextNodeId.split(",");
-        if (parts.length != 2) {
-            throw new ParseException(
-                    "The nextNodeId [%s] does not have exactly 2 comma separated parts.".formatted(nextNodeId), 0);
-        }
-        if (!parts[0].trim().equals(NEXT_NODE_ID_KEYWORD)) {
-            throw new ParseException(
-                    "The nextNodeId [%s] does not start with the keyword `nextNodeId`.".formatted(nextNodeId), 0);
-        }
-        final String nodeIdText = parts[1].trim();
-        try {
-            final long nodeId = Long.parseLong(nodeIdText);
-            if (nodeId < 0) {
-                throw new ParseException(
-                        "The nextNodeId [%s] does not have a positive integer node id.".formatted(nextNodeId), 1);
-            }
-            return new NodeId(nodeId);
-        } catch (final NumberFormatException e) {
-            throw new ParseException(
-                    "The nextNodeId [%s] does not have a positive integer node id.".formatted(nextNodeId), 1);
-        }
     }
 
     /**
@@ -282,9 +232,6 @@ public class AddressBookUtils {
     public static void verifyReconnectAddressBooks(
             @NonNull final AddressBook addressBook1, @NonNull final AddressBook addressBook2)
             throws IllegalStateException {
-        if (!addressBook1.getNextNodeId().equals(addressBook2.getNextNodeId())) {
-            throw new IllegalStateException("The next node ids are not the same.");
-        }
         final int addressCount = addressBook1.getSize();
         if (addressCount != addressBook2.getSize()) {
             throw new IllegalStateException("The address books do not have the same number of addresses.");
@@ -343,7 +290,7 @@ public class AddressBookUtils {
             final RosterEntry rosterEntry = AddressBookUtils.toRosterEntry(address, nodeId);
             rosterEntries.add(rosterEntry);
         }
-        return Roster.newBuilder().rosters(rosterEntries).build();
+        return Roster.newBuilder().rosterEntries(rosterEntries).build();
     }
 
     /**
@@ -405,7 +352,7 @@ public class AddressBookUtils {
             // Update the address book with the current address book read from config.txt.
             // Eventually we will not do this, and only transactions will be capable of
             // modifying the address book.
-            final PlatformStateAccessor platformState = state.getWritablePlatformState();
+            final PlatformStateModifier platformState = state.getWritablePlatformState();
             platformState.bulkUpdate(v -> {
                 v.setAddressBook(addressBookInitializer.getCurrentAddressBook().copy());
                 v.setPreviousAddressBook(
