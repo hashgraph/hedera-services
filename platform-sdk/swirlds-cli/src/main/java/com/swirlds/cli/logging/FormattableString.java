@@ -19,7 +19,7 @@ package com.swirlds.cli.logging;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
- * A string that can be formatted
+ * A string that can be formatted.
  */
 public interface FormattableString {
     /**

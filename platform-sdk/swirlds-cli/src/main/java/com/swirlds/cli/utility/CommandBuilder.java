@@ -49,9 +49,9 @@ public final class CommandBuilder {
      * Describes a subcommand.
      *
      * @param subcommandClass
-     * 		the class of the subcommand
+     *     the class of the subcommand
      * @param parentClass
-     * 		the parent command of the subcommand
+     *     the parent command of the subcommand
      */
     public record Subcommand(Class<?> subcommandClass, Class<?> parentClass) {}
 
@@ -70,7 +70,7 @@ public final class CommandBuilder {
      * A map of subcommand classes to their parent classes. Cache the result in a static variable, since we never
      * expect this to change (absent class-loader shenanigans we don't have to worry about supporting).
      */
-    private static Map<Class<?> /* subcommand class */, Class<?> /* parent class */> parentMap;
+    private static Map<Class<?>/* subcommand class */, Class<?>/* parent class */> parentMap;
 
     private CommandBuilder() {}
 
@@ -124,7 +124,7 @@ public final class CommandBuilder {
      *
      * @return a map of subcommands to their parents
      */
-    private static synchronized Map<Class<?> /* subcommand class */, Class<?> /* parent class */> buildParentMap() {
+    private static synchronized Map<Class<?>/* subcommand class */, Class<?>/* parent class */> buildParentMap() {
         if (parentMap != null) {
             return parentMap;
         }
@@ -151,7 +151,7 @@ public final class CommandBuilder {
      *
      * @return a map from command class to corresponding CommandLine object
      */
-    private static Map<Class<?> /* subcommand class */, CommandLine /* subcommand CommandLine */> buildCommandLines() {
+    private static Map<Class<?>/* subcommand class */, CommandLine /* subcommand CommandLine */> buildCommandLines() {
         final Map<Class<?>, CommandLine> map = new HashMap<>();
 
         for (final Subcommand subcommand : findSubcommands()) {
@@ -168,10 +168,10 @@ public final class CommandBuilder {
      * Link all subcommands with their parent command lines.
      *
      * @param commandLineMap
-     * 		a map of command to corresponding CommandLine object
+     *      a map of command to corresponding CommandLine object
      */
     private static void linkCommandLines(
-            Map<Class<?> /* subcommand class */, CommandLine /* subcommand CommandLine */> commandLineMap) {
+            Map<Class<?>/* subcommand class */, CommandLine /* subcommand CommandLine */> commandLineMap) {
 
         final Map<Class<?>, Class<?>> pMap = buildParentMap();
 
@@ -190,7 +190,7 @@ public final class CommandBuilder {
      * the first call to {@link #buildCommandLine(Class)}.
      *
      * @param packagePrefix
-     * 		a package prefix to whitelist
+     *      a package prefix to whitelist
      */
     public static synchronized void whitelistCliPackage(final String packagePrefix) {
         if (subcommands != null) {

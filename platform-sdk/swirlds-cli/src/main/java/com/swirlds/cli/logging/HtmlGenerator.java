@@ -314,7 +314,8 @@ public class HtmlGenerator {
                     // these are the objects on the page which match the class to toggle (discluding the input boxes)
                     let matchingObjects = $("." + toggleClass).not("input");
 
-                    // go through each of the matching objects, and modify the hide count according to the value of the checkbox
+                    // go through each of the matching objects, and modify the hide count according to the value
+                     of the checkbox
                     for (const element of matchingObjects) {
                         let currentNoShowCount = parseInt($(element).attr('no-show')) || 0;
 
@@ -761,7 +762,6 @@ public class HtmlGenerator {
 
         filterValues.forEach(
                 filterValue -> elements.add(createStandardRadioFilterWithoutLabelClass(sectionName, filterValue)));
-        ;
         return createInputDiv(filterName, elements);
     }
 

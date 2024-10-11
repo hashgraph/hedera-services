@@ -161,22 +161,23 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
      */
     @Override
     public void init(
-            @NonNull final Platform platform,
+            @NonNull final Platform platformInstance,
             @NonNull final InitTrigger trigger,
             @Nullable final SoftwareVersion previousSoftwareVersion) {
-        Objects.requireNonNull(platform, "the platform cannot be null");
+        Objects.requireNonNull(platformInstance, "the platform cannot be null");
         Objects.requireNonNull(trigger, "the init trigger cannot be null");
-        addressBookConfig = platform.getContext().getConfiguration().getConfigData(AddressBookConfig.class);
-        testingToolConfig = platform.getContext().getConfiguration().getConfigData(AddressBookTestingToolConfig.class);
+        addressBookConfig = platformInstance.getContext().getConfiguration().getConfigData(AddressBookConfig.class);
+        testingToolConfig =
+                platformInstance.getContext().getConfiguration().getConfigData(AddressBookTestingToolConfig.class);
         this.freezeAfterGenesis = testingToolConfig.freezeAfterGenesis();
 
-        this.platform = platform;
-        this.context = platform.getContext();
+        this.platform = platformInstance;
+        this.context = platformInstance.getContext();
 
         logger.info(STARTUP.getMarker(), "init called in State.");
         throwIfImmutable();
 
-        this.selfId = platform.getSelfId();
+        this.selfId = platformInstance.getSelfId();
     }
 
     /**
@@ -272,10 +273,11 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
     @Override
     @NonNull
     public synchronized AddressBook updateWeight(
-            @NonNull final AddressBook addressBook, @NonNull final PlatformContext context) {
+            @NonNull final AddressBook addressBook, @NonNull final PlatformContext contextInstance) {
         Objects.requireNonNull(addressBook, "the address book cannot be null");
-        this.context = Objects.requireNonNull(context, "the platform context cannot be null");
-        final int weightingBehavior = context.getConfiguration()
+        this.context = Objects.requireNonNull(contextInstance, "the platform context cannot be null");
+        final int weightingBehavior = contextInstance
+                .getConfiguration()
                 .getConfigData(AddressBookTestingToolConfig.class)
                 .weightingBehavior();
         logger.info(DEMO_INFO.getMarker(), "updateWeight called in State. Weighting Behavior: {}", weightingBehavior);

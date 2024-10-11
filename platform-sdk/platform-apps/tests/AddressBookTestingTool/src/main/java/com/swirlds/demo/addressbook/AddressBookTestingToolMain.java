@@ -83,12 +83,12 @@ public class AddressBookTestingToolMain implements SwirldMain {
      * {@inheritDoc}
      */
     @Override
-    public void init(@NonNull final Platform platform, @NonNull final NodeId id) {
-        Objects.requireNonNull(platform, "The platform must not be null.");
+    public void init(@NonNull final Platform platformInstance, @NonNull final NodeId id) {
+        Objects.requireNonNull(platformInstance, "The platform must not be null.");
         Objects.requireNonNull(id, "The node id must not be null.");
 
         logger.info(STARTUP.getMarker(), "init called in Main for node {}.", id);
-        this.platform = platform;
+        this.platform = platformInstance;
     }
 
     /**

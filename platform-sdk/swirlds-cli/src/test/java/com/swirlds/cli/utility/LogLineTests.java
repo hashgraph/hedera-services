@@ -28,6 +28,7 @@ import org.junit.jupiter.api.Test;
  * Tests for the LogLine class
  */
 @DisplayName("LogLine Tests")
+//CHECKSTYLE:OFF
 class LogLineTests {
     public static final String testString =
             """
