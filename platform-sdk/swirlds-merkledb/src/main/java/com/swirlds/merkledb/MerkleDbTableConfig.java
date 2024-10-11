@@ -163,7 +163,13 @@ public final class MerkleDbTableConfig implements SelfSerializable {
 
         // Optional hints, may be set explicitly using setters later. Defaults are loaded from
         // MerkleDb configuration
+        if (maxNumberOfKeys <= 0) {
+            throw new IllegalArgumentException("Max number of keys must be greater than 0");
+        }
         this.maxNumberOfKeys = maxNumberOfKeys;
+        if (hashesRamToDiskThreshold < 0) {
+            throw new IllegalArgumentException("Hashes RAM/disk threshold must be greater or equal to 0");
+        }
         this.hashesRamToDiskThreshold = hashesRamToDiskThreshold;
     }
 
@@ -442,8 +448,6 @@ public final class MerkleDbTableConfig implements SelfSerializable {
         final MerkleDbTableConfig copy =
                 new MerkleDbTableConfig(hashVersion, hashType, maxNumberOfKeys, hashesRamToDiskThreshold);
         copy.preferDiskIndices(preferDiskBasedIndices);
-        copy.hashesRamToDiskThreshold(hashesRamToDiskThreshold);
-        copy.maxNumberOfKeys(maxNumberOfKeys);
         return copy;
     }
 
