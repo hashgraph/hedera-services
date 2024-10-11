@@ -341,8 +341,15 @@ public record EthTxData(
 
     public boolean matchesChainId(final byte[] hederaChainId) {
         // first two checks handle the unprotected ethereum transactions
-        // before EIP155 - source: https://eips.ethereum.org/EIPS/eip-155
-        return chainId == null || chainId.length == 0 || Arrays.compare(chainId, hederaChainId) == 0;
+        // before EIP155 - source: [https://eips.ethereum.org/EIPS/eip-155](https://eips.ethereum.org/EIPS/eip-155)
+        if (chainId == null || chainId.length == 0) {
+            return true;
+        }
+
+        // Convert both chain IDs to BigInteger for comparison
+        BigInteger parsedHederaChainId = new BigInteger(1, hederaChainId);
+        BigInteger parsedChainId = new BigInteger(1, chainId);
+        return parsedHederaChainId.equals(parsedChainId);
     }
 
     @VisibleForTesting
