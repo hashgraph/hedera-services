@@ -15,7 +15,7 @@
  */
 
 plugins {
-    id("com.hedera.gradle.platform")
-    id("com.hedera.gradle.platform-publish")
+    id("com.hedera.gradle.module.library")
+    id("com.hedera.gradle.feature.publish-artifactregistry")
     id("com.hedera.gradle.feature.test-fixtures")
 }

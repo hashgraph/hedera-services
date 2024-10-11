@@ -15,8 +15,9 @@
  */
 
 plugins {
-    id("com.hedera.gradle.application")
+    id("com.hedera.gradle.module.application")
     id("com.hedera.gradle.feature.test-timing-sensitive")
+
     id("com.google.protobuf")
 }
 

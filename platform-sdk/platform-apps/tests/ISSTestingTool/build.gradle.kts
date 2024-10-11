@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-plugins { id("com.hedera.gradle.application") }
+plugins { id("com.hedera.gradle.module.application") }
 
-application.mainClass.set("com.swirlds.demo.iss.ISSTestingToolMain")
+application.mainClass = "com.swirlds.demo.iss.ISSTestingToolMain"
 
 mainModuleInfo { annotationProcessor("com.swirlds.config.processor") }

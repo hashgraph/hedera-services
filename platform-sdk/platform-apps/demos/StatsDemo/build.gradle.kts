@@ -14,6 +14,6 @@
  * limitations under the License.
  */
 
-plugins { id("com.hedera.gradle.application") }
+plugins { id("com.hedera.gradle.module.application") }
 
-application.mainClass.set("com.swirlds.demo.stats.StatsDemoMain")
+application.mainClass = "com.swirlds.demo.stats.StatsDemoMain"

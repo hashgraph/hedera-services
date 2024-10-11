@@ -14,10 +14,7 @@
  * limitations under the License.
  */
 
-plugins {
-    id("application")
-    id("com.hedera.gradle.platform")
-}
+plugins { id("com.hedera.gradle.module.application") }
 
 mainModuleInfo {
     annotationProcessor("com.swirlds.config.processor")
@@ -25,4 +22,4 @@ mainModuleInfo {
     runtimeOnly("com.swirlds.config.impl")
 }
 
-application.mainClass.set("com.swirlds.platform.base.example.Application")
+application.mainClass = "com.swirlds.platform.base.example.Application"

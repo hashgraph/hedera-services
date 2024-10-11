@@ -15,8 +15,7 @@
  */
 
 plugins {
-    id("com.hedera.gradle.services")
-    id("com.hedera.gradle.services-publish")
+    id("com.hedera.gradle.module.library")
     id("com.hedera.gradle.feature.benchmark")
     id("com.hedera.gradle.feature.test-fixtures")
 }

@@ -41,7 +41,6 @@ module com.hedera.node.app {
     requires com.swirlds.merkledb;
     requires com.swirlds.virtualmap;
     requires com.google.common;
-    requires com.google.errorprone.annotations;
     requires com.google.protobuf;
     requires io.grpc.netty;
     requires io.grpc;
@@ -52,8 +51,7 @@ module com.hedera.node.app {
     requires org.hyperledger.besu.datatypes;
     requires static com.github.spotbugs.annotations;
     requires static com.google.auto.service;
-    requires static java.compiler;
-    // javax.annotation.processing.Generated
+    requires static java.compiler; // javax.annotation.processing.Generated
 
     exports com.hedera.node.app;
     exports com.hedera.node.app.state to

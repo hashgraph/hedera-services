@@ -17,7 +17,7 @@
 import me.champeau.jmh.JMHTask
 
 plugins {
-    id("com.hedera.gradle.platform")
+    id("com.hedera.gradle.module.application")
     id("com.hedera.gradle.feature.benchmark")
 }
 
