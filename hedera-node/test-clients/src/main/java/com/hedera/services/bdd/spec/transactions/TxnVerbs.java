@@ -301,7 +301,6 @@ public class TxnVerbs {
         return blockingOrder(
                 sourcing(() -> {
                     final var creation = new HapiTokenCreate(token)
-                            .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
                             .initialSupply(0L)
                             .treasury(TOKEN_TREASURY)
                             .supplyKey(WELL_KNOWN_NFT_SUPPLY_KEY)

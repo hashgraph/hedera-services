@@ -29,6 +29,7 @@ import java.util.stream.Stream;
 
 import static com.hedera.services.bdd.junit.TestTags.TOKEN;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.burnToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsdWithin;
 
@@ -38,6 +39,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsdW
 public class TokenBulkOperationsTest  extends BulkOperationsBase {
 
     private static final String NFT_TXN = "nftTxn";
+    private static final String FT_TXN = "ftTxn";
 
     private static final double ALLOWED_DIFFERENCE_PERCENTAGE = 0.01;
     private static final double EXPECTED_FT_MINT_PRICE = 0.001;
@@ -48,9 +50,9 @@ public class TokenBulkOperationsTest  extends BulkOperationsBase {
     class BulkTokenOperationsWithoutCustomFees {
 
         @HapiTest
-        final Stream<DynamicTest> mintTokens() {
+        final Stream<DynamicTest> mintOneNftToken() {
             var nftSupplyKey = "nftSupplyKey";
-            return defaultHapiSpec("NFT without custom fees bulk mint results in correct fee")
+            return defaultHapiSpec("NFT without custom fees mint one NFT token results in correct fee")
                     .given(
                             createTokensAndAccounts())
                     .when(
@@ -65,6 +67,50 @@ public class TokenBulkOperationsTest  extends BulkOperationsBase {
                                     .via(NFT_TXN))
                     .then(
                             validateChargedUsdWithin(NFT_TXN, EXPECTED_NFT_MINT_PRICE, ALLOWED_DIFFERENCE_PERCENTAGE));
+        }
+
+        @HapiTest
+        final Stream<DynamicTest> mintNftTokens() {
+            var nftSupplyKey = "nftSupplyKey";
+            return defaultHapiSpec("NFT without custom fees bulk mint results in correct fee")
+                    .given(
+                            createTokensAndAccounts())
+                    .when(
+                            mintToken(
+                                    NFT_TOKEN,
+                                    IntStream.range(0, 10)
+                                            .mapToObj(a -> ByteString.copyFromUtf8(String.valueOf(a)))
+                                            .toList())
+                                    .payingWith(OWNER)
+                                    .signedBy(nftSupplyKey)
+                                    .blankMemo()
+                                    .via(NFT_TXN))
+                    .then(
+                            validateChargedUsdWithin(NFT_TXN, EXPECTED_NFT_MINT_PRICE * 10, ALLOWED_DIFFERENCE_PERCENTAGE));
+        }
+
+        @HapiTest
+        final Stream<DynamicTest> burnOneNFtTokens() {
+            var nftSupplyKey = "nftSupplyKey";
+            return defaultHapiSpec("NFT without custom fees burn one NFT token results in correct fee")
+                    .given(
+                            createTokensAndAccounts(),
+                            mintToken(
+                                    NFT_TOKEN,
+                                    IntStream.range(0, 10)
+                                            .mapToObj(a -> ByteString.copyFromUtf8(String.valueOf(a)))
+                                            .toList())
+                                    .payingWith(OWNER)
+                                    .signedBy(nftSupplyKey)
+                                    .blankMemo()
+                                    .via(NFT_TXN))
+                    .when(
+                            burnToken()
+                                    .payingWith(OWNER)
+                                    .blankMemo()
+                                    .via(FT_TXN))
+                    .then(
+                            validateChargedUsdWithin(FT_TXN, EXPECTED_FT_MINT_PRICE, ALLOWED_DIFFERENCE_PERCENTAGE));
         }
     }
 }
