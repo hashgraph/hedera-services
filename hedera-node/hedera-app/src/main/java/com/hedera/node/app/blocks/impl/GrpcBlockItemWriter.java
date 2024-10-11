@@ -30,12 +30,16 @@ import com.hedera.node.app.blocks.BlockItemWriter;
 import com.hedera.node.config.data.BlockStreamConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
-import io.grpc.ManagedChannel;
-import io.grpc.ManagedChannelBuilder;
 import io.grpc.Status;
 import io.grpc.stub.StreamObserver;
-import java.util.concurrent.TimeUnit;
+import io.helidon.common.tls.Tls;
+import io.helidon.webclient.grpc.GrpcClient;
+import io.helidon.webclient.grpc.GrpcClientMethodDescriptor;
+import io.helidon.webclient.grpc.GrpcClientProtocolConfig;
+import io.helidon.webclient.grpc.GrpcServiceClient;
+import io.helidon.webclient.grpc.GrpcServiceDescriptor;
+import java.net.URI;
+import java.net.URISyntaxException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -47,12 +51,10 @@ public class GrpcBlockItemWriter implements BlockItemWriter {
 
     private static final Logger logger = LogManager.getLogger(GrpcBlockItemWriter.class);
     private static final String INVALID_MESSAGE = "Invalid protocol buffer converting %s from PBJ to protoc for %s";
+    private static final String GRPC_END_POINT = BlockStreamServiceGrpc.getPublishBlockStreamMethod().getBareMethodName();
 
-    @Nullable
-    private ManagedChannel channel;
-
-    private final BlockStreamServiceGrpc.BlockStreamServiceStub asyncStub;
     private StreamObserver<PublishStreamRequest> requestObserver;
+    private final GrpcServiceClient grpcServiceClient;
     private long blockNumber;
 
     /** The state of this writer */
@@ -81,11 +83,28 @@ public class GrpcBlockItemWriter implements BlockItemWriter {
      */
     public GrpcBlockItemWriter(@NonNull final BlockStreamConfig blockStreamConfig) {
         requireNonNull(blockStreamConfig, "The supplied argument 'blockStreamConfig' cannot be null!");
-
-        channel = ManagedChannelBuilder.forAddress(blockStreamConfig.address(), blockStreamConfig.port())
-                .usePlaintext()
-                .build();
-        asyncStub = BlockStreamServiceGrpc.newStub(channel);
+        GrpcClient client;
+        try {
+            client = GrpcClient.builder()
+                    .tls(Tls.builder().enabled(false).build())
+                    .baseUri(new URI(
+                            null, null, blockStreamConfig.address(), blockStreamConfig.port(), null, null, null))
+                    .protocolConfig(GrpcClientProtocolConfig.builder()
+                            .abortPollTimeExpired(false)
+                            .build())
+                    .build();
+        } catch (URISyntaxException e) {
+            throw new RuntimeException(e);
+        }
+        grpcServiceClient = client.serviceClient(GrpcServiceDescriptor.builder()
+                .serviceName(BlockStreamServiceGrpc.SERVICE_NAME)
+                .putMethod(
+                        GRPC_END_POINT,
+                        GrpcClientMethodDescriptor.bidirectional(BlockStreamServiceGrpc.SERVICE_NAME, GRPC_END_POINT)
+                                .requestType(PublishStreamRequest.class)
+                                .responseType(PublishStreamResponse.class)
+                                .build())
+                .build());
     }
 
     @Override
@@ -94,7 +113,7 @@ public class GrpcBlockItemWriter implements BlockItemWriter {
 
         if (blockNumber < 0) throw new IllegalArgumentException("Block number must be non-negative");
         this.blockNumber = blockNumber;
-        requestObserver = asyncStub.publishBlockStream(new StreamObserver<>() {
+        requestObserver = grpcServiceClient.bidi(GRPC_END_POINT, new StreamObserver<PublishStreamResponse>() {
             @Override
             public void onNext(PublishStreamResponse streamResponse) {
                 if (streamResponse.hasAcknowledgement()) {
@@ -119,18 +138,9 @@ public class GrpcBlockItemWriter implements BlockItemWriter {
 
             @Override
             public void onCompleted() {
-                try {
-                    if (channel != null) {
-                        channel.shutdown().awaitTermination(10, TimeUnit.MILLISECONDS);
-                        channel = null;
-                    }
-                } catch (InterruptedException e) {
-                    throw new RuntimeException(e);
-                }
                 logger.info("PublishStreamResponse completed");
             }
         });
-
         this.state = State.OPEN;
     }
 
@@ -180,28 +190,5 @@ public class GrpcBlockItemWriter implements BlockItemWriter {
     @VisibleForTesting
     public State getState() {
         return state;
-    }
-
-    /**
-     * Close the existing channel.
-     */
-    @VisibleForTesting
-    public void closeChannel() {
-        try {
-            if (channel != null) {
-                channel.shutdown().awaitTermination(10, TimeUnit.MILLISECONDS);
-                channel = null;
-            }
-        } catch (InterruptedException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    /**
-     * @return the stub of the gRPC writer
-     */
-    @VisibleForTesting
-    public BlockStreamServiceGrpc.BlockStreamServiceStub getStub() {
-        return asyncStub;
     }
 }

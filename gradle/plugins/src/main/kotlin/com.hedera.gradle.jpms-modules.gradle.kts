@@ -111,6 +111,24 @@ extraJavaModuleInfo {
     module("io.grpc:grpc-util", "io.grpc.util")
     module("io.grpc:grpc-protobuf", "io.grpc.protobuf")
     module("io.grpc:grpc-protobuf-lite", "io.grpc.protobuf.lite")
+    module("io.helidon.common:helidon-common", "io.helidon.common") {
+        exportAllPackages()
+        requireAllDefinedDependencies()
+        requires("java.logging")
+        patchRealModule()
+    }
+    module("io.helidon.webclient:helidon-webclient", "io.helidon.webclient") {
+        exportAllPackages()
+        requireAllDefinedDependencies()
+        requires("java.logging")
+        patchRealModule()
+    }
+    module("io.helidon.webclient:helidon-webclient-grpc", "io.helidon.webclient.grpc") {
+        exportAllPackages()
+        requireAllDefinedDependencies()
+        requires("java.logging")
+        patchRealModule()
+    }
     module("com.github.spotbugs:spotbugs-annotations", "com.github.spotbugs.annotations")
     module("com.google.code.findbugs:jsr305", "java.annotation")
     module("com.google.errorprone:error_prone_annotations", "com.google.errorprone.annotations")

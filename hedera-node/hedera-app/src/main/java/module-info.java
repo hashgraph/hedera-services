@@ -44,7 +44,9 @@ module com.hedera.node.app {
     requires com.google.errorprone.annotations;
     requires com.google.protobuf;
     requires io.grpc.netty;
-    requires io.grpc;
+    requires io.helidon.common;
+    requires io.helidon.webclient.grpc;
+    requires io.helidon.webclient;
     requires io.netty.handler;
     requires io.netty.transport.classes.epoll;
     requires io.netty.transport;
