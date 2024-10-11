@@ -320,8 +320,9 @@ public sealed class Bucket implements Closeable permits ParsedBucket {
             } else {
                 logger.error(
                         MERKLE_DB.getMarker(),
-                        "Cannot read bucket: in={} off={} bd.pos={} bd.lim={} bd.data={}",
+                        "Cannot read bucket: in={} in.pos={} off={} bd.pos={} bd.lim={} bd.data={}",
                         in,
+                        in.position(),
                         fieldOffset,
                         bucketData.position(),
                         bucketData.limit(),
