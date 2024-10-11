@@ -224,12 +224,6 @@ If the rate at which the network is creating events slows, Alice will be able to
 events through gossip, and will be able to process them and catch up. Or, in the last extremity where Alice has fallen
 too far behind, Alice will wait for some time and reconnect.
 
-In addition, the Gossip module reports to the Execution layer health information about each node in the network, as
-well as its own health. Health in this case can simply be the highest birth-round received per node in the network. The
-birth-round is a good proxy for how healthy the node is, since slower, unhealthy nodes will have lower birth-rounds
-relative to their peers. Using this information, the Execution layer can throttle transaction ingestion network-wide.
-How this is done will be described in the "dynamic throttles" design documentation.
-
 ##### Slow Execution
 
 Under normal circumstances, the Execution layer is always the actual bottleneck. The cost of processing a few hundreds
@@ -363,11 +357,6 @@ If this happens, then Alice has "fallen behind" and must reconnect. There is no 
 events she needs through gossip alone. Gossip will detect this situation and make a call through the Consensus module
 interface to notify Execution that the node is behind. Execution will then initiate reconnect.
 
-Fundamentally, Execution is responsible for reconnect, but it cannot differentiate between a quiescent network or a
-behind node just by looking at the lack of rounds coming from Consensus. So Consensus **must** tell Execution if it
-knows that it cannot proceed in creating rounds because the node itself is bad, vs. a quiescent network which is
-able to create rounds (if there were any transactions).
-
 #### Roster Changes
 
 At runtime, it is possible that the roster will change dynamically (as happens with the dynamic address book feature).
@@ -378,8 +367,8 @@ this information from Hashgraph in the form of round metadata.
 ### Event Intake
 
 The Event Intake System is responsible for receiving events, validating them, and emitting them in *topological order*.
-It also makes sure they are durably persisted before emission so as to add resilience to the node in case of certain
-catastrophic failure scenarios.
+It also makes sure they are durably persisted before emission, which prevents branching during upgrades, and adds
+resilience to the node in case of certain catastrophic failure scenarios.
 
 ![Event Intake](event-intake-module.png)
 
@@ -390,19 +379,11 @@ not specify the validation pipeline, it will define some of the primary steps in
 the purpose of this module. That is, the following description is non-normative, but important for understanding the
 context within which this module operates.
 
-Event Intake receives events from gossip, or from the Event Creator module (i.e. a "self-event"). An "event" is actually
-a wrapper around the base protobuf event type (`EventCore`) that includes the core event data along with metadata that
-is not represented in protobuf or transmitted through gossip. One field populated in the metadata will be the `byte[]`
-that represents the protobuf-serialized form of the `EventCore`. Since gossip read this from the wire, there is no work
-to produce this `byte[]`, and since the `byte[]` will be needed for Gossip, we need to keep it anyway. But we will also
-hash this `byte[]` to produce the event hash, and store this hash in the metadata.
-
-After hashing, Event Intake will deduplicate events. It has a hash->event map allowing it to cheaply verify whether the
-event is a duplicate. If it is, the duplicate is discarded. Otherwise, the event is checked for "syntactic" correctness.
-For example, verifying that all required fields are populated, etc. While the Gossip system has already checked to
-ensure the payload of the event (its transactions) are limited in size and count, Event Intake will also check this as a
-safety measure in the event of bugs (if this check fails here, a noisy log statement should be produced, since this
-should never happen).
+Event Intake receives events from gossip, or from the Event Creator module (i.e. "self-events"). Event Intake is
+responsible for computing some pieces of metadata pertaining to the event, such as the event hash. Event Intake also
+deduplicates events, and checks for "syntactic" correctness. For example, it verifies that all required fields are
+populated. While the Gossip system has already checked to ensure the payload of the event (its transactions) are
+limited in size and count, Event Intake will also check this as an additional safety measure.
 
 If an event is valid, then we finally check the signature. Since validation and deduplication and hashing are
 significantly less expensive than signature verification, we wait on signature verification until the other steps are
@@ -436,11 +417,8 @@ hashgraph timeline. One node, Alice, may be working on round 100 while a better-
 on round 200. When Alice creates an event, it will be for birth-round 100, while an event created by Bob at the same
 instant would be for birth-round 200.
 
-In a sense, while both events are created at the same wall-clock time, Alice's event is actually older, because of what
-Alice understood about the state of the world at the time the event was created.
-
 It is not possible for any one node to get much farther ahead of all other nodes, since the only way to have a newer
-birth-round is to advance the hashgraph, and that requires 2/3 of the network by stake weight. Therefore, in this
+birth-round is to advance the hashgraph, and that requires >2/3 of the network by stake weight. Therefore, in this
 example, Alice is not just 100 rounds behind Bob, she must be 100 rounds behind at least 2/3 of the network by
 stake weight, or, Bob is lying. He may create events at round 200, but not actually have a hashgraph that has advanced
 to that round.
