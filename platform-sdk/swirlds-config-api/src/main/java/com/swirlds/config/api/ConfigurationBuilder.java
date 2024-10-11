@@ -191,5 +191,5 @@ public interface ConfigurationBuilder {
      */
     @Deprecated
     @NonNull
-    ConfigurationBuilder loadExtension(@NonNull final ConfigurationExtension extension);
+    ConfigurationBuilder loadExtension(@NonNull ConfigurationExtension extension);
 }
