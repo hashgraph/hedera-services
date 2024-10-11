@@ -529,7 +529,7 @@ public class StateChangesValidator implements BlockStreamValidator {
                         new UtilServiceImpl(),
                         new RecordCacheService(),
                         new BlockRecordService(),
-                        new BlockStreamService(bootstrapConfig),
+                        new BlockStreamService(),
                         new FeeService(),
                         new CongestionThrottleService(),
                         new NetworkServiceImpl(),
