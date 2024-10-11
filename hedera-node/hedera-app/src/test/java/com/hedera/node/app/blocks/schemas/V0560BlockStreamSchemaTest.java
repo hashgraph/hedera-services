@@ -16,7 +16,7 @@
 
 package com.hedera.node.app.blocks.schemas;
 
-import static com.hedera.node.app.blocks.schemas.V0540BlockStreamSchema.BLOCK_STREAM_INFO_KEY;
+import static com.hedera.node.app.blocks.schemas.V0560BlockStreamSchema.BLOCK_STREAM_INFO_KEY;
 import static com.hedera.node.app.fixtures.AppTestBase.DEFAULT_CONFIG;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -43,7 +43,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-public class V0540BlockStreamSchemaTest {
+public class V0560BlockStreamSchemaTest {
     @Mock
     private MigrationContext migrationContext;
 
@@ -56,16 +56,16 @@ public class V0540BlockStreamSchemaTest {
     @Mock
     private WritableSingletonState<BlockStreamInfo> state;
 
-    private V0540BlockStreamSchema subject;
+    private V0560BlockStreamSchema subject;
 
     @BeforeEach
     void setUp() {
-        subject = new V0540BlockStreamSchema(migratedBlockHashConsumer);
+        subject = new V0560BlockStreamSchema(migratedBlockHashConsumer);
     }
 
     @Test
-    void versionIsV0540() {
-        assertEquals(new SemanticVersion(0, 54, 0, "", ""), subject.getVersion());
+    void versionIsV0560() {
+        assertEquals(new SemanticVersion(0, 56, 0, "", ""), subject.getVersion());
     }
 
     @Test
@@ -83,7 +83,7 @@ public class V0540BlockStreamSchemaTest {
         given(writableStates.<BlockStreamInfo>getSingleton(BLOCK_STREAM_INFO_KEY))
                 .willReturn(state);
 
-        subject.migrate(migrationContext);
+        subject.restart(migrationContext);
 
         verify(state).put(BlockStreamInfo.DEFAULT);
     }
@@ -112,7 +112,7 @@ public class V0540BlockStreamSchemaTest {
                 .willReturn(state);
         given(migrationContext.sharedValues()).willReturn(sharedValues);
 
-        subject.migrate(migrationContext);
+        subject.restart(migrationContext);
 
         verify(migratedBlockHashConsumer).accept(Bytes.fromHex("abcd".repeat(24)));
         final var expectedInfo = new BlockStreamInfo(
@@ -136,7 +136,7 @@ public class V0540BlockStreamSchemaTest {
                 .willReturn(state);
         given(state.get()).willReturn(BlockStreamInfo.DEFAULT);
 
-        subject.migrate(migrationContext);
+        subject.restart(migrationContext);
 
         verifyNoInteractions(migratedBlockHashConsumer);
     }
