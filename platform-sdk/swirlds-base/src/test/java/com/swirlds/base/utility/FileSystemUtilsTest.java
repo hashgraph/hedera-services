@@ -16,7 +16,8 @@
 
 package com.swirlds.base.utility;
 
-import static com.swirlds.base.utility.FileSystem.waitForPathPresence;
+import static com.swirlds.base.utility.FileSystemUtils.waitForPathPresence;
+import static com.swirlds.base.utility.Retry.DEFAULT_WAIT_TIME;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.awaitility.Awaitility.await;
@@ -24,6 +25,8 @@ import static org.awaitility.Awaitility.await;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
+import java.time.temporal.ChronoUnit;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -36,9 +39,13 @@ import org.junit.jupiter.api.io.CleanupMode;
 import org.junit.jupiter.api.io.TempDir;
 
 /**
- * Validates the behavior of the {@link FileSystem} utility class.
+ * Validates the behavior of the {@link FileSystemUtils} utility class.
  */
-class FileSystemTest {
+class FileSystemUtilsTest {
+
+    private static final Duration SHORT_WAIT_TIME = Duration.of(50, ChronoUnit.MILLIS);
+    private static final Duration SHORT_RETRY_DELAY = Duration.of(25, ChronoUnit.MILLIS);
+
     @TempDir(cleanup = CleanupMode.ALWAYS)
     Path tempDir;
 
@@ -62,7 +69,8 @@ class FileSystemTest {
         final Path targetFile = tempDir.resolve("test.txt");
 
         final Future<?> filePresence = executorService.submit(() -> {
-            await().atMost(20, TimeUnit.SECONDS).until(() -> waitForPathPresence(targetFile, 10, 2_000));
+            await().atMost(DEFAULT_WAIT_TIME.plus(Duration.of(2, ChronoUnit.SECONDS)))
+                    .until(() -> waitForPathPresence(targetFile));
         });
 
         final Future<?> fileCreation = executorService.submit(() -> {
@@ -81,7 +89,9 @@ class FileSystemTest {
     @Test
     void missingFileTimeout() {
         final Path targetFile = tempDir.resolve("test.txt");
-        assertThat(waitForPathPresence(targetFile, 5, 0)).isFalse();
+        assertThat(waitForPathPresence(
+                        targetFile, Duration.of(50, ChronoUnit.MILLIS), Duration.of(25, ChronoUnit.MILLIS)))
+                .isFalse();
     }
 
     @Test
@@ -89,7 +99,8 @@ class FileSystemTest {
         final Path targetFile = tempDir.resolve("test.txt");
         Files.createFile(targetFile);
 
-        assertThat(waitForPathPresence(targetFile, 5, 0)).isFalse();
+        assertThat(waitForPathPresence(targetFile, SHORT_WAIT_TIME, SHORT_RETRY_DELAY))
+                .isFalse();
     }
 
     @Test
@@ -100,17 +111,31 @@ class FileSystemTest {
     }
 
     @Test
-    void zeroMaxAttemptsShouldThrow() {
-        assertThatThrownBy(() -> waitForPathPresence(tempDir, 0, 0))
+    void zeroDelayShouldThrow() {
+        assertThatThrownBy(() -> waitForPathPresence(tempDir, SHORT_WAIT_TIME, Duration.ZERO))
                 .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("The maximum number of attempts must be greater than zero (0)");
+                .hasMessage("The retry delay must be greater than zero (0)");
     }
 
     @Test
     void negativeDelayShouldThrow() {
-        assertThatThrownBy(() -> waitForPathPresence(tempDir, 1, -1))
+        assertThatThrownBy(() -> waitForPathPresence(tempDir, SHORT_WAIT_TIME, SHORT_RETRY_DELAY.negated()))
                 .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("The delay must be greater than or equal to zero (0)");
+                .hasMessage("The retry delay must be greater than zero (0)");
+    }
+
+    @Test
+    void zeroWaitTimeShouldThrow() {
+        assertThatThrownBy(() -> waitForPathPresence(tempDir, Duration.ZERO, SHORT_RETRY_DELAY))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("The maximum wait time must be greater than zero (0)");
+    }
+
+    @Test
+    void negativeWaitTimeShouldThrow() {
+        assertThatThrownBy(() -> waitForPathPresence(tempDir, SHORT_WAIT_TIME.negated(), SHORT_RETRY_DELAY))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("The maximum wait time must be greater than zero (0)");
     }
 
     @Test
@@ -119,7 +144,8 @@ class FileSystemTest {
         final Path targetDir = tempDir.resolve("test-dir");
 
         final Future<?> filePresence = executorService.submit(() -> {
-            await().atMost(20, TimeUnit.SECONDS).until(() -> waitForPathPresence(targetDir, 10, 2_000));
+            await().atMost(DEFAULT_WAIT_TIME.plus(Duration.of(2, ChronoUnit.SECONDS)))
+                    .until(() -> waitForPathPresence(targetDir));
         });
 
         final Future<?> fileCreation = executorService.submit(() -> {

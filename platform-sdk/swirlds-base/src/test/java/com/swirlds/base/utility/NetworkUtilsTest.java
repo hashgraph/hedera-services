@@ -16,16 +16,21 @@
 
 package com.swirlds.base.utility;
 
-import static com.swirlds.base.utility.Network.isNameResolvable;
+import static com.swirlds.base.utility.NetworkUtils.isNameResolvable;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import java.time.Duration;
+import java.time.temporal.ChronoUnit;
 import org.junit.jupiter.api.Test;
 
 /**
- * Validates the behavior of the {@link Network} utility class.
+ * Validates the behavior of the {@link NetworkUtils} utility class.
  */
-public class NetworkTest {
+public class NetworkUtilsTest {
+
+    private static final Duration SHORT_WAIT_TIME = Duration.of(25, ChronoUnit.SECONDS);
+    private static final Duration SHORT_RETRY_DELAY = Duration.of(25, ChronoUnit.MILLIS);
 
     @Test
     void ipAddressShouldResolve() {
@@ -41,8 +46,9 @@ public class NetworkTest {
 
     @Test
     void invalidHostnameShouldNotResolve() {
-        final String hostname = "invalid-hostname.local";
-        assertThat(isNameResolvable(hostname, 2, 0)).isFalse();
+        final String hostname = "invalid-hostname";
+        assertThat(isNameResolvable(hostname, SHORT_WAIT_TIME, SHORT_RETRY_DELAY))
+                .isFalse();
     }
 
     @Test
@@ -60,16 +66,30 @@ public class NetworkTest {
     }
 
     @Test
-    void zeroMaxAttemptsShouldThrow() {
-        assertThatThrownBy(() -> isNameResolvable("localhost", 0, 0))
+    void zeroDelayShouldThrow() {
+        assertThatThrownBy(() -> isNameResolvable("localhost", SHORT_WAIT_TIME, Duration.ZERO))
                 .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("The maximum number of attempts must be greater than zero (0)");
+                .hasMessage("The retry delay must be greater than zero (0)");
     }
 
     @Test
     void negativeDelayShouldThrow() {
-        assertThatThrownBy(() -> isNameResolvable("localhost", 1, -1))
+        assertThatThrownBy(() -> isNameResolvable("localhost", SHORT_WAIT_TIME, SHORT_RETRY_DELAY.negated()))
                 .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("The delay must be greater than or equal to zero (0)");
+                .hasMessage("The retry delay must be greater than zero (0)");
+    }
+
+    @Test
+    void zeroWaitTimeShouldThrow() {
+        assertThatThrownBy(() -> isNameResolvable("localhost", Duration.ZERO, SHORT_RETRY_DELAY))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("The maximum wait time must be greater than zero (0)");
+    }
+
+    @Test
+    void negativeWaitTimeShouldThrow() {
+        assertThatThrownBy(() -> isNameResolvable("localhost", SHORT_WAIT_TIME.negated(), SHORT_RETRY_DELAY))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("The maximum wait time must be greater than zero (0)");
     }
 }

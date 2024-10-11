@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.system.address;
 
-import static com.swirlds.base.utility.Network.isNameResolvable;
+import static com.swirlds.base.utility.NetworkUtils.isNameResolvable;
 import static com.swirlds.platform.util.BootstrapUtils.detectSoftwareUpgrade;
 
 import com.hedera.hapi.node.base.ServiceEndpoint;

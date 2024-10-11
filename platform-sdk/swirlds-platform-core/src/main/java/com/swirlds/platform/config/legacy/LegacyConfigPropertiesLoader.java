@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.config.legacy;
 
-import static com.swirlds.base.utility.FileSystem.waitForPathPresence;
+import static com.swirlds.base.utility.FileSystemUtils.waitForPathPresence;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 
 import com.swirlds.common.utility.CommonUtils;

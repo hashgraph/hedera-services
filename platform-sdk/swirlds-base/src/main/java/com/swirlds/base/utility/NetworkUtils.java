@@ -16,21 +16,24 @@
 
 package com.swirlds.base.utility;
 
+import static com.swirlds.base.utility.Retry.DEFAULT_RETRY_DELAY;
+import static com.swirlds.base.utility.Retry.DEFAULT_WAIT_TIME;
+
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.time.Duration;
 import java.util.Objects;
-import java.util.concurrent.ExecutionException;
 
 /**
  * Provides network-related utility methods.
  */
-public final class Network {
+public final class NetworkUtils {
 
     /**
      * Private constructor to prevent utility class instantiation.
      */
-    private Network() {}
+    private NetworkUtils() {}
 
     /**
      * Evaluates a given {@code hostname} to ensure it is resolvable to one or more valid IPv4 or IPv6 addresses.
@@ -41,14 +44,15 @@ public final class Network {
      * updates/propagation, and/or intermittent network connections.
      *
      * <p>
-     * This overloaded method uses a default of 20 attempts with a 2-second delay between each attempt.
+     * This overloaded method uses a default wait time of {@link Retry#DEFAULT_WAIT_TIME} and a default retry delay of
+     * {@link Retry#DEFAULT_RETRY_DELAY}.
      *
      * @param name the domain name fragment, fully qualified domain name (FQDN), or IP address to be resolved.
      * @return true if the name resolves to one or more valid IP addresses; otherwise false.
-     * @see #isNameResolvable(String, int, int)
+     * @see #isNameResolvable(String, Duration, Duration)
      */
     public static boolean isNameResolvable(@NonNull final String name) {
-        return isNameResolvable(name, 20, 2_000);
+        return isNameResolvable(name, DEFAULT_WAIT_TIME, DEFAULT_RETRY_DELAY);
     }
 
     /**
@@ -59,25 +63,46 @@ public final class Network {
      * This method includes retry logic to handle slow DNS queries due to network conditions, slow DNS record
      * updates/propagation, and/or intermittent network connections.
      *
-     * @param name        the domain name fragment, fully qualified domain name (FQDN), or IP address to be resolved.
-     * @param maxAttempts the maximum number of retry attempts.
-     * @param delayMs     the delay between retry attempts.
+     * <p>
+     * This overloaded method uses a default retry delay of {@link Retry#DEFAULT_RETRY_DELAY}.
+     *
+     * @param name     the domain name fragment, fully qualified domain name (FQDN), or IP address to be resolved.
+     * @param waitTime the maximum amount of time to wait for the DNS hostname to become resolvable.
+     * @return true if the name resolves to one or more valid IP addresses; otherwise false.
+     * @see #isNameResolvable(String, Duration, Duration)
+     */
+    public static boolean isNameResolvable(@NonNull final String name, @NonNull final Duration waitTime) {
+        return isNameResolvable(name, waitTime, DEFAULT_RETRY_DELAY);
+    }
+
+    /**
+     * Evaluates a given {@code hostname} to ensure it is resolvable to one or more valid IPv4 or IPv6 addresses.
+     * Supports domain name fragments, fully qualified domain names (FQDN), and IP addresses.
+     *
+     * <p>
+     * This method includes retry logic to handle slow DNS queries due to network conditions, slow DNS record
+     * updates/propagation, and/or intermittent network connections.
+     *
+     * @param name       the domain name fragment, fully qualified domain name (FQDN), or IP address to be resolved.
+     * @param waitTime   the maximum amount of time to wait for the DNS hostname to become resolvable.
+     * @param retryDelay the delay between retry attempts.
      * @return true if the name resolves to one or more valid IP addresses; otherwise false.
      */
-    public static boolean isNameResolvable(@NonNull final String name, final int maxAttempts, final int delayMs) {
+    public static boolean isNameResolvable(
+            @NonNull final String name, @NonNull final Duration waitTime, @NonNull final Duration retryDelay) {
         Objects.requireNonNull(name, "name must not be null");
+        Objects.requireNonNull(waitTime, "waitTime must not be null");
+        Objects.requireNonNull(retryDelay, "retryDelay must not be null");
         try {
-            return Retry.check(Network::isNameResolvableInternal, name, maxAttempts, delayMs);
+            return Retry.check(NetworkUtils::isNameResolvableInternal, name, waitTime, retryDelay);
         } catch (InterruptedException ignored) {
             Thread.currentThread().interrupt();
-            return false;
-        } catch (ExecutionException ignored) {
             return false;
         }
     }
 
     /**
-     * Internal implementation used by the {@link #isNameResolvable(String, int, int)} method.
+     * Internal implementation used by the {@link #isNameResolvable(String, Duration, Duration)} method.
      *
      * @param name the domain name fragment, fully qualified domain name (FQDN), or IP address to be resolved.
      * @return true if the name resolves to one or more valid IP addresses; otherwise false.

@@ -16,21 +16,25 @@
 
 package com.swirlds.base.utility;
 
+import static com.swirlds.base.utility.Retry.DEFAULT_RETRY_DELAY;
+import static com.swirlds.base.utility.Retry.DEFAULT_WAIT_TIME;
+
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.Objects;
-import java.util.concurrent.ExecutionException;
 
 /**
  * Provides file system-related utility methods.
  */
-public final class FileSystem {
+public final class FileSystemUtils {
+
     /**
      * Private constructor to prevent utility class instantiation.
      */
-    private FileSystem() {}
+    private FileSystemUtils() {}
 
     /**
      * Evaluates a given {@code path} to ensure it exists.
@@ -40,14 +44,15 @@ public final class FileSystem {
      * given threshold. Examples of these cases are Kubernetes projected volumes and persistent volumes.
      *
      * <p>
-     * This overloaded method uses a default of 20 attempts with a 2-second delay between each attempt.
+     * This overloaded method uses a default wait time of {@link Retry#DEFAULT_WAIT_TIME} and a default retry delay of
+     * {@link Retry#DEFAULT_RETRY_DELAY}.
      *
      * @param path the path to check for existence.
      * @return true if the file exists before the retries have been exhausted; otherwise false.
      * @throws NullPointerException if the {@code path} argument is a {@code null} value.
      */
-    public static boolean waitForPathPresence(@NonNull Path path) {
-        return waitForPathPresence(path, 20, 2_000);
+    public static boolean waitForPathPresence(@NonNull final Path path) {
+        return waitForPathPresence(path, DEFAULT_WAIT_TIME);
     }
 
     /**
@@ -57,22 +62,40 @@ public final class FileSystem {
      * This method includes retry logic to handle files which may not yet exist but will become available within a
      * given threshold. Examples of these cases are Kubernetes projected volumes and persistent volumes.
      *
-     * @param path        the path to check for existence.
-     * @param maxAttempts the maximum number of retry attempts.
-     * @param delayMs     the delay between retry attempts.
+     * <p>
+     * This overloaded method uses a default retry delay of {@link Retry#DEFAULT_RETRY_DELAY}.
+     *
+     * @param path the path to check for existence.
+     * @param waitTime the maximum amount of time to wait for the file, directory, block device, or symlink to become available.
      * @return true if the file exists before the retries have been exhausted; otherwise false.
-     * @throws IllegalArgumentException if the {@code maxAttempts} argument is less than or equal to zero (0) or the
-     *                                 {@code delayMs} argument is less than zero (0).
-     * @throws NullPointerException    if the {@code path} argument is a {@code null} value.
+     * @throws NullPointerException if the {@code path} argument is a {@code null} value.
      */
-    public static boolean waitForPathPresence(@NonNull Path path, int maxAttempts, int delayMs) {
+    public static boolean waitForPathPresence(@NonNull final Path path, @NonNull final Duration waitTime) {
+        return waitForPathPresence(path, waitTime, DEFAULT_RETRY_DELAY);
+    }
+
+    /**
+     * Evaluates a given {@code path} to ensure it exists.
+     *
+     * <p>
+     * This method includes retry logic to handle files which may not yet exist but will become available within a
+     * given threshold. Examples of these cases are Kubernetes projected volumes and persistent volumes.
+     *
+     * @param path       the path to check for existence.
+     * @param waitTime   the maximum amount of time to wait for the file, directory, block device, or symlink to become available.
+     * @param retryDelay the delay between retry attempts.
+     * @return true if the file exists before the retries have been exhausted; otherwise false.
+     * @throws IllegalArgumentException if the {@code waitTime} argument is less than or equal to zero (0) or the
+     *                                 {@code retryDelay} argument is less than or equal to zero (0).
+     * @throws NullPointerException     if the {@code path} argument is a {@code null} value.
+     */
+    public static boolean waitForPathPresence(
+            @NonNull final Path path, @NonNull final Duration waitTime, @NonNull final Duration retryDelay) {
         Objects.requireNonNull(path, "path must not be null");
         try {
-            return Retry.check(FileSystem::waitForPathPresenceInternal, path, maxAttempts, delayMs);
+            return Retry.check(FileSystemUtils::checkForPathPresenceInternal, path, waitTime, retryDelay);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-            return false;
-        } catch (ExecutionException e) {
             return false;
         }
     }
@@ -84,7 +107,7 @@ public final class FileSystem {
      * @return true if the file, directory, block device, or symlink exists and is not empty if the path references a
      * file; otherwise false.
      */
-    private static boolean waitForPathPresenceInternal(@NonNull final Path path) {
+    private static boolean checkForPathPresenceInternal(@NonNull final Path path) {
         // If the path does not exist, then we should consider it not present
         if (!Files.exists(path)) {
             return false;

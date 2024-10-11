@@ -16,8 +16,10 @@
 
 package com.swirlds.config.extensions.sources;
 
+import com.swirlds.base.utility.FileSystemUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.BufferedReader;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Collections;
@@ -57,6 +59,11 @@ public abstract class AbstractFileConfigSource extends AbstractConfigSource {
         this.internalProperties = new HashMap<>();
         this.filePath = Objects.requireNonNull(filePath, "filePath can not be null");
         this.ordinal = ordinal;
+
+        if (!FileSystemUtils.waitForPathPresence(filePath)) {
+            throw new FileNotFoundException("File not found: " + filePath);
+        }
+
         try (BufferedReader reader = getReader()) {
             final Properties loadedProperties = new Properties();
             loadedProperties.load(reader);
