@@ -52,6 +52,8 @@ public final class NanoClock extends Clock {
     }
 
     /**
+     * Returns the time-zone.
+     *
      * @return the time-zone being used to interpret instants, not null
      */
     @Override
@@ -61,6 +63,8 @@ public final class NanoClock extends Clock {
     }
 
     /**
+     * Returns the current instant.
+     *
      * @return the current instant from this clock, not null
      */
     @Override
@@ -70,6 +74,8 @@ public final class NanoClock extends Clock {
     }
 
     /**
+     * Changes the time-zone of this clock.
+     *
      * @param zone the time-zone to change to, not null
      * @return Returns a copy of this clock with a different time-zone
      * @throws NullPointerException if {@code zone} is {@code null}

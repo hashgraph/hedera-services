@@ -70,7 +70,7 @@ public class TestExecutorExtension implements InvocationInterceptor, ParameterRe
      *
      * @param parameterContext The context of the parameter to be resolved.
      * @param extensionContext The context of the test extension.
-     * @return true if parameter resolution is supported, false otherwise.
+     * @return true if parameter resolution is supported, false otherwise
      * @throws ParameterResolutionException if an error occurs during parameter resolution.
      */
     @Override
@@ -84,7 +84,7 @@ public class TestExecutorExtension implements InvocationInterceptor, ParameterRe
      *
      * @param parameterContext The context of the parameter to be resolved.
      * @param extensionContext The context of the test extension.
-     * @return The resolved parameter value.
+     * @return The resolved parameter value
      * @throws ParameterResolutionException if an error occurs during parameter resolution.
      */
     @Override

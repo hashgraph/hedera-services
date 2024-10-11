@@ -40,6 +40,8 @@ public interface Mutable {
     }
 
     /**
+     * Throws a {@link MutabilityException} if the object is immutable.
+     *
      * @throws MutabilityException if {@link #isImmutable()}} returns {@code true}
      */
     default void throwIfImmutable() {
@@ -47,6 +49,8 @@ public interface Mutable {
     }
 
     /**
+     * Throws a {@link MutabilityException} if the object is immutable.
+     *
      * @param errorMessage an error message for the exception
      * @throws MutabilityException if {@link #isImmutable()}} returns {@code true}
      */
@@ -57,6 +61,8 @@ public interface Mutable {
     }
 
     /**
+     * Throws a {@link MutabilityException} if the object is mutable.
+     *
      * @throws MutabilityException if {@link #isMutable()} returns {@code true}
      */
     default void throwIfMutable() {
@@ -64,6 +70,8 @@ public interface Mutable {
     }
 
     /**
+     * Throws a {@link MutabilityException} if the object is mutable.
+     *
      * @param errorMessage an error message for the exception
      * @throws MutabilityException if {@link #isMutable()}} returns {@code true}
      */

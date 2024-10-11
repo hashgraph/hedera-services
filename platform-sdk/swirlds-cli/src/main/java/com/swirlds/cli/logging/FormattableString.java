@@ -23,7 +23,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  */
 public interface FormattableString {
     /**
-     * Gets the original plaintext version of the string
+     * Gets the original plaintext version of the string.
      *
      * @return the plain text string
      */
@@ -31,7 +31,7 @@ public interface FormattableString {
     String getOriginalPlaintext();
 
     /**
-     * Generate a string with ANSI coloration
+     * Generate a string with ANSI coloration.
      *
      * @return the string with ANSI coloration
      */
@@ -39,7 +39,7 @@ public interface FormattableString {
     String generateAnsiString();
 
     /**
-     * Generate a string with HTML formatting
+     * Generate a string with HTML formatting.
      * <p>
      * This method must return a string that is safe to be inserted into an HTML document
      *

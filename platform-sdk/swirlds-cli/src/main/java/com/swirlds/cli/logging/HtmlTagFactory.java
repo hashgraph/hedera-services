@@ -33,7 +33,7 @@ public class HtmlTagFactory {
     private final Map<String, List<String>> attributeMap = new HashMap<>();
 
     /**
-     * The type of HTML tag
+     * The type of HTML tag.
      */
     private final String tagName;
 

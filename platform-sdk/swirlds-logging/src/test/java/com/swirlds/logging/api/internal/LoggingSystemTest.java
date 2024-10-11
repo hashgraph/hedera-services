@@ -16,7 +16,7 @@
 
 package com.swirlds.logging.api.internal;
 
-import static com.swirlds.base.test.fixtures.assertions.AssertionUtils.assertThrowsNPE;
+import static com.swirlds.base.test.fixtures.assertions.AssertionUtils.assertThrowsNpException;
 import static com.swirlds.logging.test.fixtures.util.LoggingTestUtils.EXPECTED_STATEMENTS;
 import static com.swirlds.logging.test.fixtures.util.LoggingTestUtils.countLinesInStatements;
 import static com.swirlds.logging.test.fixtures.util.LoggingTestUtils.getLines;
@@ -962,7 +962,7 @@ public class LoggingSystemTest {
         final LoggingSystem loggingSystem = new LoggingSystem(initialConfiguration);
 
         // then
-        assertThrowsNPE(() -> loggingSystem.update(null));
+        assertThrowsNpException(() -> loggingSystem.update(null));
     }
 
     @Test

@@ -32,6 +32,8 @@ import org.assertj.core.api.InstanceOfAssertFactory;
  */
 public class AssertionUtils {
 
+    private AssertionUtils() {}
+
     /**
      * Asserts that the {@link Throwable} of the given {@link AbstractThrowableAssert} has a non-null message.
      *
@@ -50,22 +52,22 @@ public class AssertionUtils {
     }
 
     /**
-     * Returns an {@link InstanceOfAssertFactory} for {@link String} instances: {@link  AbstractStringAssert}
+     * Asserts that the given {@link Throwable} has a non-null message.
+     *
+     * @param throwable the throwable to check
+     */
+    private static void assertHasAnyMessage(@NonNull final Throwable throwable) {
+        assertHasAnyMessage(assertThat(throwable).isNotNull());
+    }
+
+    /**
+     * Returns an {@link InstanceOfAssertFactory} for {@link String} instances: {@link  AbstractStringAssert}.
      *
      * @return the factory
      */
     @NonNull
     private static InstanceOfAssertFactory<String, AbstractStringAssert<?>> asString() {
         return as(InstanceOfAssertFactories.STRING);
-    }
-
-    /**
-     * Asserts that the given {@link Throwable} has a non-null message.
-     *
-     * @param t the throwable to check
-     */
-    private static void assertHasAnyMessage(@NonNull final Throwable t) {
-        assertHasAnyMessage(assertThat(t).isNotNull());
     }
 
     /**
@@ -93,7 +95,7 @@ public class AssertionUtils {
      *
      * @param runnable the runnable to check
      */
-    public static void assertThrowsNPE(@NonNull final Runnable runnable) {
+    public static void assertThrowsNpException(@NonNull final Runnable runnable) {
         assertThrowsWithMessage(NullPointerException.class, runnable);
     }
 }
