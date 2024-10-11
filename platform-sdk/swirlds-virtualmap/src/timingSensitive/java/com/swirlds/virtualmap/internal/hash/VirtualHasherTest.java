@@ -403,7 +403,7 @@ class VirtualHasherTest extends VirtualHasherTestBase {
         }
 
         @Override
-        public synchronized void onHashingStarted(int reconnectFlushInterval) {
+        public synchronized void onHashingStarted() {
             onHashingStartedCallCount++;
             callHistory.append(ON_HASHING_STARTED_SYMBOL);
             internals.clear();

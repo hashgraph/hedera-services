@@ -28,14 +28,12 @@ public interface VirtualHashListener<K extends VirtualKey, V extends VirtualValu
 
     /**
      * Called when starting a new fresh hash operation.
-     *
-     * @param reconnectFlushInterval the number of nodes to hash before they are flushed to disk
      */
-    default void onHashingStarted(int reconnectFlushInterval) {}
+    default void onHashingStarted() {}
 
     /**
      * Called after each node is hashed, internal or leaf. This is called between
-     * {@link #onHashingStarted(int)} and {@link #onHashingCompleted()}.
+     * {@link #onHashingStarted()} and {@link #onHashingCompleted()}.
      *
      * @param path
      * 		Node path
@@ -46,7 +44,7 @@ public interface VirtualHashListener<K extends VirtualKey, V extends VirtualValu
 
     /**
      * Called after each leaf node on a rank is hashed. This is called between
-     * {@link #onHashingStarted(int)} and {@link #onHashingCompleted()}.
+     * {@link #onHashingStarted()} and {@link #onHashingCompleted()}.
      *
      * @param leaf
      * 		A non-null leaf record representing the hashed leaf.

@@ -72,8 +72,9 @@ public class ReconnectHashListener<K extends VirtualKey, V extends VirtualValue>
             final KeySerializer<K> keySerializer,
             final ValueSerializer<V> valueSerializer,
             final VirtualDataSource dataSource,
+            final int flushInterval,
             final ReconnectNodeRemover<K, V> nodeRemover) {
-        super(firstLeafPath, lastLeafPath, keySerializer, valueSerializer, dataSource);
+        super(firstLeafPath, lastLeafPath, keySerializer, valueSerializer, dataSource, flushInterval);
         this.nodeRemover = nodeRemover;
     }
 

@@ -70,8 +70,9 @@ public class FullLeafRehashHashListener<K extends VirtualKey, V extends VirtualV
             final long lastLeafPath,
             final KeySerializer<K> keySerializer,
             final ValueSerializer<V> valueSerializer,
-            final VirtualDataSource dataSource) {
-        super(firstLeafPath, lastLeafPath, keySerializer, valueSerializer, dataSource);
+            final VirtualDataSource dataSource,
+            final int flushInterval) {
+        super(firstLeafPath, lastLeafPath, keySerializer, valueSerializer, dataSource, flushInterval);
     }
 
     /**

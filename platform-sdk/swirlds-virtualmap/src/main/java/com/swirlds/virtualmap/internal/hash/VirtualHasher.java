@@ -347,7 +347,7 @@ public final class VirtualHasher<K extends VirtualKey, V extends VirtualValue> {
         int lastLeafRank = Path.getRank(lastLeafPath);
 
         // Let the listener know we have started hashing.
-        listener.onHashingStarted(virtualMapConfig.reconnectFlushInterval());
+        listener.onHashingStarted();
 
         // This map contains all tasks created, but not scheduled for execution yet
         final HashMap<Long, ChunkHashTask> map = new HashMap<>();
