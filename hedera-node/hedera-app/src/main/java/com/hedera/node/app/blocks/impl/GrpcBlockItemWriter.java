@@ -63,15 +63,15 @@ public class GrpcBlockItemWriter implements BlockItemWriter {
      */
     public enum State {
         /**
-         * The gRPC client still not initialized
+         * The gRPC client is not initialized.
          */
         UNINITIALIZED,
         /**
-         * The gRPC client is currently open
+         * The gRPC client is currently open and blocks can be streamed.
          */
         OPEN,
         /**
-         * The gRPC client is already closed
+         * The gRPC client is already closed and cannot be used to stream blocks.
          */
         CLOSED
     }
