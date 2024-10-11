@@ -16,8 +16,10 @@
 
 package com.swirlds.config.extensions.sources;
 
+import com.swirlds.base.utility.FileSystemUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.BufferedReader;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -55,6 +57,10 @@ public class PropertyFileConfigSource extends AbstractFileConfigSource {
      */
     @NonNull
     protected BufferedReader getReader() throws IOException {
+        if (!FileSystemUtils.waitForPathPresence(filePath)) {
+            throw new FileNotFoundException("File not found: " + filePath);
+        }
+
         return Files.newBufferedReader(filePath);
     }
 }
