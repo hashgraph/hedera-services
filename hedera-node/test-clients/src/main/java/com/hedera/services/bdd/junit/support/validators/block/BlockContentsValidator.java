@@ -72,11 +72,6 @@ public class BlockContentsValidator implements BlockStreamValidator {
             Assertions.fail("Block does not start with a block header");
         }
 
-        // A block SHALL start with a `header`.
-        if (!blockItems.getFirst().hasBlockHeader()) {
-            Assertions.fail("Block does not start with a block header");
-        }
-
         // A block SHALL end with a `state_proof`.
         if (!blockItems.getLast().hasBlockProof()) {
             Assertions.fail("Block does not end with a block proof");
