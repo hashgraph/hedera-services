@@ -16,10 +16,14 @@
 
 package com.hedera.services.bdd.suites.crypto;
 
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asHeadlongAddress;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.explicitFromHeadlong;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.headlongAddressOf;
 import static com.hedera.services.bdd.junit.TestTags.CRYPTO;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.assertions.AccountDetailsAsserts.accountDetailsWith;
+import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
 import static com.hedera.services.bdd.spec.assertions.ContractInfoAsserts.contractWith;
 import static com.hedera.services.bdd.spec.keys.ControlForKey.forKey;
 import static com.hedera.services.bdd.spec.keys.KeyLabels.complex;
@@ -28,6 +32,8 @@ import static com.hedera.services.bdd.spec.keys.KeyShape.threshOf;
 import static com.hedera.services.bdd.spec.keys.SigControl.ANY;
 import static com.hedera.services.bdd.spec.keys.SigControl.OFF;
 import static com.hedera.services.bdd.spec.keys.SigControl.ON;
+import static com.hedera.services.bdd.spec.keys.SigControl.SECP256K1_ON;
+import static com.hedera.services.bdd.spec.keys.TrieSigMapGenerator.uniqueWithFullPrefixesFor;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountDetails;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
@@ -41,21 +47,33 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
+import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
+import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.AUTO_CREATION_KEY_NAME_FN;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.blockingOrder;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.createHip32Auto;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.createHollow;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.doWithStartupConfigNow;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingTwo;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.recordStreamMustIncludePassFrom;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.submitModified;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsd;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.visibleNonSyntheticItems;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withAddressOfKey;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.spec.utilops.mod.ModificationUtils.withSuccessivelyVariedBodyIds;
 import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PAYER;
+import static com.hedera.services.bdd.suites.HapiSuite.FUNDING;
 import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
 import static com.hedera.services.bdd.suites.HapiSuite.THREE_MONTHS_IN_SECONDS;
 import static com.hedera.services.bdd.suites.HapiSuite.ZERO_BYTE_MEMO;
 import static com.hedera.services.bdd.suites.contract.hapi.ContractUpdateSuite.ADMIN_KEY;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoUpdate;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EXISTING_AUTOMATIC_ASSOCIATIONS_EXCEED_GIVEN_LIMIT;
@@ -67,19 +85,32 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_STAKIN
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
+import static java.util.Objects.requireNonNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.esaulpaugh.headlong.abi.Address;
+import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.LeakyHapiTest;
-import com.hedera.services.bdd.spec.assertions.AccountInfoAsserts;
+import com.hedera.services.bdd.spec.SpecOperation;
 import com.hedera.services.bdd.spec.assertions.ContractInfoAsserts;
 import com.hedera.services.bdd.spec.keys.KeyLabels;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.keys.SigControl;
+import com.hedera.services.bdd.spec.queries.crypto.HapiGetAccountInfo;
+import com.hedera.services.bdd.spec.utilops.streams.assertions.VisibleItemsValidator;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.TokenType;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.UnaryOperator;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
@@ -132,6 +163,122 @@ public class CryptoUpdateSuite {
                         .newStakedAccountId("0.0.21")));
     }
 
+    private static final String[] ACCOUNTS_TO_HAVE_KEYS_ROTATED = {
+        "longZero", "autoCreated", "hollowAccount", "explicitAlias"
+    };
+    private static final UnaryOperator<String> ROTATION_TXN = account -> account + "KeyRotation";
+
+    /**
+     * Creates four accounts with ECDSA keys, the first having a long-zero EVM address and the other three having
+     * arbitrary EVM addresses created via,
+     * <ol>
+     *     <i>Legacy HIP-32 auto-account creation via transfer to a key alias.</i>
+     *     <i>Hollow account creation via transfer to an EVM address.</i>
+     *     <i>Explicit HIP-583 specification of the EVM address on creation.</i>
+     * </ol>
+     * Then asserts that each of them have the expected EVM addresses in the {@link HapiGetAccountInfo} query both
+     * before and after key rotation; and that the record stream does not imply anything different.
+     */
+    @HapiTest
+    final Stream<DynamicTest> keyRotationDoesNotChangeEvmAddress() {
+        final Map<String, Address> evmAddresses = new HashMap<>();
+        final var allTxnIds = Stream.concat(
+                        Arrays.stream(ACCOUNTS_TO_HAVE_KEYS_ROTATED),
+                        Arrays.stream(ACCOUNTS_TO_HAVE_KEYS_ROTATED).map(ROTATION_TXN))
+                .toArray(String[]::new);
+        return hapiTest(
+                recordStreamMustIncludePassFrom(
+                        visibleNonSyntheticItems(keyRotationsValidator(evmAddresses), allTxnIds)),
+                // --- CREATE ACCOUNTS ---
+                // The account with a long-zero EVM address
+                cryptoCreate("longZero")
+                        .via("longZero")
+                        .keyShape(SECP256K1_ON)
+                        .exposingEvmAddressTo(address -> evmAddresses.put("longZero", address)),
+                newKeyNamed("aEcdsaKey").shape(KeyShape.SECP256K1),
+                // The auto-created account with an ECDSA key alias
+                createHip32Auto(1, KeyShape.SECP256K1, i -> "autoCreated"),
+                withAddressOfKey("autoCreated", evmAddress -> {
+                    evmAddresses.put("autoCreated", evmAddress);
+                    return withOpContext((spec, opLog) -> spec.registry()
+                            .saveTxnId(
+                                    "autoCreated",
+                                    spec.registry().getTxnId("hip32" + AUTO_CREATION_KEY_NAME_FN.apply(0))));
+                }),
+                // The hollow account - create and complete it for convenience
+                createHollow(
+                        1,
+                        i -> "hollowAccount",
+                        evmAddress -> cryptoTransfer(tinyBarsFromTo(GENESIS, evmAddress, ONE_HUNDRED_HBARS))),
+                withAddressOfKey("hollowAccount", evmAddress -> {
+                    evmAddresses.put("hollowAccount", evmAddress);
+                    return withOpContext((spec, opLog) -> spec.registry()
+                            .saveTxnId("hollowAccount", spec.registry().getTxnId("autoCreate" + evmAddress)));
+                }),
+                cryptoTransfer(tinyBarsFromTo("hollowAccount", FUNDING, 1))
+                        .payingWith("hollowAccount")
+                        .sigMapPrefixes(uniqueWithFullPrefixesFor("hollowAccount")),
+                // The account with an explicit EVM address
+                newKeyNamed("bEcdsaKey").shape(KeyShape.SECP256K1),
+                withAddressOfKey("bEcdsaKey", evmAddress -> {
+                    evmAddresses.put("explicitAlias", evmAddress);
+                    return cryptoCreate("explicitAlias")
+                            .key("bEcdsaKey")
+                            .evmAddress(evmAddress)
+                            .via("explicitAlias");
+                }),
+                // --- ROTATE KEYS ---
+                blockingOrder(IntStream.range(0, ACCOUNTS_TO_HAVE_KEYS_ROTATED.length)
+                        .mapToObj(i -> {
+                            final var newKey = "replKey" + i;
+                            final var targetAccount = ACCOUNTS_TO_HAVE_KEYS_ROTATED[i];
+                            return blockingOrder(
+                                    newKeyNamed(newKey).shape(KeyShape.SECP256K1),
+                                    cryptoUpdate(targetAccount).key(newKey).via(ROTATION_TXN.apply(targetAccount)));
+                        })
+                        .toArray(SpecOperation[]::new)));
+    }
+
+    private static VisibleItemsValidator keyRotationsValidator(@NonNull final Map<String, Address> evmAddresses) {
+        return (spec, records) -> {
+            for (final var txnId : ACCOUNTS_TO_HAVE_KEYS_ROTATED) {
+                final var successItems = requireNonNull(records.get(txnId), txnId + " not found");
+                final var creationEntry = successItems.entries().stream()
+                        .filter(entry -> entry.function() == CryptoCreate)
+                        .findFirst()
+                        .orElseThrow();
+                final var recordEvmAddress = creationEntry.transactionRecord().getEvmAddress();
+                final var bodyEvmAddress =
+                        creationEntry.body().getCryptoCreateAccount().getAlias();
+                final var numEvmAddresses =
+                        ((recordEvmAddress.size() == 20) ? 1 : 0) + ((bodyEvmAddress.size() == 20) ? 1 : 0);
+                assertTrue(numEvmAddresses <= 1);
+                final var evmAddress = numEvmAddresses == 0
+                        ? headlongAddressOf(creationEntry.createdAccountId())
+                        : asHeadlongAddress(
+                                (recordEvmAddress.size() == 20)
+                                        ? recordEvmAddress.toByteArray()
+                                        : bodyEvmAddress.toByteArray());
+                assertEquals(evmAddresses.get(txnId), evmAddress);
+                allRunFor(
+                        spec,
+                        getAccountInfo("0.0." + creationEntry.createdAccountId().accountNumOrThrow())
+                                .has(accountWith().evmAddress(ByteString.copyFrom(explicitFromHeadlong(evmAddress)))));
+            }
+            final var rotationTxnIds = Arrays.stream(ACCOUNTS_TO_HAVE_KEYS_ROTATED)
+                    .map(ROTATION_TXN)
+                    .toArray(String[]::new);
+            for (final var txnId : rotationTxnIds) {
+                final var successItems = requireNonNull(records.get(txnId), txnId + " not found");
+                final var updateEntry = successItems.entries().stream()
+                        .filter(entry -> entry.function() == CryptoUpdate)
+                        .findFirst()
+                        .orElseThrow();
+                assertEquals(0, updateEntry.txnRecord().getEvmAddress().size());
+            }
+        };
+    }
+
     @HapiTest
     final Stream<DynamicTest> updateForMaxAutoAssociationsForAccountsWorks() {
         return defaultHapiSpec("updateForMaxAutoAssociationsForAccountsWorks")
@@ -179,41 +326,31 @@ public class CryptoUpdateSuite {
                 newKeyNamed(ADMIN_KEY),
                 cryptoCreate("user").key(ADMIN_KEY).stakedAccountId("0.0.20").declinedReward(true),
                 getAccountInfo("user")
-                        .has(AccountInfoAsserts.accountWith()
+                        .has(accountWith()
                                 .stakedAccountId("0.0.20")
                                 .noStakingNodeId()
                                 .isDeclinedReward(true)),
                 cryptoUpdate("user").newStakedNodeId(0L).newDeclinedReward(false),
                 getAccountInfo("user")
-                        .has(AccountInfoAsserts.accountWith()
-                                .noStakedAccountId()
-                                .stakedNodeId(0L)
-                                .isDeclinedReward(false)),
+                        .has(accountWith().noStakedAccountId().stakedNodeId(0L).isDeclinedReward(false)),
                 cryptoUpdate("user").newStakedNodeId(-1L),
                 cryptoUpdate("user").newStakedNodeId(-25L).hasKnownStatus(INVALID_STAKING_ID),
                 getAccountInfo("user")
-                        .has(AccountInfoAsserts.accountWith()
-                                .noStakedAccountId()
-                                .noStakingNodeId()
-                                .isDeclinedReward(false)),
+                        .has(accountWith().noStakedAccountId().noStakingNodeId().isDeclinedReward(false)),
                 cryptoUpdate("user").key(ADMIN_KEY).newStakedAccountId("0.0.20").newDeclinedReward(true),
                 getAccountInfo("user")
-                        .has(AccountInfoAsserts.accountWith()
+                        .has(accountWith()
                                 .stakedAccountId("0.0.20")
                                 .noStakingNodeId()
                                 .isDeclinedReward(true))
                         .logged(),
                 cryptoUpdate("user").key(ADMIN_KEY).newStakedAccountId("0.0.0"),
                 getAccountInfo("user")
-                        .has(AccountInfoAsserts.accountWith()
-                                .noStakedAccountId()
-                                .noStakingNodeId()
-                                .isDeclinedReward(true))
+                        .has(accountWith().noStakedAccountId().noStakingNodeId().isDeclinedReward(true))
                         .logged(),
                 // For completeness stake back to a node
                 cryptoUpdate("user").key(ADMIN_KEY).newStakedNodeId(1),
-                getAccountInfo("user")
-                        .has(AccountInfoAsserts.accountWith().stakedNodeId(1L).isDeclinedReward(true)));
+                getAccountInfo("user").has(accountWith().stakedNodeId(1L).isDeclinedReward(true)));
     }
 
     @LeakyHapiTest(overrides = {"entities.maxLifetime", "ledger.maxAutoAssociations"})
