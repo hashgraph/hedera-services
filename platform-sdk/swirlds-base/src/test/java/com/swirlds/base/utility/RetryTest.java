@@ -65,8 +65,6 @@ class RetryTest {
                         1,
                         1,
                         0))
-                .isInstanceOf(ExecutionException.class)
-                .cause()
                 .isInstanceOf(RuntimeException.class)
                 .hasMessage("Test exception");
     }
@@ -92,6 +90,7 @@ class RetryTest {
 
         await().atMost(125, TimeUnit.MILLISECONDS).until(() -> Retry.check(checkFn, 2, 5, 100));
         verify(checkFn, Mockito.times(2)).apply(2);
+
         //noinspection unchecked
         reset(checkFn);
         counter.set(0);
@@ -99,6 +98,10 @@ class RetryTest {
             assertThat(Retry.check(checkFn, 2, 5, 100)).isTrue();
             verify(checkFn, Mockito.times(2)).apply(2);
         });
+
+        //noinspection unchecked
+        reset(checkFn);
+        counter.set(0);
         await().pollDelay(10, TimeUnit.MILLISECONDS)
                 .atMost(25, TimeUnit.MILLISECONDS)
                 .until(() -> Retry.check(checkFn, 1, 5, 100));
