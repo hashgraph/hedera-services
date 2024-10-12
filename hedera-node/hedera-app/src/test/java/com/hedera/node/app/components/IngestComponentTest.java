@@ -17,6 +17,7 @@
 package com.hedera.node.app.components;
 
 import static com.hedera.node.app.fixtures.AppTestBase.DEFAULT_CONFIG;
+import static com.hedera.node.app.spi.AppContext.Gossip.UNAVAILBLE_GOSSIP;
 import static com.swirlds.platform.system.address.AddressBookUtils.endpointFor;
 import static java.util.concurrent.CompletableFuture.completedFuture;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -96,7 +97,8 @@ class IngestComponentTest {
                 new AppSignatureVerifier(
                         DEFAULT_CONFIG.getConfigData(HederaConfig.class),
                         new SignatureExpanderImpl(),
-                        new SignatureVerifierImpl(CryptographyHolder.get())));
+                        new SignatureVerifierImpl(CryptographyHolder.get())),
+                UNAVAILBLE_GOSSIP);
         app = DaggerHederaInjectionComponent.builder()
                 .configProviderImpl(configProvider)
                 .bootstrapConfigProviderImpl(new BootstrapConfigProviderImpl())

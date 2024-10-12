@@ -19,7 +19,13 @@ package com.hedera.services.bdd.junit.hedera.embedded.fakes;
 import static com.hedera.node.app.hapi.utils.CommonUtils.noThrowSha384HashOf;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.spi.workflows.HandleContext;
+import com.hedera.node.app.spi.workflows.HandleException;
+import com.hedera.node.app.spi.workflows.PreHandleContext;
+import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hedera.node.app.tss.TssBaseService;
+import com.hedera.node.app.tss.handlers.TssHandlers;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.state.spi.SchemaRegistry;
@@ -102,5 +108,30 @@ public class FakeTssBaseService implements TssBaseService {
     public void unregisterLedgerSignatureConsumer(@NonNull final BiConsumer<byte[], byte[]> consumer) {
         requireNonNull(consumer);
         consumers.remove(consumer);
+    }
+
+    @Override
+    public TssHandlers tssHandlers() {
+        return new TssHandlers(
+                NoopTransactionHandler.NOOP_TRANSACTION_HANDLER, NoopTransactionHandler.NOOP_TRANSACTION_HANDLER);
+    }
+
+    private enum NoopTransactionHandler implements TransactionHandler {
+        NOOP_TRANSACTION_HANDLER;
+
+        @Override
+        public void preHandle(@NonNull final PreHandleContext context) {
+            // No-op
+        }
+
+        @Override
+        public void pureChecks(@NonNull TransactionBody txn) {
+            // No-op
+        }
+
+        @Override
+        public void handle(@NonNull HandleContext context) throws HandleException {
+            // No-op
+        }
     }
 }

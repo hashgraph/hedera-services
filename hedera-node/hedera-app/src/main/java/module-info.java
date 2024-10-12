@@ -109,7 +109,7 @@ module com.hedera.node.app {
     exports com.hedera.node.app.workflows.handle.metric;
     exports com.hedera.node.app.roster;
     exports com.hedera.node.app.tss;
-    exports com.hedera.node.app.tss.impl;
+    exports com.hedera.node.app.tss.handlers;
 
     provides ConfigurationExtension with
             ServicesConfigExtension;

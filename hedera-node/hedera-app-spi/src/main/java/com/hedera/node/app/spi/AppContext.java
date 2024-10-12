@@ -16,7 +16,9 @@
 
 package com.hedera.node.app.spi;
 
+import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.spi.signatures.SignatureVerifier;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.InstantSource;
 
 /**
@@ -24,6 +26,24 @@ import java.time.InstantSource;
  * shared functions like verifying signatures or computing the current instant.
  */
 public interface AppContext {
+    /**
+     * The {@link Gossip} interface is used to submit transactions to the network.
+     */
+    interface Gossip {
+        Gossip UNAVAILBLE_GOSSIP = body -> {
+            // Tells client code not to retry as gossip is unavailable; e.g. in a standalone execution environment
+            throw new IllegalArgumentException();
+        };
+
+        /**
+         * Tries to submit a transaction to the network.
+         * @param body the transaction to submit
+         * @throws IllegalStateException if the network is not active (hence the client can retry if they wish)
+         * @throws IllegalArgumentException if body is invalid (so the client should not retry)
+         */
+        void submit(@NonNull TransactionBody body);
+    }
+
     /**
      * The source of the current instant.
      * @return the instant source
@@ -35,4 +55,10 @@ public interface AppContext {
      * @return the signature verifier
      */
     SignatureVerifier signatureVerifier();
+
+    /**
+     * The {@link Gossip} can be used to submit transactions to the network when it is active.
+     * @return the gossip interface
+     */
+    Gossip gossip();
 }

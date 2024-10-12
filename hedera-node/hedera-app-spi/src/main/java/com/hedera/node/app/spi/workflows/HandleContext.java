@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.spi.workflows;
 
+import static com.hedera.node.app.spi.AppContext.*;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.SCHEDULED;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -63,15 +64,21 @@ public interface HandleContext {
      * Category of the current transaction.
      */
     enum TransactionCategory {
-        /** The original transaction submitted by a user. */
+        /**
+         * A transaction submitted by a user via HAPI or by a node via {@link com.hedera.node.app.spi.AppContext.Gossip}.
+         * */
         USER,
-
-        /** An independent, top-level transaction that is executed before the user transaction. */
+        /**
+         * An independent, top-level transaction that is executed before the user transaction.
+         * */
         PRECEDING,
-
-        /** A child transaction that is executed as part of a user transaction. */
+        /**
+         * A child transaction that is executed as part of a user transaction.
+         * */
         CHILD,
-        /** A transaction executed via the schedule service. */
+        /**
+         * A transaction executed via the schedule service.
+         * */
         SCHEDULED
     }
 

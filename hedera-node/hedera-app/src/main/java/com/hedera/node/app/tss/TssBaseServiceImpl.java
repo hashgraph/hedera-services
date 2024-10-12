@@ -14,12 +14,13 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.tss.impl;
+package com.hedera.node.app.tss;
 
 import static com.hedera.node.app.hapi.utils.CommonUtils.noThrowSha384HashOf;
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.node.app.tss.TssBaseService;
+import com.hedera.node.app.spi.AppContext;
+import com.hedera.node.app.tss.handlers.TssHandlers;
 import com.hedera.node.app.tss.schemas.V0560TSSSchema;
 import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.state.spi.SchemaRegistry;
@@ -37,8 +38,8 @@ import org.apache.logging.log4j.Logger;
  * Placeholder for the TSS base service, added to support testing production of indirect block proofs,
  * c.f. <a href="https://github.com/hashgraph/hedera-services/issues/15379">this issue</a>.
  */
-public class PlaceholderTssBaseService implements TssBaseService {
-    private static final Logger log = LogManager.getLogger(PlaceholderTssBaseService.class);
+public class TssBaseServiceImpl implements TssBaseService {
+    private static final Logger log = LogManager.getLogger(TssBaseServiceImpl.class);
 
     /**
      * Copy-on-write list to avoid concurrent modification exceptions if a consumer unregisters
@@ -46,11 +47,15 @@ public class PlaceholderTssBaseService implements TssBaseService {
      */
     private final List<BiConsumer<byte[], byte[]>> consumers = new CopyOnWriteArrayList<>();
 
+    private final TssBaseServiceComponent component;
+    private final TssHandlers tssHandlers;
+
     private ExecutorService executor;
 
-    @Inject
-    public void setExecutor(@NonNull final ExecutorService executor) {
-        this.executor = requireNonNull(executor);
+    public TssBaseServiceImpl(@NonNull final AppContext appContext) {
+        requireNonNull(appContext);
+        component = DaggerTssBaseServiceComponent.factory().create(appContext.gossip());
+        tssHandlers = new TssHandlers(component.tssMessageHandler(), component.tssVoteHandler());
     }
 
     @Override
@@ -91,5 +96,15 @@ public class PlaceholderTssBaseService implements TssBaseService {
     public void unregisterLedgerSignatureConsumer(@NonNull final BiConsumer<byte[], byte[]> consumer) {
         requireNonNull(consumer);
         consumers.remove(consumer);
+    }
+
+    @Override
+    public TssHandlers tssHandlers() {
+        return tssHandlers;
+    }
+
+    @Inject
+    public void setExecutor(@NonNull final ExecutorService executor) {
+        this.executor = requireNonNull(executor);
     }
 }

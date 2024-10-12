@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.tss;
 
+import com.hedera.node.app.tss.handlers.TssHandlers;
 import com.swirlds.state.spi.Service;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.function.BiConsumer;
@@ -58,4 +59,10 @@ public interface TssBaseService extends Service {
      * @param consumer the consumer of ledger signatures and message hashes to unregister.
      */
     void unregisterLedgerSignatureConsumer(@NonNull BiConsumer<byte[], byte[]> consumer);
+
+    /**
+     * Returns the {@link TssHandlers} for this service.
+     * @return the handlers
+     */
+    TssHandlers tssHandlers();
 }

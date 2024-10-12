@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.workflows.standalone;
 
+import static com.hedera.node.app.spi.AppContext.Gossip.UNAVAILBLE_GOSSIP;
 import static com.hedera.node.app.workflows.standalone.impl.NoopVerificationStrategies.NOOP_VERIFICATION_STRATEGIES;
 
 import com.hedera.node.app.config.BootstrapConfigProviderImpl;
@@ -26,6 +27,7 @@ import com.hedera.node.app.services.AppContextImpl;
 import com.hedera.node.app.signature.AppSignatureVerifier;
 import com.hedera.node.app.signature.impl.SignatureExpanderImpl;
 import com.hedera.node.app.signature.impl.SignatureVerifierImpl;
+import com.hedera.node.app.tss.TssBaseServiceImpl;
 import com.hedera.node.config.data.HederaConfig;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.metrics.noop.NoOpMetrics;
@@ -87,13 +89,16 @@ public enum TransactionExecutors {
                 new AppSignatureVerifier(
                         bootstrapConfigProvider.getConfiguration().getConfigData(HederaConfig.class),
                         new SignatureExpanderImpl(),
-                        new SignatureVerifierImpl(CryptographyHolder.get())));
+                        new SignatureVerifierImpl(CryptographyHolder.get())),
+                UNAVAILBLE_GOSSIP);
+        final var tssBaseService = new TssBaseServiceImpl(appContext);
         final var contractService = new ContractServiceImpl(appContext, NOOP_VERIFICATION_STRATEGIES, tracerBinding);
         final var fileService = new FileServiceImpl();
         final var configProvider = new ConfigProviderImpl(false, null, properties);
         return DaggerExecutorComponent.builder()
                 .configProviderImpl(configProvider)
                 .bootstrapConfigProviderImpl(bootstrapConfigProvider)
+                .tssBaseService(tssBaseService)
                 .fileServiceImpl(fileService)
                 .contractServiceImpl(contractService)
                 .metrics(new NoOpMetrics())

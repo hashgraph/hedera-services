@@ -120,7 +120,7 @@ public abstract class AbstractEmbeddedHedera implements EmbeddedHedera {
                 FakeServicesRegistry.FACTORY,
                 new FakeServiceMigrator(),
                 this::now,
-                () -> tssBaseService);
+                appContext -> tssBaseService);
         version = (ServicesSoftwareVersion) hedera.getSoftwareVersion();
         Runtime.getRuntime().addShutdownHook(new Thread(executorService::shutdownNow));
     }

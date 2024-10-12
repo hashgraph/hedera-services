@@ -19,6 +19,7 @@ package com.hedera.services.bdd.junit.support.validators.block;
 import static com.hedera.node.app.blocks.impl.BlockImplUtils.combine;
 import static com.hedera.node.app.hapi.utils.CommonUtils.noThrowSha384HashOf;
 import static com.hedera.node.app.info.UnavailableNetworkInfo.UNAVAILABLE_NETWORK_INFO;
+import static com.hedera.node.app.spi.AppContext.Gossip.UNAVAILBLE_GOSSIP;
 import static com.hedera.node.app.workflows.handle.metric.UnavailableMetrics.UNAVAILABLE_METRICS;
 import static com.hedera.services.bdd.junit.hedera.ExternalPath.APPLICATION_PROPERTIES;
 import static com.hedera.services.bdd.junit.hedera.ExternalPath.SAVED_STATES_DIR;
@@ -79,6 +80,7 @@ import com.hedera.node.app.services.ServicesRegistryImpl;
 import com.hedera.node.app.spi.signatures.SignatureVerifier;
 import com.hedera.node.app.state.recordcache.RecordCacheService;
 import com.hedera.node.app.throttle.CongestionThrottleService;
+import com.hedera.node.app.tss.TssBaseServiceImpl;
 import com.hedera.node.app.version.ServicesSoftwareVersion;
 import com.hedera.node.config.VersionedConfiguration;
 import com.hedera.node.config.converter.BytesConverter;
@@ -517,12 +519,14 @@ public class StateChangesValidator implements BlockStreamValidator {
             final InstantSource instantSource,
             final ServicesRegistry servicesRegistry,
             final VersionedConfiguration bootstrapConfig) {
+        final var appContext = new AppContextImpl(instantSource, fakeSignatureVerifier(), UNAVAILBLE_GOSSIP);
         // Register all service schema RuntimeConstructable factories before platform init
         Set.of(
                         new EntityIdService(),
                         new ConsensusServiceImpl(),
-                        new ContractServiceImpl(new AppContextImpl(instantSource, fakeSignatureVerifier())),
+                        new ContractServiceImpl(appContext),
                         new FileServiceImpl(),
+                        new TssBaseServiceImpl(appContext),
                         new FreezeServiceImpl(),
                         new ScheduleServiceImpl(),
                         new TokenServiceImpl(),

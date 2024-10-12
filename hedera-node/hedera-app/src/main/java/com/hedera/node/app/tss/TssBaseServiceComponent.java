@@ -14,18 +14,24 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.services;
+package com.hedera.node.app.tss;
 
 import com.hedera.node.app.spi.AppContext;
-import com.hedera.node.app.spi.signatures.SignatureVerifier;
-import edu.umd.cs.findbugs.annotations.NonNull;
-import java.time.InstantSource;
+import com.hedera.node.app.tss.handlers.TssMessageHandler;
+import com.hedera.node.app.tss.handlers.TssVoteHandler;
+import dagger.BindsInstance;
+import dagger.Component;
+import javax.inject.Singleton;
 
-/**
- * Implements the {@link AppContext} interface.
- * @param instantSource the source of the current instant
- * @param signatureVerifier the signature verifier
- */
-public record AppContextImpl(
-        @NonNull InstantSource instantSource, @NonNull SignatureVerifier signatureVerifier, @NonNull Gossip gossip)
-        implements AppContext {}
+@Singleton
+@Component()
+public interface TssBaseServiceComponent {
+    @Component.Factory
+    interface Factory {
+        TssBaseServiceComponent create(@BindsInstance AppContext.Gossip gossip);
+    }
+
+    TssMessageHandler tssMessageHandler();
+
+    TssVoteHandler tssVoteHandler();
+}

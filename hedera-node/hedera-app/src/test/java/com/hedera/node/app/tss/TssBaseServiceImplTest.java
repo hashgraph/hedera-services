@@ -14,12 +14,14 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.tss.impl;
+package com.hedera.node.app.tss;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
+import com.hedera.node.app.spi.AppContext;
 import com.hedera.node.app.tss.schemas.V0560TSSSchema;
 import com.swirlds.state.spi.SchemaRegistry;
 import java.util.ArrayList;
@@ -36,7 +38,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class PlaceholderTssBaseServiceTest {
+class TssBaseServiceImplTest {
     private CountDownLatch latch;
     private final List<byte[]> receivedMessageHashes = new ArrayList<>();
     private final List<byte[]> receivedSignatures = new ArrayList<>();
@@ -51,10 +53,18 @@ class PlaceholderTssBaseServiceTest {
     @Mock
     private SchemaRegistry registry;
 
-    private final PlaceholderTssBaseService subject = new PlaceholderTssBaseService();
+    @Mock
+    private AppContext.Gossip gossip;
+
+    @Mock
+    private AppContext appContext;
+
+    private TssBaseServiceImpl subject;
 
     @BeforeEach
     void setUp() {
+        given(appContext.gossip()).willReturn(gossip);
+        subject = new TssBaseServiceImpl(appContext);
         subject.setExecutor(ForkJoinPool.commonPool());
     }
 
