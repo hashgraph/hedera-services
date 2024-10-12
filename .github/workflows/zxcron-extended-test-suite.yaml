@@ -64,6 +64,7 @@ jobs:
             echo "xts_tag_exists=true" >> $GITHUB_OUTPUT
             XTS_COMMIT=`git rev-list -n 1 ${XTS_CANDIDATE_TAG}`
             git branch --contains ${XTS_COMMIT} | grep -q develop
+            echo "XTS_COMMIT=${XTS_COMMIT}
             echo "xts_tag_commit=`${XTS_COMMIT}`" >> $GITHUB_OUTPUT
             echo "### Commit Tagged as an XTS-Candidate" >>  $GITHUB_STEP_SUMMARY
             echo "xts_tag_commit=`${XTS_COMMIT}`" >> $GITHUB_STEP_SUMMARY
@@ -195,11 +196,11 @@ jobs:
       - hedera-node-jrs-panel
       - tag-for-promotion
 
-    if: ${{ needs.abbreviated-panel.result != 'success' ||
+    if: ${{ !cancelled() && always() && (needs.abbreviated-panel.result != 'success' ||
             needs.extended-test-suite.result != 'success' ||
             needs.fetch-xts-candidate.result != 'success' ||
             needs.hedera-node-jrs-panel.result != 'success' ||
-            needs.tag-for-promotion.result != 'success' }}
+            needs.tag-for-promotion.result != 'success') }}
     steps:
       - name: Harden Runner
         uses: step-security/harden-runner@f086349bfa2bd1361f7909c78558e816508cdc10 # v2.8.0
