@@ -232,7 +232,6 @@ public class AppTestBase extends TestBase implements TransactionFactory, Scenari
     }
 
     public static final class TestAppBuilder {
-        private SemanticVersion softwareVersion = CURRENT_VERSION;
         private SemanticVersion hapiVersion = CURRENT_VERSION;
         private Set<Service> services = new LinkedHashSet<>();
         private TestConfigBuilder configBuilder = HederaTestConfigBuilder.create();
@@ -256,11 +255,6 @@ public class AppTestBase extends TestBase implements TransactionFactory, Scenari
 
         public TestAppBuilder withHapiVersion(@NonNull final SemanticVersion version) {
             this.hapiVersion = version;
-            return this;
-        }
-
-        public TestAppBuilder withSoftwareVersion(@NonNull final SemanticVersion version) {
-            this.softwareVersion = version;
             return this;
         }
 

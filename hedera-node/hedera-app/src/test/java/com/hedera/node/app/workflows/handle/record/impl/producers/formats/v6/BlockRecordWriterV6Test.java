@@ -87,7 +87,6 @@ final class BlockRecordWriterV6Test extends AppTestBase {
 
         appBuilder = appBuilder()
                 .withHapiVersion(VERSION)
-                .withSoftwareVersion(VERSION)
                 .withConfigValue("hedera.recordStream.enabled", true)
                 .withConfigValue("hedera.recordStream.logDir", tempDir.toString())
                 .withConfigValue("hedera.recordStream.sidecarDir", "sidecar")

@@ -40,6 +40,7 @@ import com.swirlds.platform.health.OSHealthCheckConfig;
 import com.swirlds.platform.network.SocketConfig;
 import com.swirlds.platform.system.status.PlatformStatusConfig;
 import com.swirlds.platform.uptime.UptimeConfig;
+import com.swirlds.platform.wiring.ComponentWiringConfig;
 import com.swirlds.platform.wiring.PlatformSchedulersConfig;
 import com.swirlds.virtualmap.config.VirtualMapConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -89,7 +90,8 @@ public class PlatformConfigurationExtension implements ConfigurationExtension {
                 UptimeConfig.class,
                 VirtualMapConfig.class,
                 WiringConfig.class,
-                InternalLoggingConfig.class);
+                InternalLoggingConfig.class,
+                ComponentWiringConfig.class);
     }
 
     @NonNull
