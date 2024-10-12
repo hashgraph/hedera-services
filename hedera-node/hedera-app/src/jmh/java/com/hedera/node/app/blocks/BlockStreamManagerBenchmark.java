@@ -20,7 +20,7 @@ import static com.hedera.hapi.block.stream.output.SingletonUpdateChange.NewValue
 import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_BLOCK_STREAM_INFO;
 import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_PLATFORM_STATE;
 import static com.hedera.node.app.blocks.BlockStreamManager.ZERO_BLOCK_HASH;
-import static com.hedera.node.app.blocks.schemas.V0540BlockStreamSchema.BLOCK_STREAM_INFO_KEY;
+import static com.hedera.node.app.blocks.schemas.V0560BlockStreamSchema.BLOCK_STREAM_INFO_KEY;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.CompletableFuture.completedFuture;
 
@@ -35,7 +35,7 @@ import com.hedera.hapi.node.state.blockstream.BlockStreamInfo;
 import com.hedera.hapi.platform.state.PlatformState;
 import com.hedera.node.app.blocks.impl.BlockStreamManagerImpl;
 import com.hedera.node.app.blocks.impl.BoundaryStateChangeListener;
-import com.hedera.node.app.blocks.schemas.V0540BlockStreamSchema;
+import com.hedera.node.app.blocks.schemas.V0560BlockStreamSchema;
 import com.hedera.node.app.config.ConfigProviderImpl;
 import com.hedera.node.app.fixtures.state.FakeState;
 import com.hedera.node.app.tss.impl.PlaceholderTssBaseService;
@@ -133,7 +133,7 @@ public class BlockStreamManagerBenchmark {
     public void setup() throws IOException, ParseException {
         loadSampleItems();
         state = new FakeState();
-        addServiceSingleton(new V0540BlockStreamSchema(ignore -> {}), BlockStreamService.NAME, BlockStreamInfo.DEFAULT);
+        addServiceSingleton(new V0560BlockStreamSchema(ignore -> {}), BlockStreamService.NAME, BlockStreamInfo.DEFAULT);
         addServiceSingleton(new V0540PlatformStateSchema(), PlatformStateService.NAME, platformState);
         subject.initLastBlockHash(ZERO_BLOCK_HASH);
         tssBaseService.setExecutor(ForkJoinPool.commonPool());
