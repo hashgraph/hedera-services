@@ -64,10 +64,9 @@ jobs:
             echo "xts_tag_exists=true" >> $GITHUB_OUTPUT
             XTS_COMMIT=`git rev-list -n 1 ${XTS_CANDIDATE_TAG}`
             git branch --contains ${XTS_COMMIT} | grep -q develop
-            echo "XTS_COMMIT=${XTS_COMMIT}"
-            echo "xts_tag_commit=`${XTS_COMMIT}`" >> $GITHUB_OUTPUT
+            echo "xts_tag_commit=${XTS_COMMIT}" >> $GITHUB_OUTPUT
             echo "### Commit Tagged as an XTS-Candidate" >>  $GITHUB_STEP_SUMMARY
-            echo "xts_tag_commit=`${XTS_COMMIT}`" >> $GITHUB_STEP_SUMMARY
+            echo "xts_tag_commit=${XTS_COMMIT}" >> $GITHUB_STEP_SUMMARY
             git tag -d ${XTS_CANDIDATE_TAG}
             git push --delete origin ${XTS_CANDIDATE_TAG}
           else
