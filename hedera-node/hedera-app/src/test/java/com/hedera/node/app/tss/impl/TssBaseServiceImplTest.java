@@ -51,7 +51,7 @@ class TssBaseServiceImplTest {
     @Mock
     private SchemaRegistry registry;
 
-    private final TssBaseServiceImpl subject = new TssBaseServiceImpl();
+    private final PlaceholderTssBaseService subject = new PlaceholderTssBaseService();
 
     @BeforeEach
     void setUp() {

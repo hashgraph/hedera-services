@@ -86,6 +86,7 @@ import com.hedera.node.app.statedumpers.MerkleStateChild;
 import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.app.throttle.CongestionThrottleService;
 import com.hedera.node.app.tss.TssBaseService;
+import com.hedera.node.app.tss.impl.PlaceholderTssBaseService;
 import com.hedera.node.app.version.HederaSoftwareVersion;
 import com.hedera.node.app.version.ServicesSoftwareVersion;
 import com.hedera.node.app.workflows.handle.HandleWorkflow;
@@ -917,6 +918,9 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener {
                                         .orElseGet(() -> startBlockHashFrom(state));
                             });
             daggerApp.tssBaseService().registerLedgerSignatureConsumer(daggerApp.blockStreamManager());
+            if (daggerApp.tssBaseService() instanceof PlaceholderTssBaseService placeholderTssBaseService) {
+                daggerApp.inject(placeholderTssBaseService);
+            }
         }
     }
 

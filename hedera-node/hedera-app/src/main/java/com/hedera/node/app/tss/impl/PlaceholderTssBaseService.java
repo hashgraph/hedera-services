@@ -38,8 +38,8 @@ import org.apache.logging.log4j.Logger;
  * Placeholder for the TSS base service, added to support testing production of indirect block proofs,
  * c.f. <a href="https://github.com/hashgraph/hedera-services/issues/15379">this issue</a>.
  */
-public class TssBaseServiceImpl implements TssBaseService {
-    private static final Logger log = LogManager.getLogger(TssBaseServiceImpl.class);
+public class PlaceholderTssBaseService implements TssBaseService {
+    private static final Logger log = LogManager.getLogger(PlaceholderTssBaseService.class);
 
     /**
      * Copy-on-write list to avoid concurrent modification exceptions if a consumer unregisters
