@@ -20,9 +20,8 @@ import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.hapi.node.state.roster.RosterEntry;
 import com.hedera.hapi.platform.state.NodeId;
 import com.hedera.pbj.runtime.Codec;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.pbj.runtime.io.stream.WritableStreamingData;
-import com.hederahashgraph.api.proto.java.TssMessage;
-import com.hederahashgraph.api.proto.java.TssVote;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.security.MessageDigest;
@@ -47,8 +46,8 @@ public class TssCryptographyManager {
     private final Map<byte[], List<PrivateShare>> privateShares;
     private final Map<byte[], List<PublicShare>> publicShares;
     private final Map<byte[], PairingPublicKey> ledgerIds;
-    private final Map<byte[], List<TssMessage>> tssMessages;
-    private final Map<byte[], List<TssVote>> tssVotes;
+    private final Map<byte[], List<Bytes>> tssMessages;
+    private final Map<byte[], List<Bytes>> tssVotes;
     private final Set<byte[]> votingClosed;
 
     public TssCryptographyManager(NodeId nodeId, int maxSharesPerNode, boolean keyActiveRoster) {

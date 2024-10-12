@@ -18,11 +18,8 @@ package com.hedera.node.app.tss.impl;
 
 import com.hedera.hapi.node.state.roster.LedgerId;
 import com.hedera.hapi.node.state.roster.Roster;
-import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.hederahashgraph.api.proto.java.TssMessage;
-import com.hederahashgraph.api.proto.java.TssMessageMapKey;
-import com.hederahashgraph.api.proto.java.TssVote;
-import com.hederahashgraph.api.proto.java.TssVoteMapKey;
+import com.hedera.hapi.node.state.tss.TssMessageMapKey;
+import com.hedera.hapi.node.state.tss.TssVoteMapKey;
 import com.swirlds.common.exceptions.NotImplementedException;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.HashMap;
@@ -99,22 +96,6 @@ public class TssStateManager {
     private void sendDataToTssCryptographyManager() {
         // Send active roster, candidate roster, TssMessageTransactions, and TssVoteTransactions to
         // TssCryptographyManager
-        throw new NotImplementedException();
-    }
-
-    public void handleTssMessageTransaction(@NonNull final TssMessage tssMessage) {
-        throw new NotImplementedException();
-    }
-
-    public void handleTssMessageTransaction(Bytes transaction) {
-        throw new NotImplementedException();
-    }
-
-    public void handleTssVoteTransaction(@NonNull final TssVote tssVote) {
-        throw new NotImplementedException();
-    }
-
-    public void handleTssVoteTransaction(Bytes transaction) {
         throw new NotImplementedException();
     }
 
