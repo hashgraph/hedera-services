@@ -95,7 +95,6 @@ jobs:
       sdk-gpg-key-contents: ${{ secrets.PLATFORM_GPG_KEY_CONTENTS }}
       sdk-gpg-key-passphrase: ${{ secrets.PLATFORM_GPG_KEY_PASSPHRASE }}
       slack-webhook-url: ${{ secrets.PLATFORM_SLACK_RELEASE_WEBHOOK }}
-      jenkins-integration-url: ${{ secrets.RELEASE_JENKINS_INTEGRATION_URL }}
       jf-url: ${{ vars.JF_URL }}
       jf-docker-registry: ${{ vars.JF_DOCKER_REGISTRY }}
       jf-user-name: ${{ vars.JF_USER_NAME }}
@@ -122,7 +121,6 @@ jobs:
       sdk-gpg-key-contents: ${{ secrets.PLATFORM_GPG_KEY_CONTENTS }}
       sdk-gpg-key-passphrase: ${{ secrets.PLATFORM_GPG_KEY_PASSPHRASE }}
       slack-webhook-url: ${{ secrets.PLATFORM_SLACK_RELEASE_WEBHOOK }}
-      jenkins-integration-url: ${{ secrets.RELEASE_JENKINS_INTEGRATION_URL }}
       jf-url: ${{ vars.JF_URL }}
       jf-docker-registry: ${{ vars.JF_DOCKER_REGISTRY }}
       jf-user-name: ${{ vars.JF_USER_NAME }}

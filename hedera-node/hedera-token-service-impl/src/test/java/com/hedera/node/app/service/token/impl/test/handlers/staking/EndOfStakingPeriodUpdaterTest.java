@@ -100,7 +100,8 @@ public class EndOfStakingPeriodUpdaterTest {
                 .accountId(asAccount(800))
                 .tinybarBalance(100_000_000_000L)
                 .build());
-        subject = new EndOfStakingPeriodUpdater(new StakingRewardsHelper(), DEFAULT_CONFIG_PROVIDER);
+        subject = new EndOfStakingPeriodUpdater(
+                new StakingRewardsHelper(DEFAULT_CONFIG_PROVIDER), DEFAULT_CONFIG_PROVIDER);
     }
 
     @Test

@@ -126,6 +126,7 @@ final class BlockRecordManagerTest extends AppTestBase {
                 .withConfigValue("hedera.recordStream.signatureFileVersion", 6)
                 .withConfigValue("hedera.recordStream.compressFilesOnCreation", true)
                 .withConfigValue("hedera.recordStream.sidecarMaxSizeMb", 256)
+                .withConfigValue("blockStream.streamMode", "BOTH")
                 .withService(new BlockRecordService())
                 .withService(PLATFORM_STATE_SERVICE)
                 .build();

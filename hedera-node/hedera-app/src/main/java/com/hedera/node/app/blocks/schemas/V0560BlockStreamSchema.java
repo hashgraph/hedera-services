@@ -54,7 +54,7 @@ import java.util.function.Consumer;
  *     <li>The <b>trailing 256 block hashes</b>, used to implement the EVM {@code BLOCKHASH} opcode.</li>
  * </ol>
  */
-public class V0540BlockStreamSchema extends Schema {
+public class V0560BlockStreamSchema extends Schema {
     private static final String SHARED_BLOCK_RECORD_INFO = "SHARED_BLOCK_RECORD_INFO";
     private static final String SHARED_RUNNING_HASHES = "SHARED_RUNNING_HASHES";
 
@@ -64,14 +64,14 @@ public class V0540BlockStreamSchema extends Schema {
      * The version of the schema.
      */
     private static final SemanticVersion VERSION =
-            SemanticVersion.newBuilder().major(0).minor(54).patch(0).build();
+            SemanticVersion.newBuilder().major(0).minor(56).patch(0).build();
 
     private final Consumer<Bytes> migratedBlockHashConsumer;
 
     /**
      * Schema constructor.
      */
-    public V0540BlockStreamSchema(@NonNull final Consumer<Bytes> migratedBlockHashConsumer) {
+    public V0560BlockStreamSchema(@NonNull final Consumer<Bytes> migratedBlockHashConsumer) {
         super(VERSION);
         this.migratedBlockHashConsumer = requireNonNull(migratedBlockHashConsumer);
     }
@@ -82,13 +82,14 @@ public class V0540BlockStreamSchema extends Schema {
     }
 
     @Override
-    public void migrate(@NonNull final MigrationContext ctx) {
+    public void restart(@NonNull final MigrationContext ctx) {
+        requireNonNull(ctx);
         final var state = ctx.newStates().getSingleton(BLOCK_STREAM_INFO_KEY);
         if (ctx.previousVersion() == null) {
             state.put(BlockStreamInfo.DEFAULT);
         } else {
             final var blockStreamInfo = state.get();
-            // This will be null if the previous version is before 0.54.0
+            // This will be null if the previous version is before 0.56.0
             if (blockStreamInfo == null) {
                 final BlockInfo blockInfo =
                         (BlockInfo) requireNonNull(ctx.sharedValues().get(SHARED_BLOCK_RECORD_INFO));
