@@ -28,18 +28,22 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.Duration;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.hapi.services.auxiliary.tss.TssMessageTransactionBody;
 import com.hedera.hapi.services.auxiliary.tss.TssVoteTransactionBody;
 import com.hedera.node.app.spi.AppContext;
 import com.hedera.node.app.spi.workflows.HandleContext;
+import com.hedera.node.app.tss.TssBaseService.TssContext;
+import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.state.spi.info.NetworkInfo;
 import com.swirlds.state.spi.info.NodeInfo;
 import java.time.Instant;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import org.junit.jupiter.api.BeforeEach;
@@ -61,6 +65,8 @@ class TssSubmissionManagerTest {
             .withValue("tss.distinctTxnIdsToTry", DISTINCT_TXN_IDS_TO_TRY)
             .withValue("tss.retryDelay", RETRY_DELAY)
             .getOrCreateConfig();
+    private static final Duration DURATION =
+            new Duration(TEST_CONFIG.getConfigData(HederaConfig.class).transactionMaxValidDuration());
 
     @Mock
     private HandleContext context;
@@ -74,11 +80,11 @@ class TssSubmissionManagerTest {
     @Mock
     private AppContext.Gossip gossip;
 
-    private TssSubmissionManager subject;
+    private TssSubmissions subject;
 
     @BeforeEach
     void setUp() {
-        subject = new TssSubmissionManager(gossip);
+        subject = new TssSubmissions(gossip, ForkJoinPool.commonPool());
         given(context.consensusNow()).willReturn(CONSENSUS_NOW);
         given(context.networkInfo()).willReturn(networkInfo);
         given(networkInfo.selfNodeInfo()).willReturn(nodeInfo);
@@ -88,7 +94,7 @@ class TssSubmissionManagerTest {
 
     @Test
     void futureResolvesOnSuccessfulSubmission() throws ExecutionException, InterruptedException, TimeoutException {
-        final var future = subject.submitTssMessage(TssMessageTransactionBody.DEFAULT, context);
+        final var future = subject.submitTssMessage(TssMessageTransactionBody.DEFAULT, TssContext.from(context));
 
         future.get(1, TimeUnit.SECONDS);
 
@@ -100,7 +106,7 @@ class TssSubmissionManagerTest {
             throws ExecutionException, InterruptedException, TimeoutException {
         doThrow(new IllegalStateException("" + BEHIND)).when(gossip).submit(any());
 
-        final var future = subject.submitTssVote(TssVoteTransactionBody.DEFAULT, context);
+        final var future = subject.submitTssVote(TssVoteTransactionBody.DEFAULT, TssContext.from(context));
 
         future.exceptionally(t -> {
                     verify(gossip, times(TIMES_TO_TRY_SUBMISSION)).submit(voteSubmission(0));
@@ -116,7 +122,7 @@ class TssSubmissionManagerTest {
                 .when(gossip)
                 .submit(voteSubmission(0));
 
-        final var future = subject.submitTssVote(TssVoteTransactionBody.DEFAULT, context);
+        final var future = subject.submitTssVote(TssVoteTransactionBody.DEFAULT, TssContext.from(context));
 
         future.get(1, TimeUnit.SECONDS);
 
@@ -132,7 +138,7 @@ class TssSubmissionManagerTest {
                 .when(gossip)
                 .submit(messageSubmission(1));
 
-        final var future = subject.submitTssMessage(TssMessageTransactionBody.DEFAULT, context);
+        final var future = subject.submitTssMessage(TssMessageTransactionBody.DEFAULT, TssContext.from(context));
 
         future.exceptionally(t -> {
                     for (int i = 0; i < DISTINCT_TXN_IDS_TO_TRY; i++) {
@@ -157,6 +163,7 @@ class TssSubmissionManagerTest {
     private TransactionBody.Builder builderFor(final int nanoOffset) {
         return TransactionBody.newBuilder()
                 .nodeAccountID(NODE_ACCOUNT_ID)
+                .transactionValidDuration(DURATION)
                 .transactionID(TransactionID.newBuilder()
                         .accountID(NODE_ACCOUNT_ID)
                         .transactionValidStart(asTimestamp(CONSENSUS_NOW.plusNanos(nanoOffset)))

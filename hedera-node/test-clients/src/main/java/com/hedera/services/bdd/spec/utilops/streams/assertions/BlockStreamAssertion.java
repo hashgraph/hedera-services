@@ -26,6 +26,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  *
  * <p>Typical implementations will be stateful, and will be constructed with their "parent" {@link HapiSpec}.
  */
+@FunctionalInterface
 public interface BlockStreamAssertion {
     /**
      * Updates the assertion's state based on a relevant {@link Block}, throwing an {@link AssertionError} if a
@@ -35,15 +36,5 @@ public interface BlockStreamAssertion {
      * @throws AssertionError if the assertion has failed
      * @return true if the assertion has succeeded
      */
-    default boolean test(@NonNull final Block block) throws AssertionError {
-        return true;
-    }
-
-    /**
-     * Hint to implementers to return a string that describes the assertion.
-     *
-     * @return a string that describes the assertion
-     */
-    @Override
-    String toString();
+    boolean test(@NonNull Block block) throws AssertionError;
 }

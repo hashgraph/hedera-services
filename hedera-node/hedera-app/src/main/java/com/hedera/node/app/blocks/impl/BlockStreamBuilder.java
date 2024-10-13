@@ -348,7 +348,7 @@ public class BlockStreamBuilder
         final var newTransactionID = transactionID;
         final var body =
                 inProgressBody().copyBuilder().transactionID(newTransactionID).build();
-        this.transaction = StreamBuilder.transactionWith(body);
+        this.transaction = StreamBuilder.childTransactionWith(body);
         return this;
     }
 

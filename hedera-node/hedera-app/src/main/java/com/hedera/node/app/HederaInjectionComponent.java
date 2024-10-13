@@ -49,7 +49,6 @@ import com.hedera.node.app.state.WorkingStateAccessor;
 import com.hedera.node.app.throttle.ThrottleServiceManager;
 import com.hedera.node.app.throttle.ThrottleServiceModule;
 import com.hedera.node.app.tss.TssBaseService;
-import com.hedera.node.app.tss.TssBaseServiceImpl;
 import com.hedera.node.app.workflows.FacilityInitModule;
 import com.hedera.node.app.workflows.WorkflowsInjectionModule;
 import com.hedera.node.app.workflows.handle.HandleWorkflow;
@@ -139,8 +138,6 @@ public interface HederaInjectionComponent {
     TssBaseService tssBaseService();
 
     SubmissionManager submissionManager();
-
-    void inject(TssBaseServiceImpl tssBaseServiceImpl);
 
     @Component.Builder
     interface Builder {

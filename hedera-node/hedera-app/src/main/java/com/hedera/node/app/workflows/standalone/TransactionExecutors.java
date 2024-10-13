@@ -37,6 +37,7 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.InstantSource;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ForkJoinPool;
 import java.util.function.Supplier;
 import org.hyperledger.besu.evm.tracing.OperationTracer;
 
@@ -91,7 +92,8 @@ public enum TransactionExecutors {
                         new SignatureExpanderImpl(),
                         new SignatureVerifierImpl(CryptographyHolder.get())),
                 UNAVAILBLE_GOSSIP);
-        final var tssBaseService = new TssBaseServiceImpl(appContext);
+        final var tssBaseService =
+                new TssBaseServiceImpl(appContext, ForkJoinPool.commonPool(), ForkJoinPool.commonPool());
         final var contractService = new ContractServiceImpl(appContext, NOOP_VERIFICATION_STRATEGIES, tracerBinding);
         final var fileService = new FileServiceImpl();
         final var configProvider = new ConfigProviderImpl(false, null, properties);

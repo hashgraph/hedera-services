@@ -34,25 +34,26 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class TssVoteHandler implements TransactionHandler {
-    private final TssSubmissionManager submissionManager;
-
     @Inject
-    public TssVoteHandler(@NonNull final TssSubmissionManager submissionManager) {
-        this.submissionManager = requireNonNull(submissionManager);
+    public TssVoteHandler() {
+        // Dagger2
     }
 
     @Override
-    public void preHandle(@NonNull PreHandleContext context) throws PreCheckException {
-        throw new UnsupportedOperationException();
+    public void preHandle(@NonNull final PreHandleContext context) throws PreCheckException {
+        requireNonNull(context);
+        // (TSS-FUTURE) Implement this method
     }
 
     @Override
-    public void pureChecks(@NonNull TransactionBody txn) throws PreCheckException {
-        throw new UnsupportedOperationException();
+    public void pureChecks(@NonNull final TransactionBody txn) throws PreCheckException {
+        requireNonNull(txn);
+        // (TSS-FUTURE) Implement this method
     }
 
     @Override
-    public void handle(@NonNull HandleContext context) throws HandleException {
-        throw new UnsupportedOperationException();
+    public void handle(@NonNull final HandleContext context) throws HandleException {
+        requireNonNull(context);
+        // (TSS-FUTURE) Implement this method
     }
 }

@@ -23,7 +23,7 @@ import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.tu
 import static com.hedera.node.app.service.contract.impl.utils.SynthTxnUtils.*;
 import static com.hedera.node.app.spi.key.KeyUtils.IMMUTABILITY_SENTINEL_KEY;
 import static com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer.SUPPRESSING_EXTERNALIZED_RECORD_CUSTOMIZER;
-import static com.hedera.node.app.spi.workflows.record.StreamBuilder.transactionWith;
+import static com.hedera.node.app.spi.workflows.record.StreamBuilder.childTransactionWith;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.*;
@@ -346,7 +346,7 @@ public class HandleHederaOperations implements HederaOperations {
                 .addRemovableChildRecordBuilder(ContractCreateStreamBuilder.class)
                 .contractID(contractId)
                 .status(SUCCESS)
-                .transaction(transactionWith(TransactionBody.newBuilder()
+                .transaction(childTransactionWith(TransactionBody.newBuilder()
                         .contractCreateInstance(synthContractCreationForExternalization(contractId))
                         .build()))
                 .contractCreateResult(ContractFunctionResult.newBuilder()
@@ -429,7 +429,7 @@ public class HandleHederaOperations implements HederaOperations {
                             "Dispatched transaction body was not a crypto create" + dispatchedBody);
                 }
                 final var standardizedOp = standardized(createdNumber, op);
-                return transactionWith(dispatchedBody
+                return childTransactionWith(dispatchedBody
                         .copyBuilder()
                         .contractCreateInstance(standardizedOp)
                         .build());

@@ -18,14 +18,16 @@ package com.hedera.node.app;
 
 import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_BLOCK_STREAM_INFO;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.DUPLICATE_TRANSACTION;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.UNKNOWN;
+import static com.hedera.hapi.util.HapiUtils.functionOf;
 import static com.hedera.node.app.blocks.impl.BlockImplUtils.combine;
 import static com.hedera.node.app.blocks.impl.ConcurrentStreamingTreeHasher.rootHashFrom;
 import static com.hedera.node.app.blocks.schemas.V0560BlockStreamSchema.BLOCK_STREAM_INFO_KEY;
 import static com.hedera.node.app.info.UnavailableNetworkInfo.UNAVAILABLE_NETWORK_INFO;
 import static com.hedera.node.app.records.impl.BlockRecordInfoUtils.blockHashByBlockNumber;
 import static com.hedera.node.app.records.schemas.V0490BlockRecordSchema.BLOCK_INFO_STATE_KEY;
-import static com.hedera.node.app.spi.AppContext.Gossip.DUPLICATE_TXN_ID_ERROR_MSG;
-import static com.hedera.node.app.spi.workflows.record.StreamBuilder.transactionWith;
+import static com.hedera.node.app.spi.workflows.record.StreamBuilder.nodeTransactionWith;
 import static com.hedera.node.app.state.merkle.VersionUtils.isSoOrdered;
 import static com.hedera.node.app.statedumpers.DumpCheckpoint.MOD_POST_EVENT_STREAM_REPLAY;
 import static com.hedera.node.app.statedumpers.DumpCheckpoint.selectedDumpCheckpoints;
@@ -48,12 +50,14 @@ import com.hedera.hapi.block.stream.BlockItem;
 import com.hedera.hapi.block.stream.output.SingletonUpdateChange;
 import com.hedera.hapi.block.stream.output.StateChange;
 import com.hedera.hapi.block.stream.output.StateChanges;
+import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.state.blockrecords.BlockInfo;
 import com.hedera.hapi.node.state.blockstream.BlockStreamInfo;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.hapi.platform.state.PlatformState;
 import com.hedera.hapi.util.HapiUtils;
+import com.hedera.hapi.util.UnknownHederaFunctionality;
 import com.hedera.node.app.blocks.BlockStreamManager;
 import com.hedera.node.app.blocks.BlockStreamService;
 import com.hedera.node.app.blocks.InitialStateHash;
@@ -94,7 +98,6 @@ import com.hedera.node.app.statedumpers.MerkleStateChild;
 import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.app.throttle.CongestionThrottleService;
 import com.hedera.node.app.tss.TssBaseService;
-import com.hedera.node.app.tss.TssBaseServiceImpl;
 import com.hedera.node.app.version.HederaSoftwareVersion;
 import com.hedera.node.app.version.ServicesSoftwareVersion;
 import com.hedera.node.app.workflows.handle.HandleWorkflow;
@@ -104,6 +107,7 @@ import com.hedera.node.config.Utils;
 import com.hedera.node.config.data.BlockStreamConfig;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.data.LedgerConfig;
+import com.hedera.node.config.data.NetworkAdminConfig;
 import com.hedera.node.config.data.VersionConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.constructable.ClassConstructorPair;
@@ -651,8 +655,20 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
         if (platformStatus != ACTIVE) {
             throw new IllegalStateException("" + platformStatus);
         }
+        final HederaFunctionality function;
         try {
-            final var payload = com.hedera.hapi.node.base.Transaction.PROTOBUF.toBytes(transactionWith(body));
+            function = functionOf(body);
+        } catch (UnknownHederaFunctionality e) {
+            throw new IllegalArgumentException("" + UNKNOWN);
+        }
+        try {
+            final var config = configProvider.getConfiguration();
+            final var adminConfig = config.getConfigData(NetworkAdminConfig.class);
+            final var allowList = adminConfig.nodeTransactionsAllowList().functionalitySet();
+            if (!allowList.contains(function)) {
+                throw new IllegalArgumentException("" + NOT_SUPPORTED);
+            }
+            final var payload = com.hedera.hapi.node.base.Transaction.PROTOBUF.toBytes(nodeTransactionWith(body));
             requireNonNull(daggerApp).submissionManager().submit(body, payload);
         } catch (PreCheckException e) {
             if (e.responseCode() == DUPLICATE_TRANSACTION) {
@@ -955,9 +971,6 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
                                         .orElseGet(() -> startBlockHashFrom(state));
                             });
             daggerApp.tssBaseService().registerLedgerSignatureConsumer(daggerApp.blockStreamManager());
-            if (daggerApp.tssBaseService() instanceof TssBaseServiceImpl tssBaseServiceImpl) {
-                daggerApp.inject(tssBaseServiceImpl);
-            }
         }
     }
 

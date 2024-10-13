@@ -94,16 +94,27 @@ class RepeatableEmbeddedHedera extends AbstractEmbeddedHedera implements Embedde
                     new FakeEvent(nodeId, time.now(), semanticVersion, createAppPayloadWrapper(payload));
         }
         if (response.getNodeTransactionPrecheckCode() == OK) {
-            hedera.onPreHandle(platform.lastCreatedEvent, state);
-            final var round = platform.nextConsensusRound();
-            // Handle each transaction in own round
-            hedera.handleWorkflow().handleRound(state, round);
-            hedera.onSealConsensusRound(round, state);
-            // Immediately notify the block stream manager of the "hash" at the end of this round
-            hedera.blockStreamManager()
-                    .notify(new StateHashedNotification(round.getRoundNum(), FAKE_START_OF_STATE_HASH));
+            handleNextRound();
+            // If handling this transaction scheduled TSS work, do it synchronously as well
+            if (tssBaseService.hasTssSubmission()) {
+                platform.lastCreatedEvent = null;
+                tssBaseService.executeTssSubmission();
+                if (platform.lastCreatedEvent != null) {
+                    handleNextRound();
+                }
+            }
         }
         return response;
+    }
+
+    private void handleNextRound() {
+        hedera.onPreHandle(platform.lastCreatedEvent, state);
+        final var round = platform.nextConsensusRound();
+        // Handle each transaction in own round
+        hedera.handleWorkflow().handleRound(state, round);
+        hedera.onSealConsensusRound(round, state);
+        // Immediately notify the block stream manager of the "hash" at the end of this round
+        hedera.blockStreamManager().notify(new StateHashedNotification(round.getRoundNum(), FAKE_START_OF_STATE_HASH));
     }
 
     private class SynchronousFakePlatform extends AbstractFakePlatform implements Platform {
@@ -117,7 +128,7 @@ class RepeatableEmbeddedHedera extends AbstractEmbeddedHedera implements Embedde
         }
 
         @Override
-        public boolean createTransaction(@NonNull byte[] transaction) {
+        public boolean createTransaction(@NonNull final byte[] transaction) {
             lastCreatedEvent = new FakeEvent(
                     defaultNodeId, time.now(), version.getPbjSemanticVersion(), createAppPayloadWrapper(transaction));
             return true;

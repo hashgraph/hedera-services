@@ -75,6 +75,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.InstantSource;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.ForkJoinPool;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -363,6 +364,6 @@ public class ServicesMain implements SwirldMain {
                 ServicesRegistryImpl::new,
                 new OrderedServiceMigrator(),
                 InstantSource.system(),
-                TssBaseServiceImpl::new);
+                appContext -> new TssBaseServiceImpl(appContext, ForkJoinPool.commonPool(), ForkJoinPool.commonPool()));
     }
 }

@@ -48,6 +48,7 @@ import com.hedera.node.app.workflows.handle.steps.PlatformStateUpdates;
 import com.hedera.node.app.workflows.handle.steps.SystemFileUpdates;
 import com.hedera.node.app.workflows.handle.throttle.DispatchUsageManager;
 import com.hedera.node.app.workflows.handle.throttle.ThrottleException;
+import com.hedera.node.config.data.NetworkAdminConfig;
 import com.swirlds.state.spi.info.NetworkInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -306,8 +307,18 @@ public class DispatchProcessor {
      * @param dispatch the dispatch to be processed
      */
     private @Nullable ResponseCodeEnum maybeAuthorizationFailure(@NonNull final Dispatch dispatch) {
-        if (!authorizer.isAuthorized(dispatch.payerId(), dispatch.txnInfo().functionality())) {
-            return dispatch.txnInfo().functionality() == SYSTEM_DELETE ? NOT_SUPPORTED : UNAUTHORIZED;
+        final var function = dispatch.txnInfo().functionality();
+        if (!authorizer.isAuthorized(dispatch.payerId(), function)) {
+            // Node transactions are judged by a different set of rules; any node account can submit
+            // any node transaction as long as it is in the allow list
+            if (dispatch.isNodeTransaction()) {
+                final var adminConfig = dispatch.config().getConfigData(NetworkAdminConfig.class);
+                final var allowList = adminConfig.nodeTransactionsAllowList().functionalitySet();
+                if (allowList.contains(function)) {
+                    return null;
+                }
+            }
+            return function == SYSTEM_DELETE ? NOT_SUPPORTED : UNAUTHORIZED;
         }
         final var failure = authorizer.hasPrivilegedAuthorization(
                 dispatch.payerId(),

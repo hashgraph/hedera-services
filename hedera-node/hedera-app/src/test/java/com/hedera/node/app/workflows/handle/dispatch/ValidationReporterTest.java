@@ -31,9 +31,9 @@ import static com.hedera.node.app.workflows.handle.dispatch.DispatchValidator.Of
 import static com.hedera.node.app.workflows.handle.dispatch.DispatchValidator.ServiceFeeStatus.CAN_PAY_SERVICE_FEE;
 import static com.hedera.node.app.workflows.handle.dispatch.DispatchValidator.ServiceFeeStatus.UNABLE_TO_PAY_SERVICE_FEE;
 import static com.hedera.node.app.workflows.handle.dispatch.DispatchValidator.WorkflowCheck.NOT_INGEST;
-import static com.hedera.node.app.workflows.handle.dispatch.ValidationResult.creatorValidationReport;
-import static com.hedera.node.app.workflows.handle.dispatch.ValidationResult.payerValidationReport;
-import static com.hedera.node.app.workflows.handle.dispatch.ValidationResult.successReport;
+import static com.hedera.node.app.workflows.handle.dispatch.ValidationResult.newCreatorError;
+import static com.hedera.node.app.workflows.handle.dispatch.ValidationResult.newPayerError;
+import static com.hedera.node.app.workflows.handle.dispatch.ValidationResult.newSuccess;
 import static com.hedera.node.app.workflows.prehandle.PreHandleResult.Status.NODE_DUE_DILIGENCE_FAILURE;
 import static com.hedera.node.app.workflows.prehandle.PreHandleResult.Status.PRE_HANDLE_FAILURE;
 import static com.hedera.node.app.workflows.prehandle.PreHandleResult.Status.SO_FAR_SO_GOOD;
@@ -127,7 +127,7 @@ class ValidationReporterTest {
 
         final var report = subject.validationReportFor(dispatch);
 
-        assertEquals(creatorValidationReport(dispatch.creatorInfo().accountId(), INVALID_PAYER_SIGNATURE), report);
+        assertEquals(newCreatorError(dispatch.creatorInfo().accountId(), INVALID_PAYER_SIGNATURE), report);
     }
 
     @Test
@@ -143,7 +143,7 @@ class ValidationReporterTest {
 
         final var report = subject.validationReportFor(dispatch);
 
-        assertEquals(creatorValidationReport(dispatch.creatorInfo().accountId(), INVALID_TRANSACTION_DURATION), report);
+        assertEquals(newCreatorError(dispatch.creatorInfo().accountId(), INVALID_TRANSACTION_DURATION), report);
     }
 
     @Test
@@ -157,7 +157,7 @@ class ValidationReporterTest {
 
         final var report = subject.validationReportFor(dispatch);
 
-        assertEquals(creatorValidationReport(dispatch.creatorInfo().accountId(), INVALID_PAYER_SIGNATURE), report);
+        assertEquals(newCreatorError(dispatch.creatorInfo().accountId(), INVALID_PAYER_SIGNATURE), report);
     }
 
     @Test
@@ -179,7 +179,7 @@ class ValidationReporterTest {
                         FEES,
                         NOT_INGEST,
                         SKIP_OFFERED_FEE_CHECK);
-        assertEquals(successReport(dispatch.creatorInfo().accountId(), payerAccount), report);
+        assertEquals(newSuccess(dispatch.creatorInfo().accountId(), payerAccount), report);
     }
 
     @Test
@@ -204,7 +204,7 @@ class ValidationReporterTest {
                         FEES,
                         NOT_INGEST,
                         CHECK_OFFERED_FEE);
-        assertEquals(successReport(dispatch.creatorInfo().accountId(), payerAccount), report);
+        assertEquals(newSuccess(dispatch.creatorInfo().accountId(), payerAccount), report);
     }
 
     @Test
@@ -229,7 +229,7 @@ class ValidationReporterTest {
                         NOT_INGEST,
                         CHECK_OFFERED_FEE);
         assertEquals(
-                payerValidationReport(
+                newPayerError(
                         dispatch.creatorInfo().accountId(),
                         payerAccount,
                         DUPLICATE_TRANSACTION,
@@ -250,7 +250,7 @@ class ValidationReporterTest {
 
         final var report = subject.validationReportFor(dispatch);
 
-        assertEquals(creatorValidationReport(dispatch.creatorInfo().accountId(), DUPLICATE_TRANSACTION), report);
+        assertEquals(newCreatorError(dispatch.creatorInfo().accountId(), DUPLICATE_TRANSACTION), report);
     }
 
     @Test
@@ -275,7 +275,7 @@ class ValidationReporterTest {
                         NOT_INGEST,
                         CHECK_OFFERED_FEE);
         assertEquals(
-                payerValidationReport(
+                newPayerError(
                         dispatch.creatorInfo().accountId(),
                         payerAccount,
                         UNSUCCESSFUL_PREHANDLE.responseCode(),
@@ -305,7 +305,7 @@ class ValidationReporterTest {
         final var report = subject.validationReportFor(dispatch);
 
         assertEquals(
-                payerValidationReport(
+                newPayerError(
                         dispatch.creatorInfo().accountId(),
                         payerAccount,
                         INSUFFICIENT_ACCOUNT_BALANCE,
@@ -336,7 +336,7 @@ class ValidationReporterTest {
         final var report = subject.validationReportFor(dispatch);
 
         assertEquals(
-                payerValidationReport(
+                newPayerError(
                         dispatch.creatorInfo().accountId(),
                         payerAccount,
                         INSUFFICIENT_ACCOUNT_BALANCE,
@@ -367,7 +367,7 @@ class ValidationReporterTest {
 
         final var report = subject.validationReportFor(dispatch);
 
-        assertEquals(creatorValidationReport(dispatch.creatorInfo().accountId(), INSUFFICIENT_PAYER_BALANCE), report);
+        assertEquals(newCreatorError(dispatch.creatorInfo().accountId(), INSUFFICIENT_PAYER_BALANCE), report);
     }
 
     @Test

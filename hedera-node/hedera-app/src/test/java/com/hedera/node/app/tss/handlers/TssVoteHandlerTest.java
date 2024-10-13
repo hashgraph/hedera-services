@@ -30,7 +30,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class TssVoteHandlerTest {
     @Mock
-    private TssSubmissionManager submissionManager;
+    private TssSubmissions submissionManager;
 
     @Mock
     private PreHandleContext preHandleContext;
@@ -42,14 +42,14 @@ class TssVoteHandlerTest {
 
     @BeforeEach
     void setUp() {
-        subject = new TssVoteHandler(submissionManager);
+        subject = new TssVoteHandler();
     }
 
     @Test
     void nothingImplementedYet() {
-        assertThrows(UnsupportedOperationException.class, () -> subject.preHandle(preHandleContext));
-        assertThrows(UnsupportedOperationException.class, () -> subject.pureChecks(tssVote()));
-        assertThrows(UnsupportedOperationException.class, () -> subject.handle(handleContext));
+        assertDoesNotThrow(() -> subject.preHandle(preHandleContext));
+        assertDoesNotThrow(() -> subject.pureChecks(tssVote()));
+        assertDoesNotThrow(() -> subject.handle(handleContext));
     }
 
     private TransactionBody tssVote() {

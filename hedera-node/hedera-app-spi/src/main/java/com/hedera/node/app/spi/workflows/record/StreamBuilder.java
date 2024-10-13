@@ -20,18 +20,19 @@ import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategor
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.PRECEDING;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.SCHEDULED;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.USER;
+import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.block.stream.output.StateChange;
 import com.hedera.hapi.node.base.AccountAmount;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.base.SignatureMap;
 import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.transaction.ExchangeRateSet;
 import com.hedera.hapi.node.transaction.SignedTransaction;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.hapi.node.transaction.TransactionRecord;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -136,8 +137,8 @@ public interface StreamBuilder {
     StreamBuilder status(@NonNull ResponseCodeEnum status);
 
     /**
-     * Returns the {@link TransactionRecord.Builder} of the record. It can be PRECEDING, CHILD, USER or SCHEDULED.
-     * @return the {@link TransactionRecord.Builder} of the record
+     * Returns the category of the builder's transaction.
+     * @return the category
      */
     HandleContext.TransactionCategory category();
 
@@ -239,19 +240,25 @@ public interface StreamBuilder {
     }
 
     /**
-     * Convenience method to package as {@link TransactionBody} as a {@link Transaction} .
-     *
+     * Convenience method to package as {@link TransactionBody} as a {@link Transaction} whose
+     * {@link SignedTransaction} has an unset {@link SignatureMap}.
      * @param body the transaction body
      * @return the transaction
      */
-    static Transaction transactionWith(@NonNull TransactionBody body) {
-        final var bodyBytes = TransactionBody.PROTOBUF.toBytes(body);
-        final var signedTransaction =
-                SignedTransaction.newBuilder().bodyBytes(bodyBytes).build();
-        final var signedTransactionBytes = SignedTransaction.PROTOBUF.toBytes(signedTransaction);
-        return Transaction.newBuilder()
-                .signedTransactionBytes(signedTransactionBytes)
-                .build();
+    static Transaction childTransactionWith(@NonNull final TransactionBody body) {
+        requireNonNull(body);
+        return transactionWith(body, null);
+    }
+
+    /**
+     * Convenience method to package a {@link TransactionBody} as a {@link Transaction} whose
+     * {@link SignedTransaction} has an empty {@link SignatureMap}.
+     * @param body the transaction body
+     * @return the transaction
+     */
+    static Transaction nodeTransactionWith(@NonNull final TransactionBody body) {
+        requireNonNull(body);
+        return transactionWith(body, SignatureMap.DEFAULT);
     }
 
     /**
@@ -282,5 +289,18 @@ public interface StreamBuilder {
          * Changes are committed independent of the user and parent transactions.
          */
         IRREVERSIBLE
+    }
+
+    private static Transaction transactionWith(
+            @NonNull final TransactionBody body, @Nullable final SignatureMap sigMap) {
+        final var bodyBytes = TransactionBody.PROTOBUF.toBytes(body);
+        final var signedTransaction = SignedTransaction.newBuilder()
+                .sigMap(sigMap)
+                .bodyBytes(bodyBytes)
+                .build();
+        final var signedTransactionBytes = SignedTransaction.PROTOBUF.toBytes(signedTransaction);
+        return Transaction.newBuilder()
+                .signedTransactionBytes(signedTransactionBytes)
+                .build();
     }
 }

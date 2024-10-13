@@ -27,11 +27,11 @@ import static com.hedera.node.app.workflows.handle.dispatch.DispatchValidator.Of
 import static com.hedera.node.app.workflows.handle.dispatch.DispatchValidator.ServiceFeeStatus.CAN_PAY_SERVICE_FEE;
 import static com.hedera.node.app.workflows.handle.dispatch.DispatchValidator.ServiceFeeStatus.UNABLE_TO_PAY_SERVICE_FEE;
 import static com.hedera.node.app.workflows.handle.dispatch.DispatchValidator.WorkflowCheck.NOT_INGEST;
-import static com.hedera.node.app.workflows.handle.dispatch.ValidationResult.creatorValidationReport;
-import static com.hedera.node.app.workflows.handle.dispatch.ValidationResult.payerDuplicateErrorReport;
-import static com.hedera.node.app.workflows.handle.dispatch.ValidationResult.payerUniqueValidationReport;
-import static com.hedera.node.app.workflows.handle.dispatch.ValidationResult.payerValidationReport;
-import static com.hedera.node.app.workflows.handle.dispatch.ValidationResult.successReport;
+import static com.hedera.node.app.workflows.handle.dispatch.ValidationResult.newCreatorError;
+import static com.hedera.node.app.workflows.handle.dispatch.ValidationResult.newPayerDuplicateError;
+import static com.hedera.node.app.workflows.handle.dispatch.ValidationResult.newPayerError;
+import static com.hedera.node.app.workflows.handle.dispatch.ValidationResult.newPayerUniqueError;
+import static com.hedera.node.app.workflows.handle.dispatch.ValidationResult.newSuccess;
 import static com.hedera.node.app.workflows.prehandle.PreHandleResult.Status.SO_FAR_SO_GOOD;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -91,18 +91,18 @@ public class DispatchValidator {
     public ValidationResult validationReportFor(@NonNull final Dispatch dispatch) {
         final var creatorError = creatorErrorIfKnown(dispatch);
         if (creatorError != null) {
-            return creatorValidationReport(dispatch.creatorInfo().accountId(), creatorError);
+            return newCreatorError(dispatch.creatorInfo().accountId(), creatorError);
         } else {
             final var payer =
                     getPayerAccount(dispatch.readableStoreFactory(), dispatch.payerId(), dispatch.txnCategory());
             final var category = dispatch.txnCategory();
-            final var requiresPayerSig = category == USER || category == SCHEDULED;
+            final var requiresPayerSig = category == SCHEDULED || (category == USER && !dispatch.isNodeTransaction());
             if (requiresPayerSig && !isHollow(payer)) {
                 // Skip payer verification for hollow accounts because ingest only submits valid signatures
                 // for hollow payers; and if an account is still hollow here, its alias cannot have changed
                 final var verification = dispatch.keyVerifier().verificationFor(payer.keyOrThrow());
                 if (verification.failed()) {
-                    return creatorValidationReport(dispatch.creatorInfo().accountId(), INVALID_PAYER_SIGNATURE);
+                    return newCreatorError(dispatch.creatorInfo().accountId(), INVALID_PAYER_SIGNATURE);
                 }
             }
             final var duplicateCheckResult = category != USER
@@ -112,7 +112,7 @@ public class DispatchValidator {
                             dispatch.creatorInfo().nodeId());
             return switch (duplicateCheckResult) {
                 case NO_DUPLICATE -> finalPayerValidationReport(payer, DuplicateStatus.NO_DUPLICATE, dispatch);
-                case SAME_NODE -> creatorValidationReport(dispatch.creatorInfo().accountId(), DUPLICATE_TRANSACTION);
+                case SAME_NODE -> newCreatorError(dispatch.creatorInfo().accountId(), DUPLICATE_TRANSACTION);
                 case OTHER_NODE -> finalPayerValidationReport(payer, DuplicateStatus.DUPLICATE, dispatch);
             };
         }
@@ -146,19 +146,18 @@ public class DispatchValidator {
                             ? CHECK_OFFERED_FEE
                             : SKIP_OFFERED_FEE_CHECK);
         } catch (final InsufficientServiceFeeException e) {
-            return payerValidationReport(
-                    creatorId, payer, e.responseCode(), UNABLE_TO_PAY_SERVICE_FEE, duplicateStatus);
+            return newPayerError(creatorId, payer, e.responseCode(), UNABLE_TO_PAY_SERVICE_FEE, duplicateStatus);
         } catch (final InsufficientNonFeeDebitsException e) {
-            return payerValidationReport(creatorId, payer, e.responseCode(), CAN_PAY_SERVICE_FEE, duplicateStatus);
+            return newPayerError(creatorId, payer, e.responseCode(), CAN_PAY_SERVICE_FEE, duplicateStatus);
         } catch (final PreCheckException e) {
             // Includes InsufficientNetworkFeeException
-            return creatorValidationReport(creatorId, e.responseCode());
+            return newCreatorError(creatorId, e.responseCode());
         }
         return switch (duplicateStatus) {
-            case DUPLICATE -> payerDuplicateErrorReport(creatorId, payer);
+            case DUPLICATE -> newPayerDuplicateError(creatorId, payer);
             case NO_DUPLICATE -> dispatch.preHandleResult().status() == SO_FAR_SO_GOOD
-                    ? successReport(creatorId, payer)
-                    : payerUniqueValidationReport(
+                    ? newSuccess(creatorId, payer)
+                    : newPayerUniqueError(
                             creatorId, payer, dispatch.preHandleResult().responseCode());
         };
     }

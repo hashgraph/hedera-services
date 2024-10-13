@@ -25,7 +25,7 @@ import static com.hedera.node.app.service.token.impl.handlers.staking.EndOfStaki
 import static com.hedera.node.app.service.token.impl.handlers.staking.EndOfStakingPeriodUtils.lastInstantOfPreviousPeriodFor;
 import static com.hedera.node.app.service.token.impl.handlers.staking.EndOfStakingPeriodUtils.newNodeStakeUpdateBuilder;
 import static com.hedera.node.app.service.token.impl.handlers.staking.EndOfStakingPeriodUtils.readableNonZeroHistory;
-import static com.hedera.node.app.spi.workflows.record.StreamBuilder.transactionWith;
+import static com.hedera.node.app.spi.workflows.record.StreamBuilder.childTransactionWith;
 import static java.util.Objects.requireNonNull;
 
 import com.google.common.annotations.VisibleForTesting;
@@ -263,7 +263,7 @@ public class EndOfStakingPeriodUpdater {
         // midnight. So, we add the preceding child record builder as unchecked, that doesn't fail with
         // MAX_CHILD_RECORDS_EXCEEDED
         return context.addPrecedingChildRecordBuilder(NodeStakeUpdateStreamBuilder.class)
-                .transaction(transactionWith(syntheticNodeStakeUpdateTxn.build()))
+                .transaction(childTransactionWith(syntheticNodeStakeUpdateTxn.build()))
                 .memo(END_OF_PERIOD_MEMO)
                 .exchangeRate(exchangeRates)
                 .status(SUCCESS);

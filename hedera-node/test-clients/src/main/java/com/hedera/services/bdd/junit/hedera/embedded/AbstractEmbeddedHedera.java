@@ -102,8 +102,9 @@ public abstract class AbstractEmbeddedHedera implements EmbeddedHedera {
     protected final AtomicInteger nextNano = new AtomicInteger(0);
     protected final Hedera hedera;
     protected final ServicesSoftwareVersion version;
-    protected final FakeTssBaseService tssBaseService;
     protected final ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor();
+
+    protected FakeTssBaseService tssBaseService;
 
     protected AbstractEmbeddedHedera(@NonNull final EmbeddedNode node) {
         requireNonNull(node);
@@ -114,13 +115,15 @@ public abstract class AbstractEmbeddedHedera implements EmbeddedHedera {
                 .collect(toMap(Address::getNodeId, address -> parseAccount(address.getMemo())));
         defaultNodeId = addressBook.getNodeId(0);
         defaultNodeAccountId = fromPbj(accountIds.get(defaultNodeId));
-        tssBaseService = new FakeTssBaseService();
         hedera = new Hedera(
                 ConstructableRegistry.getInstance(),
                 FakeServicesRegistry.FACTORY,
                 new FakeServiceMigrator(),
                 this::now,
-                appContext -> tssBaseService);
+                appContext -> {
+                    this.tssBaseService = new FakeTssBaseService(appContext);
+                    return tssBaseService;
+                });
         version = (ServicesSoftwareVersion) hedera.getSoftwareVersion();
         Runtime.getRuntime().addShutdownHook(new Thread(executorService::shutdownNow));
     }

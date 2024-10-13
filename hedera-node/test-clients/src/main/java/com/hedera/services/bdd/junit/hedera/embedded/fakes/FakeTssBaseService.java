@@ -19,20 +19,20 @@ package com.hedera.services.bdd.junit.hedera.embedded.fakes;
 import static com.hedera.node.app.hapi.utils.CommonUtils.noThrowSha384HashOf;
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.spi.workflows.HandleContext;
-import com.hedera.node.app.spi.workflows.HandleException;
-import com.hedera.node.app.spi.workflows.PreHandleContext;
-import com.hedera.node.app.spi.workflows.TransactionHandler;
+import com.hedera.hapi.node.state.roster.Roster;
+import com.hedera.node.app.spi.AppContext;
 import com.hedera.node.app.tss.TssBaseService;
+import com.hedera.node.app.tss.TssBaseServiceImpl;
 import com.hedera.node.app.tss.handlers.TssHandlers;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.state.spi.SchemaRegistry;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.ForkJoinPool;
 import java.util.function.BiConsumer;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -49,6 +49,24 @@ import org.apache.logging.log4j.Logger;
 public class FakeTssBaseService implements TssBaseService {
     private static final Logger log = LogManager.getLogger(FakeTssBaseService.class);
 
+    private final TssBaseServiceImpl delegate;
+
+    /**
+     * The type of signing to perform.
+     */
+    public enum Signing {
+        /**
+         * If not ignoring requests, provide a fake signature by hashing the message.
+         */
+        FAKE,
+        /**
+         * Delegate to the real TSS base service.
+         */
+        DELEGATE
+    }
+
+    private Signing signing = Signing.FAKE;
+
     /**
      * Copy-on-write list to avoid concurrent modification exceptions if a consumer unregisters
      * itself in its callback.
@@ -56,6 +74,30 @@ public class FakeTssBaseService implements TssBaseService {
     private final List<BiConsumer<byte[], byte[]>> consumers = new CopyOnWriteArrayList<>();
 
     private boolean ignoreRequests = false;
+
+    @Nullable
+    private Runnable tssSubmission = null;
+
+    public FakeTssBaseService(@NonNull final AppContext appContext) {
+        delegate = new TssBaseServiceImpl(appContext, ForkJoinPool.commonPool(), r -> tssSubmission = r);
+    }
+
+    /**
+     * Returns whether there is a pending TSS submission.
+     *
+     * @return if the fake TSS base service has a pending TSS submission
+     */
+    public boolean hasTssSubmission() {
+        return tssSubmission != null;
+    }
+
+    /**
+     * Executes the pending TSS submission and clears it.
+     */
+    public void executeTssSubmission() {
+        requireNonNull(tssSubmission).run();
+        tssSubmission = null;
+    }
 
     /**
      * When called, will start ignoring any requests for ledger signatures.
@@ -71,67 +113,75 @@ public class FakeTssBaseService implements TssBaseService {
         ignoreRequests = false;
     }
 
-    @Override
-    public void registerSchemas(@NonNull final SchemaRegistry registry) {
-        // No-op for now
+    /**
+     * Switches to using fake signatures.
+     */
+    public void useFakeSignatures() {
+        signing = Signing.FAKE;
+    }
+
+    /**
+     * Switches to using real signatures.
+     */
+    public void useRealSignatures() {
+        signing = Signing.DELEGATE;
     }
 
     @Override
     public void requestLedgerSignature(@NonNull final byte[] messageHash) {
         requireNonNull(messageHash);
-        if (ignoreRequests) {
-            return;
-        }
-        final var mockSignature = noThrowSha384HashOf(messageHash);
-        // Simulate asynchronous completion of the ledger signature
-        CompletableFuture.runAsync(() -> consumers.forEach(consumer -> {
-            try {
-                consumer.accept(messageHash, mockSignature);
-            } catch (Exception e) {
-                log.error(
-                        "Failed to provide signature {} on message {} to consumer {}",
-                        CommonUtils.hex(mockSignature),
-                        CommonUtils.hex(messageHash),
-                        consumer,
-                        e);
+        switch (signing) {
+            case FAKE -> {
+                if (ignoreRequests) {
+                    return;
+                }
+                final var mockSignature = noThrowSha384HashOf(messageHash);
+                // Simulate asynchronous completion of the ledger signature
+                CompletableFuture.runAsync(() -> consumers.forEach(consumer -> {
+                    try {
+                        consumer.accept(messageHash, mockSignature);
+                    } catch (Exception e) {
+                        log.error(
+                                "Failed to provide signature {} on message {} to consumer {}",
+                                CommonUtils.hex(mockSignature),
+                                CommonUtils.hex(messageHash),
+                                consumer,
+                                e);
+                    }
+                }));
             }
-        }));
+            case DELEGATE -> delegate.requestLedgerSignature(messageHash);
+        }
+    }
+
+    @Override
+    public void startKeyingCandidate(@NonNull final Roster roster, @NonNull final TssContext context) {
+        requireNonNull(roster);
+        requireNonNull(context);
+        delegate.startKeyingCandidate(roster, context);
+    }
+
+    @Override
+    public void registerSchemas(@NonNull final SchemaRegistry registry) {
+        delegate.registerSchemas(registry);
     }
 
     @Override
     public void registerLedgerSignatureConsumer(@NonNull final BiConsumer<byte[], byte[]> consumer) {
         requireNonNull(consumer);
         consumers.add(consumer);
+        delegate.registerLedgerSignatureConsumer(consumer);
     }
 
     @Override
     public void unregisterLedgerSignatureConsumer(@NonNull final BiConsumer<byte[], byte[]> consumer) {
         requireNonNull(consumer);
         consumers.remove(consumer);
+        delegate.unregisterLedgerSignatureConsumer(consumer);
     }
 
     @Override
     public TssHandlers tssHandlers() {
-        return new TssHandlers(
-                NoopTransactionHandler.NOOP_TRANSACTION_HANDLER, NoopTransactionHandler.NOOP_TRANSACTION_HANDLER);
-    }
-
-    private enum NoopTransactionHandler implements TransactionHandler {
-        NOOP_TRANSACTION_HANDLER;
-
-        @Override
-        public void preHandle(@NonNull final PreHandleContext context) {
-            // No-op
-        }
-
-        @Override
-        public void pureChecks(@NonNull TransactionBody txn) {
-            // No-op
-        }
-
-        @Override
-        public void handle(@NonNull HandleContext context) throws HandleException {
-            // No-op
-        }
+        return delegate.tssHandlers();
     }
 }

@@ -16,6 +16,10 @@
 
 package com.hedera.node.app.workflows.handle;
 
+import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.USER;
+import static com.hedera.node.app.workflows.prehandle.PreHandleResult.Status.SO_FAR_SO_GOOD;
+import static java.util.Objects.requireNonNull;
+
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.state.token.Account;
@@ -206,4 +210,18 @@ public interface Dispatch {
      * @return the throttling strategy
      */
     HandleContext.ConsensusThrottling throttleStrategy();
+
+    /**
+     * Returns true if the dispatch represents a node transaction. A node transaction is a transaction
+     * that is not signed by any keys and is not a child transaction, but was nonetheless judged as
+     * valid by the {@link PreHandleWorkflow}.
+     */
+    default boolean isNodeTransaction() {
+        return txnCategory() == USER
+                && preHandleResult().status() == SO_FAR_SO_GOOD
+                && requireNonNull(preHandleResult().txInfo())
+                        .signatureMap()
+                        .sigPair()
+                        .isEmpty();
+    }
 }

@@ -127,6 +127,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ForkJoinPool;
 import java.util.function.Function;
 import java.util.regex.Pattern;
 import org.apache.logging.log4j.LogManager;
@@ -526,7 +527,7 @@ public class StateChangesValidator implements BlockStreamValidator {
                         new ConsensusServiceImpl(),
                         new ContractServiceImpl(appContext),
                         new FileServiceImpl(),
-                        new TssBaseServiceImpl(appContext),
+                        new TssBaseServiceImpl(appContext, ForkJoinPool.commonPool(), ForkJoinPool.commonPool()),
                         new FreezeServiceImpl(),
                         new ScheduleServiceImpl(),
                         new TokenServiceImpl(),

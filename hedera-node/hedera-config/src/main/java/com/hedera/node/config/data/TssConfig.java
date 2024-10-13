@@ -34,5 +34,6 @@ public record TssConfig(
         @ConfigProperty(defaultValue = "5") @NetworkProperty int timesToTrySubmission,
         @ConfigProperty(defaultValue = "5s") @NetworkProperty Duration retryDelay,
         @ConfigProperty(defaultValue = "10") @NetworkProperty int distinctTxnIdsToTry,
+        @ConfigProperty(defaultValue = "false") @NetworkProperty boolean keyCandidateRoster,
         @ConfigProperty(defaultValue = "false") @NetworkProperty boolean keyActiveRoster,
         @ConfigProperty(defaultValue = "false") @NetworkProperty boolean enableLedgerId) {}

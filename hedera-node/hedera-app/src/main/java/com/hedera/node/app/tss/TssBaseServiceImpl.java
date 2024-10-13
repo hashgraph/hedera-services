@@ -19,8 +19,11 @@ package com.hedera.node.app.tss;
 import static com.hedera.node.app.hapi.utils.CommonUtils.noThrowSha384HashOf;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.state.roster.Roster;
+import com.hedera.hapi.services.auxiliary.tss.TssMessageTransactionBody;
 import com.hedera.node.app.spi.AppContext;
 import com.hedera.node.app.tss.handlers.TssHandlers;
+import com.hedera.node.app.tss.handlers.TssSubmissions;
 import com.hedera.node.app.tss.schemas.V0560TssSchema;
 import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.state.spi.SchemaRegistry;
@@ -28,15 +31,14 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.function.BiConsumer;
-import javax.inject.Inject;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
- * Placeholder for the TSS base service, added to support testing production of indirect block proofs,
- * c.f. <a href="https://github.com/hashgraph/hedera-services/issues/15379">this issue</a>.
+ * Default implementation of the {@link TssBaseService}.
  */
 public class TssBaseServiceImpl implements TssBaseService {
     private static final Logger log = LogManager.getLogger(TssBaseServiceImpl.class);
@@ -47,15 +49,19 @@ public class TssBaseServiceImpl implements TssBaseService {
      */
     private final List<BiConsumer<byte[], byte[]>> consumers = new CopyOnWriteArrayList<>();
 
-    private final TssBaseServiceComponent component;
     private final TssHandlers tssHandlers;
+    private final TssSubmissions tssSubmissions;
+    private final ExecutorService signingExecutor;
 
-    private ExecutorService executor;
-
-    public TssBaseServiceImpl(@NonNull final AppContext appContext) {
+    public TssBaseServiceImpl(
+            @NonNull final AppContext appContext,
+            @NonNull final ExecutorService signingExecutor,
+            @NonNull final Executor submissionExecutor) {
         requireNonNull(appContext);
-        component = DaggerTssBaseServiceComponent.factory().create(appContext.gossip());
+        this.signingExecutor = requireNonNull(signingExecutor);
+        final var component = DaggerTssBaseServiceComponent.factory().create(appContext.gossip(), submissionExecutor);
         tssHandlers = new TssHandlers(component.tssMessageHandler(), component.tssVoteHandler());
+        tssSubmissions = component.tssSubmissions();
     }
 
     @Override
@@ -65,10 +71,16 @@ public class TssBaseServiceImpl implements TssBaseService {
     }
 
     @Override
+    public void startKeyingCandidate(@NonNull final Roster roster, @NonNull final TssContext context) {
+        requireNonNull(roster);
+        // (TSS-FUTURE) Create a real TssMessage and body
+        tssSubmissions.submitTssMessage(TssMessageTransactionBody.DEFAULT, context);
+    }
+
+    @Override
     public void requestLedgerSignature(@NonNull final byte[] messageHash) {
         requireNonNull(messageHash);
-        requireNonNull(executor);
-        // Simulate asynchronous completion of the ledger signature
+        // (TSS-FUTURE) Initiate asynchronous process of creating a ledger signature
         final var mockSignature = noThrowSha384HashOf(messageHash);
         CompletableFuture.runAsync(
                 () -> consumers.forEach(consumer -> {
@@ -83,7 +95,7 @@ public class TssBaseServiceImpl implements TssBaseService {
                                 e);
                     }
                 }),
-                executor);
+                signingExecutor);
     }
 
     @Override
@@ -101,10 +113,5 @@ public class TssBaseServiceImpl implements TssBaseService {
     @Override
     public TssHandlers tssHandlers() {
         return tssHandlers;
-    }
-
-    @Inject
-    public void setExecutor(@NonNull final ExecutorService executor) {
-        this.executor = requireNonNull(executor);
     }
 }

@@ -30,7 +30,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class TssMessageHandlerTest {
     @Mock
-    private TssSubmissionManager submissionManager;
+    private TssSubmissions submissionManager;
 
     @Mock
     private PreHandleContext preHandleContext;
@@ -47,9 +47,9 @@ class TssMessageHandlerTest {
 
     @Test
     void nothingImplementedYet() {
-        assertThrows(UnsupportedOperationException.class, () -> subject.preHandle(preHandleContext));
-        assertThrows(UnsupportedOperationException.class, () -> subject.pureChecks(tssMessage()));
-        assertThrows(UnsupportedOperationException.class, () -> subject.handle(handleContext));
+        assertDoesNotThrow(() -> subject.preHandle(preHandleContext));
+        assertDoesNotThrow(() -> subject.pureChecks(tssMessage()));
+        assertDoesNotThrow(() -> subject.handle(handleContext));
     }
 
     private TransactionBody tssMessage() {
