@@ -21,7 +21,7 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.spi.AppContext;
 import com.hedera.node.app.tss.handlers.TssHandlers;
-import com.hedera.node.app.tss.schemas.V0560TSSSchema;
+import com.hedera.node.app.tss.schemas.V0560TssSchema;
 import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.state.spi.SchemaRegistry;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -61,7 +61,7 @@ public class TssBaseServiceImpl implements TssBaseService {
     @Override
     public void registerSchemas(@NonNull final SchemaRegistry registry) {
         requireNonNull(registry);
-        registry.register(new V0560TSSSchema());
+        registry.register(new V0560TssSchema());
     }
 
     @Override

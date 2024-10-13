@@ -22,7 +22,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
 import com.hedera.node.app.spi.AppContext;
-import com.hedera.node.app.tss.schemas.V0560TSSSchema;
+import com.hedera.node.app.tss.schemas.V0560TssSchema;
 import com.swirlds.state.spi.SchemaRegistry;
 import java.util.ArrayList;
 import java.util.List;
@@ -94,6 +94,6 @@ class TssBaseServiceImplTest {
     @Test
     void placeholderRegistersSchemas() {
         subject.registerSchemas(registry);
-        verify(registry).register(argThat(s -> s instanceof V0560TSSSchema));
+        verify(registry).register(argThat(s -> s instanceof V0560TssSchema));
     }
 }

@@ -24,11 +24,11 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 public class V0560TSSSchemaTest {
-    private V0560TSSSchema subject;
+    private V0560TssSchema subject;
 
     @BeforeEach
     void setUp() {
-        subject = new V0560TSSSchema();
+        subject = new V0560TssSchema();
     }
 
     @Test
@@ -37,7 +37,7 @@ public class V0560TSSSchemaTest {
         assertThat(statesToCreate.size()).isEqualTo(2);
         final var iter =
                 statesToCreate.stream().map(StateDefinition::stateKey).sorted().iterator();
-        assertEquals(V0560TSSSchema.TSS_MESSAGE_MAP_KEY, iter.next());
-        assertEquals(V0560TSSSchema.TSS_VOTE_MAP_KEY, iter.next());
+        assertEquals(V0560TssSchema.TSS_MESSAGE_MAP_KEY, iter.next());
+        assertEquals(V0560TssSchema.TSS_VOTE_MAP_KEY, iter.next());
     }
 }

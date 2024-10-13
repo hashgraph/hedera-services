@@ -16,6 +16,8 @@
 
 package com.hedera.node.app.spi;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.DUPLICATE_TRANSACTION;
+
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.spi.signatures.SignatureVerifier;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -35,11 +37,14 @@ public interface AppContext {
             throw new IllegalArgumentException();
         };
 
+        String DUPLICATE_TXN_ID_ERROR_MSG = "" + DUPLICATE_TRANSACTION;
+
         /**
          * Tries to submit a transaction to the network.
          * @param body the transaction to submit
-         * @throws IllegalStateException if the network is not active (hence the client can retry if they wish)
-         * @throws IllegalArgumentException if body is invalid (so the client should not retry)
+         * @throws IllegalStateException if the network is not active; so the client can retry if they wish
+         * @throws IllegalArgumentException if body is invalid; so the client should not retry this exact input, but
+         * if the exception's message is {@link #DUPLICATE_TXN_ID_ERROR_MSG}, then the client can retry with a new id
          */
         void submit(@NonNull TransactionBody body);
     }

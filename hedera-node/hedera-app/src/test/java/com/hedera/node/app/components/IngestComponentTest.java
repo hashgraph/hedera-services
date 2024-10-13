@@ -21,6 +21,7 @@ import static com.hedera.node.app.spi.AppContext.Gossip.UNAVAILBLE_GOSSIP;
 import static com.swirlds.platform.system.address.AddressBookUtils.endpointFor;
 import static java.util.concurrent.CompletableFuture.completedFuture;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 
@@ -42,8 +43,10 @@ import com.hedera.node.app.services.ServicesRegistry;
 import com.hedera.node.app.signature.AppSignatureVerifier;
 import com.hedera.node.app.signature.impl.SignatureExpanderImpl;
 import com.hedera.node.app.signature.impl.SignatureVerifierImpl;
+import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hedera.node.app.state.recordcache.RecordCacheService;
 import com.hedera.node.app.tss.TssBaseService;
+import com.hedera.node.app.tss.handlers.TssHandlers;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -75,6 +78,9 @@ class IngestComponentTest {
     @Mock
     private TssBaseService tssBaseService;
 
+    @Mock
+    private TransactionHandler transactionHandler;
+
     private HederaInjectionComponent app;
 
     @BeforeEach
@@ -99,6 +105,7 @@ class IngestComponentTest {
                         new SignatureExpanderImpl(),
                         new SignatureVerifierImpl(CryptographyHolder.get())),
                 UNAVAILBLE_GOSSIP);
+        given(tssBaseService.tssHandlers()).willReturn(new TssHandlers(transactionHandler, transactionHandler));
         app = DaggerHederaInjectionComponent.builder()
                 .configProviderImpl(configProvider)
                 .bootstrapConfigProviderImpl(new BootstrapConfigProviderImpl())

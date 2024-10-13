@@ -24,6 +24,7 @@ import static com.hedera.node.app.blocks.schemas.V0560BlockStreamSchema.BLOCK_ST
 import static com.hedera.node.app.info.UnavailableNetworkInfo.UNAVAILABLE_NETWORK_INFO;
 import static com.hedera.node.app.records.impl.BlockRecordInfoUtils.blockHashByBlockNumber;
 import static com.hedera.node.app.records.schemas.V0490BlockRecordSchema.BLOCK_INFO_STATE_KEY;
+import static com.hedera.node.app.spi.AppContext.Gossip.DUPLICATE_TXN_ID_ERROR_MSG;
 import static com.hedera.node.app.spi.workflows.record.StreamBuilder.transactionWith;
 import static com.hedera.node.app.state.merkle.VersionUtils.isSoOrdered;
 import static com.hedera.node.app.statedumpers.DumpCheckpoint.MOD_POST_EVENT_STREAM_REPLAY;
@@ -648,16 +649,16 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
     public void submit(@NonNull final TransactionBody body) {
         requireNonNull(body);
         if (platformStatus != ACTIVE) {
-            throw new IllegalStateException("Platform status is " + platformStatus);
+            throw new IllegalStateException("" + platformStatus);
         }
         try {
             final var payload = com.hedera.hapi.node.base.Transaction.PROTOBUF.toBytes(transactionWith(body));
             requireNonNull(daggerApp).submissionManager().submit(body, payload);
         } catch (PreCheckException e) {
             if (e.responseCode() == DUPLICATE_TRANSACTION) {
-                throw new IllegalArgumentException("" + DUPLICATE_TRANSACTION);
+                throw new IllegalArgumentException(DUPLICATE_TXN_ID_ERROR_MSG);
             }
-            throw new IllegalStateException("Submission failed with " + e.responseCode());
+            throw new IllegalStateException("" + e.responseCode());
         }
     }
 

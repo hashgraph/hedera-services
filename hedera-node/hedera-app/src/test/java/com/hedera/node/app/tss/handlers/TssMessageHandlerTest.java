@@ -19,7 +19,6 @@ package com.hedera.node.app.tss.handlers;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.spi.AppContext;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import org.junit.jupiter.api.BeforeEach;
@@ -31,7 +30,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class TssMessageHandlerTest {
     @Mock
-    private AppContext.Gossip gossip;
+    private TssSubmissionManager submissionManager;
 
     @Mock
     private PreHandleContext preHandleContext;
@@ -43,7 +42,7 @@ class TssMessageHandlerTest {
 
     @BeforeEach
     void setUp() {
-        subject = new TssMessageHandler(gossip);
+        subject = new TssMessageHandler(submissionManager);
     }
 
     @Test
