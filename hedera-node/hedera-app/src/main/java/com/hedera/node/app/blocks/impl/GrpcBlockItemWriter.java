@@ -51,7 +51,8 @@ public class GrpcBlockItemWriter implements BlockItemWriter {
 
     private static final Logger logger = LogManager.getLogger(GrpcBlockItemWriter.class);
     private static final String INVALID_MESSAGE = "Invalid protocol buffer converting %s from PBJ to protoc for %s";
-    private static final String GRPC_END_POINT = BlockStreamServiceGrpc.getPublishBlockStreamMethod().getBareMethodName();
+    private static final String GRPC_END_POINT =
+            BlockStreamServiceGrpc.getPublishBlockStreamMethod().getBareMethodName();
 
     private StreamObserver<PublishStreamRequest> requestObserver;
     private final GrpcServiceClient grpcServiceClient;
