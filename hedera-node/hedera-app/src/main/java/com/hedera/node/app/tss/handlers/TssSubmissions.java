@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.tss.handlers;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.DUPLICATE_TRANSACTION;
 import static com.hedera.hapi.util.HapiUtils.asTimestamp;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -45,6 +46,8 @@ import org.apache.logging.log4j.Logger;
 @Singleton
 public class TssSubmissions {
     private static final Logger log = LogManager.getLogger(TssSubmissions.class);
+
+    private static final String DUPLICATE_TRANSACTION_REASON = "" + DUPLICATE_TRANSACTION;
 
     private final AppContext.Gossip gossip;
     private final Executor submissionExecutor;
@@ -108,7 +111,7 @@ public class TssSubmissions {
                                 return;
                             } catch (IllegalArgumentException iae) {
                                 failureReason = iae.getMessage();
-                                if (AppContext.Gossip.DUPLICATE_TXN_ID_ERROR_MSG.equals(failureReason)) {
+                                if (DUPLICATE_TRANSACTION_REASON.equals(failureReason)) {
                                     validStartTime.set(validStartTime.get().plusNanos(1));
                                 } else {
                                     fatalFailure = true;

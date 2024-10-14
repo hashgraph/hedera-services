@@ -19,6 +19,7 @@ package com.hedera.node.app;
 import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_BLOCK_STREAM_INFO;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.DUPLICATE_TRANSACTION;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.PLATFORM_NOT_ACTIVE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.UNKNOWN;
 import static com.hedera.hapi.util.HapiUtils.functionOf;
 import static com.hedera.node.app.blocks.impl.BlockImplUtils.combine;
@@ -653,7 +654,7 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
     public void submit(@NonNull final TransactionBody body) {
         requireNonNull(body);
         if (platformStatus != ACTIVE) {
-            throw new IllegalStateException("" + platformStatus);
+            throw new IllegalStateException("" + PLATFORM_NOT_ACTIVE);
         }
         final HederaFunctionality function;
         try {
@@ -671,10 +672,13 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
             final var payload = com.hedera.hapi.node.base.Transaction.PROTOBUF.toBytes(nodeTransactionWith(body));
             requireNonNull(daggerApp).submissionManager().submit(body, payload);
         } catch (PreCheckException e) {
-            if (e.responseCode() == DUPLICATE_TRANSACTION) {
-                throw new IllegalArgumentException(DUPLICATE_TXN_ID_ERROR_MSG);
+            final var reason = e.responseCode();
+            if (reason == DUPLICATE_TRANSACTION) {
+                // In this case the client must not retry with the same transaction, but
+                // could retry with a different transaction id if desired.
+                throw new IllegalArgumentException("" + DUPLICATE_TRANSACTION);
             }
-            throw new IllegalStateException("" + e.responseCode());
+            throw new IllegalStateException("" + reason);
         }
     }
 

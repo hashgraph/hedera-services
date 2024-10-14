@@ -16,9 +16,9 @@
 
 package com.hedera.node.app.tss.handlers;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.DUPLICATE_TRANSACTION;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NODE_ACCOUNT;
 import static com.hedera.hapi.util.HapiUtils.asTimestamp;
-import static com.hedera.node.app.spi.AppContext.Gossip.DUPLICATE_TXN_ID_ERROR_MSG;
 import static com.swirlds.platform.system.status.PlatformStatus.BEHIND;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -53,7 +53,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class TssSubmissionManagerTest {
+class TssSubmissionsTest {
     private static final int TIMES_TO_TRY_SUBMISSION = 3;
     private static final int DISTINCT_TXN_IDS_TO_TRY = 2;
     private static final String RETRY_DELAY = "1ms";
@@ -118,7 +118,7 @@ class TssSubmissionManagerTest {
 
     @Test
     void immediatelyRetriesOnDuplicateIae() throws ExecutionException, InterruptedException, TimeoutException {
-        doThrow(new IllegalArgumentException(DUPLICATE_TXN_ID_ERROR_MSG))
+        doThrow(new IllegalArgumentException("" + DUPLICATE_TRANSACTION))
                 .when(gossip)
                 .submit(voteSubmission(0));
 
@@ -131,7 +131,7 @@ class TssSubmissionManagerTest {
 
     @Test
     void failsImmediatelyOnHittingNonDuplicateIae() throws ExecutionException, InterruptedException, TimeoutException {
-        doThrow(new IllegalArgumentException(DUPLICATE_TXN_ID_ERROR_MSG))
+        doThrow(new IllegalArgumentException("" + DUPLICATE_TRANSACTION))
                 .when(gossip)
                 .submit(messageSubmission(0));
         doThrow(new IllegalArgumentException("" + INVALID_NODE_ACCOUNT))

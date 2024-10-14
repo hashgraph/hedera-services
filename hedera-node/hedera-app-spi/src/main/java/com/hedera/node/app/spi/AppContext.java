@@ -16,8 +16,9 @@
 
 package com.hedera.node.app.spi;
 
-import static com.hedera.hapi.node.base.ResponseCodeEnum.DUPLICATE_TRANSACTION;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.FAIL_INVALID;
 
+import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.spi.signatures.SignatureVerifier;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -32,19 +33,20 @@ public interface AppContext {
      * The {@link Gossip} interface is used to submit transactions to the network.
      */
     interface Gossip {
+        /**
+         * A {@link Gossip} that throws an exception indicating it should never have been used; for example,
+         * if the client code was running in a standalone mode.
+         */
         Gossip UNAVAILABLE_GOSSIP = body -> {
-            // Tells client code not to retry as gossip is unavailable; e.g. in a standalone execution environment
-            throw new IllegalArgumentException();
+            throw new IllegalArgumentException("" + FAIL_INVALID);
         };
 
-        String DUPLICATE_TXN_ID_ERROR_MSG = "" + DUPLICATE_TRANSACTION;
-
         /**
-         * Tries to submit a transaction to the network.
+         * Attempts to submit the given transaction to the network.
          * @param body the transaction to submit
-         * @throws IllegalStateException if the network is not active; so the client can retry if they wish
-         * @throws IllegalArgumentException if body is invalid; so the client should not retry this exact input, but
-         * if the exception's message is {@link #DUPLICATE_TXN_ID_ERROR_MSG}, then the client can retry with a new id
+         * @throws IllegalStateException if the network is not active; the client should retry later
+         * @throws IllegalArgumentException if body is invalid; so the client can retry immediately with a
+         * different transaction id if the exception's message is {@link ResponseCodeEnum#DUPLICATE_TRANSACTION}
          */
         void submit(@NonNull TransactionBody body);
     }
