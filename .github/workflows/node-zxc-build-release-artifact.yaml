@@ -138,7 +138,9 @@ jobs:
           node-version: 'lts/*'
 
       - name: Install dependencies
-        run: npm ci
+        run: |
+          npm ci
+          npm install --save-dev @semantic-release/changelog @semantic-release/git
 
       - name: Determine Version
         id: semantic
