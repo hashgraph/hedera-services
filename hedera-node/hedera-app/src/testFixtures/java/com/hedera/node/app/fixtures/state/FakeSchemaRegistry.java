@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.fixtures.state;
 
+import static com.hedera.node.app.fixtures.AppTestBase.DEFAULT_CONFIG;
 import static com.hedera.node.app.state.merkle.SchemaApplicationType.MIGRATION;
 import static com.hedera.node.app.state.merkle.SchemaApplicationType.RESTART;
 import static com.hedera.node.app.state.merkle.SchemaApplicationType.STATE_DEFINITIONS;
@@ -29,7 +30,6 @@ import com.hedera.node.app.spi.state.FilteredReadableStates;
 import com.hedera.node.app.spi.state.FilteredWritableStates;
 import com.hedera.node.app.state.merkle.SchemaApplications;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.state.spi.MigrationContext;
 import com.swirlds.state.spi.ReadableStates;
 import com.swirlds.state.spi.Schema;
@@ -69,14 +69,7 @@ public class FakeSchemaRegistry implements SchemaRegistry {
     @SuppressWarnings("rawtypes")
     public void migrate(
             @NonNull final String serviceName, @NonNull final FakeState state, @NonNull final NetworkInfo networkInfo) {
-        migrate(
-                serviceName,
-                state,
-                CURRENT_VERSION,
-                networkInfo,
-                ConfigurationBuilder.create().build(),
-                new HashMap<>(),
-                new AtomicLong());
+        migrate(serviceName, state, CURRENT_VERSION, networkInfo, DEFAULT_CONFIG, new HashMap<>(), new AtomicLong());
     }
 
     public void migrate(

@@ -57,7 +57,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class StakeInfoHelperTest {
-    private static final Configuration DEFAULT_CONFIG = HederaTestConfigBuilder.createConfig();
+    public static final Configuration DEFAULT_CONFIG = HederaTestConfigBuilder.createConfig();
 
     private WritableStakingInfoStore infoStore;
 
