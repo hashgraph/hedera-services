@@ -31,8 +31,7 @@ import java.util.NoSuchElementException;
 import java.util.Objects;
 import org.apache.commons.codec.binary.Hex;
 import org.bouncycastle.jcajce.provider.digest.Keccak;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.bouncycastle.util.BigIntegers;
 
 public record EthTxData(
         byte[] rawTx,
@@ -47,12 +46,10 @@ public record EthTxData(
         BigInteger value, // weibar, always positive - note that high-bit might be ON in RLP encoding: still positive
         byte[] callData,
         byte[] accessList,
-        int recId,
-        byte[] v,
+        int recId, // "recovery id" part of a v,r,s ECDSA signature - range 0..1
+        byte[] v, // actual `v` value, incoming, recovery id (`recId` above) (possibly) encoded with chain id
         byte[] r,
         byte[] s) {
-
-    private static final Logger log = LogManager.getLogger(EthTxData.class);
 
     /**
      * A "wiebar" is 10⁻¹⁸ of an hbar.  The relationship is weibar : hbar as wei : ether.  Ethereum
@@ -157,6 +154,11 @@ public record EthTxData(
                 r,
                 s);
     }
+
+    // For more information on "recovery id" see
+    // https://coinsbench.com/understanding-digital-signatures-the-role-of-v-r-s-in-cryptographic-security-and-signature-b9d2b89bbc0c
+
+    // For more information on encoding `v` see EIP-155 - https://eips.ethereum.org/EIPS/eip-155
 
     public byte[] encodeTx() {
         if (accessList != null && accessList.length > 0) {
@@ -339,17 +341,9 @@ public record EthTxData(
     }
 
     public boolean matchesChainId(final byte[] hederaChainId) {
-        log.info("DEBUGGED CHAIN ID", chainId);
         // first two checks handle the unprotected ethereum transactions
-        // before EIP155 - source: [https://eips.ethereum.org/EIPS/eip-155](https://eips.ethereum.org/EIPS/eip-155)
-        if (chainId == null || chainId.length == 0) {
-            return true;
-        }
-
-        // Convert both chain IDs to BigInteger for comparison
-        BigInteger parsedHederaChainId = new BigInteger(1, hederaChainId);
-        BigInteger parsedChainId = new BigInteger(1, chainId);
-        return parsedHederaChainId.equals(parsedChainId);
+        // before EIP155 - source: https://eips.ethereum.org/EIPS/eip-155
+        return chainId == null || chainId.length == 0 || Arrays.compare(chainId, hederaChainId) == 0;
     }
 
     @VisibleForTesting
@@ -392,7 +386,7 @@ public record EthTxData(
         if (vBI.compareTo(BigInteger.valueOf(34)) > 0) {
             // after EIP155 the chain id is equal to
             // CHAIN_ID = (v - {0,1} - 35) / 2
-            chainId = vBI.subtract(BigInteger.valueOf(35)).shiftRight(1).toByteArray();
+            chainId = BigIntegers.asUnsignedByteArray(vBI.subtract(BigInteger.valueOf(35)).shiftRight(1));
         } else if (isLegacyUnprotectedEtx(vBI)) {
             // before EIP155 the chain id is considered equal to 0
             chainId = new byte[0];
