@@ -24,7 +24,7 @@ import static com.hedera.node.app.ids.schemas.V0490EntityIdSchema.ENTITY_ID_STAT
 import static com.hedera.node.app.service.file.impl.schemas.V0490FileSchema.dispatchSynthFileUpdate;
 import static com.hedera.node.app.service.file.impl.schemas.V0490FileSchema.parseConfigList;
 import static com.hedera.node.app.service.token.impl.handlers.staking.StakingRewardsHelper.asAccountAmounts;
-import static com.hedera.node.app.spi.workflows.record.StreamBuilder.childTransactionWith;
+import static com.hedera.node.app.spi.workflows.record.StreamBuilder.transactionWith;
 import static com.hedera.node.app.util.FileUtilities.createFileID;
 import static java.util.Objects.requireNonNull;
 
@@ -391,7 +391,7 @@ public class SystemSetup {
                 bodyBuilder.memo(recordMemo);
             }
             final var body = bodyBuilder.build();
-            recordBuilder.transaction(childTransactionWith(body));
+            recordBuilder.transaction(transactionWith(body));
 
             final var balance = account.tinybarBalance();
             if (balance != 0) {

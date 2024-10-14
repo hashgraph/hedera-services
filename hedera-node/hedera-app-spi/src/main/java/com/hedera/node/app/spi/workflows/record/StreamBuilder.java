@@ -245,7 +245,7 @@ public interface StreamBuilder {
      * @param body the transaction body
      * @return the transaction
      */
-    static Transaction childTransactionWith(@NonNull final TransactionBody body) {
+    static Transaction transactionWith(@NonNull final TransactionBody body) {
         requireNonNull(body);
         return transactionWith(body, null);
     }

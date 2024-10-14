@@ -32,7 +32,7 @@ public interface AppContext {
      * The {@link Gossip} interface is used to submit transactions to the network.
      */
     interface Gossip {
-        Gossip UNAVAILBLE_GOSSIP = body -> {
+        Gossip UNAVAILABLE_GOSSIP = body -> {
             // Tells client code not to retry as gossip is unavailable; e.g. in a standalone execution environment
             throw new IllegalArgumentException();
         };

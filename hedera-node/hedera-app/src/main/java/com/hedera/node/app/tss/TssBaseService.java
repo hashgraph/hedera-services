@@ -29,15 +29,31 @@ import java.time.Instant;
 import java.util.function.BiConsumer;
 
 /**
- * The TssBaseService will attempt to generate TSS key material for any set candidate roster, giving it a ledger id and
- * the ability to generate ledger signatures that can be verified by the ledger id.  Once the candidate roster has
- * received its full TSS key material, it can be made available for adoption by the platform.
+ * Provides the network's threshold signature scheme (TSS) capability and, as a side effect, the ledger id, as this
+ * is the exactly the same as the TSS public key.
  * <p>
- * The TssBaseService will also attempt to generate ledger signatures by aggregating share signatures produced by
- * calling {@link #requestLedgerSignature(byte[])}.
+ * The
  */
 public interface TssBaseService extends Service {
     String NAME = "TssBaseService";
+
+    /**
+     * The current phase of the TSS service.
+     */
+    enum Phase {
+        /**
+         * The TSS service is starting up .
+         */
+        STARTUP,
+        /**
+         * The TSS service is creating initial key material (and hence the ledger id).
+         */
+        BOOTSTRAP,
+        /**
+         * The TSS service is ready to sign.
+         */
+        READY,
+    }
 
     /**
      * Context for TSS operations.

@@ -23,7 +23,7 @@ import static com.hedera.node.app.service.token.impl.handlers.staking.EndOfStaki
 import static com.hedera.node.app.service.token.impl.handlers.staking.EndOfStakingPeriodUtils.newNodeStakeUpdateBuilder;
 import static com.hedera.node.app.service.token.impl.handlers.staking.StakingUtilities.roundedToHbar;
 import static com.hedera.node.app.service.token.impl.handlers.staking.StakingUtilities.totalStake;
-import static com.hedera.node.app.spi.workflows.record.StreamBuilder.childTransactionWith;
+import static com.hedera.node.app.spi.workflows.record.StreamBuilder.transactionWith;
 import static java.util.Collections.nCopies;
 import static java.util.Objects.requireNonNull;
 
@@ -248,7 +248,7 @@ public class StakeInfoHelper {
                 POST_UPGRADE_MEMO);
         log.info("Exporting:\n{}", nodeStakes);
         return context.addPrecedingChildRecordBuilder(NodeStakeUpdateStreamBuilder.class)
-                .transaction(childTransactionWith(syntheticNodeStakeUpdateTxn.build()))
+                .transaction(transactionWith(syntheticNodeStakeUpdateTxn.build()))
                 .memo(POST_UPGRADE_MEMO)
                 .status(SUCCESS);
     }

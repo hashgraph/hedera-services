@@ -18,7 +18,7 @@ package com.hedera.node.app.service.contract.impl.exec.scope;
 
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.tuweniToPbjBytes;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.CHILD;
-import static com.hedera.node.app.spi.workflows.record.StreamBuilder.childTransactionWith;
+import static com.hedera.node.app.spi.workflows.record.StreamBuilder.transactionWith;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -98,7 +98,7 @@ public class HandleSystemContractOperations implements SystemContractOperations 
 
         return context.savepointStack()
                 .addChildRecordBuilder(ContractCallStreamBuilder.class)
-                .transaction(childTransactionWith(syntheticBody))
+                .transaction(transactionWith(syntheticBody))
                 .status(preemptingStatus);
     }
 
@@ -141,7 +141,7 @@ public class HandleSystemContractOperations implements SystemContractOperations 
                 .transactionID(TransactionID.DEFAULT)
                 .contractCall(contractCallBodyBuilder.build())
                 .build();
-        return childTransactionWith(transactionBody);
+        return transactionWith(transactionBody);
     }
 
     /**

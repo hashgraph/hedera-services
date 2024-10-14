@@ -16,7 +16,7 @@
 
 package com.hedera.node.app.workflows.standalone;
 
-import static com.hedera.node.app.spi.AppContext.Gossip.UNAVAILBLE_GOSSIP;
+import static com.hedera.node.app.spi.AppContext.Gossip.UNAVAILABLE_GOSSIP;
 import static com.hedera.node.app.workflows.standalone.impl.NoopVerificationStrategies.NOOP_VERIFICATION_STRATEGIES;
 
 import com.hedera.node.app.config.BootstrapConfigProviderImpl;
@@ -91,7 +91,7 @@ public enum TransactionExecutors {
                         bootstrapConfigProvider.getConfiguration().getConfigData(HederaConfig.class),
                         new SignatureExpanderImpl(),
                         new SignatureVerifierImpl(CryptographyHolder.get())),
-                UNAVAILBLE_GOSSIP);
+                UNAVAILABLE_GOSSIP);
         final var tssBaseService =
                 new TssBaseServiceImpl(appContext, ForkJoinPool.commonPool(), ForkJoinPool.commonPool());
         final var contractService = new ContractServiceImpl(appContext, NOOP_VERIFICATION_STRATEGIES, tracerBinding);

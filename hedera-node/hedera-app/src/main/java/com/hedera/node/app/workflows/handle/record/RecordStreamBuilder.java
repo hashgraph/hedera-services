@@ -416,7 +416,7 @@ public class RecordStreamBuilder
         final var newTransactionID = transactionID;
         final var body =
                 inProgressBody().copyBuilder().transactionID(newTransactionID).build();
-        this.transaction = StreamBuilder.childTransactionWith(body);
+        this.transaction = StreamBuilder.transactionWith(body);
         this.transactionBytes = transaction.signedTransactionBytes();
         return this;
     }
