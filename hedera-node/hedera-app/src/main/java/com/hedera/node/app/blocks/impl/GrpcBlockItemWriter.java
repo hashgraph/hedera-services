@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.blocks.impl;
 
+import static com.hedera.hapi.block.protoc.PublishStreamResponseCode.STREAM_ITEMS_UNKNOWN;
 import static io.grpc.Status.fromThrowable;
 import static java.util.Objects.requireNonNull;
 
@@ -25,6 +26,7 @@ import com.hedera.hapi.block.protoc.BlockStreamServiceGrpc;
 import com.hedera.hapi.block.protoc.PublishStreamRequest;
 import com.hedera.hapi.block.protoc.PublishStreamResponse;
 import com.hedera.hapi.block.protoc.PublishStreamResponse.Acknowledgement;
+import com.hedera.hapi.block.protoc.PublishStreamResponse.EndOfStream;
 import com.hedera.hapi.block.stream.protoc.BlockItem;
 import com.hedera.node.app.blocks.BlockItemWriter;
 import com.hedera.node.config.data.BlockStreamConfig;
@@ -126,6 +128,17 @@ public class GrpcBlockItemWriter implements BlockItemWriter {
                                 "PublishStreamResponse: a single block item is received: {}",
                                 acknowledgement.getItemAck());
                     }
+                } else if (streamResponse.hasStatus()) {
+                    final EndOfStream endOfStream = streamResponse.getStatus();
+                    if (endOfStream.getStatus().equals(STREAM_ITEMS_UNKNOWN)) {
+                        logger.info(
+                                "Error returned from block node at block number {}: {}",
+                                endOfStream.getBlockNumber(),
+                                endOfStream);
+                        onNext(PublishStreamResponse.newBuilder()
+                                .setStatus(endOfStream)
+                                .build());
+                    }
                 }
             }
 
@@ -140,6 +153,7 @@ public class GrpcBlockItemWriter implements BlockItemWriter {
             @Override
             public void onCompleted() {
                 logger.info("PublishStreamResponse completed");
+                requestObserver.onCompleted();
             }
         });
         this.state = State.OPEN;
