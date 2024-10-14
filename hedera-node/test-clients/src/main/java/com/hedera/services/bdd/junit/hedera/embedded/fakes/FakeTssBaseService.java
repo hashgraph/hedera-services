@@ -21,19 +21,23 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.node.app.spi.AppContext;
+import com.hedera.node.app.tss.ReadableTssBaseStore;
 import com.hedera.node.app.tss.TssBaseService;
 import com.hedera.node.app.tss.TssBaseServiceImpl;
 import com.hedera.node.app.tss.handlers.TssHandlers;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.state.spi.SchemaRegistry;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
+import java.util.ArrayDeque;
 import java.util.List;
+import java.util.Queue;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ForkJoinPool;
 import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -75,11 +79,10 @@ public class FakeTssBaseService implements TssBaseService {
 
     private boolean ignoreRequests = false;
 
-    @Nullable
-    private Runnable tssSubmission = null;
+    private final Queue<Runnable> pendingTssSubmission = new ArrayDeque<>();
 
     public FakeTssBaseService(@NonNull final AppContext appContext) {
-        delegate = new TssBaseServiceImpl(appContext, ForkJoinPool.commonPool(), r -> tssSubmission = r);
+        delegate = new TssBaseServiceImpl(appContext, ForkJoinPool.commonPool(), pendingTssSubmission::offer);
     }
 
     /**
@@ -88,15 +91,14 @@ public class FakeTssBaseService implements TssBaseService {
      * @return if the fake TSS base service has a pending TSS submission
      */
     public boolean hasTssSubmission() {
-        return tssSubmission != null;
+        return !pendingTssSubmission.isEmpty();
     }
 
     /**
      * Executes the pending TSS submission and clears it.
      */
-    public void executeTssSubmission() {
-        requireNonNull(tssSubmission).run();
-        tssSubmission = null;
+    public void executeNextTssSubmission() {
+        requireNonNull(pendingTssSubmission.poll()).run();
     }
 
     /**
@@ -125,6 +127,34 @@ public class FakeTssBaseService implements TssBaseService {
      */
     public void useRealSignatures() {
         signing = Signing.DELEGATE;
+    }
+
+    @Override
+    public Status getStatus(
+            @NonNull final Roster roster,
+            @NonNull final Bytes ledgerId,
+            @NonNull final ReadableTssBaseStore tssBaseStore) {
+        requireNonNull(roster);
+        requireNonNull(ledgerId);
+        requireNonNull(tssBaseStore);
+        return delegate.getStatus(roster, ledgerId, tssBaseStore);
+    }
+
+    @Override
+    public void adopt(@NonNull final Roster roster) {
+        requireNonNull(roster);
+        delegate.adopt(roster);
+    }
+
+    @Override
+    public void bootstrapLedgerId(
+            @NonNull final Roster roster,
+            @NonNull final TssContext context,
+            @NonNull final Consumer<Bytes> ledgerIdConsumer) {
+        requireNonNull(roster);
+        requireNonNull(context);
+        requireNonNull(ledgerIdConsumer);
+        delegate.bootstrapLedgerId(roster, context, ledgerIdConsumer);
     }
 
     @Override

@@ -16,11 +16,17 @@
 
 package com.hedera.node.app.tss.handlers;
 
+import static com.hedera.node.app.fixtures.AppTestBase.DEFAULT_CONFIG;
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.BDDMockito.given;
 
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
+import com.swirlds.state.spi.info.NetworkInfo;
+import com.swirlds.state.spi.info.NodeInfo;
+import java.time.Instant;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -29,6 +35,10 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class TssMessageHandlerTest {
+    private static final AccountID NODE_ACCOUNT_ID =
+            AccountID.newBuilder().accountNum(666L).build();
+    private static final Instant CONSENSUS_NOW = Instant.ofEpochSecond(1_234_567L, 890);
+
     @Mock
     private TssSubmissions submissionManager;
 
@@ -37,6 +47,12 @@ class TssMessageHandlerTest {
 
     @Mock
     private HandleContext handleContext;
+
+    @Mock
+    private NodeInfo nodeInfo;
+
+    @Mock
+    private NetworkInfo networkInfo;
 
     private TssMessageHandler subject;
 
@@ -49,7 +65,17 @@ class TssMessageHandlerTest {
     void nothingImplementedYet() {
         assertDoesNotThrow(() -> subject.preHandle(preHandleContext));
         assertDoesNotThrow(() -> subject.pureChecks(tssMessage()));
-        assertDoesNotThrow(() -> subject.handle(handleContext));
+    }
+
+    @Test
+    void submitsToyVoteOnHandlingMessage() {
+        given(handleContext.networkInfo()).willReturn(networkInfo);
+        given(handleContext.consensusNow()).willReturn(CONSENSUS_NOW);
+        given(handleContext.configuration()).willReturn(DEFAULT_CONFIG);
+        given(networkInfo.selfNodeInfo()).willReturn(nodeInfo);
+        given(nodeInfo.accountId()).willReturn(NODE_ACCOUNT_ID);
+
+        subject.handle(handleContext);
     }
 
     private TransactionBody tssMessage() {

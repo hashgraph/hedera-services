@@ -45,6 +45,8 @@ import com.hedera.services.bdd.junit.RepeatableHapiTest;
 import com.hedera.services.bdd.junit.hedera.embedded.fakes.FakeTssBaseService;
 import com.hedera.services.bdd.spec.utilops.streams.assertions.BlockStreamAssertion;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.IntConsumer;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DynamicTest;
@@ -87,8 +89,10 @@ public class RepeatableTssTests {
     }
 
     /**
-     * Validates the embedded node generates a {@link TssMessageTransactionBody} that is successfully handled by the
-     * {@link com.hedera.node.app.tss.handlers.TssMessageHandler} on the first transaction in a staking period.
+     * Validates that after the first transaction in a staking period, the embedded node generates a
+     * {@link TssMessageTransactionBody} which then triggers a successful {@link TssVoteTransactionBody}.
+     * This is a trivial placeholder for he real TSS rekeying process that begins on the first transaction
+     * in a staking period.
      * <p>
      * <b>TODO:</b> Continue the rekeying happy path after the successful TSS message.
      * <ol>
@@ -106,25 +110,35 @@ public class RepeatableTssTests {
             overrides = {"tss.keyCandidateRoster"})
     Stream<DynamicTest> tssMessageSubmittedForRekeyingIsSuccessful() {
         return hapiTest(
-                blockStreamMustIncludePassFrom(spec -> successfulTssMessage()),
+                blockStreamMustIncludePassFrom(spec -> successfulTssMessageThenVote()),
                 // Current TSS default is not to try to key the candidate
                 overriding("tss.keyCandidateRoster", "true"),
                 doWithStartupConfig(
                         "staking.periodMins",
                         stakePeriodMins -> waitUntilStartOfNextStakingPeriod(parseLong(stakePeriodMins))),
                 // This transaction is now first in a new staking period and should trigger the TSS rekeying process,
-                // in particular a successful TssMessage from the embedded node
+                // in particular a successful TssMessage from the embedded node (and then a TssVote since this is our
+                // placeholder implementation of TssMessageHandler)
                 cryptoCreate("rekeyingTransaction"));
     }
 
     /**
-     * Returns an assertion that only passes when it has seen a successful TSS message in the block stream.
+     * Returns an assertion that only passes when it has seen a successful TSS message follows by a successful
+     * TSS vote in the block stream.
      *
      * @return the assertion
      */
-    private static BlockStreamAssertion successfulTssMessage() {
+    private static BlockStreamAssertion successfulTssMessageThenVote() {
+        final var sawTssMessage = new AtomicBoolean(false);
         return block -> {
             final var items = block.items();
+            final IntConsumer assertSuccessResultAt = i -> {
+                assertTrue(i < items.size(), "Missing transaction result");
+                final var resultItem = items.get(i);
+                assertTrue(resultItem.hasTransactionResult(), "Misplaced transaction result");
+                final var result = resultItem.transactionResultOrThrow();
+                assertEquals(SUCCESS, result.status());
+            };
             for (int i = 0, n = items.size(); i < n; i++) {
                 final var item = items.get(i);
                 if (item.hasEventTransaction()) {
@@ -134,11 +148,11 @@ public class RepeatableTssTests {
                         final var signedTxn = SignedTransaction.PROTOBUF.parse(wrapper.signedTransactionBytes());
                         final var txn = TransactionBody.PROTOBUF.parse(signedTxn.bodyBytes());
                         if (txn.hasTssMessage()) {
-                            assertTrue(i + 1 < items.size(), "Missing transaction result");
-                            final var resultItem = items.get(i + 1);
-                            assertTrue(resultItem.hasTransactionResult(), "Misplaced transaction result");
-                            final var result = resultItem.transactionResultOrThrow();
-                            assertEquals(SUCCESS, result.status());
+                            assertSuccessResultAt.accept(i + 1);
+                            sawTssMessage.set(true);
+                        } else if (txn.hasTssVote()) {
+                            assertTrue(sawTssMessage.get(), "Vote seen before message");
+                            assertSuccessResultAt.accept(i + 1);
                             return true;
                         }
                     } catch (ParseException e) {

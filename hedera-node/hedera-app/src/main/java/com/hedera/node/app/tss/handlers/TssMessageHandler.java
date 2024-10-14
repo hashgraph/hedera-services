@@ -20,17 +20,19 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.hapi.services.auxiliary.tss.TssMessageTransactionBody;
+import com.hedera.hapi.services.auxiliary.tss.TssVoteTransactionBody;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
+import com.hedera.node.app.tss.TssBaseService.TssContext;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
 /**
- * Validates and responds to a {@link TssMessageTransactionBody}.
+ * Validates and potentially responds with a vote to a {@link TssMessageTransactionBody}.
  */
 @Singleton
 public class TssMessageHandler implements TransactionHandler {
@@ -57,5 +59,6 @@ public class TssMessageHandler implements TransactionHandler {
     public void handle(@NonNull final HandleContext context) throws HandleException {
         requireNonNull(context);
         // (TSS-FUTURE) Implement this method
+        submissionManager.submitTssVote(TssVoteTransactionBody.DEFAULT, TssContext.from(context));
     }
 }

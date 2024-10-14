@@ -124,6 +124,7 @@ public class NodeStakeUpdates {
             if (tssConfig.keyCandidateRoster()) {
                 final var context =
                         new TssContext(config, networkInfo.selfNodeInfo().accountId(), tokenContext.consensusTime());
+                // (TSS-FUTURE) Start keying the actual candidate roster from the RosterService
                 tssBaseService.startKeyingCandidate(Roster.DEFAULT, context);
             }
         }

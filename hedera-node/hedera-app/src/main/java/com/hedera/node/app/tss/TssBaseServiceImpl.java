@@ -17,6 +17,7 @@
 package com.hedera.node.app.tss;
 
 import static com.hedera.node.app.hapi.utils.CommonUtils.noThrowSha384HashOf;
+import static com.hedera.node.app.tss.TssBaseService.Status.PENDING_LEDGER_ID;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.state.roster.Roster;
@@ -24,16 +25,20 @@ import com.hedera.hapi.services.auxiliary.tss.TssMessageTransactionBody;
 import com.hedera.node.app.spi.AppContext;
 import com.hedera.node.app.tss.handlers.TssHandlers;
 import com.hedera.node.app.tss.handlers.TssSubmissions;
-import com.hedera.node.app.tss.schemas.V0560TssSchema;
+import com.hedera.node.app.tss.schemas.V0560TssBaseSchema;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.utility.CommonUtils;
+import com.swirlds.platform.roster.RosterUtils;
 import com.swirlds.state.spi.SchemaRegistry;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -53,6 +58,12 @@ public class TssBaseServiceImpl implements TssBaseService {
     private final TssSubmissions tssSubmissions;
     private final ExecutorService signingExecutor;
 
+    /**
+     * The hash of the active roster being used to sign with the ledger private key.
+     */
+    @Nullable
+    private Bytes activeRosterHash;
+
     public TssBaseServiceImpl(
             @NonNull final AppContext appContext,
             @NonNull final ExecutorService signingExecutor,
@@ -67,7 +78,37 @@ public class TssBaseServiceImpl implements TssBaseService {
     @Override
     public void registerSchemas(@NonNull final SchemaRegistry registry) {
         requireNonNull(registry);
-        registry.register(new V0560TssSchema());
+        registry.register(new V0560TssBaseSchema());
+    }
+
+    @Override
+    public Status getStatus(
+            @NonNull final Roster roster,
+            @NonNull final Bytes ledgerId,
+            @NonNull final ReadableTssBaseStore tssBaseStore) {
+        requireNonNull(roster);
+        requireNonNull(ledgerId);
+        requireNonNull(tssBaseStore);
+        // (TSS-FUTURE) Determine if the given ledger id can be recovered from the key material for the given roster
+        return PENDING_LEDGER_ID;
+    }
+
+    @Override
+    public void adopt(@NonNull final Roster roster) {
+        requireNonNull(roster);
+        activeRosterHash = RosterUtils.hash(roster).getBytes();
+    }
+
+    @Override
+    public void bootstrapLedgerId(
+            @NonNull final Roster roster,
+            @NonNull final TssContext context,
+            @NonNull final Consumer<Bytes> ledgerIdConsumer) {
+        requireNonNull(roster);
+        requireNonNull(context);
+        requireNonNull(ledgerIdConsumer);
+        // (TSS-FUTURE) Create a real ledger id
+        ledgerIdConsumer.accept(Bytes.EMPTY);
     }
 
     @Override

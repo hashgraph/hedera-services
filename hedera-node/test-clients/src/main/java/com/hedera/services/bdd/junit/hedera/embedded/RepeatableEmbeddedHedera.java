@@ -96,9 +96,9 @@ class RepeatableEmbeddedHedera extends AbstractEmbeddedHedera implements Embedde
         if (response.getNodeTransactionPrecheckCode() == OK) {
             handleNextRound();
             // If handling this transaction scheduled TSS work, do it synchronously as well
-            if (tssBaseService.hasTssSubmission()) {
+            while (tssBaseService.hasTssSubmission()) {
                 platform.lastCreatedEvent = null;
-                tssBaseService.executeTssSubmission();
+                tssBaseService.executeNextTssSubmission();
                 if (platform.lastCreatedEvent != null) {
                     handleNextRound();
                 }

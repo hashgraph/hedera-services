@@ -29,7 +29,7 @@ import java.util.Set;
 /**
  * Schema for the TSS service.
  */
-public class V0560TssSchema extends Schema {
+public class V0560TssBaseSchema extends Schema {
     public static final String TSS_MESSAGE_MAP_KEY = "TSS_MESSAGES";
     public static final String TSS_VOTE_MAP_KEY = "TSS_VOTES";
     /**
@@ -49,7 +49,7 @@ public class V0560TssSchema extends Schema {
     /**
      * Create a new instance
      */
-    public V0560TssSchema() {
+    public V0560TssBaseSchema() {
         super(VERSION);
     }
 
