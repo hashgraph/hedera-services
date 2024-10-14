@@ -77,6 +77,7 @@ import com.swirlds.state.spi.WritableKVState;
 import com.swirlds.state.spi.WritableQueueState;
 import com.swirlds.state.spi.WritableSingletonState;
 import com.swirlds.state.spi.WritableStates;
+import com.swirlds.state.test.fixtures.StringRecord;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.ArrayList;
@@ -542,10 +543,10 @@ class MerkleStateRootTest extends MerkleTestBase {
             assertThat(states.isEmpty()).isFalse();
             assertThat(states.size()).isEqualTo(4); // animal and fruit and country and steam
 
-            final ReadableKVState<String, String> fruitState = states.get(FRUIT_STATE_KEY);
+            final ReadableKVState<String, StringRecord> fruitState = states.get(FRUIT_STATE_KEY);
             assertFruitState(fruitState);
 
-            final ReadableKVState<String, String> animalState = states.get(ANIMAL_STATE_KEY);
+            final ReadableKVState<String, StringRecord> animalState = states.get(ANIMAL_STATE_KEY);
             assertAnimalState(animalState);
 
             final ReadableSingletonState<String> countryState = states.getSingleton(COUNTRY_STATE_KEY);
@@ -580,7 +581,7 @@ class MerkleStateRootTest extends MerkleTestBase {
                     .isInstanceOf(ClassCastException.class);
         }
 
-        private static void assertFruitState(ReadableKVState<String, String> fruitState) {
+        private static void assertFruitState(ReadableKVState<String, StringRecord> fruitState) {
             assertThat(fruitState).isNotNull();
             assertThat(fruitState.get(A_KEY)).isSameAs(APPLE);
             assertThat(fruitState.get(B_KEY)).isSameAs(BANANA);
@@ -591,7 +592,7 @@ class MerkleStateRootTest extends MerkleTestBase {
             assertThat(fruitState.get(G_KEY)).isNull();
         }
 
-        private void assertAnimalState(ReadableKVState<String, String> animalState) {
+        private void assertAnimalState(ReadableKVState<String, StringRecord> animalState) {
             assertThat(animalState).isNotNull();
             assertThat(animalState.get(A_KEY)).isNull();
             assertThat(animalState.get(B_KEY)).isNull();
@@ -740,7 +741,7 @@ class MerkleStateRootTest extends MerkleTestBase {
             assertThat(states.isEmpty()).isFalse();
             assertThat(states.size()).isEqualTo(4);
 
-            final WritableKVState<String, String> fruitStates = states.get(FRUIT_STATE_KEY);
+            final WritableKVState<String, StringRecord> fruitStates = states.get(FRUIT_STATE_KEY);
             assertThat(fruitStates).isNotNull();
 
             final var animalStates = states.get(ANIMAL_STATE_KEY);

@@ -36,7 +36,7 @@ public interface WritableStates extends ReadableStates {
      */
     @Override
     @NonNull
-    <K, V> WritableKVState<K, V> get(@NonNull String stateKey);
+    <K, V extends Record> WritableKVState<K, V> get(@NonNull String stateKey);
 
     @Override
     @NonNull

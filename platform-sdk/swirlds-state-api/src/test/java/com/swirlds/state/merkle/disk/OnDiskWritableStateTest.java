@@ -19,6 +19,7 @@ package com.swirlds.state.merkle.disk;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 
+import com.swirlds.state.test.fixtures.StringRecord;
 import com.swirlds.state.test.fixtures.merkle.MerkleTestBase;
 import java.util.Spliterators;
 import java.util.stream.StreamSupport;
@@ -45,7 +46,7 @@ class OnDiskWritableStateTest extends MerkleTestBase {
                     onDiskKeyClassId(),
                     STRING_CODEC,
                     onDiskValueClassId(),
-                    STRING_CODEC,
+                    STRING_RECORD_CODEC,
                     fruitVirtualMap);
             assertThat(state.size()).isZero();
 
@@ -66,7 +67,7 @@ class OnDiskWritableStateTest extends MerkleTestBase {
                             onDiskKeyClassId(),
                             STRING_CODEC,
                             onDiskValueClassId(),
-                            STRING_CODEC,
+                            STRING_RECORD_CODEC,
                             fruitVirtualMap))
                     .isInstanceOf(NullPointerException.class);
         }
@@ -80,7 +81,7 @@ class OnDiskWritableStateTest extends MerkleTestBase {
                             onDiskKeyClassId(),
                             STRING_CODEC,
                             onDiskValueClassId(),
-                            STRING_CODEC,
+                            STRING_RECORD_CODEC,
                             null))
                     .isInstanceOf(NullPointerException.class);
         }
@@ -93,14 +94,14 @@ class OnDiskWritableStateTest extends MerkleTestBase {
                     onDiskKeyClassId(),
                     STRING_CODEC,
                     onDiskValueClassId(),
-                    STRING_CODEC,
+                    STRING_RECORD_CODEC,
                     fruitVirtualMap);
             assertThat(state.getStateKey()).isEqualTo(FRUIT_STATE_KEY);
         }
     }
 
-    private void add(String key, String value) {
-        add(fruitVirtualMap, onDiskKeyClassId(), STRING_CODEC, onDiskValueClassId(), STRING_CODEC, key, value);
+    private void add(String key, StringRecord value) {
+        add(fruitVirtualMap, onDiskKeyClassId(), STRING_CODEC, onDiskValueClassId(), STRING_RECORD_CODEC, key, value);
     }
 
     private static long onDiskValueClassId() {
@@ -114,7 +115,7 @@ class OnDiskWritableStateTest extends MerkleTestBase {
     @Nested
     @DisplayName("Query Tests")
     final class QueryTest {
-        private OnDiskWritableKVState<String, String> state;
+        private OnDiskWritableKVState<String, StringRecord> state;
 
         @BeforeEach
         void setUp() {
@@ -124,7 +125,7 @@ class OnDiskWritableStateTest extends MerkleTestBase {
                     onDiskKeyClassId(),
                     STRING_CODEC,
                     onDiskValueClassId(),
-                    STRING_CODEC,
+                    STRING_RECORD_CODEC,
                     fruitVirtualMap);
             add(A_KEY, APPLE);
             add(B_KEY, BANANA);
@@ -146,9 +147,9 @@ class OnDiskWritableStateTest extends MerkleTestBase {
         @Test
         @DisplayName("Iteration includes both mutations and committed state")
         void iterateIncludesMutations() {
-            add(A_KEY, "Apple");
-            add(B_KEY, "Banana");
-            state.put(C_KEY, "Cherry");
+            add(A_KEY, new StringRecord("Apple"));
+            add(B_KEY, new StringRecord("Banana"));
+            state.put(C_KEY, new StringRecord("Cherry"));
             final var actual = StreamSupport.stream(Spliterators.spliterator(state.keys(), 3, 0), false)
                     .toList();
             assertThat(actual).containsExactlyInAnyOrder(A_KEY, B_KEY, C_KEY);
@@ -158,7 +159,7 @@ class OnDiskWritableStateTest extends MerkleTestBase {
     @Nested
     @DisplayName("Mutation Tests")
     final class MutationTest {
-        private OnDiskWritableKVState<String, String> state;
+        private OnDiskWritableKVState<String, StringRecord> state;
 
         @BeforeEach
         void setUp() {
@@ -168,7 +169,7 @@ class OnDiskWritableStateTest extends MerkleTestBase {
                     onDiskKeyClassId(),
                     STRING_CODEC,
                     onDiskValueClassId(),
-                    STRING_CODEC,
+                    STRING_RECORD_CODEC,
                     fruitVirtualMap);
             add(A_KEY, APPLE);
             add(B_KEY, BANANA);
@@ -178,7 +179,7 @@ class OnDiskWritableStateTest extends MerkleTestBase {
             return fruitVirtualMap.containsKey(new OnDiskKey<>(onDiskKeyClassId(), STRING_CODEC, key));
         }
 
-        String readValueFromMerkleMap(String key) {
+        StringRecord readValueFromMerkleMap(String key) {
             final var val = fruitVirtualMap.get(new OnDiskKey<>(onDiskKeyClassId(), STRING_CODEC, key));
             return val == null ? null : val.getValue();
         }
@@ -294,7 +295,7 @@ class OnDiskWritableStateTest extends MerkleTestBase {
                     onDiskKeyClassId(),
                     STRING_CODEC,
                     onDiskValueClassId(),
-                    STRING_CODEC,
+                    STRING_RECORD_CODEC,
                     fruitVirtualMap);
             assertThat(state.getForModify(A_KEY)).isEqualTo(APPLE);
             state.remove(B_KEY);

@@ -45,28 +45,28 @@ public class StateTestBase extends TestBase {
     protected static final String F_KEY = "F";
     protected static final String G_KEY = "G";
 
-    protected static final String APPLE = "Apple";
-    protected static final String ACAI = "Acai";
-    protected static final String BANANA = "Banana";
-    protected static final String BLACKBERRY = "BlackBerry";
-    protected static final String BLUEBERRY = "BlueBerry";
-    protected static final String CHERRY = "Cherry";
-    protected static final String CRANBERRY = "Cranberry";
-    protected static final String DATE = "Date";
-    protected static final String DRAGONFRUIT = "DragonFruit";
-    protected static final String EGGPLANT = "Eggplant";
-    protected static final String ELDERBERRY = "ElderBerry";
-    protected static final String FIG = "Fig";
-    protected static final String FEIJOA = "Feijoa";
-    protected static final String GRAPE = "Grape";
+    protected static final StringRecord APPLE = new StringRecord("Apple");
+    protected static final StringRecord ACAI = new StringRecord("Acai");
+    protected static final StringRecord BANANA = new StringRecord("Banana");
+    protected static final StringRecord BLACKBERRY = new StringRecord("BlackBerry");
+    protected static final StringRecord BLUEBERRY = new StringRecord("BlueBerry");
+    protected static final StringRecord CHERRY = new StringRecord("Cherry");
+    protected static final StringRecord CRANBERRY = new StringRecord("Cranberry");
+    protected static final StringRecord DATE = new StringRecord("Date");
+    protected static final StringRecord DRAGONFRUIT = new StringRecord("DragonFruit");
+    protected static final StringRecord EGGPLANT = new StringRecord("Eggplant");
+    protected static final StringRecord ELDERBERRY = new StringRecord("ElderBerry");
+    protected static final StringRecord FIG = new StringRecord("Fig");
+    protected static final StringRecord FEIJOA = new StringRecord("Feijoa");
+    protected static final StringRecord GRAPE = new StringRecord("Grape");
 
-    protected static final String AARDVARK = "Aardvark";
-    protected static final String BEAR = "Bear";
-    protected static final String CUTTLEFISH = "Cuttlefish";
-    protected static final String DOG = "Dog";
-    protected static final String EMU = "Emu";
-    protected static final String FOX = "Fox";
-    protected static final String GOOSE = "Goose";
+    protected static final StringRecord AARDVARK = new StringRecord("Aardvark");
+    protected static final StringRecord BEAR = new StringRecord("Bear");
+    protected static final StringRecord CUTTLEFISH = new StringRecord("Cuttlefish");
+    protected static final StringRecord DOG = new StringRecord("Dog");
+    protected static final StringRecord EMU = new StringRecord("Emu");
+    protected static final StringRecord FOX = new StringRecord("Fox");
+    protected static final StringRecord GOOSE = new StringRecord("Goose");
 
     protected static final String ASTRONAUT = "Astronaut";
     protected static final String BLASTOFF = "Blastoff";
@@ -93,8 +93,8 @@ public class StateTestBase extends TestBase {
     protected static final String GHANA = "Ghana";
 
     @NonNull
-    protected MapReadableKVState<String, String> readableFruitState() {
-        return MapReadableKVState.<String, String>builder(FRUIT_STATE_KEY)
+    protected MapReadableKVState<String, StringRecord> readableFruitState() {
+        return MapReadableKVState.<String, StringRecord>builder(FRUIT_STATE_KEY)
                 .value(A_KEY, APPLE)
                 .value(B_KEY, BANANA)
                 .value(C_KEY, CHERRY)
@@ -106,8 +106,8 @@ public class StateTestBase extends TestBase {
     }
 
     @NonNull
-    protected MapWritableKVState<String, String> writableFruitState() {
-        return MapWritableKVState.<String, String>builder(FRUIT_STATE_KEY)
+    protected MapWritableKVState<String, StringRecord> writableFruitState() {
+        return MapWritableKVState.<String, StringRecord>builder(FRUIT_STATE_KEY)
                 .value(A_KEY, APPLE)
                 .value(B_KEY, BANANA)
                 .value(C_KEY, CHERRY)
@@ -119,8 +119,8 @@ public class StateTestBase extends TestBase {
     }
 
     @NonNull
-    protected MapReadableKVState<String, String> readableAnimalState() {
-        return MapReadableKVState.<String, String>builder(ANIMAL_STATE_KEY)
+    protected MapReadableKVState<String, StringRecord> readableAnimalState() {
+        return MapReadableKVState.<String, StringRecord>builder(ANIMAL_STATE_KEY)
                 .value(A_KEY, AARDVARK)
                 .value(B_KEY, BEAR)
                 .value(C_KEY, CUTTLEFISH)
@@ -132,8 +132,8 @@ public class StateTestBase extends TestBase {
     }
 
     @NonNull
-    protected MapWritableKVState<String, String> writableAnimalState() {
-        return MapWritableKVState.<String, String>builder(ANIMAL_STATE_KEY)
+    protected MapWritableKVState<String, StringRecord> writableAnimalState() {
+        return MapWritableKVState.<String, StringRecord>builder(ANIMAL_STATE_KEY)
                 .value(A_KEY, AARDVARK)
                 .value(B_KEY, BEAR)
                 .value(C_KEY, CUTTLEFISH)
