@@ -22,6 +22,7 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.tss.handlers.TssHandlers;
+import com.hedera.node.app.tss.stores.ReadableTssBaseStore;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.state.spi.Service;

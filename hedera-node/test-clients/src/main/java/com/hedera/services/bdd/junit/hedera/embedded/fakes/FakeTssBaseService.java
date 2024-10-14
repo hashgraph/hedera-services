@@ -21,10 +21,10 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.node.app.spi.AppContext;
-import com.hedera.node.app.tss.ReadableTssBaseStore;
 import com.hedera.node.app.tss.TssBaseService;
 import com.hedera.node.app.tss.TssBaseServiceImpl;
 import com.hedera.node.app.tss.handlers.TssHandlers;
+import com.hedera.node.app.tss.stores.ReadableTssBaseStore;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.swirlds.common.utility.CommonUtils;

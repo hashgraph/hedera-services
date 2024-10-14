@@ -26,6 +26,7 @@ import com.hedera.node.app.spi.AppContext;
 import com.hedera.node.app.tss.handlers.TssHandlers;
 import com.hedera.node.app.tss.handlers.TssSubmissions;
 import com.hedera.node.app.tss.schemas.V0560TssBaseSchema;
+import com.hedera.node.app.tss.stores.ReadableTssBaseStore;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.platform.roster.RosterUtils;

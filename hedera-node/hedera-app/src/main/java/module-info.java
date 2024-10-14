@@ -109,6 +109,7 @@ module com.hedera.node.app {
     exports com.hedera.node.app.roster;
     exports com.hedera.node.app.tss;
     exports com.hedera.node.app.tss.handlers;
+    exports com.hedera.node.app.tss.stores;
 
     provides ConfigurationExtension with
             ServicesConfigExtension;
