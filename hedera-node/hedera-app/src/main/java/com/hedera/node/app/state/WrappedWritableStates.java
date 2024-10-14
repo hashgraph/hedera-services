@@ -66,7 +66,7 @@ public class WrappedWritableStates implements WritableStates {
     @SuppressWarnings("unchecked")
     @Override
     @NonNull
-    public <K, V> WritableKVState<K, V> get(@NonNull String stateKey) {
+    public <K, V extends Record> WritableKVState<K, V> get(@NonNull String stateKey) {
         return (WritableKVState<K, V>)
                 writableKVStateMap.computeIfAbsent(stateKey, s -> new WrappedWritableKVState<>(delegate.get(stateKey)));
     }

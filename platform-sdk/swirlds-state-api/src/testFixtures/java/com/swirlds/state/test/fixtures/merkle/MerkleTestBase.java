@@ -47,6 +47,7 @@ import com.swirlds.state.merkle.memory.InMemoryValue;
 import com.swirlds.state.merkle.queue.QueueNode;
 import com.swirlds.state.merkle.singleton.SingletonNode;
 import com.swirlds.state.test.fixtures.StateTestBase;
+import com.swirlds.state.test.fixtures.StringRecord;
 import com.swirlds.virtualmap.VirtualMap;
 import com.swirlds.virtualmap.config.VirtualMapConfig;
 import com.swirlds.virtualmap.serialize.KeySerializer;
@@ -104,6 +105,8 @@ public class MerkleTestBase extends StateTestBase {
     /** A TEST ONLY {@link Codec} to be used with Long data types */
     public static final Codec<Long> LONG_CODEC = TestLongCodec.SINGLETON;
 
+    public static final Codec<StringRecord> STRING_RECORD_CODEC = TestStringRecordCodec.SINGLETON;
+
     public static final SemanticVersion TEST_VERSION =
             SemanticVersion.newBuilder().major(1).build();
 
@@ -139,15 +142,15 @@ public class MerkleTestBase extends StateTestBase {
 
     // The "FRUIT" Map is part of FIRST_SERVICE
     protected String fruitLabel;
-    protected MerkleMap<InMemoryKey<String>, InMemoryValue<String, String>> fruitMerkleMap;
+    protected MerkleMap<InMemoryKey<String>, InMemoryValue<String, StringRecord>> fruitMerkleMap;
 
     // An alternative "FRUIT" Map that is also part of FIRST_SERVICE, but based on VirtualMap
     protected String fruitVirtualLabel;
-    protected VirtualMap<OnDiskKey<String>, OnDiskValue<String>> fruitVirtualMap;
+    protected VirtualMap<OnDiskKey<String>, OnDiskValue<StringRecord>> fruitVirtualMap;
 
     // The "ANIMAL" map is part of FIRST_SERVICE
     protected String animalLabel;
-    protected MerkleMap<InMemoryKey<String>, InMemoryValue<String, String>> animalMerkleMap;
+    protected MerkleMap<InMemoryKey<String>, InMemoryValue<String, StringRecord>> animalMerkleMap;
 
     // The "SPACE" map is part of SECOND_SERVICE and uses the long-based keys
     protected String spaceLabel;
@@ -177,7 +180,7 @@ public class MerkleTestBase extends StateTestBase {
                 STRING_CODEC,
                 onDiskValueSerializerClassId(FRUIT_STATE_KEY),
                 onDiskValueClassId(FRUIT_STATE_KEY),
-                STRING_CODEC);
+                STRING_RECORD_CODEC);
     }
 
     protected static long onDiskKeyClassId(String stateKey) {
@@ -289,17 +292,17 @@ public class MerkleTestBase extends StateTestBase {
 
     /** Creates a new arbitrary virtual map with the given label, storageDir, and metadata */
     @SuppressWarnings("unchecked")
-    protected VirtualMap<OnDiskKey<String>, OnDiskValue<String>> createVirtualMap(
+    protected VirtualMap<OnDiskKey<String>, OnDiskValue<StringRecord>> createVirtualMap(
             String label,
             long keySerializerClassId,
             long keyClassId,
             Codec<String> keyCodec,
             long valueSerializerClassId,
             long valueClassId,
-            Codec<String> valueCodec) {
+            Codec<StringRecord> valueCodec) {
         final KeySerializer<OnDiskKey<String>> keySerializer =
                 new OnDiskKeySerializer<>(keySerializerClassId, keyClassId, keyCodec);
-        final ValueSerializer<OnDiskValue<String>> valueSerializer =
+        final ValueSerializer<OnDiskValue<StringRecord>> valueSerializer =
                 new OnDiskValueSerializer<>(valueSerializerClassId, valueClassId, valueCodec);
         final var merkleDbTableConfig = new MerkleDbTableConfig((short) 1, DigestType.SHA_384);
         merkleDbTableConfig.hashesRamToDiskThreshold(0);
@@ -316,25 +319,25 @@ public class MerkleTestBase extends StateTestBase {
 
     /** A convenience method for adding a k/v pair to a merkle map */
     protected void add(
-            MerkleMap<InMemoryKey<String>, InMemoryValue<String, String>> map,
+            MerkleMap<InMemoryKey<String>, InMemoryValue<String, StringRecord>> map,
             long inMemoryValueClassId,
             Codec<String> keyCodec,
-            Codec<String> valueCodec,
+            Codec<StringRecord> valueCodec,
             String key,
-            String value) {
+            StringRecord value) {
         final var k = new InMemoryKey<>(key);
         map.put(k, new InMemoryValue<>(inMemoryValueClassId, keyCodec, valueCodec, k, value));
     }
 
     /** A convenience method for adding a k/v pair to a virtual map */
     protected void add(
-            VirtualMap<OnDiskKey<String>, OnDiskValue<String>> map,
+            VirtualMap<OnDiskKey<String>, OnDiskValue<StringRecord>> map,
             long onDiskKeyClassId,
             Codec<String> keyCodec,
             long onDiskValueClassId,
-            Codec<String> valueCodec,
+            Codec<StringRecord> valueCodec,
             String key,
-            String value) {
+            StringRecord value) {
         final var k = new OnDiskKey<>(onDiskKeyClassId, keyCodec, key);
         map.put(k, new OnDiskValue<>(onDiskValueClassId, valueCodec, value));
     }

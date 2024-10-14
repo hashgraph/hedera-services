@@ -32,6 +32,7 @@ import com.swirlds.state.merkle.memory.InMemoryKey;
 import com.swirlds.state.merkle.memory.InMemoryValue;
 import com.swirlds.state.spi.StateDefinition;
 import com.swirlds.state.test.fixtures.StateTestBase;
+import com.swirlds.state.test.fixtures.StringRecord;
 import com.swirlds.virtualmap.VirtualMap;
 import java.util.function.Function;
 import org.junit.jupiter.api.AfterEach;
@@ -64,9 +65,9 @@ public class MerkleTestBase extends com.swirlds.state.test.fixtures.merkle.Merkl
     protected final Function<SemanticVersion, SoftwareVersion> softwareVersionSupplier =
             version -> new BasicSoftwareVersion(version.major());
 
-    protected StateMetadata<String, String> fruitMetadata;
-    protected StateMetadata<String, String> fruitVirtualMetadata;
-    protected StateMetadata<String, String> animalMetadata;
+    protected StateMetadata<String, StringRecord> fruitMetadata;
+    protected StateMetadata<String, StringRecord> fruitVirtualMetadata;
+    protected StateMetadata<String, StringRecord> animalMetadata;
     protected StateMetadata<Long, String> spaceMetadata;
     protected StateMetadata<String, String> steamMetadata;
     protected StateMetadata<String, String> countryMetadata;
@@ -78,7 +79,7 @@ public class MerkleTestBase extends com.swirlds.state.test.fixtures.merkle.Merkl
         fruitMetadata = new StateMetadata<>(
                 FIRST_SERVICE,
                 new TestSchema(1),
-                StateDefinition.inMemory(FRUIT_STATE_KEY, STRING_CODEC, STRING_CODEC));
+                StateDefinition.inMemory(FRUIT_STATE_KEY, STRING_CODEC, STRING_RECORD_CODEC));
     }
 
     /** Sets up the "Fruit" virtual map, label, and metadata. */
@@ -88,7 +89,7 @@ public class MerkleTestBase extends com.swirlds.state.test.fixtures.merkle.Merkl
         fruitVirtualMetadata = new StateMetadata<>(
                 FIRST_SERVICE,
                 new TestSchema(1),
-                StateDefinition.onDisk(FRUIT_STATE_KEY, STRING_CODEC, STRING_CODEC, 100));
+                StateDefinition.onDisk(FRUIT_STATE_KEY, STRING_CODEC, STRING_RECORD_CODEC, 100));
     }
 
     /** Sets up the "Animal" merkle map, label, and metadata. */
@@ -98,7 +99,7 @@ public class MerkleTestBase extends com.swirlds.state.test.fixtures.merkle.Merkl
         animalMetadata = new StateMetadata<>(
                 FIRST_SERVICE,
                 new TestSchema(1),
-                StateDefinition.inMemory(ANIMAL_STATE_KEY, STRING_CODEC, STRING_CODEC));
+                StateDefinition.inMemory(ANIMAL_STATE_KEY, STRING_CODEC, STRING_RECORD_CODEC));
     }
 
     /** Sets up the "Space" merkle map, label, and metadata. */
@@ -125,8 +126,8 @@ public class MerkleTestBase extends com.swirlds.state.test.fixtures.merkle.Merkl
 
     /** Creates a new arbitrary virtual map with the given label, storageDir, and metadata */
     @SuppressWarnings("unchecked")
-    protected VirtualMap<OnDiskKey<String>, OnDiskValue<String>> createVirtualMap(
-            String label, StateMetadata<String, String> md) {
+    protected VirtualMap<OnDiskKey<String>, OnDiskValue<StringRecord>> createVirtualMap(
+            String label, StateMetadata<String, StringRecord> md) {
         return createVirtualMap(
                 label,
                 md.onDiskKeySerializerClassId(),
@@ -157,20 +158,20 @@ public class MerkleTestBase extends com.swirlds.state.test.fixtures.merkle.Merkl
 
     /** A convenience method for adding a k/v pair to a merkle map */
     protected void add(
-            MerkleMap<InMemoryKey<String>, InMemoryValue<String, String>> map,
-            StateMetadata<String, String> md,
+            MerkleMap<InMemoryKey<String>, InMemoryValue<String, StringRecord>> map,
+            StateMetadata<String, StringRecord> md,
             String key,
-            String value) {
+            StringRecord value) {
         final var def = md.stateDefinition();
         super.add(map, md.inMemoryValueClassId(), def.keyCodec(), def.valueCodec(), key, value);
     }
 
     /** A convenience method for adding a k/v pair to a virtual map */
     protected void add(
-            VirtualMap<OnDiskKey<String>, OnDiskValue<String>> map,
-            StateMetadata<String, String> md,
+            VirtualMap<OnDiskKey<String>, OnDiskValue<StringRecord>> map,
+            StateMetadata<String, StringRecord> md,
             String key,
-            String value) {
+            StringRecord value) {
         super.add(
                 map,
                 md.onDiskKeyClassId(),

@@ -40,7 +40,7 @@ import java.util.Objects;
  * @param <V> The type of value for the state
  */
 @SuppressWarnings("DuplicatedCode")
-public final class InMemoryWritableKVState<K, V> extends WritableKVStateBase<K, V> {
+public final class InMemoryWritableKVState<K, V extends Record> extends WritableKVStateBase<K, V> {
     /** The underlying merkle tree data structure with the data */
     private final MerkleMap<InMemoryKey<K>, InMemoryValue<K, V>> merkle;
 

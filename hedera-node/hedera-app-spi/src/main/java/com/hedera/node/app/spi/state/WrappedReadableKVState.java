@@ -28,7 +28,7 @@ import java.util.Iterator;
  * @param <K> The key of the state
  * @param <V> The value of the state
  */
-public class WrappedReadableKVState<K extends Comparable<K>, V> extends ReadableKVStateBase<K, V> {
+public class WrappedReadableKVState<K extends Comparable<K>, V extends Record> extends ReadableKVStateBase<K, V> {
     /** The {@link ReadableKVState} to delegate to for all read operations on cache miss */
     private final ReadableKVState<K, V> delegate;
 

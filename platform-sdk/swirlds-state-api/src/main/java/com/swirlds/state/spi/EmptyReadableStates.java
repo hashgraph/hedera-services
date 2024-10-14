@@ -27,7 +27,7 @@ public final class EmptyReadableStates implements ReadableStates {
 
     @NonNull
     @Override
-    public <K, V> ReadableKVState<K, V> get(@NonNull final String stateKey) {
+    public <K, V extends Record> ReadableKVState<K, V> get(@NonNull final String stateKey) {
         Objects.requireNonNull(stateKey);
         throw new IllegalArgumentException("There are no k/v states");
     }
