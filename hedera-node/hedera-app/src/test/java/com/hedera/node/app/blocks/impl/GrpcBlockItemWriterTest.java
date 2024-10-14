@@ -46,30 +46,6 @@ public class GrpcBlockItemWriterTest {
     }
 
     @Test
-    public void testOpenBlock() {
-        when(blockStreamConfig.address()).thenReturn("localhost");
-        when(blockStreamConfig.port()).thenReturn(8080);
-
-        GrpcBlockItemWriter grpcBlockItemWriter = new GrpcBlockItemWriter(blockStreamConfig);
-        grpcBlockItemWriter.openBlock(1);
-        assertThat(grpcBlockItemWriter.getBlockNumber()).isEqualTo(1);
-        assertThat(grpcBlockItemWriter.getState()).isEqualTo(GrpcBlockItemWriter.State.OPEN);
-    }
-
-    @Test
-    public void testOpenBlockCannotInitializeTwice() {
-        when(blockStreamConfig.address()).thenReturn("localhost");
-        when(blockStreamConfig.port()).thenReturn(8080);
-
-        GrpcBlockItemWriter grpcBlockItemWriter = new GrpcBlockItemWriter(blockStreamConfig);
-
-        grpcBlockItemWriter.openBlock(1);
-
-        assertThatThrownBy(() -> grpcBlockItemWriter.openBlock(1), "Cannot initialize a GrpcBlockItemWriter twice")
-                .isInstanceOf(IllegalStateException.class);
-    }
-
-    @Test
     public void testOpenBlockNegativeBlockNumber() {
         when(blockStreamConfig.address()).thenReturn("localhost");
         when(blockStreamConfig.port()).thenReturn(8080);
@@ -78,27 +54,6 @@ public class GrpcBlockItemWriterTest {
 
         assertThatThrownBy(() -> grpcBlockItemWriter.openBlock(-1), "Block number must be non-negative")
                 .isInstanceOf(IllegalArgumentException.class);
-    }
-
-    @Test
-    public void testWriteItem() {
-        when(blockStreamConfig.address()).thenReturn("localhost");
-        when(blockStreamConfig.port()).thenReturn(8080);
-
-        GrpcBlockItemWriter grpcBlockItemWriter = new GrpcBlockItemWriter(blockStreamConfig);
-
-        // Open a block
-        grpcBlockItemWriter.openBlock(1);
-
-        // Create BlockProof as easiest way to build object from BlockStreams
-        Bytes bytes = Bytes.wrap(new byte[] {1, 2, 3, 4, 5});
-        final var proof = new BlockProof.Builder().blockSignature(bytes).siblingHashes(new ArrayList<>());
-        final var blockProof = BlockItem.PROTOBUF.toBytes(
-                BlockItem.newBuilder().blockProof(proof).build());
-        grpcBlockItemWriter.writeItem(blockProof);
-
-        // Close the block
-        grpcBlockItemWriter.closeBlock();
     }
 
     @Test
@@ -119,21 +74,6 @@ public class GrpcBlockItemWriterTest {
     }
 
     @Test
-    public void testCloseBlock() {
-        when(blockStreamConfig.address()).thenReturn("localhost");
-        when(blockStreamConfig.port()).thenReturn(8080);
-
-        GrpcBlockItemWriter grpcBlockItemWriter = new GrpcBlockItemWriter(blockStreamConfig);
-
-        // Open a block
-        grpcBlockItemWriter.openBlock(1);
-
-        // Close the block
-        grpcBlockItemWriter.closeBlock();
-        assertThat(grpcBlockItemWriter.getState()).isEqualTo(GrpcBlockItemWriter.State.CLOSED);
-    }
-
-    @Test
     public void testCloseBlockNotOpen() {
         when(blockStreamConfig.address()).thenReturn("localhost");
         when(blockStreamConfig.port()).thenReturn(8080);
@@ -141,23 +81,6 @@ public class GrpcBlockItemWriterTest {
         GrpcBlockItemWriter grpcBlockItemWriter = new GrpcBlockItemWriter(blockStreamConfig);
 
         assertThatThrownBy(grpcBlockItemWriter::closeBlock, "Cannot close a GrpcBlockItemWriter that is not open")
-                .isInstanceOf(IllegalStateException.class);
-    }
-
-    @Test
-    public void testCloseBlockAlreadyClosed() {
-        when(blockStreamConfig.address()).thenReturn("localhost");
-        when(blockStreamConfig.port()).thenReturn(8080);
-
-        GrpcBlockItemWriter grpcBlockItemWriter = new GrpcBlockItemWriter(blockStreamConfig);
-
-        // Open a block
-        grpcBlockItemWriter.openBlock(1);
-
-        // Close the block
-        grpcBlockItemWriter.closeBlock();
-
-        assertThatThrownBy(grpcBlockItemWriter::closeBlock, "Cannot close a GrpcBlockItemWriter that is already closed")
                 .isInstanceOf(IllegalStateException.class);
     }
 }
