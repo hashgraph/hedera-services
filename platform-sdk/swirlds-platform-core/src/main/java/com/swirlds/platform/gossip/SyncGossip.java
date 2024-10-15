@@ -18,6 +18,7 @@ package com.swirlds.platform.gossip;
 
 import static com.swirlds.platform.consensus.ConsensusConstants.ROUND_UNDEFINED;
 
+import com.hedera.service.gossip.IntakeEventCounter;
 import com.swirlds.base.state.Startable;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;

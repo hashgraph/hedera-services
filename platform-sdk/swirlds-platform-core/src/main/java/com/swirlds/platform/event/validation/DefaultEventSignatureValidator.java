@@ -20,6 +20,7 @@ import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.metrics.api.Metrics.PLATFORM_CATEGORY;
 
 import com.hedera.hapi.node.base.SemanticVersion;
+import com.hedera.service.gossip.IntakeEventCounter;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.utility.throttle.RateLimitedLogger;
@@ -28,7 +29,6 @@ import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.crypto.SignatureVerifier;
 import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.eventhandling.EventConfig;
-import com.swirlds.platform.gossip.IntakeEventCounter;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.state.spi.HapiUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;

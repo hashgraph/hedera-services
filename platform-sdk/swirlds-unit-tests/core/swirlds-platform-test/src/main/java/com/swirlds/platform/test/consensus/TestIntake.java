@@ -20,6 +20,7 @@ import static com.swirlds.common.wiring.wires.SolderType.INJECT;
 import static com.swirlds.platform.consensus.SyntheticSnapshot.GENESIS_SNAPSHOT;
 import static com.swirlds.platform.event.AncientMode.GENERATION_THRESHOLD;
 
+import com.hedera.service.gossip.IntakeEventCounter;
 import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.platform.NodeId;
@@ -41,7 +42,6 @@ import com.swirlds.platform.event.hashing.DefaultEventHasher;
 import com.swirlds.platform.event.hashing.EventHasher;
 import com.swirlds.platform.event.orphan.DefaultOrphanBuffer;
 import com.swirlds.platform.event.orphan.OrphanBuffer;
-import com.swirlds.platform.gossip.IntakeEventCounter;
 import com.swirlds.platform.gossip.NoOpIntakeEventCounter;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;

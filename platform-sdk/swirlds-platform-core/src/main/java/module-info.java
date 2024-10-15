@@ -147,6 +147,7 @@ module com.swirlds.platform.core {
     requires com.swirlds.virtualmap;
     requires com.fasterxml.jackson.core;
     requires com.fasterxml.jackson.dataformat.yaml;
+    requires com.hedera.service.gossip;
     requires java.desktop;
     requires java.management;
     requires java.scripting;

@@ -18,6 +18,7 @@ package com.swirlds.platform.builder;
 
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.service.gossip.IntakeEventCounter;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.platform.NodeId;
@@ -26,7 +27,6 @@ import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.crypto.KeysAndCerts;
 import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.event.preconsensus.PcesFileTracker;
-import com.swirlds.platform.gossip.IntakeEventCounter;
 import com.swirlds.platform.pool.TransactionPoolNexus;
 import com.swirlds.platform.scratchpad.Scratchpad;
 import com.swirlds.platform.state.SwirldStateManager;
