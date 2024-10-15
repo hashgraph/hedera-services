@@ -368,13 +368,13 @@ public class HandleWorkflow {
                         userTxn.stack().commitTransaction(streamBuilder);
                     }
                 }
-                updateNodeStakes(userTxn);
+                final var dispatch = dispatchFor(userTxn, blockStreamConfig);
+                updateNodeStakes(userTxn, dispatch);
                 if (blockStreamConfig.streamRecords()) {
                     blockRecordManager.advanceConsensusClock(userTxn.consensusNow(), userTxn.state());
                 }
                 expireSchedules(userTxn);
                 logPreDispatch(userTxn);
-                final var dispatch = dispatchFor(userTxn, blockStreamConfig);
                 if (userTxn.type() == GENESIS_TRANSACTION) {
                     systemSetup.doGenesisSetup(dispatch);
                 } else if (userTxn.type() == POST_UPGRADE_TRANSACTION) {
@@ -512,10 +512,10 @@ public class HandleWorkflow {
                 .memo(txnInfo.txBody().memo());
     }
 
-    private void updateNodeStakes(@NonNull final UserTxn userTxn) {
+    private void updateNodeStakes(@NonNull final UserTxn userTxn, final Dispatch dispatch) {
         try {
             nodeStakeUpdates.process(
-                    userTxn.stack(), userTxn.tokenContextImpl(), userTxn.type() == GENESIS_TRANSACTION);
+                    userTxn.stack(), userTxn.tokenContextImpl(), userTxn.type() == GENESIS_TRANSACTION, dispatch);
         } catch (final Exception e) {
             // We don't propagate a failure here to avoid a catastrophic scenario
             // where we are "stuck" trying to process node stake updates and never

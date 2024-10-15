@@ -17,6 +17,7 @@
 package com.hedera.node.app.workflows.standalone;
 
 import static com.hedera.node.app.fixtures.AppTestBase.DEFAULT_CONFIG;
+import static com.hedera.node.app.spi.AppContext.Gossip.UNAVAILABLE_GOSSIP;
 import static com.hedera.node.app.spi.key.KeyUtils.IMMUTABILITY_SENTINEL_KEY;
 import static com.hedera.node.app.util.FileUtilities.createFileID;
 import static com.hedera.node.app.workflows.standalone.TransactionExecutors.TRANSACTION_EXECUTORS;
@@ -272,7 +273,8 @@ class TransactionExecutorsTest {
         Set.of(
                         new EntityIdService(),
                         new ConsensusServiceImpl(),
-                        new ContractServiceImpl(new AppContextImpl(InstantSource.system(), signatureVerifier)),
+                        new ContractServiceImpl(
+                                new AppContextImpl(InstantSource.system(), signatureVerifier, UNAVAILABLE_GOSSIP)),
                         new FileServiceImpl(),
                         new FreezeServiceImpl(),
                         new ScheduleServiceImpl(),
