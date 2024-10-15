@@ -31,28 +31,7 @@ import com.hedera.node.app.spi.authorization.SystemPrivilege;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.VersionedConfigImpl;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.ContractDeleteTransactionBody;
-import com.hederahashgraph.api.proto.java.ContractID;
-import com.hederahashgraph.api.proto.java.ContractUpdateTransactionBody;
-import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
-import com.hederahashgraph.api.proto.java.CryptoDeleteTransactionBody;
-import com.hederahashgraph.api.proto.java.CryptoUpdateTransactionBody;
-import com.hederahashgraph.api.proto.java.EthereumTransactionBody;
-import com.hederahashgraph.api.proto.java.FileAppendTransactionBody;
-import com.hederahashgraph.api.proto.java.FileDeleteTransactionBody;
-import com.hederahashgraph.api.proto.java.FileID;
-import com.hederahashgraph.api.proto.java.FileUpdateTransactionBody;
-import com.hederahashgraph.api.proto.java.FreezeTransactionBody;
-import com.hederahashgraph.api.proto.java.NodeCreateTransactionBody;
-import com.hederahashgraph.api.proto.java.NodeDeleteTransactionBody;
-import com.hederahashgraph.api.proto.java.SignedTransaction;
-import com.hederahashgraph.api.proto.java.SystemDeleteTransactionBody;
-import com.hederahashgraph.api.proto.java.SystemUndeleteTransactionBody;
-import com.hederahashgraph.api.proto.java.Transaction;
-import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.api.proto.java.TransactionID;
-import com.hederahashgraph.api.proto.java.UncheckedSubmitBody;
+import com.hederahashgraph.api.proto.java.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -364,6 +343,14 @@ class PrivilegesVerifierTest {
     void nodeAdminCanCreate() throws InvalidProtocolBufferException {
         // given:
         var txn = nodeAdminTxn().setNodeCreate(NodeCreateTransactionBody.getDefaultInstance());
+        // expect:
+        assertEquals(SystemOpAuthorization.AUTHORIZED, subject.authForTestCase(accessor(txn)));
+    }
+
+    @Test
+    void nodeAdminCanUpdate() throws InvalidProtocolBufferException {
+        // given:
+        var txn = nodeAdminTxn().setNodeUpdate(NodeUpdateTransactionBody.getDefaultInstance());
         // expect:
         assertEquals(SystemOpAuthorization.AUTHORIZED, subject.authForTestCase(accessor(txn)));
     }
