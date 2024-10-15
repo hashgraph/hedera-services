@@ -18,8 +18,8 @@ package com.hedera.services.bdd.junit.hedera.embedded.fakes;
 
 import static java.util.Objects.requireNonNull;
 
+import com.swirlds.common.AddressBook;
 import com.swirlds.platform.system.Round;
-import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.events.ConsensusEvent;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;

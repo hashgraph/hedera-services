@@ -27,6 +27,7 @@ import static org.mockito.Mock.Strictness.LENIENT;
 import static org.mockito.Mockito.mockStatic;
 
 import com.hedera.node.app.version.ServicesSoftwareVersion;
+import com.swirlds.common.AddressBook;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.io.filesystem.FileSystemManager;
@@ -45,7 +46,6 @@ import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.SystemExitUtils;
-import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.util.BootstrapUtils;
 import java.util.ArrayList;
 import java.util.List;

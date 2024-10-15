@@ -25,7 +25,7 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import com.hedera.services.bdd.junit.hedera.HederaNode;
 import com.hedera.services.bdd.junit.hedera.NodeSelector;
 import com.hedera.services.bdd.spec.utilops.lifecycle.AbstractLifecycleOp;
-import com.swirlds.platform.system.address.AddressBook;
+import com.swirlds.common.AddressBook;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.nio.file.Path;
 import java.time.Duration;

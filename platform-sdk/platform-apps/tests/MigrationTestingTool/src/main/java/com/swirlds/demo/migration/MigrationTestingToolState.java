@@ -19,6 +19,7 @@ package com.swirlds.demo.migration;
 import static com.swirlds.demo.migration.MigrationTestingToolMain.PREVIOUS_SOFTWARE_VERSION;
 import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 
+import com.swirlds.common.AddressBook;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.merkle.MerkleInternal;
 import com.swirlds.common.merkle.MerkleNode;
@@ -38,7 +39,6 @@ import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.SwirldState;
-import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.events.ConsensusEvent;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
 import com.swirlds.virtualmap.VirtualMap;
