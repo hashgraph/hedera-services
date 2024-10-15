@@ -24,6 +24,7 @@ plugins {
     id("com.hedera.gradle.nexus-publish")
     id("com.hedera.gradle.spotless-kotlin")
     id("com.hedera.gradle.spotless-markdown")
+    id("com.hedera.gradle.spotless-protobuf")
 }
 
 spotless {

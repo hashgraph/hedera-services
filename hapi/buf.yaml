@@ -1,0 +1,14 @@
+version: v1
+lint:
+  use:
+    - DEFAULT   # Enforce Buf's default linting rules
+    - FILE_LOWER_SNAKE_CASE   # Ensures file names are lower_snake_case
+    - PACKAGE_DIRECTORY_MATCH   # Ensures package names match directory structure
+    - PACKAGE_SAME_JAVA_MULTIPLE_FILES   # Ensures that all .proto files in the same package are in the same directory
+    - PACKAGE_DEFINED   # Ensures that all .proto files have a package defined
+    - PACKAGE_DIRECTORY_MATCH   # Ensures that all .proto files are in a directory that matches their package
+    - PACKAGE_SAME_JAVA_PACKAGE   # Ensures that all .proto files in the same package have the same java_package option
+    - RPC_REQUEST_STANDARD_NAME   # Ensures proper naming conventions for RPCs
+    - ENUM_PASCAL_CASE   # Ensures Pascal case for enums
+    - ENUM_VALUE_PREFIX   # Ensures enum values are prefixed with the enum name
+    - ENUM_ZERO_VALUE_SUFFIX   # Ensures enum zero values are suffixed with _UNSPECIFIED
