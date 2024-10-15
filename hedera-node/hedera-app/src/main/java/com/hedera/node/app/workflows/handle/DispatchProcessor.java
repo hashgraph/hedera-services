@@ -26,6 +26,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.UNAUTHORIZED;
+import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.NODE;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.PRECEDING;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.USER;
 import static com.hedera.node.app.workflows.handle.HandleWorkflow.ALERT_MESSAGE;
@@ -123,7 +124,7 @@ public class DispatchProcessor {
         }
         dispatchUsageManager.finalizeAndSaveUsage(dispatch);
         recordFinalizer.finalizeRecord(dispatch);
-        if (dispatch.txnCategory() == USER) {
+        if (dispatch.txnCategory() == USER || dispatch.txnCategory() == NODE) {
             dispatch.stack().commitTransaction(dispatch.recordBuilder());
         } else {
             dispatch.stack().commitFullStack();
@@ -147,7 +148,9 @@ public class DispatchProcessor {
             dispatcher.dispatchHandle(dispatch.handleContext());
             dispatch.recordBuilder().status(SUCCESS);
             // Only user or preceding transactions can trigger system updates in the current system
-            if (dispatch.txnCategory() == USER || dispatch.txnCategory() == PRECEDING) {
+            if (dispatch.txnCategory() == USER
+                    || dispatch.txnCategory() == PRECEDING
+                    || dispatch.txnCategory() == NODE) {
                 handleSystemUpdates(dispatch);
             }
         } catch (HandleException e) {
@@ -245,7 +248,7 @@ public class DispatchProcessor {
         final var shouldWaiveServiceFee =
                 report.serviceFeeStatus() == UNABLE_TO_PAY_SERVICE_FEE || report.duplicateStatus() == DUPLICATE;
         final var feesToCharge = shouldWaiveServiceFee ? fees.withoutServiceComponent() : fees;
-        if (dispatch.txnCategory() == USER) {
+        if (dispatch.txnCategory() == USER || dispatch.txnCategory() == NODE) {
             dispatch.feeAccumulator()
                     .chargeFees(report.payerOrThrow().accountIdOrThrow(), report.creatorId(), feesToCharge);
         } else {
@@ -311,7 +314,7 @@ public class DispatchProcessor {
         if (!authorizer.isAuthorized(dispatch.payerId(), function)) {
             // Node transactions are judged by a different set of rules; any node account can submit
             // any node transaction as long as it is in the allow list
-            if (dispatch.isNodeTransaction()) {
+            if (dispatch.txnCategory() == NODE) {
                 final var adminConfig = dispatch.config().getConfigData(NetworkAdminConfig.class);
                 final var allowList = adminConfig.nodeTransactionsAllowList().functionalitySet();
                 if (allowList.contains(function)) {

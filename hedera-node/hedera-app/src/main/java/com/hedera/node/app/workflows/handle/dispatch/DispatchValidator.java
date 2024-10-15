@@ -19,6 +19,7 @@ package com.hedera.node.app.workflows.handle.dispatch;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.DUPLICATE_TRANSACTION;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_PAYER_SIGNATURE;
 import static com.hedera.hapi.util.HapiUtils.isHollow;
+import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.NODE;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.SCHEDULED;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.USER;
 import static com.hedera.node.app.state.HederaRecordCache.DuplicateCheckResult.NO_DUPLICATE;
@@ -96,7 +97,7 @@ public class DispatchValidator {
             final var payer =
                     getPayerAccount(dispatch.readableStoreFactory(), dispatch.payerId(), dispatch.txnCategory());
             final var category = dispatch.txnCategory();
-            final var requiresPayerSig = category == SCHEDULED || (category == USER && !dispatch.isNodeTransaction());
+            final var requiresPayerSig = category == SCHEDULED || category == USER;
             if (requiresPayerSig && !isHollow(payer)) {
                 // Skip payer verification for hollow accounts because ingest only submits valid signatures
                 // for hollow payers; and if an account is still hollow here, its alias cannot have changed
@@ -105,7 +106,7 @@ public class DispatchValidator {
                     return newCreatorError(dispatch.creatorInfo().accountId(), INVALID_PAYER_SIGNATURE);
                 }
             }
-            final var duplicateCheckResult = category != USER
+            final var duplicateCheckResult = category != USER && category != NODE
                     ? NO_DUPLICATE
                     : recordCache.hasDuplicate(
                             dispatch.txnInfo().txBody().transactionIDOrThrow(),
@@ -142,7 +143,9 @@ public class DispatchValidator {
                             ? dispatch.fees()
                             : dispatch.fees().withoutServiceComponent(),
                     NOT_INGEST,
-                    (dispatch.txnCategory() == USER || dispatch.txnCategory() == SCHEDULED)
+                    (dispatch.txnCategory() == USER
+                                    || dispatch.txnCategory() == SCHEDULED
+                                    || dispatch.txnCategory() == NODE)
                             ? CHECK_OFFERED_FEE
                             : SKIP_OFFERED_FEE_CHECK);
         } catch (final InsufficientServiceFeeException e) {
@@ -187,7 +190,7 @@ public class DispatchValidator {
      */
     @Nullable
     private ResponseCodeEnum getExpiryError(final @NonNull Dispatch dispatch) {
-        if (dispatch.txnCategory() != USER) {
+        if (dispatch.txnCategory() != USER && dispatch.txnCategory() != NODE) {
             return null;
         }
         try {
@@ -220,7 +223,7 @@ public class DispatchValidator {
         final var accountStore = storeFactory.getStore(ReadableAccountStore.class);
         final var account = accountStore.getAccountById(accountID);
         return switch (category) {
-            case USER -> {
+            case USER, NODE -> {
                 if (account == null || account.deleted() || account.smartContract()) {
                     throw new IllegalStateException(
                             "Category " + category + " payer account should have been rejected " + account);

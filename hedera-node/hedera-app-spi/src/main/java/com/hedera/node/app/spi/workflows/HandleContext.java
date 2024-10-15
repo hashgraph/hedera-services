@@ -79,7 +79,11 @@ public interface HandleContext {
         /**
          * A transaction executed via the schedule service.
          * */
-        SCHEDULED
+        SCHEDULED,
+        /**
+         * A transaction submitted by Node for TSS service
+         */
+        NODE
     }
 
     /**

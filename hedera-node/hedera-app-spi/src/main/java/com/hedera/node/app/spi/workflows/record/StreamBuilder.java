@@ -17,6 +17,7 @@
 package com.hedera.node.app.spi.workflows.record;
 
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.CHILD;
+import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.NODE;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.PRECEDING;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.SCHEDULED;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.USER;
@@ -236,7 +237,7 @@ public interface StreamBuilder {
      * @return true if this transaction is internal
      */
     default boolean isUserDispatch() {
-        return category() == USER || category() == SCHEDULED;
+        return category() == USER || category() == SCHEDULED || category() == NODE;
     }
 
     /**
