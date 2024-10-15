@@ -76,7 +76,7 @@ public class StartupStateUtilsTests {
 
     private SignedStateFilePath signedStateFilePath;
 
-    private final NodeId selfId = new NodeId(0);
+    private final NodeId selfId = NodeId.of(0);
     private final String mainClassName = "mainClassName";
     private final String swirldName = "swirldName";
 

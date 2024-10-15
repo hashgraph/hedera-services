@@ -52,11 +52,11 @@ class ReconnectThrottleTest {
     void simultaneousReconnectTest() {
         final ReconnectThrottle reconnectThrottle = new ReconnectThrottle(buildSettings("10m"), Time.getCurrent());
 
-        assertTrue(reconnectThrottle.initiateReconnect(new NodeId(0)), "reconnect should be allowed");
-        assertFalse(reconnectThrottle.initiateReconnect(new NodeId(1)), "reconnect should be blocked");
+        assertTrue(reconnectThrottle.initiateReconnect(NodeId.of(0)), "reconnect should be allowed");
+        assertFalse(reconnectThrottle.initiateReconnect(NodeId.of(1)), "reconnect should be blocked");
         reconnectThrottle.reconnectAttemptFinished();
 
-        assertTrue(reconnectThrottle.initiateReconnect(new NodeId(1)), "reconnect should be allowed");
+        assertTrue(reconnectThrottle.initiateReconnect(NodeId.of(1)), "reconnect should be allowed");
     }
 
     @Test
@@ -66,19 +66,19 @@ class ReconnectThrottleTest {
         final ReconnectThrottle reconnectThrottle = new ReconnectThrottle(buildSettings("1s"), Time.getCurrent());
         reconnectThrottle.setCurrentTime(() -> Instant.ofEpochMilli(0));
 
-        assertTrue(reconnectThrottle.initiateReconnect(new NodeId(0)), "reconnect should be allowed");
+        assertTrue(reconnectThrottle.initiateReconnect(NodeId.of(0)), "reconnect should be allowed");
         reconnectThrottle.reconnectAttemptFinished();
-        assertFalse(reconnectThrottle.initiateReconnect(new NodeId(0)), "reconnect should be blocked");
+        assertFalse(reconnectThrottle.initiateReconnect(NodeId.of(0)), "reconnect should be blocked");
 
-        assertTrue(reconnectThrottle.initiateReconnect(new NodeId(1)), "reconnect should be allowed");
+        assertTrue(reconnectThrottle.initiateReconnect(NodeId.of(1)), "reconnect should be allowed");
         reconnectThrottle.reconnectAttemptFinished();
-        assertFalse(reconnectThrottle.initiateReconnect(new NodeId(1)), "reconnect should be blocked");
+        assertFalse(reconnectThrottle.initiateReconnect(NodeId.of(1)), "reconnect should be blocked");
 
         reconnectThrottle.setCurrentTime(() -> Instant.ofEpochMilli(2000));
 
-        assertTrue(reconnectThrottle.initiateReconnect(new NodeId(0)), "reconnect should be allowed");
+        assertTrue(reconnectThrottle.initiateReconnect(NodeId.of(0)), "reconnect should be allowed");
         reconnectThrottle.reconnectAttemptFinished();
-        assertTrue(reconnectThrottle.initiateReconnect(new NodeId(1)), "reconnect should be allowed");
+        assertTrue(reconnectThrottle.initiateReconnect(NodeId.of(1)), "reconnect should be allowed");
         reconnectThrottle.reconnectAttemptFinished();
     }
 
@@ -99,7 +99,7 @@ class ReconnectThrottleTest {
         for (int i = 0; i < 3; i++) {
             for (int j = 0; j < 100; j++) {
                 // Each request is for a unique node
-                reconnectThrottle.initiateReconnect(new NodeId((i + 1000) * (j + 1)));
+                reconnectThrottle.initiateReconnect(NodeId.of((i + 1000) * (j + 1)));
                 reconnectThrottle.reconnectAttemptFinished();
 
                 assertTrue(
