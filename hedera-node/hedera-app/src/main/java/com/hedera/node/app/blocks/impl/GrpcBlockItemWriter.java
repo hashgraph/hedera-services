@@ -27,6 +27,7 @@ import com.hedera.hapi.block.protoc.PublishStreamRequest;
 import com.hedera.hapi.block.protoc.PublishStreamResponse;
 import com.hedera.hapi.block.protoc.PublishStreamResponse.Acknowledgement;
 import com.hedera.hapi.block.protoc.PublishStreamResponse.EndOfStream;
+import com.hedera.hapi.block.protoc.PublishStreamResponseCode;
 import com.hedera.hapi.block.stream.protoc.BlockItem;
 import com.hedera.node.app.blocks.BlockItemWriter;
 import com.hedera.node.config.data.BlockStreamConfig;
@@ -135,9 +136,7 @@ public class GrpcBlockItemWriter implements BlockItemWriter {
                                 "Error returned from block node at block number {}: {}",
                                 endOfStream.getBlockNumber(),
                                 endOfStream);
-                        onNext(PublishStreamResponse.newBuilder()
-                                .setStatus(endOfStream)
-                                .build());
+                        onNext(buildErrorResponse(STREAM_ITEMS_UNKNOWN));
                     }
                 }
             }
@@ -147,7 +146,8 @@ public class GrpcBlockItemWriter implements BlockItemWriter {
                 // Maybe this should be considered in this case:
                 // https://github.com/hashgraph/hedera-services/issues/15530
                 final Status status = fromThrowable(t);
-                logger.error(status.toString());
+                logger.error("error occurred with an exception: ", status.toString());
+                requestObserver.onError(t);
             }
 
             @Override
@@ -205,5 +205,15 @@ public class GrpcBlockItemWriter implements BlockItemWriter {
     @VisibleForTesting
     public State getState() {
         return state;
+    }
+
+    /**
+     * @param errorCode the error code for the stream response
+     * @return the error stream response
+     */
+    private PublishStreamResponse buildErrorResponse(PublishStreamResponseCode errorCode) {
+        final EndOfStream endOfStream =
+                EndOfStream.newBuilder().setStatus(errorCode).build();
+        return PublishStreamResponse.newBuilder().setStatus(endOfStream).build();
     }
 }
