@@ -29,6 +29,11 @@ import com.swirlds.config.api.validation.annotation.Min;
  * @param tlsPort The port for tls-encrypted grpc traffic. Must be non-negative. A value of 0 indicates an ephemeral
  *                port should be automatically selected by the computer. Must not be the same value as {@link #port()}
  *                unless both are 0. Must be a value between 0 and 65535, inclusive.
+ * @param nodeOperatorPortEnabled Whether the node operator port is enabled. If true, the node operator port will be
+ *                                enabled and must be a non-negative value between 1 and 65535, inclusive. If false, the
+ *                                node operator port will be disabled and the value of {@link #nodeOperatorPort()} will be
+ *                                ignored.
+ * @param nodeOperatorPort The port for the node operator. Must be a non-negative value between 1 and 65535, inclusive.
  * @param workflowsPort Deprecated
  * @param workflowsTlsPort Deprecated
  * @param maxMessageSize The maximum message size in bytes that the server can receive. Must be non-negative.
@@ -41,6 +46,8 @@ import com.swirlds.config.api.validation.annotation.Min;
 public record GrpcConfig(
         @ConfigProperty(defaultValue = "50211") @Min(0) @Max(65535) @NodeProperty int port,
         @ConfigProperty(defaultValue = "50212") @Min(0) @Max(65535) @NodeProperty int tlsPort,
+        @ConfigProperty(defaultValue = "false") @NodeProperty boolean nodeOperatorPortEnabled,
+        @ConfigProperty(defaultValue = "50213") @Min(1) @Max(65535) @NodeProperty int nodeOperatorPort,
         @ConfigProperty(defaultValue = "60211") @Min(0) @Max(65535) @NodeProperty int workflowsPort,
         @ConfigProperty(defaultValue = "60212") @Min(0) @Max(65535) @NodeProperty int workflowsTlsPort,
         @ConfigProperty(defaultValue = "4194304") @Max(4194304) @Min(0) int maxMessageSize,
@@ -75,6 +82,11 @@ public record GrpcConfig(
     private void validateUniqueWorkflowsPorts(int port1, int port2) {
         if (port1 == port2 && port1 != 0) {
             throw new IllegalArgumentException("grpc.workflowsPort and grpc.workflowsTlsPort must be different");
+        }
+
+        if (nodeOperatorPortEnabled && (nodeOperatorPort == port || nodeOperatorPort == tlsPort)) {
+            throw new IllegalArgumentException(
+                    "grpc.nodeOperatorPort must be different from grpc.port and grpc.tlsPort");
         }
     }
 }
