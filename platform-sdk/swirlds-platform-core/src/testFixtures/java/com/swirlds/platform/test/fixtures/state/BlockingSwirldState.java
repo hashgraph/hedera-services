@@ -31,6 +31,7 @@ import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.SwirldState;
 import com.swirlds.state.merkle.singleton.StringLeaf;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.util.Objects;
 import java.util.concurrent.CountDownLatch;
@@ -84,9 +85,11 @@ public class BlockingSwirldState extends MerkleStateRoot {
     /**
      * {@inheritDoc}
      */
+    @NonNull
     @Override
     public BlockingSwirldState copy() {
         throwIfImmutable();
+        setImmutable(true);
         return new BlockingSwirldState(this);
     }
 
