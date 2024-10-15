@@ -33,10 +33,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.nodeUpdate;
 import static com.hedera.services.bdd.spec.utilops.EmbeddedVerbs.viewNode;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
-import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PAYER;
-import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
-import static com.hedera.services.bdd.suites.HapiSuite.NONSENSE_KEY;
-import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
+import static com.hedera.services.bdd.suites.HapiSuite.*;
 import static com.hedera.services.bdd.suites.hip869.NodeCreateTest.generateX509Certificates;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -358,7 +355,7 @@ public class NodeUpdateTest {
                 nodeCreate("testNode")
                         .adminKey("adminKey")
                         .gossipCaCertificate(gossipCertificates.getFirst().getEncoded()),
-                nodeUpdate("testNode").signedBy(GENESIS).hasPrecheck(INVALID_SIGNATURE));
+                nodeUpdate("testNode").signedBy(ADDRESS_BOOK_CONTROL).hasPrecheck(INVALID_SIGNATURE));
     }
 
     @HapiTest
@@ -369,7 +366,7 @@ public class NodeUpdateTest {
                         .adminKey("adminKey")
                         .gossipCaCertificate(gossipCertificates.getFirst().getEncoded()),
                 nodeUpdate("testNode")
-                        .signedBy(GENESIS, "adminKey")
+                        .signedBy(ADDRESS_BOOK_CONTROL, "adminKey")
                         .description("updated description")
                         .via("successUpdate"),
                 getTxnRecord("successUpdate").logged());
