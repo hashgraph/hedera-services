@@ -172,9 +172,9 @@ public class CryptoUpdateSuite {
      * Creates four accounts with ECDSA keys, the first having a long-zero EVM address and the other three having
      * arbitrary EVM addresses created via,
      * <ol>
-     *     <i>Legacy HIP-32 auto-account creation via transfer to a key alias.</i>
-     *     <i>Hollow account creation via transfer to an EVM address.</i>
-     *     <i>Explicit HIP-583 specification of the EVM address on creation.</i>
+     *     <li>Legacy HIP-32 auto-account creation via transfer to a key alias.</li>
+     *     <li>Hollow account creation via transfer to an EVM address.</li>
+     *     <li>Explicit HIP-583 specification of the EVM address on creation.</li>
      * </ol>
      * Then asserts that each of them have the expected EVM addresses in the {@link HapiGetAccountInfo} query both
      * before and after key rotation; and that the record stream does not imply anything different.
