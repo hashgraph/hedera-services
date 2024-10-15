@@ -35,7 +35,6 @@ import com.hedera.hapi.services.auxiliary.tss.TssMessageTransactionBody;
 import com.hedera.hapi.services.auxiliary.tss.TssVoteTransactionBody;
 import com.hedera.node.app.spi.AppContext;
 import com.hedera.node.app.spi.workflows.HandleContext;
-import com.hedera.node.app.tss.TssBaseService.TssContext;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.swirlds.config.api.Configuration;
@@ -94,7 +93,7 @@ class TssSubmissionsTest {
 
     @Test
     void futureResolvesOnSuccessfulSubmission() throws ExecutionException, InterruptedException, TimeoutException {
-        final var future = subject.submitTssMessage(TssMessageTransactionBody.DEFAULT, TssContext.from(context));
+        final var future = subject.submitTssMessage(TssMessageTransactionBody.DEFAULT, context);
 
         future.get(1, TimeUnit.SECONDS);
 
@@ -106,7 +105,7 @@ class TssSubmissionsTest {
             throws ExecutionException, InterruptedException, TimeoutException {
         doThrow(new IllegalStateException("" + BEHIND)).when(gossip).submit(any());
 
-        final var future = subject.submitTssVote(TssVoteTransactionBody.DEFAULT, TssContext.from(context));
+        final var future = subject.submitTssVote(TssVoteTransactionBody.DEFAULT, context);
 
         future.exceptionally(t -> {
                     verify(gossip, times(TIMES_TO_TRY_SUBMISSION)).submit(voteSubmission(0));
@@ -122,7 +121,7 @@ class TssSubmissionsTest {
                 .when(gossip)
                 .submit(voteSubmission(0));
 
-        final var future = subject.submitTssVote(TssVoteTransactionBody.DEFAULT, TssContext.from(context));
+        final var future = subject.submitTssVote(TssVoteTransactionBody.DEFAULT, context);
 
         future.get(1, TimeUnit.SECONDS);
 
@@ -138,7 +137,7 @@ class TssSubmissionsTest {
                 .when(gossip)
                 .submit(messageSubmission(1));
 
-        final var future = subject.submitTssMessage(TssMessageTransactionBody.DEFAULT, TssContext.from(context));
+        final var future = subject.submitTssMessage(TssMessageTransactionBody.DEFAULT, context);
 
         future.exceptionally(t -> {
                     for (int i = 0; i < DISTINCT_TXN_IDS_TO_TRY; i++) {

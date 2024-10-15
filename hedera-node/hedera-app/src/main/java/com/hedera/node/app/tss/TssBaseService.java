@@ -16,18 +16,13 @@
 
 package com.hedera.node.app.tss;
 
-import static java.util.Objects.requireNonNull;
-
-import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.tss.handlers.TssHandlers;
 import com.hedera.node.app.tss.stores.ReadableTssBaseStore;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.swirlds.config.api.Configuration;
 import com.swirlds.state.spi.Service;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.time.Instant;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
@@ -52,29 +47,6 @@ public interface TssBaseService extends Service {
          * The TSS service is ready to sign.
          */
         READY,
-    }
-
-    /**
-     * Context for TSS operations.
-     *
-     * @param config the TSS configuration
-     * @param selfAccountId the account ID of the node
-     * @param consensusNow the current consensus time
-     */
-    record TssContext(@NonNull Configuration config, @NonNull AccountID selfAccountId, @NonNull Instant consensusNow) {
-        public static TssContext from(@NonNull final HandleContext context) {
-            requireNonNull(context);
-            return new TssContext(
-                    context.configuration(),
-                    context.networkInfo().selfNodeInfo().accountId(),
-                    context.consensusNow());
-        }
-
-        public TssContext {
-            requireNonNull(config);
-            requireNonNull(selfAccountId);
-            requireNonNull(consensusNow);
-        }
     }
 
     @NonNull
@@ -107,7 +79,7 @@ public interface TssBaseService extends Service {
      * @param ledgerIdConsumer the consumer of the ledger id, to receive the ledger id as soon as it is available
      */
     void bootstrapLedgerId(
-            @NonNull Roster roster, @NonNull TssContext context, @NonNull Consumer<Bytes> ledgerIdConsumer);
+            @NonNull Roster roster, @NonNull HandleContext context, @NonNull Consumer<Bytes> ledgerIdConsumer);
 
     /**
      * Starts the process of keying a candidate roster with TSS key material.
@@ -115,7 +87,7 @@ public interface TssBaseService extends Service {
      * @param roster the candidate roster to key
      * @param context the TSS context
      */
-    void startKeyingCandidate(@NonNull Roster roster, @NonNull TssContext context);
+    void startKeyingCandidate(@NonNull Roster roster, @NonNull HandleContext context);
 
     /**
      * Requests a ledger signature on a message hash.  The ledger signature is computed asynchronously and returned

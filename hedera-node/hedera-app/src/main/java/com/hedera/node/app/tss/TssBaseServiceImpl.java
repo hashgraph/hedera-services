@@ -23,6 +23,7 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.hapi.services.auxiliary.tss.TssMessageTransactionBody;
 import com.hedera.node.app.spi.AppContext;
+import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.tss.handlers.TssHandlers;
 import com.hedera.node.app.tss.handlers.TssSubmissions;
 import com.hedera.node.app.tss.schemas.V0560TssBaseSchema;
@@ -103,7 +104,7 @@ public class TssBaseServiceImpl implements TssBaseService {
     @Override
     public void bootstrapLedgerId(
             @NonNull final Roster roster,
-            @NonNull final TssContext context,
+            @NonNull final HandleContext context,
             @NonNull final Consumer<Bytes> ledgerIdConsumer) {
         requireNonNull(roster);
         requireNonNull(context);
@@ -113,7 +114,7 @@ public class TssBaseServiceImpl implements TssBaseService {
     }
 
     @Override
-    public void startKeyingCandidate(@NonNull final Roster roster, @NonNull final TssContext context) {
+    public void startKeyingCandidate(@NonNull final Roster roster, @NonNull final HandleContext context) {
         requireNonNull(roster);
         // (TSS-FUTURE) Create a real TssMessage and body
         tssSubmissions.submitTssMessage(TssMessageTransactionBody.DEFAULT, context);

@@ -26,7 +26,6 @@ import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
-import com.hedera.node.app.tss.TssBaseService.TssContext;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -59,6 +58,6 @@ public class TssMessageHandler implements TransactionHandler {
     public void handle(@NonNull final HandleContext context) throws HandleException {
         requireNonNull(context);
         // (TSS-FUTURE) Implement this method
-        submissionManager.submitTssVote(TssVoteTransactionBody.DEFAULT, TssContext.from(context));
+        submissionManager.submitTssVote(TssVoteTransactionBody.DEFAULT, context);
     }
 }

@@ -21,6 +21,7 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.node.app.spi.AppContext;
+import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.tss.TssBaseService;
 import com.hedera.node.app.tss.TssBaseServiceImpl;
 import com.hedera.node.app.tss.handlers.TssHandlers;
@@ -149,7 +150,7 @@ public class FakeTssBaseService implements TssBaseService {
     @Override
     public void bootstrapLedgerId(
             @NonNull final Roster roster,
-            @NonNull final TssContext context,
+            @NonNull final HandleContext context,
             @NonNull final Consumer<Bytes> ledgerIdConsumer) {
         requireNonNull(roster);
         requireNonNull(context);
@@ -185,7 +186,7 @@ public class FakeTssBaseService implements TssBaseService {
     }
 
     @Override
-    public void startKeyingCandidate(@NonNull final Roster roster, @NonNull final TssContext context) {
+    public void startKeyingCandidate(@NonNull final Roster roster, @NonNull final HandleContext context) {
         requireNonNull(roster);
         requireNonNull(context);
         delegate.startKeyingCandidate(roster, context);

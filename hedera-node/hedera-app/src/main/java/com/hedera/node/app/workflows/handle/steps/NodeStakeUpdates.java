@@ -27,11 +27,10 @@ import com.hedera.node.app.records.ReadableBlockRecordStore;
 import com.hedera.node.app.service.token.impl.handlers.staking.EndOfStakingPeriodUpdater;
 import com.hedera.node.app.service.token.records.TokenContext;
 import com.hedera.node.app.tss.TssBaseService;
-import com.hedera.node.app.tss.TssBaseService.TssContext;
+import com.hedera.node.app.workflows.handle.Dispatch;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.node.config.data.StakingConfig;
 import com.hedera.node.config.data.TssConfig;
-import com.swirlds.state.spi.info.NetworkInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -73,16 +72,16 @@ public class NodeStakeUpdates {
      * <b>which should only happen on node startup.</b> The node should therefore run this process
      * to catch up on updates and distributions when first coming online.
      *
-     * @param stack the savepoint stack
+     * @param stack        the savepoint stack
      * @param tokenContext the token context
-     * @param isGenesis whether the current transaction is the genesis transaction
-     * @param networkInfo the network information
+     * @param isGenesis    whether the current transaction is the genesis transaction
+     * @param dispatch     the dispatch
      */
     public void process(
             @NonNull final SavepointStackImpl stack,
             @NonNull final TokenContext tokenContext,
             final boolean isGenesis,
-            @NonNull final NetworkInfo networkInfo) {
+            final Dispatch dispatch) {
         requireNonNull(stack, "stack must not be null");
         requireNonNull(tokenContext, "tokenContext must not be null");
         final var blockStore = tokenContext.readableStore(ReadableBlockRecordStore.class);
@@ -122,8 +121,7 @@ public class NodeStakeUpdates {
             final var config = tokenContext.configuration();
             final var tssConfig = config.getConfigData(TssConfig.class);
             if (tssConfig.keyCandidateRoster()) {
-                final var context =
-                        new TssContext(config, networkInfo.selfNodeInfo().accountId(), tokenContext.consensusTime());
+                final var context = dispatch.handleContext();
                 // (TSS-FUTURE) Start keying the actual candidate roster from the RosterService
                 tssBaseService.startKeyingCandidate(Roster.DEFAULT, context);
             }

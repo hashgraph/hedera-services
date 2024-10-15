@@ -28,7 +28,7 @@ import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.hapi.services.auxiliary.tss.TssMessageTransactionBody;
 import com.hedera.hapi.services.auxiliary.tss.TssVoteTransactionBody;
 import com.hedera.node.app.spi.AppContext;
-import com.hedera.node.app.tss.TssBaseService.TssContext;
+import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.data.TssConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -66,7 +66,7 @@ public class TssSubmissions {
      * @return a future that completes when the message has been submitted
      */
     public CompletableFuture<Void> submitTssMessage(
-            @NonNull final TssMessageTransactionBody body, @NonNull final TssContext context) {
+            @NonNull final TssMessageTransactionBody body, @NonNull final HandleContext context) {
         requireNonNull(body);
         requireNonNull(context);
         return submit(b -> b.tssMessage(body), context);
@@ -80,15 +80,15 @@ public class TssSubmissions {
      * @return a future that completes when the vote has been submitted
      */
     public CompletableFuture<Void> submitTssVote(
-            @NonNull final TssVoteTransactionBody body, @NonNull final TssContext context) {
+            @NonNull final TssVoteTransactionBody body, @NonNull final HandleContext context) {
         requireNonNull(body);
         requireNonNull(context);
         return submit(b -> b.tssVote(body), context);
     }
 
     private CompletableFuture<Void> submit(
-            @NonNull final Consumer<TransactionBody.Builder> spec, @NonNull final TssContext context) {
-        final var config = context.config();
+            @NonNull final Consumer<TransactionBody.Builder> spec, @NonNull final HandleContext context) {
+        final var config = context.configuration();
         final var tssConfig = config.getConfigData(TssConfig.class);
         final var hederaConfig = config.getConfigData(HederaConfig.class);
         final var validDuration = new Duration(hederaConfig.transactionMaxValidDuration());
@@ -102,8 +102,10 @@ public class TssSubmissions {
                     do {
                         int txnIdsLeft = tssConfig.distinctTxnIdsToTry();
                         do {
-                            final var builder =
-                                    builderWith(validStartTime.get(), context.selfAccountId(), validDuration);
+                            final var builder = builderWith(
+                                    validStartTime.get(),
+                                    context.networkInfo().selfNodeInfo().accountId(),
+                                    validDuration);
                             spec.accept(builder);
                             body = builder.build();
                             try {

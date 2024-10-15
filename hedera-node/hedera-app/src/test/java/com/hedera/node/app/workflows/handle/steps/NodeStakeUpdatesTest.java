@@ -34,11 +34,11 @@ import com.hedera.node.app.records.ReadableBlockRecordStore;
 import com.hedera.node.app.service.token.impl.handlers.staking.EndOfStakingPeriodUpdater;
 import com.hedera.node.app.service.token.records.TokenContext;
 import com.hedera.node.app.tss.TssBaseService;
+import com.hedera.node.app.workflows.handle.Dispatch;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.node.config.data.StakingConfig;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.state.spi.info.NetworkInfo;
 import java.time.Duration;
 import java.time.Instant;
 import org.assertj.core.api.Assertions;
@@ -71,7 +71,7 @@ class NodeStakeUpdatesTest {
     private SavepointStackImpl stack;
 
     @Mock
-    private NetworkInfo networkInfo;
+    private Dispatch dispatch;
 
     private NodeStakeUpdates subject;
 
@@ -102,7 +102,7 @@ class NodeStakeUpdatesTest {
         given(exchangeRateManager.exchangeRates()).willReturn(ExchangeRateSet.DEFAULT);
         given(context.configuration()).willReturn(DEFAULT_CONFIG);
 
-        subject.process(stack, context, true, networkInfo);
+        subject.process(stack, context, true, dispatch);
 
         verify(stakingPeriodCalculator).updateNodes(context, ExchangeRateSet.DEFAULT);
         verify(exchangeRateManager).updateMidnightRates(stack);
@@ -119,7 +119,7 @@ class NodeStakeUpdatesTest {
                                 .nanos(CONSENSUS_TIME_1234567.getNano()))
                         .build());
 
-        subject.process(stack, context, false, networkInfo);
+        subject.process(stack, context, false, dispatch);
 
         verifyNoInteractions(stakingPeriodCalculator);
         verifyNoInteractions(exchangeRateManager);
@@ -144,7 +144,7 @@ class NodeStakeUpdatesTest {
                 .isTrue();
         given(exchangeRateManager.exchangeRates()).willReturn(ExchangeRateSet.DEFAULT);
 
-        subject.process(stack, context, false, networkInfo);
+        subject.process(stack, context, false, dispatch);
 
         verify(stakingPeriodCalculator)
                 .updateNodes(
@@ -166,7 +166,7 @@ class NodeStakeUpdatesTest {
         given(context.consensusTime()).willReturn(CONSENSUS_TIME_1234567.plus(Duration.ofDays(2)));
         given(context.configuration()).willReturn(DEFAULT_CONFIG);
 
-        Assertions.assertThatNoException().isThrownBy(() -> subject.process(stack, context, false, networkInfo));
+        Assertions.assertThatNoException().isThrownBy(() -> subject.process(stack, context, false, dispatch));
         verify(stakingPeriodCalculator).updateNodes(context, ExchangeRateSet.DEFAULT);
         verify(exchangeRateManager).updateMidnightRates(stack);
     }

@@ -45,13 +45,13 @@ class TssMessageHandlerTest {
     @Mock
     private PreHandleContext preHandleContext;
 
-    @Mock
+    @Mock(strictness = Mock.Strictness.LENIENT)
     private HandleContext handleContext;
 
-    @Mock
+    @Mock(strictness = Mock.Strictness.LENIENT)
     private NodeInfo nodeInfo;
 
-    @Mock
+    @Mock(strictness = Mock.Strictness.LENIENT)
     private NetworkInfo networkInfo;
 
     private TssMessageHandler subject;
