@@ -22,7 +22,6 @@ import static java.nio.file.Files.exists;
 
 import com.swirlds.base.function.CheckedBiFunction;
 import com.swirlds.common.config.StateCommonConfig;
-import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.streams.MerkleDataInputStream;
@@ -48,7 +47,7 @@ public final class SignedStateFileReader {
 
     /**
      * Same as {@link SignedStateFilePath#getSavedStateFiles(String, NodeId, String)} but uses the config from
-     * {@link ConfigurationHolder}
+     * {@link PlatformContext}
      *
      * @deprecated this uses a static config, which means that a unit test cannot configure it for its scope. this
      * causes unit tests to fail randomly if another test sets an inadequate value in the config holder.

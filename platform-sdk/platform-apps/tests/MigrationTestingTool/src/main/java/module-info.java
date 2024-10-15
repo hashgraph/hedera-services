@@ -1,6 +1,7 @@
 module com.swirlds.demo.migration {
     requires com.swirlds.base;
     requires com.swirlds.common;
+    requires com.swirlds.config.api;
     requires com.swirlds.fcqueue;
     requires com.swirlds.logging;
     requires com.swirlds.merkle;

@@ -16,11 +16,11 @@
 
 package com.swirlds.virtualmap.internal.merkle;
 
-import com.swirlds.common.config.singleton.ConfigurationHolder;
+import static java.util.Objects.requireNonNull;
+
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.virtualmap.VirtualKey;
 import com.swirlds.virtualmap.VirtualValue;
-import com.swirlds.virtualmap.config.VirtualMapConfig;
 import com.swirlds.virtualmap.datasource.VirtualDataSource;
 import com.swirlds.virtualmap.datasource.VirtualHashRecord;
 import com.swirlds.virtualmap.datasource.VirtualLeafRecord;
@@ -34,7 +34,6 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Stream;
 
@@ -81,7 +80,7 @@ public abstract class AbstractHashListener<K extends VirtualKey, V extends Virtu
     // protection from that
     private final AtomicBoolean flushInProgress = new AtomicBoolean(false);
 
-    private int reconnectFlushInterval = 0;
+    private int flushInterval = 0;
 
     /**
      * Create a new {@link ReconnectHashListener}.
@@ -96,13 +95,16 @@ public abstract class AbstractHashListener<K extends VirtualKey, V extends Virtu
      *      Virtual value serializer. Cannot be null
      * @param dataSource
      * 		The data source. Cannot be null.
+     * @param flushInterval
+     *      The number of nodes to hash before they are flushed to disk
      */
     protected AbstractHashListener(
             final long firstLeafPath,
             final long lastLeafPath,
             final KeySerializer<K> keySerializer,
             final ValueSerializer<V> valueSerializer,
-            final VirtualDataSource dataSource) {
+            final VirtualDataSource dataSource,
+            final int flushInterval) {
 
         if (firstLeafPath != Path.INVALID_PATH && !(firstLeafPath > 0 && firstLeafPath <= lastLeafPath)) {
             throw new IllegalArgumentException("The first leaf path is invalid. firstLeafPath=" + firstLeafPath
@@ -116,9 +118,10 @@ public abstract class AbstractHashListener<K extends VirtualKey, V extends Virtu
 
         this.firstLeafPath = firstLeafPath;
         this.lastLeafPath = lastLeafPath;
-        this.keySerializer = Objects.requireNonNull(keySerializer);
-        this.valueSerializer = Objects.requireNonNull(valueSerializer);
-        this.dataSource = Objects.requireNonNull(dataSource);
+        this.keySerializer = requireNonNull(keySerializer);
+        this.valueSerializer = requireNonNull(valueSerializer);
+        this.dataSource = requireNonNull(dataSource);
+        this.flushInterval = flushInterval;
     }
 
     @Override
@@ -126,8 +129,6 @@ public abstract class AbstractHashListener<K extends VirtualKey, V extends Virtu
         assert (hashes == null) && (leaves == null) : "Hashing must not be started yet";
         hashes = new ArrayList<>();
         leaves = new ArrayList<>();
-        reconnectFlushInterval =
-                ConfigurationHolder.getConfigData(VirtualMapConfig.class).reconnectFlushInterval();
     }
 
     /**
@@ -140,9 +141,7 @@ public abstract class AbstractHashListener<K extends VirtualKey, V extends Virtu
         final List<VirtualLeafRecord<K, V>> dirtyLeavesToFlush;
         synchronized (this) {
             hashes.add(new VirtualHashRecord(path, hash));
-            if ((reconnectFlushInterval > 0)
-                    && (hashes.size() >= reconnectFlushInterval)
-                    && flushInProgress.compareAndSet(false, true)) {
+            if ((flushInterval > 0) && (hashes.size() >= flushInterval) && flushInProgress.compareAndSet(false, true)) {
                 dirtyHashesToFlush = hashes;
                 hashes = new ArrayList<>();
                 dirtyLeavesToFlush = leaves;

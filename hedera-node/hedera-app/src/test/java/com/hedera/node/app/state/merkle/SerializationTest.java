@@ -83,7 +83,6 @@ class SerializationTest extends MerkleTestBase {
     void setUp() throws IOException {
         setupConstructableRegistry();
 
-        this.dir = LegacyTemporaryFileBuilder.buildTemporaryDirectory();
         this.config = new TestConfigBuilder()
                 .withSource(new SimpleConfigSource()
                         .withValue(VirtualMapConfig_.FLUSH_INTERVAL, 1 + "")
@@ -91,6 +90,7 @@ class SerializationTest extends MerkleTestBase {
                 .withConfigDataType(VirtualMapConfig.class)
                 .withConfigDataType(HederaConfig.class)
                 .getOrCreateConfig();
+        this.dir = LegacyTemporaryFileBuilder.buildTemporaryDirectory(config);
         this.networkInfo = mock(NetworkInfo.class);
     }
 
@@ -222,7 +222,7 @@ class SerializationTest extends MerkleTestBase {
 
         CRYPTO.digestTreeSync(loadedTree);
         // refreshing the dir
-        dir = LegacyTemporaryFileBuilder.buildTemporaryDirectory();
+        dir = LegacyTemporaryFileBuilder.buildTemporaryDirectory(config);
         final byte[] serializedBytesWithCache = writeTree(loadedTree, dir);
 
         // let's load it again and see if it works
@@ -253,6 +253,7 @@ class SerializationTest extends MerkleTestBase {
                 schemaV1.getVersion(),
                 schemaV1.getVersion(),
                 config,
+                config,
                 networkInfo,
                 mock(Metrics.class),
                 mock(WritableEntityIdStore.class),
@@ -272,6 +273,7 @@ class SerializationTest extends MerkleTestBase {
                 originalTree,
                 null,
                 v1,
+                config,
                 config,
                 networkInfo,
                 mock(Metrics.class),

@@ -22,6 +22,7 @@ import static com.swirlds.platform.event.AncientMode.BIRTH_ROUND_THRESHOLD;
 import static com.swirlds.platform.event.AncientMode.GENERATION_THRESHOLD;
 import static com.swirlds.platform.event.preconsensus.PcesUtilities.getDatabaseDirectory;
 import static java.nio.file.StandardCopyOption.ATOMIC_MOVE;
+import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.platform.event.GossipEvent;
 import com.swirlds.common.context.PlatformContext;
@@ -31,6 +32,7 @@ import com.swirlds.common.io.utility.FileUtils;
 import com.swirlds.common.io.utility.LegacyTemporaryFileBuilder;
 import com.swirlds.common.io.utility.RecycleBin;
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.event.PlatformEvent;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -73,6 +75,8 @@ public final class PcesBirthRoundMigration {
             final long migrationRound,
             final long minimumJudgeGenerationInMigrationRound)
             throws IOException {
+        requireNonNull(platformContext);
+        requireNonNull(selfId);
 
         final Path databaseDirectory = getDatabaseDirectory(platformContext, selfId);
 
@@ -92,7 +96,7 @@ public final class PcesBirthRoundMigration {
                     EXCEPTION.getMarker(),
                     "PCES birth round migration has already been completed, but there "
                             + "are still legacy formatted PCES files present. Cleaning up.");
-            makeBackupFiles(platformContext.getRecycleBin(), databaseDirectory);
+            makeBackupFiles(platformContext.getRecycleBin(), databaseDirectory, platformContext.getConfiguration());
             cleanUpOldFiles(databaseDirectory);
 
             return;
@@ -105,7 +109,7 @@ public final class PcesBirthRoundMigration {
                 migrationRound,
                 minimumJudgeGenerationInMigrationRound);
 
-        makeBackupFiles(platformContext.getRecycleBin(), databaseDirectory);
+        makeBackupFiles(platformContext.getRecycleBin(), databaseDirectory, platformContext.getConfiguration());
 
         final List<PlatformEvent> eventsToMigrate =
                 readEventsToBeMigrated(platformContext, selfId, minimumJudgeGenerationInMigrationRound, migrationRound);
@@ -128,13 +132,21 @@ public final class PcesBirthRoundMigration {
      *
      * @param recycleBin        the fileSystemManager
      * @param databaseDirectory the database directory (i.e. where PCES files are stored)
+     * @param configuration platform configuration
      */
-    private static void makeBackupFiles(@NonNull final RecycleBin recycleBin, @NonNull final Path databaseDirectory)
+    private static void makeBackupFiles(
+            @NonNull final RecycleBin recycleBin,
+            @NonNull final Path databaseDirectory,
+            @NonNull final Configuration configuration)
             throws IOException {
+        requireNonNull(recycleBin);
+        requireNonNull(databaseDirectory);
+        requireNonNull(configuration);
+
         logger.info(
                 STARTUP.getMarker(), "Backing up PCES files prior to PCES modification in case of unexpected failure.");
 
-        final Path copyDirectory = LegacyTemporaryFileBuilder.buildTemporaryFile("pces-backup");
+        final Path copyDirectory = LegacyTemporaryFileBuilder.buildTemporaryFile("pces-backup", configuration);
         FileUtils.hardLinkTree(databaseDirectory, copyDirectory);
         recycleBin.recycle(copyDirectory);
     }
@@ -150,6 +162,9 @@ public final class PcesBirthRoundMigration {
      */
     @NonNull
     public static List<PcesFile> findPcesFiles(@NonNull final Path path, @NonNull final AncientMode ancientMode) {
+        requireNonNull(path);
+        requireNonNull(ancientMode);
+
         try (final Stream<Path> fileStream = Files.walk(path)) {
             return fileStream
                     .filter(f -> !Files.isDirectory(f))
@@ -180,6 +195,8 @@ public final class PcesBirthRoundMigration {
             final long minimumJudgeGenerationInMigrationRound,
             final long migrationRound)
             throws IOException {
+        requireNonNull(platformContext);
+        requireNonNull(selfId);
 
         final PcesFileTracker originalFiles = PcesFileReader.readFilesFromDisk(
                 platformContext,
@@ -219,9 +236,13 @@ public final class PcesBirthRoundMigration {
             @NonNull final List<PlatformEvent> eventsToMigrate,
             final long migrationRound)
             throws IOException {
+        requireNonNull(platformContext);
+        requireNonNull(selfId);
+        requireNonNull(eventsToMigrate);
 
         // First, write the data to a temporary file. If we crash, easier to recover if this operation is atomic.
-        final Path temporaryFile = LegacyTemporaryFileBuilder.buildTemporaryFile("new-pces-file");
+        final Path temporaryFile =
+                LegacyTemporaryFileBuilder.buildTemporaryFile("new-pces-file", platformContext.getConfiguration());
         final SerializableDataOutputStream outputStream = new SerializableDataOutputStream(
                 new BufferedOutputStream(new FileOutputStream(temporaryFile.toFile())));
         outputStream.writeInt(PcesFileVersion.currentVersionNumber());
@@ -250,6 +271,8 @@ public final class PcesBirthRoundMigration {
      * @param databaseDirectory the database directory (i.e. where PCES files are stored)
      */
     private static void cleanUpOldFiles(@NonNull final Path databaseDirectory) throws IOException {
+        requireNonNull(databaseDirectory);
+
         final List<PcesFile> filesToDelete = findPcesFiles(databaseDirectory, GENERATION_THRESHOLD);
 
         logger.info(STARTUP.getMarker(), "Cleaning up old {} legacy formatted PCES files.", filesToDelete.size());
