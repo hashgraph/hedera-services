@@ -16,26 +16,78 @@
 
 package com.hedera.node.app.tss;
 
+import com.hedera.hapi.node.state.roster.Roster;
+import com.hedera.node.app.spi.workflows.HandleContext;
+import com.hedera.node.app.tss.handlers.TssHandlers;
+import com.hedera.node.app.tss.stores.ReadableTssBaseStore;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.state.spi.Service;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 
 /**
- * The TssBaseService will attempt to generate TSS key material for any set candidate roster, giving it a ledger id and
- * the ability to generate ledger signatures that can be verified by the ledger id.  Once the candidate roster has
- * received its full TSS key material, it can be made available for adoption by the platform.
+ * Provides the network's threshold signature scheme (TSS) capability and, as a side effect, the ledger id, as this
+ * is the exactly the same as the TSS public key.
  * <p>
- * The TssBaseService will also attempt to generate ledger signatures by aggregating share signatures produced by
- * calling {@link #requestLedgerSignature(byte[])}.
+ * The
  */
 public interface TssBaseService extends Service {
     String NAME = "TssBaseService";
+
+    /**
+     * The status of the TSS service relative to a given roster and ledger id.
+     */
+    enum Status {
+        /**
+         * The service cannot yet recover the expected ledger id from its current key material for the roster.
+         */
+        PENDING_LEDGER_ID,
+        /**
+         * The TSS service is ready to sign.
+         */
+        READY,
+    }
 
     @NonNull
     @Override
     default String getServiceName() {
         return NAME;
     }
+
+    /**
+     * Returns the status of the TSS service relative to the given roster, ledger id, and given TSS base state.
+     *
+     * @param roster the candidate roster
+     * @param ledgerId the expected ledger id
+     * @param tssBaseStore the store to read the TSS base state from
+     * @return the status of the TSS service
+     */
+    Status getStatus(@NonNull Roster roster, @NonNull Bytes ledgerId, @NonNull ReadableTssBaseStore tssBaseStore);
+
+    /**
+     * Adopts the given roster for TSS operations.
+     * @param roster the active roster
+     * @throws IllegalArgumentException if the expected shares cannot be aggregated
+     */
+    void adopt(@NonNull Roster roster);
+
+    /**
+     * Bootstraps the TSS service for the given roster in the given context.
+     * @param roster the network genesis roster
+     * @param context the TSS context to use for bootstrapping
+     * @param ledgerIdConsumer the consumer of the ledger id, to receive the ledger id as soon as it is available
+     */
+    void bootstrapLedgerId(
+            @NonNull Roster roster, @NonNull HandleContext context, @NonNull Consumer<Bytes> ledgerIdConsumer);
+
+    /**
+     * Starts the process of keying a candidate roster with TSS key material.
+     *
+     * @param roster the candidate roster to key
+     * @param context the TSS context
+     */
+    void startKeyingCandidate(@NonNull Roster roster, @NonNull HandleContext context);
 
     /**
      * Requests a ledger signature on a message hash.  The ledger signature is computed asynchronously and returned
@@ -58,4 +110,10 @@ public interface TssBaseService extends Service {
      * @param consumer the consumer of ledger signatures and message hashes to unregister.
      */
     void unregisterLedgerSignatureConsumer(@NonNull BiConsumer<byte[], byte[]> consumer);
+
+    /**
+     * Returns the {@link TssHandlers} for this service.
+     * @return the handlers
+     */
+    TssHandlers tssHandlers();
 }

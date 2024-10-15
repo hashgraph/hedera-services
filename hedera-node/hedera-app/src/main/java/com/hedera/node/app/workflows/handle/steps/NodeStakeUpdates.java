@@ -21,12 +21,16 @@ import static java.time.ZoneOffset.UTC;
 import static java.util.Objects.requireNonNull;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.records.ReadableBlockRecordStore;
 import com.hedera.node.app.service.token.impl.handlers.staking.EndOfStakingPeriodUpdater;
 import com.hedera.node.app.service.token.records.TokenContext;
+import com.hedera.node.app.tss.TssBaseService;
+import com.hedera.node.app.workflows.handle.Dispatch;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.node.config.data.StakingConfig;
+import com.hedera.node.config.data.TssConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -47,13 +51,16 @@ public class NodeStakeUpdates {
 
     private final EndOfStakingPeriodUpdater stakingCalculator;
     private final ExchangeRateManager exchangeRateManager;
+    private final TssBaseService tssBaseService;
 
     @Inject
     public NodeStakeUpdates(
             @NonNull final EndOfStakingPeriodUpdater stakingPeriodCalculator,
-            @NonNull final ExchangeRateManager exchangeRateManager) {
+            @NonNull final ExchangeRateManager exchangeRateManager,
+            @NonNull final TssBaseService tssBaseService) {
         this.stakingCalculator = requireNonNull(stakingPeriodCalculator);
         this.exchangeRateManager = requireNonNull(exchangeRateManager);
+        this.tssBaseService = requireNonNull(tssBaseService);
     }
 
     /**
@@ -65,14 +72,16 @@ public class NodeStakeUpdates {
      * <b>which should only happen on node startup.</b> The node should therefore run this process
      * to catch up on updates and distributions when first coming online.
      *
-     * @param stack the savepoint stack
-     * @param isGenesis whether the current transaction is the genesis transaction
+     * @param stack        the savepoint stack
      * @param tokenContext the token context
+     * @param isGenesis    whether the current transaction is the genesis transaction
+     * @param dispatch     the dispatch
      */
     public void process(
             @NonNull final SavepointStackImpl stack,
             @NonNull final TokenContext tokenContext,
-            final boolean isGenesis) {
+            final boolean isGenesis,
+            final Dispatch dispatch) {
         requireNonNull(stack, "stack must not be null");
         requireNonNull(tokenContext, "tokenContext must not be null");
         final var blockStore = tokenContext.readableStore(ReadableBlockRecordStore.class);
@@ -108,6 +117,13 @@ public class NodeStakeUpdates {
                 // If anything goes wrong, we log the error and continue
                 logger.error("CATASTROPHIC failure updating end-of-day stakes", e);
                 stack.rollbackFullStack();
+            }
+            final var config = tokenContext.configuration();
+            final var tssConfig = config.getConfigData(TssConfig.class);
+            if (tssConfig.keyCandidateRoster()) {
+                final var context = dispatch.handleContext();
+                // (TSS-FUTURE) Start keying the actual candidate roster from the RosterService
+                tssBaseService.startKeyingCandidate(Roster.DEFAULT, context);
             }
         }
     }

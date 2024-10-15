@@ -14,18 +14,9 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.services;
+package com.hedera.node.app.tss.handlers;
 
-import com.hedera.node.app.spi.AppContext;
-import com.hedera.node.app.spi.signatures.SignatureVerifier;
+import com.hedera.node.app.spi.workflows.TransactionHandler;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.time.InstantSource;
 
-/**
- * Implements the {@link AppContext} interface.
- * @param instantSource the source of the current instant
- * @param signatureVerifier the signature verifier
- */
-public record AppContextImpl(
-        @NonNull InstantSource instantSource, @NonNull SignatureVerifier signatureVerifier, @NonNull Gossip gossip)
-        implements AppContext {}
+public record TssHandlers(@NonNull TransactionHandler tssMessageHandler, @NonNull TransactionHandler tssVoteHandler) {}

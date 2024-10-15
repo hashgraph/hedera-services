@@ -49,11 +49,11 @@ import com.hedera.node.app.state.WorkingStateAccessor;
 import com.hedera.node.app.throttle.ThrottleServiceManager;
 import com.hedera.node.app.throttle.ThrottleServiceModule;
 import com.hedera.node.app.tss.TssBaseService;
-import com.hedera.node.app.tss.impl.PlaceholderTssBaseService;
 import com.hedera.node.app.workflows.FacilityInitModule;
 import com.hedera.node.app.workflows.WorkflowsInjectionModule;
 import com.hedera.node.app.workflows.handle.HandleWorkflow;
 import com.hedera.node.app.workflows.ingest.IngestWorkflow;
+import com.hedera.node.app.workflows.ingest.SubmissionManager;
 import com.hedera.node.app.workflows.prehandle.PreHandleWorkflow;
 import com.hedera.node.app.workflows.query.QueryWorkflow;
 import com.swirlds.common.crypto.Cryptography;
@@ -137,7 +137,7 @@ public interface HederaInjectionComponent {
 
     TssBaseService tssBaseService();
 
-    void inject(PlaceholderTssBaseService placeholderTssBaseService);
+    SubmissionManager submissionManager();
 
     @Component.Builder
     interface Builder {
