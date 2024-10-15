@@ -82,7 +82,7 @@ public record EventDescriptorWrapper(
      * Get the version of the class.
      * @return the version of the class
      */
-    public int getVersion() {
+    public int getClassVersion() {
         return ClassVersion.BIRTH_ROUND;
     }
 

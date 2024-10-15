@@ -42,6 +42,6 @@ public class InvalidVersionException extends IOException {
                 object.getClassId(),
                 object.getClassId(),
                 object.getMinimumSupportedVersion(),
-                object.getVersion()));
+                object.getClassVersion()));
     }
 }

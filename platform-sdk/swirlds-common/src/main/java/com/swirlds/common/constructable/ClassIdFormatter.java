@@ -58,6 +58,6 @@ public final class ClassIdFormatter {
      */
     public static String versionedClassIdString(final SerializableDet object) {
         return String.format(
-                "%s:%sv%d", object.getClass().getName(), classIdString(object.getClassId()), object.getVersion());
+                "%s:%sv%d", object.getClass().getName(), classIdString(object.getClassId()), object.getClassVersion());
     }
 }

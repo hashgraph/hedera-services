@@ -101,7 +101,7 @@ public class HederaSoftwareVersion implements SoftwareVersion {
     }
 
     @Override
-    public int getVersion() {
+    public int getClassVersion() {
         return deserializedVersion;
     }
 

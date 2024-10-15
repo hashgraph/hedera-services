@@ -74,7 +74,7 @@ public class TurtleTestingToolState extends PartialMerkleLeaf implements SwirldS
      * {@inheritDoc}
      */
     @Override
-    public int getVersion() {
+    public int getClassVersion() {
         return ClassVersion.ORIGINAL;
     }
 

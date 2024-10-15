@@ -95,7 +95,7 @@ public class StateProofPayload extends AbstractStateProofNode implements SelfSer
      * {@inheritDoc}
      */
     @Override
-    public int getVersion() {
+    public int getClassVersion() {
         return ClassVersion.ORIGINAL;
     }
 

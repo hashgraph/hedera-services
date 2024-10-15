@@ -49,7 +49,7 @@ public class RunningHashProvider extends CachingOperationProvider<Hash, Hash, Ha
      */
     private static void updateForHash(final HashBuilder hashBuilder, final Hash hash) {
         hashBuilder.update(hash.getClassId());
-        hashBuilder.update(hash.getVersion());
+        hashBuilder.update(hash.getClassVersion());
         hashBuilder.update(hash);
     }
 

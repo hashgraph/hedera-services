@@ -105,7 +105,7 @@ public final class ExampleFixedSizeVirtualValue extends ExampleByteArrayVirtualV
     }
 
     @Override
-    public int getVersion() {
+    public int getClassVersion() {
         return SERIALIZATION_VERSION;
     }
 

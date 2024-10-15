@@ -77,7 +77,7 @@ public class ExampleLongLongKeyFixedSize implements VirtualKey, FastCopyable {
         return 654838434445546360L;
     }
 
-    public int getVersion() {
+    public int getClassVersion() {
         return CURRENT_SERIALIZATION_VERSION;
     }
 
@@ -123,7 +123,7 @@ public class ExampleLongLongKeyFixedSize implements VirtualKey, FastCopyable {
 
         /** {@inheritDoc} */
         @Override
-        public int getVersion() {
+        public int getClassVersion() {
             return ClassVersion.ORIGINAL;
         }
 

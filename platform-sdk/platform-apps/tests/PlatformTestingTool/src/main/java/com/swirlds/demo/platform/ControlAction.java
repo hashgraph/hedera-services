@@ -93,7 +93,7 @@ public class ControlAction implements SelfSerializable {
     }
 
     @Override
-    public int getVersion() {
+    public int getClassVersion() {
         return 1;
     }
 }

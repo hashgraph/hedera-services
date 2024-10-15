@@ -126,7 +126,7 @@ public class BenchmarkValue implements VirtualValue {
     }
 
     @Override
-    public int getVersion() {
+    public int getClassVersion() {
         return VERSION;
     }
 

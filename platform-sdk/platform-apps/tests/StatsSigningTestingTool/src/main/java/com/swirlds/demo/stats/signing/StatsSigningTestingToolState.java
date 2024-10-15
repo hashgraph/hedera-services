@@ -232,7 +232,7 @@ public class StatsSigningTestingToolState extends PartialMerkleLeaf implements S
      * {@inheritDoc}
      */
     @Override
-    public int getVersion() {
+    public int getClassVersion() {
         return ClassVersion.NO_ADDRESS_BOOK_IN_STATE;
     }
 

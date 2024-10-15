@@ -50,7 +50,7 @@ public class BenchmarkRecord extends BenchmarkValue {
     }
 
     @Override
-    public int getVersion() {
+    public int getClassVersion() {
         return VERSION;
     }
 

@@ -43,7 +43,7 @@ public class AccountVirtualMapValueSerializer implements ValueSerializer<Account
      * {@inheritDoc}
      */
     @Override
-    public int getVersion() {
+    public int getClassVersion() {
         return ClassVersion.ORIGINAL;
     }
 

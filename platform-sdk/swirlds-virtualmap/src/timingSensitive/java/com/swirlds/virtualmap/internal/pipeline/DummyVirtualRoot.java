@@ -160,7 +160,7 @@ class DummyVirtualRoot extends PartialMerkleLeaf implements VirtualRoot, MerkleL
      * {@inheritDoc}
      */
     @Override
-    public int getVersion() {
+    public int getClassVersion() {
         return 1;
     }
 

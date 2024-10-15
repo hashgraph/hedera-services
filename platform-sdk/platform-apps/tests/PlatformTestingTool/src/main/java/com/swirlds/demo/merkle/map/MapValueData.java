@@ -198,7 +198,7 @@ public class MapValueData extends PartialMerkleLeaf implements Keyed<MapKey>, Ma
     }
 
     @Override
-    public int getVersion() {
+    public int getClassVersion() {
         return ClassVersion.UID;
     }
 

@@ -250,7 +250,7 @@ public final class VirtualInternalNode<K extends VirtualKey, V extends VirtualVa
      * {@inheritDoc}
      */
     @Override
-    public int getVersion() {
+    public int getClassVersion() {
         return SERIALIZATION_VERSION;
     }
 

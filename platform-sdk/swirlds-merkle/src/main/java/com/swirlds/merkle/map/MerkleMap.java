@@ -858,7 +858,7 @@ public class MerkleMap<K, V extends MerkleNode & Keyed<K>> extends PartialBinary
      * {@inheritDoc}
      */
     @Override
-    public int getVersion() {
+    public int getClassVersion() {
         return ClassVersion.ADDED_INFO_LEAF;
     }
 

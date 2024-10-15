@@ -152,7 +152,7 @@ public class StressTestingToolState extends PartialMerkleLeaf implements SwirldS
      * {@inheritDoc}
      */
     @Override
-    public int getVersion() {
+    public int getClassVersion() {
         return ClassVersion.NO_ADDRESS_BOOK_IN_STATE;
     }
 

@@ -211,7 +211,7 @@ class MerkleMapEntryTests {
         public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {}
 
         @Override
-        public int getVersion() {
+        public int getClassVersion() {
             return 0;
         }
     }

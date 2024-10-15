@@ -221,7 +221,7 @@ public class CesEvent extends AbstractSerializableHashable
      * {@inheritDoc}
      */
     @Override
-    public int getVersion() {
+    public int getClassVersion() {
         return CES_EVENT_VERSION_PBJ_EVENT;
     }
 

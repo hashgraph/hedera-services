@@ -105,7 +105,7 @@ public final class ServicesSoftwareVersion implements SoftwareVersion {
     }
 
     @Override
-    public int getVersion() {
+    public int getClassVersion() {
         return VERSION;
     }
 

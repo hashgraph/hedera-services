@@ -387,7 +387,7 @@ public final class MerkleDbTableConfig implements SelfSerializable {
      * {@inheritDoc}
      */
     @Override
-    public int getVersion() {
+    public int getClassVersion() {
         return ClassVersion.ORIGINAL;
     }
 

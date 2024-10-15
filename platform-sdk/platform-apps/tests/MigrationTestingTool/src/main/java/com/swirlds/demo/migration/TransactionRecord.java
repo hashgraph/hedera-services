@@ -173,7 +173,7 @@ public class TransactionRecord extends AbstractSerializableHashable implements F
      * {@inheritDoc}
      */
     @Override
-    public int getVersion() {
+    public int getClassVersion() {
         return ClassVersion.MIGRATE_TO_SERIALIZABLE;
     }
 

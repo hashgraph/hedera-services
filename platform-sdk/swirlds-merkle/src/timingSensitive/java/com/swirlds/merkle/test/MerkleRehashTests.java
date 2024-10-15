@@ -191,7 +191,7 @@ class MerkleRehashTests {
         public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {}
 
         @Override
-        public int getVersion() {
+        public int getClassVersion() {
             return 1;
         }
 
@@ -230,7 +230,7 @@ class MerkleRehashTests {
         }
 
         @Override
-        public int getVersion() {
+        public int getClassVersion() {
             return 1;
         }
 

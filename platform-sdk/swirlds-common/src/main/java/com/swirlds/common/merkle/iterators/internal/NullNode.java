@@ -127,7 +127,7 @@ public class NullNode implements MerkleLeaf {
      * {@inheritDoc}
      */
     @Override
-    public int getVersion() {
+    public int getClassVersion() {
         throw new UnsupportedOperationException();
     }
 

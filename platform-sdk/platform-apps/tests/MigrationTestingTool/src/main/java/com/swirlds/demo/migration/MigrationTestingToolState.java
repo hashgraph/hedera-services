@@ -287,7 +287,7 @@ public class MigrationTestingToolState extends PartialNaryMerkleInternal impleme
      * {@inheritDoc}
      */
     @Override
-    public int getVersion() {
+    public int getClassVersion() {
         return ClassVersion.VIRTUAL_MAP;
     }
 

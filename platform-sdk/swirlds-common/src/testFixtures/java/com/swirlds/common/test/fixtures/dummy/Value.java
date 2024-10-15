@@ -176,7 +176,7 @@ public class Value extends PartialMerkleLeaf implements Keyed<Key>, MerkleLeaf {
     }
 
     @Override
-    public int getVersion() {
+    public int getClassVersion() {
         return ClassVersion.CURRENT;
     }
 

@@ -97,7 +97,7 @@ public class BasicSoftwareVersion implements SoftwareVersion {
      * {@inheritDoc}
      */
     @Override
-    public int getVersion() {
+    public int getClassVersion() {
         return ClassVersion.ORIGINAL;
     }
 

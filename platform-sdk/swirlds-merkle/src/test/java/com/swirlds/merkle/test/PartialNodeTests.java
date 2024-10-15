@@ -102,7 +102,7 @@ class PartialNodeTests {
         public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {}
 
         @Override
-        public int getVersion() {
+        public int getClassVersion() {
             return 1;
         }
 
@@ -168,7 +168,7 @@ class PartialNodeTests {
         }
 
         @Override
-        public int getVersion() {
+        public int getClassVersion() {
             return 2;
         }
     }
@@ -184,7 +184,7 @@ class PartialNodeTests {
         }
 
         @Override
-        public int getVersion() {
+        public int getClassVersion() {
             return 3;
         }
 
@@ -243,7 +243,7 @@ class PartialNodeTests {
         }
 
         @Override
-        public int getVersion() {
+        public int getClassVersion() {
             return 4;
         }
     }
@@ -259,7 +259,7 @@ class PartialNodeTests {
         }
 
         @Override
-        public int getVersion() {
+        public int getClassVersion() {
             return 5;
         }
 
@@ -318,7 +318,7 @@ class PartialNodeTests {
         }
 
         @Override
-        public int getVersion() {
+        public int getClassVersion() {
             return 6;
         }
     }

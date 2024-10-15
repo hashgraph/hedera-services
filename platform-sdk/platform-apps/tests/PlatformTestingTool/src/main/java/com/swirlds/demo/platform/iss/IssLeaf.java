@@ -65,7 +65,7 @@ public class IssLeaf extends PartialMerkleLeaf implements MerkleLeaf {
     }
 
     @Override
-    public int getVersion() {
+    public int getClassVersion() {
         return CLASS_VERSION;
     }
 }

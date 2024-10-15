@@ -1509,7 +1509,7 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
      * {@inheritDoc}
      */
     @Override
-    public int getVersion() {
+    public int getClassVersion() {
         return ClassVersion.ADD_QUORUM_RESULT;
     }
 

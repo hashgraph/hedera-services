@@ -98,7 +98,7 @@ public class Nft extends PartialMerkleLeaf implements Keyed<NftId>, MerkleLeaf {
      * {@inheritDoc}
      */
     @Override
-    public int getVersion() {
+    public int getClassVersion() {
         return VERSION_ORIGINAL;
     }
 

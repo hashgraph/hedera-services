@@ -57,7 +57,7 @@ public class DummyCustomReconnectRoot extends DummyMerkleInternal
      * {@inheritDoc}
      */
     @Override
-    public int getVersion() {
+    public int getClassVersion() {
         return 1;
     }
 

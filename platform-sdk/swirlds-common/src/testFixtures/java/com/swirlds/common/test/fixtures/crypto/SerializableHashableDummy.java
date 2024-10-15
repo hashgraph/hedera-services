@@ -43,7 +43,7 @@ public class SerializableHashableDummy extends AbstractSerializableHashable {
     }
 
     @Override
-    public int getVersion() {
+    public int getClassVersion() {
         return CLASS_VERSION;
     }
 

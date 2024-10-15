@@ -146,7 +146,7 @@ public class Hash implements Comparable<Hash>, SerializableWithKnownLength, Seri
      * {@inheritDoc}
      */
     @Override
-    public int getVersion() {
+    public int getClassVersion() {
         return CLASS_VERSION;
     }
 

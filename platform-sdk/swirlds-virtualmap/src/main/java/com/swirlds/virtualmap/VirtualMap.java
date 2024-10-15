@@ -258,7 +258,7 @@ public final class VirtualMap<K extends VirtualKey, V extends VirtualValue> exte
      * {@inheritDoc}
      */
     @Override
-    public int getVersion() {
+    public int getClassVersion() {
         return ClassVersion.REHASH_LEAVES;
     }
 

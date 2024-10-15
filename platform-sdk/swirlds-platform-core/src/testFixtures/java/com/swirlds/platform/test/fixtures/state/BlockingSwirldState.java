@@ -126,7 +126,7 @@ public class BlockingSwirldState extends MerkleStateRoot {
      * {@inheritDoc}
      */
     @Override
-    public int getVersion() {
+    public int getClassVersion() {
         return CLASS_VERSION;
     }
 

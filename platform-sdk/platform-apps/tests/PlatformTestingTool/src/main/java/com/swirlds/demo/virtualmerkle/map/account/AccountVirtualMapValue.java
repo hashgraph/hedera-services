@@ -69,7 +69,7 @@ public class AccountVirtualMapValue implements VirtualValue {
      * {@inheritDoc}
      */
     @Override
-    public int getVersion() {
+    public int getClassVersion() {
         return ClassVersion.ORIGINAL;
     }
 

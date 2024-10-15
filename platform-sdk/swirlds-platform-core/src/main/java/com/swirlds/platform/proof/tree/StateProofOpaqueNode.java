@@ -91,7 +91,7 @@ public class StateProofOpaqueNode extends AbstractStateProofNode implements Self
      * {@inheritDoc}
      */
     @Override
-    public int getVersion() {
+    public int getClassVersion() {
         return ClassVersion.ORIGINAL;
     }
 

@@ -39,7 +39,7 @@ public final class SmartContractMapKeySerializer implements KeySerializer<SmartC
     }
 
     @Override
-    public int getVersion() {
+    public int getClassVersion() {
         return ClassVersion.ORIGINAL;
     }
 

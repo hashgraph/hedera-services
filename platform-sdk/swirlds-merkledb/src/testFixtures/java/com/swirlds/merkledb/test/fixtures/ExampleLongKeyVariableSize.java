@@ -105,7 +105,7 @@ public class ExampleLongKeyVariableSize implements VirtualKey {
         return 5614541343884544469L;
     }
 
-    public int getVersion() {
+    public int getClassVersion() {
         return CURRENT_SERIALIZATION_VERSION;
     }
 
@@ -154,7 +154,7 @@ public class ExampleLongKeyVariableSize implements VirtualKey {
 
         /** {@inheritDoc} */
         @Override
-        public int getVersion() {
+        public int getClassVersion() {
             return ClassVersion.ORIGINAL;
         }
 

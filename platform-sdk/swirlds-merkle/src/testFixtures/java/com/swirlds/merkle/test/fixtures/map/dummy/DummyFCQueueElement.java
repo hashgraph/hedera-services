@@ -100,7 +100,7 @@ public class DummyFCQueueElement implements FastCopyable, SerializableHashable {
      * {@inheritDoc}
      */
     @Override
-    public int getVersion() {
+    public int getClassVersion() {
         return ClassVersion.ORIGINAL;
     }
 

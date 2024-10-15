@@ -113,7 +113,7 @@ public final class ExampleVariableSizeVirtualValue extends ExampleByteArrayVirtu
     }
 
     @Override
-    public int getVersion() {
+    public int getClassVersion() {
         return SERIALIZATION_VERSION;
     }
 
