@@ -16,7 +16,6 @@
 
 package com.swirlds.platform.wiring;
 
-import static com.swirlds.common.wiring.model.diagram.HyperlinkBuilder.platformCoreHyperlink;
 import static com.swirlds.common.wiring.schedulers.builders.TaskSchedulerConfiguration.DIRECT_THREADSAFE_CONFIGURATION;
 import static com.swirlds.common.wiring.schedulers.builders.TaskSchedulerConfiguration.NO_OP_CONFIGURATION;
 import static com.swirlds.common.wiring.wires.SolderType.INJECT;
@@ -29,11 +28,7 @@ import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.io.IOIterator;
 import com.swirlds.common.stream.RunningEventHashOverride;
 import com.swirlds.common.wiring.component.ComponentWiring;
-import com.swirlds.common.wiring.counters.BackpressureObjectCounter;
-import com.swirlds.common.wiring.counters.ObjectCounter;
 import com.swirlds.common.wiring.model.WiringModel;
-import com.swirlds.common.wiring.schedulers.TaskScheduler;
-import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerBuilder;
 import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerConfiguration;
 import com.swirlds.common.wiring.transformers.RoutableData;
 import com.swirlds.common.wiring.transformers.WireFilter;
@@ -108,16 +103,13 @@ import com.swirlds.platform.system.status.StatusActionSubmitter;
 import com.swirlds.platform.system.status.StatusStateMachine;
 import com.swirlds.platform.system.transaction.TransactionWrapper;
 import com.swirlds.platform.wiring.components.GossipWiring;
-import com.swirlds.platform.wiring.components.PassThroughWiring;
 import com.swirlds.platform.wiring.components.PcesReplayerWiring;
 import com.swirlds.platform.wiring.components.RunningEventHashOverrideWiring;
 import com.swirlds.platform.wiring.components.StateAndRound;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.time.Duration;
 import java.util.List;
 import java.util.Objects;
-import java.util.function.LongSupplier;
 
 /**
  * Encapsulates wiring for {@link com.swirlds.platform.SwirldsPlatform}.
@@ -131,7 +123,6 @@ public class PlatformWiring {
     private final boolean inlinePces;
 
     private final ComponentWiring<EventHasher, PlatformEvent> eventHasherWiring;
-    private final PassThroughWiring<PlatformEvent> postHashCollectorWiring;
     private final ComponentWiring<InternalEventValidator, PlatformEvent> internalEventValidatorWiring;
     private final ComponentWiring<EventDeduplicator, PlatformEvent> eventDeduplicatorWiring;
     private final ComponentWiring<EventSignatureValidator, PlatformEvent> eventSignatureValidatorWiring;
@@ -179,8 +170,6 @@ public class PlatformWiring {
     private final ComponentWiring<BranchDetector, PlatformEvent> branchDetectorWiring;
     private final ComponentWiring<BranchReporter, Void> branchReporterWiring;
 
-    private final boolean hashCollectorEnabled;
-
     /**
      * Constructor.
      *
@@ -202,7 +191,6 @@ public class PlatformWiring {
                 .getConfiguration()
                 .getConfigData(ComponentWiringConfig.class)
                 .inlinePces();
-        hashCollectorEnabled = config.hashCollectorEnabled();
 
         final AncientMode ancientMode = platformContext
                 .getConfiguration()
@@ -215,29 +203,7 @@ public class PlatformWiring {
             birthRoundMigrationShimWiring = null;
         }
 
-        // Provides back pressure across both the event hasher and the post hash collector
-        final ObjectCounter hashingObjectCounter;
-        if (hashCollectorEnabled) {
-            hashingObjectCounter = new BackpressureObjectCounter(
-                    "hashingObjectCounter",
-                    platformContext
-                            .getConfiguration()
-                            .getConfigData(PlatformSchedulersConfig.class)
-                            .eventHasherUnhandledCapacity(),
-                    Duration.ofNanos(100));
-        } else {
-            hashingObjectCounter = null;
-        }
-
-        eventHasherWiring =
-                new ComponentWiring<>(model, EventHasher.class, buildEventHasherScheduler(hashingObjectCounter));
-
-        if (hashCollectorEnabled) {
-            postHashCollectorWiring = new PassThroughWiring<>(
-                    model, "PlatformEvent", buildPostHashCollectorScheduler(hashingObjectCounter));
-        } else {
-            postHashCollectorWiring = null;
-        }
+        eventHasherWiring = new ComponentWiring<>(model, EventHasher.class, config.eventHasher());
 
         internalEventValidatorWiring =
                 new ComponentWiring<>(model, InternalEventValidator.class, config.internalEventValidator());
@@ -328,13 +294,7 @@ public class PlatformWiring {
         branchReporterWiring = new ComponentWiring<>(model, BranchReporter.class, config.branchReporter());
 
         platformCoordinator = new PlatformCoordinator(
-                () -> {
-                    if (hashCollectorEnabled) {
-                        hashingObjectCounter.waitUntilEmpty();
-                    } else {
-                        eventHasherWiring.flush();
-                    }
-                },
+                eventHasherWiring::flush,
                 internalEventValidatorWiring,
                 eventDeduplicatorWiring,
                 eventSignatureValidatorWiring,
@@ -355,53 +315,6 @@ public class PlatformWiring {
                 pcesInlineWriterWiring);
 
         wire();
-    }
-
-    /**
-     * Build the event hasher scheduler. Normally we don't build schedulers in this class, but a special exception is
-     * made here because for back pressure reasons. Will be removed from this class when we implement a platform health
-     * monitor.
-     *
-     * @param hashingObjectCounter the object counter to use for back pressure
-     * @return the event hasher scheduler
-     */
-    @NonNull
-    private TaskScheduler<PlatformEvent> buildEventHasherScheduler(@NonNull final ObjectCounter hashingObjectCounter) {
-        final TaskSchedulerBuilder<Object> builder = model.schedulerBuilder("EventHasher")
-                .configure(config.eventHasher())
-                .withUnhandledTaskMetricEnabled(true)
-                .withHyperlink(platformCoreHyperlink(EventHasher.class));
-
-        if (hashCollectorEnabled) {
-            builder.withOnRamp(hashingObjectCounter).withExternalBackPressure(true);
-        } else {
-            builder.withUnhandledTaskCapacity(platformContext
-                            .getConfiguration()
-                            .getConfigData(PlatformSchedulersConfig.class)
-                            .eventHasherUnhandledCapacity())
-                    .withFlushingEnabled(true);
-        }
-
-        return builder.build().cast();
-    }
-
-    /**
-     * Build the post hash collector scheduler. Normally we don't build schedulers in this class, but a special
-     * exception is made here because for back pressure reasons. Will be removed from this class when we implement a
-     * platform health monitor.
-     *
-     * @param hashingObjectCounter the object counter to use for back pressure
-     * @return the post hash collector scheduler
-     */
-    @NonNull
-    private TaskScheduler<PlatformEvent> buildPostHashCollectorScheduler(
-            @NonNull final ObjectCounter hashingObjectCounter) {
-        return model.schedulerBuilder("PostHashCollector")
-                .configure(config.postHashCollector())
-                .withOffRamp(hashingObjectCounter)
-                .withExternalBackPressure(true)
-                .build()
-                .cast();
     }
 
     /**
@@ -475,16 +388,9 @@ public class PlatformWiring {
         }
 
         gossipWiring.getEventOutput().solderTo(pipelineInputWire);
-        if (hashCollectorEnabled) {
-            eventHasherWiring.getOutputWire().solderTo(postHashCollectorWiring.getInputWire());
-            postHashCollectorWiring
-                    .getOutputWire()
-                    .solderTo(internalEventValidatorWiring.getInputWire(InternalEventValidator::validateEvent));
-        } else {
-            eventHasherWiring
-                    .getOutputWire()
-                    .solderTo(internalEventValidatorWiring.getInputWire(InternalEventValidator::validateEvent));
-        }
+        eventHasherWiring
+                .getOutputWire()
+                .solderTo(internalEventValidatorWiring.getInputWire(InternalEventValidator::validateEvent));
 
         internalEventValidatorWiring
                 .getOutputWire()
@@ -1038,24 +944,6 @@ public class PlatformWiring {
     }
 
     /**
-     * Get a supplier for the number of unprocessed tasks at the front of the intake pipeline. This is for the purpose
-     * of applying backpressure to the event creator and gossip when the intake pipeline is overloaded.
-     * <p>
-     * Technically, the first component of the intake pipeline is the hasher, but tasks to be passed along actually
-     * accumulate in the post hash collector. This is due to how the concurrent hasher handles backpressure.
-     *
-     * @return a supplier for the number of unprocessed tasks in the PostHashCollector
-     */
-    @NonNull
-    public LongSupplier getIntakeQueueSizeSupplier() {
-        if (hashCollectorEnabled) {
-            return () -> postHashCollectorWiring.getScheduler().getUnprocessedTaskCount();
-        } else {
-            return () -> 0;
-        }
-    }
-
-    /**
      * Update the running hash for all components that need it.
      *
      * @param runningHashUpdate the object containing necessary information to update the running hash
@@ -1069,7 +957,6 @@ public class PlatformWiring {
      *
      * @param state the overriding state
      */
-    @NonNull
     public void overrideIssDetectorState(@NonNull final ReservedSignedState state) {
         issDetectorWiring.getInputWire(IssDetector::overridingState).put(state);
     }

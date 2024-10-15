@@ -505,10 +505,7 @@ public class PlatformComponentBuilder {
                     blocks.transactionPoolNexus());
 
             eventCreationManager = new DefaultEventCreationManager(
-                    blocks.platformContext(),
-                    blocks.transactionPoolNexus(),
-                    blocks.intakeQueueSizeSupplierSupplier().get(),
-                    eventCreator);
+                    blocks.platformContext(), blocks.transactionPoolNexus(), eventCreator);
         }
         return eventCreationManager;
     }
@@ -1043,7 +1040,6 @@ public class PlatformComponentBuilder {
                     blocks.initialAddressBook(),
                     blocks.selfId(),
                     blocks.appVersion(),
-                    () -> blocks.intakeQueueSizeSupplierSupplier().get().getAsLong(),
                     blocks.swirldStateManager(),
                     () -> blocks.getLatestCompleteStateReference().get().get(),
                     x -> blocks.statusActionSubmitterReference().get().submitStatusAction(x),

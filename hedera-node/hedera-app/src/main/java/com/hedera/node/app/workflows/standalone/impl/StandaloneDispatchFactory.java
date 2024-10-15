@@ -17,6 +17,7 @@
 package com.hedera.node.app.workflows.standalone.impl;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
+import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.NODE;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.USER;
 import static com.hedera.node.app.workflows.handle.HandleWorkflow.initializeBuilderInfo;
 import static com.hedera.node.app.workflows.handle.dispatch.ChildDispatchFactory.NO_OP_KEY_VERIFIER;
@@ -210,10 +211,14 @@ public class StandaloneDispatchFactory {
                 preHandleResult.getHollowAccounts(),
                 dispatchHandleContext,
                 stack,
-                USER,
+                getTxnCategory(preHandleResult),
                 tokenContext,
                 preHandleResult,
                 HandleContext.ConsensusThrottling.ON);
+    }
+
+    public static HandleContext.TransactionCategory getTxnCategory(final PreHandleResult preHandleResult) {
+        return requireNonNull(preHandleResult.txInfo()).signatureMap().sigPair().isEmpty() ? NODE : USER;
     }
 
     private ConsensusTransaction consensusTransactionFor(@NonNull final TransactionBody transactionBody) {

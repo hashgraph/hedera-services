@@ -24,7 +24,6 @@ import java.time.Duration;
 /**
  * Contains configuration values for the platform schedulers.
  *
- * @param eventHasherUnhandledCapacity         number of unhandled tasks allowed in the event hasher scheduler
  * @param internalEventValidator               configuration for the internal event validator scheduler
  * @param eventDeduplicator                    configuration for the event deduplicator scheduler
  * @param eventSignatureValidator              configuration for the event signature validator scheduler
@@ -58,13 +57,11 @@ import java.time.Duration;
  * @param transactionPool                      configuration for the transaction pool scheduler
  * @param gossip                               configuration for the gossip scheduler
  * @param eventHasher                          configuration for the event hasher scheduler
- * @param postHashCollector                    configuration for the post hash collector scheduler
  * @param branchDetector                       configuration for the branch detector scheduler
  * @param branchReporter                       configuration for the branch reporter scheduler
  */
 @ConfigData("platformSchedulers")
 public record PlatformSchedulersConfig(
-        @ConfigProperty(defaultValue = "500") int eventHasherUnhandledCapacity,
         @ConfigProperty(defaultValue = "CONCURRENT CAPACITY(500) FLUSHABLE UNHANDLED_TASK_METRIC")
                 TaskSchedulerConfiguration internalEventValidator,
         @ConfigProperty(defaultValue = "SEQUENTIAL CAPACITY(5000) FLUSHABLE UNHANDLED_TASK_METRIC")
@@ -128,12 +125,9 @@ public record PlatformSchedulersConfig(
         @ConfigProperty(defaultValue = "DIRECT_THREADSAFE") TaskSchedulerConfiguration transactionPool,
         @ConfigProperty(defaultValue = "SEQUENTIAL CAPACITY(500) FLUSHABLE UNHANDLED_TASK_METRIC")
                 TaskSchedulerConfiguration gossip,
-        @ConfigProperty(defaultValue = "CONCURRENT CAPACITY(5000) UNHANDLED_TASK_METRIC")
+        @ConfigProperty(defaultValue = "CONCURRENT CAPACITY(500) FLUSHABLE UNHANDLED_TASK_METRIC")
                 TaskSchedulerConfiguration eventHasher,
-        @ConfigProperty(defaultValue = "SEQUENTIAL CAPACITY(-1) UNHANDLED_TASK_METRIC")
-                TaskSchedulerConfiguration postHashCollector,
         @ConfigProperty(defaultValue = "SEQUENTIAL CAPACITY(500) FLUSHABLE UNHANDLED_TASK_METRIC")
                 TaskSchedulerConfiguration branchDetector,
         @ConfigProperty(defaultValue = "SEQUENTIAL CAPACITY(500) FLUSHABLE UNHANDLED_TASK_METRIC")
-                TaskSchedulerConfiguration branchReporter,
-        @ConfigProperty(defaultValue = "false") boolean hashCollectorEnabled) {}
+                TaskSchedulerConfiguration branchReporter) {}
