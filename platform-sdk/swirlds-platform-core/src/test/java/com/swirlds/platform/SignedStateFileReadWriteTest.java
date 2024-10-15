@@ -163,7 +163,7 @@ class SignedStateFileReadWriteTest {
                 .build();
 
         writeSignedStateToDisk(
-                platformContext, new NodeId(0), directory, signedState, StateToDiskReason.PERIODIC_SNAPSHOT);
+                platformContext, NodeId.of(0), directory, signedState, StateToDiskReason.PERIODIC_SNAPSHOT);
 
         assertTrue(exists(stateFile), "state file should exist");
         assertTrue(exists(hashInfoFile), "hash info file should exist");

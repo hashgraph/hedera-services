@@ -117,7 +117,7 @@ class PcesFileManagerTests {
         Instant timestamp = Instant.now();
 
         final PcesFileManager generatingManager =
-                new PcesFileManager(platformContext, new PcesFileTracker(ancientMode), new NodeId(0), 0);
+                new PcesFileManager(platformContext, new PcesFileTracker(ancientMode), NodeId.of(0), 0);
 
         for (int i = 0; i < fileCount; i++) {
             final PcesFile file = generatingManager.getNextFileDescriptor(lowerBound, upperBound);
@@ -183,7 +183,7 @@ class PcesFileManagerTests {
 
         final PcesFileTracker fileTracker =
                 PcesFileReader.readFilesFromDisk(platformContext, fileDirectory, 0, false, ancientMode);
-        final PcesFileManager manager = new PcesFileManager(platformContext, fileTracker, new NodeId(0), 0);
+        final PcesFileManager manager = new PcesFileManager(platformContext, fileTracker, NodeId.of(0), 0);
 
         assertIteratorEquality(files.iterator(), fileTracker.getFileIterator(NO_LOWER_BOUND, 0));
 
@@ -296,7 +296,7 @@ class PcesFileManagerTests {
 
         final PcesFileTracker fileTracker =
                 PcesFileReader.readFilesFromDisk(platformContext, fileDirectory, 0, false, ancientMode);
-        final PcesFileManager manager = new PcesFileManager(platformContext, fileTracker, new NodeId(0), 0);
+        final PcesFileManager manager = new PcesFileManager(platformContext, fileTracker, NodeId.of(0), 0);
 
         assertIteratorEquality(files.iterator(), fileTracker.getFileIterator(NO_LOWER_BOUND, 0));
 

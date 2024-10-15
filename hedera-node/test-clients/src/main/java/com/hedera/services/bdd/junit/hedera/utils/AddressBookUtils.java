@@ -172,6 +172,6 @@ public class AddressBookUtils {
      */
     public static Address nodeAddressFrom(@NonNull final AddressBook addressBook, final long nodeId) {
         requireNonNull(addressBook);
-        return addressBook.getAddress(new NodeId(nodeId));
+        return addressBook.getAddress(NodeId.of(nodeId));
     }
 }
