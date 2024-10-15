@@ -32,24 +32,24 @@ public interface IntakeEventCounter {
      * @param peer the peer to check for unprocessed events
      * @return true if there are unprocessed events, false otherwise
      */
-    boolean hasUnprocessedEvents(@NonNull final NodeId peer);
+    boolean hasUnprocessedEvents(@NonNull NodeId peer);
 
     /**
-     * Indicates that an event from a given peer has entered the intake pipeline
+     * Indicates that an event from a given peer has entered the intake pipeline.
      *
      * @param peer the peer that sent the event
      */
-    void eventEnteredIntakePipeline(@NonNull final NodeId peer);
+    void eventEnteredIntakePipeline(@NonNull NodeId peer);
 
     /**
-     * Indicates that an event from a given peer has exited the intake pipeline
+     * Indicates that an event from a given peer has exited the intake pipeline.
      *
      * @param peer the peer that sent the event
      */
-    void eventExitedIntakePipeline(@Nullable final NodeId peer);
+    void eventExitedIntakePipeline(@Nullable NodeId peer);
 
     /**
-     * Reset event counts
+     * Reset event counts.
      */
     void reset();
 }
