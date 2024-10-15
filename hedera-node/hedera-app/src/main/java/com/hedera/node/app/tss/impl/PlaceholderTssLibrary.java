@@ -19,7 +19,6 @@ package com.hedera.node.app.tss.impl;
 import com.hedera.cryptography.pairings.signatures.api.PairingPrivateKey;
 import com.hedera.cryptography.pairings.signatures.api.PairingPublicKey;
 import com.hedera.cryptography.pairings.signatures.api.PairingSignature;
-import com.hedera.cryptography.tss.api.TssMessage;
 import com.hedera.cryptography.tss.api.TssParticipantDirectory;
 import com.hedera.cryptography.tss.api.TssPrivateShare;
 import com.hedera.cryptography.tss.api.TssPublicShare;
@@ -29,31 +28,31 @@ import java.util.List;
 import org.jetbrains.annotations.NotNull;
 
 public class PlaceholderTssLibrary implements TssLibrary {
-    @NotNull
-    @Override
-    public TssMessage generateTssMessage(@NotNull TssParticipantDirectory tssParticipantDirectory) {
-        return null;
-    }
-
-    @NotNull
-    @Override
-    public TssMessage generateTssMessage(
-            @NotNull TssParticipantDirectory tssParticipantDirectory, @NotNull TssPrivateShare privateShare) {
-        return null;
-    }
-
-    @Override
-    public boolean verifyTssMessage(
-            @NotNull TssParticipantDirectory participantDirectory, @NotNull TssMessage tssMessage) {
-        return false;
-    }
-
-    @NotNull
-    @Override
-    public List<TssPrivateShare> decryptPrivateShares(
-            @NotNull TssParticipantDirectory participantDirectory, @NotNull List<TssMessage> validTssMessages) {
-        return List.of();
-    }
+    //    @NotNull
+    //    @Override
+    //    public TssMessage generateTssMessage(@NotNull TssParticipantDirectory tssParticipantDirectory) {
+    //        return null;
+    //    }
+    //
+    //    @NotNull
+    //    @Override
+    //    public TssMessage generateTssMessage(
+    //            @NotNull TssParticipantDirectory tssParticipantDirectory, @NotNull TssPrivateShare privateShare) {
+    //        return null;
+    //    }
+    //
+    //    @Override
+    //    public boolean verifyTssMessage(
+    //            @NotNull TssParticipantDirectory participantDirectory, @NotNull TssMessage tssMessage) {
+    //        return false;
+    //    }
+    //
+    //    @NotNull
+    //    @Override
+    //    public List<TssPrivateShare> decryptPrivateShares(
+    //            @NotNull TssParticipantDirectory participantDirectory, @NotNull List<TssMessage> validTssMessages) {
+    //        return List.of();
+    //    }
 
     @NotNull
     @Override
@@ -61,12 +60,12 @@ public class PlaceholderTssLibrary implements TssLibrary {
         return null;
     }
 
-    @NotNull
-    @Override
-    public List<TssPublicShare> computePublicShares(
-            @NotNull TssParticipantDirectory participantDirectory, @NotNull List<TssMessage> validTssMessages) {
-        return List.of();
-    }
+    //    @NotNull
+    //    @Override
+    //    public List<TssPublicShare> computePublicShares(
+    //            @NotNull TssParticipantDirectory participantDirectory, @NotNull List<TssMessage> validTssMessages) {
+    //        return List.of();
+    //    }
 
     @NotNull
     @Override

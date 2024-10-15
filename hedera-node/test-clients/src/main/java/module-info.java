@@ -61,6 +61,7 @@ module com.hedera.node.test.clients {
     exports com.hedera.services.bdd.junit.support.validators.utils;
     exports com.hedera.services.bdd.junit.support.validators.block;
     exports com.hedera.services.bdd.utils;
+    exports com.hedera.services.bdd.junit.hedera.embedded.fakes.tss;
 
     requires transitive com.hedera.node.app.hapi.fees;
     requires transitive com.hedera.node.app.hapi.utils;
@@ -77,6 +78,9 @@ module com.hedera.node.test.clients {
     requires transitive com.fasterxml.jackson.annotation;
     requires transitive com.google.common;
     requires transitive com.google.protobuf;
+    requires transitive com.hedera.cryptography.pairings.api;
+    requires transitive com.hedera.cryptography.pairings.signatures;
+    requires transitive com.hedera.cryptography.tss;
     requires transitive headlong;
     requires transitive io.grpc;
     requires transitive net.i2p.crypto.eddsa;
