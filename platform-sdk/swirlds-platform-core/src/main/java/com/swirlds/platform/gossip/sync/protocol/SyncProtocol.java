@@ -18,12 +18,12 @@ package com.swirlds.platform.gossip.sync.protocol;
 
 import static com.swirlds.common.utility.CompareTo.isGreaterThanOrEqualTo;
 
+import com.hedera.service.gossip.FallenBehindManager;
 import com.hedera.service.gossip.IntakeEventCounter;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.threading.pool.ParallelExecutionException;
 import com.swirlds.platform.Utilities;
-import com.swirlds.platform.gossip.FallenBehindManager;
 import com.swirlds.platform.gossip.SyncException;
 import com.swirlds.platform.gossip.permits.SyncPermitProvider;
 import com.swirlds.platform.gossip.shadowgraph.ShadowgraphSynchronizer;

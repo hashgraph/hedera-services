@@ -16,8 +16,8 @@
 
 package com.swirlds.platform.test.sync;
 
+import com.hedera.service.gossip.FallenBehindManager;
 import com.swirlds.common.platform.NodeId;
-import com.swirlds.platform.gossip.FallenBehindManager;
 import java.util.List;
 
 public class TestingSyncManager implements FallenBehindManager {
