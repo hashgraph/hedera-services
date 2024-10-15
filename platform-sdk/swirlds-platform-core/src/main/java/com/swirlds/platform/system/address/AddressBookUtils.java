@@ -163,7 +163,7 @@ public class AddressBookUtils {
         }
         final NodeId nodeId;
         try {
-            nodeId = new NodeId(Long.parseLong(parts[1]));
+            nodeId = NodeId.of(Long.parseLong(parts[1]));
         } catch (final Exception e) {
             throw new ParseException("Cannot parse node id from '" + parts[1] + "'", 1);
         }

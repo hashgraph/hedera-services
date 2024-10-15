@@ -87,7 +87,7 @@ abstract class GrpcTestBase extends TestBase {
     /**
      * Represents "this node" in our tests.
      */
-    private final NodeId nodeSelfId = new NodeId(7);
+    private final NodeId nodeSelfId = NodeId.of(7);
 
     /**
      * This {@link NettyGrpcServerManager} is used to handle the wire protocol tasks and delegate to our gRPC handlers

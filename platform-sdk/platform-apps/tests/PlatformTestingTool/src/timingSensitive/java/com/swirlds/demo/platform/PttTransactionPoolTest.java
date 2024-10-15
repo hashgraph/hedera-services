@@ -69,7 +69,7 @@ public class PttTransactionPoolTest {
 
     static {
         platform = Mockito.mock(Platform.class);
-        Mockito.when(platform.getSelfId()).thenReturn(new NodeId(myID));
+        Mockito.when(platform.getSelfId()).thenReturn(NodeId.of(myID));
         System.arraycopy(payload, 0, payloadWithSig, 0, payload.length);
         expectedFCMFamily = new DummyExpectedFCMFamily(myID);
         fCMFamily = new FCMFamily(true);
