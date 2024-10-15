@@ -190,7 +190,7 @@ public class ProcessUtils {
      *
      * @param condition the condition to wait for
      * @param checkBackoffMs the supplier of the number of milliseconds to back off between checks
-     * @return
+     * @return a future that resolves when the condition is true or the timeout is reached
      */
     public static CompletableFuture<Void> conditionFuture(
             @NonNull final BooleanSupplier condition, @NonNull final LongSupplier checkBackoffMs) {

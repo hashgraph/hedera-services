@@ -31,7 +31,7 @@ function waitForFile() {
   [[ -z "${fileName}" ]] && return 1
   for (( attempts = 0; attempts < 20; attempts++ )); do
     if [[ -f "${fileName}" ]]; then
-      size="$(stat -f '+%z' "${fileName}")"
+      size="$(stat --format='%s' "${fileName}")"
       [[ -n "${size}" && "${size}" -gt 0 ]] && return 0
     fi
     sleep 6
@@ -84,7 +84,8 @@ if [[ -n "${JAVA_HEAP_MAX}" ]]; then
   JAVA_HEAP_OPTS="${JAVA_HEAP_OPTS} -Xmx${JAVA_HEAP_MAX}"
 fi
 
-# Setup Main Class - Updated to default to the new ServicesMain entrypoint class
+# Setup Main Class - Updated to default to the ServicesMain entrypoint class introduced in release v0.35.0 and production
+# ready as of the v0.52.0 release.
 [[ -z "${JAVA_MAIN_CLASS}" ]] && JAVA_MAIN_CLASS="com.hedera.node.app.ServicesMain"
 
 # Setup Classpath

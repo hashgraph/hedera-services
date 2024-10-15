@@ -70,6 +70,7 @@ import com.hedera.node.app.service.token.impl.handlers.TokenUnpauseHandler;
 import com.hedera.node.app.service.token.impl.handlers.TokenUpdateHandler;
 import com.hedera.node.app.service.token.impl.handlers.TokenUpdateNftsHandler;
 import com.hedera.node.app.service.util.impl.handlers.UtilPrngHandler;
+import com.hedera.node.app.spi.workflows.TransactionHandler;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
@@ -130,4 +131,6 @@ public record TransactionHandlers(
         @NonNull NodeUpdateHandler nodeUpdateHandler,
         @NonNull NodeDeleteHandler nodeDeleteHandler,
         @NonNull TokenClaimAirdropHandler tokenClaimAirdropHandler,
-        @NonNull UtilPrngHandler utilPrngHandler) {}
+        @NonNull UtilPrngHandler utilPrngHandler,
+        @NonNull TransactionHandler tssMessageHandler,
+        @NonNull TransactionHandler tssVoteHandler) {}
