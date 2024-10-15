@@ -210,6 +210,9 @@ testing.suites {
                 maxHeapSize = "4g"
                 // Some tests overlap due to using the same temp folders within one project
                 // maxParallelForks = 4 <- set this, once tests can run in parallel
+
+                // Enable dynamic agent loading for tests - eg: Mockito, ByteBuddy
+                jvmArgs("-XX:+EnableDynamicAgentLoading")
             }
         }
     }
