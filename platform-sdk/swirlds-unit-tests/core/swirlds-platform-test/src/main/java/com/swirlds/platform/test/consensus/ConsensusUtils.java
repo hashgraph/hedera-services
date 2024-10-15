@@ -16,9 +16,9 @@
 
 package com.swirlds.platform.test.consensus;
 
+import com.swirlds.common.Address;
 import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.internal.EventImpl;
-import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.test.fixtures.event.generator.GraphGenerator;
 import com.swirlds.platform.test.fixtures.event.source.EventSource;
 import edu.umd.cs.findbugs.annotations.NonNull;

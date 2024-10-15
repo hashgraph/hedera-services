@@ -16,9 +16,9 @@
 
 package com.swirlds.platform.recovery.internal;
 
+import com.swirlds.common.AddressBook;
 import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.system.Round;
-import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.events.CesEvent;
 import com.swirlds.platform.system.events.ConsensusEvent;
 import com.swirlds.platform.util.iterator.TypedIterator;

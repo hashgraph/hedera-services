@@ -17,12 +17,12 @@
 package com.swirlds.platform.state;
 
 import com.hedera.hapi.block.stream.output.StateChanges;
+import com.swirlds.common.AddressBook;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.SoftwareVersion;
-import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.events.Event;
 import com.swirlds.state.State;
 import edu.umd.cs.findbugs.annotations.NonNull;

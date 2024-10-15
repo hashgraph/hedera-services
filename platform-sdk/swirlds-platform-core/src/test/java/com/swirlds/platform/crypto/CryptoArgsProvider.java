@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.crypto;
 
+import com.swirlds.common.AddressBook;
 import com.swirlds.common.crypto.config.CryptoConfig;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.Randotron;
@@ -24,7 +25,6 @@ import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.platform.config.PathsConfig;
 import com.swirlds.platform.roster.RosterUtils;
-import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
 import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder.WeightDistributionStrategy;
 import edu.umd.cs.findbugs.annotations.NonNull;

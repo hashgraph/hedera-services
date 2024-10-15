@@ -16,9 +16,9 @@
 
 package com.swirlds.platform.test.event.emitter;
 
+import com.swirlds.common.AddressBook;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.internal.EventImpl;
-import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.test.fixtures.event.generator.GraphGenerator;
 import java.util.List;
 

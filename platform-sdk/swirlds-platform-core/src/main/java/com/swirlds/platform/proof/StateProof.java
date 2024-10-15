@@ -17,6 +17,7 @@
 package com.swirlds.platform.proof;
 
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.common.AddressBook;
 import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.io.SelfSerializable;
@@ -32,7 +33,6 @@ import com.swirlds.platform.proof.algorithms.StateProofSerialization;
 import com.swirlds.platform.proof.algorithms.StateProofTreeBuilder;
 import com.swirlds.platform.proof.algorithms.StateProofUtils;
 import com.swirlds.platform.proof.tree.StateProofNode;
-import com.swirlds.platform.system.address.AddressBook;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.util.List;

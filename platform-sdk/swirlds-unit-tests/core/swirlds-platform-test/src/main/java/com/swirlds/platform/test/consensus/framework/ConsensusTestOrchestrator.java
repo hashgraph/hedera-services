@@ -16,9 +16,9 @@
 
 package com.swirlds.platform.test.consensus.framework;
 
+import com.swirlds.common.AddressBook;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
-import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.events.EventConstants;
 import com.swirlds.platform.test.consensus.framework.validation.ConsensusOutputValidation;
 import com.swirlds.platform.test.consensus.framework.validation.Validations;

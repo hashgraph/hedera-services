@@ -17,10 +17,10 @@
 package com.swirlds.platform.gossip;
 
 import com.hedera.service.gossip.FallenBehindManager;
+import com.swirlds.common.AddressBook;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.network.topology.NetworkTopology;
-import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.status.StatusActionSubmitter;
 import com.swirlds.platform.system.status.actions.FallenBehindAction;
 import edu.umd.cs.findbugs.annotations.NonNull;

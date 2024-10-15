@@ -25,6 +25,7 @@ import static com.swirlds.platform.state.snapshot.SignedStateFileReader.readStat
 import static java.util.Objects.requireNonNull;
 
 import com.swirlds.base.function.CheckedBiFunction;
+import com.swirlds.common.AddressBook;
 import com.swirlds.common.config.StateCommonConfig;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
@@ -41,7 +42,6 @@ import com.swirlds.platform.state.snapshot.DeserializedSignedState;
 import com.swirlds.platform.state.snapshot.SavedStateInfo;
 import com.swirlds.platform.state.snapshot.SignedStateFilePath;
 import com.swirlds.platform.system.SoftwareVersion;
-import com.swirlds.platform.system.address.AddressBook;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
