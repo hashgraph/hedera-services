@@ -31,8 +31,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.ResourceLock;
 
 /**
- * Annotation for a {@link HapiTest} that can only be run in repeatable mode. The {@link EmbeddedReason} annotation
- * enumerates common reasons a test has to run in embedded mode.
+ * Annotation for a {@link HapiTest} that can only be run in repeatable mode. The {@link RepeatableReason} annotation
+ * enumerates common reasons a test has to run in repeatable mode.
  */
 @Target({ElementType.METHOD})
 @Retention(RetentionPolicy.RUNTIME)

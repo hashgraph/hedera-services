@@ -121,7 +121,7 @@ public class ReadablePlatformStateStore implements PlatformStateAccessor {
     @Nullable
     public Hash getLegacyRunningEventHash() {
         final var hash = stateOrThrow().legacyRunningEventHash();
-        return hash.length() == 0 ? null : new Hash(hash.toByteArray());
+        return hash.length() == 0 ? null : new Hash(hash);
     }
 
     /**

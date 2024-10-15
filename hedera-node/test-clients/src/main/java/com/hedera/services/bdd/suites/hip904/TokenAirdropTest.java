@@ -83,6 +83,7 @@ import static com.hedera.services.bdd.suites.crypto.TransferWithCustomFixedFees.
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_HAS_PENDING_AIRDROPS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BATCH_SIZE_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_CHARGING_EXCEEDED_MAX_RECURSION_DEPTH;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EMPTY_TOKEN_TRANSFER_BODY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
@@ -101,7 +102,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PENDING_NFT_AI
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_AIRDROP_WITH_FALLBACK_ROYALTY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_IS_PAUSED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_REFERENCE_LIST_SIZE_LIMIT_EXCEEDED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_TRANSFER_LIST_SIZE_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
@@ -113,6 +114,7 @@ import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestLifecycle;
 import com.hedera.services.bdd.junit.LeakyHapiTest;
 import com.hedera.services.bdd.junit.support.TestLifecycle;
+import com.hedera.services.bdd.spec.SpecOperation;
 import com.hedera.services.bdd.spec.keys.SigControl;
 import com.hedera.services.bdd.spec.transactions.token.HapiTokenCreate;
 import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
@@ -122,11 +124,13 @@ import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import com.swirlds.common.utility.CommonUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.math.BigInteger;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.IntStream;
+import java.util.stream.LongStream;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
@@ -479,23 +483,13 @@ public class TokenAirdropTest extends TokenAirdropBase {
                                 createTokenWithName("FT2"),
                                 createTokenWithName("FT3"),
                                 createTokenWithName("FT4"),
-                                createTokenWithName("FT5"),
-                                createTokenWithName("FT6"),
-                                createTokenWithName("FT7"),
-                                createTokenWithName("FT8"),
-                                createTokenWithName("FT9"),
-                                createTokenWithName("FT10"))
+                                createTokenWithName("FT5"))
                         .when(tokenAirdrop(
                                         defaultMovementOfToken("FT1"),
                                         defaultMovementOfToken("FT2"),
                                         defaultMovementOfToken("FT3"),
                                         defaultMovementOfToken("FT4"),
-                                        defaultMovementOfToken("FT5"),
-                                        defaultMovementOfToken("FT6"),
-                                        defaultMovementOfToken("FT7"),
-                                        defaultMovementOfToken("FT8"),
-                                        defaultMovementOfToken("FT9"),
-                                        defaultMovementOfToken("FT10"))
+                                        defaultMovementOfToken("FT5"))
                                 .payingWith(OWNER)
                                 .via("fungible airdrop"))
                         .then(
@@ -509,17 +503,7 @@ public class TokenAirdropTest extends TokenAirdropBase {
                                 getAccountBalance(RECEIVER_WITH_UNLIMITED_AUTO_ASSOCIATIONS)
                                         .hasTokenBalance("FT4", 10),
                                 getAccountBalance(RECEIVER_WITH_UNLIMITED_AUTO_ASSOCIATIONS)
-                                        .hasTokenBalance("FT5", 10),
-                                getAccountBalance(RECEIVER_WITH_UNLIMITED_AUTO_ASSOCIATIONS)
-                                        .hasTokenBalance("FT6", 10),
-                                getAccountBalance(RECEIVER_WITH_UNLIMITED_AUTO_ASSOCIATIONS)
-                                        .hasTokenBalance("FT7", 10),
-                                getAccountBalance(RECEIVER_WITH_UNLIMITED_AUTO_ASSOCIATIONS)
-                                        .hasTokenBalance("FT8", 10),
-                                getAccountBalance(RECEIVER_WITH_UNLIMITED_AUTO_ASSOCIATIONS)
-                                        .hasTokenBalance("FT9", 10),
-                                getAccountBalance(RECEIVER_WITH_UNLIMITED_AUTO_ASSOCIATIONS)
-                                        .hasTokenBalance("FT10", 10));
+                                        .hasTokenBalance("FT5", 10));
             }
         }
 
@@ -1604,7 +1588,7 @@ public class TokenAirdropTest extends TokenAirdropBase {
                                     defaultMovementOfToken("FUNGIBLE10"),
                                     defaultMovementOfToken("FUNGIBLE11"))
                             .payingWith(OWNER)
-                            .hasKnownStatus(TOKEN_REFERENCE_LIST_SIZE_LIMIT_EXCEEDED));
+                            .hasKnownStatus(TOKEN_TRANSFER_LIST_SIZE_LIMIT_EXCEEDED));
         }
 
         @HapiTest
@@ -2001,7 +1985,7 @@ public class TokenAirdropTest extends TokenAirdropBase {
                                     moving(10L, FUNGIBLE_TOKEN_J).between(ALICE, STEVE),
                                     moving(10L, FUNGIBLE_TOKEN_K).between(ALICE, STEVE))
                             .signedByPayerAnd(ALICE)
-                            .hasKnownStatus(TOKEN_REFERENCE_LIST_SIZE_LIMIT_EXCEEDED));
+                            .hasKnownStatus(TOKEN_TRANSFER_LIST_SIZE_LIMIT_EXCEEDED));
         }
 
         @HapiTest
@@ -2182,6 +2166,70 @@ public class TokenAirdropTest extends TokenAirdropBase {
             return hapiTest(tokenAirdrop(moving(10, FUNGIBLE_TOKEN).between(OWNER, evmAddress))
                     .payingWith(OWNER)
                     .hasKnownStatus(INVALID_ACCOUNT_ID));
+        }
+
+        @HapiTest
+        @DisplayName("airdrop 1 fungible token to 10 accounts")
+        final Stream<DynamicTest> pendingAirdropOneTokenToMoreThan10Accounts() {
+            final var accountNames = generateAccountNames(10);
+            return hapiTest(flattened(
+                    // create 10 accounts with 0 auto associations
+                    createAccounts(accountNames, 0),
+                    tokenAirdrop(distributeTokens(FUNGIBLE_TOKEN, OWNER, accountNames))
+                            .payingWith(OWNER)
+                            .hasKnownStatus(TOKEN_TRANSFER_LIST_SIZE_LIMIT_EXCEEDED)));
+        }
+
+        @HapiTest
+        @DisplayName("airdrop more than 10 nft")
+        final Stream<DynamicTest> airdropMoreThan10Nft() {
+            final var nft = "nft";
+            var nftSupplyKey = "nftSupplyKey";
+            return hapiTest(flattened(
+                    newKeyNamed(nftSupplyKey),
+                    tokenCreate(nft)
+                            .supplyKey(nftSupplyKey)
+                            .tokenType(NON_FUNGIBLE_UNIQUE)
+                            .initialSupply(0)
+                            .treasury(OWNER),
+                    // mint from 1 to 10 serials
+                    mintToken(
+                            nft,
+                            IntStream.range(0, 10)
+                                    .mapToObj(a -> ByteString.copyFromUtf8(String.valueOf(a)))
+                                    .toList()),
+                    // mint 11th serial
+                    mintToken(nft, List.of(ByteString.copyFromUtf8(String.valueOf(11)))),
+                    // try to airdrop 11 NFT
+                    tokenAirdrop(distributeNFT(nft, OWNER, RECEIVER_WITH_0_AUTO_ASSOCIATIONS))
+                            .payingWith(OWNER)
+                            .hasKnownStatus(BATCH_SIZE_LIMIT_EXCEEDED)));
+        }
+
+        private static ArrayList<String> generateAccountNames(int count) {
+            final var accountNames = new ArrayList<String>(count);
+            for (int i = 0; i < count; i++) {
+                accountNames.add(String.format("account%d", i));
+            }
+            return accountNames;
+        }
+
+        private static ArrayList<SpecOperation> createAccounts(
+                ArrayList<String> accountNames, int numberOfAutoAssociations) {
+            final var specOps = new ArrayList<SpecOperation>(accountNames.size());
+            for (String accountName : accountNames) {
+                specOps.add(cryptoCreate(accountName).maxAutomaticTokenAssociations(numberOfAutoAssociations));
+            }
+            return specOps;
+        }
+
+        private static TokenMovement distributeTokens(String token, String sender, ArrayList<String> accountNames) {
+            return moving(accountNames.size(), token).distributing(sender, accountNames.toArray(new String[0]));
+        }
+
+        private static TokenMovement distributeNFT(String token, String sender, String receiver) {
+            final long[] serials = LongStream.rangeClosed(1, 11).toArray();
+            return TokenMovement.movingUnique(token, serials).between(sender, receiver);
         }
     }
 
