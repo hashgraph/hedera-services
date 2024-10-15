@@ -80,10 +80,10 @@ public final class RecoveryTestUtils {
                 .setTransactionSize(random.nextInt(10) + 1)
                 .setSystemTransactionCount(0)
                 .setSelfParent(new TestingEventBuilder(random)
-                        .setCreatorId(new NodeId(random.nextLong(0, Long.MAX_VALUE)))
+                        .setCreatorId(NodeId.of(random.nextLong(0, Long.MAX_VALUE)))
                         .build())
                 .setOtherParent(new TestingEventBuilder(random)
-                        .setCreatorId(new NodeId(random.nextLong(0, Long.MAX_VALUE)))
+                        .setCreatorId(NodeId.of(random.nextLong(0, Long.MAX_VALUE)))
                         .build())
                 .setTimeCreated(now)
                 .setConsensusTimestamp(now)
@@ -163,7 +163,7 @@ public final class RecoveryTestUtils {
                 .build();
 
         final DefaultConsensusEventStream eventStreamManager = new DefaultConsensusEventStream(
-                platformContext, new NodeId(0L), x -> randomSignature(random), "test", x -> false);
+                platformContext, NodeId.of(0L), x -> randomSignature(random), "test", x -> false);
 
         // The event stream writer has flaky asynchronous behavior,
         // so we need to be extra careful when waiting for it to finish.

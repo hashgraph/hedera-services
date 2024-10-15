@@ -33,6 +33,8 @@ import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.records.ReadableBlockRecordStore;
 import com.hedera.node.app.service.token.impl.handlers.staking.EndOfStakingPeriodUpdater;
 import com.hedera.node.app.service.token.records.TokenContext;
+import com.hedera.node.app.tss.TssBaseService;
+import com.hedera.node.app.workflows.handle.Dispatch;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.node.config.data.StakingConfig;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
@@ -63,7 +65,13 @@ class NodeStakeUpdatesTest {
     private ReadableBlockRecordStore blockStore;
 
     @Mock
+    private TssBaseService tssBaseService;
+
+    @Mock
     private SavepointStackImpl stack;
+
+    @Mock
+    private Dispatch dispatch;
 
     private NodeStakeUpdates subject;
 
@@ -71,15 +79,15 @@ class NodeStakeUpdatesTest {
     void setUp() {
         given(context.readableStore(ReadableBlockRecordStore.class)).willReturn(blockStore);
 
-        subject = new NodeStakeUpdates(stakingPeriodCalculator, exchangeRateManager);
+        subject = new NodeStakeUpdates(stakingPeriodCalculator, exchangeRateManager, tssBaseService);
     }
 
     @SuppressWarnings("DataFlowIssue")
     @Test
     void nullArgConstructor() {
-        Assertions.assertThatThrownBy(() -> new NodeStakeUpdates(null, exchangeRateManager))
+        Assertions.assertThatThrownBy(() -> new NodeStakeUpdates(null, exchangeRateManager, tssBaseService))
                 .isInstanceOf(NullPointerException.class);
-        Assertions.assertThatThrownBy(() -> new NodeStakeUpdates(stakingPeriodCalculator, null))
+        Assertions.assertThatThrownBy(() -> new NodeStakeUpdates(stakingPeriodCalculator, null, tssBaseService))
                 .isInstanceOf(NullPointerException.class);
     }
 
@@ -92,8 +100,9 @@ class NodeStakeUpdatesTest {
     @Test
     void processUpdateCalledForGenesisTxn() {
         given(exchangeRateManager.exchangeRates()).willReturn(ExchangeRateSet.DEFAULT);
+        given(context.configuration()).willReturn(DEFAULT_CONFIG);
 
-        subject.process(stack, context, true);
+        subject.process(stack, context, true, dispatch);
 
         verify(stakingPeriodCalculator).updateNodes(context, ExchangeRateSet.DEFAULT);
         verify(exchangeRateManager).updateMidnightRates(stack);
@@ -110,7 +119,7 @@ class NodeStakeUpdatesTest {
                                 .nanos(CONSENSUS_TIME_1234567.getNano()))
                         .build());
 
-        subject.process(stack, context, false);
+        subject.process(stack, context, false, dispatch);
 
         verifyNoInteractions(stakingPeriodCalculator);
         verifyNoInteractions(exchangeRateManager);
@@ -135,7 +144,7 @@ class NodeStakeUpdatesTest {
                 .isTrue();
         given(exchangeRateManager.exchangeRates()).willReturn(ExchangeRateSet.DEFAULT);
 
-        subject.process(stack, context, false);
+        subject.process(stack, context, false, dispatch);
 
         verify(stakingPeriodCalculator)
                 .updateNodes(
@@ -157,7 +166,7 @@ class NodeStakeUpdatesTest {
         given(context.consensusTime()).willReturn(CONSENSUS_TIME_1234567.plus(Duration.ofDays(2)));
         given(context.configuration()).willReturn(DEFAULT_CONFIG);
 
-        Assertions.assertThatNoException().isThrownBy(() -> subject.process(stack, context, false));
+        Assertions.assertThatNoException().isThrownBy(() -> subject.process(stack, context, false, dispatch));
         verify(stakingPeriodCalculator).updateNodes(context, ExchangeRateSet.DEFAULT);
         verify(exchangeRateManager).updateMidnightRates(stack);
     }

@@ -38,7 +38,7 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.services.OrderedServiceMigrator;
 import com.hedera.node.app.services.ServicesRegistryImpl;
-import com.hedera.node.app.tss.impl.PlaceholderTssBaseService;
+import com.hedera.node.app.tss.TssBaseServiceImpl;
 import com.swirlds.base.time.Time;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.RuntimeConstructable;
@@ -75,6 +75,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.InstantSource;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.ForkJoinPool;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -363,6 +364,6 @@ public class ServicesMain implements SwirldMain {
                 ServicesRegistryImpl::new,
                 new OrderedServiceMigrator(),
                 InstantSource.system(),
-                PlaceholderTssBaseService::new);
+                appContext -> new TssBaseServiceImpl(appContext, ForkJoinPool.commonPool(), ForkJoinPool.commonPool()));
     }
 }
