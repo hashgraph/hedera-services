@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.tss;
 
+import com.hedera.hapi.node.state.roster.Roster;
 import com.swirlds.state.spi.Service;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.function.BiConsumer;
@@ -58,4 +59,15 @@ public interface TssBaseService extends Service {
      * @param consumer the consumer of ledger signatures and message hashes to unregister.
      */
     void unregisterLedgerSignatureConsumer(@NonNull BiConsumer<byte[], byte[]> consumer);
+
+    /**
+     * Set the candidate roster for the TSS base service to generate key material.  This is a necessary step before the
+     * roster can be adopted by the platform. There can be only one candidate roster at a time. If there is an existing
+     * candidate roster in the state, it will be replaced and all related data will be removed from the state. For
+     * this reason, setting the candidate roster does not guarantee its adoption.
+     *
+     * @param candidateRoster The candidate roster to set.
+     */
+    @SuppressWarnings("unused") // not used _yet_
+    void setCandidateRoster(@NonNull final Roster candidateRoster);
 }
