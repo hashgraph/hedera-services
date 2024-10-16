@@ -98,7 +98,7 @@ public class LeakyEthereumTestsSuite {
      * if there is no free bit available for this information, as in values like 11155111.
      */
     @LeakyHapiTest(overrides = {"contracts.chainId"})
-        /* default */ final Stream<DynamicTest> legacyUnprotectedEtxBeforeEIP155WithChainIdHavingExtraByteForSign() {
+    /* default */ final Stream<DynamicTest> legacyUnprotectedEtxBeforeEIP155WithChainIdHavingExtraByteForSign() {
         final String DEPOSIT = "deposit";
         final long depositAmount = 20_000L;
         final Integer chainId = 11_155_111;
