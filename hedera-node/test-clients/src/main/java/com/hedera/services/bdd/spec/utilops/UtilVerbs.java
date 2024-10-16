@@ -583,6 +583,7 @@ public class UtilVerbs {
                             cryptoTransfer(tinyBarsFromTo(GENESIS, STAKING_REWARD, 1))
                                     .deferStatusResolution()
                                     .hasAnyStatusAtAll()
+                                    .orUnavailableStatus()
                                     .noLogging());
                 }
             });
