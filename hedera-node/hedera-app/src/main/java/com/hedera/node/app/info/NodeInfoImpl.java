@@ -16,51 +16,30 @@
 
 package com.hedera.node.app.info;
 
-import static com.hedera.hapi.util.HapiUtils.parseAccount;
-import static java.util.Objects.requireNonNull;
-
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.ServiceEndpoint;
+import com.hedera.hapi.node.state.addressbook.Node;
+import com.hedera.hapi.node.state.roster.RosterEntry;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.swirlds.common.utility.CommonUtils;
-import com.swirlds.platform.system.address.Address;
 import com.swirlds.state.spi.info.NodeInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.security.cert.CertificateEncodingException;
+import java.util.List;
 
 public record NodeInfoImpl(
         long nodeId,
         @NonNull AccountID accountId,
         long stake,
-        @NonNull String externalHostName,
-        int externalPort,
-        @NonNull String internalHostName,
-        int internalPort,
-        @NonNull String hexEncodedPublicKey,
-        @NonNull String memo,
-        @Nullable Bytes sigCertBytes,
-        @NonNull String selfName)
+        List<ServiceEndpoint> gossipEndpoints,
+        @Nullable Bytes sigCertBytes)
         implements NodeInfo {
     @NonNull
-    public static NodeInfo fromAddress(@NonNull final Address address) {
-        final var sigCert = address.getSigCert();
-        Bytes sigCertBytes;
-        try {
-            sigCertBytes = sigCert == null ? Bytes.EMPTY : Bytes.wrap(sigCert.getEncoded());
-        } catch (CertificateEncodingException e) {
-            sigCertBytes = Bytes.EMPTY;
-        }
+    public static NodeInfo fromRosterEntry(@NonNull final RosterEntry rosterEntry, @NonNull final Node node) {
         return new NodeInfoImpl(
-                address.getNodeId().id(),
-                parseAccount(address.getMemo()),
-                address.getWeight(),
-                requireNonNull(address.getHostnameExternal()),
-                address.getPortExternal(),
-                requireNonNull(address.getHostnameInternal()),
-                address.getPortInternal(),
-                CommonUtils.hex(requireNonNull(address.getSigPublicKey()).getEncoded()),
-                address.getMemo(),
-                sigCertBytes,
-                address.getSelfName());
+                rosterEntry.nodeId(),
+                node.accountIdOrThrow(),
+                rosterEntry.weight(),
+                rosterEntry.gossipEndpoint(),
+                rosterEntry.gossipCaCertificate());
     }
 }

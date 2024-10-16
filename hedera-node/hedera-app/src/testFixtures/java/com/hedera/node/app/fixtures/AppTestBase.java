@@ -16,6 +16,8 @@
 
 package com.hedera.node.app.fixtures;
 
+import static com.swirlds.platform.system.address.AddressBookUtils.createRoster;
+import static com.swirlds.platform.system.address.AddressBookUtils.endpointFor;
 import static com.swirlds.platform.test.fixtures.state.TestSchema.CURRENT_VERSION;
 import static java.util.Objects.requireNonNull;
 
@@ -26,8 +28,8 @@ import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.fixtures.state.FakePlatform;
 import com.hedera.node.app.fixtures.state.FakeSchemaRegistry;
 import com.hedera.node.app.fixtures.state.FakeState;
-import com.hedera.node.app.info.NetworkInfoImpl;
-import com.hedera.node.app.info.SelfNodeInfoImpl;
+import com.hedera.node.app.info.GenesisNetworkInfo;
+import com.hedera.node.app.info.NodeInfoImpl;
 import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.spi.fixtures.Scenarios;
 import com.hedera.node.app.spi.fixtures.TransactionFactory;
@@ -57,12 +59,12 @@ import com.swirlds.state.spi.Service;
 import com.swirlds.state.spi.WritableStates;
 import com.swirlds.state.spi.info.NetworkInfo;
 import com.swirlds.state.spi.info.NodeInfo;
-import com.swirlds.state.spi.info.SelfNodeInfo;
 import com.swirlds.state.test.fixtures.MapWritableKVState;
 import com.swirlds.state.test.fixtures.TestBase;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -145,19 +147,12 @@ public class AppTestBase extends TestBase implements TransactionFactory, Scenari
             .declineReward(true)
             .build();
 
-    protected final SelfNodeInfo selfNodeInfo = new SelfNodeInfoImpl(
+    protected final NodeInfo selfNodeInfo = new NodeInfoImpl(
             7,
             nodeSelfAccountId,
             10,
-            "127.0.0.1",
-            50211,
-            "127.0.0.4",
-            23456,
-            "0123456789012345678901234567890123456789012345678901234567890123",
-            "Node7",
-            Bytes.wrap("cert7"),
-            hapiVersion,
-            "Node7");
+            List.of(endpointFor("127.0.0.1", 50211), endpointFor("127.0.0.1", 23456)),
+            Bytes.wrap("cert7"));
 
     /**
      * The gRPC system has extensive metrics. This object allows us to inspect them and make sure they are being set
@@ -237,11 +232,11 @@ public class AppTestBase extends TestBase implements TransactionFactory, Scenari
     }
 
     public static final class TestAppBuilder {
-        private SemanticVersion softwareVersion = CURRENT_VERSION;
         private SemanticVersion hapiVersion = CURRENT_VERSION;
         private Set<Service> services = new LinkedHashSet<>();
         private TestConfigBuilder configBuilder = HederaTestConfigBuilder.create();
-        private NodeInfo selfNodeInfo = null;
+        private NodeInfo selfNodeInfo = new NodeInfoImpl(
+                0, AccountID.newBuilder().shardNum(0).realmNum(0).accountNum(8).build(), 10, List.of(), Bytes.EMPTY);
         private Set<NodeInfo> nodes = new LinkedHashSet<>();
 
         private TestAppBuilder() {}
@@ -260,11 +255,6 @@ public class AppTestBase extends TestBase implements TransactionFactory, Scenari
 
         public TestAppBuilder withHapiVersion(@NonNull final SemanticVersion version) {
             this.hapiVersion = version;
-            return this;
-        }
-
-        public TestAppBuilder withSoftwareVersion(@NonNull final SemanticVersion version) {
-            this.softwareVersion = version;
             return this;
         }
 
@@ -314,40 +304,26 @@ public class AppTestBase extends TestBase implements TransactionFactory, Scenari
         }
 
         public App build() {
-            final SelfNodeInfo realSelfNodeInfo;
+            final NodeInfo realSelfNodeInfo;
             if (this.selfNodeInfo == null) {
                 final var nodeSelfAccountId = AccountID.newBuilder()
                         .shardNum(0)
                         .realmNum(0)
                         .accountNum(8)
                         .build();
-                realSelfNodeInfo = new SelfNodeInfoImpl(
+                realSelfNodeInfo = new NodeInfoImpl(
                         7,
                         nodeSelfAccountId,
                         10,
-                        "127.0.0.1",
-                        50211,
-                        "127.0.0.4",
-                        23456,
-                        "0123456789012345678901234567890123456789012345678901234567890123",
-                        "Node7",
-                        Bytes.wrap("cert7"),
-                        hapiVersion,
-                        "Node7");
+                        List.of(endpointFor("127.0.0.1", 50211), endpointFor("127.0.0.4", 23456)),
+                        Bytes.wrap("cert7"));
             } else {
-                realSelfNodeInfo = new SelfNodeInfoImpl(
+                realSelfNodeInfo = new NodeInfoImpl(
                         selfNodeInfo.nodeId(),
                         selfNodeInfo.accountId(),
                         selfNodeInfo.stake(),
-                        selfNodeInfo.externalHostName(),
-                        selfNodeInfo.externalPort(),
-                        selfNodeInfo.internalHostName(),
-                        selfNodeInfo.internalPort(),
-                        selfNodeInfo.hexEncodedPublicKey(),
-                        selfNodeInfo.memo(),
-                        selfNodeInfo.sigCertBytes(),
-                        hapiVersion,
-                        selfNodeInfo.selfName());
+                        selfNodeInfo.gossipEndpoints(),
+                        selfNodeInfo.sigCertBytes());
             }
 
             final var workingStateAccessor = new WorkingStateAccessor();
@@ -356,14 +332,12 @@ public class AppTestBase extends TestBase implements TransactionFactory, Scenari
             final var addresses = nodes.stream()
                     .map(nodeInfo -> new Address()
                             .copySetNodeId(new NodeId(nodeInfo.nodeId()))
-                            .copySetMemo(nodeInfo.memo())
                             .copySetWeight(nodeInfo.zeroStake() ? 0 : 10))
                     .toList();
-
-            final var platform = new FakePlatform(realSelfNodeInfo.nodeId(), new AddressBook(addresses));
-            final var networkInfo = new NetworkInfoImpl(realSelfNodeInfo, platform, configProvider);
-
+            final var addressBook = new AddressBook(addresses);
+            final var platform = new FakePlatform(realSelfNodeInfo.nodeId(), addressBook);
             final var initialState = new FakeState();
+            final var networkInfo = new GenesisNetworkInfo(createRoster(addressBook), Bytes.fromHex("03"));
             services.forEach(svc -> {
                 final var reg = new FakeSchemaRegistry();
                 svc.registerSchemas(reg);

@@ -17,10 +17,16 @@
 name: "ZXF: Deploy Production Release"
 on:
   push:
-    branches:
-      - develop
     tags:
       - "v[0-9]+.[0-9]+.[0-9]+-?*"
+  workflow_run:
+    workflows:
+      - "Node: Build Application"
+    branches:
+      - develop
+    types:
+      - completed
+
 
 defaults:
   run:
@@ -35,6 +41,11 @@ jobs:
       version: ${{ steps.tag.outputs.version }}
       prerelease: ${{ steps.tag.outputs.prerelease }}
     steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@f086349bfa2bd1361f7909c78558e816508cdc10 # v2.8.0
+        with:
+          egress-policy: audit
+
       - name: Install Semantic Version Tools
         run: |
           echo "::group::Download SemVer Binary"
@@ -61,23 +72,6 @@ jobs:
           echo "version=${FINAL_VERSION}" >>"${GITHUB_OUTPUT}"
           echo "prerelease=${PRERELEASE_FLAG}" >>"${GITHUB_OUTPUT}"
 
-      - name: Checkout Code
-        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
-
-      - name: Verify HAPI version
-        run: |
-          TAG_MAJOR="$(semver get major "${{ github.ref_name }}")"
-          TAG_MINOR="$(semver get minor "${{ github.ref_name }}")"
-          HAPI_VERSION=$(grep "val hapiProtoVersion = " settings.gradle.kts | sed -E 's/.+ = "(.+)"/\1/')
-          HAPI_MAJOR="$(semver get major ${HAPI_VERSION})"
-          HAPI_MINOR="$(semver get minor ${HAPI_VERSION})"
-          if [[ "${TAG_MAJOR}" != "${HAPI_MAJOR}" || "${TAG_MINOR}" != "${HAPI_MINOR}" ]]; then
-             echo "::error title=HAPI Version Mismatch::The tag version (${TAG_MAJOR}.${TAG_MINOR}) does not match the hapiProtoVersion (${HAPI_MAJOR}.${HAPI_MINOR}) specified in settings.gradle.kts"
-             exit 1
-          else
-             echo "The tag version (${TAG_MAJOR}.${TAG_MINOR}) matches the hapiProtoVersion (${HAPI_MAJOR}.${HAPI_MINOR}) specified in settings.gradle.kts"
-          fi
-
   release-tag:
     name: Release [Tag]
     uses: ./.github/workflows/node-zxc-build-release-artifact.yaml
@@ -101,7 +95,6 @@ jobs:
       sdk-gpg-key-contents: ${{ secrets.PLATFORM_GPG_KEY_CONTENTS }}
       sdk-gpg-key-passphrase: ${{ secrets.PLATFORM_GPG_KEY_PASSPHRASE }}
       slack-webhook-url: ${{ secrets.PLATFORM_SLACK_RELEASE_WEBHOOK }}
-      jenkins-integration-url: ${{ secrets.RELEASE_JENKINS_INTEGRATION_URL }}
       jf-url: ${{ vars.JF_URL }}
       jf-docker-registry: ${{ vars.JF_DOCKER_REGISTRY }}
       jf-user-name: ${{ vars.JF_USER_NAME }}
@@ -110,7 +103,7 @@ jobs:
   release-branch:
     name: Release [Branch]
     uses: ./.github/workflows/node-zxc-build-release-artifact.yaml
-    if: ${{ github.event_name == 'push' && !startsWith(github.ref, 'refs/tags/v') }}
+    if: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success'}}
     with:
       version-policy: branch-commit
       trigger-env-deploy: integration
@@ -128,7 +121,6 @@ jobs:
       sdk-gpg-key-contents: ${{ secrets.PLATFORM_GPG_KEY_CONTENTS }}
       sdk-gpg-key-passphrase: ${{ secrets.PLATFORM_GPG_KEY_PASSPHRASE }}
       slack-webhook-url: ${{ secrets.PLATFORM_SLACK_RELEASE_WEBHOOK }}
-      jenkins-integration-url: ${{ secrets.RELEASE_JENKINS_INTEGRATION_URL }}
       jf-url: ${{ vars.JF_URL }}
       jf-docker-registry: ${{ vars.JF_DOCKER_REGISTRY }}
       jf-user-name: ${{ vars.JF_USER_NAME }}

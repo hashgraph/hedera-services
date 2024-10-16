@@ -13,8 +13,6 @@ syntax = "proto3";
 package com.hedera.hapi.node.state.tss;
 
 /*
- * Hedera Network Services Protobuf
- *
  * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -30,13 +28,14 @@ package com.hedera.hapi.node.state.tss;
  * limitations under the License.
  */
 
-option java_package = "com.hederahashgraph.api.proto.java";
+option java_package = "com.hedera.hapi.node.state.tss.legacy";
 // <<<pbj.java_package = "com.hedera.hapi.node.state.tss">>> This comment is special code for setting PBJ Compiler java package
 option java_multiple_files = true;
 
  /**
-  * A key for use in the TssVoteMaps.<br/>
-  * This key is used to uniquely identify entries in the TssVoteMaps.
+  * A key for use in the Threshold Signature Scheme (TSS) TssVoteMaps.
+  *
+  * This key SHALL be used to uniquely identify entries in the Vote Maps.
   */
 message TssVoteMapKey {
 
@@ -49,8 +48,7 @@ message TssVoteMapKey {
    */
   bytes roster_hash = 1;
 
-  /* The node id of the node that created the TssVote.
-  * <br/>
+  /** The node id of the node that created the TssVote.</br>
   * This id uniquely identifies the node.
   * <p>
   * This value MUST be set.<br/>

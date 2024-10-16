@@ -23,7 +23,7 @@ import com.swirlds.config.api.ConfigProperty;
 /**
  * Configuration for the TSS service.
  * @param maxSharesPerNode The maximum number of shares that can be assigned to a node.
- * @param keyActiveRoster A test-only configuration set to true to key the active roster with TSS key material.
+ * @param keyActiveRoster A test-only configuration; set this to true to enable the process that will key the candidate roster with TSS key material.
  */
 @ConfigData("tss")
 public record TssConfig(

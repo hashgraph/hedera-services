@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.state.signer;
 
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -75,6 +75,6 @@ public class StateSignerTests {
         final StateSignatureTransaction payload = stateSigner.signState(reservedSignedState);
         assertTrue(reservedSignedState.isClosed());
         assertNotNull(payload);
-        assertArrayEquals(payload.signature().toByteArray(), signature.getSignatureBytes());
+        assertEquals(payload.signature(), signature.getBytes());
     }
 }
