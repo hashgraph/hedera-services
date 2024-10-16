@@ -28,7 +28,6 @@ import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.dsl.operations.transactions.TouchBalancesOperation.touchBalanceOf;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getVersionInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.sysFileUpdateTo;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.nodeCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.nodeDelete;
@@ -145,9 +144,7 @@ public class DabEnabledUpgradeTest implements LifecycleTest {
                     prepareFakeUpgrade(),
                     validateUpgradeAddressBooks(DabEnabledUpgradeTest::hasClassicAddressMetadata),
                     upgradeToNextConfigVersion(),
-                    assertExpectedConfigVersion(startVersion::get),
-                    // Ensure we have a post-upgrade transaction to trigger system file exports
-                    cryptoCreate("somebodyNew"));
+                    assertExpectedConfigVersion(startVersion::get));
         }
     }
 
@@ -241,9 +238,7 @@ public class DabEnabledUpgradeTest implements LifecycleTest {
                     // node4 was not active before this the upgrade, so it could not have written a config.txt
                     validateUpgradeAddressBooks(exceptNodeIds(4L), addressBook -> assertThat(nodeIdsFrom(addressBook))
                             .contains(4L)),
-                    upgradeToNextConfigVersion(FakeNmt.addNode(4L, DAB_GENERATED)),
-                    // Ensure we have a post-upgrade transaction to trigger system file exports
-                    cryptoCreate("somebodyNew"));
+                    upgradeToNextConfigVersion(FakeNmt.addNode(4L, DAB_GENERATED)));
         }
     }
 
@@ -326,11 +321,11 @@ public class DabEnabledUpgradeTest implements LifecycleTest {
 
     private static void validateMultipartEdits(@NonNull final AddressBook addressBook) {
         assertThat(nodeIdsFrom(addressBook)).containsExactlyInAnyOrder(0L, 2L, 5L);
-        final var node0 = addressBook.getAddress(new NodeId(0L));
+        final var node0 = addressBook.getAddress(NodeId.of(0L));
         assertEquals(classicFeeCollectorIdLiteralFor(0), node0.getMemo());
-        final var node2 = addressBook.getAddress(new NodeId(2L));
+        final var node2 = addressBook.getAddress(NodeId.of(2L));
         assertEquals(classicFeeCollectorIdLiteralFor(902), node2.getMemo());
-        final var node5 = addressBook.getAddress(new NodeId(5L));
+        final var node5 = addressBook.getAddress(NodeId.of(5L));
         assertEquals(classicFeeCollectorIdLiteralFor(905), node5.getMemo());
         assertEquals("127.0.0.1", node5.getHostnameInternal());
         assertEquals(33000, node5.getPortInternal());

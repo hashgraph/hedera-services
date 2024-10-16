@@ -49,7 +49,7 @@ public class TestUtils {
                 HederaTestConfigBuilder.createConfig().getConfigData(MetricsConfig.class);
 
         return new DefaultPlatformMetrics(
-                new NodeId(DEFAULT_NODE_ID),
+                NodeId.of(DEFAULT_NODE_ID),
                 new MetricKeyRegistry(),
                 Executors.newSingleThreadScheduledExecutor(),
                 new PlatformMetricsFactoryImpl(metricsConfig),

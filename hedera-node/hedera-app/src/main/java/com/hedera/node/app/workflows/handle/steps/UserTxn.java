@@ -17,16 +17,15 @@
 package com.hedera.node.app.workflows.handle.steps;
 
 import static com.hedera.node.app.records.schemas.V0490BlockRecordSchema.BLOCK_INFO_STATE_KEY;
-import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.USER;
 import static com.hedera.node.app.workflows.handle.TransactionType.GENESIS_TRANSACTION;
 import static com.hedera.node.app.workflows.handle.TransactionType.ORDINARY_TRANSACTION;
 import static com.hedera.node.app.workflows.handle.TransactionType.POST_UPGRADE_TRANSACTION;
+import static com.hedera.node.app.workflows.standalone.impl.StandaloneDispatchFactory.getTxnCategory;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.state.blockrecords.BlockInfo;
-import com.hedera.hapi.platform.state.PlatformState;
 import com.hedera.node.app.blocks.impl.BoundaryStateChangeListener;
 import com.hedera.node.app.blocks.impl.KVStateChangeListener;
 import com.hedera.node.app.fees.ExchangeRateManager;
@@ -69,8 +68,6 @@ import com.hedera.node.config.data.BlockStreamConfig;
 import com.hedera.node.config.data.ConsensusConfig;
 import com.hedera.node.config.data.HederaConfig;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.platform.state.service.PlatformStateService;
-import com.swirlds.platform.state.service.schemas.V0540PlatformStateSchema;
 import com.swirlds.platform.system.events.ConsensusEvent;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
 import com.swirlds.state.State;
@@ -247,7 +244,7 @@ public record UserTxn(
                 preHandleResult.getHollowAccounts(),
                 dispatchHandleContext,
                 stack,
-                USER,
+                getTxnCategory(preHandleResult),
                 tokenContextImpl,
                 preHandleResult,
                 HandleContext.ConsensusThrottling.ON);
@@ -255,6 +252,7 @@ public record UserTxn(
 
     /**
      * Returns the base stream builder for this user transaction.
+     *
      * @return the base stream builder
      */
     public StreamBuilder baseBuilder() {
@@ -263,24 +261,14 @@ public record UserTxn(
 
     /**
      * Returns whether the given state indicates this transaction is the first after an upgrade.
+     *
      * @param state the Hedera state
      * @return whether the given state indicates this transaction is the first after an upgrade
      */
     private static boolean isUpgradeBoundary(@NonNull final State state) {
-        final var platformState = state.getReadableStates(PlatformStateService.NAME)
-                .<PlatformState>getSingleton(V0540PlatformStateSchema.PLATFORM_STATE_KEY)
+        final var blockInfo = state.getReadableStates(BlockRecordService.NAME)
+                .<BlockInfo>getSingleton(BLOCK_INFO_STATE_KEY)
                 .get();
-        requireNonNull(platformState);
-        if (platformState.freezeTime() == null
-                || !platformState.freezeTimeOrThrow().equals(platformState.lastFrozenTime())) {
-            return false;
-        } else {
-            // Check the state directly here instead of going through BlockManager to allow us
-            // to manipulate this condition easily in embedded tests
-            final var blockInfo = state.getReadableStates(BlockRecordService.NAME)
-                    .<BlockInfo>getSingleton(BLOCK_INFO_STATE_KEY)
-                    .get();
-            return !requireNonNull(blockInfo).migrationRecordsStreamed();
-        }
+        return !requireNonNull(blockInfo).migrationRecordsStreamed();
     }
 }

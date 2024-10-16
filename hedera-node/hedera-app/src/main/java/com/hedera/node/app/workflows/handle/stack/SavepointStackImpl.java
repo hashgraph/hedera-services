@@ -470,7 +470,7 @@ public class SavepointStackImpl implements HandleContext.SavepointStack, State {
             final var builder = builders.get(i);
             final var nonce =
                     switch (builder.category()) {
-                        case USER, SCHEDULED -> 0;
+                        case USER, SCHEDULED, NODE -> 0;
                         case PRECEDING, CHILD -> nextNonce++;
                     };
             // The schedule service specifies the transaction id to use for a triggered transaction

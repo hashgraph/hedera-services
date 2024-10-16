@@ -83,7 +83,7 @@ class NetworkPeerIdentifierTest {
                 throw new RuntimeException("Invalid node name " + name);
             }
             final int id = Integer.parseInt(nameMatcher.group(1)) - 1;
-            final NodeId node = new NodeId(id);
+            final NodeId node = NodeId.of(id);
             final PeerInfo peer;
             try {
                 peer = new PeerInfo(

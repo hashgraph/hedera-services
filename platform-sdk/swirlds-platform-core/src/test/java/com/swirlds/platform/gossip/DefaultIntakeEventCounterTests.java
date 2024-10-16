@@ -32,8 +32,8 @@ import org.mockito.Mockito;
 class DefaultIntakeEventCounterTests {
     private IntakeEventCounter intakeCounter;
 
-    final NodeId nodeId1 = new NodeId(1);
-    final NodeId nodeId2 = new NodeId(2);
+    final NodeId nodeId1 = NodeId.of(1);
+    final NodeId nodeId2 = NodeId.of(2);
 
     @BeforeEach
     void setup() {
