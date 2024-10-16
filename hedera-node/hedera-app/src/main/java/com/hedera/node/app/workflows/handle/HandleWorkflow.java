@@ -63,11 +63,11 @@ import com.hedera.node.app.state.HederaRecordCache;
 import com.hedera.node.app.store.WritableStoreFactory;
 import com.hedera.node.app.throttle.NetworkUtilizationManager;
 import com.hedera.node.app.throttle.ThrottleServiceManager;
+import com.hedera.node.app.workflows.OpWorkflowMetrics;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.app.workflows.handle.cache.CacheWarmer;
 import com.hedera.node.app.workflows.handle.dispatch.ChildDispatchFactory;
-import com.hedera.node.app.workflows.handle.metric.HandleWorkflowMetrics;
 import com.hedera.node.app.workflows.handle.record.RecordStreamBuilder;
 import com.hedera.node.app.workflows.handle.record.SystemSetup;
 import com.hedera.node.app.workflows.handle.steps.HollowAccountCompletions;
@@ -117,7 +117,7 @@ public class HandleWorkflow {
     private final BlockRecordManager blockRecordManager;
     private final BlockStreamManager blockStreamManager;
     private final CacheWarmer cacheWarmer;
-    private final HandleWorkflowMetrics handleWorkflowMetrics;
+    private final OpWorkflowMetrics opWorkflowMetrics;
     private final ThrottleServiceManager throttleServiceManager;
     private final SemanticVersion version;
     private final InitTrigger initTrigger;
@@ -148,7 +148,7 @@ public class HandleWorkflow {
             @NonNull final BlockRecordManager blockRecordManager,
             @NonNull final BlockStreamManager blockStreamManager,
             @NonNull final CacheWarmer cacheWarmer,
-            @NonNull final HandleWorkflowMetrics handleWorkflowMetrics,
+            @NonNull final OpWorkflowMetrics opWorkflowMetrics,
             @NonNull final ThrottleServiceManager throttleServiceManager,
             @NonNull final SemanticVersion version,
             @NonNull final InitTrigger initTrigger,
@@ -176,7 +176,7 @@ public class HandleWorkflow {
         this.blockRecordManager = requireNonNull(blockRecordManager);
         this.blockStreamManager = requireNonNull(blockStreamManager);
         this.cacheWarmer = requireNonNull(cacheWarmer);
-        this.handleWorkflowMetrics = requireNonNull(handleWorkflowMetrics);
+        this.opWorkflowMetrics = requireNonNull(opWorkflowMetrics);
         this.throttleServiceManager = requireNonNull(throttleServiceManager);
         this.version = requireNonNull(version);
         this.initTrigger = requireNonNull(initTrigger);
@@ -323,8 +323,7 @@ public class HandleWorkflow {
         if (blockStreamConfig.streamBlocks()) {
             handleOutput.blocksItemsOrThrow().forEach(blockStreamManager::writeItem);
         }
-        handleWorkflowMetrics.updateTransactionDuration(
-                userTxn.functionality(), (int) (System.nanoTime() - handleStart));
+        opWorkflowMetrics.updateDuration(userTxn.functionality(), (int) (System.nanoTime() - handleStart));
     }
 
     /**
@@ -369,13 +368,13 @@ public class HandleWorkflow {
                         userTxn.stack().commitTransaction(streamBuilder);
                     }
                 }
-                updateNodeStakes(userTxn);
+                final var dispatch = dispatchFor(userTxn, blockStreamConfig);
+                updateNodeStakes(userTxn, dispatch);
                 if (blockStreamConfig.streamRecords()) {
                     blockRecordManager.advanceConsensusClock(userTxn.consensusNow(), userTxn.state());
                 }
                 expireSchedules(userTxn);
                 logPreDispatch(userTxn);
-                final var dispatch = dispatchFor(userTxn, blockStreamConfig);
                 if (userTxn.type() == GENESIS_TRANSACTION) {
                     systemSetup.doGenesisSetup(dispatch);
                 } else if (userTxn.type() == POST_UPGRADE_TRANSACTION) {
@@ -450,7 +449,7 @@ public class HandleWorkflow {
         if (userTxn.type() == GENESIS_TRANSACTION
                 || userTxn.consensusNow().getEpochSecond()
                         > userTxn.lastHandledConsensusTime().getEpochSecond()) {
-            handleWorkflowMetrics.switchConsensusSecond();
+            opWorkflowMetrics.switchConsensusSecond();
         }
     }
 
@@ -513,10 +512,10 @@ public class HandleWorkflow {
                 .memo(txnInfo.txBody().memo());
     }
 
-    private void updateNodeStakes(@NonNull final UserTxn userTxn) {
+    private void updateNodeStakes(@NonNull final UserTxn userTxn, final Dispatch dispatch) {
         try {
             nodeStakeUpdates.process(
-                    userTxn.stack(), userTxn.tokenContextImpl(), userTxn.type() == GENESIS_TRANSACTION);
+                    userTxn.stack(), userTxn.tokenContextImpl(), userTxn.type() == GENESIS_TRANSACTION, dispatch);
         } catch (final Exception e) {
             // We don't propagate a failure here to avoid a catastrophic scenario
             // where we are "stuck" trying to process node stake updates and never

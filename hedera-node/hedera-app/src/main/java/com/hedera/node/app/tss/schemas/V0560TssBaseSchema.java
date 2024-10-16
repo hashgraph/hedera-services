@@ -19,20 +19,17 @@ package com.hedera.node.app.tss.schemas;
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.state.tss.TssMessageMapKey;
 import com.hedera.hapi.node.state.tss.TssVoteMapKey;
-import com.hedera.hapi.node.tss.TssMessageTransactionBody;
-import com.hedera.hapi.node.tss.TssVoteTransactionBody;
+import com.hedera.hapi.services.auxiliary.tss.TssMessageTransactionBody;
+import com.hedera.hapi.services.auxiliary.tss.TssVoteTransactionBody;
 import com.swirlds.state.spi.Schema;
 import com.swirlds.state.spi.StateDefinition;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Set;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 /**
  * Schema for the TSS service.
  */
-public class V0560TSSSchema extends Schema {
-    private static final Logger log = LogManager.getLogger(V0560TSSSchema.class);
+public class V0560TssBaseSchema extends Schema {
     public static final String TSS_MESSAGE_MAP_KEY = "TSS_MESSAGES";
     public static final String TSS_VOTE_MAP_KEY = "TSS_VOTES";
     /**
@@ -52,7 +49,7 @@ public class V0560TSSSchema extends Schema {
     /**
      * Create a new instance
      */
-    public V0560TSSSchema() {
+    public V0560TssBaseSchema() {
         super(VERSION);
     }
 

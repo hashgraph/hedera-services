@@ -184,7 +184,7 @@ public class UnlimitedAutoAssociationSuite {
                         .via(transferFungible),
                 getTxnRecord(transferFungible)
                         .andAllChildRecords()
-                        .hasChildRecordCount(0)
+                        .hasNonStakingChildRecordCount(0)
                         .hasNewTokenAssociation(tokenA, secondUser)
                         .logged(),
                 // Transfer NFT
@@ -193,7 +193,7 @@ public class UnlimitedAutoAssociationSuite {
                         .via(transferNonFungible),
                 getTxnRecord(transferNonFungible)
                         .andAllChildRecords()
-                        .hasChildRecordCount(0)
+                        .hasNonStakingChildRecordCount(0)
                         .hasNewTokenAssociation(tokenB, secondUser)
                         .logged(),
                 getAccountInfo(secondUser)

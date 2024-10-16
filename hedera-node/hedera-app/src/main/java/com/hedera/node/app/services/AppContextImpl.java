@@ -26,5 +26,6 @@ import java.time.InstantSource;
  * @param instantSource the source of the current instant
  * @param signatureVerifier the signature verifier
  */
-public record AppContextImpl(@NonNull InstantSource instantSource, @NonNull SignatureVerifier signatureVerifier)
+public record AppContextImpl(
+        @NonNull InstantSource instantSource, @NonNull SignatureVerifier signatureVerifier, @NonNull Gossip gossip)
         implements AppContext {}
