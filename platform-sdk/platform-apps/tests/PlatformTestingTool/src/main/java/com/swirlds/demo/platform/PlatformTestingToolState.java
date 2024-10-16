@@ -1519,7 +1519,7 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
     @Override
     public int getMinimumSupportedVersion() {
         // We never do migration with this state, so always fail if we are given an older version.
-        return getVersion();
+        return getClassVersion();
     }
 
     /**

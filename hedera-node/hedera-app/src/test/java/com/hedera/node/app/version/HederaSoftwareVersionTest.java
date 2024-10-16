@@ -140,7 +140,7 @@ final class HederaSoftwareVersionTest {
                 new SerializableDataInputStream(new ByteArrayInputStream(legacyBytes));
         final HederaSoftwareVersion deserializedVersion = legacyIn.readSerializable();
 
-        assertEquals(RELEASE_027_VERSION, deserializedVersion.getVersion());
+        assertEquals(RELEASE_027_VERSION, deserializedVersion.getClassVersion());
         assertEquals(semver("1.2.3"), deserializedVersion.getHapiVersion());
         assertEquals(semver("4.5.6-2147483647"), deserializedVersion.getPbjSemanticVersion());
 
@@ -182,7 +182,7 @@ final class HederaSoftwareVersionTest {
 
         final var in = new SerializableDataInputStream(new ByteArrayInputStream(serializedBytes.toByteArray()));
         final var deserializedVersion = new HederaSoftwareVersion();
-        deserializedVersion.deserialize(in, deserializedVersion.getVersion());
+        deserializedVersion.deserialize(in, deserializedVersion.getClassVersion());
 
         assertThat(deserializedVersion.getHapiVersion()).isEqualTo(version.getHapiVersion());
         assertThat(deserializedVersion.getPbjSemanticVersion()).isEqualTo(version.getPbjSemanticVersion());

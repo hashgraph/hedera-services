@@ -377,7 +377,7 @@ class PartialNodeTests {
 
         // By design, the class ID version of each node is in the format: class ID = NNNN, version = N
         assertTrue(classId > 0, "class ID should be a positive number");
-        assertEquals(node.getVersion(), classId / 1111, "unexpected version");
+        assertEquals(node.getClassVersion(), classId / 1111, "unexpected version");
     }
 
     @ParameterizedTest
@@ -494,7 +494,7 @@ class PartialNodeTests {
 
         final DummyMerkleLeaf newChild = new DummyMerkleLeaf();
 
-        node.addDeserializedChildren(List.of(newChild), node.getVersion());
+        node.addDeserializedChildren(List.of(newChild), node.getClassVersion());
 
         assertEquals(1, newChild.getReservationCount());
         assertTrue(originalChild.isDestroyed());

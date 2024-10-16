@@ -128,7 +128,7 @@ class ServicesSoftwareVersionTest {
     @Test
     void versionIsOne() {
         final var subject = new ServicesSoftwareVersion(MIDDLE_ALPHA_1, DEFAULT_CONFIG_VERSION);
-        assertThat(subject.getVersion()).isEqualTo(1);
+        assertThat(subject.getClassVersion()).isEqualTo(1);
     }
 
     @Test

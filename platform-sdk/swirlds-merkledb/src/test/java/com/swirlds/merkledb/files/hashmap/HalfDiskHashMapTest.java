@@ -226,7 +226,7 @@ class HalfDiskHashMapTest {
 
         @Override
         public void deserialize(final SerializableDataInputStream in, final int dataVersion) throws IOException {
-            assertEquals(getVersion(), dataVersion);
+            assertEquals(getClassVersion(), dataVersion);
             super.deserialize(in, dataVersion);
         }
     }

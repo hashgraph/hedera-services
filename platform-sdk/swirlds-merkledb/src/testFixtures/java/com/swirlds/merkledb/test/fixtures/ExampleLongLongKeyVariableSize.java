@@ -111,7 +111,7 @@ public class ExampleLongLongKeyVariableSize implements VirtualKey {
     }
 
     public void deserialize(final SerializableDataInputStream in, final int dataVersion) throws IOException {
-        assert dataVersion == getVersion() : "dataVersion=" + dataVersion + " != getVersion()=" + getVersion();
+        assert dataVersion == getClassVersion() : "dataVersion=" + dataVersion + " != getVersion()=" + getClassVersion();
         byte numOfBytes1 = in.readByte();
         byte numOfBytes2 = in.readByte();
         long value1 = 0;

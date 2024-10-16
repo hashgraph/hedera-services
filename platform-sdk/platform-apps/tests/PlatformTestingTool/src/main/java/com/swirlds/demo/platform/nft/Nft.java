@@ -81,7 +81,7 @@ public class Nft extends PartialMerkleLeaf implements Keyed<NftId>, MerkleLeaf {
         this.shardNum = in.readLong();
         this.realmNum = in.readLong();
         this.tokenNum = in.readLong();
-        this.mapKey.deserialize(in, this.mapKey.getVersion());
+        this.mapKey.deserialize(in, this.mapKey.getClassVersion());
         this.serialNumber = in.readNormalisedString(DATA_STRING_LIMIT);
         this.memo = in.readNormalisedString(DATA_STRING_LIMIT);
     }

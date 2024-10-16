@@ -87,7 +87,7 @@ public class ExampleLongKeyVariableSize implements VirtualKey {
     }
 
     public void deserialize(final SerializableDataInputStream in, final int dataVersion) throws IOException {
-        assert dataVersion == getVersion() : "dataVersion=" + dataVersion + " != getVersion()=" + getVersion();
+        assert dataVersion == getClassVersion() : "dataVersion=" + dataVersion + " != getVersion()=" + getClassVersion();
         final byte numOfBytes = in.readByte();
         long value = 0;
         if (numOfBytes >= 8) value |= ((long) in.readByte() & 255) << 56;

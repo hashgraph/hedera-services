@@ -328,7 +328,7 @@ public final class VirtualMap<K extends VirtualKey, V extends VirtualValue> exte
         try (SerializableDataOutputStream serout =
                 new SerializableDataOutputStream(new BufferedOutputStream(new FileOutputStream(outputFile.toFile())))) {
             serout.writeSerializable(state, true);
-            serout.writeInt(root.getVersion());
+            serout.writeInt(root.getClassVersion());
             root.serialize(serout, outputDirectory);
         }
     }
@@ -378,7 +378,7 @@ public final class VirtualMap<K extends VirtualKey, V extends VirtualValue> exte
 
         state = virtualMapState.getValue();
         root = virtualRootNode.getValue();
-        addDeserializedChildren(List.of(state, root), getVersion());
+        addDeserializedChildren(List.of(state, root), getClassVersion());
     }
 
     /**

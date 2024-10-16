@@ -219,7 +219,7 @@ class VirtualInternalNodeTest extends VirtualTestBase {
         final VirtualRootNode<TestKey, TestValue> root = createRoot();
         final VirtualInternalNode<TestKey, TestValue> internalNode = new VirtualInternalNode<>(root, virtualHashRecord);
         assertEquals(0xaf2482557cfdb6bfL, internalNode.getClassId(), "Increases code coverage for getClassId");
-        assertEquals(1, internalNode.getVersion(), "Increases code coverage for getVersion");
+        assertEquals(1, internalNode.getClassVersion(), "Increases code coverage for getClassVersion");
     }
 
     @Test

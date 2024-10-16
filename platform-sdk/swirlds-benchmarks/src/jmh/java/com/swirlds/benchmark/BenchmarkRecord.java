@@ -77,7 +77,7 @@ public class BenchmarkRecord extends BenchmarkValue {
 
     @Override
     public void deserialize(SerializableDataInputStream inputStream, int dataVersion) throws IOException {
-        assert dataVersion == getVersion() : "dataVersion=" + dataVersion + " != getVersion()=" + getVersion();
+        assert dataVersion == getClassVersion() : "dataVersion=" + dataVersion + " != getVersion()=" + getClassVersion();
         path = inputStream.readLong();
         super.deserialize(inputStream, dataVersion);
     }
