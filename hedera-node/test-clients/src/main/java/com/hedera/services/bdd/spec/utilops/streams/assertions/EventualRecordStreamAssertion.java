@@ -138,8 +138,13 @@ public class EventualRecordStreamAssertion extends AbstractEventualStreamAsserti
     }
 
     @Override
+    protected String assertionDescription() {
+        return assertion == null ? "<N/A>" : assertion.toString();
+    }
+
+    @Override
     public String toString() {
-        return "EventuallyRecordStream{" + assertion + "}";
+        return "EventuallyRecordStream{" + assertionDescription() + "}";
     }
 
     /**

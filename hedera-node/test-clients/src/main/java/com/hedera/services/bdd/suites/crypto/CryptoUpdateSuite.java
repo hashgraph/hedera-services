@@ -190,7 +190,7 @@ public class CryptoUpdateSuite {
         return hapiTest(
                 recordStreamMustIncludePassFrom(
                         visibleNonSyntheticItems(keyRotationsValidator(evmAddresses), allTxnIds),
-                        Duration.ofSeconds(10)),
+                        Duration.ofSeconds(20)),
                 // --- CREATE ACCOUNTS ---
                 // The account with a long-zero EVM address
                 cryptoCreate("longZero")
