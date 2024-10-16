@@ -67,8 +67,8 @@ jobs:
             echo "xts_tag_commit=${XTS_COMMIT}" >> $GITHUB_OUTPUT
             echo "### Commit Tagged as an XTS-Candidate" >>  $GITHUB_STEP_SUMMARY
             echo "xts_tag_commit=${XTS_COMMIT}" >> $GITHUB_STEP_SUMMARY
-            git tag -d ${XTS_CANDIDATE_TAG}
-            git push --delete origin ${XTS_CANDIDATE_TAG}
+#            git tag -d ${XTS_CANDIDATE_TAG}
+#            git push --delete origin ${XTS_CANDIDATE_TAG}
           else
             gh run cancel ${{ github.run_id }}
           fi
@@ -149,9 +149,10 @@ jobs:
       - extended-test-suite
       - fetch-xts-candidate
       - hedera-node-jrs-panel
-    if: ${{ needs.abbreviated-panel.result == 'success' ||
-            needs.extended-test-suite.result == 'success' ||
-            needs.hedera-node-jrs-panel.result == 'success' }}
+#    if: ${{ needs.abbreviated-panel.result == 'success' ||
+#            needs.extended-test-suite.result == 'success' ||
+#            needs.hedera-node-jrs-panel.result == 'success' }}
+    if: ${{ needs.extended-test-suite.result == 'success' }}
     steps:
       - name: Harden Runner
         uses: step-security/harden-runner@f086349bfa2bd1361f7909c78558e816508cdc10 # v2.8.0
@@ -184,6 +185,8 @@ jobs:
           TAG=xts-pass-${EPOCH_TIME}
           git tag --annotate ${TAG} --message "Tagging commit for build candidate promotion"
           git push --set-upstream origin --tags
+          echo "### Commit Tagged for Promotion" >>  $GITHUB_STEP_SUMMARY
+          echo "promotion-tag=${TAG}" >> $GITHUB_STEP_SUMMARY
 
   report-failure:
     name: Report XTS preparation failure
