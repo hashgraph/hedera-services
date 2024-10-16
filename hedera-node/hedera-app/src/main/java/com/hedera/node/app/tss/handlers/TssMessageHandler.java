@@ -45,7 +45,9 @@ import javax.inject.Singleton;
 @Singleton
 public class TssMessageHandler implements TransactionHandler {
     private final TssSubmissions submissionManager;
+
     private final AppContext.Gossip gossip;
+
     private final TssCryptographyManager tssCryptographyManager;
 
     @Inject
