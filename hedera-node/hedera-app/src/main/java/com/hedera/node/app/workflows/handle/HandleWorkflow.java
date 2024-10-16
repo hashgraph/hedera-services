@@ -396,7 +396,8 @@ public class HandleWorkflow {
                         userTxn.stack().commitTransaction(streamBuilder);
                     }
                 }
-                updateNodeStakes(userTxn);
+                final var dispatch = dispatchFor(userTxn);
+                updateNodeStakes(userTxn, dispatch);
                 var lastRecordManagerTime = Instant.EPOCH;
                 if (streamMode != BLOCKS) {
                     lastRecordManagerTime = blockRecordManager.consTimeOfLastHandledTxn();
@@ -411,7 +412,6 @@ public class HandleWorkflow {
                     }
                 }
                 logPreDispatch(userTxn);
-                final var dispatch = dispatchFor(userTxn);
                 if (userTxn.type() != ORDINARY_TRANSACTION) {
                     if (userTxn.type() == GENESIS_TRANSACTION) {
                         logger.info("Doing genesis setup @ {}", userTxn.consensusNow());
@@ -570,9 +570,10 @@ public class HandleWorkflow {
                 .memo(txnInfo.txBody().memo());
     }
 
-    private void updateNodeStakes(@NonNull final UserTxn userTxn) {
+    private void updateNodeStakes(@NonNull final UserTxn userTxn, final Dispatch dispatch) {
         try {
             nodeStakeUpdates.process(
+                    dispatch,
                     userTxn.stack(),
                     userTxn.tokenContextImpl(),
                     streamMode,

@@ -22,12 +22,16 @@ import static java.time.ZoneOffset.UTC;
 import static java.util.Objects.requireNonNull;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.records.ReadableBlockRecordStore;
 import com.hedera.node.app.service.token.impl.handlers.staking.EndOfStakingPeriodUpdater;
 import com.hedera.node.app.service.token.records.TokenContext;
+import com.hedera.node.app.tss.TssBaseService;
+import com.hedera.node.app.workflows.handle.Dispatch;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.node.config.data.StakingConfig;
+import com.hedera.node.config.data.TssConfig;
 import com.hedera.node.config.types.StreamMode;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
@@ -49,13 +53,16 @@ public class NodeStakeUpdates {
 
     private final EndOfStakingPeriodUpdater stakingCalculator;
     private final ExchangeRateManager exchangeRateManager;
+    private final TssBaseService tssBaseService;
 
     @Inject
     public NodeStakeUpdates(
             @NonNull final EndOfStakingPeriodUpdater stakingPeriodCalculator,
-            @NonNull final ExchangeRateManager exchangeRateManager) {
+            @NonNull final ExchangeRateManager exchangeRateManager,
+            @NonNull final TssBaseService tssBaseService) {
         this.stakingCalculator = requireNonNull(stakingPeriodCalculator);
         this.exchangeRateManager = requireNonNull(exchangeRateManager);
+        this.tssBaseService = requireNonNull(tssBaseService);
     }
 
     /**
@@ -63,10 +70,7 @@ public class NodeStakeUpdates {
      * rewards. This should only be done during handling of the first transaction of each new staking
      * period, which staking period usually starts at midnight UTC.
      *
-     * <p>The only exception to this rule is when {@code consensusTimeOfLastHandledTxn} is null,
-     * <b>which should only happen on node startup.</b> The node should therefore run this process
-     * to catch up on updates and distributions when first coming online.
-     *
+     * @param dispatch     the dispatch
      * @param stack the savepoint stack
      * @param tokenContext the token context
      * @param streamMode the stream mode
@@ -74,12 +78,14 @@ public class NodeStakeUpdates {
      * @param lastIntervalProcessTime if known, the last instant when time-based events were processed
      */
     public void process(
+            @NonNull final Dispatch dispatch,
             @NonNull final SavepointStackImpl stack,
             @NonNull final TokenContext tokenContext,
             @NonNull final StreamMode streamMode,
             final boolean isGenesis,
             @NonNull final Instant lastIntervalProcessTime) {
         requireNonNull(stack);
+        requireNonNull(dispatch);
         requireNonNull(tokenContext);
         requireNonNull(streamMode);
         requireNonNull(lastIntervalProcessTime);
@@ -122,6 +128,13 @@ public class NodeStakeUpdates {
                 // If anything goes wrong, we log the error and continue
                 logger.error("CATASTROPHIC failure updating end-of-day stakes", e);
                 stack.rollbackFullStack();
+            }
+            final var config = tokenContext.configuration();
+            final var tssConfig = config.getConfigData(TssConfig.class);
+            if (tssConfig.keyCandidateRoster()) {
+                final var context = dispatch.handleContext();
+                // (TSS-FUTURE) Start keying the actual candidate roster from the RosterService
+                tssBaseService.startKeyingCandidate(Roster.DEFAULT, context);
             }
         }
     }

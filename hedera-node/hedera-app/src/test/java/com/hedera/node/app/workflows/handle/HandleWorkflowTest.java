@@ -191,8 +191,8 @@ class HandleWorkflowTest {
 
     @Test
     void onlySkipsEventWithMissingCreator() {
-        final var presentCreatorId = new NodeId(1L);
-        final var missingCreatorId = new NodeId(2L);
+        final var presentCreatorId = NodeId.of(1L);
+        final var missingCreatorId = NodeId.of(2L);
         final var eventFromPresentCreator = mock(ConsensusEvent.class);
         final var eventFromMissingCreator = mock(ConsensusEvent.class);
         given(round.iterator())

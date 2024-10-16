@@ -84,7 +84,7 @@ public abstract class AbstractEmbeddedHedera implements EmbeddedHedera {
     private static final SemanticVersion LATER_SEMVER =
             SemanticVersion.newBuilder().major(999).build();
 
-    protected static final NodeId MISSING_NODE_ID = new NodeId(666L);
+    protected static final NodeId MISSING_NODE_ID = NodeId.of(666L);
     protected static final int MAX_PLATFORM_TXN_SIZE = 1024 * 6;
     protected static final int MAX_QUERY_RESPONSE_SIZE = 1024 * 1024 * 2;
     protected static final Hash FAKE_START_OF_STATE_HASH = new Hash(new byte[48]);
@@ -105,8 +105,9 @@ public abstract class AbstractEmbeddedHedera implements EmbeddedHedera {
     protected final AtomicInteger nextNano = new AtomicInteger(0);
     protected final Hedera hedera;
     protected final ServicesSoftwareVersion version;
-    protected final FakeTssBaseService tssBaseService;
     protected final ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor();
+
+    protected FakeTssBaseService tssBaseService;
 
     protected AbstractEmbeddedHedera(@NonNull final EmbeddedNode node) {
         requireNonNull(node);
@@ -117,13 +118,15 @@ public abstract class AbstractEmbeddedHedera implements EmbeddedHedera {
                 .collect(toMap(Address::getNodeId, address -> parseAccount(address.getMemo())));
         defaultNodeId = addressBook.getNodeId(0);
         defaultNodeAccountId = fromPbj(accountIds.get(defaultNodeId));
-        tssBaseService = new FakeTssBaseService();
         hedera = new Hedera(
                 ConstructableRegistry.getInstance(),
                 FakeServicesRegistry.FACTORY,
                 new FakeServiceMigrator(),
                 this::now,
-                () -> tssBaseService);
+                appContext -> {
+                    this.tssBaseService = new FakeTssBaseService(appContext);
+                    return tssBaseService;
+                });
         version = (ServicesSoftwareVersion) hedera.getSoftwareVersion();
         blockStreamEnabled = hedera.isBlockStreamEnabled();
         Runtime.getRuntime().addShutdownHook(new Thread(executorService::shutdownNow));

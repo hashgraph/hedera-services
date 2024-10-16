@@ -20,6 +20,7 @@ import static com.hedera.node.app.blocks.impl.BlockImplUtils.combine;
 import static com.hedera.node.app.hapi.utils.CommonUtils.noThrowSha384HashOf;
 import static com.hedera.node.app.hapi.utils.CommonUtils.sha384DigestOrThrow;
 import static com.hedera.node.app.info.UnavailableNetworkInfo.UNAVAILABLE_NETWORK_INFO;
+import static com.hedera.node.app.spi.AppContext.Gossip.UNAVAILABLE_GOSSIP;
 import static com.hedera.node.app.workflows.handle.metric.UnavailableMetrics.UNAVAILABLE_METRICS;
 import static com.hedera.services.bdd.junit.hedera.ExternalPath.APPLICATION_PROPERTIES;
 import static com.hedera.services.bdd.junit.hedera.ExternalPath.SAVED_STATES_DIR;
@@ -80,6 +81,7 @@ import com.hedera.node.app.services.ServicesRegistryImpl;
 import com.hedera.node.app.spi.signatures.SignatureVerifier;
 import com.hedera.node.app.state.recordcache.RecordCacheService;
 import com.hedera.node.app.throttle.CongestionThrottleService;
+import com.hedera.node.app.tss.TssBaseServiceImpl;
 import com.hedera.node.app.version.ServicesSoftwareVersion;
 import com.hedera.node.config.VersionedConfiguration;
 import com.hedera.node.config.converter.BytesConverter;
@@ -127,6 +129,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ForkJoinPool;
 import java.util.function.Function;
 import java.util.regex.Pattern;
 import org.apache.logging.log4j.LogManager;
@@ -251,7 +254,7 @@ public class StateChangesValidator implements BlockStreamValidator {
         final var lifecycles = newPlatformInitLifecycle(bootstrapConfig, currentVersion, migrator, servicesRegistry);
         this.state = new MerkleStateRoot(lifecycles, version -> new ServicesSoftwareVersion(version, configVersion));
         initGenesisPlatformState(
-                new FakePlatformContext(new NodeId(0), Executors.newSingleThreadScheduledExecutor()),
+                new FakePlatformContext(NodeId.of(0), Executors.newSingleThreadScheduledExecutor()),
                 this.state.getWritablePlatformState(),
                 addressBook,
                 currentVersion);
@@ -522,12 +525,14 @@ public class StateChangesValidator implements BlockStreamValidator {
             final InstantSource instantSource,
             final ServicesRegistry servicesRegistry,
             final VersionedConfiguration bootstrapConfig) {
+        final var appContext = new AppContextImpl(instantSource, fakeSignatureVerifier(), UNAVAILABLE_GOSSIP);
         // Register all service schema RuntimeConstructable factories before platform init
         Set.of(
                         new EntityIdService(),
                         new ConsensusServiceImpl(),
-                        new ContractServiceImpl(new AppContextImpl(instantSource, fakeSignatureVerifier())),
+                        new ContractServiceImpl(appContext),
                         new FileServiceImpl(),
+                        new TssBaseServiceImpl(appContext, ForkJoinPool.commonPool(), ForkJoinPool.commonPool()),
                         new FreezeServiceImpl(),
                         new ScheduleServiceImpl(),
                         new TokenServiceImpl(),

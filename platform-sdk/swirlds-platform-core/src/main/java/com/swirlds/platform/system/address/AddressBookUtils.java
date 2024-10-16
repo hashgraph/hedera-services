@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.system.address;
 
+import static com.swirlds.base.utility.NetworkUtils.isNameResolvable;
 import static com.swirlds.platform.util.BootstrapUtils.detectSoftwareUpgrade;
 
 import com.hedera.hapi.node.base.ServiceEndpoint;
@@ -32,8 +33,6 @@ import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.system.SoftwareVersion;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.net.InetAddress;
-import java.net.UnknownHostException;
 import java.security.cert.CertificateEncodingException;
 import java.text.ParseException;
 import java.util.ArrayList;
@@ -164,7 +163,7 @@ public class AddressBookUtils {
         }
         final NodeId nodeId;
         try {
-            nodeId = new NodeId(Long.parseLong(parts[1]));
+            nodeId = NodeId.of(Long.parseLong(parts[1]));
         } catch (final Exception e) {
             throw new ParseException("Cannot parse node id from '" + parts[1] + "'", 1);
         }
@@ -178,11 +177,8 @@ public class AddressBookUtils {
         }
         // FQDN Support: The original string value is preserved, whether it is an IP Address or a FQDN.
         final String internalHostname = parts[5];
-        try {
-            // validate that an InetAddress can be created from the internal hostname.
-            InetAddress.getByName(internalHostname);
-        } catch (UnknownHostException e) {
-            throw new ParseException("Cannot parse ip address from '" + parts[5] + "'", 5);
+        if (!isNameResolvable(internalHostname)) {
+            throw new ParseException("Cannot parse ip address from '" + internalHostname + "'", 5);
         }
         final int internalPort;
         try {
@@ -192,11 +188,8 @@ public class AddressBookUtils {
         }
         // FQDN Support: The original string value is preserved, whether it is an IP Address or a FQDN.
         final String externalHostname = parts[7];
-        try {
-            // validate that an InetAddress can be created from the external hostname.
-            InetAddress.getByName(externalHostname);
-        } catch (UnknownHostException e) {
-            throw new ParseException("Cannot parse ip address from '" + parts[7] + "'", 7);
+        if (!isNameResolvable(externalHostname)) {
+            throw new ParseException("Cannot parse ip address from '" + externalHostname + "'", 7);
         }
         final int externalPort;
         try {
@@ -327,13 +320,15 @@ public class AddressBookUtils {
                 .gossipEndpoint(serviceEndpoints)
                 .build();
     }
+
     /**
      * Initializes the address book from the configuration and platform saved state.
-     * @param selfId the node ID of the current node
-     * @param version the software version of the current node
-     * @param initialState the initial state of the platform
+     *
+     * @param selfId               the node ID of the current node
+     * @param version              the software version of the current node
+     * @param initialState         the initial state of the platform
      * @param bootstrapAddressBook the bootstrap address book
-     * @param platformContext the platform context
+     * @param platformContext      the platform context
      * @return the initialized address book
      */
     public static @NonNull AddressBook initializeAddressBook(

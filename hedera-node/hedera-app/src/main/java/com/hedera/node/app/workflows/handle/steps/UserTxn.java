@@ -16,9 +16,9 @@
 
 package com.hedera.node.app.workflows.handle.steps;
 
-import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.USER;
 import static com.hedera.node.app.workflows.handle.TransactionType.GENESIS_TRANSACTION;
 import static com.hedera.node.app.workflows.handle.TransactionType.POST_UPGRADE_TRANSACTION;
+import static com.hedera.node.app.workflows.standalone.impl.StandaloneDispatchFactory.getTxnCategory;
 import static com.hedera.node.config.types.StreamMode.RECORDS;
 import static java.util.Objects.requireNonNull;
 
@@ -249,7 +249,7 @@ public record UserTxn(
                 preHandleResult.getHollowAccounts(),
                 dispatchHandleContext,
                 stack,
-                USER,
+                getTxnCategory(preHandleResult),
                 tokenContextImpl,
                 preHandleResult,
                 HandleContext.ConsensusThrottling.ON);

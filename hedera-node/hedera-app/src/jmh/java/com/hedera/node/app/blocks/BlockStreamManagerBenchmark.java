@@ -21,6 +21,7 @@ import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_BLOCK
 import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_PLATFORM_STATE;
 import static com.hedera.node.app.blocks.BlockStreamManager.ZERO_BLOCK_HASH;
 import static com.hedera.node.app.blocks.schemas.V0560BlockStreamSchema.BLOCK_STREAM_INFO_KEY;
+import static com.hedera.node.app.spi.AppContext.Gossip.UNAVAILABLE_GOSSIP;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.CompletableFuture.completedFuture;
 
@@ -29,7 +30,9 @@ import com.hedera.hapi.block.stream.BlockItem;
 import com.hedera.hapi.block.stream.output.SingletonUpdateChange;
 import com.hedera.hapi.block.stream.output.StateChange;
 import com.hedera.hapi.block.stream.output.StateChanges;
+import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.SemanticVersion;
+import com.hedera.hapi.node.base.SignatureMap;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.state.blockstream.BlockStreamInfo;
 import com.hedera.hapi.platform.state.PlatformState;
@@ -38,7 +41,9 @@ import com.hedera.node.app.blocks.impl.BoundaryStateChangeListener;
 import com.hedera.node.app.blocks.schemas.V0560BlockStreamSchema;
 import com.hedera.node.app.config.ConfigProviderImpl;
 import com.hedera.node.app.fixtures.state.FakeState;
-import com.hedera.node.app.tss.impl.PlaceholderTssBaseService;
+import com.hedera.node.app.services.AppContextImpl;
+import com.hedera.node.app.spi.signatures.SignatureVerifier;
+import com.hedera.node.app.tss.TssBaseServiceImpl;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.pbj.runtime.OneOf;
 import com.hedera.pbj.runtime.ParseException;
@@ -53,6 +58,7 @@ import com.swirlds.platform.system.events.ConsensusEvent;
 import com.swirlds.platform.system.state.notifications.StateHashedNotification;
 import com.swirlds.state.spi.Schema;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -68,6 +74,7 @@ import java.util.Map;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Function;
 import java.util.zip.GZIPInputStream;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
@@ -107,7 +114,10 @@ public class BlockStreamManagerBenchmark {
                     "blockStream.hashCombineBatchSize", "64",
                     "blockStream.serializationBatchSize", "32"));
     private final List<BlockItem> roundItems = new ArrayList<>();
-    private final PlaceholderTssBaseService tssBaseService = new PlaceholderTssBaseService();
+    private final TssBaseServiceImpl tssBaseService = new TssBaseServiceImpl(
+            new AppContextImpl(Instant::now, fakeSignatureVerifier(), UNAVAILABLE_GOSSIP),
+            ForkJoinPool.commonPool(),
+            ForkJoinPool.commonPool());
     private final BlockStreamManagerImpl subject = new BlockStreamManagerImpl(
             NoopBlockItemWriter::new,
             //            BaosBlockItemWriter::new,
@@ -136,7 +146,6 @@ public class BlockStreamManagerBenchmark {
         addServiceSingleton(new V0560BlockStreamSchema(ignore -> {}), BlockStreamService.NAME, BlockStreamInfo.DEFAULT);
         addServiceSingleton(new V0540PlatformStateSchema(), PlatformStateService.NAME, platformState);
         subject.initLastBlockHash(ZERO_BLOCK_HASH);
-        tssBaseService.setExecutor(ForkJoinPool.commonPool());
         tssBaseService.registerLedgerSignatureConsumer(subject);
     }
 
@@ -369,5 +378,24 @@ public class BlockStreamManagerBenchmark {
                 }
             }
         }
+    }
+
+    private SignatureVerifier fakeSignatureVerifier() {
+        return new SignatureVerifier() {
+            @Override
+            public boolean verifySignature(
+                    @NonNull Key key,
+                    @NonNull Bytes bytes,
+                    @NonNull MessageType messageType,
+                    @NonNull SignatureMap signatureMap,
+                    @Nullable Function<Key, SimpleKeyStatus> simpleKeyVerifier) {
+                throw new UnsupportedOperationException("Not implemented");
+            }
+
+            @Override
+            public KeyCounts countSimpleKeys(@NonNull Key key) {
+                throw new UnsupportedOperationException("Not implemented");
+            }
+        };
     }
 }
