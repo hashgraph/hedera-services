@@ -50,6 +50,7 @@ import com.swirlds.common.crypto.config.CryptoConfig;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.crypto.MerkleCryptography;
 import com.swirlds.common.merkle.crypto.MerkleCryptographyFactory;
+import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.platform.state.service.PlatformStateService;
@@ -1114,6 +1115,7 @@ class MerkleStateRootTest extends MerkleTestBase {
             final PlatformContext platformContext = mock(PlatformContext.class);
             when(platform.getContext()).thenReturn(platformContext);
             when(platformContext.getMerkleCryptography()).thenReturn(merkleCryptography);
+            when(platformContext.getMetrics()).thenReturn(new NoOpMetrics());
             stateRoot.init(platform, InitTrigger.GENESIS, mock(SoftwareVersion.class));
         }
 
