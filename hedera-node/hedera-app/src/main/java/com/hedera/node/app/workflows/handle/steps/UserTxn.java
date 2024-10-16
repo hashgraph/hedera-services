@@ -257,6 +257,7 @@ public record UserTxn(
 
     /**
      * Returns the base stream builder for this user transaction.
+     *
      * @return the base stream builder
      */
     public StreamBuilder baseBuilder() {

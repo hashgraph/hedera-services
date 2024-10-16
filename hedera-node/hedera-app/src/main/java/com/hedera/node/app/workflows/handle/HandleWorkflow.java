@@ -373,6 +373,15 @@ public class HandleWorkflow {
     private HandleOutput execute(@NonNull final UserTxn userTxn) {
         try {
             if (isOlderSoftwareEvent(userTxn)) {
+                if (streamMode != BLOCKS) {
+                    final var lastRecordManagerTime = blockRecordManager.consTimeOfLastHandledTxn();
+                    // This updates consTimeOfLastHandledTxn as a side-effect
+                    blockRecordManager.advanceConsensusClock(userTxn.consensusNow(), userTxn.state());
+                    if (streamMode == RECORDS) {
+                        // If relying on last-handled time to trigger interval processing, do so now
+                        processInterval(userTxn, lastRecordManagerTime);
+                    }
+                }
                 initializeBuilderInfo(userTxn.baseBuilder(), userTxn.txnInfo(), exchangeRateManager.exchangeRates())
                         .status(BUSY);
                 // Flushes the BUSY builder to the stream, no other side effects
@@ -394,7 +403,13 @@ public class HandleWorkflow {
                         // Only externalize this if we are streaming blocks
                         streamBuilder.exchangeRate(exchangeRateManager.exchangeRates());
                         userTxn.stack().commitTransaction(streamBuilder);
+                    } else {
+                        // Only update this if we are relying on RecordManager state for post-upgrade processing
+                        blockRecordManager.markMigrationRecordsStreamed();
                     }
+                    // C.f. https://github.com/hashgraph/hedera-services/issues/14751,
+                    // here we may need to switch the newly adopted candidate roster
+                    // in the RosterService state to become the active roster
                 }
                 final var dispatch = dispatchFor(userTxn);
                 updateNodeStakes(userTxn, dispatch);

@@ -38,6 +38,7 @@ import com.hedera.services.bdd.junit.support.validators.BlockNoValidator;
 import com.hedera.services.bdd.junit.support.validators.ExpiryRecordsValidator;
 import com.hedera.services.bdd.junit.support.validators.TokenReconciliationValidator;
 import com.hedera.services.bdd.junit.support.validators.TransactionBodyValidator;
+import com.hedera.services.bdd.junit.support.validators.block.BlockContentsValidator;
 import com.hedera.services.bdd.junit.support.validators.block.StateChangesValidator;
 import com.hedera.services.bdd.junit.support.validators.block.TransactionRecordParityValidator;
 import com.hedera.services.bdd.spec.HapiSpec;
@@ -72,8 +73,8 @@ public class StreamValidationOp extends UtilOp {
             new BalanceReconciliationValidator(),
             new TokenReconciliationValidator());
 
-    private static final List<BlockStreamValidator.Factory> BLOCK_STREAM_VALIDATOR_FACTORIES =
-            List.of(TransactionRecordParityValidator.FACTORY, StateChangesValidator.FACTORY);
+    private static final List<BlockStreamValidator.Factory> BLOCK_STREAM_VALIDATOR_FACTORIES = List.of(
+            TransactionRecordParityValidator.FACTORY, StateChangesValidator.FACTORY, BlockContentsValidator.FACTORY);
 
     public static void main(String[] args) {}
 

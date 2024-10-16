@@ -219,6 +219,12 @@ public final class BlockRecordManagerImpl implements BlockRecordManager {
         return false;
     }
 
+    @Override
+    public void markMigrationRecordsStreamed() {
+        lastBlockInfo =
+                lastBlockInfo.copyBuilder().migrationRecordsStreamed(true).build();
+    }
+
     /**
      * We need this to preserve unit test expectations written that assumed a bug in the original implementation,
      * in which the first consensus time of the current block was not in state.
@@ -345,11 +351,6 @@ public final class BlockRecordManagerImpl implements BlockRecordManager {
                 .consTimeOfLastHandledTxn(Timestamp.newBuilder()
                         .seconds(consensusTime.getEpochSecond())
                         .nanos(consensusTime.getNano()));
-        if (!this.lastBlockInfo.migrationRecordsStreamed()) {
-            // Any records created during migration should have been published already. Now we shut off the flag to
-            // disallow further publishing
-            builder.migrationRecordsStreamed(true);
-        }
         final var newBlockInfo = builder.build();
 
         // Update the latest block info in state
