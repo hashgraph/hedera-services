@@ -371,6 +371,9 @@ public class HandleWorkflow {
                     if (blockStreamConfig.streamRecords()) {
                         blockRecordManager.markMigrationRecordsStreamed();
                     }
+                    // C.f. https://github.com/hashgraph/hedera-services/issues/14751,
+                    // here we may need to switch the newly adopted candidate roster
+                    // in the RosterService state to become the active roster
                 }
                 final var dispatch = dispatchFor(userTxn, blockStreamConfig);
                 updateNodeStakes(userTxn, dispatch);

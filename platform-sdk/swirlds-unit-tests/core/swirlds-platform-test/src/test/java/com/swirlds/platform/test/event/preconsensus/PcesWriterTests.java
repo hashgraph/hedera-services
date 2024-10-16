@@ -102,7 +102,7 @@ class PcesWriterTests {
     @TempDir
     Path testDirectory;
 
-    private final NodeId selfId = new NodeId(0);
+    private final NodeId selfId = NodeId.of(0);
     private final int numEvents = 1_000;
 
     protected static Stream<Arguments> buildArguments() {

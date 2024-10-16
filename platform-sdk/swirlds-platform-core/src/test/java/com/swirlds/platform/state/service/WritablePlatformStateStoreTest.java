@@ -19,6 +19,7 @@ package com.swirlds.platform.state.service;
 import static com.swirlds.common.test.fixtures.RandomUtils.nextInt;
 import static com.swirlds.common.test.fixtures.RandomUtils.randomHash;
 import static com.swirlds.platform.state.service.PbjConverter.toPbjPlatformState;
+import static com.swirlds.platform.state.service.PbjConverterTest.randomAddressBook;
 import static com.swirlds.platform.state.service.PbjConverterTest.randomPlatformState;
 import static com.swirlds.platform.state.service.schemas.V0540PlatformStateSchema.PLATFORM_STATE_KEY;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -94,14 +95,14 @@ class WritablePlatformStateStoreTest {
 
     @Test
     void verifyAddressBook() {
-        final var addressBook = PbjConverterTest.randomAddressBook(randotron);
+        final var addressBook = randomAddressBook(randotron);
         store.setAddressBook(addressBook);
         assertEquals(addressBook, store.getAddressBook());
     }
 
     @Test
     void verifyPreviousAddressBook() {
-        final var addressBook = PbjConverterTest.randomAddressBook(randotron);
+        final var addressBook = randomAddressBook(randotron);
         store.setPreviousAddressBook(addressBook);
         assertEquals(addressBook, store.getPreviousAddressBook());
     }

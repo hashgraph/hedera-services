@@ -321,11 +321,11 @@ public class DabEnabledUpgradeTest implements LifecycleTest {
 
     private static void validateMultipartEdits(@NonNull final AddressBook addressBook) {
         assertThat(nodeIdsFrom(addressBook)).containsExactlyInAnyOrder(0L, 2L, 5L);
-        final var node0 = addressBook.getAddress(new NodeId(0L));
+        final var node0 = addressBook.getAddress(NodeId.of(0L));
         assertEquals(classicFeeCollectorIdLiteralFor(0), node0.getMemo());
-        final var node2 = addressBook.getAddress(new NodeId(2L));
+        final var node2 = addressBook.getAddress(NodeId.of(2L));
         assertEquals(classicFeeCollectorIdLiteralFor(902), node2.getMemo());
-        final var node5 = addressBook.getAddress(new NodeId(5L));
+        final var node5 = addressBook.getAddress(NodeId.of(5L));
         assertEquals(classicFeeCollectorIdLiteralFor(905), node5.getMemo());
         assertEquals("127.0.0.1", node5.getHostnameInternal());
         assertEquals(33000, node5.getPortInternal());
