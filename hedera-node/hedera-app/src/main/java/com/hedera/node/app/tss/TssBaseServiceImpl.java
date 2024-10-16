@@ -114,9 +114,9 @@ public class TssBaseServiceImpl implements TssBaseService {
     }
 
     @Override
-    public void startKeyingCandidate(@NonNull final Roster roster, @NonNull final HandleContext context) {
+    public void setCandidateRoster(@NonNull final Roster roster, @NonNull final HandleContext context) {
         requireNonNull(roster);
-        // (TSS-FUTURE) Create a real TssMessage and body
+        // (TSS-FUTURE) https://github.com/hashgraph/hedera-services/issues/14748
         tssSubmissions.submitTssMessage(TssMessageTransactionBody.DEFAULT, context);
     }
 
