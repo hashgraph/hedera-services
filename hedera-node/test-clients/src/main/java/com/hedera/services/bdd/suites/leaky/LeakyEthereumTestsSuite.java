@@ -91,12 +91,14 @@ public class LeakyEthereumTestsSuite {
                                 .hasPriority(recordWith().status(SUCCESS)))));
     }
 
-    // test unprotected legacy ethereum transactions before EIP155
-    // When using a `CHAIN_ID` represented as a BigInteger, an additional byte is required
-    // to store the sign information (indicating whether the value is positive or negative),
-    // if there is no free bit available for this information, as in values like 11155111.
+    /**
+     * test unprotected legacy ethereum transactions before EIP155
+     * When using a `CHAIN_ID` represented as a BigInteger, an additional byte is required
+     * to store the sign information (indicating whether the value is positive or negative),
+     * if there is no free bit available for this information, as in values like 11155111.
+     */
     @LeakyHapiTest(overrides = {"contracts.chainId"})
-    public final Stream<DynamicTest> legacyUnprotectedEtxBeforeEIP155WithChainIdHavingExtraByteForSign() {
+    final Stream<DynamicTest> legacyUnprotectedEtxBeforeEIP155WithChainIdHavingExtraByteForSign() {
         final String DEPOSIT = "deposit";
         final long depositAmount = 20_000L;
         final Integer chainId = 11_155_111;
