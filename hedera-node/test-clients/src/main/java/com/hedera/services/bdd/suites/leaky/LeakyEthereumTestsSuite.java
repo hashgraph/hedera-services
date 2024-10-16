@@ -91,6 +91,44 @@ public class LeakyEthereumTestsSuite {
                                 .hasPriority(recordWith().status(SUCCESS)))));
     }
 
+    // test unprotected legacy ethereum transactions before EIP155
+    // When using a `CHAIN_ID` represented as a BigInteger, an additional byte is required
+    // to store the sign information (indicating whether the value is positive or negative),
+    // if there is no free bit available for this information, as in values like 11155111.
+    @LeakyHapiTest(overrides = {"contracts.chainId"})
+    final Stream<DynamicTest> legacyUnprotectedEtxBeforeEIP155WithChainIdHavingExtraByteForSign() {
+        final String DEPOSIT = "deposit";
+        final long depositAmount = 20_000L;
+        final Integer chainId = 11_155_111;
+
+        return hapiTest(
+                overriding("contracts.chainId", "" + chainId),
+                newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
+                cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS),
+                cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS))
+                        .via("autoAccount"),
+                getTxnRecord("autoAccount").andAllChildRecords(),
+                uploadInitCode(PAY_RECEIVABLE_CONTRACT),
+                contractCreate(PAY_RECEIVABLE_CONTRACT).adminKey(THRESHOLD),
+                ethereumCall(PAY_RECEIVABLE_CONTRACT, DEPOSIT, BigInteger.valueOf(depositAmount))
+                        .type(EthTransactionType.LEGACY_ETHEREUM)
+                        .signingWith(SECP_256K1_SOURCE_KEY)
+                        .payingWith(RELAYER)
+                        .via("legacyBeforeEIP155")
+                        .nonce(0)
+                        .chainId(chainId)
+                        .gasPrice(50L)
+                        .maxPriorityGas(2L)
+                        .gasLimit(1_000_000L)
+                        .sending(depositAmount)
+                        .hasKnownStatus(ResponseCodeEnum.SUCCESS),
+                withOpContext((spec, opLog) -> allRunFor(
+                        spec,
+                        getTxnRecord("legacyBeforeEIP155")
+                                .logged()
+                                .hasPriority(recordWith().status(SUCCESS)))));
+    }
+
     // test legacy ethereum transactions after EIP155
     // this tests the behaviour when the `v` field is 37 or 38
     // in this case the passed chainId = 1 so ETX is after EIP155
