@@ -117,11 +117,6 @@ public interface PreHandleWorkflow {
         }
         // We do not know how long transactions are kept in memory. Clearing metadata to avoid keeping it for too long.
         platformTxn.setMetadata(null);
-        return preHandleTransaction(
-                creator.accountId(),
-                storeFactory,
-                storeFactory.getStore(ReadableAccountStore.class),
-                platformTxn,
-                previousResult);
+        return previousResult;
     }
 }
