@@ -43,7 +43,8 @@ public class DefaultIntakeEventCounter implements IntakeEventCounter {
             return count - 1;
         } else {
             throw new IllegalStateException(
-                    "Event processed from peer, but no events from that peer were in the intake pipeline. This shouldn't be possible.");
+                    "Event processed from peer, but no events from that peer were in the intake pipeline. "
+                            + "This shouldn't be possible.");
         }
     };
 
@@ -54,7 +55,7 @@ public class DefaultIntakeEventCounter implements IntakeEventCounter {
     private final Map<NodeId, AtomicInteger> unprocessedEventCounts;
 
     /**
-     * Constructor
+     * Constructor.
      *
      * @param addressBook the address book
      */

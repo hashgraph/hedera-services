@@ -138,6 +138,7 @@ module com.swirlds.platform.core {
     requires transitive com.fasterxml.jackson.annotation;
     requires transitive com.fasterxml.jackson.databind;
     requires transitive com.hedera.pbj.runtime;
+    requires transitive com.hedera.service.gossip;
     requires transitive info.picocli;
     requires transitive org.apache.logging.log4j;
     requires com.swirlds.config.extensions;
@@ -148,7 +149,6 @@ module com.swirlds.platform.core {
     requires com.fasterxml.jackson.core;
     requires com.fasterxml.jackson.dataformat.yaml;
     requires com.hedera.consensus.gossip.impl;
-    requires com.hedera.service.gossip;
     requires java.desktop;
     requires java.management;
     requires java.scripting;
