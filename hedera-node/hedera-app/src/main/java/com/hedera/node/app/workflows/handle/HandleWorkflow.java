@@ -566,6 +566,9 @@ public class HandleWorkflow {
                     final var keys = scheduleManager.allKeysForTransaction(schedule, dispatch.handleContext());
                     final var validationResult = scheduleManager.validate(
                             schedule, dispatch.handleContext().consensusNow(), true);
+
+                    // We are not marking the scheduled transaction as executed here because below we are purging 
+                    // the expired schedules anyway.
                     scheduleManager.tryToExecuteSchedule(
                             dispatch.handleContext(),
                             schedule,
