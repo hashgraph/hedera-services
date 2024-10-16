@@ -255,16 +255,15 @@ this network, at 10 TPS, all 4 nodes may be able to process events and handle tr
 transaction load were to increase to 10,000 TPS, then the Raspberry PI may not be able to keep up with this workload,
 while the other 3 machines might. The healthy machines will continue to accept transactions and create new events, while
 the machine under stress is unable to create new consensus rounds fast enough, since consensus is stalled waiting for
-the Execution layer to finish processing previous rounds. As time goes on, the slow machine begins to receive events
-from the other nodes which are too far in the future. It drops these events. When it finally needs those events, gossip
-will fetch them again.
+the Execution layer to finish processing previous rounds. As time goes on, the slow machine cannot receive all events
+from other nodes, since the events are too far in the future. If this occurs, the slow machine will begin to fall
+behind.
 
-It may be that the load decreases back to a manageable level, and the Raspberry PI is able to fetch the events it wasn't
-able to process quickly enough, and successfully "catch up" with the other nodes. Or, it may be that the load continues
-long enough that the Raspberry PI falls so far behind that when it asks the other nodes for events it is missing, that
-those nodes will reply that those events had expired, and the Raspberry PI has truly fallen behind. At this point, the
-only recourse is for the node to reconnect. This it will do, using an exponential backoff algorithm, so that if the PI
-is continually falling behind, it will wait a longer and longer time before it attempts to reconnect again.
+It may be that the load decreases back to a manageable level, and the Raspberry PI is able to successfully "catch up"
+with the other nodes. Or, it may be that the load continues long enough that the Raspberry PI falls fully behind. At
+this point, the only recourse is for the node to reconnect. This it will do, using an exponential backoff algorithm, so
+that if the PI is continually falling behind, it will wait a longer and longer time before it attempts to reconnect
+again.
 
 Eventually, the PI may encounter a quieter network, and successfully reconnect and rejoin the network. Or the node
 operator may decide to upgrade to a more capable machine so it can rejoin the network and participate. In either case,
@@ -424,11 +423,8 @@ stake weight, or, Bob is lying. He may create events at round 200, but not actua
 to that round.
 
 Each event must be validated using the roster associated with its birth-round. If Alice is far behind Bob, and she
-receives an event for a birth-round she doesn't have the roster for, then she cannot validate the event. So the Event
-Intake module will drop events with a birth-round too far in the future.
-
-If the event has been dropped, it is possible to fetch missing events from neighbors using Gossip or, if the node has
-fallen so far behind it can no longer fetch events from neighbors in gossip, then the node will reconnect.
+receives an event for a birth-round she doesn't have the roster for, then she cannot validate the event. If the Event
+Intake module receives a far-future event which cannot be validated, then the event will be dropped.
 
 #### Self Events
 
@@ -443,18 +439,6 @@ During the validation process, invalid events are rejected, and this information
 offending node may be disciplined. Note that the node to be disciplined will be the node that sent this bad event, not
 the creator. This information (which node sent the event) must be captured by Gossip and passed to Event Intake as part
 of the event metadata.
-
-#### Assigning Generations
-
-Several algorithms, including the hashgraph consensus algorithm and the tipset algorithm, require events to be part of
-a "generation". We use what is known as "local generation". Each node, when it starts, assigns "1" as the generation
-of the first event it encounters per event creator. The absolute numbers for the generations are not important, but
-their relative values are critical. The next generation will be the max generation of all parents, plus 1. So if Alice
-builds an event with parents `a4` and `b7`, the new event will be `a8`. Different nodes may assign different generations
-to the same events. The generation will be part of the event metadata, **not** part of `EventCore` (that is, it is not
-in the part of the event that is gossiped).
-
-Event Intake is responsible for assigning generations to events.
 
 #### Branch Detection
 
@@ -543,18 +527,14 @@ Execution. The roster used for round 22 may also be included in this metadata.
 There is a critical relationship between the value of N, the latency for adopting a new roster, and the number of future
 events held in memory on the node. Remember that each event has a birth-round. Let us define another variable called
 `Z`, such that `Z <= N`. Any event with `birth_round > latest_consensus_round + z` is considered a "far future" event,
-and will be dropped by the birth-round filtering logic in Event Intake. Any event with
-`birth_round > latest_consensus_round` is just a "future" event.
+and will be either dropped by the birth-round filtering logic in Event Intake, or simply never sent in the first place.
+Any event with `birth_round > latest_consensus_round` is just a "future" event.
 
-The smaller the value of `Z`, the fewer events are held in memory on the node. However, events with birth-rounds just
-larger than `Z` will be dropped and have to be retrieved on demand with sync gossip, rather than through the broadcast
-tree. Sync is slower and more laborious than broadcast gossip, so the efficiency of the node will go down with low
-values of `Z`. Larger values of `Z` means more events in memory, but it also means more "smoothing" in gossip and
-in handling any performance spikes.
-
-On the other hand, the larger the value of `N`, the larger the latency between the round we know about a new roster, and
-the round at which it can be actually used. Ideally, the value of `N` would be small, like 3, but we may find that 3 is
-too small a number for `Z`.
+The smaller the value of `Z`, the fewer events are held in memory on the node. Larger values of `Z` means more events in
+memory, but it also means more "smoothing" in gossip and in handling any performance spikes. On the other hand, the
+larger the value of `N`, the larger the latency between the round we know about a new roster, and the round at which it
+can be actually used. Ideally, the value of `N` would be small, like 3, but we may find that 3 is too small a number for
+`Z`.
 
 Each node may select its own value of `Z`, so long as it is less than or equal to `N`. But all nodes must use the same
 value for `N`, or they will ISS since they will assign different rosters to different rounds. The value of `N` is not
