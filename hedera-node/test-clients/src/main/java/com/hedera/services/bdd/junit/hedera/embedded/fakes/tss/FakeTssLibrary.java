@@ -16,36 +16,30 @@
 
 package com.hedera.services.bdd.junit.hedera.embedded.fakes.tss;
 
-import com.hedera.cryptography.pairings.signatures.api.PairingPrivateKey;
-import com.hedera.cryptography.pairings.signatures.api.PairingPublicKey;
-import com.hedera.cryptography.pairings.signatures.api.PairingSignature;
-import com.hedera.cryptography.pairings.signatures.api.SignatureSchema;
-import com.hedera.cryptography.tss.api.TssParticipantDirectory;
-import com.hedera.cryptography.tss.api.TssPrivateShare;
-import com.hedera.cryptography.tss.api.TssPublicShare;
-import com.hedera.cryptography.tss.api.TssShareSignature;
-import com.hedera.node.app.tss.TssLibrary;
+import static com.hedera.node.app.hapi.utils.CommonUtils.noThrowSha384HashOf;
+
+import com.hedera.node.app.tss.api.TssLibrary;
+import com.hedera.node.app.tss.api.TssMessage;
+import com.hedera.node.app.tss.api.TssParticipantDirectory;
+import com.hedera.node.app.tss.api.TssPrivateShare;
+import com.hedera.node.app.tss.api.TssPublicShare;
+import com.hedera.node.app.tss.api.TssShareSignature;
+import com.hedera.node.app.tss.pairings.FakeFieldElement;
+import com.hedera.node.app.tss.pairings.FakeGroupElement;
+import com.hedera.node.app.tss.pairings.PairingPrivateKey;
+import com.hedera.node.app.tss.pairings.PairingPublicKey;
+import com.hedera.node.app.tss.pairings.PairingSignature;
+import com.hedera.node.app.tss.pairings.SignatureSchema;
 import java.math.BigInteger;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.util.List;
 import org.jetbrains.annotations.NotNull;
 
 public class FakeTssLibrary implements TssLibrary {
     public static final SignatureSchema SIGNATURE_SCHEMA = SignatureSchema.create(new byte[] {1});
-    private static final FakePairingPrivateKey AGGREGATED_PRIVATE_KEY = new FakePairingPrivateKey(
-            new PairingPrivateKey(new FakeFieldElement(BigInteger.valueOf(42L)), SIGNATURE_SCHEMA));
+    private static final PairingPrivateKey AGGREGATED_PRIVATE_KEY =
+            new PairingPrivateKey(new FakeFieldElement(BigInteger.valueOf(42L)), SIGNATURE_SCHEMA);
     private static final PairingPublicKey LEDGER_ID = AGGREGATED_PRIVATE_KEY.createPublicKey();
-    private static final MessageDigest SHA_256;
-
-    static {
-        try {
-            SHA_256 = MessageDigest.getInstance("SHA-256");
-        } catch (NoSuchAlgorithmException e) {
-            throw new RuntimeException(e);
-        }
-    }
 
     private static final SecureRandom RANDOM = new SecureRandom();
     private final int threshold;
@@ -61,11 +55,44 @@ public class FakeTssLibrary implements TssLibrary {
 
     @NotNull
     @Override
+    public TssMessage generateTssMessage(@NotNull TssParticipantDirectory tssParticipantDirectory) {
+        return null;
+    }
+
+    @NotNull
+    @Override
+    public TssMessage generateTssMessage(
+            @NotNull TssParticipantDirectory tssParticipantDirectory, @NotNull TssPrivateShare privateShare) {
+        return null;
+    }
+
+    @Override
+    public boolean verifyTssMessage(
+            @NotNull TssParticipantDirectory participantDirectory, @NotNull TssMessage tssMessage) {
+        return false;
+    }
+
+    @NotNull
+    @Override
+    public List<TssPrivateShare> decryptPrivateShares(
+            @NotNull TssParticipantDirectory participantDirectory, @NotNull List<TssMessage> validTssMessages) {
+        return List.of();
+    }
+
+    @NotNull
+    @Override
     public PairingPrivateKey aggregatePrivateShares(@NotNull List<TssPrivateShare> privateShares) {
         if (privateShares.size() < threshold) {
             throw new IllegalStateException("Not enough shares to aggregate");
         }
-        return AGGREGATED_PRIVATE_KEY.getPairingPrivateKey();
+        return AGGREGATED_PRIVATE_KEY;
+    }
+
+    @NotNull
+    @Override
+    public List<TssPublicShare> computePublicShares(
+            @NotNull TssParticipantDirectory participantDirectory, @NotNull List<TssMessage> validTssMessages) {
+        return List.of();
     }
 
     @NotNull
@@ -84,10 +111,9 @@ public class FakeTssLibrary implements TssLibrary {
             return new PairingSignature(new FakeGroupElement(BigInteger.valueOf(RANDOM.nextLong())), SIGNATURE_SCHEMA);
         }
 
-        final var messageHash = computeHash(message);
+        final var messageHash = noThrowSha384HashOf(message);
         final var messageGroupElement = new BigInteger(1, messageHash);
-        final var privateKeyFieldElement =
-                AGGREGATED_PRIVATE_KEY.getPairingPrivateKey().privateKey().toBigInteger();
+        final var privateKeyFieldElement = AGGREGATED_PRIVATE_KEY.privateKey().toBigInteger();
         final var signatureGroupElement = new FakeGroupElement(messageGroupElement.add(privateKeyFieldElement));
         return new PairingSignature(signatureGroupElement, SIGNATURE_SCHEMA);
     }
@@ -95,7 +121,7 @@ public class FakeTssLibrary implements TssLibrary {
     @NotNull
     @Override
     public TssShareSignature sign(@NotNull TssPrivateShare privateShare, @NotNull byte[] message) {
-        final var messageHash = computeHash(message);
+        final var messageHash = noThrowSha384HashOf(message);
         final var messageGroupElement = new BigInteger(1, messageHash);
         final var privateKeyFieldElement =
                 privateShare.privateKey().privateKey().toBigInteger();
@@ -118,12 +144,8 @@ public class FakeTssLibrary implements TssLibrary {
         }
 
         final PairingPublicKey ledgerId = aggregatePublicShares(publicShares);
-        final var fakePairingSignature = new FakePairingSignature(signature.signature());
+        final var fakePairingSignature = signature.signature();
         return fakePairingSignature.verify(ledgerId, message);
-    }
-
-    public static byte[] computeHash(byte[] message) {
-        return SHA_256.digest(message);
     }
 
     // This method is not part of the TssLibrary interface, used for testing purposes

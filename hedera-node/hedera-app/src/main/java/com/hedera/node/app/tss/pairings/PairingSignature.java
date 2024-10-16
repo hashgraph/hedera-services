@@ -14,32 +14,24 @@
  * limitations under the License.
  */
 
-package com.hedera.services.bdd.junit.hedera.embedded.fakes.tss;
+package com.hedera.node.app.tss.pairings;
 
-import static com.hedera.services.bdd.junit.hedera.embedded.fakes.tss.FakeGroupElement.GENERATOR;
-import static com.hedera.services.bdd.junit.hedera.embedded.fakes.tss.FakeTssLibrary.computeHash;
+import static com.hedera.node.app.hapi.utils.CommonUtils.noThrowSha384HashOf;
+import static com.hedera.node.app.tss.pairings.FakeGroupElement.GENERATOR;
 
-import com.hedera.cryptography.pairings.signatures.api.PairingPublicKey;
-import com.hedera.cryptography.pairings.signatures.api.PairingSignature;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.math.BigInteger;
 
-public class FakePairingSignature {
-    PairingSignature signature;
-
-    public FakePairingSignature(PairingSignature signature) {
-        this.signature = signature;
-    }
-
+public record PairingSignature(@NonNull GroupElement signature, @NonNull SignatureSchema signatureSchema) {
     // sig = privateKey + messageHash
     // publicKey = generator + privateKey
     // messageHash = sig - (publicKey - generator) = sig - publicKey + generator
     public boolean verify(PairingPublicKey publicKey, byte[] message) {
-        final var sig = new BigInteger(1, this.signature.signature().toBytes());
+        final var sig = new BigInteger(1, this.signature().toBytes());
         final var pk = new BigInteger(1, publicKey.publicKey().toBytes());
         final var gen = new BigInteger(1, GENERATOR.toBytes());
         final var msgHashFromSig = new BigInteger(1, sig.subtract(pk).add(gen).toByteArray());
-        final var messageHash = new BigInteger(1, computeHash(message));
-        final var res = messageHash.equals(msgHashFromSig);
-        return res;
+        final var messageHash = new BigInteger(1, noThrowSha384HashOf(message));
+        return messageHash.equals(msgHashFromSig);
     }
 }

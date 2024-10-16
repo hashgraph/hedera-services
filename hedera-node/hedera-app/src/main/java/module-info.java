@@ -21,8 +21,6 @@ module com.hedera.node.app {
     requires transitive com.swirlds.metrics.api;
     requires transitive com.swirlds.platform.core;
     requires transitive com.swirlds.state.api;
-    requires transitive com.hedera.cryptography.pairings.signatures;
-    requires transitive com.hedera.cryptography.tss;
     requires transitive com.hedera.pbj.runtime;
     requires transitive dagger;
     requires transitive io.grpc.stub;
@@ -113,6 +111,8 @@ module com.hedera.node.app {
     exports com.hedera.node.app.roster;
     exports com.hedera.node.app.tss;
     exports com.hedera.node.app.tss.impl;
+    exports com.hedera.node.app.tss.api;
+    exports com.hedera.node.app.tss.pairings;
 
     provides ConfigurationExtension with
             ServicesConfigExtension;

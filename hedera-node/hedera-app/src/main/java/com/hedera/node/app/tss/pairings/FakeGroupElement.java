@@ -14,11 +14,8 @@
  * limitations under the License.
  */
 
-package com.hedera.services.bdd.junit.hedera.embedded.fakes.tss;
+package com.hedera.node.app.tss.pairings;
 
-import com.hedera.cryptography.pairings.api.FieldElement;
-import com.hedera.cryptography.pairings.api.Group;
-import com.hedera.cryptography.pairings.api.GroupElement;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.math.BigInteger;
 import org.jetbrains.annotations.NotNull;
@@ -31,33 +28,10 @@ public class FakeGroupElement implements GroupElement {
         this.value = value;
     }
 
-    @Override
-    public int size() {
-        return 0;
-    }
-
     @NotNull
     @Override
-    public Group getGroup() {
-        return null;
-    }
-
-    @NotNull
-    @Override
-    public GroupElement multiply(@NotNull FieldElement fieldElement) {
-        return new FakeGroupElement(value.multiply(fieldElement.toBigInteger()));
-    }
-
-    @NotNull
-    @Override
-    public GroupElement add(@NotNull GroupElement groupElement) {
-        return new FakeGroupElement(value.add(new BigInteger(groupElement.toBytes())));
-    }
-
-    @NotNull
-    @Override
-    public GroupElement copy() {
-        return new FakeGroupElement(value);
+    public GroupElement add(@NotNull GroupElement other) {
+        return new FakeGroupElement(value.add(new BigInteger(other.toBytes())));
     }
 
     @NotNull

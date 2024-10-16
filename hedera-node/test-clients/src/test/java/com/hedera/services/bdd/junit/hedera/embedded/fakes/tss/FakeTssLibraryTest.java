@@ -22,14 +22,16 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.hedera.cryptography.pairings.signatures.api.PairingPrivateKey;
-import com.hedera.cryptography.pairings.signatures.api.PairingPublicKey;
-import com.hedera.cryptography.pairings.signatures.api.PairingSignature;
-import com.hedera.cryptography.tss.api.TssParticipantDirectory;
-import com.hedera.cryptography.tss.api.TssPrivateShare;
-import com.hedera.cryptography.tss.api.TssPublicShare;
-import com.hedera.cryptography.tss.api.TssShareId;
-import com.hedera.cryptography.tss.api.TssShareSignature;
+import com.hedera.node.app.tss.api.TssParticipantDirectory;
+import com.hedera.node.app.tss.api.TssPrivateShare;
+import com.hedera.node.app.tss.api.TssPublicShare;
+import com.hedera.node.app.tss.api.TssShareId;
+import com.hedera.node.app.tss.api.TssShareSignature;
+import com.hedera.node.app.tss.pairings.FakeFieldElement;
+import com.hedera.node.app.tss.pairings.FakeGroupElement;
+import com.hedera.node.app.tss.pairings.PairingPrivateKey;
+import com.hedera.node.app.tss.pairings.PairingPublicKey;
+import com.hedera.node.app.tss.pairings.PairingSignature;
 import java.math.BigInteger;
 import java.security.SecureRandom;
 import java.util.ArrayList;
@@ -116,8 +118,10 @@ class FakeTssLibraryTest {
         final var aggregatedSignature = fakeTssLibrary.aggregateSignatures(partialSignatures);
 
         assertNotNull(aggregatedSignature);
+        final var expectedSignature =
+                "8725231785142640510958974801449281668044511174527971820957835005137448197712608590715499503138764434364488379578757";
         assertEquals(
-                "102987336249554097029535212322581322789799900648198034993379397001115665086591",
+                expectedSignature,
                 new BigInteger(1, aggregatedSignature.signature().toBytes()).toString());
     }
 
@@ -125,7 +129,7 @@ class FakeTssLibraryTest {
     void verifySignature() {
         final var privateKeyElement = new FakeFieldElement(BigInteger.valueOf(42L));
         final var pairingPrivateKey = new PairingPrivateKey(privateKeyElement, SIGNATURE_SCHEMA);
-        final var pairingPublicKey = new FakePairingPrivateKey(pairingPrivateKey).createPublicKey();
+        final var pairingPublicKey = pairingPrivateKey.createPublicKey();
         final var p0PrivateShare = new TssPrivateShare(new TssShareId(0), pairingPrivateKey);
 
         final var tssDirectoryBuilder = TssParticipantDirectory.createBuilder()
@@ -183,8 +187,6 @@ class FakeTssLibraryTest {
                 .toList();
 
         final PairingSignature aggregatedSignature = fakeTssLibrary.aggregateSignatures(validSignatures);
-
-        final var fakePairingSignature = new FakePairingSignature(aggregatedSignature);
-        assertTrue(fakePairingSignature.verify(ledgerID, messageToSign));
+        assertTrue(aggregatedSignature.verify(ledgerID, messageToSign));
     }
 }

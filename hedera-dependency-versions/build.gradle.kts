@@ -226,6 +226,4 @@ dependencies.constraints {
 
     api("com.google.protobuf:protoc:3.25.4")
     api("io.grpc:protoc-gen-grpc-java:1.66.0")
-    api("com.hedera.cryptography:hedera-cryptography-pairings-signatures:0.1.0-SNAPSHOT")
-    api("com.hedera.cryptography:hedera-cryptography-tss:0.1.0-SNAPSHOT")
 }

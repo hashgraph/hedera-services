@@ -14,27 +14,14 @@
  * limitations under the License.
  */
 
-package com.hedera.services.bdd.junit.hedera.embedded.fakes.tss;
+package com.hedera.node.app.tss.pairings;
 
-import com.hedera.cryptography.pairings.api.GroupElement;
-import com.hedera.cryptography.pairings.signatures.api.PairingPrivateKey;
-import com.hedera.cryptography.pairings.signatures.api.PairingPublicKey;
+import edu.umd.cs.findbugs.annotations.NonNull;
 
-public class FakePairingPrivateKey {
-    private final PairingPrivateKey privateKey;
-
-    public FakePairingPrivateKey(PairingPrivateKey privateKey) {
-        this.privateKey = privateKey;
-    }
-
+public record PairingPrivateKey(@NonNull FieldElement privateKey, @NonNull SignatureSchema signatureSchema) {
     public PairingPublicKey createPublicKey() {
-        final var privateKeyElement =
-                new FakeGroupElement(privateKey.privateKey().toBigInteger());
+        final var privateKeyElement = new FakeGroupElement(privateKey.toBigInteger());
         GroupElement publicKey = FakeGroupElement.GENERATOR.add(privateKeyElement);
-        return new PairingPublicKey(publicKey, privateKey.signatureSchema());
-    }
-
-    public PairingPrivateKey getPairingPrivateKey() {
-        return privateKey;
+        return new PairingPublicKey(publicKey, this.signatureSchema);
     }
 }
