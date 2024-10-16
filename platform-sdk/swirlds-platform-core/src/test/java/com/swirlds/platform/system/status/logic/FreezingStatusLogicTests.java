@@ -20,8 +20,8 @@ import static com.swirlds.platform.system.status.logic.StatusLogicTestUtils.trig
 import static com.swirlds.platform.system.status.logic.StatusLogicTestUtils.triggerActionAndAssertNoTransition;
 import static com.swirlds.platform.system.status.logic.StatusLogicTestUtils.triggerActionAndAssertTransition;
 
+import com.hedera.service.gossip.impl.FallenBehindAction;
 import com.swirlds.base.test.fixtures.time.FakeTime;
-import com.swirlds.common.FallenBehindAction;
 import com.swirlds.common.PlatformStatus;
 import com.swirlds.platform.system.status.actions.CatastrophicFailureAction;
 import com.swirlds.platform.system.status.actions.DoneReplayingEventsAction;

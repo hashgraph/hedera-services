@@ -20,8 +20,8 @@ import static com.swirlds.common.units.TimeUnit.UNIT_MILLISECONDS;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.logging.legacy.LogMarker.PLATFORM_STATUS;
 
+import com.hedera.service.gossip.impl.FallenBehindAction;
 import com.swirlds.base.time.Time;
-import com.swirlds.common.FallenBehindAction;
 import com.swirlds.common.PlatformStatus;
 import com.swirlds.common.PlatformStatusAction;
 import com.swirlds.common.context.PlatformContext;

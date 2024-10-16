@@ -18,7 +18,6 @@ package com.hedera.service.gossip.impl;
 
 import com.hedera.service.gossip.FallenBehindManager;
 import com.swirlds.common.AddressBook;
-import com.swirlds.common.FallenBehindAction;
 import com.swirlds.common.NetworkTopology;
 import com.swirlds.common.StatusActionSubmitter;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
@@ -33,43 +32,43 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * A thread-safe implementation of {@link FallenBehindManager}
+ * A thread-safe implementation of {@link FallenBehindManager}.
  */
 public class FallenBehindManagerImpl implements FallenBehindManager {
     /**
-     * a set of all neighbors of this node
+     * a set of all neighbors of this node.
      */
     private final Set<NodeId> allNeighbors;
     /**
-     * the number of neighbors we have
+     * the number of neighbors we have.
      */
     private final int numNeighbors;
 
     /**
-     * set of neighbors who report that this node has fallen behind
+     * set of neighbors who report that this node has fallen behind.
      */
-    private final HashSet<NodeId> reportFallenBehind;
+    private final Set<NodeId> reportFallenBehind;
     /**
      * set of neighbors that have not yet reported that we have fallen behind, only exists if someone reports we have
-     * fallen behind. This Set is made from a ConcurrentHashMap, so it needs no synchronization
+     * fallen behind. This Set is made from a ConcurrentHashMap, so it needs no synchronization.
      */
     private final Set<NodeId> notYetReportFallenBehind;
 
     /**
-     * Enables submitting platform status actions
+     * Enables submitting platform status actions.
      */
     private final StatusActionSubmitter statusActionSubmitter;
 
     /**
-     * Called when the status becomes fallen behind
+     * Called when the status becomes fallen behind.
      */
     private final Runnable fallenBehindCallback;
 
     private final ReconnectConfig config;
     /**
-     * number of neighbors who think this node has fallen behind
+     * number of neighbors who think this node has fallen behind.
      */
-    volatile int numReportFallenBehind;
+    private volatile int numReportFallenBehind;
 
     public FallenBehindManagerImpl(
             @NonNull final AddressBook addressBook,

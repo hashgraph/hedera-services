@@ -18,8 +18,8 @@ package com.swirlds.platform.system.status.logic;
 
 import static com.swirlds.platform.system.status.logic.StatusLogicTestUtils.triggerActionAndAssertNoTransition;
 
+import com.hedera.service.gossip.impl.FallenBehindAction;
 import com.swirlds.base.test.fixtures.time.FakeTime;
-import com.swirlds.common.FallenBehindAction;
 import com.swirlds.platform.system.status.actions.CatastrophicFailureAction;
 import com.swirlds.platform.system.status.actions.DoneReplayingEventsAction;
 import com.swirlds.platform.system.status.actions.FreezePeriodEnteredAction;

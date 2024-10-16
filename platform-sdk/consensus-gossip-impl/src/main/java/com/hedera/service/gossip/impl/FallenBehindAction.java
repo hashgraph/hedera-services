@@ -14,7 +14,9 @@
  * limitations under the License.
  */
 
-package com.swirlds.common;
+package com.hedera.service.gossip.impl;
+
+import com.swirlds.common.PlatformStatusAction;
 
 /**
  * An action that is triggered when the platform falls behind.

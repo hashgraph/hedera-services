@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.system.status.logic;
 
-import com.swirlds.common.FallenBehindAction;
+import com.hedera.service.gossip.impl.FallenBehindAction;
 import com.swirlds.common.PlatformStatus;
 import com.swirlds.platform.system.status.IllegalPlatformStatusException;
 import com.swirlds.platform.system.status.actions.CatastrophicFailureAction;

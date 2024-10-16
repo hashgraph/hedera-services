@@ -29,8 +29,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import com.hedera.service.gossip.impl.FallenBehindAction;
 import com.swirlds.base.test.fixtures.time.FakeTime;
-import com.swirlds.common.FallenBehindAction;
 import com.swirlds.common.PlatformStatusAction;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
