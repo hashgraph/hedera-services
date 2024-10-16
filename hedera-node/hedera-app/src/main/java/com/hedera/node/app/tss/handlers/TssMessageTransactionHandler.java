@@ -26,7 +26,7 @@ import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hedera.node.app.tss.TssCryptographyManager;
-import com.hedera.node.app.tss.stores.WritableTssStore;
+import com.hedera.node.app.tss.stores.WritableTssBaseStore;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -64,13 +64,13 @@ public class TssMessageTransactionHandler implements TransactionHandler {
             return;
         }
 
-        final var tssState = context.storeFactory().writableStore(WritableTssStore.class);
-        final var numberOfAlreadyExistingMessages = tssState.size();
+        final var tssState = context.storeFactory().writableStore(WritableTssBaseStore.class);
+        final var numberOfAlreadyExistingMessages = tssState.messageStateSize();
         final var key = TssMessageMapKey.newBuilder()
                 .rosterHash(op.targetRosterHash())
                 .sequenceNumber(numberOfAlreadyExistingMessages + 1)
                 .build();
         tssState.put(key, op);
-        tssCryptographyManager.submitTssMessageTransaction(op);
+//        tssCryptographyManager.submitTssMessageTransaction(op);
     }
 }

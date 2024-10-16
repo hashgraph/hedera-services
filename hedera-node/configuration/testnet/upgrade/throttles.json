@@ -40,7 +40,10 @@
             "TokenGetNftInfos",
             "CryptoApproveAllowance",
             "CryptoDeleteAllowance",
-            "UtilPrng"
+            "UtilPrng",
+            "NodeCreate",
+            "NodeUpdate",
+            "NodeDelete"
           ]
         },
         {
@@ -146,7 +149,8 @@
           "opsPerSec": 0,
           "milliOpsPerSec": 2000,
           "operations": [
-            "CryptoCreate"
+            "CryptoCreate",
+            "NodeCreate"
           ]
         },
         {

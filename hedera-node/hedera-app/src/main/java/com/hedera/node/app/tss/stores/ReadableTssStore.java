@@ -18,18 +18,47 @@ package com.hedera.node.app.tss.stores;
 
 import com.hedera.hapi.node.state.tss.TssMessageMapKey;
 import com.hedera.hapi.node.state.tss.TssVoteMapKey;
-import com.hedera.hapi.node.tss.TssMessageTransactionBody;
-import com.hedera.hapi.node.tss.TssVoteTransactionBody;
+import com.hedera.hapi.services.auxiliary.tss.TssMessageTransactionBody;
+import com.hedera.hapi.services.auxiliary.tss.TssVoteTransactionBody;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 public interface ReadableTssStore {
+    /**
+     * Get the TSS message for the given key.
+     *
+     * @param TssMessageMapKey The key to look up.
+     * @return The TSS message, or null if not found.
+     */
     TssMessageTransactionBody getMessage(@NonNull TssMessageMapKey TssMessageMapKey);
 
-    boolean exists(@NonNull TssMessageMapKey TssMessageMapKey);
+    /**
+     * Check if a TSS message exists for the given key.
+     *
+     * @param tssMessageMapKey The key to check.
+     * @return True if a TSS message exists for the given key, false otherwise.
+     */
+    boolean exists(@NonNull TssMessageMapKey tssMessageMapKey);
 
-    TssVoteTransactionBody getVote(@NonNull TssVoteMapKey TssMessageMapKey);
+    /**
+     * Get the TSS vote for the given key.
+     *
+     * @param tssVoteMapKey The key to look up.
+     * @return The TSS vote, or null if not found.
+     */
+    TssVoteTransactionBody getVote(@NonNull TssVoteMapKey tssVoteMapKey);
 
-    boolean exists(@NonNull TssVoteMapKey TssMessageMapKey);
+    /**
+     * Check if a TSS vote exists for the given key.
+     *
+     * @param tssVoteMapKey The key to check.
+     * @return True if a TSS vote exists for the given key, false otherwise.
+     */
+    boolean exists(@NonNull TssVoteMapKey tssVoteMapKey);
 
-    long size();
+    /**
+     * Get the number of entries in the TSS message state.
+     *
+     * @return The number of entries in the tss message state.
+     */
+    long messageStateSize();
 }

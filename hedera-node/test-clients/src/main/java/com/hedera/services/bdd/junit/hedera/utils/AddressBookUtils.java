@@ -82,10 +82,10 @@ public class AddressBookUtils {
                     .append(", ")
                     .append("0.0.")
                     .append(node.getAccountId().accountNumOrThrow())
-                    .append("\n");
+                    .append('\n');
             maxNodeId = Math.max(node.getNodeId(), maxNodeId);
         }
-        sb.append("\nnextNodeId, ").append(maxNodeId + 1).append("\n");
+        sb.append('\n');
         return sb.toString();
     }
 
@@ -109,6 +109,7 @@ public class AddressBookUtils {
             @NonNull final String host,
             @Nullable String scope,
             final int nextGrpcPort,
+            final int nextNodeOperatorPort,
             final int nextGossipPort,
             final int nextGossipTlsPort,
             final int nextPrometheusPort) {
@@ -122,6 +123,7 @@ public class AddressBookUtils {
                         .build(),
                 host,
                 nextGrpcPort + nodeId * 2,
+                nextNodeOperatorPort + nodeId * 2,
                 nextGossipPort + nodeId * 2,
                 nextGossipTlsPort + nodeId * 2,
                 nextPrometheusPort + nodeId,
@@ -160,5 +162,16 @@ public class AddressBookUtils {
             builder.setDomainName(host);
         }
         return builder.build();
+    }
+
+    /**
+     * Returns Address of the node id from the given address book.
+     *
+     * @param addressBook the address book
+     * @return the stream of node ids
+     */
+    public static Address nodeAddressFrom(@NonNull final AddressBook addressBook, final long nodeId) {
+        requireNonNull(addressBook);
+        return addressBook.getAddress(NodeId.of(nodeId));
     }
 }
