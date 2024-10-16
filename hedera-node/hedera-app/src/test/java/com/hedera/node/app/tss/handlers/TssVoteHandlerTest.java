@@ -33,6 +33,9 @@ class TssVoteHandlerTest {
     private TssSubmissions submissionManager;
 
     @Mock
+    private TssCryptographyManager cryptographyManager;
+
+    @Mock
     private PreHandleContext preHandleContext;
 
     @Mock
@@ -42,7 +45,7 @@ class TssVoteHandlerTest {
 
     @BeforeEach
     void setUp() {
-        subject = new TssVoteHandler();
+        subject = new TssVoteHandler(cryptographyManager);
     }
 
     @Test

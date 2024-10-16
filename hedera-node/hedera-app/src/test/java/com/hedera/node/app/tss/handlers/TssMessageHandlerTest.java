@@ -43,6 +43,9 @@ class TssMessageHandlerTest {
     private TssSubmissions submissionManager;
 
     @Mock
+    private TssCryptographyManager cryptographyManager;
+
+    @Mock
     private PreHandleContext preHandleContext;
 
     @Mock(strictness = Mock.Strictness.LENIENT)
@@ -58,7 +61,7 @@ class TssMessageHandlerTest {
 
     @BeforeEach
     void setUp() {
-        subject = new TssMessageHandler(submissionManager);
+        subject = new TssMessageHandler(submissionManager, cryptographyManager);
     }
 
     @Test

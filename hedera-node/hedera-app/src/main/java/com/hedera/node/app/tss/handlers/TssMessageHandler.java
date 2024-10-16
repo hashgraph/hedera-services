@@ -36,10 +36,14 @@ import javax.inject.Singleton;
 @Singleton
 public class TssMessageHandler implements TransactionHandler {
     private final TssSubmissions submissionManager;
+    private final TssCryptographyManager tssCryptographyManager;
 
     @Inject
-    public TssMessageHandler(@NonNull final TssSubmissions submissionManager) {
+    public TssMessageHandler(
+            @NonNull final TssSubmissions submissionManager,
+            @NonNull final TssCryptographyManager tssCryptographyManager) {
         this.submissionManager = requireNonNull(submissionManager);
+        this.tssCryptographyManager = requireNonNull(tssCryptographyManager);
     }
 
     @Override
