@@ -65,6 +65,7 @@ testModuleInfo {
 jmhModuleInfo {
     requires("com.hedera.node.app")
     requires("com.hedera.node.app.hapi.utils")
+    requires("com.hedera.node.app.spi")
     requires("com.hedera.node.app.spi.test.fixtures")
     requires("com.hedera.node.app.test.fixtures")
     requires("com.hedera.node.config")
