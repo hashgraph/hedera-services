@@ -159,6 +159,16 @@ public class HevmTransactionFactory {
         };
     }
 
+    // todo for schedule transactions!!
+    public HederaEvmTransaction fromHapiTransaction(@NonNull final TransactionBody body, @NonNull AccountID payer) {
+        return switch (body.data().kind()) {
+            case CONTRACT_CREATE_INSTANCE -> fromHapiCreate(payer, body.contractCreateInstanceOrThrow());
+            case CONTRACT_CALL -> fromHapiCall(payer, body.contractCallOrThrow());
+            case ETHEREUM_TRANSACTION -> fromHapiEthereum(payer, body.ethereumTransactionOrThrow());
+            default -> throw new IllegalArgumentException("Not a contract operation");
+        };
+    }
+
     private HederaEvmTransaction fromHapiCreate(
             @NonNull final AccountID payer, @NonNull final ContractCreateTransactionBody body) {
         assertValidCreation(body);

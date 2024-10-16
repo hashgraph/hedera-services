@@ -50,6 +50,7 @@ import com.hedera.node.app.fees.FeeManager;
 import com.hedera.node.app.records.BlockRecordManager;
 import com.hedera.node.app.service.schedule.ScheduleService;
 import com.hedera.node.app.service.schedule.WritableScheduleStore;
+import com.hedera.node.app.service.schedule.impl.handlers.ScheduleManager;
 import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.service.token.impl.WritableNetworkStakingRewardsStore;
 import com.hedera.node.app.service.token.impl.WritableStakingInfoStore;
@@ -131,6 +132,7 @@ public class HandleWorkflow {
     private final KVStateChangeListener kvStateChangeListener;
     private final BoundaryStateChangeListener boundaryStateChangeListener;
     private final List<StateChanges.Builder> migrationStateChanges;
+    private final ScheduleManager scheduleManager;
 
     @Inject
     public HandleWorkflow(
@@ -161,7 +163,8 @@ public class HandleWorkflow {
             @NonNull final StakePeriodManager stakePeriodManager,
             @NonNull final KVStateChangeListener kvStateChangeListener,
             @NonNull final BoundaryStateChangeListener boundaryStateChangeListener,
-            @NonNull final List<StateChanges.Builder> migrationStateChanges) {
+            @NonNull final List<StateChanges.Builder> migrationStateChanges,
+            @NonNull final ScheduleManager scheduleManager) {
         this.networkInfo = requireNonNull(networkInfo);
         this.nodeStakeUpdates = requireNonNull(nodeStakeUpdates);
         this.authorizer = requireNonNull(authorizer);
@@ -190,6 +193,7 @@ public class HandleWorkflow {
         this.kvStateChangeListener = requireNonNull(kvStateChangeListener);
         this.boundaryStateChangeListener = requireNonNull(boundaryStateChangeListener);
         this.migrationStateChanges = new ArrayList<>(migrationStateChanges);
+        this.scheduleManager = scheduleManager;
     }
 
     /**
@@ -373,8 +377,10 @@ public class HandleWorkflow {
                 if (blockStreamConfig.streamRecords()) {
                     blockRecordManager.advanceConsensusClock(userTxn.consensusNow(), userTxn.state());
                 }
-                expireSchedules(userTxn);
                 logPreDispatch(userTxn);
+                // try to handle expired schedules
+                expireSchedules(userTxn, dispatch);
+
                 if (userTxn.type() == GENESIS_TRANSACTION) {
                     systemSetup.doGenesisSetup(dispatch);
                 } else if (userTxn.type() == POST_UPGRADE_TRANSACTION) {
@@ -536,12 +542,12 @@ public class HandleWorkflow {
     }
 
     /**
-     * Expire schedules that are due to be executed between the last handled
+     * Expire or execute schedules that are due to be executed between the last handled
      * transaction time and the current consensus time.
      *
      * @param userTxn the user transaction
      */
-    private void expireSchedules(@NonNull UserTxn userTxn) {
+    private void expireSchedules(@NonNull UserTxn userTxn, Dispatch dispatch) {
         if (userTxn.type() == GENESIS_TRANSACTION) {
             return;
         }
@@ -552,6 +558,25 @@ public class HandleWorkflow {
             final var scheduleStore = new WritableStoreFactory(
                             userTxn.stack(), ScheduleService.NAME, userTxn.config(), storeMetricsService)
                     .getStore(WritableScheduleStore.class);
+
+            // try to execute expired
+            final var schedules = scheduleStore.getByExpirationBetween(firstSecondToExpire, lastSecondToExpire);
+            for (final var schedule : schedules) {
+                if (schedule.waitForExpiry()) {
+                    final var keys = scheduleManager.allKeysForTransaction(schedule, dispatch.handleContext());
+                    final var validationResult = scheduleManager.validate(
+                            schedule, dispatch.handleContext().consensusNow(), true);
+                    scheduleManager.tryToExecuteSchedule(
+                            dispatch.handleContext(),
+                            schedule,
+                            keys.remainingRequiredKeys(),
+                            keys.updatedSignatories(),
+                            validationResult,
+                            true);
+                }
+            }
+
+            // purge expired
             scheduleStore.purgeExpiredSchedulesBetween(firstSecondToExpire, lastSecondToExpire);
             userTxn.stack().commitSystemStateChanges();
         }

@@ -29,7 +29,7 @@ import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.scheduled.SchedulableTransactionBody;
 import com.hedera.hapi.node.state.schedule.Schedule;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.service.schedule.impl.handlers.AbstractScheduleHandler.ScheduleKeysResult;
+import com.hedera.node.app.service.schedule.impl.handlers.ScheduleManager.ScheduleKeysResult;
 import com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
@@ -48,9 +48,9 @@ import org.junit.jupiter.api.Test;
 import org.mockito.BDDMockito;
 import org.mockito.Mockito;
 
-class AbstractScheduleHandlerTest extends ScheduleHandlerTestBase {
+class ScheduleManagerTest extends ScheduleHandlerTestBase {
     private static final SchedulableTransactionBody NULL_SCHEDULABLE_BODY = null;
-    private AbstractScheduleHandler testHandler;
+    private ScheduleManager testHandler;
     private PreHandleContext realPreContext;
 
     @BeforeEach
@@ -242,9 +242,9 @@ class AbstractScheduleHandlerTest extends ScheduleHandlerTestBase {
     // Callable required by AssertJ throw assertions; unavoidable due to limitations on lambda syntax.
     private static final class CallCheckValid implements ThrowingCallable {
         private final TransactionID idToTest;
-        private final AbstractScheduleHandler testHandler;
+        private final ScheduleManager testHandler;
 
-        CallCheckValid(final TransactionID idToTest, final AbstractScheduleHandler testHandler) {
+        CallCheckValid(final TransactionID idToTest, final ScheduleManager testHandler) {
             this.idToTest = idToTest;
             this.testHandler = testHandler;
         }
@@ -255,7 +255,7 @@ class AbstractScheduleHandlerTest extends ScheduleHandlerTestBase {
         }
     }
 
-    private static final class TestScheduleHandler extends AbstractScheduleHandler {}
+    private static final class TestScheduleHandler extends ScheduleManager {}
 
     private static final class PreCheckExceptionMatch extends Condition<Throwable> {
         private final ResponseCodeEnum codeToMatch;

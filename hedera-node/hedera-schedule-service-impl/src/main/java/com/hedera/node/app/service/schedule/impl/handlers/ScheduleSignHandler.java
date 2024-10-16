@@ -60,7 +60,7 @@ import javax.inject.Singleton;
  */
 @Singleton
 @SuppressWarnings("OverlyCoupledClass")
-public class ScheduleSignHandler extends AbstractScheduleHandler implements TransactionHandler {
+public class ScheduleSignHandler extends ScheduleManager implements TransactionHandler {
     private final ScheduleOpsUsage scheduleOpsUsage = new ScheduleOpsUsage();
 
     @Inject
@@ -146,13 +146,15 @@ public class ScheduleSignHandler extends AbstractScheduleHandler implements Tran
                         final ScheduleKeysResult requiredKeysResult = allKeysForTransaction(scheduleToSign, context);
                         final Set<Key> allRequiredKeys = requiredKeysResult.remainingRequiredKeys();
                         final Set<Key> updatedSignatories = requiredKeysResult.updatedSignatories();
-                        if (tryToExecuteSchedule(
-                                context,
-                                scheduleToSign,
-                                allRequiredKeys,
-                                updatedSignatories,
-                                validationResult,
-                                isLongTermEnabled)) {
+                        if (!isLongTermEnabled
+                                && !scheduleToSign.waitForExpiry()
+                                && tryToExecuteSchedule(
+                                        context,
+                                        scheduleToSign,
+                                        allRequiredKeys,
+                                        updatedSignatories,
+                                        validationResult,
+                                        isLongTermEnabled)) {
                             scheduleStore.put(HandlerUtility.replaceSignatoriesAndMarkExecuted(
                                     scheduleToSign, updatedSignatories, currentConsensusTime));
                         } else {

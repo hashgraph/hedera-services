@@ -29,6 +29,7 @@ import com.hedera.node.app.blocks.impl.KVStateChangeListener;
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.fees.FeeManager;
 import com.hedera.node.app.records.BlockRecordManager;
+import com.hedera.node.app.service.schedule.impl.handlers.ScheduleManager;
 import com.hedera.node.app.service.token.impl.handlers.staking.StakeInfoHelper;
 import com.hedera.node.app.service.token.impl.handlers.staking.StakePeriodManager;
 import com.hedera.node.app.services.ServiceScopeLookup;
@@ -153,6 +154,9 @@ class HandleWorkflowTest {
     @Mock
     private BoundaryStateChangeListener boundaryStateChangeListener;
 
+    @Mock
+    private ScheduleManager scheduleManager;
+
     private HandleWorkflow subject;
 
     @BeforeEach
@@ -186,7 +190,8 @@ class HandleWorkflowTest {
                 stakePeriodManager,
                 kvStateChangeListener,
                 boundaryStateChangeListener,
-                List.of());
+                List.of(),
+                scheduleManager);
     }
 
     @Test
