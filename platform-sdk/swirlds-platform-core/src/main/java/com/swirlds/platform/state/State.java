@@ -27,6 +27,7 @@ import com.swirlds.common.utility.RuntimeObjectRegistry;
 import com.swirlds.platform.state.service.WritableRosterStore;
 import com.swirlds.platform.system.SwirldState;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.nio.file.Path;
 import java.util.Objects;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -213,6 +214,7 @@ public class State extends PartialNaryMerkleInternal implements MerkleRoot {
     public MerkleRoot copy() {
         throwIfImmutable();
         throwIfDestroyed();
+        setImmutable(true);
         return new State(this);
     }
 
@@ -258,6 +260,16 @@ public class State extends PartialNaryMerkleInternal implements MerkleRoot {
     public String getInfoString(final int hashDepth) {
         final PlatformStateAccessor platformState = getReadablePlatformState();
         return createInfoString(hashDepth, platformState, getHash(), this);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void createSnapshot(@NonNull final Path targetPath) {
+        throwIfMutable();
+        throwIfDestroyed();
+        MerkleTreeSnapshotWriter.createSnapshot(this, targetPath);
     }
 
     /**

@@ -19,6 +19,7 @@ package com.swirlds.platform.state;
 import com.swirlds.common.merkle.MerkleInternal;
 import com.swirlds.platform.system.SwirldState;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.nio.file.Path;
 
 /**
  * This interface represents the root node of the Merkle tree.
@@ -82,4 +83,9 @@ public interface MerkleRoot extends MerkleInternal {
     /** {@inheritDoc} */
     @NonNull
     MerkleRoot copy();
+
+    /** Creates a snapshots for the state. The state has to be hashed and immutable before calling this method.
+     * @param targetPath The path to save the snapshot.
+     */
+    void createSnapshot(final @NonNull Path targetPath);
 }

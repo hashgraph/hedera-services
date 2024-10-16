@@ -18,6 +18,7 @@ package com.hedera.services.bdd.spec.utilops.streams.assertions;
 
 import com.hedera.services.bdd.spec.utilops.UtilOp;
 import com.hedera.services.bdd.spec.utilops.streams.EventualAssertionResult;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Duration;
 import org.junit.jupiter.api.Assertions;
@@ -49,6 +50,10 @@ public abstract class AbstractEventualStreamAssertion extends UtilOp {
 
     protected AbstractEventualStreamAssertion(final boolean hasPassedIfNothingFailed) {
         result = new EventualAssertionResult(hasPassedIfNothingFailed, DEFAULT_TIMEOUT);
+    }
+
+    protected AbstractEventualStreamAssertion(final boolean hasPassedIfNothingFailed, @NonNull final Duration timeout) {
+        result = new EventualAssertionResult(hasPassedIfNothingFailed, timeout);
     }
 
     /**
