@@ -253,7 +253,7 @@ class TipsetEventCreatorTests {
             @NonNull final UnsignedEvent event) {
 
         eventCreators
-                .get(new NodeId(event.getEventCore().creatorNodeId()))
+                .get(NodeId.of(event.getEventCore().creatorNodeId()))
                 .tipsetTracker
                 .addEvent(event.getDescriptor(), event.getMetadata().getAllParents());
 
@@ -952,7 +952,7 @@ class TipsetEventCreatorTests {
         final NodeId nodeC = addressBook.getNodeId(2);
         final NodeId nodeD = addressBook.getNodeId(3);
         // Node 4 (E) is not in the address book.
-        final NodeId nodeE = new NodeId(nodeD.id() + 1);
+        final NodeId nodeE = NodeId.of(nodeD.id() + 1);
 
         // All nodes except for node 0 are fully mocked. This test is testing how node 0 behaves.
         final EventCreator eventCreator = buildEventCreator(random, time, addressBook, nodeA, Collections::emptyList);

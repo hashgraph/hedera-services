@@ -73,7 +73,7 @@ includeBuild(".")
 
 configure<JavaModulesExtension> {
     // Project to aggregate code coverage data for the whole repository into one report
-    module("gradle/reports")
+    module("gradle/aggregation")
 
     // "BOM" with versions of 3rd party dependencies
     versions("hedera-dependency-versions")

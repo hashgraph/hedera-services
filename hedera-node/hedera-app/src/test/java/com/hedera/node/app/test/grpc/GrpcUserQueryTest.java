@@ -37,12 +37,12 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 /**
- * This test verifies gRPC calls made over the network. Since our gRPC code deals with bytes, and
+ * This test verifies gRPC calls made by users over the network. Since our gRPC code deals with bytes, and
  * all serialization and deserialization of protobuf objects happens in the workflows, these tests
  * can work on simple primitives such as Strings, making the tests easier to understand without
  * missing any possible cases.
  */
-class GrpcQueryTest extends GrpcTestBase {
+class GrpcUserQueryTest extends GrpcTestBase {
     private static final String SERVICE = "proto.TestService";
     private static final String METHOD = "testQuery";
     private static final String GOOD_RESPONSE = "All Good";
@@ -50,10 +50,12 @@ class GrpcQueryTest extends GrpcTestBase {
 
     private static final QueryWorkflow GOOD_QUERY = (req, res) -> res.writeBytes(GOOD_RESPONSE_BYTES);
     private static final IngestWorkflow UNIMPLEMENTED_INGEST = (r, r2) -> fail("The Ingest should not be called");
+    private static final QueryWorkflow UNIMPLEMENTED_QUERY =
+            (r, r2) -> fail("The operator query workflow should not be called");
 
     private void setUp(@NonNull final QueryWorkflow query) {
-        registerQuery(METHOD, UNIMPLEMENTED_INGEST, query);
-        startServer();
+        registerQuery(METHOD, UNIMPLEMENTED_INGEST, query, UNIMPLEMENTED_QUERY);
+        startServer(false);
     }
 
     @Test

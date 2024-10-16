@@ -69,9 +69,35 @@ configurations.all {
 
 jvmDependencyConflicts {
     consistentResolution {
-        providesVersions(":app")
+        providesVersions(":aggregation")
         platform(":hedera-dependency-versions")
     }
+}
+
+val consistentResolutionAttribute = Attribute.of("consistent-resolution", String::class.java)
+
+configurations.create("allDependencies") {
+    isCanBeConsumed = true
+    isCanBeResolved = false
+    sourceSets.all {
+        extendsFrom(
+            configurations[this.implementationConfigurationName],
+            configurations[this.compileOnlyConfigurationName],
+            configurations[this.runtimeOnlyConfigurationName],
+            configurations[this.annotationProcessorConfigurationName]
+        )
+    }
+    attributes {
+        attribute(consistentResolutionAttribute, "global")
+        attribute(Usage.USAGE_ATTRIBUTE, objects.named(Usage.JAVA_RUNTIME))
+        attribute(Category.CATEGORY_ATTRIBUTE, objects.named(Category.LIBRARY))
+        attribute(LibraryElements.LIBRARY_ELEMENTS_ATTRIBUTE, objects.named(LibraryElements.JAR))
+        attribute(Bundling.BUNDLING_ATTRIBUTE, objects.named(Bundling.EXTERNAL))
+    }
+}
+
+configurations.getByName("mainRuntimeClasspath") {
+    attributes.attribute(consistentResolutionAttribute, "global")
 }
 
 tasks.buildDependents { setGroup(null) }
@@ -210,6 +236,9 @@ testing.suites {
                 maxHeapSize = "4g"
                 // Some tests overlap due to using the same temp folders within one project
                 // maxParallelForks = 4 <- set this, once tests can run in parallel
+
+                // Enable dynamic agent loading for tests - eg: Mockito, ByteBuddy
+                jvmArgs("-XX:+EnableDynamicAgentLoading")
             }
         }
     }
