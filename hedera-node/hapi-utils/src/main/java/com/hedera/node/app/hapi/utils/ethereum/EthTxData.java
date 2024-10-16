@@ -387,7 +387,7 @@ public record EthTxData(
             // after EIP155 the chain id is equal to
             // CHAIN_ID = (v - {0,1} - 35) / 2
             chainId = BigIntegers.asUnsignedByteArray(
-                vBI.subtract(BigInteger.valueOf(35)).shiftRight(1));
+                    vBI.subtract(BigInteger.valueOf(35)).shiftRight(1));
         } else if (isLegacyUnprotectedEtx(vBI)) {
             // before EIP155 the chain id is considered equal to 0
             chainId = new byte[0];
