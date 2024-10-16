@@ -16,10 +16,12 @@
 
 package com.swirlds.config.benchmark;
 
+import com.swirlds.base.utility.FileSystemUtils;
 import com.swirlds.config.api.ConfigData;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.config.extensions.sources.PropertyFileConfigSource;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -66,6 +68,11 @@ public class ConfigBenchmark {
                 ConfigBenchmark.class.getResource("app.properties").toURI();
         fileSystem = FileSystems.newFileSystem(configUri, Collections.emptyMap());
         final Path configFile = Paths.get(configUri);
+
+        if (!FileSystemUtils.waitForPathPresence(configFile)) {
+            throw new FileNotFoundException("File not found: " + configFile);
+        }
+
         configuration = ConfigurationBuilder.create()
                 .withConfigDataType(AppConfig.class)
                 .withSource(new PropertyFileConfigSource(configFile))

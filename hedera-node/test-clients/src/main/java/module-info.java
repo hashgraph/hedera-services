@@ -64,6 +64,7 @@ module com.hedera.node.test.clients {
 
     requires transitive com.hedera.node.app.hapi.fees;
     requires transitive com.hedera.node.app.hapi.utils;
+    requires transitive com.hedera.node.app.spi;
     requires transitive com.hedera.node.app.test.fixtures;
     requires transitive com.hedera.node.app;
     requires transitive com.hedera.node.config;
@@ -97,7 +98,6 @@ module com.hedera.node.test.clients {
     requires com.hedera.node.app.service.token.impl;
     requires com.hedera.node.app.service.token;
     requires com.hedera.node.app.service.util.impl;
-    requires com.hedera.node.app.spi;
     requires com.swirlds.base.test.fixtures;
     requires com.swirlds.config.extensions.test.fixtures;
     requires com.swirlds.merkledb;

@@ -222,6 +222,9 @@ public class TransactionDispatcher {
                 default -> throw new UnsupportedOperationException(SYSTEM_UNDELETE_WITHOUT_ID_CASE);
             };
 
+            case TSS_MESSAGE -> handlers.tssMessageHandler();
+            case TSS_VOTE -> handlers.tssVoteHandler();
+
             default -> throw new UnsupportedOperationException(TYPE_NOT_SUPPORTED);
         };
     }

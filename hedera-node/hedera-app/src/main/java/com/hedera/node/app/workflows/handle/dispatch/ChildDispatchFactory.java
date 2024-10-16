@@ -300,7 +300,8 @@ public class ChildDispatchFactory {
                 }
             }
             case CHILD -> Fees.FREE;
-            case USER -> throw new IllegalStateException("Should not dispatch child with user transaction category");
+            case USER, NODE -> throw new IllegalStateException(
+                    "Should not dispatch child with user transaction category");
         };
     }
 

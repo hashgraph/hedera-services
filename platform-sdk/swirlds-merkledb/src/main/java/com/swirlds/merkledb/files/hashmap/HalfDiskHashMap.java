@@ -469,7 +469,6 @@ public class HalfDiskHashMap implements AutoCloseable, Snapshotable, FileStatist
         if (Thread.currentThread() != writingThread) {
             throw new IllegalStateException("Tried calling endWriting with different thread to startWriting()");
         }
-        writingThread = null;
         final int size = oneTransactionsData.size();
         logger.info(
                 MERKLE_DB.getMarker(),
@@ -478,8 +477,8 @@ public class HalfDiskHashMap implements AutoCloseable, Snapshotable, FileStatist
                 size,
                 oneTransactionsData.stream().mapToLong(BucketMutation::size).sum());
         final DataFileReader dataFileReader;
-        if (size > 0) {
-            try {
+        try {
+            if (size > 0) {
                 final Iterator<IntObjectPair<BucketMutation>> it =
                         oneTransactionsData.keyValuesView().iterator();
                 fileCollection.startWriting();
@@ -502,14 +501,15 @@ public class HalfDiskHashMap implements AutoCloseable, Snapshotable, FileStatist
                 dataFileReader = fileCollection.endWriting(0, numOfBuckets);
                 // we have updated all indexes so the data file can now be included in merges
                 dataFileReader.setFileCompleted();
-            } catch (final Exception z) {
-                throw new RuntimeException("Exception in HDHM.endWriting()", z);
+            } else {
+                dataFileReader = null;
             }
-        } else {
-            dataFileReader = null;
+        } catch (final Exception z) {
+            throw new RuntimeException("Exception in HDHM.endWriting()", z);
+        } finally {
+            writingThread = null;
+            oneTransactionsData = null;
         }
-        // clear put cache
-        oneTransactionsData = null;
         return dataFileReader;
     }
 
@@ -627,6 +627,7 @@ public class HalfDiskHashMap implements AutoCloseable, Snapshotable, FileStatist
                 createAndScheduleStoreTask(bucket);
                 return true;
             } catch (final IOException z) {
+                logger.error(MERKLE_DB.getMarker(), "Failed to read / update bucket " + bucketIndex, z);
                 exceptionOccurred.set(z);
                 completeExceptionally(z);
                 // Make sure the writing thread is resumed

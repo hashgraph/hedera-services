@@ -52,8 +52,8 @@ class GrpcTransactionTest extends GrpcTestBase {
     private static final QueryWorkflow UNIMPLEMENTED_QUERY = (r, r2) -> fail("The Query should not be called");
 
     private void setUp(@NonNull final IngestWorkflow ingest) {
-        registerIngest(METHOD, ingest, UNIMPLEMENTED_QUERY);
-        startServer();
+        registerIngest(METHOD, ingest, UNIMPLEMENTED_QUERY, UNIMPLEMENTED_QUERY);
+        startServer(false);
     }
 
     @Test

@@ -76,7 +76,7 @@ public class StartupStateUtilsTests {
 
     private SignedStateFilePath signedStateFilePath;
 
-    private final NodeId selfId = new NodeId(0);
+    private final NodeId selfId = NodeId.of(0);
     private final String mainClassName = "mainClassName";
     private final String swirldName = "swirldName";
 
@@ -135,6 +135,9 @@ public class StartupStateUtilsTests {
                 .setRound(round)
                 .setEpoch(epoch)
                 .build();
+
+        // make the state immutable
+        signedState.getState().copy();
 
         final Path savedStateDirectory =
                 signedStateFilePath.getSignedStateDirectory(mainClassName, selfId, swirldName, round);

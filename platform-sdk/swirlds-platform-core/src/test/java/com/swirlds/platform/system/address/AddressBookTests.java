@@ -162,7 +162,7 @@ class AddressBookTests {
     @NonNull
     private static Address buildNextAddress(@NonNull final Random random, @NonNull final AddressBook addressBook) {
         return RandomAddressBuilder.create(random)
-                .withNodeId(new NodeId(addressBook.getNextAvailableNodeId().id() + random.nextInt(0, 3)))
+                .withNodeId(NodeId.of(addressBook.getNextAvailableNodeId().id() + random.nextInt(0, 3)))
                 .build();
     }
 
@@ -283,8 +283,8 @@ class AddressBookTests {
                         "this.is.a.really.long.host.name.that.should.be.able.to.fit.in.the.address.book"));
 
         // make sure that certs are part of the round trip test.
-        assertNotNull(original.getAddress(new NodeId(0)).getSigCert());
-        assertNotNull(original.getAddress(new NodeId(0)).getAgreeCert());
+        assertNotNull(original.getAddress(NodeId.of(0)).getSigCert());
+        assertNotNull(original.getAddress(NodeId.of(0)).getAgreeCert());
 
         validateAddressBookConsistency(original);
 
@@ -356,9 +356,9 @@ class AddressBookTests {
         // The address book has gaps. Make sure we can't insert anything into those gaps.
         for (int i = 0; i < addressBook.getNextAvailableNodeId().id(); i++) {
 
-            final Address address = buildNextAddress(randotron, addressBook).copySetNodeId(new NodeId(i));
+            final Address address = buildNextAddress(randotron, addressBook).copySetNodeId(NodeId.of(i));
 
-            if (addressBook.contains(new NodeId(i))) {
+            if (addressBook.contains(NodeId.of(i))) {
                 // It's ok to update an existing address
                 addressBook.add(address);
             } else {
