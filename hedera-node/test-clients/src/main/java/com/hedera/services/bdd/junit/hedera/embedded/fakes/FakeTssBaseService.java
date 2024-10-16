@@ -186,10 +186,10 @@ public class FakeTssBaseService implements TssBaseService {
     }
 
     @Override
-    public void startKeyingCandidate(@NonNull final Roster roster, @NonNull final HandleContext context) {
+    public void setCandidateRoster(@NonNull final Roster roster, @NonNull final HandleContext context) {
         requireNonNull(roster);
         requireNonNull(context);
-        delegate.startKeyingCandidate(roster, context);
+        delegate.setCandidateRoster(roster, context);
     }
 
     @Override

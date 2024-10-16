@@ -122,8 +122,8 @@ public class NodeStakeUpdates {
             final var tssConfig = config.getConfigData(TssConfig.class);
             if (tssConfig.keyCandidateRoster()) {
                 final var context = dispatch.handleContext();
-                // (TSS-FUTURE) Start keying the actual candidate roster from the RosterService
-                tssBaseService.startKeyingCandidate(Roster.DEFAULT, context);
+                // C.f. https://github.com/hashgraph/hedera-services/issues/14748
+                tssBaseService.setCandidateRoster(Roster.DEFAULT, context);
             }
         }
     }

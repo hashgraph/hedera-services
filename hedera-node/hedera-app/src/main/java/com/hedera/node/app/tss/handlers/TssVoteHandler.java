@@ -31,6 +31,7 @@ import javax.inject.Singleton;
 
 /**
  * Validates and responds to a {@link TssVoteTransactionBody}.
+ * <p>Tracked <a href="https://github.com/hashgraph/hedera-services/issues/14750">here</a>
  */
 @Singleton
 public class TssVoteHandler implements TransactionHandler {
@@ -42,18 +43,15 @@ public class TssVoteHandler implements TransactionHandler {
     @Override
     public void preHandle(@NonNull final PreHandleContext context) throws PreCheckException {
         requireNonNull(context);
-        // (TSS-FUTURE) Implement this method
     }
 
     @Override
     public void pureChecks(@NonNull final TransactionBody txn) throws PreCheckException {
         requireNonNull(txn);
-        // (TSS-FUTURE) Implement this method
     }
 
     @Override
     public void handle(@NonNull final HandleContext context) throws HandleException {
         requireNonNull(context);
-        // (TSS-FUTURE) Implement this method
     }
 }
