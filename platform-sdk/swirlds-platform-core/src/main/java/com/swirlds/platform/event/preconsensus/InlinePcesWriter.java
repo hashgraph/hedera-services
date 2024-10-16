@@ -20,12 +20,12 @@ import com.swirlds.common.wiring.component.InputWireLabel;
 import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.event.PlatformEvent;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 
 /**
  * This object is responsible for writing preconsensus events to disk. It differs from {@link PcesWriter} in that it
  * writes events to disk and then outputs them once it ensures they are durable.
  */
-@SuppressWarnings("unused") // will be used very soon (1 Oct 2024)
 public interface InlinePcesWriter {
 
     /**
@@ -43,7 +43,7 @@ public interface InlinePcesWriter {
      * @return the event written
      */
     @InputWireLabel("events to write")
-    @NonNull
+    @Nullable
     PlatformEvent writeEvent(@NonNull PlatformEvent event);
 
     /**
