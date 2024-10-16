@@ -84,7 +84,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 class StateFileManagerTests {
 
-    private static final NodeId SELF_ID = new NodeId(1234);
+    private static final NodeId SELF_ID = NodeId.of(1234);
     private static final String MAIN_CLASS_NAME = "com.swirlds.foobar";
     private static final String SWIRLD_NAME = "mySwirld";
 
@@ -170,6 +170,7 @@ class StateFileManagerTests {
     @DisplayName("Standard Operation Test")
     void standardOperationTest(final boolean successExpected) throws IOException {
         final SignedState signedState = new RandomSignedStateGenerator().build();
+        makeImmutable(signedState);
 
         if (!successExpected) {
             // To make the save fail, create a file with the name of the directory the state will try to be saved to
@@ -202,6 +203,7 @@ class StateFileManagerTests {
         final StateSnapshotManager manager =
                 new DefaultStateSnapshotManager(context, MAIN_CLASS_NAME, SELF_ID, SWIRLD_NAME);
         signedState.markAsStateToSave(FATAL_ERROR);
+        makeImmutable(signedState);
 
         final Thread thread = new ThreadConfiguration(getStaticThreadManager())
                 .setInterruptableRunnable(
@@ -228,6 +230,7 @@ class StateFileManagerTests {
         final StateSnapshotManager manager =
                 new DefaultStateSnapshotManager(context, MAIN_CLASS_NAME, SELF_ID, SWIRLD_NAME);
         signedState.markAsStateToSave(ISS);
+        makeImmutable(signedState);
         manager.dumpStateTask(StateDumpRequest.create(signedState.reserve("test")));
 
         final Path stateDirectory = testDirectory.resolve("iss").resolve("node1234_round" + signedState.getRound());
@@ -304,6 +307,7 @@ class StateFileManagerTests {
             final ReservedSignedState reservedSignedState = signedState.reserve("initialTestReservation");
 
             controller.markSavedState(new StateAndRound(reservedSignedState, mock(ConsensusRound.class)));
+            makeImmutable(reservedSignedState.get());
 
             if (signedState.isStateToSave()) {
                 assertTrue(
@@ -396,6 +400,7 @@ class StateFileManagerTests {
                 .resolve("node" + SELF_ID + "_round" + issRound);
         final SignedState issState =
                 new RandomSignedStateGenerator(random).setRound(issRound).build();
+        makeImmutable(issState);
         issState.markAsStateToSave(ISS);
         manager.dumpStateTask(StateDumpRequest.create(issState.reserve("test")));
         validateSavingOfState(issState, issDirectory);
@@ -408,6 +413,7 @@ class StateFileManagerTests {
                 .resolve("node" + SELF_ID + "_round" + fatalRound);
         final SignedState fatalState =
                 new RandomSignedStateGenerator(random).setRound(fatalRound).build();
+        makeImmutable(fatalState);
         fatalState.markAsStateToSave(FATAL_ERROR);
         manager.dumpStateTask(StateDumpRequest.create(fatalState.reserve("test")));
         validateSavingOfState(fatalState, fatalDirectory);
@@ -419,6 +425,7 @@ class StateFileManagerTests {
                     new RandomSignedStateGenerator(random).setRound(round).build();
             issState.markAsStateToSave(PERIODIC_SNAPSHOT);
             states.add(signedState);
+            makeImmutable(signedState);
             manager.saveStateTask(signedState.reserve("test"));
 
             // Verify that the states we want to be on disk are still on disk
@@ -440,5 +447,9 @@ class StateFileManagerTests {
             validateSavingOfState(issState, issDirectory);
             validateSavingOfState(fatalState, fatalDirectory);
         }
+    }
+
+    private static void makeImmutable(SignedState signedState) {
+        signedState.getState().copy();
     }
 }

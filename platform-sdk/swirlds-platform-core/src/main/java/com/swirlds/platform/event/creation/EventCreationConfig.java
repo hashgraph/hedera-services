@@ -42,8 +42,6 @@ import java.time.Duration;
  *                                            used to compute selfishness scores.
  * @param eventIntakeThrottle                 when the size of the event intake queue equals or exceeds this value, do
  *                                            not permit the creation of new self events.
- * @param useLegacyBackpressure               whether to use the legacy backpressure (i.e. where we look at the size of
- *                                            the first queue in intake)
  * @param maximumPermissibleUnhealthyDuration the maximum amount of time that the system can be unhealthy before event
  *                                            creation stops
  */
@@ -54,5 +52,4 @@ public record EventCreationConfig(
         @ConfigProperty(defaultValue = "10") double antiSelfishnessFactor,
         @ConfigProperty(defaultValue = "10") int tipsetSnapshotHistorySize,
         @ConfigProperty(defaultValue = "1024") int eventIntakeThrottle,
-        @ConfigProperty(defaultValue = "false") boolean useLegacyBackpressure,
         @ConfigProperty(defaultValue = "1s") Duration maximumPermissibleUnhealthyDuration) {}

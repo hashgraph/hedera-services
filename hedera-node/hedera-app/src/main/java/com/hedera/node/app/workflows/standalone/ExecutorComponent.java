@@ -25,13 +25,14 @@ import com.hedera.node.app.service.file.impl.FileServiceImpl;
 import com.hedera.node.app.services.ServicesInjectionModule;
 import com.hedera.node.app.state.HederaStateInjectionModule;
 import com.hedera.node.app.throttle.ThrottleServiceModule;
+import com.hedera.node.app.tss.TssBaseService;
 import com.hedera.node.app.workflows.FacilityInitModule;
 import com.hedera.node.app.workflows.handle.DispatchProcessor;
 import com.hedera.node.app.workflows.handle.HandleWorkflowModule;
 import com.hedera.node.app.workflows.prehandle.PreHandleWorkflowInjectionModule;
 import com.hedera.node.app.workflows.standalone.impl.StandaloneDispatchFactory;
 import com.hedera.node.app.workflows.standalone.impl.StandaloneModule;
-import com.hedera.node.app.workflows.standalone.impl.StateNetworkInfo;
+import com.hedera.node.app.workflows.standalone.impl.StandaloneNetworkInfo;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.state.State;
 import dagger.BindsInstance;
@@ -40,7 +41,7 @@ import java.util.function.Consumer;
 import javax.inject.Singleton;
 
 /**
- * A component that provides DI for construction of {@link StandaloneDispatchFactory}, {@link StateNetworkInfo}, and
+ * A component that provides DI for construction of {@link StandaloneDispatchFactory}, {@link StandaloneNetworkInfo}, and
  * {@link DispatchProcessor} instances needed to execute standalone transactions against a {@link State}.
  */
 @Singleton
@@ -58,6 +59,9 @@ import javax.inject.Singleton;
 public interface ExecutorComponent {
     @Component.Builder
     interface Builder {
+        @BindsInstance
+        Builder tssBaseService(TssBaseService tssBaseService);
+
         @BindsInstance
         Builder fileServiceImpl(FileServiceImpl fileService);
 
@@ -80,7 +84,7 @@ public interface ExecutorComponent {
 
     DispatchProcessor dispatchProcessor();
 
-    StateNetworkInfo stateNetworkInfo();
+    StandaloneNetworkInfo stateNetworkInfo();
 
     ExchangeRateManager exchangeRateManager();
 

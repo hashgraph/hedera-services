@@ -17,10 +17,10 @@
 package com.hedera.node.app.workflows.handle.steps;
 
 import static com.hedera.node.app.records.schemas.V0490BlockRecordSchema.BLOCK_INFO_STATE_KEY;
-import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.USER;
 import static com.hedera.node.app.workflows.handle.TransactionType.GENESIS_TRANSACTION;
 import static com.hedera.node.app.workflows.handle.TransactionType.ORDINARY_TRANSACTION;
 import static com.hedera.node.app.workflows.handle.TransactionType.POST_UPGRADE_TRANSACTION;
+import static com.hedera.node.app.workflows.standalone.impl.StandaloneDispatchFactory.getTxnCategory;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
@@ -247,7 +247,7 @@ public record UserTxn(
                 preHandleResult.getHollowAccounts(),
                 dispatchHandleContext,
                 stack,
-                USER,
+                getTxnCategory(preHandleResult),
                 tokenContextImpl,
                 preHandleResult,
                 HandleContext.ConsensusThrottling.ON);

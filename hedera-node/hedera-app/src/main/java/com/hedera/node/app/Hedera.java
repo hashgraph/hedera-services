@@ -17,12 +17,18 @@
 package com.hedera.node.app;
 
 import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_BLOCK_STREAM_INFO;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.DUPLICATE_TRANSACTION;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.PLATFORM_NOT_ACTIVE;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.UNKNOWN;
+import static com.hedera.hapi.util.HapiUtils.functionOf;
 import static com.hedera.node.app.blocks.impl.BlockImplUtils.combine;
 import static com.hedera.node.app.blocks.impl.ConcurrentStreamingTreeHasher.rootHashFrom;
-import static com.hedera.node.app.blocks.schemas.V0540BlockStreamSchema.BLOCK_STREAM_INFO_KEY;
+import static com.hedera.node.app.blocks.schemas.V0560BlockStreamSchema.BLOCK_STREAM_INFO_KEY;
 import static com.hedera.node.app.info.UnavailableNetworkInfo.UNAVAILABLE_NETWORK_INFO;
 import static com.hedera.node.app.records.impl.BlockRecordInfoUtils.blockHashByBlockNumber;
 import static com.hedera.node.app.records.schemas.V0490BlockRecordSchema.BLOCK_INFO_STATE_KEY;
+import static com.hedera.node.app.spi.workflows.record.StreamBuilder.nodeTransactionWith;
 import static com.hedera.node.app.state.merkle.VersionUtils.isSoOrdered;
 import static com.hedera.node.app.statedumpers.DumpCheckpoint.MOD_POST_EVENT_STREAM_REPLAY;
 import static com.hedera.node.app.statedumpers.DumpCheckpoint.selectedDumpCheckpoints;
@@ -34,6 +40,9 @@ import static com.swirlds.platform.state.service.schemas.V0540PlatformStateSchem
 import static com.swirlds.platform.system.InitTrigger.EVENT_STREAM_RECOVERY;
 import static com.swirlds.platform.system.InitTrigger.GENESIS;
 import static com.swirlds.platform.system.InitTrigger.RECONNECT;
+import static com.swirlds.platform.system.address.AddressBookUtils.createRoster;
+import static com.swirlds.platform.system.status.PlatformStatus.ACTIVE;
+import static com.swirlds.platform.system.status.PlatformStatus.STARTING_UP;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.CompletableFuture.completedFuture;
@@ -42,11 +51,14 @@ import com.hedera.hapi.block.stream.BlockItem;
 import com.hedera.hapi.block.stream.output.SingletonUpdateChange;
 import com.hedera.hapi.block.stream.output.StateChange;
 import com.hedera.hapi.block.stream.output.StateChanges;
+import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.state.blockrecords.BlockInfo;
 import com.hedera.hapi.node.state.blockstream.BlockStreamInfo;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.hapi.platform.state.PlatformState;
 import com.hedera.hapi.util.HapiUtils;
+import com.hedera.hapi.util.UnknownHederaFunctionality;
 import com.hedera.node.app.blocks.BlockStreamManager;
 import com.hedera.node.app.blocks.BlockStreamService;
 import com.hedera.node.app.blocks.InitialStateHash;
@@ -59,8 +71,8 @@ import com.hedera.node.app.config.ConfigProviderImpl;
 import com.hedera.node.app.fees.FeeService;
 import com.hedera.node.app.ids.EntityIdService;
 import com.hedera.node.app.info.CurrentPlatformStatusImpl;
-import com.hedera.node.app.info.SelfNodeInfoImpl;
-import com.hedera.node.app.info.UnavailableLedgerIdNetworkInfo;
+import com.hedera.node.app.info.GenesisNetworkInfo;
+import com.hedera.node.app.info.StateNetworkInfo;
 import com.hedera.node.app.records.BlockRecordService;
 import com.hedera.node.app.roster.RosterServiceImpl;
 import com.hedera.node.app.service.addressbook.impl.AddressBookServiceImpl;
@@ -78,6 +90,8 @@ import com.hedera.node.app.services.ServicesRegistry;
 import com.hedera.node.app.signature.AppSignatureVerifier;
 import com.hedera.node.app.signature.impl.SignatureExpanderImpl;
 import com.hedera.node.app.signature.impl.SignatureVerifierImpl;
+import com.hedera.node.app.spi.AppContext;
+import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.state.MerkleStateLifecyclesImpl;
 import com.hedera.node.app.state.recordcache.RecordCacheService;
 import com.hedera.node.app.statedumpers.DumpCheckpoint;
@@ -85,7 +99,6 @@ import com.hedera.node.app.statedumpers.MerkleStateChild;
 import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.app.throttle.CongestionThrottleService;
 import com.hedera.node.app.tss.TssBaseService;
-import com.hedera.node.app.tss.impl.PlaceholderTssBaseService;
 import com.hedera.node.app.version.HederaSoftwareVersion;
 import com.hedera.node.app.version.ServicesSoftwareVersion;
 import com.hedera.node.app.workflows.handle.HandleWorkflow;
@@ -94,6 +107,8 @@ import com.hedera.node.app.workflows.query.QueryWorkflow;
 import com.hedera.node.config.Utils;
 import com.hedera.node.config.data.BlockStreamConfig;
 import com.hedera.node.config.data.HederaConfig;
+import com.hedera.node.config.data.LedgerConfig;
+import com.hedera.node.config.data.NetworkAdminConfig;
 import com.hedera.node.config.data.VersionConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.constructable.ClassConstructorPair;
@@ -122,11 +137,12 @@ import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.SwirldMain;
 import com.swirlds.platform.system.events.Event;
 import com.swirlds.platform.system.state.notifications.StateHashedListener;
+import com.swirlds.platform.system.status.PlatformStatus;
 import com.swirlds.platform.system.transaction.Transaction;
 import com.swirlds.state.State;
 import com.swirlds.state.StateChangeListener;
 import com.swirlds.state.spi.WritableSingletonStateBase;
-import com.swirlds.state.spi.info.SelfNodeInfo;
+import com.swirlds.state.spi.info.NetworkInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.nio.charset.Charset;
@@ -140,6 +156,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.BiConsumer;
+import java.util.function.Function;
 import java.util.function.Supplier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -173,7 +190,7 @@ import org.apache.logging.log4j.Logger;
  * including its state. It constructs the Dagger dependency tree, and manages the gRPC server, and in all other ways,
  * controls execution of the node. If you want to understand our system, this is a great place to start!
  */
-public final class Hedera implements SwirldMain, PlatformStatusChangeListener {
+public final class Hedera implements SwirldMain, PlatformStatusChangeListener, AppContext.Gossip {
     private static final Logger logger = LogManager.getLogger(Hedera.class);
 
     // FUTURE: This should come from configuration, not be hardcoded.
@@ -213,15 +230,16 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener {
     private final InstantSource instantSource;
 
     /**
-     * The supplier for the TSS base service.
-     */
-    private final Supplier<TssBaseService> tssBaseServiceSupplier;
-
-    /**
      * The contract service singleton, kept as a field here to avoid constructing twice
      * (once in constructor to register schemas, again inside Dagger component).
      */
     private final ContractServiceImpl contractServiceImpl;
+
+    /**
+     * The TSS base service singleton, kept as a field here to avoid constructing twice
+     * (once in constructor to register schemas, again inside Dagger component).
+     */
+    private final TssBaseService tssBaseService;
 
     /**
      * The file service singleton, kept as a field here to avoid constructing twice
@@ -245,6 +263,10 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener {
      */
     private Platform platform;
     /**
+     * The current status of the platform.
+     */
+    private PlatformStatus platformStatus = STARTING_UP;
+    /**
      * The configuration for this node; non-final because its sources depend on whether
      * we are initializing the first consensus state from genesis or a saved state.
      */
@@ -256,6 +278,9 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener {
      */
     private HederaInjectionComponent daggerApp;
 
+    /**
+     * The metrics object being used for reporting.
+     */
     private Metrics metrics;
 
     /**
@@ -304,17 +329,16 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener {
      * @param constructableRegistry  the registry to register {@link RuntimeConstructable} factories with
      * @param registryFactory        the factory to use for creating the services registry
      * @param migrator               the migrator to use with the services
-     * @param tssBaseServiceSupplier the supplier for the TSS base service
+     * @param tssBaseServiceFactory the factory for the TSS base service
      */
     public Hedera(
             @NonNull final ConstructableRegistry constructableRegistry,
             @NonNull final ServicesRegistry.Factory registryFactory,
             @NonNull final ServiceMigrator migrator,
             @NonNull final InstantSource instantSource,
-            @NonNull final Supplier<TssBaseService> tssBaseServiceSupplier) {
+            @NonNull final Function<AppContext, TssBaseService> tssBaseServiceFactory) {
         requireNonNull(registryFactory);
         requireNonNull(constructableRegistry);
-        this.tssBaseServiceSupplier = requireNonNull(tssBaseServiceSupplier);
         this.serviceMigrator = requireNonNull(migrator);
         this.instantSource = requireNonNull(instantSource);
         logger.info(
@@ -343,15 +367,18 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener {
                 new AppSignatureVerifier(
                         bootstrapConfig.getConfigData(HederaConfig.class),
                         new SignatureExpanderImpl(),
-                        new SignatureVerifierImpl(CryptographyHolder.get())));
+                        new SignatureVerifierImpl(CryptographyHolder.get())),
+                this);
+        tssBaseService = tssBaseServiceFactory.apply(appContext);
         contractServiceImpl = new ContractServiceImpl(appContext);
-        blockStreamService = new BlockStreamService(bootstrapConfig);
+        blockStreamService = new BlockStreamService();
         // Register all service schema RuntimeConstructable factories before platform init
         Set.of(
                         new EntityIdService(),
                         new ConsensusServiceImpl(),
                         contractServiceImpl,
                         fileServiceImpl,
+                        tssBaseService,
                         new FreezeServiceImpl(),
                         new ScheduleServiceImpl(),
                         new TokenServiceImpl(),
@@ -417,7 +444,7 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener {
 
     @Override
     public void notify(@NonNull final PlatformStatusChangeNotification notification) {
-        final var platformStatus = notification.getNewStatus();
+        this.platformStatus = notification.getNewStatus();
         logger.info("HederaNode#{} is {}", platform.getSelfId(), platformStatus.name());
         switch (platformStatus) {
             case ACTIVE -> startGrpcServer();
@@ -551,8 +578,18 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener {
                         .orElse(null)),
                 () -> HapiUtils.toString(version.getPbjSemanticVersion()),
                 () -> trigger);
-        final var selfNodeInfo = extractSelfNodeInfo(platform);
-        final var networkInfo = new UnavailableLedgerIdNetworkInfo(selfNodeInfo, platform);
+        // This is set only when the trigger is genesis. Because, only in those cases
+        // the migration code is using the network info values.
+        NetworkInfo genesisNetworkInfo = null;
+        if (trigger == GENESIS) {
+            final var config = configProvider.getConfiguration();
+            final var ledgerConfig = config.getConfigData(LedgerConfig.class);
+            final var readableStore =
+                    new ReadablePlatformStateStore(state.getReadableStates(PlatformStateService.NAME));
+            final var genesisRoster = createRoster(requireNonNull(readableStore.getAddressBook()));
+
+            genesisNetworkInfo = new GenesisNetworkInfo(genesisRoster, ledgerConfig.id());
+        }
         final List<StateChanges.Builder> migrationStateChanges = new ArrayList<>();
         if (isNotEmbedded()) {
             if (!(state instanceof MerkleStateRoot merkleStateRoot)) {
@@ -570,7 +607,7 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener {
                 deserializedVersion,
                 version,
                 configProvider.getConfiguration(),
-                networkInfo,
+                genesisNetworkInfo,
                 metrics);
         migrationStateChanges.addAll(migrationChanges);
         kvStateChangeListener.reset();
@@ -611,6 +648,38 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener {
         logger.info("Initializing Hedera app with HederaNode#{}", nodeId);
         Locale.setDefault(Locale.US);
         logger.info("Locale to set to US en");
+    }
+
+    @Override
+    public void submit(@NonNull final TransactionBody body) {
+        requireNonNull(body);
+        if (platformStatus != ACTIVE) {
+            throw new IllegalStateException("" + PLATFORM_NOT_ACTIVE);
+        }
+        final HederaFunctionality function;
+        try {
+            function = functionOf(body);
+        } catch (UnknownHederaFunctionality e) {
+            throw new IllegalArgumentException("" + UNKNOWN);
+        }
+        try {
+            final var config = configProvider.getConfiguration();
+            final var adminConfig = config.getConfigData(NetworkAdminConfig.class);
+            final var allowList = adminConfig.nodeTransactionsAllowList().functionalitySet();
+            if (!allowList.contains(function)) {
+                throw new IllegalArgumentException("" + NOT_SUPPORTED);
+            }
+            final var payload = com.hedera.hapi.node.base.Transaction.PROTOBUF.toBytes(nodeTransactionWith(body));
+            requireNonNull(daggerApp).submissionManager().submit(body, payload);
+        } catch (PreCheckException e) {
+            final var reason = e.responseCode();
+            if (reason == DUPLICATE_TRANSACTION) {
+                // In this case the client must not retry with the same transaction, but
+                // could retry with a different transaction id if desired.
+                throw new IllegalArgumentException("" + DUPLICATE_TRANSACTION);
+            }
+            throw new IllegalStateException("" + reason);
+        }
     }
 
     /**
@@ -857,10 +926,6 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener {
             initialStateHashFuture = new CompletableFuture<>();
             notifications.register(ReconnectCompleteListener.class, new ReadReconnectStartingStateHash(notifications));
         }
-        if (initialStateHashFuture == null) {
-            logger.warn("Starting from Browser is deprecated. Setting initial start hash to empty hash.");
-            initialStateHashFuture = completedFuture(Bytes.wrap(new byte[48]));
-        }
         // For other triggers the initial state hash must have been set already
         requireNonNull(initialStateHashFuture);
         final var roundNum = requireNonNull(state.getReadableStates(PlatformStateService.NAME)
@@ -869,15 +934,17 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener {
                 .consensusSnapshotOrThrow()
                 .round();
         final var initialStateHash = new InitialStateHash(initialStateHashFuture, roundNum);
+        final var networkInfo = new StateNetworkInfo(state, platform.getSelfId().id(), configProvider);
         // Fully qualified so as to not confuse javadoc
         daggerApp = com.hedera.node.app.DaggerHederaInjectionComponent.builder()
                 .configProviderImpl(configProvider)
                 .bootstrapConfigProviderImpl(bootstrapConfigProvider)
                 .fileServiceImpl(fileServiceImpl)
                 .contractServiceImpl(contractServiceImpl)
+                .tssBaseService(tssBaseService)
                 .initTrigger(trigger)
                 .softwareVersion(version.getPbjSemanticVersion())
-                .self(extractSelfNodeInfo(platform))
+                .self(networkInfo.selfNodeInfo())
                 .platform(platform)
                 .maxSignedTxnSize(MAX_SIGNED_TXN_SIZE)
                 .crypto(CryptographyHolder.get())
@@ -888,8 +955,8 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener {
                 .kvStateChangeListener(kvStateChangeListener)
                 .boundaryStateChangeListener(boundaryStateChangeListener)
                 .migrationStateChanges(migrationStateChanges)
-                .tssBaseService(tssBaseServiceSupplier.get())
                 .initialStateHash(initialStateHash)
+                .networkInfo(networkInfo)
                 .build();
         // Initialize infrastructure for fees, exchange rates, and throttles from the working state
         daggerApp.initializer().accept(state);
@@ -908,9 +975,6 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener {
                                         .orElseGet(() -> startBlockHashFrom(state));
                             });
             daggerApp.tssBaseService().registerLedgerSignatureConsumer(daggerApp.blockStreamManager());
-            if (daggerApp.tssBaseService() instanceof PlaceholderTssBaseService placeholderTssBaseService) {
-                daggerApp.inject(placeholderTssBaseService);
-            }
         }
     }
 
@@ -1030,12 +1094,6 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener {
                     "Fatal precondition violation in HederaNode#{}: digest factory does not support SHA-384", nodeId);
             System.exit(1);
         }
-    }
-
-    private SelfNodeInfo extractSelfNodeInfo(@NonNull final Platform platform) {
-        final var selfId = platform.getSelfId();
-        final var nodeAddress = platform.getAddressBook().getAddress(selfId);
-        return SelfNodeInfoImpl.of(nodeAddress, hapiVersion);
     }
 
     private MerkleStateRoot withListeners(@NonNull final MerkleStateRoot root) {

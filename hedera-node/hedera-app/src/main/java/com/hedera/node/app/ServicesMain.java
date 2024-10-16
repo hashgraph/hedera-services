@@ -38,7 +38,7 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.services.OrderedServiceMigrator;
 import com.hedera.node.app.services.ServicesRegistryImpl;
-import com.hedera.node.app.tss.impl.PlaceholderTssBaseService;
+import com.hedera.node.app.tss.TssBaseServiceImpl;
 import com.swirlds.base.time.Time;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.RuntimeConstructable;
@@ -75,6 +75,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.InstantSource;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.ForkJoinPool;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -170,7 +171,7 @@ public class ServicesMain implements SwirldMain {
 
         // Determine which node to run locally
         // Load config.txt address book file and parse address book
-        final AddressBook bootstrapAddressBook = loadAddressBook(DEFAULT_CONFIG_FILE_NAME);
+        final AddressBook diskAddressBook = loadAddressBook(DEFAULT_CONFIG_FILE_NAME);
         // parse command line arguments
         final CommandLineArgs commandLineArgs = CommandLineArgs.parse(args);
 
@@ -185,7 +186,7 @@ public class ServicesMain implements SwirldMain {
         // get the list of configured nodes from the address book
         // for each node in the address book, check if it has a local IP (local to this computer)
         // additionally if a command line arg is supplied then limit matching nodes to that node id
-        final List<NodeId> nodesToRun = getNodesToRun(bootstrapAddressBook, commandLineArgs.localNodesToStart());
+        final List<NodeId> nodesToRun = getNodesToRun(diskAddressBook, commandLineArgs.localNodesToStart());
         // hard exit if no nodes are configured to run
         checkNodesToRun(nodesToRun);
 
@@ -196,7 +197,7 @@ public class ServicesMain implements SwirldMain {
 
         final var configuration = buildConfiguration();
         final var keysAndCerts =
-                initNodeSecurity(bootstrapAddressBook, configuration).get(selfId);
+                initNodeSecurity(diskAddressBook, configuration).get(selfId);
 
         setupGlobalMetrics(configuration);
         final var metrics = getMetricsProvider().createPlatformMetrics(selfId);
@@ -208,7 +209,7 @@ public class ServicesMain implements SwirldMain {
         final var cryptography = CryptographyFactory.create();
         CryptographyHolder.set(cryptography);
         // the AddressBook is not changed after this point, so we calculate the hash now
-        cryptography.digestSync(bootstrapAddressBook);
+        cryptography.digestSync(diskAddressBook);
 
         // Initialize the Merkle cryptography
         final var merkleCryptography = MerkleCryptographyFactory.create(configuration, cryptography);
@@ -232,21 +233,21 @@ public class ServicesMain implements SwirldMain {
                 Hedera.APP_NAME,
                 Hedera.SWIRLD_NAME,
                 selfId,
-                bootstrapAddressBook);
+                diskAddressBook);
         final var initialState = reservedState.state();
         final var stateHash = reservedState.hash();
 
         // Initialize the address book and set on platform builder
-        final var addressBook =
-                initializeAddressBook(selfId, version, initialState, bootstrapAddressBook, platformContext);
+        final var addressBook = initializeAddressBook(selfId, version, initialState, diskAddressBook, platformContext);
 
         // Follow the Inversion of Control pattern by injecting all needed dependencies into the PlatformBuilder.
+        final var roster = createRoster(addressBook);
         final var platformBuilder = PlatformBuilder.create(
                         Hedera.APP_NAME, Hedera.SWIRLD_NAME, version, initialState, selfId)
                 .withPlatformContext(platformContext)
                 .withConfiguration(configuration)
                 .withAddressBook(addressBook)
-                .withRoster(createRoster(addressBook))
+                .withRoster(roster)
                 .withKeysAndCerts(keysAndCerts);
 
         hedera.setInitialStateHash(stateHash);
@@ -363,6 +364,6 @@ public class ServicesMain implements SwirldMain {
                 ServicesRegistryImpl::new,
                 new OrderedServiceMigrator(),
                 InstantSource.system(),
-                PlaceholderTssBaseService::new);
+                appContext -> new TssBaseServiceImpl(appContext, ForkJoinPool.commonPool(), ForkJoinPool.commonPool()));
     }
 }
