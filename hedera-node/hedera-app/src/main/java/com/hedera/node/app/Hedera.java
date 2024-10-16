@@ -36,6 +36,7 @@ import static com.hedera.node.app.statedumpers.DumpCheckpoint.selectedDumpCheckp
 import static com.hedera.node.app.statedumpers.StateDumper.dumpModChildrenFrom;
 import static com.hedera.node.app.util.HederaAsciiArt.HEDERA;
 import static com.hedera.node.app.workflows.handle.metric.UnavailableMetrics.UNAVAILABLE_METRICS;
+import static com.hedera.node.config.types.StreamMode.BLOCKS;
 import static com.hedera.node.config.types.StreamMode.RECORDS;
 import static com.swirlds.platform.state.service.PlatformStateService.PLATFORM_STATE_SERVICE;
 import static com.swirlds.platform.state.service.schemas.V0540PlatformStateSchema.PLATFORM_STATE_KEY;
@@ -112,6 +113,7 @@ import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.data.LedgerConfig;
 import com.hedera.node.config.data.NetworkAdminConfig;
 import com.hedera.node.config.data.VersionConfig;
+import com.hedera.node.config.types.StreamMode;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
@@ -261,6 +263,11 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
     private final BootstrapConfigProviderImpl bootstrapConfigProvider;
 
     /**
+     * The stream mode the node is operating in.
+     */
+    private final StreamMode streamMode;
+
+    /**
      * The Hashgraph Platform. This is set during state initialization.
      */
     private Platform platform;
@@ -357,6 +364,7 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
         final var bootstrapConfig = bootstrapConfigProvider.getConfiguration();
         hapiVersion = bootstrapConfig.getConfigData(VersionConfig.class).hapiVersion();
         version = getNodeStartupVersion(bootstrapConfig);
+        streamMode = bootstrapConfig.getConfigData(BlockStreamConfig.class).streamMode();
         servicesRegistry = registryFactory.create(constructableRegistry, bootstrapConfig);
         logger.info(
                 "Creating Hedera Consensus Node {} with HAPI {}",
@@ -613,7 +621,9 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
         migrationStateChanges.addAll(migrationChanges);
         kvStateChangeListener.reset();
         boundaryStateChangeListener.reset();
-        if (isUpgrade && !trigger.equals(RECONNECT)) {
+        // If still using BlockRecordManager state, then for specifically a non-genesis upgrade,
+        // set in state that post-upgrade work is pending
+        if (streamMode != BLOCKS && isUpgrade && trigger != RECONNECT && trigger != GENESIS) {
             unmarkMigrationRecordsStreamed(state);
             migrationStateChanges.add(
                     StateChanges.newBuilder().stateChanges(boundaryStateChangeListener.allStateChanges()));
@@ -871,11 +881,7 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
     }
 
     public boolean isBlockStreamEnabled() {
-        return bootstrapConfigProvider
-                        .getConfiguration()
-                        .getConfigData(BlockStreamConfig.class)
-                        .streamMode()
-                != RECORDS;
+        return streamMode != RECORDS;
     }
 
     /*==================================================================================================================
