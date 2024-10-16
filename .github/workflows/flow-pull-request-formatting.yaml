@@ -65,9 +65,10 @@ jobs:
           egress-policy: audit
 
       - name: Check Milestone
-        if: ${{ github.event.pull_request.milestone == null }}
+        #if: ${{ github.event.pull_request.milestone == null }}
         run: |
             echo "Milestone is not set. Failing the workflow."
+            echo ${{ github.event.pull_request.milestone }}
             exit 1
 
   assignee-check:
