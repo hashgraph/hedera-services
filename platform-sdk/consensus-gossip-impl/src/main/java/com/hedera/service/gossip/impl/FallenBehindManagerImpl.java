@@ -14,15 +14,15 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.gossip;
+package com.hedera.service.gossip.impl;
 
 import com.hedera.service.gossip.FallenBehindManager;
 import com.swirlds.common.AddressBook;
+import com.swirlds.common.FallenBehindAction;
+import com.swirlds.common.NetworkTopology;
+import com.swirlds.common.StatusActionSubmitter;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.platform.NodeId;
-import com.swirlds.platform.network.topology.NetworkTopology;
-import com.swirlds.platform.system.status.StatusActionSubmitter;
-import com.swirlds.platform.system.status.actions.FallenBehindAction;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.Collections;

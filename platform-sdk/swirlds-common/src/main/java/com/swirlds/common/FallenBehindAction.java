@@ -14,20 +14,9 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.system.status;
-
-import com.swirlds.platform.system.status.actions.PlatformStatusAction;
-import edu.umd.cs.findbugs.annotations.NonNull;
+package com.swirlds.common;
 
 /**
- * A functional interface for submitting status actions
+ * An action that is triggered when the platform falls behind.
  */
-@FunctionalInterface
-public interface StatusActionSubmitter {
-    /**
-     * Submit a status action, which will be processed in the order received
-     *
-     * @param action the action to submit
-     */
-    void submitStatusAction(@NonNull final PlatformStatusAction action);
-}
+public record FallenBehindAction() implements PlatformStatusAction {}

@@ -14,9 +14,12 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.system.status.actions;
+package com.swirlds.common;
 
 /**
- * An action that is triggered when the platform falls behind.
+ * An interface for platform status actions.
+ * <p>
+ * A platform status action is an occurrence that has the potential to affect the
+ * {@link PlatformStatus PlatformStatus}
  */
-public record FallenBehindAction() implements PlatformStatusAction {}
+public interface PlatformStatusAction {}

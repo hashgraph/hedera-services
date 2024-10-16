@@ -16,6 +16,8 @@
 
 package com.swirlds.platform.system.status.actions;
 
+import com.swirlds.common.PlatformStatusAction;
+
 /**
  * An action that is triggered when the platform starts replaying events from the preconsensus event stream.
  */

@@ -16,29 +16,29 @@
 
 package com.swirlds.platform.system.status;
 
-import static com.swirlds.platform.system.status.PlatformStatus.ACTIVE;
-import static com.swirlds.platform.system.status.PlatformStatus.BEHIND;
-import static com.swirlds.platform.system.status.PlatformStatus.CATASTROPHIC_FAILURE;
-import static com.swirlds.platform.system.status.PlatformStatus.CHECKING;
-import static com.swirlds.platform.system.status.PlatformStatus.FREEZE_COMPLETE;
-import static com.swirlds.platform.system.status.PlatformStatus.FREEZING;
-import static com.swirlds.platform.system.status.PlatformStatus.OBSERVING;
-import static com.swirlds.platform.system.status.PlatformStatus.RECONNECT_COMPLETE;
-import static com.swirlds.platform.system.status.PlatformStatus.REPLAYING_EVENTS;
+import static com.swirlds.common.PlatformStatus.ACTIVE;
+import static com.swirlds.common.PlatformStatus.BEHIND;
+import static com.swirlds.common.PlatformStatus.CATASTROPHIC_FAILURE;
+import static com.swirlds.common.PlatformStatus.CHECKING;
+import static com.swirlds.common.PlatformStatus.FREEZE_COMPLETE;
+import static com.swirlds.common.PlatformStatus.FREEZING;
+import static com.swirlds.common.PlatformStatus.OBSERVING;
+import static com.swirlds.common.PlatformStatus.RECONNECT_COMPLETE;
+import static com.swirlds.common.PlatformStatus.REPLAYING_EVENTS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.swirlds.base.test.fixtures.time.FakeTime;
+import com.swirlds.common.FallenBehindAction;
+import com.swirlds.common.PlatformStatusAction;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.platform.system.status.actions.CatastrophicFailureAction;
 import com.swirlds.platform.system.status.actions.DoneReplayingEventsAction;
-import com.swirlds.platform.system.status.actions.FallenBehindAction;
 import com.swirlds.platform.system.status.actions.FreezePeriodEnteredAction;
-import com.swirlds.platform.system.status.actions.PlatformStatusAction;
 import com.swirlds.platform.system.status.actions.ReconnectCompleteAction;
 import com.swirlds.platform.system.status.actions.SelfEventReachedConsensusAction;
 import com.swirlds.platform.system.status.actions.StartedReplayingEventsAction;
