@@ -147,7 +147,7 @@ public class PreGeneratedX509Certs {
             }
         }
         long index = nodeId % sigCerts.size();
-        return sigCerts.get(new NodeId(index));
+        return sigCerts.get(NodeId.of(index));
     }
 
     /**
@@ -164,7 +164,7 @@ public class PreGeneratedX509Certs {
             }
         }
         long index = nodeId % agreeCerts.size();
-        return agreeCerts.get(new NodeId(index));
+        return agreeCerts.get(NodeId.of(index));
     }
 
     /**
@@ -196,7 +196,7 @@ public class PreGeneratedX509Certs {
             for (int i = 0; i < numSigCerts; i++) {
                 SerializableX509Certificate sigCert =
                         sigCertDis.readSerializable(false, SerializableX509Certificate::new);
-                sigCerts.put(new NodeId(i), sigCert);
+                sigCerts.put(NodeId.of(i), sigCert);
             }
 
             // load agreement certs
@@ -204,7 +204,7 @@ public class PreGeneratedX509Certs {
             for (int i = 0; i < numAgreeCerts; i++) {
                 SerializableX509Certificate agreeCert =
                         agreeCertDis.readSerializable(false, SerializableX509Certificate::new);
-                agreeCerts.put(new NodeId(i), agreeCert);
+                agreeCerts.put(NodeId.of(i), agreeCert);
             }
         } catch (final IOException e) {
             throw new IllegalStateException("critical failure in loading certificates", e);

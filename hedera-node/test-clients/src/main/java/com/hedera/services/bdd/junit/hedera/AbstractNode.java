@@ -56,6 +56,11 @@ public abstract class AbstractNode implements HederaNode {
     }
 
     @Override
+    public int getGrpcNodeOperatorPort() {
+        return metadata.grpcNodeOperatorPort();
+    }
+
+    @Override
     public long getNodeId() {
         return metadata.nodeId();
     }
