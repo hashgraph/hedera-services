@@ -1159,6 +1159,20 @@ public class UtilVerbs {
     }
 
     /**
+     * Returns an operation that asserts that the record stream must include a pass from the given assertion
+     * before its timeout elapses.
+     * @param assertion the assertion to apply to the record stream
+     * @param timeout the timeout for the assertion
+     * @return the operation that asserts a passing record stream
+     */
+    public static EventualRecordStreamAssertion recordStreamMustIncludePassFrom(
+            @NonNull final Function<HapiSpec, RecordStreamAssertion> assertion, @NonNull final Duration timeout) {
+        requireNonNull(assertion);
+        requireNonNull(timeout);
+        return EventualRecordStreamAssertion.eventuallyAssertingExplicitPass(assertion, timeout);
+    }
+
+    /**
      * Returns an operation that asserts that the block stream must include no failures from the given assertion
      * before its timeout elapses.
      * @param assertion the assertion to apply to the block stream

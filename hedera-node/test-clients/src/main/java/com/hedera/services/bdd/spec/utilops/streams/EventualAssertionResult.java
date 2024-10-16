@@ -32,10 +32,6 @@ public class EventualAssertionResult {
 
     private AssertionResult result;
 
-    public EventualAssertionResult(@NonNull final Duration timeout) {
-        this(false, timeout);
-    }
-
     public EventualAssertionResult(final boolean hasPassedIfNothingFailed, @NonNull final Duration timeout) {
         this.hasPassedIfNothingFailed = hasPassedIfNothingFailed;
         this.timeout = requireNonNull(timeout);

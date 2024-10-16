@@ -104,6 +104,7 @@ import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.TokenType;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
@@ -188,7 +189,8 @@ public class CryptoUpdateSuite {
                 .toArray(String[]::new);
         return hapiTest(
                 recordStreamMustIncludePassFrom(
-                        visibleNonSyntheticItems(keyRotationsValidator(evmAddresses), allTxnIds)),
+                        visibleNonSyntheticItems(keyRotationsValidator(evmAddresses), allTxnIds),
+                        Duration.ofSeconds(10)),
                 // --- CREATE ACCOUNTS ---
                 // The account with a long-zero EVM address
                 cryptoCreate("longZero")
