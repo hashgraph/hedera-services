@@ -181,7 +181,7 @@ jobs:
       # Now that the XTS suite has run we should be able to tag for promotion
       - name: Tag for XTS promotion
         run: |
-          EPOCH_TIME=`date -j -f "%a %b %d %T %Z %Y" "\`LC_ALL=C date\`" "+%s"`
+          EPOCH_TIME=`+%s`
           TAG=xts-pass-${EPOCH_TIME}
           git tag --annotate ${TAG} --message "Tagging commit for build candidate promotion"
           git push --set-upstream origin --tags
