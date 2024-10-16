@@ -19,7 +19,7 @@ package com.hedera.node.app.state.recordcache;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.DUPLICATE_TRANSACTION;
 import static com.hedera.hapi.util.HapiUtils.TIMESTAMP_COMPARATOR;
 import static com.hedera.hapi.util.HapiUtils.isBefore;
-import static com.hedera.node.app.spi.records.RecordCache.matches;
+import static com.hedera.node.app.spi.records.RecordCache.matchesExceptNonce;
 import static com.hedera.node.app.state.HederaRecordCache.DuplicateCheckResult.NO_DUPLICATE;
 import static com.hedera.node.app.state.HederaRecordCache.DuplicateCheckResult.OTHER_NODE;
 import static com.hedera.node.app.state.HederaRecordCache.DuplicateCheckResult.SAME_NODE;
@@ -159,7 +159,7 @@ public class RecordCacheImpl implements HederaRecordCache {
      * @param recordSources The sources of records for the relevant base {@link TransactionID}
      */
     private record HistorySource(@NonNull Set<Long> nodeIds, @NonNull List<RecordSource> recordSources)
-            implements Receipts {
+            implements ReceiptSource {
         public HistorySource() {
             this(new HashSet<>(), new ArrayList<>());
         }
@@ -171,12 +171,12 @@ public class RecordCacheImpl implements HederaRecordCache {
                 return PENDING_RECEIPT;
             }
             final var firstPriorityReceipt = recordSources.getFirst().receiptOf(txnId);
-            if (!NON_UNIQUE_FAILURES.contains(firstPriorityReceipt.status())) {
+            if (!NODE_FAILURES.contains(firstPriorityReceipt.status())) {
                 return firstPriorityReceipt;
             } else {
                 for (int i = 1, n = recordSources.size(); i < n; i++) {
                     final var nextPriorityReceipt = recordSources.get(i).receiptOf(txnId);
-                    if (!NON_UNIQUE_FAILURES.contains(nextPriorityReceipt.status())) {
+                    if (!NODE_FAILURES.contains(nextPriorityReceipt.status())) {
                         return nextPriorityReceipt;
                     }
                 }
@@ -226,7 +226,7 @@ public class RecordCacheImpl implements HederaRecordCache {
             for (final var recordSource : recordSources) {
                 recordSource.forEachTxnRecord(txnRecord -> {
                     final var txnId = txnRecord.transactionIDOrThrow();
-                    if (matches(txnId, userTxnId)) {
+                    if (matchesExceptNonce(txnId, userTxnId)) {
                         final var source = txnId.nonce() > 0 ? childRecords : duplicateRecords;
                         source.add(txnRecord);
                     }
@@ -280,15 +280,15 @@ public class RecordCacheImpl implements HederaRecordCache {
                 // Honest nodes use the set of node ids that have submitted classifiable transactions with this id to
                 // classify user versus node duplicates; so reconstructing the set here is critical for deterministic
                 // transaction handling across all nodes in the network
-                if (!NON_UNIQUE_FAILURES.contains(receipt.status())) {
+                if (!NODE_FAILURES.contains(receipt.status())) {
                     historySource.nodeIds().add(receipt.nodeId());
                 }
                 // These steps only make a partial transaction record available for answering queries, and are not
                 // of critical importance for the operation of the node
                 if (historySource.recordSources().isEmpty()) {
-                    historySource.recordSources().add(new ListRecordSource());
+                    historySource.recordSources().add(new PartialRecordSource());
                 }
-                ((ListRecordSource) historySource.recordSources.getFirst()).incorporate(asTxnRecord(receipt));
+                ((PartialRecordSource) historySource.recordSources.getFirst()).incorporate(asTxnRecord(receipt));
                 payerTxnIds
                         .computeIfAbsent(txnId.accountIDOrThrow(), ignored -> new HashSet<>())
                         .add(txnId);
@@ -315,7 +315,7 @@ public class RecordCacheImpl implements HederaRecordCache {
                     txnId.nonce() == 0 ? txnId : txnId.copyBuilder().nonce(0).build();
             final var historySource = historySources.computeIfAbsent(baseTxnId, ignore -> new HistorySource());
             // We don't let improperly submitted transactions keep properly submitted transactions from using an id
-            if (!NON_UNIQUE_FAILURES.contains(status)) {
+            if (!NODE_FAILURES.contains(status)) {
                 historySource.nodeIds().add(nodeId);
             }
             // Only add each record source once per history; since very few record sources contain more than one
@@ -325,7 +325,7 @@ public class RecordCacheImpl implements HederaRecordCache {
                 historySource.recordSources.add(recordSource);
             }
             final AccountID effectivePayerId;
-            if (dueDiligenceFailure == DueDiligenceFailure.YES && matches(txnId, userTxnId)) {
+            if (dueDiligenceFailure == DueDiligenceFailure.YES && matchesExceptNonce(txnId, userTxnId)) {
                 effectivePayerId = requireNonNull(networkInfo.nodeInfo(nodeId)).accountId();
             } else {
                 effectivePayerId = txnId.accountIDOrThrow();
@@ -446,7 +446,7 @@ public class RecordCacheImpl implements HederaRecordCache {
     }
 
     @Override
-    public @Nullable Receipts getReceipts(@NonNull final TransactionID txnId) {
+    public @Nullable ReceiptSource getReceipts(@NonNull final TransactionID txnId) {
         requireNonNull(txnId);
         final var historySource = historySources.get(txnId);
         return historySource != null

@@ -443,17 +443,29 @@ public class BlockStreamBuilder
          */
         public RecordSource.IdentifiedReceipt toIdentifiedReceipt(@NonNull final BlockItemsTranslator translator) {
             requireNonNull(translator);
-            return toView(translator, View.IDENTIFIED_RECEIPT);
+            return toView(translator, View.RECEIPT);
         }
 
         /**
          * The view to translate to.
          */
         private enum View {
-            IDENTIFIED_RECEIPT,
+            RECEIPT,
             RECORD
         }
 
+        /**
+         * Uses a given translator to translate the block items into a view of the requested type. The steps are,
+         * <ol>
+         *     <li>Find the {@link TransactionResult} in this builder's items.</li>
+         *     <li>Find the {@link TransactionOutput} items, if any.</li>
+         *     <li>Translate these items into a view of the requested type.</li>
+         * </ol>
+         * @param translator the translator to use
+         * @param view the type of view to translate to
+         * @return the translated view
+         * @param <T> the Java type of the view
+         */
         @SuppressWarnings("unchecked")
         private <T extends Record> T toView(@NonNull final BlockItemsTranslator translator, @NonNull final View view) {
             int i = 0;
@@ -474,7 +486,7 @@ public class BlockStreamBuilder
                 }
                 return (T)
                         switch (view) {
-                            case IDENTIFIED_RECEIPT -> new RecordSource.IdentifiedReceipt(
+                            case RECEIPT -> new RecordSource.IdentifiedReceipt(
                                     translationContext.txnId(),
                                     translator.translateReceipt(translationContext, result, outputs));
                             case RECORD -> translator.translateRecord(translationContext, result, outputs);
@@ -482,7 +494,7 @@ public class BlockStreamBuilder
             } else {
                 return (T)
                         switch (view) {
-                            case IDENTIFIED_RECEIPT -> new RecordSource.IdentifiedReceipt(
+                            case RECEIPT -> new RecordSource.IdentifiedReceipt(
                                     translationContext.txnId(),
                                     translator.translateReceipt(translationContext, result));
                             case RECORD -> translator.translateRecord(translationContext, result);
@@ -1147,6 +1159,11 @@ public class BlockStreamBuilder
         return BlockItem.newBuilder().transactionOutput(output).build();
     }
 
+    /**
+     * Returns the {@link TranslationContext} that will be needed to easily translate this builder's items into
+     * a {@link TransactionRecord} or {@link TransactionReceipt} if needed to answer a query.
+     * @return the translation context
+     */
     private TranslationContext translationContext() {
         return switch (requireNonNull(functionality)) {
             case CONTRACT_CALL,

@@ -21,12 +21,19 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.transaction.TransactionReceipt;
 import com.hedera.hapi.node.transaction.TransactionRecord;
+import com.hedera.node.app.spi.workflows.HandleContext.SavepointStack;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 import java.util.function.Consumer;
 
 /**
  * A source of {@link TransactionRecord}s and {@link TransactionReceipt}s for one or more {@link TransactionID}'s.
+ * <p>
+ * <b>(FUTURE) Important:</b> It would be much simpler if this interface was scoped to a single {@link TransactionID},
+ * but that adds overhead in the current system where a single {@link SavepointStack} commit flushes builders for
+ * unrelated ids.
+ * <p>
+ * Once we refactor to use a separate {@link SavepointStack} for each id, we can simplify this interface.
  */
 public interface RecordSource {
     /**

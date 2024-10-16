@@ -54,7 +54,7 @@ public interface RecordCache {
      * For mono-service fidelity, records with these statuses do not prevent valid transactions with
      * the same id from reaching consensus and being handled.
      */
-    Set<ResponseCodeEnum> NON_UNIQUE_FAILURES = EnumSet.of(INVALID_NODE_ACCOUNT, INVALID_PAYER_SIGNATURE);
+    Set<ResponseCodeEnum> NODE_FAILURES = EnumSet.of(INVALID_NODE_ACCOUNT, INVALID_PAYER_SIGNATURE);
 
     /**
      * And when ordering records for queries, we treat records with unclassifiable statuses as the
@@ -67,9 +67,9 @@ public interface RecordCache {
     @SuppressWarnings("java:S3358")
     Comparator<TransactionRecord> RECORD_COMPARATOR = Comparator.<TransactionRecord, ResponseCodeEnum>comparing(
                     rec -> rec.receiptOrThrow().status(),
-                    (a, b) -> NON_UNIQUE_FAILURES.contains(a) == NON_UNIQUE_FAILURES.contains(b)
+                    (a, b) -> NODE_FAILURES.contains(a) == NODE_FAILURES.contains(b)
                             ? 0
-                            : (NON_UNIQUE_FAILURES.contains(b) ? -1 : 1))
+                            : (NODE_FAILURES.contains(b) ? -1 : 1))
             .thenComparing(rec -> rec.consensusTimestampOrElse(Timestamp.DEFAULT), TIMESTAMP_COMPARATOR);
 
     /**
@@ -78,7 +78,7 @@ public interface RecordCache {
      * @param bTxnId the second transaction ID
      * @return true if the two transaction IDs are equal in all fields except for the nonce
      */
-    static boolean matches(@NonNull final TransactionID aTxnId, @NonNull final TransactionID bTxnId) {
+    static boolean matchesExceptNonce(@NonNull final TransactionID aTxnId, @NonNull final TransactionID bTxnId) {
         requireNonNull(aTxnId);
         requireNonNull(bTxnId);
         return aTxnId.accountIDOrElse(AccountID.DEFAULT).equals(bTxnId.accountIDOrElse(AccountID.DEFAULT))
@@ -96,13 +96,13 @@ public interface RecordCache {
     static boolean isChild(@NonNull final TransactionID aTxnId, @NonNull final TransactionID bTxnId) {
         requireNonNull(aTxnId);
         requireNonNull(bTxnId);
-        return aTxnId.nonce() == 0 && bTxnId.nonce() != 0 && matches(aTxnId, bTxnId);
+        return aTxnId.nonce() == 0 && bTxnId.nonce() != 0 && matchesExceptNonce(aTxnId, bTxnId);
     }
 
     /**
      * Just the receipts for a source of one or more {@link TransactionID}s instead of the full records.
      */
-    interface Receipts {
+    interface ReceiptSource {
         /**
          * This receipt is returned whenever we know there is a transaction pending (i.e. we have a history for a
          * transaction ID), but we do not yet have a record for it.
@@ -111,9 +111,9 @@ public interface RecordCache {
                 TransactionReceipt.newBuilder().status(UNKNOWN).build();
 
         /**
-         * The "priority" receipt for the transaction id, if known; or {@link Receipts#PENDING_RECEIPT} if there are no
+         * The "priority" receipt for the transaction id, if known; or {@link ReceiptSource#PENDING_RECEIPT} if there are no
          * consensus receipts with this id. (The priority receipt is the first receipt in the id's history that had a
-         * status not in {@link RecordCache#NON_UNIQUE_FAILURES}; or if all its receipts have such statuses, the first
+         * status not in {@link RecordCache#NODE_FAILURES}; or if all its receipts have such statuses, the first
          * one to have reached consensus.)
          * @return the priority receipt, if known
          */
@@ -129,7 +129,7 @@ public interface RecordCache {
 
         /**
          * All the duplicate receipts for the transaction id, if any, with the statuses in
-         * {@link RecordCache#NON_UNIQUE_FAILURES} coming last. The list is otherwise ordered by consensus timestamp.
+         * {@link RecordCache#NODE_FAILURES} coming last. The list is otherwise ordered by consensus timestamp.
          * @return the duplicate receipts, if any
          */
         @NonNull
@@ -185,7 +185,7 @@ public interface RecordCache {
 
         public @NonNull TransactionReceipt priorityReceipt() {
             return records.isEmpty()
-                    ? Receipts.PENDING_RECEIPT
+                    ? ReceiptSource.PENDING_RECEIPT
                     : sortedRecords().getFirst().receiptOrThrow();
         }
 
@@ -246,7 +246,7 @@ public interface RecordCache {
      * @return the receipts, if any, stored in this cache for the given transaction ID
      */
     @Nullable
-    Receipts getReceipts(@NonNull TransactionID transactionID);
+    ReceiptSource getReceipts(@NonNull TransactionID transactionID);
 
     /**
      * Gets a list of all records for the given {@link AccountID}. The {@link AccountID} is the account of the Payer of

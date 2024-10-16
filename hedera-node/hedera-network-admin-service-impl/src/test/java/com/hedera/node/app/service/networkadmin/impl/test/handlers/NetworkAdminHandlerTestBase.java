@@ -54,7 +54,7 @@ import com.hedera.node.app.state.DeduplicationCache;
 import com.hedera.node.app.state.HederaRecordCache;
 import com.hedera.node.app.state.WorkingStateAccessor;
 import com.hedera.node.app.state.recordcache.DeduplicationCacheImpl;
-import com.hedera.node.app.state.recordcache.ListRecordSource;
+import com.hedera.node.app.state.recordcache.PartialRecordSource;
 import com.hedera.node.app.state.recordcache.RecordCacheImpl;
 import com.hedera.node.app.state.recordcache.RecordCacheService;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
@@ -309,27 +309,27 @@ public class NetworkAdminHandlerTestBase {
                 0,
                 primaryRecord.transactionIDOrThrow(),
                 HederaRecordCache.DueDiligenceFailure.NO,
-                new ListRecordSource(List.of(primaryRecord)));
+                new PartialRecordSource(List.of(primaryRecord)));
         cache.addRecordSource(
                 1,
                 duplicate1.transactionIDOrThrow(),
                 HederaRecordCache.DueDiligenceFailure.NO,
-                new ListRecordSource(List.of(duplicate1)));
+                new PartialRecordSource(List.of(duplicate1)));
         cache.addRecordSource(
                 2,
                 duplicate2.transactionIDOrThrow(),
                 HederaRecordCache.DueDiligenceFailure.NO,
-                new ListRecordSource(List.of(duplicate2)));
+                new PartialRecordSource(List.of(duplicate2)));
         cache.addRecordSource(
                 3,
                 duplicate3.transactionIDOrThrow(),
                 HederaRecordCache.DueDiligenceFailure.NO,
-                new ListRecordSource(List.of(duplicate3)));
+                new PartialRecordSource(List.of(duplicate3)));
         cache.addRecordSource(
                 0,
                 otherTxnId,
                 HederaRecordCache.DueDiligenceFailure.NO,
-                new ListRecordSource(List.of(otherRecord, recordOne, recordTwo, recordThree)));
+                new PartialRecordSource(List.of(otherRecord, recordOne, recordTwo, recordThree)));
     }
 
     protected MapReadableKVState<AccountID, Account> readableAccountState() {

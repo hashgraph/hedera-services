@@ -35,20 +35,20 @@ import java.util.function.Consumer;
  * {@link BlockStreamConfig#streamMode()} is {@link StreamMode#BLOCKS} to  support queryable partial records after
  * reconnect or restart.
  */
-public class ListRecordSource implements RecordSource {
+public class PartialRecordSource implements RecordSource {
     private final List<TransactionRecord> precomputedRecords;
     private final List<IdentifiedReceipt> identifiedReceipts;
 
-    public ListRecordSource() {
+    public PartialRecordSource() {
         this.precomputedRecords = new ArrayList<>();
         this.identifiedReceipts = new ArrayList<>();
     }
 
-    public ListRecordSource(@NonNull final TransactionRecord precomputedRecord) {
+    public PartialRecordSource(@NonNull final TransactionRecord precomputedRecord) {
         this(List.of(precomputedRecord));
     }
 
-    public ListRecordSource(@NonNull final List<TransactionRecord> precomputedRecords) {
+    public PartialRecordSource(@NonNull final List<TransactionRecord> precomputedRecords) {
         requireNonNull(precomputedRecords);
         this.precomputedRecords = requireNonNull(precomputedRecords);
         identifiedReceipts = new ArrayList<>();

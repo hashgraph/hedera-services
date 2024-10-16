@@ -48,7 +48,7 @@ import com.hedera.node.app.service.networkadmin.impl.handlers.NetworkTransaction
 import com.hedera.node.app.spi.workflows.QueryContext;
 import com.hedera.node.app.state.HederaRecordCache;
 import com.hedera.node.app.state.SingleTransactionRecord;
-import com.hedera.node.app.state.recordcache.ListRecordSource;
+import com.hedera.node.app.state.recordcache.PartialRecordSource;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -143,7 +143,7 @@ class NetworkTransactionGetReceiptHandlerTest extends NetworkAdminHandlerTestBas
                 0L,
                 topLevelId,
                 HederaRecordCache.DueDiligenceFailure.NO,
-                new ListRecordSource(List.of(
+                new PartialRecordSource(List.of(
                         TransactionRecord.newBuilder()
                                 .transactionID(topLevelId)
                                 .receipt(TransactionReceipt.newBuilder()
@@ -191,7 +191,7 @@ class NetworkTransactionGetReceiptHandlerTest extends NetworkAdminHandlerTestBas
                 0L,
                 topLevelId,
                 HederaRecordCache.DueDiligenceFailure.NO,
-                new ListRecordSource(List.of(
+                new PartialRecordSource(List.of(
                         TransactionRecord.newBuilder()
                                 .transactionID(topLevelId)
                                 .receipt(TransactionReceipt.newBuilder()

@@ -41,9 +41,8 @@ class RecordCacheTest {
 
     @Test
     void constantsAsExpected() {
-        assertThat(RecordCache.NON_UNIQUE_FAILURES)
-                .containsExactlyInAnyOrder(INVALID_PAYER_SIGNATURE, INVALID_NODE_ACCOUNT);
-        assertThat(RecordCache.Receipts.PENDING_RECEIPT)
+        assertThat(RecordCache.NODE_FAILURES).containsExactlyInAnyOrder(INVALID_PAYER_SIGNATURE, INVALID_NODE_ACCOUNT);
+        assertThat(RecordCache.ReceiptSource.PENDING_RECEIPT)
                 .isEqualTo(TransactionReceipt.newBuilder().status(UNKNOWN).build());
     }
 
@@ -83,25 +82,25 @@ class RecordCacheTest {
 
     @Test
     void idsMatchEvenIfNonceDiffers() {
-        assertThat(RecordCache.matches(
+        assertThat(RecordCache.matchesExceptNonce(
                         USER_TXN_ID, USER_TXN_ID.copyBuilder().nonce(1).build()))
                 .isTrue();
     }
 
     @Test
     void idsDontMatchIfAnythingButNonceDiffers() {
-        assertThat(RecordCache.matches(
+        assertThat(RecordCache.matchesExceptNonce(
                         USER_TXN_ID,
                         USER_TXN_ID
                                 .copyBuilder()
                                 .transactionValidStart(Timestamp.DEFAULT)
                                 .build()))
                 .isFalse();
-        assertThat(RecordCache.matches(
+        assertThat(RecordCache.matchesExceptNonce(
                         USER_TXN_ID,
                         USER_TXN_ID.copyBuilder().accountID(AccountID.DEFAULT).build()))
                 .isFalse();
-        assertThat(RecordCache.matches(
+        assertThat(RecordCache.matchesExceptNonce(
                         USER_TXN_ID, USER_TXN_ID.copyBuilder().scheduled(false).build()))
                 .isFalse();
     }
@@ -134,7 +133,7 @@ class RecordCacheTest {
     void emptyHistoryAsExpected() {
         final var subject = new RecordCache.History();
         assertThat(subject.userTransactionRecord()).isNull();
-        assertThat(subject.priorityReceipt()).isSameAs(RecordCache.Receipts.PENDING_RECEIPT);
+        assertThat(subject.priorityReceipt()).isSameAs(RecordCache.ReceiptSource.PENDING_RECEIPT);
         assertThat(subject.duplicateRecords()).isEmpty();
         assertThat(subject.duplicateCount()).isZero();
         assertThat(subject.orderedRecords()).isEmpty();
