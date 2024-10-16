@@ -20,6 +20,7 @@ import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.swirlds.common.SerializableX509Certificate;
 import com.swirlds.common.crypto.internal.CryptoUtils;
 import com.swirlds.common.test.fixtures.io.InputOutputStream;
 import edu.umd.cs.findbugs.annotations.NonNull;

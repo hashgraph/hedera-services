@@ -16,10 +16,10 @@
 
 package com.swirlds.platform.state.address;
 
+import com.swirlds.common.AddressBook;
 import com.swirlds.common.metrics.FunctionGauge;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.metrics.api.Metrics;
-import com.swirlds.platform.system.address.AddressBook;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**

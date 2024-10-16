@@ -19,11 +19,11 @@ package com.swirlds.platform.gossip.sync;
 import static com.swirlds.logging.legacy.LogMarker.FREEZE;
 import static com.swirlds.metrics.api.Metrics.INTERNAL_CATEGORY;
 
+import com.hedera.service.gossip.FallenBehindManager;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.metrics.FunctionGauge;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.eventhandling.EventConfig;
-import com.swirlds.platform.gossip.FallenBehindManager;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 import java.util.Objects;

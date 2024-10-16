@@ -18,11 +18,11 @@ package com.swirlds.platform.test.fixtures.addressbook;
 
 import static org.mockito.Mockito.mock;
 
+import com.swirlds.common.Address;
+import com.swirlds.common.AddressBook;
+import com.swirlds.common.SerializableX509Certificate;
 import com.swirlds.common.platform.NodeId;
-import com.swirlds.platform.crypto.SerializableX509Certificate;
 import com.swirlds.platform.system.Platform;
-import com.swirlds.platform.system.address.Address;
-import com.swirlds.platform.system.address.AddressBook;
 import java.security.cert.X509Certificate;
 import java.util.List;
 

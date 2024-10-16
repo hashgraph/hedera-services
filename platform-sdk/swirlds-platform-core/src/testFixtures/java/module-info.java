@@ -12,6 +12,7 @@ open module com.swirlds.platform.core.test.fixtures {
     requires com.swirlds.logging;
     requires com.swirlds.merkledb;
     requires com.hedera.pbj.runtime;
+    requires com.hedera.service.gossip;
     requires org.apache.logging.log4j;
     requires org.junit.jupiter.api;
     requires org.mockito;

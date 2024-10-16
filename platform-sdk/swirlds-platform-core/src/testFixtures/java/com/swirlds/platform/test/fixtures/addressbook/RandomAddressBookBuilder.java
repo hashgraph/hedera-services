@@ -20,11 +20,11 @@ import static com.swirlds.common.utility.CommonUtils.nameToAlias;
 import static com.swirlds.platform.crypto.KeyCertPurpose.AGREEMENT;
 import static com.swirlds.platform.crypto.KeyCertPurpose.SIGNING;
 
+import com.swirlds.common.AddressBook;
+import com.swirlds.common.SerializableX509Certificate;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.crypto.KeysAndCerts;
 import com.swirlds.platform.crypto.PublicStores;
-import com.swirlds.platform.crypto.SerializableX509Certificate;
-import com.swirlds.platform.system.address.AddressBook;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.HashMap;
 import java.util.Map;

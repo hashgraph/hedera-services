@@ -18,12 +18,12 @@ package com.swirlds.platform.network.connectivity;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.swirlds.common.AddressBook;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.Utilities;
 import com.swirlds.platform.crypto.KeysAndCerts;
 import com.swirlds.platform.network.NetworkUtils;
 import com.swirlds.platform.network.PeerInfo;
-import com.swirlds.platform.system.address.AddressBook;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.net.ServerSocket;
 import java.net.Socket;

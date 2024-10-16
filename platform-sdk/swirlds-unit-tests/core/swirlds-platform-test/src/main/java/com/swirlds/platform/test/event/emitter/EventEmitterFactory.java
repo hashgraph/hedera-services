@@ -16,8 +16,8 @@
 
 package com.swirlds.platform.test.event.emitter;
 
+import com.swirlds.common.AddressBook;
 import com.swirlds.common.context.PlatformContext;
-import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.test.event.source.EventSourceFactory;
 import com.swirlds.platform.test.event.source.ForkingEventSource;
 import com.swirlds.platform.test.fixtures.event.generator.StandardGraphGenerator;

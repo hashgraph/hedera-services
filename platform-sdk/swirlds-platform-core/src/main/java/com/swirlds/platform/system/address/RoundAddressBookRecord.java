@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.system.address;
 
+import com.swirlds.common.AddressBook;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**

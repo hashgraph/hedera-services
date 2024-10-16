@@ -27,6 +27,7 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 
 import com.hedera.hapi.platform.event.GossipEvent;
+import com.hedera.service.gossip.IntakeEventCounter;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
@@ -35,7 +36,6 @@ import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.event.deduplication.EventDeduplicator;
 import com.swirlds.platform.event.deduplication.StandardEventDeduplicator;
 import com.swirlds.platform.eventhandling.EventConfig_;
-import com.swirlds.platform.gossip.IntakeEventCounter;
 import com.swirlds.platform.system.events.EventConstants;
 import com.swirlds.platform.test.fixtures.event.TestingEventBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;

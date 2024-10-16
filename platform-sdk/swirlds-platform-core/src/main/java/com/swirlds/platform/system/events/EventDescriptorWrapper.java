@@ -20,13 +20,13 @@ import static com.swirlds.common.io.streams.SerializableStreamConstants.NULL_LIS
 import static com.swirlds.common.io.streams.SerializableStreamConstants.NULL_VERSION;
 
 import com.hedera.hapi.platform.event.EventDescriptor;
+import com.swirlds.common.AddressBook;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.exceptions.InvalidVersionException;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.event.AncientMode;
-import com.swirlds.platform.system.address.AddressBook;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
