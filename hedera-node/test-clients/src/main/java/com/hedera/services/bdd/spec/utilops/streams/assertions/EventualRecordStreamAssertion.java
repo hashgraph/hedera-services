@@ -28,6 +28,7 @@ import com.hedera.services.stream.proto.TransactionSidecarRecord;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.function.Function;
 
 /**
@@ -69,10 +70,32 @@ public class EventualRecordStreamAssertion extends AbstractEventualStreamAsserti
         return new EventualRecordStreamAssertion(assertionFactory, false);
     }
 
+    /**
+     * Returns an {@link EventualRecordStreamAssertion} that will pass only if the given assertion explicitly
+     * passes within the default timeout.
+     * @param assertionFactory the assertion factory
+     * @return the eventual record stream assertion that must pass
+     */
+    public static EventualRecordStreamAssertion eventuallyAssertingExplicitPass(
+            @NonNull final Function<HapiSpec, RecordStreamAssertion> assertionFactory,
+            @NonNull final Duration timeout) {
+        requireNonNull(assertionFactory);
+        requireNonNull(timeout);
+        return new EventualRecordStreamAssertion(assertionFactory, false, timeout);
+    }
+
     private EventualRecordStreamAssertion(
             @NonNull final Function<HapiSpec, RecordStreamAssertion> assertionFactory,
             final boolean hasPassedIfNothingFailed) {
         super(hasPassedIfNothingFailed);
+        this.assertionFactory = requireNonNull(assertionFactory);
+    }
+
+    private EventualRecordStreamAssertion(
+            @NonNull final Function<HapiSpec, RecordStreamAssertion> assertionFactory,
+            final boolean hasPassedIfNothingFailed,
+            @NonNull final Duration timeout) {
+        super(hasPassedIfNothingFailed, timeout);
         this.assertionFactory = requireNonNull(assertionFactory);
     }
 
