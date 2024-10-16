@@ -16,7 +16,12 @@
 
 package com.hedera.node.app.spi;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.FAIL_INVALID;
+
+import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.spi.signatures.SignatureVerifier;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.InstantSource;
 
 /**
@@ -24,6 +29,28 @@ import java.time.InstantSource;
  * shared functions like verifying signatures or computing the current instant.
  */
 public interface AppContext {
+    /**
+     * The {@link Gossip} interface is used to submit transactions to the network.
+     */
+    interface Gossip {
+        /**
+         * A {@link Gossip} that throws an exception indicating it should never have been used; for example,
+         * if the client code was running in a standalone mode.
+         */
+        Gossip UNAVAILABLE_GOSSIP = body -> {
+            throw new IllegalArgumentException("" + FAIL_INVALID);
+        };
+
+        /**
+         * Attempts to submit the given transaction to the network.
+         * @param body the transaction to submit
+         * @throws IllegalStateException if the network is not active; the client should retry later
+         * @throws IllegalArgumentException if body is invalid; so the client can retry immediately with a
+         * different transaction id if the exception's message is {@link ResponseCodeEnum#DUPLICATE_TRANSACTION}
+         */
+        void submit(@NonNull TransactionBody body);
+    }
+
     /**
      * The source of the current instant.
      * @return the instant source
@@ -35,4 +62,10 @@ public interface AppContext {
      * @return the signature verifier
      */
     SignatureVerifier signatureVerifier();
+
+    /**
+     * The {@link Gossip} can be used to submit transactions to the network when it is active.
+     * @return the gossip interface
+     */
+    Gossip gossip();
 }

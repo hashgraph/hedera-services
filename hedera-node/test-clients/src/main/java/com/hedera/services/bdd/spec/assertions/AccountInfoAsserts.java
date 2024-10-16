@@ -16,6 +16,7 @@
 
 package com.hedera.services.bdd.spec.assertions;
 
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.explicitFromHeadlong;
 import static com.hedera.services.bdd.suites.HapiSuite.EMPTY_KEY;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
 import static com.hederahashgraph.api.proto.java.CryptoGetInfoResponse.AccountInfo;
@@ -25,6 +26,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.esaulpaugh.headlong.abi.Address;
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.HapiSpec;
@@ -227,6 +229,16 @@ public class AccountInfoAsserts extends BaseErroringAssertsProvider<AccountInfo>
         registerProvider((spec, o) -> assertEquals(
                 CommonUtils.hex(evmAddress.toByteArray()), ((AccountInfo) o).getContractAccountID(), BAD_ALIAS));
         return this;
+    }
+
+    /**
+     * Asserts that the account has the given EVM address.
+     * @param evmAddress the EVM address
+     * @return this
+     */
+    public AccountInfoAsserts evmAddress(@NonNull final Address evmAddress) {
+        requireNonNull(evmAddress);
+        return evmAddress(ByteString.copyFrom(explicitFromHeadlong(evmAddress)));
     }
 
     public AccountInfoAsserts noAlias() {

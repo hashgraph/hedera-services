@@ -55,7 +55,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class DefaultMetricsTest {
 
-    private static final NodeId NODE_ID = new NodeId(42L);
+    private static final NodeId NODE_ID = NodeId.of(42L);
     private static final String CATEGORY_1 = "CaTeGoRy1";
     private static final String CATEGORY_1a = "CaTeGoRy1.a";
     private static final String CATEGORY_1b = "CaTeGoRy1.b";

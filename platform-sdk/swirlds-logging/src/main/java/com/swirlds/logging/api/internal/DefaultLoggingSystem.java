@@ -17,6 +17,7 @@
 package com.swirlds.logging.api.internal;
 
 import com.swirlds.base.internal.BaseExecutorFactory;
+import com.swirlds.base.utility.FileSystemUtils;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.config.api.source.ConfigSource;
@@ -31,6 +32,7 @@ import com.swirlds.logging.api.internal.configuration.InternalLoggingConfig;
 import com.swirlds.logging.api.internal.configuration.MarkerStateConverter;
 import com.swirlds.logging.api.internal.emergency.EmergencyLoggerImpl;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.time.Duration;
@@ -121,6 +123,10 @@ public class DefaultLoggingSystem {
         final Path configFilePath =
                 Optional.ofNullable(logConfigPath).map(Path::of).orElseGet(() -> Path.of("log.properties"));
         try {
+            if (!FileSystemUtils.waitForPathPresence(configFilePath)) {
+                throw new FileNotFoundException("File not found: " + configFilePath);
+            }
+
             final ConfigSource configSource = new PropertyFileConfigSource(configFilePath);
             return ConfigurationBuilder.create()
                     .withSource(configSource)

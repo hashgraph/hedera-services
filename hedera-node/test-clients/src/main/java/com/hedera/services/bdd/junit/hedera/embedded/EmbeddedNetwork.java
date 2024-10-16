@@ -72,7 +72,7 @@ public class EmbeddedNetwork extends AbstractNetwork {
     }
 
     public EmbeddedNetwork(@NonNull final String name, @NonNull final String workingDir) {
-        super(name, List.of(new EmbeddedNode(classicMetadataFor(0, name, FAKE_HOST, workingDir, 0, 0, 0, 0))));
+        super(name, List.of(new EmbeddedNode(classicMetadataFor(0, name, FAKE_HOST, workingDir, 0, 0, 0, 0, 0))));
         this.embeddedNode = (EmbeddedNode) nodes().getFirst();
         // Even though we are only embedding node0, we generate an address book
         // for a "classic" HapiTest network with 4 nodes so that tests can still
@@ -81,8 +81,8 @@ public class EmbeddedNetwork extends AbstractNetwork {
         this.configTxt = configTxtForLocal(
                 name(),
                 IntStream.range(0, CLASSIC_HAPI_TEST_NETWORK_SIZE)
-                        .<HederaNode>mapToObj(nodeId ->
-                                new EmbeddedNode(classicMetadataFor(nodeId, name, FAKE_HOST, workingDir, 0, 0, 0, 0)))
+                        .<HederaNode>mapToObj(nodeId -> new EmbeddedNode(
+                                classicMetadataFor(nodeId, name, FAKE_HOST, workingDir, 0, 0, 0, 0, 0)))
                         .toList(),
                 0,
                 0);
