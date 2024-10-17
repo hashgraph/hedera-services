@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,8 +16,6 @@
 
 package com.swirlds.platform.event.preconsensus;
 
-import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
-
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.event.PlatformEvent;
@@ -25,45 +23,27 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.util.ArrayDeque;
-import java.util.Deque;
 import java.util.Objects;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-/**
- * This object is responsible for writing events to the database.
- */
-public class DefaultPcesWriter implements PcesWriter {
-
-    private static final Logger logger = LogManager.getLogger(DefaultPcesWriter.class);
+public class DefaultInlinePcesWriter implements InlinePcesWriter {
+    private static final Logger logger = LogManager.getLogger(DefaultInlinePcesWriter.class);
 
     private final CommonPcesWriter commonPcesWriter;
-
-    /**
-     * A collection of outstanding flush requests
-     * <p>
-     * Each flush request is a sequence number that needs to be flushed to disk as soon as possible.
-     */
-    private final Deque<Long> flushRequests = new ArrayDeque<>();
-
     /**
      * Constructor
      *
      * @param platformContext the platform context
      * @param fileManager     manages all preconsensus event stream files currently on disk
      */
-    public DefaultPcesWriter(
+    public DefaultInlinePcesWriter(
             @NonNull final PlatformContext platformContext, @NonNull final PcesFileManager fileManager) {
         Objects.requireNonNull(platformContext, "platformContext is required");
         Objects.requireNonNull(fileManager, "fileManager is required");
-
         commonPcesWriter = new CommonPcesWriter(platformContext, fileManager);
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public void beginStreamingNewEvents() {
         commonPcesWriter.beginStreamingNewEvents();
@@ -72,9 +52,9 @@ public class DefaultPcesWriter implements PcesWriter {
     /**
      * {@inheritDoc}
      */
-    @Override
     @Nullable
-    public Long writeEvent(@NonNull final PlatformEvent event) {
+    @Override
+    public PlatformEvent writeEvent(@NonNull PlatformEvent event) {
         if (event.getStreamSequenceNumber() == PlatformEvent.NO_STREAM_SEQUENCE_NUMBER) {
             throw new IllegalStateException("Event must have a valid stream sequence number");
         }
@@ -83,7 +63,7 @@ public class DefaultPcesWriter implements PcesWriter {
         if (!commonPcesWriter.isStreamingNewEvents()) {
             commonPcesWriter.setLastWrittenEvent(event.getStreamSequenceNumber());
             commonPcesWriter.setLastFlushedEvent(event.getStreamSequenceNumber());
-            return event.getStreamSequenceNumber();
+            return event;
         }
 
         // don't do anything with ancient events
@@ -96,9 +76,10 @@ public class DefaultPcesWriter implements PcesWriter {
             commonPcesWriter.getCurrentMutableFile().writeEvent(event);
             commonPcesWriter.setLastWrittenEvent(event.getStreamSequenceNumber());
 
-            final boolean flushPerformed = processFlushRequests();
+            commonPcesWriter.getCurrentMutableFile().flush();
+            commonPcesWriter.setLastFlushedEvent(commonPcesWriter.getLastWrittenEvent());
 
-            return fileClosed || flushPerformed ? commonPcesWriter.getLastFlushedEvent() : null;
+            return event;
         } catch (final IOException e) {
             throw new UncheckedIOException(e);
         }
@@ -108,75 +89,20 @@ public class DefaultPcesWriter implements PcesWriter {
      * {@inheritDoc}
      */
     @Override
-    @Nullable
-    public Long registerDiscontinuity(@NonNull final Long newOriginRound) {
+    public void registerDiscontinuity(@NonNull Long newOriginRound) {
         commonPcesWriter.registerDiscontinuity(newOriginRound);
-        return commonPcesWriter.getLastFlushedEvent();
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    @Nullable
-    public Long submitFlushRequest(@NonNull final Long sequenceNumber) {
-        flushRequests.add(sequenceNumber);
-
-        return processFlushRequests() ? commonPcesWriter.getLastFlushedEvent() : null;
-    }
-
-    /**
-     * Consider outstanding flush requests and perform a flush if needed.
-     *
-     * @return true if a flush was performed, otherwise false
-     */
-    private boolean processFlushRequests() {
-        boolean flushRequired = false;
-        while (!flushRequests.isEmpty() && flushRequests.peekFirst() <= commonPcesWriter.getLastWrittenEvent()) {
-            final long flushRequest = flushRequests.removeFirst();
-
-            if (flushRequest > commonPcesWriter.getLastFlushedEvent()) {
-                flushRequired = true;
-            }
-        }
-
-        if (flushRequired) {
-            if (commonPcesWriter.getCurrentMutableFile() == null) {
-                logger.error(EXCEPTION.getMarker(), "Flush required, but no file is open. This should never happen");
-            }
-
-            try {
-                commonPcesWriter.getCurrentMutableFile().flush();
-            } catch (final IOException e) {
-                throw new UncheckedIOException(e);
-            }
-
-            commonPcesWriter.setLastFlushedEvent(commonPcesWriter.getLastWrittenEvent());
-        }
-
-        return flushRequired;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void updateNonAncientEventBoundary(@NonNull final EventWindow nonAncientBoundary) {
+    public void updateNonAncientEventBoundary(@NonNull EventWindow nonAncientBoundary) {
         commonPcesWriter.updateNonAncientEventBoundary(nonAncientBoundary);
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public void setMinimumAncientIdentifierToStore(@NonNull final Long minimumAncientIdentifierToStore) {
         commonPcesWriter.setMinimumAncientIdentifierToStore(minimumAncientIdentifierToStore);
-    }
-
-    /**
-     * Close the current mutable file.
-     */
-    public void closeCurrentMutableFile() {
-        commonPcesWriter.closeCurrentMutableFile();
     }
 }
