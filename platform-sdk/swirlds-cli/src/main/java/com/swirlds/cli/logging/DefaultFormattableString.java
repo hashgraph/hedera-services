@@ -23,12 +23,12 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  */
 public class DefaultFormattableString implements FormattableString {
     /**
-     * The original string
+     * The original string.
      */
     private final String originalString;
 
     /**
-     * Constructor
+     * Constructor.
      *
      * @param inputString the input string
      */

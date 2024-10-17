@@ -60,8 +60,8 @@ public record BaseTaskDefinition(@NonNull UUID id, @NonNull String type) {
     /**
      * Constructs a new task for the given callable.
      * @param callable the callable
-     * @return the task definition
      * @param <V> the type of the callable
+     * @return the task definition
      */
     @NonNull
     public static <V> BaseTaskDefinition of(@NonNull final Callable<V> callable) {

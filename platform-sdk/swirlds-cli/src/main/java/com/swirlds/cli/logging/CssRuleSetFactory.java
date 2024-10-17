@@ -32,7 +32,7 @@ public class CssRuleSetFactory {
     private final List<String> rules = new ArrayList<>();
 
     /**
-     * Create a string representing a CSS rule
+     * Create a string representing a CSS rule.
      *
      * @return the CSS rule string
      */
@@ -47,7 +47,7 @@ public class CssRuleSetFactory {
     }
 
     /**
-     * Add a rule that will be part of the output CSS
+     * Add a rule that will be part of the output CSS.
      *
      * @param selector     the CSS selector
      * @param declarations the CSS declarations
@@ -60,7 +60,7 @@ public class CssRuleSetFactory {
     }
 
     /**
-     * Generate the CSS string representing all the rules that have been added
+     * Generate the CSS string representing all the rules that have been added.
      *
      * @return the CSS string
      */

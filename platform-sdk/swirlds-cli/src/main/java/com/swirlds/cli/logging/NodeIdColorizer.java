@@ -22,16 +22,16 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
 
 /**
- * Utility class for determining the color of node ID text
+ * Utility class for determining the color of node ID text.
  */
 public class NodeIdColorizer {
     /**
-     * Hidden constructor
+     * Hidden constructor.
      */
     private NodeIdColorizer() {}
 
     /**
-     * Only define 24 colors, each separated by minimum of 15 degrees on the color wheel
+     * Only define 24 colors, each separated by minimum of 15 degrees on the color wheel.
      * <p>
      * Further specification isn't very helpful, since less than 15 degrees is too close to be easily distinguished
      */
@@ -63,7 +63,7 @@ public class NodeIdColorizer {
             );
 
     /**
-     * Get the color for a node id
+     * Get the color for a node id.
      * <p>
      * If the node ID cannot be used an index for the color list, then null is returned
      *
