@@ -98,3 +98,104 @@ jobs:
           git_user_signingkey: true
           gpg_private_key: ${{ secrets.SVCS_GPG_KEY_CONTENTS }}
           passphrase: ${{ secrets.SVCS_GPG_KEY_PASSPHRASE }}
+
+      - name: Tag Build Candidate
+        env:
+          BUILD_INDEX: ${{ vars.XTS_BUILD_PROMOTION_INDEX }}
+        run: |
+          printf -v BUILD_TAG "build-%05d" ${BUILD_INDEX}
+          git tag --annotate ${BUILD_TAG} --message "Tagging commit for build promotion"
+          git push --set-upstream origin --tags
+          echo "### Build Promotion Tag Information" >> $GITHUB_STEP_SUMMARY
+          echo "build-tag=${BUILD_TAG}" >> $GITHUB_STEP_SUMMARY
+
+      - name: Increment Build Promotion Index
+        uses: action-pack/increment@14c9f7fbbf560e7518ccaeab781aeca7bff15069 # v2.12
+        id: increment
+        with:
+          name: 'XTS_BUILD_PROMOTION_INDEX'
+          token: ${{ secrets.GH_ACCESS_TOKEN }}
+
+      - name: Preview Next Build
+        env:
+          NEXT_BUILD_ID: ${{ steps.increment.outputs.value }}
+        run: |
+          printf -v NEXT_BUILD_TAG "build-%05d" ${NEXT_BUILD_ID}
+          echo "### Preview Next Build Tag" >> $GITHUB_STEP_SUMMARY
+          echo "Next build tag is: ${NEXT_BUILD_TAG}" >> $GITHUB_STEP_SUMMARY
+
+  report-failure:
+    name: Report XTS execution failure
+    runs-on: network-node-linux-medium
+    needs:
+      - determine-build-candidate
+      - promote-build-candidate
+    if: ${{ !cancelled() && always() && (needs.determine-build-candidate.result != 'success' || needs.promote-build-candidate.result != 'success') }}
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@f086349bfa2bd1361f7909c78558e816508cdc10 # v2.8.0
+        with:
+          egress-policy: audit
+
+      - name: Report failure (slack)
+        uses: slackapi/slack-github-action@6c661ce58804a1a20f6dc5fbee7f0381b469e001 # v1.25.0
+        env:
+          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_CITR_WEBHOOK }}
+        with:
+          payload: |
+            {
+              "attachments": [
+                {
+                  "color": "#7647cd",
+                  "blocks": [
+                    {
+                      "type": "header",
+                      "text": {
+                        "type": "plain_text",
+                        "text": ":grey_exclamation: Hedera Services - Build Candidate Promotion Error Report",
+                        "emoji": true
+                      }
+                    },
+                    {
+                      "type": "divider"
+                    },
+                    {
+                      "type": "section",
+                      "text": {
+                        "type": "mrkdwn",
+                        "text": "*Build Candidate Promotion Job Resulted in failure. See status below.*"
+                      },
+                      "fields": [
+                        {
+                          "type": "plain_text",
+                          "text": "Fetch Latest Build Candidate"
+                        },
+                        {
+                          "type": "plain_text",
+                          "text": "${{ needs.determine-build-candidate.result }}"
+                        },
+                        {
+                          "type": "plain_text",
+                          "text": "Promote Build Candidate"
+                        },
+                        {
+                          "type": "plain_text",
+                          "text": "${{ needs.promote-build-candidate.result }}"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "divider"
+                    },
+                    {
+                      "type": "section",
+                      "text": {
+                        "type": "mrkdwn",
+                        "text": "*Source Commit*: \n<${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}>"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
