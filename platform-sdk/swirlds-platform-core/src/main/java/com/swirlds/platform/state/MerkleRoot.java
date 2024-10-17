@@ -57,7 +57,6 @@ public interface MerkleRoot extends MerkleInternal {
     @NonNull
     PlatformStateModifier getWritablePlatformState();
 
-
     /**
      * Set the platform state.
      *

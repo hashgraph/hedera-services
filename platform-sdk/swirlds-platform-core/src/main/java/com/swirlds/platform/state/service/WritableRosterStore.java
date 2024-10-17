@@ -28,9 +28,6 @@ import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.RosterStateId;
 import com.swirlds.platform.roster.RosterUtils;
 import com.swirlds.platform.roster.RosterValidator;
-import com.swirlds.platform.state.RosterStateAccessor;
-import com.swirlds.platform.state.RosterStateModifier;
-import com.swirlds.state.spi.CommittableWritableStates;
 import com.swirlds.state.spi.WritableKVState;
 import com.swirlds.state.spi.WritableSingletonState;
 import com.swirlds.state.spi.WritableStates;
@@ -41,12 +38,11 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * Read-write interface for accessing rosters states.
+ * Read-write implementation for accessing rosters states.
  */
-public class WritableRosterStore implements RosterStateModifier {
+public class WritableRosterStore {
 
-    private final WritableStates writableStates;
-    private final RosterStateAccessor rosterStateAccessor;
+    private final ReadableRosterStore rosterStateAccessor;
 
     /**
      * The roster state singleton. This is the state that holds the candidate roster hash and the list of pairs of
@@ -70,16 +66,18 @@ public class WritableRosterStore implements RosterStateModifier {
      * @param writableStates the readable states
      */
     public WritableRosterStore(@NonNull final WritableStates writableStates) {
-        this.writableStates = writableStates;
+        Objects.requireNonNull(writableStates);
         this.rosterStateAccessor = new ReadableRosterStore(writableStates);
         this.rosterState = writableStates.getSingleton(RosterStateId.ROSTER_STATES_KEY);
         this.rosterMap = writableStates.get(RosterStateId.ROSTER_KEY);
     }
 
     /**
-     * {@inheritDoc}
+     * Sets the candidate roster. This will be called to inform the platform of a new candidate roster.
+     * Setting the candidate roster indicates that this roster should be adopted as the active roster when required.
+     *
+     * @param candidateRoster a candidate roster to set. It must be a valid roster.
      */
-    @Override
     public void setCandidateRoster(@NonNull final Roster candidateRoster) {
         Objects.requireNonNull(candidateRoster);
         RosterValidator.validate(candidateRoster);
@@ -97,25 +95,33 @@ public class WritableRosterStore implements RosterStateModifier {
     }
 
     /**
-     * {@inheritDoc}
+     * Gets the candidate roster.
+     *
+     * @return the candidate roster
      */
     @Nullable
-    @Override
     public Roster getCandidateRoster() {
         return rosterStateAccessor.getCandidateRoster();
     }
 
     /**
-     * {@inheritDoc}
+     * Gets the active roster present in the state.
+     *
+     * @return the active roster if present. Null otherwise.
      */
     @Nullable
-    @Override
     public Roster getActiveRoster() {
         return rosterStateAccessor.getActiveRoster();
     }
 
     /**
-     * {@inheritDoc}
+     * Sets the Active roster.
+     * This will be called to store a new Active Roster in the state.
+     * The roster must be valid according to rules codified in {@link com.swirlds.platform.roster.RosterValidator}.
+     *
+     * @param roster an active roster to set
+     * @param round the round number in which the roster became active.
+     *              It must be a positive number greater than the round number of the current active roster.
      */
     public void setActiveRoster(@NonNull final Roster roster, final long round) {
         Objects.requireNonNull(roster);
@@ -168,7 +174,7 @@ public class WritableRosterStore implements RosterStateModifier {
     }
 
     /**
-     * Stores the roster in the roster map, updates the roster store with the provided builder, and commits the changes.
+     * Stores the roster in the roster map and updates the roster store with the provided builder.
      *
      * @param rosterToStore              the roster to store
      * @param rosterHash                   the hash of the roster
@@ -181,10 +187,6 @@ public class WritableRosterStore implements RosterStateModifier {
 
         this.rosterState.put(rosterStateBuilder.build());
         this.rosterMap.put(ProtoBytes.newBuilder().value(rosterHash).build(), rosterToStore);
-
-        if (writableStates instanceof final CommittableWritableStates committableWritableStates) {
-            committableWritableStates.commit();
-        }
     }
 
     /**

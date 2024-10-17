@@ -22,7 +22,6 @@ import com.hedera.hapi.node.state.roster.RosterState;
 import com.hedera.hapi.node.state.roster.RoundRosterPair;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.RosterStateId;
-import com.swirlds.platform.state.RosterStateAccessor;
 import com.swirlds.state.spi.ReadableKVState;
 import com.swirlds.state.spi.ReadableSingletonState;
 import com.swirlds.state.spi.ReadableStates;
@@ -32,9 +31,9 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * ReadableRosterStore implementation.
+ * Read-only implementation for accessing rosters states.
  */
-public class ReadableRosterStore implements RosterStateAccessor {
+public class ReadableRosterStore {
 
     /**
      * The roster state singleton. This is the state that holds the candidate roster hash and the list of pairs of round
@@ -58,8 +57,12 @@ public class ReadableRosterStore implements RosterStateAccessor {
         this.rosterMap = readableStates.get(RosterStateId.ROSTER_KEY);
     }
 
+    /**
+     * Gets the candidate roster if found in state or null otherwise.
+     *
+     * @return the candidate roster
+     */
     @Nullable
-    @Override
     public Roster getCandidateRoster() {
         final RosterState rosterStateSingleton = rosterState.get();
         if (rosterStateSingleton == null) {
@@ -80,7 +83,6 @@ public class ReadableRosterStore implements RosterStateAccessor {
      * @return the active roster
      */
     @Nullable
-    @Override
     public Roster getActiveRoster() {
         final RosterState rosterStateSingleton = rosterState.get();
         if (rosterStateSingleton == null) {

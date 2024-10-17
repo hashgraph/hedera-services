@@ -160,13 +160,6 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
     private MerkleRootSnapshotMetrics snapshotMetrics = new MerkleRootSnapshotMetrics();
 
     /**
-     * For the early round of migration, a writable state for the {@link RosterStateAccessor},
-     * just like the {@link WritablePlatformStateStore} can only be obtained from here and not the usual
-     * WritableStoreFactory instance.
-     */
-    private RosterStateModifier rosterStateModifier;
-
-    /**
      * Maintains information about each service, and each state of each service, known by this
      * instance. The key is the "service-name.state-key".
      */
@@ -1047,7 +1040,6 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
         }
         return writablePlatformStateStore();
     }
-
 
     /**
      * {@inheritDoc}
