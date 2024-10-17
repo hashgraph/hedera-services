@@ -16,10 +16,10 @@
 
 package com.swirlds.platform.state.iss;
 
+import com.swirlds.common.PlatformStatusAction;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.system.state.notifications.IssNotification;
 import com.swirlds.platform.system.status.actions.CatastrophicFailureAction;
-import com.swirlds.platform.system.status.actions.PlatformStatusAction;
 import com.swirlds.platform.wiring.components.StateAndRound;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.network.topology;
+package com.swirlds.common;
 
 import com.swirlds.common.platform.NodeId;
 import java.util.Set;

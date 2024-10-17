@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.system.status.actions;
 
+import com.swirlds.common.PlatformStatusAction;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 

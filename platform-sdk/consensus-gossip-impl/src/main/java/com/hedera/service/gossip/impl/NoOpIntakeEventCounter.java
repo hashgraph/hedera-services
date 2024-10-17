@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.gossip;
+package com.hedera.service.gossip.impl;
 
 import com.hedera.service.gossip.IntakeEventCounter;
 import com.swirlds.common.platform.NodeId;
