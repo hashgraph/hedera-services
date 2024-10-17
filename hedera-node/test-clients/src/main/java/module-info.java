@@ -61,6 +61,7 @@ module com.hedera.node.test.clients {
     exports com.hedera.services.bdd.junit.support.validators.utils;
     exports com.hedera.services.bdd.junit.support.validators.block;
     exports com.hedera.services.bdd.utils;
+    exports com.hedera.services.bdd.junit.hedera.embedded.fakes.tss;
 
     requires transitive com.hedera.node.app.hapi.fees;
     requires transitive com.hedera.node.app.hapi.utils;
@@ -102,7 +103,7 @@ module com.hedera.node.test.clients {
     requires com.swirlds.platform.core.test.fixtures;
     requires com.fasterxml.jackson.core;
     requires com.fasterxml.jackson.databind;
-    requires com.github.docker.java.api;
+    requires com.github.dockerjava.api;
     requires com.sun.jna;
     requires io.grpc.netty;
     requires io.grpc.stub;

@@ -87,7 +87,7 @@ final class BlockRecordServiceTest {
                 assertEquals(
                         new RunningHashes(GENESIS_HASH, Bytes.EMPTY, Bytes.EMPTY, Bytes.EMPTY),
                         runningHashesCapture.getValue());
-                assertEquals(new BlockInfo(-1, EPOCH, Bytes.EMPTY, EPOCH, false, EPOCH), blockInfoCapture.getValue());
+                assertEquals(new BlockInfo(-1, EPOCH, Bytes.EMPTY, EPOCH, true, EPOCH), blockInfoCapture.getValue());
             } else {
                 assertThat(schema).isInstanceOf(V0560BlockRecordSchema.class);
             }

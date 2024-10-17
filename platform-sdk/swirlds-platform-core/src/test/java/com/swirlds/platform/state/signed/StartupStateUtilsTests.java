@@ -136,6 +136,9 @@ public class StartupStateUtilsTests {
                 .setEpoch(epoch)
                 .build();
 
+        // make the state immutable
+        signedState.getState().copy();
+
         final Path savedStateDirectory =
                 signedStateFilePath.getSignedStateDirectory(mainClassName, selfId, swirldName, round);
 

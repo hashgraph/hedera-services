@@ -46,6 +46,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.submitMessageTo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.updateInitCodeWithConstructorArgs;
 import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.asHeadlongAddress;
+import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromAccountToAlias;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.transactions.file.HapiFileUpdate.getUpdated121;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
@@ -105,6 +106,7 @@ import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.SpecOperation;
 import com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts;
 import com.hedera.services.bdd.spec.infrastructure.OpProvider;
+import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.queries.HapiQueryOp;
 import com.hedera.services.bdd.spec.queries.meta.HapiGetTxnRecord;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
@@ -217,7 +219,9 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalLong;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
@@ -565,6 +569,37 @@ public class UtilVerbs {
         return new WaitForStatusOp(NodeSelector.allNodes(), FREEZE_COMPLETE, timeout);
     }
 
+    /**
+     * Returns an operation that initiates background traffic running until the target network's
+     * first node has reached {@link com.swirlds.platform.system.status.PlatformStatus#FREEZE_COMPLETE}.
+     * @return the operation
+     */
+    public static SpecOperation runBackgroundTrafficUntilFreezeComplete() {
+        return withOpContext((spec, opLog) -> {
+            opLog.info("Starting background traffic until freeze complete");
+            final var stopTraffic = new AtomicBoolean();
+            CompletableFuture.runAsync(() -> {
+                while (!stopTraffic.get()) {
+                    allRunFor(
+                            spec,
+                            cryptoTransfer(tinyBarsFromTo(GENESIS, STAKING_REWARD, 1))
+                                    .deferStatusResolution()
+                                    .hasAnyStatusAtAll()
+                                    .orUnavailableStatus()
+                                    .noLogging());
+                }
+            });
+            spec.targetNetworkOrThrow()
+                    .nodes()
+                    .getFirst()
+                    .statusFuture(FREEZE_COMPLETE, (status) -> {})
+                    .thenRun(() -> {
+                        stopTraffic.set(true);
+                        opLog.info("Stopping background traffic after freeze complete");
+                    });
+        });
+    }
+
     public static HapiSpecSleep sleepFor(long timeMs) {
         return new HapiSpecSleep(timeMs);
     }
@@ -910,6 +945,21 @@ public class UtilVerbs {
     }
 
     /**
+     * Returns an operation that runs a given callback with the EVM address implied by the given key.
+     *
+     * @param obs the callback to run with the address
+     * @return the operation that runs the callback using the address
+     */
+    public static SpecOperation useAddressOfKey(@NonNull final String key, @NonNull final Consumer<Address> obs) {
+        return withOpContext((spec, opLog) -> {
+            final var publicKey = fromByteString(spec.registry().getKey(key).getECDSASecp256K1());
+            final var address =
+                    asHeadlongAddress(recoverAddressFromPubKey(publicKey).toByteArray());
+            obs.accept(address);
+        });
+    }
+
+    /**
      * Returns an operation that computes and executes a {@link SpecOperation} returned by a function whose
      * input is the EVM address implied by the given key.
      *
@@ -1015,6 +1065,73 @@ public class UtilVerbs {
         });
     }
 
+    /**
+     * Returns an operation that creates the requested number of HIP-32 auto-created accounts using a key alias
+     * of the given type, with names given by the given name function and default {@link HapiCryptoTransfer} using
+     * the standard transfer of tinybar to a key alias.
+     * @param n the number of HIP-32 accounts to create
+     * @param keyShape the type of key alias to use
+     * @param nameFn the function that computes the spec registry names for the accounts
+     * @return the operation
+     */
+    public static SpecOperation createHip32Auto(
+            final int n, @NonNull final KeyShape keyShape, @NonNull final IntFunction<String> nameFn) {
+        return createHip32Auto(
+                n,
+                keyShape,
+                nameFn,
+                keyName -> cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, keyName, ONE_HUNDRED_HBARS)));
+    }
+
+    /**
+     * The function that computes the spec registry names of the keys that
+     * {@link #createHollow(int, IntFunction, Function)} uses to create the hollow accounts.
+     */
+    public static final IntFunction<String> AUTO_CREATION_KEY_NAME_FN = i -> "forAutoCreated" + i;
+
+    /**
+     * Returns an operation that creates the requested number of HIP-32 auto-created accounts using a key alias
+     * of the given type, with names given by the given name function and {@link HapiCryptoTransfer} derived
+     * from the given factory.
+     * @param n the number of HIP-32 accounts to create
+     * @param keyShape the type of key alias to use
+     * @param nameFn the function that computes the spec registry names for the accounts
+     * @param creationFn the function that computes the creation operation for each account
+     * @return the operation
+     */
+    public static SpecOperation createHip32Auto(
+            final int n,
+            @NonNull final KeyShape keyShape,
+            @NonNull final IntFunction<String> nameFn,
+            @NonNull final Function<String, HapiCryptoTransfer> creationFn) {
+        requireNonNull(nameFn);
+        requireNonNull(keyShape);
+        requireNonNull(creationFn);
+        return withOpContext((spec, opLog) -> {
+            final List<AccountID> createdIds = new ArrayList<>();
+            final List<String> keyNames = new ArrayList<>();
+            for (int i = 0; i < n; i++) {
+                final var keyName = AUTO_CREATION_KEY_NAME_FN.apply(i);
+                keyNames.add(keyName);
+                allRunFor(spec, newKeyNamed(keyName).shape(keyShape));
+            }
+            allRunFor(
+                    spec,
+                    blockingOrder(keyNames.stream()
+                            .map(keyName -> blockingOrder(
+                                    creationFn.apply(keyName).via("hip32" + keyName),
+                                    getTxnRecord("hip32" + keyName)
+                                            .exposingCreationsTo(
+                                                    creations -> createdIds.add(asAccount(creations.getFirst())))))
+                            .toArray(SpecOperation[]::new)));
+            for (int i = 0; i < n; i++) {
+                final var name = nameFn.apply(i);
+                spec.registry().saveKey(name, spec.registry().getKey(keyNames.get(i)));
+                spec.registry().saveAccountId(name, createdIds.get(i));
+            }
+        });
+    }
+
     public static HapiSpecOperation overridingTwo(
             final String aProperty, final String aValue, final String bProperty, final String bValue) {
         return overridingAllOf(Map.of(
@@ -1072,6 +1189,20 @@ public class UtilVerbs {
     public static EventualRecordStreamAssertion recordStreamMustIncludePassFrom(
             @NonNull final Function<HapiSpec, RecordStreamAssertion> assertion) {
         return EventualRecordStreamAssertion.eventuallyAssertingExplicitPass(assertion);
+    }
+
+    /**
+     * Returns an operation that asserts that the record stream must include a pass from the given assertion
+     * before its timeout elapses.
+     * @param assertion the assertion to apply to the record stream
+     * @param timeout the timeout for the assertion
+     * @return the operation that asserts a passing record stream
+     */
+    public static EventualRecordStreamAssertion recordStreamMustIncludePassFrom(
+            @NonNull final Function<HapiSpec, RecordStreamAssertion> assertion, @NonNull final Duration timeout) {
+        requireNonNull(assertion);
+        requireNonNull(timeout);
+        return EventualRecordStreamAssertion.eventuallyAssertingExplicitPass(assertion, timeout);
     }
 
     /**
