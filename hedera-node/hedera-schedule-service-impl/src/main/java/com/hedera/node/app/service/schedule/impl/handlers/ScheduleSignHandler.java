@@ -146,20 +146,21 @@ public class ScheduleSignHandler extends ScheduleManager implements TransactionH
                         final ScheduleKeysResult requiredKeysResult = allKeysForTransaction(scheduleToSign, context);
                         final Set<Key> allRequiredKeys = requiredKeysResult.remainingRequiredKeys();
                         final Set<Key> updatedSignatories = requiredKeysResult.updatedSignatories();
-                        if (!isLongTermEnabled
-                                && !scheduleToSign.waitForExpiry()
-                                && tryToExecuteSchedule(
-                                        context,
-                                        scheduleToSign,
-                                        allRequiredKeys,
-                                        updatedSignatories,
-                                        validationResult,
-                                        isLongTermEnabled)) {
-                            scheduleStore.put(HandlerUtility.replaceSignatoriesAndMarkExecuted(
-                                    scheduleToSign, updatedSignatories, currentConsensusTime));
-                        } else {
+                        if (isLongTermEnabled && scheduleToSign.waitForExpiry()) {
                             verifyHasNewSignatures(scheduleToSign.signatories(), updatedSignatories);
                             scheduleStore.put(HandlerUtility.replaceSignatories(scheduleToSign, updatedSignatories));
+                        } else {
+                            var isExecuted = tryToExecuteSchedule(
+                                    context,
+                                    scheduleToSign,
+                                    allRequiredKeys,
+                                    updatedSignatories,
+                                    validationResult,
+                                    isLongTermEnabled);
+                            if (isExecuted) {
+                                scheduleStore.put(HandlerUtility.replaceSignatoriesAndMarkExecuted(
+                                        scheduleToSign, updatedSignatories, currentConsensusTime));
+                            }
                         }
                         final ScheduleStreamBuilder scheduleRecords =
                                 context.savepointStack().getBaseBuilder(ScheduleStreamBuilder.class);
