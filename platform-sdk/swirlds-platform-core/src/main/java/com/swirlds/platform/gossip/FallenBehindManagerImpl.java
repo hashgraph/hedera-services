@@ -19,7 +19,6 @@ package com.swirlds.platform.gossip;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.network.topology.NetworkTopology;
-import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.status.StatusActionSubmitter;
 import com.swirlds.platform.system.status.actions.FallenBehindAction;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -71,13 +70,11 @@ public class FallenBehindManagerImpl implements FallenBehindManager {
     volatile int numReportFallenBehind;
 
     public FallenBehindManagerImpl(
-            @NonNull final AddressBook addressBook,
             @NonNull final NodeId selfId,
             @NonNull final NetworkTopology topology,
             @NonNull final StatusActionSubmitter statusActionSubmitter,
             @NonNull final Runnable fallenBehindCallback,
             @NonNull final ReconnectConfig config) {
-        Objects.requireNonNull(addressBook, "addressBook");
         Objects.requireNonNull(selfId, "selfId");
         Objects.requireNonNull(topology, "topology");
 

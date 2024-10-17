@@ -16,12 +16,15 @@
 
 package com.swirlds.platform.consensus;
 
+import com.hedera.hapi.node.state.roster.Roster;
+import com.hedera.hapi.node.state.roster.RosterEntry;
 import com.swirlds.logging.legacy.LogMarker;
 import com.swirlds.platform.internal.EventImpl;
+import com.swirlds.platform.roster.RosterUtils;
 import com.swirlds.platform.state.MinimumJudgeInfo;
-import com.swirlds.platform.system.address.AddressBook;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.stream.LongStream;
 import org.apache.logging.log4j.LogManager;
@@ -39,7 +42,7 @@ public class ConsensusRounds {
     /** stores the minimum judge ancient identifier for all decided and non-expired rounds */
     private final SequentialRingBuffer<MinimumJudgeInfo> minimumJudgeStorage;
     /** the only address book currently in use, until address book changes are implemented */
-    private final AddressBook addressBook;
+    private final Map<Long, RosterEntry> rosterEntryMap;
     /** The maximum round created of all the known witnesses */
     private long maxRoundCreated = ConsensusConstants.ROUND_UNDEFINED;
     /** The round we are currently voting on */
@@ -49,10 +52,10 @@ public class ConsensusRounds {
     public ConsensusRounds(
             @NonNull final ConsensusConfig config,
             @NonNull final SequentialRingBuffer<MinimumJudgeInfo> minimumJudgeStorage,
-            @NonNull final AddressBook addressBook) {
+            @NonNull final Roster roster) {
         this.config = Objects.requireNonNull(config);
         this.minimumJudgeStorage = Objects.requireNonNull(minimumJudgeStorage);
-        this.addressBook = Objects.requireNonNull(addressBook);
+        this.rosterEntryMap = RosterUtils.toMap(Objects.requireNonNull(roster));
         reset();
     }
 
@@ -87,7 +90,8 @@ public class ConsensusRounds {
         // theorem says this witness can't be famous if round R+2 exists
         // if this is true, we immediately mark this witness as not famous without any elections
         // also, if the witness is not in the AB, we decide that it's not famous
-        if (maxRoundCreated >= witness.getRoundCreated() + 2 || !addressBook.contains(witness.getCreatorId())) {
+        if (maxRoundCreated >= witness.getRoundCreated() + 2
+                || !rosterEntryMap.containsKey(witness.getCreatorId().id())) {
             witness.setFamous(false);
             witness.setFameDecided(true);
             return;

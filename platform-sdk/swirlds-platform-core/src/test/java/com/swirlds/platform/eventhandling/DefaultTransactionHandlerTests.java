@@ -24,6 +24,7 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.verify;
 
+import com.hedera.hapi.node.state.roster.Roster;
 import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.consensus.SyntheticSnapshot;
@@ -31,10 +32,9 @@ import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.gossip.shadowgraph.Generations;
 import com.swirlds.platform.internal.ConsensusRound;
-import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.events.ConsensusEvent;
 import com.swirlds.platform.system.status.actions.FreezePeriodEnteredAction;
-import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
+import com.swirlds.platform.test.fixtures.addressbook.RandomRosterBuilder;
 import com.swirlds.platform.test.fixtures.event.TestingEventBuilder;
 import com.swirlds.platform.wiring.components.StateAndRound;
 import java.util.List;
@@ -49,12 +49,12 @@ import org.junit.jupiter.params.provider.CsvSource;
  */
 class DefaultTransactionHandlerTests {
     private Randotron random;
-    private AddressBook addressBook;
+    private Roster roster;
 
     @BeforeEach
     void setUp() {
         random = Randotron.create();
-        addressBook = RandomAddressBookBuilder.create(random)
+        roster = RandomRosterBuilder.create(random)
                 .withRealKeysEnabled(false)
                 .withSize(4)
                 .build();
@@ -88,7 +88,7 @@ class DefaultTransactionHandlerTests {
         final PlatformEvent keystone = new TestingEventBuilder(random).build();
         keystone.signalPrehandleCompletion();
         final ConsensusRound round = new ConsensusRound(
-                addressBook,
+                roster,
                 events,
                 keystone,
                 new Generations(),
@@ -105,7 +105,7 @@ class DefaultTransactionHandlerTests {
     @ParameterizedTest
     @CsvSource({"false", "true"})
     void normalOperation(final boolean pcesRound) throws InterruptedException {
-        final TransactionHandlerTester tester = new TransactionHandlerTester(addressBook);
+        final TransactionHandlerTester tester = new TransactionHandlerTester(roster);
         final ConsensusRound consensusRound = newConsensusRound(pcesRound);
 
         final StateAndRound handlerOutput = tester.getTransactionHandler().handleConsensusRound(consensusRound);
@@ -153,7 +153,7 @@ class DefaultTransactionHandlerTests {
     @Test
     @DisplayName("Round in freeze period")
     void freezeHandling() throws InterruptedException {
-        final TransactionHandlerTester tester = new TransactionHandlerTester(addressBook);
+        final TransactionHandlerTester tester = new TransactionHandlerTester(roster);
         final ConsensusRound consensusRound = newConsensusRound(false);
         tester.getPlatformState().setFreezeTime(consensusRound.getConsensusTimestamp());
 

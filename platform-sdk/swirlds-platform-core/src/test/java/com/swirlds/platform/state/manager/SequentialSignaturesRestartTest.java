@@ -23,6 +23,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 
+import com.hedera.hapi.node.state.roster.Roster;
+import com.hedera.hapi.node.state.roster.RosterEntry;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.Signature;
@@ -30,12 +32,11 @@ import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.platform.components.state.output.StateHasEnoughSignaturesConsumer;
 import com.swirlds.platform.components.state.output.StateLacksSignaturesConsumer;
+import com.swirlds.platform.roster.RosterUtils;
 import com.swirlds.platform.state.StateSignatureCollectorTester;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
-import com.swirlds.platform.system.address.Address;
-import com.swirlds.platform.system.address.AddressBook;
-import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
+import com.swirlds.platform.test.fixtures.addressbook.RandomRosterBuilder;
 import com.swirlds.platform.test.fixtures.state.RandomSignedStateGenerator;
 import java.util.HashMap;
 import java.util.Map;
@@ -52,9 +53,9 @@ public class SequentialSignaturesRestartTest extends AbstractStateSignatureColle
 
     private final int roundAgeToSign = 3;
 
-    private final AddressBook addressBook = RandomAddressBookBuilder.create(random)
+    private final Roster roster = RandomRosterBuilder.create(random)
             .withSize(4)
-            .withWeightDistributionStrategy(RandomAddressBookBuilder.WeightDistributionStrategy.BALANCED)
+            .withWeightDistributionStrategy(RandomRosterBuilder.WeightDistributionStrategy.BALANCED)
             .build();
 
     private final long firstRound = 50;
@@ -97,12 +98,15 @@ public class SequentialSignaturesRestartTest extends AbstractStateSignatureColle
         // Simulate a restart (i.e. loading a state from disk)
         final Hash stateHash = randomHash(random);
         final Map<NodeId, Signature> signatures = new HashMap<>();
-        for (final Address address : addressBook) {
-            signatures.put(address.getNodeId(), buildFakeSignature(address.getSigPublicKey(), stateHash));
+        for (final RosterEntry address : roster.rosterEntries()) {
+            signatures.put(
+                    NodeId.of(address.nodeId()),
+                    buildFakeSignature(
+                            RosterUtils.fetchGossipCaCertificate(address).getPublicKey(), stateHash));
         }
 
         final SignedState stateFromDisk = new RandomSignedStateGenerator(random)
-                .setAddressBook(addressBook)
+                .setRoster(roster)
                 .setRound(firstRound)
                 .setSignatures(signatures)
                 .build();
@@ -119,7 +123,7 @@ public class SequentialSignaturesRestartTest extends AbstractStateSignatureColle
         final int count = 100;
         for (int round = (int) firstRound + 1; round < count + firstRound; round++) {
             final SignedState signedState = new RandomSignedStateGenerator(random)
-                    .setAddressBook(addressBook)
+                    .setRoster(roster)
                     .setRound(round)
                     .setSignatures(new HashMap<>())
                     .build();
@@ -131,11 +135,23 @@ public class SequentialSignaturesRestartTest extends AbstractStateSignatureColle
 
             // Add some signatures to one of the previous states
             final long roundToSign = round - roundAgeToSign;
-            addSignature(manager, roundToSign, addressBook.getNodeId(0));
-            addSignature(manager, roundToSign, addressBook.getNodeId(1));
-            addSignature(manager, roundToSign, addressBook.getNodeId(2));
+            addSignature(
+                    manager,
+                    roundToSign,
+                    NodeId.of(roster.rosterEntries().get(0).nodeId()));
+            addSignature(
+                    manager,
+                    roundToSign,
+                    NodeId.of(roster.rosterEntries().get(1).nodeId()));
+            addSignature(
+                    manager,
+                    roundToSign,
+                    NodeId.of(roster.rosterEntries().get(2).nodeId()));
             if (random.nextBoolean()) {
-                addSignature(manager, roundToSign, addressBook.getNodeId(1));
+                addSignature(
+                        manager,
+                        roundToSign,
+                        NodeId.of(roster.rosterEntries().get(1).nodeId()));
             }
 
             try (final ReservedSignedState lastCompletedState = manager.getLatestSignedState("test")) {

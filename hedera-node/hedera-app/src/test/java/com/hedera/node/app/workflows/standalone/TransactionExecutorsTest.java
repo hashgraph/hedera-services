@@ -72,8 +72,9 @@ import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.crypto.CryptoStatic;
+import com.swirlds.platform.roster.RosterAddressBookBuilder;
 import com.swirlds.platform.system.address.AddressBook;
-import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
+import com.swirlds.platform.test.fixtures.addressbook.RandomRosterBuilder;
 import com.swirlds.state.State;
 import com.swirlds.state.spi.CommittableWritableStates;
 import com.swirlds.state.spi.WritableStates;
@@ -292,10 +293,10 @@ class TransactionExecutorsTest {
     private NetworkInfo fakeNetworkInfo() {
         final var addressBook = new AddressBook(StreamSupport.stream(
                         Spliterators.spliteratorUnknownSize(
-                                RandomAddressBookBuilder.create(new Random())
-                                        .withSize(1)
-                                        .withRealKeysEnabled(true)
-                                        .build()
+                                RosterAddressBookBuilder.buildAddressBook(RandomRosterBuilder.create(new Random())
+                                                .withSize(1)
+                                                .withRealKeysEnabled(true)
+                                                .build())
                                         .iterator(),
                                 0),
                         false)

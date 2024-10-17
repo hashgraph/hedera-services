@@ -20,6 +20,7 @@ import static com.swirlds.logging.legacy.LogMarker.CONSENSUS_VOTING;
 import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 import static com.swirlds.platform.consensus.ConsensusConstants.FIRST_CONSENSUS_NUMBER;
 
+import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.hapi.platform.event.EventConsensusData;
 import com.hedera.hapi.util.HapiUtils;
 import com.swirlds.base.time.Time;
@@ -48,7 +49,7 @@ import com.swirlds.platform.gossip.shadowgraph.Generations;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.metrics.ConsensusMetrics;
-import com.swirlds.platform.system.address.AddressBook;
+import com.swirlds.platform.roster.RosterUtils;
 import com.swirlds.platform.util.MarkerFileWriter;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -60,6 +61,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -160,7 +162,11 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
     /** wall clock time */
     private final Time time;
     /** the only address book currently, until address book changes are implemented */
-    private final AddressBook addressBook;
+    private final Roster roster;
+    /** a helper view of the roster */
+    private final Map<Long, Integer> rosterIndicesMap;
+
+    private final long rosterTotalWeight;
     /** metrics related to consensus */
     private final ConsensusMetrics consensusMetrics;
     /** used for searching the hashgraph */
@@ -224,21 +230,23 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
      *
      * @param platformContext  the platform context containing configuration
      * @param consensusMetrics metrics related to consensus
-     * @param addressBook      the global address book, which never changes
+     * @param roster           the global roster, which never changes
      */
     public ConsensusImpl(
             @NonNull final PlatformContext platformContext,
             @NonNull final ConsensusMetrics consensusMetrics,
-            @NonNull final AddressBook addressBook) {
+            @NonNull final Roster roster) {
         super(platformContext);
         this.time = platformContext.getTime();
         this.markerFileWriter = new MarkerFileWriter(platformContext);
         this.consensusMetrics = consensusMetrics;
 
-        // until we implement address book changes, we will just use the use this address book
-        this.addressBook = addressBook;
+        // until we implement roster changes, we will just use the use this roster
+        this.roster = roster;
+        this.rosterIndicesMap = RosterUtils.toIndicesMap(roster);
+        this.rosterTotalWeight = RosterUtils.computeTotalWeight(roster);
 
-        this.rounds = new ConsensusRounds(config, getStorage(), addressBook);
+        this.rounds = new ConsensusRounds(config, getStorage(), roster);
         this.ancientMode = platformContext
                 .getConfiguration()
                 .getConfigData(EventConfig.class)
@@ -603,7 +611,7 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
                 noWeight += weight;
             }
         }
-        final long totalWeight = addressBook.getTotalWeight();
+        final long totalWeight = rosterTotalWeight;
         final boolean superMajority = Threshold.SUPER_MAJORITY.isSatisfiedBy(yesWeight, totalWeight)
                 || Threshold.SUPER_MAJORITY.isSatisfiedBy(noWeight, totalWeight);
         final boolean countingVote = yesWeight >= noWeight;
@@ -665,7 +673,8 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
     private boolean firstVote(@NonNull final EventImpl voting, @NonNull final EventImpl votedOn) {
         // first round of an election. Vote TRUE for self-ancestors of those you firstSee. Don't
         // decide.
-        EventImpl w = firstSee(voting, addressBook.getIndexOfNodeId(votedOn.getCreatorId()));
+        EventImpl w = firstSee(
+                voting, rosterIndicesMap.getOrDefault(votedOn.getCreatorId().id(), -1));
         while (w != null && w.getRoundCreated() > voting.getRoundCreated() - 1 && selfParent(w) != null) {
             w = firstSelfWitnessS(selfParent(w));
         }
@@ -681,7 +690,7 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
      */
     @NonNull
     private List<EventImpl> getStronglySeenInPreviousRound(final EventImpl event) {
-        final int numMembers = addressBook.getSize();
+        final int numMembers = roster.rosterEntries().size();
         final ArrayList<EventImpl> stronglySeen = new ArrayList<>(numMembers);
         for (long m = 0; m < numMembers; m++) {
             final EventImpl s = stronglySeeS1(event, m);
@@ -759,7 +768,7 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
                 Math.max(previousRoundNonExpired, decidedRoundNumber - config.roundsExpired() + 1));
 
         return new ConsensusRound(
-                addressBook,
+                roster,
                 consensusEvents,
                 recentEvents.get(recentEvents.size() - 1).getBaseEvent(),
                 new Generations(this),
@@ -789,14 +798,14 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
             markerFileWriter.writeMarkerFile(NO_JUDGES_MARKER_FILE);
             noJudgeLogger.error(LogMarker.ERROR.getMarker(), "no judges in round = {}", decidedRoundNumber);
         } else {
-            if (!Threshold.SUPER_MAJORITY.isSatisfiedBy(judgeWeights, addressBook.getTotalWeight())) {
+            if (!Threshold.SUPER_MAJORITY.isSatisfiedBy(judgeWeights, rosterTotalWeight)) {
                 markerFileWriter.writeMarkerFile(NO_SUPER_MAJORITY_MARKER_FILE);
                 noSuperMajorityLogger.error(
                         LogMarker.ERROR.getMarker(),
                         "less than a super majority of weight on judges.  round = {}, judgesWeight = {}, percentage = {}",
                         decidedRoundNumber,
                         judgeWeights,
-                        (double) judgeWeights / addressBook.getTotalWeight());
+                        (double) judgeWeights / rosterTotalWeight);
             }
         }
     }
@@ -988,7 +997,7 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
             return x.getLastSee((int) m);
         }
         // memoize answers for all choices of m, then return answer for just this m
-        numMembers = addressBook.getSize();
+        numMembers = roster.rosterEntries().size();
         x.initLastSee(numMembers);
 
         op = otherParent(x);
@@ -1061,8 +1070,8 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
         }
         // calculate the answer, and remember it for next time
         // find and memoize answers for all choices of m, then return answer for just this m
-        final int numMembers = addressBook.getSize(); // number of members
-        final long totalWeight = addressBook.getTotalWeight(); // total stake in existence
+        final int numMembers = roster.rosterEntries().size(); // number of members
+        final long totalWeight = rosterTotalWeight; // total stake in existence
         final EventImpl sp = selfParent(x); // self parent
         final EventImpl op = otherParent(x); // other parent
         final long prx = parentRound(x); // parent round of x
@@ -1176,7 +1185,7 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
         }
 
         // number of members that are voting
-        final int numMembers = addressBook.getSize();
+        final int numMembers = roster.rosterEntries().size();
 
         // parents have equal rounds (not -1), so check if x can strongly see witnesses with a
         // supermajority of stake
@@ -1190,7 +1199,7 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
             }
         }
         consensusMetrics.witnessesStronglySeen(numStronglySeen);
-        if (Threshold.SUPER_MAJORITY.isSatisfiedBy(weight, addressBook.getTotalWeight())) {
+        if (Threshold.SUPER_MAJORITY.isSatisfiedBy(weight, rosterTotalWeight)) {
             // it's a supermajority, so advance to the next round
             x.setRoundCreated(1 + parentRound(x));
             consensusMetrics.roundIncrementedByStronglySeen();
@@ -1289,10 +1298,10 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
      * @return the weight of the node, or 0 if the node is not in the address book
      */
     private long getWeight(@NonNull final NodeId nodeId) {
-        if (!addressBook.contains(nodeId)) {
+        if (!rosterIndicesMap.containsKey(nodeId.id())) {
             return 0;
         }
-        return addressBook.getAddress(nodeId).getWeight();
+        return roster.rosterEntries().get(rosterIndicesMap.get(nodeId.id())).weight();
     }
 
     /**
@@ -1301,7 +1310,7 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
      * @return the weight of the node
      */
     private long getWeight(final int nodeIndex) {
-        return getWeight(addressBook.getNodeId(nodeIndex));
+        return getWeight(NodeId.of(roster.rosterEntries().get(nodeIndex).nodeId()));
     }
 
     /**
@@ -1311,9 +1320,9 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
      * @return true if this creator is in the address book and has the given index
      */
     private boolean creatorIndexEquals(@NonNull final EventImpl e, final int index) {
-        if (!addressBook.contains(e.getCreatorId())) {
+        if (!rosterIndicesMap.containsKey(e.getCreatorId().id())) {
             return false;
         }
-        return addressBook.getIndexOfNodeId(e.getCreatorId()) == index;
+        return rosterIndicesMap.get(e.getCreatorId().id()) == index;
     }
 }

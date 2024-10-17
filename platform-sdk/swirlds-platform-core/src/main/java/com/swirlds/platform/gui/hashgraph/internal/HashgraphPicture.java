@@ -19,12 +19,13 @@ package com.swirlds.platform.gui.hashgraph.internal;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.platform.gui.hashgraph.HashgraphGuiConstants.HASHGRAPH_PICTURE_FONT;
 
+import com.hedera.hapi.node.state.roster.Roster;
 import com.swirlds.platform.consensus.GraphGenerations;
 import com.swirlds.platform.gui.hashgraph.HashgraphGuiConstants;
 import com.swirlds.platform.gui.hashgraph.HashgraphGuiSource;
 import com.swirlds.platform.gui.hashgraph.HashgraphPictureOptions;
 import com.swirlds.platform.internal.EventImpl;
-import com.swirlds.platform.system.address.AddressBook;
+import com.swirlds.platform.roster.RosterUtils;
 import java.awt.AWTException;
 import java.awt.Color;
 import java.awt.Font;
@@ -38,6 +39,7 @@ import java.awt.image.BufferedImage;
 import java.io.Serial;
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 import javax.swing.JPanel;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -57,8 +59,8 @@ public class HashgraphPicture extends JPanel {
     /** used to store an image when the freeze checkbox is checked */
     private BufferedImage image = null;
 
-    private AddressBookMetadata nonExpandedMetadata;
-    private AddressBookMetadata expandedMetadata;
+    private RosterMetadata nonExpandedMetadata;
+    private RosterMetadata expandedMetadata;
 
     public HashgraphPicture(final HashgraphGuiSource hashgraphSource, final HashgraphPictureOptions options) {
         this.hashgraphSource = hashgraphSource;
@@ -70,8 +72,8 @@ public class HashgraphPicture extends JPanel {
 
     private void createMetadata() {
         if ((expandedMetadata == null || nonExpandedMetadata == null) && hashgraphSource.isReady()) {
-            expandedMetadata = new AddressBookMetadata(hashgraphSource.getAddressBook(), true);
-            nonExpandedMetadata = new AddressBookMetadata(hashgraphSource.getAddressBook(), false);
+            expandedMetadata = new RosterMetadata(hashgraphSource.getRoster(), true);
+            nonExpandedMetadata = new RosterMetadata(hashgraphSource.getRoster(), false);
         }
     }
 
@@ -89,9 +91,9 @@ public class HashgraphPicture extends JPanel {
             createMetadata();
             g.setFont(HASHGRAPH_PICTURE_FONT);
             final FontMetrics fm = g.getFontMetrics();
-            final AddressBook addressBook = hashgraphSource.getAddressBook();
-            final int numMem = addressBook.getSize();
-            final AddressBookMetadata currentMetadata = options.isExpanded() ? expandedMetadata : nonExpandedMetadata;
+            final Roster roster = hashgraphSource.getRoster();
+            final int numMem = roster.rosterEntries().size();
+            final RosterMetadata currentMetadata = options.isExpanded() ? expandedMetadata : nonExpandedMetadata;
 
             List<EventImpl> events;
             if (options.displayLatestEvents()) {
@@ -107,9 +109,10 @@ public class HashgraphPicture extends JPanel {
             if (events == null) { // in case a screen refresh happens before any events
                 return;
             }
+            final Map<Long, Integer> indicesMap = RosterUtils.toIndicesMap(roster);
             events = events.stream()
-                    .filter(e -> addressBook.contains(e.getCreatorId()))
-                    .filter(e -> addressBook.getIndexOfNodeId(e.getCreatorId()) < numMem)
+                    .filter(e -> indicesMap.containsKey(e.getCreatorId().id()))
+                    .filter(e -> indicesMap.get(e.getCreatorId().id()) < numMem)
                     .toList();
 
             pictureMetadata = new PictureMetadata(fm, this.getSize(), currentMetadata, events);
@@ -153,13 +156,14 @@ public class HashgraphPicture extends JPanel {
         g.setColor(HashgraphGuiUtils.eventColor(event, options));
         final EventImpl e1 = event.getSelfParent();
         EventImpl e2 = event.getOtherParent();
-        final AddressBook addressBook = hashgraphSource.getAddressBook();
-        if (e2 != null
-                && (!addressBook.contains(e2.getCreatorId())
-                        || addressBook.getIndexOfNodeId(e2.getCreatorId()) >= addressBook.getSize())) {
-            // if the creator of the other parent has been removed,
-            // treat it as if there is no other parent
-            e2 = null;
+        final Roster roster = hashgraphSource.getRoster();
+        if (e2 != null) {
+            final int index = RosterUtils.getIndex(roster, e2.getCreatorId().id());
+            if (index != -1 || index >= roster.rosterEntries().size()) {
+                // if the creator of the other parent has been removed,
+                // treat it as if there is no other parent
+                e2 = null;
+            }
         }
         if (e1 != null && e1.getGeneration() >= pictureMetadata.getMinGen()) {
             g.drawLine(
@@ -183,9 +187,10 @@ public class HashgraphPicture extends JPanel {
         final int fa = fm.getMaxAscent();
         final int fd = fm.getMaxDescent();
         final EventImpl e2 = event.getOtherParent() != null
-                        && hashgraphSource
-                                .getAddressBook()
-                                .contains(event.getOtherParent().getCreatorId())
+                        && RosterUtils.getIndex(
+                                        hashgraphSource.getRoster(),
+                                        event.getOtherParent().getCreatorId().id())
+                                != -1
                 ? event.getOtherParent()
                 : null;
         final Color color;

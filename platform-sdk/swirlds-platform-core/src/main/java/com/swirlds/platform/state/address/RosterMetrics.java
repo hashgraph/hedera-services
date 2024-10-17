@@ -19,33 +19,32 @@ package com.swirlds.platform.state.address;
 import com.swirlds.common.metrics.FunctionGauge;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.metrics.api.Metrics;
-import com.swirlds.platform.system.address.AddressBook;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
- * A utility class to encapsulate the metrics for the address book.
+ * A utility class to encapsulate the metrics for the roster.
  */
-public final class AddressBookMetrics {
+public final class RosterMetrics {
 
-    private AddressBookMetrics() {}
+    private RosterMetrics() {}
 
     /**
-     * Register the metrics for the address book.
+     * Register the metrics for the roster.
      *
      * @param metrics     the metrics engine
-     * @param addressBook the address book to register metrics for
+     * @param rosterSize  the size of the roster
      * @param selfId      the ID of the node
      */
-    public static void registerAddressBookMetrics(
-            @NonNull final Metrics metrics, @NonNull final AddressBook addressBook, @NonNull final NodeId selfId) {
+    public static void registerRosterMetrics(
+            @NonNull final Metrics metrics, @NonNull final int rosterSize, @NonNull final NodeId selfId) {
 
         metrics.getOrCreate(new FunctionGauge.Config<>(Metrics.INFO_CATEGORY, "memberID", Long.class, selfId::id)
                 .withUnit("nodeID")
                 .withDescription("The node ID number of this member"));
 
         metrics.getOrCreate(
-                new FunctionGauge.Config<>(Metrics.INFO_CATEGORY, "members", Integer.class, addressBook::getSize)
+                new FunctionGauge.Config<>(Metrics.INFO_CATEGORY, "members", Integer.class, () -> rosterSize)
                         .withUnit("count")
-                        .withDescription("total number of nodes currently in the address book"));
+                        .withDescription("total number of nodes currently in the roster"));
     }
 }

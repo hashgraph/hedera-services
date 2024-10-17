@@ -18,13 +18,14 @@ package com.swirlds.platform.proof.algorithms;
 
 import static com.swirlds.common.crypto.DigestType.SHA_384;
 
+import com.hedera.hapi.node.state.roster.Roster;
+import com.hedera.hapi.node.state.roster.RosterEntry;
 import com.swirlds.common.crypto.Cryptography;
-import com.swirlds.common.platform.NodeId;
+import com.swirlds.platform.crypto.CryptoStatic;
 import com.swirlds.platform.proof.SignatureVerifier;
 import com.swirlds.platform.proof.tree.StateProofInternalNode;
 import com.swirlds.platform.proof.tree.StateProofNode;
-import com.swirlds.platform.system.address.Address;
-import com.swirlds.platform.system.address.AddressBook;
+import com.swirlds.platform.roster.RosterUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.security.MessageDigest;
 import java.util.Deque;
@@ -43,7 +44,7 @@ public final class StateProofUtils {
     /**
      * Compute the weight of all signatures in a state proof that are valid.
      *
-     * @param addressBook       the address book to use for verification, should be a trusted address book
+     * @param roster            the roster to use for verification, should be a trusted address book
      * @param signatures        the list of signatures to check
      * @param signatureVerifier a method that checks if a signature is valid
      * @param hashBytes         the bytes that were signed (i.e. the hash at the root of the state the proof was derived
@@ -51,35 +52,41 @@ public final class StateProofUtils {
      * @return the total weight of all valid signatures
      */
     public static long computeValidSignatureWeight(
-            @NonNull final AddressBook addressBook,
+            @NonNull final Roster roster,
             @NonNull final List<NodeSignature> signatures,
             @NonNull final SignatureVerifier signatureVerifier,
             @NonNull final byte[] hashBytes) {
 
-        final Set<NodeId> signingNodes = new HashSet<>();
+        final Set<Long> signingNodes = new HashSet<>();
 
         long validWeight = 0;
         for (final NodeSignature nodeSignature : signatures) {
-            if (!signingNodes.add(nodeSignature.nodeId())) {
+            if (!signingNodes.add(nodeSignature.nodeId().id())) {
                 // Signature is not unique.
                 continue;
             }
 
-            if (!addressBook.contains(nodeSignature.nodeId())) {
+            if (RosterUtils.getIndex(roster, nodeSignature.nodeId().id()) == -1) {
                 // Signature is not in the address book.
                 continue;
             }
-            final Address address = addressBook.getAddress(nodeSignature.nodeId());
-            if (address.getWeight() == 0) {
+            final RosterEntry address =
+                    RosterUtils.getRosterEntry(roster, nodeSignature.nodeId().id());
+            if (address.weight() == 0) {
                 // Don't bother validating the signature of a zero weight node.
                 continue;
             }
 
-            if (!signatureVerifier.verifySignature(nodeSignature.signature(), hashBytes, address.getSigPublicKey())) {
+            if (!signatureVerifier.verifySignature(
+                    nodeSignature.signature(),
+                    hashBytes,
+                    CryptoStatic.generateCertificate(
+                                    address.gossipCaCertificate().toByteArray())
+                            .getPublicKey())) {
                 // Signature is invalid.
                 continue;
             }
-            validWeight += address.getWeight();
+            validWeight += address.weight();
         }
 
         return validWeight;

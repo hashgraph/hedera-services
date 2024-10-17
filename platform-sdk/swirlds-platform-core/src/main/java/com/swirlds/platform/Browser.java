@@ -40,6 +40,7 @@ import static com.swirlds.platform.util.BootstrapUtils.getNodesToRun;
 import static com.swirlds.platform.util.BootstrapUtils.loadSwirldMains;
 import static com.swirlds.platform.util.BootstrapUtils.setupBrowserWindow;
 
+import com.hedera.hapi.node.state.roster.Roster;
 import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.CryptographyFactory;
@@ -67,6 +68,7 @@ import com.swirlds.platform.gui.internal.WinBrowser;
 import com.swirlds.platform.gui.model.InfoApp;
 import com.swirlds.platform.gui.model.InfoMember;
 import com.swirlds.platform.gui.model.InfoSwirld;
+import com.swirlds.platform.roster.RosterRetriever;
 import com.swirlds.platform.state.signed.HashedReservedSignedState;
 import com.swirlds.platform.state.snapshot.SignedStateFileUtils;
 import com.swirlds.platform.system.SwirldMain;
@@ -211,9 +213,10 @@ public class Browser {
             BootstrapUtils.setupConfigBuilder(guiConfigBuilder, getAbsolutePath(DEFAULT_SETTINGS_FILE_NAME));
             final Configuration guiConfig = guiConfigBuilder.build();
 
-            guiEventStorage = new GuiEventStorage(guiConfig, appDefinition.getConfigAddressBook());
+            final Roster roster = RosterRetriever.buildRoster(appDefinition.getConfigAddressBook());
+            guiEventStorage = new GuiEventStorage(guiConfig, roster);
 
-            guiSource = new StandardGuiSource(appDefinition.getConfigAddressBook(), guiEventStorage);
+            guiSource = new StandardGuiSource(roster, guiEventStorage);
         } else {
             guiSource = null;
             guiEventStorage = null;

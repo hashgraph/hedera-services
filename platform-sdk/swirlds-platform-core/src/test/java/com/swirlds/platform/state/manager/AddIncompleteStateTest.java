@@ -21,6 +21,8 @@ import static com.swirlds.platform.test.fixtures.state.manager.SignatureVerifica
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
+import com.hedera.hapi.node.state.roster.Roster;
+import com.hedera.hapi.node.state.roster.RosterEntry;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.Signature;
@@ -28,11 +30,10 @@ import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.platform.components.state.output.StateHasEnoughSignaturesConsumer;
 import com.swirlds.platform.components.state.output.StateLacksSignaturesConsumer;
+import com.swirlds.platform.roster.RosterUtils;
 import com.swirlds.platform.state.StateSignatureCollectorTester;
 import com.swirlds.platform.state.signed.SignedState;
-import com.swirlds.platform.system.address.Address;
-import com.swirlds.platform.system.address.AddressBook;
-import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
+import com.swirlds.platform.test.fixtures.addressbook.RandomRosterBuilder;
 import com.swirlds.platform.test.fixtures.state.RandomSignedStateGenerator;
 import java.util.HashMap;
 import java.util.Map;
@@ -49,9 +50,9 @@ class AddIncompleteStateTest extends AbstractStateSignatureCollectorTest {
 
     private final int roundAgeToSign = 3;
 
-    private final AddressBook addressBook = RandomAddressBookBuilder.create(random)
+    private final Roster roster = RandomRosterBuilder.create(random)
             .withSize(4)
-            .withWeightDistributionStrategy(RandomAddressBookBuilder.WeightDistributionStrategy.BALANCED)
+            .withWeightDistributionStrategy(RandomRosterBuilder.WeightDistributionStrategy.BALANCED)
             .build();
 
     /**
@@ -92,13 +93,16 @@ class AddIncompleteStateTest extends AbstractStateSignatureCollectorTest {
         // Simulate a restart (i.e. loading a state from disk)
         final Hash signedHash = randomHash(random);
         final Map<NodeId, Signature> signatures = new HashMap<>();
-        for (final Address address : addressBook) {
-            signatures.put(address.getNodeId(), buildFakeSignature(address.getSigPublicKey(), signedHash));
+        for (final RosterEntry address : roster.rosterEntries()) {
+            signatures.put(
+                    NodeId.of(address.nodeId()),
+                    buildFakeSignature(
+                            RosterUtils.fetchGossipCaCertificate(address).getPublicKey(), signedHash));
         }
 
         final long firstRound = 50;
         final SignedState stateFromDisk = new RandomSignedStateGenerator(random)
-                .setAddressBook(addressBook)
+                .setRoster(roster)
                 .setRound(firstRound)
                 .setSignatures(signatures)
                 .build();

@@ -33,6 +33,7 @@ import com.swirlds.logging.legacy.payload.ReconnectStartPayload;
 import com.swirlds.platform.config.StateConfig;
 import com.swirlds.platform.metrics.ReconnectMetrics;
 import com.swirlds.platform.network.Connection;
+import com.swirlds.platform.roster.RosterUtils;
 import com.swirlds.platform.state.signed.SignedState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
@@ -249,7 +250,7 @@ public class ReconnectTeacher {
         sb.append(" (signing weight = ")
                 .append(signedState.getSigningWeight())
                 .append("/")
-                .append(signedState.getAddressBook().getTotalWeight())
+                .append(RosterUtils.computeTotalWeight(signedState.getRoster()))
                 .append(") for state hash ")
                 .append(signedState.getState().getHash());
 

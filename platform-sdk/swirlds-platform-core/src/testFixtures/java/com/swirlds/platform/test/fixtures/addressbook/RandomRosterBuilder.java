@@ -17,24 +17,24 @@
 package com.swirlds.platform.test.fixtures.addressbook;
 
 import static com.swirlds.common.utility.CommonUtils.nameToAlias;
-import static com.swirlds.platform.crypto.KeyCertPurpose.AGREEMENT;
 import static com.swirlds.platform.crypto.KeyCertPurpose.SIGNING;
 
+import com.hedera.hapi.node.state.roster.Roster;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.crypto.KeysAndCerts;
 import com.swirlds.platform.crypto.PublicStores;
 import com.swirlds.platform.crypto.SerializableX509Certificate;
-import com.swirlds.platform.system.address.AddressBook;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Random;
+import java.util.stream.IntStream;
 
 /**
- * A utility for generating a random address book.
+ * A utility for generating a random roster.
  */
-public class RandomAddressBookBuilder {
+public class RandomRosterBuilder {
 
     /**
      * All randomness comes from this.
@@ -42,12 +42,12 @@ public class RandomAddressBookBuilder {
     private final Random random;
 
     /**
-     * The number of addresses to put into the address book.
+     * The number of roster entries to put into the roster.
      */
     private int size = 4;
 
     /**
-     * Describes different ways that the random address book has its weight distributed if the custom strategy lambda is
+     * Describes different ways that the random roster has its weight distributed if the custom strategy lambda is
      * unset.
      */
     public enum WeightDistributionStrategy {
@@ -104,14 +104,14 @@ public class RandomAddressBookBuilder {
     private final Map<NodeId, KeysAndCerts> privateKeys = new HashMap<>();
 
     /**
-     * Create a new random address book generator.
+     * Create a new random roster generator.
      *
      * @param random a source of randomness
-     * @return a new random address book generator
+     * @return a new random roster generator
      */
     @NonNull
-    public static RandomAddressBookBuilder create(@NonNull final Random random) {
-        return new RandomAddressBookBuilder(random);
+    public static RandomRosterBuilder create(@NonNull final Random random) {
+        return new RandomRosterBuilder(random);
     }
 
     /**
@@ -119,42 +119,44 @@ public class RandomAddressBookBuilder {
      *
      * @param random a source of randomness
      */
-    private RandomAddressBookBuilder(@NonNull final Random random) {
+    private RandomRosterBuilder(@NonNull final Random random) {
         this.random = Objects.requireNonNull(random);
     }
 
     /**
-     * Build a random address book given the provided configuration.
+     * Build a random roster given the provided configuration.
      */
     @NonNull
-    public AddressBook build() {
-        final AddressBook addressBook = new AddressBook();
-        addressBook.setRound(Math.abs(random.nextLong()));
+    public Roster build() {
+        final Roster.Builder builder = Roster.newBuilder();
 
         if (maximumWeight == null && size > 0) {
             // We don't want the total weight to overflow a long
             maximumWeight = Long.MAX_VALUE / size;
         }
 
-        for (int index = 0; index < size; index++) {
-            final NodeId nodeId = getNextNodeId();
-            final RandomAddressBuilder addressBuilder =
-                    RandomAddressBuilder.create(random).withNodeId(nodeId).withWeight(getNextWeight());
+        builder.rosterEntries(IntStream.range(0, size)
+                .mapToObj(index -> {
+                    final NodeId nodeId = getNextNodeId();
+                    final RandomRosterEntryBuilder addressBuilder = RandomRosterEntryBuilder.create(random)
+                            .withNodeId(nodeId)
+                            .withWeight(getNextWeight());
 
-            generateKeys(nodeId, addressBuilder);
-            addressBook.add(addressBuilder.build());
-        }
+                    generateKeys(nodeId, addressBuilder);
+                    return addressBuilder.build();
+                })
+                .toList());
 
-        return addressBook;
+        return builder.build();
     }
 
     /**
-     * Set the size of the address book.
+     * Set the size of the roster.
      *
      * @return this object
      */
     @NonNull
-    public RandomAddressBookBuilder withSize(final int size) {
+    public RandomRosterBuilder withSize(final int size) {
         this.size = size;
         return this;
     }
@@ -167,7 +169,7 @@ public class RandomAddressBookBuilder {
      * @return this object
      */
     @NonNull
-    public RandomAddressBookBuilder withAverageWeight(final long averageWeight) {
+    public RandomRosterBuilder withAverageWeight(final long averageWeight) {
         this.averageWeight = averageWeight;
         return this;
     }
@@ -179,7 +181,7 @@ public class RandomAddressBookBuilder {
      * @return this object
      */
     @NonNull
-    public RandomAddressBookBuilder withWeightStandardDeviation(final long weightStandardDeviation) {
+    public RandomRosterBuilder withWeightStandardDeviation(final long weightStandardDeviation) {
         this.weightStandardDeviation = weightStandardDeviation;
         return this;
     }
@@ -190,7 +192,7 @@ public class RandomAddressBookBuilder {
      * @return this object
      */
     @NonNull
-    public RandomAddressBookBuilder withMinimumWeight(final long minimumWeight) {
+    public RandomRosterBuilder withMinimumWeight(final long minimumWeight) {
         this.minimumWeight = minimumWeight;
         return this;
     }
@@ -201,7 +203,7 @@ public class RandomAddressBookBuilder {
      * @return this object
      */
     @NonNull
-    public RandomAddressBookBuilder withMaximumWeight(final long maximumWeight) {
+    public RandomRosterBuilder withMaximumWeight(final long maximumWeight) {
         this.maximumWeight = maximumWeight;
         return this;
     }
@@ -212,7 +214,7 @@ public class RandomAddressBookBuilder {
      * @return this object
      */
     @NonNull
-    public RandomAddressBookBuilder withWeightDistributionStrategy(
+    public RandomRosterBuilder withWeightDistributionStrategy(
             final WeightDistributionStrategy weightDistributionStrategy) {
 
         this.weightDistributionStrategy = weightDistributionStrategy;
@@ -227,18 +229,18 @@ public class RandomAddressBookBuilder {
      * @return this object
      */
     @NonNull
-    public RandomAddressBookBuilder withRealKeysEnabled(final boolean realKeysEnabled) {
+    public RandomRosterBuilder withRealKeysEnabled(final boolean realKeysEnabled) {
         this.realKeys = realKeysEnabled;
         return this;
     }
 
     /**
-     * Get the private keys for a node. Should only be called after the address book has been built and only if
+     * Get the private keys for a node. Should only be called after the roster has been built and only if
      * {@link #withRealKeysEnabled(boolean)} was set to true.
      *
      * @param nodeId the node id
      * @return the private keys
-     * @throws IllegalStateException if real keys are not being generated or the address book has not been built
+     * @throws IllegalStateException if real keys are not being generated or the roster has not been built
      */
     @NonNull
     public KeysAndCerts getPrivateKeys(final NodeId nodeId) {
@@ -281,7 +283,7 @@ public class RandomAddressBookBuilder {
     /**
      * Generate the cryptographic keys for a node.
      */
-    private void generateKeys(@NonNull final NodeId nodeId, @NonNull final RandomAddressBuilder addressBuilder) {
+    private void generateKeys(@NonNull final NodeId nodeId, @NonNull final RandomRosterEntryBuilder addressBuilder) {
         if (realKeys) {
             try {
                 final PublicStores publicStores = new PublicStores();
@@ -298,10 +300,8 @@ public class RandomAddressBookBuilder {
 
                 final SerializableX509Certificate sigCert =
                         new SerializableX509Certificate(publicStores.getCertificate(SIGNING, alias));
-                final SerializableX509Certificate agrCert =
-                        new SerializableX509Certificate(publicStores.getCertificate(AGREEMENT, alias));
 
-                addressBuilder.withSigCert(sigCert).withAgreeCert(agrCert);
+                addressBuilder.withSigCert(sigCert);
 
             } catch (final Exception e) {
                 throw new RuntimeException();

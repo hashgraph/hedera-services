@@ -18,13 +18,15 @@ package com.swirlds.platform.event.branching;
 
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 
+import com.hedera.hapi.node.state.roster.Roster;
+import com.hedera.hapi.node.state.roster.RosterEntry;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.utility.Threshold;
 import com.swirlds.common.utility.throttle.RateLimitedLogger;
 import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.event.PlatformEvent;
-import com.swirlds.platform.system.address.AddressBook;
+import com.swirlds.platform.roster.RosterUtils;
 import com.swirlds.platform.system.events.EventDescriptorWrapper;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
@@ -55,7 +57,7 @@ public class DefaultBranchReporter implements BranchReporter {
     /**
      * The current roster.
      */
-    private final AddressBook currentRoster;
+    private final Roster currentRoster;
 
     /**
      * The node IDs of the nodes in the network in sorted order, provides deterministic iteration order.
@@ -93,11 +95,13 @@ public class DefaultBranchReporter implements BranchReporter {
      * @param platformContext the platform context
      * @param currentRoster   the current roster
      */
-    public DefaultBranchReporter(
-            @NonNull final PlatformContext platformContext, @NonNull final AddressBook currentRoster) {
+    public DefaultBranchReporter(@NonNull final PlatformContext platformContext, @NonNull final Roster currentRoster) {
 
         this.currentRoster = Objects.requireNonNull(currentRoster);
-        for (final NodeId nodeId : currentRoster.getNodeIdSet()) {
+        for (final NodeId nodeId : currentRoster.rosterEntries().stream()
+                .map(RosterEntry::nodeId)
+                .map(NodeId::of)
+                .toList()) {
             nodes.add(nodeId);
             nodeLoggers.put(nodeId, new RateLimitedLogger(logger, platformContext.getTime(), Duration.ofMinutes(10)));
         }
@@ -131,15 +135,16 @@ public class DefaultBranchReporter implements BranchReporter {
         if (previousBranchingEvent == null) {
             // This node is now branching but wasn't previously.
             branchingCount++;
-            branchingWeight += currentRoster.getAddress(creator).getWeight();
+            branchingWeight +=
+                    RosterUtils.getRosterEntry(currentRoster, creator.id()).weight();
         }
 
         metrics.reportBranchingEvent();
         metrics.reportBranchingNodeCount(branchingCount);
-        final double fraction = (double) branchingWeight / currentRoster.getTotalWeight();
+        final double fraction = (double) branchingWeight / RosterUtils.computeTotalWeight(currentRoster);
         metrics.reportBranchingWeightFraction(fraction);
 
-        if (Threshold.STRONG_MINORITY.isSatisfiedBy(branchingWeight, currentRoster.getTotalWeight())) {
+        if (Threshold.STRONG_MINORITY.isSatisfiedBy(branchingWeight, RosterUtils.computeTotalWeight(currentRoster))) {
             // Uh oh. We've violated our assumption that >2/3 nodes in the network are honest.
 
             final List<NodeId> branchingNodes = new ArrayList<>();
@@ -172,17 +177,18 @@ public class DefaultBranchReporter implements BranchReporter {
     public void updateEventWindow(@NonNull final EventWindow eventWindow) {
         currentEventWindow = eventWindow;
 
+        final Map<Long, RosterEntry> rosterEntryMap = RosterUtils.toMap(currentRoster);
         for (final NodeId nodeId : nodes) {
             final EventDescriptorWrapper mostRecentBranchingEvent = mostRecentBranchingEvents.get(nodeId);
             if (mostRecentBranchingEvent != null && eventWindow.isAncient(mostRecentBranchingEvent)) {
                 // Branching event is ancient, forget it.
                 mostRecentBranchingEvents.put(nodeId, null);
                 branchingCount--;
-                branchingWeight -= currentRoster.getAddress(nodeId).getWeight();
+                branchingWeight -= rosterEntryMap.get(nodeId.id()).weight();
             }
         }
         metrics.reportBranchingNodeCount(branchingCount);
-        metrics.reportBranchingWeightFraction((double) branchingWeight / currentRoster.getTotalWeight());
+        metrics.reportBranchingWeightFraction((double) branchingWeight / RosterUtils.computeTotalWeight(currentRoster));
     }
 
     /**

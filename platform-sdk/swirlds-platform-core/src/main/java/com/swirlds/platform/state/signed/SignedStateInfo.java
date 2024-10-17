@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.state.signed;
 
-import com.swirlds.platform.system.address.AddressBook;
+import com.hedera.hapi.node.state.roster.Roster;
 
 /**
  * Contains information about a signed state. A SignedStateInfo object is still ok to read after the parent SignedState
@@ -49,5 +49,5 @@ public interface SignedStateInfo {
      */
     boolean isComplete();
 
-    AddressBook getAddressBook();
+    Roster getRoster();
 }

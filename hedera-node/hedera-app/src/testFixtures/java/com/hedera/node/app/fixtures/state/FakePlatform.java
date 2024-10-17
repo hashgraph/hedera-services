@@ -19,6 +19,7 @@ package com.hedera.node.app.fixtures.state;
 import static com.hedera.node.app.fixtures.AppTestBase.METRIC_EXECUTOR;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 
+import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
@@ -37,8 +38,7 @@ import com.swirlds.common.utility.AutoCloseableWrapper;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.SwirldState;
-import com.swirlds.platform.system.address.AddressBook;
-import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBuilder;
+import com.swirlds.platform.test.fixtures.addressbook.RandomRosterEntryBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 import java.util.Random;
@@ -48,7 +48,7 @@ import java.util.Random;
  */
 public final class FakePlatform implements Platform {
     private final NodeId selfNodeId;
-    private final AddressBook addressBook;
+    private final Roster roster;
     private final PlatformContext context;
     private final NotificationEngine notificationEngine;
     private final Random random = new Random(12345L);
@@ -58,11 +58,11 @@ public final class FakePlatform implements Platform {
      */
     public FakePlatform() {
         this.selfNodeId = NodeId.of(0L);
-        final var addressBuilder = RandomAddressBuilder.create(random);
-        final var address =
-                addressBuilder.withNodeId(selfNodeId).withWeight(500L).build();
+        final var rosterEntryBuilder = RandomRosterEntryBuilder.create(random);
+        final var rosterEntry =
+                rosterEntryBuilder.withNodeId(selfNodeId).withWeight(500L).build();
 
-        this.addressBook = new AddressBook(List.of(address));
+        this.roster = new Roster(List.of(rosterEntry));
         this.context = createPlatformContext();
         this.notificationEngine = NotificationEngine.buildEngine(getStaticThreadManager());
     }
@@ -70,11 +70,11 @@ public final class FakePlatform implements Platform {
     /**
      * Constructor for an app test that uses multiple nodes in the network
      * @param nodeId the node id
-     * @param addresses the address book
+     * @param roster the address book
      */
-    public FakePlatform(final long nodeId, final AddressBook addresses) {
+    public FakePlatform(final long nodeId, final Roster roster) {
         this.selfNodeId = NodeId.of(nodeId);
-        this.addressBook = addresses;
+        this.roster = roster;
         this.context = createPlatformContext();
         this.notificationEngine = NotificationEngine.buildEngine(getStaticThreadManager());
     }
@@ -118,8 +118,8 @@ public final class FakePlatform implements Platform {
     }
 
     @Override
-    public AddressBook getAddressBook() {
-        return addressBook;
+    public Roster getRoster() {
+        return roster;
     }
 
     @Override

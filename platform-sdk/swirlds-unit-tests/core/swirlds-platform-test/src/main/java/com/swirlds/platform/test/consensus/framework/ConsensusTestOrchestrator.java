@@ -16,9 +16,10 @@
 
 package com.swirlds.platform.test.consensus.framework;
 
+import com.hedera.hapi.node.state.roster.Roster;
 import com.swirlds.common.context.PlatformContext;
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
-import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.events.EventConstants;
 import com.swirlds.platform.test.consensus.framework.validation.ConsensusOutputValidation;
 import com.swirlds.platform.test.consensus.framework.validation.Validations;
@@ -67,12 +68,11 @@ public class ConsensusTestOrchestrator {
 
         final PlatformContext platformContext =
                 TestPlatformContextBuilder.create().build();
-        final AddressBook addressBook =
-                node.getEventEmitter().getGraphGenerator().getAddressBook();
+        final Roster roster = node.getEventEmitter().getGraphGenerator().getRoster();
 
         new TestGuiSource(
                         platformContext,
-                        addressBook,
+                        roster,
                         new GeneratorEventProvider(node.getEventEmitter().getGraphGenerator()))
                 .runGui();
     }
@@ -169,7 +169,8 @@ public class ConsensusTestOrchestrator {
         for (final ConsensusTestNode node : nodes) {
             node.getEventEmitter()
                     .getGraphGenerator()
-                    .getSource(getAddressBook().getNodeId(nodeIndex))
+                    .getSource(
+                            NodeId.of(getRoster().rosterEntries().get(nodeIndex).nodeId()))
                     .setNewEventWeight(eventWeight);
         }
     }
@@ -189,7 +190,7 @@ public class ConsensusTestOrchestrator {
         return nodes;
     }
 
-    public AddressBook getAddressBook() {
-        return nodes.get(0).getEventEmitter().getGraphGenerator().getAddressBook();
+    public Roster getRoster() {
+        return nodes.get(0).getEventEmitter().getGraphGenerator().getRoster();
     }
 }

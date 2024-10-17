@@ -18,6 +18,7 @@ package com.swirlds.platform;
 
 import static com.swirlds.logging.legacy.LogMarker.RECONNECT;
 
+import com.hedera.hapi.node.state.roster.Roster;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.stream.RunningEventHashOverride;
@@ -34,7 +35,6 @@ import com.swirlds.platform.state.nexus.SignedStateNexus;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;
-import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.address.AddressBookUtils;
 import com.swirlds.platform.system.status.actions.ReconnectCompleteAction;
 import com.swirlds.platform.wiring.PlatformWiring;
@@ -57,7 +57,7 @@ public class ReconnectStateLoader {
     private final SwirldStateManager swirldStateManager;
     private final SignedStateNexus latestImmutableStateNexus;
     private final SavedStateController savedStateController;
-    private final AddressBook addressBook;
+    private final Roster roster;
 
     /**
      * Constructor.
@@ -68,7 +68,7 @@ public class ReconnectStateLoader {
      * @param swirldStateManager        manages the mutable state
      * @param latestImmutableStateNexus holds the latest immutable state
      * @param savedStateController      manages how states are saved
-     * @param addressBook               the address book
+     * @param roster                    the roster
      */
     public ReconnectStateLoader(
             @NonNull final Platform platform,
@@ -77,14 +77,14 @@ public class ReconnectStateLoader {
             @NonNull final SwirldStateManager swirldStateManager,
             @NonNull final SignedStateNexus latestImmutableStateNexus,
             @NonNull final SavedStateController savedStateController,
-            @NonNull final AddressBook addressBook) {
+            @NonNull final Roster roster) {
         this.platform = Objects.requireNonNull(platform);
         this.platformContext = Objects.requireNonNull(platformContext);
         this.platformWiring = Objects.requireNonNull(platformWiring);
         this.swirldStateManager = Objects.requireNonNull(swirldStateManager);
         this.latestImmutableStateNexus = Objects.requireNonNull(latestImmutableStateNexus);
         this.savedStateController = Objects.requireNonNull(savedStateController);
-        this.addressBook = Objects.requireNonNull(addressBook);
+        this.roster = Objects.requireNonNull(roster);
     }
 
     /**
@@ -116,7 +116,7 @@ public class ReconnectStateLoader {
             }
 
             // Before attempting to load the state, verify that the platform AB matches the state AB.
-            AddressBookUtils.verifyReconnectAddressBooks(addressBook, signedState.getAddressBook());
+            AddressBookUtils.verifyReconnectRosters(roster, signedState.getRoster());
 
             swirldStateManager.loadFromSignedState(signedState);
             // kick off transition to RECONNECT_COMPLETE before beginning to save the reconnect state to disk

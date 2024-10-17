@@ -18,6 +18,8 @@ package com.swirlds.platform.gossip;
 
 import static com.swirlds.platform.consensus.ConsensusConstants.ROUND_UNDEFINED;
 
+import com.hedera.hapi.node.state.roster.Roster;
+import com.hedera.hapi.node.state.roster.RosterEntry;
 import com.swirlds.base.state.Startable;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
@@ -71,12 +73,11 @@ import com.swirlds.platform.reconnect.ReconnectHelper;
 import com.swirlds.platform.reconnect.ReconnectLearnerFactory;
 import com.swirlds.platform.reconnect.ReconnectLearnerThrottle;
 import com.swirlds.platform.reconnect.ReconnectThrottle;
+import com.swirlds.platform.roster.RosterUtils;
 import com.swirlds.platform.state.SwirldStateManager;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.system.SoftwareVersion;
-import com.swirlds.platform.system.address.Address;
-import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.status.PlatformStatus;
 import com.swirlds.platform.system.status.StatusActionSubmitter;
 import com.swirlds.platform.wiring.NoInput;
@@ -141,7 +142,7 @@ public class SyncGossip implements ConnectionTracker, Gossip {
      * @param platformContext               the platform context
      * @param threadManager                 the thread manager
      * @param keysAndCerts                  private keys and public certificates
-     * @param addressBook                   the current address book
+     * @param roster                        the current roster
      * @param selfId                        this node's ID
      * @param appVersion                    the version of the app
      * @param swirldStateManager            manages the mutable state
@@ -155,7 +156,7 @@ public class SyncGossip implements ConnectionTracker, Gossip {
             @NonNull final PlatformContext platformContext,
             @NonNull final ThreadManager threadManager,
             @NonNull final KeysAndCerts keysAndCerts,
-            @NonNull final AddressBook addressBook,
+            @NonNull final Roster roster,
             @NonNull final NodeId selfId,
             @NonNull final SoftwareVersion appVersion,
             @NonNull final SwirldStateManager swirldStateManager,
@@ -165,14 +166,14 @@ public class SyncGossip implements ConnectionTracker, Gossip {
             @NonNull final Runnable clearAllPipelinesForReconnect,
             @NonNull final IntakeEventCounter intakeEventCounter) {
 
-        shadowgraph = new Shadowgraph(platformContext, addressBook, intakeEventCounter);
+        shadowgraph = new Shadowgraph(platformContext, roster.rosterEntries().size(), intakeEventCounter);
 
         this.statusActionSubmitter = Objects.requireNonNull(statusActionSubmitter);
 
         final ThreadConfig threadConfig = platformContext.getConfiguration().getConfigData(ThreadConfig.class);
 
         final BasicConfig basicConfig = platformContext.getConfiguration().getConfigData(BasicConfig.class);
-        final List<PeerInfo> peers = Utilities.createPeerInfoList(addressBook, selfId);
+        final List<PeerInfo> peers = Utilities.createPeerInfoList(roster, selfId);
 
         topology = new StaticTopology(peers, selfId);
         final NetworkPeerIdentifier peerIdentifier = new NetworkPeerIdentifier(platformContext, peers);
@@ -180,7 +181,7 @@ public class SyncGossip implements ConnectionTracker, Gossip {
                 NetworkUtils.createSocketFactory(selfId, peers, keysAndCerts, platformContext.getConfiguration());
         // create an instance that can create new outbound connections
         final OutboundConnectionCreator connectionCreator =
-                new OutboundConnectionCreator(platformContext, selfId, this, socketFactory, addressBook);
+                new OutboundConnectionCreator(platformContext, selfId, this, socketFactory, roster);
         connectionManagers = new StaticConnectionManagers(topology, connectionCreator);
         final InboundConnectionHandler inboundConnectionHandler = new InboundConnectionHandler(
                 platformContext,
@@ -190,9 +191,16 @@ public class SyncGossip implements ConnectionTracker, Gossip {
                 connectionManagers::newConnection,
                 platformContext.getTime());
         // allow other members to create connections to me
-        final Address address = addressBook.getAddress(selfId);
+        final RosterEntry rosterEntry = RosterUtils.getRosterEntry(roster, selfId.id());
+        // Assume all ServiceEndpoints use the same port and use the port from the first endpoint.
+        // Previously, this code used a "local port" corresponding to the internal endpoint,
+        // which should normally be the second entry in the endpoints list if it's obtained via
+        // a regular AddressBook -> Roster conversion.
+        // The assumption must be correct, otherwise, if ports were indeed different, then the old code
+        // using the AddressBook would never have listened on a port associated with the external endpoint,
+        // thus not allowing anyone to connect to the node from outside the local network, which we'd have noticed.
         final ConnectionServer connectionServer = new ConnectionServer(
-                threadManager, address.getListenPort(), socketFactory, inboundConnectionHandler::handle);
+                threadManager, RosterUtils.fetchPort(rosterEntry), socketFactory, inboundConnectionHandler::handle);
         thingsToStart.add(new StoppableThreadConfiguration<>(threadManager)
                 .setPriority(threadConfig.threadPrioritySync())
                 .setNodeId(selfId)
@@ -202,7 +210,6 @@ public class SyncGossip implements ConnectionTracker, Gossip {
                 .build());
 
         fallenBehindManager = new FallenBehindManagerImpl(
-                addressBook,
                 selfId,
                 topology,
                 statusActionSubmitter,
@@ -216,10 +223,10 @@ public class SyncGossip implements ConnectionTracker, Gossip {
 
         reconnectThrottle = new ReconnectThrottle(reconnectConfig, platformContext.getTime());
 
-        networkMetrics = new NetworkMetrics(platformContext.getMetrics(), selfId, addressBook);
+        networkMetrics = new NetworkMetrics(platformContext.getMetrics(), selfId, roster);
         platformContext.getMetrics().addUpdater(networkMetrics::update);
 
-        reconnectMetrics = new ReconnectMetrics(platformContext.getMetrics(), addressBook);
+        reconnectMetrics = new ReconnectMetrics(platformContext.getMetrics(), roster);
 
         final StateConfig stateConfig = platformContext.getConfiguration().getConfigData(StateConfig.class);
 
@@ -244,11 +251,7 @@ public class SyncGossip implements ConnectionTracker, Gossip {
                     syncManager.resetFallenBehind();
                 },
                 new ReconnectLearnerFactory(
-                        platformContext,
-                        threadManager,
-                        addressBook,
-                        reconnectConfig.asyncStreamTimeout(),
-                        reconnectMetrics),
+                        platformContext, threadManager, roster, reconnectConfig.asyncStreamTimeout(), reconnectMetrics),
                 stateConfig);
         this.intakeEventCounter = Objects.requireNonNull(intakeEventCounter);
 
@@ -260,7 +263,7 @@ public class SyncGossip implements ConnectionTracker, Gossip {
         syncShadowgraphSynchronizer = new ShadowgraphSynchronizer(
                 platformContext,
                 shadowgraph,
-                addressBook.getSize(),
+                roster.rosterEntries().size(),
                 syncMetrics,
                 event -> receivedEventHandler.accept(event),
                 syncManager,
@@ -275,7 +278,7 @@ public class SyncGossip implements ConnectionTracker, Gossip {
 
         final int permitCount;
         if (syncConfig.onePermitPerPeer()) {
-            permitCount = addressBook.getSize() - 1;
+            permitCount = roster.rosterEntries().size() - 1;
         } else {
             permitCount = syncConfig.syncProtocolPermitCount();
         }

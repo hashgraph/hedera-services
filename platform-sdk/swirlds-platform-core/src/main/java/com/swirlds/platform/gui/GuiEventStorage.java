@@ -19,6 +19,7 @@ package com.swirlds.platform.gui;
 import static com.swirlds.platform.event.AncientMode.GENERATION_THRESHOLD;
 import static com.swirlds.platform.system.events.EventConstants.FIRST_GENERATION;
 
+import com.hedera.hapi.node.state.roster.Roster;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.Consensus;
@@ -29,7 +30,6 @@ import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.metrics.NoOpConsensusMetrics;
-import com.swirlds.platform.system.address.AddressBook;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
@@ -54,14 +54,14 @@ public class GuiEventStorage {
      * Constructor
      *
      * @param configuration this node's configuration
-     * @param addressBook   the network's address book
+     * @param roster        the network's roster
      */
-    public GuiEventStorage(@NonNull final Configuration configuration, @NonNull final AddressBook addressBook) {
+    public GuiEventStorage(@NonNull final Configuration configuration, @NonNull final Roster roster) {
 
         this.configuration = Objects.requireNonNull(configuration);
         final PlatformContext platformContext = PlatformContext.create(configuration);
 
-        this.consensus = new ConsensusImpl(platformContext, new NoOpConsensusMetrics(), addressBook);
+        this.consensus = new ConsensusImpl(platformContext, new NoOpConsensusMetrics(), roster);
         // Future work: birth round compatibility for GUI
         this.linker = new SimpleLinker(GENERATION_THRESHOLD);
     }

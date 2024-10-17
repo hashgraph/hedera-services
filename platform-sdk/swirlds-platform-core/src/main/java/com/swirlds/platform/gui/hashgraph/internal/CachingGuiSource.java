@@ -16,11 +16,11 @@
 
 package com.swirlds.platform.gui.hashgraph.internal;
 
+import com.hedera.hapi.node.state.roster.Roster;
 import com.swirlds.platform.gossip.shadowgraph.Generations;
 import com.swirlds.platform.gui.hashgraph.HashgraphGuiConstants;
 import com.swirlds.platform.gui.hashgraph.HashgraphGuiSource;
 import com.swirlds.platform.internal.EventImpl;
-import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.events.EventConstants;
 import java.util.List;
 
@@ -30,7 +30,7 @@ import java.util.List;
 public class CachingGuiSource implements HashgraphGuiSource {
     private final HashgraphGuiSource source;
     private List<EventImpl> events = null;
-    private AddressBook addressBook = null;
+    private Roster roster = null;
     private long maxGeneration = EventConstants.GENERATION_UNDEFINED;
     private long startGeneration = Generations.FIRST_GENERATION;
     private int numGenerations = HashgraphGuiConstants.DEFAULT_GENERATIONS_TO_DISPLAY;
@@ -52,13 +52,13 @@ public class CachingGuiSource implements HashgraphGuiSource {
     }
 
     @Override
-    public AddressBook getAddressBook() {
-        return addressBook;
+    public Roster getRoster() {
+        return roster;
     }
 
     @Override
     public boolean isReady() {
-        return events != null && addressBook != null && maxGeneration != EventConstants.GENERATION_UNDEFINED;
+        return events != null && roster != null && maxGeneration != EventConstants.GENERATION_UNDEFINED;
     }
 
     /**
@@ -67,7 +67,7 @@ public class CachingGuiSource implements HashgraphGuiSource {
     public void refresh() {
         if (source.isReady()) {
             events = source.getEvents(startGeneration, numGenerations);
-            addressBook = source.getAddressBook();
+            roster = source.getRoster();
             maxGeneration = source.getMaxGeneration();
         }
     }

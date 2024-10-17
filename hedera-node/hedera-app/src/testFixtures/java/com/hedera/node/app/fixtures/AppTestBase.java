@@ -50,6 +50,7 @@ import com.swirlds.config.api.source.ConfigSource;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.metrics.api.Counter;
 import com.swirlds.metrics.api.Metrics;
+import com.swirlds.platform.roster.RosterRetriever;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
@@ -335,7 +336,7 @@ public class AppTestBase extends TestBase implements TransactionFactory, Scenari
                             .copySetWeight(nodeInfo.zeroStake() ? 0 : 10))
                     .toList();
             final var addressBook = new AddressBook(addresses);
-            final var platform = new FakePlatform(realSelfNodeInfo.nodeId(), addressBook);
+            final var platform = new FakePlatform(realSelfNodeInfo.nodeId(), RosterRetriever.buildRoster(addressBook));
             final var initialState = new FakeState();
             final var networkInfo = new GenesisNetworkInfo(createRoster(addressBook), Bytes.fromHex("03"));
             services.forEach(svc -> {

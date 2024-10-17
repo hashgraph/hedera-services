@@ -19,15 +19,17 @@ package com.swirlds.platform.test.fixtures.crypto;
 import static com.swirlds.common.test.fixtures.RandomUtils.getRandom;
 import static com.swirlds.platform.crypto.CryptoStatic.generateKeysAndCerts;
 
+import com.hedera.hapi.node.state.roster.Roster;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.io.ResourceLoader;
 import com.swirlds.common.test.fixtures.io.ResourceNotFoundException;
 import com.swirlds.platform.crypto.SerializableX509Certificate;
+import com.swirlds.platform.roster.RosterAddressBookBuilder;
 import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
-import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
+import com.swirlds.platform.test.fixtures.addressbook.RandomRosterBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.File;
@@ -91,10 +93,11 @@ public class PreGeneratedX509Certs {
         }
 
         // create address book without any certs.
-        final AddressBook addressBook =
-                RandomAddressBookBuilder.create(random).withSize(numCerts).build();
+        final Roster roster =
+                RandomRosterBuilder.create(random).withSize(numCerts).build();
 
         // generate certs for the address book.
+        final AddressBook addressBook = RosterAddressBookBuilder.buildAddressBook(roster);
         generateKeysAndCerts(addressBook);
 
         // autocloseable output streams to write the serializable certs.
@@ -104,8 +107,8 @@ public class PreGeneratedX509Certs {
                         new SerializableDataOutputStream(new FileOutputStream(agreeCertFile))) {
 
             // record number of certs being written to each file.
-            sigCertDos.writeInt(addressBook.getSize());
-            agreeCertDos.writeInt(addressBook.getSize());
+            sigCertDos.writeInt(roster.rosterEntries().size());
+            agreeCertDos.writeInt(roster.rosterEntries().size());
 
             // write the certs to their respective files.
             for (final Address address : addressBook) {

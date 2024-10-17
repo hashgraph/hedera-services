@@ -19,10 +19,13 @@ package com.swirlds.platform.gui.internal;
 import static com.swirlds.platform.gui.GuiUtils.wrap;
 import static com.swirlds.platform.gui.internal.BrowserWindowManager.getPlatforms;
 
+import com.hedera.hapi.node.state.roster.RosterEntry;
 import com.swirlds.platform.gui.GuiUtils;
 import com.swirlds.platform.gui.components.PrePaintableJPanel;
+import com.swirlds.platform.roster.RosterUtils;
 import com.swirlds.platform.system.Platform;
-import com.swirlds.platform.system.address.Address;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import javax.swing.JTextArea;
 
 /**
@@ -52,21 +55,23 @@ class WinTabAddresses extends PrePaintableJPanel {
         String s = "";
         synchronized (getPlatforms()) {
             for (final Platform p : getPlatforms()) {
-                final Address address = p.getAddressBook().getAddress(p.getSelfId());
-                s += "\n" + address.getNodeId().id() + "   " + address.getNickname()
-                        + "   " + address.getSelfName()
-                        + "   " + address.getHostnameInternal()
-                        + "   " + address.getPortInternal()
-                        + "   " + address.getHostnameExternal()
-                        + "   " + address.getPortExternal();
+                final RosterEntry rosterEntry =
+                        RosterUtils.getRosterEntry(p.getRoster(), p.getSelfId().id());
+                s += "\n" + rosterEntry.nodeId()
+                        + "   " + RosterUtils.formatNodeName(rosterEntry.nodeId())
+                        + "   "
+                        + IntStream.range(0, rosterEntry.gossipEndpoint().size())
+                                .mapToObj(i -> RosterUtils.fetchHostname(rosterEntry, i) + "   "
+                                        + RosterUtils.fetchPort(rosterEntry, i))
+                                .collect(Collectors.joining("   "));
             }
         }
         s += wrap(
                 70,
                 "\n\n"
                         + "The above are all the member addresses. "
-                        + "Each address includes the nickname, name, "
-                        + "internal hostname/port and external hostname/port.");
+                        + "Each address includes the name, "
+                        + "and all the ServiceEndpoint hostnames/ports.");
 
         text.setText(s);
     }

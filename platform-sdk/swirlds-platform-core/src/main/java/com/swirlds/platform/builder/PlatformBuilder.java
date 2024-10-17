@@ -413,7 +413,7 @@ public final class PlatformBuilder {
         final AtomicReference<StatusActionSubmitter> statusActionSubmitterAtomicReference = new AtomicReference<>();
         final SwirldStateManager swirldStateManager = new SwirldStateManager(
                 platformContext,
-                initialState.get().getAddressBook(),
+                initialState.get().getRoster(),
                 selfId,
                 x -> statusActionSubmitterAtomicReference.get().submitStatusAction(x),
                 softwareVersion);

@@ -49,6 +49,7 @@ import com.swirlds.platform.state.snapshot.SignedStateFileReader;
 import com.swirlds.platform.state.snapshot.SignedStateFileUtils;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;
+import com.swirlds.platform.test.fixtures.addressbook.RandomRosterBuilder;
 import com.swirlds.platform.test.fixtures.state.MerkleTestBase;
 import com.swirlds.platform.test.fixtures.state.RandomSignedStateGenerator;
 import com.swirlds.platform.test.fixtures.state.TestSchema;
@@ -73,6 +74,7 @@ import java.io.IOException;
 import java.lang.reflect.Field;
 import java.nio.file.Path;
 import java.util.HashMap;
+import java.util.Random;
 import java.util.Set;
 import java.util.function.Supplier;
 import org.junit.jupiter.api.BeforeEach;
@@ -324,7 +326,13 @@ class SerializationTest extends MerkleTestBase {
 
     private MerkleStateRoot createMerkleHederaState(Schema schemaV1) {
         final SignedState randomState =
-                new RandomSignedStateGenerator().setRound(1).build();
+                new RandomSignedStateGenerator()
+                        .setRound(1)
+                        .setRoster(RandomRosterBuilder.create(new Random())
+                                .withWeightDistributionStrategy(RandomRosterBuilder.WeightDistributionStrategy.BALANCED)
+                                .withRealKeysEnabled(true)
+                                .build())
+                        .build();
 
         final var originalTree = (MerkleStateRoot) randomState.getState();
         final var originalRegistry =

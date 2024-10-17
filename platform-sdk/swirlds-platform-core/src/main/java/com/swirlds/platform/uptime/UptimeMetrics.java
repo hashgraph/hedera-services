@@ -16,12 +16,12 @@
 
 package com.swirlds.platform.uptime;
 
+import com.hedera.hapi.node.state.roster.Roster;
+import com.hedera.hapi.node.state.roster.RosterEntry;
 import com.swirlds.common.metrics.FunctionGauge;
 import com.swirlds.common.metrics.RunningAverageMetric;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.metrics.api.Metrics;
-import com.swirlds.platform.system.address.Address;
-import com.swirlds.platform.system.address.AddressBook;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.HashMap;
 import java.util.Map;
@@ -67,16 +67,14 @@ class UptimeMetrics {
      * Construct a new uptime metrics object.
      *
      * @param metrics     the metrics for this node
-     * @param addressBook the address book
+     * @param roster      the roster
      * @param isDegraded  a supplier that returns true if this node is degraded, false otherwise
      */
     public UptimeMetrics(
-            @NonNull final Metrics metrics,
-            @NonNull final AddressBook addressBook,
-            @NonNull final Supplier<Boolean> isDegraded) {
+            @NonNull final Metrics metrics, @NonNull final Roster roster, @NonNull final Supplier<Boolean> isDegraded) {
 
         this.metrics = Objects.requireNonNull(metrics);
-        Objects.requireNonNull(addressBook);
+        Objects.requireNonNull(roster);
         Objects.requireNonNull(isDegraded);
 
         healthyNetworkFraction = metrics.getOrCreate(HEALTHY_NETWORK_FRACTION_CONFIG);
@@ -89,8 +87,8 @@ class UptimeMetrics {
 
         uptimeComputationTime = metrics.getOrCreate(UPTIME_COMPUTATION_TIME);
 
-        for (final Address address : addressBook) {
-            addMetricsForNode(address.getNodeId());
+        for (final RosterEntry rosterEntry : roster.rosterEntries()) {
+            addMetricsForNode(NodeId.of(rosterEntry.nodeId()));
         }
     }
 

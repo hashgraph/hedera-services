@@ -21,6 +21,7 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import com.hedera.hapi.node.state.roster.Roster;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
@@ -32,7 +33,6 @@ import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.SwirldState;
-import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.status.StatusActionSubmitter;
 import com.swirlds.platform.system.status.actions.PlatformStatusAction;
 import java.util.ArrayList;
@@ -49,12 +49,12 @@ public class TransactionHandlerTester {
     private final List<Round> handledRounds = new ArrayList<>();
 
     /**
-     * Constructs a new {@link TransactionHandlerTester} with the given {@link AddressBook}.
+     * Constructs a new {@link TransactionHandlerTester} with the given {@link Roster}.
      *
-     * @param addressBook
-     *     the {@link AddressBook} to use
+     * @param roster
+     *     the {@link Roster} to use
      */
-    public TransactionHandlerTester(final AddressBook addressBook) {
+    public TransactionHandlerTester(final Roster roster) {
         final PlatformContext platformContext =
                 TestPlatformContextBuilder.create().build();
         platformState = new PlatformStateValueAccumulator();
@@ -73,7 +73,7 @@ public class TransactionHandlerTester {
                 .handleConsensusRound(any(), any());
         final StatusActionSubmitter statusActionSubmitter = submittedActions::add;
         swirldStateManager = new SwirldStateManager(
-                platformContext, addressBook, NodeId.FIRST_NODE_ID, statusActionSubmitter, new BasicSoftwareVersion(1));
+                platformContext, roster, NodeId.FIRST_NODE_ID, statusActionSubmitter, new BasicSoftwareVersion(1));
         swirldStateManager.setInitialState(consensusState);
         defaultTransactionHandler = new DefaultTransactionHandler(
                 platformContext, swirldStateManager, statusActionSubmitter, mock(SoftwareVersion.class));

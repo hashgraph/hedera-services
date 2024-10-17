@@ -18,6 +18,7 @@ package com.swirlds.platform.builder;
 
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.state.roster.Roster;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.platform.NodeId;
@@ -28,6 +29,7 @@ import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.event.preconsensus.PcesFileTracker;
 import com.swirlds.platform.gossip.IntakeEventCounter;
 import com.swirlds.platform.pool.TransactionPoolNexus;
+import com.swirlds.platform.roster.RosterRetriever;
 import com.swirlds.platform.scratchpad.Scratchpad;
 import com.swirlds.platform.state.SwirldStateManager;
 import com.swirlds.platform.state.iss.IssScratchpad;
@@ -153,5 +155,15 @@ public record PlatformBuildingBlocks(
     @NonNull
     public AddressBook initialAddressBook() {
         return initialState.get().getState().getReadablePlatformState().getAddressBook();
+    }
+
+    /**
+     * Get the roster from the initial state.
+     *
+     * @return the initial roster
+     */
+    @NonNull
+    public Roster initialRoster() {
+        return RosterRetriever.retrieve(initialState.get().getState().cast());
     }
 }

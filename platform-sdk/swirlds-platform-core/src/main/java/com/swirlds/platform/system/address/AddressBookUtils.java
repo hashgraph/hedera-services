@@ -214,32 +214,17 @@ public class AddressBookUtils {
     }
 
     /**
-     * Verifies that all addresses and the nextNodeId are the same between the two address books, otherwise an
-     * IllegalStateException is thrown.  All other fields in the address book are intentionally ignored. This comparison
-     * is used during reconnect to verify that the address books align enough to proceed.
+     * Verifies that rosters are equal, otherwise an IllegalStateException is thrown.
+     * This comparison is used during reconnect to verify that the rosters align enough to proceed.
      *
-     * @param addressBook1 the first address book to compare.
-     * @param addressBook2 the second address book to compare.
-     * @throws IllegalStateException if the address books are not compatible for reconnect.
+     * @param roster1 the first roster to compare.
+     * @param roster2 the second roster to compare.
+     * @throws IllegalStateException if the rosters are not compatible for reconnect.
      */
-    public static void verifyReconnectAddressBooks(
-            @NonNull final AddressBook addressBook1, @NonNull final AddressBook addressBook2)
+    public static void verifyReconnectRosters(@NonNull final Roster roster1, @NonNull final Roster roster2)
             throws IllegalStateException {
-        final int addressCount = addressBook1.getSize();
-        if (addressCount != addressBook2.getSize()) {
-            throw new IllegalStateException("The address books do not have the same number of addresses.");
-        }
-        for (int i = 0; i < addressCount; i++) {
-            final NodeId nodeId1 = addressBook1.getNodeId(i);
-            final NodeId nodeId2 = addressBook2.getNodeId(i);
-            if (!nodeId1.equals(nodeId2)) {
-                throw new IllegalStateException("The address books do not have the same node ids.");
-            }
-            final Address address1 = addressBook1.getAddress(nodeId1);
-            final Address address2 = addressBook2.getAddress(nodeId2);
-            if (!address1.equals(address2)) {
-                throw new IllegalStateException("The address books do not have the same addresses.");
-            }
+        if (!roster1.equals(roster2)) {
+            throw new IllegalStateException("Roster 1 and roster 2 are not compatible for reconnect.");
         }
     }
 

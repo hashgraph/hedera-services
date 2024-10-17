@@ -31,20 +31,22 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import com.hedera.hapi.node.state.roster.Roster;
+import com.hedera.hapi.node.state.roster.RosterEntry;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.platform.roster.RosterAddressBookBuilder;
+import com.swirlds.platform.roster.RosterRetrieverTests;
+import com.swirlds.platform.roster.RosterUtils;
 import com.swirlds.platform.state.signed.SigSet;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateInvalidException;
-import com.swirlds.platform.system.address.Address;
-import com.swirlds.platform.system.address.AddressBook;
-import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
+import com.swirlds.platform.test.fixtures.addressbook.RandomRosterBuilder;
 import com.swirlds.platform.test.fixtures.state.RandomSignedStateGenerator;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.security.PublicKey;
-import java.security.cert.X509Certificate;
+import java.security.cert.CertificateEncodingException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -52,7 +54,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Random;
 import java.util.Set;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -68,24 +69,21 @@ class StateSigningTests {
 
         final int nodeCount = random.nextInt(10, 20);
 
-        final AddressBook addressBook = RandomAddressBookBuilder.create(random)
+        final Roster roster = RandomRosterBuilder.create(random)
                 .withWeightDistributionStrategy(
                         evenWeighting
-                                ? RandomAddressBookBuilder.WeightDistributionStrategy.BALANCED
-                                : RandomAddressBookBuilder.WeightDistributionStrategy.GAUSSIAN)
+                                ? RandomRosterBuilder.WeightDistributionStrategy.BALANCED
+                                : RandomRosterBuilder.WeightDistributionStrategy.GAUSSIAN)
                 .withSize(nodeCount)
                 .build();
 
         final SignedState signedState = new RandomSignedStateGenerator(random)
-                .setAddressBook(addressBook)
+                .setRoster(roster)
                 .setSignatures(new HashMap<>())
                 .build();
 
         // Randomize address order
-        final List<Address> nodes = new ArrayList<>(addressBook.getSize());
-        for (final Address address : addressBook) {
-            nodes.add(address);
-        }
+        final List<RosterEntry> nodes = new ArrayList<>(roster.rosterEntries());
         Collections.shuffle(nodes, random);
 
         final Set<NodeId> signaturesAdded = new HashSet<>();
@@ -93,19 +91,20 @@ class StateSigningTests {
         final SigSet sigSet = signedState.getSigSet();
 
         final List<Signature> signatures = new ArrayList<>(nodeCount);
-        for (final Address address : nodes) {
+        for (final RosterEntry address : nodes) {
             signatures.add(buildFakeSignature(
-                    address.getSigPublicKey(), signedState.getState().getHash()));
+                    RosterUtils.fetchGossipCaCertificate(address).getPublicKey(),
+                    signedState.getState().getHash()));
         }
 
         long expectedWeight = 0;
         int count = 0;
         for (int index = 0; index < nodeCount; index++) {
-            final Address address = nodes.get(index);
+            final RosterEntry address = nodes.get(index);
             final Signature signature = signatures.get(index);
 
             final boolean previouslyComplete = signedState.isComplete();
-            final boolean completed = signedState.addSignature(address.getNodeId(), signature);
+            final boolean completed = signedState.addSignature(NodeId.of(address.nodeId()), signature);
             final boolean nowComplete = signedState.isComplete();
             final boolean verifiable = signedState.isVerifiable();
 
@@ -117,8 +116,8 @@ class StateSigningTests {
 
             if (!previouslyComplete || !nowComplete) {
                 count++;
-                expectedWeight += address.getWeight();
-                signaturesAdded.add(address.getNodeId());
+                expectedWeight += address.weight();
+                signaturesAdded.add(NodeId.of(address.nodeId()));
             }
 
             if (completed) {
@@ -128,19 +127,20 @@ class StateSigningTests {
             if (random.nextBoolean()) {
                 // Sometimes offer the signature more than once. This should have no effect
                 // since duplicates are ignored.
-                assertFalse(signedState.addSignature(address.getNodeId(), signature));
+                assertFalse(signedState.addSignature(NodeId.of(address.nodeId()), signature));
             }
 
             assertEquals(
-                    SUPER_MAJORITY.isSatisfiedBy(expectedWeight, addressBook.getTotalWeight()),
+                    SUPER_MAJORITY.isSatisfiedBy(expectedWeight, RosterUtils.computeTotalWeight(roster)),
                     signedState.isComplete());
             assertEquals(
-                    MAJORITY.isSatisfiedBy(expectedWeight, addressBook.getTotalWeight()), signedState.isVerifiable());
+                    MAJORITY.isSatisfiedBy(expectedWeight, RosterUtils.computeTotalWeight(roster)),
+                    signedState.isVerifiable());
             assertEquals(expectedWeight, signedState.getSigningWeight());
             assertEquals(count, sigSet.size());
 
             for (int metaIndex = 0; metaIndex < nodeCount; metaIndex++) {
-                final NodeId nodeId = nodes.get(metaIndex).getNodeId();
+                final NodeId nodeId = NodeId.of(nodes.get(metaIndex).nodeId());
 
                 if (signaturesAdded.contains(nodeId)) {
                     // We have added this signature, make sure the sigset is tracking it
@@ -173,16 +173,16 @@ class StateSigningTests {
 
         final int nodeCount = random.nextInt(10, 20);
 
-        final AddressBook addressBook = RandomAddressBookBuilder.create(random)
+        final Roster roster = RandomRosterBuilder.create(random)
                 .withWeightDistributionStrategy(
                         evenWeighting
-                                ? RandomAddressBookBuilder.WeightDistributionStrategy.BALANCED
-                                : RandomAddressBookBuilder.WeightDistributionStrategy.GAUSSIAN)
+                                ? RandomRosterBuilder.WeightDistributionStrategy.BALANCED
+                                : RandomRosterBuilder.WeightDistributionStrategy.GAUSSIAN)
                 .withSize(nodeCount)
                 .build();
 
         final SignedState signedState = new RandomSignedStateGenerator(random)
-                .setAddressBook(addressBook)
+                .setRoster(roster)
                 .setSignatures(new HashMap<>())
                 .build();
 
@@ -191,37 +191,35 @@ class StateSigningTests {
         final SigSet sigSet = signedState.getSigSet();
 
         // Randomize address order
-        final List<Address> nodes = new ArrayList<>(addressBook.getSize());
-        for (final Address address : addressBook) {
-            nodes.add(address);
-        }
+        final List<RosterEntry> nodes = new ArrayList<>(roster.rosterEntries());
         Collections.shuffle(nodes, random);
 
         final List<Signature> signatures = new ArrayList<>(nodeCount);
-        for (final Address address : nodes) {
-            if (isInvalid(address.getNodeId())) {
+        for (final RosterEntry address : nodes) {
+            if (isInvalid(NodeId.of(address.nodeId()))) {
                 // A random signature won't be valid with high probability
                 signatures.add(randomSignature(random));
             } else {
                 signatures.add(buildFakeSignature(
-                        address.getSigPublicKey(), signedState.getState().getHash()));
+                        RosterUtils.fetchGossipCaCertificate(address).getPublicKey(),
+                        signedState.getState().getHash()));
             }
         }
 
         long expectedWeight = 0;
         int count = 0;
         for (int index = 0; index < nodeCount; index++) {
-            final Address address = nodes.get(index);
+            final RosterEntry address = nodes.get(index);
             final Signature signature = signatures.get(index);
 
             final boolean previouslyComplete = signedState.isComplete();
-            final boolean completed = signedState.addSignature(address.getNodeId(), signature);
+            final boolean completed = signedState.addSignature(NodeId.of(address.nodeId()), signature);
             final boolean nowComplete = signedState.isComplete();
 
-            if (!isInvalid(address.getNodeId()) && !previouslyComplete) {
+            if (!isInvalid(NodeId.of(address.nodeId())) && !previouslyComplete) {
                 count++;
-                expectedWeight += address.getWeight();
-                signaturesAdded.add(address.getNodeId());
+                expectedWeight += address.weight();
+                signaturesAdded.add(NodeId.of(address.nodeId()));
             }
 
             if (completed) {
@@ -231,19 +229,20 @@ class StateSigningTests {
             if (random.nextBoolean()) {
                 // Sometimes offer the signature more than once. This should have no effect
                 // since duplicates are ignored.
-                assertFalse(signedState.addSignature(address.getNodeId(), signature));
+                assertFalse(signedState.addSignature(NodeId.of(address.nodeId()), signature));
             }
 
             assertEquals(
-                    SUPER_MAJORITY.isSatisfiedBy(expectedWeight, addressBook.getTotalWeight()),
+                    SUPER_MAJORITY.isSatisfiedBy(expectedWeight, RosterUtils.computeTotalWeight(roster)),
                     signedState.isComplete());
             assertEquals(
-                    MAJORITY.isSatisfiedBy(expectedWeight, addressBook.getTotalWeight()), signedState.isVerifiable());
+                    MAJORITY.isSatisfiedBy(expectedWeight, RosterUtils.computeTotalWeight(roster)),
+                    signedState.isVerifiable());
             assertEquals(expectedWeight, signedState.getSigningWeight());
             assertEquals(count, sigSet.size());
 
             for (int metaIndex = 0; metaIndex < nodeCount; metaIndex++) {
-                final NodeId nodeId = nodes.get(metaIndex).getNodeId();
+                final NodeId nodeId = NodeId.of(nodes.get(metaIndex).nodeId());
 
                 if (signaturesAdded.contains(nodeId)) {
                     // We have added this signature, make sure the sigset is tracking it
@@ -270,16 +269,16 @@ class StateSigningTests {
 
         final int nodeCount = random.nextInt(10, 20);
 
-        final AddressBook addressBook = RandomAddressBookBuilder.create(random)
+        final Roster roster = RandomRosterBuilder.create(random)
                 .withWeightDistributionStrategy(
                         evenWeighting
-                                ? RandomAddressBookBuilder.WeightDistributionStrategy.BALANCED
-                                : RandomAddressBookBuilder.WeightDistributionStrategy.GAUSSIAN)
+                                ? RandomRosterBuilder.WeightDistributionStrategy.BALANCED
+                                : RandomRosterBuilder.WeightDistributionStrategy.GAUSSIAN)
                 .withSize(nodeCount)
                 .build();
 
         final SignedState signedState = new RandomSignedStateGenerator(random)
-                .setAddressBook(addressBook)
+                .setRoster(roster)
                 .setSignatures(new HashMap<>())
                 .build();
 
@@ -289,16 +288,14 @@ class StateSigningTests {
         final SigSet sigSet = signedState.getSigSet();
 
         // Randomize address order
-        final List<Address> nodes = new ArrayList<>(addressBook.getSize());
-        for (final Address address : addressBook) {
-            nodes.add(address);
-        }
+        final List<RosterEntry> nodes = new ArrayList<>(roster.rosterEntries());
         Collections.shuffle(nodes, random);
 
         final List<Signature> signatures = new ArrayList<>(nodeCount);
-        for (final Address address : nodes) {
+        for (final RosterEntry address : nodes) {
             final Signature signature = buildFakeSignature(
-                    address.getSigPublicKey(), signedState.getState().getHash());
+                    RosterUtils.fetchGossipCaCertificate(address).getPublicKey(),
+                    signedState.getState().getHash());
             final Signature mockSignature = mock(Signature.class);
             when(mockSignature.getBytes()).thenReturn(signature.getBytes());
             when(mockSignature.getType()).thenReturn(signature.getType());
@@ -307,10 +304,10 @@ class StateSigningTests {
 
         for (int index = 0; index < nodeCount; index++) {
             final boolean alreadyComplete = signedState.isComplete();
-            signedState.addSignature(nodes.get(index).getNodeId(), signatures.get(index));
+            signedState.addSignature(NodeId.of(nodes.get(index).nodeId()), signatures.get(index));
             if (!alreadyComplete) {
-                signaturesAdded.add(nodes.get(index).getNodeId());
-                expectedWeight += nodes.get(index).getWeight();
+                signaturesAdded.add(NodeId.of(nodes.get(index).nodeId()));
+                expectedWeight += nodes.get(index).weight();
             }
         }
 
@@ -319,13 +316,22 @@ class StateSigningTests {
         assertEquals(expectedWeight, signedState.getSigningWeight());
 
         // Remove a node from the address book
-        final NodeId nodeRemovedFromAddressBook = nodes.get(0).getNodeId();
-        final long weightRemovedFromAddressBook = nodes.get(0).getWeight();
-        final AddressBook updatedAddressBook = signedState.getAddressBook().remove(nodeRemovedFromAddressBook);
-        signedState.getState().getWritablePlatformState().setAddressBook(updatedAddressBook);
+        final NodeId nodeRemovedFromAddressBook = NodeId.of(nodes.get(0).nodeId());
+        final long weightRemovedFromAddressBook = nodes.get(0).weight();
+        final Roster updatedRoster = signedState
+                .getRoster()
+                .copyBuilder()
+                .rosterEntries(signedState.getRoster().rosterEntries().stream()
+                        .filter(re -> re.nodeId() != nodeRemovedFromAddressBook.id())
+                        .toList())
+                .build();
+        signedState
+                .getState()
+                .getWritablePlatformState()
+                .setAddressBook(RosterAddressBookBuilder.buildAddressBook(updatedRoster));
 
         // Tamper with a node's signature
-        final long weightWithModifiedSignature = nodes.get(1).getWeight();
+        final long weightWithModifiedSignature = nodes.get(1).weight();
         final byte[] tamperedBytes = signatures.get(1).getBytes().toByteArray();
         tamperedBytes[0] = 0;
         when(signatures.get(1).getBytes()).thenReturn(Bytes.wrap(tamperedBytes));
@@ -340,12 +346,12 @@ class StateSigningTests {
         for (int index = 0; index < nodes.size(); index++) {
             if (index == 0
                     || index == 1
-                    || !signaturesAdded.contains(nodes.get(index).getNodeId())) {
-                assertNull(sigSet.getSignature(nodes.get(index).getNodeId()));
+                    || !signaturesAdded.contains(NodeId.of(nodes.get(index).nodeId()))) {
+                assertNull(sigSet.getSignature(NodeId.of(nodes.get(index).nodeId())));
             } else {
                 assertSame(
                         signatures.get(index),
-                        sigSet.getSignature(nodes.get(index).getNodeId()));
+                        sigSet.getSignature(NodeId.of(nodes.get(index).nodeId())));
             }
         }
     }
@@ -358,36 +364,34 @@ class StateSigningTests {
 
         final int nodeCount = random.nextInt(10, 20);
 
-        final AddressBook addressBook = RandomAddressBookBuilder.create(random)
+        final Roster roster = RandomRosterBuilder.create(random)
                 .withWeightDistributionStrategy(
                         evenWeighting
-                                ? RandomAddressBookBuilder.WeightDistributionStrategy.BALANCED
-                                : RandomAddressBookBuilder.WeightDistributionStrategy.GAUSSIAN)
+                                ? RandomRosterBuilder.WeightDistributionStrategy.BALANCED
+                                : RandomRosterBuilder.WeightDistributionStrategy.GAUSSIAN)
                 .withSize(nodeCount)
                 .build();
 
         final SignedState signedState = new RandomSignedStateGenerator(random)
-                .setAddressBook(addressBook)
+                .setRoster(roster)
                 .setSignatures(new HashMap<>())
                 .build();
 
         final SigSet sigSet = signedState.getSigSet();
 
         // Randomize address order
-        final List<Address> nodes = new ArrayList<>(addressBook.getSize());
-        for (final Address address : addressBook) {
-            nodes.add(address);
-        }
+        final List<RosterEntry> nodes = new ArrayList<>(roster.rosterEntries());
         Collections.shuffle(nodes, random);
 
         final List<Signature> signatures = new ArrayList<>(nodeCount);
-        for (final Address address : nodes) {
+        for (final RosterEntry address : nodes) {
             signatures.add(buildFakeSignature(
-                    address.getSigPublicKey(), signedState.getState().getHash()));
+                    RosterUtils.fetchGossipCaCertificate(address).getPublicKey(),
+                    signedState.getState().getHash()));
         }
 
         for (int index = 0; index < nodeCount; index++) {
-            signedState.addSignature(nodes.get(index).getNodeId(), signatures.get(index));
+            signedState.addSignature(NodeId.of(nodes.get(index).nodeId()), signatures.get(index));
         }
 
         assertTrue(signedState.isComplete());
@@ -409,53 +413,54 @@ class StateSigningTests {
 
         final int nodeCount = random.nextInt(10, 20);
 
-        final AddressBook addressBook = RandomAddressBookBuilder.create(random)
+        final Roster roster = RandomRosterBuilder.create(random)
                 .withWeightDistributionStrategy(
                         evenWeighting
-                                ? RandomAddressBookBuilder.WeightDistributionStrategy.BALANCED
-                                : RandomAddressBookBuilder.WeightDistributionStrategy.GAUSSIAN)
+                                ? RandomRosterBuilder.WeightDistributionStrategy.BALANCED
+                                : RandomRosterBuilder.WeightDistributionStrategy.GAUSSIAN)
                 .withSize(nodeCount)
                 .build();
 
         final SignedState signedState = new RandomSignedStateGenerator(random)
-                .setAddressBook(addressBook)
+                .setRoster(roster)
                 .setSignatures(new HashMap<>())
                 .build();
 
         final SigSet sigSet = signedState.getSigSet();
 
         // Randomize address order
-        final List<Address> nodes = new ArrayList<>(addressBook.getSize());
-        for (final Address address : addressBook) {
-            nodes.add(address);
-        }
+        final List<RosterEntry> nodes = new ArrayList<>(roster.rosterEntries());
         Collections.shuffle(nodes, random);
 
         final List<Signature> signatures = new ArrayList<>(nodeCount);
-        for (final Address address : nodes) {
+        for (final RosterEntry address : nodes) {
             signatures.add(buildFakeSignature(
-                    address.getSigPublicKey(), signedState.getState().getHash()));
+                    RosterUtils.fetchGossipCaCertificate(address).getPublicKey(),
+                    signedState.getState().getHash()));
         }
 
         for (int index = 0; index < nodeCount; index++) {
-            signedState.addSignature(nodes.get(index).getNodeId(), signatures.get(index));
+            signedState.addSignature(NodeId.of(nodes.get(index).nodeId()), signatures.get(index));
         }
 
         assertTrue(signedState.isComplete());
 
-        final AddressBook newAddressBook = addressBook.copy();
-        for (final Address address : newAddressBook) {
-            final PublicKey publicKey = mock(PublicKey.class);
-            when(publicKey.getAlgorithm()).thenReturn("RSA");
-            when(publicKey.getEncoded()).thenReturn(new byte[] {1, 2, 3});
-            final X509Certificate certificate = mock(X509Certificate.class);
-            when(certificate.getPublicKey()).thenReturn(publicKey);
-            final Address newAddress = address.copySetSigCert(certificate);
-            // This replaces the old address
-            newAddressBook.add(newAddress);
-        }
+        final Roster newRoster = roster.copyBuilder()
+                .rosterEntries(roster.rosterEntries().stream()
+                        .map(re -> {
+                            try {
+                                return re.copyBuilder()
+                                        .gossipCaCertificate(Bytes.wrap(RosterRetrieverTests.randomX509Certificate()
+                                                .getEncoded()))
+                                        .build();
+                            } catch (CertificateEncodingException e) {
+                                throw new RuntimeException(e);
+                            }
+                        })
+                        .toList())
+                .build();
 
-        signedState.pruneInvalidSignatures(newAddressBook);
+        signedState.pruneInvalidSignatures(newRoster);
 
         assertEquals(0, sigSet.size());
         assertEquals(0, signedState.getSigningWeight());
@@ -470,56 +475,61 @@ class StateSigningTests {
 
         final int nodeCount = random.nextInt(10, 20);
 
-        final AddressBook addressBook = RandomAddressBookBuilder.create(random)
+        Roster roster = RandomRosterBuilder.create(random)
                 .withWeightDistributionStrategy(
                         evenWeighting
-                                ? RandomAddressBookBuilder.WeightDistributionStrategy.BALANCED
-                                : RandomAddressBookBuilder.WeightDistributionStrategy.GAUSSIAN)
+                                ? RandomRosterBuilder.WeightDistributionStrategy.BALANCED
+                                : RandomRosterBuilder.WeightDistributionStrategy.GAUSSIAN)
                 .withSize(nodeCount)
                 .build();
 
         // set node to zero weight
-        final NodeId nodeWithZeroWeight = addressBook.getNodeId(0);
-        addressBook.updateWeight(nodeWithZeroWeight, 0);
+        final NodeId nodeWithZeroWeight =
+                NodeId.of(roster.rosterEntries().get(0).nodeId());
+        roster = roster.copyBuilder()
+                .rosterEntries(roster.rosterEntries().stream()
+                        .map(re -> {
+                            if (re.nodeId() == nodeWithZeroWeight.id()) {
+                                return re.copyBuilder().weight(0).build();
+                            } else {
+                                return re;
+                            }
+                        })
+                        .toList())
+                .build();
 
         final SignedState signedState = new RandomSignedStateGenerator(random)
-                .setAddressBook(addressBook)
+                .setRoster(roster)
                 .setSignatures(new HashMap<>())
                 .build();
 
         final SigSet sigSet = signedState.getSigSet();
 
         // Randomize address order
-        final List<Address> nodes = new ArrayList<>(addressBook.getSize());
-        for (final Address address : addressBook) {
-            nodes.add(address);
-        }
+        final List<RosterEntry> nodes = new ArrayList<>(roster.rosterEntries());
         Collections.shuffle(nodes, random);
 
         final List<Signature> signatures = new ArrayList<>(nodeCount);
-        for (final Address address : nodes) {
+        for (final RosterEntry address : nodes) {
             signatures.add(buildFakeSignature(
-                    address.getSigPublicKey(), signedState.getState().getHash()));
+                    RosterUtils.fetchGossipCaCertificate(address).getPublicKey(),
+                    signedState.getState().getHash()));
         }
 
         for (int index = 0; index < nodeCount; index++) {
-            signedState.addSignature(nodes.get(index).getNodeId(), signatures.get(index));
+            signedState.addSignature(NodeId.of(nodes.get(index).nodeId()), signatures.get(index));
         }
 
         assertFalse(sigSet.hasSignature(nodeWithZeroWeight), "Signature for node with zero weight should not be added");
         assertTrue(signedState.isComplete());
 
-        final AddressBook newAddressBook = new AddressBook();
-        int i = 0;
-        for (final Address address : addressBook) {
-            newAddressBook.add(address.copySetWeight(0));
-            final Address newAddress = newAddressBook.getAddress(newAddressBook.getNodeId(i));
-            Assertions.assertNotNull(newAddress);
-            assertTrue(address.equalsWithoutWeight(newAddress));
-            i++;
-        }
+        final Roster newRoster = roster.copyBuilder()
+                .rosterEntries(roster.rosterEntries().stream()
+                        .map(re -> re.copyBuilder().weight(0).build())
+                        .toList())
+                .build();
 
-        signedState.pruneInvalidSignatures(newAddressBook);
+        signedState.pruneInvalidSignatures(newRoster);
 
         assertEquals(0, sigSet.size());
         assertEquals(0, signedState.getSigningWeight());
@@ -534,16 +544,16 @@ class StateSigningTests {
 
         final int nodeCount = random.nextInt(10, 20);
 
-        final AddressBook addressBook = RandomAddressBookBuilder.create(random)
+        final Roster roster = RandomRosterBuilder.create(random)
                 .withWeightDistributionStrategy(
                         evenWeighting
-                                ? RandomAddressBookBuilder.WeightDistributionStrategy.BALANCED
-                                : RandomAddressBookBuilder.WeightDistributionStrategy.GAUSSIAN)
+                                ? RandomRosterBuilder.WeightDistributionStrategy.BALANCED
+                                : RandomRosterBuilder.WeightDistributionStrategy.GAUSSIAN)
                 .withSize(nodeCount)
                 .build();
 
         final SignedState signedState = new RandomSignedStateGenerator(random)
-                .setAddressBook(addressBook)
+                .setRoster(roster)
                 .setSignatures(new HashMap<>())
                 .build();
 

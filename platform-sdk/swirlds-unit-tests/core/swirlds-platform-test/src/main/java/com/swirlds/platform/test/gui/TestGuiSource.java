@@ -18,6 +18,7 @@ package com.swirlds.platform.test.gui;
 
 import static com.swirlds.platform.consensus.SyntheticSnapshot.GENESIS_SNAPSHOT;
 
+import com.hedera.hapi.node.state.roster.Roster;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.event.PlatformEvent;
@@ -25,7 +26,6 @@ import com.swirlds.platform.gui.GuiEventStorage;
 import com.swirlds.platform.gui.hashgraph.HashgraphGuiSource;
 import com.swirlds.platform.gui.hashgraph.internal.StandardGuiSource;
 import com.swirlds.platform.internal.ConsensusRound;
-import com.swirlds.platform.system.address.AddressBook;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.awt.FlowLayout;
 import java.util.List;
@@ -45,15 +45,15 @@ public class TestGuiSource {
      * Construct a {@link TestGuiSource} with the given platform context, address book, and event provider.
      *
      * @param platformContext the platform context
-     * @param addressBook     the address book
+     * @param roster     the address book
      * @param eventProvider   the event provider
      */
     public TestGuiSource(
             @NonNull final PlatformContext platformContext,
-            @NonNull final AddressBook addressBook,
+            @NonNull final Roster roster,
             @NonNull final GuiEventProvider eventProvider) {
-        this.eventStorage = new GuiEventStorage(platformContext.getConfiguration(), addressBook);
-        this.guiSource = new StandardGuiSource(addressBook, eventStorage);
+        this.eventStorage = new GuiEventStorage(platformContext.getConfiguration(), roster);
+        this.guiSource = new StandardGuiSource(roster, eventStorage);
         this.eventProvider = eventProvider;
     }
 

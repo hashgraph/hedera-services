@@ -16,8 +16,8 @@
 
 package com.swirlds.platform.gui.hashgraph;
 
+import com.hedera.hapi.node.state.roster.Roster;
 import com.swirlds.platform.internal.EventImpl;
-import com.swirlds.platform.system.address.AddressBook;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 
@@ -47,7 +47,7 @@ public interface HashgraphGuiSource {
      * @return AddressBook
      */
     @NonNull
-    AddressBook getAddressBook();
+    Roster getRoster();
 
     /**
      * @return true if the source is ready to return data
