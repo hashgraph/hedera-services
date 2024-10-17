@@ -38,6 +38,7 @@ import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfe
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromToWithInvalidAmounts;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.recordFeeAmount;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
@@ -881,34 +882,9 @@ public class ScheduleLongTermExecutionSpecs {
                                 .withRelativeExpiry(SENDER_TXN, 8)
                                 .designatingPayer(PAYING_ACCOUNT)
                                 .recordingScheduledTxn()
-                                .via(CREATE_TX))
-                .when(scheduleSign(FAILED_XFER)
-                        .alsoSigningWith(SENDER, PAYING_ACCOUNT)
-                        .via(SIGN_TX)
-                        .hasKnownStatus(SUCCESS))
-                .then(
-                        getScheduleInfo(FAILED_XFER)
-                                .hasScheduleId(FAILED_XFER)
-                                .hasWaitForExpiry()
-                                .isNotExecuted()
-                                .isNotDeleted()
-                                .hasRelativeExpiry(SENDER_TXN, 8)
-                                .hasRecordedScheduledTxn(),
-                        sleepFor(9000),
-                        cryptoCreate("foo").via(TRIGGERING_TXN),
-                        getScheduleInfo(FAILED_XFER).hasCostAnswerPrecheck(INVALID_SCHEDULE_ID),
-                        getAccountBalance(SENDER).hasTinyBars(senderBalance),
-                        getAccountBalance(RECEIVER).hasTinyBars(noBalance),
-                        withOpContext((spec, opLog) -> {
-                            var triggeredTx = getTxnRecord(CREATE_TX).scheduled();
-
-                            allRunFor(spec, triggeredTx);
-
-                            Assertions.assertEquals(
-                                    INVALID_ACCOUNT_AMOUNTS,
-                                    triggeredTx.getResponseRecord().getReceipt().getStatus(),
-                                    SCHEDULED_TRANSACTION_MUST_NOT_SUCCEED);
-                        }));
+                                .hasKnownStatus(INVALID_ACCOUNT_AMOUNTS))
+                .when()
+                .then();
     }
 
     @HapiTest
@@ -1338,34 +1314,28 @@ public class ScheduleLongTermExecutionSpecs {
                                 .isExecuted());
     }
 
-    //    @HapiTest
-    //    public Stream<DynamicTest> expiryIgnoredWhenLongTermDisabled() {
-    //
-    //        return defaultHapiSpec("ExpiryIgnoredWhenLongTermDisabled")
-    //                .given(
-    //                        cryptoCreate(PAYER).balance(ONE_HBAR),
-    //                        cryptoCreate(SENDER).balance(1L).via(SENDER_TXN),
-    //                        cryptoCreate(RECEIVER).balance(0L).receiverSigRequired(true))
-    //                .when(
-    //                        overriding(LEDGER_SCHEDULE_TX_EXPIRY_TIME_SECS, "" + 5),
-    //                        scheduleCreate(
-    //                                THREE_SIG_XFER,
-    //                                cryptoTransfer(tinyBarsFromTo(SENDER, RECEIVER, 1))
-    //                                        .fee(ONE_HBAR))
-    //                                .withRelativeExpiry(SENDER_TXN, 500)
-    //                                .designatingPayer(PAYER)
-    //                                .alsoSigningWith(SENDER, RECEIVER))
-    //                .then(
-    //                        overriding(LEDGER_SCHEDULE_TX_EXPIRY_TIME_SECS, DEFAULT_TX_EXPIRY),
-    //                        getScheduleInfo(THREE_SIG_XFER)
-    //                                .hasScheduleId(THREE_SIG_XFER)
-    //                                .isNotExecuted()
-    //                                .isNotDeleted(),
-    //                        sleepFor(9000),
-    //                        cryptoCreate("foo"),
-    //                        getScheduleInfo(THREE_SIG_XFER).hasCostAnswerPrecheck(INVALID_SCHEDULE_ID),
-    //                        getAccountBalance(RECEIVER).hasTinyBars(0L));
-    //    }
+    @HapiTest
+    public Stream<DynamicTest> expiryIgnoredWhenLongTermDisabled() {
+        return defaultHapiSpec("ExpiryIgnoredWhenLongTermDisabled")
+                .given(
+                        overriding("scheduling.longTermEnabled", "false"),
+                        cryptoCreate(SENDER).balance(ONE_HBAR).via(SENDER_TXN),
+                        cryptoCreate(RECEIVER).balance(0L).receiverSigRequired(true))
+                .when(scheduleCreate(
+                                THREE_SIG_XFER,
+                                cryptoTransfer(tinyBarsFromTo(SENDER, RECEIVER, 1))
+                                        .fee(ONE_HBAR))
+                        .withRelativeExpiry(SENDER_TXN, 20)
+                        .waitForExpiry(true)
+                        .designatingPayer(SENDER))
+                .then(
+                        scheduleSign(THREE_SIG_XFER).alsoSigningWith(SENDER, RECEIVER),
+                        getScheduleInfo(THREE_SIG_XFER)
+                                .hasScheduleId(THREE_SIG_XFER)
+                                .isExecuted()
+                                .isNotDeleted(),
+                        getAccountBalance(RECEIVER).hasTinyBars(1L));
+    }
 
     //    @HapiTest
     //    public Stream<DynamicTest> waitForExpiryIgnoredWhenLongTermDisabledThenEnabled() {
