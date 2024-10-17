@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.workflows.handle.record;
 
+import static com.hedera.hapi.node.base.HederaFunctionality.CRYPTO_CREATE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS_BUT_MISSING_EXPECTED_OPERATION;
 import static com.hedera.hapi.util.HapiUtils.ACCOUNT_ID_COMPARATOR;
@@ -376,7 +377,8 @@ public class SystemSetup {
         for (final Account account : accts) {
             // Since this is only called at genesis, the active savepoint's preceding record capacity will be
             // Integer.MAX_VALUE and this will never fail with MAX_CHILD_RECORDS_EXCEEDED (c.f., HandleWorkflow)
-            final var recordBuilder = context.addPrecedingChildRecordBuilder(GenesisAccountStreamBuilder.class);
+            final var recordBuilder =
+                    context.addPrecedingChildRecordBuilder(GenesisAccountStreamBuilder.class, CRYPTO_CREATE);
             recordBuilder.accountID(account.accountIdOrThrow()).exchangeRate(exchangeRateSet);
             if (recordMemo != null) {
                 recordBuilder.memo(recordMemo);
