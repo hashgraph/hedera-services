@@ -36,6 +36,10 @@ import org.hyperledger.besu.evm.operation.SLoadOperation;
 public class CustomSLoadOperation extends DelegatingOperation {
     private final FeatureFlags featureFlags;
 
+    /**
+     * @param featureFlags current evm module feature flags
+     * @param delegate the delegate operation
+     */
     public CustomSLoadOperation(@NonNull final FeatureFlags featureFlags, @NonNull final SLoadOperation delegate) {
         super(delegate);
         this.featureFlags = requireNonNull(featureFlags);

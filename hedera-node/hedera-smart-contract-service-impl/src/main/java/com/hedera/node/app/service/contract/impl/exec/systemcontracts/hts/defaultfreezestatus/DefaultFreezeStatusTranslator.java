@@ -26,11 +26,17 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.Return
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
 
+/**
+ * Translates {@code getTokenDefaultFreezeStatus()} calls to the HTS system contract.
+ */
 public class DefaultFreezeStatusTranslator extends AbstractCallTranslator<HtsCallAttempt> {
-
+    /** Selector for getTokenDefaultFreezeStatus(address) method. */
     public static final Function DEFAULT_FREEZE_STATUS =
             new Function("getTokenDefaultFreezeStatus(address)", ReturnTypes.RESPONSE_CODE_BOOL);
 
+    /**
+     * Default constructor for injection.
+     */
     @Inject
     public DefaultFreezeStatusTranslator() {
         // Dagger2

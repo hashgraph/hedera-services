@@ -28,14 +28,20 @@ import com.hedera.node.config.data.ContractsConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
 
+/**
+ * Translates {@code getTokenInfo()} calls to the HTS system contract.
+ */
 public class TokenInfoTranslator extends AbstractCallTranslator<HtsCallAttempt> {
-
+    /** Selector for getTokenInfo(address) method. */
     public static final Function TOKEN_INFO =
             new Function("getTokenInfo(address)", ReturnTypes.RESPONSE_CODE_TOKEN_INFO);
-
+    /** Selector for getTokenInfoV2(address) method. */
     public static final Function TOKEN_INFO_V2 =
             new Function("getTokenInfoV2(address)", ReturnTypes.RESPONSE_CODE_TOKEN_INFO_V2);
 
+    /**
+     * Default constructor for injection.
+     */
     @Inject
     public TokenInfoTranslator() {
         // Dagger2

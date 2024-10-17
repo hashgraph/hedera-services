@@ -52,10 +52,11 @@ import javax.inject.Singleton;
 public class ContractGetBytecodeHandler extends PaidQueryHandler {
     private final SmartContractFeeBuilder feeBuilder = new SmartContractFeeBuilder();
 
+    /**
+     * Default constructor for injection.
+     */
     @Inject
-    public ContractGetBytecodeHandler() {
-        // Exists for injection
-    }
+    public ContractGetBytecodeHandler() {}
 
     @Override
     public QueryHeader extractHeader(@NonNull final Query query) {

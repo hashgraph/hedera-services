@@ -32,6 +32,7 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class EvmAddressAliasTranslator extends AbstractCallTranslator<HasCallAttempt> {
+    /** Selector for getEvmAddressAlias(address) method. */
     public static final Function EVM_ADDRESS_ALIAS =
             new Function("getEvmAddressAlias(address)", ReturnTypes.RESPONSE_CODE_ADDRESS);
 

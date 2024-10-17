@@ -55,6 +55,9 @@ import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 
+/**
+ * Unit tests for create token calls.
+ */
 public class ClassicCreatesCallTest extends CallTestBase {
     private static final org.hyperledger.besu.datatypes.Address FRAME_SENDER_ADDRESS = EIP_1014_ADDRESS;
 

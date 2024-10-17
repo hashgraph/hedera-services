@@ -28,9 +28,13 @@ import javax.inject.Inject;
 
 public class HederaAccountNumAliasTranslator extends AbstractCallTranslator<HasCallAttempt> {
 
+    /** Selector for getHederaAccountNumAlias(address) method. */
     public static final Function HEDERA_ACCOUNT_NUM_ALIAS =
             new Function("getHederaAccountNumAlias(address)", ReturnTypes.RESPONSE_CODE_ADDRESS);
 
+    /**
+     * Default constructor for injection.
+     */
     @Inject
     public HederaAccountNumAliasTranslator() {
         // Dagger

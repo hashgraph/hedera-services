@@ -37,17 +37,39 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class AssociationsTranslator extends AbstractCallTranslator<HtsCallAttempt> {
+    /**
+     * Selector for associate() method.
+     */
     public static final Function HRC_ASSOCIATE = new Function("associate()", ReturnTypes.INT);
+    /**
+     * Selector for associateToken(address,address) method.
+     */
     public static final Function ASSOCIATE_ONE = new Function("associateToken(address,address)", ReturnTypes.INT_64);
+    /**
+     * Selector for dissociateToken(address,address) method.
+     */
     public static final Function DISSOCIATE_ONE = new Function("dissociateToken(address,address)", ReturnTypes.INT_64);
+    /**
+     * Selector for dissociate() method.
+     */
     public static final Function HRC_DISSOCIATE = new Function("dissociate()", ReturnTypes.INT);
+    /**
+     * Selector for associateTokens(address,address[]) method.
+     */
     public static final Function ASSOCIATE_MANY =
             new Function("associateTokens(address,address[])", ReturnTypes.INT_64);
+    /**
+     * Selector for dissociateTokens(address,address[]) method.
+     */
     public static final Function DISSOCIATE_MANY =
             new Function("dissociateTokens(address,address[])", ReturnTypes.INT_64);
 
     private final AssociationsDecoder decoder;
 
+    /**
+     * Constructor for injection.
+     * @param decoder
+     */
     @Inject
     public AssociationsTranslator(@NonNull final AssociationsDecoder decoder) {
         this.decoder = decoder;
@@ -74,6 +96,13 @@ public class AssociationsTranslator extends AbstractCallTranslator<HtsCallAttemp
                 AssociationsTranslator::gasRequirement);
     }
 
+    /**
+     * @param body                          the transaction body to be dispatched
+     * @param systemContractGasCalculator   the gas calculator for the system contract
+     * @param enhancement                   the enhancement to use
+     * @param payerId                       the payer of the transaction
+     * @return the required gas
+     */
     public static long gasRequirement(
             @NonNull final TransactionBody body,
             @NonNull final SystemContractGasCalculator systemContractGasCalculator,

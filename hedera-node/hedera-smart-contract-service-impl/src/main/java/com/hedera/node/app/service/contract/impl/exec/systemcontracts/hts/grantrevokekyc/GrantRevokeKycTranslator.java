@@ -37,11 +37,20 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class GrantRevokeKycTranslator extends AbstractCallTranslator<HtsCallAttempt> {
+    /**
+     * Selector for grantTokenKyc(address,address) method.
+     */
     public static final Function GRANT_KYC = new Function("grantTokenKyc(address,address)", ReturnTypes.INT_64);
+    /**
+     * Selector for revokeTokenKyc(address,address) method.
+     */
     public static final Function REVOKE_KYC = new Function("revokeTokenKyc(address,address)", ReturnTypes.INT_64);
 
     private final GrantRevokeKycDecoder decoder;
 
+    /**
+     * @param decoder the decoder to be used for grand / revoke kyc
+     */
     @Inject
     public GrantRevokeKycTranslator(@NonNull GrantRevokeKycDecoder decoder) {
         this.decoder = decoder;
@@ -69,6 +78,13 @@ public class GrantRevokeKycTranslator extends AbstractCallTranslator<HtsCallAtte
                 NOOP_CUSTOMIZER);
     }
 
+    /**
+     * @param body the transaction body to be dispatched
+     * @param systemContractGasCalculator the gas calculator for the system contract
+     * @param enhancement the enhancement to use
+     * @param payerId the payer of the transaction
+     * @return the gas requirement for grant kyc calls to HTS system contract
+     */
     public static long grantGasRequirement(
             @NonNull final TransactionBody body,
             @NonNull final SystemContractGasCalculator systemContractGasCalculator,
@@ -77,6 +93,13 @@ public class GrantRevokeKycTranslator extends AbstractCallTranslator<HtsCallAtte
         return systemContractGasCalculator.gasRequirement(body, DispatchType.GRANT_KYC, payerId);
     }
 
+    /**
+     * @param body the transaction body to be dispatched
+     * @param systemContractGasCalculator the gas calculator for the system contract
+     * @param enhancement the enhancement to use
+     * @param payerId the payer of the transaction
+     * @return the gas requirement for revoke kyc calls to HTS system contract
+     */
     public static long revokeGasRequirement(
             @NonNull final TransactionBody body,
             @NonNull final SystemContractGasCalculator systemContractGasCalculator,

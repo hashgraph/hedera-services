@@ -44,6 +44,7 @@ public interface DeleteCapableTransactionStreamBuilder extends StreamBuilder {
 
     /**
      * Gets the beneficiary account ID for deleted account ID.
+     * @param deletedAccountID the deleted account id to return
      * @return the beneficiary account ID of deleted account ID
      */
     @Nullable

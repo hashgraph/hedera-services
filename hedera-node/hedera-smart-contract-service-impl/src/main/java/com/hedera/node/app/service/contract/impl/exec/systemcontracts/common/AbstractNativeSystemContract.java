@@ -57,7 +57,11 @@ import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 @Singleton
 public abstract class AbstractNativeSystemContract extends AbstractFullContract implements HederaSystemContract {
     private static final Logger log = LogManager.getLogger(AbstractNativeSystemContract.class);
+    /**
+     * Function selector byte length
+     */
     public static final int FUNCTION_SELECTOR_LENGTH = 4;
+
     private final CallFactory callFactory;
     private final ContractID contractID;
 
