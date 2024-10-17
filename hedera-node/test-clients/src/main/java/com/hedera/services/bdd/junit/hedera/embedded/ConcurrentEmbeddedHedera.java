@@ -32,7 +32,6 @@ import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.events.ConsensusEvent;
-import com.swirlds.platform.system.state.notifications.StateHashedNotification;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
 import java.time.Instant;
@@ -157,9 +156,7 @@ class ConcurrentEmbeddedHedera extends AbstractEmbeddedHedera implements Embedde
                     final var round = new FakeRound(roundNo.getAndIncrement(), addressBook, consensusEvents);
                     hedera.handleWorkflow().handleRound(state, round);
                     hedera.onSealConsensusRound(round, state);
-                    // Immediately notify the block stream manager of the "hash" at the end of this round
-                    hedera.blockStreamManager()
-                            .notify(new StateHashedNotification(round.getRoundNum(), FAKE_START_OF_STATE_HASH));
+                    notifyBlockStreamManagerIfEnabled(round.getRoundNum());
                     prehandledEvents.clear();
                 }
                 // Now drain all events that will go in the next round and pre-handle them
@@ -167,8 +164,8 @@ class ConcurrentEmbeddedHedera extends AbstractEmbeddedHedera implements Embedde
                 queue.drainTo(newEvents);
                 newEvents.forEach(event -> hedera.onPreHandle(event, state));
                 prehandledEvents.addAll(newEvents);
-            } catch (Exception e) {
-                log.warn("Error handling transactions", e);
+            } catch (Throwable t) {
+                log.error("Error handling transactions", t);
             }
         }
     }

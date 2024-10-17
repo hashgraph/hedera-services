@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.workflows.handle.steps;
 
+import static com.hedera.node.config.types.StreamMode.RECORDS;
 import static com.swirlds.common.stream.LinkedObjectStreamUtilities.getPeriod;
 import static java.time.ZoneOffset.UTC;
 import static java.util.Objects.requireNonNull;
@@ -31,6 +32,7 @@ import com.hedera.node.app.workflows.handle.Dispatch;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.node.config.data.StakingConfig;
 import com.hedera.node.config.data.TssConfig;
+import com.hedera.node.config.types.StreamMode;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -68,32 +70,41 @@ public class NodeStakeUpdates {
      * rewards. This should only be done during handling of the first transaction of each new staking
      * period, which staking period usually starts at midnight UTC.
      *
-     * <p>The only exception to this rule is when {@code consensusTimeOfLastHandledTxn} is null,
-     * <b>which should only happen on node startup.</b> The node should therefore run this process
-     * to catch up on updates and distributions when first coming online.
-     *
-     * @param stack        the savepoint stack
-     * @param tokenContext the token context
-     * @param isGenesis    whether the current transaction is the genesis transaction
      * @param dispatch     the dispatch
+     * @param stack the savepoint stack
+     * @param tokenContext the token context
+     * @param streamMode the stream mode
+     * @param isGenesis whether the current transaction is the genesis transaction
+     * @param lastIntervalProcessTime if known, the last instant when time-based events were processed
      */
     public void process(
+            @NonNull final Dispatch dispatch,
             @NonNull final SavepointStackImpl stack,
             @NonNull final TokenContext tokenContext,
+            @NonNull final StreamMode streamMode,
             final boolean isGenesis,
-            final Dispatch dispatch) {
-        requireNonNull(stack, "stack must not be null");
-        requireNonNull(tokenContext, "tokenContext must not be null");
-        final var blockStore = tokenContext.readableStore(ReadableBlockRecordStore.class);
+            @NonNull final Instant lastIntervalProcessTime) {
+        requireNonNull(stack);
+        requireNonNull(dispatch);
+        requireNonNull(tokenContext);
+        requireNonNull(streamMode);
+        requireNonNull(lastIntervalProcessTime);
         var shouldExport = isGenesis;
         if (!shouldExport) {
             final var consensusTime = tokenContext.consensusTime();
-            final var lastHandleTime = blockStore.getLastBlockInfo().consTimeOfLastHandledTxnOrThrow();
-            if (consensusTime.getEpochSecond() > lastHandleTime.seconds()) {
-                shouldExport = isNextStakingPeriod(
-                        consensusTime,
-                        Instant.ofEpochSecond(lastHandleTime.seconds(), lastHandleTime.nanos()),
-                        tokenContext);
+            if (streamMode == RECORDS) {
+                final var blockStore = tokenContext.readableStore(ReadableBlockRecordStore.class);
+                final var lastHandleTime = blockStore.getLastBlockInfo().consTimeOfLastHandledTxnOrThrow();
+                if (consensusTime.getEpochSecond() > lastHandleTime.seconds()) {
+                    shouldExport = isNextStakingPeriod(
+                            consensusTime,
+                            Instant.ofEpochSecond(lastHandleTime.seconds(), lastHandleTime.nanos()),
+                            tokenContext);
+                }
+            } else {
+                if (consensusTime.getEpochSecond() > lastIntervalProcessTime.getEpochSecond()) {
+                    shouldExport = isNextStakingPeriod(consensusTime, lastIntervalProcessTime, tokenContext);
+                }
             }
         }
         if (shouldExport) {
