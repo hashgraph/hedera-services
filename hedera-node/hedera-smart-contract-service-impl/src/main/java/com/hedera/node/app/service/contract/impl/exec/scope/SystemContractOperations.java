@@ -18,6 +18,7 @@ package com.hedera.node.app.service.contract.impl.exec.scope;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
+import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.Transaction;
@@ -25,6 +26,7 @@ import com.hedera.hapi.node.contract.ContractFunctionResult;
 import com.hedera.hapi.node.transaction.ExchangeRate;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.records.ContractCallStreamBuilder;
+import com.hedera.node.app.spi.workflows.record.StreamBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.function.Predicate;
 import org.apache.tuweni.bytes.Bytes;
@@ -45,7 +47,7 @@ public interface SystemContractOperations {
      * @return the result of the dispatch
      */
     @NonNull
-    <T> T dispatch(
+    <T extends StreamBuilder> T dispatch(
             @NonNull TransactionBody syntheticBody,
             @NonNull VerificationStrategy strategy,
             @NonNull AccountID syntheticPayerId,
@@ -57,10 +59,13 @@ public interface SystemContractOperations {
      *
      * @param syntheticBody the preempted dispatch
      * @param preemptingStatus the status code causing the preemption
+     * @param functionality the functionality of the preemption
      * @return the record of the preemption
      */
     ContractCallStreamBuilder externalizePreemptedDispatch(
-            @NonNull TransactionBody syntheticBody, @NonNull ResponseCodeEnum preemptingStatus);
+            @NonNull TransactionBody syntheticBody,
+            @NonNull ResponseCodeEnum preemptingStatus,
+            @NonNull HederaFunctionality functionality);
 
     /**
      * Returns a {@link Predicate} that tests whether the given {@link Key} is active based on the
@@ -73,17 +78,10 @@ public interface SystemContractOperations {
     Predicate<Key> activeSignatureTestWith(@NonNull VerificationStrategy strategy);
 
     /**
-     * Attempts to create a child record of the current record, with the given {@code result}
-     *
-     * @param result    contract function result
-     */
-    void externalizeResult(
-            @NonNull final ContractFunctionResult result, @NonNull final ResponseCodeEnum responseStatus);
-
-    /**
-     * Attempts to create a child record of the current record, with the given {@code result}
-     *
-     * @param result    contract function result
+     * Attempts to create a child record of the current record, with the given {@code result}.
+     * @param result contract function result
+     * @param responseStatus response status
+     * @param transaction transaction
      */
     void externalizeResult(
             @NonNull ContractFunctionResult result,
@@ -93,12 +91,13 @@ public interface SystemContractOperations {
     /**
      * Generate synthetic transaction for child hts call
      *
-     * @param input
-     * @param contractID
-     * @param isViewCall
-     * @return
+     * @param input the input data
+     * @param contractID the contract id
+     * @param isViewCall if the call is a view call
+     * @return the synthetic transaction
      */
-    Transaction syntheticTransactionForNativeCall(Bytes input, ContractID contractID, boolean isViewCall);
+    Transaction syntheticTransactionForNativeCall(
+            @NonNull Bytes input, @NonNull ContractID contractID, boolean isViewCall);
 
     /**
      * Returns the {@link ExchangeRate} for the current consensus time.  This will enable the translation from hbars

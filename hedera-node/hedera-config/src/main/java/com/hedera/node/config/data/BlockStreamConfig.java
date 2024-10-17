@@ -16,8 +16,6 @@
 
 package com.hedera.node.config.data;
 
-import static com.hedera.node.config.types.StreamMode.BOTH;
-
 import com.hedera.node.config.NetworkProperty;
 import com.hedera.node.config.NodeProperty;
 import com.hedera.node.config.types.BlockStreamWriterMode;
@@ -38,12 +36,6 @@ public record BlockStreamConfig(
         @ConfigProperty(defaultValue = "FILE") @NodeProperty BlockStreamWriterMode writerMode,
         @ConfigProperty(defaultValue = "data/block-streams") @NodeProperty String blockFileDir,
         @ConfigProperty(defaultValue = "true") @NetworkProperty boolean compressFilesOnCreation,
-        @ConfigProperty(defaultValue = "1") @NetworkProperty int roundsPerBlock) {
-    public boolean streamBlocks() {
-        return streamMode == BOTH;
-    }
-
-    public boolean streamRecords() {
-        return true;
-    }
-}
+        @ConfigProperty(defaultValue = "32") @NetworkProperty int serializationBatchSize,
+        @ConfigProperty(defaultValue = "32") @NetworkProperty int hashCombineBatchSize,
+        @ConfigProperty(defaultValue = "1") @NetworkProperty int roundsPerBlock) {}
