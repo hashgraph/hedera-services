@@ -22,5 +22,14 @@ spotless {
         buf("1.45.0").pathToExe("/opt/homebrew/bin/buf")
         target("**/*.proto") // target every '.proto'
         custom("Fix incorrect br tags") { it -> it.replace("</br>", "<br/>") }
+        custom("Add * prefix for blank lines in comments") { it ->
+            it.replace(Regex("""(/\*\*.*?\*/)|(/\*.*?\*/)""", RegexOption.DOT_MATCHES_ALL)) {
+                matchResult ->
+                // Capture the matched comment block
+                val comment = matchResult.value
+                // Replace blank lines with '*'
+                comment.replace(Regex("\\n\\n"), "\n   *\n")
+            }
+        }
     }
 }
