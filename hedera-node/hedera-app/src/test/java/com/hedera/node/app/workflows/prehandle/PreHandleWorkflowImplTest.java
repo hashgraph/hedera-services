@@ -68,6 +68,7 @@ import com.swirlds.platform.system.transaction.TransactionWrapper;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.Future;
 import java.util.stream.Stream;
@@ -215,7 +216,7 @@ final class PreHandleWorkflowImplTest extends AppTestBase implements Scenarios {
         final var transactions = list.stream();
         final var creator = NODE_1.nodeAccountID();
         workflow.preHandle(storeFactory, creator, transactions);
-        assertThat((Object) platformTx.getMetadata()).isNull();
+        assertThat(Optional.ofNullable(platformTx.getMetadata())).isEmpty();
     }
 
     /**
