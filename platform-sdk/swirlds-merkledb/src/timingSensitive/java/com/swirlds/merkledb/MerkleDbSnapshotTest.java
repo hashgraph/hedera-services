@@ -116,14 +116,6 @@ class MerkleDbSnapshotTest {
                 MerkleDbDataSource::getCountOfOpenDatabases,
                 Duration.ofSeconds(1),
                 "Expected no open dbs. Actual number of open dbs: " + MerkleDbDataSource.getCountOfOpenDatabases());
-
-        if (Files.exists(tempDirectory)) {
-            Files.walk(tempDirectory).map(Path::toFile).forEach(file -> {
-                if (!file.delete()) {
-                    file.deleteOnExit();
-                }
-            });
-        }
     }
 
     private static MerkleDbTableConfig fixedConfig() {

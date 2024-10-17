@@ -63,7 +63,6 @@ import java.nio.file.Path;
 import java.util.function.Function;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.io.CleanupMode;
 import org.junit.jupiter.api.io.TempDir;
 
 public class VirtualMapReconnectTestBase {
@@ -111,7 +110,7 @@ public class VirtualMapReconnectTestBase {
             .withConfigDataType(StateCommonConfig.class)
             .build();
 
-    @TempDir(cleanup = CleanupMode.NEVER)
+    @TempDir
     private static Path tempDirectory;
 
     private static TestFileSystemManager testFileSystemManager;

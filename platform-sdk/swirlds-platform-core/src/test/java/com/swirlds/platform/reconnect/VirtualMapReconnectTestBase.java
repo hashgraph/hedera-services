@@ -56,7 +56,6 @@ import java.util.Objects;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.io.CleanupMode;
 import org.junit.jupiter.api.io.TempDir;
 
 public abstract class VirtualMapReconnectTestBase {
@@ -100,7 +99,7 @@ public abstract class VirtualMapReconnectTestBase {
             .getOrCreateConfig()
             .getConfigData(ReconnectConfig.class);
 
-    @TempDir(cleanup = CleanupMode.NEVER)
+    @TempDir
     private Path tempDir;
 
     protected TestFileSystemManager testFileSystemManager;
