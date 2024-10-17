@@ -37,6 +37,7 @@ import com.swirlds.base.utility.ToStringBuilder;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
+import com.swirlds.config.api.Configuration;
 import com.swirlds.merkledb.collections.HashListByteBuffer;
 import com.swirlds.merkledb.collections.LongList;
 import com.swirlds.merkledb.collections.LongListDisk;
@@ -181,7 +182,8 @@ public final class MerkleDbDataSource implements VirtualDataSource {
             final String tableName,
             final int tableId,
             final MerkleDbTableConfig tableConfig,
-            final boolean compactionEnabled)
+            final boolean compactionEnabled,
+            final Configuration configuration)
             throws IOException {
         this.database = database;
         this.tableName = tableName;
@@ -238,18 +240,21 @@ public final class MerkleDbDataSource implements VirtualDataSource {
 
         // create path to disk location index
         final boolean forceIndexRebuilding = database.getConfig().indexRebuildingEnforced();
+
         if (tableConfig.isPreferDiskBasedIndices()) {
-            pathToDiskLocationInternalNodes = new LongListDisk(dbPaths.pathToDiskLocationInternalNodesFile);
+            pathToDiskLocationInternalNodes =
+                    new LongListDisk(dbPaths.pathToDiskLocationInternalNodesFile, configuration);
         } else if (Files.exists(dbPaths.pathToDiskLocationInternalNodesFile) && !forceIndexRebuilding) {
-            pathToDiskLocationInternalNodes = new LongListOffHeap(dbPaths.pathToDiskLocationInternalNodesFile);
+            pathToDiskLocationInternalNodes =
+                    new LongListOffHeap(dbPaths.pathToDiskLocationInternalNodesFile, configuration);
         } else {
             pathToDiskLocationInternalNodes = new LongListOffHeap();
         }
         // path to disk location index, leaf nodes
         if (tableConfig.isPreferDiskBasedIndices()) {
-            pathToDiskLocationLeafNodes = new LongListDisk(dbPaths.pathToDiskLocationLeafNodesFile);
+            pathToDiskLocationLeafNodes = new LongListDisk(dbPaths.pathToDiskLocationLeafNodesFile, configuration);
         } else if (Files.exists(dbPaths.pathToDiskLocationLeafNodesFile) && !forceIndexRebuilding) {
-            pathToDiskLocationLeafNodes = new LongListOffHeap(dbPaths.pathToDiskLocationLeafNodesFile);
+            pathToDiskLocationLeafNodes = new LongListOffHeap(dbPaths.pathToDiskLocationLeafNodesFile, configuration);
         } else {
             pathToDiskLocationLeafNodes =
                     new LongListOffHeap(database.getConfig().reservedBufferLengthForLeafList());
@@ -316,7 +321,7 @@ public final class MerkleDbDataSource implements VirtualDataSource {
         // key to path store
         String keyToPathStoreName = tableName + "_objectkeytopath";
         keyToPath = new HalfDiskHashMap(
-                database.getConfig(),
+                configuration,
                 tableConfig.getMaxNumberOfKeys(),
                 dbPaths.keyToPathDirectory,
                 keyToPathStoreName,

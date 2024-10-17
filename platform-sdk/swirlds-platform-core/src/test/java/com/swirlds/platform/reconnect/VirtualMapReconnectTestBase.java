@@ -17,6 +17,7 @@
 package com.swirlds.platform.reconnect;
 
 import static com.swirlds.common.test.fixtures.io.ResourceLoader.loadLog4jContext;
+import static com.swirlds.platform.test.fixtures.config.ConfigUtils.CONFIGURATION;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.fail;
 
@@ -30,12 +31,14 @@ import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.MerkleInternal;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig_;
+import com.swirlds.common.test.fixtures.TestFileSystemManager;
 import com.swirlds.common.test.fixtures.merkle.dummy.DummyMerkleInternal;
 import com.swirlds.common.test.fixtures.merkle.dummy.DummyMerkleLeaf;
 import com.swirlds.common.test.fixtures.merkle.util.MerkleTestUtils;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.virtualmap.VirtualMap;
+import com.swirlds.virtualmap.config.VirtualMapConfig;
 import com.swirlds.virtualmap.datasource.VirtualDataSource;
 import com.swirlds.virtualmap.datasource.VirtualDataSourceBuilder;
 import com.swirlds.virtualmap.datasource.VirtualHashRecord;
@@ -53,6 +56,7 @@ import java.util.Objects;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.io.TempDir;
 
 public abstract class VirtualMapReconnectTestBase {
 
@@ -95,6 +99,11 @@ public abstract class VirtualMapReconnectTestBase {
             .getOrCreateConfig()
             .getConfigData(ReconnectConfig.class);
 
+    @TempDir
+    private Path tempDir;
+
+    protected TestFileSystemManager testFileSystemManager;
+
     protected abstract VirtualDataSourceBuilder createBuilder() throws IOException;
 
     @BeforeEach
@@ -102,11 +111,12 @@ public abstract class VirtualMapReconnectTestBase {
         // Some tests set custom default VirtualMap settings, e.g. StreamEventParserTest calls
         // Browser.populateSettingsCommon(). These custom settings can't be used to run VM reconnect
         // tests. As a workaround, set default settings here explicitly
+        testFileSystemManager = new TestFileSystemManager(tempDir);
         final VirtualDataSourceBuilder dataSourceBuilder = createBuilder();
         teacherBuilder = new BrokenBuilder(dataSourceBuilder);
         learnerBuilder = new BrokenBuilder(dataSourceBuilder);
-        teacherMap = new VirtualMap<>("Teacher", KEY_SERIALIZER, VALUE_SERIALIZER, teacherBuilder);
-        learnerMap = new VirtualMap<>("Learner", KEY_SERIALIZER, VALUE_SERIALIZER, learnerBuilder);
+        teacherMap = new VirtualMap<>("Teacher", KEY_SERIALIZER, VALUE_SERIALIZER, teacherBuilder, CONFIGURATION);
+        learnerMap = new VirtualMap<>("Learner", KEY_SERIALIZER, VALUE_SERIALIZER, learnerBuilder, CONFIGURATION);
     }
 
     @BeforeAll
@@ -117,9 +127,12 @@ public abstract class VirtualMapReconnectTestBase {
         registry.registerConstructables("com.swirlds.virtualmap");
         registry.registerConstructable(new ClassConstructorPair(DummyMerkleInternal.class, DummyMerkleInternal::new));
         registry.registerConstructable(new ClassConstructorPair(DummyMerkleLeaf.class, DummyMerkleLeaf::new));
-        registry.registerConstructable(new ClassConstructorPair(VirtualMap.class, VirtualMap::new));
+        registry.registerConstructable(
+                new ClassConstructorPair(VirtualMap.class, () -> new VirtualMap<>(CONFIGURATION)));
         registry.registerConstructable(new ClassConstructorPair(VirtualMapState.class, VirtualMapState::new));
-        registry.registerConstructable(new ClassConstructorPair(VirtualRootNode.class, VirtualRootNode::new));
+        registry.registerConstructable(new ClassConstructorPair(
+                VirtualRootNode.class,
+                () -> new VirtualRootNode<>(CONFIGURATION.getConfigData(VirtualMapConfig.class))));
         registry.registerConstructable(new ClassConstructorPair(TestKey.class, TestKey::new));
         registry.registerConstructable(new ClassConstructorPair(TestValue.class, TestValue::new));
         registry.registerConstructable(new ClassConstructorPair(BrokenBuilder.class, BrokenBuilder::new));

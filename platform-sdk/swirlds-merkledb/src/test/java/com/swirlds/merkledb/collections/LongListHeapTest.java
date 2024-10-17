@@ -18,6 +18,7 @@ package com.swirlds.merkledb.collections;
 
 import static com.swirlds.base.units.UnitConstants.MEBIBYTES_TO_BYTES;
 
+import com.swirlds.config.api.Configuration;
 import java.io.IOException;
 import java.nio.file.Path;
 
@@ -35,7 +36,8 @@ public class LongListHeapTest extends AbstractLongListTest<LongListHeap> {
     }
 
     @Override
-    protected LongListHeap createLongListFromFile(final Path file) throws IOException {
-        return new LongListHeap(file);
+    protected LongListHeap createLongListFromFile(final Path file, final Configuration configuration)
+            throws IOException {
+        return new LongListHeap(file, configuration);
     }
 }

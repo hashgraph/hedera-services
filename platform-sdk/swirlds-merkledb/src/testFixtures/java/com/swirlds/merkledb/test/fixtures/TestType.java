@@ -16,6 +16,7 @@
 
 package com.swirlds.merkledb.test.fixtures;
 
+import static com.swirlds.merkledb.test.fixtures.MerkleDbTestUtils.CONFIGURATION;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -220,8 +221,10 @@ public enum TestType {
                 final boolean enableMerging,
                 boolean preferDiskBasedIndexes)
                 throws IOException {
-            final MerkleDb database = MerkleDb.getInstance(dbPath);
-            final MerkleDbTableConfig tableConfig = new MerkleDbTableConfig((short) 1, DigestType.SHA_384)
+            final Configuration configuration = new TestConfigBuilder().getOrCreateConfig();
+            final MerkleDb database = MerkleDb.getInstance(dbPath, configuration);
+            final MerkleDbTableConfig tableConfig = new MerkleDbTableConfig(
+                            (short) 1, DigestType.SHA_384, CONFIGURATION.getConfigData(MerkleDbConfig.class))
                     .preferDiskIndices(preferDiskBasedIndexes)
                     .maxNumberOfKeys(size * 10L)
                     .hashesRamToDiskThreshold(hashesRamToDiskThreshold);
@@ -232,7 +235,8 @@ public enum TestType {
 
         public MerkleDbDataSource getDataSource(final Path dbPath, final String name, final boolean enableMerging)
                 throws IOException {
-            final MerkleDb database = MerkleDb.getInstance(dbPath);
+            final Configuration configuration = new TestConfigBuilder().getOrCreateConfig();
+            final MerkleDb database = MerkleDb.getInstance(dbPath, configuration);
             return database.getDataSource(name, enableMerging);
         }
 

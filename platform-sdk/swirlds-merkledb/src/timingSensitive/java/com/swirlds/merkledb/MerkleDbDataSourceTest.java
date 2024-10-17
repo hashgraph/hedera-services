@@ -18,6 +18,7 @@ package com.swirlds.merkledb;
 
 import static com.swirlds.common.test.fixtures.AssertionUtils.assertEventuallyEquals;
 import static com.swirlds.common.test.fixtures.AssertionUtils.assertEventuallyFalse;
+import static com.swirlds.merkledb.test.fixtures.MerkleDbTestUtils.CONFIGURATION;
 import static com.swirlds.merkledb.test.fixtures.MerkleDbTestUtils.checkDirectMemoryIsCleanedUpToLessThanBaseUsage;
 import static com.swirlds.merkledb.test.fixtures.MerkleDbTestUtils.getDirectMemoryUsedBytes;
 import static com.swirlds.merkledb.test.fixtures.MerkleDbTestUtils.hash;
@@ -36,7 +37,7 @@ import com.swirlds.base.function.CheckedConsumer;
 import com.swirlds.base.units.UnitConstants;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.crypto.Hash;
-import com.swirlds.common.io.utility.LegacyTemporaryFileBuilder;
+import com.swirlds.common.test.fixtures.TestFileSystemManager;
 import com.swirlds.merkledb.test.fixtures.ExampleByteArrayVirtualValue;
 import com.swirlds.merkledb.test.fixtures.TestType;
 import com.swirlds.metrics.api.IntegerGauge;
@@ -65,6 +66,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.EnumSource;
@@ -75,11 +77,14 @@ class MerkleDbDataSourceTest {
     private static final int COUNT = 10_000;
     private static final Random RANDOM = new Random(1234);
 
+    @TempDir
+    private static Path tempDirectory;
+
     private static Path testDirectory;
 
     @BeforeAll
     static void setup() throws Exception {
-        testDirectory = LegacyTemporaryFileBuilder.buildTemporaryFile("MerkleDbDataSourceTest");
+        testDirectory = new TestFileSystemManager(tempDirectory).resolve(Path.of("MerkleDbDataSourceTest"));
         ConstructableRegistry.getInstance().registerConstructables("com.swirlds.merkledb");
     }
 
@@ -452,7 +457,7 @@ class MerkleDbDataSourceTest {
             assertFalse(
                     Files.exists(originalDb.getTableDir(tableName, dataSource.getTableId())),
                     "Data source dir should be deleted");
-            final MerkleDb snapshotDb = MerkleDb.getInstance(snapshotDbPathRef[0]);
+            final MerkleDb snapshotDb = MerkleDb.getInstance(snapshotDbPathRef[0], CONFIGURATION);
             assertTrue(
                     Files.exists(snapshotDb.getTableDir(tableName, dataSource.getTableId())),
                     "Snapshot dir [" + snapshotDbPathRef[0] + "] should exist");
@@ -513,7 +518,7 @@ class MerkleDbDataSourceTest {
             // close data source
             dataSource.close();
 
-            final MerkleDb snapshotDb = MerkleDb.getInstance(snapshotDbPath);
+            final MerkleDb snapshotDb = MerkleDb.getInstance(snapshotDbPath, CONFIGURATION);
             final MerkleDbPaths snapshotPaths = new MerkleDbPaths(snapshotDb.getTableDir(tableName, tableId));
             // Delete all indices
             Files.delete(snapshotPaths.pathToDiskLocationLeafNodesFile);
