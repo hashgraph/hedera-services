@@ -111,7 +111,7 @@ public final class InMemoryValue<K, V> extends PartialMerkleLeaf
 
     /** {@inheritDoc} */
     @Override
-    public int getVersion() {
+    public int getClassVersion() {
         return 1;
     }
 

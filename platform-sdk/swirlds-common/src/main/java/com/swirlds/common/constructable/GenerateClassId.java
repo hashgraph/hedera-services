@@ -54,7 +54,7 @@ public final class GenerateClassId {
 						\t * {@inheritDoc}
 						\t */
 						\t@Override
-						\tpublic int getVersion() {
+						\tpublic int getClassVersion() {
 						\t\treturn ClassVersion.ORIGINAL;
 						\t}
 							""",

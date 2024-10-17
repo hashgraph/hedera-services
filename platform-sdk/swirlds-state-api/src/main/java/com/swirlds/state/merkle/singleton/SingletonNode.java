@@ -75,7 +75,7 @@ public class SingletonNode<T> extends PartialBinaryMerkleInternal implements Lab
     }
 
     @Override
-    public int getVersion() {
+    public int getClassVersion() {
         return CLASS_VERSION;
     }
 

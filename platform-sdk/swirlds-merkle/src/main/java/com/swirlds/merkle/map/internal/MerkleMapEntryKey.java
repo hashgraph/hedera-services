@@ -99,7 +99,7 @@ public class MerkleMapEntryKey<K extends SelfSerializable & FastCopyable> extend
      * {@inheritDoc}
      */
     @Override
-    public int getVersion() {
+    public int getClassVersion() {
         return ClassVersion.ORIGINAL;
     }
 

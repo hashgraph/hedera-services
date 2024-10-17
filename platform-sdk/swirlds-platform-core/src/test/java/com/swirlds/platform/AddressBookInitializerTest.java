@@ -327,7 +327,7 @@ class AddressBookInitializerTest {
      */
     private SoftwareVersion getMockSoftwareVersion(int version) {
         final SoftwareVersion softwareVersion = mock(SoftwareVersion.class);
-        when(softwareVersion.getVersion()).thenReturn(version);
+        when(softwareVersion.getClassVersion()).thenReturn(version);
         final AtomicReference<SoftwareVersion> softVersion = new AtomicReference<>();
         when(softwareVersion.compareTo(argThat(sv -> {
                     softVersion.set(sv);
@@ -338,7 +338,7 @@ class AddressBookInitializerTest {
                     if (other == null) {
                         return 1;
                     } else {
-                        return Integer.compare(softwareVersion.getVersion(), other.getVersion());
+                        return Integer.compare(softwareVersion.getClassVersion(), other.getClassVersion());
                     }
                 });
         return softwareVersion;

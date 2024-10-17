@@ -427,7 +427,7 @@ public class PayloadCfgSimple extends PartialMerkleLeaf implements MerkleLeaf {
      * {@inheritDoc}
      */
     @Override
-    public int getVersion() {
+    public int getClassVersion() {
         return ClassVersion.MIGRATE_TO_SERIALIZABLE;
     }
 

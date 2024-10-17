@@ -49,7 +49,7 @@ public final class NoOpVirtualRoot extends PartialMerkleLeaf implements VirtualR
     public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {}
 
     @Override
-    public int getVersion() {
+    public int getClassVersion() {
         return 0;
     }
 

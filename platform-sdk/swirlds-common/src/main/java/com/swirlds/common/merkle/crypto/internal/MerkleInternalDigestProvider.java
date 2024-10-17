@@ -61,7 +61,7 @@ public class MerkleInternalDigestProvider
         hashBuilder.reset();
 
         hashBuilder.update(node.getClassId());
-        hashBuilder.update(node.getVersion());
+        hashBuilder.update(node.getClassVersion());
         for (int index = 0; index < childHashes.size(); index++) {
             final Hash childHash = childHashes.get(index);
 

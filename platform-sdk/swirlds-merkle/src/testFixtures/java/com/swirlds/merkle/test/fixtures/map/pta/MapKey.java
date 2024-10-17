@@ -129,7 +129,7 @@ public class MapKey implements SelfSerializable, Comparable<MapKey>, FastCopyabl
     }
 
     @Override
-    public int getVersion() {
+    public int getClassVersion() {
         return ClassVersion.ORIGINAL;
     }
 }

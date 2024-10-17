@@ -69,7 +69,7 @@ public class MerkleDataOutputStream extends SerializableDataOutputStream {
      */
     private void writeDefaultInternalNode(final MerkleInternal node) throws IOException {
         writeLong(node.getClassId());
-        writeInt(node.getVersion());
+        writeInt(node.getClassVersion());
         writeInt(node.getNumberOfChildren());
     }
 

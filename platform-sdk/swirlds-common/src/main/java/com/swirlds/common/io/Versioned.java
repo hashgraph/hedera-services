@@ -28,5 +28,5 @@ public interface Versioned {
      *
      * @return version number
      */
-    int getVersion();
+    int getClassVersion();
 }

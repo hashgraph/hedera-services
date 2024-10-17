@@ -40,7 +40,7 @@ public final class ExampleVariableSizeVirtualValueSerializer
     }
 
     @Override
-    public int getVersion() {
+    public int getClassVersion() {
         return ClassVersion.ORIGINAL;
     }
 

@@ -86,7 +86,7 @@ public class FCInt extends AbstractSerializableHashable implements FastCopyable 
      * {@inheritDoc}
      */
     @Override
-    public int getVersion() {
+    public int getClassVersion() {
         return CLASS_VERSION;
     }
 

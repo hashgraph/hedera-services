@@ -236,7 +236,7 @@ public class UncompressedMerkleRoute extends AbstractMerkleRoute {
      * {@inheritDoc}
      */
     @Override
-    public int getVersion() {
+    public int getClassVersion() {
         return ClassVersion.ORIGINAL;
     }
 }

@@ -154,7 +154,7 @@ public class SerializableDataInputStream extends AugmentedDataInputStream {
      * Throws an exception if the version is not supported.
      */
     protected void validateVersion(final SerializableDet object, final int version) throws InvalidVersionException {
-        if (version < object.getMinimumSupportedVersion() || version > object.getVersion()) {
+        if (version < object.getMinimumSupportedVersion() || version > object.getClassVersion()) {
             throw new InvalidVersionException(version, object);
         }
     }

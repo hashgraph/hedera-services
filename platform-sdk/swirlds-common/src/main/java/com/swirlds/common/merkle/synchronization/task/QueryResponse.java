@@ -83,7 +83,7 @@ public class QueryResponse implements SelfSerializable {
      * {@inheritDoc}
      */
     @Override
-    public int getVersion() {
+    public int getClassVersion() {
         return ClassVersion.ORIGINAL;
     }
 }

@@ -70,7 +70,7 @@ public final class OnDiskValueSerializer<V> implements ValueSerializer<OnDiskVal
     }
 
     @Override
-    public int getVersion() {
+    public int getClassVersion() {
         return VERSION;
     }
 

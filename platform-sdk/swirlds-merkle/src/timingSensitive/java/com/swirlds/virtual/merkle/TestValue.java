@@ -48,7 +48,7 @@ public final class TestValue implements VirtualValue {
     }
 
     @Override
-    public int getVersion() {
+    public int getClassVersion() {
         return 1;
     }
 
