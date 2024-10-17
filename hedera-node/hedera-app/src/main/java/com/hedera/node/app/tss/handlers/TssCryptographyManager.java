@@ -68,7 +68,8 @@ public class TssCryptographyManager {
                     // 1. If voting is closed for the target roster or the vote is a second vote from the originating
                     // node, do nothing.
                     if (votingClosed.contains(tssVoteTransactionBody.targetRosterHash())
-                            || tssVotes.containsKey(tssVoteTransactionBody.targetRosterHash())) {
+                            || tssVotes.get(tssVoteTransactionBody.targetRosterHash())
+                                    .contains(tssVoteTransactionBody)) {
                         return;
                     }
 

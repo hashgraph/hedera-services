@@ -18,23 +18,23 @@ package com.hedera.node.app.tss.handlers;
 
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.hapi.node.state.addressbook.Node;
-import com.hedera.hapi.node.state.common.EntityNumber;
+import com.hedera.hapi.node.state.token.StakingNodeInfo;
 import com.hedera.hapi.node.state.tss.TssVoteMapKey;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.hapi.services.auxiliary.tss.TssVoteTransactionBody;
-import com.hedera.node.app.service.addressbook.ReadableNodeStore;
+import com.hedera.node.app.service.token.ReadableStakingInfoStore;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hedera.node.app.tss.stores.WritableTssBaseStore;
+import com.hedera.node.config.data.StakingConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.Map;
+import java.util.Set;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -70,7 +70,6 @@ public class TssVoteHandler implements TransactionHandler {
         final var txBody = context.body().tssVoteOrThrow();
         // Check if the sourceRosterHash and targetRosterHash correspond to existing rosters in the system?
         //   RosterStateId.ROSTER_STATES_KEY
-        // Check if the ledgerId corresponds to an existing ledger in the system?
 
         // 1. If a threshold number of votes (totaling at least 1/3 of weight), all with the same vote byte array,
         //    have already been received for the candidate roster, then discard the TssVoteTransaction.
@@ -103,70 +102,44 @@ public class TssVoteHandler implements TransactionHandler {
     public static boolean hasReachedThreshold(
             TssVoteTransactionBody tssVoteTransaction, HandleContext context, long thresholdDenominator) {
         final var tssBaseStore = context.storeFactory().writableStore(WritableTssBaseStore.class);
-        final var nodeStore = context.storeFactory().readableStore(ReadableNodeStore.class);
+        final var stakingInfoStore = context.storeFactory().readableStore(ReadableStakingInfoStore.class);
 
         // Get the target roster from the TssVoteTransactionBody
         Bytes candidateRosterHash = tssVoteTransaction.targetRosterHash();
 
         // Get all votes for the candidate roster
-        Map<Node, TssVoteTransactionBody> votes = new HashMap<>();
-        Iterator<EntityNumber> nodeIterator = nodeStore.keys();
-        while (nodeIterator.hasNext()) {
-            long nodeId = nodeIterator.next().number();
-            Node node = nodeStore.get(nodeId);
-
-            if (node != null && !node.deleted()) {
+        Map<StakingNodeInfo, TssVoteTransactionBody> votes = new HashMap<>();
+        Set<Long> nodeIds = stakingInfoStore.getAll();
+        for (long nodeId : nodeIds) {
+            StakingNodeInfo stakingNodeInfo = stakingInfoStore.get(nodeId);
+            if (stakingNodeInfo != null && !stakingNodeInfo.deleted()) {
                 final TssVoteMapKey tssVoteMapKey = new TssVoteMapKey(candidateRosterHash, nodeId);
                 if (tssBaseStore.exists(tssVoteMapKey)) {
-                    votes.put(node, tssBaseStore.getVote(tssVoteMapKey));
+                    votes.put(stakingNodeInfo, tssBaseStore.getVote(tssVoteMapKey));
                 }
             }
         }
 
         // Calculate the total weight of the network
-        long totalWeight = getTotalNetworkWeight(nodeStore);
+        final var totalWeight =
+                context.configuration().getConfigData(StakingConfig.class).sumOfConsensusWeights();
 
         // Initialize a counter for the total weight of votes with the same vote byte array
         long voteWeight = 0L;
 
         // Iterate over the votes
-        for (Node node : votes.keySet()) {
-            final var vote = votes.get(node);
+        for (StakingNodeInfo stakingNodeInfo : votes.keySet()) {
+            final var vote = votes.get(stakingNodeInfo);
             // If the vote byte array matches the one in the TssVoteTransaction, add the weight of the vote to the
             // counter
             if (vote.tssVote().equals(tssVoteTransaction.tssVote())) {
-                voteWeight += node.weight();
+                voteWeight += stakingNodeInfo.weight();
             }
         }
 
-        // Check if the total weight of votes with the same vote byte array is at least 1/3 of the total weight of the
+        // Check if the total weight of votes with the same vote byte array is at least 1/thresholdDenominator of the
+        // total weight of the
         // network
         return voteWeight >= totalWeight / thresholdDenominator;
-    }
-
-    /**
-     * Calculate the total weight of the network.
-     *
-     * @param nodeStore the node store
-     * @return the total weight of the network
-     */
-    public static long getTotalNetworkWeight(@NonNull final ReadableNodeStore nodeStore) {
-        long totalWeight = 0L;
-
-        // Iterate over all nodes in the network
-        Iterator<EntityNumber> nodeIterator = nodeStore.keys();
-        while (nodeIterator.hasNext()) {
-            long nodeId = nodeIterator.next().number();
-
-            // Get the Node object for the current node
-            Node node = nodeStore.get(nodeId);
-
-            // If the node is not null and not deleted, add its weight to the total weight
-            if (node != null && !node.deleted()) {
-                totalWeight += node.weight();
-            }
-        }
-
-        return totalWeight;
     }
 }
