@@ -59,6 +59,9 @@ public class ReadableRosterStore {
 
     /**
      * Gets the candidate roster if found in state or null otherwise.
+     * Not that state commits are buffered,
+     * so it is possible that a recently stored candidate roster is still in the batched changes and not yet committed.
+     * Therefore, callers of this API must bear in mind that an immediate call after storing a candidate roster may return null.
      *
      * @return the candidate roster
      */
