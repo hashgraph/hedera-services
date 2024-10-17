@@ -83,12 +83,17 @@ public abstract class VirtualTreeViewBase<K extends VirtualKey, V extends Virtua
      */
     @Override
     public MerkleNode getMerkleRoot(final Long node) {
+        assert node != null;
         // NOTE: It is not clear what this "node" is. Original path? New path? It seems to be both depending on the
         // call site. Luckily, it doesn't really matter in my case.
-        if (node == null || node == ROOT_PATH) {
+        if (node == ROOT_PATH) {
             return root;
         }
         throw new UnsupportedOperationException("Nested virtual maps not supported " + node);
+    }
+
+    public VirtualStateAccessor getReconnectState() {
+        return reconnectState;
     }
 
     /**

@@ -24,20 +24,16 @@ import static com.swirlds.virtualmap.internal.Path.isLeft;
 
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.crypto.Hash;
-import com.swirlds.common.io.streams.MerkleDataInputStream;
-import com.swirlds.common.io.streams.MerkleDataOutputStream;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.synchronization.LearningSynchronizer;
-import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.merkle.synchronization.stats.ReconnectMapStats;
 import com.swirlds.common.merkle.synchronization.streams.AsyncInputStream;
 import com.swirlds.common.merkle.synchronization.streams.AsyncOutputStream;
 import com.swirlds.common.merkle.synchronization.task.ExpectedLesson;
 import com.swirlds.common.merkle.synchronization.task.LearnerPushTask;
-import com.swirlds.common.merkle.synchronization.task.Lesson;
-import com.swirlds.common.merkle.synchronization.task.QueryResponse;
 import com.swirlds.common.merkle.synchronization.utility.MerkleSynchronizationException;
+import com.swirlds.common.merkle.synchronization.views.CustomReconnectRoot;
 import com.swirlds.common.merkle.synchronization.views.LearnerTreeView;
 import com.swirlds.common.threading.pool.StandardWorkGroup;
 import com.swirlds.virtualmap.VirtualKey;
@@ -49,9 +45,10 @@ import com.swirlds.virtualmap.internal.VirtualStateAccessor;
 import com.swirlds.virtualmap.internal.merkle.VirtualRootNode;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
+import java.util.Map;
 import java.util.Objects;
-import java.util.Queue;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -84,9 +81,7 @@ public final class LearnerPushVirtualTreeView<K extends VirtualKey, V extends Vi
      */
     private static final Hash NULL_HASH = CryptographyHolder.get().getNullHash();
 
-    private final ReconnectConfig reconnectConfig;
-
-    private AsyncInputStream<Lesson<Long>> in;
+    private final int viewId;
 
     /**
      * Handles removal of old nodes.
@@ -136,7 +131,7 @@ public final class LearnerPushVirtualTreeView<K extends VirtualKey, V extends Vi
      *      A ReconnectMapStats object to collect reconnect metrics
      */
     public LearnerPushVirtualTreeView(
-            final ReconnectConfig reconnectConfig,
+            final int viewId,
             final VirtualRootNode<K, V> root,
             final RecordAccessor<K, V> originalRecords,
             final VirtualStateAccessor originalState,
@@ -144,7 +139,7 @@ public final class LearnerPushVirtualTreeView<K extends VirtualKey, V extends Vi
             final ReconnectNodeRemover<K, V> nodeRemover,
             @NonNull final ReconnectMapStats mapStats) {
         super(root, originalState, reconnectState);
-        this.reconnectConfig = reconnectConfig;
+        this.viewId = viewId;
         this.originalRecords = Objects.requireNonNull(originalRecords);
         this.nodeRemover = nodeRemover;
         this.mapStats = mapStats;
@@ -154,23 +149,24 @@ public final class LearnerPushVirtualTreeView<K extends VirtualKey, V extends Vi
     public void startLearnerTasks(
             final LearningSynchronizer learningSynchronizer,
             final StandardWorkGroup workGroup,
-            final MerkleDataInputStream inputStream,
-            final MerkleDataOutputStream outputStream,
-            final Queue<MerkleNode> rootsToReceive,
-            final AtomicReference<Long> reconstructedRoot) {
-        in = new AsyncInputStream<>(inputStream, workGroup, () -> new Lesson<>(this), reconnectConfig);
-        in.start();
-        final AsyncOutputStream<QueryResponse> out = learningSynchronizer.buildOutputStream(workGroup, outputStream);
-        out.start();
-
+            final AsyncInputStream in,
+            final AsyncOutputStream out,
+            final Map<Integer, LearnerTreeView<?>> views,
+            final Consumer<CustomReconnectRoot<?, ?>> subtreeListener,
+            final AtomicReference<MerkleNode> reconstructedRoot,
+            final Consumer<Integer> completeListener) {
         final LearnerPushTask<Long> learnerThread = new LearnerPushTask<>(
-                workGroup, in, out, rootsToReceive, reconstructedRoot, this, learningSynchronizer, mapStats);
+                workGroup,
+                viewId,
+                in,
+                out,
+                subtreeListener,
+                reconstructedRoot,
+                this,
+                learningSynchronizer,
+                completeListener,
+                mapStats);
         learnerThread.start();
-    }
-
-    @Override
-    public void abort() {
-        in.abort();
     }
 
     /**
@@ -237,7 +233,7 @@ public final class LearnerPushVirtualTreeView<K extends VirtualKey, V extends Vi
         final int index = isLeft(child) ? 0 : 1;
         final Long original = expectedOriginalExists.remove() ? child : null;
         final boolean nodeAlreadyPresent = expectedNodeAlreadyPresent.remove();
-        return new ExpectedLesson<>(parent, index, original, nodeAlreadyPresent);
+        return new ExpectedLesson<>(parent < 0 ? null : parent, index, original, nodeAlreadyPresent);
     }
 
     /**

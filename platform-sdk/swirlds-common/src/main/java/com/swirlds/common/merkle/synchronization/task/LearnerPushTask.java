@@ -17,7 +17,6 @@
 package com.swirlds.common.merkle.synchronization.task;
 
 import static com.swirlds.common.constructable.ClassIdFormatter.classIdString;
-import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.logging.legacy.LogMarker.RECONNECT;
 
 import com.swirlds.common.constructable.ConstructableRegistry;
@@ -33,8 +32,9 @@ import com.swirlds.common.threading.pool.StandardWorkGroup;
 import com.swirlds.common.utility.ThresholdLimitingHandler;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
-import java.util.Queue;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
+import java.util.function.Supplier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -51,17 +51,20 @@ public class LearnerPushTask<T> {
     private static final String NAME = "learner-task";
 
     private final StandardWorkGroup workGroup;
-    private final AsyncInputStream<Lesson<T>> in;
-    private final AsyncOutputStream<QueryResponse> out;
-    private final AtomicReference<T> root;
+    private final int viewId;
+    private final AsyncInputStream in;
+    private final AsyncOutputStream out;
+    private final AtomicReference<MerkleNode> root;
     private final LearnerTreeView<T> view;
     private final ReconnectNodeCount nodeCount;
 
+    private final Consumer<CustomReconnectRoot<?, ?>> subtreeListener;
+
     private final ReconnectMapStats mapStats;
 
-    private final Queue<MerkleNode> rootsToReceive;
-
     private final ThresholdLimitingHandler<Throwable> exceptionRateLimiter = new ThresholdLimitingHandler<>(1);
+
+    private final Consumer<Integer> completeListener;
 
     /**
      * Create a new thread for the learner.
@@ -72,8 +75,8 @@ public class LearnerPushTask<T> {
      * 		the input stream, this object is responsible for closing the stream when finished
      * @param out
      * 		the output stream, this object is responsible for closing the stream when finished
-     * @param rootsToReceive
-     * 		a queue of subtree roots to synchronize
+     * @param subtreeListener
+     * 		a listener to notify if custom tree views are encountered
      * @param root
      * 		a reference which will eventually hold the root of this subtree
      * @param view
@@ -85,20 +88,24 @@ public class LearnerPushTask<T> {
      */
     public LearnerPushTask(
             final StandardWorkGroup workGroup,
-            final AsyncInputStream<Lesson<T>> in,
-            final AsyncOutputStream<QueryResponse> out,
-            final Queue<MerkleNode> rootsToReceive,
-            final AtomicReference<T> root,
+            final int viewId,
+            final AsyncInputStream in,
+            final AsyncOutputStream out,
+            final Consumer<CustomReconnectRoot<?, ?>> subtreeListener,
+            final AtomicReference<MerkleNode> root,
             final LearnerTreeView<T> view,
             final ReconnectNodeCount nodeCount,
+            final Consumer<Integer> completeListener,
             @NonNull final ReconnectMapStats mapStats) {
         this.workGroup = workGroup;
+        this.viewId = viewId;
         this.in = in;
         this.out = out;
-        this.rootsToReceive = rootsToReceive;
+        this.subtreeListener = subtreeListener;
         this.root = root;
         this.view = view;
         this.nodeCount = nodeCount;
+        this.completeListener = completeListener;
         this.mapStats = mapStats;
     }
 
@@ -132,7 +139,7 @@ public class LearnerPushTask<T> {
             customRoot.setupWithNoData();
         }
 
-        rootsToReceive.add(customRoot);
+        subtreeListener.accept(customRoot);
         return view.convertMerkleRootToViewType(customRoot);
     }
 
@@ -177,8 +184,8 @@ public class LearnerPushTask<T> {
      */
     private void handleQueries(
             final LearnerTreeView<T> view,
-            final AsyncInputStream<Lesson<T>> in,
-            final AsyncOutputStream<QueryResponse> out,
+            final AsyncInputStream in,
+            final AsyncOutputStream out,
             final List<Hash> queries,
             final T originalParent,
             final T newParent)
@@ -204,12 +211,11 @@ public class LearnerPushTask<T> {
                                 logger.warn(RECONNECT.getMarker(), "originalHash for node {} is null", originalChild));
             }
             final boolean nodeAlreadyPresent = originalHash != null && originalHash.equals(teacherHash);
-            out.sendAsync(new QueryResponse(nodeAlreadyPresent));
+            out.sendAsync(viewId, new QueryResponse(nodeAlreadyPresent));
             mapStats.incrementTransfersFromLearner();
             view.recordHashStats(mapStats, newParent, childIndex, nodeAlreadyPresent);
 
             view.expectLessonFor(newParent, childIndex, originalChild, nodeAlreadyPresent);
-            in.anticipateMessage();
         }
     }
 
@@ -244,17 +250,14 @@ public class LearnerPushTask<T> {
     private void run() {
         boolean firstLesson = true;
 
-        try (in;
-                out;
-                view) {
-
+        final Supplier<Lesson<T>> messageFactory = () -> new Lesson<>(view);
+        try (view) {
             view.expectLessonFor(null, 0, view.getOriginalRoot(), false);
-            in.anticipateMessage();
 
-            while (view.hasNextExpectedLesson()) {
+            while (view.hasNextExpectedLesson() && !Thread.currentThread().isInterrupted()) {
 
                 final ExpectedLesson<T> expectedLesson = view.getNextExpectedLesson();
-                final Lesson<T> lesson = in.readAnticipatedMessage();
+                final Lesson<T> lesson = in.readAnticipatedMessage(viewId, messageFactory);
                 mapStats.incrementTransfersFromTeacher();
 
                 final T parent = expectedLesson.getParent();
@@ -264,7 +267,7 @@ public class LearnerPushTask<T> {
                 firstLesson = false;
 
                 if (parent == null) {
-                    root.set(newChild);
+                    root.set(view.getMerkleRoot(newChild));
                 } else {
                     view.setChild(parent, expectedLesson.getPositionInParent(), newChild);
                 }
@@ -279,13 +282,14 @@ public class LearnerPushTask<T> {
 
             logger.info(RECONNECT.getMarker(), "learner thread finished the learning loop for the current subtree");
         } catch (final InterruptedException ex) {
-            logger.warn(RECONNECT.getMarker(), "learner thread interrupted");
+            logger.warn(RECONNECT.getMarker(), "Learner thread interrupted");
             Thread.currentThread().interrupt();
         } catch (final Exception ex) {
-            logger.error(EXCEPTION.getMarker(), "exception in the learner's receiving thread", ex);
-            throw new MerkleSynchronizationException("exception in the learner's receiving thread", ex);
+            workGroup.handleError(ex);
+        } finally {
+            completeListener.accept(viewId);
         }
 
-        logger.info(RECONNECT.getMarker(), "learner thread closed input, output, and view for the current subtree");
+        logger.info(RECONNECT.getMarker(), "learner thread closed view for the current subtree");
     }
 }

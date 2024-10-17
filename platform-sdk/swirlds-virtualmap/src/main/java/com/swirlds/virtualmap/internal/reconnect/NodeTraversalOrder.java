@@ -16,8 +16,6 @@
 
 package com.swirlds.virtualmap.internal.reconnect;
 
-import com.swirlds.common.merkle.synchronization.task.ReconnectNodeCount;
-
 public interface NodeTraversalOrder {
 
     /**
@@ -26,9 +24,8 @@ public interface NodeTraversalOrder {
      *
      * @param firstLeafPath the first leaf path in teacher's virtual tree
      * @param lastLeafPath the last leaf path in teacher's virtual tree
-     * @param nodeCount object to report node stats
      */
-    void start(final long firstLeafPath, final long lastLeafPath, final ReconnectNodeCount nodeCount);
+    void start(final long firstLeafPath, final long lastLeafPath);
 
     /**
      * Called by the learner's sending thread to send the next path to teacher. If this method returns
@@ -36,12 +33,15 @@ public interface NodeTraversalOrder {
      * to send.
      *
      * @return the next virtual path to send to the teacher
-     * @throws InterruptedException if the current thread is interrupted while backpressure waiting
      */
-    long getNextPathToSend() throws InterruptedException;
+    long getNextInternalPathToSend();
+
+    long getNextLeafPathToSend();
 
     /**
-     * Notifies this object that a node response is received from the teacher.
+     * Notifies this object that a node response is received from the teacher. This method may be called
+     * concurrently from multiple threads, except for root response (path == 0), which is always received
+     * first.
      *
      * @param path the received node path
      * @param isClean indicates if the node at the given path matches the corresponding node on the teacher

@@ -17,24 +17,35 @@
 package com.swirlds.virtual.merkle.reconnect;
 
 import com.swirlds.base.time.Time;
-import com.swirlds.common.io.streams.MerkleDataInputStream;
-import com.swirlds.common.io.streams.MerkleDataOutputStream;
+import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.synchronization.TeachingSynchronizer;
-import com.swirlds.common.merkle.synchronization.task.TeacherSubtree;
+import com.swirlds.common.merkle.synchronization.streams.AsyncInputStream;
+import com.swirlds.common.merkle.synchronization.streams.AsyncOutputStream;
+import com.swirlds.common.merkle.synchronization.views.CustomReconnectRoot;
 import com.swirlds.common.merkle.synchronization.views.TeacherTreeView;
+import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.common.threading.pool.StandardWorkGroup;
+import com.swirlds.virtualmap.VirtualKey;
+import com.swirlds.virtualmap.VirtualValue;
+import com.swirlds.virtualmap.datasource.VirtualLeafRecord;
+import com.swirlds.virtualmap.internal.VirtualStateAccessor;
+import com.swirlds.virtualmap.internal.merkle.VirtualRootNode;
+import com.swirlds.virtualmap.internal.pipeline.VirtualPipeline;
+import com.swirlds.virtualmap.internal.reconnect.TeacherPullVirtualTreeView;
 import java.io.IOException;
-import java.util.Queue;
+import java.util.Map;
+import java.util.function.Consumer;
 
 /**
  * An intentionally broken teacher tree view. Throws an IO exception after a certain number of nodes have been
  * serialized.
  */
-public class BrokenVirtualMapTeacherView implements TeacherTreeView<Long> {
+public class BrokenVirtualMapTeacherView<K extends VirtualKey, V extends VirtualValue>
+        extends TeacherPullVirtualTreeView<K, V> {
 
-    private final TeacherTreeView<Long> baseView;
+    private final TeacherPullVirtualTreeView<K, V> baseView;
     private final int permittedInternals;
     private final int permittedLeaves;
     private int leafCount;
@@ -53,21 +64,32 @@ public class BrokenVirtualMapTeacherView implements TeacherTreeView<Long> {
      * 		IO exception is thrown
      */
     public BrokenVirtualMapTeacherView(
-            final TeacherTreeView<Long> baseView, final int permittedInternals, final int permittedLeaves) {
+            final VirtualRootNode<K, V> rootNode,
+            final TeacherPullVirtualTreeView<K, V> baseView,
+            final int permittedInternals,
+            final int permittedLeaves) {
+        super(null, null, rootNode, baseView.getReconnectState(), rootNode.getPipeline());
         this.baseView = baseView;
         this.permittedInternals = permittedInternals;
         this.permittedLeaves = permittedLeaves;
     }
 
     @Override
+    public void prepareReady(ThreadManager threadManager, VirtualPipeline pipeline) {}
+
+    @Override
     public void startTeacherTasks(
             final TeachingSynchronizer teachingSynchronizer,
+            final int viewId,
             final Time time,
             final StandardWorkGroup workGroup,
-            final MerkleDataInputStream inputStream,
-            final MerkleDataOutputStream outputStream,
-            final Queue<TeacherSubtree> subtrees) {
-        baseView.startTeacherTasks(teachingSynchronizer, time, workGroup, inputStream, outputStream, subtrees);
+            final AsyncInputStream in,
+            final AsyncOutputStream out,
+            final Consumer<CustomReconnectRoot<?, ?>> subtreeListener,
+            final Map<Integer, TeacherTreeView<?>> views,
+            final Consumer<Integer> completeListener) {
+        baseView.startTeacherTasks(
+                teachingSynchronizer, viewId, time, workGroup, in, out, subtreeListener, views, completeListener);
     }
 
     @Override
@@ -163,5 +185,35 @@ public class BrokenVirtualMapTeacherView implements TeacherTreeView<Long> {
     @Override
     public MerkleNode getMerkleRoot(final Long node) {
         return baseView.getMerkleRoot(node);
+    }
+
+    @Override
+    public void close() {
+        baseView.close();
+    }
+
+    @Override
+    public Hash loadHash(final long path) {
+        return baseView.loadHash(path);
+    }
+
+    @Override
+    public VirtualLeafRecord<K, V> loadLeaf(final long path) {
+        return baseView.loadLeaf(path);
+    }
+
+    @Override
+    public boolean isLeaf(final long path) {
+        return baseView.isLeaf(path);
+    }
+
+    @Override
+    public VirtualStateAccessor getReconnectState() {
+        return baseView.getReconnectState();
+    }
+
+    @Override
+    public void waitUntilReady() throws InterruptedException {
+        baseView.waitUntilReady();
     }
 }
