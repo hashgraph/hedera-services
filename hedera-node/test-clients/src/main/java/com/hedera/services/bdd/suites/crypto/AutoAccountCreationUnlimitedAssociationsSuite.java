@@ -82,7 +82,7 @@ public class AutoAccountCreationUnlimitedAssociationsSuite {
 
     public static final String TRUE = "true";
     public static final String FALSE = "false";
-    public static final String LAZY_MEMO = "lazy-created account";
+    public static final String LAZY_MEMO = "";
     public static final String VALID_ALIAS = "validAlias";
     public static final String A_TOKEN = "tokenA";
     public static final String PARTY = "party";
@@ -90,10 +90,10 @@ public class AutoAccountCreationUnlimitedAssociationsSuite {
     private static final String TRANSFER_TXN = "transferTxn";
     private static final String MULTI_KEY = "multi";
     private static final long INITIAL_BALANCE = 1000L;
-    private static final String AUTO_MEMO = "auto-created account";
+    private static final String AUTO_MEMO = "";
     private static final String CIVILIAN = "somebody";
     private static final String SPONSOR = "autoCreateSponsor";
-    private static final long EXPECTED_HBAR_TRANSFER_AUTO_CREATION_FEE = 39418863L;
+    private static final long EXPECTED_HBAR_TRANSFER_AUTO_CREATION_FEE = 39_376_619L;
     private static final String HBAR_XFER = "hbarXfer";
     private static final String FT_XFER = "ftXfer";
     private static final String NFT_XFER = "nftXfer";
