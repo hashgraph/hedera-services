@@ -26,7 +26,11 @@ on:
       - develop
     types:
       - completed
-
+  pull_request_review_comment:
+    types:
+      - created
+      - edited
+      - deleted
 
 defaults:
   run:
