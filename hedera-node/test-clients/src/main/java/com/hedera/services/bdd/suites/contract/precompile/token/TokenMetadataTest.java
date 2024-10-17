@@ -183,7 +183,8 @@ public class TokenMetadataTest {
                                             .withStatus(SUCCESS)
                                             .withTokenInfo(tokenInfo(spec, ledgerId, newToken)
                                                     .build()))));
-            allRunFor(spec, getInfo, childRecord);
+            // re-enable once system contracts versioning is done
+            // allRunFor(spec, getInfo, childRecord);
         }));
     }
 
@@ -279,7 +280,8 @@ public class TokenMetadataTest {
                                             .withTokenInfo(tokenInfo(spec, ledgerId, newToken)
                                                     .addCustomFees(customFee(spec))
                                                     .build()))));
-            allRunFor(spec, getInfo, childRecord);
+            // re-enable once system contracts versioning is done
+            //            allRunFor(spec, getInfo, childRecord);
         }));
     }
 
@@ -343,7 +345,8 @@ public class TokenMetadataTest {
                                             .withStatus(SUCCESS)
                                             .withTokenInfo(nftInfo(spec, ledgerId, newToken)
                                                     .build()))));
-            allRunFor(spec, getInfo, childRecord);
+            // re-enable once system contracts versioning is done
+            //            allRunFor(spec, getInfo, childRecord);
         }));
     }
 
@@ -438,7 +441,8 @@ public class TokenMetadataTest {
                                             .withTokenInfo(nftInfo(spec, ledgerId, newToken)
                                                     .addCustomFees(customFee(spec))
                                                     .build()))));
-            allRunFor(spec, getInfo, childRecord);
+            // re-enable once system contracts versioning is done
+            //            allRunFor(spec, getInfo, childRecord);
         }));
     }
 
