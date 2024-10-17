@@ -143,6 +143,16 @@ final class ConcurrentArray<T> {
     }
 
     /**
+     * Create a new concurrent array with {@link #DEFAULT_ELEMENT_ARRAY_LENGTH} subarray capacity
+     * and elements from the given stream. The created array is immutable.
+     */
+    ConcurrentArray(final Stream<T> from) {
+        this();
+        from.parallel().forEach(this::add);
+        seal();
+    }
+
+    /**
      * Effectively adds all {@link SubArray}s from another {@link ConcurrentArray}.
      * @param other
      *      {@link ConcurrentArray} to be merged.
@@ -195,7 +205,7 @@ final class ConcurrentArray<T> {
      *
      * @return A non-negative number of elements.
      */
-    int size() {
+    public int size() {
         return elementCount.get();
     }
 

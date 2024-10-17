@@ -20,6 +20,8 @@ import static java.util.Objects.requireNonNull;
 
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.iterators.MerkleIterator;
+import com.swirlds.state.merkle.vmapsupport.OnDiskKey;
+import com.swirlds.state.merkle.vmapsupport.OnDiskValue;
 import com.swirlds.virtualmap.VirtualMap;
 import com.swirlds.virtualmap.internal.merkle.VirtualLeafNode;
 import edu.umd.cs.findbugs.annotations.NonNull;

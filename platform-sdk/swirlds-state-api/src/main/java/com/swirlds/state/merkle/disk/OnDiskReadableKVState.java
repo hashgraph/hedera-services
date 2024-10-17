@@ -22,6 +22,8 @@ import static com.swirlds.state.merkle.logging.StateLogger.logMapIterate;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.pbj.runtime.Codec;
+import com.swirlds.state.merkle.vmapsupport.OnDiskKey;
+import com.swirlds.state.merkle.vmapsupport.OnDiskValue;
 import com.swirlds.state.spi.ReadableKVState;
 import com.swirlds.state.spi.ReadableKVStateBase;
 import com.swirlds.virtualmap.VirtualMap;
