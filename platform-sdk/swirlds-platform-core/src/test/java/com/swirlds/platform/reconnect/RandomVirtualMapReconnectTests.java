@@ -265,10 +265,7 @@ class RandomVirtualMapReconnectTests extends VirtualMapReconnectTestBase {
             copiesQueue.remove().release();
         }
 
-        afterSyncLearnerTree.release();
         copy.release();
-        teacherTree.release();
-        learnerTree.release();
     }
 
     /**
@@ -295,7 +292,5 @@ class RandomVirtualMapReconnectTests extends VirtualMapReconnectTestBase {
         afterSyncLearnerTree.release();
         copy.release();
         afterCopy.release();
-        teacherTree.release();
-        learnerTree.release();
     }
 }

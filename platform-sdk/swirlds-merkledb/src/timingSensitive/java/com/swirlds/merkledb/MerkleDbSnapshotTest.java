@@ -109,7 +109,7 @@ class MerkleDbSnapshotTest {
     }
 
     @AfterEach
-    public void afterTest() throws IOException {
+    public void afterTest() {
         // check db count
         AssertionUtils.assertEventuallyEquals(
                 0L,
@@ -185,7 +185,6 @@ class MerkleDbSnapshotTest {
 
         verify(restoredStateRoot);
 
-        lastRoot.get().release();
         restoredStateRoot.release();
         closeDataSources(initialRoot);
         closeDataSources(lastRoot.get());
@@ -254,7 +253,6 @@ class MerkleDbSnapshotTest {
 
         verify(restoredStateRoot);
 
-        lastRoot.get().release();
         restoredStateRoot.release();
         closeDataSources(initialRoot);
         closeDataSources(restoredStateRoot);
