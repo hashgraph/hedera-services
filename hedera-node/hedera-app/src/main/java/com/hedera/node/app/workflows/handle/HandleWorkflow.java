@@ -345,6 +345,7 @@ public class HandleWorkflow {
         final var blockStreamConfig = userTxn.config().getConfigData(BlockStreamConfig.class);
         try {
             if (isOlderSoftwareEvent(userTxn)) {
+                advanceConsensusClock(userTxn, blockStreamConfig);
                 initializeBuilderInfo(userTxn.baseBuilder(), userTxn.txnInfo(), exchangeRateManager.exchangeRates())
                         .status(BUSY);
                 // Flushes the BUSY builder to the stream, no other side effects
@@ -367,13 +368,16 @@ public class HandleWorkflow {
                         streamBuilder.exchangeRate(exchangeRateManager.exchangeRates());
                         userTxn.stack().commitTransaction(streamBuilder);
                     }
+                    if (blockStreamConfig.streamRecords()) {
+                        blockRecordManager.markMigrationRecordsStreamed();
+                    }
+                    // C.f. https://github.com/hashgraph/hedera-services/issues/14751,
+                    // here we may need to switch the newly adopted candidate roster
+                    // in the RosterService state to become the active roster
                 }
                 final var dispatch = dispatchFor(userTxn, blockStreamConfig);
                 updateNodeStakes(userTxn, dispatch);
-                if (blockStreamConfig.streamRecords()) {
-                    blockRecordManager.advanceConsensusClock(userTxn.consensusNow(), userTxn.state());
-                }
-                expireSchedules(userTxn);
+                advanceConsensusClock(userTxn, blockStreamConfig);
                 logPreDispatch(userTxn);
                 if (userTxn.type() == GENESIS_TRANSACTION) {
                     systemSetup.doGenesisSetup(dispatch);
@@ -399,6 +403,20 @@ public class HandleWorkflow {
             logger.error("{} - exception thrown while handling user transaction", ALERT_MESSAGE, e);
             return failInvalidStreamItems(userTxn);
         }
+    }
+
+    /**
+     * Advances the consensus clock in state when streaming records; also expires any schedules.
+     * @param userTxn the user transaction
+     * @param blockStreamConfig the block stream configuration
+     */
+    private void advanceConsensusClock(
+            @NonNull final UserTxn userTxn, @NonNull final BlockStreamConfig blockStreamConfig) {
+        if (blockStreamConfig.streamRecords()) {
+            // For POST_UPGRADE_TRANSACTION, also commits to state that the post-upgrade work is done
+            blockRecordManager.advanceConsensusClock(userTxn.consensusNow(), userTxn.state());
+        }
+        expireSchedules(userTxn);
     }
 
     /**
