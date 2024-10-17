@@ -21,7 +21,6 @@ spotless {
         //        buf().pathToExe("/usr/local/bin/buf-1.24.0")
         buf("1.45.0").pathToExe("/opt/homebrew/bin/buf")
         target("**/*.proto") // target every '.proto'
-        //        custom("Buf Lint") { "/usr/local/bin/buf lint" }
-        licenseHeader("/* (C) MAYBE NEXT YEAR */") // or licenseHeaderFile
+        custom("Fix incorrect br tags") { it -> it.replace("</br>", "<br/>") }
     }
 }
