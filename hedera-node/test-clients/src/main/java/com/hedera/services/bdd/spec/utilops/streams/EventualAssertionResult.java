@@ -65,7 +65,7 @@ public class EventualAssertionResult {
      * @return the result of the assertion
      * @throws InterruptedException if the thread is interrupted while waiting
      */
-    public synchronized AssertionResult get() throws InterruptedException {
+    public AssertionResult get() throws InterruptedException {
         if (!ready.await(timeout.toMillis(), TimeUnit.MILLISECONDS)) {
             if (passAfterTimeout && result == null) {
                 return AssertionResult.newSuccess();
@@ -79,7 +79,7 @@ public class EventualAssertionResult {
     /**
      * Completes the result as a success.
      */
-    public synchronized void pass() {
+    public void pass() {
         this.result = AssertionResult.newSuccess();
         ready.countDown();
     }
@@ -88,7 +88,7 @@ public class EventualAssertionResult {
      * Completes the result as a failure with the given reason.
      * @param reason the reason for the failure
      */
-    public synchronized void fail(@NonNull final String reason) {
+    public void fail(@NonNull final String reason) {
         requireNonNull(reason);
         this.result = AssertionResult.failure(reason);
         ready.countDown();
