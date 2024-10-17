@@ -1,0 +1,12 @@
+name: "ZXF: Deploy Production Release"
+on:
+  pull_request_review_comment:
+    types: [deleted, created]
+  pull_request:
+    types: [locked, opened, reopened, closed, ready_for_review]
+
+jobs:
+  announce:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo Hello, world!

@@ -1,0 +1,11 @@
+name: "Bad Actor"
+on:
+  push:
+    tags:
+      - "xts-candidate"
+
+jobs:
+  dump:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "I am a bad actor"
