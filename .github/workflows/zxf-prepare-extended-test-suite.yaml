@@ -65,7 +65,9 @@ jobs:
       # move the tag if successful
       - name: Tag Code and push
         run: |
-          git tag --force --sign ${XTS_CANDIDATE_TAG} --message "Tagging commit for XTS promotion"
+          git tag -d ${XTS_CANDIDATE_TAG}
+          git push --delete origin ${XTS_CANDIDATE_TAG}
+          git tag --annotate ${XTS_CANDIDATE_TAG} --message "Tagging commit for XTS promotion"
           git push --set-upstream origin --tags
 
       - name: Report failure

@@ -41,9 +41,14 @@ jobs:
     name: Fetch XTS Candidate Tag
     runs-on: network-node-linux-medium
     outputs:
-      xts_tag_exists: ${{ steps.check_tags_exist.outputs.xts_tag_exists }}
-      xts_tag_commit: ${{ steps.check_tags_exist.outputs.xts_tag_commit }}
+      xts_tag_exists: ${{ steps.check-tags-exist.outputs.xts_tag_exists }}
+      xts_tag_commit: ${{ steps.check-tags-exist.outputs.xts_tag_commit }}
     steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@f086349bfa2bd1361f7909c78558e816508cdc10 # v2.8.0
+        with:
+          egress-policy: audit
+
       # Checkout the latest from dev
       - name: Checkout Code
         uses: actions/checkout@eef61447b9ff4aafe5dcd4e0bbf5d482be7e7871 # v4.2.1
@@ -57,7 +62,7 @@ jobs:
       # will return an exit code of 1 if the tag commit is not found on the develop
       # branch.
       - name: Check for tags
-        id: check_tags_exist
+        id: check-tags-exist
         run: |
           TAG=${XTS_CANDIDATE_TAG}
           if [ $(git tag -l "${TAG}") ]; then
@@ -189,7 +194,7 @@ jobs:
           echo "promotion-tag=${TAG}" >> $GITHUB_STEP_SUMMARY
 
   report-failure:
-    name: Report XTS preparation failure
+    name: Report XTS execution failure
     runs-on: network-node-linux-medium
     needs:
       - abbreviated-panel
