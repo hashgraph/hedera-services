@@ -92,6 +92,7 @@ jvmDependencyConflicts.patch {
 // Jar needs to have this file. If it is missing, it is added by what is configured here.
 extraJavaModuleInfo {
     failOnAutomaticModules = true // Only allow Jars with 'module-info' on all module paths
+    versionsProvidingConfiguration = "mainRuntimeClasspath"
 
     module("io.grpc:grpc-api", "io.grpc")
     module("io.grpc:grpc-core", "io.grpc.internal")
@@ -106,8 +107,6 @@ extraJavaModuleInfo {
         requireAllDefinedDependencies()
         requires("java.logging")
     }
-    module("io.grpc:grpc-testing", "io.grpc.testing")
-    module("io.grpc:grpc-services", "io.grpc.services")
     module("io.grpc:grpc-util", "io.grpc.util")
     module("io.grpc:grpc-protobuf", "io.grpc.protobuf")
     module("io.grpc:grpc-protobuf-lite", "io.grpc.protobuf.lite")
@@ -126,8 +125,6 @@ extraJavaModuleInfo {
     }
     module("com.github.spotbugs:spotbugs-annotations", "com.github.spotbugs.annotations")
     module("com.google.code.findbugs:jsr305", "java.annotation")
-    module("com.google.errorprone:error_prone_annotations", "com.google.errorprone.annotations")
-    module("com.google.j2objc:j2objc-annotations", "com.google.j2objc.annotations")
     module("com.google.protobuf:protobuf-java", "com.google.protobuf") {
         exportAllPackages()
         requireAllDefinedDependencies()
@@ -144,8 +141,6 @@ extraJavaModuleInfo {
     module("io.perfmark:perfmark-api", "io.perfmark")
     module("javax.inject:javax.inject", "javax.inject")
     module("commons-codec:commons-codec", "org.apache.commons.codec")
-    module("org.apache.commons:commons-math3", "org.apache.commons.math3")
-    module("org.apache.commons:commons-collections4", "org.apache.commons.collections4")
     module("com.esaulpaugh:headlong", "headlong")
     module("org.checkerframework:checker-qual", "org.checkerframework.checker.qual")
     module("org.connid:framework", "org.connid.framework")
@@ -187,7 +182,6 @@ extraJavaModuleInfo {
         requireAllDefinedDependencies()
         requiresStatic("com.fasterxml.jackson.annotation")
     }
-    module("org.hyperledger.besu:plugin-api", "org.hyperledger.besu.plugin.api")
     module("org.hyperledger.besu:secp256k1", "org.hyperledger.besu.nativelib.secp256k1")
     module("org.hyperledger.besu:secp256r1", "org.hyperledger.besu.nativelib.secp256r1")
     module("com.goterl:resource-loader", "resource.loader")
@@ -210,11 +204,11 @@ extraJavaModuleInfo {
     // Need to use Jar file names here as there is currently no other way to address Jar with
     // classifier directly for patching
     module(
-        "netty-transport-native-epoll-4.1.110.Final-linux-x86_64.jar",
+        "io.netty:netty-transport-native-epoll|linux-x86_64",
         "io.netty.transport.epoll.linux.x86_64"
     )
     module(
-        "netty-transport-native-epoll-4.1.110.Final-linux-aarch_64.jar",
+        "io.netty:netty-transport-native-epoll|linux-aarch_64",
         "io.netty.transport.epoll.linux.aarch_64"
     )
 
@@ -240,15 +234,8 @@ extraJavaModuleInfo {
     module("uk.org.webcompere:system-stubs-core", "uk.org.webcompere.systemstubs.core")
     module("uk.org.webcompere:system-stubs-jupiter", "uk.org.webcompere.systemstubs.jupiter")
 
-    // JMH only
-    module("net.sf.jopt-simple:jopt-simple", "jopt.simple")
-    module("org.openjdk.jmh:jmh-core", "jmh.core")
-    module("org.openjdk.jmh:jmh-generator-asm", "jmh.generator.asm")
-    module("org.openjdk.jmh:jmh-generator-bytecode", "jmh.generator.bytecode")
-    module("org.openjdk.jmh:jmh-generator-reflection", "jmh.generator.reflection")
-
     // Test clients only
-    module("com.github.docker-java:docker-java-api", "com.github.docker.java.api")
+    module("com.github.docker-java:docker-java-api", "com.github.dockerjava.api")
     module("com.github.docker-java:docker-java-transport", "com.github.docker.java.transport")
     module(
         "com.github.docker-java:docker-java-transport-zerodep",
@@ -265,7 +252,6 @@ extraJavaModuleInfo {
     module("org.mockito:mockito-core", "org.mockito")
     module("org.objenesis:objenesis", "org.objenesis")
     module("org.rnorth.duct-tape:duct-tape", "org.rnorth.ducttape")
-    module("org.testcontainers:junit-jupiter", "org.testcontainers.junit.jupiter")
     module("org.testcontainers:testcontainers", "org.testcontainers")
     module("org.mockito:mockito-junit-jupiter", "org.mockito.junit.jupiter")
 }
