@@ -124,6 +124,9 @@ public class V0560BlockStreamSchemaTest {
                 Bytes.EMPTY,
                 0,
                 List.of(),
+                blockInfo.consTimeOfLastHandledTxn(),
+                false,
+                SemanticVersion.DEFAULT,
                 blockInfo.consTimeOfLastHandledTxn());
         verify(state).put(expectedInfo);
     }
