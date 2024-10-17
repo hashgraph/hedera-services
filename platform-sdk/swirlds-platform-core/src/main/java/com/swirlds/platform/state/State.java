@@ -24,6 +24,7 @@ import com.swirlds.common.merkle.impl.PartialNaryMerkleInternal;
 import com.swirlds.common.merkle.route.MerkleRouteFactory;
 import com.swirlds.common.utility.RuntimeObjectRecord;
 import com.swirlds.common.utility.RuntimeObjectRegistry;
+import com.swirlds.platform.state.service.WritableRosterStore;
 import com.swirlds.platform.system.SwirldState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.nio.file.Path;
@@ -162,6 +163,16 @@ public class State extends PartialNaryMerkleInternal implements MerkleRoot {
     @Override
     public PlatformState getWritablePlatformState() {
         return getChild(ChildIndices.PLATFORM_STATE);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @NonNull
+    @Override
+    public WritableRosterStore getWritableRosterState() {
+        // roster is only a part of the platform state
+        throw new UnsupportedOperationException("Roster can only be obtained from the state used by the platform");
     }
 
     /**

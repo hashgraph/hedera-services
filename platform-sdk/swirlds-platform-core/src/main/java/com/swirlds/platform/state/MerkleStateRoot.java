@@ -30,6 +30,7 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.hapi.block.stream.output.StateChanges;
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.swirlds.base.time.Time;
+import com.swirlds.common.RosterStateId;
 import com.swirlds.common.constructable.ConstructableIgnored;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.merkle.MerkleInternal;
@@ -44,6 +45,7 @@ import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.state.service.PlatformStateService;
 import com.swirlds.platform.state.service.ReadablePlatformStateStore;
 import com.swirlds.platform.state.service.WritablePlatformStateStore;
+import com.swirlds.platform.state.service.WritableRosterStore;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.Round;
@@ -158,6 +160,13 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
      * Metrics for the snapshot creation process
      */
     private MerkleRootSnapshotMetrics snapshotMetrics = new MerkleRootSnapshotMetrics();
+
+    /**
+     * For the early round of migration, a writable state for the {@link RosterStateAccessor},
+     * just like the {@link WritablePlatformStateStore} can only be obtained from here and not the usual
+     * WritableStoreFactory instance.
+     */
+    private RosterStateModifier rosterStateModifier;
 
     /**
      * Maintains information about each service, and each state of each service, known by this
@@ -1039,6 +1048,19 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
             throw new IllegalStateException("Cannot get writable platform state when state is immutable");
         }
         return writablePlatformStateStore();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @NonNull
+    @Override
+    public RosterStateModifier getWritableRosterState() {
+        throwIfImmutable();
+        if (rosterStateModifier == null) {
+            rosterStateModifier = new WritableRosterStore(getWritableStates(RosterStateId.NAME));
+        }
+        return rosterStateModifier;
     }
 
     /**
