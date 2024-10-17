@@ -90,7 +90,7 @@ public class TssCryptographyManager {
 
                         final var tssConfig = context.configuration().getConfigData(TssConfig.class);
                         if (tssConfig.keyActiveRoster()) {
-                            // Signal TssStateMangager to adopt the ledger id in the state on the next round.
+                            // TODO Signal a process to adopt the candidate roster in the state at the beginning of the next round?
                         } else {
                             // Do nothing here, rely on the startup logic to rotate the candidate roster to the active
                             // roster.
