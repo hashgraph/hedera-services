@@ -41,7 +41,6 @@ import java.io.OutputStreamWriter;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardOpenOption;
 import java.security.Key;
 import java.security.KeyPair;
 import java.security.KeyStore;
@@ -58,7 +57,6 @@ import java.security.cert.CertificateEncodingException;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.util.Arrays;
-import java.util.Base64;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -1477,7 +1475,8 @@ public class EnhancedKeyStoreLoader {
                     ERROR.getMarker(),
                     "Failed to move {} PFX files to OLD_PFX_KEYS. Manual cleanup required.",
                     cleanupErrorCount.get());
-            throw new IllegalStateException("Cryptography Migration failed to move PFX files to OLD_PFX_KEYS sub-directory.");
+            throw new IllegalStateException(
+                    "Cryptography Migration failed to move PFX files to OLD_PFX_KEYS sub-directory.");
         }
     }
 
@@ -1492,7 +1491,7 @@ public class EnhancedKeyStoreLoader {
     private static void writePemFile(
             final boolean isPrivateKey, @NonNull final Path location, @NonNull final byte[] encoded)
             throws IOException {
-        final PemObject pemObj = new PemObject(isPrivateKey? "PRIVATE KEY" : "CERTIFICATE", encoded);
+        final PemObject pemObj = new PemObject(isPrivateKey ? "PRIVATE KEY" : "CERTIFICATE", encoded);
         try (final FileOutputStream file = new FileOutputStream(location.toFile(), false);
                 final var out = new OutputStreamWriter(file);
                 final PemWriter writer = new PemWriter(out)) {
