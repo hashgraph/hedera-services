@@ -65,7 +65,7 @@ public class NodeUpdateHandler implements TransactionHandler {
     @Override
     public void pureChecks(@NonNull final TransactionBody txn) throws PreCheckException {
         requireNonNull(txn);
-        final var op = txn.nodeUpdate();
+        final var op = txn.nodeUpdateOrThrow();
         validateFalsePreCheck(op.nodeId() < 0, INVALID_NODE_ID);
         if (op.hasGossipCaCertificate()) {
             validateFalsePreCheck(op.gossipCaCertificate().equals(Bytes.EMPTY), INVALID_GOSSIP_CA_CERTIFICATE);
