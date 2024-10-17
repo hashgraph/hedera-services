@@ -185,9 +185,15 @@ class EnhancedKeyStoreLoaderTest {
         assertThat(keyDirectory).exists().isDirectory().isReadable().isNotEmptyDirectory();
 
         assertThat(loader).isNotNull();
+        assertThatCode(loader::migrate).doesNotThrowAnyException();
         assertThatCode(loader::scan).doesNotThrowAnyException();
+        assertThatCode(loader::generateIfNecessary).isInstanceOf(KeyGeneratingException.class);
         assertThatCode(loader::verify).isInstanceOf(KeyLoadingException.class);
-        assertThatCode(loader::injectInAddressBook).doesNotThrowAnyException();
+        if (directoryName.equals("hybrid-invalid-case-2") || directoryName.equals("enhanced-invalid-case-2")) {
+            assertThatCode(loader::injectInAddressBook).isInstanceOf(KeyLoadingException.class);
+        } else {
+            assertThatCode(loader::injectInAddressBook).doesNotThrowAnyException();
+        }
         assertThatCode(loader::keysAndCerts).isInstanceOf(KeyLoadingException.class);
     }
 

@@ -1211,7 +1211,7 @@ public class EnhancedKeyStoreLoader {
         if (errorCount > 0) {
             // roll back due to errors.
             // this deletes any pem files created, but leaves the agreement keys deleted.
-            logger.info(STARTUP.getMarker(), "Due to {} errors, reverting pem file creation.", errorCount);
+            logger.error(STARTUP.getMarker(), "Due to {} errors, reverting pem file creation.", errorCount);
             rollBackSigningKeysAndCertsChanges(pfxPrivateKeys, pfxCertificates);
         } else {
             // cleanup pfx files by moving them to sub-directory
