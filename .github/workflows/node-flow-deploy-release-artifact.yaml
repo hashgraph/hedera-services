@@ -41,6 +41,10 @@ defaults:
     shell: bash
 
 jobs:
+  announce:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "Hello, World!"
   prepare-tag-release:
     name: Prepare Release [Tag]
     runs-on: network-node-linux-medium
