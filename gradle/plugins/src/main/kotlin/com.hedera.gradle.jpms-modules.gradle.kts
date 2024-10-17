@@ -113,11 +113,9 @@ extraJavaModuleInfo {
     module("io.grpc:grpc-protobuf-lite", "io.grpc.protobuf.lite")
     module("io.helidon.common:helidon-common", "io.helidon.common") {
         exportAllPackages()
-        requireAllDefinedDependencies()
         patchRealModule()
     }
     module("io.helidon.webclient:helidon-webclient", "io.helidon.webclient") {
-        exportAllPackages()
         requireAllDefinedDependencies()
         patchRealModule()
     }
