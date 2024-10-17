@@ -18,6 +18,8 @@ package com.hedera.node.app.tss.handlers;
 
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.state.roster.Roster;
+import com.hedera.hapi.node.state.roster.RosterEntry;
 import com.hedera.hapi.node.state.token.StakingNodeInfo;
 import com.hedera.hapi.node.state.tss.TssVoteMapKey;
 import com.hedera.hapi.node.transaction.TransactionBody;
@@ -31,6 +33,7 @@ import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hedera.node.app.tss.stores.WritableTssBaseStore;
 import com.hedera.node.config.data.StakingConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.platform.state.service.ReadableRosterStore;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.HashMap;
 import java.util.Map;
@@ -92,48 +95,53 @@ public class TssVoteHandler implements TransactionHandler {
     }
 
     /**
-     * Check if the threshold number of votes (totaling at least 1/3 of weight) have already been received for the
+     * Check if the threshold number of votes (totaling at least 1/thresholdDenominator of weight) have already been received for the
      * candidate roster, all with the same vote byte array.
      *
      * @param tssVoteTransaction the TssVoteTransaction to check
      * @param context the HandleContext
+     * @param thresholdDenominator the denominator of the threshold
      * @return true if the threshold has been reached, false otherwise
      */
     public static boolean hasReachedThreshold(
             TssVoteTransactionBody tssVoteTransaction, HandleContext context, long thresholdDenominator) {
         final var tssBaseStore = context.storeFactory().writableStore(WritableTssBaseStore.class);
-        final var stakingInfoStore = context.storeFactory().readableStore(ReadableStakingInfoStore.class);
+        final var rosterStore = context.storeFactory().readableStore(ReadableRosterStore.class);
 
         // Get the target roster from the TssVoteTransactionBody
-        Bytes candidateRosterHash = tssVoteTransaction.targetRosterHash();
+        Bytes targetRosterHash = tssVoteTransaction.targetRosterHash();
 
-        // Get all votes for the candidate roster
-        Map<StakingNodeInfo, TssVoteTransactionBody> votes = new HashMap<>();
-        Set<Long> nodeIds = stakingInfoStore.getAll();
-        for (long nodeId : nodeIds) {
-            StakingNodeInfo stakingNodeInfo = stakingInfoStore.get(nodeId);
-            if (stakingNodeInfo != null && !stakingNodeInfo.deleted()) {
-                final TssVoteMapKey tssVoteMapKey = new TssVoteMapKey(candidateRosterHash, nodeId);
-                if (tssBaseStore.exists(tssVoteMapKey)) {
-                    votes.put(stakingNodeInfo, tssBaseStore.getVote(tssVoteMapKey));
-                }
-            }
+        // Get all votes for the source roster
+        // TODO States API to be updated to get a roster by hash? Use source roster instead of activeRoster?
+        Map<RosterEntry, TssVoteTransactionBody> voteByNode = new HashMap<>();
+
+        // Also get the total roster weight
+        long totalWeight = 0;
+
+        Roster sourceRoster = rosterStore.getActiveRoster();
+        if (sourceRoster == null) {
+            throw new IllegalArgumentException("No active roster found");
         }
 
-        // Calculate the total weight of the network
-        final var totalWeight =
-                context.configuration().getConfigData(StakingConfig.class).sumOfConsensusWeights();
+        // For every node in the source roster, check if there is a vote for the target roster hash
+        for (RosterEntry rosterEntry : rosterStore.getActiveRoster().rosterEntries()) {
+            totalWeight += rosterEntry.weight();
+            final TssVoteMapKey tssVoteMapKey = new TssVoteMapKey(targetRosterHash, rosterEntry.nodeId());
+            if (tssBaseStore.exists(tssVoteMapKey)) {
+                voteByNode.put(rosterEntry, tssBaseStore.getVote(tssVoteMapKey));
+            }
+        }
 
         // Initialize a counter for the total weight of votes with the same vote byte array
         long voteWeight = 0L;
 
-        // Iterate over the votes
-        for (StakingNodeInfo stakingNodeInfo : votes.keySet()) {
-            final var vote = votes.get(stakingNodeInfo);
+        // Iterate over the votes which has the same target roster hash
+        for (RosterEntry rosterEntryKey : voteByNode.keySet()) {
+            final TssVoteTransactionBody vote = voteByNode.get(rosterEntryKey);
             // If the vote byte array matches the one in the TssVoteTransaction, add the weight of the vote to the
             // counter
             if (vote.tssVote().equals(tssVoteTransaction.tssVote())) {
-                voteWeight += stakingNodeInfo.weight();
+                voteWeight += rosterEntryKey.weight();
             }
         }
 
