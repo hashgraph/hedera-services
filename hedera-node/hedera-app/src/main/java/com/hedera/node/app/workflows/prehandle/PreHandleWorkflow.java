@@ -16,6 +16,8 @@
 
 package com.hedera.node.app.workflows.prehandle;
 
+import static com.hedera.node.app.workflows.prehandle.PreHandleResult.Status.UNKNOWN_FAILURE;
+
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.store.ReadableStoreFactory;
@@ -103,7 +105,7 @@ public interface PreHandleWorkflow {
             final ReadableStoreFactory storeFactory) {
         final var metadata = platformTxn.getMetadata();
         final PreHandleResult previousResult;
-        if (metadata instanceof PreHandleResult result) {
+        if (metadata instanceof PreHandleResult result && result.status() != UNKNOWN_FAILURE) {
             previousResult = result;
         } else {
             // This should be impossible since the Platform contract guarantees that SwirldState.preHandle()
@@ -117,6 +119,14 @@ public interface PreHandleWorkflow {
         }
         // We do not know how long transactions are kept in memory. Clearing metadata to avoid keeping it for too long.
         platformTxn.setMetadata(null);
-        return previousResult;
+
+        return (previousResult == null
+                ? preHandleTransaction(
+                        creator.accountId(),
+                        storeFactory,
+                        storeFactory.getStore(ReadableAccountStore.class),
+                        platformTxn,
+                        previousResult)
+                : previousResult);
     }
 }
