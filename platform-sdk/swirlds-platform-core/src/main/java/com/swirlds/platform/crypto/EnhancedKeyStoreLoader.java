@@ -34,8 +34,10 @@ import com.swirlds.platform.system.address.AddressBook;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -81,6 +83,8 @@ import org.bouncycastle.operator.jcajce.JceInputDecryptorProviderBuilder;
 import org.bouncycastle.pkcs.PKCS8EncryptedPrivateKeyInfo;
 import org.bouncycastle.pkcs.PKCSException;
 import org.bouncycastle.util.encoders.DecoderException;
+import org.bouncycastle.util.io.pem.PemObject;
+import org.bouncycastle.util.io.pem.PemWriter;
 
 /**
  * This class is responsible for loading the key stores for all nodes in the address book.
@@ -1191,11 +1195,11 @@ public class EnhancedKeyStoreLoader {
      */
     @NonNull
     public EnhancedKeyStoreLoader migrate() throws KeyLoadingException, KeyStoreException {
-        logger.debug(STARTUP.getMarker(), "Starting key store migration");
+        logger.info(STARTUP.getMarker(), "Starting key store migration");
         final Map<NodeId, PrivateKey> pfxPrivateKeys = new HashMap<>();
         final Map<NodeId, Certificate> pfxCertificates = new HashMap<>();
 
-        // delete agreement keys
+        // delete agreement keys permanently.  They are being created at startup by generateIfNecessary() after scan().
         deleteAgreementKeys();
 
         // create PEM files for signing keys and certs.
@@ -1209,14 +1213,14 @@ public class EnhancedKeyStoreLoader {
         if (errorCount > 0) {
             // roll back due to errors.
             // this deletes any pem files created, but leaves the agreement keys deleted.
-            logger.debug(STARTUP.getMarker(), "Due to {} errors, reverting pem file creation.", errorCount);
+            logger.info(STARTUP.getMarker(), "Due to {} errors, reverting pem file creation.", errorCount);
             rollBackSigningKeysAndCertsChanges(pfxPrivateKeys, pfxCertificates);
         } else {
             // cleanup pfx files by moving them to sub-directory
             cleanupMovePfxFilesToSubDirectory();
         }
 
-        logger.trace(STARTUP.getMarker(), "Completed migration of key store.");
+        logger.info(STARTUP.getMarker(), "Completed migration of key store.");
         return this;
     }
 
@@ -1273,7 +1277,7 @@ public class EnhancedKeyStoreLoader {
                             readLegacyPrivateKey(nodeId, ksLocation, KeyCertPurpose.SIGNING.storeName(nodeAlias));
                     pfxPrivateKeys.put(nodeId, privateKey);
                     if (privateKey == null) {
-                        logger.trace(
+                        logger.error(
                                 ERROR.getMarker(),
                                 "Failed to extract private signing key for node {} from file {}",
                                 nodeId,
@@ -1288,7 +1292,7 @@ public class EnhancedKeyStoreLoader {
                         try {
                             writePemFile(true, sPrivateKeyLocation, privateKey.getEncoded());
                         } catch (IOException e) {
-                            logger.trace(
+                            logger.error(
                                     ERROR.getMarker(),
                                     "Failed to write private key for node {} to PEM file {}",
                                     nodeId,
@@ -1312,7 +1316,7 @@ public class EnhancedKeyStoreLoader {
                         readLegacyCertificate(nodeId, nodeAlias, KeyCertPurpose.SIGNING, legacyPublicStore);
                 pfxCertificates.put(nodeId, certificate);
                 if (certificate == null) {
-                    logger.trace(
+                    logger.error(
                             ERROR.getMarker(),
                             "Failed to extract signing certificate for node {} from file {}",
                             nodeId,
@@ -1327,7 +1331,7 @@ public class EnhancedKeyStoreLoader {
                     try {
                         writePemFile(false, sCertificateLocation, certificate.getEncoded());
                     } catch (CertificateEncodingException | IOException e) {
-                        logger.trace(
+                        logger.error(
                                 ERROR.getMarker(),
                                 "Failed to write signing certificate for node {} to PEM file {}",
                                 nodeId,
@@ -1439,6 +1443,7 @@ public class EnhancedKeyStoreLoader {
      */
     private void cleanupMovePfxFilesToSubDirectory() throws KeyStoreException, KeyLoadingException {
         AtomicLong cleanupErrorCount = new AtomicLong(0);
+
         Path oldPfxKeys = keyStoreDirectory.resolve("OLD_PFX_KEYS");
         if (!Files.exists(oldPfxKeys)) {
             try {
@@ -1487,10 +1492,12 @@ public class EnhancedKeyStoreLoader {
     private static void writePemFile(
             final boolean isPrivateKey, @NonNull final Path location, @NonNull final byte[] encoded)
             throws IOException {
-        final String pemString = (isPrivateKey ? "-----BEGIN PRIVATE KEY-----\n" : "-----BEGIN CERTIFICATE-----\n")
-                + Base64.getEncoder().encodeToString(encoded) + "\n"
-                + (isPrivateKey ? "-----END PRIVATE KEY-----\n" : "-----END CERTIFICATE-----\n");
-        Files.writeString(
-                location, pemString, StandardCharsets.UTF_8, StandardOpenOption.SYNC, StandardOpenOption.CREATE);
+        final PemObject pemObj = new PemObject(isPrivateKey? "PRIVATE KEY" : "CERTIFICATE", encoded);
+        try (final FileOutputStream file = new FileOutputStream(location.toFile(), false);
+                final var out = new OutputStreamWriter(file);
+                final PemWriter writer = new PemWriter(out)) {
+            writer.writeObject(pemObj);
+            file.getFD().sync();
+        }
     }
 }

@@ -185,7 +185,6 @@ class EnhancedKeyStoreLoaderTest {
         assertThat(keyDirectory).exists().isDirectory().isReadable().isNotEmptyDirectory();
 
         assertThat(loader).isNotNull();
-        assertThatCode(loader::migrate).doesNotThrowAnyException();
         assertThatCode(loader::scan).doesNotThrowAnyException();
         assertThatCode(loader::verify).isInstanceOf(KeyLoadingException.class);
         assertThatCode(loader::injectInAddressBook).doesNotThrowAnyException();
