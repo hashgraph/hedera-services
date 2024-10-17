@@ -225,8 +225,10 @@ public class PlatformWiring {
                 new ComponentWiring<>(model, StateSnapshotManager.class, config.stateSnapshotManager());
         stateSignerWiring = new ComponentWiring<>(model, StateSigner.class, config.stateSigner());
         transactionHandlerWiring = new ComponentWiring<>(
-                model, TransactionHandler.class, config.transactionHandler(), data -> ((ConsensusRound) data)
-                        .getNumAppTransactions());
+                model,
+                TransactionHandler.class,
+                config.transactionHandler(),
+                data -> data instanceof ConsensusRound consensusRound ? consensusRound.getNumAppTransactions() : 1);
         consensusEventStreamWiring =
                 new ComponentWiring<>(model, ConsensusEventStream.class, config.consensusEventStream());
         runningEventHashOverrideWiring = RunningEventHashOverrideWiring.create(model);
