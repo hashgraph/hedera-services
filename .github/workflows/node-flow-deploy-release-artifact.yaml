@@ -17,7 +17,9 @@
 name: "ZXF: Deploy Production Release"
 on:
   pull_request_review_comment:
-    types: [deleted, created]
+    types: [deleted, created, edited]
+  pull_request:
+    types: [locked, edited]
 
 defaults:
   run:
