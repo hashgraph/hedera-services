@@ -250,15 +250,12 @@ public class StateChangesValidator implements BlockStreamValidator {
                 bootstrapConfig.getConfigData(HederaConfig.class).configVersion();
         final var currentVersion = new ServicesSoftwareVersion(servicesVersion, configVersion);
         final var fakePlatformContext =
-                new FakePlatformContext(new NodeId(0), Executors.newSingleThreadScheduledExecutor());
+                new FakePlatformContext(NodeId.of(0), Executors.newSingleThreadScheduledExecutor());
         final var lifecycles = newPlatformInitLifecycle(
                 bootstrapConfig, fakePlatformContext.getConfiguration(), currentVersion, migrator, servicesRegistry);
         this.state = new MerkleStateRoot(lifecycles, version -> new ServicesSoftwareVersion(version, configVersion));
         initGenesisPlatformState(
                 fakePlatformContext, this.state.getWritablePlatformState(), addressBook, currentVersion);
-                this.state.getWritablePlatformState(),
-                addressBook,
-                currentVersion);
         final var stateToBeCopied = state;
         state = state.copy();
         // get the state hash before applying the state changes from current block
