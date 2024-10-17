@@ -57,7 +57,7 @@ final class SidecarWriterV6 implements AutoCloseable {
     /** The hash of the file contents, computed in close */
     private Bytes hash = null;
     /** The number of uncompressed bytes written to this file */
-    private long bytesWritten = 0;
+    private long bytesWritten;
 
     private final int id;
 
