@@ -50,10 +50,8 @@ public class DefaultKycStatusCall extends AbstractNonRevertibleTokenViewCall {
     @Override
     protected @NonNull PricedResult resultOfViewingToken(@Nullable final Token token) {
         requireNonNull(token);
-        return gasOnly(
-                fullResultsFor(SUCCESS, gasCalculator.viewGasRequirement(), token.accountsKycGrantedByDefault()),
-                SUCCESS,
-                true);
+        final boolean kycStatus = !token.hasKycKey() || token.accountsKycGrantedByDefault();
+        return gasOnly(fullResultsFor(SUCCESS, gasCalculator.viewGasRequirement(), kycStatus), SUCCESS, true);
     }
 
     @Override

@@ -387,7 +387,7 @@ public class HapiSpecRegistry {
     }
 
     public Key getKycKey(String name) {
-        return get(name + "Kyc", Key.class);
+        return getOrElse(name + "Kyc", Key.class, null);
     }
 
     public Long getExpiry(String name) {
