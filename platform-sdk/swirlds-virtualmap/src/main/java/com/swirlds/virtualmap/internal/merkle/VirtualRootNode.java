@@ -502,7 +502,7 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
                 lastLeafPath,
                 getRoute());
         final FullLeafRehashHashListener<K, V> hashListener = new FullLeafRehashHashListener<>(
-                firstLeafPath, lastLeafPath, keySerializer, valueSerializer, dataSource);
+                firstLeafPath, lastLeafPath, keySerializer, valueSerializer, dataSource, statistics);
 
         // This background thread will be responsible for hashing the tree and sending the
         // data to the hash listener to flush.
@@ -1613,6 +1613,7 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
                 keySerializer,
                 valueSerializer,
                 reconnectRecords.getDataSource(),
+                statistics,
                 nodeRemover);
 
         // This background thread will be responsible for hashing the tree and sending the
