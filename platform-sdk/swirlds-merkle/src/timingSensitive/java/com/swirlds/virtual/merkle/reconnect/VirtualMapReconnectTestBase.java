@@ -36,6 +36,7 @@ import com.swirlds.common.test.fixtures.merkle.dummy.DummyMerkleInternal;
 import com.swirlds.common.test.fixtures.merkle.dummy.DummyMerkleLeaf;
 import com.swirlds.common.test.fixtures.merkle.util.MerkleTestUtils;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
+import com.swirlds.merkle.test.fixtures.FakeVirtualMap;
 import com.swirlds.merkledb.MerkleDb;
 import com.swirlds.merkledb.MerkleDbDataSourceBuilder;
 import com.swirlds.merkledb.MerkleDbTableConfig;
@@ -147,6 +148,7 @@ public class VirtualMapReconnectTestBase {
         registry.registerConstructable(new ClassConstructorPair(VirtualRootNode.class, VirtualRootNode::new));
         registry.registerConstructable(new ClassConstructorPair(TestKey.class, TestKey::new));
         registry.registerConstructable(new ClassConstructorPair(TestValue.class, TestValue::new));
+        registry.registerConstructable(new ClassConstructorPair(FakeVirtualMap.class, FakeVirtualMap::new));
 
         new TestConfigBuilder()
                 .withValue(ReconnectConfig_.ACTIVE, "true")
@@ -197,15 +199,6 @@ public class VirtualMapReconnectTestBase {
 
         final MerkleInternal teacherTree = createTreeForMap(teacherMap);
         final VirtualMap<TestKey, TestValue> copy = teacherMap.copy();
-        final MerkleInternal brokenTeacherTree = createTreeForMap(brokenTeacherMapBuilder.apply(teacherMap));
-
-        // Hack: undo the reservation from the broken tree. Reconnect test utils expect every node to have
-        // a reference count of exactly one, and it's a lot simpler to "fix" the extra reference than to deviate.
-        boolean creativeAccountingOnTeacherMap = false;
-        if (teacherMap.getReservationCount() > 1) {
-            teacherMap.release();
-            creativeAccountingOnTeacherMap = true;
-        }
 
         final MerkleInternal learnerTree = createTreeForMap(learnerMap);
 
@@ -214,6 +207,13 @@ public class VirtualMapReconnectTestBase {
 
                 final boolean failureExpected = i + 1 < attempts;
 
+                final MerkleInternal brokenTeacherTree = createTreeForMap(brokenTeacherMapBuilder.apply(teacherMap));
+                // Hack: undo the reservation from the broken tree. Reconnect test utils expect every node to have
+                // a reference count of exactly one, and it's a lot simpler to "fix" the extra reference than to
+                // deviate.
+                if (teacherMap.getReservationCount() > 1) {
+                    teacherMap.release();
+                }
                 try {
                     final MerkleNode node = MerkleTestUtils.hashAndTestSynchronization(
                             learnerTree, failureExpected ? brokenTeacherTree : teacherTree, reconnectConfig);
@@ -238,14 +238,8 @@ public class VirtualMapReconnectTestBase {
                         });
             }
         } finally {
-            if (creativeAccountingOnTeacherMap) {
-                // Undo hack from above for clean garbage collection
-                teacherMap.reserve();
-            }
-
             teacherTree.release();
             learnerTree.release();
-            brokenTeacherTree.release();
             copy.release();
         }
     }

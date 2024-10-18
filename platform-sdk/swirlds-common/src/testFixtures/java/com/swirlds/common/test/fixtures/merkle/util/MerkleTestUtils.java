@@ -1161,6 +1161,11 @@ public final class MerkleTestUtils {
     private static void assertReconnectValidity(
             final MerkleNode startingTree, final MerkleNode desiredTree, final MerkleNode generatedTree) {
 
+        if (!areTreesEqual(generatedTree, desiredTree)) {
+            System.err.println("Starting: " + startingTree);
+            System.err.println("Desired: " + desiredTree);
+            System.err.println("Generated: " + generatedTree);
+        }
         assertTrue(areTreesEqual(generatedTree, desiredTree), "reconnect should produce identical tree");
 
         if (desiredTree != null) {

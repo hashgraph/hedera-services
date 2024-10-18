@@ -39,6 +39,8 @@ public class PullVirtualTreeRequest implements SelfSerializable {
         public static final int ORIGINAL = 1;
     }
 
+    private int viewId;
+
     // Virtual node path. If the path is Path.INVALID_PATH, it indicates that the learner will
     // not send any more node requests to the teacher
     private long path;
@@ -48,9 +50,16 @@ public class PullVirtualTreeRequest implements SelfSerializable {
     private Hash hash;
 
     /**
-     * This constructor is used by the teacher to deserialize the request from the stream.
+     * Required for (de)serialization needs.
      */
     public PullVirtualTreeRequest() {}
+
+    /**
+     * This constructor is used by the teacher to deserialize the request from the stream.
+     */
+    public PullVirtualTreeRequest(final int viewId) {
+        this.viewId = viewId;
+    }
 
     /**
      * This constructor is used by the learner to send requests to the teacher.
@@ -86,6 +95,10 @@ public class PullVirtualTreeRequest implements SelfSerializable {
             }
             hash = new Hash(hashBytes, DigestType.SHA_384);
         }
+    }
+
+    public int getViewId() {
+        return viewId;
     }
 
     public long getPath() {

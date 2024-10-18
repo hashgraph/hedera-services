@@ -53,9 +53,14 @@ import java.time.Duration;
  *                                               then there is no limit.
  * @param teacherRateLimiterSleep                The amount of time that a teacher will sleep when throttling is
  *                                               engaged
+ * @param maxParallelSubtrees                    Maximum number of merkle tree subtrees to synchronize in parallel
  * @param pullLearnerRootResponseTimeout         In pull-based reconnect implementations (virtual trees only), the
  *                                               timeout on the learner side to get a virtual root node response from
  *                                               teacher
+ * @param allMessagesReceiveTimeout              In pull-based reconnect implementations (virtual trees only), the
+ *                                               timeout on the learner side to wait until all virtual view messages
+ *                                               are completely processed, after the teacher sent a final response
+ *                                               for this view
  */
 @ConfigData("reconnect")
 public record ReconnectConfig(
@@ -70,4 +75,6 @@ public record ReconnectConfig(
         @ConfigProperty(defaultValue = "10m") Duration minimumTimeBetweenReconnects,
         @ConfigProperty(defaultValue = "0") int teacherMaxNodesPerSecond,
         @ConfigProperty(defaultValue = "1us") Duration teacherRateLimiterSleep,
-        @ConfigProperty(defaultValue = "60s") Duration pullLearnerRootResponseTimeout) {}
+        @ConfigProperty(defaultValue = "3") int maxParallelSubtrees,
+        @ConfigProperty(defaultValue = "600s") Duration pullLearnerRootResponseTimeout,
+        @ConfigProperty(defaultValue = "300s") Duration allMessagesReceiveTimeout) {}

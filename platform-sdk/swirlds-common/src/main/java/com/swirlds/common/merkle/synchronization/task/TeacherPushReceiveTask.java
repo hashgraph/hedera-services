@@ -20,10 +20,10 @@ import static com.swirlds.logging.legacy.LogMarker.RECONNECT;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 import com.swirlds.common.merkle.synchronization.streams.AsyncInputStream;
-import com.swirlds.common.merkle.synchronization.utility.MerkleSynchronizationException;
 import com.swirlds.common.merkle.synchronization.views.TeacherTreeView;
 import com.swirlds.common.threading.pool.StandardWorkGroup;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Consumer;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -40,9 +40,12 @@ public class TeacherPushReceiveTask<T> {
     private static final String NAME = "teacher-receive-task";
 
     private final StandardWorkGroup workGroup;
-    private final AsyncInputStream<QueryResponse> in;
+    private final int viewId;
+    private final AsyncInputStream in;
     private final TeacherTreeView<T> view;
     private final AtomicBoolean senderIsFinished;
+
+    private final Consumer<Integer> completeListener;
 
     /**
      * Create a thread for receiving responses to queries from the learner.
@@ -58,13 +61,17 @@ public class TeacherPushReceiveTask<T> {
      */
     public TeacherPushReceiveTask(
             final StandardWorkGroup workGroup,
-            final AsyncInputStream<QueryResponse> in,
+            final int viewId,
+            final AsyncInputStream in,
             final TeacherTreeView<T> view,
-            final AtomicBoolean senderIsFinished) {
+            final AtomicBoolean senderIsFinished,
+            final Consumer<Integer> completeListener) {
         this.workGroup = workGroup;
+        this.viewId = viewId;
         this.in = in;
         this.view = view;
         this.senderIsFinished = senderIsFinished;
+        this.completeListener = completeListener;
     }
 
     public void start() {
@@ -72,13 +79,13 @@ public class TeacherPushReceiveTask<T> {
     }
 
     private void run() {
-        try (in) {
+        try {
             boolean finished = senderIsFinished.get();
             boolean responseExpected = view.isResponseExpected();
 
-            while (!finished || responseExpected) {
+            while ((!finished || responseExpected) && !Thread.currentThread().isInterrupted()) {
                 if (responseExpected) {
-                    final QueryResponse response = in.readAnticipatedMessage();
+                    final QueryResponse response = in.readAnticipatedMessage(viewId, QueryResponse::new);
                     final T node = view.getNodeForNextResponse();
                     view.registerResponseForNode(node, response.doesLearnerHaveTheNode());
                 } else {
@@ -88,11 +95,12 @@ public class TeacherPushReceiveTask<T> {
                 finished = senderIsFinished.get();
                 responseExpected = view.isResponseExpected();
             }
+            completeListener.accept(viewId);
         } catch (final InterruptedException ex) {
             logger.warn(RECONNECT.getMarker(), "teacher's receiving thread interrupted");
             Thread.currentThread().interrupt();
         } catch (final Exception ex) {
-            throw new MerkleSynchronizationException("exception in the teacher's receiving thread", ex);
+            workGroup.handleError(ex);
         }
     }
 }
