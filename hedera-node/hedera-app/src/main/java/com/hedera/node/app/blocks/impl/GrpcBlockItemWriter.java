@@ -21,7 +21,6 @@ import static io.grpc.Status.fromThrowable;
 import static java.util.Objects.requireNonNull;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.hapi.block.protoc.BlockStreamServiceGrpc;
 import com.hedera.hapi.block.protoc.PublishStreamRequest;
 import com.hedera.hapi.block.protoc.PublishStreamResponse;
@@ -31,7 +30,7 @@ import com.hedera.hapi.block.protoc.PublishStreamResponseCode;
 import com.hedera.hapi.block.stream.protoc.BlockItem;
 import com.hedera.node.app.blocks.BlockItemWriter;
 import com.hedera.node.config.data.BlockStreamConfig;
-import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import io.grpc.Status;
 import io.grpc.stub.StreamObserver;
@@ -41,6 +40,7 @@ import io.helidon.webclient.grpc.GrpcClientMethodDescriptor;
 import io.helidon.webclient.grpc.GrpcClientProtocolConfig;
 import io.helidon.webclient.grpc.GrpcServiceClient;
 import io.helidon.webclient.grpc.GrpcServiceDescriptor;
+import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import org.apache.logging.log4j.LogManager;
@@ -160,7 +160,8 @@ public class GrpcBlockItemWriter implements BlockItemWriter {
     }
 
     @Override
-    public BlockItemWriter writeItem(@NonNull Bytes serializedItem) {
+    public BlockItemWriter writeItem(@NonNull final byte[] bytes) {
+        requireNonNull(bytes);
         if (state != State.OPEN) {
             throw new IllegalStateException(
                     "Cannot write to a GrpcBlockItemWriter that is not open for block: " + this.blockNumber);
@@ -169,10 +170,31 @@ public class GrpcBlockItemWriter implements BlockItemWriter {
         PublishStreamRequest request = PublishStreamRequest.newBuilder().build();
         try {
             request = PublishStreamRequest.newBuilder()
-                    .setBlockItem(BlockItem.parseFrom(serializedItem.toByteArray()))
+                    .setBlockItem(BlockItem.parseFrom(bytes))
                     .build();
             requestObserver.onNext(request);
-        } catch (InvalidProtocolBufferException e) {
+        } catch (IOException e) {
+            final String message = INVALID_MESSAGE.formatted("PublishStreamResponse", request);
+            throw new RuntimeException(message, e);
+        }
+        return this;
+    }
+
+    @Override
+    public BlockItemWriter writeItems(@NonNull BufferedData data) {
+        requireNonNull(data);
+        if (state != State.OPEN) {
+            throw new IllegalStateException(
+                    "Cannot write to a GrpcBlockItemWriter that is not open for block: " + this.blockNumber);
+        }
+
+        PublishStreamRequest request = PublishStreamRequest.newBuilder().build();
+        try {
+            request = PublishStreamRequest.newBuilder()
+                    .setBlockItem(BlockItem.parseFrom(data.asInputStream()))
+                    .build();
+            requestObserver.onNext(request);
+        } catch (IOException e) {
             final String message = INVALID_MESSAGE.formatted("PublishStreamResponse", request);
             throw new RuntimeException(message, e);
         }
@@ -181,9 +203,9 @@ public class GrpcBlockItemWriter implements BlockItemWriter {
 
     @Override
     public void closeBlock() {
-        if (state.ordinal() < GrpcBlockItemWriter.State.OPEN.ordinal()) {
+        if (state.ordinal() < State.OPEN.ordinal()) {
             throw new IllegalStateException("Cannot close a GrpcBlockItemWriter that is not open");
-        } else if (state.ordinal() == GrpcBlockItemWriter.State.CLOSED.ordinal()) {
+        } else if (state.ordinal() == State.CLOSED.ordinal()) {
             throw new IllegalStateException("Cannot close a GrpcBlockItemWriter that is already closed");
         }
 
