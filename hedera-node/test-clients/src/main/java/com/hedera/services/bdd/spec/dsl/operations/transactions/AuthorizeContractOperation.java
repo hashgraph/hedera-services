@@ -70,11 +70,11 @@ public class AuthorizeContractOperation extends AbstractSpecOperation implements
 
     /**
      * Update this operation to also authorize a given key types besides the admin key.
-     * @param keyType an additional the key types to authorize
+     * @param keyTypes an additional the key types to authorize
      * @return this
      */
-    public AuthorizeContractOperation alsoAuthorizing(@NonNull final TokenKeyType... keyType) {
-        extraTokenAuthorizations.addAll(Arrays.asList(keyType));
+    public AuthorizeContractOperation alsoAuthorizing(@NonNull final TokenKeyType... keyTypes) {
+        extraTokenAuthorizations.addAll(Arrays.asList(keyTypes));
         return this;
     }
 
