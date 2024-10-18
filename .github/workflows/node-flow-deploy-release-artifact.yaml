@@ -21,7 +21,6 @@ on:
       - "v[0-9]+.[0-9]+.[0-9]+-?*"
   workflow_dispatch:
 
-
 defaults:
   run:
     shell: bash
@@ -97,7 +96,7 @@ jobs:
   release-branch:
     name: Release [Branch]
     uses: ./.github/workflows/node-zxc-build-release-artifact.yaml
-    if: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success'}}
+    if: ${{ github.event_name == 'workflow_dispatch' && !github.event.workflow_dispatch.repository.fork }}
     with:
       version-policy: branch-commit
       trigger-env-deploy: integration
@@ -119,3 +118,20 @@ jobs:
       jf-docker-registry: ${{ vars.JF_DOCKER_REGISTRY }}
       jf-user-name: ${{ vars.JF_USER_NAME }}
       jf-access-token: ${{ secrets.JF_ACCESS_TOKEN }}
+
+  deploy-ci-trigger:
+    name: Trigger CI Flows
+    runs-on: network-node-linux-medium
+    if: ${{ github.event_name == 'workflow_dispatch' && !github.event.workflow_dispatch.repository.fork }}
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@f086349bfa2bd1361f7909c78558e816508cdc10 # v2.8.0
+        with:
+          egress-policy: audit
+
+      - name: Trigger ZXF Deploy Production Release
+        uses: step-security/workflow-dispatch@4d1049025980f72b1327cbfdeecb07fe7a20f577 # v1.2.4
+        with:
+          workflow: .github/workflows/node-flow-deploy-release-artifact.yaml
+          repo: hashgraph/hedera-services # ensure we are executing in the hashgraph org
+          token: secrets.GH_ACCESS_TOKEN

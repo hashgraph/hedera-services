@@ -17,6 +17,10 @@
 name: "ZXF: Prepare Extended Test Suite"
 on:
   workflow_dispatch:
+    inputs:
+      ref:
+        description: Git Commit Reference for the XTS prep tag
+        required: true
 
 defaults:
   run:
@@ -32,18 +36,37 @@ jobs:
   tag-for-xts:
     name: Tag for XTS promotion
     runs-on: network-node-linux-medium
-    if: ${{ github.event.workflow_dispatch.conclusion == 'success' && !github.event.workflow_dispatch.head_repository.fork && github.event.workflow_dispatch.head_branch == 'develop'}}
+    if: ${{ !github.event.workflow_dispatch.repository.fork }}
     steps:
       - name: Harden Runner
         uses: step-security/harden-runner@f086349bfa2bd1361f7909c78558e816508cdc10 # v2.8.0
         with:
           egress-policy: audit
 
-      - name: Checkout code
+      - name: Checkout Default Branch
         uses: actions/checkout@eef61447b9ff4aafe5dcd4e0bbf5d482be7e7871 # v4.2.1
         with:
           fetch-depth: '0'
-          ref: ${{ github.event.workflow_dispatch.head_sha }}
+          ref: 'develop'
+          token: ${{ secrets.GH_ACCESS_TOKEN }}
+
+      - name: Validate Input Ref
+        id: validate-input
+        env:
+          COMMIT_ID: ${{ inputs.ref }}
+        run: |
+          if [ 0 -eq $(git merge-base --is-ancestor $COMMIT_ID develop) ]; then 
+            echo "commit_on_dev=true" >> $GITHUB_OUTPUT
+          else
+            exit 1
+          fi
+
+      - name: Checkout code
+        uses: actions/checkout@eef61447b9ff4aafe5dcd4e0bbf5d482be7e7871 # v4.2.1
+        if: ${{ steps.validate-input.outputs.commit_on_dev == 'true'}}
+        with:
+          fetch-depth: '0'
+          ref: ${{ inputs.ref }}
           token: ${{ secrets.GH_ACCESS_TOKEN }}
 
       - name: Import GPG Key
@@ -65,7 +88,7 @@ jobs:
           git push --set-upstream origin --tags
 
       - name: Report failure
-        if: ${{ failure() }}
+        if: ${{ !cancelled() && always() && failure() }}
         uses: slackapi/slack-github-action@6c661ce58804a1a20f6dc5fbee7f0381b469e001 # v1.25.0
         env:
           SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
