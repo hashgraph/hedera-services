@@ -114,3 +114,11 @@ jobs:
           repo: hashgraph/hedera-services # ensure we are executing in the hashgraph org
           token: secrets.GH_ACCESS_TOKEN
           inputs: '{ "ref": "${{ steps.get-commit-id.outputs.commit_id }}" }'
+
+      - name: Trigger ZXF Deploy Integration
+        uses: step-security/workflow-dispatch@4d1049025980f72b1327cbfdeecb07fe7a20f577 # v1.2.4
+        with:
+          workflow: .github/workflows/node-zxf-deploy-integration.yaml
+          repo: hashgraph/hedera-services # ensure we are executing in the hashgraph org
+          token: secrets.GH_ACCESS_TOKEN
+          inputs: '{ "data": "${{ toJSON(github.event) }}" }'
