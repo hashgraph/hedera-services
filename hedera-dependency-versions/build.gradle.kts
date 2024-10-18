@@ -28,6 +28,15 @@ dependencies {
 }
 
 dependencies.constraints {
+    api("io.helidon.common:helidon-common:4.1.1") {
+        because("io.helidon.common")
+    }
+    api("io.helidon.webclient:helidon-webclient:4.1.1") {
+        because("io.helidon.webclient")
+    }
+    api("io.helidon.webclient:helidon-webclient-grpc:4.1.1") {
+        because("io.helidon.webclient.grpc")
+    }
     api("org.awaitility:awaitility:4.2.0") {
         because("awaitility")
     }
