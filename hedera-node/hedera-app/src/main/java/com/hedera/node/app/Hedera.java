@@ -117,6 +117,7 @@ import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.constructable.RuntimeConstructable;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.config.api.Configuration;
@@ -190,7 +191,7 @@ import org.apache.logging.log4j.Logger;
  * including its state. It constructs the Dagger dependency tree, and manages the gRPC server, and in all other ways,
  * controls execution of the node. If you want to understand our system, this is a great place to start!
  */
-public final class Hedera implements SwirldMain, PlatformStatusChangeListener, AppContext.Gossip {
+public final class Hedera implements SwirldMain, PlatformStatusChangeListener, AppContext.Gossip, AppContext.LedgerSigner {
     private static final Logger logger = LogManager.getLogger(Hedera.class);
 
     // FUTURE: This should come from configuration, not be hardcoded.
@@ -681,6 +682,11 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
             }
             throw new IllegalStateException("" + reason);
         }
+    }
+
+    @Override
+    public Signature sign(final Bytes ledgerId) {
+        return platform.sign(ledgerId.toByteArray());
     }
 
     /**

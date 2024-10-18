@@ -53,9 +53,9 @@ public class TssMessageTransactionHandler implements TransactionHandler {
     public void handle(@NonNull final HandleContext context) throws HandleException {
         requireNonNull(context);
         final var op = context.body().tssMessageOrThrow();
-        // If any of these values are not set its not a valid input. This message will not be considered to be added to
-        // the
-        // TSS message store.
+        // If any of these values are not set it is not a valid input.
+        // This message will not be considered to be added to the TSS message store.
+        // Are there any other checks that need to be done?
         if (op.targetRosterHash().toByteArray().length == 0
                 || op.sourceRosterHash().toByteArray().length == 0
                 || op.shareIndex() < 0
@@ -64,13 +64,19 @@ public class TssMessageTransactionHandler implements TransactionHandler {
             return;
         }
 
-        final var tssState = context.storeFactory().writableStore(WritableTssBaseStore.class);
-        final var numberOfAlreadyExistingMessages = tssState.messageStateSize();
+        final var tssStore = context.storeFactory().writableStore(WritableTssBaseStore.class);
+        final var numberOfAlreadyExistingMessages = tssStore.messageStateSize();
         final var key = TssMessageMapKey.newBuilder()
                 .rosterHash(op.targetRosterHash())
                 .sequenceNumber(numberOfAlreadyExistingMessages + 1)
                 .build();
-        tssState.put(key, op);
-//        tssCryptographyManager.submitTssMessageTransaction(op);
+        // if the tss message already exists in the store, do not add it again.
+        if(tssStore.getMessage(key) != null){
+            log.warn("TSS message already exists in the store. Not adding to the TSS message store.");
+            return;
+        }
+        tssStore.put(key, op);
+        // Once a TSS message is added to the store, it is sent to the TSS cryptography manager.
+        tssCryptographyManager.handleTssMessageTransaction(op);
     }
 }

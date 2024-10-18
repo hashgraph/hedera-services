@@ -136,33 +136,6 @@ message PlatformState {
      */
     AddressBook previous_address_book = 10005 [deprecated = true];
 }
-/**
- * A node rewards message. This is used to find number of active nodes in a staking period based on number of judges
- * each node created in that period.
- */
-message NodeRewards {
-  /**
-   * Number of rounds in a staking period.
-   */
-  uint64 num_rounds_in_staking_period = 1;
-  /**
-   * Number of judges created by each node in a staking period.
-   */
-  repeated NodeActivity node_activities = 2;
-}
-/**
-  * A node activity containing number of judges created in a staking period.
- */
-message NodeActivity {
-  /**
-   * Node ID of the node.
-   */
-  uint64 node_id = 1;
-  /**
-   * Number of judges created by the node.
-   */
-  uint64 num_judge_rounds = 2;
-}
 
 
 /**
@@ -215,12 +188,7 @@ message ConsensusSnapshot {
      * Consensus Timestamps SHALL always increase.
      */
     proto.Timestamp consensus_timestamp = 5;
-    /*
-     * A list of judge information entries.
-     * This list SHALL be ordered by creator ID.<br/>
-     * This list MUST be deterministically ordered.
-     */
-    repeated JudgeInfo judge_infos = 6;
+
 }
 /**
  * A judge information.<br/>

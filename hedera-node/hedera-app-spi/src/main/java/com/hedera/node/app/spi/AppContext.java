@@ -21,6 +21,8 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.FAIL_INVALID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.spi.signatures.SignatureVerifier;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.common.crypto.Signature;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.InstantSource;
 
@@ -49,6 +51,11 @@ public interface AppContext {
          * different transaction id if the exception's message is {@link ResponseCodeEnum#DUPLICATE_TRANSACTION}
          */
         void submit(@NonNull TransactionBody body);
+    }
+
+    interface LedgerSigner {
+
+        Signature sign(Bytes ledgerId);
     }
 
     /**
