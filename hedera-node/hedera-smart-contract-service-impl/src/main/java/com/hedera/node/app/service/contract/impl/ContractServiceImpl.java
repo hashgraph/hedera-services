@@ -41,10 +41,6 @@ public class ContractServiceImpl implements ContractService {
      * Minimum gas required for contract operations.
      */
     public static final long INTRINSIC_GAS_LOWER_BOUND = 21_000L;
-    /**
-     * Constant to set as a memo on auto-account creation.
-     */
-    public static final String LAZY_MEMO = "lazy-created account";
 
     private final ContractServiceComponent component;
 
