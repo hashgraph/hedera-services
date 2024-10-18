@@ -42,7 +42,7 @@ public class BenchmarkKeySerializer implements KeySerializer<BenchmarkKey> {
     }
 
     @Override
-    public int getVersion() {
+    public int getClassVersion() {
         return VERSION;
     }
 

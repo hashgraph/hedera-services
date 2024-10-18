@@ -262,7 +262,7 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
      * {@inheritDoc}
      */
     @Override
-    public int getVersion() {
+    public int getClassVersion() {
         return ClassVersion.ORIGINAL;
     }
 

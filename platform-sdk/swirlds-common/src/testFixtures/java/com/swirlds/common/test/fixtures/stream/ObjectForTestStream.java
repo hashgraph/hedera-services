@@ -91,7 +91,7 @@ public class ObjectForTestStream extends AbstractHashable
     }
 
     @Override
-    public int getVersion() {
+    public int getClassVersion() {
         return CLASS_VERSION;
     }
 

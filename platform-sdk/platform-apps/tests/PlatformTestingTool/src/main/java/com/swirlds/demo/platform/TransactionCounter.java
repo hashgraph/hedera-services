@@ -247,7 +247,7 @@ public class TransactionCounter implements Cloneable, FastCopyable, SelfSerializ
     }
 
     @Override
-    public int getVersion() {
+    public int getClassVersion() {
         return ClassVersion.ADD_VM_COUNTERS;
     }
 

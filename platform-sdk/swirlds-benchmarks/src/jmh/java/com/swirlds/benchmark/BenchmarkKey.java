@@ -67,7 +67,7 @@ public class BenchmarkKey implements VirtualKey {
 
     @Override
     public void deserialize(final SerializableDataInputStream inputStream, final int dataVersion) throws IOException {
-        assert dataVersion == getVersion() : "dataVersion=" + dataVersion + " != getVersion()=" + getVersion();
+        assert dataVersion == getClassVersion() : "dataVersion=" + dataVersion + " != getVersion()=" + getClassVersion();
         keyBytes = new byte[keySize];
         int n = keySize;
         while (n > 0) {
@@ -92,7 +92,7 @@ public class BenchmarkKey implements VirtualKey {
     }
 
     @Override
-    public int getVersion() {
+    public int getClassVersion() {
         return VERSION;
     }
 

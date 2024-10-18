@@ -175,7 +175,7 @@ public class AddressBook implements Iterable<Address>, SelfSerializable, Hashabl
      * {@inheritDoc}
      */
     @Override
-    public int getVersion() {
+    public int getClassVersion() {
         return ClassVersion.SELF_SERIALIZABLE_NODE_ID;
     }
 

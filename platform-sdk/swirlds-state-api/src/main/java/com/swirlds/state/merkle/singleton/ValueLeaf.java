@@ -97,7 +97,7 @@ public class ValueLeaf<T> extends PartialMerkleLeaf implements MerkleLeaf {
 
     /** {@inheritDoc} */
     @Override
-    public int getVersion() {
+    public int getClassVersion() {
         return 1;
     }
 

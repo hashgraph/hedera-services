@@ -51,7 +51,7 @@ public class StringLeaf extends PartialMerkleLeaf implements Labeled, MerkleLeaf
 
     /** {@inheritDoc} */
     @Override
-    public int getVersion() {
+    public int getClassVersion() {
         return CLASS_VERSION;
     }
 

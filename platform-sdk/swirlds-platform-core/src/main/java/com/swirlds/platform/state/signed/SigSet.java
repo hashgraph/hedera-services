@@ -221,7 +221,7 @@ public class SigSet implements FastCopyable, Iterable<NodeId>, SelfSerializable 
      * {@inheritDoc}
      */
     @Override
-    public int getVersion() {
+    public int getClassVersion() {
         return ClassVersion.SELF_SERIALIZABLE_NODE_ID;
     }
 }

@@ -816,7 +816,7 @@ public class FCQueue<E extends FastCopyable & SerializableHashable> extends Part
     }
 
     @Override
-    public int getVersion() {
+    public int getClassVersion() {
         return ClassVersion.REMOVED_HASH;
     }
 

@@ -207,7 +207,7 @@ public final class StateProofTreeBuilder {
         // Though happenstance, our hash builder implementation ingests integers and longs
         // in reverse order, and it's too late to change how that works now.
         byteSegments.add(longToByteArray(Long.reverseBytes(node.getClassId())));
-        byteSegments.add(intToByteArray(Integer.reverseBytes(node.getVersion())));
+        byteSegments.add(intToByteArray(Integer.reverseBytes(node.getClassVersion())));
 
         // Then, the hashes of the children are appended.
         for (int childIndex = 0; childIndex < node.getNumberOfChildren(); childIndex++) {

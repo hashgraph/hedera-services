@@ -178,7 +178,7 @@ class AsyncStreamTest {
         final SerializableDataInputStream in = new SerializableDataInputStream(new ByteArrayInputStream(bytes));
         for (int i = 0; i < count; i++) {
             final SerializableLong value = new SerializableLong();
-            value.deserialize(in, value.getVersion());
+            value.deserialize(in, value.getClassVersion());
             assertEquals(i, value.getValue(), "deserialized value should match expected value");
         }
     }
