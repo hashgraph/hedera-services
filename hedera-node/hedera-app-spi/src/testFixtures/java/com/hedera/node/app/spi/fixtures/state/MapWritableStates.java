@@ -65,7 +65,7 @@ public class MapWritableStates implements WritableStates, CommittableWritableSta
     @SuppressWarnings("unchecked")
     @NonNull
     @Override
-    public <K, V> WritableKVState<K, V> get(@NonNull final String stateKey) {
+    public <K, V extends Record> WritableKVState<K, V> get(@NonNull final String stateKey) {
         final var state = states.get(requireNonNull(stateKey));
         if (state == null) {
             throw new IllegalArgumentException("Unknown k/v state key " + stateKey);

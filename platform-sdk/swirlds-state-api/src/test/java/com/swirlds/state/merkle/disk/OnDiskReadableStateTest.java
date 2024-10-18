@@ -20,6 +20,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.verify;
 
+import com.swirlds.state.test.fixtures.StringRecord;
 import com.swirlds.state.test.fixtures.merkle.MerkleTestBase;
 import com.swirlds.virtualmap.VirtualMap;
 import org.junit.jupiter.api.BeforeEach;
@@ -51,8 +52,8 @@ class OnDiskReadableStateTest extends MerkleTestBase {
         assertThat(state.size()).isEqualTo(3);
     }
 
-    private void add(String key, String value) {
-        add(fruitVirtualMap, onDiskKeyClassId(), STRING_CODEC, onDiskValueClassId(), STRING_CODEC, key, value);
+    private void add(String key, StringRecord value) {
+        add(fruitVirtualMap, onDiskKeyClassId(), STRING_CODEC, onDiskValueClassId(), STRING_RECORD_CODEC, key, value);
     }
 
     private static long onDiskValueClassId() {
@@ -97,7 +98,7 @@ class OnDiskReadableStateTest extends MerkleTestBase {
     @Nested
     @DisplayName("Query Tests")
     final class QueryTest {
-        private OnDiskReadableKVState<String, String> state;
+        private OnDiskReadableKVState<String, StringRecord> state;
 
         @BeforeEach
         void setUp() {
@@ -122,7 +123,7 @@ class OnDiskReadableStateTest extends MerkleTestBase {
 
     @Test
     @DisplayName("The method warm() calls the appropriate method on the virtual map")
-    void warm(@Mock VirtualMap<OnDiskKey<String>, OnDiskValue<String>> virtualMapMock) {
+    void warm(@Mock VirtualMap<OnDiskKey<String>, OnDiskValue<StringRecord>> virtualMapMock) {
         final var state =
                 new OnDiskReadableKVState<>(FRUIT_STATE_KEY, onDiskKeyClassId(), STRING_CODEC, virtualMapMock);
         state.warm(A_KEY);

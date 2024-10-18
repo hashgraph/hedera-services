@@ -58,7 +58,7 @@ class WritableStoreFactoryImplTest {
     private WritableStates writableStates;
 
     @Mock
-    private WritableKVState<Object, Object> writableKVState;
+    private WritableKVState<Object, Record> writableKVState;
 
     @Mock
     private SavepointStackImpl stack;
