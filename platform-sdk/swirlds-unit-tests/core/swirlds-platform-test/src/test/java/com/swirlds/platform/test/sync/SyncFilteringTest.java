@@ -20,6 +20,7 @@ import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.hedera.hapi.node.state.roster.Roster;
 import com.swirlds.base.test.fixtures.time.FakeTime;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
@@ -30,9 +31,8 @@ import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.gossip.shadowgraph.SyncUtils;
 import com.swirlds.platform.gossip.sync.config.SyncConfig;
 import com.swirlds.platform.internal.EventImpl;
-import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.events.EventDescriptorWrapper;
-import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
+import com.swirlds.platform.test.fixtures.addressbook.RandomRosterBuilder;
 import com.swirlds.platform.test.fixtures.event.generator.StandardGraphGenerator;
 import com.swirlds.platform.test.fixtures.event.source.EventSource;
 import com.swirlds.platform.test.fixtures.event.source.StandardEventSource;
@@ -57,7 +57,7 @@ class SyncFilteringTest {
      *
      * @param platformContext the platform context
      * @param random          a random number generator
-     * @param addressBook     the address book
+     * @param roster     the address book
      * @param time            provides the current time
      * @param timeStep        the time between events
      * @param count           the number of events to generate
@@ -66,7 +66,7 @@ class SyncFilteringTest {
     private static List<EventImpl> generateEvents(
             @NonNull final PlatformContext platformContext,
             @NonNull final Random random,
-            @NonNull final AddressBook addressBook,
+            @NonNull final Roster roster,
             @NonNull final FakeTime time,
             final Duration timeStep,
             final int count) {
@@ -74,11 +74,11 @@ class SyncFilteringTest {
         final List<EventImpl> events = new ArrayList<>(count);
 
         final List<EventSource<?>> sources = new ArrayList<>();
-        for (int i = 0; i < addressBook.getSize(); i++) {
+        for (int i = 0; i < roster.rosterEntries().size(); i++) {
             sources.add(new StandardEventSource(false));
         }
         final StandardGraphGenerator generator =
-                new StandardGraphGenerator(platformContext, random.nextLong(), sources, addressBook);
+                new StandardGraphGenerator(platformContext, random.nextLong(), sources, roster);
 
         for (int i = 0; i < count; i++) {
             final EventImpl event = generator.generateEvent();
@@ -133,9 +133,8 @@ class SyncFilteringTest {
     void filterLikelyDuplicatesTest() {
         final Random random = getRandomPrintSeed();
 
-        final AddressBook addressBook =
-                RandomAddressBookBuilder.create(random).withSize(32).build();
-        final NodeId selfId = addressBook.getNodeId(0);
+        final Roster roster = RandomRosterBuilder.create(random).withSize(32).build();
+        final NodeId selfId = NodeId.of(roster.rosterEntries().get(0).nodeId());
 
         final Instant startingTime = Instant.ofEpochMilli(random.nextInt());
         final Duration timeStep = Duration.ofMillis(10);
@@ -146,7 +145,7 @@ class SyncFilteringTest {
 
         final int eventCount = 1000;
         final List<PlatformEvent> events =
-                generateEvents(platformContext, random, addressBook, time, timeStep, eventCount).stream()
+                generateEvents(platformContext, random, roster, time, timeStep, eventCount).stream()
                         .map(EventImpl::getBaseEvent)
                         .sorted(Comparator.comparingLong(PlatformEvent::getGeneration))
                         .toList();

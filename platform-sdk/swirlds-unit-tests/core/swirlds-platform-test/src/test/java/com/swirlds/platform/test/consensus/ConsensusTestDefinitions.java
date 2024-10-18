@@ -29,6 +29,7 @@ import com.swirlds.platform.consensus.ConsensusConfig;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.consensus.SyntheticSnapshot;
 import com.swirlds.platform.internal.EventImpl;
+import com.swirlds.platform.roster.RosterUtils;
 import com.swirlds.platform.test.consensus.framework.ConsensusTestNode;
 import com.swirlds.platform.test.consensus.framework.ConsensusTestOrchestrator;
 import com.swirlds.platform.test.consensus.framework.ConsensusTestUtils;
@@ -335,7 +336,8 @@ public final class ConsensusTestDefinitions {
                 OrchestratorBuilder.builder().setTestInput(input).build();
         orchestrator.configGenerators(g -> {
             // Setup: pick one node to use stale other-parents
-            final NodeId staleNodeProvider = g.getAddressBook().getNodeId(0);
+            final NodeId staleNodeProvider =
+                    NodeId.of(g.getRoster().rosterEntries().get(0).nodeId());
             g.getSource(staleNodeProvider)
                     .setRecentEventRetentionSize(5000)
                     .setRequestedOtherParentAgeDistribution(integerPowerDistribution(0.002, 300));
@@ -353,15 +355,15 @@ public final class ConsensusTestDefinitions {
                 OrchestratorBuilder.builder().setTestInput(input).build();
         // Setup: pick one node to provide stale other-parents
         // The node's weight should be less than a strong minority so that we can reach consensus
-        final NodeId staleParentProvider = StreamSupport.stream(
+        final NodeId staleParentProvider = NodeId.of(StreamSupport.stream(
                         Spliterators.spliteratorUnknownSize(
-                                orchestrator.getAddressBook().iterator(), 0),
+                                orchestrator.getRoster().rosterEntries().iterator(), 0),
                         false)
                 .filter(a -> !Threshold.STRONG_MINORITY.isSatisfiedBy(
-                        a.getWeight(), orchestrator.getAddressBook().getTotalWeight()))
+                        a.weight(), RosterUtils.computeTotalWeight(orchestrator.getRoster())))
                 .findFirst()
                 .orElseThrow()
-                .getNodeId();
+                .nodeId());
         Objects.requireNonNull(staleParentProvider, "Could not find a node with less than a strong minority of weight");
         orchestrator.configGenerators(g -> g.getSource(staleParentProvider)
                 .setRecentEventRetentionSize(5000)

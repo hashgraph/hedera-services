@@ -1,4 +1,5 @@
 module com.swirlds.demo.stats {
+    requires com.hedera.node.hapi;
     requires com.swirlds.base;
     requires com.swirlds.common;
     requires com.swirlds.metrics.api;

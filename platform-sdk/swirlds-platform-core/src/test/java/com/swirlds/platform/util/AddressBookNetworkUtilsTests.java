@@ -26,6 +26,7 @@ import static org.mockito.Mockito.when;
 
 import com.hedera.hapi.node.base.ServiceEndpoint;
 import com.hedera.hapi.node.state.roster.Roster;
+import com.hedera.hapi.node.state.roster.RosterEntry;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.Randotron;
@@ -37,7 +38,6 @@ import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.address.AddressBookUtils;
-import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
 import java.net.Inet4Address;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
@@ -58,24 +58,31 @@ class AddressBookNetworkUtilsTests {
     @DisplayName("Determine If Local Node")
     void determineLocalNodeAddress() throws UnknownHostException {
         final Randotron randotron = Randotron.create();
-        final AddressBook addressBook =
-                RandomAddressBookBuilder.create(randotron).withSize(2).build();
-        final Address address = addressBook.getAddress(addressBook.getNodeId(0));
 
-        final Address loopBackAddress = address.copySetHostnameInternal(
-                Inet4Address.getLoopbackAddress().getHostAddress());
+        final RosterEntry loopBackAddress = RosterEntry.newBuilder()
+                .gossipEndpoint(ServiceEndpoint.newBuilder()
+                        .domainName(Inet4Address.getLoopbackAddress().getHostAddress())
+                        .build())
+                .build();
         assertTrue(AddressBookNetworkUtils.isLocal(loopBackAddress));
 
-        final Address localIpAddress = address.copySetHostnameInternal(
-                Inet4Address.getByName(Network.getInternalIPAddress()).getHostAddress());
+        final RosterEntry localIpAddress = RosterEntry.newBuilder()
+                .gossipEndpoint(ServiceEndpoint.newBuilder()
+                        .domainName(Inet4Address.getByName(Network.getInternalIPAddress())
+                                .getHostAddress())
+                        .build())
+                .build();
         assertTrue(AddressBookNetworkUtils.isLocal(localIpAddress));
 
         final InetAddress inetAddress = Inet4Address.getByName(Network.getInternalIPAddress());
         assertTrue(Network.isOwn(inetAddress));
 
-        final Address notLocalAddress =
-                address.copySetHostnameInternal(Inet4Address.getByAddress(new byte[] {(byte) 192, (byte) 168, 0, 1})
-                        .getHostAddress());
+        final RosterEntry notLocalAddress = RosterEntry.newBuilder()
+                .gossipEndpoint(ServiceEndpoint.newBuilder()
+                        .domainName(Inet4Address.getByAddress(new byte[] {(byte) 192, (byte) 168, 0, 1})
+                                .getHostAddress())
+                        .build())
+                .build();
         assertFalse(AddressBookNetworkUtils.isLocal(notLocalAddress));
     }
 
@@ -83,12 +90,10 @@ class AddressBookNetworkUtilsTests {
     @DisplayName("Error On Invalid Local Address")
     @DisabledOnOs({OS.WINDOWS, OS.MAC})
     void ErrorOnInvalidLocalAddress() {
-        final Randotron randotron = Randotron.create();
-        final AddressBook addressBook =
-                RandomAddressBookBuilder.create(randotron).withSize(2).build();
-        final Address address = addressBook.getAddress(addressBook.getNodeId(0));
-
-        final Address badLocalAddress = address.copySetHostnameInternal("500.8.8");
+        final RosterEntry badLocalAddress = RosterEntry.newBuilder()
+                .gossipEndpoint(
+                        ServiceEndpoint.newBuilder().domainName("500.8.8").build())
+                .build();
         assertThrows(IllegalStateException.class, () -> AddressBookNetworkUtils.isLocal(badLocalAddress));
     }
 

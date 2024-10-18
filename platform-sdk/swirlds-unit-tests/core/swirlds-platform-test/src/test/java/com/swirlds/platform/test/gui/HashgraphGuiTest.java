@@ -45,7 +45,7 @@ class HashgraphGuiTest {
         graphGenerator.reset();
 
         final TestGuiSource guiSource = new TestGuiSource(
-                platformContext, graphGenerator.getAddressBook(), new GeneratorEventProvider(graphGenerator));
+                platformContext, graphGenerator.getRoster(), new GeneratorEventProvider(graphGenerator));
         guiSource.generateEvents(initialEvents);
         guiSource.runGui();
     }

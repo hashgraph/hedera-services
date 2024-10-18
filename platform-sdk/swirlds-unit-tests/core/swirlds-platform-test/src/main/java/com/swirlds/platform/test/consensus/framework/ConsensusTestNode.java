@@ -60,7 +60,7 @@ public class ConsensusTestNode {
                 eventEmitter,
                 new TestIntake(
                         Objects.requireNonNull(platformContext),
-                        eventEmitter.getGraphGenerator().getAddressBook()));
+                        eventEmitter.getGraphGenerator().getRoster()));
     }
 
     /** Simulates a restart on a node */
@@ -87,7 +87,7 @@ public class ConsensusTestNode {
 
         final ConsensusTestNode consensusTestNode = new ConsensusTestNode(
                 newEmitter,
-                new TestIntake(platformContext, newEmitter.getGraphGenerator().getAddressBook()));
+                new TestIntake(platformContext, newEmitter.getGraphGenerator().getRoster()));
         consensusTestNode.intake.loadSnapshot(
                 Objects.requireNonNull(getOutput().getConsensusRounds().peekLast())
                         .getSnapshot());

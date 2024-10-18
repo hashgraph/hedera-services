@@ -16,14 +16,14 @@
 
 package com.swirlds.platform.network;
 
+import com.hedera.hapi.node.state.roster.Roster;
+import com.hedera.hapi.node.state.roster.RosterEntry;
 import com.swirlds.common.metrics.RunningAverageMetric;
 import com.swirlds.common.metrics.SpeedometerMetric;
 import com.swirlds.common.metrics.extensions.CountPerSecond;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.metrics.api.FloatFormats;
 import com.swirlds.metrics.api.Metrics;
-import com.swirlds.platform.system.address.Address;
-import com.swirlds.platform.system.address.AddressBook;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.HashMap;
@@ -83,21 +83,20 @@ public class NetworkMetrics {
      *
      * @param metrics         a reference to the metrics-system
      * @param selfId          this node's id
-     * @param addressBook     the address book
+     * @param roster          the roster
      * @throws IllegalArgumentException if {@code platform} is {@code null}
      */
-    public NetworkMetrics(
-            @NonNull final Metrics metrics, @NonNull final NodeId selfId, @NonNull final AddressBook addressBook) {
+    public NetworkMetrics(@NonNull final Metrics metrics, @NonNull final NodeId selfId, @NonNull final Roster roster) {
         Objects.requireNonNull(metrics, "The metrics must not be null.");
         this.selfId = Objects.requireNonNull(selfId, "The selfId must not be null.");
-        Objects.requireNonNull(addressBook, "The addressBook must not be null.");
+        Objects.requireNonNull(roster, "The roster must not be null.");
 
         avgPing = metrics.getOrCreate(AVG_PING_CONFIG);
         bytesPerSecondSent = metrics.getOrCreate(BYTES_PER_SECOND_SENT_CONFIG);
         avgConnsCreated = metrics.getOrCreate(AVG_CONNS_CREATED_CONFIG);
 
-        for (final Address address : addressBook) {
-            final NodeId nodeId = address.getNodeId();
+        for (final RosterEntry entry : roster.rosterEntries()) {
+            final NodeId nodeId = NodeId.of(entry.nodeId());
             avgPingMilliseconds.put(
                     nodeId,
                     metrics.getOrCreate(

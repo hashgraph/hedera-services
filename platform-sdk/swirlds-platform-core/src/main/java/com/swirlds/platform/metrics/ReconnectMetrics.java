@@ -19,14 +19,14 @@ package com.swirlds.platform.metrics;
 import static com.swirlds.metrics.api.FloatFormats.FORMAT_10_0;
 import static com.swirlds.metrics.api.Metrics.PLATFORM_CATEGORY;
 
+import com.hedera.hapi.node.state.roster.Roster;
+import com.hedera.hapi.node.state.roster.RosterEntry;
 import com.swirlds.common.metrics.extensions.CountPerSecond;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.units.TimeUnit;
 import com.swirlds.metrics.api.Counter;
 import com.swirlds.metrics.api.LongAccumulator;
 import com.swirlds.metrics.api.Metrics;
-import com.swirlds.platform.system.address.Address;
-import com.swirlds.platform.system.address.AddressBook;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
 import java.util.HashMap;
@@ -94,9 +94,9 @@ public class ReconnectMetrics {
      * 		reference to the metrics-system
      * @throws IllegalArgumentException if {@code metrics} is {@code null}
      */
-    public ReconnectMetrics(@NonNull final Metrics metrics, @NonNull final AddressBook addressBook) {
+    public ReconnectMetrics(@NonNull final Metrics metrics, @NonNull final Roster roster) {
         Objects.requireNonNull(metrics, "metrics");
-        Objects.requireNonNull(addressBook, "addressBook");
+        Objects.requireNonNull(roster, "roster");
         senderStartTimes = metrics.getOrCreate(SENDER_START_TIMES_CONFIG);
         receiverStartTimes = metrics.getOrCreate(RECEIVER_START_TIMES_CONFIG);
         senderEndTimes = metrics.getOrCreate(SENDER_END_TIMES_CONFIG);
@@ -104,8 +104,8 @@ public class ReconnectMetrics {
         senderReconnectDurationSeconds = metrics.getOrCreate(SENDER_DURATION_CONFIG);
         receiverReconnectDurationSeconds = metrics.getOrCreate(RECEIVER_DURATION_CONFIG);
 
-        for (final Address address : addressBook) {
-            final NodeId nodeId = address.getNodeId();
+        for (final RosterEntry entry : roster.rosterEntries()) {
+            final NodeId nodeId = NodeId.of(entry.nodeId());
             rejectionFrequency.put(
                     nodeId,
                     new CountPerSecond(

@@ -16,8 +16,8 @@
 
 package com.swirlds.platform.state.signed;
 
+import com.hedera.hapi.node.state.roster.Roster;
 import com.swirlds.platform.state.service.ReadablePlatformStateStore;
-import com.swirlds.platform.system.address.AddressBook;
 
 /**
  * Validates a signed state received via reconnect.
@@ -30,16 +30,13 @@ public interface SignedStateValidator {
      * threshold, but other requirements could be included as well.
      *
      * @param signedState       the signed state to validate
-     * @param addressBook       the address book used for this signed state
+     * @param roster            the roster used for this signed state
      * @param previousStateData A {@link SignedStateValidationData} containing data from the
      *        {@link ReadablePlatformStateStore} in the state before the signed state to be validated.
      *        This may be used to ensure signed state is usable and valid, and also contains useful information for
      *        diagnostics produced when the signed state is not considered valid.
      * @throws SignedStateInvalidException if the signed state is not valid
      */
-    void validate(
-            final SignedState signedState,
-            final AddressBook addressBook,
-            final SignedStateValidationData previousStateData)
+    void validate(final SignedState signedState, final Roster roster, final SignedStateValidationData previousStateData)
             throws SignedStateInvalidException;
 }

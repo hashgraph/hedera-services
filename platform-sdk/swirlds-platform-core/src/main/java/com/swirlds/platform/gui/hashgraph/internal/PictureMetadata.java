@@ -31,7 +31,7 @@ public class PictureMetadata {
      */
     private static final double MARGIN_FRACTION = 0.5;
 
-    private final AddressBookMetadata addressBookMetadata;
+    private final RosterMetadata rosterMetadata;
     private final int ymax;
     private final int ymin;
     private final int width;
@@ -42,9 +42,9 @@ public class PictureMetadata {
     public PictureMetadata(
             final FontMetrics fm,
             final Dimension pictureDimension,
-            final AddressBookMetadata addressBookMetadata,
+            final RosterMetadata rosterMetadata,
             final List<EventImpl> events) {
-        this.addressBookMetadata = addressBookMetadata;
+        this.rosterMetadata = rosterMetadata;
         final int fa = fm.getMaxAscent();
         final int fd = fm.getMaxDescent();
         final int textLineHeight = fa + fd;
@@ -67,7 +67,7 @@ public class PictureMetadata {
         minGen = minGenTmp;
         maxGen = maxGenTmp;
 
-        final int n = addressBookMetadata.getNumMembers() + 1;
+        final int n = rosterMetadata.getNumMembers() + 1;
         final double gens = maxGen - minGen;
         final double dy = (ymax - ymin) * (gens - 1) / gens;
         r = Math.min(width / n / 4, dy / gens / 2);
@@ -77,7 +77,7 @@ public class PictureMetadata {
      * @return the gap between columns
      */
     public int getGapBetweenColumns() {
-        return (int) (width / (addressBookMetadata.getNumColumns() - 1 + 2 * MARGIN_FRACTION));
+        return (int) (width / (rosterMetadata.getNumColumns() - 1 + 2 * MARGIN_FRACTION));
     }
 
     /**
@@ -93,12 +93,12 @@ public class PictureMetadata {
         // is marginFraction times the gap between columns (and similarly for right side)
         final double marginFraction = 0.5;
         // gap between columns
-        final int betweenGap = (int) (width / (addressBookMetadata.getNumColumns() - 1 + 2 * marginFraction));
+        final int betweenGap = (int) (width / (rosterMetadata.getNumColumns() - 1 + 2 * marginFraction));
         // gap between leftmost column and left edge (and similar on right)
         final int sideGap = (int) (betweenGap * marginFraction);
 
         // find the column for e2 next to the column for e1
-        return sideGap + addressBookMetadata.mems2col(e1, e2) * betweenGap;
+        return sideGap + rosterMetadata.mems2col(e1, e2) * betweenGap;
     }
 
     /**

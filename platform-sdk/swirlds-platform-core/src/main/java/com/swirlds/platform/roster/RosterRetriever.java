@@ -114,6 +114,26 @@ public final class RosterRetriever {
      */
     @Nullable
     public static Bytes getActiveRosterHash(@NonNull final State state, final long round) {
+        final RoundRosterPair roundRosterPair = getActiveRoundRosterPair(state, round);
+        if (roundRosterPair != null) {
+            return roundRosterPair.activeRosterHash();
+        }
+
+        return null;
+    }
+
+    /**
+     * Retrieve the active RoundRosterPair for a given round of the state,
+     * or null if the roster is unknown for that round.
+     * A roster may be unknown if the RosterState hasn't been populated yet,
+     * or the given round of the state predates the implementation of the Roster.
+     *
+     * @param state a state
+     * @param round a round number
+     * @return a Bytes object with the roster hash, or null
+     */
+    @Nullable
+    public static RoundRosterPair getActiveRoundRosterPair(@NonNull final State state, final long round) {
         final ReadableSingletonState<RosterState> rosterState =
                 state.getReadableStates(RosterStateId.NAME).getSingleton(RosterStateId.ROSTER_STATES_KEY);
         // replace with binary search when/if the list size becomes unreasonably large (100s of entries or more)
@@ -121,7 +141,7 @@ public final class RosterRetriever {
         for (int i = 0; i < roundRosterPairs.size(); i++) {
             final RoundRosterPair roundRosterPair = roundRosterPairs.get(i);
             if (roundRosterPair.roundNumber() <= round) {
-                return roundRosterPair.activeRosterHash();
+                return roundRosterPair;
             }
         }
 
@@ -146,8 +166,11 @@ public final class RosterRetriever {
      * @param addressBook an AddressBook
      * @return a Roster
      */
-    @NonNull
-    public static Roster buildRoster(@NonNull final AddressBook addressBook) {
+    @Nullable
+    public static Roster buildRoster(@Nullable final AddressBook addressBook) {
+        if (addressBook == null) {
+            return null;
+        }
         return Roster.newBuilder()
                 .rosterEntries(addressBook.getNodeIdSet().stream()
                         .map(addressBook::getAddress)

@@ -16,13 +16,17 @@
 
 package com.swirlds.platform.state.address;
 
+import com.hedera.hapi.node.state.roster.Roster;
+import com.hedera.hapi.node.state.roster.RosterEntry;
 import com.swirlds.platform.network.Network;
+import com.swirlds.platform.roster.RosterUtils;
 import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.Objects;
+import java.util.stream.IntStream;
 
 /**
  * {@link AddressBook AddressBook} utility methods.
@@ -30,6 +34,27 @@ import java.util.Objects;
 public final class AddressBookNetworkUtils {
 
     private AddressBookNetworkUtils() {}
+
+    /**
+     * Check if the address is local to the machine.
+     *
+     * @param rosterEntry the address to check
+     * @return true if the address is local to the machine, false otherwise
+     * @throws IllegalStateException if the locality of the address cannot be determined.
+     */
+    public static boolean isLocal(@NonNull final RosterEntry rosterEntry) {
+        Objects.requireNonNull(rosterEntry, "The address must not be null.");
+        return IntStream.range(0, rosterEntry.gossipEndpoint().size()).anyMatch(i -> {
+            try {
+                return Network.isOwn(InetAddress.getByName(RosterUtils.fetchHostname(rosterEntry, i)));
+            } catch (final UnknownHostException e) {
+                throw new IllegalStateException(
+                        "Not able to determine locality of address [%s] for node [%d]"
+                                .formatted(RosterUtils.fetchHostname(rosterEntry, i), rosterEntry.nodeId()),
+                        e);
+            }
+        });
+    }
 
     /**
      * Check if the address is local to the machine.
@@ -55,14 +80,14 @@ public final class AddressBookNetworkUtils {
      * run with a config.txt file, it can launch multiple copies of the app simultaneously, each with its own TCP/IP
      * port. This method returns how many there are.
      *
-     * @param addressBook the address book to check
+     * @param roster the address book to check
      * @return the number of local addresses
      */
-    public static int getLocalAddressCount(@NonNull final AddressBook addressBook) {
-        Objects.requireNonNull(addressBook, "The addressBook must not be null.");
+    public static int getLocalAddressCount(@NonNull final Roster roster) {
+        Objects.requireNonNull(roster, "The roster must not be null.");
         int count = 0;
-        for (final Address address : addressBook) {
-            if (isLocal(address)) {
+        for (final RosterEntry rosterEntry : roster.rosterEntries()) {
+            if (isLocal(rosterEntry)) {
                 count++;
             }
         }

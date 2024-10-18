@@ -18,6 +18,7 @@ package com.swirlds.platform.components.consensus;
 
 import static com.swirlds.platform.system.status.PlatformStatus.REPLAYING_EVENTS;
 
+import com.hedera.hapi.node.state.roster.Roster;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.Consensus;
@@ -35,7 +36,6 @@ import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.metrics.AddedEventMetrics;
 import com.swirlds.platform.metrics.ConsensusMetrics;
 import com.swirlds.platform.metrics.ConsensusMetricsImpl;
-import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.status.PlatformStatus;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
@@ -65,16 +65,16 @@ public class DefaultConsensusEngine implements ConsensusEngine {
      * Constructor
      *
      * @param platformContext the platform context
-     * @param addressBook     the current address book
+     * @param roster          the current roster
      * @param selfId          the ID of the node
      */
     public DefaultConsensusEngine(
             @NonNull final PlatformContext platformContext,
-            @NonNull final AddressBook addressBook,
+            @NonNull final Roster roster,
             @NonNull final NodeId selfId) {
 
         final ConsensusMetrics consensusMetrics = new ConsensusMetricsImpl(selfId, platformContext.getMetrics());
-        consensus = new ConsensusImpl(platformContext, consensusMetrics, addressBook);
+        consensus = new ConsensusImpl(platformContext, consensusMetrics, roster);
 
         linker = new ConsensusLinker(platformContext, selfId);
         ancientMode = platformContext

@@ -16,8 +16,8 @@
 
 package com.swirlds.platform.test.event.source;
 
+import com.hedera.hapi.node.state.roster.Roster;
 import com.swirlds.base.utility.Pair;
-import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.test.fixtures.event.source.EventSource;
 import com.swirlds.platform.test.fixtures.event.source.StandardEventSource;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -32,14 +32,14 @@ import java.util.stream.IntStream;
 public class EventSourceFactory {
 
     /** the address book to use */
-    private final AddressBook addressBook;
+    private final Roster roster;
     /**
      * a list of lambdas that supply a custom event source for some indexes
      */
     private final List<Pair<Predicate<Long>, Supplier<EventSource<?>>>> customSources;
 
-    public EventSourceFactory(@NonNull final AddressBook addressBook) {
-        this.addressBook = Objects.requireNonNull(addressBook);
+    public EventSourceFactory(@NonNull final Roster roster) {
+        this.roster = Objects.requireNonNull(roster);
         this.customSources = new LinkedList<>();
     }
 
@@ -61,7 +61,7 @@ public class EventSourceFactory {
      */
     public List<EventSource<?>> generateSources() {
         final List<EventSource<?>> list = new LinkedList<>();
-        final int numNodes = addressBook.getSize();
+        final int numNodes = roster.rosterEntries().size();
         forEachNode:
         for (long i = 0; i < numNodes; i++) {
             for (final Pair<Predicate<Long>, Supplier<EventSource<?>>> customSource : customSources) {
