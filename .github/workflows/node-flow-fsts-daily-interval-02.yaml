@@ -77,7 +77,7 @@ jobs:
       gradle-cache-password: ${{ secrets.GRADLE_CACHE_PASSWORD }}
       grafana-agent-username: ${{ secrets.GRAFANA_AGENT_USERNAME }}
       grafana-agent-password: ${{ secrets.GRAFANA_AGENT_PASSWORD }}
-    if: ${{ !cancelled() && always() }}
+    if: ${{ !cancelled() && always() && !github.event.workflow_dispatch.repository.fork }}
 
 
   balances-validation-6n-1c:
@@ -102,7 +102,7 @@ jobs:
       grafana-agent-password: ${{ secrets.GRAFANA_AGENT_PASSWORD }}
     needs:
       - crypto-migration-7n-1c
-    if: ${{ !cancelled() && always() }}
+    if: ${{ !cancelled() && always() && !github.event.workflow_dispatch.repository.fork }}
 
 
   crypto-invalid-accounts-4n-4c:
@@ -127,7 +127,7 @@ jobs:
       grafana-agent-password: ${{ secrets.GRAFANA_AGENT_PASSWORD }}
     needs:
       - balances-validation-6n-1c
-    if: ${{ !cancelled() && always() }}
+    if: ${{ !cancelled() && always() && !github.event.workflow_dispatch.repository.fork }}
 
 
   comp-nd-reconnect-correctness-6n-1c:
@@ -150,7 +150,7 @@ jobs:
       gradle-cache-password: ${{ secrets.GRADLE_CACHE_PASSWORD }}
       grafana-agent-username: ${{ secrets.GRAFANA_AGENT_USERNAME }}
       grafana-agent-password: ${{ secrets.GRAFANA_AGENT_PASSWORD }}
-    if: ${{ !cancelled() && always() }}
+    if: ${{ !cancelled() && always() && !github.event.workflow_dispatch.repository.fork }}
 
 
   reconnect-6n-4c:
@@ -175,7 +175,7 @@ jobs:
       grafana-agent-password: ${{ secrets.GRAFANA_AGENT_PASSWORD }}
     needs:
       - comp-nd-reconnect-correctness-6n-1c
-    if: ${{ !cancelled() && always() }}
+    if: ${{ !cancelled() && always() && !github.event.workflow_dispatch.repository.fork }}
 
 
   comp-neterror-4n-1c:
@@ -198,7 +198,7 @@ jobs:
       gradle-cache-password: ${{ secrets.GRADLE_CACHE_PASSWORD }}
       grafana-agent-username: ${{ secrets.GRAFANA_AGENT_USERNAME }}
       grafana-agent-password: ${{ secrets.GRAFANA_AGENT_PASSWORD }}
-    if: ${{ !cancelled() && always() }}
+    if: ${{ !cancelled() && always() && !github.event.workflow_dispatch.repository.fork }}
 
 
   crypto-restart-4n-1c:
@@ -223,4 +223,4 @@ jobs:
       grafana-agent-password: ${{ secrets.GRAFANA_AGENT_PASSWORD }}
     needs:
       - comp-neterror-4n-1c
-    if: ${{ !cancelled() && always() }}
+    if: ${{ !cancelled() && always() && !github.event.workflow_dispatch.repository.fork }}

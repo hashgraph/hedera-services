@@ -54,6 +54,7 @@ concurrency:
 jobs:
   reconnect:
     name: Reconnect
+    if: ${{ !github.event.workflow_dispatch.repository.fork }}
     uses: ./.github/workflows/zxc-jrs-regression.yaml
     with:
       panel-config: "configs/suites/daily/4N/GCP-Daily-Reconnect-4N.json"
@@ -79,6 +80,7 @@ jobs:
       grafana-agent-password: ${{ secrets.GRAFANA_AGENT_PASSWORD }}
   restart:
     name: Restart
+    if: ${{ !github.event.workflow_dispatch.repository.fork }}
     uses: ./.github/workflows/zxc-jrs-regression.yaml
     with:
       panel-config: "configs/suites/daily/4N/GCP-Daily-Restart-4N.json"
@@ -104,6 +106,7 @@ jobs:
       grafana-agent-password: ${{ secrets.GRAFANA_AGENT_PASSWORD }}
   dynamic-freeze:
     name: DynamicFreeze
+    if: ${{ !github.event.workflow_dispatch.repository.fork }}
     uses: ./.github/workflows/zxc-jrs-regression.yaml
     with:
       panel-config: "configs/suites/daily/4N/GCP-Daily-DynamicFreeze-4N.json"
@@ -129,6 +132,7 @@ jobs:
       grafana-agent-password: ${{ secrets.GRAFANA_AGENT_PASSWORD }}
   NewNodesSimilarStake:
     name: NewNodesSimilarStake
+    if: ${{ !github.event.workflow_dispatch.repository.fork }}
     uses: ./.github/workflows/zxc-jrs-regression.yaml
     with:
       panel-config: "configs/suites/daily/5N/GCP-Daily-RestartWithNewNodes-SimilarStake-5N.json"

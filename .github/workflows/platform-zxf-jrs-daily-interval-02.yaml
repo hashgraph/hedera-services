@@ -62,7 +62,7 @@ jobs:
       gradle-cache-password: ${{ secrets.GRADLE_CACHE_PASSWORD }}
       grafana-agent-username: ${{ secrets.GRAFANA_AGENT_USERNAME }}
       grafana-agent-password: ${{ secrets.GRAFANA_AGENT_PASSWORD }}
-    if: ${{ !cancelled() && always() }}
+    if: ${{ !cancelled() && always() && !github.event.workflow_dispatch.repository.fork }}
 
   restart:
     name: Restart
@@ -82,4 +82,4 @@ jobs:
       gradle-cache-password: ${{ secrets.GRADLE_CACHE_PASSWORD }}
       grafana-agent-username: ${{ secrets.GRAFANA_AGENT_USERNAME }}
       grafana-agent-password: ${{ secrets.GRAFANA_AGENT_PASSWORD }}
-    if: ${{ !cancelled() && always() }}
+    if: ${{ !cancelled() && always() && !github.event.workflow_dispatch.repository.fork }}

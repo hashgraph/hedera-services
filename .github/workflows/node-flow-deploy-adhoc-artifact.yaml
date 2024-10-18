@@ -46,7 +46,8 @@ defaults:
 jobs:
   release-adhoc:
     name: Release [Adhoc]
-    if: ${{ github.event_name == 'workflow_dispatch' }}
+    if: ${{ github.event_name == 'workflow_dispatch' &&
+            !github.event.workflow_dispatch.repository.fork }}
     uses: ./.github/workflows/node-zxc-build-release-artifact.yaml
     with:
       version-policy: branch-commit

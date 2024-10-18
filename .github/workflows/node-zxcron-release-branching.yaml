@@ -93,7 +93,7 @@ jobs:
     env:
       GITHUB_TOKEN: ${{ secrets.GH_ACCESS_TOKEN }}
 
-    if: ${{ needs.check-trigger.outputs.triggered == 'true' && !cancelled() }}
+    if: ${{ !github.event.workflow_dispatch.repository.fork && needs.check-trigger.outputs.triggered == 'true' && !cancelled() }}
     steps:
       - name: Harden Runner
         uses: step-security/harden-runner@f086349bfa2bd1361f7909c78558e816508cdc10 # v2.8.0
@@ -116,7 +116,7 @@ jobs:
     env:
       GITHUB_TOKEN: ${{ secrets.GH_ACCESS_TOKEN }}
 
-    if: ${{ needs.check-branch.outputs.branch-create == 'true' && !cancelled() }}
+    if: ${{ !github.event.workflow_dispatch.repository.fork && needs.check-branch.outputs.branch-create == 'true' && !cancelled() }}
     steps:
       - name: Harden Runner
         uses: step-security/harden-runner@f086349bfa2bd1361f7909c78558e816508cdc10 # v2.8.0
@@ -124,6 +124,7 @@ jobs:
           egress-policy: audit
 
       - name: Checkout Code
+        if: ${{ !github.event.workflow_dispatch.repository.fork }}
         uses: actions/checkout@eef61447b9ff4aafe5dcd4e0bbf5d482be7e7871 # v4.2.1
         with:
           fetch-depth: 0
@@ -140,6 +141,7 @@ jobs:
         run: echo "short-id=$(echo -n "${{ github.sha }}" | tr -d '[:space:]' | cut -c1-8)" >> "${GITHUB_OUTPUT}"
 
       - name: Send Slack Notification
+        if: ${{ !github.event.workflow_dispatch.repository.fork }}
         uses: slackapi/slack-github-action@6c661ce58804a1a20f6dc5fbee7f0381b469e001 # v1.25.0
         env:
           SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
@@ -237,6 +239,7 @@ jobs:
           printf "## Dispatch Payload\n\`\`\`json\n%s\n\`\`\`\n" "$(jq '.' <<<"${REQ_JSON}")" >>"${GITHUB_STEP_SUMMARY}"
 
       - name: Repository Dispatch
+        if: ${{ !github.event.workflow_dispatch.repository.fork }}
         uses: peter-evans/repository-dispatch@ff45666b9427631e3450c54a1bcbee4d9ff4d7c0 # v3.0.0
         with:
           token: ${{ secrets.GH_ACCESS_TOKEN }}
