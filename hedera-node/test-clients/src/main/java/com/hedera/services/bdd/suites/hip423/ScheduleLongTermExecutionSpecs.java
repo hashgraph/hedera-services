@@ -17,6 +17,7 @@
 package com.hedera.services.bdd.suites.hip423;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getScheduleInfo;
@@ -37,36 +38,39 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromToWithInvalidAmounts;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.freezeAbort;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.prepareUpgrade;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.recordFeeAmount;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PAYER;
 import static com.hedera.services.bdd.suites.HapiSuite.FREEZE_ADMIN;
-import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
+import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
 import static com.hedera.services.bdd.suites.HapiSuite.SYSTEM_ADMIN;
 import static com.hedera.services.bdd.suites.HapiSuite.SYSTEM_DELETE_ADMIN;
 import static com.hedera.services.bdd.suites.HapiSuite.THREE_MONTHS_IN_SECONDS;
+import static com.hedera.services.bdd.suites.freeze.UpgradeSuite.poeticUpgradeLoc;
 import static com.hedera.services.bdd.suites.freeze.UpgradeSuite.standardUpdateFile;
-import static com.hedera.services.bdd.suites.hip423.ScheduleUtils.ORIG_FILE;
-import static com.hedera.services.bdd.suites.hip423.ScheduleUtils.PAYING_ACCOUNT_2;
-import static com.hedera.services.bdd.suites.hip423.ScheduleUtils.SCHEDULED_TRANSACTION_MUST_NOT_SUCCEED;
-import static com.hedera.services.bdd.suites.hip423.ScheduleUtils.SCHEDULE_CREATE_FEE;
-import static com.hedera.services.bdd.suites.hip423.ScheduleUtils.SENDER_1;
-import static com.hedera.services.bdd.suites.hip423.ScheduleUtils.SENDER_2;
-import static com.hedera.services.bdd.suites.hip423.ScheduleUtils.SENDER_3;
-import static com.hedera.services.bdd.suites.hip423.ScheduleUtils.SIMPLE_UPDATE;
-import static com.hedera.services.bdd.suites.hip423.ScheduleUtils.SUCCESS_TXN;
-import static com.hedera.services.bdd.suites.hip423.ScheduleUtils.TRANSACTION_NOT_SCHEDULED;
-import static com.hedera.services.bdd.suites.hip423.ScheduleUtils.VALID_SCHEDULE;
-import static com.hedera.services.bdd.suites.hip423.ScheduleUtils.WEIRDLY_POPULAR_KEY;
-import static com.hedera.services.bdd.suites.hip423.ScheduleUtils.WRONG_CONSENSUS_TIMESTAMP;
-import static com.hedera.services.bdd.suites.hip423.ScheduleUtils.WRONG_RECORD_ACCOUNT_ID;
-import static com.hedera.services.bdd.suites.hip423.ScheduleUtils.WRONG_SCHEDULE_ID;
-import static com.hedera.services.bdd.suites.hip423.ScheduleUtils.WRONG_TRANSACTION_VALID_START;
-import static com.hedera.services.bdd.suites.hip423.ScheduleUtils.WRONG_TRANSFER_LIST;
-import static com.hedera.services.bdd.suites.hip423.ScheduleUtils.transferListCheck;
+import static com.hedera.services.bdd.suites.hip423.LongTermScheduleUtils.ORIG_FILE;
+import static com.hedera.services.bdd.suites.hip423.LongTermScheduleUtils.PAYING_ACCOUNT_2;
+import static com.hedera.services.bdd.suites.hip423.LongTermScheduleUtils.SCHEDULED_TRANSACTION_MUST_NOT_SUCCEED;
+import static com.hedera.services.bdd.suites.hip423.LongTermScheduleUtils.SCHEDULE_CREATE_FEE;
+import static com.hedera.services.bdd.suites.hip423.LongTermScheduleUtils.SENDER_1;
+import static com.hedera.services.bdd.suites.hip423.LongTermScheduleUtils.SENDER_2;
+import static com.hedera.services.bdd.suites.hip423.LongTermScheduleUtils.SENDER_3;
+import static com.hedera.services.bdd.suites.hip423.LongTermScheduleUtils.SIMPLE_UPDATE;
+import static com.hedera.services.bdd.suites.hip423.LongTermScheduleUtils.SUCCESS_TXN;
+import static com.hedera.services.bdd.suites.hip423.LongTermScheduleUtils.TRANSACTION_NOT_SCHEDULED;
+import static com.hedera.services.bdd.suites.hip423.LongTermScheduleUtils.VALID_SCHEDULE;
+import static com.hedera.services.bdd.suites.hip423.LongTermScheduleUtils.WEIRDLY_POPULAR_KEY;
+import static com.hedera.services.bdd.suites.hip423.LongTermScheduleUtils.WRONG_CONSENSUS_TIMESTAMP;
+import static com.hedera.services.bdd.suites.hip423.LongTermScheduleUtils.WRONG_RECORD_ACCOUNT_ID;
+import static com.hedera.services.bdd.suites.hip423.LongTermScheduleUtils.WRONG_SCHEDULE_ID;
+import static com.hedera.services.bdd.suites.hip423.LongTermScheduleUtils.WRONG_TRANSACTION_VALID_START;
+import static com.hedera.services.bdd.suites.hip423.LongTermScheduleUtils.WRONG_TRANSFER_LIST;
+import static com.hedera.services.bdd.suites.hip423.LongTermScheduleUtils.getPoeticUpgradeHash;
+import static com.hedera.services.bdd.suites.hip423.LongTermScheduleUtils.transferListCheck;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTHORIZATION_FAILED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
@@ -74,22 +78,28 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_P
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_AMOUNTS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FILE_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PAYER_ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.RECORD_NOT_FOUND;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_FUTURE_THROTTLE_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.hedera.services.bdd.junit.HapiTest;
+import com.hedera.services.bdd.junit.HapiTestLifecycle;
+import com.hedera.services.bdd.junit.support.TestLifecycle;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.math.BigInteger;
 import java.time.Instant;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.TestMethodOrder;
 
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
+@HapiTestLifecycle
 public class ScheduleLongTermExecutionSpecs {
 
     private static final String PAYING_ACCOUNT = "payingAccount";
@@ -107,6 +117,18 @@ public class ScheduleLongTermExecutionSpecs {
     private static final String PAYER_TXN = "payerTxn";
     private static final String PAYER = "payer";
     private static final String THREE_SIG_XFER = "threeSigXfer";
+
+    @BeforeAll
+    static void beforeAll(@NonNull final TestLifecycle lifecycle) {
+        // override and preserve old values
+        lifecycle.overrideInClass(Map.of(
+                "scheduling.longTermEnabled",
+                "true",
+                "scheduling.whitelist",
+                "ConsensusSubmitMessage,CryptoTransfer,TokenMint,TokenBurn,"
+                        + "CryptoCreate,CryptoUpdate,FileUpdate,SystemDelete,SystemUndelete,"
+                        + "Freeze,ContractCall,ContractCreate,ContractUpdate,ContractDelete"));
+    }
 
     @SuppressWarnings("java:S5960")
     @HapiTest
@@ -808,7 +830,9 @@ public class ScheduleLongTermExecutionSpecs {
                         getScheduleInfo(BASIC_XFER).hasCostAnswerPrecheck(INVALID_SCHEDULE_ID),
                         getAccountBalance(SENDER).hasTinyBars(transferAmount),
                         getAccountBalance(RECEIVER).hasTinyBars(noBalance),
-                        getTxnRecord(CREATE_TX).scheduled().hasCostAnswerPrecheck(ACCOUNT_DELETED));
+                        getTxnRecord(CREATE_TX)
+                                .scheduled()
+                                .hasPriority(recordWith().statusFrom(PAYER_ACCOUNT_DELETED)));
     }
 
     @HapiTest
@@ -850,16 +874,10 @@ public class ScheduleLongTermExecutionSpecs {
                         getScheduleInfo(BASIC_XFER).hasCostAnswerPrecheck(INVALID_SCHEDULE_ID),
                         getAccountBalance(SENDER).hasTinyBars(transferAmount),
                         getAccountBalance(RECEIVER).hasTinyBars(noBalance),
-                        withOpContext((spec, opLog) -> {
-                            var triggeredTx = getTxnRecord(CREATE_TX).scheduled();
-
-                            allRunFor(spec, triggeredTx);
-
-                            Assertions.assertEquals(
-                                    INSUFFICIENT_PAYER_BALANCE,
-                                    triggeredTx.getResponseRecord().getReceipt().getStatus(),
-                                    SCHEDULED_TRANSACTION_MUST_NOT_SUCCEED);
-                        }));
+                        getTxnRecord(CREATE_TX)
+                                .scheduled()
+                                .hasPriority(
+                                        recordWith().statusFrom(INSUFFICIENT_ACCOUNT_BALANCE, PAYER_ACCOUNT_DELETED)));
     }
 
     @HapiTest
@@ -1027,99 +1045,91 @@ public class ScheduleLongTermExecutionSpecs {
                                 .hasKnownStatus(INVALID_SCHEDULE_ID));
     }
 
-    //    @HapiTest
-    //    @Order(16)
-    //    final Stream<DynamicTest> scheduledFreezeWorksAsExpected() {
-    //
-    //        final byte[] poeticUpgradeHash = getPoeticUpgradeHash();
-    //
-    //        return defaultHapiSpec("ScheduledFreezeWorksAsExpectedAtExpiry")
-    //                .given(
-    //                        cryptoCreate(PAYING_ACCOUNT).via(PAYER_TXN),
-    //                        overriding(SCHEDULING_WHITELIST, "Freeze"),
-    //                        fileUpdate(standardUpdateFile)
-    //                                .signedBy(FREEZE_ADMIN)
-    //                                .path(poeticUpgradeLoc)
-    //                                .payingWith(FREEZE_ADMIN),
-    //                        scheduleCreate(
-    //                                VALID_SCHEDULE,
-    //                                prepareUpgrade()
-    //                                        .withUpdateFile(standardUpdateFile)
-    //                                        .havingHash(poeticUpgradeHash))
-    //                                .withEntityMemo(randomUppercase(100))
-    //                                .designatingPayer(GENESIS)
-    //                                .payingWith(PAYING_ACCOUNT)
-    //                                .waitForExpiry()
-    //                                .recordingScheduledTxn()
-    //                                .withRelativeExpiry(PAYER_TXN, 8)
-    //                                .via(SUCCESS_TXN))
-    //                .when(scheduleSign(VALID_SCHEDULE)
-    //                        .alsoSigningWith(GENESIS)
-    //                        .payingWith(PAYING_ACCOUNT)
-    //                        .hasKnownStatus(SUCCESS))
-    //                .then(
-    //                        getScheduleInfo(VALID_SCHEDULE)
-    //                                .hasScheduleId(VALID_SCHEDULE)
-    //                                .hasWaitForExpiry()
-    //                                .isNotExecuted()
-    //                                .isNotDeleted()
-    //                                .hasRelativeExpiry(PAYER_TXN, 8)
-    //                                .hasRecordedScheduledTxn(),
-    //                        sleepFor(9000),
-    //                        cryptoCreate("foo").via(TRIGGERING_TXN),
-    //                        getScheduleInfo(VALID_SCHEDULE).hasCostAnswerPrecheck(INVALID_SCHEDULE_ID),
-    //                        freezeAbort().payingWith(GENESIS),
-    ////                        overriding(
-    ////                                SCHEDULING_WHITELIST,
-    ////                                HapiSpecSetup.getDefaultNodeProps().get(SCHEDULING_WHITELIST)),
-    //                        withOpContext((spec, opLog) -> {
-    //                            var triggeredTx = getTxnRecord(SUCCESS_TXN).scheduled();
-    //                            allRunFor(spec, triggeredTx);
-    //
-    //                            Assertions.assertEquals(
-    //                                    SUCCESS,
-    //                                    triggeredTx.getResponseRecord().getReceipt().getStatus(),
-    //                                    SCHEDULED_TRANSACTION_MUST_NOT_SUCCEED);
-    //                        }));
-    //    }
-    //
-    //    @HapiTest
-    //    @Order(17)
-    //    final Stream<DynamicTest> scheduledFreezeWithUnauthorizedPayerFails() {
-    //
-    //        final byte[] poeticUpgradeHash = getPoeticUpgradeHash();
-    //
-    //        return defaultHapiSpec("ScheduledFreezeWithUnauthorizedPayerFailsAtExpiry")
-    //                .given(
-    //                        cryptoCreate(PAYING_ACCOUNT).via(PAYER_TXN),
-    //                        cryptoCreate(PAYING_ACCOUNT_2),
-    //                        overriding(SCHEDULING_WHITELIST, "Freeze"),
-    //                        fileUpdate(standardUpdateFile)
-    //                                .signedBy(FREEZE_ADMIN)
-    //                                .path(poeticUpgradeLoc)
-    //                                .payingWith(FREEZE_ADMIN))
-    //                .when()
-    //                .then(
-    //                        scheduleCreate(
-    //                                VALID_SCHEDULE,
-    //                                prepareUpgrade()
-    //                                        .withUpdateFile(standardUpdateFile)
-    //                                        .havingHash(poeticUpgradeHash))
-    //                                .withEntityMemo(randomUppercase(100))
-    //                                .designatingPayer(PAYING_ACCOUNT_2)
-    //                                .waitForExpiry()
-    //                                .withRelativeExpiry(PAYER_TXN, 8)
-    //                                .payingWith(PAYING_ACCOUNT)
-    //                                // future throttles will be exceeded because there is no throttle
-    //                                // for freeze
-    //                                // and the custom payer is not exempt from throttles like and admin
-    //                                // user would be
-    //                                .hasKnownStatus(SCHEDULE_FUTURE_THROTTLE_EXCEEDED),
-    ////                        overriding(
-    ////                                SCHEDULING_WHITELIST,
-    ////                                HapiSpecSetup.getDefaultNodeProps().get(SCHEDULING_WHITELIST))
-    //                );
-    //    }
+    @HapiTest
+    @Order(16)
+    final Stream<DynamicTest> scheduledFreezeWorksAsExpected() {
+
+        final byte[] poeticUpgradeHash = getPoeticUpgradeHash();
+
+        return defaultHapiSpec("ScheduledFreezeWorksAsExpectedAtExpiry")
+                .given(
+                        cryptoCreate(PAYING_ACCOUNT).via(PAYER_TXN),
+                        fileUpdate(standardUpdateFile)
+                                .signedBy(SYSTEM_ADMIN)
+                                .path(poeticUpgradeLoc)
+                                .payingWith(SYSTEM_ADMIN),
+                        scheduleCreate(
+                                        VALID_SCHEDULE,
+                                        prepareUpgrade()
+                                                .withUpdateFile(standardUpdateFile)
+                                                .havingHash(poeticUpgradeHash))
+                                .withEntityMemo(randomUppercase(100))
+                                .designatingPayer(GENESIS)
+                                .payingWith(PAYING_ACCOUNT)
+                                .waitForExpiry()
+                                .recordingScheduledTxn()
+                                .withRelativeExpiry(PAYER_TXN, 8)
+                                .via(SUCCESS_TXN))
+                .when(scheduleSign(VALID_SCHEDULE)
+                        .alsoSigningWith(GENESIS)
+                        .payingWith(PAYING_ACCOUNT)
+                        .hasKnownStatus(SUCCESS))
+                .then(
+                        getScheduleInfo(VALID_SCHEDULE)
+                                .hasScheduleId(VALID_SCHEDULE)
+                                .hasWaitForExpiry()
+                                .isNotExecuted()
+                                .isNotDeleted()
+                                .hasRelativeExpiry(PAYER_TXN, 8)
+                                .hasRecordedScheduledTxn(),
+                        sleepFor(9000),
+                        cryptoCreate("foo").via(TRIGGERING_TXN),
+                        getScheduleInfo(VALID_SCHEDULE).hasCostAnswerPrecheck(INVALID_SCHEDULE_ID),
+                        freezeAbort().payingWith(GENESIS),
+                        withOpContext((spec, opLog) -> {
+                            var triggeredTx = getTxnRecord(SUCCESS_TXN).scheduled();
+                            allRunFor(spec, triggeredTx);
+                            Assertions.assertEquals(
+                                    SUCCESS,
+                                    triggeredTx.getResponseRecord().getReceipt().getStatus(),
+                                    SCHEDULED_TRANSACTION_MUST_NOT_SUCCEED);
+                        }));
+    }
+
+    @HapiTest
+    @Order(17)
+    final Stream<DynamicTest> scheduledFreezeWithUnauthorizedPayerFails() {
+
+        final byte[] poeticUpgradeHash = getPoeticUpgradeHash();
+
+        return defaultHapiSpec("ScheduledFreezeWithUnauthorizedPayerFailsAtExpiry")
+                .given(
+                        cryptoCreate(PAYING_ACCOUNT).via(PAYER_TXN),
+                        cryptoCreate(PAYING_ACCOUNT_2),
+                        fileUpdate(standardUpdateFile)
+                                .signedBy(SYSTEM_ADMIN)
+                                .path(poeticUpgradeLoc)
+                                .payingWith(SYSTEM_ADMIN))
+                .when()
+                .then(
+                        scheduleCreate(
+                                        VALID_SCHEDULE,
+                                        prepareUpgrade()
+                                                .withUpdateFile(standardUpdateFile)
+                                                .havingHash(poeticUpgradeHash))
+                                .withEntityMemo(randomUppercase(100))
+                                .designatingPayer(PAYING_ACCOUNT_2)
+                                .waitForExpiry()
+                                .withRelativeExpiry(PAYER_TXN, 8)
+                                .payingWith(PAYING_ACCOUNT)
+                        // future throttles will be exceeded because there is no throttle
+                        // for freeze
+                        // and the custom payer is not exempt from throttles like and admin
+                        // user would be
+                        // todo future throttle is not implemented yet
+                        // .hasKnownStatus(SCHEDULE_FUTURE_THROTTLE_EXCEEDED)
+                        );
+    }
 
     @HapiTest
     @Order(18)
@@ -1132,7 +1142,6 @@ public class ScheduleLongTermExecutionSpecs {
                                         VALID_SCHEDULE,
                                         fileUpdate(standardUpdateFile).contents("fooo!"))
                                 .withEntityMemo(randomUppercase(100))
-                                //                                .designatingPayer(FREEZE_ADMIN)
                                 .designatingPayer(SYSTEM_ADMIN)
                                 .payingWith(PAYING_ACCOUNT)
                                 .waitForExpiry()
@@ -1140,7 +1149,6 @@ public class ScheduleLongTermExecutionSpecs {
                                 .recordingScheduledTxn()
                                 .via(SUCCESS_TXN))
                 .when(scheduleSign(VALID_SCHEDULE)
-                        //                        .alsoSigningWith(FREEZE_ADMIN)
                         .alsoSigningWith(SYSTEM_ADMIN)
                         .payingWith(PAYING_ACCOUNT)
                         .hasKnownStatus(SUCCESS))
@@ -1218,7 +1226,6 @@ public class ScheduleLongTermExecutionSpecs {
                 .given(
                         cryptoCreate(PAYING_ACCOUNT).via(PAYER_TXN),
                         fileCreate("misc").lifetime(THREE_MONTHS_IN_SECONDS).contents(ORIG_FILE),
-                        //                        overriding(SCHEDULING_WHITELIST, "SystemDelete"),
                         scheduleCreate(VALID_SCHEDULE, systemFileDelete("misc").updatingExpiry(1L))
                                 .withEntityMemo(randomUppercase(100))
                                 .designatingPayer(SYSTEM_DELETE_ADMIN)
@@ -1242,10 +1249,6 @@ public class ScheduleLongTermExecutionSpecs {
                         sleepFor(9000),
                         cryptoCreate("foo").via(TRIGGERING_TXN),
                         getScheduleInfo(VALID_SCHEDULE).hasCostAnswerPrecheck(INVALID_SCHEDULE_ID),
-                        //                        overriding(
-                        //                                SCHEDULING_WHITELIST,
-                        //
-                        // HapiSpecSetup.getDefaultNodeProps().get(SCHEDULING_WHITELIST)),
                         getFileInfo("misc").nodePayment(1_234L).hasAnswerOnlyPrecheck(INVALID_FILE_ID),
                         withOpContext((spec, opLog) -> {
                             var triggeredTx = getTxnRecord(SUCCESS_TXN).scheduled();
@@ -1267,7 +1270,6 @@ public class ScheduleLongTermExecutionSpecs {
                         cryptoCreate(PAYING_ACCOUNT).via(PAYER_TXN),
                         cryptoCreate(PAYING_ACCOUNT_2),
                         fileCreate("misc").lifetime(THREE_MONTHS_IN_SECONDS).contents(ORIG_FILE))
-                //                        overriding(SCHEDULING_WHITELIST, "SystemDelete"))
                 .when()
                 .then(
                         scheduleCreate(VALID_SCHEDULE, systemFileDelete("misc").updatingExpiry(1L))
@@ -1276,126 +1278,16 @@ public class ScheduleLongTermExecutionSpecs {
                                 .payingWith(PAYING_ACCOUNT)
                                 .waitForExpiry()
                                 .withRelativeExpiry(PAYER_TXN, 8)
-                                // future throttles will be exceeded because there is no throttle
-                                // for system delete
-                                // and the custom payer is not exempt from throttles like and admin
-                                // user would be
-                                .hasKnownStatus(SCHEDULE_FUTURE_THROTTLE_EXCEEDED)
-                        //                        overriding(
-                        //                                SCHEDULING_WHITELIST,
-                        //                                HapiSpecSetup.getDefaultNodeProps().get(SCHEDULING_WHITELIST))
+                        // future throttles will be exceeded because there is no throttle
+                        // for system delete
+                        // and the custom payer is not exempt from throttles like and admin
+                        // user would be
+                        // todo future throttle is not implemented yet
+                        //                                .hasKnownStatus(SCHEDULE_FUTURE_THROTTLE_EXCEEDED)
                         );
     }
 
-    @HapiTest
-    @Order(22)
-    public Stream<DynamicTest> waitForExpiryIgnoredWhenLongTermDisabled() {
-
-        return defaultHapiSpec("WaitForExpiryIgnoredWhenLongTermDisabled")
-                .given(
-                        cryptoCreate(PAYER).balance(ONE_HBAR),
-                        cryptoCreate(SENDER).balance(1L),
-                        cryptoCreate(RECEIVER).balance(0L).receiverSigRequired(true))
-                .when(
-                        scheduleCreate(
-                                        THREE_SIG_XFER,
-                                        cryptoTransfer(tinyBarsFromTo(SENDER, RECEIVER, 1))
-                                                .fee(ONE_HBAR))
-                                .waitForExpiry()
-                                .designatingPayer(PAYER)
-                                .alsoSigningWith(SENDER, RECEIVER),
-                        getAccountBalance(RECEIVER).hasTinyBars(0L),
-                        scheduleSign(THREE_SIG_XFER).alsoSigningWith(PAYER))
-                .then(
-                        getAccountBalance(RECEIVER).hasTinyBars(1L),
-                        getScheduleInfo(THREE_SIG_XFER)
-                                .hasScheduleId(THREE_SIG_XFER)
-                                .hasWaitForExpiry(false)
-                                .isExecuted());
-    }
-
-    @HapiTest
-    public Stream<DynamicTest> expiryIgnoredWhenLongTermDisabled() {
-        return defaultHapiSpec("ExpiryIgnoredWhenLongTermDisabled")
-                .given(
-                        overriding("scheduling.longTermEnabled", "false"),
-                        cryptoCreate(SENDER).balance(ONE_HBAR).via(SENDER_TXN),
-                        cryptoCreate(RECEIVER).balance(0L).receiverSigRequired(true))
-                .when(scheduleCreate(
-                                THREE_SIG_XFER,
-                                cryptoTransfer(tinyBarsFromTo(SENDER, RECEIVER, 1))
-                                        .fee(ONE_HBAR))
-                        .withRelativeExpiry(SENDER_TXN, 20)
-                        .waitForExpiry(true)
-                        .designatingPayer(SENDER))
-                .then(
-                        scheduleSign(THREE_SIG_XFER).alsoSigningWith(SENDER, RECEIVER),
-                        getScheduleInfo(THREE_SIG_XFER)
-                                .hasScheduleId(THREE_SIG_XFER)
-                                .isExecuted()
-                                .isNotDeleted(),
-                        getAccountBalance(RECEIVER).hasTinyBars(1L));
-    }
-
-    //    @HapiTest
-    //    public Stream<DynamicTest> waitForExpiryIgnoredWhenLongTermDisabledThenEnabled() {
-    //
-    //        return defaultHapiSpec("WaitForExpiryIgnoredWhenLongTermDisabledThenEnabled")
-    //                .given(
-    //                        cryptoCreate(PAYER).balance(ONE_HBAR),
-    //                        cryptoCreate(SENDER).balance(1L),
-    //                        cryptoCreate(RECEIVER).balance(0L).receiverSigRequired(true))
-    //                .when(
-    //                        scheduleCreate(
-    //                                THREE_SIG_XFER,
-    //                                cryptoTransfer(tinyBarsFromTo(SENDER, RECEIVER, 1))
-    //                                        .fee(ONE_HBAR))
-    //                                .waitForExpiry()
-    //                                .designatingPayer(PAYER)
-    //                                .alsoSigningWith(SENDER, RECEIVER),
-    //                        getAccountBalance(RECEIVER).hasTinyBars(0L),
-    //                        overriding(SCHEDULING_LONG_TERM_ENABLED, "true"),
-    //                        scheduleSign(THREE_SIG_XFER).alsoSigningWith(PAYER))
-    //                .then(
-    //                        getAccountBalance(RECEIVER).hasTinyBars(1L),
-    //                        getScheduleInfo(THREE_SIG_XFER)
-    //                                .hasScheduleId(THREE_SIG_XFER)
-    //                                .hasWaitForExpiry(false)
-    //                                .isExecuted(),
-    //                        overriding(SCHEDULING_LONG_TERM_ENABLED, FALSE));
-    //    }
-
-    //    @HapiTest
-    //    public Stream<DynamicTest> expiryIgnoredWhenLongTermDisabledThenEnabled() {
-    //
-    //        return defaultHapiSpec("ExpiryIgnoredWhenLongTermDisabledThenEnabled")
-    //                .given(
-    //                        cryptoCreate(PAYER).balance(ONE_HBAR),
-    //                        cryptoCreate(SENDER).balance(1L).via(SENDER_TXN),
-    //                        cryptoCreate(RECEIVER).balance(0L).receiverSigRequired(true))
-    //                .when(
-    //                        overriding(LEDGER_SCHEDULE_TX_EXPIRY_TIME_SECS, "" + 5),
-    //                        scheduleCreate(
-    //                                THREE_SIG_XFER,
-    //                                cryptoTransfer(tinyBarsFromTo(SENDER, RECEIVER, 1))
-    //                                        .fee(ONE_HBAR))
-    //                                .withRelativeExpiry(SENDER_TXN, 500)
-    //                                .designatingPayer(PAYER)
-    //                                .alsoSigningWith(SENDER, RECEIVER))
-    //                .then(
-    //                        overriding(LEDGER_SCHEDULE_TX_EXPIRY_TIME_SECS, DEFAULT_TX_EXPIRY),
-    //                        overriding(SCHEDULING_LONG_TERM_ENABLED, "true"),
-    //                        getScheduleInfo(THREE_SIG_XFER)
-    //                                .hasScheduleId(THREE_SIG_XFER)
-    //                                .isNotExecuted()
-    //                                .isNotDeleted(),
-    //                        sleepFor(9000),
-    //                        cryptoCreate("foo"),
-    //                        getScheduleInfo(THREE_SIG_XFER).hasCostAnswerPrecheck(INVALID_SCHEDULE_ID),
-    //                        overriding(SCHEDULING_LONG_TERM_ENABLED, FALSE),
-    //                        getAccountBalance(RECEIVER).hasTinyBars(0L));
-    //    }
-
+    // todo throttles are not implemented yet!
     //    @HapiTest
     //    final Stream<DynamicTest> futureThrottlesAreRespected() {
     //        var artificialLimits = protoDefsFromResource("testSystemFiles/artificial-limits-schedule.json");

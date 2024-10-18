@@ -624,7 +624,8 @@ public class HandleWorkflow {
      * @param lastProcessTime an upper bound on the last time that time-based events were processed
      * @return true if the interval was processed
      */
-    private boolean processInterval(@NonNull final UserTxn userTxn, final Instant lastProcessTime, final Dispatch dispatch) {
+    private boolean processInterval(
+            @NonNull final UserTxn userTxn, final Instant lastProcessTime, final Dispatch dispatch) {
         // If we have never processed an interval, treat this time as the last processed time
         if (Instant.EPOCH.equals(lastProcessTime)) {
             return true;

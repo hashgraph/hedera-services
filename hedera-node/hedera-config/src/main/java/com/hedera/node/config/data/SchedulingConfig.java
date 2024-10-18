@@ -25,11 +25,11 @@ import com.swirlds.config.api.ConfigProperty;
 // spotless:off
 @ConfigData("scheduling")
 public record SchedulingConfig(
-        @ConfigProperty(defaultValue = "true") @NetworkProperty boolean longTermEnabled,
+        @ConfigProperty(defaultValue = "false") @NetworkProperty boolean longTermEnabled,
         @ConfigProperty(defaultValue = "100") @NetworkProperty long maxTxnPerSec,
         @ConfigProperty(defaultValue = "10000000") @NetworkProperty long maxNumber,
         @ConfigProperty(defaultValue = "5356800") @NetworkProperty long maxExpirationFutureSeconds,
         @ConfigProperty(defaultValue =
-                "ConsensusSubmitMessage,CryptoTransfer,TokenMint,TokenBurn,CryptoCreate,CryptoUpdate,FileUpdate,SystemDelete,SystemUndelete,Freeze,ContractCall,ContractCreate,ContractUpdate,ContractDelete")
+                "CryptoTransfer,ConsensusSubmitMessage,TokenBurn,TokenMint,CryptoApproveAllowance")
                 @NetworkProperty HederaFunctionalitySet whitelist) {}
 // spotless:on

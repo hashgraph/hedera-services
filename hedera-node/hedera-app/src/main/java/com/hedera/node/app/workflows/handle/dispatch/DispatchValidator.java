@@ -18,6 +18,7 @@ package com.hedera.node.app.workflows.handle.dispatch;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.DUPLICATE_TRANSACTION;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_PAYER_SIGNATURE;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.PAYER_ACCOUNT_DELETED;
 import static com.hedera.hapi.util.HapiUtils.isHollow;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.NODE;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.SCHEDULED;
@@ -96,6 +97,9 @@ public class DispatchValidator {
         } else {
             final var payer =
                     getPayerAccount(dispatch.readableStoreFactory(), dispatch.payerId(), dispatch.txnCategory());
+            if (payer.deleted()) {
+                return newCreatorError(dispatch.creatorInfo().accountId(), PAYER_ACCOUNT_DELETED);
+            }
             final var category = dispatch.txnCategory();
             final var requiresPayerSig = category == SCHEDULED || category == USER;
             if (requiresPayerSig && !isHollow(payer)) {
