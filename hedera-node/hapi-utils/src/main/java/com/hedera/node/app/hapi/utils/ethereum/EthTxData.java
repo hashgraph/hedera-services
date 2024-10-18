@@ -31,6 +31,7 @@ import java.util.NoSuchElementException;
 import java.util.Objects;
 import org.apache.commons.codec.binary.Hex;
 import org.bouncycastle.jcajce.provider.digest.Keccak;
+import org.bouncycastle.util.BigIntegers;
 
 public record EthTxData(
         byte[] rawTx,
@@ -385,7 +386,8 @@ public record EthTxData(
         if (vBI.compareTo(BigInteger.valueOf(34)) > 0) {
             // after EIP155 the chain id is equal to
             // CHAIN_ID = (v - {0,1} - 35) / 2
-            chainId = vBI.subtract(BigInteger.valueOf(35)).shiftRight(1).toByteArray();
+            chainId = BigIntegers.asUnsignedByteArray(
+                    vBI.subtract(BigInteger.valueOf(35)).shiftRight(1));
         } else if (isLegacyUnprotectedEtx(vBI)) {
             // before EIP155 the chain id is considered equal to 0
             chainId = new byte[0];
