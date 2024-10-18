@@ -69,7 +69,9 @@ jobs:
     name: Execute eXtended Test Suite
     uses: ./.github/workflows/node-zxc-compile-application-code.yaml
     needs: fetch-xts-candidate
-    if: ${{ needs.fetch-xts-candidate.result == 'success' && needs.fetch-xts-candidate.outputs.xts_tag_exists == 'true' }}
+    if: ${{ needs.fetch-xts-candidate.result == 'success' && 
+      needs.fetch-xts-candidate.outputs.xts_tag_exists == 'true' &&
+      !github.event.workflow_dispatch.repository.fork }}
     with:
       custom-job-label: Execute eXtended Test Suite
       enable-timing-sensitive-tests: true
@@ -87,7 +89,9 @@ jobs:
     name: JRS Panel
     uses: ./.github/workflows/zxc-jrs-regression.yaml
     needs: fetch-xts-candidate
-    if: ${{ needs.fetch-xts-candidate.result == 'success' && needs.fetch-xts-candidate.outputs.xts_tag_exists == 'true' }}
+    if: ${{ needs.fetch-xts-candidate.result == 'success' &&
+      needs.fetch-xts-candidate.outputs.xts_tag_exists == 'true' &&
+      !github.event.workflow_dispatch.repository.fork }}
     with:
       custom-job-name: "Platform SDK"
       panel-config: "configs/suites/GCP-PRCheck-Abbrev-4N.json"
@@ -113,7 +117,9 @@ jobs:
     name: Hedera Node JRS Panel
     uses: ./.github/workflows/zxc-jrs-regression.yaml
     needs: fetch-xts-candidate
-    if: ${{ needs.fetch-xts-candidate.result == 'success' && needs.fetch-xts-candidate.outputs.xts_tag_exists == 'true' }}
+    if: ${{ needs.fetch-xts-candidate.result == 'success' &&
+      needs.fetch-xts-candidate.outputs.xts_tag_exists == 'true' &&
+      !github.event.workflow_dispatch.repository.fork }}
     with:
       custom-job-name: "Abbrev Update Test"
       ref: ${{ needs.fetch-xts-candidate.outputs.xts_tag_commit }} # pass the xts-candidate tag to the JRS panel for checkout
@@ -175,11 +181,12 @@ jobs:
       - hedera-node-jrs-panel
       - tag-for-promotion
 
-    if: ${{ needs.abbreviated-panel.result != 'success' ||
+    if: ${{ !github.event.workflow_dispatch.repository.fork &&
+            (needs.abbreviated-panel.result != 'success' ||
             needs.extended-test-suite.result != 'success' ||
             needs.fetch-xts-candidate.result != 'success' ||
             needs.hedera-node-jrs-panel.result != 'success' ||
-            needs.tag-for-promotion.result != 'success' }}
+            needs.tag-for-promotion.result != 'success') }}
     steps:
       - name: Harden Runner
         uses: step-security/harden-runner@f086349bfa2bd1361f7909c78558e816508cdc10 # v2.8.0
