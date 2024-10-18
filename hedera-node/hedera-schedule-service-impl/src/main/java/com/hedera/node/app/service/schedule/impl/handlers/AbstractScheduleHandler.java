@@ -17,13 +17,12 @@
 package com.hedera.node.app.service.schedule.impl.handlers;
 
 import static com.hedera.node.app.spi.workflows.HandleContext.ConsensusThrottling.ON;
+import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.ScheduleID;
-import com.hedera.hapi.node.base.Timestamp;
-import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.state.schedule.Schedule;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.transaction.TransactionBody;
@@ -54,9 +53,6 @@ import java.util.function.Predicate;
  * ScheduleSignHandler}.
  */
 abstract class AbstractScheduleHandler {
-    protected static final String NULL_CONTEXT_MESSAGE =
-            "Dispatcher called the schedule handler with a null context; probable internal data corruption.";
-
     /**
      * A simple record to return both "deemed valid" signatories and remaining primitive keys that must sign.
      *
@@ -284,24 +280,6 @@ abstract class AbstractScheduleHandler {
     }
 
     /**
-     * Very basic transaction ID validation.
-     * This just checks that the transaction is not scheduled (you cannot schedule a schedule),
-     * that the account ID is not null (so we can fill in scheduler account),
-     * and that the start timestamp is not null (so we can fill in schedule valid start time)
-     * @param currentId a TransactionID to validate
-     * @throws PreCheckException if the transaction is scheduled, the account ID is null, or the start time is null.
-     */
-    protected void checkValidTransactionId(@Nullable final TransactionID currentId) throws PreCheckException {
-        if (currentId == null) throw new PreCheckException(ResponseCodeEnum.INVALID_TRANSACTION_ID);
-        final AccountID payer = currentId.accountID();
-        final Timestamp validStart = currentId.transactionValidStart();
-        final boolean isScheduled = currentId.scheduled();
-        if (isScheduled) throw new PreCheckException(ResponseCodeEnum.SCHEDULED_TRANSACTION_NOT_IN_WHITELIST);
-        if (payer == null) throw new PreCheckException(ResponseCodeEnum.INVALID_SCHEDULE_PAYER_ID);
-        if (validStart == null) throw new PreCheckException(ResponseCodeEnum.INVALID_TRANSACTION_START);
-    }
-
-    /**
      * Try to execute a schedule. Will attempt to execute a schedule if the remaining signatories are empty
      * and the schedule is not waiting for expiration.
      *
@@ -320,11 +298,16 @@ abstract class AbstractScheduleHandler {
             @NonNull final Set<Key> validSignatories,
             @NonNull final ResponseCodeEnum validationResult,
             final boolean isLongTermEnabled) {
+        requireNonNull(context);
+        requireNonNull(scheduleToExecute);
+        requireNonNull(remainingSignatories);
+        requireNonNull(validSignatories);
+        requireNonNull(validationResult);
         if (canExecute(remainingSignatories, isLongTermEnabled, validationResult, scheduleToExecute)) {
-            final AccountID originalPayer = scheduleToExecute
-                    .originalCreateTransaction()
-                    .transactionID()
-                    .accountID();
+            final var originalPayer = scheduleToExecute
+                    .originalCreateTransactionOrThrow()
+                    .transactionIDOrThrow()
+                    .accountIDOrThrow();
             final Set<Key> acceptedSignatories = new HashSet<>();
             acceptedSignatories.addAll(validSignatories);
             acceptedSignatories.add(getKeyForAccount(context, originalPayer));

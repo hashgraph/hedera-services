@@ -25,7 +25,6 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.ScheduleID;
-import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.scheduled.SchedulableTransactionBody;
 import com.hedera.hapi.node.state.schedule.Schedule;
 import com.hedera.hapi.node.transaction.TransactionBody;
@@ -42,7 +41,6 @@ import java.time.Instant;
 import java.util.Set;
 import java.util.function.Predicate;
 import org.assertj.core.api.Condition;
-import org.assertj.core.api.ThrowableAssert.ThrowingCallable;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.BDDMockito;
@@ -133,25 +131,6 @@ class AbstractScheduleHandlerTest extends ScheduleHandlerTestBase {
     }
 
     @Test
-    void verifyCheckTxnId() {
-        assertThatThrownBy(new CallCheckValid(null, testHandler))
-                .is(new PreCheckExceptionMatch(ResponseCodeEnum.INVALID_TRANSACTION_ID));
-        for (final Schedule next : listOfScheduledOptions) {
-            final TransactionID idToTest = next.originalCreateTransaction().transactionID();
-            assertThatNoException().isThrownBy(new CallCheckValid(idToTest, testHandler));
-            TransactionID brokenId = idToTest.copyBuilder().scheduled(true).build();
-            assertThatThrownBy(new CallCheckValid(brokenId, testHandler))
-                    .is(new PreCheckExceptionMatch(ResponseCodeEnum.SCHEDULED_TRANSACTION_NOT_IN_WHITELIST));
-            brokenId = idToTest.copyBuilder().accountID((AccountID) null).build();
-            assertThatThrownBy(new CallCheckValid(brokenId, testHandler))
-                    .is(new PreCheckExceptionMatch(ResponseCodeEnum.INVALID_SCHEDULE_PAYER_ID));
-            brokenId = idToTest.copyBuilder().transactionValidStart(nullTime).build();
-            assertThatThrownBy(new CallCheckValid(brokenId, testHandler))
-                    .is(new PreCheckExceptionMatch(ResponseCodeEnum.INVALID_TRANSACTION_START));
-        }
-    }
-
-    @Test
     void verifyKeysForPreHandle() throws PreCheckException {
         // Run through the "standard" schedules to ensure we handle the common cases
         for (final Schedule next : listOfScheduledOptions) {
@@ -236,22 +215,6 @@ class AbstractScheduleHandlerTest extends ScheduleHandlerTestBase {
             assertThatNoException()
                     .isThrownBy(() -> testHandler.tryToExecuteSchedule(
                             mockContext, testItem, testRemaining, testSignatories, ResponseCodeEnum.OK, false));
-        }
-    }
-
-    // Callable required by AssertJ throw assertions; unavoidable due to limitations on lambda syntax.
-    private static final class CallCheckValid implements ThrowingCallable {
-        private final TransactionID idToTest;
-        private final AbstractScheduleHandler testHandler;
-
-        CallCheckValid(final TransactionID idToTest, final AbstractScheduleHandler testHandler) {
-            this.idToTest = idToTest;
-            this.testHandler = testHandler;
-        }
-
-        @Override
-        public void call() throws PreCheckException {
-            testHandler.checkValidTransactionId(idToTest);
         }
     }
 

@@ -46,7 +46,6 @@ import com.hedera.node.config.data.SchedulingConfig;
 import com.hederahashgraph.api.proto.java.FeeData;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.util.Objects;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -86,7 +85,7 @@ public class ScheduleDeleteHandler extends AbstractScheduleHandler implements Tr
 
     @Override
     public void preHandle(@NonNull final PreHandleContext context) throws PreCheckException {
-        Objects.requireNonNull(context, NULL_CONTEXT_MESSAGE);
+        requireNonNull(context);
         final ReadableScheduleStore scheduleStore = context.createStore(ReadableScheduleStore.class);
         final SchedulingConfig schedulingConfig = context.configuration().getConfigData(SchedulingConfig.class);
         final boolean isLongTermEnabled = schedulingConfig.longTermEnabled();
@@ -108,7 +107,7 @@ public class ScheduleDeleteHandler extends AbstractScheduleHandler implements Tr
 
     @Override
     public void handle(@NonNull final HandleContext context) throws HandleException {
-        Objects.requireNonNull(context, NULL_CONTEXT_MESSAGE);
+        requireNonNull(context);
         final WritableScheduleStore scheduleStore = context.storeFactory().writableStore(WritableScheduleStore.class);
         final TransactionBody currentTransaction = context.body();
         final SchedulingConfig schedulingConfig = context.configuration().getConfigData(SchedulingConfig.class);

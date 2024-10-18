@@ -50,7 +50,6 @@ import com.hederahashgraph.api.proto.java.FeeData;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
-import java.util.Objects;
 import java.util.Set;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -69,7 +68,6 @@ public class ScheduleSignHandler extends AbstractScheduleHandler implements Tran
     @Override
     public void pureChecks(@Nullable final TransactionBody currentTransaction) throws PreCheckException {
         if (currentTransaction != null) {
-            checkValidTransactionId(currentTransaction.transactionID());
             getValidScheduleSignBody(currentTransaction);
         } else {
             throw new PreCheckException(ResponseCodeEnum.INVALID_TRANSACTION_BODY);
@@ -86,7 +84,7 @@ public class ScheduleSignHandler extends AbstractScheduleHandler implements Tran
      */
     @Override
     public void preHandle(@NonNull final PreHandleContext context) throws PreCheckException {
-        Objects.requireNonNull(context, NULL_CONTEXT_MESSAGE);
+        requireNonNull(context);
         final ReadableScheduleStore scheduleStore = context.createStore(ReadableScheduleStore.class);
         final SchedulingConfig schedulingConfig = context.configuration().getConfigData(SchedulingConfig.class);
         final boolean isLongTermEnabled = schedulingConfig.longTermEnabled();
@@ -126,7 +124,7 @@ public class ScheduleSignHandler extends AbstractScheduleHandler implements Tran
     @SuppressWarnings({"FeatureEnvy", "OverlyCoupledMethod"})
     @Override
     public void handle(@NonNull final HandleContext context) throws HandleException {
-        Objects.requireNonNull(context, NULL_CONTEXT_MESSAGE);
+        requireNonNull(context);
         final Instant currentConsensusTime = context.consensusNow();
         final WritableScheduleStore scheduleStore = context.storeFactory().writableStore(WritableScheduleStore.class);
         final SchedulingConfig schedulingConfig = context.configuration().getConfigData(SchedulingConfig.class);

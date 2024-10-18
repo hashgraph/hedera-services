@@ -26,7 +26,6 @@ import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.scheduled.SchedulableTransactionBody;
 import com.hedera.hapi.node.scheduled.SchedulableTransactionBody.DataOneOfType;
-import com.hedera.hapi.node.scheduled.ScheduleCreateTransactionBody;
 import com.hedera.hapi.node.state.schedule.Schedule;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.spi.workflows.HandleException;
@@ -244,28 +243,29 @@ public final class HandlerUtility {
             @NonNull final Instant currentConsensusTime,
             final long maxLifeSeconds)
             throws HandleException {
-        // The next three items will never be null, but Sonar is persnickety, so we force NPE if any are null.
-        final TransactionID parentTransactionId = currentTransaction.transactionIDOrThrow();
-        final ScheduleCreateTransactionBody createTransaction = currentTransaction.scheduleCreateOrThrow();
-        final AccountID schedulerAccount = parentTransactionId.accountIDOrThrow();
+        final var parentTransactionId = currentTransaction.transactionIDOrThrow();
+        final var createTransaction = currentTransaction.scheduleCreateOrThrow();
+        final var schedulerAccount = parentTransactionId.accountIDOrThrow();
         final long calculatedExpirationTime =
                 calculateExpiration(createTransaction.expirationTime(), currentConsensusTime, maxLifeSeconds);
-        final ScheduleID nullId = null;
-
-        Schedule.Builder builder = Schedule.newBuilder();
-        builder.scheduleId(nullId).deleted(false).executed(false);
-        builder.waitForExpiry(createTransaction.waitForExpiry());
-        builder.adminKey(createTransaction.adminKey()).schedulerAccountId(parentTransactionId.accountID());
-        builder.payerAccountId(createTransaction.payerAccountIDOrElse(schedulerAccount));
-        builder.schedulerAccountId(schedulerAccount);
-        builder.scheduleValidStart(parentTransactionId.transactionValidStart());
-        builder.calculatedExpirationSecond(calculatedExpirationTime);
-        builder.providedExpirationSecond(
-                createTransaction.expirationTimeOrElse(Timestamp.DEFAULT).seconds());
-        builder.originalCreateTransaction(currentTransaction);
-        builder.memo(createTransaction.memo());
-        builder.scheduledTransaction(createTransaction.scheduledTransactionBody());
-        return builder.build();
+        return Schedule.newBuilder()
+                .scheduleId((ScheduleID) null)
+                .deleted(false)
+                .executed(false)
+                .waitForExpiry(createTransaction.waitForExpiry())
+                .adminKey(createTransaction.adminKey())
+                .schedulerAccountId(parentTransactionId.accountID())
+                .payerAccountId(createTransaction.payerAccountIDOrElse(schedulerAccount))
+                .schedulerAccountId(schedulerAccount)
+                .scheduleValidStart(parentTransactionId.transactionValidStart())
+                .calculatedExpirationSecond(calculatedExpirationTime)
+                .providedExpirationSecond(createTransaction
+                        .expirationTimeOrElse(Timestamp.DEFAULT)
+                        .seconds())
+                .originalCreateTransaction(currentTransaction)
+                .memo(createTransaction.memo())
+                .scheduledTransaction(createTransaction.scheduledTransactionBody())
+                .build();
     }
 
     /**
