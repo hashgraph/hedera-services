@@ -585,6 +585,7 @@ public class UtilVerbs {
                             cryptoTransfer(tinyBarsFromTo(GENESIS, STAKING_REWARD, 1))
                                     .fireAndForget()
                                     .noLogging());
+                    spec.sleepConsensusTime(Duration.ofMillis(1L));
                 }
             });
             spec.targetNetworkOrThrow()
