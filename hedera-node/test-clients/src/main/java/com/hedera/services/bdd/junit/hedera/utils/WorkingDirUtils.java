@@ -24,7 +24,7 @@ import com.hedera.services.bdd.spec.props.JutilPropertySource;
 import com.swirlds.platform.config.legacy.LegacyConfigPropertiesLoader;
 import com.swirlds.platform.crypto.CryptoStatic;
 import com.swirlds.platform.system.address.AddressBook;
-import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
+import com.swirlds.platform.test.fixtures.addressbook.RandomRosterBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.File;
@@ -303,7 +303,7 @@ public class WorkingDirUtils {
     }
 
     /**
-     * Load the address book from the given path, using {@link RandomAddressBookBuilder} to
+     * Load the address book from the given path, using {@link RandomRosterBuilder} to
      * set a {@code sigCert} for each address.
      *
      * @param path the path to the address book file
@@ -312,11 +312,16 @@ public class WorkingDirUtils {
     public static AddressBook loadAddressBook(@NonNull final Path path) {
         requireNonNull(path);
         final var configFile = LegacyConfigPropertiesLoader.loadConfigFile(path.toAbsolutePath());
-        final var randomAddressBook = RandomAddressBookBuilder.create(new Random())
+        final var randomRoster = RandomRosterBuilder.create(new Random())
                 .withSize(1)
                 .withRealKeysEnabled(true)
                 .build();
-        final var sigCert = requireNonNull(randomAddressBook.iterator().next().getSigCert());
+        final var sigCert = requireNonNull(CryptoStatic.generateCertificate(randomRoster
+                .rosterEntries()
+                .iterator()
+                .next()
+                .gossipCaCertificate()
+                .toByteArray()));
         final var addressBook = configFile.getAddressBook();
         return new AddressBook(stream(spliteratorUnknownSize(addressBook.iterator(), 0), false)
                 .map(address -> address.copySetSigCert(sigCert))

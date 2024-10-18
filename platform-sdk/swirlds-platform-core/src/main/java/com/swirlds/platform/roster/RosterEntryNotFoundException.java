@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,15 +14,17 @@
  * limitations under the License.
  */
 
-plugins { id("com.hedera.gradle.application") }
+package com.swirlds.platform.roster;
 
-application.mainClass.set("com.swirlds.demo.consistency.ConsistencyTestingToolMain")
-
-mainModuleInfo { annotationProcessor("com.swirlds.config.processor") }
-
-testModuleInfo {
-    requires("com.swirlds.common.test.fixtures")
-    requires("com.swirlds.platform.core.test.fixtures")
-    requires("org.junit.jupiter.api")
-    requires("org.mockito")
+/**
+ * An exception thrown when a RosterEntry cannot be found, e.g. when searching by NodeId.
+ */
+public class RosterEntryNotFoundException extends RuntimeException {
+    /**
+     * A default constructor.
+     * @param message a message
+     */
+    public RosterEntryNotFoundException(String message) {
+        super(message);
+    }
 }

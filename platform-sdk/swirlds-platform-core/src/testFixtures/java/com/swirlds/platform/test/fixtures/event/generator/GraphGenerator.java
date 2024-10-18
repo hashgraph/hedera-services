@@ -16,9 +16,9 @@
 
 package com.swirlds.platform.test.fixtures.event.generator;
 
+import com.hedera.hapi.node.state.roster.Roster;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.internal.EventImpl;
-import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.test.fixtures.event.DynamicValue;
 import com.swirlds.platform.test.fixtures.event.source.EventSource;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -118,7 +118,7 @@ public interface GraphGenerator<T extends GraphGenerator<T>> {
      * Get an address book that represents the collection of nodes that are generating the events.
      */
     @NonNull
-    AddressBook getAddressBook();
+    Roster getRoster();
 
     /**
      * Returns the maximum generation of this event generator.

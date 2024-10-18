@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.test.consensus;
 
+import com.hedera.hapi.node.state.roster.Roster;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
@@ -23,7 +24,6 @@ import com.swirlds.config.api.Configuration;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.platform.consensus.ConsensusConfig_;
 import com.swirlds.platform.internal.EventImpl;
-import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.events.EventConstants;
 import com.swirlds.platform.test.consensus.framework.validation.ConsensusRoundValidation;
 import com.swirlds.platform.test.fixtures.event.DynamicValue;
@@ -77,8 +77,8 @@ class IntakeAndConsensusTests {
         // the generated events are first fed into consensus so that round created is calculated before we start
         // using them
         final GeneratorWithConsensus generator = new GeneratorWithConsensus(platformContext, seed, numNodes);
-        final TestIntake node1 = new TestIntake(platformContext, generator.getAddressBook());
-        final TestIntake node2 = new TestIntake(platformContext, generator.getAddressBook());
+        final TestIntake node1 = new TestIntake(platformContext, generator.getRoster());
+        final TestIntake node2 = new TestIntake(platformContext, generator.getRoster());
 
         // first we generate events regularly, until we have some ancient rounds
         final int firstBatchSize = 5000;
@@ -192,7 +192,7 @@ class IntakeAndConsensusTests {
                     Stream.generate(StandardEventSource::new).limit(numNodes).toList();
             generator =
                     new StandardGraphGenerator(platformContext, seed, (List<EventSource<?>>) (List<?>) eventSources);
-            intake = new TestIntake(platformContext, generator.getAddressBook());
+            intake = new TestIntake(platformContext, generator.getRoster());
         }
 
         @Override
@@ -235,8 +235,8 @@ class IntakeAndConsensusTests {
         }
 
         @Override
-        public AddressBook getAddressBook() {
-            return generator.getAddressBook();
+        public Roster getRoster() {
+            return generator.getRoster();
         }
 
         @Override

@@ -20,7 +20,8 @@ import static com.swirlds.platform.test.graph.OtherParentMatrixFactory.createBal
 import static com.swirlds.platform.test.graph.OtherParentMatrixFactory.createForcedOtherParentMatrix;
 import static com.swirlds.platform.test.graph.OtherParentMatrixFactory.createShunnedNodeOtherParentAffinityMatrix;
 
-import com.swirlds.platform.system.address.AddressBook;
+import com.hedera.hapi.node.state.roster.Roster;
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.test.event.emitter.StandardEventEmitter;
 import com.swirlds.platform.test.sync.SyncTestParams;
 import java.util.List;
@@ -49,21 +50,23 @@ public class SplitForkGraphCreator {
 
     private static void forceNextCreator(
             final SyncTestParams params, final StandardEventEmitter emitter, final int creatorToFork) {
-        final AddressBook addressBook = emitter.getGraphGenerator().getAddressBook();
-        final int numberOfSources = addressBook.getSize();
+        final Roster roster = emitter.getGraphGenerator().getRoster();
+        final int numberOfSources = roster.rosterEntries().size();
         for (int i = 0; i < numberOfSources; i++) {
             final boolean sourceIsCreatorToFork = i == creatorToFork;
-            emitter.getGraphGenerator().getSource(addressBook.getNodeId(i)).setNewEventWeight((r, index, prev) -> {
-                if (index < params.getNumCommonEvents()) {
-                    return 1.0;
-                } else if (index == params.getNumCommonEvents() && sourceIsCreatorToFork) {
-                    return 1.0;
-                } else if (index > params.getNumCommonEvents()) {
-                    return 1.0;
-                } else {
-                    return 0.0;
-                }
-            });
+            emitter.getGraphGenerator()
+                    .getSource(NodeId.of(roster.rosterEntries().get(i).nodeId()))
+                    .setNewEventWeight((r, index, prev) -> {
+                        if (index < params.getNumCommonEvents()) {
+                            return 1.0;
+                        } else if (index == params.getNumCommonEvents() && sourceIsCreatorToFork) {
+                            return 1.0;
+                        } else if (index > params.getNumCommonEvents()) {
+                            return 1.0;
+                        } else {
+                            return 0.0;
+                        }
+                    });
         }
     }
 

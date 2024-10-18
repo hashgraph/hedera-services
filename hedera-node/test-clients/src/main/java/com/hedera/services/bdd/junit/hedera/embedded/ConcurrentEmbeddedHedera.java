@@ -153,7 +153,7 @@ class ConcurrentEmbeddedHedera extends AbstractEmbeddedHedera implements Embedde
                                         event.getSoftwareVersion());
                             })
                             .toList();
-                    final var round = new FakeRound(roundNo.getAndIncrement(), addressBook, consensusEvents);
+                    final var round = new FakeRound(roundNo.getAndIncrement(), roster, consensusEvents);
                     hedera.handleWorkflow().handleRound(state, round);
                     hedera.onSealConsensusRound(round, state);
                     notifyBlockStreamManagerIfEnabled(round.getRoundNum());

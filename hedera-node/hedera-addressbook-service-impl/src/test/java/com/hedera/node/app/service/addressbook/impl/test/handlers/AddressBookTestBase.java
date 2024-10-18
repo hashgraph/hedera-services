@@ -31,6 +31,7 @@ import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.state.addressbook.Node;
 import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.primitives.ProtoBytes;
+import com.hedera.hapi.node.state.roster.RosterEntry;
 import com.hedera.node.app.service.addressbook.ReadableNodeStore;
 import com.hedera.node.app.service.addressbook.impl.ReadableNodeStoreImpl;
 import com.hedera.node.app.service.addressbook.impl.WritableNodeStore;
@@ -38,8 +39,8 @@ import com.hedera.node.app.service.addressbook.impl.schemas.V053AddressBookSchem
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.swirlds.platform.system.address.Address;
-import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
+import com.swirlds.platform.crypto.CryptoStatic;
+import com.swirlds.platform.test.fixtures.addressbook.RandomRosterBuilder;
 import com.swirlds.state.spi.ReadableStates;
 import com.swirlds.state.spi.WritableStates;
 import com.swirlds.state.test.fixtures.MapReadableKVState;
@@ -278,12 +279,17 @@ public class AddressBookTestBase {
     }
 
     public static List<X509Certificate> generateX509Certificates(final int n) {
-        final var randomAddressBook = RandomAddressBookBuilder.create(new Random())
+        final var randomRoster = RandomRosterBuilder.create(new Random())
                 .withSize(n)
                 .withRealKeysEnabled(true)
                 .build();
-        return StreamSupport.stream(Spliterators.spliteratorUnknownSize(randomAddressBook.iterator(), 0), false)
-                .map(Address::getSigCert)
+        return StreamSupport.stream(
+                        Spliterators.spliteratorUnknownSize(
+                                randomRoster.rosterEntries().iterator(), 0),
+                        false)
+                .map(RosterEntry::gossipCaCertificate)
+                .map(Bytes::toByteArray)
+                .map(CryptoStatic::generateCertificate)
                 .collect(Collectors.toList());
     }
 }

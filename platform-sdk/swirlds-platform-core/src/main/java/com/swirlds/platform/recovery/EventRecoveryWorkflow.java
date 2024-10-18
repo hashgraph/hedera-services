@@ -20,9 +20,12 @@ import static com.swirlds.common.io.utility.FileUtils.getAbsolutePath;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 import static com.swirlds.platform.builder.PlatformBuildConstants.DEFAULT_CONFIG_FILE_NAME;
+import static com.swirlds.platform.crypto.CryptoStatic.initNodeSecurity;
 import static com.swirlds.platform.util.BootstrapUtils.loadAppMain;
 import static com.swirlds.platform.util.BootstrapUtils.setupConstructableRegistry;
 
+import com.hedera.hapi.node.state.roster.Roster;
+import com.hedera.hapi.node.state.roster.RosterEntry;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.IOIterator;
@@ -41,6 +44,7 @@ import com.swirlds.platform.config.StateConfig;
 import com.swirlds.platform.consensus.ConsensusConfig;
 import com.swirlds.platform.consensus.SyntheticSnapshot;
 import com.swirlds.platform.crypto.CryptoStatic;
+import com.swirlds.platform.crypto.KeysAndCerts;
 import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.event.hashing.DefaultEventHasher;
 import com.swirlds.platform.event.preconsensus.PcesFile;
@@ -51,6 +55,8 @@ import com.swirlds.platform.recovery.internal.EventStreamRoundIterator;
 import com.swirlds.platform.recovery.internal.RecoveredState;
 import com.swirlds.platform.recovery.internal.RecoveryPlatform;
 import com.swirlds.platform.recovery.internal.StreamedRound;
+import com.swirlds.platform.roster.RosterAddressBookBuilder;
+import com.swirlds.platform.roster.RosterUtils;
 import com.swirlds.platform.state.MerkleRoot;
 import com.swirlds.platform.state.PlatformStateAccessor;
 import com.swirlds.platform.state.PlatformStateModifier;
@@ -64,17 +70,22 @@ import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.StaticSoftwareVersion;
 import com.swirlds.platform.system.SwirldMain;
 import com.swirlds.platform.system.SwirldState;
+import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.events.CesEvent;
 import com.swirlds.platform.system.events.ConsensusEvent;
 import com.swirlds.platform.system.state.notifications.NewRecoveredStateListener;
 import com.swirlds.platform.system.state.notifications.NewRecoveredStateNotification;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.security.cert.CertificateEncodingException;
 import java.time.Instant;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ExecutionException;
 import org.apache.logging.log4j.LogManager;
@@ -160,10 +171,50 @@ public final class EventRecoveryWorkflow {
                     STARTUP.getMarker(),
                     "State from round {} loaded.",
                     initialState.get().getRound());
+
+            final KeysAndCerts keysAndCerts;
+            if (loadSigningKeys) {
+                final Roster roster = initialState.get().getRoster();
+                final AddressBook addressBook = RosterAddressBookBuilder.buildAddressBook(roster);
+                final Map<NodeId, KeysAndCerts> allKeysAndCerts =
+                        initNodeSecurity(addressBook, platformContext.getConfiguration());
+                final Map<Long, RosterEntry> rosterEntryMap = RosterUtils.toMap(roster);
+
+                if (allKeysAndCerts.size() != rosterEntryMap.size()) {
+                    throw new IllegalStateException("initNodeSecurity() loaded " + allKeysAndCerts.size()
+                            + " keys, while there's " + rosterEntryMap.size() + " roster entries.");
+                }
+
+                allKeysAndCerts.forEach((nodeId, kc) -> {
+                    if (!rosterEntryMap.containsKey(nodeId.id())) {
+                        throw new IllegalStateException("There's not a roster entry for node id " + nodeId.id());
+                    }
+
+                    try {
+                        if (!Arrays.equals(
+                                kc.sigCert().getEncoded(),
+                                rosterEntryMap
+                                        .get(nodeId.id())
+                                        .gossipCaCertificate()
+                                        .toByteArray())) {
+                            throw new IllegalStateException(
+                                    "Gossip certificate on disk mismatch with the certificate in roster for node id "
+                                            + nodeId.id());
+                        }
+                    } catch (CertificateEncodingException e) {
+                        throw new IllegalStateException("Failed to encode certificate", e);
+                    }
+                });
+
+                keysAndCerts = allKeysAndCerts.get(selfId);
+            } else {
+                keysAndCerts = null;
+            }
+
             logger.info(STARTUP.getMarker(), "Loading event stream at {}", eventStreamDirectory);
 
             final IOIterator<StreamedRound> roundIterator = new EventStreamRoundIterator(
-                    initialState.get().getAddressBook(),
+                    initialState.get().getRoster(),
                     eventStreamDirectory,
                     initialState.get().getRound() + 1,
                     allowPartialRounds);
@@ -177,7 +228,7 @@ public final class EventRecoveryWorkflow {
                     roundIterator,
                     finalRound,
                     selfId,
-                    loadSigningKeys);
+                    keysAndCerts);
 
             logger.info(
                     STARTUP.getMarker(),
@@ -279,7 +330,7 @@ public final class EventRecoveryWorkflow {
      * @param finalRound      the last round to apply to the state (inclusive), will stop earlier if the event stream
      *                        does not have events from the final round
      * @param selfId          the self ID of the node
-     * @param loadSigningKeys if true then load the signing keys
+     * @param keysAndCerts    the keys and certificates, or null if not loaded
      * @return the resulting signed state
      * @throws IOException if there is a problem reading from the event stream file
      */
@@ -291,7 +342,7 @@ public final class EventRecoveryWorkflow {
             @NonNull final IOIterator<StreamedRound> roundIterator,
             final long finalRound,
             @NonNull final NodeId selfId,
-            final boolean loadSigningKeys)
+            @Nullable final KeysAndCerts keysAndCerts)
             throws IOException {
 
         Objects.requireNonNull(platformContext, "platformContext must not be null");
@@ -306,8 +357,7 @@ public final class EventRecoveryWorkflow {
 
         logger.info(STARTUP.getMarker(), "Initializing application state");
 
-        final RecoveryPlatform platform =
-                new RecoveryPlatform(configuration, initialState.get(), selfId, loadSigningKeys);
+        final RecoveryPlatform platform = new RecoveryPlatform(configuration, initialState.get(), selfId, keysAndCerts);
 
         initialState
                 .get()

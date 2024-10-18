@@ -16,13 +16,13 @@
 
 package com.swirlds.platform.test;
 
+import com.hedera.hapi.node.state.roster.Roster;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.test.fixtures.WeightGenerators;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.platform.Consensus;
 import com.swirlds.platform.ConsensusImpl;
 import com.swirlds.platform.metrics.NoOpConsensusMetrics;
-import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.test.event.emitter.StandardEventEmitter;
 import com.swirlds.platform.test.event.source.EventSourceFactory;
 import com.swirlds.platform.test.fixtures.event.generator.StandardGraphGenerator;
@@ -49,9 +49,9 @@ public class ProfilingTest {
                 TestPlatformContextBuilder.create().build();
         final StandardGraphGenerator generator = new StandardGraphGenerator(platformContext, seed, eventSources);
         final StandardEventEmitter emitter = new StandardEventEmitter(generator);
-        final AddressBook addressBook = emitter.getGraphGenerator().getAddressBook();
+        final Roster roster = emitter.getGraphGenerator().getRoster();
 
-        final Consensus consensus = new ConsensusImpl(platformContext, new NoOpConsensusMetrics(), addressBook);
+        final Consensus consensus = new ConsensusImpl(platformContext, new NoOpConsensusMetrics(), roster);
 
         for (int i = 0; i < numEvents; i++) {
             consensus.addEvent(emitter.emitEvent());

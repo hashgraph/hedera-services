@@ -32,6 +32,8 @@ import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.hedera.hapi.node.state.roster.Roster;
+import com.hedera.hapi.node.state.roster.RosterEntry;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.crypto.Cryptography;
@@ -47,9 +49,9 @@ import com.swirlds.common.merkle.interfaces.MerkleType;
 import com.swirlds.common.merkle.route.MerkleRouteFactory;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.utility.Threshold;
-import com.swirlds.platform.system.address.Address;
-import com.swirlds.platform.system.address.AddressBook;
-import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
+import com.swirlds.platform.crypto.CryptoStatic;
+import com.swirlds.platform.roster.RosterUtils;
+import com.swirlds.platform.test.fixtures.addressbook.RandomRosterBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -62,6 +64,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.TreeMap;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -82,26 +86,32 @@ class StateProofTests {
     @NonNull
     private Map<NodeId, Signature> generateThresholdOfSignatures(
             @NonNull final Random random,
-            @NonNull final AddressBook addressBook,
+            @NonNull final Roster roster,
             @NonNull final FakeSignatureBuilder signatureBuilder,
             @NonNull final Hash hash,
             @NonNull final Threshold threshold) {
 
-        final List<NodeId> nodes = new ArrayList<>(addressBook.getSize());
-        for (final Address address : addressBook) {
-            nodes.add(address.getNodeId());
-        }
+        final List<NodeId> nodes = roster.rosterEntries().stream()
+                .map(RosterEntry::nodeId)
+                .map(NodeId::of)
+                .collect(Collectors.toCollection(() -> new ArrayList<>()));
         Collections.shuffle(nodes, random);
 
         final Map<NodeId, Signature> signatures = new HashMap<>();
 
         long weight = 0;
         for (final NodeId nodeId : nodes) {
-            final Address address = addressBook.getAddress(nodeId);
-            weight += address.getWeight();
-            signatures.put(nodeId, signatureBuilder.fakeSign(hash.copyToByteArray(), address.getSigPublicKey()));
+            final RosterEntry address = RosterUtils.getRosterEntry(roster, nodeId.id());
+            weight += address.weight();
+            signatures.put(
+                    nodeId,
+                    signatureBuilder.fakeSign(
+                            hash.copyToByteArray(),
+                            CryptoStatic.generateCertificate(
+                                            address.gossipCaCertificate().toByteArray())
+                                    .getPublicKey()));
 
-            if (threshold.isSatisfiedBy(weight, addressBook.getTotalWeight())) {
+            if (threshold.isSatisfiedBy(weight, RosterUtils.computeTotalWeight(roster))) {
                 break;
             }
         }
@@ -144,22 +154,21 @@ class StateProofTests {
         final MerkleNode root = buildLessSimpleTree();
         MerkleCryptoFactory.getInstance().digestTreeSync(root);
 
-        final AddressBook addressBook =
-                RandomAddressBookBuilder.create(random).withSize(10).build();
+        final Roster roster = RandomRosterBuilder.create(random).withSize(10).build();
 
         final MerkleLeaf nodeD =
                 root.getNodeAtRoute(MerkleRouteFactory.buildRoute(2, 0)).asLeaf();
 
         final Map<NodeId, Signature> signatures =
-                generateThresholdOfSignatures(random, addressBook, signatureBuilder, root.getHash(), SUPER_MAJORITY);
+                generateThresholdOfSignatures(random, roster, signatureBuilder, root.getHash(), SUPER_MAJORITY);
 
         final StateProof stateProof = new StateProof(cryptography, root, signatures, List.of(nodeD));
 
         assertEquals(1, stateProof.getPayloads().size());
         assertSame(nodeD, stateProof.getPayloads().get(0));
-        assertTrue(stateProof.isValid(cryptography, addressBook, SUPER_MAJORITY, signatureBuilder));
+        assertTrue(stateProof.isValid(cryptography, roster, SUPER_MAJORITY, signatureBuilder));
         // Checking a second time shouldn't cause problems
-        assertTrue(stateProof.isValid(cryptography, addressBook, SUPER_MAJORITY, signatureBuilder));
+        assertTrue(stateProof.isValid(cryptography, roster, SUPER_MAJORITY, signatureBuilder));
 
         final StateProof deserialized = serializeAndDeserialize(stateProof);
 
@@ -167,7 +176,7 @@ class StateProofTests {
         assertNotSame(nodeD, deserialized.getPayloads().get(0));
         assertEquals(nodeD, deserialized.getPayloads().get(0));
         // Checking a second time shouldn't cause problems
-        assertTrue(deserialized.isValid(cryptography, addressBook, SUPER_MAJORITY, signatureBuilder));
+        assertTrue(deserialized.isValid(cryptography, roster, SUPER_MAJORITY, signatureBuilder));
     }
 
     @Test
@@ -181,19 +190,18 @@ class StateProofTests {
         final MerkleNode root = buildSizeOneTree();
         MerkleCryptoFactory.getInstance().digestTreeSync(root);
 
-        final AddressBook addressBook =
-                RandomAddressBookBuilder.create(random).withSize(10).build();
+        final Roster roster = RandomRosterBuilder.create(random).withSize(10).build();
 
         final Map<NodeId, Signature> signatures =
-                generateThresholdOfSignatures(random, addressBook, signatureBuilder, root.getHash(), SUPER_MAJORITY);
+                generateThresholdOfSignatures(random, roster, signatureBuilder, root.getHash(), SUPER_MAJORITY);
 
         final StateProof stateProof = new StateProof(cryptography, root, signatures, List.of(root.asLeaf()));
 
         assertEquals(1, stateProof.getPayloads().size());
         assertSame(root, stateProof.getPayloads().get(0));
-        assertTrue(stateProof.isValid(cryptography, addressBook, SUPER_MAJORITY, signatureBuilder));
+        assertTrue(stateProof.isValid(cryptography, roster, SUPER_MAJORITY, signatureBuilder));
         // Checking a second time shouldn't cause problems
-        assertTrue(stateProof.isValid(cryptography, addressBook, SUPER_MAJORITY, signatureBuilder));
+        assertTrue(stateProof.isValid(cryptography, roster, SUPER_MAJORITY, signatureBuilder));
 
         final StateProof deserialized = serializeAndDeserialize(stateProof);
 
@@ -201,7 +209,7 @@ class StateProofTests {
         assertNotSame(root, deserialized.getPayloads().get(0));
         assertEquals(root, deserialized.getPayloads().get(0));
         // Checking a second time shouldn't cause problems
-        assertTrue(deserialized.isValid(cryptography, addressBook, SUPER_MAJORITY, signatureBuilder));
+        assertTrue(deserialized.isValid(cryptography, roster, SUPER_MAJORITY, signatureBuilder));
     }
 
     private void testWithNPayloads(
@@ -216,12 +224,12 @@ class StateProofTests {
 
         MerkleCryptoFactory.getInstance().digestTreeSync(root);
 
-        final AddressBook addressBook = RandomAddressBookBuilder.create(random)
+        final Roster roster = RandomRosterBuilder.create(random)
                 .withSize(random.nextInt(1, 10))
                 .build();
 
         final Map<NodeId, Signature> signatures =
-                generateThresholdOfSignatures(random, addressBook, signatureBuilder, root.getHash(), threshold);
+                generateThresholdOfSignatures(random, roster, signatureBuilder, root.getHash(), threshold);
 
         final StateProof stateProof = new StateProof(cryptography, root, signatures, payloads);
 
@@ -238,9 +246,9 @@ class StateProofTests {
             assertTrue(payloadFound);
         }
 
-        assertTrue(stateProof.isValid(cryptography, addressBook, threshold, signatureBuilder));
+        assertTrue(stateProof.isValid(cryptography, roster, threshold, signatureBuilder));
         // Checking a second time shouldn't cause problems
-        assertTrue(stateProof.isValid(cryptography, addressBook, threshold, signatureBuilder));
+        assertTrue(stateProof.isValid(cryptography, roster, threshold, signatureBuilder));
 
         final StateProof deserialized = serializeAndDeserialize(stateProof);
 
@@ -258,9 +266,9 @@ class StateProofTests {
             assertTrue(payloadFound);
         }
 
-        assertTrue(deserialized.isValid(cryptography, addressBook, threshold, signatureBuilder));
+        assertTrue(deserialized.isValid(cryptography, roster, threshold, signatureBuilder));
         // Checking a second time shouldn't cause problems
-        assertTrue(deserialized.isValid(cryptography, addressBook, threshold, signatureBuilder));
+        assertTrue(deserialized.isValid(cryptography, roster, threshold, signatureBuilder));
     }
 
     @ParameterizedTest
@@ -310,12 +318,12 @@ class StateProofTests {
         // Now, rehash the tree using the incorrect leaf hashes.
         MerkleCryptoFactory.getInstance().digestTreeSync(root);
 
-        final AddressBook addressBook = RandomAddressBookBuilder.create(random)
+        final Roster roster = RandomRosterBuilder.create(random)
                 .withSize(random.nextInt(1, 10))
                 .build();
 
         final Map<NodeId, Signature> signatures =
-                generateThresholdOfSignatures(random, addressBook, signatureBuilder, root.getHash(), STRONG_MINORITY);
+                generateThresholdOfSignatures(random, roster, signatureBuilder, root.getHash(), STRONG_MINORITY);
 
         final StateProof stateProof = new StateProof(cryptography, root, signatures, payloads);
 
@@ -335,9 +343,9 @@ class StateProofTests {
         // serialize and deserialize to make sure the validator is not using the incorrect hashes
         final StateProof deserialized = serializeAndDeserialize(stateProof);
 
-        assertFalse(deserialized.isValid(cryptography, addressBook, STRONG_MINORITY, signatureBuilder));
+        assertFalse(deserialized.isValid(cryptography, roster, STRONG_MINORITY, signatureBuilder));
         // Checking a second time shouldn't cause problems
-        assertFalse(deserialized.isValid(cryptography, addressBook, STRONG_MINORITY, signatureBuilder));
+        assertFalse(deserialized.isValid(cryptography, roster, STRONG_MINORITY, signatureBuilder));
     }
 
     /**
@@ -460,16 +468,29 @@ class StateProofTests {
 
         // For this test, there will be 9 total weight,
         // with the node at index 9 having 0 stake, and all others having a weight of 1.
-        final AddressBook addressBook =
-                RandomAddressBookBuilder.create(random).withSize(10).build();
-        for (int index = 0; index < 10; index++) {
-            final NodeId nodeId = addressBook.getNodeId(index);
-            if (index == 9) {
-                addressBook.add(addressBook.getAddress(nodeId).copySetWeight(0));
-            } else {
-                addressBook.add(addressBook.getAddress(nodeId).copySetWeight(1));
-            }
-        }
+        final Roster randomRoster =
+                RandomRosterBuilder.create(random).withSize(10).build();
+        final Roster roster = Roster.newBuilder()
+                .rosterEntries(IntStream.range(0, randomRoster.rosterEntries().size())
+                        .mapToObj(index -> {
+                            if (index == 9) {
+                                return randomRoster
+                                        .rosterEntries()
+                                        .get(index)
+                                        .copyBuilder()
+                                        .weight(0)
+                                        .build();
+                            } else {
+                                return randomRoster
+                                        .rosterEntries()
+                                        .get(index)
+                                        .copyBuilder()
+                                        .weight(1)
+                                        .build();
+                            }
+                        })
+                        .toList())
+                .build();
 
         final MerkleLeaf nodeD =
                 root.getNodeAtRoute(MerkleRouteFactory.buildRoute(2, 0)).asLeaf();
@@ -477,38 +498,41 @@ class StateProofTests {
         // Add 6 signatures. Not quite enough to reach super majority.
         final Map<NodeId, Signature> signatures = new HashMap<>();
         for (int index = 0; index < 6; index++) {
-            final NodeId nodeId = addressBook.getNodeId(index);
-            final Address address = addressBook.getAddress(nodeId);
-            final Signature signature =
-                    signatureBuilder.fakeSign(root.getHash().copyToByteArray(), address.getSigPublicKey());
+            final RosterEntry address = randomRoster.rosterEntries().get(index);
+            final NodeId nodeId = NodeId.of(address.nodeId());
+            final Signature signature = signatureBuilder.fakeSign(
+                    root.getHash().copyToByteArray(),
+                    RosterUtils.fetchGossipCaCertificate(address).getPublicKey());
             signatures.put(nodeId, signature);
         }
 
         final StateProof stateProofA = new StateProof(cryptography, root, signatures, List.of(nodeD));
 
         // We don't quite have the right threshold
-        assertFalse(stateProofA.isValid(cryptography, addressBook, SUPER_MAJORITY, signatureBuilder));
+        assertFalse(stateProofA.isValid(cryptography, roster, SUPER_MAJORITY, signatureBuilder));
 
         // Adding the zero weight signature should not change the result.
-        final NodeId nodeId = addressBook.getNodeId(9);
-        final Address address = addressBook.getAddress(nodeId);
-        final Signature signature =
-                signatureBuilder.fakeSign(root.getHash().copyToByteArray(), address.getSigPublicKey());
+        final NodeId nodeId = NodeId.of(roster.rosterEntries().get(9).nodeId());
+        final RosterEntry address = roster.rosterEntries().get(9);
+        final Signature signature = signatureBuilder.fakeSign(
+                root.getHash().copyToByteArray(),
+                RosterUtils.fetchGossipCaCertificate(address).getPublicKey());
         signatures.put(nodeId, signature);
 
         final StateProof stateProofB = new StateProof(cryptography, root, signatures, List.of(nodeD));
-        assertFalse(stateProofB.isValid(cryptography, addressBook, SUPER_MAJORITY, signatureBuilder));
+        assertFalse(stateProofB.isValid(cryptography, roster, SUPER_MAJORITY, signatureBuilder));
 
         // Adding another non-zero weight signature should do the trick.
 
-        final NodeId nodeId2 = addressBook.getNodeId(8);
-        final Address address2 = addressBook.getAddress(nodeId2);
-        final Signature signature2 =
-                signatureBuilder.fakeSign(root.getHash().copyToByteArray(), address2.getSigPublicKey());
+        final NodeId nodeId2 = NodeId.of(roster.rosterEntries().get(8).nodeId());
+        final RosterEntry address2 = roster.rosterEntries().get(8);
+        final Signature signature2 = signatureBuilder.fakeSign(
+                root.getHash().copyToByteArray(),
+                RosterUtils.fetchGossipCaCertificate(address2).getPublicKey());
         signatures.put(nodeId2, signature2);
 
         final StateProof stateProofC = new StateProof(cryptography, root, signatures, List.of(nodeD));
-        assertTrue(stateProofC.isValid(cryptography, addressBook, SUPER_MAJORITY, signatureBuilder));
+        assertTrue(stateProofC.isValid(cryptography, roster, SUPER_MAJORITY, signatureBuilder));
     }
 
     @Test
@@ -523,12 +547,11 @@ class StateProofTests {
         MerkleCryptoFactory.getInstance().digestTreeSync(root);
 
         // For this test, there will be 9 total weight, with each node having a weight of 1.
-        final AddressBook addressBook =
-                RandomAddressBookBuilder.create(random).withSize(9).build();
-        for (int index = 0; index < 9; index++) {
-            final NodeId nodeId = addressBook.getNodeId(index);
-            addressBook.add(addressBook.getAddress(nodeId).copySetWeight(1));
-        }
+        final Roster roster = RandomRosterBuilder.create(random)
+                .withSize(9)
+                .withAverageWeight(1)
+                .withWeightDistributionStrategy(RandomRosterBuilder.WeightDistributionStrategy.BALANCED)
+                .build();
 
         final MerkleLeaf nodeD =
                 root.getNodeAtRoute(MerkleRouteFactory.buildRoute(2, 0)).asLeaf();
@@ -536,37 +559,39 @@ class StateProofTests {
         // Add 6 signatures. Not quite enough to reach super majority.
         final Map<NodeId, Signature> signatures = new HashMap<>();
         for (int index = 0; index < 6; index++) {
-            final NodeId nodeId = addressBook.getNodeId(index);
-            final Address address = addressBook.getAddress(nodeId);
-            final Signature signature =
-                    signatureBuilder.fakeSign(root.getHash().copyToByteArray(), address.getSigPublicKey());
+            final RosterEntry address = roster.rosterEntries().get(index);
+            final NodeId nodeId = NodeId.of(address.nodeId());
+            final Signature signature = signatureBuilder.fakeSign(
+                    root.getHash().copyToByteArray(),
+                    RosterUtils.fetchGossipCaCertificate(address).getPublicKey());
             signatures.put(nodeId, signature);
         }
 
         final StateProof stateProofA = new StateProof(cryptography, root, signatures, List.of(nodeD));
 
         // We don't quite have the right threshold
-        assertFalse(stateProofA.isValid(cryptography, addressBook, SUPER_MAJORITY, signatureBuilder));
+        assertFalse(stateProofA.isValid(cryptography, roster, SUPER_MAJORITY, signatureBuilder));
 
         // Adding a signature for a node not in the address book should not change the result.
         final NodeId nodeId = NodeId.of(10000000);
-        assertFalse(addressBook.contains(nodeId));
+        assertEquals(-1, RosterUtils.getIndex(roster, nodeId.id()));
         final Signature signature = randomSignature(random);
         signatures.put(nodeId, signature);
 
         final StateProof stateProofB = new StateProof(cryptography, root, signatures, List.of(nodeD));
-        assertFalse(stateProofB.isValid(cryptography, addressBook, SUPER_MAJORITY, signatureBuilder));
+        assertFalse(stateProofB.isValid(cryptography, roster, SUPER_MAJORITY, signatureBuilder));
 
         // Adding another real signature should do the trick.
 
-        final NodeId nodeId2 = addressBook.getNodeId(7);
-        final Address address2 = addressBook.getAddress(nodeId2);
-        final Signature signature2 =
-                signatureBuilder.fakeSign(root.getHash().copyToByteArray(), address2.getSigPublicKey());
+        final RosterEntry address2 = roster.rosterEntries().get(7);
+        final NodeId nodeId2 = NodeId.of(address2.nodeId());
+        final Signature signature2 = signatureBuilder.fakeSign(
+                root.getHash().copyToByteArray(),
+                RosterUtils.fetchGossipCaCertificate(address2).getPublicKey());
         signatures.put(nodeId2, signature2);
 
         final StateProof stateProofC = new StateProof(cryptography, root, signatures, List.of(nodeD));
-        assertTrue(stateProofC.isValid(cryptography, addressBook, SUPER_MAJORITY, signatureBuilder));
+        assertTrue(stateProofC.isValid(cryptography, roster, SUPER_MAJORITY, signatureBuilder));
     }
 
     private final class DummyNodeId extends NodeId {
@@ -592,12 +617,11 @@ class StateProofTests {
         MerkleCryptoFactory.getInstance().digestTreeSync(root);
 
         // For this test, there will be 9 total weight, with each node having a weight of 1.
-        final AddressBook addressBook =
-                RandomAddressBookBuilder.create(random).withSize(9).build();
-        for (int index = 0; index < 9; index++) {
-            final NodeId nodeId = addressBook.getNodeId(index);
-            addressBook.add(addressBook.getAddress(nodeId).copySetWeight(1));
-        }
+        final Roster roster = RandomRosterBuilder.create(random)
+                .withSize(9)
+                .withAverageWeight(1)
+                .withWeightDistributionStrategy(RandomRosterBuilder.WeightDistributionStrategy.BALANCED)
+                .build();
 
         final MerkleLeaf nodeD =
                 root.getNodeAtRoute(MerkleRouteFactory.buildRoute(2, 0)).asLeaf();
@@ -605,17 +629,18 @@ class StateProofTests {
         // Add 6 signatures. Not quite enough to reach super majority.
         final Map<NodeId, Signature> signatures = new HashMap<>();
         for (int index = 0; index < 6; index++) {
-            final NodeId nodeId = addressBook.getNodeId(index);
-            final Address address = addressBook.getAddress(nodeId);
-            final Signature signature =
-                    signatureBuilder.fakeSign(root.getHash().copyToByteArray(), address.getSigPublicKey());
+            final RosterEntry address = roster.rosterEntries().get(index);
+            final NodeId nodeId = NodeId.of(address.nodeId());
+            final Signature signature = signatureBuilder.fakeSign(
+                    root.getHash().copyToByteArray(),
+                    RosterUtils.fetchGossipCaCertificate(address).getPublicKey());
             signatures.put(nodeId, signature);
         }
 
         final StateProof stateProofA = new StateProof(cryptography, root, signatures, List.of(nodeD));
 
         // We don't quite have the right threshold
-        assertFalse(stateProofA.isValid(cryptography, addressBook, SUPER_MAJORITY, signatureBuilder));
+        assertFalse(stateProofA.isValid(cryptography, roster, SUPER_MAJORITY, signatureBuilder));
 
         // Adding duplicate signatures should not change the result.
         // We can force the logic to accept duplicate signatures by playing games with hash codes,
@@ -629,22 +654,23 @@ class StateProofTests {
         assertEquals(12, signatures.size());
 
         final StateProof stateProofB = new StateProof(cryptography, root, signatures, List.of(nodeD));
-        assertFalse(stateProofB.isValid(cryptography, addressBook, SUPER_MAJORITY, signatureBuilder));
+        assertFalse(stateProofB.isValid(cryptography, roster, SUPER_MAJORITY, signatureBuilder));
 
         // Serialize and deserialize. This will get rid of any hash code games. Should still not be valid.
         final StateProof deserialized = serializeAndDeserialize(stateProofB);
-        assertFalse(deserialized.isValid(cryptography, addressBook, SUPER_MAJORITY, signatureBuilder));
+        assertFalse(deserialized.isValid(cryptography, roster, SUPER_MAJORITY, signatureBuilder));
 
         // Adding another non-duplicate signature should do the trick.
 
-        final NodeId nodeId2 = addressBook.getNodeId(7);
-        final Address address2 = addressBook.getAddress(nodeId2);
-        final Signature signature2 =
-                signatureBuilder.fakeSign(root.getHash().copyToByteArray(), address2.getSigPublicKey());
+        final RosterEntry address2 = roster.rosterEntries().get(7);
+        final NodeId nodeId2 = NodeId.of(address2.nodeId());
+        final Signature signature2 = signatureBuilder.fakeSign(
+                root.getHash().copyToByteArray(),
+                RosterUtils.fetchGossipCaCertificate(address2).getPublicKey());
         signatures.put(nodeId2, signature2);
 
         final StateProof stateProofC = new StateProof(cryptography, root, signatures, List.of(nodeD));
-        assertTrue(stateProofC.isValid(cryptography, addressBook, SUPER_MAJORITY, signatureBuilder));
+        assertTrue(stateProofC.isValid(cryptography, roster, SUPER_MAJORITY, signatureBuilder));
     }
 
     @Test
@@ -659,12 +685,11 @@ class StateProofTests {
         MerkleCryptoFactory.getInstance().digestTreeSync(root);
 
         // For this test, there will be 9 total weight, with each node having a weight of 1.
-        final AddressBook addressBook =
-                RandomAddressBookBuilder.create(random).withSize(9).build();
-        for (int index = 0; index < 9; index++) {
-            final NodeId nodeId = addressBook.getNodeId(index);
-            addressBook.add(addressBook.getAddress(nodeId).copySetWeight(1));
-        }
+        final Roster roster = RandomRosterBuilder.create(random)
+                .withSize(9)
+                .withAverageWeight(1)
+                .withWeightDistributionStrategy(RandomRosterBuilder.WeightDistributionStrategy.BALANCED)
+                .build();
 
         final MerkleLeaf nodeD =
                 root.getNodeAtRoute(MerkleRouteFactory.buildRoute(2, 0)).asLeaf();
@@ -672,15 +697,16 @@ class StateProofTests {
         // Add 7 signatures, enough to make the proof valid if we use the right IDs.
         final Map<NodeId, Signature> signatures = new HashMap<>();
         for (int index = 0; index < 7; index++) {
-            final NodeId nodeId = addressBook.getNodeId(index);
-            final Address address = addressBook.getAddress(nodeId);
-            final Signature signature =
-                    signatureBuilder.fakeSign(root.getHash().copyToByteArray(), address.getSigPublicKey());
+            final RosterEntry address = roster.rosterEntries().get(index);
+            final NodeId nodeId = NodeId.of(address.nodeId());
+            final Signature signature = signatureBuilder.fakeSign(
+                    root.getHash().copyToByteArray(),
+                    RosterUtils.fetchGossipCaCertificate(address).getPublicKey());
             signatures.put(nodeId, signature);
         }
 
         final StateProof stateProofA = new StateProof(cryptography, root, signatures, List.of(nodeD));
-        assertTrue(stateProofA.isValid(cryptography, addressBook, SUPER_MAJORITY, signatureBuilder));
+        assertTrue(stateProofA.isValid(cryptography, roster, SUPER_MAJORITY, signatureBuilder));
 
         // Using the same signatures with the wrong node IDs should not work.
         final Map<NodeId, Signature> wrongSignatures = new HashMap<>();
@@ -698,11 +724,11 @@ class StateProofTests {
         }
 
         final StateProof stateProofB = new StateProof(cryptography, root, wrongSignatures, List.of(nodeD));
-        assertFalse(stateProofB.isValid(cryptography, addressBook, SUPER_MAJORITY, signatureBuilder));
+        assertFalse(stateProofB.isValid(cryptography, roster, SUPER_MAJORITY, signatureBuilder));
 
         // serialization shouldn't change anything
         final StateProof deserialized = serializeAndDeserialize(stateProofB);
-        assertFalse(deserialized.isValid(cryptography, addressBook, SUPER_MAJORITY, signatureBuilder));
+        assertFalse(deserialized.isValid(cryptography, roster, SUPER_MAJORITY, signatureBuilder));
     }
 
     @Test
@@ -718,23 +744,22 @@ class StateProofTests {
 
         // For this test, there will be 12 total weight, with each node having a weight of 1.
         // 12 is chosen because it is divisible by both 2 and 3.
-        final AddressBook addressBook =
-                RandomAddressBookBuilder.create(random).withSize(12).build();
-        for (int index = 0; index < 12; index++) {
-            final NodeId nodeId = addressBook.getNodeId(index);
-            addressBook.add(addressBook.getAddress(nodeId).copySetWeight(1));
-        }
+        final Roster roster = RandomRosterBuilder.create(random)
+                .withSize(12)
+                .withAverageWeight(1)
+                .withWeightDistributionStrategy(RandomRosterBuilder.WeightDistributionStrategy.BALANCED)
+                .build();
 
         final MerkleLeaf nodeD =
                 root.getNodeAtRoute(MerkleRouteFactory.buildRoute(2, 0)).asLeaf();
 
         final Map<NodeId, Signature> signatures = new HashMap<>();
         for (int index = 0; index < 12; index++) {
-
-            final NodeId nextId = addressBook.getNodeId(index);
-            final Address address = addressBook.getAddress(nextId);
-            final Signature signature =
-                    signatureBuilder.fakeSign(root.getHash().copyToByteArray(), address.getSigPublicKey());
+            final RosterEntry address = roster.rosterEntries().get(index);
+            final NodeId nextId = NodeId.of(address.nodeId());
+            final Signature signature = signatureBuilder.fakeSign(
+                    root.getHash().copyToByteArray(),
+                    RosterUtils.fetchGossipCaCertificate(address).getPublicKey());
             signatures.put(nextId, signature);
 
             int weight = index + 1;
@@ -742,21 +767,21 @@ class StateProofTests {
             final StateProof stateProof = new StateProof(cryptography, root, signatures, List.of(nodeD));
 
             if (weight >= 4) { // >= 1/3
-                assertTrue(stateProof.isValid(cryptography, addressBook, STRONG_MINORITY, signatureBuilder));
+                assertTrue(stateProof.isValid(cryptography, roster, STRONG_MINORITY, signatureBuilder));
             } else {
-                assertFalse(stateProof.isValid(cryptography, addressBook, STRONG_MINORITY, signatureBuilder));
+                assertFalse(stateProof.isValid(cryptography, roster, STRONG_MINORITY, signatureBuilder));
             }
 
             if (weight > 6) { // > 1/2
-                assertTrue(stateProof.isValid(cryptography, addressBook, MAJORITY, signatureBuilder));
+                assertTrue(stateProof.isValid(cryptography, roster, MAJORITY, signatureBuilder));
             } else {
-                assertFalse(stateProof.isValid(cryptography, addressBook, MAJORITY, signatureBuilder));
+                assertFalse(stateProof.isValid(cryptography, roster, MAJORITY, signatureBuilder));
             }
 
             if (weight > 8) { // > 2/3
-                assertTrue(stateProof.isValid(cryptography, addressBook, SUPER_MAJORITY, signatureBuilder));
+                assertTrue(stateProof.isValid(cryptography, roster, SUPER_MAJORITY, signatureBuilder));
             } else {
-                assertFalse(stateProof.isValid(cryptography, addressBook, SUPER_MAJORITY, signatureBuilder));
+                assertFalse(stateProof.isValid(cryptography, roster, SUPER_MAJORITY, signatureBuilder));
             }
         }
     }

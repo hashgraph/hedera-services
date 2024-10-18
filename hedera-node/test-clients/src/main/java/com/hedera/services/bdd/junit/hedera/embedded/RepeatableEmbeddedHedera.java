@@ -145,7 +145,7 @@ class RepeatableEmbeddedHedera extends AbstractEmbeddedHedera implements Embedde
                     consensusOrder.getAndIncrement(),
                     firstRoundTime,
                     lastCreatedEvent.getSoftwareVersion()));
-            return new FakeRound(roundNo.getAndIncrement(), addressBook, consensusEvents);
+            return new FakeRound(roundNo.getAndIncrement(), roster, consensusEvents);
         }
     }
 }

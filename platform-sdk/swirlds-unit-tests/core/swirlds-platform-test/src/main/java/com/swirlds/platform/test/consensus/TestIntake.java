@@ -20,6 +20,7 @@ import static com.swirlds.common.wiring.wires.SolderType.INJECT;
 import static com.swirlds.platform.consensus.SyntheticSnapshot.GENESIS_SNAPSHOT;
 import static com.swirlds.platform.event.AncientMode.GENERATION_THRESHOLD;
 
+import com.hedera.hapi.node.state.roster.Roster;
 import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.platform.NodeId;
@@ -45,7 +46,6 @@ import com.swirlds.platform.gossip.IntakeEventCounter;
 import com.swirlds.platform.gossip.NoOpIntakeEventCounter;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
-import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.test.consensus.framework.ConsensusOutput;
 import com.swirlds.platform.wiring.components.PassThroughWiring;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -67,9 +67,9 @@ public class TestIntake {
 
     /**
      * @param platformContext the platform context used to configure this intake.
-     * @param addressBook     the address book used by this intake
+     * @param roster     the address book used by this intake
      */
-    public TestIntake(@NonNull final PlatformContext platformContext, @NonNull final AddressBook addressBook) {
+    public TestIntake(@NonNull final PlatformContext platformContext, @NonNull final Roster roster) {
         final NodeId selfId = NodeId.of(0);
         roundsNonAncient = platformContext
                 .getConfiguration()
@@ -93,7 +93,7 @@ public class TestIntake {
         orphanBufferWiring = new ComponentWiring<>(model, OrphanBuffer.class, directScheduler("orphanBuffer"));
         orphanBufferWiring.bind(orphanBuffer);
 
-        final ConsensusEngine consensusEngine = new DefaultConsensusEngine(platformContext, addressBook, selfId);
+        final ConsensusEngine consensusEngine = new DefaultConsensusEngine(platformContext, roster, selfId);
 
         consensusEngineWiring = new ComponentWiring<>(model, ConsensusEngine.class, directScheduler("consensusEngine"));
         consensusEngineWiring.bind(consensusEngine);

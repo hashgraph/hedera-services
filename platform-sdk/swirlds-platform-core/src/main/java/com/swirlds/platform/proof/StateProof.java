@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.proof;
 
+import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.crypto.Signature;
@@ -32,7 +33,7 @@ import com.swirlds.platform.proof.algorithms.StateProofSerialization;
 import com.swirlds.platform.proof.algorithms.StateProofTreeBuilder;
 import com.swirlds.platform.proof.algorithms.StateProofUtils;
 import com.swirlds.platform.proof.tree.StateProofNode;
-import com.swirlds.platform.system.address.AddressBook;
+import com.swirlds.platform.roster.RosterUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.util.List;
@@ -96,19 +97,19 @@ public class StateProof implements SelfSerializable {
      * Cryptographically validate this state proof using the provided threshold.
      *
      * @param cryptography provides cryptographic primitives
-     * @param addressBook  the address book to use to validate the state proof
+     * @param roster       the roster to use to validate the state proof
      * @param threshold    the threshold of signatures required to trust this state proof
      * @return true if this state proof is valid, otherwise false
      * @throws IllegalStateException if this method is called before this object has been fully deserialized
      */
     public boolean isValid(
             @NonNull final Cryptography cryptography,
-            @NonNull final AddressBook addressBook,
+            @NonNull final Roster roster,
             @NonNull final Threshold threshold) {
 
         return isValid(
                 cryptography,
-                addressBook,
+                roster,
                 threshold,
                 (signature, bytes, publicKey) ->
                         CryptoStatic.verifySignature(Bytes.wrap(bytes), signature.getBytes(), publicKey));
@@ -118,7 +119,7 @@ public class StateProof implements SelfSerializable {
      * Cryptographically validate this state proof using the provided threshold.
      *
      * @param cryptography      provides cryptographic primitives
-     * @param addressBook       the address book to use to validate the state proof
+     * @param roster            the roster to use to validate the state proof
      * @param threshold         the threshold of signatures required to trust this state proof
      * @param signatureVerifier a function that verifies a signature
      * @return true if this state proof is valid, otherwise false
@@ -126,12 +127,12 @@ public class StateProof implements SelfSerializable {
      */
     public boolean isValid(
             @NonNull final Cryptography cryptography,
-            @NonNull final AddressBook addressBook,
+            @NonNull final Roster roster,
             @NonNull final Threshold threshold,
             @NonNull final SignatureVerifier signatureVerifier) {
 
         Objects.requireNonNull(cryptography);
-        Objects.requireNonNull(addressBook);
+        Objects.requireNonNull(roster);
         Objects.requireNonNull(threshold);
         Objects.requireNonNull(signatureVerifier);
 
@@ -140,13 +141,13 @@ public class StateProof implements SelfSerializable {
             hashBytes = StateProofUtils.computeStateProofTreeHash(cryptography, root);
         }
         final long validWeight =
-                StateProofUtils.computeValidSignatureWeight(addressBook, signatures, signatureVerifier, hashBytes);
-        return threshold.isSatisfiedBy(validWeight, addressBook.getTotalWeight());
+                StateProofUtils.computeValidSignatureWeight(roster, signatures, signatureVerifier, hashBytes);
+        return threshold.isSatisfiedBy(validWeight, RosterUtils.computeTotalWeight(roster));
     }
 
     /**
      * Get the payloads of this state proof (i.e. the leaf nodes being "proven"). Do not trust the authenticity of these
-     * payloads unless {@link #isValid(Cryptography, AddressBook, Threshold)} returns true.
+     * payloads unless {@link #isValid(Cryptography, Roster, Threshold)} returns true.
      *
      * @return the payloads of this state proof
      * @throws IllegalStateException if this method is called before this object has been fully deserialized

@@ -75,6 +75,7 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.base.NodeAddressBook;
 import com.hedera.hapi.node.base.ServiceEndpoint;
+import com.hedera.hapi.node.state.roster.RosterEntry;
 import com.hedera.pbj.runtime.ParseException;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.services.bdd.junit.GenesisHapiTest;
@@ -86,8 +87,8 @@ import com.hedera.services.bdd.spec.utilops.streams.assertions.VisibleItemsValid
 import com.hederahashgraph.api.proto.java.CurrentAndNextFeeSchedule;
 import com.hederahashgraph.api.proto.java.ServicesConfigurationList;
 import com.hederahashgraph.api.proto.java.ThrottleDefinitions;
-import com.swirlds.platform.system.address.Address;
-import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
+import com.swirlds.platform.crypto.CryptoStatic;
+import com.swirlds.platform.test.fixtures.addressbook.RandomRosterBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.math.BigInteger;
 import java.security.cert.CertificateEncodingException;
@@ -537,13 +538,18 @@ public class SystemFileExportsTest {
     }
 
     private static Map<Long, X509Certificate> generateCertificates(final int n) {
-        final var randomAddressBook = RandomAddressBookBuilder.create(new Random())
+        final var randomRoster = RandomRosterBuilder.create(new Random())
                 .withSize(n)
                 .withRealKeysEnabled(true)
                 .build();
         final var nextNodeId = new AtomicLong();
-        return StreamSupport.stream(Spliterators.spliteratorUnknownSize(randomAddressBook.iterator(), 0), false)
-                .map(Address::getSigCert)
+        return StreamSupport.stream(
+                        Spliterators.spliteratorUnknownSize(
+                                randomRoster.rosterEntries().iterator(), 0),
+                        false)
+                .map(RosterEntry::gossipCaCertificate)
+                .map(Bytes::toByteArray)
+                .map(CryptoStatic::generateCertificate)
                 .collect(Collectors.toMap(cert -> nextNodeId.getAndIncrement(), cert -> cert));
     }
 

@@ -25,6 +25,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import com.hedera.hapi.node.state.roster.Roster;
+import com.hedera.hapi.node.state.roster.RosterEntry;
 import com.swirlds.base.test.fixtures.time.FakeTime;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.platform.NodeId;
@@ -34,11 +36,9 @@ import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.consensus.GraphGenerations;
 import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.internal.ConsensusRound;
-import com.swirlds.platform.system.address.Address;
-import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.events.ConsensusEvent;
 import com.swirlds.platform.system.status.StatusActionSubmitter;
-import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
+import com.swirlds.platform.test.fixtures.addressbook.RandomRosterBuilder;
 import com.swirlds.platform.test.fixtures.event.TestingEventBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
@@ -59,7 +59,7 @@ class UptimeTests {
             @NonNull final Random random,
             @NonNull final FakeTime time,
             @NonNull final Duration roundDuration,
-            @NonNull final AddressBook addressBook,
+            @NonNull final Roster roster,
             final int count,
             @NonNull Set<NodeId> noEvents,
             @NonNull Set<NodeId> noJudges) {
@@ -68,7 +68,9 @@ class UptimeTests {
         final Set<NodeId> firstEventCreated = new HashSet<>();
         while (events.size() < count) {
 
-            final NodeId nodeId = addressBook.getNodeId(random.nextInt(addressBook.getSize()));
+            final NodeId nodeId = NodeId.of(roster.rosterEntries()
+                    .get(random.nextInt(roster.rosterEntries().size()))
+                    .nodeId());
             if (noEvents.contains(nodeId)) {
                 continue;
             }
@@ -93,7 +95,7 @@ class UptimeTests {
     private static ConsensusRound mockRound(@NonNull final List<PlatformEvent> events, final long roundNum) {
         final ConsensusSnapshot snapshot = mock(ConsensusSnapshot.class);
         final ConsensusRound round = new ConsensusRound(
-                mock(AddressBook.class),
+                mock(Roster.class),
                 events,
                 mock(PlatformEvent.class),
                 mock(GraphGenerations.class),
@@ -117,33 +119,37 @@ class UptimeTests {
                 TestPlatformContextBuilder.create().build();
         final FakeTime time = new FakeTime();
 
-        final AddressBook addressBook =
-                RandomAddressBookBuilder.create(random).withSize(10).build();
-        final NodeId selfId = addressBook.getNodeId(0);
+        final Roster roster = RandomRosterBuilder.create(random).withSize(10).build();
+        final NodeId selfId = NodeId.of(roster.rosterEntries().get(0).nodeId());
 
         final UptimeTracker uptimeTracker =
-                new UptimeTracker(platformContext, addressBook, mock(StatusActionSubmitter.class), selfId, time);
+                new UptimeTracker(platformContext, roster, mock(StatusActionSubmitter.class), selfId, time);
         final UptimeData uptimeData = uptimeTracker.uptimeData;
 
         // First, simulate a round starting at genesis
         final int eventCount = 100;
-        final Set<NodeId> noFirstRoundEvents = Set.of(addressBook.getNodeId(0), addressBook.getNodeId(1));
-        final Set<NodeId> noFirstRoundJudges = Set.of(addressBook.getNodeId(8), addressBook.getNodeId(9));
+        final Set<NodeId> noFirstRoundEvents = Set.of(
+                NodeId.of(roster.rosterEntries().get(0).nodeId()),
+                NodeId.of(roster.rosterEntries().get(1).nodeId()));
+        final Set<NodeId> noFirstRoundJudges = Set.of(
+                NodeId.of(roster.rosterEntries().get(8).nodeId()),
+                NodeId.of(roster.rosterEntries().get(9).nodeId()));
         final List<PlatformEvent> firstRoundEvents = generateEvents(
-                random, time, Duration.ofSeconds(1), addressBook, eventCount, noFirstRoundEvents, noFirstRoundJudges);
+                random, time, Duration.ofSeconds(1), roster, eventCount, noFirstRoundEvents, noFirstRoundJudges);
 
         final ConsensusRound roundOne = mockRound(firstRoundEvents, 1);
-        uptimeTracker.handleRound(roundOne, addressBook);
+        uptimeTracker.handleRound(roundOne, roster);
 
-        for (final Address address : addressBook) {
+        for (final RosterEntry address : roster.rosterEntries()) {
             ConsensusEvent judge = null;
             ConsensusEvent lastEvent = null;
+            final NodeId nodeId = NodeId.of(address.nodeId());
 
             for (final ConsensusEvent event : firstRoundEvents) {
-                if (!Objects.equals(event.getCreatorId(), address.getNodeId())) {
+                if (!Objects.equals(event.getCreatorId(), nodeId)) {
                     continue;
                 }
-                if (judge == null && !noFirstRoundJudges.contains(address.getNodeId())) {
+                if (judge == null && !noFirstRoundJudges.contains(nodeId)) {
                     judge = event;
                 }
                 lastEvent = event;
@@ -156,44 +162,49 @@ class UptimeTests {
             // genesisUptimeData.getLastJudgeTime(address.getNodeId()));
             //            } else {
 
-            assertEquals(NO_ROUND, uptimeData.getLastJudgeRound(address.getNodeId()));
-            assertNull(uptimeData.getLastJudgeTime(address.getNodeId()));
+            assertEquals(NO_ROUND, uptimeData.getLastJudgeRound(nodeId));
+            assertNull(uptimeData.getLastJudgeTime(nodeId));
             //            }
 
             if (lastEvent != null) {
-                assertEquals(1, uptimeData.getLastEventRound(address.getNodeId()));
-                assertEquals(lastEvent.getConsensusTimestamp(), uptimeData.getLastEventTime(address.getNodeId()));
+                assertEquals(1, uptimeData.getLastEventRound(nodeId));
+                assertEquals(lastEvent.getConsensusTimestamp(), uptimeData.getLastEventTime(nodeId));
             } else {
-                assertEquals(NO_ROUND, uptimeData.getLastEventRound(address.getNodeId()));
-                assertNull(uptimeData.getLastEventTime(address.getNodeId()));
+                assertEquals(NO_ROUND, uptimeData.getLastEventRound(nodeId));
+                assertNull(uptimeData.getLastEventTime(nodeId));
             }
         }
 
-        final Set<NodeId> noSecondRoundEvents = Set.of(addressBook.getNodeId(0), addressBook.getNodeId(2));
-        final Set<NodeId> noSecondRoundJudges = Set.of(addressBook.getNodeId(7), addressBook.getNodeId(9));
+        final Set<NodeId> noSecondRoundEvents = Set.of(
+                NodeId.of(roster.rosterEntries().get(0).nodeId()),
+                NodeId.of(roster.rosterEntries().get(2).nodeId()));
+        final Set<NodeId> noSecondRoundJudges = Set.of(
+                NodeId.of(roster.rosterEntries().get(7).nodeId()),
+                NodeId.of(roster.rosterEntries().get(9).nodeId()));
         final List<PlatformEvent> secondRoundEvents = generateEvents(
-                random, time, Duration.ofSeconds(1), addressBook, eventCount, noSecondRoundEvents, noSecondRoundJudges);
+                random, time, Duration.ofSeconds(1), roster, eventCount, noSecondRoundEvents, noSecondRoundJudges);
 
         final ConsensusRound roundTwo = mockRound(secondRoundEvents, 2);
-        uptimeTracker.handleRound(roundTwo, addressBook);
+        uptimeTracker.handleRound(roundTwo, roster);
 
-        for (final Address address : addressBook) {
+        for (final RosterEntry address : roster.rosterEntries()) {
             ConsensusEvent judge = null;
             ConsensusEvent lastEvent = null;
+            final NodeId nodeId = NodeId.of(address.nodeId());
 
             for (final ConsensusEvent event : secondRoundEvents) {
-                if (!Objects.equals(event.getCreatorId(), address.getNodeId())) {
+                if (!Objects.equals(event.getCreatorId(), nodeId)) {
                     continue;
                 }
-                if (judge == null && !noSecondRoundJudges.contains(address.getNodeId())) {
+                if (judge == null && !noSecondRoundJudges.contains(nodeId)) {
                     judge = event;
                 }
                 lastEvent = event;
             }
 
             // Temporarily disabled until we properly detect judges in a round
-            assertEquals(NO_ROUND, uptimeData.getLastJudgeRound(address.getNodeId()));
-            assertNull(uptimeData.getLastJudgeTime(address.getNodeId()));
+            assertEquals(NO_ROUND, uptimeData.getLastJudgeRound(nodeId));
+            assertNull(uptimeData.getLastJudgeTime(nodeId));
             //            if (judge != null) {
             //                assertEquals(2, nextRoundUptimeData.getLastJudgeRound(address.getNodeId()));
             //                assertEquals(judge.getConsensusTimestamp(),
@@ -208,8 +219,8 @@ class UptimeTests {
             //            }
 
             if (lastEvent != null) {
-                assertEquals(2, uptimeData.getLastEventRound(address.getNodeId()));
-                assertEquals(lastEvent.getConsensusTimestamp(), uptimeData.getLastEventTime(address.getNodeId()));
+                assertEquals(2, uptimeData.getLastEventRound(nodeId));
+                assertEquals(lastEvent.getConsensusTimestamp(), uptimeData.getLastEventTime(nodeId));
             }
         }
     }
@@ -223,39 +234,44 @@ class UptimeTests {
                 TestPlatformContextBuilder.create().build();
         final FakeTime time = new FakeTime();
 
-        final AddressBook addressBook =
-                RandomAddressBookBuilder.create(random).withSize(10).build();
-        final NodeId selfId = addressBook.getNodeId(0);
+        final Roster roster = RandomRosterBuilder.create(random).withSize(10).build();
+        final NodeId selfId = NodeId.of(roster.rosterEntries().get(0).nodeId());
 
         final UptimeTracker uptimeTracker =
-                new UptimeTracker(platformContext, addressBook, mock(StatusActionSubmitter.class), selfId, time);
+                new UptimeTracker(platformContext, roster, mock(StatusActionSubmitter.class), selfId, time);
         final UptimeData uptimeData = uptimeTracker.uptimeData;
         // First, simulate a round starting at genesis
         final int eventCount = 100;
-        final Set<NodeId> noFirstRoundEvents = Set.of(addressBook.getNodeId(0), addressBook.getNodeId(1));
-        final Set<NodeId> noFirstRoundJudges = Set.of(addressBook.getNodeId(8), addressBook.getNodeId(9));
+        final Set<NodeId> noFirstRoundEvents = Set.of(
+                NodeId.of(roster.rosterEntries().get(0).nodeId()),
+                NodeId.of(roster.rosterEntries().get(1).nodeId()));
+        final Set<NodeId> noFirstRoundJudges = Set.of(
+                NodeId.of(roster.rosterEntries().get(8).nodeId()),
+                NodeId.of(roster.rosterEntries().get(9).nodeId()));
         final List<PlatformEvent> firstRoundEvents = generateEvents(
-                random, time, Duration.ofSeconds(1), addressBook, eventCount, noFirstRoundEvents, noFirstRoundJudges);
+                random, time, Duration.ofSeconds(1), roster, eventCount, noFirstRoundEvents, noFirstRoundJudges);
 
-        for (final Address address : addressBook) {
-            assertNull(uptimeData.getLastEventTime(address.getNodeId()));
-            assertNull(uptimeData.getLastJudgeTime(address.getNodeId()));
-            assertEquals(NO_ROUND, uptimeData.getLastEventRound(address.getNodeId()));
-            assertEquals(NO_ROUND, uptimeData.getLastJudgeRound(address.getNodeId()));
+        for (final RosterEntry address : roster.rosterEntries()) {
+            final NodeId nodeId = NodeId.of(address.nodeId());
+            assertNull(uptimeData.getLastEventTime(nodeId));
+            assertNull(uptimeData.getLastJudgeTime(nodeId));
+            assertEquals(NO_ROUND, uptimeData.getLastEventRound(nodeId));
+            assertEquals(NO_ROUND, uptimeData.getLastJudgeRound(nodeId));
         }
 
         final ConsensusRound roundOne = mockRound(firstRoundEvents, 1);
-        uptimeTracker.handleRound(roundOne, addressBook);
+        uptimeTracker.handleRound(roundOne, roster);
 
-        for (final Address address : addressBook) {
+        for (final RosterEntry address : roster.rosterEntries()) {
             ConsensusEvent judge = null;
             ConsensusEvent lastEvent = null;
+            final NodeId nodeId = NodeId.of(address.nodeId());
 
             for (final ConsensusEvent event : firstRoundEvents) {
-                if (!Objects.equals(event.getCreatorId(), address.getNodeId())) {
+                if (!Objects.equals(event.getCreatorId(), nodeId)) {
                     continue;
                 }
-                if (judge == null && !noFirstRoundJudges.contains(address.getNodeId())) {
+                if (judge == null && !noFirstRoundJudges.contains(nodeId)) {
                     judge = event;
                 }
                 lastEvent = event;
@@ -267,47 +283,48 @@ class UptimeTests {
             //                assertEquals(judge.getConsensusTimestamp(),
             // genesisUptimeData.getLastJudgeTime(address.getNodeId()));
             //            } else {
-            assertEquals(NO_ROUND, uptimeData.getLastJudgeRound(address.getNodeId()));
-            assertNull(uptimeData.getLastJudgeTime(address.getNodeId()));
+            assertEquals(NO_ROUND, uptimeData.getLastJudgeRound(nodeId));
+            assertNull(uptimeData.getLastJudgeTime(nodeId));
             //            }
 
             if (lastEvent != null) {
-                assertEquals(1, uptimeData.getLastEventRound(address.getNodeId()));
-                assertEquals(lastEvent.getConsensusTimestamp(), uptimeData.getLastEventTime(address.getNodeId()));
+                assertEquals(1, uptimeData.getLastEventRound(nodeId));
+                assertEquals(lastEvent.getConsensusTimestamp(), uptimeData.getLastEventTime(nodeId));
             } else {
-                assertEquals(NO_ROUND, uptimeData.getLastEventRound(address.getNodeId()));
-                assertNull(uptimeData.getLastEventTime(address.getNodeId()));
+                assertEquals(NO_ROUND, uptimeData.getLastEventRound(nodeId));
+                assertNull(uptimeData.getLastEventTime(nodeId));
             }
         }
 
         // Simulate a following round with a different address book
-        final AddressBook newAddressBook = addressBook.copy();
-        final NodeId nodeToRemove = addressBook.getNodeId(0);
-        newAddressBook.remove(nodeToRemove);
-        final Address newAddress =
-                addressBook.getAddress(addressBook.getNodeId(0)).copySetNodeId(NodeId.of(12345));
-        newAddressBook.add(newAddress);
+        final NodeId nodeToRemove = NodeId.of(roster.rosterEntries().get(0).nodeId());
+        final Roster newRoster = roster.copyBuilder()
+                .rosterEntries(roster.rosterEntries().stream()
+                        .map(re -> {
+                            if (re.nodeId() == nodeToRemove.id()) {
+                                return re.copyBuilder().nodeId(12345).build();
+                            } else {
+                                return re;
+                            }
+                        })
+                        .toList())
+                .build();
         final Set<NodeId> noSecondRoundEvents = Set.of();
         final Set<NodeId> noSecondRoundJudges = Set.of();
         final List<PlatformEvent> secondRoundEvents = generateEvents(
-                random,
-                time,
-                Duration.ofSeconds(1),
-                newAddressBook,
-                eventCount,
-                noSecondRoundEvents,
-                noSecondRoundJudges);
+                random, time, Duration.ofSeconds(1), newRoster, eventCount, noSecondRoundEvents, noSecondRoundJudges);
 
         final ConsensusRound roundTwo = mockRound(secondRoundEvents, 2);
 
-        uptimeTracker.handleRound(roundTwo, newAddressBook);
+        uptimeTracker.handleRound(roundTwo, newRoster);
 
-        for (final Address address : newAddressBook) {
+        for (final RosterEntry address : newRoster.rosterEntries()) {
             ConsensusEvent judge = null;
             ConsensusEvent lastEvent = null;
+            final NodeId nodeId = NodeId.of(address.nodeId());
 
             for (final ConsensusEvent event : secondRoundEvents) {
-                if (!Objects.equals(event.getCreatorId(), address.getNodeId())) {
+                if (!Objects.equals(event.getCreatorId(), nodeId)) {
                     continue;
                 }
                 if (judge == null) {
@@ -317,8 +334,8 @@ class UptimeTests {
             }
 
             // Temporarily disabled until we properly detect judges in a round
-            assertEquals(NO_ROUND, uptimeData.getLastJudgeRound(address.getNodeId()));
-            assertNull(uptimeData.getLastJudgeTime(address.getNodeId()));
+            assertEquals(NO_ROUND, uptimeData.getLastJudgeRound(nodeId));
+            assertNull(uptimeData.getLastJudgeTime(nodeId));
             //            if (judge != null) {
             //                assertEquals(2, nextRoundUptimeData.getLastJudgeRound(address.getNodeId()));
             //                assertEquals(judge.getConsensusTimestamp(),
@@ -326,8 +343,8 @@ class UptimeTests {
             //            }
 
             if (lastEvent != null) {
-                assertEquals(2, uptimeData.getLastEventRound(address.getNodeId()));
-                assertEquals(lastEvent.getConsensusTimestamp(), uptimeData.getLastEventTime(address.getNodeId()));
+                assertEquals(2, uptimeData.getLastEventRound(nodeId));
+                assertEquals(lastEvent.getConsensusTimestamp(), uptimeData.getLastEventTime(nodeId));
             }
         }
 
@@ -346,48 +363,48 @@ class UptimeTests {
                 TestPlatformContextBuilder.create().build();
         final FakeTime time = new FakeTime();
 
-        final AddressBook addressBook =
-                RandomAddressBookBuilder.create(random).withSize(3).build();
-        final NodeId selfId = addressBook.getNodeId(0);
+        final Roster roster = RandomRosterBuilder.create(random).withSize(3).build();
+        final NodeId selfId = NodeId.of(roster.rosterEntries().get(0).nodeId());
 
         final UptimeTracker uptimeTracker =
-                new UptimeTracker(platformContext, addressBook, mock(StatusActionSubmitter.class), selfId, time);
+                new UptimeTracker(platformContext, roster, mock(StatusActionSubmitter.class), selfId, time);
         final UptimeData uptimeData = uptimeTracker.uptimeData;
 
         // First, simulate a round starting at genesis
         final int eventCount = 100;
         final List<PlatformEvent> firstRoundEvents =
-                generateEvents(random, time, Duration.ofSeconds(1), addressBook, eventCount, Set.of(), Set.of());
+                generateEvents(random, time, Duration.ofSeconds(1), roster, eventCount, Set.of(), Set.of());
 
-        for (final Address address : addressBook) {
-            assertNull(uptimeData.getLastEventTime(address.getNodeId()));
-            assertNull(uptimeData.getLastJudgeTime(address.getNodeId()));
-            assertEquals(NO_ROUND, uptimeData.getLastEventRound(address.getNodeId()));
-            assertEquals(NO_ROUND, uptimeData.getLastJudgeRound(address.getNodeId()));
+        for (final RosterEntry address : roster.rosterEntries()) {
+            final NodeId nodeId = NodeId.of(address.nodeId());
+            assertNull(uptimeData.getLastEventTime(nodeId));
+            assertNull(uptimeData.getLastJudgeTime(nodeId));
+            assertEquals(NO_ROUND, uptimeData.getLastEventRound(nodeId));
+            assertEquals(NO_ROUND, uptimeData.getLastJudgeRound(nodeId));
         }
 
         final ConsensusRound roundOne = mockRound(firstRoundEvents, 1);
-        uptimeTracker.handleRound(roundOne, addressBook);
+        uptimeTracker.handleRound(roundOne, roster);
 
         // Simulate a following round, but allow a long time to pass
         time.tick(Duration.ofSeconds(30));
 
-        final Set<NodeId> noSecondRoundEvents = Set.of(addressBook.getNodeId(0));
-        final List<PlatformEvent> secondRoundEvents = generateEvents(
-                random, time, Duration.ofSeconds(1), addressBook, eventCount, noSecondRoundEvents, Set.of());
+        final Set<NodeId> noSecondRoundEvents = Set.of(selfId);
+        final List<PlatformEvent> secondRoundEvents =
+                generateEvents(random, time, Duration.ofSeconds(1), roster, eventCount, noSecondRoundEvents, Set.of());
 
         final ConsensusRound roundTwo = mockRound(secondRoundEvents, 2);
-        uptimeTracker.handleRound(roundTwo, addressBook);
+        uptimeTracker.handleRound(roundTwo, roster);
 
         assertTrue(uptimeTracker.isSelfDegraded());
 
         // Once one of the node's events reaches consensus again, it should no longer be degraded
 
         final List<PlatformEvent> thirdRoundEvents =
-                generateEvents(random, time, Duration.ofSeconds(1), addressBook, eventCount, Set.of(), Set.of());
+                generateEvents(random, time, Duration.ofSeconds(1), roster, eventCount, Set.of(), Set.of());
 
         final ConsensusRound roundThree = mockRound(thirdRoundEvents, 3);
-        uptimeTracker.handleRound(roundThree, addressBook);
+        uptimeTracker.handleRound(roundThree, roster);
 
         assertFalse(uptimeTracker.isSelfDegraded());
     }

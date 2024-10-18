@@ -24,6 +24,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 
+import com.hedera.hapi.node.state.roster.Roster;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig_;
@@ -37,9 +38,8 @@ import com.swirlds.platform.network.PeerInfo;
 import com.swirlds.platform.network.topology.NetworkTopology;
 import com.swirlds.platform.network.topology.StaticTopology;
 import com.swirlds.platform.pool.TransactionPoolNexus;
-import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.status.StatusActionSubmitter;
-import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
+import com.swirlds.platform.test.fixtures.addressbook.RandomRosterBuilder;
 import java.util.List;
 import java.util.Random;
 import org.junit.jupiter.api.MethodOrderer;
@@ -55,7 +55,7 @@ class SyncManagerTest {
      * A helper class that contains dummy data to feed into SyncManager lambdas.
      */
     private static class SyncManagerTestData {
-        public AddressBook addressBook;
+        public Roster roster;
         public NodeId selfId;
         public TransactionPoolNexus transactionPoolNexus;
         public SyncManagerImpl syncManager;
@@ -68,27 +68,21 @@ class SyncManagerTest {
 
             transactionPoolNexus = spy(new TransactionPoolNexus(platformContext));
 
-            this.addressBook =
-                    RandomAddressBookBuilder.create(random).withSize(41).build();
-            this.selfId = addressBook.getNodeId(0);
+            this.roster = RandomRosterBuilder.create(random).withSize(41).build();
+            this.selfId = NodeId.of(roster.rosterEntries().get(0).nodeId());
 
             configuration = new TestConfigBuilder()
                     .withValue(ReconnectConfig_.FALLEN_BEHIND_THRESHOLD, "0.25")
                     .getOrCreateConfig();
             final ReconnectConfig reconnectConfig = configuration.getConfigData(ReconnectConfig.class);
 
-            final List<PeerInfo> peers = Utilities.createPeerInfoList(addressBook, selfId);
+            final List<PeerInfo> peers = Utilities.createPeerInfoList(roster, selfId);
             final NetworkTopology topology = new StaticTopology(peers, selfId);
 
             syncManager = new SyncManagerImpl(
                     platformContext,
                     new FallenBehindManagerImpl(
-                            addressBook,
-                            selfId,
-                            topology,
-                            mock(StatusActionSubmitter.class),
-                            () -> {},
-                            reconnectConfig));
+                            selfId, topology, mock(StatusActionSubmitter.class), () -> {}, reconnectConfig));
         }
     }
 
@@ -100,7 +94,7 @@ class SyncManagerTest {
     void basicTest() {
         final SyncManagerTestData test = new SyncManagerTestData();
 
-        final List<PeerInfo> peers = Utilities.createPeerInfoList(test.addressBook, test.selfId);
+        final List<PeerInfo> peers = Utilities.createPeerInfoList(test.roster, test.selfId);
 
         // we should not think we have fallen behind initially
         assertFalse(test.syncManager.hasFallenBehind());

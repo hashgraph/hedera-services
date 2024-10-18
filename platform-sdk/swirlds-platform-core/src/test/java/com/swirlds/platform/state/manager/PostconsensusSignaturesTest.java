@@ -21,17 +21,19 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 
+import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.hapi.platform.event.StateSignatureTransaction;
 import com.swirlds.common.context.PlatformContext;
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.platform.components.state.output.StateHasEnoughSignaturesConsumer;
 import com.swirlds.platform.components.state.output.StateLacksSignaturesConsumer;
+import com.swirlds.platform.roster.RosterUtils;
 import com.swirlds.platform.state.StateSignatureCollectorTester;
 import com.swirlds.platform.state.signed.DefaultStateSignatureCollector;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
-import com.swirlds.platform.system.address.AddressBook;
-import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
+import com.swirlds.platform.test.fixtures.addressbook.RandomRosterBuilder;
 import com.swirlds.platform.test.fixtures.state.RandomSignedStateGenerator;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -44,9 +46,9 @@ import org.junit.jupiter.api.Test;
  */
 class PostconsensusSignaturesTest extends AbstractStateSignatureCollectorTest {
 
-    private final AddressBook addressBook = RandomAddressBookBuilder.create(random)
+    private final Roster roster = RandomRosterBuilder.create(random)
             .withSize(4)
-            .withWeightDistributionStrategy(RandomAddressBookBuilder.WeightDistributionStrategy.BALANCED)
+            .withWeightDistributionStrategy(RandomRosterBuilder.WeightDistributionStrategy.BALANCED)
             .build();
 
     /**
@@ -86,7 +88,7 @@ class PostconsensusSignaturesTest extends AbstractStateSignatureCollectorTest {
         final List<SignedState> states = new ArrayList<>();
         for (int round = 0; round < count; round++) {
             final SignedState signedState = new RandomSignedStateGenerator(random)
-                    .setAddressBook(addressBook)
+                    .setRoster(roster)
                     .setRound(round)
                     .setSignatures(new HashMap<>())
                     .build();
@@ -101,15 +103,15 @@ class PostconsensusSignaturesTest extends AbstractStateSignatureCollectorTest {
 
             manager.addReservedState(signedState.reserve("test"));
 
-            for (int node = 0; node < addressBook.getSize(); node++) {
+            for (int node = 0; node < roster.rosterEntries().size(); node++) {
                 manager.handlePostconsensusSignatureTransaction(
-                        addressBook.getNodeId(node),
+                        NodeId.of(roster.rosterEntries().get(node).nodeId()),
                         StateSignatureTransaction.newBuilder()
                                 .round(round)
                                 .signature(buildFakeSignatureBytes(
-                                        addressBook
-                                                .getAddress(addressBook.getNodeId(node))
-                                                .getSigPublicKey(),
+                                        RosterUtils.fetchGossipCaCertificate(
+                                                        roster.rosterEntries().get(node))
+                                                .getPublicKey(),
                                         states.get(round).getState().getHash()))
                                 .hash(states.get(round).getState().getHash().getBytes())
                                 .build());

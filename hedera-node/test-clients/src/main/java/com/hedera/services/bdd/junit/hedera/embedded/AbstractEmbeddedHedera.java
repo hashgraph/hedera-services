@@ -30,6 +30,7 @@ import static java.util.stream.Collectors.toMap;
 import static java.util.stream.StreamSupport.stream;
 
 import com.hedera.hapi.node.base.SemanticVersion;
+import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.hapi.platform.state.PlatformState;
 import com.hedera.node.app.Hedera;
 import com.hedera.node.app.fixtures.state.FakeServiceMigrator;
@@ -50,13 +51,15 @@ import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.config.legacy.LegacyConfigPropertiesLoader;
+import com.swirlds.platform.crypto.CryptoStatic;
 import com.swirlds.platform.listeners.PlatformStatusChangeNotification;
+import com.swirlds.platform.roster.RosterRetriever;
 import com.swirlds.platform.state.service.PlatformStateService;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.state.notifications.StateHashedNotification;
-import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
+import com.swirlds.platform.test.fixtures.addressbook.RandomRosterBuilder;
 import com.swirlds.state.spi.CommittableWritableStates;
 import com.swirlds.state.spi.WritableSingletonState;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -101,6 +104,7 @@ public abstract class AbstractEmbeddedHedera implements EmbeddedHedera {
     protected final FakeState state = new FakeState();
     protected final AccountID defaultNodeAccountId;
     protected final AddressBook addressBook;
+    protected final Roster roster;
     protected final NodeId defaultNodeId;
     protected final AtomicInteger nextNano = new AtomicInteger(0);
     protected final Hedera hedera;
@@ -112,6 +116,7 @@ public abstract class AbstractEmbeddedHedera implements EmbeddedHedera {
     protected AbstractEmbeddedHedera(@NonNull final EmbeddedNode node) {
         requireNonNull(node);
         addressBook = loadAddressBook(node.getExternalPath(ADDRESS_BOOK));
+        roster = RosterRetriever.buildRoster(addressBook);
         nodeIds = stream(spliteratorUnknownSize(addressBook.iterator(), 0), false)
                 .collect(toMap(AbstractEmbeddedHedera::accountIdOf, Address::getNodeId));
         accountIds = stream(spliteratorUnknownSize(addressBook.iterator(), 0), false)
@@ -285,11 +290,13 @@ public abstract class AbstractEmbeddedHedera implements EmbeddedHedera {
     private static AddressBook loadAddressBook(@NonNull final Path path) {
         requireNonNull(path);
         final var configFile = LegacyConfigPropertiesLoader.loadConfigFile(path.toAbsolutePath());
-        final var randomAddressBook = RandomAddressBookBuilder.create(new Random())
+        final var randomRoster = RandomRosterBuilder.create(new Random())
                 .withSize(1)
                 .withRealKeysEnabled(true)
                 .build();
-        final var sigCert = requireNonNull(randomAddressBook.iterator().next().getSigCert());
+        final var sigCert = CryptoStatic.generateCertificate(
+                requireNonNull(randomRoster.rosterEntries().iterator().next().gossipCaCertificate())
+                        .toByteArray());
         final var addressBook = configFile.getAddressBook();
         return new AddressBook(stream(spliteratorUnknownSize(addressBook.iterator(), 0), false)
                 .map(address -> address.copySetSigCert(sigCert))

@@ -23,6 +23,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 
+import com.hedera.hapi.node.state.roster.Roster;
 import com.swirlds.base.test.fixtures.time.FakeTime;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
@@ -37,7 +38,6 @@ import com.swirlds.platform.event.preconsensus.durability.DefaultRoundDurability
 import com.swirlds.platform.event.preconsensus.durability.RoundDurabilityBuffer;
 import com.swirlds.platform.gossip.shadowgraph.Generations;
 import com.swirlds.platform.internal.ConsensusRound;
-import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.test.fixtures.event.TestingEventBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import jakarta.inject.Inject;
@@ -74,7 +74,7 @@ class RoundDurabilityBufferTests {
         keystoneEvent.setStreamSequenceNumber(keystoneSequenceNumber);
 
         return new ConsensusRound(
-                mock(AddressBook.class),
+                mock(Roster.class),
                 List.of(),
                 keystoneEvent,
                 mock(Generations.class),

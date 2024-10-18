@@ -22,6 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.hedera.hapi.node.state.roster.Roster;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.RandomUtils;
 import com.swirlds.platform.Utilities;
@@ -32,8 +33,7 @@ import com.swirlds.platform.network.connectivity.OutboundConnectionCreator;
 import com.swirlds.platform.network.topology.NetworkTopology;
 import com.swirlds.platform.network.topology.StaticConnectionManagers;
 import com.swirlds.platform.network.topology.StaticTopology;
-import com.swirlds.platform.system.address.AddressBook;
-import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
+import com.swirlds.platform.test.fixtures.addressbook.RandomRosterBuilder;
 import java.util.List;
 import java.util.Random;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -57,11 +57,11 @@ class StaticConnectionManagersTest {
     @MethodSource("topologicalVariations")
     void testShouldConnectToMe(final int numNodes) throws Exception {
         final Random r = RandomUtils.getRandomPrintSeed();
-        final AddressBook addressBook =
-                RandomAddressBookBuilder.create(r).withSize(numNodes).build();
-        final NodeId selfId = addressBook.getNodeId(r.nextInt(numNodes));
+        final Roster roster = RandomRosterBuilder.create(r).withSize(numNodes).build();
+        final NodeId selfId =
+                NodeId.of(roster.rosterEntries().get(r.nextInt(numNodes)).nodeId());
 
-        final List<PeerInfo> peers = Utilities.createPeerInfoList(addressBook, selfId);
+        final List<PeerInfo> peers = Utilities.createPeerInfoList(roster, selfId);
         final NetworkTopology topology = new StaticTopology(peers, selfId);
 
         final StaticConnectionManagers managers = new StaticConnectionManagers(topology, connectionCreator);
@@ -93,10 +93,10 @@ class StaticConnectionManagersTest {
     @MethodSource("topologicalVariations")
     void testShouldConnectTo(final int numNodes) throws Exception {
         final Random r = RandomUtils.getRandomPrintSeed();
-        final AddressBook addressBook =
-                RandomAddressBookBuilder.create(r).withSize(numNodes).build();
-        final NodeId selfId = addressBook.getNodeId(r.nextInt(numNodes));
-        final List<PeerInfo> peers = Utilities.createPeerInfoList(addressBook, selfId);
+        final Roster roster = RandomRosterBuilder.create(r).withSize(numNodes).build();
+        final NodeId selfId =
+                NodeId.of(roster.rosterEntries().get(r.nextInt(numNodes)).nodeId());
+        final List<PeerInfo> peers = Utilities.createPeerInfoList(roster, selfId);
         final NetworkTopology topology = new StaticTopology(peers, selfId);
 
         final StaticConnectionManagers managers = new StaticConnectionManagers(topology, connectionCreator);

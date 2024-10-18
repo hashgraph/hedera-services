@@ -55,6 +55,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import com.google.protobuf.ByteString;
+import com.hedera.hapi.node.state.roster.RosterEntry;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.services.bdd.junit.EmbeddedHapiTest;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestLifecycle;
@@ -64,8 +66,8 @@ import com.hedera.services.bdd.junit.support.TestLifecycle;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ServiceEndpoint;
-import com.swirlds.platform.system.address.Address;
-import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
+import com.swirlds.platform.crypto.CryptoStatic;
+import com.swirlds.platform.test.fixtures.addressbook.RandomRosterBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.security.cert.CertificateEncodingException;
 import java.security.cert.X509Certificate;
@@ -575,12 +577,17 @@ public class NodeCreateTest {
     }
 
     public static List<X509Certificate> generateX509Certificates(final int n) {
-        final var randomAddressBook = RandomAddressBookBuilder.create(new Random())
+        final var randomRoster = RandomRosterBuilder.create(new Random())
                 .withSize(n)
                 .withRealKeysEnabled(true)
                 .build();
-        return StreamSupport.stream(Spliterators.spliteratorUnknownSize(randomAddressBook.iterator(), 0), false)
-                .map(Address::getSigCert)
+        return StreamSupport.stream(
+                        Spliterators.spliteratorUnknownSize(
+                                randomRoster.rosterEntries().iterator(), 0),
+                        false)
+                .map(RosterEntry::gossipCaCertificate)
+                .map(Bytes::toByteArray)
+                .map(CryptoStatic::generateCertificate)
                 .collect(Collectors.toList());
     }
 }
