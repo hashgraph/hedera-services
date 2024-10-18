@@ -28,7 +28,6 @@ import com.hedera.node.config.data.HederaConfig;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.test.fixtures.TestFileSystemManager;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.merkledb.MerkleDb;
 import com.swirlds.merkledb.MerkleDbDataSourceBuilder;
 import com.swirlds.merkledb.MerkleDbTableConfig;
 import com.swirlds.merkledb.config.MerkleDbConfig;
@@ -182,7 +181,7 @@ class OnDiskTest extends MerkleTestBase {
         r.register(schema);
 
         // Restore to a fresh MerkleDb instance
-        MerkleDb.setDefaultPath(testFileSystemManager.resolveNewTemp("merkledb"));
+        testFileSystemManager.resetMerkleDb("merkledb");
 
         // read it back now as our map and validate the data come back fine
         virtualMap = parseTree(serializedBytes, snapshotDir);

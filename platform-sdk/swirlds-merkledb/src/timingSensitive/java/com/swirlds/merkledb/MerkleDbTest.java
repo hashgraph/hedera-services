@@ -82,11 +82,10 @@ public class MerkleDbTest {
 
     @Test
     @DisplayName("Set custom default storage path")
-    void testChangeDefaultPath() throws IOException {
+    void testChangeDefaultPath() {
         final MerkleDb instance1 = MerkleDb.getDefaultInstance(CONFIGURATION);
         Assertions.assertNotNull(instance1);
-        final Path tempDir = testFileSystemManager.resolveNewTemp(null);
-        MerkleDb.setDefaultPath(tempDir);
+        testFileSystemManager.resetMerkleDb(null);
         final MerkleDb instance2 = MerkleDb.getDefaultInstance(CONFIGURATION);
         Assertions.assertNotNull(instance2);
         Assertions.assertNotEquals(instance2, instance1);
@@ -95,7 +94,7 @@ public class MerkleDbTest {
 
     @Test
     @DisplayName("MerkleDb paths")
-    void testMerkleDbDirs() throws IOException {
+    void testMerkleDbDirs() {
         final Path tempDir = testFileSystemManager.resolveNewTemp(null);
         MerkleDb.setDefaultPath(tempDir);
         final MerkleDb instance = MerkleDb.getDefaultInstance(CONFIGURATION);
@@ -231,9 +230,8 @@ public class MerkleDbTest {
 
     @Test
     @DisplayName("Get and create data source")
-    void testGetDataSource() throws IOException {
-        final Path dbDir = testFileSystemManager.resolveNewTemp(null);
-        MerkleDb.setDefaultPath(dbDir);
+    void testGetDataSource() {
+        testFileSystemManager.resetMerkleDb(null);
         final MerkleDb instance = MerkleDb.getDefaultInstance(CONFIGURATION);
         final String tableName = "tableb";
         Assertions.assertThrows(IllegalStateException.class, () -> instance.getDataSource(tableName, false));
@@ -388,8 +386,7 @@ public class MerkleDbTest {
         final Path snapshotDir = testFileSystemManager.resolveNewTemp(null);
         instance.snapshot(snapshotDir, dataSource);
 
-        final Path newDir = testFileSystemManager.resolveNewTemp(null);
-        MerkleDb.setDefaultPath(newDir);
+        testFileSystemManager.resetMerkleDb(null);
         final MerkleDb instance2 = MerkleDb.restore(snapshotDir, null, CONFIGURATION);
         final MerkleDbDataSource dataSource2 = instance2.getDataSource(tableName, false);
         Assertions.assertNotNull(dataSource2);

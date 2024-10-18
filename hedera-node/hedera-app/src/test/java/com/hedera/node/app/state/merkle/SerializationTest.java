@@ -42,7 +42,6 @@ import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.extensions.sources.SimpleConfigSource;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
-import com.swirlds.merkledb.MerkleDb;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.config.StateConfig_;
 import com.swirlds.platform.state.MerkleStateLifecycles;
@@ -312,7 +311,7 @@ class SerializationTest extends MerkleTestBase {
         registry.registerConstructable(pair);
 
         // Restore to a fresh MerkleDb instance
-        MerkleDb.setDefaultPath(testFileSystemManager.resolveNewTemp("merkledb"));
+        testFileSystemManager.resetMerkleDb("merkledb");
         final MerkleStateRoot loadedTree = parseTree(serializedBytes, dir);
         initServices(schemaV1, loadedTree);
 

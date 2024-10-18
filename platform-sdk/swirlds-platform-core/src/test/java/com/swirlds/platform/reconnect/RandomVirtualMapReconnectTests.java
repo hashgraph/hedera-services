@@ -29,14 +29,11 @@ import com.swirlds.common.test.fixtures.merkle.dummy.DummyMerkleInternal;
 import com.swirlds.common.test.fixtures.merkle.util.MerkleTestUtils;
 import com.swirlds.common.test.fixtures.set.RandomAccessHashSet;
 import com.swirlds.common.test.fixtures.set.RandomAccessSet;
-import com.swirlds.merkledb.MerkleDb;
 import com.swirlds.merkledb.MerkleDbDataSourceBuilder;
 import com.swirlds.merkledb.MerkleDbTableConfig;
 import com.swirlds.merkledb.config.MerkleDbConfig;
 import com.swirlds.virtualmap.VirtualMap;
 import com.swirlds.virtualmap.datasource.VirtualDataSourceBuilder;
-import java.io.IOException;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -60,11 +57,10 @@ class RandomVirtualMapReconnectTests extends VirtualMapReconnectTestBase {
     public static final int ZZZZZ = 26 * 26 * 26 * 26 * 26; // key value corresponding to five Z's (plus 1)
 
     @Override
-    protected VirtualDataSourceBuilder createBuilder() throws IOException {
+    protected VirtualDataSourceBuilder createBuilder() {
         // The tests create maps with identical names. They would conflict with each other in the default
         // MerkleDb instance, so let's use a new (temp) database location for every run
-        final Path defaultVirtualMapPath = testFileSystemManager.resolveNewTemp(null);
-        MerkleDb.setDefaultPath(defaultVirtualMapPath);
+        testFileSystemManager.resetMerkleDb(null);
         final MerkleDbTableConfig tableConfig = new MerkleDbTableConfig(
                 (short) 1, DigestType.SHA_384, CONFIGURATION.getConfigData(MerkleDbConfig.class));
         return new MerkleDbDataSourceBuilder(tableConfig, CONFIGURATION);

@@ -101,8 +101,7 @@ class VirtualMapSerializationTests {
     public static MerkleDbDataSourceBuilder constructBuilder() throws IOException {
         // The tests below create maps with identical names. They would conflict with each other in the default
         // MerkleDb instance, so let's use a new database location for every map
-        final Path defaultVirtualMapPath = testFileSystemManager.resolveNewTemp("merkledb-source");
-        MerkleDb.setDefaultPath(defaultVirtualMapPath);
+        testFileSystemManager.resetMerkleDb("merkledb-source");
         final MerkleDbTableConfig tableConfig = new MerkleDbTableConfig(
                         (short) 1, DigestType.SHA_384, CONFIGURATION.getConfigData(MerkleDbConfig.class))
                 .preferDiskIndices(false)
