@@ -122,7 +122,7 @@ public final class RosterUtils {
      * @return a gossip certificate
      */
     public static X509Certificate fetchGossipCaCertificate(@NonNull final RosterEntry entry) {
-        return CryptoStatic.generateCertificate(entry.gossipCaCertificate().toByteArray());
+        return CryptoStatic.decodeCertificate(entry.gossipCaCertificate().toByteArray());
     }
 
     /**

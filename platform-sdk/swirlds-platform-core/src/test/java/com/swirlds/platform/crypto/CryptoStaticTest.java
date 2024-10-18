@@ -25,11 +25,11 @@ import org.junit.jupiter.api.Test;
 
 public class CryptoStaticTest {
     @Test
-    void testGenerateCertificate() throws Exception {
+    void testDecodeCertificate() throws Exception {
         final X509Certificate cert1 = randomX509Certificate();
         final byte[] encoded1 = cert1.getEncoded();
 
-        final X509Certificate cert2 = CryptoStatic.generateCertificate(encoded1);
+        final X509Certificate cert2 = CryptoStatic.decodeCertificate(encoded1);
         final byte[] encoded2 = cert2.getEncoded();
 
         assertArrayEquals(encoded1, encoded2);

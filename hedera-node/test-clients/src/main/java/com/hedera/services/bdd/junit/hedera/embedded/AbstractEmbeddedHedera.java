@@ -294,7 +294,7 @@ public abstract class AbstractEmbeddedHedera implements EmbeddedHedera {
                 .withSize(1)
                 .withRealKeysEnabled(true)
                 .build();
-        final var sigCert = CryptoStatic.generateCertificate(
+        final var sigCert = CryptoStatic.decodeCertificate(
                 requireNonNull(randomRoster.rosterEntries().iterator().next().gossipCaCertificate())
                         .toByteArray());
         final var addressBook = configFile.getAddressBook();

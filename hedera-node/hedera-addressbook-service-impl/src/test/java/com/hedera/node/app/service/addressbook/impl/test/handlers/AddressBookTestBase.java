@@ -289,7 +289,7 @@ public class AddressBookTestBase {
                         false)
                 .map(RosterEntry::gossipCaCertificate)
                 .map(Bytes::toByteArray)
-                .map(CryptoStatic::generateCertificate)
+                .map(CryptoStatic::decodeCertificate)
                 .collect(Collectors.toList());
     }
 }

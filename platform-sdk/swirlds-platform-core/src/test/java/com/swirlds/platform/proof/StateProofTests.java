@@ -107,7 +107,7 @@ class StateProofTests {
                     nodeId,
                     signatureBuilder.fakeSign(
                             hash.copyToByteArray(),
-                            CryptoStatic.generateCertificate(
+                            CryptoStatic.decodeCertificate(
                                             address.gossipCaCertificate().toByteArray())
                                     .getPublicKey()));
 

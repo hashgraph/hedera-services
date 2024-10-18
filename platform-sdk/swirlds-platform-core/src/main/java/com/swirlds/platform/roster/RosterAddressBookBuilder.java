@@ -41,7 +41,7 @@ public class RosterAddressBookBuilder {
         address = address.copySetNodeId(NodeId.of(entry.nodeId()));
         address = address.copySetWeight(entry.weight());
         address = address.copySetSigCert(
-                CryptoStatic.generateCertificate(entry.gossipCaCertificate().toByteArray()));
+                CryptoStatic.decodeCertificate(entry.gossipCaCertificate().toByteArray()));
 
         if (entry.gossipEndpoint().size() > 0) {
             address = address.copySetHostnameExternal(RosterUtils.fetchHostname(entry, 0));

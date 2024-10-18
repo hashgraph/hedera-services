@@ -316,7 +316,7 @@ public class WorkingDirUtils {
                 .withSize(1)
                 .withRealKeysEnabled(true)
                 .build();
-        final var sigCert = requireNonNull(CryptoStatic.generateCertificate(randomRoster
+        final var sigCert = requireNonNull(CryptoStatic.decodeCertificate(randomRoster
                 .rosterEntries()
                 .iterator()
                 .next()

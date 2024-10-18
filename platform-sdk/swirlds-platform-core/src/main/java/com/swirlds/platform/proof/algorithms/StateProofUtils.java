@@ -80,8 +80,7 @@ public final class StateProofUtils {
             if (!signatureVerifier.verifySignature(
                     nodeSignature.signature(),
                     hashBytes,
-                    CryptoStatic.generateCertificate(
-                                    address.gossipCaCertificate().toByteArray())
+                    CryptoStatic.decodeCertificate(address.gossipCaCertificate().toByteArray())
                             .getPublicKey())) {
                 // Signature is invalid.
                 continue;

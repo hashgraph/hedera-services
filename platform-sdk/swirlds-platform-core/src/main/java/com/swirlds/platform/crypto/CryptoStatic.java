@@ -236,13 +236,13 @@ public final class CryptoStatic {
     }
 
     /**
-     * Generate a X509Certificate from a byte array that was previously obtained via X509Certificate.getEncoded().
+     * Decode a X509Certificate from a byte array that was previously obtained via X509Certificate.getEncoded().
      *
      * @param encoded a byte array with an encoded representation of a certificate
      * @return the certificate reconstructed from its encoded form
      */
     @NonNull
-    public static X509Certificate generateCertificate(@NonNull final byte[] encoded) {
+    public static X509Certificate decodeCertificate(@NonNull final byte[] encoded) {
         try (final InputStream in = new ByteArrayInputStream(encoded)) {
             final CertificateFactory factory = CertificateFactory.getInstance("X.509");
             return (X509Certificate) factory.generateCertificate(in);
