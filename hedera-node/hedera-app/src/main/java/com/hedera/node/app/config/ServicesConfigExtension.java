@@ -68,6 +68,7 @@ import com.hedera.node.config.data.StatsConfig;
 import com.hedera.node.config.data.TokensConfig;
 import com.hedera.node.config.data.TopicsConfig;
 import com.hedera.node.config.data.TraceabilityConfig;
+import com.hedera.node.config.data.TssConfig;
 import com.hedera.node.config.data.UtilPrngConfig;
 import com.hedera.node.config.data.VersionConfig;
 import com.hedera.node.config.types.CongestionMultipliers;
@@ -126,7 +127,8 @@ public class ServicesConfigExtension implements ConfigurationExtension {
                 TopicsConfig.class,
                 TraceabilityConfig.class,
                 UtilPrngConfig.class,
-                VersionConfig.class);
+                VersionConfig.class,
+                TssConfig.class);
     }
 
     @NonNull

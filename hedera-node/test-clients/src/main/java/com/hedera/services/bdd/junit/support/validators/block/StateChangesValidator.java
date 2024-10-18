@@ -18,7 +18,9 @@ package com.hedera.services.bdd.junit.support.validators.block;
 
 import static com.hedera.node.app.blocks.impl.BlockImplUtils.combine;
 import static com.hedera.node.app.hapi.utils.CommonUtils.noThrowSha384HashOf;
+import static com.hedera.node.app.hapi.utils.CommonUtils.sha384DigestOrThrow;
 import static com.hedera.node.app.info.UnavailableNetworkInfo.UNAVAILABLE_NETWORK_INFO;
+import static com.hedera.node.app.spi.AppContext.Gossip.UNAVAILABLE_GOSSIP;
 import static com.hedera.node.app.workflows.handle.metric.UnavailableMetrics.UNAVAILABLE_METRICS;
 import static com.hedera.services.bdd.junit.hedera.ExternalPath.APPLICATION_PROPERTIES;
 import static com.hedera.services.bdd.junit.hedera.ExternalPath.SAVED_STATES_DIR;
@@ -31,6 +33,7 @@ import static com.hedera.services.bdd.junit.support.validators.block.ChildHashUt
 import static com.hedera.services.bdd.spec.TargetNetworkType.SUBPROCESS_NETWORK;
 import static com.swirlds.platform.state.GenesisStateBuilder.initGenesisPlatformState;
 import static com.swirlds.platform.state.service.PlatformStateService.PLATFORM_STATE_SERVICE;
+import static com.swirlds.platform.system.address.AddressBookUtils.createRoster;
 import static java.util.Objects.requireNonNull;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -59,7 +62,7 @@ import com.hedera.node.app.config.BootstrapConfigProviderImpl;
 import com.hedera.node.app.config.ConfigProviderImpl;
 import com.hedera.node.app.fees.FeeService;
 import com.hedera.node.app.ids.EntityIdService;
-import com.hedera.node.app.info.NodeInfoImpl;
+import com.hedera.node.app.info.GenesisNetworkInfo;
 import com.hedera.node.app.records.BlockRecordService;
 import com.hedera.node.app.roster.RosterServiceImpl;
 import com.hedera.node.app.service.addressbook.impl.AddressBookServiceImpl;
@@ -78,8 +81,10 @@ import com.hedera.node.app.services.ServicesRegistryImpl;
 import com.hedera.node.app.spi.signatures.SignatureVerifier;
 import com.hedera.node.app.state.recordcache.RecordCacheService;
 import com.hedera.node.app.throttle.CongestionThrottleService;
+import com.hedera.node.app.tss.TssBaseServiceImpl;
 import com.hedera.node.app.version.ServicesSoftwareVersion;
 import com.hedera.node.config.VersionedConfiguration;
+import com.hedera.node.config.converter.BytesConverter;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.data.VersionConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -109,13 +114,11 @@ import com.swirlds.platform.system.events.Event;
 import com.swirlds.state.State;
 import com.swirlds.state.spi.CommittableWritableStates;
 import com.swirlds.state.spi.Service;
-import com.swirlds.state.spi.info.NetworkInfo;
-import com.swirlds.state.spi.info.NodeInfo;
-import com.swirlds.state.spi.info.SelfNodeInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -126,9 +129,9 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ForkJoinPool;
 import java.util.function.Function;
 import java.util.regex.Pattern;
-import java.util.stream.StreamSupport;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Assertions;
@@ -164,7 +167,8 @@ public class StateChangesValidator implements BlockStreamValidator {
                         "f31a2b563cbe3fef1242bd94bc610fc5134267faa7f3fefc5de176cc1f4032f28d5b27f084bbc388c5a766e4d057acdd"),
                 node0Dir.resolve("output/swirlds.log"),
                 node0Dir.resolve("genesis-config.txt"),
-                node0Dir.resolve("data/config/application.properties"));
+                node0Dir.resolve("data/config/application.properties"),
+                Bytes.fromHex("03"));
         final var blocks =
                 BlockStreamAccess.BLOCK_STREAM_ACCESS.readBlocks(node0Dir.resolve("data/block-streams/block-0.0.3"));
         validator.validateBlocks(blocks);
@@ -212,7 +216,9 @@ public class StateChangesValidator implements BlockStreamValidator {
                     rootHash,
                     node0.getExternalPath(SWIRLDS_LOG),
                     genesisConfigTxt,
-                    node0.getExternalPath(APPLICATION_PROPERTIES));
+                    node0.getExternalPath(APPLICATION_PROPERTIES),
+                    requireNonNull(new BytesConverter()
+                            .convert(spec.startupProperties().get("ledger.id"))));
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
@@ -222,7 +228,8 @@ public class StateChangesValidator implements BlockStreamValidator {
             @NonNull final Bytes expectedRootHash,
             @NonNull final Path pathToNode0SwirldsLog,
             @NonNull final Path pathToAddressBook,
-            @NonNull final Path pathToOverrideProperties) {
+            @NonNull final Path pathToOverrideProperties,
+            @NonNull final Bytes ledgerId) {
         this.expectedRootHash = requireNonNull(expectedRootHash);
         this.pathToNode0SwirldsLog = requireNonNull(pathToNode0SwirldsLog);
 
@@ -237,7 +244,8 @@ public class StateChangesValidator implements BlockStreamValidator {
         final var versionConfig = bootstrapConfig.getConfigData(VersionConfig.class);
         final var servicesVersion = versionConfig.servicesVersion();
         final var addressBook = loadAddressBookWithDeterministicCerts(pathToAddressBook);
-        final var networkInfo = fakeNetworkInfoFrom(addressBook);
+        final var roster = createRoster(addressBook);
+        final var networkInfo = new GenesisNetworkInfo(roster, ledgerId);
 
         final var migrator = new OrderedServiceMigrator();
         final var configVersion =
@@ -246,7 +254,7 @@ public class StateChangesValidator implements BlockStreamValidator {
         final var lifecycles = newPlatformInitLifecycle(bootstrapConfig, currentVersion, migrator, servicesRegistry);
         this.state = new MerkleStateRoot(lifecycles, version -> new ServicesSoftwareVersion(version, configVersion));
         initGenesisPlatformState(
-                new FakePlatformContext(new NodeId(0), Executors.newSingleThreadScheduledExecutor()),
+                new FakePlatformContext(NodeId.of(0), Executors.newSingleThreadScheduledExecutor()),
                 this.state.getWritablePlatformState(),
                 addressBook,
                 currentVersion);
@@ -333,9 +341,12 @@ public class StateChangesValidator implements BlockStreamValidator {
             final StreamingTreeHasher inputTreeHasher,
             final StreamingTreeHasher outputTreeHasher) {
         final var itemSerialized = BlockItem.PROTOBUF.toBytes(item);
+        final var digest = sha384DigestOrThrow();
         switch (item.item().kind()) {
-            case EVENT_HEADER, EVENT_TRANSACTION -> inputTreeHasher.addLeaf(itemSerialized);
-            case TRANSACTION_RESULT, TRANSACTION_OUTPUT, STATE_CHANGES -> outputTreeHasher.addLeaf(itemSerialized);
+            case EVENT_HEADER, EVENT_TRANSACTION -> inputTreeHasher.addLeaf(
+                    ByteBuffer.wrap(digest.digest(itemSerialized.toByteArray())));
+            case TRANSACTION_RESULT, TRANSACTION_OUTPUT, STATE_CHANGES -> outputTreeHasher.addLeaf(
+                    ByteBuffer.wrap(digest.digest(itemSerialized.toByteArray())));
             default -> {
                 // Other items are not part of the input/output trees
             }
@@ -514,19 +525,21 @@ public class StateChangesValidator implements BlockStreamValidator {
             final InstantSource instantSource,
             final ServicesRegistry servicesRegistry,
             final VersionedConfiguration bootstrapConfig) {
+        final var appContext = new AppContextImpl(instantSource, fakeSignatureVerifier(), UNAVAILABLE_GOSSIP);
         // Register all service schema RuntimeConstructable factories before platform init
         Set.of(
                         new EntityIdService(),
                         new ConsensusServiceImpl(),
-                        new ContractServiceImpl(new AppContextImpl(instantSource, fakeSignatureVerifier())),
+                        new ContractServiceImpl(appContext),
                         new FileServiceImpl(),
+                        new TssBaseServiceImpl(appContext, ForkJoinPool.commonPool(), ForkJoinPool.commonPool()),
                         new FreezeServiceImpl(),
                         new ScheduleServiceImpl(),
                         new TokenServiceImpl(),
                         new UtilServiceImpl(),
                         new RecordCacheService(),
                         new BlockRecordService(),
-                        new BlockStreamService(bootstrapConfig),
+                        new BlockStreamService(),
                         new FeeService(),
                         new CongestionThrottleService(),
                         new NetworkServiceImpl(),
@@ -534,41 +547,6 @@ public class StateChangesValidator implements BlockStreamValidator {
                         new RosterServiceImpl(),
                         PLATFORM_STATE_SERVICE)
                 .forEach(servicesRegistry::register);
-    }
-
-    private NetworkInfo fakeNetworkInfoFrom(@NonNull final AddressBook addressBook) {
-        return new NetworkInfo() {
-            @NonNull
-            @Override
-            public Bytes ledgerId() {
-                throw new UnsupportedOperationException("Not implemented");
-            }
-
-            @NonNull
-            @Override
-            public SelfNodeInfo selfNodeInfo() {
-                throw new UnsupportedOperationException("Not implemented");
-            }
-
-            @NonNull
-            @Override
-            public List<NodeInfo> addressBook() {
-                return StreamSupport.stream(addressBook.spliterator(), false)
-                        .map(NodeInfoImpl::fromAddress)
-                        .toList();
-            }
-
-            @Nullable
-            @Override
-            public NodeInfo nodeInfo(final long nodeId) {
-                throw new UnsupportedOperationException("Not implemented");
-            }
-
-            @Override
-            public boolean containsNode(final long nodeId) {
-                return addressBook.contains(new NodeId(nodeId));
-            }
-        };
     }
 
     private SignatureVerifier fakeSignatureVerifier() {

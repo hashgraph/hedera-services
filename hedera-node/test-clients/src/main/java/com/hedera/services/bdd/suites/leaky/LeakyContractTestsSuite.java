@@ -20,7 +20,6 @@ import static com.google.protobuf.ByteString.EMPTY;
 import static com.hedera.node.app.hapi.utils.CommonUtils.asEvmAddress;
 import static com.hedera.node.app.hapi.utils.EthSigsUtils.recoverAddressFromPubKey;
 import static com.hedera.services.bdd.junit.ContextRequirement.FEE_SCHEDULE_OVERRIDES;
-import static com.hedera.services.bdd.junit.ContextRequirement.PROPERTY_OVERRIDES;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asContract;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asHexedSolidityAddress;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asSolidityAddress;
@@ -50,7 +49,6 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCustomC
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoUpdate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.ethereumCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.ethereumCallWithFunctionAbi;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
@@ -1536,39 +1534,6 @@ public class LeakyContractTestsSuite {
                                 .gasPrice(0L)
                                 .gasLimit(1_000_000L)
                                 .hasPrecheck(INVALID_CONTRACT_ID))));
-    }
-
-    @Order(36)
-    @LeakyHapiTest(
-            requirement = {PROPERTY_OVERRIDES, FEE_SCHEDULE_OVERRIDES},
-            overrides = {"contracts.evm.version"})
-    final Stream<DynamicTest> relayerFeeAsExpectedIfSenderCoversGas() {
-        final var canonicalTxn = "canonical";
-        final long depositAmount = 20_000L;
-
-        return hapiTest(
-                overriding("contracts.evm.version", "v0.38"),
-                newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
-                cryptoCreate(RELAYER).balance(ONE_HUNDRED_HBARS),
-                cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS))
-                        .via("autoAccount"),
-                getTxnRecord("autoAccount").andAllChildRecords(),
-                uploadInitCode(PAY_RECEIVABLE_CONTRACT),
-                contractCreate(PAY_RECEIVABLE_CONTRACT).adminKey(THRESHOLD),
-                ethereumCall(PAY_RECEIVABLE_CONTRACT, DEPOSIT, BigInteger.valueOf(depositAmount))
-                        .type(EthTxData.EthTransactionType.EIP1559)
-                        .signingWith(SECP_256K1_SOURCE_KEY)
-                        .payingWith(RELAYER)
-                        .via(canonicalTxn)
-                        .nonce(0)
-                        .gasPrice(100L)
-                        .maxFeePerGas(100L)
-                        .maxPriorityGas(2_000_000L)
-                        .gasLimit(1_000_000L)
-                        .sending(depositAmount),
-                getAccountInfo(RELAYER)
-                        .has(accountWith().expectedBalanceWithChargedUsd(ONE_HUNDRED_HBARS, 0.0545, 0.5))
-                        .logged());
     }
 
     @Order(38)

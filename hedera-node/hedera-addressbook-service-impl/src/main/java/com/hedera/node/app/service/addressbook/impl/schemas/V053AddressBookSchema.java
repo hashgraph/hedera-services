@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.addressbook.impl.schemas;
 
 import static com.hedera.node.app.service.addressbook.AddressBookHelper.NODES_KEY;
+import static com.swirlds.platform.roster.RosterUtils.formatNodeName;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -41,7 +42,6 @@ import com.swirlds.state.spi.Schema;
 import com.swirlds.state.spi.StateDefinition;
 import com.swirlds.state.spi.WritableKVState;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
@@ -78,11 +78,12 @@ public class V053AddressBookSchema extends Schema {
     @Override
     public void migrate(@NonNull final MigrationContext ctx) {
         requireNonNull(ctx);
+        final var networkInfo = ctx.genesisNetworkInfo();
+        if (networkInfo == null) {
+            throw new IllegalStateException("Genesis network info is not found");
+        }
         final WritableKVState<EntityNumber, Node> writableNodes =
                 ctx.newStates().get(NODES_KEY);
-
-        final var networkInfo = ctx.networkInfo();
-        final var addressBook = networkInfo.addressBook();
         final var bootstrapConfig = ctx.configuration().getConfigData(BootstrapConfig.class);
 
         log.info("Started migrating nodes from address book");
@@ -93,14 +94,14 @@ public class V053AddressBookSchema extends Schema {
                 ? Key.newBuilder().ed25519(bootstrapConfig.genesisPublicKey()).build()
                 : adminKey;
         NodeAddress nodeDetail;
+        final var addressBook = networkInfo.addressBook();
         for (final var nodeInfo : addressBook) {
             final var nodeBuilder = Node.newBuilder()
                     .nodeId(nodeInfo.nodeId())
                     .accountId(nodeInfo.accountId())
-                    .description(nodeInfo.selfName())
-                    .gossipEndpoint(List.of(
-                            endpointFor(nodeInfo.internalHostName(), nodeInfo.internalPort()),
-                            endpointFor(nodeInfo.externalHostName(), nodeInfo.externalPort())))
+                    // Default node description hard coded to the values used currently
+                    .description(formatNodeName(nodeInfo.nodeId()))
+                    .gossipEndpoint(nodeInfo.gossipEndpoints())
                     .gossipCaCertificate(nodeInfo.sigCertBytes())
                     .weight(nodeInfo.stake())
                     .adminKey(finalAdminKey);

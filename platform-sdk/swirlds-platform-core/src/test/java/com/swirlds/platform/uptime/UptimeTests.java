@@ -285,7 +285,7 @@ class UptimeTests {
         final NodeId nodeToRemove = addressBook.getNodeId(0);
         newAddressBook.remove(nodeToRemove);
         final Address newAddress =
-                addressBook.getAddress(addressBook.getNodeId(0)).copySetNodeId(new NodeId(12345));
+                addressBook.getAddress(addressBook.getNodeId(0)).copySetNodeId(NodeId.of(12345));
         newAddressBook.add(newAddress);
         final Set<NodeId> noSecondRoundEvents = Set.of();
         final Set<NodeId> noSecondRoundJudges = Set.of();

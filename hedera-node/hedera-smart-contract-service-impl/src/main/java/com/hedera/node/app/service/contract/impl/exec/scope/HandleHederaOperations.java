@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.contract.impl.exec.scope;
 
+import static com.hedera.hapi.node.base.HederaFunctionality.CONTRACT_CREATE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.FEE_SCHEDULE_UNITS_PER_TINYCENT;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.tuweniToPbjBytes;
@@ -348,7 +349,7 @@ public class HandleHederaOperations implements HederaOperations {
     @Override
     public void externalizeHollowAccountMerge(@NonNull ContractID contractId, @Nullable Bytes evmAddress) {
         final var recordBuilder = context.savepointStack()
-                .addRemovableChildRecordBuilder(ContractCreateStreamBuilder.class)
+                .addRemovableChildRecordBuilder(ContractCreateStreamBuilder.class, CONTRACT_CREATE)
                 .contractID(contractId)
                 .status(SUCCESS)
                 .transaction(transactionWith(TransactionBody.newBuilder()
@@ -398,6 +399,7 @@ public class HandleHederaOperations implements HederaOperations {
             // have been pre-validated in ProxyWorldUpdater.createAccount() so this is an invariant failure
             throw new IllegalStateException("Unexpected failure creating new contract - " + recordBuilder.status());
         }
+        recordBuilder.functionality(CONTRACT_CREATE);
         // If this creation runs to a successful completion, its ContractBytecode sidecar
         // goes in the top-level record or the just-created child record depending on whether
         // we are doing this on behalf of a HAPI ContractCreate call; we only include the

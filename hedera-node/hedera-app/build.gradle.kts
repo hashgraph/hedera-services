@@ -45,8 +45,10 @@ testModuleInfo {
     requires("com.hedera.node.app.spi.test.fixtures")
     requires("com.hedera.node.config.test.fixtures")
     requires("com.swirlds.config.extensions.test.fixtures")
+    requires("com.swirlds.common.test.fixtures")
     requires("com.swirlds.platform.core.test.fixtures")
     requires("com.swirlds.state.api.test.fixtures")
+    requires("com.swirlds.base.test.fixtures")
     requires("headlong")
     requires("org.assertj.core")
     requires("org.bouncycastle.provider")
@@ -63,11 +65,17 @@ testModuleInfo {
 jmhModuleInfo {
     requires("com.hedera.node.app")
     requires("com.hedera.node.app.hapi.utils")
+    requires("com.hedera.node.app.spi")
     requires("com.hedera.node.app.spi.test.fixtures")
     requires("com.hedera.node.app.test.fixtures")
+    requires("com.hedera.node.config")
     requires("com.hedera.node.hapi")
     requires("com.hedera.pbj.runtime")
     requires("com.swirlds.common")
+    requires("com.swirlds.config.api")
+    requires("com.swirlds.metrics.api")
+    requires("com.swirlds.platform.core")
+    requires("com.swirlds.state.api")
     requires("jmh.core")
 }
 
@@ -132,18 +140,10 @@ tasks.assemble {
 // Create the "run" task for running a Hedera consensus node
 tasks.register<JavaExec>("run") {
     group = "application"
-    dependsOn(tasks.assemble)
-    workingDir = nodeWorkingDir.get().asFile
-    jvmArgs = listOf("-cp", "data/lib/*")
-    mainClass.set("com.swirlds.platform.Browser")
-}
-
-tasks.register<JavaExec>("modrun") {
-    group = "build"
     description = "Run a Hedera consensus node instance."
     dependsOn(tasks.assemble)
     workingDir = nodeWorkingDir.get().asFile
-    jvmArgs = listOf("-cp", "data/lib/*:data/apps/*", "-Dhedera.workflows.enabled=true")
+    jvmArgs = listOf("-cp", "data/lib/*:data/apps/*")
     mainClass.set("com.hedera.node.app.ServicesMain")
 }
 

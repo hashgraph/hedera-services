@@ -54,8 +54,8 @@ class InOrderLinkerTests {
 
     private FakeTime time;
 
-    private NodeId selfId = new NodeId(0);
-    private NodeId otherId = new NodeId(1);
+    private NodeId selfId = NodeId.of(0);
+    private NodeId otherId = NodeId.of(1);
 
     /**
      * Set up the in order linker for testing

@@ -19,6 +19,7 @@ package com.swirlds.platform.state;
 import com.swirlds.common.merkle.MerkleInternal;
 import com.swirlds.platform.system.SwirldState;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.nio.file.Path;
 
 /**
  * This interface represents the root node of the Merkle tree.
@@ -31,6 +32,12 @@ public interface MerkleRoot extends MerkleInternal {
      */
     @NonNull
     SwirldState getSwirldState();
+
+    /**
+     * This method makes sure that the platform state is initialized.
+     * If it's already initialized, it does nothing.
+     */
+    void initPlatformState();
 
     /**
      * Get readable platform state.
@@ -48,14 +55,14 @@ public interface MerkleRoot extends MerkleInternal {
      * @return mutable platform state
      */
     @NonNull
-    PlatformStateAccessor getWritablePlatformState();
+    PlatformStateModifier getWritablePlatformState();
 
     /**
      * Set the platform state.
      *
      * @param platformState the platform state
      */
-    void updatePlatformState(@NonNull final PlatformStateAccessor platformState);
+    void updatePlatformState(@NonNull final PlatformStateModifier platformState);
 
     /**
      * Generate a string that describes this state.
@@ -68,4 +75,9 @@ public interface MerkleRoot extends MerkleInternal {
     /** {@inheritDoc} */
     @NonNull
     MerkleRoot copy();
+
+    /** Creates a snapshots for the state. The state has to be hashed and immutable before calling this method.
+     * @param targetPath The path to save the snapshot.
+     */
+    void createSnapshot(final @NonNull Path targetPath);
 }

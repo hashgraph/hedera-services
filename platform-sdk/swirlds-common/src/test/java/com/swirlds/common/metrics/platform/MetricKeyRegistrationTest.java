@@ -26,7 +26,7 @@ import org.junit.jupiter.api.Test;
 
 class MetricKeyRegistrationTest {
 
-    private static final NodeId NODE_ID = new NodeId(1L);
+    private static final NodeId NODE_ID = NodeId.of(1L);
     private static final String METRIC_KEY = calculateMetricKey("CaTeGoRy", "NaMe");
 
     @Test
@@ -98,7 +98,7 @@ class MetricKeyRegistrationTest {
         registry.register(NODE_ID, METRIC_KEY, Counter.class);
 
         // when
-        final boolean result = registry.register(new NodeId(111L), METRIC_KEY, Counter.class);
+        final boolean result = registry.register(NodeId.of(111L), METRIC_KEY, Counter.class);
 
         // then
         assertThat(result).isTrue();
@@ -187,7 +187,7 @@ class MetricKeyRegistrationTest {
     @Test
     void testAddingGlobalMetricWhenOnlyOnePlatformMetricWasDeleted() {
         // given
-        final NodeId nodeId2 = new NodeId(111L);
+        final NodeId nodeId2 = NodeId.of(111L);
         final MetricKeyRegistry registry = new MetricKeyRegistry();
         registry.register(NODE_ID, METRIC_KEY, Counter.class);
         registry.register(nodeId2, METRIC_KEY, Counter.class);

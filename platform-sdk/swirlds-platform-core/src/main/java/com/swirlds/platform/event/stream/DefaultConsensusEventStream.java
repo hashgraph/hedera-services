@@ -26,7 +26,6 @@ import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
-import com.swirlds.common.crypto.ImmutableHash;
 import com.swirlds.common.metrics.FunctionGauge;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.stream.EventStreamType;
@@ -83,7 +82,7 @@ public class DefaultConsensusEventStream implements ConsensusEventStream {
     /**
      * initialHash loaded from signed state
      */
-    private Hash initialHash = new ImmutableHash(new byte[DigestType.SHA_384.digestLength()]);
+    private Hash initialHash = new Hash(new byte[DigestType.SHA_384.digestLength()]);
     /**
      * When we freeze the platform, the last event to be written to EventStream file is the last event in the freeze
      * round. The freeze round is defined as the first round with a consensus timestamp after the start of the freeze

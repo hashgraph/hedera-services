@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.contract.impl.test.exec.systemcontracts;
 
+import static com.hedera.hapi.node.base.HederaFunctionality.UTIL_PRNG;
 import static com.hedera.node.app.service.contract.impl.exec.scope.HandleHederaOperations.ZERO_ENTROPY;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.EXPECTED_RANDOM_NUMBER;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.PRECOMPILE_CONTRACT_FAILED_RESULT;
@@ -24,6 +25,7 @@ import static com.hedera.node.app.service.contract.impl.test.TestHelpers.PSEUDO_
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -42,7 +44,6 @@ import java.util.ArrayDeque;
 import java.util.Deque;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
-import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.frame.BlockValues;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
@@ -120,7 +121,6 @@ class PrngSystemContractTest {
         givenInitialFrame();
         given(messageFrame.isStatic()).willReturn(true);
         given(messageFrame.getWorldUpdater()).willReturn(proxyWorldUpdater);
-        given(messageFrame.getValue()).willReturn(Wei.ZERO);
         given(proxyWorldUpdater.entropy()).willReturn(EXPECTED_RANDOM_NUMBER);
 
         // when:
@@ -137,7 +137,6 @@ class PrngSystemContractTest {
         commonMocks();
         given(messageFrame.isStatic()).willReturn(false);
         given(messageFrame.getWorldUpdater()).willReturn(proxyWorldUpdater);
-        given(messageFrame.getValue()).willReturn(Wei.ZERO);
         given(proxyWorldUpdater.entropy()).willReturn(EXPECTED_RANDOM_NUMBER);
         given(systemContractGasCalculator.canonicalGasRequirement(any())).willReturn(GAS_REQUIRED);
 
@@ -160,9 +159,8 @@ class PrngSystemContractTest {
         given(systemContractGasCalculator.canonicalGasRequirement(any())).willReturn(GAS_REQUIRED);
         given(messageFrame.isStatic()).willReturn(false);
         given(messageFrame.getWorldUpdater()).willReturn(proxyWorldUpdater);
-        given(messageFrame.getValue()).willReturn(Wei.ZERO);
         given(proxyWorldUpdater.entropy()).willReturn(Bytes.wrap(ZERO_ENTROPY.toByteArray()));
-        when(systemContractOperations.externalizePreemptedDispatch(any(), any()))
+        when(systemContractOperations.externalizePreemptedDispatch(any(), any(), eq(UTIL_PRNG)))
                 .thenReturn(mock(ContractCallStreamBuilder.class));
 
         // when:
@@ -180,8 +178,7 @@ class PrngSystemContractTest {
         given(systemContractGasCalculator.canonicalGasRequirement(any())).willReturn(GAS_REQUIRED);
         given(messageFrame.isStatic()).willReturn(false);
         given(messageFrame.getWorldUpdater()).willReturn(proxyWorldUpdater);
-        given(messageFrame.getValue()).willReturn(Wei.ONE);
-        when(systemContractOperations.externalizePreemptedDispatch(any(), any()))
+        when(systemContractOperations.externalizePreemptedDispatch(any(), any(), eq(UTIL_PRNG)))
                 .thenReturn(mock(ContractCallStreamBuilder.class));
 
         // when:
@@ -197,7 +194,7 @@ class PrngSystemContractTest {
         givenCommon();
 
         given(systemContractGasCalculator.canonicalGasRequirement(any())).willReturn(GAS_REQUIRED);
-        when(systemContractOperations.externalizePreemptedDispatch(any(), any()))
+        when(systemContractOperations.externalizePreemptedDispatch(any(), any(), eq(UTIL_PRNG)))
                 .thenReturn(mock(ContractCallStreamBuilder.class));
 
         // when:
