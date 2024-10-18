@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.token.impl.handlers.staking;
 
+import static com.hedera.hapi.node.base.HederaFunctionality.NODE_STAKE_UPDATE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.node.app.service.token.impl.TokenServiceImpl.HBARS_TO_TINYBARS;
 import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.asAccount;
@@ -262,7 +263,7 @@ public class EndOfStakingPeriodUpdater {
         // We don't want to fail adding the preceding child record for the node stake update that happens every
         // midnight. So, we add the preceding child record builder as unchecked, that doesn't fail with
         // MAX_CHILD_RECORDS_EXCEEDED
-        return context.addPrecedingChildRecordBuilder(NodeStakeUpdateStreamBuilder.class)
+        return context.addPrecedingChildRecordBuilder(NodeStakeUpdateStreamBuilder.class, NODE_STAKE_UPDATE)
                 .transaction(transactionWith(syntheticNodeStakeUpdateTxn.build()))
                 .memo(END_OF_PERIOD_MEMO)
                 .exchangeRate(exchangeRates)

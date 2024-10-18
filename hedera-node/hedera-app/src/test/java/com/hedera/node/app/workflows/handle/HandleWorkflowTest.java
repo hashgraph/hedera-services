@@ -209,7 +209,6 @@ class HandleWorkflowTest {
         given(networkInfo.nodeInfo(missingCreatorId.id())).willReturn(null);
         given(eventFromPresentCreator.consensusTransactionIterator()).willReturn(Collections.emptyIterator());
         given(round.getConsensusTimestamp()).willReturn(Instant.ofEpochSecond(12345L));
-        given(configProvider.getConfiguration()).willReturn(new VersionedConfigImpl(DEFAULT_CONFIG, 1));
 
         subject.handleRound(state, round);
 
