@@ -81,7 +81,6 @@ public abstract class AbstractEmbeddedHedera implements EmbeddedHedera {
     private static final Logger log = LogManager.getLogger(AbstractEmbeddedHedera.class);
 
     private static final int NANOS_IN_A_SECOND = 1_000_000_000;
-    private static final long VALID_START_TIME_OFFSET_SECS = 42;
     private static final SemanticVersion EARLIER_SEMVER =
             SemanticVersion.newBuilder().patch(1).build();
     private static final SemanticVersion LATER_SEMVER =
@@ -185,7 +184,7 @@ public abstract class AbstractEmbeddedHedera implements EmbeddedHedera {
             nextNano.set(1);
         }
         return Timestamp.newBuilder()
-                .setSeconds(now().getEpochSecond() - VALID_START_TIME_OFFSET_SECS)
+                .setSeconds(now().getEpochSecond() - validStartOffsetSecs())
                 .setNanos(candidateNano)
                 .build();
     }
@@ -233,6 +232,12 @@ public abstract class AbstractEmbeddedHedera implements EmbeddedHedera {
 
     protected abstract TransactionResponse submit(
             @NonNull Transaction transaction, @NonNull AccountID nodeAccountId, @NonNull SemanticVersion version);
+
+    /**
+     * Returns the number of seconds to offset the next valid start time.
+     * @return the number of seconds to offset the next valid start time
+     */
+    protected abstract long validStartOffsetSecs();
 
     /**
      * Returns the fake platform to start and stop.
