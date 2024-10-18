@@ -1092,6 +1092,7 @@ public class EthereumSuite {
         final Integer chainId = 11_155_111;
 
         return hapiTest(
+                overriding("contracts.chainId", "" + chainId),
                 newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                 cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS),
                 cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS))
