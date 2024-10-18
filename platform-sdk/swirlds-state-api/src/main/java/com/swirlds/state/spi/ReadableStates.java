@@ -39,7 +39,7 @@ public interface ReadableStates {
      * @throws IllegalArgumentException if the state cannot be found.
      */
     @NonNull
-    <K, V> ReadableKVState<K, V> get(@NonNull String stateKey);
+    <K, V extends Record> ReadableKVState<K, V> get(@NonNull String stateKey);
 
     @NonNull
     <T> ReadableSingletonState<T> getSingleton(@NonNull String stateKey);

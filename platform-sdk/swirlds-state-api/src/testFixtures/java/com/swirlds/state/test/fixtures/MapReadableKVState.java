@@ -38,7 +38,7 @@ import java.util.Objects;
  * @param <K> The key type
  * @param <V> The value type
  */
-public class MapReadableKVState<K, V> extends ReadableKVStateBase<K, V> {
+public class MapReadableKVState<K, V extends Record> extends ReadableKVStateBase<K, V> {
     /** Represents the backing storage for this state */
     private final Map<K, V> backingStore;
 
@@ -83,7 +83,7 @@ public class MapReadableKVState<K, V> extends ReadableKVStateBase<K, V> {
      * @param <V> The value type
      */
     @NonNull
-    public static <K, V> Builder<K, V> builder(@NonNull final String stateKey) {
+    public static <K, V extends Record> Builder<K, V> builder(@NonNull final String stateKey) {
         return new Builder<>(stateKey);
     }
 
@@ -91,7 +91,7 @@ public class MapReadableKVState<K, V> extends ReadableKVStateBase<K, V> {
      * A convenient builder for creating instances of {@link
      * MapReadableKVState}.
      */
-    public static final class Builder<K, V> {
+    public static final class Builder<K, V extends Record> {
         private final Map<K, V> backingStore = new HashMap<>();
         private final String stateKey;
 
