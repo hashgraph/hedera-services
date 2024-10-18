@@ -74,6 +74,7 @@ jobs:
 
   release-tag:
     name: Release [Tag]
+    if: ${{ !github.event.workflow_run.head_repository.fork }}
     uses: ./.github/workflows/node-zxc-build-release-artifact.yaml
     needs:
       - prepare-tag-release
@@ -102,6 +103,7 @@ jobs:
 
   release-branch:
     name: Release [Branch]
+    if: ${{ !github.event.workflow_run.head_repository.fork }}
     uses: ./.github/workflows/node-zxc-build-release-artifact.yaml
     if: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success'}}
     with:

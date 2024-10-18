@@ -73,6 +73,7 @@ jobs:
 
   deploy-tag:
     name: Deploy Tag
+    if: ${{ !github.event.workflow_dispatch.repository.fork }}
     uses: ./.github/workflows/node-zxc-deploy-preview.yaml
     needs:
       - prepare-deploy-preview

@@ -76,7 +76,7 @@ jobs:
       gradle-cache-password: ${{ secrets.GRADLE_CACHE_PASSWORD }}
       grafana-agent-username: ${{ secrets.GRAFANA_AGENT_USERNAME }}
       grafana-agent-password: ${{ secrets.GRAFANA_AGENT_PASSWORD }}
-    if: ${{ !cancelled() && always() }}
+    if: ${{ !cancelled() && always() && !github.event.workflow_dispatch.repository.fork }}
 
 
   similarstake-4n:
@@ -101,7 +101,7 @@ jobs:
       grafana-agent-password: ${{ secrets.GRAFANA_AGENT_PASSWORD }}
     needs:
       - minstake-4n
-    if: ${{ !cancelled() && always() }}
+    if: ${{ !cancelled() && always() && !github.event.workflow_dispatch.repository.fork }}
 
 
   unevenstake-4n:
@@ -126,7 +126,7 @@ jobs:
       grafana-agent-password: ${{ secrets.GRAFANA_AGENT_PASSWORD }}
     needs:
       - similarstake-4n
-    if: ${{ !cancelled() && always() }}
+    if: ${{ !cancelled() && always() && !github.event.workflow_dispatch.repository.fork }}
 
 
   zerostake-4n:
@@ -151,7 +151,7 @@ jobs:
       grafana-agent-password: ${{ secrets.GRAFANA_AGENT_PASSWORD }}
     needs:
       - unevenstake-4n
-    if: ${{ !cancelled() && always() }}
+    if: ${{ !cancelled() && always() && !github.event.workflow_dispatch.repository.fork }}
 
 
   restartwithnewnodes-minstake-5n:
@@ -174,7 +174,7 @@ jobs:
       gradle-cache-password: ${{ secrets.GRADLE_CACHE_PASSWORD }}
       grafana-agent-username: ${{ secrets.GRAFANA_AGENT_USERNAME }}
       grafana-agent-password: ${{ secrets.GRAFANA_AGENT_PASSWORD }}
-    if: ${{ !cancelled() && always() }}
+    if: ${{ !cancelled() && always() && !github.event.workflow_dispatch.repository.fork }}
 
 
   restartwithnewnodes-similarstake-5n:
@@ -199,7 +199,7 @@ jobs:
       grafana-agent-password: ${{ secrets.GRAFANA_AGENT_PASSWORD }}
     needs:
       - restartwithnewnodes-minstake-5n
-    if: ${{ !cancelled() && always() }}
+    if: ${{ !cancelled() && always() && !github.event.workflow_dispatch.repository.fork }}
 
 
   restartwithnewnodes-unevenstake-5n:
@@ -224,7 +224,7 @@ jobs:
       grafana-agent-password: ${{ secrets.GRAFANA_AGENT_PASSWORD }}
     needs:
       - restartwithnewnodes-similarstake-5n
-    if: ${{ !cancelled() && always() }}
+    if: ${{ !cancelled() && always() && !github.event.workflow_dispatch.repository.fork }}
 
 
   restartwithnewnodes-zerostake-5n:
@@ -249,4 +249,4 @@ jobs:
       grafana-agent-password: ${{ secrets.GRAFANA_AGENT_PASSWORD }}
     needs:
       - restartwithnewnodes-unevenstake-5n
-    if: ${{ !cancelled() && always() }}
+    if: ${{ !cancelled() && always() && !github.event.workflow_dispatch.repository.fork }}

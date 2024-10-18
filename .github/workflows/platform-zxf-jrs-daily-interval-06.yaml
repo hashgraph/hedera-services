@@ -50,6 +50,7 @@ concurrency:
 jobs:
   abbrev:
     name: Abbreviated
+    if: ${{ !github.event.workflow_dispatch.repository.fork }}
     uses: ./.github/workflows/zxc-jrs-regression.yaml
     with:
       ref: ${{ github.event.inputs.ref }}
