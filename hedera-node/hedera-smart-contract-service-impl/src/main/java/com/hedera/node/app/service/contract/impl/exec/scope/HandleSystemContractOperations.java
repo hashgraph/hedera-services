@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.contract.impl.exec.scope;
 
+import static com.hedera.hapi.node.base.HederaFunctionality.CONTRACT_CALL;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.tuweniToPbjBytes;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.CHILD;
 import static com.hedera.node.app.spi.workflows.record.StreamBuilder.transactionWith;
@@ -23,6 +24,7 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
+import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.Transaction;
@@ -34,6 +36,7 @@ import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.annotations.TransactionScope;
 import com.hedera.node.app.service.contract.impl.records.ContractCallStreamBuilder;
 import com.hedera.node.app.spi.workflows.HandleContext;
+import com.hedera.node.app.spi.workflows.record.StreamBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.function.Predicate;
@@ -72,7 +75,7 @@ public class HandleSystemContractOperations implements SystemContractOperations 
      * {@inheritDoc}
      */
     @Override
-    public @NonNull <T> T dispatch(
+    public @NonNull <T extends StreamBuilder> T dispatch(
             @NonNull final TransactionBody syntheticBody,
             @NonNull final VerificationStrategy strategy,
             @NonNull final AccountID syntheticPayerId,
@@ -92,45 +95,37 @@ public class HandleSystemContractOperations implements SystemContractOperations 
 
     @Override
     public ContractCallStreamBuilder externalizePreemptedDispatch(
-            @NonNull final TransactionBody syntheticBody, @NonNull final ResponseCodeEnum preemptingStatus) {
+            @NonNull final TransactionBody syntheticBody,
+            @NonNull final ResponseCodeEnum preemptingStatus,
+            @NonNull final HederaFunctionality functionality) {
         requireNonNull(syntheticBody);
         requireNonNull(preemptingStatus);
+        requireNonNull(functionality);
 
         return context.savepointStack()
-                .addChildRecordBuilder(ContractCallStreamBuilder.class)
+                .addChildRecordBuilder(ContractCallStreamBuilder.class, functionality)
                 .transaction(transactionWith(syntheticBody))
                 .status(preemptingStatus);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void externalizeResult(
-            @NonNull final ContractFunctionResult result, @NonNull final ResponseCodeEnum responseStatus) {
-        final var childRecordBuilder = context.savepointStack().addChildRecordBuilder(ContractCallStreamBuilder.class);
-        childRecordBuilder
-                .transaction(Transaction.DEFAULT)
-                .contractID(result.contractID())
-                .status(responseStatus)
-                .contractCallResult(result);
     }
 
     @Override
     public void externalizeResult(
             @NonNull final ContractFunctionResult result,
             @NonNull final ResponseCodeEnum responseStatus,
-            @NonNull Transaction transaction) {
+            @NonNull final Transaction transaction) {
         requireNonNull(transaction);
         context.savepointStack()
-                .addChildRecordBuilder(ContractCallStreamBuilder.class)
+                .addChildRecordBuilder(ContractCallStreamBuilder.class, CONTRACT_CALL)
                 .transaction(transaction)
                 .status(responseStatus)
                 .contractCallResult(result);
     }
 
     @Override
-    public Transaction syntheticTransactionForNativeCall(Bytes input, ContractID contractID, boolean isViewCall) {
+    public Transaction syntheticTransactionForNativeCall(
+            @NonNull final Bytes input, @NonNull final ContractID contractID, boolean isViewCall) {
+        requireNonNull(input);
+        requireNonNull(contractID);
         var functionParameters = tuweniToPbjBytes(input);
         var contractCallBodyBuilder =
                 ContractCallTransactionBody.newBuilder().contractID(contractID).functionParameters(functionParameters);

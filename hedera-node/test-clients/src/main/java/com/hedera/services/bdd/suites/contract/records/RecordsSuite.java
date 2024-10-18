@@ -16,6 +16,7 @@
 
 package com.hedera.services.bdd.suites.contract.records;
 
+import static com.hedera.node.config.types.StreamMode.RECORDS;
 import static com.hedera.services.bdd.junit.RepeatableReason.NEEDS_VIRTUAL_TIME_FOR_FAST_EXECUTION;
 import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
@@ -294,7 +295,10 @@ public class RecordsSuite {
                     final var secondBlockNumber =
                             Longs.fromByteArray(Arrays.copyOfRange(secondBlockHashLogData, 24, 32));
 
-                    assertEquals(firstBlockNumber + 1, secondBlockNumber, "Wrong previous block number");
+                    if (spec.startupProperties().getStreamMode("blockStream.streamMode") == RECORDS) {
+                        // This relationship is only guaranteed if block boundaries are based on time periods
+                        assertEquals(firstBlockNumber + 1, secondBlockNumber, "Wrong previous block number");
+                    }
 
                     final var secondBlockHash = Bytes32.wrap(Arrays.copyOfRange(secondBlockHashLogData, 32, 64));
 

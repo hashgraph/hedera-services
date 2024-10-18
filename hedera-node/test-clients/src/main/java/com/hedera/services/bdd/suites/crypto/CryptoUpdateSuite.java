@@ -55,6 +55,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.blockingOrder;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.createHip32Auto;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.createHollow;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.doWithStartupConfigNow;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.doingContextual;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingTwo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.recordStreamMustIncludePassFrom;
@@ -99,6 +100,7 @@ import com.hedera.services.bdd.spec.keys.KeyLabels;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.keys.SigControl;
 import com.hedera.services.bdd.spec.queries.crypto.HapiGetAccountInfo;
+import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.spec.utilops.streams.assertions.VisibleItemsValidator;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.Key;
@@ -191,13 +193,15 @@ public class CryptoUpdateSuite {
                 recordStreamMustIncludePassFrom(
                         visibleNonSyntheticItems(keyRotationsValidator(evmAddresses), allTxnIds),
                         Duration.ofSeconds(10)),
+                // If the FileAlterationObserver just started the monitor, there's a chance we could miss the
+                // first couple of creations, so wait for a new record file boundary
+                doingContextual(TxnUtils::triggerAndCloseAtLeastOneFileIfNotInterrupted),
                 // --- CREATE ACCOUNTS ---
                 // The account with a long-zero EVM address
                 cryptoCreate("longZero")
                         .via("longZero")
                         .keyShape(SECP256K1_ON)
                         .exposingEvmAddressTo(address -> evmAddresses.put("longZero", address)),
-                newKeyNamed("aEcdsaKey").shape(KeyShape.SECP256K1),
                 // The auto-created account with an ECDSA key alias
                 createHip32Auto(1, KeyShape.SECP256K1, i -> "autoCreated"),
                 withAddressOfKey("autoCreated", evmAddress -> {
