@@ -55,7 +55,7 @@ jobs:
         env:
           COMMIT_ID: ${{ inputs.ref }}
         run: |
-          if [ 0 -eq $(git merge-base --is-ancestor $COMMIT_ID develop) ]; then 
+          if [ 0 -eq $(git merge-base --is-ancestor $COMMIT_ID develop) ]; then
             echo "commit_on_dev=true" >> $GITHUB_OUTPUT
           else
             exit 1
