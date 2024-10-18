@@ -606,7 +606,8 @@ public class AddressBook implements Iterable<Address>, SelfSerializable, Hashabl
         return addressBookConfigText(this);
     }
 
-    public static String addressBookConfigText(@NonNull final AddressBook addressBook) {
+    // FUTURE WORK: remove this method and use AddressBookUtils after that file has also been moved to new module
+    private static String addressBookConfigText(@NonNull final AddressBook addressBook) {
         Objects.requireNonNull(addressBook, "The addressBook must not be null.");
         final TextTable table = new TextTable().setBordersEnabled(false);
         for (final Address address : addressBook) {
