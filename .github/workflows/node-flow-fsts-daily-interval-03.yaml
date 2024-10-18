@@ -70,7 +70,7 @@ jobs:
       gradle-cache-password: ${{ secrets.GRADLE_CACHE_PASSWORD }}
       grafana-agent-username: ${{ secrets.GRAFANA_AGENT_USERNAME }}
       grafana-agent-password: ${{ secrets.GRAFANA_AGENT_PASSWORD }}
-    if: ${{ !cancelled() && always() }}
+    if: ${{ !cancelled() && always() && !github.event.workflow_dispatch.repository.fork }}
 
 
   comp-update-dispreupdate-4n-2c:
@@ -93,7 +93,7 @@ jobs:
       gradle-cache-password: ${{ secrets.GRADLE_CACHE_PASSWORD }}
       grafana-agent-username: ${{ secrets.GRAFANA_AGENT_USERNAME }}
       grafana-agent-password: ${{ secrets.GRAFANA_AGENT_PASSWORD }}
-    if: ${{ !cancelled() && always() }}
+    if: ${{ !cancelled() && always() && !github.event.workflow_dispatch.repository.fork }}
 
 
   comp-update-reconnect-4n-2c:
@@ -116,7 +116,7 @@ jobs:
       gradle-cache-password: ${{ secrets.GRADLE_CACHE_PASSWORD }}
       grafana-agent-username: ${{ secrets.GRAFANA_AGENT_USERNAME }}
       grafana-agent-password: ${{ secrets.GRAFANA_AGENT_PASSWORD }}
-    if: ${{ !cancelled() && always() }}
+    if: ${{ !cancelled() && always() && !github.event.workflow_dispatch.repository.fork }}
 
 
   comp-update-reconnect-abort-4n-2c:
@@ -139,7 +139,7 @@ jobs:
       gradle-cache-password: ${{ secrets.GRADLE_CACHE_PASSWORD }}
       grafana-agent-username: ${{ secrets.GRAFANA_AGENT_USERNAME }}
       grafana-agent-password: ${{ secrets.GRAFANA_AGENT_PASSWORD }}
-    if: ${{ !cancelled() && always() }}
+    if: ${{ !cancelled() && always() && !github.event.workflow_dispatch.repository.fork }}
 
 
   comp-update-reconnect-abort-dispreupdate-4n-2c:
@@ -162,4 +162,4 @@ jobs:
       gradle-cache-password: ${{ secrets.GRADLE_CACHE_PASSWORD }}
       grafana-agent-username: ${{ secrets.GRAFANA_AGENT_USERNAME }}
       grafana-agent-password: ${{ secrets.GRAFANA_AGENT_PASSWORD }}
-    if: ${{ !cancelled() && always() }}
+    if: ${{ !cancelled() && always() && !github.event.workflow_dispatch.repository.fork }}
