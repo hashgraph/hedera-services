@@ -376,6 +376,7 @@ public class HandleWorkflow {
      */
     private HandleOutput execute(@NonNull final UserTxn userTxn) {
         try {
+            final var dispatch = dispatchFor(userTxn);
             if (isOlderSoftwareEvent(userTxn)) {
                 if (streamMode != BLOCKS) {
                     final var lastRecordManagerTime = blockRecordManager.consTimeOfLastHandledTxn();
@@ -383,7 +384,7 @@ public class HandleWorkflow {
                     blockRecordManager.advanceConsensusClock(userTxn.consensusNow(), userTxn.state());
                     if (streamMode == RECORDS) {
                         // If relying on last-handled time to trigger interval processing, do so now
-                        processInterval(userTxn, lastRecordManagerTime);
+                        processInterval(userTxn, lastRecordManagerTime, dispatch);
                     }
                 }
                 initializeBuilderInfo(userTxn.baseBuilder(), userTxn.txnInfo(), exchangeRateManager.exchangeRates())
@@ -415,7 +416,6 @@ public class HandleWorkflow {
                     // here we may need to switch the newly adopted candidate roster
                     // in the RosterService state to become the active roster
                 }
-                final var dispatch = dispatchFor(userTxn);
                 updateNodeStakes(userTxn, dispatch);
                 var lastRecordManagerTime = Instant.EPOCH;
                 if (streamMode != BLOCKS) {
@@ -426,7 +426,7 @@ public class HandleWorkflow {
                 if (streamMode == RECORDS) {
                     processInterval(userTxn, lastRecordManagerTime, dispatch);
                 } else {
-                    if (processInterval(userTxn, blockStreamManager.lastIntervalProcessTime())) {
+                    if (processInterval(userTxn, blockStreamManager.lastIntervalProcessTime(), dispatch)) {
                         blockStreamManager.setLastIntervalProcessTime(userTxn.consensusNow());
                     }
                 }
