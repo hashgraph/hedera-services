@@ -82,10 +82,10 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_CHILD_RECO
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PLATFORM_TRANSACTION_NOT_CREATED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS_BUT_MISSING_EXPECTED_OPERATION;
-import static com.swirlds.platform.system.status.PlatformStatus.ACTIVE;
-import static com.swirlds.platform.system.status.PlatformStatus.BEHIND;
-import static com.swirlds.platform.system.status.PlatformStatus.FREEZE_COMPLETE;
-import static com.swirlds.platform.system.status.PlatformStatus.RECONNECT_COMPLETE;
+import static com.swirlds.common.PlatformStatus.ACTIVE;
+import static com.swirlds.common.PlatformStatus.BEHIND;
+import static com.swirlds.common.PlatformStatus.FREEZE_COMPLETE;
+import static com.swirlds.common.PlatformStatus.RECONNECT_COMPLETE;
 import static java.util.Objects.requireNonNull;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;

@@ -16,6 +16,8 @@
 
 package com.swirlds.platform.system.status.actions;
 
+import com.swirlds.common.PlatformStatusAction;
+
 /**
  * An action that is triggered when the platform experiences a catastrophic failure.
  */

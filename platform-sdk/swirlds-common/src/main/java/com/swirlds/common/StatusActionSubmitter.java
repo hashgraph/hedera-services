@@ -14,14 +14,19 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.system.status.actions;
+package com.swirlds.common;
 
-import com.swirlds.platform.system.status.PlatformStatus;
+import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
- * An interface for platform status actions.
- * <p>
- * A platform status action is an occurrence that has the potential to affect the
- * {@link PlatformStatus PlatformStatus}
+ * A functional interface for submitting status actions
  */
-public interface PlatformStatusAction {}
+@FunctionalInterface
+public interface StatusActionSubmitter {
+    /**
+     * Submit a status action, which will be processed in the order received
+     *
+     * @param action the action to submit
+     */
+    void submitStatusAction(@NonNull final PlatformStatusAction action);
+}

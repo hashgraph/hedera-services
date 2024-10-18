@@ -25,8 +25,8 @@ import static com.hedera.services.bdd.junit.hedera.utils.AddressBookUtils.config
 import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.CONFIG_TXT;
 import static com.hedera.services.bdd.spec.TargetNetworkType.SUBPROCESS_NETWORK;
 import static com.hedera.services.bdd.suites.utils.sysfiles.BookEntryPojo.asOctets;
+import static com.swirlds.common.PlatformStatus.ACTIVE;
 import static com.swirlds.common.io.utility.FileUtils.rethrowIO;
-import static com.swirlds.platform.system.status.PlatformStatus.ACTIVE;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.CompletableFuture.runAsync;
 import static java.util.stream.Collectors.toSet;
