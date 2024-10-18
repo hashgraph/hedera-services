@@ -40,6 +40,9 @@ import org.bouncycastle.util.encoders.Hex;
  */
 @Singleton
 public class EthereumCallDataHydration {
+    /**
+     * Default constructor for injection.
+     */
     @Inject
     public EthereumCallDataHydration() {
         // Dagger2

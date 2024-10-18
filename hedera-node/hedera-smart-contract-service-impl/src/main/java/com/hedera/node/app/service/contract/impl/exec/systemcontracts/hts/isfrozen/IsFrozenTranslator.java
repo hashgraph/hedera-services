@@ -27,9 +27,12 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
 
 public class IsFrozenTranslator extends AbstractCallTranslator<HtsCallAttempt> {
-
+    /** Selector for isFrozen(address,address) method. */
     public static final Function IS_FROZEN = new Function("isFrozen(address,address)", ReturnTypes.RESPONSE_CODE_BOOL);
 
+    /**
+     * Default constructor for injection.
+     */
     @Inject
     public IsFrozenTranslator() {
         // Dagger2

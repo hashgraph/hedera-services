@@ -32,9 +32,16 @@ import com.hedera.node.app.service.contract.impl.utils.ConversionUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
 
+/**
+ * Translates {@code delete} calls to the HTS system contract.
+ */
 public class DeleteTranslator extends AbstractCallTranslator<HtsCallAttempt> {
+    /** Selector for deleteToken(address) method. */
     public static final Function DELETE_TOKEN = new Function("deleteToken(address)", ReturnTypes.INT);
 
+    /**
+     * Default constructor to delete.
+     */
     @Inject
     public DeleteTranslator() {
         // Dagger2
@@ -50,6 +57,13 @@ public class DeleteTranslator extends AbstractCallTranslator<HtsCallAttempt> {
         return new DispatchForResponseCodeHtsCall(attempt, bodyForClassic(attempt), DeleteTranslator::gasRequirement);
     }
 
+    /**
+     * @param body                          the transaction body to be dispatched
+     * @param systemContractGasCalculator   the gas calculator for the system contract
+     * @param enhancement                   the enhancement to use
+     * @param payerId                       the payer of the transaction
+     * @return the required gas
+     */
     public static long gasRequirement(
             @NonNull final TransactionBody body,
             @NonNull final SystemContractGasCalculator systemContractGasCalculator,

@@ -30,6 +30,9 @@ import java.util.Set;
  */
 @SuppressWarnings("java:S6548")
 public final class SmartContractServiceDefinition implements RpcServiceDefinition {
+    /**
+     * Singleton instance of the Token Service.
+     */
     public static final SmartContractServiceDefinition INSTANCE = new SmartContractServiceDefinition();
 
     private static final Set<RpcMethodDefinition<?, ?>> methods = Set.of(
