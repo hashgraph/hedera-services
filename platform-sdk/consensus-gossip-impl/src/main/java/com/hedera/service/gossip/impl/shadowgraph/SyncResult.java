@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.gossip.shadowgraph;
+package com.hedera.service.gossip.impl.shadowgraph;
 
 import com.swirlds.common.platform.NodeId;
 
 /**
- * Information about a successful sync that just occurred
+ * Information about a successful sync that just occurred.
  */
 public class SyncResult {
     private final boolean caller;
@@ -28,14 +28,16 @@ public class SyncResult {
     private final int eventsWritten;
 
     /**
+     * Constructs a new SyncResult.
+     *
      * @param caller
-     * 		true if this node initiated the sync, false otherwise
+     *      true if this node initiated the sync, false otherwise
      * @param otherId
-     * 		the ID of the node we synced with
+     *      the ID of the node we synced with
      * @param eventsRead
-     * 		the number of events read during the sync
+     *      the number of events read during the sync
      * @param eventsWritten
-     * 		the number of events written during the sync
+     *      the number of events written during the sync
      */
     public SyncResult(final boolean caller, final NodeId otherId, final int eventsRead, final int eventsWritten) {
         this.caller = caller;
@@ -45,6 +47,8 @@ public class SyncResult {
     }
 
     /**
+     * Returns whether this node initiated the sync.
+     *
      * @return true if this node initiated the sync, false otherwise
      */
     public boolean isCaller() {
@@ -52,6 +56,8 @@ public class SyncResult {
     }
 
     /**
+     * Returns the ID of the node synced with.
+     *
      * @return the ID of the node we synced with
      */
     public NodeId getOtherId() {
@@ -59,6 +65,8 @@ public class SyncResult {
     }
 
     /**
+     * Returns the number of events read during the sync.
+     *
      * @return the number of events read during the sync
      */
     public int getEventsRead() {
@@ -66,6 +74,8 @@ public class SyncResult {
     }
 
     /**
+     * Returns the number of events written during the sync.
+     *
      * @return the number of events written during the sync
      */
     public int getEventsWritten() {

@@ -14,14 +14,14 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.gossip.shadowgraph;
+package com.hedera.service.gossip.impl.shadowgraph;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Represents zero or more reservations for an ancient indicator (i.e. a generation or a birth round, depending on
- * current {@link com.swirlds.platform.event.AncientMode andient mode}). It is used to determine when it is safe to
- * expire events in a given ancient indicator. Reservations are made by gossip threads inside {@link Shadowgraph}.
+ * current {ancient mode}). It is used to determine when it is safe to
+ * expire events in a given ancient indicator. Reservations are made by gossip threads inside {Shadowgraph}.
  * Ancient indicators that have at least one reservation may not have any of its events expired.
  */
 public final class ShadowgraphReservation implements AutoCloseable {

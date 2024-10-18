@@ -1,5 +1,6 @@
 module com.hedera.consensus.gossip.impl {
     exports com.hedera.service.gossip.impl;
+    exports com.hedera.service.gossip.impl.shadowgraph;
 
     requires transitive com.swirlds.common;
     requires transitive com.hedera.service.gossip;

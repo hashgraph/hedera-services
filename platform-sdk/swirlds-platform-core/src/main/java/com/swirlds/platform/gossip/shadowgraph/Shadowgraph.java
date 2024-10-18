@@ -21,6 +21,7 @@ import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 import static com.swirlds.logging.legacy.LogMarker.SYNC_INFO;
 
 import com.hedera.service.gossip.IntakeEventCounter;
+import com.hedera.service.gossip.impl.shadowgraph.ShadowgraphReservation;
 import com.swirlds.common.AddressBook;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
