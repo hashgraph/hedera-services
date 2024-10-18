@@ -56,6 +56,8 @@ import java.security.cert.Certificate;
 import java.security.cert.CertificateEncodingException;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -1442,13 +1444,22 @@ public class EnhancedKeyStoreLoader {
     private void cleanupMovePfxFilesToSubDirectory() throws KeyStoreException, KeyLoadingException {
         AtomicLong cleanupErrorCount = new AtomicLong(0);
 
-        Path oldPfxKeys = keyStoreDirectory.resolve("OLD_PFX_KEYS");
-        if (!Files.exists(oldPfxKeys)) {
+        final String now = DateTimeFormatter.ofPattern("yyyy-MM-dd-HH:mm:ss").format(LocalDateTime.now());
+        final Path pfxArchiveDirectory = keyStoreDirectory.resolve(".archive");
+        final Path pfxDateDirectory = pfxArchiveDirectory.resolve(now);
+
+        logger.info(STARTUP.getMarker(), "Cryptography Migration Cleanup: Moving PFX files to {}", pfxDateDirectory);
+
+        if (!Files.exists(pfxDateDirectory)) {
             try {
-                Files.createDirectory(oldPfxKeys);
+                if (!Files.exists(pfxArchiveDirectory)) {
+                    Files.createDirectory(pfxArchiveDirectory);
+                }
+                Files.createDirectory(pfxDateDirectory);
             } catch (IOException e) {
                 logger.error(
-                        ERROR.getMarker(), "Failed to create OLD_PFX_KEYS sub-directory. Manual cleanup required.");
+                        ERROR.getMarker(),
+                        "Failed to create [.archive/yyyy-MM-dd-HH:mm:ss] sub-directory. Manual cleanup required.");
                 return;
             }
         }
@@ -1459,7 +1470,7 @@ public class EnhancedKeyStoreLoader {
                 if (sPrivatePfx.exists()
                         && sPrivatePfx.isFile()
                         && !sPrivatePfx.renameTo(
-                                oldPfxKeys.resolve(sPrivatePfx.getName()).toFile())) {
+                                pfxDateDirectory.resolve(sPrivatePfx.getName()).toFile())) {
                     cleanupErrorCount.incrementAndGet();
                 }
             }
@@ -1467,16 +1478,17 @@ public class EnhancedKeyStoreLoader {
         File sPublicPfx = legacyCertificateStore().toFile();
         if (sPublicPfx.exists()
                 && sPublicPfx.isFile()
-                && !sPublicPfx.renameTo(oldPfxKeys.resolve(sPublicPfx.getName()).toFile())) {
+                && !sPublicPfx.renameTo(
+                        pfxArchiveDirectory.resolve(sPublicPfx.getName()).toFile())) {
             cleanupErrorCount.incrementAndGet();
         }
         if (cleanupErrorCount.get() > 0) {
             logger.error(
                     ERROR.getMarker(),
-                    "Failed to move {} PFX files to OLD_PFX_KEYS. Manual cleanup required.",
+                    "Failed to move {} PFX files to [.archive/yyyy-MM-dd-HH:mm:ss]. Manual cleanup required.",
                     cleanupErrorCount.get());
             throw new IllegalStateException(
-                    "Cryptography Migration failed to move PFX files to OLD_PFX_KEYS sub-directory.");
+                    "Cryptography Migration failed to move PFX files to [.archive/yyyy-MM-dd-HH:mm:ss] sub-directory.");
         }
     }
 
