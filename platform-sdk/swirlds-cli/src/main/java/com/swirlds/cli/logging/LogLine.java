@@ -53,13 +53,13 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
- * Represents a single line of log output
+ * Represents a single line of log output.
  * <p>
- * 2023-05-18 09:03:03.618     80         INFO    PLATFORM_STATUS    main      SwirldsPlatform: Platform status changed to...
- * timestamp               log number   log level      marker     thread name     class name         remainder of line
+ * 2023-05-18 09:03:03.618     80         INFO    PLATFORM_STATUS   main    SwirldsPlatform: Platform status changed to
+ * timestamp               log number   log level      marker    thread name   class name         remainder of line
  */
 public class LogLine implements FormattableString {
-    public final Logger logger = LogManager.getLogger();
+    private final Logger logger = LogManager.getLogger();
     public static final String CAPTURED_WHITESPACE_REGEX = "(\\s+)";
     public static final String TIMESTAMP_REGEX = "(\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}\\.\\d+)";
     public static final String LOG_NUMBER_REGEX = "(\\d+)";
@@ -94,64 +94,64 @@ public class LogLine implements FormattableString {
             + REMAINDER_OF_LINE_REGEX;
 
     /**
-     * The original log line string
+     * The original log line string.
      */
     private final String originalLogString;
 
     /**
-     * The timezone of the timestamp in the log line
+     * The timezone of the timestamp in the log line.
      * <p>
      * Currently not in use. Kept for FUTURE WORK
      */
     private final ZoneId zoneId;
 
     /**
-     * The timestamp of the log line, as an instant
+     * The timestamp of the log line, as an instant.
      */
     private final Instant timestamp;
 
     /**
-     * The original timestamp string
+     * The original timestamp string.
      */
     private final String timestampOriginalString;
 
     /**
-     * The log number of the log line
+     * The log number of the log line.
      */
     private final String logNumber;
 
     /**
-     * The log level of the log line
+     * The log level of the log line.
      */
     private final String logLevel;
 
     /**
-     * The marker of the log line
+     * The marker of the log line.
      */
     private final String marker;
 
     /**
-     * The thread name of the log line
+     * The thread name of the log line.
      */
     private final String threadName;
 
     /**
-     * The class name of the log line
+     * The class name of the log line.
      */
     private final String className;
 
     /**
-     * ": "
+     * : .
      */
     private final String colonSpace;
 
     /**
-     * The remainder of the log line that follows the colonSpace
+     * The remainder of the log line that follows the colonSpace.
      */
     private final FormattableString remainderOfLine;
 
     /**
-     * The list of whitespace strings that were captured by the regex
+     * The list of whitespace strings that were captured by the regex.
      */
     private final List<String> whitespaces = new ArrayList<>();
 
@@ -206,14 +206,15 @@ public class LogLine implements FormattableString {
 
         final String remainderString = logLineMatcher.group(13);
 
-        switch (marker) {
-            case "PLATFORM_STATUS" -> remainderOfLine = new PlatformStatusLog(remainderString);
-            default -> remainderOfLine = new DefaultFormattableString(remainderString);
+        if (marker.equals("PLATFORM_STATUS")) {
+            remainderOfLine = new PlatformStatusLog(remainderString);
+        } else {
+            remainderOfLine = new DefaultFormattableString(remainderString);
         }
     }
 
     /**
-     * Constructor without node id
+     * Constructor without node id.
      *
      * @param logLineString the log line string
      * @param zoneId        the zone ID of the timestamp in the log line
@@ -223,7 +224,7 @@ public class LogLine implements FormattableString {
     }
 
     /**
-     * The earliest timestamp of any log line in the system
+     * The earliest timestamp of any log line in the system.
      *
      * @param logStartTime the log starting time
      */
@@ -255,7 +256,7 @@ public class LogLine implements FormattableString {
     }
 
     /**
-     * Get the timestamp of the log line
+     * Get the timestamp of the log line.
      *
      * @return the timestamp
      */
@@ -265,7 +266,7 @@ public class LogLine implements FormattableString {
     }
 
     /**
-     * Get the log number of the log line
+     * Get the log number of the log line.
      *
      * @return the log number
      */
@@ -275,7 +276,7 @@ public class LogLine implements FormattableString {
     }
 
     /**
-     * Get the level of the log line
+     * Get the level of the log line.
      *
      * @return the log level
      */
@@ -285,7 +286,7 @@ public class LogLine implements FormattableString {
     }
 
     /**
-     * Get the marker of the log line
+     * Get the marker of the log line.
      *
      * @return the marker
      */
@@ -295,7 +296,7 @@ public class LogLine implements FormattableString {
     }
 
     /**
-     * Get the thread name of the log line
+     * Get the thread name of the log line.
      *
      * @return the thread name
      */
@@ -305,7 +306,7 @@ public class LogLine implements FormattableString {
     }
 
     /**
-     * Get the class name of the log line
+     * Get the class name of the log line.
      *
      * @return the class name
      */
@@ -315,7 +316,7 @@ public class LogLine implements FormattableString {
     }
 
     /**
-     * Get the formattable string remainder of the log line
+     * Get the formattable string remainder of the log line.
      *
      * @return the remainder of the log line
      */

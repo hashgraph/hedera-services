@@ -40,19 +40,19 @@ import java.util.stream.IntStream;
 import org.apache.logging.log4j.Level;
 
 /**
- * Generates an HTML log page
+ * Generates an HTML log page.
  */
 public class HtmlGenerator {
     // These values have been chosen to mimic the jetbrains terminal
     /**
-     * This is a dark gray color
+     * This is a dark gray color.
      */
     public static final String PAGE_BACKGROUND_COLOR = "#1e1e23";
 
     public static final String HIGHLIGHT_COLOR = "#353539";
 
     /**
-     * This is a light gray color
+     * This is a light gray color.
      */
     public static final String DEFAULT_TEXT_COLOR = "#bdbfc4";
 
@@ -61,34 +61,34 @@ public class HtmlGenerator {
     public static final String BLACKLIST_RADIO_COLOR = "#DA4754";
 
     /**
-     * Jetbrains font
+     * Jetbrains font.
      */
     public static final String DEFAULT_FONT = "Jetbrains Mono, monospace";
 
     /**
-     * The source for the minified jQuery library
+     * The source for the minified jQuery library.
      */
     public static final String MIN_JS_SOURCE = "https://ajax.googleapis.com/ajax/libs/jquery/3.6.4/jquery.min.js";
 
     /**
-     * HTML elements with this class can be hidden with the filter checkboxes
+     * HTML elements with this class can be hidden with the filter checkboxes.
      */
     public static final String HIDEABLE_LABEL = "hideable";
 
     /**
-     * This label is used to hold the value of how many blacklist filters are currently applied to a field
+     * This label is used to hold the value of how many blacklist filters are currently applied to a field.
      */
     public static final String BLACKLIST_LABEL = "blacklist";
 
     /**
-     * This label is for fields we absolutely positively do not want displayed, regardless of what filters say
+     * This label is for fields we absolutely positively do not want displayed, regardless of what filters say.
      * <p>
      * The only thing that supersedes this are the "select" checkboxes
      */
     public static final String NO_SHOW = "no-show";
 
     /**
-     * This label is used to hold the value of how many whitelist filters are currently applied to a field
+     * This label is used to hold the value of how many whitelist filters are currently applied to a field.
      */
     public static final String WHITELIST_LABEL = "whitelist";
 
@@ -110,7 +110,7 @@ public class HtmlGenerator {
     public static final String SELECT_COMPACT_BUTTON_LABEL = "select-compact-button";
 
     /**
-     * Signifies filter radio buttons
+     * Signifies filter radio buttons.
      */
     public static final String FILTER_RADIO_LABEL = "filter-radio";
 
@@ -119,26 +119,26 @@ public class HtmlGenerator {
     public static final String BLACKLIST_RADIO_LABEL = "blacklist-radio";
 
     /**
-     * Signifies filter checkboxes
+     * Signifies filter checkboxes.
      */
     public static final String FILTER_CHECKBOX_LABEL = "filter-checkbox";
 
     /**
-     * Signifies checkboxes where unchecked results in ABSOLUTELY_NO_SHOW, rather than simple blacklist
+     * Signifies checkboxes where unchecked results in ABSOLUTELY_NO_SHOW, rather than simple blacklist.
      */
     public static final String NO_SHOW_CHECKBOX_LABEL = "no-show-checkbox";
 
     /**
-     * This label is used to make the filter column and log table full height, side by side
+     * This label is used to make the filter column and log table full height, side by side.
      */
     public static final String DOUBLE_COLUMNS_DIV_LABEL = "double-columns";
 
     /**
-     * This label is used to make the filter column and log table scroll independently
+     * This label is used to make the filter column and log table scroll independently.
      */
     public static final String INDEPENDENT_SCROLL_LABEL = "independent-scroll";
     /**
-     * For styling particular to the log table instance of an independent scroll box
+     * For styling particular to the log table instance of an independent scroll box.
      */
     public static final String TABLE_INDEPENDENT_SCROLL_LABEL = "table-independent-scroll";
 
@@ -156,7 +156,7 @@ public class HtmlGenerator {
             "FATAL", "fatal-label");
 
     /**
-     * The javascript that is used to hide/show elements when the filter checkboxes are clicked
+     * The javascript that is used to hide/show elements when the filter checkboxes are clicked.
      */
     public static final String FILTER_JS =
             """
@@ -178,7 +178,8 @@ public class HtmlGenerator {
                     // the name of the class that should be hidden
                     let toggleClass;
 
-                    // each radio button has 3 classes, "filter-radio", the type of radio button this is, and the name of the class to be hidden
+                    // each radio button has 3 classes, "filter-radio", the type of radio button this is,
+                    and the name of the class to be hidden
                     for (const element of radioClasses) {
                         if (element === "filter-radio" || element.endsWith("filter-section")) {
                             continue;
@@ -196,7 +197,8 @@ public class HtmlGenerator {
                     // these are the objects on the page which match the class to toggle (discluding the input boxes)
                     let matchingObjects = $("." + toggleClass).not("input");
 
-                    // go through each of the matching objects, and modify the hide count according to the value of the checkbox
+                    // go through each of the matching objects, and modify the hide count according to the value
+                    of the checkbox
                     for (const element of matchingObjects) {
                         let currentBlacklistCount = parseInt($(element).attr('blacklist')) || 0;
                         let currentWhitelistCount = parseInt($(element).attr('whitelist')) || 0;
@@ -206,7 +208,8 @@ public class HtmlGenerator {
                         let newWhitelistCount;
                         let newNoShowCount;
 
-                        // modify blacklist and whitelist counts depending on the new checked value, and the previous checked value
+                        // modify blacklist and whitelist counts depending on the new checked value,
+                         and the previous checked value
                         if (newCheckedValue === "1") {
                             newWhitelistCount = currentWhitelistCount + 1;
                             if (previousCheckedValue === "3") {
@@ -271,7 +274,8 @@ public class HtmlGenerator {
                     // these are the objects on the page which match the class to toggle (discluding the input boxes)
                     let matchingObjects = $("." + toggleClass).not("input");
 
-                    // go through each of the matching objects, and modify the hide count according to the value of the checkbox
+                    // go through each of the matching objects, and modify the hide count according
+                    to the value of the checkbox
                     for (const element of matchingObjects) {
                         let currentBlacklistCount = parseInt($(element).attr('blacklist')) || 0;
 
@@ -310,7 +314,8 @@ public class HtmlGenerator {
                     // these are the objects on the page which match the class to toggle (discluding the input boxes)
                     let matchingObjects = $("." + toggleClass).not("input");
 
-                    // go through each of the matching objects, and modify the hide count according to the value of the checkbox
+                    // go through each of the matching objects, and modify the hide count according to the value
+                     of the checkbox
                     for (const element of matchingObjects) {
                         let currentNoShowCount = parseInt($(element).attr('no-show')) || 0;
 
@@ -482,7 +487,7 @@ public class HtmlGenerator {
     private HtmlGenerator() {}
 
     /**
-     * Create show / hide checkboxes for node IDs
+     * Create show / hide checkboxes for node IDs.
      *
      * @param sectionName the name of the filter section this checkbox is in
      * @param nodeId      the node ID
@@ -516,7 +521,7 @@ public class HtmlGenerator {
     }
 
     /**
-     * Create a single checkbox filter
+     * Create a single checkbox filter.
      *
      * @param elementName the name of the element to hide / show
      * @param sectionName the name of the filter section this checkbox is in
@@ -550,7 +555,7 @@ public class HtmlGenerator {
     }
 
     /**
-     * Create a set of radio buttons that can hide elements with the given name
+     * Create a set of radio buttons that can hide elements with the given name.
      * <p>
      * This method creates 3 radio buttons, whitelist, blacklist, and neutral
      *
@@ -565,7 +570,7 @@ public class HtmlGenerator {
     }
 
     /**
-     * Create a set of radio buttons that can hide elements with the given name
+     * Create a set of radio buttons that can hide elements with the given name.
      * <p>
      * This method creates 3 radio buttons, whitelist, blacklist, and neutral
      *
@@ -622,7 +627,7 @@ public class HtmlGenerator {
     }
 
     /**
-     * Wraps a filter heading and series of filter input buttons in a form, then a div
+     * Wraps a filter heading and series of filter input buttons in a form, then a div.
      *
      * @param heading      the heading for the filter
      * @param bodyElements the filter input buttons
@@ -643,7 +648,7 @@ public class HtmlGenerator {
     }
 
     /**
-     * Create the div for node ID filters
+     * Create the div for node ID filters.
      *
      * @param filterValues the different node IDs to make filters for
      * @return the node ID filter div
@@ -737,7 +742,7 @@ public class HtmlGenerator {
     }
 
     /**
-     * Create a standard 3 radio filter div for the given filter name and values
+     * Create a standard 3 radio filter div for the given filter name and values.
      * <p>
      * The filter div has a heading, and a series of radio buttons that can hide elements with the given names
      *
@@ -757,12 +762,11 @@ public class HtmlGenerator {
 
         filterValues.forEach(
                 filterValue -> elements.add(createStandardRadioFilterWithoutLabelClass(sectionName, filterValue)));
-        ;
         return createInputDiv(filterName, elements);
     }
 
     /**
-     * Create a standard 3 radio filter div for the given filter name and values
+     * Create a standard 3 radio filter div for the given filter name and values.
      * <p>
      * The filter div has a heading, and a series of radio buttons that can hide elements with the given names
      * <p>
@@ -789,7 +793,7 @@ public class HtmlGenerator {
     }
 
     /**
-     * Create CSS rules that apply to the whole HTML page
+     * Create CSS rules that apply to the whole HTML page.
      * <p>
      * Rules specific to individual elements should be added where those elements are being constructed
      *
@@ -912,7 +916,7 @@ public class HtmlGenerator {
     }
 
     /**
-     * Generate the head of the HTML page
+     * Generate the head of the HTML page.
      *
      * @param cssFactory the css rule factory
      * @return the head of the HTML page
@@ -934,7 +938,7 @@ public class HtmlGenerator {
     }
 
     /**
-     * Generate the generate filters div for the html page
+     * Generate the generate filters div for the html page.
      *
      * @param logLines   the log lines
      * @param cssFactory a factory that new rules can be added to
@@ -1014,7 +1018,7 @@ public class HtmlGenerator {
     }
 
     /**
-     * Generate the log table for the HTML page
+     * Generate the log table for the HTML page.
      *
      * @param logLines   the log lines
      * @param cssFactory a factory that new rules can be added to
@@ -1037,7 +1041,7 @@ public class HtmlGenerator {
     }
 
     /**
-     * Generate the body of the HTML page
+     * Generate the body of the HTML page.
      *
      * @param logLines   the log lines
      * @param cssFactory a factory that new rules can be added to
@@ -1082,7 +1086,7 @@ public class HtmlGenerator {
     }
 
     /**
-     * Go through all log lines, find the earliest time, and set the log start time for each log line
+     * Go through all log lines, find the earliest time, and set the log start time for each log line.
      *
      * @param logLines the log lines
      */
@@ -1099,7 +1103,7 @@ public class HtmlGenerator {
     }
 
     /**
-     * Goes through the raw log line strings from a given node, and returns the list of log lines
+     * Goes through the raw log line strings from a given node, and returns the list of log lines.
      *
      * @param nodeId         the node id
      * @param logLineStrings the raw log line strings
@@ -1130,7 +1134,7 @@ public class HtmlGenerator {
     }
 
     /**
-     * Generate an HTML page from a list of log line strings
+     * Generate an HTML page from a list of log line strings.
      *
      * @param logLineStrings a map of node id to the raw log line strings for that node
      * @return the HTML page

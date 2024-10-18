@@ -17,7 +17,7 @@
 package com.swirlds.demo.addressbook;
 
 /**
- * Enumerated values for the test scenarios that can be run for validation of AddressBook Initialization
+ * Enumerated values for the test scenarios that can be run for validation of AddressBook Initialization.
  */
 public enum AddressBookTestScenario {
     /** Skip validation of the address book initialization. */
@@ -41,9 +41,9 @@ public enum AddressBookTestScenario {
     /** On restart, upgrade, force use of the config address book. */
     UPGRADE_FORCE_CONFIG_AB,
 
-    /** On restart, upgrade, add a new Node **/
+    /** On restart, upgrade, add a new Node. **/
     UPGRADE_ADD_NODE,
 
-    /** On restart, upgrade, remove a node **/
+    /** On restart, upgrade, remove a node. **/
     UPGRADE_REMOVE_NODE;
 }
