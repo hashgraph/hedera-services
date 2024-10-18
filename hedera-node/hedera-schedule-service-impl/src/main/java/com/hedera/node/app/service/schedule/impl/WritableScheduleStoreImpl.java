@@ -35,6 +35,8 @@ import com.swirlds.state.spi.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -173,5 +175,17 @@ public class WritableScheduleStoreImpl extends ReadableScheduleStoreImpl impleme
                 schedulesByExpirationMutable.remove(second);
             }
         }
+    }
+
+    public List<Schedule> getByExpirationBetween(long firstSecondToExpire, long lastSecondToExpire) {
+        final var schedules = new ArrayList<Schedule>();
+        for (long i = firstSecondToExpire; i <= lastSecondToExpire; i++) {
+            final var second = new ProtoLong(i);
+            final var scheduleList = schedulesByExpirationMutable.get(second);
+            if (scheduleList != null) {
+                schedules.addAll(scheduleList.schedules());
+            }
+        }
+        return schedules;
     }
 }

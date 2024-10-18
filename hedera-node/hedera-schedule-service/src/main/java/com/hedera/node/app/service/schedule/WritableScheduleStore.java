@@ -21,6 +21,7 @@ import com.hedera.hapi.node.state.schedule.Schedule;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
+import java.util.List;
 
 /**
  * The interface Writable schedule store.
@@ -63,4 +64,6 @@ public interface WritableScheduleStore extends ReadableScheduleStore {
      * @param lastSecondToExpire  The consensus second of the last schedule to expire.
      */
     void purgeExpiredSchedulesBetween(long firstSecondToExpire, long lastSecondToExpire);
+
+    List<Schedule> getByExpirationBetween(long firstSecondToExpire, long lastSecondToExpire);
 }
