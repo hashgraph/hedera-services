@@ -325,14 +325,13 @@ class SerializationTest extends MerkleTestBase {
     }
 
     private MerkleStateRoot createMerkleHederaState(Schema schemaV1) {
-        final SignedState randomState =
-                new RandomSignedStateGenerator()
-                        .setRound(1)
-                        .setRoster(RandomRosterBuilder.create(new Random())
-                                .withWeightDistributionStrategy(RandomRosterBuilder.WeightDistributionStrategy.BALANCED)
-                                .withRealKeysEnabled(true)
-                                .build())
-                        .build();
+        final SignedState randomState = new RandomSignedStateGenerator()
+                .setRound(1)
+                .setRoster(RandomRosterBuilder.create(new Random())
+                        .withWeightDistributionStrategy(RandomRosterBuilder.WeightDistributionStrategy.BALANCED)
+                        .withRealKeysEnabled(true)
+                        .build())
+                .build();
 
         final var originalTree = (MerkleStateRoot) randomState.getState();
         final var originalRegistry =
