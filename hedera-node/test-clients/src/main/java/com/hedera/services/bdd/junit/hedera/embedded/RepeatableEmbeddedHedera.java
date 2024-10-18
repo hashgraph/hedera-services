@@ -106,6 +106,13 @@ class RepeatableEmbeddedHedera extends AbstractEmbeddedHedera implements Embedde
         return response;
     }
 
+    @Override
+    protected long validStartOffsetSecs() {
+        // We handle each transaction in a round starting in the next second of fake consensus time, so
+        // we don't need any offset here; this simplifies tests that validate purging expired receipts
+        return 0L;
+    }
+
     private void handleNextRound() {
         hedera.onPreHandle(platform.lastCreatedEvent, state);
         final var round = platform.nextConsensusRound();
