@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.token.impl.test.handlers.staking;
 
+import static com.hedera.hapi.node.base.HederaFunctionality.NODE_STAKE_UPDATE;
 import static com.hedera.node.app.service.token.impl.schemas.V0490TokenSchema.STAKING_INFO_KEY;
 import static com.hedera.node.app.service.token.impl.schemas.V0490TokenSchema.STAKING_NETWORK_REWARDS_KEY;
 import static com.hedera.node.app.service.token.impl.test.WritableStakingInfoStoreImplTest.NODE_ID_1;
@@ -115,7 +116,7 @@ class StakeInfoHelperTest {
         // Platform address book has node Ids 2, 4, 8
         final var networkInfo = new FakeNetworkInfo();
         given(tokenContext.consensusTime()).willReturn(Instant.EPOCH);
-        given(tokenContext.addPrecedingChildRecordBuilder(NodeStakeUpdateStreamBuilder.class))
+        given(tokenContext.addPrecedingChildRecordBuilder(NodeStakeUpdateStreamBuilder.class, NODE_STAKE_UPDATE))
                 .willReturn(streamBuilder);
         given(streamBuilder.transaction(any())).willReturn(streamBuilder);
         given(streamBuilder.memo(any())).willReturn(streamBuilder);

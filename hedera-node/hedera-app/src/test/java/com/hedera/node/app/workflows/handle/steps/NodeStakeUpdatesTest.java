@@ -18,6 +18,8 @@ package com.hedera.node.app.workflows.handle.steps;
 
 import static com.hedera.node.app.fixtures.AppTestBase.DEFAULT_CONFIG;
 import static com.hedera.node.app.service.token.impl.handlers.staking.StakePeriodManager.DEFAULT_STAKING_PERIOD_MINS;
+import static com.hedera.node.config.types.StreamMode.BLOCKS;
+import static com.hedera.node.config.types.StreamMode.RECORDS;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
@@ -102,7 +104,7 @@ class NodeStakeUpdatesTest {
         given(exchangeRateManager.exchangeRates()).willReturn(ExchangeRateSet.DEFAULT);
         given(context.configuration()).willReturn(DEFAULT_CONFIG);
 
-        subject.process(stack, context, true, dispatch);
+        subject.process(dispatch, stack, context, RECORDS, true, Instant.EPOCH);
 
         verify(stakingPeriodCalculator).updateNodes(context, ExchangeRateSet.DEFAULT);
         verify(exchangeRateManager).updateMidnightRates(stack);
@@ -119,14 +121,14 @@ class NodeStakeUpdatesTest {
                                 .nanos(CONSENSUS_TIME_1234567.getNano()))
                         .build());
 
-        subject.process(stack, context, false, dispatch);
+        subject.process(dispatch, stack, context, RECORDS, false, Instant.EPOCH);
 
         verifyNoInteractions(stakingPeriodCalculator);
         verifyNoInteractions(exchangeRateManager);
     }
 
     @Test
-    void processUpdateCalledForNextPeriod() {
+    void processUpdateCalledForNextPeriodWithRecordsStreamMode() {
         given(context.configuration()).willReturn(newPeriodMinsConfig());
         // Use any number of seconds that gets isNextPeriod(...) to return true
         final var currentConsensusTime = CONSENSUS_TIME_1234567.plusSeconds(500_000);
@@ -144,7 +146,29 @@ class NodeStakeUpdatesTest {
                 .isTrue();
         given(exchangeRateManager.exchangeRates()).willReturn(ExchangeRateSet.DEFAULT);
 
-        subject.process(stack, context, false, dispatch);
+        subject.process(dispatch, stack, context, RECORDS, false, Instant.EPOCH);
+
+        verify(stakingPeriodCalculator)
+                .updateNodes(
+                        argThat(stakingContext -> currentConsensusTime.equals(stakingContext.consensusTime())),
+                        eq(ExchangeRateSet.DEFAULT));
+        verify(exchangeRateManager).updateMidnightRates(stack);
+    }
+
+    @Test
+    void processUpdateCalledForNextPeriodWithBlocksStreamMode() {
+        given(context.configuration()).willReturn(newPeriodMinsConfig());
+        // Use any number of seconds that gets isNextPeriod(...) to return true
+        final var currentConsensusTime = CONSENSUS_TIME_1234567.plusSeconds(500_000);
+        given(context.consensusTime()).willReturn(currentConsensusTime);
+
+        // Pre-condition check
+        Assertions.assertThat(
+                        NodeStakeUpdates.isNextStakingPeriod(currentConsensusTime, CONSENSUS_TIME_1234567, context))
+                .isTrue();
+        given(exchangeRateManager.exchangeRates()).willReturn(ExchangeRateSet.DEFAULT);
+
+        subject.process(dispatch, stack, context, BLOCKS, false, CONSENSUS_TIME_1234567);
 
         verify(stakingPeriodCalculator)
                 .updateNodes(
@@ -166,7 +190,8 @@ class NodeStakeUpdatesTest {
         given(context.consensusTime()).willReturn(CONSENSUS_TIME_1234567.plus(Duration.ofDays(2)));
         given(context.configuration()).willReturn(DEFAULT_CONFIG);
 
-        Assertions.assertThatNoException().isThrownBy(() -> subject.process(stack, context, false, dispatch));
+        Assertions.assertThatNoException()
+                .isThrownBy(() -> subject.process(dispatch, stack, context, RECORDS, false, Instant.EPOCH));
         verify(stakingPeriodCalculator).updateNodes(context, ExchangeRateSet.DEFAULT);
         verify(exchangeRateManager).updateMidnightRates(stack);
     }
