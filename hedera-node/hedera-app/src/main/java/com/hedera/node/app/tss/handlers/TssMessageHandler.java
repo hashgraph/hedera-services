@@ -31,12 +31,13 @@ import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hedera.node.app.tss.TssCryptographyManager;
 import com.hedera.node.app.tss.stores.WritableTssBaseStore;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.metrics.api.Counter;
+import com.swirlds.metrics.api.Metrics;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * Validates and potentially responds with a vote to a {@link TssMessageTransactionBody}.
@@ -45,17 +46,25 @@ import javax.inject.Singleton;
 @Singleton
 public class TssMessageHandler implements TransactionHandler {
     private static final Logger log = LogManager.getLogger(TssMessageHandler.class);
+    private static final String TSS_MESSAGE_COUNTER_METRIC = "tss_message";
+    private static final String TSS_MESSAGE_COUNTER_METRIC_DESC = "total numbers of tss messages";
+
     private final TssSubmissions submissionManager;
     private final AppContext.LedgerSigner ledgerSigner;
     private final TssCryptographyManager tssCryptographyManager;
+    private final Counter tssMessageTxCounter;
 
     @Inject
-    public TssMessageHandler(@NonNull final TssSubmissions submissionManager,
-                             @NonNull final AppContext.LedgerSigner ledgerSigner,
-                             @NonNull final TssCryptographyManager tssCryptographyManager) {
+    public TssMessageHandler(
+            @NonNull final TssSubmissions submissionManager,
+            @NonNull final AppContext.LedgerSigner ledgerSigner,
+            @NonNull final TssCryptographyManager tssCryptographyManager,
+            @NonNull final Metrics metrics) {
         this.submissionManager = requireNonNull(submissionManager);
         this.ledgerSigner = requireNonNull(ledgerSigner);
         this.tssCryptographyManager = requireNonNull(tssCryptographyManager);
+        this.tssMessageTxCounter = metrics.getOrCreate(
+                new Counter.Config("app", TSS_MESSAGE_COUNTER_METRIC).withDescription(TSS_MESSAGE_COUNTER_METRIC_DESC));
     }
 
     @Override
@@ -90,7 +99,8 @@ public class TssMessageHandler implements TransactionHandler {
                 .rosterHash(op.targetRosterHash())
                 .sequenceNumber(numberOfAlreadyExistingMessages)
                 .build();
-        // Each tss message is stored in the tss message state and is sent to CryptographyManager for further processing.
+        // Each tss message is stored in the tss message state and is sent to CryptographyManager for further
+        // processing.
         tssState.put(key, op);
         tssCryptographyManager.handleTssMessageTransaction(op, context);
 
@@ -102,5 +112,8 @@ public class TssMessageHandler implements TransactionHandler {
                 .ledgerId(Bytes.EMPTY)
                 .build();
         submissionManager.submitTssVote(tssVote, context);
+
+        // Track the number of times we successfully handled a TssMessageTransaction.
+        tssMessageTxCounter.increment();
     }
 }
