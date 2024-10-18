@@ -44,6 +44,7 @@ jobs:
   title-check:
     name: Title Check
     runs-on: network-node-linux-medium
+    if: ${{ !github.event.pull_request.base.repo.fork }}
     steps:
       - name: Harden Runner
         uses: step-security/harden-runner@0080882f6c36860b6ba35c610c98ce87d4e2f26f # v2.10.2
