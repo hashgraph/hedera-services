@@ -16,17 +16,14 @@
 
 package com.hedera.node.app.workflows.handle.steps;
 
-import static com.hedera.node.app.records.schemas.V0490BlockRecordSchema.BLOCK_INFO_STATE_KEY;
 import static com.hedera.node.app.workflows.handle.TransactionType.GENESIS_TRANSACTION;
-import static com.hedera.node.app.workflows.handle.TransactionType.ORDINARY_TRANSACTION;
 import static com.hedera.node.app.workflows.handle.TransactionType.POST_UPGRADE_TRANSACTION;
 import static com.hedera.node.app.workflows.standalone.impl.StandaloneDispatchFactory.getTxnCategory;
+import static com.hedera.node.config.types.StreamMode.RECORDS;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.Key;
-import com.hedera.hapi.node.state.blockrecords.BlockInfo;
-import com.hedera.hapi.platform.state.PlatformState;
 import com.hedera.node.app.blocks.impl.BoundaryStateChangeListener;
 import com.hedera.node.app.blocks.impl.KVStateChangeListener;
 import com.hedera.node.app.fees.ExchangeRateManager;
@@ -36,14 +33,13 @@ import com.hedera.node.app.fees.ResourcePriceCalculatorImpl;
 import com.hedera.node.app.ids.EntityIdService;
 import com.hedera.node.app.ids.EntityNumGeneratorImpl;
 import com.hedera.node.app.ids.WritableEntityIdStore;
-import com.hedera.node.app.records.BlockRecordManager;
-import com.hedera.node.app.records.BlockRecordService;
 import com.hedera.node.app.service.token.api.FeeStreamBuilder;
 import com.hedera.node.app.service.token.api.TokenServiceApi;
 import com.hedera.node.app.services.ServiceScopeLookup;
 import com.hedera.node.app.signature.DefaultKeyVerifier;
 import com.hedera.node.app.spi.authorization.Authorizer;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
+import com.hedera.node.app.spi.records.BlockRecordInfo;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.record.StreamBuilder;
 import com.hedera.node.app.store.ReadableStoreFactory;
@@ -68,9 +64,8 @@ import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.BlockStreamConfig;
 import com.hedera.node.config.data.ConsensusConfig;
 import com.hedera.node.config.data.HederaConfig;
+import com.hedera.node.config.types.StreamMode;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.platform.state.service.PlatformStateService;
-import com.swirlds.platform.state.service.schemas.V0540PlatformStateSchema;
 import com.swirlds.platform.system.events.ConsensusEvent;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
 import com.swirlds.state.State;
@@ -92,9 +87,23 @@ public record UserTxn(
         @NonNull PreHandleResult preHandleResult,
         @NonNull ReadableStoreFactory readableStoreFactory,
         @NonNull Configuration config,
-        @NonNull Instant lastHandledConsensusTime,
         @NonNull NodeInfo creatorInfo) {
 
+    /**
+     * Creates a new {@link UserTxn} instance from the given parameters.
+     * @param state the state the transaction will be applied to
+     * @param event the consensus event containing the transaction
+     * @param creatorInfo the node information of the creator
+     * @param platformTxn the transaction itself
+     * @param consensusNow the current consensus time
+     * @param type the type of the transaction
+     * @param configProvider the configuration provider
+     * @param storeMetricsService the store metrics service
+     * @param kvStateChangeListener the key-value state change listener
+     * @param boundaryStateChangeListener the boundary state change listener
+     * @param preHandleWorkflow the pre-handle workflow
+     * @return the new user transaction
+     */
     public static UserTxn from(
             // @UserTxnScope
             @NonNull final State state,
@@ -102,28 +111,22 @@ public record UserTxn(
             @NonNull final NodeInfo creatorInfo,
             @NonNull final ConsensusTransaction platformTxn,
             @NonNull final Instant consensusNow,
-            @NonNull final Instant lastHandledConsensusTime,
+            @NonNull final TransactionType type,
             // @Singleton
             @NonNull final ConfigProvider configProvider,
             @NonNull final StoreMetricsService storeMetricsService,
             @NonNull final KVStateChangeListener kvStateChangeListener,
             @NonNull final BoundaryStateChangeListener boundaryStateChangeListener,
             @NonNull final PreHandleWorkflow preHandleWorkflow) {
-
-        final TransactionType type;
-        if (lastHandledConsensusTime.equals(Instant.EPOCH)) {
-            type = GENESIS_TRANSACTION;
-        } else if (isUpgradeBoundary(state)) {
-            type = POST_UPGRADE_TRANSACTION;
-        } else {
-            type = ORDINARY_TRANSACTION;
-        }
         final var config = configProvider.getConfiguration();
         final var consensusConfig = config.getConfigData(ConsensusConfig.class);
         final var blockStreamConfig = config.getConfigData(BlockStreamConfig.class);
+        final var maxPrecedingRecords = (type == GENESIS_TRANSACTION || type == POST_UPGRADE_TRANSACTION)
+                ? Integer.MAX_VALUE
+                : consensusConfig.handleMaxPrecedingRecords();
         final var stack = SavepointStackImpl.newRootStack(
                 state,
-                type != ORDINARY_TRANSACTION ? Integer.MAX_VALUE : consensusConfig.handleMaxPrecedingRecords(),
+                maxPrecedingRecords,
                 consensusConfig.handleMaxFollowingRecords(),
                 boundaryStateChangeListener,
                 kvStateChangeListener,
@@ -146,7 +149,6 @@ public record UserTxn(
                 preHandleResult,
                 readableStoreFactory,
                 config,
-                lastHandledConsensusTime,
                 creatorInfo);
     }
 
@@ -157,7 +159,7 @@ public record UserTxn(
      * @param networkInfo the network information
      * @param feeManager the fee manager
      * @param dispatchProcessor the dispatch processor
-     * @param blockRecordManager the block record manager
+     * @param blockRecordInfo the block record manager
      * @param serviceScopeLookup the service scope lookup
      * @param storeMetricsService the store metrics service
      * @param exchangeRateManager the exchange rate manager
@@ -165,7 +167,7 @@ public record UserTxn(
      * @param dispatcher the transaction dispatcher
      * @param networkUtilizationManager the network utilization manager
      * @param baseBuilder the base record builder
-     * @param blockStreamConfig the block stream configuration
+     * @param streamMode the stream mode
      * @return the new dispatch instance
      */
     public Dispatch newDispatch(
@@ -174,7 +176,7 @@ public record UserTxn(
             @NonNull final NetworkInfo networkInfo,
             @NonNull final FeeManager feeManager,
             @NonNull final DispatchProcessor dispatchProcessor,
-            @NonNull final BlockRecordManager blockRecordManager,
+            @NonNull final BlockRecordInfo blockRecordInfo,
             @NonNull final ServiceScopeLookup serviceScopeLookup,
             @NonNull final StoreMetricsService storeMetricsService,
             @NonNull final ExchangeRateManager exchangeRateManager,
@@ -183,7 +185,7 @@ public record UserTxn(
             @NonNull final NetworkUtilizationManager networkUtilizationManager,
             // @UserTxnScope
             @NonNull final StreamBuilder baseBuilder,
-            @NonNull final BlockStreamConfig blockStreamConfig) {
+            @NonNull final StreamMode streamMode) {
         final var keyVerifier = new DefaultKeyVerifier(
                 txnInfo.signatureMap().sigPair().size(),
                 config.getConfigData(HederaConfig.class),
@@ -207,7 +209,7 @@ public record UserTxn(
                 txnInfo,
                 config,
                 authorizer,
-                blockRecordManager,
+                blockRecordInfo,
                 priceCalculator,
                 feeManager,
                 storeFactory,
@@ -225,7 +227,7 @@ public record UserTxn(
                 throttleAdvisor,
                 feeAccumulator);
         final var fees = dispatcher.dispatchComputeFees(dispatchHandleContext);
-        if (blockStreamConfig.streamBlocks()) {
+        if (streamMode != RECORDS) {
             final var congestionMultiplier = feeManager.congestionMultiplierFor(
                     txnInfo.txBody(), txnInfo.functionality(), storeFactory.asReadOnly());
             if (congestionMultiplier > 1) {
@@ -255,32 +257,10 @@ public record UserTxn(
 
     /**
      * Returns the base stream builder for this user transaction.
+     *
      * @return the base stream builder
      */
     public StreamBuilder baseBuilder() {
         return stack.getBaseBuilder(StreamBuilder.class);
-    }
-
-    /**
-     * Returns whether the given state indicates this transaction is the first after an upgrade.
-     * @param state the Hedera state
-     * @return whether the given state indicates this transaction is the first after an upgrade
-     */
-    private static boolean isUpgradeBoundary(@NonNull final State state) {
-        final var platformState = state.getReadableStates(PlatformStateService.NAME)
-                .<PlatformState>getSingleton(V0540PlatformStateSchema.PLATFORM_STATE_KEY)
-                .get();
-        requireNonNull(platformState);
-        if (platformState.freezeTime() == null
-                || !platformState.freezeTimeOrThrow().equals(platformState.lastFrozenTime())) {
-            return false;
-        } else {
-            // Check the state directly here instead of going through BlockManager to allow us
-            // to manipulate this condition easily in embedded tests
-            final var blockInfo = state.getReadableStates(BlockRecordService.NAME)
-                    .<BlockInfo>getSingleton(BLOCK_INFO_STATE_KEY)
-                    .get();
-            return !requireNonNull(blockInfo).migrationRecordsStreamed();
-        }
     }
 }

@@ -132,7 +132,7 @@ public class TokenDissociateFromAccountHandler implements TransactionHandler {
         // positive balances to remove from the account separate from the account object itself. Confusing, but we'll
         // _add_ the number to subtract to each aggregating variable. The total subtraction for each variable will be
         // done outside the dissociation loop
-        var numNftsToSubtract = 0;
+        var numNftsToSubtract = 0L;
         var numAutoAssociationsToSubtract = 0;
         var numAssociationsToSubtract = 0;
         var numPositiveBalancesToSubtract = 0;

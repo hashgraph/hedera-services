@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,10 +14,6 @@
  * limitations under the License.
  */
 
-package com.hedera.services.bdd.spec.utilops.streams;
+package com.hedera.node.app.tss.pairings;
 
-public enum AssertionOutcome {
-    SUCCESS,
-    FAILURE,
-    TIMEOUT
-}
+public record PairingPublicKey(GroupElement publicKey, SignatureSchema signatureSchema) {}

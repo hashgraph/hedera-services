@@ -135,9 +135,11 @@ public final class FeeManager {
             currentSchedule = FeeSchedule.DEFAULT;
         }
 
-        // Populate the map of HederaFunctionality -> FeeData for the current schedule
-        this.currentFeeDataMap = new HashMap<>();
-        populateFeeDataMap(currentFeeDataMap, currentSchedule.transactionFeeSchedule());
+        // Populate the map of HederaFunctionality -> FeeData for the current schedule, but avoid mutating
+        // the active one in-place as other threads may be using it for ingest/query fee calculations
+        final var newCurrentFeeDataMap = new HashMap<Entry, FeeData>();
+        populateFeeDataMap(newCurrentFeeDataMap, currentSchedule.transactionFeeSchedule());
+        this.currentFeeDataMap = newCurrentFeeDataMap;
 
         // Get the expiration time of the current schedule
         if (currentSchedule.hasExpiryTime()) {
@@ -160,9 +162,11 @@ public final class FeeManager {
             logger.warn("Unable to parse next fee schedule, will default to the current fee schedule.");
             nextFeeDataMap = new HashMap<>(currentFeeDataMap);
         } else {
-            // Populate the map of HederaFunctionality -> FeeData for the current schedule
-            this.nextFeeDataMap = new HashMap<>();
-            populateFeeDataMap(nextFeeDataMap, nextSchedule.transactionFeeSchedule());
+            // Populate the map of HederaFunctionality -> FeeData for the next schedule, but avoid mutating
+            // the active one in-place as other threads may be using it for ingest/query fee calculations
+            final var newNextFeeDataMap = new HashMap<Entry, FeeData>();
+            populateFeeDataMap(newNextFeeDataMap, nextSchedule.transactionFeeSchedule());
+            this.nextFeeDataMap = newNextFeeDataMap;
         }
 
         return SUCCESS;

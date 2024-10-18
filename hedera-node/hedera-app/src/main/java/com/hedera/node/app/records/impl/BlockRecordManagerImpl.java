@@ -32,7 +32,6 @@ import com.hedera.node.app.records.BlockRecordService;
 import com.hedera.node.app.state.SingleTransactionRecord;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.BlockRecordStreamConfig;
-import com.hedera.node.config.data.BlockStreamConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
@@ -89,9 +88,7 @@ public final class BlockRecordManagerImpl implements BlockRecordManager {
     /**
      * True when we have completed event recovery. This is not yet implemented properly.
      */
-    private boolean eventRecoveryCompleted = false;
-
-    private final ConfigProvider configProvider;
+    private boolean eventRecoveryCompleted;
 
     /**
      * Construct BlockRecordManager
@@ -106,7 +103,6 @@ public final class BlockRecordManagerImpl implements BlockRecordManager {
             @NonNull final State state,
             @NonNull final BlockRecordStreamProducer streamFileProducer) {
         requireNonNull(state);
-        this.configProvider = requireNonNull(configProvider);
         this.streamFileProducer = requireNonNull(streamFileProducer);
 
         // FUTURE: check if we were started in event recover mode and if event recovery needs to be completed before we
@@ -271,7 +267,6 @@ public final class BlockRecordManagerImpl implements BlockRecordManager {
         // Update running hashes in state with the latest running hash and the previous 3 running hashes.
         final var states = state.getWritableStates(BlockRecordService.NAME);
         final var runningHashesState = states.<RunningHashes>getSingleton(RUNNING_HASHES_STATE_KEY);
-        final var blockRecordInfoState = states.<BlockInfo>getSingleton(BLOCK_INFO_STATE_KEY);
         final var existingRunningHashes = runningHashesState.get();
         assert existingRunningHashes != null : "This cannot be null because genesis migration sets it";
         final var runningHashes = new RunningHashes(
@@ -282,11 +277,6 @@ public final class BlockRecordManagerImpl implements BlockRecordManager {
         runningHashesState.put(runningHashes);
         // Commit the changes to the merkle tree.
         ((WritableSingletonStateBase<RunningHashes>) runningHashesState).commit();
-
-        final var blockStreamConfig = configProvider.getConfiguration().getConfigData(BlockStreamConfig.class);
-        if (blockStreamConfig.streamBlocks()) {
-            // FUTURE: Add runningHash state changes block item and block info block item to the stream
-        }
     }
 
     public long lastBlockNo() {
@@ -361,11 +351,6 @@ public final class BlockRecordManagerImpl implements BlockRecordManager {
                 .consTimeOfLastHandledTxn(Timestamp.newBuilder()
                         .seconds(consensusTime.getEpochSecond())
                         .nanos(consensusTime.getNano()));
-        if (!this.lastBlockInfo.migrationRecordsStreamed()) {
-            // Any records created during migration should have been published already. Now we shut off the flag to
-            // disallow further publishing
-            builder.migrationRecordsStreamed(true);
-        }
         final var newBlockInfo = builder.build();
 
         // Update the latest block info in state
@@ -429,7 +414,7 @@ public final class BlockRecordManagerImpl implements BlockRecordManager {
      */
     private BlockInfo infoOfJustFinished(
             @NonNull final BlockInfo lastBlockInfo,
-            @NonNull final long justFinishedBlockNumber,
+            final long justFinishedBlockNumber,
             @NonNull final Bytes hashOfJustFinishedBlock,
             @NonNull final Instant currentBlockFirstTransactionTime) {
         // compute new block hashes bytes

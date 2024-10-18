@@ -83,9 +83,6 @@ import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
 public class ScheduleSignSpecs {
-    private static final int SCHEDULE_EXPIRY_TIME_SECS = 10;
-    private static final int SCHEDULE_EXPIRY_TIME_MS = SCHEDULE_EXPIRY_TIME_SECS * 1000;
-
     @HapiTest
     final Stream<DynamicTest> idVariantsTreatedAsExpected() {
         return defaultHapiSpec("idVariantsTreatedAsExpected")

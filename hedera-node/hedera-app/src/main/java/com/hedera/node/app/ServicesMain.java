@@ -250,6 +250,12 @@ public class ServicesMain implements SwirldMain {
                 .withPlatformContext(platformContext)
                 .withConfiguration(configuration)
                 .withAddressBook(addressBook)
+                // C.f. https://github.com/hashgraph/hedera-services/issues/14751,
+                // we need to choose the correct roster in the following cases:
+                //  - At genesis, a roster loaded from disk
+                //  - At restart, the active roster in the saved state
+                //  - At upgrade boundary, the candidate roster in the saved state IF
+                //    that state satisfies conditions (e.g. the roster has been keyed)
                 .withRoster(roster)
                 .withKeysAndCerts(keysAndCerts);
 
