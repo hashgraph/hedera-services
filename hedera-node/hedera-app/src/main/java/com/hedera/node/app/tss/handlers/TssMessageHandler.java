@@ -85,12 +85,13 @@ public class TssMessageHandler implements TransactionHandler {
 
         final var tssState = context.storeFactory().writableStore(WritableTssBaseStore.class);
         final var numberOfAlreadyExistingMessages = tssState.messageStateSize();
+        // The sequence number starts from 0 and increments by 1 for each new message.
         final var key = TssMessageMapKey.newBuilder()
                 .rosterHash(op.targetRosterHash())
-                .sequenceNumber(numberOfAlreadyExistingMessages + 1)
+                .sequenceNumber(numberOfAlreadyExistingMessages)
                 .build();
+        // Each tss message is stored in the tss message state and is sent to CryptographyManager for further processing.
         tssState.put(key, op);
-
         tssCryptographyManager.handleTssMessageTransaction(op, context);
 
         final var tssVote = TssVoteTransactionBody.newBuilder()

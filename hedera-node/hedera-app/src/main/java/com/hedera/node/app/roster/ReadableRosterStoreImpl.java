@@ -80,7 +80,7 @@ public class ReadableRosterStoreImpl implements ReadableRosterStore{
     }
 
     @Override
-    public Roster get(ProtoBytes protoBytes) {
-        return rosterMap.get(protoBytes);
+    public Roster get(Bytes rosterHash) {
+        return rosterMap.get(ProtoBytes.newBuilder().value(rosterHash).build());
     }
 }

@@ -21,6 +21,6 @@ public interface ReadableRosterStore {
     Roster getCandidateRoster();
 
     Roster getActiveRoster();
-    Roster get(ProtoBytes protoBytes);
+    Roster get(Bytes protoBytes);
 
 }

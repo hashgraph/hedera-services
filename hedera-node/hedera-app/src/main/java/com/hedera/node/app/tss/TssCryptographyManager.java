@@ -17,15 +17,20 @@
 package com.hedera.node.app.tss;
 
 import com.hedera.hapi.node.state.primitives.ProtoBytes;
+import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.hapi.node.state.roster.RosterEntry;
 import com.hedera.hapi.node.state.tss.TssVoteMapKey;
 import com.hedera.node.app.roster.ReadableRosterStore;
+import com.hedera.node.app.spi.AppContext;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.hapi.services.auxiliary.tss.TssMessageTransactionBody;
 import com.hedera.hapi.services.auxiliary.tss.TssVoteTransactionBody;
 import com.hedera.node.app.tss.api.TssLibrary;
 import com.hedera.node.app.tss.api.TssMessage;
 import com.hedera.node.app.tss.api.TssParticipantDirectory;
+import com.hedera.node.app.tss.api.TssPrivateShare;
+import com.hedera.node.app.tss.api.TssPublicShare;
+import com.hedera.node.app.tss.pairings.PairingPublicKey;
 import com.hedera.node.app.tss.stores.WritableTssBaseStore;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.platform.NodeId;
@@ -37,8 +42,11 @@ import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+
+import static java.util.Objects.requireNonNull;
 
 /**
  * This is yet to be implemented
@@ -46,9 +54,14 @@ import java.util.concurrent.ConcurrentHashMap;
 @Singleton
 public class TssCryptographyManager {
     private static final int NUM_MAX_SHARES_PER_NODE = 10;
-    private Map<Bytes, List<TssMessageTransactionBody>> tssMessages = new ConcurrentHashMap<>();
-    Map<Bytes, List<TssVoteTransactionBody>> tssVotes = new ConcurrentHashMap<>();
-    Map<Bytes, BitSet> tssVoteBitSet = new ConcurrentHashMap<>();
+    private Map<Bytes, List<TssMessage>> tssMessages = new LinkedHashMap<>();
+    Map<Bytes, List<TssVoteTransactionBody>> tssVotes = new LinkedHashMap<>();
+    Map<Bytes, BitSet> tssVoteBitSet = new LinkedHashMap<>();
+    Map<Bytes, PairingPublicKey> ledgerIds = new LinkedHashMap<>();
+    Map<Bytes, Map<Long, Integer>> nodeShareCounts = new LinkedHashMap<>();
+    Map<Bytes, List<TssPublicShare>> publicShares = new LinkedHashMap<>();
+    Map<Bytes, List<TssPrivateShare>> privateShares = new LinkedHashMap<>();
+
     private Set<Bytes> votingClosed = new LinkedHashSet();
     private boolean createNewLedgerId = false;
     private NodeId nodeId;
@@ -56,80 +69,119 @@ public class TssCryptographyManager {
     private final TssLibrary tssLibrary;
     private TssParticipantDirectory tssParticipantDirectory;
 
+    private AppContext.LedgerSigner ledgerSigner;
+
     public TssCryptographyManager(NodeId nodeId,
                                   TssLibrary tssLibrary,
-                                  TssParticipantDirectory tssParticipantDirectory) {
+                                  TssParticipantDirectory tssParticipantDirectory,
+                                  AppContext.LedgerSigner ledgerSigner) {
         this.nodeId = nodeId;
         this.tssLibrary = tssLibrary;
         this.tssParticipantDirectory = tssParticipantDirectory;
-        // This is yet to be implemented
+        this.ledgerSigner = ledgerSigner;
     }
 
     /**
      * Submit TSS message transactions to the transaction pool
      */
     public void handleTssMessageTransaction(TssMessageTransactionBody op, HandleContext context) {
-        final var targetRoster = op.targetRosterHash();
-        final var sourceRoster = op.sourceRosterHash();
+        final var targetRosterHash = op.targetRosterHash();
+        final var sourceRosterHash = op.sourceRosterHash();
         //1. Add it to the list of TssMessageTransactions for the target roster.
-        tssMessages.computeIfAbsent(targetRoster, k -> new LinkedList<>()).add(op);
+        tssMessages.computeIfAbsent(targetRosterHash, k -> new LinkedList<>()).add(new TssMessage(op.tssMessage().toByteArray()));
 
         final var tssStore = context.storeFactory().writableStore(WritableTssBaseStore.class);
+        final var rosterStore = context.storeFactory().readableStore(ReadableRosterStore.class);
         final var hasVoteSubmitted = tssStore.getVote(TssVoteMapKey.newBuilder()
                 .nodeId(nodeId.id())
-                .rosterHash(targetRoster)
+                .rosterHash(targetRosterHash)
                 .build()) != null;
         // If the node didn't submit a TssVoteTransaction
-        if (!votingClosed.contains(targetRoster) && !hasVoteSubmitted) {
+        if (!votingClosed.contains(targetRosterHash) && !hasVoteSubmitted) {
             // validate TSS transaction
             final boolean isValid = tssLibrary.verifyTssMessage(tssParticipantDirectory, new TssMessage(op.tssMessage().toByteArray()));
             if (isValid) {
                 //2. If the TSS message is valid, set the bit vector for the votes
-                tssVoteBitSet.computeIfAbsent(targetRoster, k -> new BitSet()).set((int) op.shareIndex());
+                tssVoteBitSet.computeIfAbsent(targetRosterHash, k -> new BitSet()).set((int) op.shareIndex());
+            }
+        }
+        nodeShareCounts = sharesFromWeight(rosterStore, sourceRosterHash);
+        boolean tssMessageThresholdMet = isThresholdMet(sourceRosterHash, targetRosterHash, context);
+        // If public keys for target roster have not been computed yet and the threshold is met, compute the public keys
+        if (tssMessageThresholdMet) {
+            final var computedPublicShares = tssLibrary.computePublicShares(tssParticipantDirectory, tssMessages.get(targetRosterHash));
+            publicShares.put(targetRosterHash, computedPublicShares);
+            // compute the ledger id
+            final var ledgerId = tssLibrary.aggregatePublicShares(computedPublicShares);
+            ledgerIds.put(targetRosterHash, ledgerId);
+
+            // If this node is present in the target roster with same tssEncryptionKey as the source roster, then
+            // add the private shares to the list of private shares
+            final var sourceRoster = rosterStore.get(sourceRosterHash);
+            final var targetRoster = rosterStore.get(targetRosterHash);
+            final var recoveredPrivateShares = tssLibrary.decryptPrivateShares(tssParticipantDirectory, tssMessages.get(targetRosterHash));
+
+            final var sourceRosterEncryptionKey = requireNonNull(getRosterEntry(sourceRoster))
+                    .get().tssEncryptionKey();
+            final var targetRosterEntry = targetRoster.rosterEntries().stream()
+                    .filter(e -> e.nodeId() == nodeId.id())
+                    .findFirst();
+            // If the node is in the roster, but the tssEncryptionKey is different, a restart may be required
+            // to pickup the correct encryption key from disk. so, do nothing here
+            if (targetRosterEntry.isPresent() && targetRosterEntry.get().tssEncryptionKey().equals(sourceRosterEncryptionKey)) {
+                privateShares.put(targetRosterHash, recoveredPrivateShares);
             }
 
-        }
-        final boolean tssMessageThresholdMet = false;
-
-        if(isThresholdMet(sourceRoster, context)) {
-            //3. If the threshold is met, create a new ledger id
-            createNewLedgerId = true;
+            // If the target roster hash is not in the votingClosed set and there is no TssVoteTransaction
+            // from this node
+            if(!votingClosed.contains(targetRosterHash)) {
+//                ledgerSigner.sign(ledgerId.)
+            }
         }
 
     }
 
-    private boolean isThresholdMet(final Bytes sourceRosterHash, final HandleContext context) {
-       final boolean thresholdMetForSourceRoster = !createNewLedgerId
-               && tssVoteBitSet.get(sourceRosterHash).cardinality() >= tssParticipantDirectory.getThreshold();
-       final boolean thresholdMetForTargetRoster = createNewLedgerId && metThresholdWeight(sourceRosterHash, context);
-       return thresholdMetForSourceRoster || thresholdMetForTargetRoster;
+    private Optional<RosterEntry> getRosterEntry(final Roster sourceRoster) {
+        return sourceRoster.rosterEntries().stream()
+                .filter(e -> e.nodeId() == nodeId.id())
+                .findFirst();
     }
 
-    private boolean metThresholdWeight(Bytes sourceRosterHash, final HandleContext context) {
-        final var tssStore = context.storeFactory().writableStore(WritableTssBaseStore.class);
+    private boolean isThresholdMet(final Bytes sourceRosterHash, Bytes targetRosterHash, final HandleContext context) {
+        final boolean thresholdMetForSourceRoster = !createNewLedgerId
+                && tssVoteBitSet.get(sourceRosterHash).cardinality() >= tssParticipantDirectory.getThreshold();
+        final boolean thresholdMetForTargetRoster = createNewLedgerId && metThresholdWeight(sourceRosterHash, targetRosterHash, context);
+        return thresholdMetForSourceRoster || thresholdMetForTargetRoster;
+    }
+
+    private boolean metThresholdWeight(Bytes sourceRosterHash, Bytes targetRosterHash, final HandleContext context) {
         final var rosterStore = context.storeFactory().readableStore(ReadableRosterStore.class);
         final var sourceRoster = rosterStore.get(ProtoBytes.newBuilder().value(sourceRosterHash).build());
-        if(sourceRoster == null) {
+        if (sourceRoster == null) {
             return false;
         } else {
-            final var totalWeight = sourceRoster.rosterEntries().stream().mapToLong(RosterEntry::weight).sum();
-
+            final var numTssMessagesReceived = tssMessages.get(targetRosterHash).size();
+            final var numShares = nodeShareCounts.get(sourceRosterHash).values().stream().mapToInt(Integer::intValue).sum();
+            // If more than 1/2 the consensus weight has been received, then the threshold is met
+            return numTssMessagesReceived >= numShares / 2;
         }
     }
 
-    private Map<Long, Long> sharesFromWeight(final ReadableRosterStore store, final Bytes rosterHash){
+    private Map<Bytes, Map<Long, Integer>> sharesFromWeight(final ReadableRosterStore store, final Bytes rosterHash) {
         final var roster = store.get(ProtoBytes.newBuilder().value(rosterHash).build());
         final var maxWeight = roster.rosterEntries()
                 .stream()
                 .mapToLong(RosterEntry::weight)
                 .max()
                 .orElse(0);
-        final var shares = new LinkedHashMap<Long, Long>();
-        for(final var entry : roster.rosterEntries()){
-            final var numShares = (10 * entry.weight() + maxWeight - 1)/ maxWeight;
+        final var shares = new LinkedHashMap<Long, Integer>();
+        final var rosterWithShares = new LinkedHashMap<Bytes, Map<Long, Integer>>();
+        for (final var entry : roster.rosterEntries()) {
+            final var numShares = (int) ((10 * entry.weight() + maxWeight - 1) / maxWeight);
             shares.put(entry.nodeId(), numShares);
         }
-        return shares;
+        rosterWithShares.put(rosterHash, shares);
+        return rosterWithShares;
     }
 
 }
