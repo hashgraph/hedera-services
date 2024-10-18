@@ -140,7 +140,7 @@ public class PreHandleContextImpl implements PreHandleContext {
             throws PreCheckException {
         this.storeFactory = requireNonNull(storeFactory, "storeFactory must not be null.");
         this.txn = requireNonNull(txn, "txn must not be null!");
-        this.payer = requireNonNull(payer, "payer msut not be null!");
+        this.payer = requireNonNull(payer, "payer must not be null!");
         this.configuration = requireNonNull(configuration, "configuration must not be null!");
         this.dispatcher = requireNonNull(dispatcher, "dispatcher must not be null!");
         this.isUserTx = isUserTx;
