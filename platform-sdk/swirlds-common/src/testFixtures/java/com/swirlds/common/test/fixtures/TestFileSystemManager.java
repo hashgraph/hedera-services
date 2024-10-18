@@ -20,6 +20,7 @@ import static com.swirlds.common.io.utility.FileUtils.rethrowIO;
 
 import com.swirlds.common.io.filesystem.FileSystemManager;
 import com.swirlds.common.io.utility.FileUtils;
+import com.swirlds.merkledb.MerkleDb;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.nio.file.Files;
@@ -89,5 +90,15 @@ public class TestFileSystemManager implements FileSystemManager {
             nameBuilder.append(tag);
         }
         return tempPath.resolve(nameBuilder.toString());
+    }
+
+    /**
+     * Reset the default path of the {@link MerkleDb} to a new temporary path
+     *
+     * @param pathSuffix the suffix to append to the path
+     */
+    public void resetMerkleDb(@Nullable final String pathSuffix) {
+        final Path defaultVirtualMapPath = resolveNewTemp(pathSuffix);
+        MerkleDb.setDefaultPath(defaultVirtualMapPath);
     }
 }

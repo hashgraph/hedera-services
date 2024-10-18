@@ -17,6 +17,7 @@
 package com.swirlds.virtualmap.internal.merkle;
 
 import static com.swirlds.virtualmap.internal.Path.INVALID_PATH;
+import static com.swirlds.virtualmap.test.fixtures.VirtualMapTestUtils.VIRTUAL_MAP_CONFIG;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
@@ -75,7 +76,7 @@ public class RecordAccessorImplTest {
     @BeforeEach
     void setUp() throws IOException {
         DummyVirtualStateAccessor state = new DummyVirtualStateAccessor();
-        VirtualNodeCache<TestKey, TestValue> cache = new VirtualNodeCache<>();
+        VirtualNodeCache<TestKey, TestValue> cache = new VirtualNodeCache<>(VIRTUAL_MAP_CONFIG);
         dataSource = new BreakableDataSource();
         records = new RecordAccessorImpl<>(
                 state, cache, TestKeySerializer.INSTANCE, TestValueSerializer.INSTANCE, dataSource);

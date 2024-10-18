@@ -34,8 +34,10 @@ import com.swirlds.common.constructable.RuntimeConstructable;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.CryptographyFactory;
 import com.swirlds.common.crypto.config.CryptoConfig;
-import com.swirlds.common.io.utility.LegacyTemporaryFileBuilder;
+import com.swirlds.common.io.config.FileSystemManagerConfig;
+import com.swirlds.common.io.config.FileSystemManagerConfig_;
 import com.swirlds.common.merkle.crypto.MerkleCryptographyFactory;
+import com.swirlds.common.test.fixtures.TestFileSystemManager;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.extensions.sources.SimpleConfigSource;
@@ -71,6 +73,7 @@ import com.swirlds.virtualmap.internal.merkle.VirtualRootNode;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.lang.reflect.Field;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Set;
@@ -99,16 +102,21 @@ class SerializationTest extends MerkleTestBase {
     @TempDir
     Path tempDir;
 
+    private TestFileSystemManager testFileSystemManager;
+
     @BeforeEach
     void setUp() throws IOException {
         setupConstructableRegistry();
-
-        this.dir = LegacyTemporaryFileBuilder.buildTemporaryDirectory();
+        this.testFileSystemManager = new TestFileSystemManager(tempDir);
+        this.dir = testFileSystemManager.resolveNewTemp(null);
+        Files.createDirectory(this.dir);
         this.config = new TestConfigBuilder()
                 .withSource(new SimpleConfigSource()
                         .withValue(VirtualMapConfig_.FLUSH_INTERVAL, 1 + "")
-                        .withValue(VirtualMapConfig_.COPY_FLUSH_THRESHOLD, 1 + ""))
+                        .withValue(VirtualMapConfig_.COPY_FLUSH_THRESHOLD, 1 + "")
+                        .withValue(FileSystemManagerConfig_.ROOT_PATH, this.dir.toString()))
                 .withConfigDataType(VirtualMapConfig.class)
+                .withConfigDataType(FileSystemManagerConfig.class)
                 .withConfigDataType(HederaConfig.class)
                 .withConfigDataType(CryptoConfig.class)
                 .getOrCreateConfig();
@@ -277,7 +285,8 @@ class SerializationTest extends MerkleTestBase {
 
         CRYPTO.digestTreeSync(loadedTree);
         // refreshing the dir
-        dir = LegacyTemporaryFileBuilder.buildTemporaryDirectory();
+        dir = testFileSystemManager.resolveNewTemp(null);
+        Files.createDirectory(dir);
         final byte[] serializedBytesWithCache = writeTree(loadedTree, dir);
 
         // let's load it again and see if it works
@@ -291,6 +300,8 @@ class SerializationTest extends MerkleTestBase {
 
     private MerkleStateRoot loadedMerkleTree(Schema schemaV1, byte[] serializedBytes)
             throws ConstructableRegistryException, IOException {
+        final var newRegistry = new MerkleSchemaRegistry(registry, FIRST_SERVICE, config, new SchemaApplications());
+        newRegistry.register(schemaV1);
 
         // Register the MerkleStateRoot so, when found in serialized bytes, it will register with
         // our migration callback, etc. (normally done by the Hedera main method)
@@ -299,6 +310,8 @@ class SerializationTest extends MerkleTestBase {
         final var pair = new ClassConstructorPair(MerkleStateRoot.class, constructor);
         registry.registerConstructable(pair);
 
+        // Restore to a fresh MerkleDb instance
+        testFileSystemManager.resetMerkleDb("merkledb");
         final MerkleStateRoot loadedTree = parseTree(serializedBytes, dir);
         initServices(schemaV1, loadedTree);
 
@@ -314,6 +327,7 @@ class SerializationTest extends MerkleTestBase {
                 schemaV1.getVersion(),
                 schemaV1.getVersion(),
                 config,
+                config,
                 networkInfo,
                 mock(Metrics.class),
                 mock(WritableEntityIdStore.class),
@@ -328,12 +342,13 @@ class SerializationTest extends MerkleTestBase {
 
         final var originalTree = (MerkleStateRoot) randomState.getState();
         final var originalRegistry =
-                new MerkleSchemaRegistry(registry, FIRST_SERVICE, DEFAULT_CONFIG, new SchemaApplications());
+                new MerkleSchemaRegistry(registry, FIRST_SERVICE, config, new SchemaApplications());
         originalRegistry.register(schemaV1);
         originalRegistry.migrate(
                 originalTree,
                 null,
                 v1,
+                config,
                 config,
                 networkInfo,
                 mock(Metrics.class),

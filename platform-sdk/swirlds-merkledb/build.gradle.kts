@@ -64,6 +64,7 @@ timingSensitiveModuleInfo {
 
 hammerModuleInfo {
     requires("com.swirlds.common")
+    requires("com.swirlds.config.api")
     requires("com.swirlds.merkledb")
     requires("com.swirlds.merkledb.test.fixtures")
     requires("com.swirlds.metrics.api")
