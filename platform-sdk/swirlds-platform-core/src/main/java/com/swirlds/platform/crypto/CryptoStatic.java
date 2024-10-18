@@ -25,6 +25,8 @@ import static com.swirlds.platform.crypto.CryptoConstants.PUBLIC_KEYS_FILE;
 import static com.swirlds.platform.crypto.KeyCertPurpose.SIGNING;
 
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.common.Address;
+import com.swirlds.common.AddressBook;
 import com.swirlds.common.crypto.CryptographyException;
 import com.swirlds.common.crypto.config.CryptoConfig;
 import com.swirlds.common.platform.NodeId;
@@ -39,8 +41,6 @@ import com.swirlds.platform.network.PeerInfo;
 import com.swirlds.platform.state.address.AddressBookNetworkUtils;
 import com.swirlds.platform.system.SystemExitCode;
 import com.swirlds.platform.system.SystemExitUtils;
-import com.swirlds.platform.system.address.Address;
-import com.swirlds.platform.system.address.AddressBook;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.FileInputStream;
 import java.io.IOException;

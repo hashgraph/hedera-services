@@ -18,6 +18,7 @@ package com.swirlds.platform;
 
 import static com.swirlds.logging.legacy.LogMarker.RECONNECT;
 
+import com.swirlds.common.AddressBook;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.stream.RunningEventHashOverride;
@@ -34,7 +35,6 @@ import com.swirlds.platform.state.nexus.SignedStateNexus;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;
-import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.address.AddressBookUtils;
 import com.swirlds.platform.system.status.actions.ReconnectCompleteAction;
 import com.swirlds.platform.wiring.PlatformWiring;

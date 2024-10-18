@@ -19,6 +19,7 @@ package com.swirlds.platform.network.connectivity;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.base.time.Time;
+import com.swirlds.common.AddressBook;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
@@ -30,7 +31,6 @@ import com.swirlds.platform.network.ConnectionTracker;
 import com.swirlds.platform.network.NetworkPeerIdentifier;
 import com.swirlds.platform.network.NetworkUtils;
 import com.swirlds.platform.network.PeerInfo;
-import com.swirlds.platform.system.address.AddressBook;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.List;

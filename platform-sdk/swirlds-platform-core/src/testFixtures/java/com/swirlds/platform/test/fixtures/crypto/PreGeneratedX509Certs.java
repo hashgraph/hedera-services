@@ -19,14 +19,14 @@ package com.swirlds.platform.test.fixtures.crypto;
 import static com.swirlds.common.test.fixtures.RandomUtils.getRandom;
 import static com.swirlds.platform.crypto.CryptoStatic.generateKeysAndCerts;
 
+import com.swirlds.common.Address;
+import com.swirlds.common.AddressBook;
+import com.swirlds.common.SerializableX509Certificate;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.io.ResourceLoader;
 import com.swirlds.common.test.fixtures.io.ResourceNotFoundException;
-import com.swirlds.platform.crypto.SerializableX509Certificate;
-import com.swirlds.platform.system.address.Address;
-import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;

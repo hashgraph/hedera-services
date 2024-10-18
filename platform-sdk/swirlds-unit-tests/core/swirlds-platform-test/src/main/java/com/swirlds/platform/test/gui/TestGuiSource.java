@@ -18,6 +18,7 @@ package com.swirlds.platform.test.gui;
 
 import static com.swirlds.platform.consensus.SyntheticSnapshot.GENESIS_SNAPSHOT;
 
+import com.swirlds.common.AddressBook;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.event.PlatformEvent;
@@ -25,7 +26,6 @@ import com.swirlds.platform.gui.GuiEventStorage;
 import com.swirlds.platform.gui.hashgraph.HashgraphGuiSource;
 import com.swirlds.platform.gui.hashgraph.internal.StandardGuiSource;
 import com.swirlds.platform.internal.ConsensusRound;
-import com.swirlds.platform.system.address.AddressBook;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.awt.FlowLayout;
 import java.util.List;

@@ -16,8 +16,8 @@
 
 package com.swirlds.platform.recovery.internal;
 
+import com.swirlds.common.AddressBook;
 import com.swirlds.common.io.IOIterator;
-import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.events.CesEvent;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;

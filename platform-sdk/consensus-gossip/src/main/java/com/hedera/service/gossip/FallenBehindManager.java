@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.gossip;
+package com.hedera.service.gossip;
 
 import com.swirlds.common.platform.NodeId;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -24,16 +24,16 @@ import java.util.List;
 public interface FallenBehindManager {
     /**
      * Notify the fallen behind manager that a node has reported that they don't have events we need. This means we have
-     * probably fallen behind and will need to reconnect
+     * probably fallen behind and will need to reconnect.
      *
      * @param id
-     * 		the id of the node who says we have fallen behind
+     *      the id of the node who says we have fallen behind
      */
     void reportFallenBehind(NodeId id);
 
     /**
      * We have determined that we have not fallen behind, or we have reconnected, so reset everything to the initial
-     * state
+     * state.
      */
     void resetFallenBehind();
 
@@ -46,14 +46,14 @@ public interface FallenBehindManager {
     List<NodeId> getNeededForFallenBehind();
 
     /**
-     * Have enough nodes reported that they don't have events we need, and that we have fallen behind?
+     * Have enough nodes reported that they don't have events we need, and that we have fallen behind.
      *
      * @return true if we have fallen behind, false otherwise
      */
     boolean hasFallenBehind();
 
     /**
-     * Get a list of neighbors to call if we need to do a reconnect
+     * Get a list of neighbors to call if we need to do a reconnect.
      *
      * @return a list of neighbor IDs
      */
@@ -61,15 +61,17 @@ public interface FallenBehindManager {
     List<NodeId> getNeighborsForReconnect();
 
     /**
-     * Should I attempt a reconnect with this neighbor?
+     * Should I attempt a reconnect with this neighbor.
      *
      * @param peerId
-     * 		the ID of the neighbor
+     *      the ID of the neighbor
      * @return true if I should attempt a reconnect
      */
     boolean shouldReconnectFrom(@NonNull NodeId peerId);
 
     /**
+     * Returns the number of nodes that have reported that have fallen behind.
+     *
      * @return the number of nodes that have told us we have fallen behind
      */
     int numReportedFallenBehind();

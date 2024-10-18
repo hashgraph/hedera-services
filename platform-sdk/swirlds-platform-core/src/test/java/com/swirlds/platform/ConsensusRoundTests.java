@@ -21,6 +21,7 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import com.swirlds.common.AddressBook;
 import com.swirlds.common.test.fixtures.RandomUtils;
 import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
@@ -28,7 +29,6 @@ import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.consensus.GraphGenerations;
 import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.internal.ConsensusRound;
-import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.test.fixtures.event.TestingEventBuilder;
 import java.time.Instant;
 import java.util.ArrayList;

@@ -16,7 +16,7 @@
 
 package com.swirlds.platform;
 
-import com.swirlds.platform.system.address.AddressBook;
+import com.swirlds.common.AddressBook;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.nio.file.Path;
 import java.util.Objects;

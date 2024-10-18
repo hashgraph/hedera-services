@@ -22,6 +22,7 @@ import static com.swirlds.logging.legacy.LogMarker.STATE_HASH;
 
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.platform.event.StateSignatureTransaction;
+import com.swirlds.common.AddressBook;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.platform.NodeId;
@@ -39,7 +40,6 @@ import com.swirlds.platform.state.iss.internal.ConsensusHashFinder;
 import com.swirlds.platform.state.iss.internal.HashValidityStatus;
 import com.swirlds.platform.state.iss.internal.RoundHashValidator;
 import com.swirlds.platform.state.signed.ReservedSignedState;
-import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.state.notifications.IssNotification;
 import com.swirlds.platform.system.state.notifications.IssNotification.IssType;
 import com.swirlds.platform.util.MarkerFileWriter;

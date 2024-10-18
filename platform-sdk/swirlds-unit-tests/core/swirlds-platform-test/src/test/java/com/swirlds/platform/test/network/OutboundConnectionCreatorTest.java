@@ -24,6 +24,7 @@ import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 
+import com.swirlds.common.AddressBook;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.platform.NodeId;
@@ -38,7 +39,6 @@ import com.swirlds.platform.network.SocketConnection;
 import com.swirlds.platform.network.connection.NotConnectedConnection;
 import com.swirlds.platform.network.connectivity.OutboundConnectionCreator;
 import com.swirlds.platform.network.connectivity.SocketFactory;
-import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
 import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder.WeightDistributionStrategy;
 import edu.umd.cs.findbugs.annotations.NonNull;

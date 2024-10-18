@@ -21,6 +21,8 @@ import static com.swirlds.logging.legacy.LogMarker.NETWORK;
 import static com.swirlds.logging.legacy.LogMarker.SOCKET_EXCEPTIONS;
 import static com.swirlds.logging.legacy.LogMarker.TCP_CONNECT_EXCEPTIONS;
 
+import com.swirlds.common.Address;
+import com.swirlds.common.AddressBook;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.gossip.sync.SyncInputStream;
@@ -32,8 +34,6 @@ import com.swirlds.platform.network.SocketConfig;
 import com.swirlds.platform.network.SocketConnection;
 import com.swirlds.platform.network.connection.NotConnectedConnection;
 import com.swirlds.platform.state.address.AddressBookNetworkUtils;
-import com.swirlds.platform.system.address.Address;
-import com.swirlds.platform.system.address.AddressBook;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.net.Socket;

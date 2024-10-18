@@ -19,6 +19,8 @@ package com.swirlds.demo.platform.stream;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.common.Address;
+import com.swirlds.common.AddressBook;
 import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.platform.NodeId;
@@ -27,8 +29,6 @@ import com.swirlds.demo.platform.PlatformTestingToolState;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.merkle.test.fixtures.map.pta.MapKey;
 import com.swirlds.platform.system.Platform;
-import com.swirlds.platform.system.address.Address;
-import com.swirlds.platform.system.address.AddressBook;
 import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;

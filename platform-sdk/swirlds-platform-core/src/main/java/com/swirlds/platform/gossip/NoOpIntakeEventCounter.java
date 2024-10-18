@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.gossip;
 
+import com.hedera.service.gossip.IntakeEventCounter;
 import com.swirlds.common.platform.NodeId;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;

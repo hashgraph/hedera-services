@@ -41,6 +41,7 @@ import static com.swirlds.platform.util.BootstrapUtils.loadSwirldMains;
 import static com.swirlds.platform.util.BootstrapUtils.setupBrowserWindow;
 
 import com.swirlds.base.time.Time;
+import com.swirlds.common.AddressBook;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.CryptographyFactory;
 import com.swirlds.common.crypto.CryptographyHolder;
@@ -72,7 +73,6 @@ import com.swirlds.platform.state.snapshot.SignedStateFileUtils;
 import com.swirlds.platform.system.SwirldMain;
 import com.swirlds.platform.system.SystemExitCode;
 import com.swirlds.platform.system.SystemExitUtils;
-import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.util.BootstrapUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.awt.GraphicsEnvironment;

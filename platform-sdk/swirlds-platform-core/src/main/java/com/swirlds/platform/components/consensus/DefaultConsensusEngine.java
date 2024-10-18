@@ -18,6 +18,7 @@ package com.swirlds.platform.components.consensus;
 
 import static com.swirlds.platform.system.status.PlatformStatus.REPLAYING_EVENTS;
 
+import com.swirlds.common.AddressBook;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.Consensus;
@@ -35,7 +36,6 @@ import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.metrics.AddedEventMetrics;
 import com.swirlds.platform.metrics.ConsensusMetrics;
 import com.swirlds.platform.metrics.ConsensusMetricsImpl;
-import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.status.PlatformStatus;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;

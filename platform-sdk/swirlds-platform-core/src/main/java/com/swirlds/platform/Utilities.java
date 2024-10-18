@@ -17,13 +17,13 @@
 package com.swirlds.platform;
 
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.common.AddressBook;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.internal.Deserializer;
 import com.swirlds.platform.internal.Serializer;
 import com.swirlds.platform.network.PeerInfo;
-import com.swirlds.platform.system.address.AddressBook;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;

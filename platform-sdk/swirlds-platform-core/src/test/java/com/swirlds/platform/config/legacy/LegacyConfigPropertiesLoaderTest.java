@@ -19,9 +19,9 @@ package com.swirlds.platform.config.legacy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
+import com.swirlds.common.Address;
+import com.swirlds.common.AddressBook;
 import com.swirlds.common.platform.NodeId;
-import com.swirlds.platform.system.address.Address;
-import com.swirlds.platform.system.address.AddressBook;
 import java.net.UnknownHostException;
 import java.nio.file.Path;
 import java.nio.file.Paths;

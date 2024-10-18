@@ -19,6 +19,8 @@ package com.swirlds.platform.network.connectivity;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.swirlds.common.Address;
+import com.swirlds.common.AddressBook;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.Utilities;
 import com.swirlds.platform.crypto.AddressBookAndCerts;
@@ -26,8 +28,6 @@ import com.swirlds.platform.crypto.CryptoArgsProvider;
 import com.swirlds.platform.crypto.KeysAndCerts;
 import com.swirlds.platform.network.NetworkUtils;
 import com.swirlds.platform.network.PeerInfo;
-import com.swirlds.platform.system.address.Address;
-import com.swirlds.platform.system.address.AddressBook;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;

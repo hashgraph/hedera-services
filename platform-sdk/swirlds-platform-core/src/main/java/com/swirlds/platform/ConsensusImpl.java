@@ -23,6 +23,7 @@ import static com.swirlds.platform.consensus.ConsensusConstants.FIRST_CONSENSUS_
 import com.hedera.hapi.platform.event.EventConsensusData;
 import com.hedera.hapi.util.HapiUtils;
 import com.swirlds.base.time.Time;
+import com.swirlds.common.AddressBook;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.utility.Threshold;
@@ -48,7 +49,6 @@ import com.swirlds.platform.gossip.shadowgraph.Generations;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.metrics.ConsensusMetrics;
-import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.util.MarkerFileWriter;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;

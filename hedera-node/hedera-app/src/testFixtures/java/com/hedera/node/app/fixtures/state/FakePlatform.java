@@ -21,6 +21,7 @@ import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticT
 
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.swirlds.base.time.Time;
+import com.swirlds.common.AddressBook;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.crypto.Signature;
@@ -37,7 +38,6 @@ import com.swirlds.common.utility.AutoCloseableWrapper;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.SwirldState;
-import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;

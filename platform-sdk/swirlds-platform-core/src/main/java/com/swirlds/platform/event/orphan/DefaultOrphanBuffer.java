@@ -18,13 +18,13 @@ package com.swirlds.platform.event.orphan;
 
 import static com.swirlds.metrics.api.Metrics.PLATFORM_CATEGORY;
 
+import com.hedera.service.gossip.IntakeEventCounter;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.metrics.FunctionGauge;
 import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.eventhandling.EventConfig;
-import com.swirlds.platform.gossip.IntakeEventCounter;
 import com.swirlds.platform.sequence.map.SequenceMap;
 import com.swirlds.platform.sequence.map.StandardSequenceMap;
 import com.swirlds.platform.sequence.set.SequenceSet;

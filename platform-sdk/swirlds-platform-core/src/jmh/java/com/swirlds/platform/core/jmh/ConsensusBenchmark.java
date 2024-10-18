@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.core.jmh;
 
+import com.swirlds.common.AddressBook;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.test.fixtures.WeightGenerators;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
@@ -23,7 +24,6 @@ import com.swirlds.platform.Consensus;
 import com.swirlds.platform.ConsensusImpl;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.metrics.NoOpConsensusMetrics;
-import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.test.event.emitter.StandardEventEmitter;
 import com.swirlds.platform.test.event.source.EventSourceFactory;
 import com.swirlds.platform.test.fixtures.event.generator.StandardGraphGenerator;
