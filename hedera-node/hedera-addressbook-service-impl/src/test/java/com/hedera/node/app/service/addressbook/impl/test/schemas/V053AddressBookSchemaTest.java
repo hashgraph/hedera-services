@@ -243,6 +243,14 @@ class V053AddressBookSchemaTest extends AddressBookTestBase {
                 writableNodes.get(EntityNumber.newBuilder().number(3).build()));
     }
 
+    @Test
+    void failedNullNetworkinfo() {
+        given(migrationContext.genesisNetworkInfo()).willReturn(null);
+        assertThatCode(() -> subject.migrate(migrationContext))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessage("Genesis network info is not found");
+    }
+
     private void setupMigrationContext() {
         writableStates = MapWritableStates.builder().state(writableNodes).build();
         given(migrationContext.newStates()).willReturn(writableStates);

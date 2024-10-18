@@ -16,23 +16,32 @@
 
 package com.hedera.node.app.blocks.impl;
 
+import static com.hedera.hapi.block.stream.BlockItem.ItemOneOfType.TRANSACTION_RESULT;
 import static com.hedera.hapi.node.base.BlockHashAlgorithm.SHA2_384;
 import static com.hedera.hapi.util.HapiUtils.asInstant;
+import static com.hedera.hapi.util.HapiUtils.asTimestamp;
+import static com.hedera.node.app.blocks.BlockStreamManager.PendingWork.GENESIS_WORK;
+import static com.hedera.node.app.blocks.BlockStreamManager.PendingWork.NONE;
+import static com.hedera.node.app.blocks.BlockStreamManager.PendingWork.POST_UPGRADE_WORK;
 import static com.hedera.node.app.blocks.impl.BlockImplUtils.appendHash;
 import static com.hedera.node.app.blocks.impl.BlockImplUtils.combine;
 import static com.hedera.node.app.blocks.schemas.V0560BlockStreamSchema.BLOCK_STREAM_INFO_KEY;
-import static com.hedera.node.app.hapi.utils.CommonUtils.noThrowSha384HashOf;
+import static com.hedera.node.app.hapi.utils.CommonUtils.sha384DigestOrThrow;
+import static com.hedera.node.app.records.BlockRecordService.EPOCH;
 import static com.hedera.node.app.records.impl.BlockRecordInfoUtils.HASH_SIZE;
+import static com.hedera.pbj.runtime.ProtoConstants.WIRE_TYPE_DELIMITED;
+import static com.hedera.pbj.runtime.ProtoWriterTools.writeTag;
 import static com.swirlds.platform.state.SwirldStateManagerUtils.isInFreezePeriod;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.CompletableFuture.completedFuture;
-import static java.util.concurrent.CompletableFuture.supplyAsync;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.hedera.hapi.block.stream.BlockItem;
 import com.hedera.hapi.block.stream.BlockProof;
 import com.hedera.hapi.block.stream.MerkleSiblingHash;
 import com.hedera.hapi.block.stream.output.BlockHeader;
 import com.hedera.hapi.block.stream.output.TransactionResult;
+import com.hedera.hapi.block.stream.schema.BlockSchema;
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.state.blockstream.BlockStreamInfo;
@@ -42,12 +51,14 @@ import com.hedera.node.app.blocks.BlockStreamManager;
 import com.hedera.node.app.blocks.BlockStreamService;
 import com.hedera.node.app.blocks.InitialStateHash;
 import com.hedera.node.app.blocks.StreamingTreeHasher;
+import com.hedera.node.app.hapi.utils.CommonUtils;
 import com.hedera.node.app.records.impl.BlockRecordInfoUtils;
 import com.hedera.node.app.tss.TssBaseService;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.BlockRecordStreamConfig;
 import com.hedera.node.config.data.BlockStreamConfig;
 import com.hedera.node.config.data.VersionConfig;
+import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.state.service.PlatformStateService;
@@ -58,8 +69,14 @@ import com.swirlds.state.State;
 import com.swirlds.state.spi.CommittableWritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.ByteBuffer;
+import java.security.DigestException;
+import java.security.MessageDigest;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
@@ -77,10 +94,11 @@ import org.apache.logging.log4j.Logger;
 public class BlockStreamManagerImpl implements BlockStreamManager {
     private static final Logger log = LogManager.getLogger(BlockStreamManagerImpl.class);
 
-    private static final int CHUNK_SIZE = 8;
-
     private final int roundsPerBlock;
+    private final int hashCombineBatchSize;
+    private final int serializationBatchSize;
     private final TssBaseService tssBaseService;
+    private final SemanticVersion version;
     private final SemanticVersion hapiVersion;
     private final ExecutorService executor;
     private final Supplier<BlockItemWriter> writerSupplier;
@@ -89,6 +107,10 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
     private final BlockHashManager blockHashManager;
     private final RunningHashManager runningHashManager;
 
+    // The status of pending work
+    private PendingWork pendingWork = NONE;
+    // The last time at which interval-based processing was done
+    private Instant lastIntervalProcessTime = Instant.EPOCH;
     // All this state is scoped to producing the current block
     private long blockNumber;
     // Set to the round number of the last round handled before entering a freeze period
@@ -140,7 +162,9 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
             @NonNull final ConfigProvider configProvider,
             @NonNull final TssBaseService tssBaseService,
             @NonNull final BoundaryStateChangeListener boundaryStateChangeListener,
-            @NonNull final InitialStateHash initialStateHash) {
+            @NonNull final InitialStateHash initialStateHash,
+            @NonNull final SemanticVersion version) {
+        this.version = requireNonNull(version);
         this.writerSupplier = requireNonNull(writerSupplier);
         this.executor = requireNonNull(executor);
         this.tssBaseService = requireNonNull(tssBaseService);
@@ -148,7 +172,10 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
         requireNonNull(configProvider);
         final var config = configProvider.getConfiguration();
         this.hapiVersion = hapiVersionFrom(config);
-        this.roundsPerBlock = config.getConfigData(BlockStreamConfig.class).roundsPerBlock();
+        final var blockStreamConfig = config.getConfigData(BlockStreamConfig.class);
+        this.roundsPerBlock = blockStreamConfig.roundsPerBlock();
+        this.hashCombineBatchSize = blockStreamConfig.hashCombineBatchSize();
+        this.serializationBatchSize = blockStreamConfig.serializationBatchSize();
         this.blockHashManager = new BlockHashManager(config);
         this.runningHashManager = new RunningHashManager();
         this.lastNonEmptyRoundNumber = initialStateHash.roundNum();
@@ -187,11 +214,13 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
             boundaryStateChangeListener.setBoundaryTimestamp(blockTimestamp);
 
             final var blockStreamInfo = blockStreamInfoFrom(state);
+            pendingWork = classifyPendingWork(blockStreamInfo, version);
+            lastIntervalProcessTime = asInstant(blockStreamInfo.lastIntervalProcessTimeOrElse(EPOCH));
             blockHashManager.startBlock(blockStreamInfo, lastBlockHash);
             runningHashManager.startBlock(blockStreamInfo);
 
-            inputTreeHasher = new ConcurrentStreamingTreeHasher(executor);
-            outputTreeHasher = new ConcurrentStreamingTreeHasher(executor);
+            inputTreeHasher = new ConcurrentStreamingTreeHasher(executor, hashCombineBatchSize);
+            outputTreeHasher = new ConcurrentStreamingTreeHasher(executor, hashCombineBatchSize);
             blockNumber = blockStreamInfo.blockNumber() + 1;
             pendingItems = new ArrayList<>();
 
@@ -206,6 +235,30 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
 
             writer.openBlock(blockNumber);
         }
+    }
+
+    @Override
+    public void confirmPendingWorkFinished() {
+        if (pendingWork == NONE) {
+            // Should never happen but throwing IllegalStateException might make the situation even worse, so just log
+            log.error("HandleWorkflow confirmed finished work but none was pending");
+        }
+        pendingWork = NONE;
+    }
+
+    @Override
+    public @NonNull PendingWork pendingWork() {
+        return pendingWork;
+    }
+
+    @Override
+    public @NonNull Instant lastIntervalProcessTime() {
+        return lastIntervalProcessTime;
+    }
+
+    @Override
+    public void setLastIntervalProcessTime(@NonNull final Instant lastIntervalProcessTime) {
+        this.lastIntervalProcessTime = requireNonNull(lastIntervalProcessTime);
     }
 
     @Override
@@ -237,13 +290,18 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
                     blockStartStateHash,
                     outputTreeStatus.numLeaves(),
                     outputTreeStatus.rightmostHashes(),
-                    boundaryStateChangeListener.boundaryTimestampOrThrow()));
+                    boundaryStateChangeListener.boundaryTimestampOrThrow(),
+                    pendingWork != POST_UPGRADE_WORK,
+                    version,
+                    asTimestamp(lastIntervalProcessTime)));
             ((CommittableWritableStates) writableState).commit();
 
-            // Flush the block stream info change
-            pendingItems.add(boundaryStateChangeListener.flushChanges());
-            schedulePendingWork();
+            // Serialize and hash the final block item
+            final var finalWork = new ScheduledWork(List.of(boundaryStateChangeListener.flushChanges()));
+            final var finalOutput = finalWork.computeOutput();
+            // Ensure we only write and incorporate the final hash after all preceding work is done
             writeFuture.join();
+            combineOutput(null, finalOutput);
             final var outputHash = outputTreeHasher.rootHash().join();
             final var leftParent = combine(lastBlockHash, inputHash);
             final var rightParent = combine(outputHash, blockStartStateHash);
@@ -262,7 +320,6 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
             // Update in-memory state to prepare for the next block
             lastBlockHash = blockHash;
             writer = null;
-
             tssBaseService.requestLedgerSignature(blockHash.toByteArray());
         }
     }
@@ -270,7 +327,7 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
     @Override
     public void writeItem(@NonNull final BlockItem item) {
         pendingItems.add(item);
-        if (pendingItems.size() == CHUNK_SIZE) {
+        if (pendingItems.size() == serializationBatchSize) {
             schedulePendingWork();
         }
     }
@@ -281,8 +338,8 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
         // no two consecutive transactions ever get the same seed
         schedulePendingWork();
         writeFuture.join();
-        final var seed = runningHashManager.nMinus3HashFuture.join();
-        return seed == null ? null : Bytes.wrap(seed);
+        final var seed = runningHashManager.nMinus3Hash;
+        return seed == null ? null : Bytes.wrap(runningHashManager.nMinus3Hash);
     }
 
     @Override
@@ -336,20 +393,46 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
             final var proof = block.proofBuilder()
                     .blockSignature(blockSignature)
                     .siblingHashes(siblingHashes.stream().flatMap(List::stream).toList());
-            block.writer()
-                    .writeItem(BlockItem.PROTOBUF.toBytes(
-                            BlockItem.newBuilder().blockProof(proof).build()))
-                    .closeBlock();
+            final var proofItem = BlockItem.newBuilder().blockProof(proof).build();
+            block.writer().writePbjItem(BlockItem.PROTOBUF.toBytes(proofItem)).closeBlock();
             if (block.number() != blockNumber) {
                 siblingHashes.removeFirst();
             }
         }
     }
 
+    /**
+     * Classifies the type of work pending, if any, given the block stream info from state and the current
+     * software version.
+     *
+     * @param blockStreamInfo the block stream info
+     * @param version the version
+     * @return the type of pending work given the block stream info and version
+     */
+    @VisibleForTesting
+    static PendingWork classifyPendingWork(
+            @NonNull final BlockStreamInfo blockStreamInfo, @NonNull final SemanticVersion version) {
+        requireNonNull(version);
+        requireNonNull(blockStreamInfo);
+        if (EPOCH.equals(blockStreamInfo.lastIntervalProcessTimeOrElse(EPOCH))) {
+            // If we have never processed any time-based events, we must be at genesis
+            return GENESIS_WORK;
+        } else if (impliesPostUpgradeWorkPending(blockStreamInfo, version)) {
+            return POST_UPGRADE_WORK;
+        } else {
+            return NONE;
+        }
+    }
+
+    private static boolean impliesPostUpgradeWorkPending(
+            @NonNull final BlockStreamInfo blockStreamInfo, @NonNull final SemanticVersion version) {
+        return !version.equals(blockStreamInfo.creationSoftwareVersion()) || !blockStreamInfo.postUpgradeWorkDone();
+    }
+
     private void schedulePendingWork() {
         final var scheduledWork = new ScheduledWork(pendingItems);
-        final var pendingSerialization = CompletableFuture.supplyAsync(scheduledWork::serializeItems, executor);
-        writeFuture = writeFuture.thenCombine(pendingSerialization, scheduledWork::combineSerializedItems);
+        final var pendingOutput = CompletableFuture.supplyAsync(scheduledWork::computeOutput, executor);
+        writeFuture = writeFuture.thenCombine(pendingOutput, this::combineOutput);
         pendingItems = new ArrayList<>();
     }
 
@@ -384,71 +467,133 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
      *     </li>
      * </ol>
      */
-    private class ScheduledWork {
-        private final List<BlockItem> scheduledWork;
+    private static class ScheduledWork {
+        private final List<BlockItem> items;
 
-        public ScheduledWork(@NonNull final List<BlockItem> scheduledWork) {
-            this.scheduledWork = requireNonNull(scheduledWork);
+        public record Output(
+                @NonNull BufferedData data,
+                @NonNull ByteBuffer inputHashes,
+                @NonNull ByteBuffer outputHashes,
+                @NonNull ByteBuffer resultHashes) {}
+
+        public ScheduledWork(@NonNull final List<BlockItem> items) {
+            this.items = requireNonNull(items);
         }
 
         /**
-         * Serializes the scheduled work items to bytes using the {@link BlockItem#PROTOBUF} codec.
+         * Serializes the scheduled work items to bytes using the {@link BlockItem#PROTOBUF} codec and
+         * computes the associated input/output hashes, returning the serialized items and hashes bundled
+         * into an {@link Output}.
          *
-         * @return the serialized items
+         * @return the output of doing the scheduled work
          */
-        public List<Bytes> serializeItems() {
-            final List<Bytes> serializedItems = new ArrayList<>(scheduledWork.size());
-            for (final var item : scheduledWork) {
-                serializedItems.add(BlockItem.PROTOBUF.toBytes(item));
-            }
-            return serializedItems;
-        }
-
-        /**
-         * Given the serialized items, schedules the hashes of the input/output items and running hash
-         * for the {@link TransactionResult}s to be incorporated in the input/output trees and running hash
-         * respectively; and writes the serialized bytes to the {@link BlockItemWriter}.
-         *
-         * @param ignore ignored, needed for type compatibility with {@link CompletableFuture#thenCombine}
-         * @param serializedItems the serialized items to be processed
-         * @return {@code null}
-         */
-        public Void combineSerializedItems(@Nullable Void ignore, @NonNull final List<Bytes> serializedItems) {
-            for (int i = 0, n = scheduledWork.size(); i < n; i++) {
-                final var item = scheduledWork.get(i);
-                final var serializedItem = serializedItems.get(i);
+        public Output computeOutput() {
+            var size = 0;
+            var numInputs = 0;
+            var numOutputs = 0;
+            var numResults = 0;
+            final var n = items.size();
+            final var sizes = new int[n];
+            for (var i = 0; i < n; i++) {
+                final var item = items.get(i);
+                sizes[i] = BlockItem.PROTOBUF.measureRecord(item);
+                // Plus (at most) 8 bytes for the preceding tag and length
+                size += (sizes[i] + 8);
                 final var kind = item.item().kind();
                 switch (kind) {
-                    case EVENT_HEADER, EVENT_TRANSACTION -> inputTreeHasher.addLeaf(serializedItem);
-                    case TRANSACTION_RESULT, TRANSACTION_OUTPUT, STATE_CHANGES -> outputTreeHasher.addLeaf(
-                            serializedItem);
-                    default -> {
-                        // Other items are not part of the input/output trees
+                    case EVENT_HEADER, EVENT_TRANSACTION -> numInputs++;
+                    case TRANSACTION_RESULT, TRANSACTION_OUTPUT, STATE_CHANGES -> {
+                        numOutputs++;
+                        if (kind == TRANSACTION_RESULT) {
+                            numResults++;
+                        }
                     }
                 }
-                if (kind == BlockItem.ItemOneOfType.TRANSACTION_RESULT) {
-                    runningHashManager.nextResult(serializedItem);
-                }
-                writer.writeItem(serializedItem);
             }
-            return null;
+            final var inputHashes = new byte[numInputs * HASH_SIZE];
+            final var outputHashes = new byte[numOutputs * HASH_SIZE];
+            final var resultHashes = ByteBuffer.allocate(numResults * HASH_SIZE);
+            final var serializedItems = ByteBuffer.allocate(size);
+            final var data = BufferedData.wrap(serializedItems);
+            final var digest = sha384DigestOrThrow();
+            var j = 0;
+            var k = 0;
+            for (var i = 0; i < n; i++) {
+                final var item = items.get(i);
+                writeTag(data, BlockSchema.ITEMS, WIRE_TYPE_DELIMITED);
+                data.writeVarInt(sizes[i], false);
+                final var pre = serializedItems.position();
+                writeItemToBuffer(item, data);
+                final var post = serializedItems.position();
+                final var kind = item.item().kind();
+                switch (kind) {
+                    case EVENT_HEADER, EVENT_TRANSACTION, TRANSACTION_RESULT, TRANSACTION_OUTPUT, STATE_CHANGES -> {
+                        digest.update(serializedItems.array(), pre, post - pre);
+                        switch (kind) {
+                            case EVENT_HEADER, EVENT_TRANSACTION -> finish(digest, inputHashes, j++ * HASH_SIZE);
+                            case TRANSACTION_RESULT, TRANSACTION_OUTPUT, STATE_CHANGES -> finish(
+                                    digest, outputHashes, k++ * HASH_SIZE);
+                        }
+                        if (kind == TRANSACTION_RESULT) {
+                            resultHashes.put(Arrays.copyOfRange(outputHashes, (k - 1) * HASH_SIZE, k * HASH_SIZE));
+                        }
+                    }
+                    default -> {
+                        // Other items have no special processing to do
+                    }
+                }
+            }
+            data.flip();
+            return new Output(data, ByteBuffer.wrap(inputHashes), ByteBuffer.wrap(outputHashes), resultHashes.flip());
         }
+
+        private void finish(@NonNull final MessageDigest digest, final byte[] hashes, final int offset) {
+            try {
+                digest.digest(hashes, offset, HASH_SIZE);
+            } catch (DigestException e) {
+                throw new IllegalArgumentException(e);
+            }
+        }
+    }
+
+    /**
+     * Given the output of a {@link ScheduledWork} instance, writes the output's serialized items and
+     * incorporates its input/output hashes into the corresponding trees and running hash.
+     *
+     * @param ignore ignored, needed for type compatibility with {@link CompletableFuture#thenCombine}
+     * @param output the output to be combined
+     * @return {@code null}
+     */
+    private Void combineOutput(@Nullable Void ignore, @NonNull final ScheduledWork.Output output) {
+        writer.writeItems(output.data());
+        while (output.inputHashes().hasRemaining()) {
+            inputTreeHasher.addLeaf(output.inputHashes());
+        }
+        while (output.outputHashes().hasRemaining()) {
+            outputTreeHasher.addLeaf(output.outputHashes());
+        }
+        while (output.resultHashes().hasRemaining()) {
+            runningHashManager.nextResultHash(output.resultHashes());
+        }
+        return null;
     }
 
     private SemanticVersion hapiVersionFrom(@NonNull final Configuration config) {
         return config.getConfigData(VersionConfig.class).hapiVersion();
     }
 
-    private class RunningHashManager {
-        CompletableFuture<byte[]> nMinus3HashFuture;
-        CompletableFuture<byte[]> nMinus2HashFuture;
-        CompletableFuture<byte[]> nMinus1HashFuture;
-        CompletableFuture<byte[]> hashFuture;
+    private static class RunningHashManager {
+        private static final ThreadLocal<byte[]> HASHES = ThreadLocal.withInitial(() -> new byte[HASH_SIZE]);
+        private static final ThreadLocal<MessageDigest> DIGESTS =
+                ThreadLocal.withInitial(CommonUtils::sha384DigestOrThrow);
+
+        byte[] nMinus3Hash;
+        byte[] nMinus2Hash;
+        byte[] nMinus1Hash;
+        byte[] hash;
 
         Bytes latestHashes() {
-            final var all = new byte[][] {
-                nMinus3HashFuture.join(), nMinus2HashFuture.join(), nMinus1HashFuture.join(), hashFuture.join()
-            };
+            final var all = new byte[][] {nMinus3Hash, nMinus2Hash, nMinus1Hash, hash};
             int numMissing = 0;
             while (numMissing < all.length && all[numMissing] == null) {
                 numMissing++;
@@ -468,27 +613,28 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
         void startBlock(@NonNull final BlockStreamInfo blockStreamInfo) {
             final var hashes = blockStreamInfo.trailingOutputHashes();
             final var n = (int) (hashes.length() / HASH_SIZE);
-            nMinus3HashFuture = completedFuture(n < 4 ? null : hashes.toByteArray(0, HASH_SIZE));
-            nMinus2HashFuture = completedFuture(n < 3 ? null : hashes.toByteArray((n - 3) * HASH_SIZE, HASH_SIZE));
-            nMinus1HashFuture = completedFuture(n < 2 ? null : hashes.toByteArray((n - 2) * HASH_SIZE, HASH_SIZE));
-            hashFuture =
-                    completedFuture(n < 1 ? new byte[HASH_SIZE] : hashes.toByteArray((n - 1) * HASH_SIZE, HASH_SIZE));
+            nMinus3Hash = n < 4 ? null : hashes.toByteArray(0, HASH_SIZE);
+            nMinus2Hash = n < 3 ? null : hashes.toByteArray((n - 3) * HASH_SIZE, HASH_SIZE);
+            nMinus1Hash = n < 2 ? null : hashes.toByteArray((n - 2) * HASH_SIZE, HASH_SIZE);
+            hash = n < 1 ? new byte[HASH_SIZE] : hashes.toByteArray((n - 1) * HASH_SIZE, HASH_SIZE);
         }
 
         /**
          * Updates the running hashes for the given serialized output block item.
          *
-         * @param bytes the serialized output block item
+         * @param hash the serialized output block item
          */
-        void nextResult(@NonNull final Bytes bytes) {
-            requireNonNull(bytes);
-            nMinus3HashFuture = nMinus2HashFuture;
-            nMinus2HashFuture = nMinus1HashFuture;
-            nMinus1HashFuture = hashFuture;
-            hashFuture = hashFuture.thenCombineAsync(
-                    supplyAsync(() -> noThrowSha384HashOf(bytes.toByteArray()), executor),
-                    BlockImplUtils::combine,
-                    executor);
+        void nextResultHash(@NonNull final ByteBuffer hash) {
+            requireNonNull(hash);
+            nMinus3Hash = nMinus2Hash;
+            nMinus2Hash = nMinus1Hash;
+            nMinus1Hash = this.hash;
+            final var digest = DIGESTS.get();
+            digest.update(this.hash);
+            final var resultHash = HASHES.get();
+            hash.get(resultHash);
+            digest.update(resultHash);
+            this.hash = digest.digest();
         }
     }
 
@@ -542,5 +688,13 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
         endRoundStateHashes
                 .get(notification.round())
                 .complete(notification.hash().getBytes());
+    }
+
+    private static void writeItemToBuffer(@NonNull final BlockItem item, @NonNull final BufferedData bufferedData) {
+        try {
+            BlockItem.PROTOBUF.write(item, bufferedData);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
     }
 }
