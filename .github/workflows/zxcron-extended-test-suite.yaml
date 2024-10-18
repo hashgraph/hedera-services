@@ -69,7 +69,7 @@ jobs:
     name: Execute eXtended Test Suite
     uses: ./.github/workflows/node-zxc-compile-application-code.yaml
     needs: fetch-xts-candidate
-    if: ${{ needs.fetch-xts-candidate.result == 'success' && 
+    if: ${{ needs.fetch-xts-candidate.result == 'success' &&
       needs.fetch-xts-candidate.outputs.xts_tag_exists == 'true' &&
       !github.event.workflow_dispatch.repository.fork }}
     with:
