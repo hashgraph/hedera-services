@@ -1232,7 +1232,10 @@ public class HapiSpec implements Runnable, Executable {
             if (repeatableModeRequested()) {
                 // Statuses are immediately available in repeatable mode because ingest is synchronous;
                 // ECDSA signatures are inherently random, so use only ED25519 in repeatable mode
-                overrides = Map.of("status.wait.sleep.ms", "0", "default.keyAlgorithm", "ED25519");
+                overrides = Map.of(
+                        "txn.start.offset.secs", "0",
+                        "status.wait.sleep.ms", "0",
+                        "default.keyAlgorithm", "ED25519");
             } else {
                 overrides = Map.of("status.wait.sleep.ms", "" + CONCURRENT_EMBEDDED_STATUS_WAIT_SLEEP_MS);
             }
