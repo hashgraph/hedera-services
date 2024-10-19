@@ -16,15 +16,10 @@
 
 package com.hedera.node.app.signature;
 
-import static java.util.Collections.emptySortedSet;
-
-import com.hedera.hapi.node.base.Key;
-import com.hedera.node.app.spi.key.KeyComparator;
 import com.hedera.node.app.spi.key.KeyVerifier;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.SortedSet;
 
 /**
  * Helper class that contains all functionality for verifying signatures during handle.
@@ -45,20 +40,4 @@ public interface AppKeyVerifier extends KeyVerifier {
      * @return the number of signatures verified for this transaction. Non-negative.
      */
     int numSignaturesVerified();
-
-    /**
-     * <b>If</b> this verifier is based on cryptographic verification of signatures on a transaction submitted from
-     * outside the blockchain, returns the set of cryptographic keys that had valid signatures, ordered by the
-     * {@link KeyComparator}.
-     * <p>
-     * Default is an empty set, for verifiers that use a more abstract concept of signing, such as,
-     * <ol>
-     *     <li>Whether a key references the contract whose EVM address is the recipient address of the active frame.</li>
-     *     <li>Whether a key is present in the signatories list of a scheduled transaction.</li>
-     * </ol>
-     * @return the set of cryptographic keys that had valid signatures for this transaction.
-     */
-    default SortedSet<Key> signingCryptoKeys() {
-        return emptySortedSet();
-    }
 }

@@ -82,10 +82,7 @@ import java.util.stream.Stream;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
-public class ScheduleSignSpecs {
-    private static final int SCHEDULE_EXPIRY_TIME_SECS = 10;
-    private static final int SCHEDULE_EXPIRY_TIME_MS = SCHEDULE_EXPIRY_TIME_SECS * 1000;
-
+public class ScheduleSignTest {
     @HapiTest
     final Stream<DynamicTest> idVariantsTreatedAsExpected() {
         return defaultHapiSpec("idVariantsTreatedAsExpected")
@@ -106,19 +103,17 @@ public class ScheduleSignSpecs {
         String schedule = "Z";
         String adminKey = ADMIN;
 
-        return defaultHapiSpec("SigningDeletedSchedulesHasNoEffect")
-                .given(
-                        newKeyNamed(adminKey),
-                        cryptoCreate(sender),
-                        cryptoCreate(receiver).balance(0L),
-                        scheduleCreate(schedule, cryptoTransfer(tinyBarsFromTo(sender, receiver, 1)))
-                                .adminKey(adminKey)
-                                .payingWith(DEFAULT_PAYER),
-                        getAccountBalance(receiver).hasTinyBars(0L))
-                .when(
-                        scheduleDelete(schedule).signedBy(DEFAULT_PAYER, adminKey),
-                        scheduleSign(schedule).alsoSigningWith(sender).hasKnownStatus(SCHEDULE_ALREADY_DELETED))
-                .then(getAccountBalance(receiver).hasTinyBars(0L));
+        return hapiTest(
+                newKeyNamed(adminKey),
+                cryptoCreate(sender),
+                cryptoCreate(receiver).balance(0L),
+                scheduleCreate(schedule, cryptoTransfer(tinyBarsFromTo(sender, receiver, 1)))
+                        .adminKey(adminKey)
+                        .payingWith(DEFAULT_PAYER),
+                getAccountBalance(receiver).hasTinyBars(0L),
+                scheduleDelete(schedule).signedBy(DEFAULT_PAYER, adminKey),
+                scheduleSign(schedule).alsoSigningWith(sender).hasKnownStatus(SCHEDULE_ALREADY_DELETED),
+                getAccountBalance(receiver).hasTinyBars(0L));
     }
 
     @HapiTest
@@ -458,13 +453,12 @@ public class ScheduleSignSpecs {
     final Stream<DynamicTest> basicSignatureCollectionWorks() {
         var txnBody = cryptoTransfer(tinyBarsFromTo(SENDER, RECEIVER, 1));
 
-        return defaultHapiSpec("BasicSignatureCollectionWorks")
-                .given(
-                        cryptoCreate(SENDER),
-                        cryptoCreate(RECEIVER).receiverSigRequired(true),
-                        scheduleCreate(BASIC_XFER, txnBody))
-                .when(scheduleSign(BASIC_XFER).alsoSigningWith(RECEIVER))
-                .then(getScheduleInfo(BASIC_XFER).hasSignatories(RECEIVER));
+        return hapiTest(
+                cryptoCreate(SENDER),
+                cryptoCreate(RECEIVER).receiverSigRequired(true),
+                scheduleCreate(BASIC_XFER, txnBody),
+                scheduleSign(BASIC_XFER).alsoSigningWith(RECEIVER),
+                getScheduleInfo(BASIC_XFER).hasSignatories(DEFAULT_PAYER, RECEIVER));
     }
 
     @HapiTest
