@@ -58,8 +58,8 @@ jobs:
           token: ${{ secrets.GH_ACCESS_TOKEN }}
 
       # Check if the xts-candidate tag exists
-      # the command git branch --contains xts_tag_commit | grep -q <default branch>
-      # will return an exit code of 1 if the tag commit is not found on the develop
+      # the command git branch --contains xts_tag_commit | grep --quiet <default branch>
+      # will return an exit code of 1 if the tagged commit is not found on the develop
       # branch.
       - name: Check for tags
         id: check-tags-exist
@@ -68,9 +68,9 @@ jobs:
           if [ $(git tag -l "${TAG}") ]; then
             echo "xts_tag_exists=true" >> $GITHUB_OUTPUT
             XTS_COMMIT=`git rev-list -n 1 ${XTS_CANDIDATE_TAG}`
-            git branch --contains ${XTS_COMMIT} | grep -q develop
+            git branch --contains ${XTS_COMMIT} | grep --quiet develop
             echo "xts_tag_commit=${XTS_COMMIT}" >> $GITHUB_OUTPUT
-            echo "### Commit Tagged as an XTS-Candidate" >>  $GITHUB_STEP_SUMMARY
+            echo "### Commit has been tagged as an XTS-Candidate" >>  $GITHUB_STEP_SUMMARY
             echo "xts_tag_commit=${XTS_COMMIT}" >> $GITHUB_STEP_SUMMARY
             git tag -d ${XTS_CANDIDATE_TAG}
             git push --delete origin ${XTS_CANDIDATE_TAG}

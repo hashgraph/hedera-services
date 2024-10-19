@@ -54,17 +54,17 @@ jobs:
         id: find-build-candidates
         run: |
           TAG_PATTERN="xts-pass-*"
-          if [ $(git tag -l "${TAG_PATTERN}") ]; then
+          if [ $(git tag --list "${TAG_PATTERN}") ]; then
             echo "build_candidate_exists=true" >> $GITHUB_OUTPUT
-            CANDIDATE_TAG=`git tag --list --sort=-version:refname ${TAG_PATTERN} | head -n 1`
-            CANDIDATE_COMMIT=`git rev-list -n 1 ${CANDIDATE_TAG}`
-            git branch --contains ${CANDIDATE_COMMIT} | grep -q develop
+            CANDIDATE_TAG=`git tag --list --sort=-version:refname ${TAG_PATTERN} | head --lines 1`
+            CANDIDATE_COMMIT=`git rev-list --max-count 1 ${CANDIDATE_TAG}`
+            git branch --contains ${CANDIDATE_COMMIT} | grep --quiet develop
             echo "build_candidate_commit=${CANDIDATE_COMMIT}" >> $GITHUB_OUTPUT
             echo "### Build Candidate Found" >>  $GITHUB_STEP_SUMMARY
             echo "build_candidate_commit=${CANDIDATE_COMMIT}" >> $GITHUB_STEP_SUMMARY
             echo "build_candidate_tag=${CANDIDATE_TAG}" >> ${GITHUB_STEP_SUMMARY}
-            git tag -d $(git tag -l ${TAG_PATTERN})
-            git push -d origin $(git tag -l ${TAG_PATTERN})
+            git tag --delete $(git tag --list ${TAG_PATTERN})
+            git push --delete origin $(git tag --list ${TAG_PATTERN})
           else
             gh run cancel ${{ github.run_id }}
           fi

@@ -104,7 +104,7 @@ jobs:
       - name: Get commit reference
         id: get-commit-id
         run: |
-          XTS_COMMIT=`git rev-list -n 1 HEAD`; echo $XTS_COMMIT
+          XTS_COMMIT=`git rev-list --max-count 1 HEAD`; echo $XTS_COMMIT
           echo "commit_id=${XTS_COMMIT}" >>"${GITHUB_OUTPUT}"
 
       - name: Trigger ZXF Prepare Extended Test Suite

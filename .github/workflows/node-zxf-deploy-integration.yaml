@@ -19,7 +19,7 @@ on:
   workflow_dispatch:
     inputs:
       data:
-        description: json representation of the triggering github event
+        description: JSON representation of the triggering GitHub event
         required: true
 
 jobs:
