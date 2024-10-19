@@ -1444,7 +1444,7 @@ public class EnhancedKeyStoreLoader {
     private void cleanupMovePfxFilesToSubDirectory() throws KeyStoreException, KeyLoadingException {
         AtomicLong cleanupErrorCount = new AtomicLong(0);
 
-        final String now = DateTimeFormatter.ofPattern("yyyy-MM-dd-HH:mm:ss").format(LocalDateTime.now());
+        final String now = DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss").format(LocalDateTime.now());
         final Path pfxArchiveDirectory = keyStoreDirectory.resolve(".archive");
         final Path pfxDateDirectory = pfxArchiveDirectory.resolve(now);
 
@@ -1459,7 +1459,7 @@ public class EnhancedKeyStoreLoader {
             } catch (IOException e) {
                 logger.error(
                         ERROR.getMarker(),
-                        "Failed to create [.archive/yyyy-MM-dd-HH:mm:ss] sub-directory. Manual cleanup required.");
+                        "Failed to create [.archive/yyyy-MM-dd_HH-mm-ss] sub-directory. Manual cleanup required.");
                 return;
             }
         }
@@ -1485,10 +1485,10 @@ public class EnhancedKeyStoreLoader {
         if (cleanupErrorCount.get() > 0) {
             logger.error(
                     ERROR.getMarker(),
-                    "Failed to move {} PFX files to [.archive/yyyy-MM-dd-HH:mm:ss]. Manual cleanup required.",
+                    "Failed to move {} PFX files to [.archive/yyyy-MM-dd_HH-mm-ss]. Manual cleanup required.",
                     cleanupErrorCount.get());
             throw new IllegalStateException(
-                    "Cryptography Migration failed to move PFX files to [.archive/yyyy-MM-dd-HH:mm:ss] sub-directory.");
+                    "Cryptography Migration failed to move PFX files to [.archive/yyyy-MM-dd_HH-mm-ss] sub-directory.");
         }
     }
 
