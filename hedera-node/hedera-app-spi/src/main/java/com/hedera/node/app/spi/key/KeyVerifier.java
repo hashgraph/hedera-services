@@ -16,18 +16,20 @@
 
 package com.hedera.node.app.spi.key;
 
-import static java.util.Collections.emptySortedSet;
+import static java.util.Collections.unmodifiableSortedSet;
 
 import com.hedera.hapi.node.base.Key;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
 import com.hedera.node.app.spi.signatures.VerificationAssistant;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.SortedSet;
+import java.util.TreeSet;
 
 /**
  * Helper class that contains all functionality for verifying signatures during handle.
  */
 public interface KeyVerifier {
+    SortedSet<Key> NO_CRYPTO_KEYS = unmodifiableSortedSet(new TreeSet<>(new KeyComparator()));
 
     /**
      * Gets the {@link SignatureVerification} for the given key. If this key was not provided during pre-handle, then
@@ -77,6 +79,6 @@ public interface KeyVerifier {
      * @return the set of cryptographic keys that had valid signatures for this transaction.
      */
     default SortedSet<Key> signingCryptoKeys() {
-        return emptySortedSet();
+        return NO_CRYPTO_KEYS;
     }
 }

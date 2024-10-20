@@ -328,7 +328,7 @@ public class PreHandleContextImpl implements PreHandleContext {
         }
         // Verify this key isn't for an immutable account
         verifyNotStakingAccounts(account.accountIdOrThrow(), responseCode);
-        final var key = account.key();
+        final var key = account.keyOrThrow();
         if (!isValid(key)) { // Or if it is a Contract Key? Or if it is an empty key?
             // Or a KeyList with no
             // keys? Or KeyList with Contract keys only?

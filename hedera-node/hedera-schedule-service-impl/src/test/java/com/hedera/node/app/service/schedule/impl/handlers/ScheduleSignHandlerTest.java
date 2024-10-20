@@ -41,7 +41,6 @@ import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.concurrent.ConcurrentSkipListSet;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.mockito.BDDMockito;
 import org.mockito.Mockito;
@@ -87,10 +86,8 @@ class ScheduleSignHandlerTest extends ScheduleHandlerTestBase {
     }
 
     @Test
-    @Disabled
     void verifySignatoriesAreUpdatedWithoutExecution() throws PreCheckException {
         int successCount = 0;
-        given(keyVerifier.signingCryptoKeys()).willReturn(new ConcurrentSkipListSet<>(new KeyComparator()));
         for (final Schedule next : listOfScheduledOptions) {
             final int startCount = scheduleMapById.size();
             writableSchedules.put(next);
@@ -125,10 +122,8 @@ class ScheduleSignHandlerTest extends ScheduleHandlerTestBase {
     }
 
     @Test
-    @Disabled
     void handleExecutesImmediateIfPossible() throws HandleException, PreCheckException {
         int successCount = 0;
-        given(keyVerifier.signingCryptoKeys()).willReturn(new ConcurrentSkipListSet<>(new KeyComparator()));
         for (final Schedule next : listOfScheduledOptions) {
             final int startCount = scheduleMapById.size();
             writableSchedules.put(next);
@@ -148,7 +143,7 @@ class ScheduleSignHandlerTest extends ScheduleHandlerTestBase {
     private void verifyAllSignatories(final Schedule original, final TransactionKeys expectedKeys) {
         final Set<Key> combinedSet = new LinkedHashSet<>(5);
         combinedSet.addAll(expectedKeys.requiredNonPayerKeys());
-        combinedSet.addAll(expectedKeys.optionalNonPayerKeys());
+        combinedSet.add(expectedKeys.payerKey());
         verifySignatorySet(original, combinedSet);
     }
 
@@ -175,10 +170,13 @@ class ScheduleSignHandlerTest extends ScheduleHandlerTestBase {
         // We leave out "other" key from the "valid" keys for that reason.
         final Set<Key> acceptedKeys = Set.of(payerKey, optionKey);
         final TestTransactionKeys accepted = new TestTransactionKeys(payerKey, acceptedKeys, Collections.emptySet());
+        final var signingSet = new ConcurrentSkipListSet<>(new KeyComparator());
+        signingSet.addAll(acceptedKeys);
+        given(keyVerifier.signingCryptoKeys()).willReturn(signingSet);
         // This is how you get side-effects replicated, by having the "Answer" called in place of the real method.
         given(keyVerifier.verificationFor(BDDMockito.any(Key.class), BDDMockito.any(VerificationAssistant.class)))
                 .will(new VerificationForAnswer(accepted));
-        return acceptedKeys; // return the expected set of signatories after the transaction is handled.
+        return Set.of(payerKey); // return the expected set of signatories after the transaction is handled.
     }
 
     private void prepareContextAllPass(final TransactionBody signTransaction) throws PreCheckException {
@@ -186,6 +184,9 @@ class ScheduleSignHandlerTest extends ScheduleHandlerTestBase {
         given(mockContext.allKeysForTransaction(Mockito.any(), Mockito.any())).willReturn(testChildKeys);
         // for signature verification to succeed, the "Answer" needs to be "valid" for all keys
         final Set<Key> allKeys = Set.of(payerKey, adminKey, schedulerKey, optionKey, otherKey);
+        final var signingSet = new ConcurrentSkipListSet<>(new KeyComparator());
+        signingSet.addAll(allKeys);
+        given(keyVerifier.signingCryptoKeys()).willReturn(signingSet);
         final TestTransactionKeys allRequired = new TestTransactionKeys(payerKey, allKeys, Collections.emptySet());
         // This is how you get side-effects replicated, by having the "Answer" called in place of the real method.
         given(keyVerifier.verificationFor(BDDMockito.any(Key.class), BDDMockito.any(VerificationAssistant.class)))

@@ -141,7 +141,7 @@ abstract class AbstractScheduleHandler {
         requireNonNull(requiredKeys);
         final var newSignatories = new ConcurrentSkipListSet<>(KEY_COMPARATOR);
         newSignatories.addAll(signatories);
-        requiredKeys.forEach(k -> accumulateValidSignatories(newSignatories, signingCryptoKeys, k));
+        requiredKeys.forEach(k -> accumulateNewSignatories(newSignatories, signingCryptoKeys, k));
         return new ArrayList<>(newSignatories);
     }
 
@@ -316,7 +316,7 @@ abstract class AbstractScheduleHandler {
      * @param signingCryptoKeys the signing crypto keys
      * @param key the key structure to accumulate signatories from
      */
-    private void accumulateValidSignatories(
+    private void accumulateNewSignatories(
             @NonNull final Set<Key> signatories, @NonNull final Set<Key> signingCryptoKeys, @NonNull final Key key) {
         switch (key.key().kind()) {
             case ED25519, ECDSA_SECP256K1 -> {
@@ -326,11 +326,11 @@ abstract class AbstractScheduleHandler {
             }
             case KEY_LIST -> key.keyListOrThrow()
                     .keys()
-                    .forEach(k -> accumulateValidSignatories(signatories, signingCryptoKeys, k));
+                    .forEach(k -> accumulateNewSignatories(signatories, signingCryptoKeys, k));
             case THRESHOLD_KEY -> key.thresholdKeyOrThrow()
                     .keysOrThrow()
                     .keys()
-                    .forEach(k -> accumulateValidSignatories(signatories, signingCryptoKeys, k));
+                    .forEach(k -> accumulateNewSignatories(signatories, signingCryptoKeys, k));
         }
     }
 }
