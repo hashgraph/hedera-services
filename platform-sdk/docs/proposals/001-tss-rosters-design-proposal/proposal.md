@@ -465,42 +465,34 @@ However, the mechanism through which the Roster is created will differ based on 
 3. DevOps will be responsible for managing the lifecycle of the files on disk that are used in creating the Roster, including the new TSS encryption key.
 4. DevOps will be responsible for cleaning up the `override-config.txt` file after the network transplant process is complete.
 
-## Core Behaviors, in summary
-
-- Roster Creation: Hedera App will create a Candidate Roster from the Address Book.
-- Roster Submission: App will trigger roster submission by setting the `Roster` object in the `PlatformState` API.
-- Roster Validation: The submitted roster is validated and hashed, if valid, and the hash is not already in the state.
-- Roster Storage: The Roster is stored in the State as a States API map of Roster Hash to Roster.
-  A reference to the candidate roster's hash is also stored in the `RosterState` singleton object.
-- Roster Adoption: The candidate roster is always adopted on the next software upgrade.
-- Roster Replacement: If a new candidate roster is submitted before the previous one is adopted, the corresponding new Candidate Roster will replace the previous.
-
 ## Technical Debt Dependencies on Services, DevOps, and Release Engineering
 
 There are a few existing technical debts that the team has agreed to tackle as dependencies for this proposal.
 
-1. Source of Node identity: Nodes infer their node id from the internal hostname matching the address entry in the address book. 
-Two nodes on different corporate networks may have the same internal ip address, ex: 10.10.10.1.
-   While highly improbable, we’re lucky there hasn’t been a collision so far. The result would be that the software would try to start both nodes on the same machine.
-   The resolution is that nodes should get their identity (Node Id) specified explicitly through the node.properties file.
-   Services and DevOps will implement this.
+1. Source of Node identity: Nodes infer their node id from the internal hostname matching the address entry in the
+   address book. Two nodes on different corporate networks may have the same internal ip address, ex: 10.10.10.1. While
+   highly improbable, we’re lucky there hasn’t been a collision so far. The result would be that the software would try
+   to start both nodes on the same machine. The resolution is that nodes should get their identity (Node Id)
+   specified explicitly through the node.properties file. Services and DevOps will implement this.
 
-2. Off-by-1 problem: Node IDs are 1 less than the node name. For example, the name of the node with node id 0 is `node1`. This is confusing.
-   The node name is used as the alias in the cryptography and used to name the pem files on disk.
-   Node id 0 gets its cryptography through “node1” alias. The resolution is to get rid of node names and use Node IDs only.
+2. Off-by-1 problem: Node IDs are 1 less than the node name. For example, the name of the node with node id 0
+   is `node1`. This is confusing. The node name is used as the alias in the cryptography and used to name the pem files
+   on disk. Node id 0 gets its cryptography through “node1” alias. The resolution is to get rid of node names and
+   use Node IDs only. Services and DevOps will implement this.
 
-3. Inversion of Control: The `config.txt` file does not have all the information that the Hedera Address Book needs (proxy endpoints, and in the future, Block Nodes).
-   It has verbose information for the platform. Its format could be better, and it stores the account number in the memo field.
-   Upon the creation and adoption of rosters in the state, `config.txt` is no longer useful.
-   The resolution is to offload this duty off the platform and allow Services to use whatever file format that suits them as described earlier. Services will implement this.
+3. Inversion of Control: The `config.txt` file does not have all the information that the Hedera Address Book needs (
+   proxy endpoints, and in the future, Block Nodes). It has verbose information for the platform. Its format could be
+   better, and it stores the account number in the memo field. Upon the creation and adoption of rosters in the
+   state, `config.txt` is no longer useful. The resolution is to offload this duty off the platform and allow
+   Services to use whatever file format that suits them as described earlier. Services will implement this.
 
 ### Roster changes needed for Components
 
 #### Reconnect
 
-Reconnect logic currently exchanges and validates the address book between the learner and teacher nodes. 
-The learner node uses the address book to select the teacher node, as well as remove all invalid signatures from the state. 
-Both of these will need to be updated to use rosters instead.
+Reconnect logic currently exchanges and validates the address book between the learner and teacher nodes. The
+learner node uses the address book to select the teacher node, as well as remove all invalid signatures from the
+state. Both of these will need to be updated to use rosters instead.
 
 #### Others
 
