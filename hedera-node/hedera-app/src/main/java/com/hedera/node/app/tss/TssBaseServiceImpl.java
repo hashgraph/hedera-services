@@ -29,6 +29,7 @@ import com.hedera.node.app.roster.ReadableRosterStore;
 import com.hedera.node.app.spi.AppContext;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.tss.api.TssLibrary;
+import com.hedera.node.app.tss.api.TssPrivateShare;
 import com.hedera.node.app.tss.handlers.TssHandlers;
 import com.hedera.node.app.tss.handlers.TssSubmissions;
 import com.hedera.node.app.tss.schemas.V0560TssBaseSchema;
@@ -127,31 +128,41 @@ public class TssBaseServiceImpl implements TssBaseService {
         requireNonNull(roster);
         // (TSS-FUTURE) https://github.com/hashgraph/hedera-services/issues/14748
 
-        final var sourceRoster =
-                context.storeFactory().readableStore(ReadableRosterStore.class).getActiveRoster();
+        // generate TSS messages based on the active roster and the candidate roster
         final var tssStore = context.storeFactory().writableStore(ReadableTssBaseStore.class);
         final var maxSharesPerNode =
                 context.configuration().getConfigData(TssConfig.class).maxSharesPerNode();
-        final var sourceRosterHash = RosterUtils.hash(sourceRoster).getBytes();
-        final var targetRosterHash = RosterUtils.hash(roster).getBytes();
-
-        final var tssParticipantDirectory = computeTssParticipantDirectory(roster, maxSharesPerNode);
-        final var validTssOps =
-                validateTssMessages(tssStore.getTssMessages(targetRosterHash), tssParticipantDirectory, tssLibrary);
-        final var validTssMessages = getTssMessages(validTssOps);
-        final var tssPrivateShares = tssLibrary.decryptPrivateShares(tssParticipantDirectory, validTssMessages);
+        final var sourceRoster =
+                context.storeFactory().readableStore(ReadableRosterStore.class).getActiveRoster();
+        final var activeRosterHash = RosterUtils.hash(sourceRoster).getBytes();
+        final var candidateRosterHash = RosterUtils.hash(roster).getBytes();
+        final var candidateRosterParticipantDirectory = computeTssParticipantDirectory(roster, maxSharesPerNode);
+        final var tssPrivateShares = getTssPrivateShares(sourceRoster, maxSharesPerNode, tssStore, candidateRosterHash);
 
         int shareIndex = 0;
         for (final var tssPrivateShare : tssPrivateShares) {
-            final var tssMsg = tssLibrary.generateTssMessage(tssParticipantDirectory, tssPrivateShare);
+            final var tssMsg = tssLibrary.generateTssMessage(candidateRosterParticipantDirectory, tssPrivateShare);
             final var tssMessage = TssMessageTransactionBody.newBuilder()
-                    .sourceRosterHash(sourceRosterHash)
-                    .targetRosterHash(targetRosterHash)
+                    .sourceRosterHash(activeRosterHash)
+                    .targetRosterHash(candidateRosterHash)
                     .shareIndex(shareIndex++)
                     .tssMessage(Bytes.wrap(tssMsg.bytes()))
                     .build();
             tssSubmissions.submitTssMessage(tssMessage, context);
         }
+    }
+
+    @NonNull
+    private List<TssPrivateShare> getTssPrivateShares(
+            @NonNull final Roster sourceRoster,
+            final long maxSharesPerNode,
+            @NonNull final ReadableTssBaseStore tssStore,
+            @NonNull final Bytes candidateRosterHash) {
+        final var activeRosterParticipantDirectory = computeTssParticipantDirectory(sourceRoster, maxSharesPerNode);
+        final var validTssOps = validateTssMessages(
+                tssStore.getTssMessages(candidateRosterHash), activeRosterParticipantDirectory, tssLibrary);
+        final var validTssMessages = getTssMessages(validTssOps);
+        return tssLibrary.decryptPrivateShares(activeRosterParticipantDirectory, validTssMessages);
     }
 
     @Override
