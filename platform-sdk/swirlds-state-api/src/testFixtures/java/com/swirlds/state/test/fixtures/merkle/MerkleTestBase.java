@@ -276,6 +276,7 @@ public class MerkleTestBase extends StateTestBase {
             registry.registerConstructables("com.swirlds.common");
             registry.registerConstructables("com.swirlds.merkle");
             registry.registerConstructables("com.swirlds.merkle.tree");
+            registry.registerConstructables("com.swirlds.platform");
             ConstructableRegistry.getInstance()
                     .registerConstructable(new ClassConstructorPair(
                             MerkleDbDataSourceBuilder.class, () -> new MerkleDbDataSourceBuilder(CONFIGURATION)));

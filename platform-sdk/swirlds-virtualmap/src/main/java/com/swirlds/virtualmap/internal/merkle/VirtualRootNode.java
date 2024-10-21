@@ -514,11 +514,13 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
                 getRoute());
         final FullLeafRehashHashListener<K, V> hashListener = new FullLeafRehashHashListener<>(
                 firstLeafPath,
+                firstLeafPath,
                 lastLeafPath,
                 keySerializer,
                 valueSerializer,
                 dataSource,
-                virtualMapConfig.flushInterval());
+                virtualMapConfig.flushInterval(),
+                statistics);
 
         // This background thread will be responsible for hashing the tree and sending the
         // data to the hash listener to flush.
@@ -1618,6 +1620,7 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
                 valueSerializer,
                 reconnectRecords.getDataSource(),
                 virtualMapConfig.flushInterval(),
+                statistics,
                 nodeRemover);
 
         // This background thread will be responsible for hashing the tree and sending the
