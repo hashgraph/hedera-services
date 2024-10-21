@@ -29,7 +29,6 @@ import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hedera.node.app.tss.stores.WritableTssBaseStore;
-import com.hedera.node.config.data.TssConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.platform.state.service.ReadableRosterStore;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -44,7 +43,7 @@ import javax.inject.Singleton;
 @Singleton
 public class TssVoteHandler implements TransactionHandler {
 
-    public static final double THRESHOLD_ONE_HALF = 2.0;
+    public static final double THRESHOLD_ONE_THIRD = 3.0;
 
     @Inject
     public TssVoteHandler() {
@@ -73,13 +72,8 @@ public class TssVoteHandler implements TransactionHandler {
             return;
         }
 
-        tssBaseStore.put(tssVoteMapKey, txBody);
-
-        if (TssVoteHandler.hasReachedThreshold(txBody, context, THRESHOLD_ONE_HALF)) {
-            final var tssConfig = context.configuration().getConfigData(TssConfig.class);
-            if (tssConfig.keyActiveRoster()) {
-                // TODO Signal a process to adopt the candidate roster at the next software upgrade boundary?
-            }
+        if (!TssVoteHandler.hasReachedThreshold(txBody, context, THRESHOLD_ONE_THIRD)) {
+            tssBaseStore.put(tssVoteMapKey, txBody);
         }
     }
 
