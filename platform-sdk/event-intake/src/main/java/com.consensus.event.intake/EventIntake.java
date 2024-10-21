@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-plugins {
-    id("com.hedera.gradle.services")
-    id("com.hedera.gradle.services-publish")
-}
+package com.consensus.event.intake;
 
-description = "Consensus Event Intake API"
+/**
+ * Mock event intake service.
+ */
+public interface EventIntake {}

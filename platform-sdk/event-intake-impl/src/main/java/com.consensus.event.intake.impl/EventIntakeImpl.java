@@ -14,9 +14,11 @@
  * limitations under the License.
  */
 
-plugins {
-    id("com.hedera.gradle.services")
-    id("com.hedera.gradle.services-publish")
-}
+package com.consensus.event.intake.impl;
 
-description = "Default Consensus Event Intake Implementation"
+import com.consensus.event.intake.EventIntake;
+
+/**
+ * Implementation for the mock event intake service.
+ */
+public final class EventIntakeImpl implements EventIntake {}
