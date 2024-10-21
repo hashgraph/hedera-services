@@ -59,6 +59,7 @@ concurrency:
 jobs:
   jrs-panel:
     name: JRS Panel
+    if: ${{ !github.event.workflow_dispatch.repository.fork }}
     uses: ./.github/workflows/zxc-jrs-regression.yaml
     with:
       hedera-tests-enabled: true
