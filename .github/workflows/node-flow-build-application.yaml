@@ -100,6 +100,6 @@ jobs:
         with:
           workflow: .github/workflows/node-flow-deploy-release-artifact.yaml
           repo: hashgraph/hedera-services # ensure we are executing in the hashgraph org
-          token: secrets.GH_ACCESS_TOKEN
+          token: ${{ secrets.GH_ACCESS_TOKEN }}
           inputs: '{ "ref": "${{ inputs.ref }}" }'
 
