@@ -67,6 +67,16 @@ public class PlatformCli extends AbstractCommand {
     }
 
     @CommandLine.Option(
+            names = {"-M", "--memory"},
+            scope = CommandLine.ScopeType.INHERIT,
+            description = "Set the amount of memory to allocate to the JVM, in gigabytes. "
+                    + "'-M 16' is equivalent to '-J -Xmx16g'.")
+    private void setJvmArgs(final int memory) {
+        throw buildParameterException("The memory parameter is expected to be parsed prior to the JVM being started. "
+                + DOCUMENTATION_PURPOSES_ONLY);
+    }
+
+    @CommandLine.Option(
             names = {"-C", "--cli"},
             scope = CommandLine.ScopeType.INHERIT,
             description = "A package prefix where CLI commands/subcommands can be found. "
@@ -87,21 +97,11 @@ public class PlatformCli extends AbstractCommand {
                 + DOCUMENTATION_PURPOSES_ONLY);
     }
 
-    @CommandLine.Option(
-            names = {"-M", "--memory"},
-            scope = CommandLine.ScopeType.INHERIT,
-            description = "Set the amount of memory to allocate to the JVM, in gigabytes. "
-                    + "'-M 16' is equivalent to '-J -Xmx16g'.")
-    private void setJvmArgs(final int memory) {
-        throw buildParameterException("The memory parameter is expected to be parsed prior to the JVM being started. "
-                + DOCUMENTATION_PURPOSES_ONLY);
-    }
-
     /**
      * Set the log4j path.
      */
     @CommandLine.Option(
-            names = {"--log4j"},
+            names = "--log4j",
             scope = CommandLine.ScopeType.INHERIT,
             description = "The path where the log4j configuration file can be found.")
     private void setLog4jPath(final Path log4jPath) {
@@ -110,7 +110,7 @@ public class PlatformCli extends AbstractCommand {
     }
 
     @CommandLine.Option(
-            names = {"--no-color"},
+            names = "--no-color",
             description = "Disable color output. This option is designed for "
                     + "boring people living boring lives, who want their console "
                     + "output to be just as boring as they are.")
