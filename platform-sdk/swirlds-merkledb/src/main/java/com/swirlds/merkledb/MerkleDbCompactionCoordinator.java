@@ -20,8 +20,8 @@ import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticT
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.logging.legacy.LogMarker.MERKLE_DB;
 import static com.swirlds.merkledb.MerkleDb.MERKLEDB_COMPONENT;
+import static java.util.Objects.requireNonNull;
 
-import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.merkledb.config.MerkleDbConfig;
 import com.swirlds.merkledb.files.DataFileCompactor;
@@ -60,16 +60,24 @@ class MerkleDbCompactionCoordinator {
     private static final long SHUTDOWN_TIMEOUT_MILLIS = 60_000;
 
     /**
-     * An executor service to run compaction tasks. Accessed using {@link #getCompactionExecutor()}.
+     * An executor service to run compaction tasks. Accessed using {@link #getCompactionExecutor(MerkleDbConfig)}.
      */
     private static ExecutorService compactionExecutor = null;
 
-    static synchronized ExecutorService getCompactionExecutor() {
+    /**
+     * This method is invoked from a non-static method and uses the provided configuration.
+     * Consequently, the compaction executor will be initialized using the configuration provided
+     * by the first instance of MerkleDbCompactionCoordinator class that calls the relevant non-static method.
+     * Subsequent calls will reuse the same executor, regardless of any new configurations provided.
+     * FUTURE WORK: it can be moved to MerkleDb.
+     */
+    static synchronized ExecutorService getCompactionExecutor(final @NonNull MerkleDbConfig merkleDbConfig) {
+        requireNonNull(merkleDbConfig);
+
         if (compactionExecutor == null) {
-            final MerkleDbConfig config = ConfigurationHolder.getConfigData(MerkleDbConfig.class);
             compactionExecutor = new ThreadPoolExecutor(
-                    config.compactionThreads(),
-                    config.compactionThreads(),
+                    merkleDbConfig.compactionThreads(),
+                    merkleDbConfig.compactionThreads(),
                     50L,
                     TimeUnit.MILLISECONDS,
                     new LinkedBlockingQueue<>(),
@@ -103,6 +111,9 @@ class MerkleDbCompactionCoordinator {
     @NonNull
     private final DataFileCompactor pathToKeyValue;
 
+    @NonNull
+    private final MerkleDbConfig merkleDbConfig;
+
     // Number of compaction tasks currently running. Checked during shutdown to make sure all
     // tasks are stopped
     private final AtomicInteger tasksRunning = new AtomicInteger(0);
@@ -113,15 +124,21 @@ class MerkleDbCompactionCoordinator {
      * @param objectKeyToPath an object key to path store
      * @param hashesStoreDisk a hash store
      * @param pathToKeyValue a path to key-value store
+     * @param merkleDbConfig platform config for MerkleDbDataSource
      */
     public MerkleDbCompactionCoordinator(
             @NonNull String tableName,
             @Nullable DataFileCompactor objectKeyToPath,
             @Nullable DataFileCompactor hashesStoreDisk,
-            @NonNull DataFileCompactor pathToKeyValue) {
+            @NonNull DataFileCompactor pathToKeyValue,
+            @NonNull MerkleDbConfig merkleDbConfig) {
+        requireNonNull(tableName);
+        requireNonNull(pathToKeyValue);
+        requireNonNull(merkleDbConfig);
         this.objectKeyToPath = objectKeyToPath;
         this.hashesStoreDisk = hashesStoreDisk;
         this.pathToKeyValue = pathToKeyValue;
+        this.merkleDbConfig = merkleDbConfig;
         if (objectKeyToPath != null) {
             objectKeyToPathTask = new CompactionTask(tableName + OBJECT_KEY_TO_PATH_SUFFIX, objectKeyToPath);
         } else {
@@ -246,7 +263,7 @@ class MerkleDbCompactionCoordinator {
                     return;
                 }
             }
-            final ExecutorService executor = getCompactionExecutor();
+            final ExecutorService executor = getCompactionExecutor(merkleDbConfig);
             compactionFuturesByName.put(task.id, executor.submit(task));
         }
     }

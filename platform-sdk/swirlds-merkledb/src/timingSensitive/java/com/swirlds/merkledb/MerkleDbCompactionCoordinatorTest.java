@@ -19,6 +19,7 @@ package com.swirlds.merkledb;
 import static com.swirlds.common.test.fixtures.AssertionUtils.assertEventuallyDoesNotThrow;
 import static com.swirlds.common.test.fixtures.AssertionUtils.assertEventuallyEquals;
 import static com.swirlds.common.test.fixtures.AssertionUtils.assertEventuallyTrue;
+import static com.swirlds.merkledb.test.fixtures.MerkleDbTestUtils.CONFIGURATION;
 import static org.apache.commons.lang3.RandomStringUtils.randomAlphabetic;
 import static org.apache.commons.lang3.RandomUtils.nextBoolean;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -30,6 +31,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
+import com.swirlds.merkledb.config.MerkleDbConfig;
 import com.swirlds.merkledb.files.DataFileCompactor;
 import java.io.IOException;
 import java.time.Duration;
@@ -65,7 +67,12 @@ class MerkleDbCompactionCoordinatorTest {
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
-        coordinator = new MerkleDbCompactionCoordinator("test", objectKeyToPath, hashStoreDisk, pathToHashKeyValue);
+        coordinator = new MerkleDbCompactionCoordinator(
+                "test",
+                objectKeyToPath,
+                hashStoreDisk,
+                pathToHashKeyValue,
+                CONFIGURATION.getConfigData(MerkleDbConfig.class));
         coordinator.enableBackgroundCompaction();
     }
 
@@ -73,14 +80,17 @@ class MerkleDbCompactionCoordinatorTest {
     void cleanUp() {
         coordinator.stopAndDisableBackgroundCompaction();
         assertEventuallyTrue(
-                () -> ((ThreadPoolExecutor) MerkleDbCompactionCoordinator.getCompactionExecutor())
+                () -> ((ThreadPoolExecutor) MerkleDbCompactionCoordinator.getCompactionExecutor(
+                                CONFIGURATION.getConfigData(MerkleDbConfig.class)))
                         .getQueue()
                         .isEmpty(),
                 Duration.ofSeconds(1),
                 "Queue is not empty");
         assertEventuallyEquals(
                 0,
-                () -> ((ThreadPoolExecutor) MerkleDbCompactionCoordinator.getCompactionExecutor()).getActiveCount(),
+                () -> ((ThreadPoolExecutor) MerkleDbCompactionCoordinator.getCompactionExecutor(
+                                CONFIGURATION.getConfigData(MerkleDbConfig.class)))
+                        .getActiveCount(),
                 Duration.ofSeconds(1),
                 "Active task count is not 0");
     }
@@ -202,7 +212,8 @@ class MerkleDbCompactionCoordinatorTest {
     @Test
     void testCompactionWithNullNullables() throws IOException, InterruptedException {
         String table = randomAlphabetic(7);
-        coordinator = new MerkleDbCompactionCoordinator(table, null, null, pathToHashKeyValue);
+        coordinator = new MerkleDbCompactionCoordinator(
+                table, null, null, pathToHashKeyValue, CONFIGURATION.getConfigData(MerkleDbConfig.class));
         coordinator.enableBackgroundCompaction();
 
         testCompaction(

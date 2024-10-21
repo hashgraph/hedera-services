@@ -16,6 +16,8 @@
 
 package com.swirlds.virtualmap.internal.reconnect;
 
+import static com.swirlds.virtualmap.test.fixtures.VirtualMapTestUtils.CONFIGURATION;
+import static com.swirlds.virtualmap.test.fixtures.VirtualMapTestUtils.VIRTUAL_MAP_CONFIG;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -26,6 +28,7 @@ import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.metrics.api.Metrics;
+import com.swirlds.virtualmap.config.VirtualMapConfig;
 import com.swirlds.virtualmap.datasource.VirtualDataSource;
 import com.swirlds.virtualmap.datasource.VirtualHashRecord;
 import com.swirlds.virtualmap.datasource.VirtualLeafBytes;
@@ -66,8 +69,15 @@ class ReconnectHashListenerTest {
         final ReconnectNodeRemover<TestKey, TestValue> nodeRemover = mock(ReconnectNodeRemover.class);
         assertThrows(
                 NullPointerException.class,
-                () -> new ReconnectHashListener<>(
-                        1, 1, TestKeySerializer.INSTANCE, TestValueSerializer.INSTANCE, null, statistics, nodeRemover),
+                () -> new ReconnectHashListener<TestKey, TestValue>(
+                        1,
+                        1,
+                        TestKeySerializer.INSTANCE,
+                        TestValueSerializer.INSTANCE,
+                        null,
+                        VIRTUAL_MAP_CONFIG.flushInterval(),
+                        statistics,
+                        nodeRemover),
                 "A null data source should produce an NPE");
     }
 
@@ -79,7 +89,14 @@ class ReconnectHashListenerTest {
         assertThrows(
                 NullPointerException.class,
                 () -> new ReconnectHashListener<>(
-                        1, 1, TestKeySerializer.INSTANCE, TestValueSerializer.INSTANCE, ds, null, nodeRemover),
+                        1,
+                        1,
+                        TestKeySerializer.INSTANCE,
+                        TestValueSerializer.INSTANCE,
+                        ds,
+                        VIRTUAL_MAP_CONFIG.flushInterval(),
+                        null,
+                        nodeRemover),
                 "A null statistics should produce an NPE");
     }
 
@@ -91,7 +108,14 @@ class ReconnectHashListenerTest {
         assertThrows(
                 NullPointerException.class,
                 () -> new ReconnectHashListener<>(
-                        1, 1, TestKeySerializer.INSTANCE, TestValueSerializer.INSTANCE, ds, statistics, null),
+                        1,
+                        1,
+                        TestKeySerializer.INSTANCE,
+                        TestValueSerializer.INSTANCE,
+                        ds,
+                        VIRTUAL_MAP_CONFIG.flushInterval(),
+                        statistics,
+                        null),
                 "A null node remover should produce an NPE");
     }
 
@@ -119,6 +143,7 @@ class ReconnectHashListenerTest {
                         TestKeySerializer.INSTANCE,
                         TestValueSerializer.INSTANCE,
                         ds,
+                        VIRTUAL_MAP_CONFIG.flushInterval(),
                         statistics,
                         nodeRemover),
                 "Should have thrown IllegalArgumentException");
@@ -138,6 +163,7 @@ class ReconnectHashListenerTest {
                     TestKeySerializer.INSTANCE,
                     TestValueSerializer.INSTANCE,
                     ds,
+                    VIRTUAL_MAP_CONFIG.flushInterval(),
                     statistics,
                     nodeRemover);
         } catch (Exception e) {
@@ -158,10 +184,22 @@ class ReconnectHashListenerTest {
         // 100 leaves would have firstLeafPath = 99, lastLeafPath = 198
         final long last = size + size;
         final ReconnectHashListener<TestKey, TestValue> listener = new ReconnectHashListener<>(
-                size, last, TestKeySerializer.INSTANCE, TestValueSerializer.INSTANCE, ds, statistics, nodeRemover);
+                size,
+                last,
+                TestKeySerializer.INSTANCE,
+                TestValueSerializer.INSTANCE,
+                ds,
+                VIRTUAL_MAP_CONFIG.flushInterval(),
+                statistics,
+                nodeRemover);
         final VirtualHasher<TestKey, TestValue> hasher = new VirtualHasher<>();
         hasher.hash(
-                this::hash, LongStream.range(size, last).mapToObj(this::leaf).iterator(), size, last, listener);
+                this::hash,
+                LongStream.range(size, last).mapToObj(this::leaf).iterator(),
+                size,
+                last,
+                listener,
+                CONFIGURATION.getConfigData(VirtualMapConfig.class));
 
         // Now validate that everything showed up the data source in ordered chunks
         final TreeSet<VirtualHashRecord> allInternalRecords =
