@@ -63,7 +63,7 @@ class HashHandshakeTests {
         registry.registerConstructable(new ClassConstructorPair(SerializableLong.class, SerializableLong::new));
 
         final Pair<Connection, Connection> connections =
-                ConnectionFactory.createLocalConnections(new NodeId(0L), new NodeId(1));
+                ConnectionFactory.createLocalConnections(NodeId.of(0L), NodeId.of(1));
         myConnection = connections.left();
         theirConnection = connections.right();
     }

@@ -191,8 +191,8 @@ class HandleWorkflowTest {
 
     @Test
     void onlySkipsEventWithMissingCreator() {
-        final var presentCreatorId = new NodeId(1L);
-        final var missingCreatorId = new NodeId(2L);
+        final var presentCreatorId = NodeId.of(1L);
+        final var missingCreatorId = NodeId.of(2L);
         final var eventFromPresentCreator = mock(ConsensusEvent.class);
         final var eventFromMissingCreator = mock(ConsensusEvent.class);
         given(round.iterator())
@@ -204,7 +204,6 @@ class HandleWorkflowTest {
         given(networkInfo.nodeInfo(missingCreatorId.id())).willReturn(null);
         given(eventFromPresentCreator.consensusTransactionIterator()).willReturn(Collections.emptyIterator());
         given(round.getConsensusTimestamp()).willReturn(Instant.ofEpochSecond(12345L));
-        given(configProvider.getConfiguration()).willReturn(new VersionedConfigImpl(DEFAULT_CONFIG, 1));
 
         subject.handleRound(state, round);
 
