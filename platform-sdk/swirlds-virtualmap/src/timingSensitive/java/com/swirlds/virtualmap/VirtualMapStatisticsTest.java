@@ -147,16 +147,6 @@ public class VirtualMapStatisticsTest {
     }
 
     @Test
-    void testFlushBacklogSize() {
-        // given
-        final Metric metric = getMetric("lifecycle_", "flushBacklogSize_" + LABEL);
-        // when
-        statistics.recordFlushBacklogSize(3456);
-        // then
-        assertValueEquals(metric, 3456);
-    }
-
-    @Test
     void testFlushBackpressureMs() {
         // given
         final Metric metric = getMetric("lifecycle_", "flushBackpressureMs_" + LABEL);
