@@ -64,10 +64,8 @@ jobs:
       - name: Check for tags
         id: check-tags-exist
         run: |
-          TAG=$(git rev-list -n 1 ${XTS_CANDIDATE_TAG})
-          if [[ -n "${TAG}" ]]; then
-            XTS_COMMIT=$(git rev-list -n 1 ${XTS_CANDIDATE_TAG})
-            git branch --contains ${XTS_COMMIT} | grep --quiet develop
+          XTS_COMMIT=$(git rev-list -n 1 ${XTS_CANDIDATE_TAG})
+          if [[ -n "${XTS_COMMIT}" && $(git branch --contains ${XTS_COMMIT} | grep --quiet develop) -eq 0 ]]; then
             echo "xts-tag-exists=true" >> $GITHUB_OUTPUT
             echo "xts-tag-commit=${XTS_COMMIT}" >> $GITHUB_OUTPUT
             echo "### Commit has been tagged as an XTS-Candidate" >>  $GITHUB_STEP_SUMMARY
