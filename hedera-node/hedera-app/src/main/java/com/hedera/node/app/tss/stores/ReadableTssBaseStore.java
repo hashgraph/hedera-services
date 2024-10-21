@@ -24,9 +24,12 @@ import com.hedera.hapi.node.state.tss.TssMessageMapKey;
 import com.hedera.hapi.node.state.tss.TssVoteMapKey;
 import com.hedera.hapi.services.auxiliary.tss.TssMessageTransactionBody;
 import com.hedera.hapi.services.auxiliary.tss.TssVoteTransactionBody;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.state.spi.ReadableKVState;
 import com.swirlds.state.spi.ReadableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Provides read-only access to the TSS base store.
@@ -85,5 +88,16 @@ public class ReadableTssBaseStore implements ReadableTssStore {
     @Override
     public long messageStateSize() {
         return readableTssMessageState.size();
+    }
+
+    @Override
+    public List<TssMessageTransactionBody> getTssMessages(final Bytes rosterHash) {
+        final List<TssMessageTransactionBody> tssMessages = new ArrayList<>();
+        readableTssMessageState.keys().forEachRemaining(key -> {
+            if (key.rosterHash().equals(rosterHash)) {
+                tssMessages.add(readableTssMessageState.get(key));
+            }
+        });
+        return tssMessages;
     }
 }

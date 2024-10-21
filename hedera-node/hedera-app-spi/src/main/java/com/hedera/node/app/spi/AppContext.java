@@ -21,9 +21,9 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.FAIL_INVALID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.spi.signatures.SignatureVerifier;
-import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.crypto.Signature;
 import edu.umd.cs.findbugs.annotations.NonNull;
+
 import java.time.InstantSource;
 
 /**
@@ -45,33 +45,45 @@ public interface AppContext {
 
         /**
          * Attempts to submit the given transaction to the network.
+         *
          * @param body the transaction to submit
-         * @throws IllegalStateException if the network is not active; the client should retry later
+         * @throws IllegalStateException    if the network is not active; the client should retry later
          * @throws IllegalArgumentException if body is invalid; so the client can retry immediately with a
-         * different transaction id if the exception's message is {@link ResponseCodeEnum#DUPLICATE_TRANSACTION}
+         *                                  different transaction id if the exception's message is {@link ResponseCodeEnum#DUPLICATE_TRANSACTION}
          */
         void submit(@NonNull TransactionBody body);
     }
 
+    /**
+     * A signer that can sign a ledger id.
+     */
     interface LedgerSigner {
-
-        Signature sign(Bytes ledgerId);
+        /**
+         * Signs the given ledger id and returns the signature.
+         *
+         * @param ledgerId the ledger id to sign
+         * @return the signature
+         */
+        Signature sign(byte[] ledgerId);
     }
 
     /**
      * The source of the current instant.
+     *
      * @return the instant source
      */
     InstantSource instantSource();
 
     /**
      * The signature verifier the application workflows will use.
+     *
      * @return the signature verifier
      */
     SignatureVerifier signatureVerifier();
 
     /**
      * The {@link Gossip} can be used to submit transactions to the network when it is active.
+     *
      * @return the gossip interface
      */
     Gossip gossip();

@@ -31,7 +31,10 @@ public interface TssBaseServiceComponent {
     @Component.Factory
     interface Factory {
         TssBaseServiceComponent create(
-                @BindsInstance AppContext.Gossip gossip, @BindsInstance Executor submissionExecutor);
+                @BindsInstance AppContext.Gossip gossip,
+                @BindsInstance Executor submissionExecutor,
+                @BindsInstance AppContext.LedgerSigner ledgerSigner,
+                @BindsInstance TssCryptographyManager tssCryptographyManager);
     }
 
     TssMessageHandler tssMessageHandler();

@@ -686,8 +686,8 @@ public final class Hedera
     }
 
     @Override
-    public Signature sign(final Bytes ledgerId) {
-        return platform.sign(ledgerId.toByteArray());
+    public Signature sign(final byte[] ledgerId) {
+        return platform.sign(ledgerId);
     }
 
     /**
