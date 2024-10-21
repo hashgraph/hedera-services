@@ -42,6 +42,7 @@ import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.KeyList;
 import com.hedera.hapi.node.base.ThresholdKey;
 import com.hedera.node.app.signature.impl.SignatureVerificationImpl;
+import com.hedera.node.app.spi.key.KeyComparator;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
 import com.hedera.node.app.spi.signatures.VerificationAssistant;
 import com.hedera.node.app.workflows.prehandle.FakeSignatureVerificationFuture;
@@ -50,11 +51,13 @@ import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.TreeSet;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -73,6 +76,11 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class DefaultKeyVerifierTest {
     private static final int LEGACY_FEE_CALC_NETWORK_VPT = 13;
+    private static final Key ECDSA_X1 = FAKE_ECDSA_KEY_INFOS[1].publicKey();
+    private static final Key ECDSA_X2 = FAKE_ECDSA_KEY_INFOS[2].publicKey();
+    private static final Key ED25519_X1 = FAKE_ED25519_KEY_INFOS[1].publicKey();
+    private static final Key ED25519_X2 = FAKE_ED25519_KEY_INFOS[2].publicKey();
+    private static final Comparator<Key> KEY_COMPARATOR = new KeyComparator();
 
     private static final HederaConfig HEDERA_CONFIG =
             HederaTestConfigBuilder.createConfig().getConfigData(HederaConfig.class);
@@ -199,6 +207,48 @@ class DefaultKeyVerifierTest {
         }
     }
 
+    @Nested
+    @DisplayName("Only keys with valid signatures are returned by signingCryptoKeys()")
+    class SigningCryptoKeysTests {
+        @ParameterizedTest
+        @MethodSource("variousValidityScenarios")
+        void exactlyKeysWithValidKeysAreReturned(@NonNull final Map<Key, Boolean> keysAndPassFail) {
+            final var subject = new DefaultKeyVerifier(
+                    LEGACY_FEE_CALC_NETWORK_VPT, HEDERA_CONFIG, verificationResults(keysAndPassFail));
+            final var expectedKeys = keysAndPassFail.entrySet().stream()
+                    .filter(Entry::getValue)
+                    .map(Entry::getKey)
+                    .collect(Collectors.toCollection(() -> new TreeSet<>(KEY_COMPARATOR)));
+            final var actualKeys = subject.signingCryptoKeys();
+            assertThat(actualKeys).isEqualTo(expectedKeys);
+        }
+
+        static Stream<Arguments> variousValidityScenarios() {
+            return Stream.of(
+                    Arguments.of(named(
+                            "ECDSA_X1=pass, ECDSA_X2=pass, ED25519_X1=fail, ED25519_X2=fail",
+                            Map.of(
+                                    ECDSA_X1, true,
+                                    ECDSA_X2, true,
+                                    ED25519_X1, false,
+                                    ED25519_X2, false))),
+                    Arguments.of(named(
+                            "ECDSA_X1=fail, ECDSA_X2=pass, ED25519_X1=pass, ED25519_X2=fail",
+                            Map.of(
+                                    ECDSA_X1, false,
+                                    ECDSA_X2, true,
+                                    ED25519_X1, true,
+                                    ED25519_X2, false))),
+                    Arguments.of(named(
+                            "ECDSA_X1=fail, ECDSA_X2=fail, ED25519_X1=fail, ED25519_X2=fail",
+                            Map.of(
+                                    ECDSA_X1, false,
+                                    ECDSA_X2, false,
+                                    ED25519_X1, false,
+                                    ED25519_X2, false))));
+        }
+    }
+
     /**
      * Tests to verify that finding a {@link SignatureVerification} for compound keys (threshold keys, key lists) that
      * also have duplicated keys. The point of these tests is really to verify that duplicate keys are counted multiple
@@ -219,14 +269,10 @@ class DefaultKeyVerifierTest {
     @DisplayName("Finding SignatureVerification With Complex Keys with Duplicates")
     @ExtendWith(MockitoExtension.class)
     final class FindingSignatureVerificationWithDuplicateKeysTests {
-        // Used once in the key list
-        private static final Key ECDSA_X1 = FAKE_ECDSA_KEY_INFOS[1].publicKey();
-        // Used twice in the key list
-        private static final Key ECDSA_X2 = FAKE_ECDSA_KEY_INFOS[2].publicKey();
-        // Used once in the key list
-        private static final Key ED25519_X1 = FAKE_ED25519_KEY_INFOS[1].publicKey();
-        // Used twice in the key list
-        private static final Key ED25519_X2 = FAKE_ED25519_KEY_INFOS[2].publicKey();
+        // ECDSA_X1 is used once in the key list
+        // ECDSA_X2 is used twice in the key list
+        // ED25519_X1 is used once in the key list
+        // ED25519_X2 is used twice in the key list
 
         @BeforeEach
         void setup() {
@@ -234,17 +280,6 @@ class DefaultKeyVerifierTest {
                 final SignatureVerification verification = invocation.getArgument(1);
                 return verification.passed();
             });
-        }
-
-        private Map<Key, SignatureVerificationFuture> verificationResults(Map<Key, Boolean> keysAndPassFail) {
-            final var results = new HashMap<Key, SignatureVerificationFuture>();
-            for (final var entry : keysAndPassFail.entrySet()) {
-                results.put(
-                        entry.getKey(),
-                        new FakeSignatureVerificationFuture(
-                                new SignatureVerificationImpl(entry.getKey(), null, entry.getValue())));
-            }
-            return results;
         }
 
         @Test
@@ -1281,5 +1316,16 @@ class DefaultKeyVerifierTest {
                         .keys(KeyList.newBuilder().keys(keys))
                         .threshold(threshold))
                 .build();
+    }
+
+    private static Map<Key, SignatureVerificationFuture> verificationResults(Map<Key, Boolean> keysAndPassFail) {
+        final var results = new HashMap<Key, SignatureVerificationFuture>();
+        for (final var entry : keysAndPassFail.entrySet()) {
+            results.put(
+                    entry.getKey(),
+                    new FakeSignatureVerificationFuture(
+                            new SignatureVerificationImpl(entry.getKey(), null, entry.getValue())));
+        }
+        return results;
     }
 }

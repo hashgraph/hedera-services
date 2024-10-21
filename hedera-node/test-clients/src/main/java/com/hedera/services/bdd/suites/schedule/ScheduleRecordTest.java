@@ -68,7 +68,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.DynamicTest;
 
-public class ScheduleRecordSpecs {
+public class ScheduleRecordTest {
     @HapiTest
     final Stream<DynamicTest> noFeesChargedIfTriggeredPayerIsUnwilling() {
         return defaultHapiSpec("NoFeesChargedIfTriggeredPayerIsUnwilling")

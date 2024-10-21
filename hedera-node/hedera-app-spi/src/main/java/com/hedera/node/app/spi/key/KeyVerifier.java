@@ -16,15 +16,20 @@
 
 package com.hedera.node.app.spi.key;
 
+import static java.util.Collections.unmodifiableSortedSet;
+
 import com.hedera.hapi.node.base.Key;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
 import com.hedera.node.app.spi.signatures.VerificationAssistant;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.SortedSet;
+import java.util.TreeSet;
 
 /**
  * Helper class that contains all functionality for verifying signatures during handle.
  */
 public interface KeyVerifier {
+    SortedSet<Key> NO_CRYPTO_KEYS = unmodifiableSortedSet(new TreeSet<>(new KeyComparator()));
 
     /**
      * Gets the {@link SignatureVerification} for the given key. If this key was not provided during pre-handle, then
@@ -60,4 +65,20 @@ public interface KeyVerifier {
      */
     @NonNull
     SignatureVerification verificationFor(@NonNull Key key, @NonNull VerificationAssistant callback);
+
+    /**
+     * <b>If</b> this verifier is based on cryptographic verification of signatures on a transaction submitted from
+     * outside the blockchain, returns the set of cryptographic keys that had valid signatures, ordered by the
+     * {@link KeyComparator}.
+     * <p>
+     * Default is an empty set, for verifiers that use a more abstract concept of signing, such as,
+     * <ol>
+     *     <li>Whether a key references the contract whose EVM address is the recipient address of the active frame.</li>
+     *     <li>Whether a key is present in the signatories list of a scheduled transaction.</li>
+     * </ol>
+     * @return the set of cryptographic keys that had valid signatures for this transaction.
+     */
+    default SortedSet<Key> signingCryptoKeys() {
+        return NO_CRYPTO_KEYS;
+    }
 }

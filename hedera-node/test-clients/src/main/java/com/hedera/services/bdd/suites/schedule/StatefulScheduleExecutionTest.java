@@ -67,7 +67,7 @@ import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.TestMethodOrder;
 
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
-public class ScheduleExecutionSpecStateful {
+public class StatefulScheduleExecutionTest {
     @HapiTest
     @Order(4)
     final Stream<DynamicTest> scheduledBurnWithInvalidTokenThrowsUnresolvableSigners() {

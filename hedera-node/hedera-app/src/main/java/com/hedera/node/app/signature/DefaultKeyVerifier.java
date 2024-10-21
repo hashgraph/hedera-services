@@ -23,19 +23,25 @@ import static java.util.concurrent.CompletableFuture.completedFuture;
 
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.KeyList;
+import com.hedera.node.app.spi.key.KeyComparator;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
 import com.hedera.node.app.spi.signatures.VerificationAssistant;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.util.AbstractMap;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.SortedSet;
+import java.util.TreeSet;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -43,8 +49,9 @@ import org.apache.logging.log4j.Logger;
  * Base implementation of {@link AppKeyVerifier}
  */
 public class DefaultKeyVerifier implements AppKeyVerifier {
-
     private static final Logger logger = LogManager.getLogger(DefaultKeyVerifier.class);
+
+    private static final Comparator<Key> KEY_COMPARATOR = new KeyComparator();
 
     private final int legacyFeeCalcNetworkVpt;
     private final long timeout;
@@ -135,6 +142,16 @@ public class DefaultKeyVerifier implements AppKeyVerifier {
     public int numSignaturesVerified() {
         // FUTURE - keyVerifications.size(); now this for mono-service differential testing
         return legacyFeeCalcNetworkVpt;
+    }
+
+    @Override
+    public SortedSet<Key> signingCryptoKeys() {
+        return keyVerifications.entrySet().stream()
+                .map(entry -> new AbstractMap.SimpleImmutableEntry<>(
+                        entry.getKey(), resolveFuture(entry.getValue(), () -> failedVerification(entry.getKey()))))
+                .filter(e -> e.getValue().passed())
+                .map(Map.Entry::getKey)
+                .collect(Collectors.toCollection(() -> new TreeSet<>(KEY_COMPARATOR)));
     }
 
     /**

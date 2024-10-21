@@ -180,9 +180,8 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
         return feeAccumulator.chargeNetworkFee(payerId, amount);
     }
 
-    @NonNull
     @Override
-    public Configuration configuration() {
+    public @NonNull Configuration configuration() {
         return config;
     }
 
