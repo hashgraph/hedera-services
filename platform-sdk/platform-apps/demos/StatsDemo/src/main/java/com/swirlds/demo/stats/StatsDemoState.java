@@ -104,7 +104,7 @@ public class StatsDemoState extends PartialMerkleLeaf implements SwirldState, Me
      * {@inheritDoc}
      */
     @Override
-    public int getVersion() {
+    public int getClassVersion() {
         return ClassVersion.MIGRATE_TO_SERIALIZABLE;
     }
 

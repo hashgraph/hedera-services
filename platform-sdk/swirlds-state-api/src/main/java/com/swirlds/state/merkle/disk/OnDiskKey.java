@@ -101,7 +101,7 @@ public final class OnDiskKey<K> implements VirtualKey {
     }
 
     @Override
-    public int getVersion() {
+    public int getClassVersion() {
         return VERSION;
     }
 

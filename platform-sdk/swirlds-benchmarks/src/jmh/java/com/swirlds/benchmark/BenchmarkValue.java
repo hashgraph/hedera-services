@@ -104,7 +104,7 @@ public class BenchmarkValue implements VirtualValue {
 
     @Override
     public void deserialize(SerializableDataInputStream inputStream, int dataVersion) throws IOException {
-        assert dataVersion == getVersion() : "dataVersion=" + dataVersion + " != getVersion()=" + getVersion();
+        assert dataVersion == getClassVersion() : "dataVersion=" + dataVersion + " != getVersion()=" + getClassVersion();
         int n = inputStream.readInt();
         valueBytes = new byte[n];
         while (n > 0) {
@@ -114,7 +114,7 @@ public class BenchmarkValue implements VirtualValue {
 
     @Deprecated
     void deserialize(ByteBuffer buffer, int dataVersion) {
-        assert dataVersion == getVersion() : "dataVersion=" + dataVersion + " != getVersion()=" + getVersion();
+        assert dataVersion == getClassVersion() : "dataVersion=" + dataVersion + " != getVersion()=" + getClassVersion();
         int n = buffer.getInt();
         valueBytes = new byte[n];
         buffer.get(valueBytes);
@@ -126,7 +126,7 @@ public class BenchmarkValue implements VirtualValue {
     }
 
     @Override
-    public int getVersion() {
+    public int getClassVersion() {
         return VERSION;
     }
 

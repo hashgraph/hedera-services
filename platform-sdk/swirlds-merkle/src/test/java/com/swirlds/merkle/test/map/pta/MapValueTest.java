@@ -88,7 +88,7 @@ class MapValueTest {
             public void setHash(final Hash hash) {}
 
             @Override
-            public int getVersion() {
+            public int getClassVersion() {
                 return 0;
             }
         };

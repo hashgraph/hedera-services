@@ -81,7 +81,7 @@ public class SerializableSemVers implements SoftwareVersion {
     }
 
     @Override
-    public int getVersion() {
+    public int getClassVersion() {
         return RELEASE_027_VERSION;
     }
 

@@ -39,7 +39,7 @@ public final class SmartContractByteCodeMapKeySerializer implements KeySerialize
     }
 
     @Override
-    public int getVersion() {
+    public int getClassVersion() {
         return ClassVersion.ORIGINAL;
     }
 

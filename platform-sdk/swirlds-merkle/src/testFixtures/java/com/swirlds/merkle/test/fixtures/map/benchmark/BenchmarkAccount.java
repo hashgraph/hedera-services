@@ -96,7 +96,7 @@ public class BenchmarkAccount extends PartialMerkleLeaf implements Keyed<Benchma
      * {@inheritDoc}
      */
     @Override
-    public int getVersion() {
+    public int getClassVersion() {
         return 1;
     }
 

@@ -425,7 +425,7 @@ public class ISSTestingToolState extends PartialMerkleLeaf implements SwirldStat
      * {@inheritDoc}
      */
     @Override
-    public int getVersion() {
+    public int getClassVersion() {
         return ClassVersion.ORIGINAL;
     }
 }

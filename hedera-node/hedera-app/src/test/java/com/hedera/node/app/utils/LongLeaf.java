@@ -86,7 +86,7 @@ public class LongLeaf extends PartialMerkleLeaf implements MerkleLeaf {
 
     /** {@inheritDoc} */
     @Override
-    public int getVersion() {
+    public int getClassVersion() {
         return CURRENT_VERSION;
     }
 

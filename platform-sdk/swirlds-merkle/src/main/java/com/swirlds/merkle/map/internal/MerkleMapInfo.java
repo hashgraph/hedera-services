@@ -60,7 +60,7 @@ public class MerkleMapInfo extends PartialMerkleLeaf implements Labeled, MerkleL
      * {@inheritDoc}
      */
     @Override
-    public int getVersion() {
+    public int getClassVersion() {
         return ClassVersion.ORIGINAL;
     }
 

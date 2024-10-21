@@ -113,7 +113,7 @@ public class KeyedMerkleLong<K extends FastCopyable & SelfSerializable> extends 
      * {@inheritDoc}
      */
     @Override
-    public int getVersion() {
+    public int getClassVersion() {
         return CLASS_VERSION;
     }
 

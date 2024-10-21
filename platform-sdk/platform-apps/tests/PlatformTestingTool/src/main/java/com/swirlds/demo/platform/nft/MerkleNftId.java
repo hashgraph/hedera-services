@@ -116,7 +116,7 @@ public class MerkleNftId extends PartialMerkleLeaf implements MerkleLeaf {
      * {@inheritDoc}
      */
     @Override
-    public int getVersion() {
+    public int getClassVersion() {
         return VERSION_ORIGINAL;
     }
 

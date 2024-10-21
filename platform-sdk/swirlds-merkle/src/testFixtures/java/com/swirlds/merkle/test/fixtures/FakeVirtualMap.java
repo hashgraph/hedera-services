@@ -39,7 +39,7 @@ public class FakeVirtualMap extends PartialBinaryMerkleInternal implements Merkl
     }
 
     @Override
-    public int getVersion() {
+    public int getClassVersion() {
         return ClassVersion.ORIGINAL;
     }
 

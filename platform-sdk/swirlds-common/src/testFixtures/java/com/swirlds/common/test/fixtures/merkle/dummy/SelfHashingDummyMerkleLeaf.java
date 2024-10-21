@@ -74,7 +74,7 @@ public class SelfHashingDummyMerkleLeaf extends PartialMerkleLeaf implements Dum
     }
 
     @Override
-    public int getVersion() {
+    public int getClassVersion() {
         return VERSION;
     }
 
