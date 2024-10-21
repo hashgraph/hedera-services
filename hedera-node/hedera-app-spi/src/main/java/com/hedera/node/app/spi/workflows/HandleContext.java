@@ -455,8 +455,6 @@ public interface HandleContext {
     @NonNull
     ThrottleAdviser throttleAdviser();
 
-    void submitInternalTransaction(TransactionBody transactionBody);
-
     /**
      * A stack of savepoints.
      *
