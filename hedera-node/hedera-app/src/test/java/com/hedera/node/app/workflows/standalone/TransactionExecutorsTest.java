@@ -58,6 +58,7 @@ import com.hedera.node.app.service.token.impl.TokenServiceImpl;
 import com.hedera.node.app.service.util.impl.UtilServiceImpl;
 import com.hedera.node.app.services.AppContextImpl;
 import com.hedera.node.app.services.ServicesRegistry;
+import com.hedera.node.app.spi.AppContext;
 import com.hedera.node.app.spi.signatures.SignatureVerifier;
 import com.hedera.node.app.state.recordcache.RecordCacheService;
 import com.hedera.node.app.throttle.CongestionThrottleService;
@@ -273,8 +274,11 @@ class TransactionExecutorsTest {
         Set.of(
                         new EntityIdService(),
                         new ConsensusServiceImpl(),
-                        new ContractServiceImpl(
-                                new AppContextImpl(InstantSource.system(), signatureVerifier, UNAVAILABLE_GOSSIP)),
+                        new ContractServiceImpl(new AppContextImpl(
+                                InstantSource.system(),
+                                signatureVerifier,
+                                UNAVAILABLE_GOSSIP,
+                                AppContext.LedgerIdSigner.UNAVAILABLE_LEDGER_SIGNER)),
                         new FileServiceImpl(),
                         new FreezeServiceImpl(),
                         new ScheduleServiceImpl(),

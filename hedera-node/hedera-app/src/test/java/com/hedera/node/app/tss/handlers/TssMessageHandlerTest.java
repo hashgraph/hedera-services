@@ -22,8 +22,10 @@ import static org.mockito.BDDMockito.given;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.spi.AppContext;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
+import com.hedera.node.app.tss.TssCryptographyManager;
 import com.swirlds.state.spi.info.NetworkInfo;
 import com.swirlds.state.spi.info.NodeInfo;
 import java.time.Instant;
@@ -54,11 +56,17 @@ class TssMessageHandlerTest {
     @Mock(strictness = Mock.Strictness.LENIENT)
     private NetworkInfo networkInfo;
 
+    @Mock
+    private AppContext.LedgerIdSigner ledgerSigner;
+
+    @Mock
+    private TssCryptographyManager tssCryptographyManager;
+
     private TssMessageHandler subject;
 
     @BeforeEach
     void setUp() {
-        subject = new TssMessageHandler(submissionManager);
+        subject = new TssMessageHandler(submissionManager, ledgerSigner, tssCryptographyManager);
     }
 
     @Test

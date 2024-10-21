@@ -72,7 +72,8 @@ public class TssBaseServiceImpl implements TssBaseService {
             @NonNull final Executor submissionExecutor) {
         requireNonNull(appContext);
         this.signingExecutor = requireNonNull(signingExecutor);
-        final var component = DaggerTssBaseServiceComponent.factory().create(appContext.gossip(), submissionExecutor);
+        final var component = DaggerTssBaseServiceComponent.factory()
+                .create(appContext.gossip(), submissionExecutor, appContext.ledgerIdSigner());
         tssHandlers = new TssHandlers(component.tssMessageHandler(), component.tssVoteHandler());
         tssSubmissions = component.tssSubmissions();
     }

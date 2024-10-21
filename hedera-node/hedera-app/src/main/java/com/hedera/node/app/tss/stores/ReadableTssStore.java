@@ -20,7 +20,9 @@ import com.hedera.hapi.node.state.tss.TssMessageMapKey;
 import com.hedera.hapi.node.state.tss.TssVoteMapKey;
 import com.hedera.hapi.services.auxiliary.tss.TssMessageTransactionBody;
 import com.hedera.hapi.services.auxiliary.tss.TssVoteTransactionBody;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.List;
 
 public interface ReadableTssStore {
     /**
@@ -61,4 +63,6 @@ public interface ReadableTssStore {
      * @return The number of entries in the tss message state.
      */
     long messageStateSize();
+
+    List<TssMessageTransactionBody> getTssMessages(Bytes rosterHash);
 }
