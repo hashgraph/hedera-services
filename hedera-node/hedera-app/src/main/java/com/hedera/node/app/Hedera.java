@@ -191,7 +191,8 @@ import org.apache.logging.log4j.Logger;
  * including its state. It constructs the Dagger dependency tree, and manages the gRPC server, and in all other ways,
  * controls execution of the node. If you want to understand our system, this is a great place to start!
  */
-public final class Hedera implements SwirldMain, PlatformStatusChangeListener, AppContext.Gossip, AppContext.LedgerSigner {
+public final class Hedera
+        implements SwirldMain, PlatformStatusChangeListener, AppContext.Gossip, AppContext.LedgerSigner {
     private static final Logger logger = LogManager.getLogger(Hedera.class);
 
     // FUTURE: This should come from configuration, not be hardcoded.
@@ -685,8 +686,8 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
     }
 
     @Override
-    public Signature sign(final Bytes ledgerId) {
-        return platform.sign(ledgerId.toByteArray());
+    public Signature sign(final byte[] ledgerId) {
+        return platform.sign(ledgerId);
     }
 
     /**

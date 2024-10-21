@@ -16,65 +16,48 @@
 
 package com.hedera.node.app.tss;
 
-import com.hedera.hapi.node.state.primitives.ProtoBytes;
-import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.hapi.node.state.roster.RosterEntry;
 import com.hedera.hapi.node.state.tss.TssVoteMapKey;
+import com.hedera.hapi.services.auxiliary.tss.TssMessageTransactionBody;
 import com.hedera.node.app.roster.ReadableRosterStore;
 import com.hedera.node.app.spi.AppContext;
 import com.hedera.node.app.spi.workflows.HandleContext;
-import com.hedera.hapi.services.auxiliary.tss.TssMessageTransactionBody;
-import com.hedera.hapi.services.auxiliary.tss.TssVoteTransactionBody;
 import com.hedera.node.app.tss.api.TssLibrary;
 import com.hedera.node.app.tss.api.TssMessage;
 import com.hedera.node.app.tss.api.TssParticipantDirectory;
-import com.hedera.node.app.tss.api.TssPrivateShare;
-import com.hedera.node.app.tss.api.TssPublicShare;
 import com.hedera.node.app.tss.pairings.PairingPublicKey;
 import com.hedera.node.app.tss.stores.WritableTssBaseStore;
-import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.hedera.node.config.data.TssConfig;
+import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.platform.NodeId;
-
-import javax.inject.Singleton;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.BitSet;
 import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-
-import static java.util.Objects.requireNonNull;
+import java.util.concurrent.CompletableFuture;
+import javax.inject.Inject;
+import javax.inject.Singleton;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * This is yet to be implemented
  */
 @Singleton
 public class TssCryptographyManager {
-    private static final int NUM_MAX_SHARES_PER_NODE = 10;
-    private Map<Bytes, List<TssMessage>> tssMessages = new LinkedHashMap<>();
-    Map<Bytes, List<TssVoteTransactionBody>> tssVotes = new LinkedHashMap<>();
-    Map<Bytes, BitSet> tssVoteBitSet = new LinkedHashMap<>();
-    Map<Bytes, PairingPublicKey> ledgerIds = new LinkedHashMap<>();
-    Map<Bytes, Map<Long, Integer>> nodeShareCounts = new LinkedHashMap<>();
-    Map<Bytes, List<TssPublicShare>> publicShares = new LinkedHashMap<>();
-    Map<Bytes, List<TssPrivateShare>> privateShares = new LinkedHashMap<>();
+    private static final Logger log = LogManager.getLogger(TssCryptographyManager.class);
 
-    private Set<Bytes> votingClosed = new LinkedHashSet();
-    private boolean createNewLedgerId = false;
     private NodeId nodeId;
-
     private final TssLibrary tssLibrary;
     private TssParticipantDirectory tssParticipantDirectory;
-
     private AppContext.LedgerSigner ledgerSigner;
-
-    public TssCryptographyManager(NodeId nodeId,
-                                  TssLibrary tssLibrary,
-                                  TssParticipantDirectory tssParticipantDirectory,
-                                  AppContext.LedgerSigner ledgerSigner) {
+    public TssCryptographyManager(
+            @NonNull final NodeId nodeId,
+            @NonNull final TssLibrary tssLibrary,
+            @NonNull final TssParticipantDirectory tssParticipantDirectory,
+            @NonNull final AppContext.LedgerSigner ledgerSigner) {
         this.nodeId = nodeId;
         this.tssLibrary = tssLibrary;
         this.tssParticipantDirectory = tssParticipantDirectory;
@@ -84,104 +67,123 @@ public class TssCryptographyManager {
     /**
      * Submit TSS message transactions to the transaction pool
      */
-    public void handleTssMessageTransaction(TssMessageTransactionBody op, HandleContext context) {
-        final var targetRosterHash = op.targetRosterHash();
-        final var sourceRosterHash = op.sourceRosterHash();
-        //1. Add it to the list of TssMessageTransactions for the target roster.
-        tssMessages.computeIfAbsent(targetRosterHash, k -> new LinkedList<>()).add(new TssMessage(op.tssMessage().toByteArray()));
-
+    public CompletableFuture<LedgerIdAndSignature> handleTssMessageTransaction(
+            @NonNull final TssMessageTransactionBody op,
+            @NonNull final TssParticipantDirectory tssParticipantDirectory,
+            @NonNull final HandleContext context) {
         final var tssStore = context.storeFactory().writableStore(WritableTssBaseStore.class);
         final var rosterStore = context.storeFactory().readableStore(ReadableRosterStore.class);
+
+        final var targetRosterHash = op.targetRosterHash();
+        final var sourceRosterHash = op.sourceRosterHash();
+
+        final var tssMessageBodies = tssStore.getTssMessages(targetRosterHash);
+
         final var hasVoteSubmitted = tssStore.getVote(TssVoteMapKey.newBuilder()
-                .nodeId(nodeId.id())
-                .rosterHash(targetRosterHash)
-                .build()) != null;
-        // If the node didn't submit a TssVoteTransaction
-        if (!votingClosed.contains(targetRosterHash) && !hasVoteSubmitted) {
-            // validate TSS transaction
-            final boolean isValid = tssLibrary.verifyTssMessage(tssParticipantDirectory, new TssMessage(op.tssMessage().toByteArray()));
-            if (isValid) {
-                //2. If the TSS message is valid, set the bit vector for the votes
-                tssVoteBitSet.computeIfAbsent(targetRosterHash, k -> new BitSet()).set((int) op.shareIndex());
-            }
+                        .nodeId(nodeId.id())
+                        .rosterHash(targetRosterHash)
+                        .build())
+                != null;
+        // If the node didn't submit a TssVoteTransaction, validate all TssMessages and compute the vote bit set
+        // to see if threshold is met
+        // FUTURE: Add !votingClosed.contains(targetRosterHash)
+        if (!hasVoteSubmitted) {
+            final var rosterEntries = rosterStore.get(sourceRosterHash).rosterEntries();
+            final TssConfig tssConfig = context.configuration().getConfigData(TssConfig.class);
+            final var maxSharesPerNode = tssConfig.maxSharesPerNode();
+            // Validate the TSSMessages and if the threshold is met and public keys for a target roster have
+            // not been computed yet compute the public keys
+            return computePublicKeysAndSignIfThresholdMet(tssMessageBodies, maxSharesPerNode, rosterEntries)
+                    .exceptionally(e -> {
+                        log.error("Error computing public keys and signing", e);
+                        return null;
+                    });
         }
-        nodeShareCounts = sharesFromWeight(rosterStore, sourceRosterHash);
-        boolean tssMessageThresholdMet = isThresholdMet(sourceRosterHash, targetRosterHash, context);
-        // If public keys for target roster have not been computed yet and the threshold is met, compute the public keys
-        if (tssMessageThresholdMet) {
-            final var computedPublicShares = tssLibrary.computePublicShares(tssParticipantDirectory, tssMessages.get(targetRosterHash));
-            publicShares.put(targetRosterHash, computedPublicShares);
+        return CompletableFuture.completedFuture(null);
+    }
+
+    private CompletableFuture<LedgerIdAndSignature> computePublicKeysAndSignIfThresholdMet(
+            @NonNull final List<TssMessageTransactionBody> tssMessageBodies,
+            @NonNull final long maxSharesPerNode,
+            @NonNull final List<RosterEntry> rosterEntries) {
+        return CompletableFuture.supplyAsync(() -> {
+            // validate TSS transactions and set the vote bit set.
+            // This could be an in memory data structure in the future
+            final var validTssMessages = validateTssMessages(tssMessageBodies);
+            boolean tssMessageThresholdMet = isThresholdMet(validTssMessages, maxSharesPerNode, rosterEntries);
+            if (!tssMessageThresholdMet) {
+                return null;
+            }
+            final var tssMessages = validTssMessages.stream()
+                    .map(TssMessageTransactionBody::tssMessage)
+                    .map(k -> new TssMessage(k.toByteArray()))
+                    .toList();
+            final var computedPublicShares = tssLibrary.computePublicShares(tssParticipantDirectory, tssMessages);
+
             // compute the ledger id
             final var ledgerId = tssLibrary.aggregatePublicShares(computedPublicShares);
-            ledgerIds.put(targetRosterHash, ledgerId);
+            // final var recoveredPrivateShares = tssLibrary.decryptPrivateShares(tssParticipantDirectory, tssMessages);
+            //  copyPrivateShares(targetRosterHash, sourceRosterHash, recoveredPrivateShares);
 
-            // If this node is present in the target roster with same tssEncryptionKey as the source roster, then
-            // add the private shares to the list of private shares
-            final var sourceRoster = rosterStore.get(sourceRosterHash);
-            final var targetRoster = rosterStore.get(targetRosterHash);
-            final var recoveredPrivateShares = tssLibrary.decryptPrivateShares(tssParticipantDirectory, tssMessages.get(targetRosterHash));
+            // If the target roster hash is not in the votingClosed set, and there is no TssVoteTransaction
+            // from this node.
+            // FUTURE: Add !votingClosed.contains(targetRosterHash)
+            final var signature = ledgerSigner.sign(ledgerId.publicKey().toBytes());
 
-            final var sourceRosterEncryptionKey = requireNonNull(getRosterEntry(sourceRoster))
-                    .get().tssEncryptionKey();
-            final var targetRosterEntry = targetRoster.rosterEntries().stream()
-                    .filter(e -> e.nodeId() == nodeId.id())
-                    .findFirst();
-            // If the node is in the roster, but the tssEncryptionKey is different, a restart may be required
-            // to pickup the correct encryption key from disk. so, do nothing here
-            if (targetRosterEntry.isPresent() && targetRosterEntry.get().tssEncryptionKey().equals(sourceRosterEncryptionKey)) {
-                privateShares.put(targetRosterHash, recoveredPrivateShares);
-            }
+            final BitSet tssVoteBitSet = computeTssVoteBitSet(validTssMessages);
+            return new LedgerIdAndSignature(ledgerId, signature, tssVoteBitSet);
+        });
+    }
 
-            // If the target roster hash is not in the votingClosed set and there is no TssVoteTransaction
-            // from this node
-            if(!votingClosed.contains(targetRosterHash)) {
-//                ledgerSigner.sign(ledgerId.)
+    private List<TssMessageTransactionBody> validateTssMessages(
+            @NonNull final List<TssMessageTransactionBody> tssMessages) {
+        final var validTssMessages = new LinkedList<TssMessageTransactionBody>();
+        for (TssMessageTransactionBody op : tssMessages) {
+            final var isValid = tssLibrary.verifyTssMessage(
+                    tssParticipantDirectory, new TssMessage(op.tssMessage().toByteArray()));
+            if (isValid) {
+                validTssMessages.add(op);
             }
         }
-
+        return validTssMessages;
     }
 
-    private Optional<RosterEntry> getRosterEntry(final Roster sourceRoster) {
-        return sourceRoster.rosterEntries().stream()
-                .filter(e -> e.nodeId() == nodeId.id())
-                .findFirst();
-    }
-
-    private boolean isThresholdMet(final Bytes sourceRosterHash, Bytes targetRosterHash, final HandleContext context) {
-        final boolean thresholdMetForSourceRoster = !createNewLedgerId
-                && tssVoteBitSet.get(sourceRosterHash).cardinality() >= tssParticipantDirectory.getThreshold();
-        final boolean thresholdMetForTargetRoster = createNewLedgerId && metThresholdWeight(sourceRosterHash, targetRosterHash, context);
-        return thresholdMetForSourceRoster || thresholdMetForTargetRoster;
-    }
-
-    private boolean metThresholdWeight(Bytes sourceRosterHash, Bytes targetRosterHash, final HandleContext context) {
-        final var rosterStore = context.storeFactory().readableStore(ReadableRosterStore.class);
-        final var sourceRoster = rosterStore.get(ProtoBytes.newBuilder().value(sourceRosterHash).build());
-        if (sourceRoster == null) {
-            return false;
-        } else {
-            final var numTssMessagesReceived = tssMessages.get(targetRosterHash).size();
-            final var numShares = nodeShareCounts.get(sourceRosterHash).values().stream().mapToInt(Integer::intValue).sum();
-            // If more than 1/2 the consensus weight has been received, then the threshold is met
-            return numTssMessagesReceived >= numShares / 2;
+    private BitSet computeTssVoteBitSet(@NonNull final List<TssMessageTransactionBody> tssMessageBodies) {
+        final var tssVoteBitSet = new BitSet();
+        for (TssMessageTransactionBody op : tssMessageBodies) {
+            final var isValid = tssLibrary.verifyTssMessage(
+                    tssParticipantDirectory, new TssMessage(op.tssMessage().toByteArray()));
+            if (!isValid) {
+                tssVoteBitSet.set((int) op.shareIndex());
+            }
         }
+        return tssVoteBitSet;
     }
 
-    private Map<Bytes, Map<Long, Integer>> sharesFromWeight(final ReadableRosterStore store, final Bytes rosterHash) {
-        final var roster = store.get(ProtoBytes.newBuilder().value(rosterHash).build());
-        final var maxWeight = roster.rosterEntries()
-                .stream()
-                .mapToLong(RosterEntry::weight)
-                .max()
-                .orElse(0);
-        final var shares = new LinkedHashMap<Long, Integer>();
-        final var rosterWithShares = new LinkedHashMap<Bytes, Map<Long, Integer>>();
-        for (final var entry : roster.rosterEntries()) {
-            final var numShares = (int) ((10 * entry.weight() + maxWeight - 1) / maxWeight);
+    private boolean isThresholdMet(
+            @NonNull final List<TssMessageTransactionBody> validTssMessages,
+            final long maxTssMessagesPerNode,
+            @NonNull final List<RosterEntry> rosterEntries) {
+        final var nodeShareCounts = sharesFromWeight(rosterEntries, maxTssMessagesPerNode);
+        final var numShares =
+                nodeShareCounts.values().stream().mapToLong(Long::longValue).sum();
+
+        // If more than 1/2 the consensus weight has been received, then the threshold is met
+        return validTssMessages.size() >= ((numShares + 2) / 2);
+    }
+
+    public static Map<Long, Long> sharesFromWeight(
+            @NonNull final List<RosterEntry> rosterEntries, final long maxTssMessagesPerNode) {
+        final var maxWeight =
+                rosterEntries.stream().mapToLong(RosterEntry::weight).max().orElse(0);
+        final var shares = new LinkedHashMap<Long, Long>();
+        for (final var entry : rosterEntries) {
+            final var numShares = ((maxTssMessagesPerNode * entry.weight() + maxWeight - 1) / maxWeight);
             shares.put(entry.nodeId(), numShares);
         }
-        rosterWithShares.put(rosterHash, shares);
-        return rosterWithShares;
+        return shares;
     }
 
+    public record LedgerIdAndSignature(
+            @NonNull PairingPublicKey ledgerId, @NonNull Signature signature, @NonNull BitSet tssVoteBitSet) {}
 }
