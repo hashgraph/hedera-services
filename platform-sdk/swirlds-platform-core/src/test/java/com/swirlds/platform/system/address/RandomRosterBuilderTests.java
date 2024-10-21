@@ -21,20 +21,21 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.hedera.hapi.node.state.roster.Roster;
+import com.hedera.hapi.node.state.roster.RosterEntry;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.Randotron;
-import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.platform.crypto.CryptoStatic;
 import com.swirlds.platform.crypto.KeysAndCerts;
 import com.swirlds.platform.crypto.PlatformSigner;
-import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
+import com.swirlds.platform.roster.RosterUtils;
+import com.swirlds.platform.test.fixtures.addressbook.RandomRosterBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.security.PublicKey;
 import org.junit.jupiter.api.Test;
 
-class RandomAddressBookBuilderTests {
+class RandomRosterBuilderTests {
 
     /**
      * Assert that the given keys are unique.
@@ -65,21 +66,17 @@ class RandomAddressBookBuilderTests {
         // Only generate small address book (it's expensive to generate signatures)
         final int size = 3;
 
-        final RandomAddressBookBuilder builderA =
-                RandomAddressBookBuilder.create(randotron).withSize(size).withRealKeysEnabled(true);
-        final AddressBook addressBookA = builderA.build();
+        final RandomRosterBuilder builderA =
+                RandomRosterBuilder.create(randotron).withSize(size).withRealKeysEnabled(true);
+        final Roster rosterA = builderA.build();
 
-        final RandomAddressBookBuilder builderB = RandomAddressBookBuilder.create(randotron.copyAndReset())
+        final RandomRosterBuilder builderB = RandomRosterBuilder.create(randotron.copyAndReset())
                 .withSize(size)
                 .withRealKeysEnabled(true);
-        final AddressBook addressBookB = builderB.build();
+        final Roster rosterB = builderB.build();
 
         // The address book should be the same (keys should be deterministic)
-        final PlatformContext platformContext =
-                TestPlatformContextBuilder.create().build();
-        platformContext.getCryptography().digestSync(addressBookA);
-        platformContext.getCryptography().digestSync(addressBookB);
-        assertEquals(addressBookA.getHash(), addressBookB.getHash());
+        assertEquals(RosterUtils.hash(rosterA), RosterUtils.hash(rosterB));
 
         // Verify that each address has unique keys
         for (int i = 0; i < size; i++) {
@@ -88,26 +85,24 @@ class RandomAddressBookBuilderTests {
                     continue;
                 }
 
-                final NodeId idI = addressBookA.getNodeId(i);
-                final Address addressI = addressBookA.getAddress(idI);
-                final PublicKey signaturePublicKeyI = addressI.getSigPublicKey();
-                final PublicKey agreementPublicKeyI = addressI.getAgreePublicKey();
+                final RosterEntry addressI = rosterA.rosterEntries().get(i);
+                final PublicKey signaturePublicKeyI =
+                        RosterUtils.fetchGossipCaCertificate(addressI).getPublicKey();
 
-                final NodeId idJ = addressBookA.getNodeId(j);
-                final Address addressJ = addressBookA.getAddress(idJ);
-                final PublicKey signaturePublicKeyJ = addressJ.getSigPublicKey();
-                final PublicKey agreementPublicKeyJ = addressJ.getAgreePublicKey();
+                final RosterEntry addressJ = rosterA.rosterEntries().get(j);
+                final PublicKey signaturePublicKeyJ =
+                        RosterUtils.fetchGossipCaCertificate(addressJ).getPublicKey();
 
                 assertKeysAreUnique(signaturePublicKeyI, signaturePublicKeyJ);
-                assertKeysAreUnique(agreementPublicKeyI, agreementPublicKeyJ);
             }
         }
 
         // Verify that the private key can produce valid signatures that can be verified by the public key
         for (int i = 0; i < size; i++) {
-            final NodeId id = addressBookA.getNodeId(i);
-            final Address address = addressBookA.getAddress(id);
-            final PublicKey signaturePublicKey = address.getSigPublicKey();
+            final RosterEntry address = rosterA.rosterEntries().get(i);
+            final NodeId id = NodeId.of(address.nodeId());
+            final PublicKey signaturePublicKey =
+                    RosterUtils.fetchGossipCaCertificate(address).getPublicKey();
             final KeysAndCerts privateKeys = builderA.getPrivateKeys(id);
 
             final byte[] dataArray = randotron.nextByteArray(64);
@@ -117,9 +112,10 @@ class RandomAddressBookBuilderTests {
             assertTrue(CryptoStatic.verifySignature(dataBytes, signature.getBytes(), signaturePublicKey));
 
             // Sanity check: validating using the wrong public key should fail
-            final NodeId wrongId = addressBookA.getNodeId((i + 1) % size);
-            final Address wrongAddress = addressBookA.getAddress(wrongId);
-            final PublicKey wrongPublicKey = wrongAddress.getSigPublicKey();
+            final RosterEntry wrongAddress = rosterA.rosterEntries().get((i + 1) % size);
+            final NodeId wrongId = NodeId.of(wrongAddress.nodeId());
+            final PublicKey wrongPublicKey =
+                    RosterUtils.fetchGossipCaCertificate(wrongAddress).getPublicKey();
             assertFalse(CryptoStatic.verifySignature(dataBytes, signature.getBytes(), wrongPublicKey));
 
             // Sanity check: validating against the wrong data should fail

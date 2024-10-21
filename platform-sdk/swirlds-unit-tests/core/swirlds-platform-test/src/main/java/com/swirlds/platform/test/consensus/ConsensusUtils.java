@@ -16,9 +16,10 @@
 
 package com.swirlds.platform.test.consensus;
 
+import com.hedera.hapi.node.state.roster.RosterEntry;
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.internal.EventImpl;
-import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.test.fixtures.event.generator.GraphGenerator;
 import com.swirlds.platform.test.fixtures.event.source.EventSource;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -37,10 +38,11 @@ public abstract class ConsensusUtils {
             @NonNull final GraphGenerator<?> generator,
             @NonNull final Random random) {
         Instant lastTimestamp = Instant.MIN;
-        for (final Address address : generator.getAddressBook()) {
-            final EventSource<?> source = generator.getSource(address.getNodeId());
+        for (final RosterEntry entry : generator.getRoster().rosterEntries()) {
+            final NodeId nodeId = NodeId.of(entry.nodeId());
+            final EventSource<?> source = generator.getSource(nodeId);
             final List<PlatformEvent> eventsByCreator = events.stream()
-                    .filter(e -> e.getCreatorId().id() == address.getNodeId().id())
+                    .filter(e -> e.getCreatorId().id() == nodeId.id())
                     .toList();
             eventsByCreator.forEach(e -> {
                 final EventImpl eventImpl = new EventImpl(e, null, null);

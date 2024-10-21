@@ -21,6 +21,8 @@ import static com.swirlds.logging.legacy.LogMarker.NETWORK;
 import static com.swirlds.logging.legacy.LogMarker.SOCKET_EXCEPTIONS;
 import static com.swirlds.logging.legacy.LogMarker.TCP_CONNECT_EXCEPTIONS;
 
+import com.hedera.hapi.node.state.roster.Roster;
+import com.hedera.hapi.node.state.roster.RosterEntry;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.gossip.sync.SyncInputStream;
@@ -31,9 +33,7 @@ import com.swirlds.platform.network.NetworkUtils;
 import com.swirlds.platform.network.SocketConfig;
 import com.swirlds.platform.network.SocketConnection;
 import com.swirlds.platform.network.connection.NotConnectedConnection;
-import com.swirlds.platform.state.address.AddressBookNetworkUtils;
-import com.swirlds.platform.system.address.Address;
-import com.swirlds.platform.system.address.AddressBook;
+import com.swirlds.platform.roster.RosterUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.net.Socket;
@@ -53,7 +53,7 @@ public class OutboundConnectionCreator {
     private final SocketConfig socketConfig;
     private final ConnectionTracker connectionTracker;
     private final SocketFactory socketFactory;
-    private final AddressBook addressBook;
+    private final Roster roster;
     private final PlatformContext platformContext;
 
     public OutboundConnectionCreator(
@@ -61,12 +61,12 @@ public class OutboundConnectionCreator {
             @NonNull final NodeId selfId,
             @NonNull final ConnectionTracker connectionTracker,
             @NonNull final SocketFactory socketFactory,
-            @NonNull final AddressBook addressBook) {
+            @NonNull final Roster roster) {
         this.platformContext = Objects.requireNonNull(platformContext);
         this.selfId = Objects.requireNonNull(selfId);
         this.connectionTracker = Objects.requireNonNull(connectionTracker);
         this.socketFactory = Objects.requireNonNull(socketFactory);
-        this.addressBook = Objects.requireNonNull(addressBook);
+        this.roster = Objects.requireNonNull(roster);
         this.socketConfig = platformContext.getConfiguration().getConfigData(SocketConfig.class);
     }
 
@@ -78,10 +78,17 @@ public class OutboundConnectionCreator {
      * @return the new connection, or a connection that is not connected if it couldn't connect on the first try
      */
     public Connection createConnection(final NodeId otherId) {
-        final Address other = addressBook.getAddress(otherId);
-        final Address ownAddress = addressBook.getAddress(selfId);
-        final int port = other.getConnectPort(ownAddress);
-        final String hostname = getConnectHostname(ownAddress, other);
+        final RosterEntry other = RosterUtils.getRosterEntry(roster, otherId.id());
+        final RosterEntry ownRosterEntry = RosterUtils.getRosterEntry(roster, selfId.id());
+
+        // NOTE: we always connect to the first ServiceEndpoint, which for now represents a legacy "external" address
+        // (which may change in the future as new Rosters get installed).
+        // There's no longer a distinction between "internal" and "external" endpoints in Roster,
+        // and it would be complex and error-prone to build logic to guess which one is which.
+        // Ideally, this code should use a randomized and/or round-robin approach to choose an appropriate endpoint.
+        // For now, we default to the very first one at all times.
+        final int port = RosterUtils.fetchPort(other);
+        final String hostname = RosterUtils.fetchHostname(other);
 
         Socket clientSocket = null;
         SyncOutputStream dos = null;
@@ -130,24 +137,5 @@ public class OutboundConnectionCreator {
         }
 
         return NotConnectedConnection.getSingleton();
-    }
-
-    /**
-     * Find the best way to connect <code>from</code> address <code>to</code> address
-     *
-     * @param from the address that needs to connect
-     * @param to   the address to connect to
-     * @return the IP address to connect to
-     */
-    private String getConnectHostname(final Address from, final Address to) {
-        final boolean fromIsLocal = AddressBookNetworkUtils.isLocal(from);
-        final boolean toIsLocal = AddressBookNetworkUtils.isLocal(to);
-        if (fromIsLocal && toIsLocal && socketConfig.useLoopbackIp()) {
-            return LOCALHOST;
-        } else if (to.isLocalTo(from)) {
-            return to.getHostnameInternal();
-        } else {
-            return to.getHostnameExternal();
-        }
     }
 }

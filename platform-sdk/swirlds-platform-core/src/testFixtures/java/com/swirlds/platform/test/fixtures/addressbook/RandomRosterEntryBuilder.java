@@ -17,20 +17,22 @@
 package com.swirlds.platform.test.fixtures.addressbook;
 
 import static com.swirlds.common.test.fixtures.RandomUtils.randomIp;
-import static com.swirlds.common.test.fixtures.RandomUtils.randomString;
 
+import com.hedera.hapi.node.base.ServiceEndpoint;
+import com.hedera.hapi.node.state.roster.RosterEntry;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.crypto.SerializableX509Certificate;
-import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.test.fixtures.crypto.PreGeneratedX509Certs;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.security.cert.CertificateEncodingException;
 import java.util.Objects;
 import java.util.Random;
 
 /**
- * A builder for creating random {@link Address} instances.
+ * A builder for creating random {@link RosterEntry} instances.
  */
-public class RandomAddressBuilder {
+public class RandomRosterEntryBuilder {
 
     private final Random random;
     private NodeId nodeId;
@@ -38,20 +40,19 @@ public class RandomAddressBuilder {
     private Integer port;
     private String hostname;
     private SerializableX509Certificate sigCert;
-    private SerializableX509Certificate agreeCert;
 
     private long minimumWeight = 0;
     private long maximumWeight = Long.MAX_VALUE / 1024;
 
     /**
-     * Creates a new {@link RandomAddressBuilder} instance.
+     * Creates a new {@link RandomRosterEntryBuilder} instance.
      *
      * @param random the random number generator to use
-     * @return a new {@link RandomAddressBuilder} instance
+     * @return a new {@link RandomRosterEntryBuilder} instance
      */
     @NonNull
-    public static RandomAddressBuilder create(@NonNull final Random random) {
-        return new RandomAddressBuilder(random);
+    public static RandomRosterEntryBuilder create(@NonNull final Random random) {
+        return new RandomRosterEntryBuilder(random);
     }
 
     /**
@@ -59,17 +60,17 @@ public class RandomAddressBuilder {
      *
      * @param random the random number generator to use
      */
-    private RandomAddressBuilder(@NonNull final Random random) {
+    private RandomRosterEntryBuilder(@NonNull final Random random) {
         this.random = Objects.requireNonNull(random);
     }
 
     /**
-     * Builds a new {@link Address} instance.
+     * Builds a new {@link RosterEntry} instance.
      *
-     * @return a new {@link Address} instance
+     * @return a new {@link RosterEntry} instance
      */
     @NonNull
-    public Address build() {
+    public RosterEntry build() {
 
         // Future work: use randotron utility methods once randotron changes merge
 
@@ -93,22 +94,19 @@ public class RandomAddressBuilder {
             sigCert = PreGeneratedX509Certs.getSigCert(nodeId.id());
         }
 
-        if (agreeCert == null) {
-            agreeCert = PreGeneratedX509Certs.getAgreeCert(nodeId.id());
+        try {
+            return RosterEntry.newBuilder()
+                    .nodeId(nodeId.id())
+                    .weight(weight)
+                    .gossipCaCertificate(Bytes.wrap(sigCert.getCertificate().getEncoded()))
+                    .gossipEndpoint(ServiceEndpoint.newBuilder()
+                            .domainName(hostname)
+                            .port(port)
+                            .build())
+                    .build();
+        } catch (CertificateEncodingException e) {
+            throw new IllegalStateException(e);
         }
-
-        return new Address(
-                nodeId,
-                randomString(random, 8),
-                randomString(random, 8),
-                weight,
-                hostname,
-                port,
-                hostname,
-                port,
-                sigCert,
-                agreeCert,
-                randomString(random, 8));
     }
 
     /**
@@ -118,7 +116,7 @@ public class RandomAddressBuilder {
      * @return this builder
      */
     @NonNull
-    public RandomAddressBuilder withNodeId(@NonNull final NodeId nodeId) {
+    public RandomRosterEntryBuilder withNodeId(@NonNull final NodeId nodeId) {
         this.nodeId = Objects.requireNonNull(nodeId);
         return this;
     }
@@ -130,7 +128,7 @@ public class RandomAddressBuilder {
      * @return this builder
      */
     @NonNull
-    public RandomAddressBuilder withWeight(final long weight) {
+    public RandomRosterEntryBuilder withWeight(final long weight) {
         this.weight = weight;
         return this;
     }
@@ -142,7 +140,7 @@ public class RandomAddressBuilder {
      * @return this builder
      */
     @NonNull
-    public RandomAddressBuilder withPort(final int port) {
+    public RandomRosterEntryBuilder withPort(final int port) {
         this.port = port;
         return this;
     }
@@ -154,7 +152,7 @@ public class RandomAddressBuilder {
      * @return this builder
      */
     @NonNull
-    public RandomAddressBuilder withHostname(@NonNull final String hostname) {
+    public RandomRosterEntryBuilder withHostname(@NonNull final String hostname) {
         this.hostname = Objects.requireNonNull(hostname);
         return this;
     }
@@ -166,20 +164,8 @@ public class RandomAddressBuilder {
      * @return this builder
      */
     @NonNull
-    public RandomAddressBuilder withSigCert(@NonNull final SerializableX509Certificate sigCert) {
+    public RandomRosterEntryBuilder withSigCert(@NonNull final SerializableX509Certificate sigCert) {
         this.sigCert = Objects.requireNonNull(sigCert);
-        return this;
-    }
-
-    /**
-     * Sets the agreeCert for the address.
-     *
-     * @param agreeCert the agreeCert
-     * @return this builder
-     */
-    @NonNull
-    public RandomAddressBuilder withAgreeCert(@NonNull final SerializableX509Certificate agreeCert) {
-        this.agreeCert = Objects.requireNonNull(agreeCert);
         return this;
     }
 
@@ -190,7 +176,7 @@ public class RandomAddressBuilder {
      * @return this builder
      */
     @NonNull
-    public RandomAddressBuilder withMinimumWeight(final long minimumWeight) {
+    public RandomRosterEntryBuilder withMinimumWeight(final long minimumWeight) {
         this.minimumWeight = minimumWeight;
         return this;
     }
@@ -202,7 +188,7 @@ public class RandomAddressBuilder {
      * @return this builder
      */
     @NonNull
-    public RandomAddressBuilder withMaximumWeight(final long maximumWeight) {
+    public RandomRosterEntryBuilder withMaximumWeight(final long maximumWeight) {
         this.maximumWeight = maximumWeight;
         return this;
     }

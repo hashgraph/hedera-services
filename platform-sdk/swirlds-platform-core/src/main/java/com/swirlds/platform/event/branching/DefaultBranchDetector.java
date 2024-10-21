@@ -16,10 +16,11 @@
 
 package com.swirlds.platform.event.branching;
 
+import com.hedera.hapi.node.state.roster.Roster;
+import com.hedera.hapi.node.state.roster.RosterEntry;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.event.PlatformEvent;
-import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.events.EventDescriptorWrapper;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -54,8 +55,11 @@ public class DefaultBranchDetector implements BranchDetector {
      *
      * @param currentRoster the current roster
      */
-    public DefaultBranchDetector(@NonNull final AddressBook currentRoster) {
-        nodes.addAll(currentRoster.getNodeIdSet());
+    public DefaultBranchDetector(@NonNull final Roster currentRoster) {
+        nodes.addAll(currentRoster.rosterEntries().stream()
+                .map(RosterEntry::nodeId)
+                .map(NodeId::of)
+                .toList());
         Collections.sort(nodes);
     }
 

@@ -17,8 +17,8 @@
 package com.swirlds.platform.recovery.internal;
 
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
-import static com.swirlds.platform.crypto.CryptoStatic.initNodeSecurity;
 
+import com.hedera.hapi.node.state.roster.Roster;
 import com.swirlds.common.AutoCloseableNonThrowing;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Signature;
@@ -33,8 +33,8 @@ import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateReference;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.SwirldState;
-import com.swirlds.platform.system.address.AddressBook;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Objects;
 
 /**
@@ -44,7 +44,7 @@ public class RecoveryPlatform implements Platform, AutoCloseableNonThrowing {
 
     private final NodeId selfId;
 
-    private final AddressBook addressBook;
+    private final Roster roster;
     private final KeysAndCerts keysAndCerts;
 
     private final SignedStateReference immutableState = new SignedStateReference();
@@ -59,25 +59,21 @@ public class RecoveryPlatform implements Platform, AutoCloseableNonThrowing {
      * @param configuration   the node's configuration
      * @param initialState    the starting signed state
      * @param selfId          the ID of the node
-     * @param loadSigningKeys whether to load the signing keys, if false then {@link #sign(byte[])} will throw if
+     * @param keysAndCerts    the keys and certificates, or null. If null then {@link #sign(byte[])} will throw if
      *                        called
      */
     public RecoveryPlatform(
             @NonNull final Configuration configuration,
             @NonNull final SignedState initialState,
             @NonNull final NodeId selfId,
-            final boolean loadSigningKeys) {
+            @Nullable final KeysAndCerts keysAndCerts) {
         Objects.requireNonNull(configuration, "configuration must not be null");
         Objects.requireNonNull(initialState, "initialState must not be null");
         this.selfId = Objects.requireNonNull(selfId, "selfId must not be null");
 
-        this.addressBook = initialState.getAddressBook();
+        this.roster = initialState.getRoster();
 
-        if (loadSigningKeys) {
-            keysAndCerts = initNodeSecurity(addressBook, configuration).get(selfId);
-        } else {
-            keysAndCerts = null;
-        }
+        this.keysAndCerts = keysAndCerts;
 
         notificationEngine = NotificationEngine.buildEngine(getStaticThreadManager());
 
@@ -130,8 +126,8 @@ public class RecoveryPlatform implements Platform, AutoCloseableNonThrowing {
      */
     @Override
     @NonNull
-    public AddressBook getAddressBook() {
-        return addressBook;
+    public Roster getRoster() {
+        return roster;
     }
 
     /**

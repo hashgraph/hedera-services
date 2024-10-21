@@ -134,7 +134,7 @@ public class StressTestingToolMain implements SwirldMain {
         this.platform = platform;
         config = platform.getContext().getConfiguration().getConfigData(StressTestingToolConfig.class);
         expectedTPS = config.transPerSecToCreate()
-                / (double) platform.getAddressBook().getSize();
+                / (double) platform.getRoster().rosterEntries().size();
 
         // the higher the expected TPS, the smaller the window
         tps_measure_window_milliseconds = (int) (WINDOW_CALCULATION_CONST / expectedTPS);

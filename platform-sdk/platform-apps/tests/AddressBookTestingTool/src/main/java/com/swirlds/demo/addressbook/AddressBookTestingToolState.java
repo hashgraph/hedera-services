@@ -44,6 +44,7 @@ import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.utility.ByteUtils;
 import com.swirlds.common.utility.StackTrace;
 import com.swirlds.platform.config.AddressBookConfig;
+import com.swirlds.platform.roster.RosterAddressBookBuilder;
 import com.swirlds.platform.state.PlatformStateAccessor;
 import com.swirlds.platform.state.PlatformStateModifier;
 import com.swirlds.platform.system.InitTrigger;
@@ -370,7 +371,7 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
             return false;
         }
 
-        final AddressBook platformAddressBook = platform.getAddressBook();
+        final AddressBook platformAddressBook = RosterAddressBookBuilder.buildAddressBook(platform.getRoster());
         final AddressBook configAddressBook = getConfigAddressBook();
         final AddressBook stateAddressBook = getStateAddressBook();
         final AddressBook usedAddressBook = getUsedAddressBook();
@@ -389,7 +390,7 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
             return false;
         }
 
-        final AddressBook platformAddressBook = platform.getAddressBook();
+        final AddressBook platformAddressBook = RosterAddressBookBuilder.buildAddressBook(platform.getRoster());
         final AddressBook configAddressBook = getConfigAddressBook();
         final AddressBook stateAddressBook = getStateAddressBook();
         final AddressBook usedAddressBook = getUsedAddressBook();
@@ -421,7 +422,7 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
             return false;
         }
 
-        final AddressBook platformAddressBook = platform.getAddressBook();
+        final AddressBook platformAddressBook = RosterAddressBookBuilder.buildAddressBook(platform.getRoster());
         final AddressBook configAddressBook = getConfigAddressBook();
         final AddressBook stateAddressBook = getStateAddressBook();
         final AddressBook usedAddressBook = getUsedAddressBook();
@@ -440,7 +441,7 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
             return false;
         }
 
-        final AddressBook platformAddressBook = platform.getAddressBook();
+        final AddressBook platformAddressBook = RosterAddressBookBuilder.buildAddressBook(platform.getRoster());
         final AddressBook configAddressBook = getConfigAddressBook();
         final AddressBook stateAddressBook = getStateAddressBook();
         final AddressBook usedAddressBook = getUsedAddressBook();
@@ -458,7 +459,7 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
             return false;
         }
 
-        final AddressBook platformAddressBook = platform.getAddressBook();
+        final AddressBook platformAddressBook = RosterAddressBookBuilder.buildAddressBook(platform.getRoster());
         final AddressBook configAddressBook = getConfigAddressBook();
         final AddressBook stateAddressBook = getStateAddressBook();
         final AddressBook usedAddressBook = getUsedAddressBook();
@@ -477,7 +478,7 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
             return false;
         }
 
-        final AddressBook platformAddressBook = platform.getAddressBook();
+        final AddressBook platformAddressBook = RosterAddressBookBuilder.buildAddressBook(platform.getRoster());
         final AddressBook configAddressBook = getConfigAddressBook();
         final AddressBook stateAddressBook = getStateAddressBook();
         final AddressBook usedAddressBook = getUsedAddressBook();
@@ -496,7 +497,7 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
             return false;
         }
 
-        final AddressBook platformAddressBook = platform.getAddressBook();
+        final AddressBook platformAddressBook = RosterAddressBookBuilder.buildAddressBook(platform.getRoster());
         final AddressBook configAddressBook = getConfigAddressBook();
         final AddressBook stateAddressBook = getStateAddressBook();
         final AddressBook usedAddressBook = getUsedAddressBook();
@@ -514,7 +515,7 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
             return false;
         }
 
-        final AddressBook platformAddressBook = platform.getAddressBook();
+        final AddressBook platformAddressBook = RosterAddressBookBuilder.buildAddressBook(platform.getRoster());
         final AddressBook configAddressBook = getConfigAddressBook();
         final AddressBook stateAddressBook = getStateAddressBook();
         final AddressBook usedAddressBook = getUsedAddressBook();

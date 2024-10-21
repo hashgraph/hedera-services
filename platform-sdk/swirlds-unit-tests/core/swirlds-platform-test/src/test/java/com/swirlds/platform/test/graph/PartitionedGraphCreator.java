@@ -19,7 +19,8 @@ package com.swirlds.platform.test.graph;
 import static com.swirlds.platform.test.graph.OtherParentMatrixFactory.createBalancedOtherParentMatrix;
 import static com.swirlds.platform.test.graph.OtherParentMatrixFactory.createPartitionedOtherParentAffinityMatrix;
 
-import com.swirlds.platform.system.address.AddressBook;
+import com.hedera.hapi.node.state.roster.Roster;
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.test.event.emitter.EventEmitter;
 import com.swirlds.platform.test.fixtures.event.generator.GraphGenerator;
 import com.swirlds.platform.test.sync.SyncNode;
@@ -42,7 +43,7 @@ public class PartitionedGraphCreator {
             final SyncTestParams params, final SyncNode node, final List<Integer> nodesInPartition) {
         final EventEmitter<?> emitter = node.getEmitter();
         final GraphGenerator<?> graphGenerator = emitter.getGraphGenerator();
-        final AddressBook addressBook = graphGenerator.getAddressBook();
+        final Roster roster = graphGenerator.getRoster();
 
         final List<List<Double>> fullyConnectedMatrix = createBalancedOtherParentMatrix(params.getNumNetworkNodes());
 
@@ -55,13 +56,15 @@ public class PartitionedGraphCreator {
         for (int i = 0; i < graphGenerator.getNumberOfSources(); i++) {
             final boolean isSourceInPartition = nodesInPartition.contains(i);
 
-            graphGenerator.getSource(addressBook.getNodeId(i)).setNewEventWeight((r, index, prev) -> {
-                if (index < params.getNumCommonEvents() || isSourceInPartition) {
-                    return 1.0;
-                } else {
-                    return 0.0;
-                }
-            });
+            graphGenerator
+                    .getSource(NodeId.of(roster.rosterEntries().get(i).nodeId()))
+                    .setNewEventWeight((r, index, prev) -> {
+                        if (index < params.getNumCommonEvents() || isSourceInPartition) {
+                            return 1.0;
+                        } else {
+                            return 0.0;
+                        }
+                    });
         }
 
         graphGenerator.setOtherParentAffinity((Random r, long eventIndex, List<List<Double>> previousValue) -> {

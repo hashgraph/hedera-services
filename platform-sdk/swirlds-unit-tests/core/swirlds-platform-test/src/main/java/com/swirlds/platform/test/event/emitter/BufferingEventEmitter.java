@@ -16,9 +16,9 @@
 
 package com.swirlds.platform.test.event.emitter;
 
+import com.hedera.hapi.node.state.roster.Roster;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.internal.EventImpl;
-import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.test.fixtures.event.generator.GraphGenerator;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.HashMap;
@@ -82,10 +82,10 @@ public abstract class BufferingEventEmitter<T extends BufferingEventEmitter<T>> 
     }
 
     protected void clearEvents() {
-        final AddressBook addressBook = getGraphGenerator().getAddressBook();
+        final Roster roster = getGraphGenerator().getRoster();
         events = new HashMap<>(getGraphGenerator().getNumberOfSources());
         for (int index = 0; index < getGraphGenerator().getNumberOfSources(); index++) {
-            events.put(addressBook.getNodeId(index), new LinkedList<>());
+            events.put(NodeId.of(roster.rosterEntries().get(index).nodeId()), new LinkedList<>());
         }
         bufferedEvents = 0;
     }

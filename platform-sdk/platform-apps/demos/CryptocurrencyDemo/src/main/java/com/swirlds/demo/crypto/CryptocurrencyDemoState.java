@@ -26,6 +26,7 @@ package com.swirlds.demo.crypto;
  * DISTRIBUTING THIS SOFTWARE OR ITS DERIVATIVES.
  */
 
+import com.hedera.hapi.node.state.roster.RosterEntry;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
@@ -33,14 +34,13 @@ import com.swirlds.common.merkle.MerkleLeaf;
 import com.swirlds.common.merkle.impl.PartialMerkleLeaf;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.SwirldsPlatform;
+import com.swirlds.platform.roster.RosterUtils;
 import com.swirlds.platform.state.PlatformStateModifier;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.SwirldState;
-import com.swirlds.platform.system.address.Address;
-import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.transaction.Transaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -297,11 +297,9 @@ public class CryptocurrencyDemoState extends PartialMerkleLeaf implements Swirld
         shares.get(bidId[tradeStock]).get(tradeStock).addAndGet(1); // buyer gets 1 share
 
         // save a description of the trade to show on the console
-        final String selfName = platform.getAddressBook().getAddress(id).getSelfName();
-        final String sellerNickname =
-                platform.getAddressBook().getAddress(askId[tradeStock]).getNickname();
-        final String buyerNickname =
-                platform.getAddressBook().getAddress(bidId[tradeStock]).getNickname();
+        final String selfName = RosterUtils.formatNodeName(id.id());
+        final String sellerNickname = RosterUtils.formatNodeName(askId[tradeStock].id());
+        final String buyerNickname = RosterUtils.formatNodeName(bidId[tradeStock].id());
         final int change = tradePrice - price[tradeStock];
         final double changePerc = 100. * change / price[tradeStock];
         final String dir = (change > 0) ? "^" : (change < 0) ? "v" : " ";
@@ -358,9 +356,8 @@ public class CryptocurrencyDemoState extends PartialMerkleLeaf implements Swirld
             ask[i] = bid[i] = price[i] = 64; // start the trading around 64 cents
         }
 
-        final AddressBook addressBook = platform.getAddressBook();
-        for (final Address address : addressBook) {
-            final NodeId id = address.getNodeId();
+        for (final RosterEntry address : platform.getRoster().rosterEntries()) {
+            final NodeId id = NodeId.of(address.nodeId());
             // each member starts with $200 dollars (20,000 cents)
             wallet.put(id, new AtomicLong(20000L));
             final List<AtomicLong> sharesForID = new ArrayList<>();

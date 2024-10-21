@@ -21,12 +21,13 @@ import static com.swirlds.common.test.fixtures.RandomUtils.randomHash;
 import static com.swirlds.common.test.fixtures.RandomUtils.randomInstant;
 
 import com.swirlds.platform.consensus.ConsensusSnapshot;
+import com.swirlds.platform.roster.RosterAddressBookBuilder;
 import com.swirlds.platform.state.MinimumJudgeInfo;
 import com.swirlds.platform.state.PlatformStateModifier;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.address.AddressBook;
-import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
-import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder.WeightDistributionStrategy;
+import com.swirlds.platform.test.fixtures.addressbook.RandomRosterBuilder;
+import com.swirlds.platform.test.fixtures.addressbook.RandomRosterBuilder.WeightDistributionStrategy;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Random;
@@ -46,10 +47,13 @@ public final class PlatformStateUtils {
      * Generate a randomized PlatformState object. Values contained internally may be nonsensical.
      */
     public static PlatformStateModifier randomPlatformState(final Random random, PlatformStateModifier platformState) {
-        final AddressBook addressBook = RandomAddressBookBuilder.create(random)
+        // PlatformState uses the "previous address book" concept which cannot be removed until it's fully migrated to
+        // Rosters,
+        // so we continue to use the AddressBook with the PlatformState for now.
+        final AddressBook addressBook = RosterAddressBookBuilder.buildAddressBook(RandomRosterBuilder.create(random)
                 .withSize(4)
                 .withWeightDistributionStrategy(WeightDistributionStrategy.BALANCED)
-                .build();
+                .build());
 
         platformState.bulkUpdate(v -> {
             v.setAddressBook(addressBook);

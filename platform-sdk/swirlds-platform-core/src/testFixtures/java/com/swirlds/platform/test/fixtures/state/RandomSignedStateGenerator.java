@@ -22,6 +22,7 @@ import static com.swirlds.common.test.fixtures.RandomUtils.randomSignature;
 import static com.swirlds.platform.test.fixtures.state.FakeMerkleStateLifecycles.FAKE_MERKLE_STATE_LIFECYCLES;
 import static com.swirlds.platform.test.fixtures.state.FakeMerkleStateLifecycles.registerMerkleStateRootClassIds;
 
+import com.hedera.hapi.node.state.roster.Roster;
 import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
@@ -35,6 +36,7 @@ import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.platform.config.StateConfig;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.crypto.SignatureVerifier;
+import com.swirlds.platform.roster.RosterAddressBookBuilder;
 import com.swirlds.platform.state.MerkleRoot;
 import com.swirlds.platform.state.MerkleStateRoot;
 import com.swirlds.platform.state.MinimumJudgeInfo;
@@ -42,8 +44,7 @@ import com.swirlds.platform.state.PlatformStateModifier;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.SoftwareVersion;
-import com.swirlds.platform.system.address.AddressBook;
-import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
+import com.swirlds.platform.test.fixtures.addressbook.RandomRosterBuilder;
 import com.swirlds.platform.test.fixtures.state.manager.SignatureVerificationTestUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
@@ -67,7 +68,7 @@ public class RandomSignedStateGenerator {
     private MerkleRoot state;
     private Long round;
     private Hash legacyRunningEventHash;
-    private AddressBook addressBook;
+    private Roster roster;
     private Instant consensusTimestamp;
     private Boolean freezeState = false;
     private SoftwareVersion softwareVersion;
@@ -109,13 +110,13 @@ public class RandomSignedStateGenerator {
      * @return a new signed state
      */
     public SignedState build() {
-        final AddressBook addressBookInstance;
-        if (addressBook == null) {
-            addressBookInstance = RandomAddressBookBuilder.create(random)
-                    .withWeightDistributionStrategy(RandomAddressBookBuilder.WeightDistributionStrategy.BALANCED)
+        final Roster rosterInstance;
+        if (roster == null) {
+            rosterInstance = RandomRosterBuilder.create(random)
+                    .withWeightDistributionStrategy(RandomRosterBuilder.WeightDistributionStrategy.BALANCED)
                     .build();
         } else {
-            addressBookInstance = addressBook;
+            rosterInstance = roster;
         }
 
         final SoftwareVersion softwareVersionInstance;
@@ -192,7 +193,10 @@ public class RandomSignedStateGenerator {
 
         platformState.bulkUpdate(v -> {
             v.setSnapshot(consensusSnapshotInstance);
-            v.setAddressBook(addressBookInstance);
+            // PlatformState[Accessor] needs to fully migrate to roster/candidate roster before
+            // we can refactor the existing getAddressBook/getPreviousAddressBook methods.
+            // So for now we construct a State with an AB:
+            v.setAddressBook(RosterAddressBookBuilder.buildAddressBook(rosterInstance));
             v.setLegacyRunningEventHash(legacyRunningEventHashInstance);
             v.setCreationSoftwareVersion(softwareVersionInstance);
             v.setRoundsNonAncient(roundsNonAncientInstance);
@@ -230,9 +234,10 @@ public class RandomSignedStateGenerator {
             final List<NodeId> signingNodeIdsInstance;
             if (signingNodeIds == null) {
                 signingNodeIdsInstance = new LinkedList<>();
-                if (addressBookInstance.getSize() > 0) {
-                    for (int i = 0; i < addressBookInstance.getSize() / 3 + 1; i++) {
-                        signingNodeIdsInstance.add(addressBookInstance.getNodeId(i));
+                if (rosterInstance.rosterEntries().size() > 0) {
+                    for (int i = 0; i < rosterInstance.rosterEntries().size() / 3 + 1; i++) {
+                        signingNodeIdsInstance.add(
+                                NodeId.of(rosterInstance.rosterEntries().get(i).nodeId()));
                     }
                 }
             } else {
@@ -318,8 +323,8 @@ public class RandomSignedStateGenerator {
      *
      * @return this object
      */
-    public RandomSignedStateGenerator setAddressBook(final AddressBook addressBook) {
-        this.addressBook = addressBook;
+    public RandomSignedStateGenerator setRoster(final Roster roster) {
+        this.roster = roster;
         return this;
     }
 

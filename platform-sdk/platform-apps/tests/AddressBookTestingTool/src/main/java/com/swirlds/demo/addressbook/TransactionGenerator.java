@@ -47,8 +47,8 @@ public class TransactionGenerator implements Startable {
         this.platform = platform;
 
         // Each node in an N node network should create 1/N transactions per second.
-        final int tps =
-                networkWideTransactionsPerSecond / platform.getAddressBook().getSize();
+        final int tps = networkWideTransactionsPerSecond
+                / platform.getRoster().rosterEntries().size();
 
         thread = new StoppableThreadConfiguration<>(getStaticThreadManager())
                 .setComponent("addressbook-testing-tool")

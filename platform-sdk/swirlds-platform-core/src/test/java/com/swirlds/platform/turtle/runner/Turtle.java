@@ -21,8 +21,9 @@ import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.Randotron;
+import com.swirlds.platform.roster.RosterAddressBookBuilder;
 import com.swirlds.platform.system.address.AddressBook;
-import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
+import com.swirlds.platform.test.fixtures.addressbook.RandomRosterBuilder;
 import com.swirlds.platform.test.fixtures.turtle.gossip.SimulatedNetwork;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
@@ -105,10 +106,10 @@ public class Turtle {
                 Math.min(builder.getNodeCount(), Runtime.getRuntime().availableProcessors()));
         time = new FakeTime(randotron.nextInstant(), Duration.ZERO);
 
-        final RandomAddressBookBuilder addressBookBuilder = RandomAddressBookBuilder.create(randotron)
+        final RandomRosterBuilder addressBookBuilder = RandomRosterBuilder.create(randotron)
                 .withSize(builder.getNodeCount())
                 .withRealKeysEnabled(true);
-        final AddressBook addressBook = addressBookBuilder.build();
+        final AddressBook addressBook = RosterAddressBookBuilder.buildAddressBook(addressBookBuilder.build());
 
         network = new SimulatedNetwork(randotron, addressBook, Duration.ofMillis(200), Duration.ofMillis(10));
 

@@ -20,6 +20,7 @@ import static com.swirlds.platform.test.fixtures.event.EventUtils.staticDynamicV
 import static com.swirlds.platform.test.fixtures.event.EventUtils.weightedChoice;
 import static com.swirlds.platform.test.fixtures.event.RandomEventUtils.DEFAULT_FIRST_EVENT_TIME_CREATED;
 
+import com.hedera.hapi.node.state.roster.Roster;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.ConsensusImpl;
@@ -29,8 +30,8 @@ import com.swirlds.platform.event.linking.ConsensusLinker;
 import com.swirlds.platform.event.linking.InOrderLinker;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.metrics.NoOpConsensusMetrics;
-import com.swirlds.platform.system.address.AddressBook;
-import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
+import com.swirlds.platform.roster.RosterUtils;
+import com.swirlds.platform.test.fixtures.addressbook.RandomRosterBuilder;
 import com.swirlds.platform.test.fixtures.event.DynamicValue;
 import com.swirlds.platform.test.fixtures.event.DynamicValueGenerator;
 import com.swirlds.platform.test.fixtures.event.source.EventSource;
@@ -40,6 +41,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
+import java.util.stream.IntStream;
 
 /**
  * A utility class for generating a graph of events.
@@ -57,9 +59,9 @@ public class StandardGraphGenerator extends AbstractGraphGenerator<StandardGraph
     private DynamicValueGenerator<List<List<Double>>> affinityMatrix;
 
     /**
-     * The address book representing the event sources.
+     * The roster representing the event sources.
      */
-    private AddressBook addressBook;
+    private Roster roster;
 
     /**
      * The average difference in the timestamp between two adjacent events (in seconds).
@@ -146,24 +148,24 @@ public class StandardGraphGenerator extends AbstractGraphGenerator<StandardGraph
      *
      * @param seed         The random seed used to generate events.
      * @param eventSources One or more event sources.
-     * @param addressBook  The address book to use with the event sources.
+     * @param roster       The roster to use with the event sources.
      */
     public StandardGraphGenerator(
             @NonNull final PlatformContext platformContext,
             final long seed,
             @NonNull final List<EventSource<?>> eventSources,
-            @NonNull final AddressBook addressBook) {
+            @NonNull final Roster roster) {
         super(seed);
         this.platformContext = Objects.requireNonNull(platformContext);
         Objects.requireNonNull(eventSources);
-        Objects.requireNonNull(addressBook);
+        Objects.requireNonNull(roster);
 
         this.sources = eventSources;
         if (eventSources.isEmpty()) {
             throw new IllegalArgumentException("At least one event source is required");
         }
 
-        setAddressBookInitializeEventSources(eventSources, addressBook);
+        setAddressBookInitializeEventSources(eventSources, roster);
         buildDefaultOtherParentAffinityMatrix();
         initializeInternalConsensus();
     }
@@ -187,7 +189,7 @@ public class StandardGraphGenerator extends AbstractGraphGenerator<StandardGraph
             final EventSource<?> copy = sourceToCopy.copy();
             this.sources.add(copy);
         }
-        this.addressBook = that.getAddressBook().copy();
+        this.roster = that.getRoster();
         this.eventPeriodMean = that.eventPeriodMean;
         this.eventPeriodStandardDeviation = that.eventPeriodStandardDeviation;
         this.simultaneousEventFraction = that.simultaneousEventFraction;
@@ -196,7 +198,7 @@ public class StandardGraphGenerator extends AbstractGraphGenerator<StandardGraph
     }
 
     private void initializeInternalConsensus() {
-        consensus = new ConsensusImpl(platformContext, new NoOpConsensusMetrics(), addressBook);
+        consensus = new ConsensusImpl(platformContext, new NoOpConsensusMetrics(), roster);
         inOrderLinker = new ConsensusLinker(platformContext, NodeId.of(0));
     }
 
@@ -209,10 +211,10 @@ public class StandardGraphGenerator extends AbstractGraphGenerator<StandardGraph
     private void buildAddressBookInitializeEventSources(@NonNull final List<EventSource<?>> eventSources) {
         final int eventSourceCount = eventSources.size();
 
-        final AddressBook addressBook = RandomAddressBookBuilder.create(getRandom())
+        final Roster roster = RandomRosterBuilder.create(getRandom())
                 .withSize(eventSourceCount)
                 .build();
-        setAddressBookInitializeEventSources(eventSources, addressBook);
+        setAddressBookInitializeEventSources(eventSources, roster);
     }
 
     /**
@@ -220,19 +222,27 @@ public class StandardGraphGenerator extends AbstractGraphGenerator<StandardGraph
      * the event sources from the addresses.
      *
      * @param eventSources the event sources to initialize.
-     * @param addressBook  the address book to use.
+     * @param roster  the roster to use.
      */
     private void setAddressBookInitializeEventSources(
-            @NonNull final List<EventSource<?>> eventSources, @NonNull final AddressBook addressBook) {
+            @NonNull final List<EventSource<?>> eventSources, @NonNull final Roster roster) {
         final int eventSourceCount = eventSources.size();
 
-        this.addressBook = addressBook;
-        for (int index = 0; index < eventSourceCount; index++) {
-            final EventSource<?> source = eventSources.get(index);
-            final NodeId nodeId = addressBook.getNodeId(index);
-            addressBook.updateWeight(nodeId, source.getWeight());
-            source.setNodeId(nodeId);
-        }
+        this.roster = Roster.newBuilder()
+                .rosterEntries(IntStream.range(0, eventSourceCount)
+                        .mapToObj(index -> {
+                            final EventSource<?> source = eventSources.get(index);
+                            final NodeId nodeId =
+                                    NodeId.of(roster.rosterEntries().get(index).nodeId());
+                            source.setNodeId(nodeId);
+                            return roster.rosterEntries()
+                                    .get(index)
+                                    .copyBuilder()
+                                    .weight(source.getWeight())
+                                    .build();
+                        })
+                        .toList())
+                .build();
     }
 
     /**
@@ -271,10 +281,12 @@ public class StandardGraphGenerator extends AbstractGraphGenerator<StandardGraph
         final List<List<Double>> matrix = new ArrayList<>(sources.size());
 
         for (int nodeIndex = 0; nodeIndex < sources.size(); nodeIndex++) {
-            final NodeId nodeId = addressBook.getNodeId(nodeIndex);
+            final NodeId nodeId =
+                    NodeId.of(roster.rosterEntries().get(nodeIndex).nodeId());
             final List<Double> affinityVector = new ArrayList<>(sources.size());
             for (int otherNodeIndex = 0; otherNodeIndex < sources.size(); otherNodeIndex++) {
-                final NodeId otherNodeId = addressBook.getNodeId(otherNodeIndex);
+                final NodeId otherNodeId =
+                        NodeId.of(roster.rosterEntries().get(otherNodeIndex).nodeId());
                 if (Objects.equals(nodeId, otherNodeId)) {
                     affinityVector.add(0.0);
                 } else {
@@ -361,7 +373,7 @@ public class StandardGraphGenerator extends AbstractGraphGenerator<StandardGraph
      */
     @Override
     public EventSource<?> getSource(final NodeId nodeID) {
-        final int nodeIndex = addressBook.getIndexOfNodeId(nodeID);
+        final int nodeIndex = RosterUtils.getIndex(roster, nodeID.id());
         return sources.get(nodeIndex);
     }
 
@@ -378,8 +390,8 @@ public class StandardGraphGenerator extends AbstractGraphGenerator<StandardGraph
      * {@inheritDoc}
      */
     @Override
-    public AddressBook getAddressBook() {
-        return addressBook;
+    public Roster getRoster() {
+        return roster;
     }
 
     /**
@@ -434,8 +446,8 @@ public class StandardGraphGenerator extends AbstractGraphGenerator<StandardGraph
      * @param source The node that is creating the event.
      */
     private EventSource<?> getNextOtherParentSource(final long eventIndex, final EventSource<?> source) {
-        final List<Double> affinityVector =
-                getOtherParentAffinityVector(eventIndex, addressBook.getIndexOfNodeId(source.getNodeId()));
+        final List<Double> affinityVector = getOtherParentAffinityVector(
+                eventIndex, RosterUtils.getIndex(roster, source.getNodeId().id()));
         final int nodeIndex = weightedChoice(getRandom(), affinityVector);
         return sources.get(nodeIndex);
     }
