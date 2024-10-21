@@ -1081,6 +1081,42 @@ public class EthereumSuite {
                                 .hasPriority(recordWith().status(SUCCESS)))));
     }
 
+    // Test unprotected legacy Ethereum transactions (pre-EIP155).
+    // When using a `CHAIN_ID` represented as a BigInteger, an additional byte is required
+    // to store the sign information (indicating whether the value is positive or negative),
+    // if there is no free bit available for this information, as in values like 11155111.
+    @HapiTest
+    final Stream<DynamicTest> legacyUnprotectedEtxBeforeEIP155WithChainIdHavingExtraByteForSign() {
+        final String DEPOSIT = "deposit";
+        final long depositAmount = 20_000L;
+        final Integer chainId = 11_155_111;
+
+        return hapiTest(
+                newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
+                cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS),
+                cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS))
+                        .via("autoAccount"),
+                getTxnRecord("autoAccount").andAllChildRecords(),
+                uploadInitCode(PAY_RECEIVABLE_CONTRACT),
+                contractCreate(PAY_RECEIVABLE_CONTRACT).adminKey(THRESHOLD),
+                ethereumCall(PAY_RECEIVABLE_CONTRACT, DEPOSIT, BigInteger.valueOf(depositAmount))
+                        .type(EthTransactionType.LEGACY_ETHEREUM)
+                        .signingWith(SECP_256K1_SOURCE_KEY)
+                        .payingWith(RELAYER)
+                        .via("legacyBeforeEIP155")
+                        .nonce(0)
+                        .chainId(chainId)
+                        .gasPrice(50L)
+                        .maxPriorityGas(2L)
+                        .gasLimit(1_000_000L)
+                        .sending(depositAmount),
+                withOpContext((spec, opLog) -> allRunFor(
+                        spec,
+                        getTxnRecord("legacyBeforeEIP155")
+                                .logged()
+                                .hasPriority(recordWith().status(SUCCESS)))));
+    }
+
     @HapiTest
     final Stream<DynamicTest> etx007FungibleTokenCreateWithFeesHappyPath() {
         final var createdTokenNum = new AtomicLong();
