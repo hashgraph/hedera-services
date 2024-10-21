@@ -16,6 +16,8 @@
 
 package com.swirlds.platform.gossip.shadowgraph;
 
+import com.hedera.service.gossip.impl.shadowgraph.InsertableStatus;
+
 /**
  * An exception thrown by {@link Shadowgraph} when an event cannot be added to the shadow graph.
  */
