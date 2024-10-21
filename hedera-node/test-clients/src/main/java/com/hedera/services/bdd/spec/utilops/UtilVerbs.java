@@ -95,7 +95,6 @@ import com.esaulpaugh.headlong.abi.Address;
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.google.protobuf.ByteString;
 import com.hedera.hapi.node.state.addressbook.Node;
-import com.hedera.hapi.node.state.blockrecords.BlockInfo;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.services.bdd.junit.hedera.MarkerFile;
 import com.hedera.services.bdd.junit.hedera.NodeSelector;
@@ -194,9 +193,7 @@ import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.swirlds.common.utility.CommonUtils;
-import com.swirlds.platform.state.service.WritablePlatformStateStore;
 import com.swirlds.platform.system.address.AddressBook;
-import com.swirlds.state.spi.CommittableWritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -533,38 +530,6 @@ public class UtilVerbs {
         };
     }
 
-    /**
-     * Returns an operation that changes the state of an embedded network to appear to be handling
-     * the first transaction after an upgrade.
-     *
-     * @return the operation that simulates the first transaction after an upgrade
-     */
-    public static SpecOperation simulatePostUpgradeTransaction() {
-        return withOpContext((spec, opLog) -> {
-            if (spec.targetNetworkOrThrow() instanceof EmbeddedNetwork embeddedNetwork) {
-                final var embeddedHedera = embeddedNetwork.embeddedHederaOrThrow();
-                final var fakeState = embeddedHedera.state();
-                // First make the freeze and last freeze times non-null and identical
-                final var aTime = spec.consensusTime();
-                // This store immediately commits mutations, hence no cast and call to commit
-                final var writablePlatformStateStore =
-                        new WritablePlatformStateStore(fakeState.getWritableStates("PlatformStateService"));
-                writablePlatformStateStore.setLastFrozenTime(aTime);
-                writablePlatformStateStore.setFreezeTime(aTime);
-                // Next mark the migration records as not streamed
-                final var writableBlockStates = fakeState.getWritableStates("BlockRecordService");
-                final var blockInfo = writableBlockStates.<BlockInfo>getSingleton("BLOCKS");
-                blockInfo.put(requireNonNull(blockInfo.get())
-                        .copyBuilder()
-                        .migrationRecordsStreamed(false)
-                        .build());
-                ((CommittableWritableStates) writableBlockStates).commit();
-            } else {
-                throw new IllegalStateException("Cannot simulate post-upgrade transaction on non-embedded network");
-            }
-        });
-    }
-
     public static WaitForStatusOp waitForFrozenNetwork(@NonNull final Duration timeout) {
         return new WaitForStatusOp(NodeSelector.allNodes(), FREEZE_COMPLETE, timeout);
     }
@@ -583,10 +548,9 @@ public class UtilVerbs {
                     allRunFor(
                             spec,
                             cryptoTransfer(tinyBarsFromTo(GENESIS, STAKING_REWARD, 1))
-                                    .deferStatusResolution()
-                                    .hasAnyStatusAtAll()
-                                    .orUnavailableStatus()
+                                    .fireAndForget()
                                     .noLogging());
+                    spec.sleepConsensusTime(Duration.ofMillis(1L));
                 }
             });
             spec.targetNetworkOrThrow()

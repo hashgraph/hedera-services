@@ -98,6 +98,7 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
     private boolean ensureResolvedStatusIsntFromDuplicate = false;
     private final TupleType LONG_TUPLE = TupleType.parse("(int64)");
 
+    protected boolean fireAndForget = false;
     protected boolean deferStatusResolution = false;
     protected boolean unavailableStatusIsOk = false;
     protected boolean acceptAnyStatus = false;
@@ -285,7 +286,7 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
         }
         spec.adhocIncrement();
 
-        if (!deferStatusResolution) {
+        if (!deferStatusResolution && !fireAndForget) {
             resolveStatus(spec);
         }
         if (requiresFinalization(spec)) {
@@ -406,7 +407,7 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
 
     @Override
     public boolean requiresFinalization(HapiSpec spec) {
-        return actualPrecheck == OK && deferStatusResolution;
+        return !fireAndForget && actualPrecheck == OK && deferStatusResolution;
     }
 
     @Override
@@ -700,6 +701,14 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
 
     public T hasAnyStatusAtAll() {
         acceptAnyStatus = true;
+        return self();
+    }
+
+    public T fireAndForget() {
+        hasAnyPrecheck();
+        hasAnyStatusAtAll();
+        orUnavailableStatus();
+        fireAndForget = true;
         return self();
     }
 

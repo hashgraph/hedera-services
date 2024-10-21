@@ -27,6 +27,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.nodeUpdate;
 import static com.hedera.services.bdd.spec.utilops.EmbeddedVerbs.viewNode;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsdWithin;
+import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PAYER;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
 import static com.hedera.services.bdd.suites.hip869.NodeCreateTest.generateX509Certificates;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NODE_ACCOUNT_ID;
@@ -100,16 +101,17 @@ public class UpdateAccountEnabledTest {
                 // Submit to a different node so ingest check is skipped
                 nodeUpdate("node100")
                         .setNode("0.0.5")
-                        .payingWith("payer")
+                        .signedBy(DEFAULT_PAYER)
                         .accountId("0.0.1000")
                         .fee(ONE_HBAR)
                         .hasKnownStatus(INVALID_SIGNATURE)
                         .via("failedUpdate"),
                 getTxnRecord("failedUpdate").logged(),
-                // The fee is charged here because the payer is not privileged
-                validateChargedUsdWithin("failedUpdate", 0.001, 3.0),
+                // The fee is not charged here because the payer is privileged
+                validateChargedUsdWithin("failedUpdate", 0.0, 3.0),
                 nodeUpdate("node100")
                         .adminKey("testKey")
+                        .signedBy(DEFAULT_PAYER, "testKey")
                         .accountId("0.0.1000")
                         .fee(ONE_HBAR)
                         .via("updateNode"),
@@ -120,12 +122,12 @@ public class UpdateAccountEnabledTest {
                 // Submit with several signatures and the price should increase
                 nodeUpdate("node100")
                         .setNode("0.0.5")
-                        .payingWith("payer")
-                        .signedBy("payer", "payer", "randomAccount", "testKey")
+                        .signedBy(DEFAULT_PAYER, "payer", "payer", "randomAccount", "testKey")
                         .accountId("0.0.1000")
                         .fee(ONE_HBAR)
                         .via("failedUpdateMultipleSigs"),
-                validateChargedUsdWithin("failedUpdateMultipleSigs", 0.0011276316, 3.0));
+                // The fee is not charged here because the payer is privileged
+                validateChargedUsdWithin("failedUpdateMultipleSigs", 0.0, 3.0));
     }
 
     @EmbeddedHapiTest(NEEDS_STATE_ACCESS)
