@@ -36,7 +36,6 @@ import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.events.ConsensusEvent;
-import com.swirlds.platform.system.state.notifications.StateHashedNotification;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
 import java.time.Instant;
@@ -107,14 +106,20 @@ class RepeatableEmbeddedHedera extends AbstractEmbeddedHedera implements Embedde
         return response;
     }
 
+    @Override
+    protected long validStartOffsetSecs() {
+        // We handle each transaction in a round starting in the next second of fake consensus time, so
+        // we don't need any offset here; this simplifies tests that validate purging expired receipts
+        return 0L;
+    }
+
     private void handleNextRound() {
         hedera.onPreHandle(platform.lastCreatedEvent, state);
         final var round = platform.nextConsensusRound();
         // Handle each transaction in own round
         hedera.handleWorkflow().handleRound(state, round);
         hedera.onSealConsensusRound(round, state);
-        // Immediately notify the block stream manager of the "hash" at the end of this round
-        hedera.blockStreamManager().notify(new StateHashedNotification(round.getRoundNum(), FAKE_START_OF_STATE_HASH));
+        notifyBlockStreamManagerIfEnabled(round.getRoundNum());
     }
 
     private class SynchronousFakePlatform extends AbstractFakePlatform implements Platform {

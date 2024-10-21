@@ -26,6 +26,10 @@ public enum StreamMode {
      */
     RECORDS,
     /**
+     * Stream blocks only.
+     */
+    BLOCKS,
+    /**
      * Stream both blocks and records.
      */
     BOTH

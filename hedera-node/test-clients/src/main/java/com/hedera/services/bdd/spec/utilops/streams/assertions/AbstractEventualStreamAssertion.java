@@ -80,13 +80,20 @@ public abstract class AbstractEventualStreamAssertion extends UtilOp {
     public void assertHasPassed() {
         try {
             final var eventualResult = result.get();
-            unsubscribe();
             if (!eventualResult.passed()) {
-                Assertions.fail(eventualResult.getErrorDetails());
+                Assertions.fail(assertionDescription() + " ended with result: " + eventualResult.getErrorDetails());
             }
         } catch (final InterruptedException e) {
             Thread.currentThread().interrupt();
             Assertions.fail("Interrupted while waiting for " + this + " to pass");
+        } finally {
+            unsubscribe();
         }
     }
+
+    /**
+     * Returns a description of the assertion.
+     * @return a description of the assertion
+     */
+    protected abstract String assertionDescription();
 }
