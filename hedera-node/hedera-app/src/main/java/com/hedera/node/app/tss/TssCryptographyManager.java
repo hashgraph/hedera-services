@@ -19,27 +19,21 @@ package com.hedera.node.app.tss;
 import static com.hedera.node.app.tss.handlers.TssUtils.getTssMessages;
 import static com.hedera.node.app.tss.handlers.TssUtils.validateTssMessages;
 
-import com.hedera.hapi.node.state.roster.RosterEntry;
 import com.hedera.hapi.node.state.tss.TssVoteMapKey;
 import com.hedera.hapi.services.auxiliary.tss.TssMessageTransactionBody;
 import com.hedera.node.app.spi.AppContext;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.tss.api.TssLibrary;
-import com.hedera.node.app.tss.api.TssMessage;
 import com.hedera.node.app.tss.api.TssParticipantDirectory;
 import com.hedera.node.app.tss.pairings.PairingPublicKey;
 import com.hedera.node.app.tss.stores.WritableTssBaseStore;
 import com.swirlds.common.crypto.Signature;
 import edu.umd.cs.findbugs.annotations.NonNull;
-
 import java.util.BitSet;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -70,9 +64,9 @@ public class TssCryptographyManager {
         final var tssMessageBodies = tssStore.getTssMessages(targetRosterHash);
 
         final var isVoteSubmitted = tssStore.getVote(TssVoteMapKey.newBuilder()
-                .nodeId(context.networkInfo().selfNodeInfo().nodeId())
-                .rosterHash(targetRosterHash)
-                .build())
+                        .nodeId(context.networkInfo().selfNodeInfo().nodeId())
+                        .rosterHash(targetRosterHash)
+                        .build())
                 != null;
         // If the node didn't submit a TssVoteTransaction, validate all TssMessages and compute the vote bit set
         // to see if a threshold is met
@@ -138,6 +132,5 @@ public class TssCryptographyManager {
     }
 
     public record LedgerIdWithSignature(
-            @NonNull PairingPublicKey ledgerId, @NonNull Signature signature, @NonNull BitSet tssVoteBitSet) {
-    }
+            @NonNull PairingPublicKey ledgerId, @NonNull Signature signature, @NonNull BitSet tssVoteBitSet) {}
 }

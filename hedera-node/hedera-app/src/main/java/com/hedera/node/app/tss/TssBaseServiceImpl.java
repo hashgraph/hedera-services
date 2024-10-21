@@ -136,8 +136,11 @@ public class TssBaseServiceImpl implements TssBaseService {
                 context.storeFactory().readableStore(ReadableRosterStore.class).getActiveRoster();
         final var activeRosterHash = RosterUtils.hash(sourceRoster).getBytes();
         final var candidateRosterHash = RosterUtils.hash(roster).getBytes();
-        final var candidateRosterParticipantDirectory = computeTssParticipantDirectory(roster, maxSharesPerNode);
-        final var tssPrivateShares = getTssPrivateShares(sourceRoster, maxSharesPerNode, tssStore, candidateRosterHash);
+        final var tssPrivateShares =
+                getTssPrivateShares(sourceRoster, maxSharesPerNode, tssStore, candidateRosterHash, context);
+        final var aggregatedPrivateKey = tssLibrary.aggregatePrivateShares(tssPrivateShares);
+        final var candidateRosterParticipantDirectory = computeTssParticipantDirectory(roster, maxSharesPerNode, (int)
+                context.networkInfo().selfNodeInfo().nodeId());
 
         int shareIndex = 0;
         for (final var tssPrivateShare : tssPrivateShares) {
@@ -157,8 +160,11 @@ public class TssBaseServiceImpl implements TssBaseService {
             @NonNull final Roster sourceRoster,
             final long maxSharesPerNode,
             @NonNull final ReadableTssBaseStore tssStore,
-            @NonNull final Bytes candidateRosterHash) {
-        final var activeRosterParticipantDirectory = computeTssParticipantDirectory(sourceRoster, maxSharesPerNode);
+            @NonNull final Bytes candidateRosterHash,
+            final HandleContext context) {
+        final var selfId = (int) context.networkInfo().selfNodeInfo().nodeId();
+        final var activeRosterParticipantDirectory =
+                computeTssParticipantDirectory(sourceRoster, maxSharesPerNode, selfId);
         final var validTssOps = validateTssMessages(
                 tssStore.getTssMessages(candidateRosterHash), activeRosterParticipantDirectory, tssLibrary);
         final var validTssMessages = getTssMessages(validTssOps);

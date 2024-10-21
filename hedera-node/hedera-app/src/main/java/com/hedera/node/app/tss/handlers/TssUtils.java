@@ -22,11 +22,12 @@ import com.hedera.hapi.services.auxiliary.tss.TssMessageTransactionBody;
 import com.hedera.node.app.tss.api.TssLibrary;
 import com.hedera.node.app.tss.api.TssMessage;
 import com.hedera.node.app.tss.api.TssParticipantDirectory;
+import com.hedera.node.app.tss.pairings.FakeFieldElement;
 import com.hedera.node.app.tss.pairings.FakeGroupElement;
+import com.hedera.node.app.tss.pairings.PairingPrivateKey;
 import com.hedera.node.app.tss.pairings.PairingPublicKey;
 import com.hedera.node.app.tss.pairings.SignatureSchema;
 import edu.umd.cs.findbugs.annotations.NonNull;
-
 import java.math.BigInteger;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
@@ -35,23 +36,28 @@ import java.util.Map;
 
 public class TssUtils {
     public static TssParticipantDirectory computeTssParticipantDirectory(
-            @NonNull final Roster roster, final long maxSharesPerNode) {
+            @NonNull final Roster roster, final long maxSharesPerNode, final int selfNodeId) {
         final var computedShares = computeNodeShares(roster.rosterEntries(), maxSharesPerNode);
         final var totalShares =
                 computedShares.values().stream().mapToLong(Long::longValue).sum();
         final var threshold = (int) (totalShares + 2) / 2;
 
         final var builder = TssParticipantDirectory.createBuilder().withThreshold(threshold);
+        // TODO: How to set this private key? Cant use aggregatePrivateKeys since it needs tssParticipantDirectory
+        builder.withSelf(
+                selfNodeId,
+                new PairingPrivateKey(
+                        new FakeFieldElement(BigInteger.valueOf(10L)), SignatureSchema.create(new byte[] {1})));
         for (var rosterEntry : roster.rosterEntries()) {
             final int numSharesPerThisNode =
                     computedShares.get(rosterEntry.nodeId()).intValue();
             // FUTURE: Use the actual public key from the node
             final var pairingPublicKey = new PairingPublicKey(
-                    new FakeGroupElement(BigInteger.valueOf(10L)), SignatureSchema.create(new byte[]{1}));
+                    new FakeGroupElement(BigInteger.valueOf(10L)), SignatureSchema.create(new byte[] {1}));
             builder.withParticipant((int) rosterEntry.nodeId(), numSharesPerThisNode, pairingPublicKey);
         }
         // FUTURE: Use the actual signature schema
-        return builder.build(SignatureSchema.create(new byte[]{1}));
+        return builder.build(SignatureSchema.create(new byte[] {1}));
     }
 
     /**

@@ -90,21 +90,20 @@ public class TssMessageHandler implements TransactionHandler {
         tssStore.put(key, op);
 
         final var tssParticipantDirectory =
-                computeTssParticipantDirectory(rosterStore.getActiveRoster(), maxSharesPerNode);
+                computeTssParticipantDirectory(rosterStore.getActiveRoster(), maxSharesPerNode, (int)
+                        context.networkInfo().selfNodeInfo().nodeId());
         final var result = tssCryptographyManager.handleTssMessageTransaction(op, tssParticipantDirectory, context);
 
         result.thenAccept(ledgerIdAndSignature -> {
             if (ledgerIdAndSignature != null) {
+                final var signature =
+                        gossip.sign(ledgerIdAndSignature.ledgerId().publicKey().toBytes());
                 // FUTURE: Validate the ledgerId computed is same as the current ledgerId
                 final var tssVote = TssVoteTransactionBody.newBuilder()
                         .tssVote(Bytes.wrap(ledgerIdAndSignature.tssVoteBitSet().toByteArray()))
                         .targetRosterHash(op.targetRosterHash())
                         .sourceRosterHash(op.sourceRosterHash())
-                        .nodeSignature(gossip.sign(ledgerIdAndSignature
-                                        .ledgerId()
-                                        .publicKey()
-                                        .toBytes())
-                                .getBytes())
+                        .nodeSignature(signature.getBytes())
                         .ledgerId(Bytes.wrap(
                                 ledgerIdAndSignature.ledgerId().publicKey().toBytes()))
                         .build();
