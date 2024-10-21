@@ -102,4 +102,3 @@ jobs:
           repo: hashgraph/hedera-services # ensure we are executing in the hashgraph org
           token: ${{ secrets.GH_ACCESS_TOKEN }}
           inputs: '{ "ref": "${{ inputs.ref }}" }'
-
