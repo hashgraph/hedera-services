@@ -51,7 +51,7 @@ class ReadableStoreFactoryTest {
     private ReadableStates readableStates;
 
     @Mock
-    private ReadableKVState<Object, Object> readableKVState;
+    private ReadableKVState<Object, Record> readableKVState;
 
     @ParameterizedTest
     @ValueSource(

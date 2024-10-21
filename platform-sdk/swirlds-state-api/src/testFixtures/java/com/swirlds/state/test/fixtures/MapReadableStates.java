@@ -40,7 +40,7 @@ public class MapReadableStates implements ReadableStates {
     @SuppressWarnings("unchecked")
     @NonNull
     @Override
-    public <K, V> ReadableKVState<K, V> get(@NonNull final String stateKey) {
+    public <K, V extends Record> ReadableKVState<K, V> get(@NonNull final String stateKey) {
         final var state = states.get(Objects.requireNonNull(stateKey));
         if (state == null) {
             throw new IllegalArgumentException("Unknown k/v state key " + stateKey);

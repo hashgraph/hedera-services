@@ -40,7 +40,7 @@ import java.util.Set;
  * @param <K> the type of the keys
  * @param <V> the type of the values
  */
-public class WritableKVStateStack<K, V> implements WritableKVState<K, V> {
+public class WritableKVStateStack<K, V extends Record> implements WritableKVState<K, V> {
 
     private final WritableStatesStack writableStatesStack;
     private final String stateKey;

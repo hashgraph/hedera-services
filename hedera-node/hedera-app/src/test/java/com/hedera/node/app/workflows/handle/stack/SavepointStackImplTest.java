@@ -33,6 +33,7 @@ import com.swirlds.state.State;
 import com.swirlds.state.spi.ReadableStates;
 import com.swirlds.state.test.fixtures.MapWritableKVState;
 import com.swirlds.state.test.fixtures.StateTestBase;
+import com.swirlds.state.test.fixtures.StringRecord;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -51,7 +52,7 @@ class SavepointStackImplTest extends StateTestBase {
 
     private static final String FOOD_SERVICE = "FOOD_SERVICE";
 
-    private final Map<String, String> BASE_DATA = Map.of(
+    private final Map<String, StringRecord> BASE_DATA = Map.of(
             A_KEY, APPLE,
             B_KEY, BANANA,
             C_KEY, CHERRY,
@@ -664,11 +665,11 @@ class SavepointStackImplTest extends StateTestBase {
         }
     }
 
-    private static Condition<ReadableStates> content(Map<String, String> expected) {
+    private static Condition<ReadableStates> content(Map<String, StringRecord> expected) {
         return new Condition<>(contentCheck(expected), "state " + expected);
     }
 
-    private static Predicate<ReadableStates> contentCheck(Map<String, String> expected) {
+    private static Predicate<ReadableStates> contentCheck(Map<String, StringRecord> expected) {
         return readableStates -> {
             final var actual = readableStates.get(FRUIT_STATE_KEY);
             if (expected.size() != actual.size()) {
