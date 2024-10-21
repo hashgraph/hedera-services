@@ -48,12 +48,19 @@ import java.util.Set;
 import java.util.SortedSet;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.function.Predicate;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 
 /**
  * Provides some implementation support needed for both the {@link ScheduleCreateHandler} and {@link
  * ScheduleSignHandler}.
  */
-abstract class AbstractScheduleHandler {
+@Singleton
+public class ScheduleManager {
+
+    @Inject
+    public ScheduleManager() {}
+
     protected static final String NULL_CONTEXT_MESSAGE =
             "Dispatcher called the schedule handler with a null context; probable internal data corruption.";
 
@@ -64,7 +71,7 @@ abstract class AbstractScheduleHandler {
      * @param remainingRequiredKeys A Set of Key entries that have not yet signed the scheduled transaction, but
      *     must sign that transaction before it can be executed.
      */
-    protected record ScheduleKeysResult(Set<Key> updatedSignatories, Set<Key> remainingRequiredKeys) {}
+    public record ScheduleKeysResult(Set<Key> updatedSignatories, Set<Key> remainingRequiredKeys) {}
 
     /**
      * Gets the set of all the keys required to sign a transaction.
@@ -96,7 +103,7 @@ abstract class AbstractScheduleHandler {
      * @throws HandleException if any validation check fails when getting the keys for the transaction
      */
     @NonNull
-    protected ScheduleKeysResult allKeysForTransaction(
+    public ScheduleKeysResult allKeysForTransaction(
             @NonNull final Schedule scheduleInState, @NonNull final HandleContext context) throws HandleException {
         final AccountID originalCreatePayer =
                 scheduleInState.originalCreateTransaction().transactionID().accountID();
@@ -241,7 +248,7 @@ abstract class AbstractScheduleHandler {
      *     if all checks pass, or an appropriate failure code if any checks fail.
      */
     @NonNull
-    protected ResponseCodeEnum validate(
+    public ResponseCodeEnum validate(
             @Nullable final Schedule scheduleToValidate,
             @Nullable final Instant consensusTime,
             final boolean isLongTermEnabled) {
@@ -313,7 +320,7 @@ abstract class AbstractScheduleHandler {
      * @param isLongTermEnabled    the is long term enabled
      * @return boolean indicating if the schedule was executed
      */
-    protected boolean tryToExecuteSchedule(
+    public boolean tryToExecuteSchedule(
             @NonNull final HandleContext context,
             @NonNull final Schedule scheduleToExecute,
             @NonNull final Set<Key> remainingSignatories,

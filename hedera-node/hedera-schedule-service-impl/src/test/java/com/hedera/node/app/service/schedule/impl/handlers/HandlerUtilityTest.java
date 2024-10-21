@@ -147,8 +147,8 @@ class HandlerUtilityTest extends ScheduleHandlerTestBase {
             final Schedule.Builder build = next.copyBuilder().memo(createMemo);
             final Schedule expected = build.waitForExpiry(createWait).build();
             final long maxLifeSeconds = scheduleConfig.maxExpirationFutureSeconds();
-            final Schedule modified =
-                    HandlerUtility.createProvisionalSchedule(createTransaction, testConsensusTime, maxLifeSeconds);
+            final Schedule modified = HandlerUtility.createProvisionalSchedule(
+                    createTransaction, testConsensusTime, maxLifeSeconds, true);
 
             assertThat(modified.executed()).isEqualTo(expected.executed());
             assertThat(modified.deleted()).isEqualTo(expected.deleted());
@@ -170,8 +170,8 @@ class HandlerUtilityTest extends ScheduleHandlerTestBase {
             final AccountID baseId = createTransaction.transactionID().accountID();
             final ScheduleID expectedId = new ScheduleID(baseId.shardNum(), baseId.realmNum(), testEntityNumber);
             final long maxLifeSeconds = scheduleConfig.maxExpirationFutureSeconds();
-            final Schedule provisional =
-                    HandlerUtility.createProvisionalSchedule(createTransaction, testConsensusTime, maxLifeSeconds);
+            final Schedule provisional = HandlerUtility.createProvisionalSchedule(
+                    createTransaction, testConsensusTime, maxLifeSeconds, false);
             final Schedule completed =
                     HandlerUtility.completeProvisionalSchedule(provisional, testEntityNumber, fakeSignatories);
 

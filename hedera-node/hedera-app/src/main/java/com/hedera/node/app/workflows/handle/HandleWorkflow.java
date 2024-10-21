@@ -60,6 +60,7 @@ import com.hedera.node.app.records.BlockRecordService;
 import com.hedera.node.app.service.file.FileService;
 import com.hedera.node.app.service.schedule.ScheduleService;
 import com.hedera.node.app.service.schedule.WritableScheduleStore;
+import com.hedera.node.app.service.schedule.impl.handlers.ScheduleManager;
 import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.service.token.impl.WritableNetworkStakingRewardsStore;
 import com.hedera.node.app.service.token.impl.WritableStakingInfoStore;
@@ -148,6 +149,7 @@ public class HandleWorkflow {
     private final KVStateChangeListener kvStateChangeListener;
     private final BoundaryStateChangeListener boundaryStateChangeListener;
     private final List<StateChanges.Builder> migrationStateChanges;
+    private final ScheduleManager scheduleManager;
 
     // The last second since the epoch at which the metrics were updated; this does not affect transaction handling
     private long lastMetricUpdateSecond;
@@ -181,7 +183,8 @@ public class HandleWorkflow {
             @NonNull final StakePeriodManager stakePeriodManager,
             @NonNull final KVStateChangeListener kvStateChangeListener,
             @NonNull final BoundaryStateChangeListener boundaryStateChangeListener,
-            @NonNull final List<StateChanges.Builder> migrationStateChanges) {
+            @NonNull final List<StateChanges.Builder> migrationStateChanges,
+            @NonNull final ScheduleManager scheduleManager) {
         this.networkInfo = requireNonNull(networkInfo);
         this.nodeStakeUpdates = requireNonNull(nodeStakeUpdates);
         this.authorizer = requireNonNull(authorizer);
@@ -214,6 +217,7 @@ public class HandleWorkflow {
                 .getConfiguration()
                 .getConfigData(BlockStreamConfig.class)
                 .streamMode();
+        this.scheduleManager = scheduleManager;
     }
 
     /**
@@ -372,6 +376,7 @@ public class HandleWorkflow {
      */
     private HandleOutput execute(@NonNull final UserTxn userTxn) {
         try {
+            final var dispatch = dispatchFor(userTxn);
             if (isOlderSoftwareEvent(userTxn)) {
                 if (streamMode != BLOCKS) {
                     final var lastRecordManagerTime = blockRecordManager.consTimeOfLastHandledTxn();
@@ -379,7 +384,7 @@ public class HandleWorkflow {
                     blockRecordManager.advanceConsensusClock(userTxn.consensusNow(), userTxn.state());
                     if (streamMode == RECORDS) {
                         // If relying on last-handled time to trigger interval processing, do so now
-                        processInterval(userTxn, lastRecordManagerTime);
+                        processInterval(userTxn, lastRecordManagerTime, dispatch);
                     }
                 }
                 initializeBuilderInfo(userTxn.baseBuilder(), userTxn.txnInfo(), exchangeRateManager.exchangeRates())
@@ -411,7 +416,6 @@ public class HandleWorkflow {
                     // here we may need to switch the newly adopted candidate roster
                     // in the RosterService state to become the active roster
                 }
-                final var dispatch = dispatchFor(userTxn);
                 updateNodeStakes(userTxn, dispatch);
                 var lastRecordManagerTime = Instant.EPOCH;
                 if (streamMode != BLOCKS) {
@@ -420,9 +424,9 @@ public class HandleWorkflow {
                     blockRecordManager.advanceConsensusClock(userTxn.consensusNow(), userTxn.state());
                 }
                 if (streamMode == RECORDS) {
-                    processInterval(userTxn, lastRecordManagerTime);
+                    processInterval(userTxn, lastRecordManagerTime, dispatch);
                 } else {
-                    if (processInterval(userTxn, blockStreamManager.lastIntervalProcessTime())) {
+                    if (processInterval(userTxn, blockStreamManager.lastIntervalProcessTime(), dispatch)) {
                         blockStreamManager.setLastIntervalProcessTime(userTxn.consensusNow());
                     }
                 }
@@ -620,7 +624,8 @@ public class HandleWorkflow {
      * @param lastProcessTime an upper bound on the last time that time-based events were processed
      * @return true if the interval was processed
      */
-    private boolean processInterval(@NonNull final UserTxn userTxn, final Instant lastProcessTime) {
+    private boolean processInterval(
+            @NonNull final UserTxn userTxn, final Instant lastProcessTime, final Dispatch dispatch) {
         // If we have never processed an interval, treat this time as the last processed time
         if (Instant.EPOCH.equals(lastProcessTime)) {
             return true;
@@ -631,6 +636,28 @@ public class HandleWorkflow {
             final var scheduleStore = new WritableStoreFactory(
                             userTxn.stack(), ScheduleService.NAME, userTxn.config(), storeMetricsService)
                     .getStore(WritableScheduleStore.class);
+
+            // try to execute expired
+            final var schedules = scheduleStore.getByExpirationBetween(startSecond, endSecond);
+            for (final var schedule : schedules) {
+                if (schedule.waitForExpiry()) {
+                    final var keys = scheduleManager.allKeysForTransaction(schedule, dispatch.handleContext());
+                    final var validationResult = scheduleManager.validate(
+                            schedule, dispatch.handleContext().consensusNow(), true);
+
+                    // We are not marking the scheduled transaction as executed here because below we are purging
+                    // the expired schedules anyway.
+                    scheduleManager.tryToExecuteSchedule(
+                            dispatch.handleContext(),
+                            schedule,
+                            keys.remainingRequiredKeys(),
+                            keys.updatedSignatories(),
+                            validationResult,
+                            true);
+                }
+            }
+
+            // purge expired
             scheduleStore.purgeExpiredSchedulesBetween(startSecond, endSecond);
             userTxn.stack().commitSystemStateChanges();
             return true;
