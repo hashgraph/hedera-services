@@ -45,6 +45,9 @@ public class EvmActionTracer implements ActionSidecarContentTracer {
 
     private final ActionStack actionStack;
 
+    /**
+     * @param actionStack the action stack of the contract
+     */
     public EvmActionTracer(@NonNull final ActionStack actionStack) {
         this.actionStack = requireNonNull(actionStack);
     }

@@ -38,6 +38,9 @@ import org.hyperledger.besu.evm.operation.AbstractOperation;
 public class CustomChainIdOperation extends AbstractOperation {
     private final long cost;
 
+    /**
+     * @param gasCalculator the gas calculator to use
+     */
     public CustomChainIdOperation(@NonNull final GasCalculator gasCalculator) {
         super(CHAINID.opcode(), "CHAINID", 0, 1, gasCalculator);
         this.cost = Objects.requireNonNull(gasCalculator).getBaseTierGasCost();

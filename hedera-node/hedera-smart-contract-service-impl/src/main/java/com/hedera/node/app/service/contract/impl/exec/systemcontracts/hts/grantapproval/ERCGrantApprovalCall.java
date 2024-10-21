@@ -33,8 +33,21 @@ import com.hedera.node.app.service.contract.impl.records.ContractCallStreamBuild
 import edu.umd.cs.findbugs.annotations.NonNull;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 
+/**
+ * Implements the ERC-20 {@code transfer()} and {@code transferFrom()} calls of the HTS contract.
+ */
 public class ERCGrantApprovalCall extends AbstractGrantApprovalCall {
 
+    /**
+     * @param enhancement the enhancement that is used
+     * @param gasCalculator the gas calculator that is used
+     * @param verificationStrategy the verification strategy that is used
+     * @param senderId the sender id of the sending account
+     * @param tokenId the token id of the token to be transferred
+     * @param spenderId the spender id of the spending account
+     * @param amount the amount that is approved
+     * @param tokenType the token type of the token
+     */
     // too many parameters
     @SuppressWarnings("java:S107")
     public ERCGrantApprovalCall(

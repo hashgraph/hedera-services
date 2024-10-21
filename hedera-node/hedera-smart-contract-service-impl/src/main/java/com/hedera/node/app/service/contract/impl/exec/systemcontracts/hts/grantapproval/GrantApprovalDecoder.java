@@ -30,14 +30,24 @@ import java.math.BigInteger;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
+/**
+ * Provides help in decoding an {@link HtsCallAttempt} representing an approval into a synthetic {@link TransactionBody}.
+ */
 @Singleton
 public class GrantApprovalDecoder {
 
+    /**
+     * Default constructor for injection.
+     */
     @Inject
     public GrantApprovalDecoder() {
         // Dagger2
     }
 
+    /**
+     * @param attempt the HTS call attempt
+     * @return the crypto allowance transaction body
+     */
     public TransactionBody decodeGrantApproval(@NonNull final HtsCallAttempt attempt) {
         final var call = GrantApprovalTranslator.GRANT_APPROVAL.decodeCall(attempt.inputBytes());
         return TransactionBody.newBuilder()
@@ -48,6 +58,10 @@ public class GrantApprovalDecoder {
                 .build();
     }
 
+    /**
+     * @param attempt the HTS call attempt
+     * @return the crypto allowance transaction body
+     */
     public TransactionBody decodeGrantApprovalNFT(@NonNull final HtsCallAttempt attempt) {
         final var call = GrantApprovalTranslator.GRANT_APPROVAL_NFT.decodeCall(attempt.inputBytes());
         return TransactionBody.newBuilder()

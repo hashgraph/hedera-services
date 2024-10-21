@@ -32,11 +32,15 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
 
 public class UpdateNFTsMetadataTranslator extends AbstractCallTranslator<HtsCallAttempt> {
+    /** Selector for updateNFTsMetadata(address,int64[],bytes) method. */
     public static final Function UPDATE_NFTs_METADATA =
             new Function("updateNFTsMetadata(address,int64[],bytes)", ReturnTypes.INT);
 
     private final UpdateDecoder decoder;
 
+    /**
+     * @param decoder the decoder to use for NFTs update  metadata
+     */
     @Inject
     public UpdateNFTsMetadataTranslator(@NonNull final UpdateDecoder decoder) {
         this.decoder = decoder;

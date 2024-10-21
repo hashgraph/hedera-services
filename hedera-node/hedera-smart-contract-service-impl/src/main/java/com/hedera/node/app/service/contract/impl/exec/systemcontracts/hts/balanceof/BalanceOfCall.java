@@ -39,6 +39,12 @@ import java.math.BigInteger;
 public class BalanceOfCall extends AbstractRevertibleTokenViewCall {
     private final Address owner;
 
+    /**
+     * @param enhancement the enhancement to use
+     * @param gasCalculator the gas calculator to use
+     * @param token the target token of this call
+     * @param owner the owner of the token
+     */
     public BalanceOfCall(
             @NonNull final HederaWorldUpdater.Enhancement enhancement,
             @NonNull final SystemContractGasCalculator gasCalculator,

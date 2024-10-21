@@ -23,6 +23,10 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 
+/**
+ * Enum which implements {@link org.hyperledger.besu.evm.frame.ExceptionalHaltReason} and enhances it with more halt reasons.
+ */
+@SuppressWarnings("ALL")
 public enum CustomExceptionalHaltReason implements ExceptionalHaltReason {
     INVALID_CONTRACT_ID("Invalid contract id"),
     INVALID_SOLIDITY_ADDRESS("Invalid account reference"),

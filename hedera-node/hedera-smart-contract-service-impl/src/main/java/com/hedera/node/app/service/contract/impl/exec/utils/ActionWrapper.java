@@ -29,14 +29,23 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 public class ActionWrapper {
     private ContractAction value;
 
+    /**
+     * @param value the contract action to be initialized
+     */
     public ActionWrapper(@NonNull final ContractAction value) {
         this.value = requireNonNull(value);
     }
 
+    /**
+     * @return the contract action
+     */
     public @NonNull ContractAction get() {
         return value;
     }
 
+    /**
+     * @param value the contract action to be set
+     */
     public void set(@NonNull final ContractAction value) {
         this.value = requireNonNull(value);
     }

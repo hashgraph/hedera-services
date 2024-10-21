@@ -66,6 +66,19 @@ public class Erc20TransfersCall extends AbstractCall {
     private final boolean requiresApproval;
     private final SpecialRewardReceivers specialRewardReceivers;
 
+    /**
+     * @param gasCalculator the gas calculator used in this call
+     * @param enhancement the enhancement used in this call
+     * @param amount the amount of ERC20 tokens to be sent
+     * @param from the address of the account from which the token will be transferred
+     * @param to the address of the account to which the token will be transferred
+     * @param tokenId the token id of the token to be transferred
+     * @param verificationStrategy the verification strategy used in this call
+     * @param senderId the sender id of the sending account
+     * @param addressIdConverter the address ID converter for this call
+     * @param requiresApproval whether the call requires an approval
+     * @param specialRewardReceivers the special reward receiver
+     */
     // too many parameters
     @SuppressWarnings("java:S107")
     public Erc20TransfersCall(

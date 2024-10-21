@@ -29,8 +29,12 @@ import javax.inject.Inject;
 
 public class IsValidAliasTranslator extends AbstractCallTranslator<HasCallAttempt> {
 
+    /** Selector for isValidAlias(address) method. */
     public static final Function IS_VALID_ALIAS = new Function("isValidAlias(address)", ReturnTypes.BOOL);
 
+    /**
+     * Default constructor for injection.
+     */
     @Inject
     public IsValidAliasTranslator() {
         // Dagger

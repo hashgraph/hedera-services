@@ -24,10 +24,17 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
+/**
+ * Translates {@code totalSupply()} calls to the HTS system contract.
+ */
 @Singleton
 public class TotalSupplyTranslator extends AbstractCallTranslator<HtsCallAttempt> {
+    /** Selector for totalSupply() method. */
     public static final Function TOTAL_SUPPLY = new Function("totalSupply()", ReturnTypes.INT);
 
+    /**
+     * Default constructor for injection.
+     */
     @Inject
     public TotalSupplyTranslator() {
         // Dagger2

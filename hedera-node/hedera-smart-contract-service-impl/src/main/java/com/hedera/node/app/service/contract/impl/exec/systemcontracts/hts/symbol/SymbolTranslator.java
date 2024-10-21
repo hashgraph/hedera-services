@@ -29,8 +29,12 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class SymbolTranslator extends AbstractCallTranslator<HtsCallAttempt> {
+    /** Selector for symbol() method. */
     public static final Function SYMBOL = new Function("symbol()", ReturnTypes.STRING);
 
+    /**
+     * Default constructor for injection.
+     */
     @Inject
     public SymbolTranslator() {
         // Dagger2
