@@ -75,7 +75,6 @@ public class ScheduleCreateHandler extends ScheduleManager implements Transactio
     public void pureChecks(@Nullable final TransactionBody currentTransaction) throws PreCheckException {
         if (currentTransaction != null) {
             checkValidTransactionId(currentTransaction.transactionID());
-            checkLongTermSchedulable(getValidScheduleCreateBody(currentTransaction));
         } else {
             throw new PreCheckException(ResponseCodeEnum.INVALID_TRANSACTION_BODY);
         }
@@ -96,7 +95,9 @@ public class ScheduleCreateHandler extends ScheduleManager implements Transactio
         final LedgerConfig ledgerConfig = context.configuration().getConfigData(LedgerConfig.class);
         final HederaConfig hederaConfig = context.configuration().getConfigData(HederaConfig.class);
         final SchedulingConfig schedulingConfig = context.configuration().getConfigData(SchedulingConfig.class);
-        final long maxExpireConfig = schedulingConfig.longTermEnabled()
+        final var isLongTermEnabled = schedulingConfig.longTermEnabled();
+        checkLongTermSchedulable(getValidScheduleCreateBody(currentTransaction), isLongTermEnabled);
+        final long maxExpireConfig = isLongTermEnabled
                 ? schedulingConfig.maxExpirationFutureSeconds()
                 : ledgerConfig.scheduleTxExpiryTimeSecs();
         final ScheduleCreateTransactionBody scheduleBody = getValidScheduleCreateBody(currentTransaction);
@@ -122,7 +123,7 @@ public class ScheduleCreateHandler extends ScheduleManager implements Transactio
         final TransactionID transactionId = currentTransaction.transactionID();
         if (transactionId != null) {
             final Schedule provisionalSchedule = HandlerUtility.createProvisionalSchedule(
-                    currentTransaction, instantSource.instant(), maxExpireConfig);
+                    currentTransaction, instantSource.instant(), maxExpireConfig, isLongTermEnabled);
             final Set<Key> allRequiredKeys = allKeysForTransaction(provisionalSchedule, context);
             context.optionalKeys(allRequiredKeys);
         } else {
@@ -153,7 +154,7 @@ public class ScheduleCreateHandler extends ScheduleManager implements Transactio
                     ? schedulingConfig.maxExpirationFutureSeconds()
                     : ledgerConfig.scheduleTxExpiryTimeSecs();
             final Schedule provisionalSchedule = HandlerUtility.createProvisionalSchedule(
-                    currentTransaction, currentConsensusTime, expirationSeconds);
+                    currentTransaction, currentConsensusTime, expirationSeconds, isLongTermEnabled);
             checkSchedulableWhitelistHandle(provisionalSchedule, schedulingConfig);
             context.attributeValidator().validateMemo(provisionalSchedule.memo());
             context.attributeValidator()
@@ -327,10 +328,12 @@ public class ScheduleCreateHandler extends ScheduleManager implements Transactio
         }
     }
 
-    private void checkLongTermSchedulable(final ScheduleCreateTransactionBody scheduleCreate) throws PreCheckException {
+    private void checkLongTermSchedulable(
+            final ScheduleCreateTransactionBody scheduleCreate, final boolean isLongTermEnabled)
+            throws PreCheckException {
         // @todo('long term schedule') HIP needed?, before enabling long term schedules, add a response code for
         //       INVALID_LONG_TERM_SCHEDULE and fix this exception.
-        if (scheduleCreate.waitForExpiry() && !scheduleCreate.hasExpirationTime()) {
+        if (isLongTermEnabled && scheduleCreate.waitForExpiry() && !scheduleCreate.hasExpirationTime()) {
             throw new PreCheckException(ResponseCodeEnum.INVALID_TRANSACTION /*INVALID_LONG_TERM_SCHEDULE*/);
         }
     }

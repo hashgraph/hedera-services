@@ -242,19 +242,19 @@ public final class HandlerUtility {
     static Schedule createProvisionalSchedule(
             @NonNull final TransactionBody currentTransaction,
             @NonNull final Instant currentConsensusTime,
-            final long maxLifeSeconds)
+            final long maxLifeSeconds,
+            final boolean longTermEnabled)
             throws HandleException {
         // The next three items will never be null, but Sonar is persnickety, so we force NPE if any are null.
         final TransactionID parentTransactionId = currentTransaction.transactionIDOrThrow();
         final ScheduleCreateTransactionBody createTransaction = currentTransaction.scheduleCreateOrThrow();
         final AccountID schedulerAccount = parentTransactionId.accountIDOrThrow();
-        final long calculatedExpirationTime =
-                calculateExpiration(createTransaction.expirationTime(), currentConsensusTime, maxLifeSeconds);
+        final long calculatedExpirationTime = calculateExpiration(
+                createTransaction.expirationTime(), currentConsensusTime, maxLifeSeconds, longTermEnabled);
         final ScheduleID nullId = null;
 
         Schedule.Builder builder = Schedule.newBuilder();
         builder.scheduleId(nullId).deleted(false).executed(false);
-        builder.waitForExpiry(createTransaction.waitForExpiry());
         builder.adminKey(createTransaction.adminKey()).schedulerAccountId(parentTransactionId.accountID());
         builder.payerAccountId(createTransaction.payerAccountIDOrElse(schedulerAccount));
         builder.schedulerAccountId(schedulerAccount);
@@ -262,6 +262,9 @@ public final class HandlerUtility {
         builder.calculatedExpirationSecond(calculatedExpirationTime);
         builder.providedExpirationSecond(
                 createTransaction.expirationTimeOrElse(Timestamp.DEFAULT).seconds());
+        if (longTermEnabled) {
+            builder.waitForExpiry(createTransaction.waitForExpiry());
+        }
         builder.originalCreateTransaction(currentTransaction);
         builder.memo(createTransaction.memo());
         builder.scheduledTransaction(createTransaction.scheduledTransactionBody());
@@ -341,8 +344,9 @@ public final class HandlerUtility {
     private static long calculateExpiration(
             @Nullable final Timestamp givenExpiration,
             @NonNull final Instant currentConsensusTime,
-            final long maxLifeSeconds) {
-        if (givenExpiration != null) {
+            final long maxLifeSeconds,
+            final boolean longTermEnabled) {
+        if (givenExpiration != null && longTermEnabled) {
             return givenExpiration.seconds();
         } else {
             final Instant currentPlusMaxLife = currentConsensusTime.plusSeconds(maxLifeSeconds);
