@@ -89,7 +89,14 @@ class ReconnectHashListenerTest {
         assertThrows(
                 NullPointerException.class,
                 () -> new ReconnectHashListener<>(
-                        1, 1, TestKeySerializer.INSTANCE, TestValueSerializer.INSTANCE, ds, VIRTUAL_MAP_CONFIG.flushInterval(), null, nodeRemover),
+                        1,
+                        1,
+                        TestKeySerializer.INSTANCE,
+                        TestValueSerializer.INSTANCE,
+                        ds,
+                        VIRTUAL_MAP_CONFIG.flushInterval(),
+                        null,
+                        nodeRemover),
                 "A null statistics should produce an NPE");
     }
 
@@ -101,7 +108,14 @@ class ReconnectHashListenerTest {
         assertThrows(
                 NullPointerException.class,
                 () -> new ReconnectHashListener<>(
-                        1, 1, TestKeySerializer.INSTANCE, TestValueSerializer.INSTANCE, ds, VIRTUAL_MAP_CONFIG.flushInterval(), statistics, null),
+                        1,
+                        1,
+                        TestKeySerializer.INSTANCE,
+                        TestValueSerializer.INSTANCE,
+                        ds,
+                        VIRTUAL_MAP_CONFIG.flushInterval(),
+                        statistics,
+                        null),
                 "A null node remover should produce an NPE");
     }
 

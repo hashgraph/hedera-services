@@ -16,9 +16,8 @@
 
 package com.swirlds.virtualmap.internal.merkle;
 
-import static java.util.Objects.requireNonNull;
-
 import static com.swirlds.logging.legacy.LogMarker.VIRTUAL_MERKLE_STATS;
+import static java.util.Objects.requireNonNull;
 
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.virtualmap.VirtualKey;
@@ -104,7 +103,7 @@ public abstract class AbstractHashListener<K extends VirtualKey, V extends Virtu
      * @param dataSource
      * 		The data source. Cannot be null.
      * @param flushInterval
-     *      The number of nodes to hash before they are flushed to disk
+     *      The number of nodes to hash before they are flushed to disk.
      * @param statistics
      *      Virtual map stats. Cannot be null.
      */
@@ -113,7 +112,7 @@ public abstract class AbstractHashListener<K extends VirtualKey, V extends Virtu
             final long lastLeafPath,
             final KeySerializer<K> keySerializer,
             final ValueSerializer<V> valueSerializer,
-            final VirtualDataSource dataSource,
+            @NonNull final VirtualDataSource dataSource,
             final int flushInterval,
             @NonNull final VirtualMapStatistics statistics) {
 

@@ -69,7 +69,7 @@ public class ReconnectHashListener<K extends VirtualKey, V extends VirtualValue>
      * @param dataSource
      * 		The data source. Cannot be null.
      * @param flushInterval
-     *      TBD
+     *      The number of nodes to hash before they are flushed to disk.
      * @param statistics
      *      Virtual map stats. Cannot be null.
      */

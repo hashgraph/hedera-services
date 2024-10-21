@@ -514,7 +514,6 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
                 getRoute());
         final FullLeafRehashHashListener<K, V> hashListener = new FullLeafRehashHashListener<>(
                 firstLeafPath,
-                firstLeafPath,
                 lastLeafPath,
                 keySerializer,
                 valueSerializer,
