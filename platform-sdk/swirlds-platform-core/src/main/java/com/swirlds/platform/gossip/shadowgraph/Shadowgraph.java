@@ -22,6 +22,7 @@ import static com.swirlds.logging.legacy.LogMarker.SYNC_INFO;
 
 import com.hedera.service.gossip.IntakeEventCounter;
 import com.hedera.service.gossip.impl.shadowgraph.InsertableStatus;
+import com.hedera.service.gossip.impl.shadowgraph.ShadowgraphInsertionException;
 import com.hedera.service.gossip.impl.shadowgraph.ShadowgraphReservation;
 import com.swirlds.common.AddressBook;
 import com.swirlds.common.context.PlatformContext;
