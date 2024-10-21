@@ -1217,10 +1217,10 @@ public class EnhancedKeyStoreLoader {
             rollBackSigningKeysAndCertsChanges(pfxPrivateKeys, pfxCertificates);
         } else {
             // cleanup pfx files by moving them to sub-directory
-            cleanupMovePfxFilesToSubDirectory();
+            cleanupByMovingPfxFilesToSubDirectory();
+            logger.info(STARTUP.getMarker(), "Finished key store migration.");
         }
 
-        logger.info(STARTUP.getMarker(), "Completed migration of key store.");
         return this;
     }
 
@@ -1231,12 +1231,12 @@ public class EnhancedKeyStoreLoader {
         // delete any agreement keys of the form a-*
         final File[] agreementKeyFiles = keyStoreDirectory.toFile().listFiles((dir, name) -> name.startsWith("a-"));
         if (agreementKeyFiles != null) {
-            for (File agreementKeyFile : agreementKeyFiles) {
+            for (final File agreementKeyFile : agreementKeyFiles) {
                 if (agreementKeyFile.isFile()) {
                     try {
                         Files.delete(agreementKeyFile.toPath());
                         logger.debug(STARTUP.getMarker(), "Deleted agreement key file {}", agreementKeyFile.getName());
-                    } catch (IOException e) {
+                    } catch (final IOException e) {
                         logger.error(
                                 ERROR.getMarker(),
                                 "Failed to delete agreement key file {}",
@@ -1250,8 +1250,8 @@ public class EnhancedKeyStoreLoader {
     /**
      * Extracts the private keys and certificates from the PFX files and writes them to PEM files.
      *
-     * @param pfxPrivateKeys  the map of extracted private keys.
-     * @param pfxCertificates the map of extracted certificates.
+     * @param pfxPrivateKeys  the map of private keys being extracted (Updated By Method Call)
+     * @param pfxCertificates the map of certificates being extracted (Updated By Method Call)
      * @return the number of errors encountered during the extraction process.
      * @throws KeyStoreException   if the underlying method calls throw this exception.
      * @throws KeyLoadingException if the underlying method calls throw this exception.
@@ -1260,7 +1260,7 @@ public class EnhancedKeyStoreLoader {
             final Map<NodeId, PrivateKey> pfxPrivateKeys, final Map<NodeId, Certificate> pfxCertificates)
             throws KeyStoreException, KeyLoadingException {
         final KeyStore legacyPublicStore = resolveLegacyPublicStore();
-        AtomicLong errorCount = new AtomicLong(0);
+        final AtomicLong errorCount = new AtomicLong(0);
 
         iterateAddressBook(addressBook, (i, nodeId, address, nodeAlias) -> {
             if (isLocal(address)) {
@@ -1291,7 +1291,7 @@ public class EnhancedKeyStoreLoader {
                                 sPrivateKeyLocation.getFileName());
                         try {
                             writePemFile(true, sPrivateKeyLocation, privateKey.getEncoded());
-                        } catch (IOException e) {
+                        } catch (final IOException e) {
                             logger.error(
                                     ERROR.getMarker(),
                                     "Failed to write private key for node {} to PEM file {}",
@@ -1305,11 +1305,11 @@ public class EnhancedKeyStoreLoader {
 
             // extract certificates for all nodes
             final Path sCertificateLocation = keyStoreDirectory.resolve("s-public-" + nodeAlias + ".pem");
-            Path ksLocation = legacyCertificateStore();
+            final Path ksLocation = legacyCertificateStore();
             if (!Files.exists(sCertificateLocation) && Files.exists(ksLocation)) {
                 logger.trace(
                         STARTUP.getMarker(),
-                        "Extracting signing certificate for node {} from file {} ]",
+                        "Extracting signing certificate for node {} from file {} ",
                         nodeId,
                         ksLocation.getFileName());
                 final Certificate certificate =
@@ -1330,7 +1330,7 @@ public class EnhancedKeyStoreLoader {
                             sCertificateLocation.getFileName());
                     try {
                         writePemFile(false, sCertificateLocation, certificate.getEncoded());
-                    } catch (CertificateEncodingException | IOException e) {
+                    } catch (final CertificateEncodingException | IOException e) {
                         logger.error(
                                 ERROR.getMarker(),
                                 "Failed to write signing certificate for node {} to PEM file {}",
@@ -1347,8 +1347,8 @@ public class EnhancedKeyStoreLoader {
     /**
      * Validates that the private keys and certs in PEM files are loadable and match the PFX loaded keys and certs.
      *
-     * @param pfxPrivateKeys  the map of extracted private keys.
-     * @param pfxCertificates the map of extracted certificates.
+     * @param pfxPrivateKeys  the map of private keys being extracted.
+     * @param pfxCertificates the map of certificates being extracted.
      * @return the number of errors encountered during the validation process.
      * @throws KeyStoreException   if the underlying method calls throw this exception.
      * @throws KeyLoadingException if the underlying method calls throw this exception.
@@ -1356,11 +1356,11 @@ public class EnhancedKeyStoreLoader {
     private long validateKeysAndCertsAreLoadableFromPemFiles(
             final Map<NodeId, PrivateKey> pfxPrivateKeys, final Map<NodeId, Certificate> pfxCertificates)
             throws KeyStoreException, KeyLoadingException {
-        AtomicLong errorCount = new AtomicLong(0);
+        final AtomicLong errorCount = new AtomicLong(0);
         iterateAddressBook(addressBook, (i, nodeId, address, nodeAlias) -> {
             if (isLocal(address) && pfxCertificates.containsKey(nodeId)) {
                 // validate private keys for local nodes
-                Path ksLocation = privateKeyStore(nodeAlias, KeyCertPurpose.SIGNING);
+                final Path ksLocation = privateKeyStore(nodeAlias, KeyCertPurpose.SIGNING);
                 final PrivateKey pemPrivateKey = readPrivateKey(nodeId, ksLocation);
                 if (pemPrivateKey == null
                         || !Arrays.equals(
@@ -1373,7 +1373,7 @@ public class EnhancedKeyStoreLoader {
 
             // validate certificates for all nodes PEM files were created for.
             if (pfxCertificates.containsKey(nodeId)) {
-                Path ksLocation = certificateStore(nodeAlias, KeyCertPurpose.SIGNING);
+                final Path ksLocation = certificateStore(nodeAlias, KeyCertPurpose.SIGNING);
                 final Certificate pemCertificate = readCertificate(nodeId, ksLocation);
                 try {
                     if (pemCertificate == null
@@ -1386,7 +1386,7 @@ public class EnhancedKeyStoreLoader {
                                 nodeId);
                         errorCount.incrementAndGet();
                     }
-                } catch (CertificateEncodingException e) {
+                } catch (final CertificateEncodingException e) {
                     logger.error(ERROR.getMarker(), "Encoding error while validating certificate for node {}.", nodeId);
                     errorCount.incrementAndGet();
                 }
@@ -1398,8 +1398,8 @@ public class EnhancedKeyStoreLoader {
     /**
      * Rollback the creation of PEM files for signing keys and certificates.
      *
-     * @param pfxPrivateKeys  the map of extracted private keys.
-     * @param pfxCertificates the map of extracted certificates.
+     * @param pfxPrivateKeys  the map of private keys being extracted.
+     * @param pfxCertificates the map of certificates being extracted.
      * @throws KeyStoreException   if the underlying method calls throw this exception.
      * @throws KeyLoadingException if the underlying method calls throw this exception.
      */
@@ -1407,13 +1407,13 @@ public class EnhancedKeyStoreLoader {
             final Map<NodeId, PrivateKey> pfxPrivateKeys, final Map<NodeId, Certificate> pfxCertificates)
             throws KeyStoreException, KeyLoadingException {
 
-        AtomicLong cleanupErrorCount = new AtomicLong(0);
+        final AtomicLong cleanupErrorCount = new AtomicLong(0);
         iterateAddressBook(addressBook, (i, nodeId, address, nodeAlias) -> {
             // private key rollback
             if (isLocal(address) && pfxPrivateKeys.containsKey(address.getNodeId())) {
                 try {
                     Files.deleteIfExists(privateKeyStore(nodeAlias, KeyCertPurpose.SIGNING));
-                } catch (IOException e) {
+                } catch (final IOException e) {
                     cleanupErrorCount.incrementAndGet();
                 }
             }
@@ -1421,7 +1421,7 @@ public class EnhancedKeyStoreLoader {
             if (pfxCertificates.containsKey(address.getNodeId())) {
                 try {
                     Files.deleteIfExists(certificateStore(nodeAlias, KeyCertPurpose.SIGNING));
-                } catch (IOException e) {
+                } catch (final IOException e) {
                     cleanupErrorCount.incrementAndGet();
                 }
             }
@@ -1441,8 +1441,8 @@ public class EnhancedKeyStoreLoader {
      * @throws KeyStoreException   if the underlying method calls throw this exception.
      * @throws KeyLoadingException if the underlying method calls throw this exception.
      */
-    private void cleanupMovePfxFilesToSubDirectory() throws KeyStoreException, KeyLoadingException {
-        AtomicLong cleanupErrorCount = new AtomicLong(0);
+    private void cleanupByMovingPfxFilesToSubDirectory() throws KeyStoreException, KeyLoadingException {
+        final AtomicLong cleanupErrorCount = new AtomicLong(0);
 
         final String now = DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss").format(LocalDateTime.now());
         final Path pfxArchiveDirectory = keyStoreDirectory.resolve(".archive");
@@ -1456,7 +1456,7 @@ public class EnhancedKeyStoreLoader {
                     Files.createDirectory(pfxArchiveDirectory);
                 }
                 Files.createDirectory(pfxDateDirectory);
-            } catch (IOException e) {
+            } catch (final IOException e) {
                 logger.error(
                         ERROR.getMarker(),
                         "Failed to create [.archive/yyyy-MM-dd_HH-mm-ss] sub-directory. Manual cleanup required.");
@@ -1466,7 +1466,7 @@ public class EnhancedKeyStoreLoader {
         iterateAddressBook(addressBook, (i, nodeId, address, nodeAlias) -> {
             if (isLocal(address)) {
                 // move private key PFX files per local node
-                File sPrivatePfx = legacyPrivateKeyStore(nodeAlias).toFile();
+                final File sPrivatePfx = legacyPrivateKeyStore(nodeAlias).toFile();
                 if (sPrivatePfx.exists()
                         && sPrivatePfx.isFile()
                         && !sPrivatePfx.renameTo(
@@ -1475,7 +1475,7 @@ public class EnhancedKeyStoreLoader {
                 }
             }
         });
-        File sPublicPfx = legacyCertificateStore().toFile();
+        final File sPublicPfx = legacyCertificateStore().toFile();
         if (sPublicPfx.exists()
                 && sPublicPfx.isFile()
                 && !sPublicPfx.renameTo(
