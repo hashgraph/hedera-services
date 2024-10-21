@@ -838,7 +838,7 @@ jobs:
           arguments: "release${{ inputs.release-profile }} -PpublishingPackageGroup=com.swirlds -Ps01SonatypeHost=true -PpublishSigningEnabled=true --scan --no-configuration-cache"
 
       - name: Gradle Publish Services to ${{ inputs.version-policy == 'specified' && 'Maven Central' || 'Google Artifact Registry' }} (${{ inputs.release-profile }})
-        uses: gradle/gradle-build-action@29c0906b64b8fc82467890bfb7a0a7ef34bda89e # v3.1.0
+        uses: gradle/gradle-build-action@ac2d340dc04d9e1113182899e983b5400c17cda1 # v3.5.0
         if: ${{ inputs.dry-run-enabled != true && inputs.release-profile != 'none' && !cancelled() && !failure() }}
         env:
           NEXUS_USERNAME: ${{ secrets.svcs-ossrh-username }}
