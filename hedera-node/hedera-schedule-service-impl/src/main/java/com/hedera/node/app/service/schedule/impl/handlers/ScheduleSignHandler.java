@@ -146,10 +146,12 @@ public class ScheduleSignHandler extends ScheduleManager implements TransactionH
                         final ScheduleKeysResult requiredKeysResult = allKeysForTransaction(scheduleToSign, context);
                         final Set<Key> allRequiredKeys = requiredKeysResult.remainingRequiredKeys();
                         final Set<Key> updatedSignatories = requiredKeysResult.updatedSignatories();
+                        // long term schedule enabled
                         if (isLongTermEnabled && scheduleToSign.waitForExpiry()) {
                             verifyHasNewSignatures(scheduleToSign.signatories(), updatedSignatories);
                             scheduleStore.put(HandlerUtility.replaceSignatories(scheduleToSign, updatedSignatories));
                         } else {
+                            // long term schedule disabled
                             var isExecuted = tryToExecuteSchedule(
                                     context,
                                     scheduleToSign,
@@ -160,6 +162,10 @@ public class ScheduleSignHandler extends ScheduleManager implements TransactionH
                             if (isExecuted) {
                                 scheduleStore.put(HandlerUtility.replaceSignatoriesAndMarkExecuted(
                                         scheduleToSign, updatedSignatories, currentConsensusTime));
+                            } else {
+                                verifyHasNewSignatures(scheduleToSign.signatories(), updatedSignatories);
+                                scheduleStore.put(
+                                        HandlerUtility.replaceSignatories(scheduleToSign, updatedSignatories));
                             }
                         }
                         final ScheduleStreamBuilder scheduleRecords =

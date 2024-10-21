@@ -143,7 +143,7 @@ public class ScheduleLongTermExecutionSpecs {
                         scheduleCreate(BASIC_XFER, cryptoTransfer(tinyBarsFromTo(SENDER, RECEIVER, 1)))
                                 .designatingPayer(PAYING_ACCOUNT)
                                 .waitForExpiry()
-                                .withRelativeExpiry(SENDER_TXN, 8)
+                                .withRelativeExpiry(SENDER_TXN, 2)
                                 .recordingScheduledTxn()
                                 .via(CREATE_TX),
                         scheduleSign(BASIC_XFER)
@@ -156,9 +156,9 @@ public class ScheduleLongTermExecutionSpecs {
                                 .hasWaitForExpiry()
                                 .isNotExecuted()
                                 .isNotDeleted()
-                                .hasRelativeExpiry(SENDER_TXN, 8)
+                                .hasRelativeExpiry(SENDER_TXN, 2)
                                 .hasRecordedScheduledTxn(),
-                        sleepFor(9000),
+                        sleepFor(3000),
                         cryptoCreate("foo").via(TRIGGERING_TXN),
                         getScheduleInfo(BASIC_XFER).hasCostAnswerPrecheck(INVALID_SCHEDULE_ID),
                         withOpContext((spec, opLog) -> {
@@ -252,7 +252,7 @@ public class ScheduleLongTermExecutionSpecs {
                                 .designatingPayer(PAYING_ACCOUNT)
                                 .adminKey("adminKey")
                                 .waitForExpiry()
-                                .withRelativeExpiry(SENDER_TXN, 8)
+                                .withRelativeExpiry(SENDER_TXN, 2)
                                 .recordingScheduledTxn()
                                 .via(CREATE_TX),
                         scheduleSign(BASIC_XFER)
@@ -265,9 +265,9 @@ public class ScheduleLongTermExecutionSpecs {
                                 .hasWaitForExpiry()
                                 .isNotExecuted()
                                 .isNotDeleted()
-                                .hasRelativeExpiry(SENDER_TXN, 8)
+                                .hasRelativeExpiry(SENDER_TXN, 2)
                                 .hasRecordedScheduledTxn(),
-                        sleepFor(9000),
+                        sleepFor(3000),
                         cryptoCreate("foo").via(TRIGGERING_TXN),
                         getScheduleInfo(BASIC_XFER).hasCostAnswerPrecheck(INVALID_SCHEDULE_ID),
                         withOpContext((spec, opLog) -> {
@@ -360,7 +360,7 @@ public class ScheduleLongTermExecutionSpecs {
                                 .payingWith(PAYING_ACCOUNT)
                                 .designatingPayer(PAYING_ACCOUNT)
                                 .waitForExpiry()
-                                .withRelativeExpiry(SENDER_TXN, 8)
+                                .withRelativeExpiry(SENDER_TXN, 2)
                                 .recordingScheduledTxn()
                                 .via(CREATE_TX),
                         scheduleSign(BASIC_XFER)
@@ -373,9 +373,9 @@ public class ScheduleLongTermExecutionSpecs {
                                 .hasWaitForExpiry()
                                 .isNotExecuted()
                                 .isNotDeleted()
-                                .hasRelativeExpiry(SENDER_TXN, 8)
+                                .hasRelativeExpiry(SENDER_TXN, 2)
                                 .hasRecordedScheduledTxn(),
-                        sleepFor(9000),
+                        sleepFor(3000),
                         cryptoCreate("foo").via(TRIGGERING_TXN),
                         getScheduleInfo(BASIC_XFER).hasCostAnswerPrecheck(INVALID_SCHEDULE_ID),
                         withOpContext((spec, opLog) -> {
@@ -466,7 +466,7 @@ public class ScheduleLongTermExecutionSpecs {
                         cryptoCreate(PAYING_ACCOUNT),
                         scheduleCreate(BASIC_XFER, cryptoTransfer(tinyBarsFromTo(SENDER, RECEIVER, transferAmount)))
                                 .waitForExpiry()
-                                .withRelativeExpiry(SENDER_TXN, 8)
+                                .withRelativeExpiry(SENDER_TXN, 2)
                                 .payingWith(PAYING_ACCOUNT)
                                 .recordingScheduledTxn()
                                 .via(CREATE_TX))
@@ -477,9 +477,9 @@ public class ScheduleLongTermExecutionSpecs {
                                 .hasWaitForExpiry()
                                 .isNotExecuted()
                                 .isNotDeleted()
-                                .hasRelativeExpiry(SENDER_TXN, 8)
+                                .hasRelativeExpiry(SENDER_TXN, 2)
                                 .hasRecordedScheduledTxn(),
-                        sleepFor(9000),
+                        sleepFor(3000),
                         cryptoCreate("foo").via(TRIGGERING_TXN),
                         getScheduleInfo(BASIC_XFER).hasCostAnswerPrecheck(INVALID_SCHEDULE_ID),
                         withOpContext((spec, opLog) -> {
@@ -573,7 +573,7 @@ public class ScheduleLongTermExecutionSpecs {
                                 contractCall(SIMPLE_UPDATE, "set", BigInteger.valueOf(5), BigInteger.valueOf(42))
                                         .gas(300000L))
                         .waitForExpiry()
-                        .withRelativeExpiry(PAYING_ACCOUNT_TXN, 8)
+                        .withRelativeExpiry(PAYING_ACCOUNT_TXN, 2)
                         .designatingPayer(PAYING_ACCOUNT)
                         .alsoSigningWith(PAYING_ACCOUNT)
                         .recordingScheduledTxn()
@@ -584,9 +584,9 @@ public class ScheduleLongTermExecutionSpecs {
                                 .hasWaitForExpiry()
                                 .isNotExecuted()
                                 .isNotDeleted()
-                                .hasRelativeExpiry(PAYING_ACCOUNT_TXN, 8)
+                                .hasRelativeExpiry(PAYING_ACCOUNT_TXN, 2)
                                 .hasRecordedScheduledTxn(),
-                        sleepFor(9000),
+                        sleepFor(3000),
                         cryptoCreate("foo").via(TRIGGERING_TXN),
                         getScheduleInfo(BASIC_XFER).hasCostAnswerPrecheck(INVALID_SCHEDULE_ID),
                         getAccountBalance(PAYING_ACCOUNT)
@@ -621,7 +621,7 @@ public class ScheduleLongTermExecutionSpecs {
                                 BASIC_XFER,
                                 contractCreate(SIMPLE_UPDATE).gas(500_000L).adminKey(PAYING_ACCOUNT))
                         .waitForExpiry()
-                        .withRelativeExpiry(PAYING_ACCOUNT_TXN, 8)
+                        .withRelativeExpiry(PAYING_ACCOUNT_TXN, 2)
                         .designatingPayer(PAYING_ACCOUNT)
                         .alsoSigningWith(PAYING_ACCOUNT)
                         .recordingScheduledTxn()
@@ -632,9 +632,9 @@ public class ScheduleLongTermExecutionSpecs {
                                 .hasWaitForExpiry()
                                 .isNotExecuted()
                                 .isNotDeleted()
-                                .hasRelativeExpiry(PAYING_ACCOUNT_TXN, 8)
+                                .hasRelativeExpiry(PAYING_ACCOUNT_TXN, 2)
                                 .hasRecordedScheduledTxn(),
-                        sleepFor(9000),
+                        sleepFor(3000),
                         cryptoCreate("foo").via(TRIGGERING_TXN),
                         getScheduleInfo(BASIC_XFER).hasCostAnswerPrecheck(INVALID_SCHEDULE_ID),
                         // todo check white list here?
@@ -680,7 +680,7 @@ public class ScheduleLongTermExecutionSpecs {
                         cryptoCreate(RECEIVER).balance(noBalance),
                         scheduleCreate(BASIC_XFER, cryptoTransfer(tinyBarsFromTo(SENDER, RECEIVER, transferAmount)))
                                 .waitForExpiry()
-                                .withRelativeExpiry(SENDER_TXN, 8)
+                                .withRelativeExpiry(SENDER_TXN, 2)
                                 .payingWith(PAYING_ACCOUNT)
                                 .recordingScheduledTxn()
                                 .via(CREATE_TX),
@@ -698,9 +698,9 @@ public class ScheduleLongTermExecutionSpecs {
                                 .hasWaitForExpiry()
                                 .isNotExecuted()
                                 .isNotDeleted()
-                                .hasRelativeExpiry(SENDER_TXN, 8)
+                                .hasRelativeExpiry(SENDER_TXN, 2)
                                 .hasRecordedScheduledTxn(),
-                        sleepFor(9000),
+                        sleepFor(3000),
                         cryptoCreate("foo").via(TRIGGERING_TXN),
                         getScheduleInfo(BASIC_XFER).hasCostAnswerPrecheck(INVALID_SCHEDULE_ID),
                         getAccountBalance(SENDER).hasTinyBars(transferAmount),
@@ -728,7 +728,7 @@ public class ScheduleLongTermExecutionSpecs {
                         cryptoCreate(RECEIVER),
                         scheduleCreate(BASIC_XFER, cryptoTransfer(tinyBarsFromTo(SENDER, RECEIVER, transferAmount)))
                                 .waitForExpiry()
-                                .withRelativeExpiry(SENDER_TXN, 8)
+                                .withRelativeExpiry(SENDER_TXN, 2)
                                 .recordingScheduledTxn()
                                 .designatingPayer(PAYING_ACCOUNT)
                                 .via(CREATE_TX))
@@ -742,9 +742,9 @@ public class ScheduleLongTermExecutionSpecs {
                                 .hasWaitForExpiry()
                                 .isNotExecuted()
                                 .isNotDeleted()
-                                .hasRelativeExpiry(SENDER_TXN, 8)
+                                .hasRelativeExpiry(SENDER_TXN, 2)
                                 .hasRecordedScheduledTxn(),
-                        sleepFor(9000),
+                        sleepFor(3000),
                         cryptoCreate("foo").via(TRIGGERING_TXN),
                         getScheduleInfo(BASIC_XFER).hasCostAnswerPrecheck(INVALID_SCHEDULE_ID),
                         getTxnRecord(CREATE_TX).scheduled().hasAnswerOnlyPrecheck(RECORD_NOT_FOUND));
@@ -762,7 +762,7 @@ public class ScheduleLongTermExecutionSpecs {
                         cryptoCreate(RECEIVER),
                         scheduleCreate(BASIC_XFER, cryptoTransfer(tinyBarsFromTo(SENDER, RECEIVER, transferAmount)))
                                 .waitForExpiry()
-                                .withRelativeExpiry(SENDER_TXN, 8)
+                                .withRelativeExpiry(SENDER_TXN, 2)
                                 .recordingScheduledTxn()
                                 .designatingPayer(PAYING_ACCOUNT)
                                 .via(CREATE_TX))
@@ -776,9 +776,9 @@ public class ScheduleLongTermExecutionSpecs {
                                 .hasWaitForExpiry()
                                 .isNotExecuted()
                                 .isNotDeleted()
-                                .hasRelativeExpiry(SENDER_TXN, 8)
+                                .hasRelativeExpiry(SENDER_TXN, 2)
                                 .hasRecordedScheduledTxn(),
-                        sleepFor(9000),
+                        sleepFor(3000),
                         cryptoCreate("foo").via(TRIGGERING_TXN),
                         getScheduleInfo(BASIC_XFER).hasCostAnswerPrecheck(INVALID_SCHEDULE_ID),
                         withOpContext((spec, opLog) -> {
@@ -807,7 +807,7 @@ public class ScheduleLongTermExecutionSpecs {
                         cryptoCreate(RECEIVER).balance(noBalance),
                         scheduleCreate(BASIC_XFER, cryptoTransfer(tinyBarsFromTo(SENDER, RECEIVER, transferAmount)))
                                 .waitForExpiry()
-                                .withRelativeExpiry(SENDER_TXN, 8)
+                                .withRelativeExpiry(SENDER_TXN, 2)
                                 .recordingScheduledTxn()
                                 .payingWith(PAYING_ACCOUNT)
                                 .via(CREATE_TX),
@@ -823,9 +823,9 @@ public class ScheduleLongTermExecutionSpecs {
                                 .hasWaitForExpiry()
                                 .isNotExecuted()
                                 .isNotDeleted()
-                                .hasRelativeExpiry(SENDER_TXN, 8)
+                                .hasRelativeExpiry(SENDER_TXN, 2)
                                 .hasRecordedScheduledTxn(),
-                        sleepFor(9000),
+                        sleepFor(3000),
                         cryptoCreate("foo").via(TRIGGERING_TXN),
                         getScheduleInfo(BASIC_XFER).hasCostAnswerPrecheck(INVALID_SCHEDULE_ID),
                         getAccountBalance(SENDER).hasTinyBars(transferAmount),
@@ -848,7 +848,7 @@ public class ScheduleLongTermExecutionSpecs {
                         cryptoCreate(RECEIVER).balance(noBalance),
                         scheduleCreate(BASIC_XFER, cryptoTransfer(tinyBarsFromTo(SENDER, RECEIVER, transferAmount)))
                                 .waitForExpiry()
-                                .withRelativeExpiry(SENDER_TXN, 8)
+                                .withRelativeExpiry(SENDER_TXN, 2)
                                 .recordingScheduledTxn()
                                 .designatingPayer(PAYING_ACCOUNT)
                                 .alsoSigningWith(PAYING_ACCOUNT)
@@ -867,9 +867,9 @@ public class ScheduleLongTermExecutionSpecs {
                                 .hasWaitForExpiry()
                                 .isNotExecuted()
                                 .isNotDeleted()
-                                .hasRelativeExpiry(SENDER_TXN, 8)
+                                .hasRelativeExpiry(SENDER_TXN, 2)
                                 .hasRecordedScheduledTxn(),
-                        sleepFor(9000),
+                        sleepFor(3000),
                         cryptoCreate("foo").via(TRIGGERING_TXN),
                         getScheduleInfo(BASIC_XFER).hasCostAnswerPrecheck(INVALID_SCHEDULE_ID),
                         getAccountBalance(SENDER).hasTinyBars(transferAmount),
@@ -897,7 +897,7 @@ public class ScheduleLongTermExecutionSpecs {
                                         cryptoTransfer(
                                                 tinyBarsFromToWithInvalidAmounts(SENDER, RECEIVER, transferAmount)))
                                 .waitForExpiry()
-                                .withRelativeExpiry(SENDER_TXN, 8)
+                                .withRelativeExpiry(SENDER_TXN, 2)
                                 .designatingPayer(PAYING_ACCOUNT)
                                 .recordingScheduledTxn()
                                 .hasKnownStatus(INVALID_ACCOUNT_AMOUNTS))
@@ -919,7 +919,7 @@ public class ScheduleLongTermExecutionSpecs {
                         cryptoCreate(RECEIVER).balance(noBalance),
                         scheduleCreate(FAILED_XFER, cryptoTransfer(tinyBarsFromTo(SENDER, RECEIVER, transferAmount)))
                                 .waitForExpiry()
-                                .withRelativeExpiry(SENDER_TXN, 8)
+                                .withRelativeExpiry(SENDER_TXN, 2)
                                 .designatingPayer(PAYING_ACCOUNT)
                                 .recordingScheduledTxn()
                                 .via(CREATE_TX))
@@ -933,9 +933,9 @@ public class ScheduleLongTermExecutionSpecs {
                                 .hasWaitForExpiry()
                                 .isNotExecuted()
                                 .isNotDeleted()
-                                .hasRelativeExpiry(SENDER_TXN, 8)
+                                .hasRelativeExpiry(SENDER_TXN, 2)
                                 .hasRecordedScheduledTxn(),
-                        sleepFor(9000),
+                        sleepFor(3000),
                         cryptoCreate("foo").via(TRIGGERING_TXN),
                         getScheduleInfo(FAILED_XFER).hasCostAnswerPrecheck(INVALID_SCHEDULE_ID),
                         getAccountBalance(SENDER).hasTinyBars(senderBalance),
@@ -966,7 +966,7 @@ public class ScheduleLongTermExecutionSpecs {
                         cryptoCreate(RECEIVER).balance(noBalance),
                         scheduleCreate(FAILED_XFER, cryptoTransfer(tinyBarsFromTo(SENDER, RECEIVER, transferAmount)))
                                 .waitForExpiry()
-                                .withRelativeExpiry(SENDER_TXN, 8)
+                                .withRelativeExpiry(SENDER_TXN, 2)
                                 .recordingScheduledTxn()
                                 .designatingPayer(PAYING_ACCOUNT)
                                 .via(CREATE_TX))
@@ -983,9 +983,9 @@ public class ScheduleLongTermExecutionSpecs {
                                 .hasWaitForExpiry()
                                 .isNotExecuted()
                                 .isNotDeleted()
-                                .hasRelativeExpiry(SENDER_TXN, 8)
+                                .hasRelativeExpiry(SENDER_TXN, 2)
                                 .hasRecordedScheduledTxn(),
-                        sleepFor(9000),
+                        sleepFor(3000),
                         cryptoCreate("foo").via(TRIGGERING_TXN),
                         getScheduleInfo(FAILED_XFER).hasCostAnswerPrecheck(INVALID_SCHEDULE_ID),
                         getAccountBalance(RECEIVER).hasTinyBars(noBalance),
@@ -1020,7 +1020,7 @@ public class ScheduleLongTermExecutionSpecs {
                                                 tinyBarsFromTo(SENDER_2, RECEIVER, 1L),
                                                 tinyBarsFromTo(SENDER_3, RECEIVER, 1L)))
                                 .waitForExpiry()
-                                .withRelativeExpiry(WEIRDLY_POPULAR_KEY_TXN, 8)
+                                .withRelativeExpiry(WEIRDLY_POPULAR_KEY_TXN, 2)
                                 .payingWith(DEFAULT_PAYER)
                                 .recordingScheduledTxn()
                                 .via("creation"))
@@ -1031,9 +1031,9 @@ public class ScheduleLongTermExecutionSpecs {
                                 .hasWaitForExpiry()
                                 .isNotExecuted()
                                 .isNotDeleted()
-                                .hasRelativeExpiry(WEIRDLY_POPULAR_KEY_TXN, 8)
+                                .hasRelativeExpiry(WEIRDLY_POPULAR_KEY_TXN, 2)
                                 .hasRecordedScheduledTxn(),
-                        sleepFor(9000),
+                        sleepFor(3000),
                         cryptoCreate("foo").via(TRIGGERING_TXN),
                         getScheduleInfo(schedule).hasCostAnswerPrecheck(INVALID_SCHEDULE_ID),
                         getAccountBalance(SENDER_1).hasTinyBars(0L),
@@ -1068,7 +1068,7 @@ public class ScheduleLongTermExecutionSpecs {
                                 .payingWith(PAYING_ACCOUNT)
                                 .waitForExpiry()
                                 .recordingScheduledTxn()
-                                .withRelativeExpiry(PAYER_TXN, 8)
+                                .withRelativeExpiry(PAYER_TXN, 2)
                                 .via(SUCCESS_TXN))
                 .when(scheduleSign(VALID_SCHEDULE)
                         .alsoSigningWith(GENESIS)
@@ -1080,9 +1080,9 @@ public class ScheduleLongTermExecutionSpecs {
                                 .hasWaitForExpiry()
                                 .isNotExecuted()
                                 .isNotDeleted()
-                                .hasRelativeExpiry(PAYER_TXN, 8)
+                                .hasRelativeExpiry(PAYER_TXN, 2)
                                 .hasRecordedScheduledTxn(),
-                        sleepFor(9000),
+                        sleepFor(3000),
                         cryptoCreate("foo").via(TRIGGERING_TXN),
                         getScheduleInfo(VALID_SCHEDULE).hasCostAnswerPrecheck(INVALID_SCHEDULE_ID),
                         freezeAbort().payingWith(GENESIS),
@@ -1120,7 +1120,7 @@ public class ScheduleLongTermExecutionSpecs {
                                 .withEntityMemo(randomUppercase(100))
                                 .designatingPayer(PAYING_ACCOUNT_2)
                                 .waitForExpiry()
-                                .withRelativeExpiry(PAYER_TXN, 8)
+                                .withRelativeExpiry(PAYER_TXN, 2)
                                 .payingWith(PAYING_ACCOUNT)
                         // future throttles will be exceeded because there is no throttle
                         // for freeze
@@ -1145,7 +1145,7 @@ public class ScheduleLongTermExecutionSpecs {
                                 .designatingPayer(SYSTEM_ADMIN)
                                 .payingWith(PAYING_ACCOUNT)
                                 .waitForExpiry()
-                                .withRelativeExpiry(PAYER_TXN, 8)
+                                .withRelativeExpiry(PAYER_TXN, 2)
                                 .recordingScheduledTxn()
                                 .via(SUCCESS_TXN))
                 .when(scheduleSign(VALID_SCHEDULE)
@@ -1158,9 +1158,9 @@ public class ScheduleLongTermExecutionSpecs {
                                 .hasWaitForExpiry()
                                 .isNotExecuted()
                                 .isNotDeleted()
-                                .hasRelativeExpiry(PAYER_TXN, 8)
+                                .hasRelativeExpiry(PAYER_TXN, 2)
                                 .hasRecordedScheduledTxn(),
-                        sleepFor(9000),
+                        sleepFor(3000),
                         cryptoCreate("foo").via(TRIGGERING_TXN),
                         getScheduleInfo(VALID_SCHEDULE).hasCostAnswerPrecheck(INVALID_SCHEDULE_ID),
                         withOpContext((spec, opLog) -> {
@@ -1189,7 +1189,7 @@ public class ScheduleLongTermExecutionSpecs {
                                 .designatingPayer(PAYING_ACCOUNT_2)
                                 .payingWith(PAYING_ACCOUNT)
                                 .waitForExpiry()
-                                .withRelativeExpiry(PAYER_TXN, 8)
+                                .withRelativeExpiry(PAYER_TXN, 2)
                                 .recordingScheduledTxn()
                                 .via(SUCCESS_TXN))
                 .when(scheduleSign(VALID_SCHEDULE)
@@ -1202,9 +1202,9 @@ public class ScheduleLongTermExecutionSpecs {
                                 .hasWaitForExpiry()
                                 .isNotExecuted()
                                 .isNotDeleted()
-                                .hasRelativeExpiry(PAYER_TXN, 8)
+                                .hasRelativeExpiry(PAYER_TXN, 2)
                                 .hasRecordedScheduledTxn(),
-                        sleepFor(9000),
+                        sleepFor(3000),
                         cryptoCreate("foo").via(TRIGGERING_TXN),
                         getScheduleInfo(VALID_SCHEDULE).hasCostAnswerPrecheck(INVALID_SCHEDULE_ID),
                         withOpContext((spec, opLog) -> {
@@ -1231,7 +1231,7 @@ public class ScheduleLongTermExecutionSpecs {
                                 .designatingPayer(SYSTEM_DELETE_ADMIN)
                                 .payingWith(PAYING_ACCOUNT)
                                 .waitForExpiry()
-                                .withRelativeExpiry(PAYER_TXN, 8)
+                                .withRelativeExpiry(PAYER_TXN, 2)
                                 .recordingScheduledTxn()
                                 .via(SUCCESS_TXN))
                 .when(scheduleSign(VALID_SCHEDULE)
@@ -1244,9 +1244,9 @@ public class ScheduleLongTermExecutionSpecs {
                                 .hasWaitForExpiry()
                                 .isNotExecuted()
                                 .isNotDeleted()
-                                .hasRelativeExpiry(PAYER_TXN, 8)
+                                .hasRelativeExpiry(PAYER_TXN, 2)
                                 .hasRecordedScheduledTxn(),
-                        sleepFor(9000),
+                        sleepFor(3000),
                         cryptoCreate("foo").via(TRIGGERING_TXN),
                         getScheduleInfo(VALID_SCHEDULE).hasCostAnswerPrecheck(INVALID_SCHEDULE_ID),
                         getFileInfo("misc").nodePayment(1_234L).hasAnswerOnlyPrecheck(INVALID_FILE_ID),
@@ -1277,7 +1277,7 @@ public class ScheduleLongTermExecutionSpecs {
                                 .designatingPayer(PAYING_ACCOUNT_2)
                                 .payingWith(PAYING_ACCOUNT)
                                 .waitForExpiry()
-                                .withRelativeExpiry(PAYER_TXN, 8)
+                                .withRelativeExpiry(PAYER_TXN, 2)
                         // future throttles will be exceeded because there is no throttle
                         // for system delete
                         // and the custom payer is not exempt from throttles like and admin
