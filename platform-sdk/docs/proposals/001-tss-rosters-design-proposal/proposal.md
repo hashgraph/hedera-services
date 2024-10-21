@@ -343,6 +343,8 @@ Starting in a Genesis Network will require a `Genesis Roster`, while a Network T
 Normal restart and Software Upgrade modes will use the existing roster present in the state or fallback to creating one from `config.txt` file as described in the following diagram.
 ![](TSS%20Roster%20Lifecycle-Proposed%20Startup%20Behavior.drawio.svg)
 
+The mechanism of arriving at Genesis or Override Roster is as follows.
+
 #### Genesis Roster
 
 A `Genesis Roster` is an optional Roster that DevOps may provide for the explicit purpose of starting a Genesis Network
@@ -440,7 +442,7 @@ Setting both rosters in the state builds the roster history in the state, which 
 
 #### Edge Case2: Previous Active Roster has a hash collision with Active Roster
 
-In the rare case the active `Roster` is the same as the Previous active `Roster`, a call to `setActiveRoster` will result in the Roster not getting stored as it will be deemed to already exist.
+In the rare case the active `Roster` is the same as the Previous active `Roster`, a call to `setActiveRoster` will result in the Roster not getting stored as it will be found to already exist.
 This is expected to happen the very first time the network adopts the use of Rosters, where the active `Roster`constructed from `config.txt` and the Previous active `Roster` constructed from the `currentAddressBook` in the `PlatformState` might be the same.
 In this case, as the Roster History will contain only one element, the active `Roster` will be duplicated in the Roster History instead.
 The Round number assignments used in Edge Case 1 above will still apply.
@@ -450,7 +452,7 @@ The Round number assignments used in Edge Case 1 above will still apply.
 A new feature flag will be introduced to signify whether to use the determination logic described in the previous section or continue to use legacy `config.txt` to create/determine Address Books.
 The feature flag will be set in the configuration file and retrievable via some call similar to `config.useRosterConfigTxt()`.
 
-When this feature flag is turned off, the network will load AddressBook from `config.txt` and create a Roster from this AddressBook for use by the Platform code.
+When this feature flag is turned off, the network will load AddressBook from `config.txt` and create a Roster from this AddressBook for use by the Platform code as done today.
 The current and previous active address books in the `PlatformState` will continue to be used.
 
 Regardless of the status of this flag, on the Platform side of the codebase, the use of `AddressBook`s will be replaced by `Roster`s.
