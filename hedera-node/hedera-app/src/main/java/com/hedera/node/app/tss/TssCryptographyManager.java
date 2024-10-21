@@ -31,6 +31,7 @@ import com.hedera.node.app.tss.pairings.PairingPublicKey;
 import com.hedera.node.app.tss.stores.WritableTssBaseStore;
 import com.swirlds.common.crypto.Signature;
 import edu.umd.cs.findbugs.annotations.NonNull;
+
 import java.util.BitSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -38,6 +39,7 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -68,9 +70,9 @@ public class TssCryptographyManager {
         final var tssMessageBodies = tssStore.getTssMessages(targetRosterHash);
 
         final var isVoteSubmitted = tssStore.getVote(TssVoteMapKey.newBuilder()
-                        .nodeId(context.networkInfo().selfNodeInfo().nodeId())
-                        .rosterHash(targetRosterHash)
-                        .build())
+                .nodeId(context.networkInfo().selfNodeInfo().nodeId())
+                .rosterHash(targetRosterHash)
+                .build())
                 != null;
         // If the node didn't submit a TssVoteTransaction, validate all TssMessages and compute the vote bit set
         // to see if a threshold is met
@@ -103,25 +105,30 @@ public class TssCryptographyManager {
             final var ledgerId = tssLibrary.aggregatePublicShares(computedPublicShares);
             final var signature = gossip.sign(ledgerId.publicKey().toBytes());
 
-            final BitSet tssVoteBitSet = computeTssVoteBitSet(validTssOps, tssParticipantDirectory);
+            final BitSet tssVoteBitSet = computeTssVoteBitSet(validTssOps);
             return new LedgerIdWithSignature(ledgerId, signature, tssVoteBitSet);
         });
     }
 
-    private BitSet computeTssVoteBitSet(
-            @NonNull final List<TssMessageTransactionBody> tssMessageBodies,
-            final TssParticipantDirectory tssParticipantDirectory) {
+    /**
+     * Compute the TSS vote bit set. No need to validate the TSS messages here as they have already been validated.
+     * @param validIssBodies the valid TSS messages
+     * @return the TSS vote bit set
+     */
+    private BitSet computeTssVoteBitSet(@NonNull final List<TssMessageTransactionBody> validIssBodies) {
         final var tssVoteBitSet = new BitSet();
-        for (TssMessageTransactionBody op : tssMessageBodies) {
-            final var isValid = tssLibrary.verifyTssMessage(
-                    tssParticipantDirectory, new TssMessage(op.tssMessage().toByteArray()));
-            if (!isValid) {
-                tssVoteBitSet.set((int) op.shareIndex());
-            }
+        for (TssMessageTransactionBody op : validIssBodies) {
+            tssVoteBitSet.set((int) op.shareIndex());
         }
         return tssVoteBitSet;
     }
 
+    /**
+     * Check if the threshold is met. The threshold is met if more than half the consensus weight has been received.
+     * @param validTssMessages the valid TSS messages
+     * @param tssParticipantDirectory the TSS participant directory
+     * @return true if the threshold is met, false otherwise
+     */
     private boolean isThresholdMet(
             @NonNull final List<TssMessageTransactionBody> validTssMessages,
             @NonNull final TssParticipantDirectory tssParticipantDirectory) {
@@ -130,18 +137,7 @@ public class TssCryptographyManager {
         return validTssMessages.size() >= ((numShares + 2) / 2);
     }
 
-    public static Map<Long, Long> computeNodeShares(
-            @NonNull final List<RosterEntry> rosterEntries, final long maxTssMessagesPerNode) {
-        final var maxWeight =
-                rosterEntries.stream().mapToLong(RosterEntry::weight).max().orElse(0);
-        final var shares = new LinkedHashMap<Long, Long>();
-        for (final var entry : rosterEntries) {
-            final var numShares = ((maxTssMessagesPerNode * entry.weight() + maxWeight - 1) / maxWeight);
-            shares.put(entry.nodeId(), numShares);
-        }
-        return shares;
-    }
-
     public record LedgerIdWithSignature(
-            @NonNull PairingPublicKey ledgerId, @NonNull Signature signature, @NonNull BitSet tssVoteBitSet) {}
+            @NonNull PairingPublicKey ledgerId, @NonNull Signature signature, @NonNull BitSet tssVoteBitSet) {
+    }
 }
