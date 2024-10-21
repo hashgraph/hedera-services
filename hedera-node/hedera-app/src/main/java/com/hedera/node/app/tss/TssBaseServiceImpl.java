@@ -21,7 +21,6 @@ import static com.hedera.node.app.tss.TssBaseService.Status.PENDING_LEDGER_ID;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.state.roster.Roster;
-import com.hedera.hapi.services.auxiliary.tss.TssMessageTransactionBody;
 import com.hedera.node.app.spi.AppContext;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.tss.handlers.TssHandlers;
@@ -31,10 +30,12 @@ import com.hedera.node.app.tss.stores.ReadableTssBaseStore;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.platform.roster.RosterUtils;
+import com.swirlds.platform.state.service.WritableRosterStore;
 import com.swirlds.state.spi.SchemaRegistry;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executor;
@@ -114,10 +115,14 @@ public class TssBaseServiceImpl implements TssBaseService {
     }
 
     @Override
-    public void setCandidateRoster(@NonNull final Roster roster, @NonNull final HandleContext context) {
-        requireNonNull(roster);
-        // (TSS-FUTURE) https://github.com/hashgraph/hedera-services/issues/14748
-        tssSubmissions.submitTssMessage(TssMessageTransactionBody.DEFAULT, context);
+    public void setCandidateRoster(@NonNull final Roster newCandidate, @NonNull final HandleContext context) {
+        requireNonNull(newCandidate);
+
+        final var rosterStore = context.storeFactory().writableStore(WritableRosterStore.class);
+        if (!Objects.equals(newCandidate, rosterStore.getCandidateRoster())
+                && !Objects.equals(newCandidate, rosterStore.getActiveRoster())) {
+            rosterStore.setCandidateRoster(newCandidate);
+        }
     }
 
     @Override

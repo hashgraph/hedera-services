@@ -22,11 +22,12 @@ import static java.time.ZoneOffset.UTC;
 import static java.util.Objects.requireNonNull;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.records.ReadableBlockRecordStore;
+import com.hedera.node.app.service.addressbook.ReadableNodeStore;
 import com.hedera.node.app.service.token.impl.handlers.staking.EndOfStakingPeriodUpdater;
 import com.hedera.node.app.service.token.records.TokenContext;
+import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.tss.TssBaseService;
 import com.hedera.node.app.workflows.handle.Dispatch;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
@@ -69,6 +70,10 @@ public class NodeStakeUpdates {
      * This time hook is responsible for performing necessary staking updates and distributing staking
      * rewards. This should only be done during handling of the first transaction of each new staking
      * period, which staking period usually starts at midnight UTC.
+     *
+     * <p>Given successful processing of staking updates, and keying candidate TSS rosters is enabled,
+     * this time hook also signals to the {@link TssBaseService} that a new candidate roster – constructed
+     * from the new weights calculated herein for staking – is available.
      *
      * @param dispatch     the dispatch
      * @param stack the savepoint stack
@@ -129,12 +134,12 @@ public class NodeStakeUpdates {
                 logger.error("CATASTROPHIC failure updating end-of-day stakes", e);
                 stack.rollbackFullStack();
             }
+
+            // If enabled, initialize a new candidate roster
             final var config = tokenContext.configuration();
             final var tssConfig = config.getConfigData(TssConfig.class);
             if (tssConfig.keyCandidateRoster()) {
-                final var context = dispatch.handleContext();
-                // C.f. https://github.com/hashgraph/hedera-services/issues/14748
-                tssBaseService.setCandidateRoster(Roster.DEFAULT, context);
+                keyNewRoster(dispatch.handleContext());
             }
         }
     }
@@ -152,6 +157,13 @@ public class NodeStakeUpdates {
             return getPeriod(currentConsensusTime, stakingPeriod * MINUTES_TO_MILLISECONDS)
                     > getPeriod(previousConsensusTime, stakingPeriod * MINUTES_TO_MILLISECONDS);
         }
+    }
+
+    private void keyNewRoster(@NonNull final HandleContext handleContext) {
+        final var nodeStore = handleContext.storeFactory().readableStore(ReadableNodeStore.class);
+        final var newCandidateRoster = nodeStore.newRosterFromNodes();
+
+        tssBaseService.setCandidateRoster(newCandidateRoster, handleContext);
     }
 
     private static boolean isLaterUtcDay(@NonNull final Instant now, @NonNull final Instant then) {

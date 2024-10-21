@@ -17,32 +17,50 @@
 package com.hedera.node.app.workflows.handle.steps;
 
 import static com.hedera.node.app.fixtures.AppTestBase.DEFAULT_CONFIG;
+import static com.hedera.node.app.service.addressbook.AddressBookHelper.NODES_KEY;
 import static com.hedera.node.app.service.token.impl.handlers.staking.StakePeriodManager.DEFAULT_STAKING_PERIOD_MINS;
+import static com.hedera.node.app.tss.TssBaseServiceTest.NODE_1;
+import static com.hedera.node.app.tss.TssBaseServiceTest.NODE_2;
+import static com.hedera.node.app.tss.TssBaseServiceTest.NODE_3;
 import static com.hedera.node.config.types.StreamMode.BLOCKS;
 import static com.hedera.node.config.types.StreamMode.RECORDS;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.notNull;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 
 import com.hedera.hapi.node.base.Timestamp;
+import com.hedera.hapi.node.state.addressbook.Node;
 import com.hedera.hapi.node.state.blockrecords.BlockInfo;
+import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.transaction.ExchangeRateSet;
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.records.ReadableBlockRecordStore;
+import com.hedera.node.app.service.addressbook.ReadableNodeStore;
+import com.hedera.node.app.service.addressbook.impl.ReadableNodeStoreImpl;
 import com.hedera.node.app.service.token.impl.handlers.staking.EndOfStakingPeriodUpdater;
 import com.hedera.node.app.service.token.records.TokenContext;
+import com.hedera.node.app.spi.store.StoreFactory;
+import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.tss.TssBaseService;
 import com.hedera.node.app.workflows.handle.Dispatch;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.node.config.data.StakingConfig;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
+import com.hedera.node.config.types.StreamMode;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.state.spi.ReadableKVState;
+import com.swirlds.state.spi.ReadableStates;
+import com.swirlds.state.test.fixtures.MapReadableKVState;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Arrays;
+import java.util.Map;
+import java.util.stream.Collectors;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -74,6 +92,15 @@ class NodeStakeUpdatesTest {
 
     @Mock
     private Dispatch dispatch;
+
+    @Mock
+    private ReadableStates readableStates;
+
+    @Mock
+    private HandleContext handleContext;
+
+    @Mock
+    private StoreFactory storeFactory;
 
     private NodeStakeUpdates subject;
 
@@ -254,14 +281,67 @@ class NodeStakeUpdatesTest {
         Assertions.assertThat(result).isTrue();
     }
 
+    @Test
+    void stakingPeriodDoesntSetCandidateRosterForDisabledFlag() {
+        // Simulate staking information
+        given(context.configuration()).willReturn(newConfig(990, false));
+        given(blockStore.getLastBlockInfo())
+                .willReturn(BlockInfo.newBuilder()
+                        .consTimeOfLastHandledTxn(new Timestamp(CONSENSUS_TIME_1234567.getEpochSecond(), 0))
+                        .build());
+        given(context.consensusTime()).willReturn(CONSENSUS_TIME_1234567.plus(Duration.ofDays(2)));
+
+        subject.process(dispatch, stack, context, StreamMode.RECORDS, false, Instant.EPOCH);
+        verifyNoInteractions(tssBaseService);
+    }
+
+    @Test
+    void stakingPeriodSetsCandidateRosterForEnabledFlag() {
+        // Simulate staking information
+        given(blockStore.getLastBlockInfo())
+                .willReturn(BlockInfo.newBuilder()
+                        .consTimeOfLastHandledTxn(new Timestamp(CONSENSUS_TIME_1234567.getEpochSecond(), 0))
+                        .build());
+        given(context.consensusTime()).willReturn(CONSENSUS_TIME_1234567.plus(Duration.ofDays(2)));
+
+        // Enable keyCandidateRoster
+        given(context.configuration()).willReturn(newConfig(990, true));
+
+        // Simulate an updated address book
+        final var nodeStore = simulateNodes(NODE_1, NODE_2, NODE_3);
+        given(dispatch.handleContext()).willReturn(handleContext);
+        given(handleContext.storeFactory()).willReturn(storeFactory);
+        given(storeFactory.readableStore(ReadableNodeStore.class)).willReturn(nodeStore);
+
+        subject.process(dispatch, stack, context, StreamMode.RECORDS, false, Instant.EPOCH);
+        verify(tssBaseService).setCandidateRoster(notNull(), notNull());
+    }
+
+    private ReadableNodeStore simulateNodes(Node... nodes) {
+        Map<EntityNumber, Node> translated = Arrays.stream(nodes)
+                .collect(Collectors.toMap(
+                        n -> EntityNumber.newBuilder().number(n.nodeId()).build(), node -> node));
+        ReadableKVState<EntityNumber, Node> nodeReadableKVState = new MapReadableKVState<>(NODES_KEY, translated);
+        given(readableStates.<EntityNumber, Node>get(NODES_KEY)).willReturn(nodeReadableKVState);
+        final ReadableNodeStore nodeStore = new ReadableNodeStoreImpl(readableStates);
+        given(context.readableStore(ReadableNodeStore.class)).willReturn(nodeStore);
+
+        return nodeStore;
+    }
+
     private Configuration newPeriodMinsConfig() {
         return newPeriodMinsConfig(DEFAULT_STAKING_PERIOD_MINS);
     }
 
     private Configuration newPeriodMinsConfig(final long periodMins) {
+        return newConfig(periodMins, false);
+    }
+
+    private Configuration newConfig(final long periodMins, final boolean keyCandidateRoster) {
         return HederaTestConfigBuilder.create()
                 .withConfigDataType(StakingConfig.class)
                 .withValue("staking.periodMins", periodMins)
+                .withValue("tss.keyCandidateRoster", keyCandidateRoster)
                 .getOrCreateConfig();
     }
 }

@@ -146,4 +146,9 @@ message Node {
      * This field is REQUIRED and MUST NOT be set to an empty `KeyList`.
      */
     proto.Key admin_key = 10;
+
+    /**
+
+     */
+    proto.Key tss_encryption_key = 11;
 }

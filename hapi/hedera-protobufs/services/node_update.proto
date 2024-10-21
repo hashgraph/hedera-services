@@ -162,4 +162,9 @@ message NodeUpdateTransactionBody {
      * If set, this field MUST NOT be set to an empty `KeyList`.
      */
     proto.Key admin_key = 8;
+
+    /**
+
+ */
+    proto.Key tss_encryption_key = 9;
 }

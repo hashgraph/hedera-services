@@ -246,7 +246,8 @@ public class AddressBookTestBase {
                 Bytes.wrap(grpcCertificateHash),
                 0,
                 deleted,
-                key);
+                key,
+                anotherKey);
     }
 
     protected void givenValidNodeWithAdminKey(Key adminKey) {
@@ -260,7 +261,8 @@ public class AddressBookTestBase {
                 Bytes.wrap(grpcCertificateHash),
                 0,
                 false,
-                adminKey);
+                adminKey,
+                anotherKey);
     }
 
     protected Node createNode() {
@@ -274,6 +276,7 @@ public class AddressBookTestBase {
                 .grpcCertificateHash(Bytes.wrap(grpcCertificateHash))
                 .weight(0)
                 .adminKey(key)
+                .tssEncryptionKey(anotherKey)
                 .build();
     }
 
