@@ -34,8 +34,8 @@ jobs:
     name: Fetch Latest Build Candidate
     runs-on: network-node-linux-medium
     outputs:
-      build_candidate_exists: ${{ steps.find-build-candidates.outputs.build_candidate_exists }}
-      build_candidate_commit: ${{ steps.find-build-candidates.outputs.build_candidate_commit }}
+      build-candidate-exists: ${{ steps.find-build-candidates.outputs.build-candidate-exists }}
+      build-candidate-commit: ${{ steps.find-build-candidates.outputs.build-candidate-commit }}
     steps:
       - name: Harden Runner
         uses: step-security/harden-runner@f086349bfa2bd1361f7909c78558e816508cdc10 # v2.8.0
@@ -54,17 +54,20 @@ jobs:
         id: find-build-candidates
         run: |
           TAG_PATTERN="xts-pass-*"
-          if [ $(git tag --list "${TAG_PATTERN}") ]; then
-            echo "build_candidate_exists=true" >> $GITHUB_OUTPUT
-            CANDIDATE_TAG=`git tag --list --sort=-version:refname ${TAG_PATTERN} | head --lines 1`
-            CANDIDATE_COMMIT=`git rev-list --max-count 1 ${CANDIDATE_TAG}`
-            git branch --contains ${CANDIDATE_COMMIT} | grep --quiet develop
-            echo "build_candidate_commit=${CANDIDATE_COMMIT}" >> $GITHUB_OUTPUT
-            echo "### Build Candidate Found" >>  $GITHUB_STEP_SUMMARY
-            echo "build_candidate_commit=${CANDIDATE_COMMIT}" >> $GITHUB_STEP_SUMMARY
-            echo "build_candidate_tag=${CANDIDATE_TAG}" >> ${GITHUB_STEP_SUMMARY}
-            git tag --delete $(git tag --list ${TAG_PATTERN})
-            git push --delete origin $(git tag --list ${TAG_PATTERN})
+          CANDIDATE_TAG=$(git tag --list --sort=-version:refname ${TAG_PATTERN} | head --lines 1)
+          if [[ -n "${CANDIDATE_TAG} ]]; then
+            CANDIDATE_COMMIT=$(git rev-list --max-count 1 ${CANDIDATE_TAG})
+            if [[ $(git branch --contains ${CANDIDATE_COMMIT} | grep --quiet develop) -eq 0 ]]; then
+              echo "build-candidate-exists=true" >> $GITHUB_OUTPUT
+              echo "build-candidate-commit=${CANDIDATE_COMMIT}" >> $GITHUB_OUTPUT
+              echo "### Build Candidate Found" >>  $GITHUB_STEP_SUMMARY
+              echo "build-candidate-commit=${CANDIDATE_COMMIT}" >> $GITHUB_STEP_SUMMARY
+              echo "build_candidate_tag=${CANDIDATE_TAG}" >> ${GITHUB_STEP_SUMMARY}
+              git tag --delete $(git tag --list ${TAG_PATTERN})
+              git push --delete origin $(git tag --list ${TAG_PATTERN})
+            else
+              gh run cancel ${{ github.run_id }}
+            fi
           else
             gh run cancel ${{ github.run_id }}
           fi
@@ -73,7 +76,7 @@ jobs:
     name: Promote Build Candidate
     runs-on: network-node-linux-medium
     needs: determine-build-candidate
-    if: ${{ needs.determine-build-candidate.result == 'success' && needs.determine-build-candidate.outputs.build_candidate_exists == 'true' }}
+    if: ${{ needs.determine-build-candidate.result == 'success' && needs.determine-build-candidate.outputs.build-candidate-exists == 'true' }}
     steps:
       - name: Harden Runner
         uses: step-security/harden-runner@f086349bfa2bd1361f7909c78558e816508cdc10 # v2.8.0
@@ -82,11 +85,11 @@ jobs:
 
       - name: Checkout Tagged Code
         id: checkout-tagged-code
-        if: ${{ needs.determine-build-candidate.build_candidate_exists == 'true' }}
+        if: ${{ needs.determine-build-candidate.build-candidate-exists == 'true' }}
         uses: actions/checkout@eef61447b9ff4aafe5dcd4e0bbf5d482be7e7871 # v4.2.1
         with:
           fetch-depth: '0'
-          ref: ${{ needs.determine-build-candidate.outputs.build_candidate_commit }}
+          ref: ${{ needs.determine-build-candidate.outputs.build-candidate-commit }}
           token: ${{ secrets.GH_ACCESS_TOKEN }}
 
       - name: Import GPG Key
@@ -130,7 +133,7 @@ jobs:
     needs:
       - determine-build-candidate
       - promote-build-candidate
-    if: ${{ !cancelled() && always() && (needs.determine-build-candidate.result != 'success' || needs.promote-build-candidate.result != 'success') }}
+    if: ${{ (needs.determine-build-candidate.result != 'success' || needs.promote-build-candidate.result != 'success') && !cancelled() && always() }}
     steps:
       - name: Harden Runner
         uses: step-security/harden-runner@f086349bfa2bd1361f7909c78558e816508cdc10 # v2.8.0

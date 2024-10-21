@@ -87,38 +87,19 @@ jobs:
   deploy-ci-trigger:
     name: Trigger CI Flows
     runs-on: network-node-linux-medium
-    if: ${{ !github.repository.fork }}
+    needs: code
+    if: ${{ needs.code.result == 'success' }}
     steps:
       - name: Harden Runner
         uses: step-security/harden-runner@f086349bfa2bd1361f7909c78558e816508cdc10 # v2.8.0
         with:
           egress-policy: audit
 
-      - name: Checkout Code
-        uses: actions/checkout@eef61447b9ff4aafe5dcd4e0bbf5d482be7e7871 # v4.2.1
-        with:
-          fetch-depth: '0'
-          ref: develop
-          token: ${{ secrets.GH_ACCESS_TOKEN }}
-
-      - name: Get commit reference
-        id: get-commit-id
-        run: |
-          XTS_COMMIT=`git rev-list --max-count 1 HEAD`; echo $XTS_COMMIT
-          echo "commit_id=${XTS_COMMIT}" >>"${GITHUB_OUTPUT}"
-
-      - name: Trigger ZXF Prepare Extended Test Suite
+      - name: Trigger ZXF Deploy Production Release
         uses: step-security/workflow-dispatch@4d1049025980f72b1327cbfdeecb07fe7a20f577 # v1.2.4
         with:
-          workflow: .github/workflows/zxf-prepare-extended-test-suite.yaml
+          workflow: .github/workflows/node-flow-deploy-release-artifact.yaml
           repo: hashgraph/hedera-services # ensure we are executing in the hashgraph org
           token: secrets.GH_ACCESS_TOKEN
-          inputs: '{ "ref": "${{ steps.get-commit-id.outputs.commit_id }}" }'
+          inputs: '{ "ref": "${{ inputs.ref }}" }'
 
-      - name: Trigger ZXF Deploy Integration
-        uses: step-security/workflow-dispatch@4d1049025980f72b1327cbfdeecb07fe7a20f577 # v1.2.4
-        with:
-          workflow: .github/workflows/node-zxf-deploy-integration.yaml
-          repo: hashgraph/hedera-services # ensure we are executing in the hashgraph org
-          token: secrets.GH_ACCESS_TOKEN
-          inputs: '{ "data": "${{ toJSON(github.event) }}" }'
