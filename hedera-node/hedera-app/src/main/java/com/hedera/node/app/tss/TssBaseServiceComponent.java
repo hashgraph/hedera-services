@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.tss;
 
+import com.hedera.node.app.service.contract.impl.exec.TransactionModule;
 import com.hedera.node.app.spi.AppContext;
 import com.hedera.node.app.tss.handlers.TssMessageHandler;
 import com.hedera.node.app.tss.handlers.TssSubmissions;
@@ -26,15 +27,14 @@ import java.util.concurrent.Executor;
 import javax.inject.Singleton;
 
 @Singleton
-@Component()
+@Component(modules = {TransactionModule.class, TssModule.class})
 public interface TssBaseServiceComponent {
     @Component.Factory
     interface Factory {
         TssBaseServiceComponent create(
                 @BindsInstance AppContext.Gossip gossip,
                 @BindsInstance Executor submissionExecutor,
-                @BindsInstance AppContext.LedgerSigner ledgerSigner,
-                @BindsInstance TssCryptographyManager tssCryptographyManager);
+                @BindsInstance AppContext.LedgerIdSigner ledgerSigner);
     }
 
     TssMessageHandler tssMessageHandler();
@@ -42,4 +42,6 @@ public interface TssBaseServiceComponent {
     TssVoteHandler tssVoteHandler();
 
     TssSubmissions tssSubmissions();
+
+    TssCryptographyManager tssCryptographyManager();
 }

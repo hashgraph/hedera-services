@@ -192,7 +192,7 @@ import org.apache.logging.log4j.Logger;
  * controls execution of the node. If you want to understand our system, this is a great place to start!
  */
 public final class Hedera
-        implements SwirldMain, PlatformStatusChangeListener, AppContext.Gossip, AppContext.LedgerSigner {
+        implements SwirldMain, PlatformStatusChangeListener, AppContext.Gossip, AppContext.LedgerIdSigner {
     private static final Logger logger = LogManager.getLogger(Hedera.class);
 
     // FUTURE: This should come from configuration, not be hardcoded.
@@ -370,6 +370,7 @@ public final class Hedera
                         bootstrapConfig.getConfigData(HederaConfig.class),
                         new SignatureExpanderImpl(),
                         new SignatureVerifierImpl(CryptographyHolder.get())),
+                this,
                 this);
         tssBaseService = tssBaseServiceFactory.apply(appContext);
         contractServiceImpl = new ContractServiceImpl(appContext);

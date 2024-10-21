@@ -23,7 +23,6 @@ import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.spi.signatures.SignatureVerifier;
 import com.swirlds.common.crypto.Signature;
 import edu.umd.cs.findbugs.annotations.NonNull;
-
 import java.time.InstantSource;
 
 /**
@@ -57,7 +56,14 @@ public interface AppContext {
     /**
      * A signer that can sign a ledger id.
      */
-    interface LedgerSigner {
+    interface LedgerIdSigner {
+        /**
+         * A {@link LedgerIdSigner} that throws an exception indicating it should never have been used; for example,
+         * if the client code was running in a standalone mode.
+         */
+        LedgerIdSigner UNAVAILABLE_LEDGER_SIGNER = body -> {
+            throw new IllegalArgumentException("" + FAIL_INVALID);
+        };
         /**
          * Signs the given ledger id and returns the signature.
          *
@@ -87,4 +93,10 @@ public interface AppContext {
      * @return the gossip interface
      */
     Gossip gossip();
+
+    /**
+     * The {@link LedgerIdSigner} can be used to sign a ledger id.
+     * @return the ledger id signer
+     */
+    LedgerIdSigner ledgerIdSigner();
 }

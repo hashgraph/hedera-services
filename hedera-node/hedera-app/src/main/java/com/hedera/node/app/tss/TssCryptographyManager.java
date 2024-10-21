@@ -29,7 +29,6 @@ import com.hedera.node.app.tss.pairings.PairingPublicKey;
 import com.hedera.node.app.tss.stores.WritableTssBaseStore;
 import com.hedera.node.config.data.TssConfig;
 import com.swirlds.common.crypto.Signature;
-import com.swirlds.common.platform.NodeId;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.BitSet;
 import java.util.LinkedHashMap;
@@ -48,19 +47,13 @@ import org.apache.logging.log4j.Logger;
 @Singleton
 public class TssCryptographyManager {
     private static final Logger log = LogManager.getLogger(TssCryptographyManager.class);
-
-    private NodeId nodeId;
     private final TssLibrary tssLibrary;
-    private TssParticipantDirectory tssParticipantDirectory;
-    private AppContext.LedgerSigner ledgerSigner;
+    private AppContext.LedgerIdSigner ledgerSigner;
+
+    @Inject
     public TssCryptographyManager(
-            @NonNull final NodeId nodeId,
-            @NonNull final TssLibrary tssLibrary,
-            @NonNull final TssParticipantDirectory tssParticipantDirectory,
-            @NonNull final AppContext.LedgerSigner ledgerSigner) {
-        this.nodeId = nodeId;
+            @NonNull final TssLibrary tssLibrary, @NonNull final AppContext.LedgerIdSigner ledgerSigner) {
         this.tssLibrary = tssLibrary;
-        this.tssParticipantDirectory = tssParticipantDirectory;
         this.ledgerSigner = ledgerSigner;
     }
 
@@ -80,7 +73,7 @@ public class TssCryptographyManager {
         final var tssMessageBodies = tssStore.getTssMessages(targetRosterHash);
 
         final var hasVoteSubmitted = tssStore.getVote(TssVoteMapKey.newBuilder()
-                        .nodeId(nodeId.id())
+                        .nodeId(context.networkInfo().selfNodeInfo().nodeId())
                         .rosterHash(targetRosterHash)
                         .build())
                 != null;
@@ -93,7 +86,8 @@ public class TssCryptographyManager {
             final var maxSharesPerNode = tssConfig.maxSharesPerNode();
             // Validate the TSSMessages and if the threshold is met and public keys for a target roster have
             // not been computed yet compute the public keys
-            return computePublicKeysAndSignIfThresholdMet(tssMessageBodies, maxSharesPerNode, rosterEntries)
+            return computePublicKeysAndSignIfThresholdMet(
+                            tssMessageBodies, maxSharesPerNode, rosterEntries, tssParticipantDirectory)
                     .exceptionally(e -> {
                         log.error("Error computing public keys and signing", e);
                         return null;
@@ -105,11 +99,12 @@ public class TssCryptographyManager {
     private CompletableFuture<LedgerIdAndSignature> computePublicKeysAndSignIfThresholdMet(
             @NonNull final List<TssMessageTransactionBody> tssMessageBodies,
             @NonNull final long maxSharesPerNode,
-            @NonNull final List<RosterEntry> rosterEntries) {
+            @NonNull final List<RosterEntry> rosterEntries,
+            final TssParticipantDirectory tssParticipantDirectory) {
         return CompletableFuture.supplyAsync(() -> {
             // validate TSS transactions and set the vote bit set.
             // This could be an in memory data structure in the future
-            final var validTssMessages = validateTssMessages(tssMessageBodies);
+            final var validTssMessages = validateTssMessages(tssMessageBodies, tssParticipantDirectory);
             boolean tssMessageThresholdMet = isThresholdMet(validTssMessages, maxSharesPerNode, rosterEntries);
             if (!tssMessageThresholdMet) {
                 return null;
@@ -130,13 +125,14 @@ public class TssCryptographyManager {
             // FUTURE: Add !votingClosed.contains(targetRosterHash)
             final var signature = ledgerSigner.sign(ledgerId.publicKey().toBytes());
 
-            final BitSet tssVoteBitSet = computeTssVoteBitSet(validTssMessages);
+            final BitSet tssVoteBitSet = computeTssVoteBitSet(validTssMessages, tssParticipantDirectory);
             return new LedgerIdAndSignature(ledgerId, signature, tssVoteBitSet);
         });
     }
 
     private List<TssMessageTransactionBody> validateTssMessages(
-            @NonNull final List<TssMessageTransactionBody> tssMessages) {
+            @NonNull final List<TssMessageTransactionBody> tssMessages,
+            final TssParticipantDirectory tssParticipantDirectory) {
         final var validTssMessages = new LinkedList<TssMessageTransactionBody>();
         for (TssMessageTransactionBody op : tssMessages) {
             final var isValid = tssLibrary.verifyTssMessage(
@@ -148,7 +144,9 @@ public class TssCryptographyManager {
         return validTssMessages;
     }
 
-    private BitSet computeTssVoteBitSet(@NonNull final List<TssMessageTransactionBody> tssMessageBodies) {
+    private BitSet computeTssVoteBitSet(
+            @NonNull final List<TssMessageTransactionBody> tssMessageBodies,
+            final TssParticipantDirectory tssParticipantDirectory) {
         final var tssVoteBitSet = new BitSet();
         for (TssMessageTransactionBody op : tssMessageBodies) {
             final var isValid = tssLibrary.verifyTssMessage(

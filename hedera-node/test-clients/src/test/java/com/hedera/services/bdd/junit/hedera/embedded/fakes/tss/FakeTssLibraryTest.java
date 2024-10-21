@@ -16,7 +16,7 @@
 
 package com.hedera.services.bdd.junit.hedera.embedded.fakes.tss;
 
-import static com.hedera.services.bdd.junit.hedera.embedded.fakes.tss.PlaceholderTssLibrary.SIGNATURE_SCHEMA;
+import static com.hedera.services.bdd.junit.hedera.embedded.fakes.tss.FakeTssLibrary.SIGNATURE_SCHEMA;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -42,7 +42,7 @@ class FakeTssLibraryTest {
 
     @Test
     void sign() {
-        final var fakeTssLibrary = new com.hedera.services.bdd.junit.hedera.embedded.fakes.tss.PlaceholderTssLibrary(1);
+        final var fakeTssLibrary = new FakeTssLibrary(1);
         final var privateKeyElement = new FakeFieldElement(BigInteger.valueOf(2L));
         final var pairingPrivateKey = new PairingPrivateKey(privateKeyElement, SIGNATURE_SCHEMA);
         final var privateShare = new TssPrivateShare(new TssShareId(1), pairingPrivateKey);
@@ -56,7 +56,7 @@ class FakeTssLibraryTest {
 
     @Test
     void aggregatePrivateShares() {
-        final var fakeTssLibrary = new com.hedera.services.bdd.junit.hedera.embedded.fakes.tss.PlaceholderTssLibrary(2);
+        final var fakeTssLibrary = new FakeTssLibrary(2);
         final var privateShares = new ArrayList<TssPrivateShare>();
         final var privateKeyShares = new long[] {1, 2, 3};
         for (int i = 0; i < privateKeyShares.length; i++) {
@@ -73,7 +73,7 @@ class FakeTssLibraryTest {
 
     @Test
     void aggregatePrivateSharesWithNotEnoughShares() {
-        final var fakeTssLibrary = new com.hedera.services.bdd.junit.hedera.embedded.fakes.tss.PlaceholderTssLibrary(3);
+        final var fakeTssLibrary = new FakeTssLibrary(3);
         final var privateShares = new ArrayList<TssPrivateShare>();
         final var privateKeyShares = new long[] {1, 2};
         for (int i = 0; i < privateKeyShares.length; i++) {
@@ -89,7 +89,7 @@ class FakeTssLibraryTest {
 
     @Test
     void aggregatePublicShares() {
-        final var fakeTssLibrary = new com.hedera.services.bdd.junit.hedera.embedded.fakes.tss.PlaceholderTssLibrary(2);
+        final var fakeTssLibrary = new FakeTssLibrary(2);
         final var publicShares = new ArrayList<TssPublicShare>();
         final var publicKeyShares = new long[] {1, 2, 3};
         for (int i = 0; i < publicKeyShares.length; i++) {
@@ -106,7 +106,7 @@ class FakeTssLibraryTest {
 
     @Test
     void aggregateSignatures() {
-        final var fakeTssLibrary = new com.hedera.services.bdd.junit.hedera.embedded.fakes.tss.PlaceholderTssLibrary(2);
+        final var fakeTssLibrary = new FakeTssLibrary(2);
         final var partialSignatures = new ArrayList<TssShareSignature>();
         final var signatureShares = new long[] {1, 2, 3};
         for (int i = 0; i < signatureShares.length; i++) {
@@ -148,7 +148,7 @@ class FakeTssLibraryTest {
         }
 
         final var threshold = 2;
-        final var fakeTssLibrary = new com.hedera.services.bdd.junit.hedera.embedded.fakes.tss.PlaceholderTssLibrary(threshold);
+        final var fakeTssLibrary = new FakeTssLibrary(threshold);
         final PairingPublicKey ledgerID = fakeTssLibrary.aggregatePublicShares(publicShares);
 
         final TssParticipantDirectory p0sDirectory =

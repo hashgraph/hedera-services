@@ -53,13 +53,13 @@ import org.apache.logging.log4j.Logger;
 public class TssMessageHandler implements TransactionHandler {
     private static final Logger log = LogManager.getLogger(TssMessageHandler.class);
     private final TssSubmissions submissionManager;
-    private final AppContext.LedgerSigner ledgerSigner;
+    private final AppContext.LedgerIdSigner ledgerSigner;
     private final TssCryptographyManager tssCryptographyManager;
 
     @Inject
     public TssMessageHandler(
             @NonNull final TssSubmissions submissionManager,
-            @NonNull final AppContext.LedgerSigner ledgerSigner,
+            @NonNull final AppContext.LedgerIdSigner ledgerSigner,
             @NonNull final TssCryptographyManager tssCryptographyManager) {
         this.submissionManager = requireNonNull(submissionManager);
         this.ledgerSigner = requireNonNull(ledgerSigner);
@@ -80,7 +80,7 @@ public class TssMessageHandler implements TransactionHandler {
     public void handle(@NonNull final HandleContext context) throws HandleException {
         requireNonNull(context);
         final var op = context.body().tssMessageOrThrow();
-        // If any of these values are not set it's not a valid input.
+        // If any of these values are not set, it's not a valid input.
         // This message will not be considered to be added to the TSS message store.
         final var tssStore = context.storeFactory().writableStore(WritableTssBaseStore.class);
         final var numberOfAlreadyExistingMessages = tssStore.messageStateSize();

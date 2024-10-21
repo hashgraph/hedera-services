@@ -35,7 +35,7 @@ import java.security.SecureRandom;
 import java.util.List;
 import org.jetbrains.annotations.NotNull;
 
-public class PlaceholderTssLibrary implements TssLibrary {
+public class FakeTssLibrary implements TssLibrary {
     public static final SignatureSchema SIGNATURE_SCHEMA = SignatureSchema.create(new byte[] {1});
     private static final PairingPrivateKey AGGREGATED_PRIVATE_KEY =
             new PairingPrivateKey(new FakeFieldElement(BigInteger.valueOf(42L)), SIGNATURE_SCHEMA);
@@ -45,7 +45,7 @@ public class PlaceholderTssLibrary implements TssLibrary {
     private final int threshold;
     private byte[] message = new byte[0];
 
-    public PlaceholderTssLibrary(int threshold) {
+    public FakeTssLibrary(int threshold) {
         if (threshold <= 0) {
             throw new IllegalArgumentException("Invalid threshold: " + threshold);
         }

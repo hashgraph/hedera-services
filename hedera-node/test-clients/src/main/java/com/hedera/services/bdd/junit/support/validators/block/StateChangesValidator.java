@@ -77,6 +77,7 @@ import com.hedera.node.app.services.AppContextImpl;
 import com.hedera.node.app.services.OrderedServiceMigrator;
 import com.hedera.node.app.services.ServicesRegistry;
 import com.hedera.node.app.services.ServicesRegistryImpl;
+import com.hedera.node.app.spi.AppContext;
 import com.hedera.node.app.spi.signatures.SignatureVerifier;
 import com.hedera.node.app.state.recordcache.RecordCacheService;
 import com.hedera.node.app.throttle.CongestionThrottleService;
@@ -520,7 +521,11 @@ public class StateChangesValidator implements BlockStreamValidator {
             final InstantSource instantSource,
             final ServicesRegistry servicesRegistry,
             final VersionedConfiguration bootstrapConfig) {
-        final var appContext = new AppContextImpl(instantSource, fakeSignatureVerifier(), UNAVAILABLE_GOSSIP);
+        final var appContext = new AppContextImpl(
+                instantSource,
+                fakeSignatureVerifier(),
+                UNAVAILABLE_GOSSIP,
+                AppContext.LedgerIdSigner.UNAVAILABLE_LEDGER_SIGNER);
         // Register all service schema RuntimeConstructable factories before platform init
         Set.of(
                         new EntityIdService(),
