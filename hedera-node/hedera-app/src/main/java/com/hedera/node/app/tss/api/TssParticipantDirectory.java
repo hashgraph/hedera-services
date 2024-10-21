@@ -135,6 +135,14 @@ public final class TssParticipantDirectory {
         return threshold;
     }
 
+    public Map<Integer, List<TssShareId>> getSharesById() {
+        Map<Integer, List<TssShareId>> sharesById = new HashMap<>();
+        for (Entry<TssShareId, Integer> entry : shareAllocationMap.entrySet()) {
+            sharesById.computeIfAbsent(entry.getValue(), k -> new ArrayList<>()).add(entry.getKey());
+        }
+        return sharesById;
+    }
+
     /**
      * Returns the shares owned by the participant represented as self.
      *

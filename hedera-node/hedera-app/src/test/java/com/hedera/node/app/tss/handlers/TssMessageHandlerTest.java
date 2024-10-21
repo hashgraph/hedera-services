@@ -57,7 +57,7 @@ class TssMessageHandlerTest {
     private NetworkInfo networkInfo;
 
     @Mock
-    private AppContext.LedgerIdSigner ledgerSigner;
+    private AppContext.Gossip gossip;
 
     @Mock
     private TssCryptographyManager tssCryptographyManager;
@@ -66,7 +66,7 @@ class TssMessageHandlerTest {
 
     @BeforeEach
     void setUp() {
-        subject = new TssMessageHandler(submissionManager, ledgerSigner, tssCryptographyManager);
+        subject = new TssMessageHandler(submissionManager, gossip, tssCryptographyManager);
     }
 
     @Test

@@ -18,7 +18,6 @@ package com.hedera.node.app.tss;
 
 import com.hedera.node.app.spi.AppContext;
 import com.hedera.node.app.tss.api.TssLibrary;
-import com.hedera.services.bdd.junit.hedera.embedded.fakes.tss.FakeTssLibrary;
 import dagger.Binds;
 import dagger.Module;
 import dagger.Provides;
@@ -29,11 +28,11 @@ import javax.inject.Singleton;
 public interface TssModule {
     @Provides
     @Singleton
-    static TssCryptographyManager tssCryptographyManager(@NonNull final AppContext.LedgerIdSigner ledgerIdSigner) {
-        return new TssCryptographyManager(new FakeTssLibrary(10), ledgerIdSigner);
+    static TssCryptographyManager tssCryptographyManager(@NonNull final AppContext.Gossip gossip) {
+        return new TssCryptographyManager(new PlaceholderTssLibrary(), gossip);
     }
 
     @Binds
     @Singleton
-    TssLibrary bindTssLibrary(FakeTssLibrary fakeTssLibrary);
+    TssLibrary bindTssLibrary(PlaceholderTssLibrary fakeTssLibrary);
 }

@@ -18,16 +18,22 @@ package com.hedera.node.app.tss;
 
 import static com.hedera.node.app.hapi.utils.CommonUtils.noThrowSha384HashOf;
 import static com.hedera.node.app.tss.TssBaseService.Status.PENDING_LEDGER_ID;
+import static com.hedera.node.app.tss.handlers.TssUtils.computeTssParticipantDirectory;
+import static com.hedera.node.app.tss.handlers.TssUtils.getTssMessages;
+import static com.hedera.node.app.tss.handlers.TssUtils.validateTssMessages;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.hapi.services.auxiliary.tss.TssMessageTransactionBody;
+import com.hedera.node.app.roster.ReadableRosterStore;
 import com.hedera.node.app.spi.AppContext;
 import com.hedera.node.app.spi.workflows.HandleContext;
+import com.hedera.node.app.tss.api.TssLibrary;
 import com.hedera.node.app.tss.handlers.TssHandlers;
 import com.hedera.node.app.tss.handlers.TssSubmissions;
 import com.hedera.node.app.tss.schemas.V0560TssBaseSchema;
 import com.hedera.node.app.tss.stores.ReadableTssBaseStore;
+import com.hedera.node.config.data.TssConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.platform.roster.RosterUtils;
@@ -59,6 +65,7 @@ public class TssBaseServiceImpl implements TssBaseService {
     private final TssHandlers tssHandlers;
     private final TssSubmissions tssSubmissions;
     private final ExecutorService signingExecutor;
+    private final TssLibrary tssLibrary;
 
     /**
      * The hash of the active roster being used to sign with the ledger private key.
@@ -69,13 +76,14 @@ public class TssBaseServiceImpl implements TssBaseService {
     public TssBaseServiceImpl(
             @NonNull final AppContext appContext,
             @NonNull final ExecutorService signingExecutor,
-            @NonNull final Executor submissionExecutor) {
+            @NonNull final Executor submissionExecutor,
+            @NonNull final TssLibrary tssLibrary) {
         requireNonNull(appContext);
         this.signingExecutor = requireNonNull(signingExecutor);
-        final var component = DaggerTssBaseServiceComponent.factory()
-                .create(appContext.gossip(), submissionExecutor, appContext.ledgerIdSigner());
+        final var component = DaggerTssBaseServiceComponent.factory().create(appContext.gossip(), submissionExecutor);
         tssHandlers = new TssHandlers(component.tssMessageHandler(), component.tssVoteHandler());
         tssSubmissions = component.tssSubmissions();
+        this.tssLibrary = requireNonNull(tssLibrary);
     }
 
     @Override
@@ -118,7 +126,32 @@ public class TssBaseServiceImpl implements TssBaseService {
     public void setCandidateRoster(@NonNull final Roster roster, @NonNull final HandleContext context) {
         requireNonNull(roster);
         // (TSS-FUTURE) https://github.com/hashgraph/hedera-services/issues/14748
-        tssSubmissions.submitTssMessage(TssMessageTransactionBody.DEFAULT, context);
+
+        final var sourceRoster =
+                context.storeFactory().readableStore(ReadableRosterStore.class).getActiveRoster();
+        final var tssStore = context.storeFactory().writableStore(ReadableTssBaseStore.class);
+        final var maxSharesPerNode =
+                context.configuration().getConfigData(TssConfig.class).maxSharesPerNode();
+        final var sourceRosterHash = RosterUtils.hash(sourceRoster).getBytes();
+        final var targetRosterHash = RosterUtils.hash(roster).getBytes();
+
+        final var tssParticipantDirectory = computeTssParticipantDirectory(roster, maxSharesPerNode);
+        final var validTssOps =
+                validateTssMessages(tssStore.getTssMessages(targetRosterHash), tssParticipantDirectory, tssLibrary);
+        final var validTssMessages = getTssMessages(validTssOps);
+        final var tssPrivateShares = tssLibrary.decryptPrivateShares(tssParticipantDirectory, validTssMessages);
+
+        int shareIndex = 0;
+        for (final var tssPrivateShare : tssPrivateShares) {
+            final var tssMsg = tssLibrary.generateTssMessage(tssParticipantDirectory, tssPrivateShare);
+            final var tssMessage = TssMessageTransactionBody.newBuilder()
+                    .sourceRosterHash(sourceRosterHash)
+                    .targetRosterHash(targetRosterHash)
+                    .shareIndex(shareIndex++)
+                    .tssMessage(Bytes.wrap(tssMsg.bytes()))
+                    .build();
+            tssSubmissions.submitTssMessage(tssMessage, context);
+        }
     }
 
     @Override

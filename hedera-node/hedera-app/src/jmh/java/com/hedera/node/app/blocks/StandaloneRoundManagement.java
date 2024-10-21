@@ -43,6 +43,7 @@ import com.hedera.node.app.config.ConfigProviderImpl;
 import com.hedera.node.app.fixtures.state.FakeState;
 import com.hedera.node.app.services.AppContextImpl;
 import com.hedera.node.app.spi.signatures.SignatureVerifier;
+import com.hedera.node.app.tss.PlaceholderTssLibrary;
 import com.hedera.node.app.tss.TssBaseServiceImpl;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.BlockStreamConfig;
@@ -93,7 +94,8 @@ public class StandaloneRoundManagement {
     private final TssBaseServiceImpl tssBaseService = new TssBaseServiceImpl(
             new AppContextImpl(Instant::now, fakeSignatureVerifier(), UNAVAILABLE_GOSSIP),
             ForkJoinPool.commonPool(),
-            ForkJoinPool.commonPool());
+            ForkJoinPool.commonPool(),
+            new PlaceholderTssLibrary());
     private final BlockStreamManagerImpl subject = new BlockStreamManagerImpl(
             NoopBlockItemWriter::new,
             ForkJoinPool.commonPool(),

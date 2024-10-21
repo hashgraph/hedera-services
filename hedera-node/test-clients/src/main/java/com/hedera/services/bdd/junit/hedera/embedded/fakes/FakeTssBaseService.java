@@ -22,6 +22,7 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.node.app.spi.AppContext;
 import com.hedera.node.app.spi.workflows.HandleContext;
+import com.hedera.node.app.tss.PlaceholderTssLibrary;
 import com.hedera.node.app.tss.TssBaseService;
 import com.hedera.node.app.tss.TssBaseServiceImpl;
 import com.hedera.node.app.tss.handlers.TssHandlers;
@@ -83,7 +84,8 @@ public class FakeTssBaseService implements TssBaseService {
     private final Queue<Runnable> pendingTssSubmission = new ArrayDeque<>();
 
     public FakeTssBaseService(@NonNull final AppContext appContext) {
-        delegate = new TssBaseServiceImpl(appContext, ForkJoinPool.commonPool(), pendingTssSubmission::offer);
+        delegate = new TssBaseServiceImpl(
+                appContext, ForkJoinPool.commonPool(), pendingTssSubmission::offer, new PlaceholderTssLibrary());
     }
 
     /**

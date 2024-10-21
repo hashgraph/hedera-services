@@ -17,7 +17,6 @@
 package com.hedera.node.app.workflows.standalone;
 
 import static com.hedera.node.app.spi.AppContext.Gossip.UNAVAILABLE_GOSSIP;
-import static com.hedera.node.app.spi.AppContext.LedgerIdSigner.UNAVAILABLE_LEDGER_SIGNER;
 import static com.hedera.node.app.workflows.standalone.impl.NoopVerificationStrategies.NOOP_VERIFICATION_STRATEGIES;
 
 import com.hedera.node.app.config.BootstrapConfigProviderImpl;
@@ -29,6 +28,7 @@ import com.hedera.node.app.signature.AppSignatureVerifier;
 import com.hedera.node.app.signature.impl.SignatureExpanderImpl;
 import com.hedera.node.app.signature.impl.SignatureVerifierImpl;
 import com.hedera.node.app.state.recordcache.LegacyListRecordSource;
+import com.hedera.node.app.tss.PlaceholderTssLibrary;
 import com.hedera.node.app.tss.TssBaseServiceImpl;
 import com.hedera.node.config.data.HederaConfig;
 import com.swirlds.common.crypto.CryptographyHolder;
@@ -94,10 +94,9 @@ public enum TransactionExecutors {
                         bootstrapConfigProvider.getConfiguration().getConfigData(HederaConfig.class),
                         new SignatureExpanderImpl(),
                         new SignatureVerifierImpl(CryptographyHolder.get())),
-                UNAVAILABLE_GOSSIP,
-                UNAVAILABLE_LEDGER_SIGNER);
-        final var tssBaseService =
-                new TssBaseServiceImpl(appContext, ForkJoinPool.commonPool(), ForkJoinPool.commonPool());
+                UNAVAILABLE_GOSSIP);
+        final var tssBaseService = new TssBaseServiceImpl(
+                appContext, ForkJoinPool.commonPool(), ForkJoinPool.commonPool(), new PlaceholderTssLibrary());
         final var contractService = new ContractServiceImpl(appContext, NOOP_VERIFICATION_STRATEGIES, tracerBinding);
         final var fileService = new FileServiceImpl();
         final var configProvider = new ConfigProviderImpl(false, null, properties);

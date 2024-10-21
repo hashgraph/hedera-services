@@ -16,8 +16,6 @@
 
 package com.hedera.node.app.spi;
 
-import static com.hedera.hapi.node.base.ResponseCodeEnum.FAIL_INVALID;
-
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.spi.signatures.SignatureVerifier;
@@ -38,8 +36,16 @@ public interface AppContext {
          * A {@link Gossip} that throws an exception indicating it should never have been used; for example,
          * if the client code was running in a standalone mode.
          */
-        Gossip UNAVAILABLE_GOSSIP = body -> {
-            throw new IllegalArgumentException("" + FAIL_INVALID);
+        Gossip UNAVAILABLE_GOSSIP = new Gossip() {
+            @Override
+            public void submit(@NonNull final TransactionBody body) {
+                throw new IllegalStateException("Gossip is not available!");
+            }
+
+            @Override
+            public Signature sign(final byte[] ledgerId) {
+                throw new IllegalStateException("Gossip is not available!");
+            }
         };
 
         /**
@@ -51,19 +57,7 @@ public interface AppContext {
          *                                  different transaction id if the exception's message is {@link ResponseCodeEnum#DUPLICATE_TRANSACTION}
          */
         void submit(@NonNull TransactionBody body);
-    }
 
-    /**
-     * A signer that can sign a ledger id.
-     */
-    interface LedgerIdSigner {
-        /**
-         * A {@link LedgerIdSigner} that throws an exception indicating it should never have been used; for example,
-         * if the client code was running in a standalone mode.
-         */
-        LedgerIdSigner UNAVAILABLE_LEDGER_SIGNER = body -> {
-            throw new IllegalArgumentException("" + FAIL_INVALID);
-        };
         /**
          * Signs the given ledger id and returns the signature.
          *
@@ -93,10 +87,4 @@ public interface AppContext {
      * @return the gossip interface
      */
     Gossip gossip();
-
-    /**
-     * The {@link LedgerIdSigner} can be used to sign a ledger id.
-     * @return the ledger id signer
-     */
-    LedgerIdSigner ledgerIdSigner();
 }
