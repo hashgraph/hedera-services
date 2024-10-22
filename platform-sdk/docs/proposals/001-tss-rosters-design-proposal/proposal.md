@@ -388,7 +388,7 @@ Now might be a good time to revisit the startup decision tree diagram for refere
 
 The next round number for this network will continue from the last round number in the provided state.
 Note that the Network Transplant process is designed primarily with test networks in mind.
-Upon adoption of the `Override Roster`, the `override-config.txt` should be renamed from disk by the implementation code that just adopted it.
+Upon adoption of the `Override Roster`, the `override-config.txt` will be renamed from disk by the implementation code that just adopted it.
 In test networks where this process is designed to be used, the renamed `override-config.txt` file will be easily accessible and removable by DevOps.
 
 **More on Genesis and Transplant Modes**
