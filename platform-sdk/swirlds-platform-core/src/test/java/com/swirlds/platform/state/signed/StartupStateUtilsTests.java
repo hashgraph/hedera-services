@@ -17,6 +17,8 @@
 package com.swirlds.platform.state.signed;
 
 import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
+import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
+import static com.swirlds.platform.builder.internal.StaticPlatformBuilder.getMetricsProvider;
 import static com.swirlds.platform.state.snapshot.SignedStateFileWriter.writeSignedStateToDisk;
 import static com.swirlds.platform.test.fixtures.state.FakeMerkleStateLifecycles.FAKE_MERKLE_STATE_LIFECYCLES;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -26,6 +28,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.spy;
 
+import com.swirlds.base.time.Time;
 import com.swirlds.common.config.StateCommonConfig;
 import com.swirlds.common.config.StateCommonConfig_;
 import com.swirlds.common.constructable.ClassConstructorPair;
@@ -33,6 +36,7 @@ import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.io.filesystem.FileSystemManager;
 import com.swirlds.common.io.utility.FileUtils;
 import com.swirlds.common.io.utility.RecycleBin;
 import com.swirlds.common.platform.NodeId;
@@ -161,8 +165,16 @@ public class StartupStateUtilsTests {
     void genesisTest() throws SignedStateLoadingException {
         final PlatformContext platformContext = buildContext(false, TestRecycleBin.getInstance());
 
+        final var metrics = getMetricsProvider().createPlatformMetrics(selfId);
+        final var configuration = platformContext.getConfiguration();
+        final var fileSystemManager = FileSystemManager.create(configuration);
+        final var time = Time.getCurrent();
+        final var recycleBin =
+                RecycleBin.create(metrics, configuration, getStaticThreadManager(), time, fileSystemManager, selfId);
+
         final SignedState loadedState = StartupStateUtils.loadStateFile(
-                        platformContext,
+                        configuration,
+                        recycleBin,
                         selfId,
                         mainClassName,
                         swirldName,
@@ -188,8 +200,16 @@ public class StartupStateUtilsTests {
             latestState = writeState(random, platformContext, latestRound, null, false);
         }
 
+        final var metrics = getMetricsProvider().createPlatformMetrics(selfId);
+        final var configuration = platformContext.getConfiguration();
+        final var fileSystemManager = FileSystemManager.create(configuration);
+        final var time = Time.getCurrent();
+        final var recycleBin =
+                RecycleBin.create(metrics, configuration, getStaticThreadManager(), time, fileSystemManager, selfId);
+
         final SignedState loadedState = StartupStateUtils.loadStateFile(
-                        platformContext,
+                        configuration,
+                        recycleBin,
                         selfId,
                         mainClassName,
                         swirldName,
@@ -219,8 +239,16 @@ public class StartupStateUtilsTests {
             writeState(random, platformContext, latestRound, null, corrupted);
         }
 
+        final var metrics = getMetricsProvider().createPlatformMetrics(selfId);
+        final var configuration = platformContext.getConfiguration();
+        final var fileSystemManager = FileSystemManager.create(configuration);
+        final var time = Time.getCurrent();
+        final var recycleBin =
+                RecycleBin.create(metrics, configuration, getStaticThreadManager(), time, fileSystemManager, selfId);
+
         assertThrows(SignedStateLoadingException.class, () -> StartupStateUtils.loadStateFile(
-                        platformContext,
+                        configuration,
+                        recycleBin,
                         selfId,
                         mainClassName,
                         swirldName,
@@ -263,7 +291,8 @@ public class StartupStateUtilsTests {
         }
 
         final SignedState loadedState = StartupStateUtils.loadStateFile(
-                        platformContext,
+                        platformContext.getConfiguration(),
+                        recycleBin,
                         selfId,
                         mainClassName,
                         swirldName,

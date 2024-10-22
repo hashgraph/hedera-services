@@ -212,7 +212,7 @@ public class RandomSignedStateGenerator {
                 .build();
 
         final SignedState signedState = new SignedState(
-                platformContext,
+                configuration,
                 signatureVerifier,
                 stateInstance,
                 "RandomSignedStateGenerator.build()",

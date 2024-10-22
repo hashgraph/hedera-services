@@ -69,11 +69,11 @@ public class ValidateAddressBookStateCommand extends AbstractCommand {
         final Configuration configuration = DefaultConfiguration.buildBasicConfiguration(ConfigurationBuilder.create());
         BootstrapUtils.setupConstructableRegistry();
 
-        final PlatformContext platformContext = PlatformContext.create(configuration);
+//        final PlatformContext platformContext = PlatformContext.create(configuration);
 
         System.out.printf("Reading state from %s %n", statePath.toAbsolutePath());
         final DeserializedSignedState deserializedSignedState =
-                SignedStateFileReader.readStateFile(platformContext, statePath, SignedStateFileUtils::readState);
+                SignedStateFileReader.readStateFile(configuration, statePath, SignedStateFileUtils::readState);
 
         System.out.printf("Reading address book from %s %n", addressBookPath.toAbsolutePath());
         final String addressBookString = Files.readString(addressBookPath);

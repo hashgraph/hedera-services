@@ -32,6 +32,7 @@ import com.swirlds.common.io.streams.MerkleDataInputStream;
 import com.swirlds.common.io.utility.RecycleBin;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.config.api.Configuration;
 import com.swirlds.logging.legacy.payload.SavedStateLoadedPayload;
 import com.swirlds.platform.config.StateConfig;
 import com.swirlds.platform.crypto.CryptoStatic;
@@ -51,6 +52,7 @@ import java.util.List;
 import java.util.function.Supplier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.checkerframework.checker.units.qual.N;
 
 /**
  * Utilities for loading and manipulating state files at startup time.
@@ -65,7 +67,7 @@ public final class StartupStateUtils {
      * Get the initial state to be used by this node. May return a state loaded from disk, or may return a genesis state
      * if no valid state is found on disk.
      *
-     * @param platformContext     the platform context
+     * @param configuration      the configuration for this node
      * @param softwareVersion     the software version of the app
      * @param genesisStateBuilder a supplier that can build a genesis state
      * @param snapshotStateReader a function to read an existing state snapshot
@@ -79,7 +81,8 @@ public final class StartupStateUtils {
      */
     @NonNull
     public static HashedReservedSignedState getInitialState(
-            @NonNull final PlatformContext platformContext,
+            @NonNull final Configuration configuration,
+            @NonNull final RecycleBin recycleBin,
             @NonNull final SoftwareVersion softwareVersion,
             @NonNull final Supplier<MerkleRoot> genesisStateBuilder,
             @NonNull final CheckedBiFunction<MerkleDataInputStream, Path, MerkleRoot, IOException> snapshotStateReader,
@@ -89,14 +92,14 @@ public final class StartupStateUtils {
             @NonNull final AddressBook configAddressBook)
             throws SignedStateLoadingException {
 
-        requireNonNull(platformContext);
+        requireNonNull(configuration);
         requireNonNull(mainClassName);
         requireNonNull(swirldName);
         requireNonNull(selfId);
         requireNonNull(configAddressBook);
 
         final ReservedSignedState loadedState = StartupStateUtils.loadStateFile(
-                platformContext, selfId, mainClassName, swirldName, softwareVersion, snapshotStateReader);
+                configuration, recycleBin, selfId, mainClassName, swirldName, softwareVersion, snapshotStateReader);
 
         try (loadedState) {
             if (loadedState.isNotNull()) {
@@ -105,22 +108,22 @@ public final class StartupStateUtils {
                         new SavedStateLoadedPayload(
                                 loadedState.get().getRound(), loadedState.get().getConsensusTimestamp()));
 
-                return copyInitialSignedState(platformContext, loadedState.get());
+                return copyInitialSignedState(configuration, loadedState.get());
             }
         }
 
         final ReservedSignedState genesisState =
-                buildGenesisState(platformContext, configAddressBook, softwareVersion, genesisStateBuilder.get());
+                buildGenesisState(configuration, configAddressBook, softwareVersion, genesisStateBuilder.get());
 
         try (genesisState) {
-            return copyInitialSignedState(platformContext, genesisState.get());
+            return copyInitialSignedState(configuration, genesisState.get());
         }
     }
 
     /**
      * Looks at the states on disk, chooses one to load, and then loads the chosen state.
      *
-     * @param platformContext          the platform context
+     * @param configuration            the configuration for this node
      * @param selfId                   the ID of this node
      * @param mainClassName            the name of the main class
      * @param swirldName               the name of the swirld
@@ -132,7 +135,8 @@ public final class StartupStateUtils {
      */
     @NonNull
     static ReservedSignedState loadStateFile(
-            @NonNull final PlatformContext platformContext,
+            @NonNull final Configuration configuration,
+            @NonNull final RecycleBin recycleBin,
             @NonNull final NodeId selfId,
             @NonNull final String mainClassName,
             @NonNull final String swirldName,
@@ -140,11 +144,11 @@ public final class StartupStateUtils {
             @NonNull
                     final CheckedBiFunction<MerkleDataInputStream, Path, MerkleRoot, IOException> snapshotStateReader) {
 
-        final StateConfig stateConfig = platformContext.getConfiguration().getConfigData(StateConfig.class);
+        final StateConfig stateConfig = configuration.getConfigData(StateConfig.class);
         final String actualMainClassName = stateConfig.getMainClassName(mainClassName);
 
         final List<SavedStateInfo> savedStateFiles = new SignedStateFilePath(
-                        platformContext.getConfiguration().getConfigData(StateCommonConfig.class))
+                        configuration.getConfigData(StateCommonConfig.class))
                 .getSavedStateFiles(actualMainClassName, selfId, swirldName);
         logStatesFound(savedStateFiles);
 
@@ -154,7 +158,7 @@ public final class StartupStateUtils {
         }
 
         final ReservedSignedState state =
-                loadLatestState(platformContext, currentSoftwareVersion, savedStateFiles, snapshotStateReader);
+                loadLatestState(configuration, recycleBin, currentSoftwareVersion, savedStateFiles, snapshotStateReader);
         return state;
     }
 
@@ -162,18 +166,18 @@ public final class StartupStateUtils {
      * Create a copy of the initial signed state. There are currently data structures that become immutable after being
      * hashed, and we need to make a copy to force it to become mutable again.
      *
-     * @param platformContext    the platform's context
+     * @param configuration      the configuration for this node
      * @param initialSignedState the initial signed state
      * @return a copy of the initial signed state
      */
     public static @NonNull HashedReservedSignedState copyInitialSignedState(
-            @NonNull final PlatformContext platformContext, @NonNull final SignedState initialSignedState) {
-        requireNonNull(platformContext);
+            @NonNull final Configuration configuration, @NonNull final SignedState initialSignedState) {
+        requireNonNull(configuration);
         requireNonNull(initialSignedState);
 
         final MerkleRoot stateCopy = initialSignedState.getState().copy();
         final SignedState signedStateCopy = new SignedState(
-                platformContext,
+                configuration,
                 CryptoStatic::verifySignature,
                 stateCopy,
                 "StartupStateUtils: copy initial state",
@@ -215,7 +219,8 @@ public final class StartupStateUtils {
      * @return the loaded state
      */
     private static ReservedSignedState loadLatestState(
-            @NonNull final PlatformContext platformContext,
+            @NonNull final Configuration configuration,
+            @NonNull final RecycleBin recycleBin,
             @NonNull final SoftwareVersion currentSoftwareVersion,
             @NonNull final List<SavedStateInfo> savedStateFiles,
             @NonNull final CheckedBiFunction<MerkleDataInputStream, Path, MerkleRoot, IOException> snapshotStateReader)
@@ -225,7 +230,7 @@ public final class StartupStateUtils {
 
         for (final SavedStateInfo savedStateFile : savedStateFiles) {
             final ReservedSignedState state =
-                    loadStateFile(platformContext, currentSoftwareVersion, savedStateFile, snapshotStateReader);
+                    loadStateFile(configuration, recycleBin, currentSoftwareVersion, savedStateFile, snapshotStateReader);
             if (state != null) {
                 return state;
             }
@@ -246,7 +251,8 @@ public final class StartupStateUtils {
      */
     @Nullable
     private static ReservedSignedState loadStateFile(
-            @NonNull final PlatformContext platformContext,
+            @NonNull final Configuration configuration,
+            @NonNull final RecycleBin recycleBin,
             @NonNull final SoftwareVersion currentSoftwareVersion,
             @NonNull final SavedStateInfo savedStateFile,
             @NonNull final CheckedBiFunction<MerkleDataInputStream, Path, MerkleRoot, IOException> snapshotStateReader)
@@ -256,13 +262,13 @@ public final class StartupStateUtils {
 
         final DeserializedSignedState deserializedSignedState;
         try {
-            deserializedSignedState = readStateFile(platformContext, savedStateFile.stateFile(), snapshotStateReader);
+            deserializedSignedState = readStateFile(configuration, savedStateFile.stateFile(), snapshotStateReader);
         } catch (final IOException e) {
             logger.error(EXCEPTION.getMarker(), "unable to load state file {}", savedStateFile.stateFile(), e);
 
-            final StateConfig stateConfig = platformContext.getConfiguration().getConfigData(StateConfig.class);
+            final StateConfig stateConfig = configuration.getConfigData(StateConfig.class);
             if (stateConfig.deleteInvalidStateFiles()) {
-                recycleState(platformContext.getRecycleBin(), savedStateFile);
+                recycleState(recycleBin, savedStateFile);
                 return null;
             } else {
                 throw new SignedStateLoadingException("unable to load state, this is unrecoverable");

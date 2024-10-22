@@ -96,12 +96,17 @@ import com.hedera.services.bdd.spec.HapiSpec;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.crypto.config.CryptoConfig;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.common.merkle.crypto.MerkleCryptography;
 import com.swirlds.common.merkle.utility.MerkleTreeVisualizer;
+import com.swirlds.common.metrics.config.MetricsConfig;
 import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.config.api.ConfigurationBuilder;
+import com.swirlds.platform.config.BasicConfig;
+import com.swirlds.platform.config.TransactionConfig;
 import com.swirlds.platform.state.MerkleStateLifecycles;
 import com.swirlds.platform.state.MerkleStateRoot;
 import com.swirlds.platform.state.service.PlatformStateService;
@@ -253,8 +258,14 @@ public class StateChangesValidator implements BlockStreamValidator {
         final var currentVersion = new ServicesSoftwareVersion(servicesVersion, configVersion);
         final var lifecycles = newPlatformInitLifecycle(bootstrapConfig, currentVersion, migrator, servicesRegistry);
         this.state = new MerkleStateRoot(lifecycles, version -> new ServicesSoftwareVersion(version, configVersion));
+        final Configuration platformConfig = ConfigurationBuilder.create()
+                .withConfigDataType(MetricsConfig.class)
+                .withConfigDataType(TransactionConfig.class)
+                .withConfigDataType(CryptoConfig.class)
+                .withConfigDataType(BasicConfig.class)
+                .build();
         initGenesisPlatformState(
-                new FakePlatformContext(NodeId.of(0), Executors.newSingleThreadScheduledExecutor()),
+                platformConfig,
                 this.state.getWritablePlatformState(),
                 addressBook,
                 currentVersion);

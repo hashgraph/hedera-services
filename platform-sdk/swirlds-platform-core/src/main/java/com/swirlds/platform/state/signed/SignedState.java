@@ -32,6 +32,7 @@ import com.swirlds.common.utility.ReferenceCounter;
 import com.swirlds.common.utility.RuntimeObjectRecord;
 import com.swirlds.common.utility.RuntimeObjectRegistry;
 import com.swirlds.common.utility.Threshold;
+import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.config.StateConfig;
 import com.swirlds.platform.crypto.SignatureVerifier;
 import com.swirlds.platform.state.MerkleRoot;
@@ -164,7 +165,7 @@ public class SignedState implements SignedStateInfo {
     /**
      * Instantiate a signed state.
      *
-     * @param platformContext          the platform context
+     * @param configuration            the configuration for this node
      * @param signatureVerifier        the signature verifier
      * @param state                    a fast copy of the state resulting from all transactions in consensus order from
      *                                 all events with received rounds up through the round this SignedState represents
@@ -179,7 +180,7 @@ public class SignedState implements SignedStateInfo {
      *                                 event stream
      */
     public SignedState(
-            @NonNull final PlatformContext platformContext,
+            @NonNull final Configuration configuration,
             @NonNull final SignatureVerifier signatureVerifier,
             @NonNull final MerkleRoot state,
             @NonNull final String reason,
@@ -192,7 +193,7 @@ public class SignedState implements SignedStateInfo {
         this.signatureVerifier = Objects.requireNonNull(signatureVerifier);
         this.state = state;
 
-        final StateConfig stateConfig = platformContext.getConfiguration().getConfigData(StateConfig.class);
+        final StateConfig stateConfig = configuration.getConfigData(StateConfig.class);
         if (stateConfig.stateHistoryEnabled()) {
             history = new SignedStateHistory(Time.getCurrent(), getRound(), stateConfig.debugStackTracesEnabled());
             history.recordAction(CREATION, getReservationCount(), reason, null);
