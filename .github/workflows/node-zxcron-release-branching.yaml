@@ -124,7 +124,6 @@ jobs:
           egress-policy: audit
 
       - name: Checkout Code
-        if: ${{ !github.event.workflow_dispatch.repository.fork }}
         uses: actions/checkout@eef61447b9ff4aafe5dcd4e0bbf5d482be7e7871 # v4.2.1
         with:
           fetch-depth: 0
@@ -141,7 +140,6 @@ jobs:
         run: echo "short-id=$(echo -n "${{ github.sha }}" | tr -d '[:space:]' | cut -c1-8)" >> "${GITHUB_OUTPUT}"
 
       - name: Send Slack Notification
-        if: ${{ !github.event.workflow_dispatch.repository.fork }}
         uses: slackapi/slack-github-action@6c661ce58804a1a20f6dc5fbee7f0381b469e001 # v1.25.0
         env:
           SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
