@@ -21,6 +21,7 @@ import static com.swirlds.platform.builder.internal.StaticPlatformBuilder.getMet
 import static com.swirlds.platform.gui.internal.BrowserWindowManager.getPlatforms;
 import static com.swirlds.platform.state.iss.IssDetector.DO_NOT_IGNORE_ROUNDS;
 
+import com.hedera.hapi.node.state.roster.Roster;
 import com.swirlds.common.merkle.utility.SerializableLong;
 import com.swirlds.common.threading.manager.AdHocThreadManager;
 import com.swirlds.platform.SwirldsPlatform;
@@ -72,6 +73,7 @@ import com.swirlds.platform.eventhandling.TransactionPrehandler;
 import com.swirlds.platform.gossip.SyncGossip;
 import com.swirlds.platform.pool.DefaultTransactionPool;
 import com.swirlds.platform.pool.TransactionPool;
+import com.swirlds.platform.roster.RosterRetriever;
 import com.swirlds.platform.state.hasher.DefaultStateHasher;
 import com.swirlds.platform.state.hasher.StateHasher;
 import com.swirlds.platform.state.hashlogger.DefaultHashLogger;
@@ -190,6 +192,16 @@ public class PlatformComponentBuilder {
         if (used) {
             throw new IllegalStateException("PlatformBuilder has already been used");
         }
+    }
+
+    /**
+     * Get the roster from the initial state in PlatformBuildingBlocks.
+     *
+     * @return the initial roster
+     */
+    @NonNull
+    private Roster getInitialRoster() {
+        return RosterRetriever.retrieve(blocks.initialState().get().getState().cast());
     }
 
     /**
@@ -499,7 +511,7 @@ public class PlatformComponentBuilder {
                     blocks.platformContext(),
                     blocks.randomBuilder().buildNonCryptographicRandom(),
                     data -> new PlatformSigner(blocks.keysAndCerts()).sign(data),
-                    blocks.initialAddressBook(),
+                    getInitialRoster(),
                     blocks.selfId(),
                     blocks.appVersion(),
                     blocks.transactionPoolNexus());
