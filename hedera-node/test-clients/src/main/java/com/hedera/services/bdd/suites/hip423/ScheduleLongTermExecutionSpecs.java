@@ -40,7 +40,6 @@ import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfe
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.freezeAbort;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.prepareUpgrade;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.recordFeeAmount;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
@@ -50,7 +49,7 @@ import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
 import static com.hedera.services.bdd.suites.HapiSuite.SYSTEM_ADMIN;
 import static com.hedera.services.bdd.suites.HapiSuite.SYSTEM_DELETE_ADMIN;
 import static com.hedera.services.bdd.suites.HapiSuite.THREE_MONTHS_IN_SECONDS;
-import static com.hedera.services.bdd.suites.freeze.UpgradeSuite.poeticUpgradeLoc;
+import static com.hedera.services.bdd.suites.HapiSuite.flattened;
 import static com.hedera.services.bdd.suites.freeze.UpgradeSuite.standardUpdateFile;
 import static com.hedera.services.bdd.suites.hip423.LongTermScheduleUtils.ORIG_FILE;
 import static com.hedera.services.bdd.suites.hip423.LongTermScheduleUtils.PAYING_ACCOUNT_2;
@@ -69,7 +68,7 @@ import static com.hedera.services.bdd.suites.hip423.LongTermScheduleUtils.WRONG_
 import static com.hedera.services.bdd.suites.hip423.LongTermScheduleUtils.WRONG_SCHEDULE_ID;
 import static com.hedera.services.bdd.suites.hip423.LongTermScheduleUtils.WRONG_TRANSACTION_VALID_START;
 import static com.hedera.services.bdd.suites.hip423.LongTermScheduleUtils.WRONG_TRANSFER_LIST;
-import static com.hedera.services.bdd.suites.hip423.LongTermScheduleUtils.getPoeticUpgradeHash;
+import static com.hedera.services.bdd.suites.hip423.LongTermScheduleUtils.scheduleFakeUpgrade;
 import static com.hedera.services.bdd.suites.hip423.LongTermScheduleUtils.transferListCheck;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTHORIZATION_FAILED;
@@ -114,8 +113,6 @@ public class ScheduleLongTermExecutionSpecs {
     private static final String FAILED_XFER = "failedXfer";
     private static final String WEIRDLY_POPULAR_KEY_TXN = "weirdlyPopularKeyTxn";
     private static final String PAYER_TXN = "payerTxn";
-    private static final String PAYER = "payer";
-    private static final String THREE_SIG_XFER = "threeSigXfer";
 
     @BeforeAll
     static void beforeAll(@NonNull final TestLifecycle lifecycle) {
@@ -1048,27 +1045,10 @@ public class ScheduleLongTermExecutionSpecs {
     @Order(16)
     final Stream<DynamicTest> scheduledFreezeWorksAsExpected() {
 
-        final byte[] poeticUpgradeHash = getPoeticUpgradeHash();
-
         return defaultHapiSpec("ScheduledFreezeWorksAsExpectedAtExpiry")
-                .given(
+                .given(flattened(
                         cryptoCreate(PAYING_ACCOUNT).via(PAYER_TXN),
-                        fileUpdate(standardUpdateFile)
-                                .signedBy(SYSTEM_ADMIN)
-                                .path(poeticUpgradeLoc)
-                                .payingWith(SYSTEM_ADMIN),
-                        scheduleCreate(
-                                        VALID_SCHEDULE,
-                                        prepareUpgrade()
-                                                .withUpdateFile(standardUpdateFile)
-                                                .havingHash(poeticUpgradeHash))
-                                .withEntityMemo(randomUppercase(100))
-                                .designatingPayer(GENESIS)
-                                .payingWith(PAYING_ACCOUNT)
-                                .waitForExpiry()
-                                .recordingScheduledTxn()
-                                .withRelativeExpiry(PAYER_TXN, 4)
-                                .via(SUCCESS_TXN))
+                        scheduleFakeUpgrade(PAYING_ACCOUNT, PAYER_TXN, 4, SUCCESS_TXN)))
                 .when(scheduleSign(VALID_SCHEDULE)
                         .alsoSigningWith(GENESIS)
                         .payingWith(PAYING_ACCOUNT)
@@ -1099,28 +1079,11 @@ public class ScheduleLongTermExecutionSpecs {
     @Order(17)
     final Stream<DynamicTest> scheduledFreezeWithUnauthorizedPayerFails() {
 
-        final byte[] poeticUpgradeHash = getPoeticUpgradeHash();
-
         return defaultHapiSpec("ScheduledFreezeWithUnauthorizedPayerFailsAtExpiry")
-                .given(
-                        cryptoCreate(PAYING_ACCOUNT).via(PAYER_TXN),
-                        cryptoCreate(PAYING_ACCOUNT_2),
-                        fileUpdate(standardUpdateFile)
-                                .signedBy(SYSTEM_ADMIN)
-                                .path(poeticUpgradeLoc)
-                                .payingWith(SYSTEM_ADMIN))
+                .given(cryptoCreate(PAYING_ACCOUNT).via(PAYER_TXN), cryptoCreate(PAYING_ACCOUNT_2))
                 .when()
                 .then(
-                        scheduleCreate(
-                                        VALID_SCHEDULE,
-                                        prepareUpgrade()
-                                                .withUpdateFile(standardUpdateFile)
-                                                .havingHash(poeticUpgradeHash))
-                                .withEntityMemo(randomUppercase(100))
-                                .designatingPayer(PAYING_ACCOUNT_2)
-                                .waitForExpiry()
-                                .withRelativeExpiry(PAYER_TXN, 4)
-                                .payingWith(PAYING_ACCOUNT)
+                        scheduleFakeUpgrade(PAYING_ACCOUNT, PAYER_TXN, 4, "test")
                         // future throttles will be exceeded because there is no throttle
                         // for freeze
                         // and the custom payer is not exempt from throttles like and admin

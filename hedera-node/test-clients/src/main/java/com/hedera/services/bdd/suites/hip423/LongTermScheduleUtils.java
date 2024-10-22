@@ -16,16 +16,26 @@
 
 package com.hedera.services.bdd.suites.hip423;
 
-import static com.hedera.services.bdd.suites.freeze.UpgradeSuite.poeticUpgradeLoc;
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.randomUppercase;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleCreate;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.buildUpgradeZipFrom;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.prepareUpgrade;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.purgeUpgradeArtifacts;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.updateSpecialFile;
+import static com.hedera.services.bdd.spec.utilops.upgrade.BuildUpgradeZipOp.FAKE_UPGRADE_ZIP_LOC;
+import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
+import static com.hedera.services.bdd.suites.freeze.CommonUpgradeResources.DEFAULT_UPGRADE_FILE_ID;
+import static com.hedera.services.bdd.suites.freeze.CommonUpgradeResources.FAKE_ASSETS_LOC;
+import static com.hedera.services.bdd.suites.freeze.CommonUpgradeResources.upgradeFileAppendsPerBurst;
+import static com.hedera.services.bdd.suites.freeze.CommonUpgradeResources.upgradeFileHashAt;
 
+import com.hedera.services.bdd.spec.SpecOperation;
 import com.hedera.services.bdd.spec.queries.meta.HapiGetTxnRecord;
+import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
+import java.util.List;
 
 public final class LongTermScheduleUtils {
 
@@ -78,15 +88,30 @@ public final class LongTermScheduleUtils {
         return amountHasBeenTransferred && payerHasPaid;
     }
 
-    static byte[] getPoeticUpgradeHash() {
-        final byte[] poeticUpgradeHash;
-        try {
-            final var sha384 = MessageDigest.getInstance("SHA-384");
-            final var poeticUpgrade = Files.readAllBytes(Paths.get(poeticUpgradeLoc));
-            poeticUpgradeHash = sha384.digest(poeticUpgrade);
-        } catch (NoSuchAlgorithmException | IOException e) {
-            throw new IllegalStateException("scheduledFreezeWorksAsExpected environment is unsuitable", e);
-        }
-        return poeticUpgradeHash;
+    static SpecOperation[] scheduleFakeUpgrade(String payer, String relativeTransaction, long offset, String via) {
+        final var operations = List.of(
+                buildUpgradeZipFrom(FAKE_ASSETS_LOC),
+                // Upload it to file 0.0.150; need sourcing() here because the operation reads contents eagerly
+                sourcing(() -> updateSpecialFile(
+                        GENESIS,
+                        DEFAULT_UPGRADE_FILE_ID,
+                        FAKE_UPGRADE_ZIP_LOC,
+                        TxnUtils.BYTES_4K,
+                        upgradeFileAppendsPerBurst())),
+                purgeUpgradeArtifacts(),
+                // Issue PREPARE_UPGRADE; need sourcing() here because we want to hash only after creating the ZIP
+                sourcing(() -> scheduleCreate(
+                                VALID_SCHEDULE,
+                                prepareUpgrade()
+                                        .withUpdateFile(DEFAULT_UPGRADE_FILE_ID)
+                                        .havingHash(upgradeFileHashAt(FAKE_UPGRADE_ZIP_LOC)))
+                        .withEntityMemo(randomUppercase(100))
+                        .designatingPayer(GENESIS)
+                        .payingWith(payer)
+                        .waitForExpiry()
+                        .recordingScheduledTxn()
+                        .withRelativeExpiry(relativeTransaction, offset)
+                        .via(via)));
+        return operations.toArray(SpecOperation[]::new);
     }
 }
