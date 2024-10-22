@@ -33,6 +33,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.BitSet;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;
@@ -46,11 +47,16 @@ public class TssCryptographyManager {
     private static final Logger log = LogManager.getLogger(TssCryptographyManager.class);
     private final TssLibrary tssLibrary;
     private AppContext.Gossip gossip;
+    private Executor libraryExecutor;
 
     @Inject
-    public TssCryptographyManager(@NonNull final TssLibrary tssLibrary, @NonNull final AppContext.Gossip gossip) {
+    public TssCryptographyManager(
+            @NonNull final TssLibrary tssLibrary,
+            @NonNull final AppContext.Gossip gossip,
+            @NonNull @TssLibraryExecutor final Executor libraryExecutor) {
         this.tssLibrary = tssLibrary;
         this.gossip = gossip;
+        this.libraryExecutor = libraryExecutor;
     }
 
     /**
@@ -103,25 +109,28 @@ public class TssCryptographyManager {
     private CompletableFuture<LedgerIdWithSignature> computeAndSignLedgerIdIfApplicable(
             @NonNull final List<TssMessageTransactionBody> tssMessageBodies,
             final TssParticipantDirectory tssParticipantDirectory) {
-        return CompletableFuture.supplyAsync(() -> {
-            // Validate TSS transactions and set the vote bit set.
-            final var validTssOps = validateTssMessages(tssMessageBodies, tssParticipantDirectory, tssLibrary);
-            boolean tssMessageThresholdMet = isThresholdMet(validTssOps, tssParticipantDirectory);
+        return CompletableFuture.supplyAsync(
+                () -> {
+                    // Validate TSS transactions and set the vote bit set.
+                    final var validTssOps = validateTssMessages(tssMessageBodies, tssParticipantDirectory, tssLibrary);
+                    boolean tssMessageThresholdMet = isThresholdMet(validTssOps, tssParticipantDirectory);
 
-            // If the threshold is not met, return
-            if (!tssMessageThresholdMet) {
-                return null;
-            }
-            final var validTssMessages = getTssMessages(validTssOps);
-            final var computedPublicShares = tssLibrary.computePublicShares(tssParticipantDirectory, validTssMessages);
+                    // If the threshold is not met, return
+                    if (!tssMessageThresholdMet) {
+                        return null;
+                    }
+                    final var validTssMessages = getTssMessages(validTssOps);
+                    final var computedPublicShares =
+                            tssLibrary.computePublicShares(tssParticipantDirectory, validTssMessages);
 
-            // compute the ledger id and sign it
-            final var ledgerId = tssLibrary.aggregatePublicShares(computedPublicShares);
-            final var signature = gossip.sign(ledgerId.publicKey().toBytes());
+                    // compute the ledger id and sign it
+                    final var ledgerId = tssLibrary.aggregatePublicShares(computedPublicShares);
+                    final var signature = gossip.sign(ledgerId.publicKey().toBytes());
 
-            final BitSet tssVoteBitSet = computeTssVoteBitSet(validTssOps);
-            return new LedgerIdWithSignature(ledgerId, signature, tssVoteBitSet);
-        });
+                    final BitSet tssVoteBitSet = computeTssVoteBitSet(validTssOps);
+                    return new LedgerIdWithSignature(ledgerId, signature, tssVoteBitSet);
+                },
+                libraryExecutor);
     }
 
     /**

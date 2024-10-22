@@ -372,6 +372,10 @@ public class ServicesMain implements SwirldMain {
                 new OrderedServiceMigrator(),
                 InstantSource.system(),
                 appContext -> new TssBaseServiceImpl(
-                        appContext, ForkJoinPool.commonPool(), ForkJoinPool.commonPool(), new PlaceholderTssLibrary()));
+                        appContext,
+                        ForkJoinPool.commonPool(),
+                        ForkJoinPool.commonPool(),
+                        new PlaceholderTssLibrary(),
+                        ForkJoinPool.commonPool()));
     }
 }

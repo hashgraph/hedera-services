@@ -95,7 +95,8 @@ public class StandaloneRoundManagement {
             new AppContextImpl(Instant::now, fakeSignatureVerifier(), UNAVAILABLE_GOSSIP),
             ForkJoinPool.commonPool(),
             ForkJoinPool.commonPool(),
-            new PlaceholderTssLibrary());
+            new PlaceholderTssLibrary(),
+            ForkJoinPool.commonPool());
     private final BlockStreamManagerImpl subject = new BlockStreamManagerImpl(
             NoopBlockItemWriter::new,
             ForkJoinPool.commonPool(),

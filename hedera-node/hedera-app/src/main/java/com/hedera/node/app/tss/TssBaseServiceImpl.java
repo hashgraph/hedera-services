@@ -41,7 +41,6 @@ import com.swirlds.platform.roster.RosterUtils;
 import com.swirlds.state.spi.SchemaRegistry;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -49,7 +48,6 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -80,10 +78,12 @@ public class TssBaseServiceImpl implements TssBaseService {
             @NonNull final AppContext appContext,
             @NonNull final ExecutorService signingExecutor,
             @NonNull final Executor submissionExecutor,
-            @NonNull final TssLibrary tssLibrary) {
+            @NonNull final TssLibrary tssLibrary,
+            @NonNull final Executor libraryExecutor) {
         requireNonNull(appContext);
         this.signingExecutor = requireNonNull(signingExecutor);
-        final var component = DaggerTssBaseServiceComponent.factory().create(appContext.gossip(), submissionExecutor);
+        final var component = DaggerTssBaseServiceComponent.factory()
+                .create(appContext.gossip(), submissionExecutor, libraryExecutor);
         tssHandlers = new TssHandlers(component.tssMessageHandler(), component.tssVoteHandler());
         tssSubmissions = component.tssSubmissions();
         this.tssLibrary = requireNonNull(tssLibrary);
@@ -131,7 +131,7 @@ public class TssBaseServiceImpl implements TssBaseService {
         // (TSS-FUTURE) https://github.com/hashgraph/hedera-services/issues/14748
 
         // generate TSS messages based on the active roster and the candidate roster
-        final var tssStore = context.storeFactory().writableStore(ReadableTssBaseStore.class);
+        final var tssStore = context.storeFactory().readableStore(ReadableTssBaseStore.class);
         final var maxSharesPerNode =
                 context.configuration().getConfigData(TssConfig.class).maxSharesPerNode();
         final var sourceRoster =
