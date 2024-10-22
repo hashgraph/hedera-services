@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.token.impl.handlers.staking;
 
+import static com.hedera.hapi.node.base.HederaFunctionality.NODE_STAKE_UPDATE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.node.app.service.token.impl.handlers.staking.EndOfStakingPeriodUtils.copyBuilderFrom;
 import static com.hedera.node.app.service.token.impl.handlers.staking.EndOfStakingPeriodUtils.fromStakingInfo;
@@ -247,7 +248,7 @@ public class StakeInfoHelper {
                 stakingConfig.maxStakeRewarded(),
                 POST_UPGRADE_MEMO);
         log.info("Exporting:\n{}", nodeStakes);
-        return context.addPrecedingChildRecordBuilder(NodeStakeUpdateStreamBuilder.class)
+        return context.addPrecedingChildRecordBuilder(NodeStakeUpdateStreamBuilder.class, NODE_STAKE_UPDATE)
                 .transaction(transactionWith(syntheticNodeStakeUpdateTxn.build()))
                 .memo(POST_UPGRADE_MEMO)
                 .status(SUCCESS);

@@ -57,7 +57,7 @@ public final class FakePlatform implements Platform {
      * Constructor for Embedded Hedera that uses a single node network
      */
     public FakePlatform() {
-        this.selfNodeId = new NodeId(0L);
+        this.selfNodeId = NodeId.of(0L);
         final var addressBuilder = RandomAddressBuilder.create(random);
         final var address =
                 addressBuilder.withNodeId(selfNodeId).withWeight(500L).build();
@@ -73,7 +73,7 @@ public final class FakePlatform implements Platform {
      * @param addresses the address book
      */
     public FakePlatform(final long nodeId, final AddressBook addresses) {
-        this.selfNodeId = new NodeId(nodeId);
+        this.selfNodeId = NodeId.of(nodeId);
         this.addressBook = addresses;
         this.context = createPlatformContext();
         this.notificationEngine = NotificationEngine.buildEngine(getStaticThreadManager());

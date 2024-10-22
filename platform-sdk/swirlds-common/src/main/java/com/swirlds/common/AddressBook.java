@@ -563,7 +563,7 @@ public class AddressBook implements Iterable<Address>, SelfSerializable, Hashabl
 
         round = in.readLong();
         if (version < ClassVersion.SELF_SERIALIZABLE_NODE_ID) {
-            nextNodeId = new NodeId(in.readLong());
+            nextNodeId = NodeId.of(in.readLong());
         } else {
             nextNodeId = in.readSerializable(false, NodeId::new);
         }

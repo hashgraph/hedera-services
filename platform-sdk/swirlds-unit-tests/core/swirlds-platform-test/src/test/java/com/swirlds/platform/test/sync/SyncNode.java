@@ -120,7 +120,7 @@ public class SyncNode {
 
         this.ancientMode = Objects.requireNonNull(ancientMode);
         this.numNodes = numNodes;
-        this.nodeId = new NodeId(nodeId);
+        this.nodeId = NodeId.of(nodeId);
         this.eventEmitter = eventEmitter;
 
         syncManager = new TestingSyncManager();

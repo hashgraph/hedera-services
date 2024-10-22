@@ -39,6 +39,7 @@ import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.hapi.util.UnknownHederaFunctionality;
+import com.hedera.node.app.blocks.BlockItemsTranslator;
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.fees.FeeManager;
 import com.hedera.node.app.service.token.ReadableAccountStore;
@@ -136,6 +137,9 @@ class ChildDispatchFactoryTest {
 
     @Mock
     private ExchangeRateManager exchangeRateManager;
+
+    @Mock
+    private BlockItemsTranslator recordTranslator;
 
     private ChildDispatchFactory subject;
 

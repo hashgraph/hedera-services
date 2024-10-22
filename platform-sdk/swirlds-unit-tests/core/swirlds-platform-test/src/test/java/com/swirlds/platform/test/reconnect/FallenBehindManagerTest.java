@@ -64,32 +64,32 @@ class FallenBehindManagerTest {
         assertFallenBehind(false, 0, "default should be none report fallen behind");
 
         // node 1 reports fallen behind
-        manager.reportFallenBehind(new NodeId(1));
+        manager.reportFallenBehind(NodeId.of(1));
         assertFallenBehind(false, 1, "one node only reported fallen behind");
 
         // if the same node reports again, nothing should change
-        manager.reportFallenBehind(new NodeId(1));
+        manager.reportFallenBehind(NodeId.of(1));
         assertFallenBehind(false, 1, "if the same node reports again, nothing should change");
 
-        manager.reportFallenBehind(new NodeId(2));
-        manager.reportFallenBehind(new NodeId(3));
-        manager.reportFallenBehind(new NodeId(4));
-        manager.reportFallenBehind(new NodeId(5));
+        manager.reportFallenBehind(NodeId.of(2));
+        manager.reportFallenBehind(NodeId.of(3));
+        manager.reportFallenBehind(NodeId.of(4));
+        manager.reportFallenBehind(NodeId.of(5));
         assertFallenBehind(false, 5, "we should still be missing one for fallen behind");
 
-        manager.reportFallenBehind(new NodeId(6));
+        manager.reportFallenBehind(NodeId.of(6));
         assertFallenBehind(true, 6, "we should be fallen behind");
 
-        manager.reportFallenBehind(new NodeId(1));
-        manager.reportFallenBehind(new NodeId(2));
-        manager.reportFallenBehind(new NodeId(3));
-        manager.reportFallenBehind(new NodeId(4));
-        manager.reportFallenBehind(new NodeId(5));
-        manager.reportFallenBehind(new NodeId(6));
+        manager.reportFallenBehind(NodeId.of(1));
+        manager.reportFallenBehind(NodeId.of(2));
+        manager.reportFallenBehind(NodeId.of(3));
+        manager.reportFallenBehind(NodeId.of(4));
+        manager.reportFallenBehind(NodeId.of(5));
+        manager.reportFallenBehind(NodeId.of(6));
         assertFallenBehind(true, 6, "if the same nodes report again, nothing should change");
 
-        manager.reportFallenBehind(new NodeId(7));
-        manager.reportFallenBehind(new NodeId(8));
+        manager.reportFallenBehind(NodeId.of(7));
+        manager.reportFallenBehind(NodeId.of(8));
         assertFallenBehind(true, 8, "more nodes reported, but the status should be the same");
 
         manager.resetFallenBehind();

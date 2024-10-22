@@ -74,7 +74,7 @@ public class RandomAddressBuilder {
         // Future work: use randotron utility methods once randotron changes merge
 
         if (nodeId == null) {
-            nodeId = new NodeId(random.nextLong(0, Long.MAX_VALUE));
+            nodeId = NodeId.of(random.nextLong(0, Long.MAX_VALUE));
         }
 
         if (weight == null) {

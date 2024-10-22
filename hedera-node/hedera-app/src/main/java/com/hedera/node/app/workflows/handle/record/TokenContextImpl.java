@@ -20,6 +20,7 @@ import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategor
 import static com.hedera.node.app.workflows.handle.stack.SavepointStackImpl.castBuilder;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.node.app.service.token.ReadableStakingInfoStore;
 import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.service.token.records.FinalizeContext;
@@ -103,8 +104,11 @@ public class TokenContextImpl implements TokenContext, FinalizeContext {
 
     @NonNull
     @Override
-    public <T extends StreamBuilder> T addPrecedingChildRecordBuilder(@NonNull Class<T> recordBuilderClass) {
-        final var result = stack.createIrreversiblePrecedingBuilder();
+    public <T extends StreamBuilder> T addPrecedingChildRecordBuilder(
+            @NonNull final Class<T> recordBuilderClass, @NonNull final HederaFunctionality functionality) {
+        requireNonNull(recordBuilderClass);
+        requireNonNull(functionality);
+        final var result = stack.createIrreversiblePrecedingBuilder().functionality(functionality);
         return castBuilder(result, recordBuilderClass);
     }
 

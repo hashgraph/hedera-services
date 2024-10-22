@@ -89,8 +89,8 @@ import "node_create.proto";
 import "node_update.proto";
 import "node_delete.proto";
 
-import "tss_message.proto";
-import "tss_vote.proto";
+import "auxiliary/tss/tss_message.proto";
+import "auxiliary/tss/tss_vote.proto";
 
 /**
  * A single transaction. All transaction types are possible here.
@@ -425,11 +425,11 @@ message TransactionBody {
         /**
          * A transaction body for a `tssMessage` request.
          */
-        TssMessageTransactionBody tssMessage = 61;
+        com.hedera.hapi.services.auxiliary.tss.TssMessageTransactionBody tssMessage = 61;
 
         /**
          * A transaction body for a `tssVote` request.
          */
-        TssVoteTransactionBody tssVote = 62;
+        com.hedera.hapi.services.auxiliary.tss.TssVoteTransactionBody tssVote = 62;
     }
 }

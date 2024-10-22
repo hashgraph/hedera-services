@@ -284,7 +284,7 @@ class ThreadTests {
                 Thread.currentThread().getContextClassLoader().getParent();
 
         final ThreadFactory factory = new ThreadConfiguration(getStaticThreadManager())
-                .setNodeId(new NodeId(1234L))
+                .setNodeId(NodeId.of(1234L))
                 .setComponent("pool1")
                 .setThreadName("thread1")
                 .setDaemon(false)
@@ -333,7 +333,7 @@ class ThreadTests {
                 .setRunnable(() -> {})
                 .setComponent("foo")
                 .setThreadName("bar")
-                .setNodeId(new NodeId(1234L))
+                .setNodeId(NodeId.of(1234L))
                 .build();
         assertEquals("<foo: bar 1234>", thread3.getName(), "unexpected thread name");
 
@@ -341,8 +341,8 @@ class ThreadTests {
                 .setRunnable(() -> {})
                 .setComponent("foo")
                 .setThreadName("bar")
-                .setNodeId(new NodeId(1234L))
-                .setOtherNodeId(new NodeId(4321L))
+                .setNodeId(NodeId.of(1234L))
+                .setOtherNodeId(NodeId.of(4321L))
                 .build();
         assertEquals("<foo: bar 1234 to 4321>", thread4.getName(), "unexpected thread name");
 
@@ -350,8 +350,8 @@ class ThreadTests {
                 .setRunnable(() -> {})
                 .setComponent("foo")
                 .setThreadName("bar")
-                .setNodeId(new NodeId(1234L))
-                .setOtherNodeId(new NodeId(4321L))
+                .setNodeId(NodeId.of(1234L))
+                .setOtherNodeId(NodeId.of(4321L))
                 .buildFactory();
 
         assertEquals("<foo: bar 1234 to 4321 #0>", factory.newThread(null).getName(), "unexpected thread name");
@@ -460,7 +460,7 @@ class ThreadTests {
 
         assertThrows(
                 MutabilityException.class,
-                () -> configuration0.setNodeId(new NodeId(0L)),
+                () -> configuration0.setNodeId(NodeId.of(0L)),
                 "configuration should be immutable");
         assertThrows(
                 MutabilityException.class,
@@ -476,7 +476,7 @@ class ThreadTests {
                 "configuration should be immutable");
         assertThrows(
                 MutabilityException.class,
-                () -> configuration0.setOtherNodeId(new NodeId(0L)),
+                () -> configuration0.setOtherNodeId(NodeId.of(0L)),
                 "configuration should be immutable");
         assertThrows(
                 MutabilityException.class,
@@ -510,7 +510,7 @@ class ThreadTests {
 
         assertThrows(
                 MutabilityException.class,
-                () -> configuration1.setNodeId(new NodeId(0L)),
+                () -> configuration1.setNodeId(NodeId.of(0L)),
                 "configuration should be immutable");
         assertThrows(
                 MutabilityException.class,
@@ -526,7 +526,7 @@ class ThreadTests {
                 "configuration should be immutable");
         assertThrows(
                 MutabilityException.class,
-                () -> configuration1.setOtherNodeId(new NodeId(0L)),
+                () -> configuration1.setOtherNodeId(NodeId.of(0L)),
                 "configuration should be immutable");
         assertThrows(
                 MutabilityException.class,
@@ -560,7 +560,7 @@ class ThreadTests {
 
         assertThrows(
                 MutabilityException.class,
-                () -> configuration2.setNodeId(new NodeId(0L)),
+                () -> configuration2.setNodeId(NodeId.of(0L)),
                 "configuration should be immutable");
         assertThrows(
                 MutabilityException.class,
@@ -576,7 +576,7 @@ class ThreadTests {
                 "configuration should be immutable");
         assertThrows(
                 MutabilityException.class,
-                () -> configuration2.setOtherNodeId(new NodeId(0L)),
+                () -> configuration2.setOtherNodeId(NodeId.of(0L)),
                 "configuration should be immutable");
         assertThrows(
                 MutabilityException.class,
@@ -648,7 +648,7 @@ class ThreadTests {
         final Runnable runnable = () -> {};
 
         final ThreadConfiguration configuration = new ThreadConfiguration(getStaticThreadManager())
-                .setNodeId(new NodeId(1234L))
+                .setNodeId(NodeId.of(1234L))
                 .setComponent("component")
                 .setThreadName("name")
                 .setThreadGroup(group)

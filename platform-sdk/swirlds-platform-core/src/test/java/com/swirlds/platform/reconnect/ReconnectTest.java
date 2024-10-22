@@ -109,7 +109,7 @@ final class ReconnectTest {
         final long weightPerNode = 100L;
         final int numNodes = 4;
         final List<NodeId> nodeIds =
-                IntStream.range(0, numNodes).mapToObj(NodeId::new).toList();
+                IntStream.range(0, numNodes).mapToObj(NodeId::of).toList();
         final Random random = RandomUtils.getRandomPrintSeed();
 
         final AddressBook addressBook = RandomAddressBookBuilder.create(random)
@@ -158,7 +158,7 @@ final class ReconnectTest {
         for (int i = 0; i < numAddresses; i++) {
             final Address address = mock(Address.class);
             when(address.getSigPublicKey()).thenReturn(publicKey);
-            when(address.getNodeId()).thenReturn(new NodeId(i));
+            when(address.getNodeId()).thenReturn(NodeId.of(i));
             addresses.add(address);
         }
         return new AddressBook(addresses);
@@ -173,8 +173,8 @@ final class ReconnectTest {
         final PlatformContext platformContext =
                 TestPlatformContextBuilder.create().build();
 
-        final NodeId selfId = new NodeId(0);
-        final NodeId otherId = new NodeId(3);
+        final NodeId selfId = NodeId.of(0);
+        final NodeId otherId = NodeId.of(3);
         final long lastRoundReceived = 100;
         return new ReconnectTeacher(
                 platformContext,

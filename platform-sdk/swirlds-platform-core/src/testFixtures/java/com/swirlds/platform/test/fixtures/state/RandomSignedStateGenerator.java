@@ -23,6 +23,7 @@ import static com.swirlds.platform.test.fixtures.state.FakeMerkleStateLifecycles
 import static com.swirlds.platform.test.fixtures.state.FakeMerkleStateLifecycles.registerMerkleStateRootClassIds;
 
 import com.swirlds.common.AddressBook;
+import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.Signature;
@@ -133,6 +134,7 @@ public class RandomSignedStateGenerator {
                 stateInstance = new MerkleStateRoot(
                         FAKE_MERKLE_STATE_LIFECYCLES, version -> new BasicSoftwareVersion(version.major()));
             }
+            ((MerkleStateRoot) stateInstance).setTime(Time.getCurrent());
         } else {
             stateInstance = state;
         }

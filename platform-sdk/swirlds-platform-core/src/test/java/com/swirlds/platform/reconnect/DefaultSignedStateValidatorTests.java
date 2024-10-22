@@ -143,7 +143,7 @@ class DefaultSignedStateValidatorTests {
             // Allow zero-weight
             final int weight = r.nextInt(MAX_WEIGHT_PER_NODE);
             final boolean hasValidSig = r.nextBoolean();
-            nodes.add(new Node(new NodeId(i), weight, hasValidSig));
+            nodes.add(new Node(NodeId.of(i), weight, hasValidSig));
         }
         return nodes;
     }
@@ -213,13 +213,13 @@ class DefaultSignedStateValidatorTests {
         }
 
         final List<Node> nodes = new ArrayList<>(NUM_NODES_IN_STATIC_TESTS);
-        nodes.add(new Node(new NodeId(0L), 5L, isValidSigList.get(0)));
-        nodes.add(new Node(new NodeId(1L), 5L, isValidSigList.get(1)));
-        nodes.add(new Node(new NodeId(2L), 8L, isValidSigList.get(2)));
-        nodes.add(new Node(new NodeId(3L), 15L, isValidSigList.get(3)));
-        nodes.add(new Node(new NodeId(4L), 17L, isValidSigList.get(4)));
-        nodes.add(new Node(new NodeId(5L), 10L, isValidSigList.get(5)));
-        nodes.add(new Node(new NodeId(6L), 30L, isValidSigList.get(6)));
+        nodes.add(new Node(NodeId.of(0L), 5L, isValidSigList.get(0)));
+        nodes.add(new Node(NodeId.of(1L), 5L, isValidSigList.get(1)));
+        nodes.add(new Node(NodeId.of(2L), 8L, isValidSigList.get(2)));
+        nodes.add(new Node(NodeId.of(3L), 15L, isValidSigList.get(3)));
+        nodes.add(new Node(NodeId.of(4L), 17L, isValidSigList.get(4)));
+        nodes.add(new Node(NodeId.of(5L), 10L, isValidSigList.get(5)));
+        nodes.add(new Node(NodeId.of(6L), 30L, isValidSigList.get(6)));
         return nodes;
     }
 
@@ -322,7 +322,7 @@ class DefaultSignedStateValidatorTests {
             if (signature.getByte(0) == 0) {
                 return false;
             }
-            final Hash hash = new Hash(data.toByteArray(), stateHash.getDigestType());
+            final Hash hash = new Hash(data, stateHash.getDigestType());
 
             return hash.equals(stateHash);
         };

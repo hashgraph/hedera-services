@@ -197,7 +197,7 @@ public class StandardGraphGenerator extends AbstractGraphGenerator<StandardGraph
 
     private void initializeInternalConsensus() {
         consensus = new ConsensusImpl(platformContext, new NoOpConsensusMetrics(), addressBook);
-        inOrderLinker = new ConsensusLinker(platformContext, new NodeId(0));
+        inOrderLinker = new ConsensusLinker(platformContext, NodeId.of(0));
     }
 
     /**

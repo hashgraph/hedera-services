@@ -99,10 +99,10 @@ class AddressBookNetworkUtilsTests {
                 "swirldName",
                 new BasicSoftwareVersion(1),
                 ReservedSignedState.createNullReservation(),
-                new NodeId(0));
+                NodeId.of(0));
 
-        final Address address1 = new Address(new NodeId(1), "", "", 10, null, 77, null, 88, null, null, "");
-        final Address address2 = new Address(new NodeId(2), "", "", 10, null, 77, null, 88, null, null, "");
+        final Address address1 = new Address(NodeId.of(1), "", "", 10, null, 77, null, 88, null, null, "");
+        final Address address2 = new Address(NodeId.of(2), "", "", 10, null, 77, null, 88, null, null, "");
         final AddressBook addressBook = new AddressBook();
         addressBook.add(address1);
         addressBook.add(address2);
@@ -130,7 +130,7 @@ class AddressBookNetworkUtilsTests {
                 "swirldName",
                 new BasicSoftwareVersion(1),
                 ReservedSignedState.createNullReservation(),
-                new NodeId(0));
+                NodeId.of(0));
         final AddressBook addressBook = new AddressBook();
         platformBuilder.withAddressBook(addressBook);
         final Roster roster = AddressBookUtils.createRoster(addressBook);
