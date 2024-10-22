@@ -58,7 +58,7 @@ At some point when the Hedera App (henceforth referred to as 'App') decides it's
 it will create a `Roster` object with information from the Address Book and set it to be stored it in the state.
 
 To manage `Roster`s in the state, a new set of `store` APIs will be introduced, similar to existing store
-implementations. Stores are an abstraction over state storage and retrieval and provide a way to interact with the 
+implementations. Stores are an abstraction over state storage and retrieval and provide a way to interact with the
 state.
 
 A `ReadableRosterStore` and `WritableRosterStore` will be introduced.
@@ -99,7 +99,7 @@ A checked exception will be thrown if the Roster is invalid. The durability of t
 
 ## Data Structure
 
-The App is already responsible for managing the address book. 
+The App is already responsible for managing the address book.
 We propose that it continues to do so, and when it deems necessary (such as during a freeze upgrade), creates a candidate `Roster` object and stores it via the new API.
 
 ### Protobuf
@@ -370,10 +370,15 @@ A common example of this is Mainnet State being transplanted into a testing netw
 
 **A quick note on Pre-Consensus Event Stream (PCES).**
 
-The software version is used to determine which roster (active or previous) should be used to validate the signatures of events in the PCES.
-If the PCES event version is less than the current software version, it indicates that the event was signed with the old roster, and hence, the old roster is used for validation.
-If the PCES event version matches the current software version, the active roster is used.
-This behavior will be maintained until Birth Rounds or Dynamic Address Book is implemented.
+In the current PCES implementation, the software version is used to determine which address book (current or previous) 
+should be used to validate the signatures of events in the PCES.
+If the PCES event version is less than the current software version, it indicates that the event was signed with the old roster, and hence, the old address book is used for validation.
+If the PCES event version matches the current software version, the current address book is used.
+This proposal maintains this exact behavior (until Birth Rounds or Dynamic Address Book is implemented), but it replaces the use of address books with rosters.
+Instead of using current and previous `AddressBook`s, active and previous active `Roster`s will be passed to PCES.
+A previous active `Roster`, in most cases, is the Roster that was active before the current Active Roster roster.
+There is an edge case in which this definition of Previous Roster will not hold true, and the previous active Roster will be artificially created instead of being the roster that was previously active.
+See Edge Case 1 below for more details.
 
 Like the Genesis Roster, the Override Roster will be created from a special-purpose config file named `override-config.txt`.
 This file will be in the same location and format as the current `config.txt` file.
@@ -383,8 +388,8 @@ Now might be a good time to revisit the startup decision tree diagram for refere
 
 The next round number for this network will continue from the last round number in the provided state.
 Note that the Network Transplant process is designed primarily with test networks in mind.
-Upon adoption of the `Override Roster`, the `override-config.txt` should be deleted/renamed from disk.
-In test networks where this process is designed to be used, the `override-config.txt` file can be easily accessed and deleted by DevOps.
+Upon adoption of the `Override Roster`, the `override-config.txt` should be renamed from disk by the implementation code that just adopted it.
+In test networks where this process is designed to be used, the renamed `override-config.txt` file will be easily accessible and removable by DevOps.
 
 **More on Genesis and Transplant Modes**
 
@@ -485,10 +490,10 @@ There are a few existing technical debts that the team has agreed to tackle as d
    use Node IDs only. Services and DevOps will implement this.
 
 3. Inversion of Control: The `config.txt` file does not have all the information that the Hedera Address Book needs (
-   proxy endpoints, and in the future, Block Nodes). Its format could be better, and it stores the account number in the memo field. 
-Upon the creation and adoption of rosters in the state, `config.txt` is no longer useful. 
-The resolution is to offload this duty off the current platform components and allow Services components to use whatever file format that suits them as described earlier. 
-Services will implement this.
+   proxy endpoints, and in the future, Block Nodes). Its format could be better, and it stores the account number in the memo field.
+   Upon the creation and adoption of rosters in the state, `config.txt` is no longer useful.
+   The resolution is to offload this duty off the current platform components and allow Services components to use whatever file format that suits them as described earlier.
+   Services will implement this.
 
 ### Roster changes needed for Components
 
