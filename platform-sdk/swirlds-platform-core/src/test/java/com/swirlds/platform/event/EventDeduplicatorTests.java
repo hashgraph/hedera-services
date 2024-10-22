@@ -159,7 +159,7 @@ class EventDeduplicatorTests {
         for (int i = 0; i < TEST_EVENT_COUNT; i++) {
             if (submittedEvents.isEmpty() || random.nextBoolean()) {
                 // submit a brand new event half the time
-                final NodeId creatorId = new NodeId(random.nextInt(NODE_ID_COUNT));
+                final NodeId creatorId = NodeId.of(random.nextInt(NODE_ID_COUNT));
                 final long eventGeneration = Math.max(0, minimumGenerationNonAncient + random.nextInt(-1, 10));
                 final long eventBirthRound =
                         Math.max(ConsensusConstants.ROUND_FIRST, minimumRoundNonAncient + random.nextLong(-1, 4));

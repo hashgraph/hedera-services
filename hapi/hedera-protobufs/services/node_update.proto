@@ -28,9 +28,10 @@ import "basic_types.proto";
 /**
  * Transaction body to modify address book node attributes.
  *
- * - This transaction SHALL enable the node operator, as identified by the
- *   `admin_key`, to modify operational attributes of the node.
- * - This transaction MUST be signed by the active `admin_key` for the node.
+ * This transaction body SHALL be considered a "privileged transaction".
+ *
+ * - This transaction MUST be signed by the governing council and
+ * - the active `admin_key` for the node.
  * - If this transaction sets a new value for the `admin_key`, then both the
  *   current `admin_key`, and the new `admin_key` MUST sign this transaction.
  * - This transaction SHALL NOT change any field that is not set (is null) in

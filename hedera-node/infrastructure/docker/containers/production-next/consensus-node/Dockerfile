@@ -226,6 +226,8 @@ ENV JAVA_VERSION "jdk-21.0.4+7"
 ENV JAVA_HOME /usr/local/java
 ENV PATH ${JAVA_HOME}/bin:${PATH}
 
+ENV CONTAINER_TSR_ENABLED "true"
+
 # Install Java
 COPY --from=java-builder ${JAVA_HOME}/ ${JAVA_HOME}/
 

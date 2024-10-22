@@ -21,6 +21,7 @@ import com.swirlds.platform.state.MerkleRoot;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.Set;
 
 /**
  * Utility methods for dealing with signed states on disk.
@@ -31,6 +32,8 @@ public final class SignedStateFileUtils {
      * this file doesn't actually contain a hashgraph.
      */
     public static final String SIGNED_STATE_FILE_NAME = "SignedState.swh";
+
+    public static final String SIGNATURE_SET_FILE_NAME = "signatureSet.bin";
 
     public static final String HASH_INFO_FILE_NAME = "hashInfo.txt";
 
@@ -45,9 +48,31 @@ public final class SignedStateFileUtils {
     public static final byte VERSIONED_FILE_BYTE = Byte.MAX_VALUE;
 
     /**
-     * The current version of the signed state file
+     * The previous version of the signed state file
      */
-    public static final int FILE_VERSION = 1;
+    public static final int INIT_STATE_FILE_VERSION = 1;
+
+    /**
+     * The current version of the signed state file. A file of this version no longer contains the signature set,
+     * instead the signature set is stored in a separate file.
+     */
+    public static final int SIG_SET_SEPARATE_STATE_FILE_VERSION = 2;
+
+    /**
+     * The initial version of the signature set file
+     */
+    public static final int INIT_SIG_SET_FILE_VERSION = 1;
+
+    /**
+     * The supported versions of the signed state file
+     */
+    public static final Set<Integer> SUPPORTED_STATE_FILE_VERSIONS =
+            Set.of(INIT_STATE_FILE_VERSION, SIG_SET_SEPARATE_STATE_FILE_VERSION);
+
+    /**
+     * The supported versions of the signature set file
+     */
+    public static final Set<Integer> SUPPORTED_SIGSET_VERSIONS = Set.of(INIT_SIG_SET_FILE_VERSION);
 
     public static final int MAX_MERKLE_NODES_IN_STATE = Integer.MAX_VALUE;
 
