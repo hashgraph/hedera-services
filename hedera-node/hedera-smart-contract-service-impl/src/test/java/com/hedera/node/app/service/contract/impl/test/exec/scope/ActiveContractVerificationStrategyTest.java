@@ -136,11 +136,11 @@ class ActiveContractVerificationStrategyTest {
     @Test
     void signatureTestApprovesEthSenderKeyWhenDelegating() {
         final var subject = mock(VerificationStrategy.class);
-        doCallRealMethod().when(subject).asSignatureTestIn(context, A_SECP256K1_KEY);
+        doCallRealMethod().when(subject).asPrimitiveSignatureTestIn(context, A_SECP256K1_KEY);
         given(subject.decideForPrimitive(A_SECP256K1_KEY))
                 .willReturn(VerificationStrategy.Decision.DELEGATE_TO_CRYPTOGRAPHIC_VERIFICATION);
 
-        final var test = subject.asSignatureTestIn(context, A_SECP256K1_KEY);
+        final var test = subject.asPrimitiveSignatureTestIn(context, A_SECP256K1_KEY);
         assertTrue(test.test(A_SECP256K1_KEY));
     }
 
@@ -149,14 +149,14 @@ class ActiveContractVerificationStrategyTest {
         final var keyVerifier = mock(KeyVerifier.class);
         final var verification = mock(SignatureVerification.class);
         final var subject = mock(VerificationStrategy.class);
-        doCallRealMethod().when(subject).asSignatureTestIn(context, null);
+        doCallRealMethod().when(subject).asPrimitiveSignatureTestIn(context, null);
         given(verification.passed()).willReturn(true);
         given(context.keyVerifier()).willReturn(keyVerifier);
         given(keyVerifier.verificationFor(B_SECP256K1_KEY)).willReturn(verification);
         given(subject.decideForPrimitive(B_SECP256K1_KEY))
                 .willReturn(VerificationStrategy.Decision.DELEGATE_TO_CRYPTOGRAPHIC_VERIFICATION);
 
-        final var test = subject.asSignatureTestIn(context, null);
+        final var test = subject.asPrimitiveSignatureTestIn(context, null);
         assertTrue(test.test(B_SECP256K1_KEY));
     }
 }
