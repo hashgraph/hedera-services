@@ -79,7 +79,7 @@ public class MapValueFCQTests {
         mapKey = new MapKey(0, 0, random.nextLong());
         state = Mockito.spy(PlatformTestingToolState.class);
         final Platform platform = Mockito.mock(Platform.class);
-        when(platform.getSelfId()).thenReturn(new NodeId(0L));
+        when(platform.getSelfId()).thenReturn(NodeId.of(0L));
         AddressBook addressBook = Mockito.spy(AddressBook.class);
         when(addressBook.getNumberWithWeight()).thenReturn(4);
         when(platform.getAddressBook()).thenReturn(addressBook);

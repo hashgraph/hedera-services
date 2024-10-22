@@ -42,6 +42,13 @@ public interface HederaNode {
     int getGrpcPort();
 
     /**
+     * Gets the port number of the node operator gRPC service.
+     *
+     * @return the port number of the node operator gRPC service
+     */
+    int getGrpcNodeOperatorPort();
+
+    /**
      * Gets the node ID, such as 0, 1, 2, or 3.
      * @return the node ID
      */

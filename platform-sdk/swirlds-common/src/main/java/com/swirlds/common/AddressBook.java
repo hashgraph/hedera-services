@@ -563,7 +563,7 @@ public class AddressBook implements Iterable<Address>, SelfSerializable, Hashabl
 
         round = in.readLong();
         if (version < ClassVersion.SELF_SERIALIZABLE_NODE_ID) {
-            nextNodeId = new NodeId(in.readLong());
+            nextNodeId = NodeId.of(in.readLong());
         } else {
             nextNodeId = in.readSerializable(false, NodeId::new);
         }
@@ -606,7 +606,8 @@ public class AddressBook implements Iterable<Address>, SelfSerializable, Hashabl
         return addressBookConfigText(this);
     }
 
-    public static String addressBookConfigText(@NonNull final AddressBook addressBook) {
+    // FUTURE WORK: remove this method and use AddressBookUtils after that file has also been moved to new module
+    private static String addressBookConfigText(@NonNull final AddressBook addressBook) {
         Objects.requireNonNull(addressBook, "The addressBook must not be null.");
         final TextTable table = new TextTable().setBordersEnabled(false);
         for (final Address address : addressBook) {

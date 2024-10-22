@@ -41,6 +41,8 @@ import com.swirlds.platform.gossip.sync.SyncManagerImpl;
 import com.swirlds.platform.network.PeerInfo;
 import com.swirlds.platform.network.topology.StaticTopology;
 import com.swirlds.platform.pool.TransactionPoolNexus;
+import com.swirlds.platform.system.status.StatusActionSubmitter;
+import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
 import java.util.List;
 import java.util.Random;
 import org.junit.jupiter.api.MethodOrderer;
@@ -56,7 +58,6 @@ class SyncManagerTest {
      * A helper class that contains dummy data to feed into SyncManager lambdas.
      */
     private static class SyncManagerTestData {
-        public DummyHashgraph hashgraph;
         public AddressBook addressBook;
         public NodeId selfId;
         public TransactionPoolNexus transactionPoolNexus;
@@ -65,36 +66,32 @@ class SyncManagerTest {
 
         public SyncManagerTestData() {
             final Random random = getRandomPrintSeed();
-            hashgraph = new DummyHashgraph(random, 0);
             final PlatformContext platformContext =
                     TestPlatformContextBuilder.create().build();
 
             transactionPoolNexus = spy(new TransactionPoolNexus(platformContext));
 
-            this.addressBook = hashgraph.getAddressBook();
+            this.addressBook =
+                    RandomAddressBookBuilder.create(random).withSize(41).build();
             this.selfId = addressBook.getNodeId(0);
 
             configuration = new TestConfigBuilder()
                     .withValue(ReconnectConfig_.FALLEN_BEHIND_THRESHOLD, "0.25")
-                    .withValue(EventConfig_.EVENT_INTAKE_QUEUE_THROTTLE_SIZE, "100")
                     .getOrCreateConfig();
             final ReconnectConfig reconnectConfig = configuration.getConfigData(ReconnectConfig.class);
-            final EventConfig eventConfig = configuration.getConfigData(EventConfig.class);
 
             final List<PeerInfo> peers = Utilities.createPeerInfoList(addressBook, selfId);
             final NetworkTopology topology = new StaticTopology(peers, selfId);
 
             syncManager = new SyncManagerImpl(
                     platformContext,
-                    hashgraph::getEventIntakeQueueSize,
                     new FallenBehindManagerImpl(
                             addressBook,
                             selfId,
                             topology,
                             mock(StatusActionSubmitter.class),
                             () -> {},
-                            reconnectConfig),
-                    eventConfig);
+                            reconnectConfig));
         }
     }
 
@@ -149,43 +146,5 @@ class SyncManagerTest {
 
         // we should now be back where we started
         assertFalse(test.syncManager.hasFallenBehind());
-    }
-
-    /**
-     * Test when the SyncManager should accept an incoming sync
-     */
-    @Test
-    @Order(1)
-    void shouldAcceptSyncTest() {
-        final SyncManagerTestData test = new SyncManagerTestData();
-
-        // We should accept a sync if the event queue is empty and we aren't exceeding the maximum number of syncs
-        test.hashgraph.eventIntakeQueueSize = 0;
-        assertTrue(test.syncManager.shouldAcceptSync());
-
-        // We should not accept a sync if the event queue fills up
-        test.hashgraph.eventIntakeQueueSize = 101;
-        assertFalse(test.syncManager.shouldAcceptSync());
-        test.hashgraph.eventIntakeQueueSize = 0;
-
-        // Once the queue and concurrent syncs decrease we should be able to sync again.
-        assertTrue(test.syncManager.shouldAcceptSync());
-    }
-
-    /**
-     * Test when the sync manager should initiate a sync of its own.
-     */
-    @Test
-    @Order(2)
-    void shouldInitiateSyncTest() {
-        final SyncManagerTestData test = new SyncManagerTestData();
-
-        // It is ok to initiate a sync if the intake queue is not full.
-        test.hashgraph.eventIntakeQueueSize = 0;
-        assertTrue(test.syncManager.shouldInitiateSync());
-
-        // It is not ok to initiate a sync if the intake queue is full.
-        test.hashgraph.eventIntakeQueueSize = 101;
-        assertFalse(test.syncManager.shouldInitiateSync());
     }
 }

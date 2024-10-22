@@ -16,7 +16,6 @@
 
 package com.swirlds.state.spi;
 
-import com.hedera.pbj.runtime.Schema;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Iterator;

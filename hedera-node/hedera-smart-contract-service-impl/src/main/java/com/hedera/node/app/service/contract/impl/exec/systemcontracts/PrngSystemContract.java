@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts;
 
+import static com.hedera.hapi.node.base.HederaFunctionality.UTIL_PRNG;
 import static com.hedera.node.app.hapi.utils.CommonPbjConverters.toPbj;
 import static com.hedera.node.app.hapi.utils.ValidationUtils.validateTrue;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.systemContractGasCalculatorOf;
@@ -151,7 +152,7 @@ public class PrngSystemContract extends AbstractFullContract implements HederaSy
 
             updater.enhancement()
                     .systemOperations()
-                    .externalizePreemptedDispatch(synthBody(), toPbj(responseCode))
+                    .externalizePreemptedDispatch(synthBody(), toPbj(responseCode), UTIL_PRNG)
                     .contractCallResult(contractResult);
         }
     }

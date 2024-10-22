@@ -120,9 +120,14 @@ public class TxnRecordRegression {
     @RepeatableHapiTest(NEEDS_VIRTUAL_TIME_FOR_FAST_EXECUTION)
     final Stream<DynamicTest> receiptUnavailableAfterCacheTtl() {
         return hapiTest(
+                // Every transaction in a repeatable spec reaches consensus one second apart,
+                // and it uses a valid start offset of one second; hence this will reach
+                // consensus at some time T with a valid start of T-1, and be purged after
+                // any transaction that reaches consensus at T+180 or later
                 cryptoCreate("misc").via("success").balance(1_000L),
-                sleepFor(181_000L),
-                // Run a transaction to give receipt expiration a chance to occur
+                // Sleep until T+179
+                sleepFor(179_000L),
+                // Run a transaction that will reach consensus at T+180 to purge receipts
                 cryptoTransfer(tinyBarsFromTo(GENESIS, FUNDING, 1L)),
                 getReceipt("success").hasAnswerOnlyPrecheck(RECEIPT_NOT_FOUND));
     }
