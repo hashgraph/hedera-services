@@ -57,7 +57,7 @@ class SwirldStateManagerTests {
         swirldStateManager = new SwirldStateManager(
                 platformContext,
                 addressBook,
-                new NodeId(0L),
+                NodeId.of(0L),
                 mock(StatusActionSubmitter.class),
                 new BasicSoftwareVersion(1));
         swirldStateManager.setInitialState(initialState);

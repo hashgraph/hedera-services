@@ -41,7 +41,6 @@ module com.hedera.node.app {
     requires com.swirlds.merkledb;
     requires com.swirlds.virtualmap;
     requires com.google.common;
-    requires com.google.errorprone.annotations;
     requires com.google.protobuf;
     requires io.grpc.netty;
     requires io.grpc;
@@ -53,6 +52,7 @@ module com.hedera.node.app {
     requires static com.github.spotbugs.annotations;
     requires static com.google.auto.service;
     requires static java.compiler;
+    requires static org.jetbrains.annotations;
     // javax.annotation.processing.Generated
 
     exports com.hedera.node.app;
@@ -109,7 +109,10 @@ module com.hedera.node.app {
     exports com.hedera.node.app.workflows.handle.metric;
     exports com.hedera.node.app.roster;
     exports com.hedera.node.app.tss;
-    exports com.hedera.node.app.tss.impl;
+    exports com.hedera.node.app.tss.api;
+    exports com.hedera.node.app.tss.pairings;
+    exports com.hedera.node.app.tss.handlers;
+    exports com.hedera.node.app.tss.stores;
 
     provides ConfigurationExtension with
             ServicesConfigExtension;

@@ -14,36 +14,14 @@
  * limitations under the License.
  */
 
+import org.gradlex.javamodule.dependencies.tasks.ModuleDirectivesScopeCheck
+
 plugins {
-    id("jvm-ecosystem")
+    id("com.hedera.gradle.java")
     id("jacoco-report-aggregation")
-    id("com.hedera.gradle.lifecycle")
-    id("com.hedera.gradle.repositories")
-    id("com.hedera.gradle.jpms-modules")
 }
 
-dependencies {
-    rootProject.subprojects
-        // exclude the 'reports' project itself
-        .filter { prj -> prj != project }
-        // exclude 'test-clients' as it contains test sources in 'main'
-        // see also 'codecov.yml'
-        .filter { prj -> prj.name != "test-clients" }
-        .forEach {
-            if (it.name == "hedera-dependency-versions") {
-                jacocoAggregation(platform(project(it.path)))
-            } else {
-                jacocoAggregation(project(it.path))
-            }
-        }
-}
+tasks.withType<ModuleDirectivesScopeCheck> { enabled = false }
 
-// Use Gradle's 'jacoco-report-aggregation' plugin to create an aggregated report independent of the
-// platform (Codecov, Codacy, ...) that picks it up later on.
-// See:
-// https://docs.gradle.org/current/samples/sample_jvm_multi_project_with_code_coverage_standalone.html
-reporting {
-    reports.create<JacocoCoverageReport>("testCodeCoverageReport") {
-        testType = TestSuiteType.UNIT_TEST
-    }
-}
+// Make aggregation "classpath" use the platform for versions (gradle/versions)
+configurations.aggregateCodeCoverageReportResults { extendsFrom(configurations["internal"]) }

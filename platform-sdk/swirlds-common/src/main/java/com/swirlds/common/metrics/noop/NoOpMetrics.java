@@ -46,7 +46,7 @@ public class NoOpMetrics implements PlatformMetrics {
 
     @Override
     public NodeId getNodeId() {
-        return new NodeId(42L);
+        return NodeId.of(42L);
     }
 
     @Override

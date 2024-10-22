@@ -218,7 +218,7 @@ public class PlannedIss implements SelfSerializable, PlannedIncident {
 
             final List<NodeId> nodes = new ArrayList<>();
             for (final String nodeString : nodeStrings) {
-                final NodeId nodeId = new NodeId(Long.parseLong(nodeString));
+                final NodeId nodeId = NodeId.of(Long.parseLong(nodeString));
                 nodes.add(nodeId);
                 if (!uniqueNodeIds.add(nodeId)) {
                     logger.error(EXCEPTION.getMarker(), "Node {} appears more than once in ISS description!", nodeId);
