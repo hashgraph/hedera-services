@@ -61,7 +61,6 @@ defaults:
 jobs:
   code:
     name: Code
-    if: ${{ !github.event.workflow_dispatch.repository.fork }}
     uses: ./.github/workflows/node-zxc-compile-application-code.yaml
     with:
       java-version: ${{ github.event.inputs.java-version || '21' }}
