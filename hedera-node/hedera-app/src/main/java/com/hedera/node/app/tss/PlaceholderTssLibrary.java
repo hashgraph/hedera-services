@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.services.bdd.junit.hedera.embedded.fakes.tss;
+package com.hedera.node.app.tss;
 
 import static com.hedera.node.app.hapi.utils.CommonUtils.noThrowSha384HashOf;
 
@@ -36,6 +36,7 @@ import java.util.List;
 import org.jetbrains.annotations.NotNull;
 
 public class PlaceholderTssLibrary implements TssLibrary {
+    public static final int DEFAULT_THRESHOLD = 10;
     public static final SignatureSchema SIGNATURE_SCHEMA = SignatureSchema.create(new byte[] {1});
     private static final PairingPrivateKey AGGREGATED_PRIVATE_KEY =
             new PairingPrivateKey(new FakeFieldElement(BigInteger.valueOf(42L)), SIGNATURE_SCHEMA);
@@ -51,6 +52,10 @@ public class PlaceholderTssLibrary implements TssLibrary {
         }
 
         this.threshold = threshold;
+    }
+
+    public PlaceholderTssLibrary() {
+        this(DEFAULT_THRESHOLD);
     }
 
     @NotNull
@@ -149,7 +154,7 @@ public class PlaceholderTssLibrary implements TssLibrary {
     }
 
     // This method is not part of the TssLibrary interface, used for testing purposes
-    void setTestMessage(byte[] message) {
+    public void setTestMessage(byte[] message) {
         this.message = message;
     }
 }

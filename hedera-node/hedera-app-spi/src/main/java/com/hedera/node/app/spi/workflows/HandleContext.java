@@ -455,8 +455,6 @@ public interface HandleContext {
     @NonNull
     ThrottleAdviser throttleAdviser();
 
-    void submitInternalTransaction(TransactionBody transactionBody);
-
     /**
      * A stack of savepoints.
      *
@@ -511,28 +509,31 @@ public interface HandleContext {
          * Adds a child record builder to the list of record builders. If the current {@link HandleContext} (or any parent
          * context) is rolled back, all child record builders will be reverted.
          *
-         * @param recordBuilderClass the record type
-         * @return the new child record builder
          * @param <T> the record type
+         * @param recordBuilderClass the record type
+         * @param functionality the functionality of the record
+         * @return the new child record builder
          * @throws NullPointerException if {@code recordBuilderClass} is {@code null}
          * @throws IllegalArgumentException if the record builder type is unknown to the app
          */
         @NonNull
-        <T> T addChildRecordBuilder(@NonNull Class<T> recordBuilderClass);
+        <T> T addChildRecordBuilder(@NonNull Class<T> recordBuilderClass, @NonNull HederaFunctionality functionality);
 
         /**
          * Adds a removable child record builder to the list of record builders. Unlike a regular child record builder,
          * a removable child record builder is removed, if the current {@link HandleContext} (or any parent context) is
          * rolled back.
          *
-         * @param recordBuilderClass the record type
-         * @return the new child record builder
          * @param <T> the record type
+         * @param recordBuilderClass the record type
+         * @param functionality the functionality of the record
+         * @return the new child record builder
          * @throws NullPointerException if {@code recordBuilderClass} is {@code null}
          * @throws IllegalArgumentException if the record builder type is unknown to the app
          */
         @NonNull
-        <T> T addRemovableChildRecordBuilder(@NonNull Class<T> recordBuilderClass);
+        <T> T addRemovableChildRecordBuilder(
+                @NonNull Class<T> recordBuilderClass, @NonNull HederaFunctionality functionality);
     }
 
     static void throwIfMissingPayerId(@NonNull final TransactionBody body) {

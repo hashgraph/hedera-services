@@ -27,6 +27,7 @@ import static com.hedera.node.app.spi.workflows.record.StreamBuilder.ReversingBe
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.node.app.blocks.impl.BlockStreamBuilder;
 import com.hedera.node.app.blocks.impl.PairedStreamBuilder;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer;
@@ -115,17 +116,22 @@ public abstract class AbstractSavepoint extends BuilderSinkImpl implements Savep
             @NonNull final StreamBuilder.ReversingBehavior reversingBehavior,
             @NonNull final HandleContext.TransactionCategory txnCategory,
             @NonNull final ExternalizedRecordCustomizer customizer,
-            final boolean isBaseBuilder,
-            @NonNull final StreamMode streamMode) {
+            @NonNull final StreamMode streamMode,
+            final boolean isBaseBuilder) {
         requireNonNull(reversingBehavior);
         requireNonNull(txnCategory);
         requireNonNull(customizer);
         final var builder =
                 switch (streamMode) {
                     case RECORDS -> new RecordStreamBuilder(reversingBehavior, customizer, txnCategory);
+                    case BLOCKS -> new BlockStreamBuilder(reversingBehavior, customizer, txnCategory);
                     case BOTH -> new PairedStreamBuilder(reversingBehavior, customizer, txnCategory);
                 };
         if (!customizer.shouldSuppressRecord()) {
+            // Other code is a bit simpler when we always put the base builder for a stack in its
+            // "following" list, even if the stack is child stack for a preceding child dispatch;
+            // the base builder will still end up in the correct relative position in the parent
+            // sink because of how FirstChildSavepoint implements #commitBuilders()
             if (txnCategory == PRECEDING && !isBaseBuilder) {
                 addPrecedingOrThrow(builder);
             } else {

@@ -16,14 +16,11 @@
 
 package com.hedera.node.app.spi;
 
-import static com.hedera.hapi.node.base.ResponseCodeEnum.FAIL_INVALID;
-
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.spi.signatures.SignatureVerifier;
 import com.swirlds.common.crypto.Signature;
 import edu.umd.cs.findbugs.annotations.NonNull;
-
 import java.time.InstantSource;
 
 /**
@@ -39,8 +36,16 @@ public interface AppContext {
          * A {@link Gossip} that throws an exception indicating it should never have been used; for example,
          * if the client code was running in a standalone mode.
          */
-        Gossip UNAVAILABLE_GOSSIP = body -> {
-            throw new IllegalArgumentException("" + FAIL_INVALID);
+        Gossip UNAVAILABLE_GOSSIP = new Gossip() {
+            @Override
+            public void submit(@NonNull final TransactionBody body) {
+                throw new IllegalStateException("Gossip is not available!");
+            }
+
+            @Override
+            public Signature sign(final byte[] ledgerId) {
+                throw new IllegalStateException("Gossip is not available!");
+            }
         };
 
         /**
@@ -52,19 +57,14 @@ public interface AppContext {
          *                                  different transaction id if the exception's message is {@link ResponseCodeEnum#DUPLICATE_TRANSACTION}
          */
         void submit(@NonNull TransactionBody body);
-    }
 
-    /**
-     * A signer that can sign a ledger id.
-     */
-    interface LedgerSigner {
         /**
-         * Signs the given ledger id and returns the signature.
+         * Signs the given byte with the node's RSA key and returns the signature.
          *
-         * @param ledgerId the ledger id to sign
+         * @param bytes the bytes to sign
          * @return the signature
          */
-        Signature sign(byte[] ledgerId);
+        Signature sign(byte[] bytes);
     }
 
     /**

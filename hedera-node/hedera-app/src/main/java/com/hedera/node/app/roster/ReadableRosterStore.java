@@ -20,11 +20,30 @@ import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.Nullable;
 
+@Deprecated
+// This is just added to unblock services PRs until this PR https://github.com/hashgraph/hedera-services/pull/15442
+// is merged
 public interface ReadableRosterStore {
+    /**
+     * Get the candidate roster.
+     *
+     * @return The candidate roster.
+     */
     @Nullable
     Roster getCandidateRoster();
 
+    /**
+     * Get the active roster.
+     *
+     * @return The active roster.
+     */
     Roster getActiveRoster();
 
+    /**
+     * Get the roster based on roster hash
+     *
+     * @param protoBytes
+     * @return The roster.
+     */
     Roster get(Bytes protoBytes);
 }

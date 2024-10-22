@@ -16,40 +16,23 @@
 
 package com.hedera.node.app.tss;
 
-import com.hedera.hapi.platform.state.NodeId;
-import com.hedera.node.app.annotations.CommonExecutor;
-import com.hedera.node.app.state.WorkingStateAccessor;
-import com.hedera.node.app.state.listeners.ReconnectListener;
-import com.hedera.node.app.state.listeners.WriteStateToDiskListener;
-import com.hedera.node.app.tss.api.TssParticipantDirectory;
-import com.hedera.services.bdd.junit.hedera.embedded.fakes.tss.PlaceholderTssLibrary;
-import com.swirlds.common.stream.Signer;
-import com.swirlds.platform.listeners.ReconnectCompleteListener;
-import com.swirlds.platform.listeners.StateWriteToDiskCompleteListener;
-import com.swirlds.platform.system.Platform;
-import com.swirlds.state.State;
+import com.hedera.node.app.spi.AppContext;
+import com.hedera.node.app.tss.api.TssLibrary;
 import dagger.Binds;
 import dagger.Module;
 import dagger.Provides;
 import edu.umd.cs.findbugs.annotations.NonNull;
-
 import javax.inject.Singleton;
-import java.nio.charset.Charset;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.ForkJoinPool;
-import java.util.function.IntSupplier;
-import java.util.function.Supplier;
 
 @Module
 public interface TssModule {
     @Provides
     @Singleton
-    static TssCryptographyManager tssCryptographyManager(
-            @NonNull final WorkingStateAccessor workingStateAccessor,
-            @NonNull final Platform platform) {
-        return new TssCryptographyManager(platform.getSelfId().id(),
-                new PlaceholderTssLibrary(),
-                new TssParticipantDirectory(),
-                );
+    static TssCryptographyManager tssCryptographyManager(@NonNull final AppContext.Gossip gossip) {
+        return new TssCryptographyManager(new PlaceholderTssLibrary(), gossip);
     }
+
+    @Binds
+    @Singleton
+    TssLibrary bindTssLibrary(PlaceholderTssLibrary fakeTssLibrary);
 }

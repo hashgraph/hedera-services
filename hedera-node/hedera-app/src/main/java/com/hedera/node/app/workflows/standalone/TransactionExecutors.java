@@ -27,6 +27,8 @@ import com.hedera.node.app.services.AppContextImpl;
 import com.hedera.node.app.signature.AppSignatureVerifier;
 import com.hedera.node.app.signature.impl.SignatureExpanderImpl;
 import com.hedera.node.app.signature.impl.SignatureVerifierImpl;
+import com.hedera.node.app.state.recordcache.LegacyListRecordSource;
+import com.hedera.node.app.tss.PlaceholderTssLibrary;
 import com.hedera.node.app.tss.TssBaseServiceImpl;
 import com.hedera.node.config.data.HederaConfig;
 import com.swirlds.common.crypto.CryptographyHolder;
@@ -76,9 +78,10 @@ public enum TransactionExecutors {
             final var dispatch = executor.standaloneDispatchFactory().newDispatch(state, transactionBody, consensusNow);
             tracerBinding.runWhere(List.of(operationTracers), () -> executor.dispatchProcessor()
                     .processDispatch(dispatch));
-            return dispatch.stack()
+            final var recordSource = dispatch.stack()
                     .buildHandleOutput(consensusNow, exchangeRateManager.exchangeRates())
-                    .recordsOrThrow();
+                    .recordSourceOrThrow();
+            return ((LegacyListRecordSource) recordSource).precomputedRecords();
         };
     }
 
@@ -92,8 +95,8 @@ public enum TransactionExecutors {
                         new SignatureExpanderImpl(),
                         new SignatureVerifierImpl(CryptographyHolder.get())),
                 UNAVAILABLE_GOSSIP);
-        final var tssBaseService =
-                new TssBaseServiceImpl(appContext, ForkJoinPool.commonPool(), ForkJoinPool.commonPool());
+        final var tssBaseService = new TssBaseServiceImpl(
+                appContext, ForkJoinPool.commonPool(), ForkJoinPool.commonPool(), new PlaceholderTssLibrary());
         final var contractService = new ContractServiceImpl(appContext, NOOP_VERIFICATION_STRATEGIES, tracerBinding);
         final var fileService = new FileServiceImpl();
         final var configProvider = new ConfigProviderImpl(false, null, properties);

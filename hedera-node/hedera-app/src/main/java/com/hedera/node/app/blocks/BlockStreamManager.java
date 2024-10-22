@@ -23,6 +23,7 @@ import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.state.notifications.StateHashedListener;
 import com.swirlds.state.State;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.time.Instant;
 import java.util.function.BiConsumer;
 
 /**
@@ -40,6 +41,24 @@ public interface BlockStreamManager extends BlockRecordInfo, BiConsumer<byte[], 
     Bytes ZERO_BLOCK_HASH = Bytes.wrap(new byte[48]);
 
     /**
+     * The types of work that may be identified as pending within a block.
+     */
+    enum PendingWork {
+        /**
+         * No work is pending.
+         */
+        NONE,
+        /**
+         * Genesis work is pending.
+         */
+        GENESIS_WORK,
+        /**
+         * Post-upgrade work is pending.
+         */
+        POST_UPGRADE_WORK
+    }
+
+    /**
      * Initializes the block stream manager after a restart or during reconnect with the hash of the last block
      * incorporated in the state used in the restart or reconnect. (At genesis, this hash should be the
      * {@link #ZERO_BLOCK_HASH}.)
@@ -49,11 +68,38 @@ public interface BlockStreamManager extends BlockRecordInfo, BiConsumer<byte[], 
 
     /**
      * Updates the internal state of the block stream manager to reflect the start of a new round.
+     *
      * @param round the round that has just started
      * @param state the state of the network at the beginning of the round
      * @throws IllegalStateException if the last block hash was not explicitly initialized
      */
     void startRound(@NonNull Round round, @NonNull State state);
+
+    /**
+     * Confirms that the post-upgrade work has been completed.
+     */
+    void confirmPendingWorkFinished();
+
+    /**
+     * Returns whether post-upgrade work is pending.
+     *
+     * @return whether post-upgrade work is pending
+     */
+    @NonNull
+    PendingWork pendingWork();
+
+    /**
+     * Sets the last interval process time.
+     * @param lastIntervalProcessTime the last interval process time
+     */
+    void setLastIntervalProcessTime(@NonNull Instant lastIntervalProcessTime);
+
+    /**
+     * Get the consensus time at which an interval was last processed.
+     * @return the consensus time at which an interval was last processed
+     */
+    @NonNull
+    Instant lastIntervalProcessTime();
 
     /**
      * Updates both the internal state of the block stream manager and the durable state of the network

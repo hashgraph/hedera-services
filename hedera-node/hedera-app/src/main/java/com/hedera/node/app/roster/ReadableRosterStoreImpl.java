@@ -31,6 +31,9 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
 
+@Deprecated
+// This is just added to unblock services PRs until this PR https://github.com/hashgraph/hedera-services/pull/15442
+// is merged
 public class ReadableRosterStoreImpl implements ReadableRosterStore {
 
     /**

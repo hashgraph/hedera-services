@@ -25,6 +25,7 @@ import static com.hedera.hapi.util.HapiUtils.functionOf;
 import static com.hedera.node.app.blocks.impl.BlockImplUtils.combine;
 import static com.hedera.node.app.blocks.impl.ConcurrentStreamingTreeHasher.rootHashFrom;
 import static com.hedera.node.app.blocks.schemas.V0560BlockStreamSchema.BLOCK_STREAM_INFO_KEY;
+import static com.hedera.node.app.hapi.utils.CommonUtils.noThrowSha384HashOf;
 import static com.hedera.node.app.info.UnavailableNetworkInfo.UNAVAILABLE_NETWORK_INFO;
 import static com.hedera.node.app.records.impl.BlockRecordInfoUtils.blockHashByBlockNumber;
 import static com.hedera.node.app.records.schemas.V0490BlockRecordSchema.BLOCK_INFO_STATE_KEY;
@@ -35,6 +36,8 @@ import static com.hedera.node.app.statedumpers.DumpCheckpoint.selectedDumpCheckp
 import static com.hedera.node.app.statedumpers.StateDumper.dumpModChildrenFrom;
 import static com.hedera.node.app.util.HederaAsciiArt.HEDERA;
 import static com.hedera.node.app.workflows.handle.metric.UnavailableMetrics.UNAVAILABLE_METRICS;
+import static com.hedera.node.config.types.StreamMode.BLOCKS;
+import static com.hedera.node.config.types.StreamMode.RECORDS;
 import static com.swirlds.platform.state.service.PlatformStateService.PLATFORM_STATE_SERVICE;
 import static com.swirlds.platform.state.service.schemas.V0540PlatformStateSchema.PLATFORM_STATE_KEY;
 import static com.swirlds.platform.system.InitTrigger.EVENT_STREAM_RECOVERY;
@@ -110,6 +113,7 @@ import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.data.LedgerConfig;
 import com.hedera.node.config.data.NetworkAdminConfig;
 import com.hedera.node.config.data.VersionConfig;
+import com.hedera.node.config.types.StreamMode;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
@@ -191,8 +195,7 @@ import org.apache.logging.log4j.Logger;
  * including its state. It constructs the Dagger dependency tree, and manages the gRPC server, and in all other ways,
  * controls execution of the node. If you want to understand our system, this is a great place to start!
  */
-public final class Hedera
-        implements SwirldMain, PlatformStatusChangeListener, AppContext.Gossip, AppContext.LedgerSigner {
+public final class Hedera implements SwirldMain, PlatformStatusChangeListener, AppContext.Gossip {
     private static final Logger logger = LogManager.getLogger(Hedera.class);
 
     // FUTURE: This should come from configuration, not be hardcoded.
@@ -259,6 +262,11 @@ public final class Hedera
      * The bootstrap configuration provider for the network.
      */
     private final BootstrapConfigProviderImpl bootstrapConfigProvider;
+
+    /**
+     * The stream mode the node is operating in.
+     */
+    private final StreamMode streamMode;
 
     /**
      * The Hashgraph Platform. This is set during state initialization.
@@ -357,6 +365,7 @@ public final class Hedera
         final var bootstrapConfig = bootstrapConfigProvider.getConfiguration();
         hapiVersion = bootstrapConfig.getConfigData(VersionConfig.class).hapiVersion();
         version = getNodeStartupVersion(bootstrapConfig);
+        streamMode = bootstrapConfig.getConfigData(BlockStreamConfig.class).streamMode();
         servicesRegistry = registryFactory.create(constructableRegistry, bootstrapConfig);
         logger.info(
                 "Creating Hedera Consensus Node {} with HAPI {}",
@@ -396,10 +405,9 @@ public final class Hedera
                         PLATFORM_STATE_SERVICE)
                 .forEach(servicesRegistry::register);
         try {
-            final var blockStreamsEnabled =
-                    bootstrapConfig.getConfigData(BlockStreamConfig.class).streamBlocks();
             final Supplier<MerkleStateRoot> baseSupplier =
                     () -> new MerkleStateRoot(new MerkleStateLifecyclesImpl(this), ServicesSoftwareVersion::new);
+            final var blockStreamsEnabled = isBlockStreamEnabled();
             stateRootSupplier = blockStreamsEnabled ? () -> withListeners(baseSupplier.get()) : baseSupplier;
             onSealConsensusRound = blockStreamsEnabled ? this::manageBlockEndRound : (round, state) -> {};
             // And the factory for the MerkleStateRoot class id must be our constructor
@@ -614,8 +622,9 @@ public final class Hedera
         migrationStateChanges.addAll(migrationChanges);
         kvStateChangeListener.reset();
         boundaryStateChangeListener.reset();
-        // For specifically a non-genesis upgrade, set in state that post-upgrade work is pending
-        if (isUpgrade && trigger != RECONNECT && trigger != GENESIS) {
+        // If still using BlockRecordManager state, then for specifically a non-genesis upgrade,
+        // set in state that post-upgrade work is pending
+        if (streamMode != BLOCKS && isUpgrade && trigger != RECONNECT && trigger != GENESIS) {
             unmarkMigrationRecordsStreamed(state);
             migrationStateChanges.add(
                     StateChanges.newBuilder().stateChanges(boundaryStateChangeListener.allStateChanges()));
@@ -858,7 +867,7 @@ public final class Hedera
 
     /*==================================================================================================================
     *
-    * Workflows for use by embedded Hedera
+    * Exposed for use by embedded Hedera
     *
     =================================================================================================================*/
     public IngestWorkflow ingestWorkflow() {
@@ -875,6 +884,10 @@ public final class Hedera
 
     public BlockStreamManager blockStreamManager() {
         return daggerApp.blockStreamManager();
+    }
+
+    public boolean isBlockStreamEnabled() {
+        return streamMode != RECORDS;
     }
 
     /*==================================================================================================================
@@ -1038,14 +1051,8 @@ public final class Hedera
         // store from the pending output tree to recompute its final root hash
         final var penultimateOutputTreeStatus = new StreamingTreeHasher.Status(
                 blockStreamInfo.numPrecedingOutputItems(), blockStreamInfo.rightmostPrecedingOutputTreeHashes());
-        return rootHashFrom(penultimateOutputTreeStatus, BlockItem.PROTOBUF.toBytes(lastStateChanges));
-    }
-
-    private boolean isBlockStreamEnabled() {
-        return bootstrapConfigProvider
-                .getConfiguration()
-                .getConfigData(BlockStreamConfig.class)
-                .streamBlocks();
+        final var lastLeafHash = noThrowSha384HashOf(BlockItem.PROTOBUF.toBytes(lastStateChanges));
+        return rootHashFrom(penultimateOutputTreeStatus, lastLeafHash);
     }
 
     private static ServicesSoftwareVersion getNodeStartupVersion(@NonNull final Configuration config) {
