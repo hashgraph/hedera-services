@@ -2,7 +2,7 @@
   "branches": ["main", "develop"],
   "plugins": [
     ["@semantic-release/commit-analyzer", {
-      "preset": "angular",
+      "preset": "conventional-commits",
       "releaseRules": [
         {"type": "breaking", "release": "minor"},
         {"type": "feat", "release": "minor"},
@@ -14,9 +14,28 @@
         {"type": "test", "release": "patch"},
         {"type": "ci", "release": "patch"},
         {"type": "chore", "release": "patch"}
-      ]
+      ],
+      "parserOpts": {
+        "noteKeywords": ["BREAKING CHANGE", "BREAKING CHANGES", "BREAKING"]
+      }
     }],
-    "@semantic-release/release-notes-generator",
+    ["@semantic-release/release-notes-generator", {
+      "preset": "conventional-commits",
+      "presetConfig": {
+        "types": [
+          {"type": "feat", "section": "Features"},
+          {"type": "fix", "section": "Bug Fixes"},
+          {"type": "docs", "section": "Documentation"},
+          {"type": "style", "section": "Styles"},
+          {"type": "refactor", "section": "Code Refactoring"},
+          {"type": "perf", "section": "Performance Improvements"},
+          {"type": "test", "section": "Tests"},
+          {"type": "ci", "section": "Continuous Integration"},
+          {"type": "chore", "section": "Chores"},
+          {"type": "breaking", "section": "Breaking Changes"}
+        ]
+      }
+    }],
     "@semantic-release/changelog",
     "@semantic-release/npm",
     "@semantic-release/github",

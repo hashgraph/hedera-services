@@ -140,7 +140,10 @@ jobs:
       - name: Install dependencies
         run: |
           npm ci
-          npm install --save-dev @semantic-release/changelog @semantic-release/git
+          npm install --save-dev \
+            @semantic-release/changelog \
+            @semantic-release/git \
+            conventional-changelog-conventionalcommits  
 
       - name: Determine Version
         id: semantic
