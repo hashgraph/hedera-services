@@ -186,7 +186,10 @@ public final class HandlerUtility {
      */
     @NonNull
     static Schedule createProvisionalSchedule(
-            @NonNull final TransactionBody body, @NonNull final Instant consensusNow, final long maxLifetime, final boolean longTermEnabled) {
+            @NonNull final TransactionBody body,
+            @NonNull final Instant consensusNow,
+            final long maxLifetime,
+            final boolean longTermEnabled) {
         final var txnId = body.transactionIDOrThrow();
         final var op = body.scheduleCreateOrThrow();
         final var payerId = txnId.accountIDOrThrow();
@@ -195,8 +198,7 @@ public final class HandlerUtility {
         if (longTermEnabled) {
             builder.waitForExpiry(op.waitForExpiry());
         }
-        return builder
-                .scheduleId((ScheduleID) null)
+        return builder.scheduleId((ScheduleID) null)
                 .deleted(false)
                 .executed(false)
                 .adminKey(op.adminKey())

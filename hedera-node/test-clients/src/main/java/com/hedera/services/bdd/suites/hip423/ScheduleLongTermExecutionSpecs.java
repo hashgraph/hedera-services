@@ -42,6 +42,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.freezeAbort;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.recordFeeAmount;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.uploadScheduledContractPrices;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PAYER;
 import static com.hedera.services.bdd.suites.HapiSuite.FREEZE_ADMIN;
@@ -560,7 +561,8 @@ public class ScheduleLongTermExecutionSpecs {
     public Stream<DynamicTest> executionWithContractCallWorksAtExpiry() {
         return defaultHapiSpec("ExecutionWithContractCallWorksAtExpiry")
                 .given(
-                        // overriding(SCHEDULING_WHITELIST, "ContractCall"),
+                        // upload fees for SCHEDULE_CREATE_CONTRACT_CALL
+                        uploadScheduledContractPrices(GENESIS),
                         uploadInitCode(SIMPLE_UPDATE),
                         contractCreate(SIMPLE_UPDATE).gas(500_000L),
                         cryptoCreate(PAYING_ACCOUNT).balance(1000000000000L).via(PAYING_ACCOUNT_TXN))

@@ -641,7 +641,8 @@ public class HandleWorkflow {
             final var schedules = scheduleStore.getByExpirationBetween(startSecond, endSecond);
             for (final var schedule : schedules) {
                 if (schedule.waitForExpiry()) {
-                    final var keys = scheduleManager.getTransactionKeysOrThrow(schedule, dispatch.handleContext()::allKeysForTransaction);
+                    final var keys = scheduleManager.getTransactionKeysOrThrow(
+                            schedule, dispatch.handleContext()::allKeysForTransaction);
                     final var requiredKeys = scheduleManager.allRequiredKeys(keys);
                     final var validationResult = scheduleManager.validate(
                             schedule, dispatch.handleContext().consensusNow(), true);
@@ -649,11 +650,7 @@ public class HandleWorkflow {
                     // We are not marking the scheduled transaction as executed here because below we are purging
                     // the expired schedules anyway.
                     scheduleManager.tryToExecuteSchedule(
-                            dispatch.handleContext(),
-                            schedule,
-                            requiredKeys,
-                            validationResult,
-                            true);
+                            dispatch.handleContext(), schedule, requiredKeys, validationResult, true);
                 }
             }
 

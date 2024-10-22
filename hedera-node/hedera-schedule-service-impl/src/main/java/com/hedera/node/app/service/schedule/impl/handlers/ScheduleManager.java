@@ -55,7 +55,6 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.concurrent.ConcurrentSkipListSet;
-import java.util.function.Predicate;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 

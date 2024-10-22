@@ -118,7 +118,8 @@ public class ScheduleCreateHandler extends ScheduleManager implements Transactio
         final long maxLifetime = schedulingConfig.longTermEnabled()
                 ? schedulingConfig.maxExpirationFutureSeconds()
                 : ledgerConfig.scheduleTxExpiryTimeSecs();
-        final var schedule = createProvisionalSchedule(body, instantSource.instant(), maxLifetime, schedulingConfig.longTermEnabled());
+        final var schedule = createProvisionalSchedule(
+                body, instantSource.instant(), maxLifetime, schedulingConfig.longTermEnabled());
         final var transactionKeys = getRequiredKeys(schedule, context::allKeysForTransaction);
         // If the schedule payer inherits from the ScheduleCreate, it is already in the required keys
         if (op.hasPayerAccountID()) {
@@ -139,7 +140,8 @@ public class ScheduleCreateHandler extends ScheduleManager implements Transactio
                 ? schedulingConfig.maxExpirationFutureSeconds()
                 : ledgerConfig.scheduleTxExpiryTimeSecs();
         final var consensusNow = context.consensusNow();
-        final var provisionalSchedule = createProvisionalSchedule(context.body(), consensusNow, expirationSeconds, isLongTermEnabled);
+        final var provisionalSchedule =
+                createProvisionalSchedule(context.body(), consensusNow, expirationSeconds, isLongTermEnabled);
         validateTrue(
                 isAllowedFunction(provisionalSchedule.scheduledTransactionOrThrow(), schedulingConfig),
                 SCHEDULED_TRANSACTION_NOT_IN_WHITELIST);
