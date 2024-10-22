@@ -378,7 +378,8 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
                         bootstrapConfig.getConfigData(HederaConfig.class),
                         new SignatureExpanderImpl(),
                         new SignatureVerifierImpl(CryptographyHolder.get())),
-                this);
+                this,
+                () -> metrics);
         tssBaseService = tssBaseServiceFactory.apply(appContext);
         contractServiceImpl = new ContractServiceImpl(appContext);
         blockStreamService = new BlockStreamService();

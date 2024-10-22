@@ -19,12 +19,14 @@ package com.hedera.node.app.service.contract.impl;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.service.contract.ContractService;
+import com.hedera.node.app.service.contract.impl.exec.metrics.ContractMetrics;
 import com.hedera.node.app.service.contract.impl.exec.scope.DefaultVerificationStrategies;
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategies;
 import com.hedera.node.app.service.contract.impl.handlers.ContractHandlers;
 import com.hedera.node.app.service.contract.impl.schemas.V0490ContractSchema;
 import com.hedera.node.app.service.contract.impl.schemas.V0500ContractSchema;
 import com.hedera.node.app.spi.AppContext;
+import com.swirlds.metrics.api.Metrics;
 import com.swirlds.state.spi.SchemaRegistry;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -57,7 +59,9 @@ public class ContractServiceImpl implements ContractService {
                         // C.f. https://github.com/hashgraph/hedera-services/issues/14248
                         appContext.signatureVerifier(),
                         Optional.ofNullable(verificationStrategies).orElseGet(DefaultVerificationStrategies::new),
-                        addOnTracers);
+                        addOnTracers,
+                        appContext.metricsSupplier(),
+                        new ContractMetrics());
     }
 
     @Override
@@ -68,5 +72,14 @@ public class ContractServiceImpl implements ContractService {
 
     public ContractHandlers handlers() {
         return component.handlers();
+    }
+
+    public Supplier<Metrics> metricsSupplier() {
+        return component.metricsSupplier();
+    }
+
+    public ContractMetrics contractMetrics() {
+        component.contractMetrics().init(metricsSupplier().get());
+        return component.contractMetrics();
     }
 }

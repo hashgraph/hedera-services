@@ -32,9 +32,11 @@ import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.contract.ContractCallTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.service.contract.impl.ContractServiceComponent;
 import com.hedera.node.app.service.contract.impl.exec.CallOutcome;
 import com.hedera.node.app.service.contract.impl.exec.ContextTransactionProcessor;
 import com.hedera.node.app.service.contract.impl.exec.TransactionComponent;
+import com.hedera.node.app.service.contract.impl.exec.metrics.ContractMetrics;
 import com.hedera.node.app.service.contract.impl.handlers.ContractCallHandler;
 import com.hedera.node.app.service.contract.impl.records.ContractCallStreamBuilder;
 import com.hedera.node.app.service.contract.impl.state.RootProxyWorldUpdater;
@@ -44,12 +46,15 @@ import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.PreCheckException;
+import com.swirlds.common.metrics.noop.NoOpMetrics;
+import com.swirlds.metrics.api.Metrics;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
+import org.mockito.Mock.Strictness;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
@@ -80,11 +85,19 @@ class ContractCallHandlerTest extends ContractHandlerTestBase {
     @Mock
     private GasCalculator gasCalculator;
 
+    @Mock(strictness = Strictness.LENIENT)
+    private ContractServiceComponent contractServiceComponent;
+
+    private final Metrics metrics = new NoOpMetrics();
+    private final ContractMetrics contractMetrics = new ContractMetrics();
+
     private ContractCallHandler subject;
 
     @BeforeEach
     void setUp() {
-        subject = new ContractCallHandler(() -> factory, gasCalculator);
+        contractMetrics.init(metrics);
+        given(contractServiceComponent.contractMetrics()).willReturn(contractMetrics);
+        subject = new ContractCallHandler(() -> factory, gasCalculator, contractServiceComponent);
     }
 
     @Test

@@ -270,11 +270,12 @@ class TransactionExecutorsTest {
 
     private void registerServices(@NonNull final ServicesRegistry servicesRegistry) {
         // Register all service schema RuntimeConstructable factories before platform init
+        final var noopMetrics = new NoOpMetrics();
         Set.of(
                         new EntityIdService(),
                         new ConsensusServiceImpl(),
-                        new ContractServiceImpl(
-                                new AppContextImpl(InstantSource.system(), signatureVerifier, UNAVAILABLE_GOSSIP)),
+                        new ContractServiceImpl(new AppContextImpl(
+                                InstantSource.system(), signatureVerifier, UNAVAILABLE_GOSSIP, () -> noopMetrics)),
                         new FileServiceImpl(),
                         new FreezeServiceImpl(),
                         new ScheduleServiceImpl(),

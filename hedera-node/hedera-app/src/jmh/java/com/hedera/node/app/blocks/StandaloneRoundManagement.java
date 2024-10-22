@@ -51,6 +51,8 @@ import com.hedera.pbj.runtime.ParseException;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.metrics.noop.NoOpMetrics;
+import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.state.service.PlatformStateService;
 import com.swirlds.platform.state.service.schemas.V0540PlatformStateSchema;
 import com.swirlds.platform.system.Round;
@@ -90,8 +92,9 @@ public class StandaloneRoundManagement {
     private final ConfigProvider configProvider =
             new ConfigProviderImpl(false, null, Map.of("blockStream.serializationBatchSize", "32"));
     private final List<BlockItem> roundItems = new ArrayList<>();
+    private final Metrics noopMetrics = new NoOpMetrics();
     private final TssBaseServiceImpl tssBaseService = new TssBaseServiceImpl(
-            new AppContextImpl(Instant::now, fakeSignatureVerifier(), UNAVAILABLE_GOSSIP),
+            new AppContextImpl(Instant::now, fakeSignatureVerifier(), UNAVAILABLE_GOSSIP, () -> noopMetrics),
             ForkJoinPool.commonPool(),
             ForkJoinPool.commonPool());
     private final BlockStreamManagerImpl subject = new BlockStreamManagerImpl(

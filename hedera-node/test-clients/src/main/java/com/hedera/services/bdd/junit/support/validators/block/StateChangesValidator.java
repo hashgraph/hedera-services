@@ -525,7 +525,9 @@ public class StateChangesValidator implements BlockStreamValidator {
             final InstantSource instantSource,
             final ServicesRegistry servicesRegistry,
             final VersionedConfiguration bootstrapConfig) {
-        final var appContext = new AppContextImpl(instantSource, fakeSignatureVerifier(), UNAVAILABLE_GOSSIP);
+        final var noopMetrics = new NoOpMetrics();
+        final var appContext =
+                new AppContextImpl(instantSource, fakeSignatureVerifier(), UNAVAILABLE_GOSSIP, () -> noopMetrics);
         // Register all service schema RuntimeConstructable factories before platform init
         Set.of(
                         new EntityIdService(),

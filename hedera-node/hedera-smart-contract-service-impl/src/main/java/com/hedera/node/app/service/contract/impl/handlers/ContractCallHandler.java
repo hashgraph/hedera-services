@@ -29,6 +29,7 @@ import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.hapi.utils.CommonPbjConverters;
 import com.hedera.node.app.hapi.utils.fee.SmartContractFeeBuilder;
+import com.hedera.node.app.service.contract.impl.ContractServiceComponent;
 import com.hedera.node.app.service.contract.impl.exec.TransactionComponent;
 import com.hedera.node.app.service.contract.impl.records.ContractCallStreamBuilder;
 import com.hedera.node.app.spi.fees.FeeContext;
@@ -52,14 +53,17 @@ import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 public class ContractCallHandler implements TransactionHandler {
     private final Provider<TransactionComponent.Factory> provider;
     private final GasCalculator gasCalculator;
+    private final ContractServiceComponent component;
     private final SmartContractFeeBuilder usageEstimator = new SmartContractFeeBuilder();
 
     @Inject
     public ContractCallHandler(
             @NonNull final Provider<TransactionComponent.Factory> provider,
-            @NonNull final GasCalculator gasCalculator) {
+            @NonNull final GasCalculator gasCalculator,
+            @NonNull final ContractServiceComponent component) {
         this.provider = requireNonNull(provider);
         this.gasCalculator = requireNonNull(gasCalculator);
+        this.component = requireNonNull(component);
     }
 
     @Override
@@ -83,12 +87,21 @@ public class ContractCallHandler implements TransactionHandler {
 
     @Override
     public void pureChecks(@NonNull TransactionBody txn) throws PreCheckException {
-        final var op = txn.contractCallOrThrow();
-        mustExist(op.contractID(), INVALID_CONTRACT_ID);
+        try {
+            final var op = txn.contractCallOrThrow();
+            mustExist(op.contractID(), INVALID_CONTRACT_ID);
 
-        final var intrinsicGas = gasCalculator.transactionIntrinsicGasCost(
-                Bytes.wrap(op.functionParameters().toByteArray()), false);
-        validateTruePreCheck(op.gas() >= intrinsicGas, INSUFFICIENT_GAS);
+            final var intrinsicGas = gasCalculator.transactionIntrinsicGasCost(
+                    Bytes.wrap(op.functionParameters().toByteArray()), false);
+            validateTruePreCheck(op.gas() >= intrinsicGas, INSUFFICIENT_GAS);
+        } catch (@NonNull final Exception e) {
+            final var contractMetrics = component.contractMetrics();
+            contractMetrics.incrementRejectedTx(CONTRACT_CALL);
+            if (e instanceof PreCheckException pce && pce.responseCode() == INSUFFICIENT_GAS) {
+                contractMetrics.incrementRejectedForGasTx(CONTRACT_CALL);
+            }
+            throw e;
+        }
     }
 
     @NonNull

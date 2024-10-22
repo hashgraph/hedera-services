@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.contract.impl.handlers;
 
+import static com.hedera.hapi.node.base.HederaFunctionality.CONTRACT_CALL;
 import static com.hedera.hapi.node.base.HederaFunctionality.CONTRACT_CREATE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_GAS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
@@ -29,6 +30,7 @@ import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.hapi.utils.fee.SmartContractFeeBuilder;
+import com.hedera.node.app.service.contract.impl.ContractServiceComponent;
 import com.hedera.node.app.service.contract.impl.exec.TransactionComponent;
 import com.hedera.node.app.service.contract.impl.records.ContractCreateStreamBuilder;
 import com.hedera.node.app.spi.fees.FeeContext;
@@ -53,15 +55,18 @@ public class ContractCreateHandler implements TransactionHandler {
     private static final AccountID REMOVE_AUTO_RENEW_ACCOUNT_SENTINEL =
             AccountID.newBuilder().shardNum(0).realmNum(0).accountNum(0).build();
     private final Provider<TransactionComponent.Factory> provider;
+    private final ContractServiceComponent component;
     private final SmartContractFeeBuilder usageEstimator = new SmartContractFeeBuilder();
     private final GasCalculator gasCalculator;
 
     @Inject
     public ContractCreateHandler(
             @NonNull final Provider<TransactionComponent.Factory> provider,
-            @NonNull final GasCalculator gasCalculator) {
+            @NonNull final GasCalculator gasCalculator,
+            @NonNull final ContractServiceComponent component) {
         this.provider = requireNonNull(provider);
         this.gasCalculator = requireNonNull(gasCalculator);
+        this.component = requireNonNull(component);
     }
 
     @Override
@@ -80,10 +85,19 @@ public class ContractCreateHandler implements TransactionHandler {
 
     @Override
     public void pureChecks(@NonNull final TransactionBody txn) throws PreCheckException {
-        final var op = txn.contractCreateInstanceOrThrow();
+        try {
+            final var op = txn.contractCreateInstanceOrThrow();
 
-        final var intrinsicGas = gasCalculator.transactionIntrinsicGasCost(Bytes.wrap(new byte[0]), true);
-        validateTruePreCheck(op.gas() >= intrinsicGas, INSUFFICIENT_GAS);
+            final var intrinsicGas = gasCalculator.transactionIntrinsicGasCost(Bytes.wrap(new byte[0]), true);
+            validateTruePreCheck(op.gas() >= intrinsicGas, INSUFFICIENT_GAS);
+        } catch (@NonNull final Exception e) {
+            final var contractMetrics = component.contractMetrics();
+            contractMetrics.incrementRejectedTx(CONTRACT_CREATE);
+            if (e instanceof PreCheckException pce && pce.responseCode() == INSUFFICIENT_GAS) {
+                contractMetrics.incrementRejectedForGasTx(CONTRACT_CALL);
+            }
+            throw e;
+        }
     }
 
     @Override
