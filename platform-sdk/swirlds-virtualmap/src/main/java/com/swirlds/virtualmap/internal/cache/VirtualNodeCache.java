@@ -234,6 +234,15 @@ public final class VirtualNodeCache<K extends VirtualKey, V extends VirtualValue
     private final AtomicBoolean released = new AtomicBoolean(false);
 
     /**
+     * Indicates whether this cache has been prepared for flush by calling its {@link
+     * #prepareForFlush()} method. In most cases counters like {@link #filteredLeavesCount},
+     * {@link #filteredLeafPathsCount}, and {@link #filteredHashesCount} are expected
+     * to be greater than zero after the method is called, but sometimes they are all
+     * zeroes, and therefore a separate flag is used.
+     */
+    private final AtomicBoolean preparedForFlush = new AtomicBoolean(false);
+
+    /**
      * Whether the <strong>leaf</strong> indexes in this cache are immutable. We track
      * immutability of leaves and internal nodes separately, because leaves are only
      * modified on the head of the chain (the most recent version).
@@ -780,6 +789,8 @@ public final class VirtualNodeCache<K extends VirtualKey, V extends VirtualValue
      * Returns a stream of dirty leaves from this cache instance to flush this virtual map copy and all
      * previous copies merged into this one to disk.
      *
+     * <p>{@link #prepareForFlush()} must be called before this method.
+     *
      * @param firstLeafPath
      * 		The first leaf path to include to the stream
      * @param lastLeafPath
@@ -788,12 +799,8 @@ public final class VirtualNodeCache<K extends VirtualKey, V extends VirtualValue
      *      A stream of dirty leaves for flushes
      */
     public Stream<VirtualLeafRecord<K, V>> dirtyLeavesForFlush(final long firstLeafPath, final long lastLeafPath) {
-        // Filter mutations, if it isn't done yet. Filtering doesn't remove mutations from the
-        // concurrent arrays, just marks them as filtered. When this method is called by
-        // VirtualRootNode, prepareForFlush() has been already called, but some tests don't
-        // do that
-        if (filteredLeavesCount.get() < 0) {
-            prepareForFlush();
+        if (!preparedForFlush.get()) {
+            throw new IllegalStateException("This cache has not been prepared for flush");
         }
         return dirtyLeaves(firstLeafPath, lastLeafPath);
     }
@@ -820,8 +827,7 @@ public final class VirtualNodeCache<K extends VirtualKey, V extends VirtualValue
      * 		for the data to have leaf data that is outside the expected range for the {@link VirtualMap} of
      * 		this cache. We need to provide the leaf boundaries to compensate for this.
      * @return A non-null stream of dirty leaves. May be empty. Will not contain duplicate records
-     * @throws MutabilityException
-     * 		if called on a cache that still allows dirty leaves to be added
+     * @throws MutabilityException if called on a cache that still allows dirty leaves to be added
      */
     private Stream<VirtualLeafRecord<K, V>> dirtyLeaves(final long firstLeafPath, final long lastLeafPath) {
         if (!dirtyLeaves.isImmutable()) {
@@ -992,24 +998,25 @@ public final class VirtualNodeCache<K extends VirtualKey, V extends VirtualValue
     /**
      * Gets a stream of dirty hashes <strong>from this cache instance</strong>. Deleted hashes are
      * not included in this stream. Must be called <strong>after</strong> the cache has been sealed.
-     * <p>
-     * This method may be called concurrently from multiple threads (although in practice, this should never happen).
+     *
+     * <p>This method may be called concurrently from multiple threads (although in practice, this should
+     * never happen).
+     *
+     * <p>{@link #prepareForFlush()} must be called before this method.
      *
      * @param lastLeafPath
      * 		The last leaf path at and above which no node results should be returned. It is possible,
      * 		through merging of multiple rounds, for the data to have data that is outside the expected range
      * 		for the {@link VirtualMap} of this cache. We need to provide the leaf boundaries to compensate for this.
      * @return A non-null stream of dirty hashes. May be empty. Will not contain duplicate records.
-     * @throws MutabilityException
-     * 		if called on a non-sealed cache instance.
+     * @throws MutabilityException if called on a non-sealed cache instance.
      */
     public Stream<VirtualHashRecord> dirtyHashesForFlush(final long lastLeafPath) {
         if (!dirtyHashes.isImmutable()) {
             throw new MutabilityException("Cannot get the dirty internal records for a non-sealed cache.");
         }
-        // Call prepareForFlush(), if that method hasn't been called yet
-        if (filteredHashesCount.get() < 0) {
-            prepareForFlush();
+        if (!preparedForFlush.get()) {
+            throw new IllegalStateException("This cache has not been prepared for flush");
         }
         return dirtyHashes.stream()
                 .filter(mutation -> mutation.key <= lastLeafPath)
@@ -1044,8 +1051,18 @@ public final class VirtualNodeCache<K extends VirtualKey, V extends VirtualValue
      * included to the streams for the data source. It may happen that after filtering the
      * cache copy is no longer needed to flush. In this case, all filtered mutations are
      * removed using {@link #garbageCollect(long, long)} method.
+     *
+     * <p>This method can only be called on sealed caches.
+     *
+     * @throws MutabilityException if called on a non-sealed cache instance.
      */
     public void prepareForFlush() {
+        if (!hashesAreImmutable.get() || !leafIndexesAreImmutable.get()) {
+            throw new MutabilityException("Cannot prepare for flushing for a non-sealed cache");
+        }
+        if (preparedForFlush.getAndSet(true)) {
+            throw new IllegalStateException("This cache has been already prepared for flush");
+        }
         // Mark obsolete mutations to filter later and update "filtered" counters. These
         // counters will affect the estimated size
         final long version = getFastCopyVersion();
@@ -1058,17 +1075,26 @@ public final class VirtualNodeCache<K extends VirtualKey, V extends VirtualValue
      * If a cache copy's estimated size exceeded flush threshold, but after mutations are
      * filtered the size drops below the threshold, the copy is not flushed to disk, but
      * just removes all filtered mutations using this method.
+     *
+     * <p>This method can only be called on sealed caches.
+     *
+     * @throws MutabilityException if called on a non-sealed cache instance.
      */
     public void garbageCollect(final long firstLeafPath, final long lastLeafPath) {
+        if (!hashesAreImmutable.get() || !leafIndexesAreImmutable.get()) {
+            throw new MutabilityException("Cannot run garbage collection for a non-sealed cache");
+        }
         final Stream<Mutation<Long, Hash>> filteredHashes = dirtyHashes.stream()
                 .filter(mutation -> mutation.key <= lastLeafPath)
                 .filter(mutation -> !mutation.isFiltered())
+                // Leave only the latest mutation for every hash path by setting next to null
                 .peek(mutation -> mutation.next = null);
         dirtyHashes = new ConcurrentArray<>(filteredHashes);
         filteredHashesCount.set(0);
         final Stream<Mutation<Long, K>> filteredLeafPaths = dirtyLeafPaths.stream()
                 .filter(mutation -> (mutation.key >= firstLeafPath) && (mutation.key <= lastLeafPath))
                 .filter(mutation -> !mutation.isFiltered())
+                // Leave only the latest mutation for every leaf path by setting next to null
                 .peek(mutation -> mutation.next = null);
         dirtyLeafPaths = new ConcurrentArray<>(filteredLeafPaths);
         filteredLeafPathsCount.set(0);
@@ -1078,6 +1104,7 @@ public final class VirtualNodeCache<K extends VirtualKey, V extends VirtualValue
                     return path >= firstLeafPath && path <= lastLeafPath;
                 })
                 .filter(mutation -> !mutation.isFiltered())
+                // Leave only the latest mutation for every leaf by setting next to null
                 .peek(mutation -> mutation.next = null);
         dirtyLeaves = new ConcurrentArray<>(filteredLeaves);
         filteredLeavesCount.set(0);

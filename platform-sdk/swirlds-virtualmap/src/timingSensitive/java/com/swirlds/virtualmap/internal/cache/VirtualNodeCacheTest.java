@@ -587,6 +587,7 @@ class VirtualNodeCacheTest extends VirtualTestBase {
                 cache1.lookupLeafByKey(B_KEY, false),
                 "value that was looked up should match original value");
 
+        cache1.prepareForFlush();
         final List<VirtualLeafRecord<TestKey, TestValue>> dirtyLeaves =
                 cache1.dirtyLeavesForFlush(1, 1).toList();
         assertEquals(1, dirtyLeaves.size(), "incorrect number of dirty leaves");
@@ -783,6 +784,7 @@ class VirtualNodeCacheTest extends VirtualTestBase {
 
         // Verify everything
         final AtomicInteger index = new AtomicInteger(0);
+        cache1.prepareForFlush();
         cache1.dirtyLeavesForFlush(totalMutationCount, totalMutationCount * 2)
                 .sorted(Comparator.comparingLong(VirtualLeafRecord::getPath))
                 .forEach(rec -> {
@@ -2040,6 +2042,7 @@ class VirtualNodeCacheTest extends VirtualTestBase {
         cache.deleteLeaf(cherryLeaf(1));
         cache.seal();
 
+        cache.prepareForFlush();
         final List<VirtualLeafRecord<TestKey, TestValue>> leaves =
                 cache.dirtyLeavesForFlush(-1, -1).toList();
         assertEquals(0, leaves.size(), "All leaves should be missing");
@@ -2104,6 +2107,7 @@ class VirtualNodeCacheTest extends VirtualTestBase {
         cache0.merge();
         cache1.merge();
 
+        cache2.prepareForFlush();
         final Set<VirtualLeafRecord<TestKey, TestValue>> leaves =
                 cache2.dirtyLeavesForFlush(4, 8).collect(Collectors.toSet());
         assertEquals(5, leaves.size(), "All leaves should be dirty");
@@ -2143,6 +2147,7 @@ class VirtualNodeCacheTest extends VirtualTestBase {
         cache0.merge();
         cache1.merge();
 
+        cache2.prepareForFlush();
         final Set<VirtualLeafRecord<TestKey, TestValue>> leaves =
                 cache2.dirtyLeavesForFlush(3, 6).collect(Collectors.toSet());
         assertEquals(4, leaves.size(), "Some leaves should be dirty");
@@ -2183,6 +2188,7 @@ class VirtualNodeCacheTest extends VirtualTestBase {
         cache0.merge();
         cache1.merge();
 
+        cache2.prepareForFlush();
         final List<VirtualLeafRecord<TestKey, TestValue>> leaves =
                 cache2.dirtyLeavesForFlush(-1, -1).toList();
         assertEquals(0, leaves.size(), "All leaves should be deleted");
@@ -2203,6 +2209,7 @@ class VirtualNodeCacheTest extends VirtualTestBase {
         cache0.putHash(rightLeftInternal());
         cache0.seal();
 
+        cache0.prepareForFlush();
         final List<VirtualHashRecord> internals = cache0.dirtyHashesForFlush(12).toList();
         assertEquals(6, internals.size(), "All internals should be dirty");
         assertEquals(rootInternal(), internals.get(0), "Unexpected internal");
@@ -2230,6 +2237,7 @@ class VirtualNodeCacheTest extends VirtualTestBase {
         cache1.seal();
         cache0.merge();
 
+        cache1.prepareForFlush();
         final List<VirtualHashRecord> internals = cache1.dirtyHashesForFlush(12).toList();
         assertEquals(6, internals.size(), "All internals should be dirty");
         assertEquals(
@@ -2273,6 +2281,7 @@ class VirtualNodeCacheTest extends VirtualTestBase {
         cache0.merge();
         cache1.merge();
 
+        cache2.prepareForFlush();
         final List<VirtualHashRecord> internals = cache2.dirtyHashesForFlush(12).toList();
         assertEquals(6, internals.size(), "All internals should be dirty");
         assertEquals(
@@ -2318,6 +2327,7 @@ class VirtualNodeCacheTest extends VirtualTestBase {
         cache0.merge();
         cache1.merge();
 
+        cache2.prepareForFlush();
         final List<VirtualHashRecord> internals = cache2.dirtyHashesForFlush(-1).toList();
         assertEquals(0, internals.size(), "No internals should be dirty");
     }
@@ -2349,6 +2359,7 @@ class VirtualNodeCacheTest extends VirtualTestBase {
                 cache1.dirtyLeavesForHash(2, 4).toList();
         assertEquals(List.of(appleLeaf(3), cherryLeaf(4)), dirtyLeaves1);
 
+        cache0.prepareForFlush();
         // Flush version 0
         final Set<VirtualLeafRecord<TestKey, TestValue>> dirtyLeaves0F =
                 cache0.dirtyLeavesForFlush(1, 2).collect(Collectors.toSet());
@@ -2416,6 +2427,7 @@ class VirtualNodeCacheTest extends VirtualTestBase {
         cache1.merge();
         cache2.merge();
 
+        cache3.prepareForFlush();
         final List<VirtualLeafRecord<TestKey, TestValue>> dirtyLeaves =
                 cache3.dirtyLeavesForFlush(4, 8).toList();
         System.err.println(dirtyLeaves);
