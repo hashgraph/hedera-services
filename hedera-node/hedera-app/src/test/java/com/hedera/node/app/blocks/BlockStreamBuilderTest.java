@@ -154,7 +154,6 @@ public class BlockStreamBuilderTest {
         assertEquals(status, result.status());
         assertEquals(asTimestamp(CONSENSUS_TIME), result.consensusTimestamp());
         assertEquals(asTimestamp(PARENT_CONSENSUS_TIME), result.parentConsensusTimestamp());
-        assertEquals(exchangeRate, result.exchangeRate());
         assertEquals(scheduleRef, result.scheduleRef());
         assertEquals(TRANSACTION_FEE, result.transactionFeeCharged());
         assertEquals(transferList, result.transferList());

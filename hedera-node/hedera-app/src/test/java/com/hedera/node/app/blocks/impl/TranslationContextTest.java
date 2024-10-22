@@ -22,6 +22,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.base.TransactionID;
+import com.hedera.hapi.node.transaction.ExchangeRateSet;
 import com.hedera.hapi.node.transaction.SignedTransaction;
 import com.hedera.node.app.blocks.impl.contexts.BaseOpContext;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -35,6 +36,7 @@ class TranslationContextTest {
 
         final var subject = new BaseOpContext(
                 "",
+                ExchangeRateSet.DEFAULT,
                 TransactionID.DEFAULT,
                 Transaction.newBuilder()
                         .signedTransactionBytes(signedTransactionBytes)
@@ -48,7 +50,8 @@ class TranslationContextTest {
     void hashIsOfSerializedTransactionIfMissingSignedTransactionBytes() {
         final var transactionBytes = Transaction.PROTOBUF.toBytes(Transaction.DEFAULT);
 
-        final var subject = new BaseOpContext("", TransactionID.DEFAULT, Transaction.DEFAULT, HederaFunctionality.NONE);
+        final var subject = new BaseOpContext(
+                "", ExchangeRateSet.DEFAULT, TransactionID.DEFAULT, Transaction.DEFAULT, HederaFunctionality.NONE);
 
         assertEquals(Bytes.wrap(noThrowSha384HashOf(transactionBytes.toByteArray())), subject.transactionHash());
     }

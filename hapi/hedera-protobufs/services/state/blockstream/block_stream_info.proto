@@ -50,7 +50,7 @@ option java_multiple_files = true;
  * _each_ block, but MUST be updated at the beginning of the _next_ block.<br/>
  * This value SHALL contain the block hash up to, and including, the
  * immediately prior completed block.<br/>
- * The state change to update this singleton MUST be the last "output"
+ * The state change to update this singleton MUST be the last
  * block item in this block.
  */
 message BlockStreamInfo {
@@ -74,7 +74,7 @@ message BlockStreamInfo {
      * A concatenation of hash values.<br/>
      * This combines several trailing output block item hashes and
      * is used as a seed value for a pseudo-random number generator.<br/>
-     * This is also required to implement the EVM `PREVRANDAO` opcode.
+     * This is also required to implement the EVM `PREVRANDAO` opcode.<br/>
      * This MUST contain at least 256 bits of entropy.
      */
     bytes trailing_output_hashes = 3;

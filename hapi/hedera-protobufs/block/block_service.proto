@@ -70,43 +70,45 @@ message PublishStreamRequest {
         /**
          * An item sent when a stream is ended by the publisher.
          */
-        EndOfStream status = 2;
+        // @workaround(PBJ #280) REMOVED pending fix for PBJ bug 280
+        //EndOfStream status = 2;
     }
 
-    /**
-     * A message sent to end a stream.
-     *
-     * This request message SHALL be sent from a Publisher to a block
-     * node system when a `publishBlockStream` stream ends.<br/>
-     * This message SHALL be sent _at most_ once for each `publishBlockStream`
-     * call.<br/>
-     * The source system SHALL cease sending block items after sending
-     * this item.
-     */
-    message EndOfStream {
-        /**
-         * A status code.
-         * <p>
-         * This code indicates the reason the stream ended.<br/>
-         * This value MUST be set to a non-default value.
-         */
-        PublishStreamEndCode status = 1;
-
-        /**
-         * The number of the earliest available block.
-         * <p>
-         * Publishers MUST provide the earliest available block still
-         * present in local cache.
-         */
-        uint64 earliest_block_number = 2;
-
-        /**
-         * The number of the last available block.
-         * <p>
-         * Publishers MUST provide the most recent available block.
-         */
-        uint64 latest_block_number = 3;
-    }
+    // @workaround(PBJ #280) REMOVED pending fix for PBJ bug 280
+    ///**
+    // * A message sent to end a stream.
+    // *
+    // * This request message SHALL be sent from a Publisher to a block
+    // * node system when a `publishBlockStream` stream ends.<br/>
+    // * This message SHALL be sent _at most_ once for each `publishBlockStream`
+    // * call.<br/>
+    // * The source system SHALL cease sending block items after sending
+    // * this item.
+    // */
+    //message EndOfStream {
+    //    /**
+    //     * A status code.
+    //     * <p>
+    //     * This code indicates the reason the stream ended.<br/>
+    //     * This value MUST be set to a non-default value.
+    //     */
+    //    PublishStreamEndCode status = 1;
+    //
+    //    /**
+    //     * The number of the earliest available block.
+    //     * <p>
+    //     * Publishers MUST provide the earliest available block still
+    //     * present in local cache.
+    //     */
+    //    uint64 earliest_block_number = 2;
+    //
+    //    /**
+    //     * The number of the last available block.
+    //     * <p>
+    //     * Publishers MUST provide the most recent available block.
+    //     */
+    //    uint64 latest_block_number = 3;
+    //}
 }
 
 /**
