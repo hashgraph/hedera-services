@@ -6,7 +6,7 @@
 
 This proposal outlines the design specification of rosters to support Threshold Signature Scheme (TSS) block signing.
 It details the roster's lifecycle, data storage, API, DevOps workflow, and necessary changes to associated
-components within the platform.
+components within the Hedera platform.
 
 |      Metadata      |                   Entities                    |
 |--------------------|-----------------------------------------------|
@@ -32,9 +32,9 @@ The details of how the roster is created, validated, stored, adopted and removed
 
 1. Immutability: The roster hash will be a critical piece of data. Rosters must be immutable to protect the integrity of its computed hash.
 2. Efficient Storage: Roster data should be stored efficiently in the state to minimize overhead and unnecessary data copying.
-3. Clear API: A well-defined API should be provided to create and submit candidate rosters to the platform, and for the platform to manage the lifecycle of submitted rosters.
-4. Components update: Platform components that currently rely on the use of the Address book (such as Reconnect, Network, Event Validation etc.) must be adapted to use the new `Roster` object instead.
-5. Address book paradigm discontinued within the platform codebase in favor of `Roster`s.
+3. Clear API: A well-defined API should be provided to create and submit candidate rosters, and for components to manage the lifecycle of submitted rosters.
+4. Components update: Components that currently rely on the use of the Address book (such as Reconnect, Network, Event Validation, etc.) must be adapted to use the new `Roster` object instead.
+5. Address book paradigm discontinued within the current platform side of the codebase in favor of `Roster`s.
 6. There must be a well-laid-out mechanism for the start-up code to arrive at the correct roster to use in starting the network.
 
 ## Architecture
@@ -58,7 +58,10 @@ At some point when the Hedera App (henceforth referred to as 'App') decides it's
 it will create a `Roster` object with information from the Address Book and set it to be stored it in the state.
 
 To manage `Roster`s in the state, a new set of `store` APIs will be introduced, similar to existing store
-implementations. A `ReadableRosterStore` and `WritableRosterStore` will be introduced.
+implementations. Stores are an abstraction over state storage and retrieval and provide a way to interact with the 
+state.
+
+A `ReadableRosterStore` and `WritableRosterStore` will be introduced.
 
 The `ReadableRosterStore` will have methods such as `getCandidateRoster()`, `getActiveRoster()` and `getRosterHistory()`.
 These will respectively return the candidate `Roster`, active `Roster`, and the history of active rosters present in the state.
@@ -96,8 +99,8 @@ A checked exception will be thrown if the Roster is invalid. The durability of t
 
 ## Data Structure
 
-The App is already responsible for managing the address book. We propose that it continues to do so, and when it deems necessary (such as during a freeze upgrade), creates a candidate `Roster` object and passes it to the platform via the new API.
-The platform will then validate the roster and store it in the state.
+The App is already responsible for managing the address book. 
+We propose that it continues to do so, and when it deems necessary (such as during a freeze upgrade), creates a candidate `Roster` object and stores it via the new API.
 
 ### Protobuf
 
@@ -211,8 +214,8 @@ The `RosterState` protobuf is defined as follows.
 
 ```proto
 /**
- * The current state of platform rosters.<br/>
- * This message stores a roster data for the platform in network state.
+ * The current state of rosters.<br/>
+ * This message stores a roster data in the network state.
  *
  * The roster state SHALL encapsulate the incoming candidate roster's hash,<br/>
  * and a list of pairs of round number and active roster hash.<br/>
@@ -285,7 +288,7 @@ When we reach full Dynamic Address Book, this design choice may need to be revis
 
 If a `candidateRosterHash` hash entry already exist (hash collisions) in the map of Rosters, it will be discarded.
 That is, setting a candidate `Roster` is an idempotent operation. One benefit of this indirection (using a Map instead of a Singleton) is that it avoids moving data around in the merkle state.
-Another benefit is that adoption trigger becomes straightforward (App sets the roster) with delineated responsibilities between the App and the platform.
+Another benefit is that adoption trigger becomes straightforward (App sets the roster) with delineated responsibilities between components.
 
 ### Roster Validity
 
@@ -299,8 +302,8 @@ A Roster is considered valid if it satisfies the following conditions:
 6. All ServiceEndpoint/s must have a valid IP address or domain name (mutually exclusive), and port.
 7. The roster must have a unique NodeId for each RosterEntry.
 
-On the submission of a new Candidate Roster, the platform will validate the roster against these conditions.
-Note that a constructed `Roster` can be valid, but not accepted by the platform.
+On the submission of a new Candidate Roster, it will be validated against these conditions.
+Note that a constructed `Roster` can be valid, but not accepted by the API.
 For example, if a new candidate roster is set via the API, but its hash evaluates to the hash of the existing candidate roster, the new roster will be discarded. That is, the operation has no effect.
 
 ## Data storage
@@ -326,9 +329,9 @@ However, it will be the responsibility of the devops team to manage the lifecycl
 
 The current startup procedure will be altered as follows:
 
-- The `config.txt` file will no longer be used by the platform for storing the address book in existing networks. It will no longer be used by the platform code
+- The `config.txt` file will no longer be used for storing the address book in existing networks.
 - Designating `config.txt` introduces inversion of control. It will be at the exclusive prerogative of Services (the App) going forward.
-  Platform will no longer be responsible for it, and all the platform code that builds an AddressBook from `config.txt` will be removed or refactored and moved into the Services codebase.
+  It's ownership (current platform components) will no longer be responsible for it, and all the code that builds an AddressBook from `config.txt` will be removed or refactored and moved into the current Services part of the codebase.
 
 The current network Transplant procedure is manual. DevOps is given a State and `config.txt` file on disk.
 This is then followed by a config-only upgrade to adopt the `config.txt` file using that state.
@@ -337,7 +340,7 @@ The new startup sequence will be determined by the presence of a Genesis Roster,
 
 ### The new Startup Behavior
 
-There will be four possible startup modes for the platform - Genesis Network, Network Transplant, Normal restart, and Software Upgrade modes.
+There will be four possible startup modes for the network - Genesis Network, Network Transplant, Normal restart, and Software Upgrade modes.
 
 Starting in a Genesis Network will require a `Genesis Roster`, while a Network Transplant will require an `Override Roster`.
 Normal restart and Software Upgrade modes will use the existing roster present in the state or fallback to creating one from `config.txt` file as described in the following diagram.
@@ -365,7 +368,8 @@ If found, a Genesis Roster will be created from it and used as the active `Roste
 An `Override Roster` is an optional Roster that DevOps may provide for the explicit purpose of starting a network using a specific state, with a specific set of nodes, such as during a Network Transplant Process.
 A common example of this is Mainnet State being transplanted into a testing network.
 
-A quick note on Pre-Consensus Event Stream (PCES).
+**A quick note on Pre-Consensus Event Stream (PCES).**
+
 The software version is used to determine which roster (active or previous) should be used to validate the signatures of events in the PCES.
 If the PCES event version is less than the current software version, it indicates that the event was signed with the old roster, and hence, the old roster is used for validation.
 If the PCES event version matches the current software version, the active roster is used.
@@ -452,10 +456,10 @@ The Round number assignments used in Edge Case 1 above will still apply.
 A new feature flag will be introduced to signify whether to use the determination logic described in the previous section or continue to use legacy `config.txt` to create/determine Address Books.
 The feature flag will be set in the configuration file and retrievable via some call similar to `config.useRosterConfigTxt()`.
 
-When this feature flag is turned off, the network will load AddressBook from `config.txt` and create a Roster from this AddressBook for use by the Platform code as done today.
+When this feature flag is turned off, the network will load AddressBook from `config.txt` and create a Roster from this AddressBook as it is done today.
 The current and previous active address books in the `PlatformState` will continue to be used.
 
-Regardless of the status of this flag, on the Platform side of the codebase, the use of `AddressBook`s will be replaced by `Roster`s.
+Regardless of the status of this flag, on the current Platform side of the codebase, the use of `AddressBook`s will be replaced by `Roster`s.
 However, the mechanism through which the Roster is created will differ based on the status of the feature flag.
 
 ### DevOps Changes, in summary
@@ -481,10 +485,10 @@ There are a few existing technical debts that the team has agreed to tackle as d
    use Node IDs only. Services and DevOps will implement this.
 
 3. Inversion of Control: The `config.txt` file does not have all the information that the Hedera Address Book needs (
-   proxy endpoints, and in the future, Block Nodes). It has verbose information for the platform. Its format could be
-   better, and it stores the account number in the memo field. Upon the creation and adoption of rosters in the
-   state, `config.txt` is no longer useful. The resolution is to offload this duty off the platform and allow
-   Services to use whatever file format that suits them as described earlier. Services will implement this.
+   proxy endpoints, and in the future, Block Nodes). Its format could be better, and it stores the account number in the memo field. 
+Upon the creation and adoption of rosters in the state, `config.txt` is no longer useful. 
+The resolution is to offload this duty off the current platform components and allow Services components to use whatever file format that suits them as described earlier. 
+Services will implement this.
 
 ### Roster changes needed for Components
 
@@ -534,6 +538,6 @@ been set. Others may be introduced during implementation.
 - Define Roster Data Structure in protobuf: Design and implement the Roster class and the associated child classes.
 - Develop the API: Method added and implemented in `PlatformState` to set a candidate roster.
 - Modify State Storage: Implement specified data structures and candidate roster logic.
-- Update Components: Modify all platform components that currently use `AddressBook` to use `Rosters` instead, if any.
+- Update Components: Modify all current platform components that currently use `AddressBook` to use `Rosters` instead, if any.
 - Testing: Conduct thorough testing as specified in this proposal.
 - Deployment: Work with DevOps and Release Engineering to deploy the changes.
