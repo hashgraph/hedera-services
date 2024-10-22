@@ -41,6 +41,7 @@ import com.swirlds.platform.roster.RosterUtils;
 import com.swirlds.state.spi.SchemaRegistry;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -48,6 +49,7 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -138,7 +140,6 @@ public class TssBaseServiceImpl implements TssBaseService {
         final var candidateRosterHash = RosterUtils.hash(roster).getBytes();
         final var tssPrivateShares =
                 getTssPrivateShares(sourceRoster, maxSharesPerNode, tssStore, candidateRosterHash, context);
-        final var aggregatedPrivateKey = tssLibrary.aggregatePrivateShares(tssPrivateShares);
         final var candidateRosterParticipantDirectory = computeTssParticipantDirectory(roster, maxSharesPerNode, (int)
                 context.networkInfo().selfNodeInfo().nodeId());
 
