@@ -29,6 +29,7 @@ import com.hedera.node.app.tss.handlers.TssHandlers;
 import com.hedera.node.app.tss.stores.ReadableTssBaseStore;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.services.bdd.junit.HapiTest;
+import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.state.spi.SchemaRegistry;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -85,7 +86,11 @@ public class FakeTssBaseService implements TssBaseService {
 
     public FakeTssBaseService(@NonNull final AppContext appContext) {
         delegate = new TssBaseServiceImpl(
-                appContext, ForkJoinPool.commonPool(), pendingTssSubmission::offer, new PlaceholderTssLibrary());
+                appContext,
+                ForkJoinPool.commonPool(),
+                pendingTssSubmission::offer,
+                new PlaceholderTssLibrary(),
+                new NoOpMetrics());
     }
 
     /**

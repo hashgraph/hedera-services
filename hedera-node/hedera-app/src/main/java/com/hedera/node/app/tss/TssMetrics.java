@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,30 +16,12 @@
 
 package com.hedera.node.app.tss;
 
-import com.hedera.node.app.spi.AppContext;
-import com.hedera.node.app.tss.api.TssLibrary;
 import com.swirlds.metrics.api.Metrics;
-import dagger.Binds;
-import dagger.Module;
-import dagger.Provides;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Singleton;
 
-@Module
-public interface TssModule {
-    @Provides
-    @Singleton
-    static TssCryptographyManager tssCryptographyManager(@NonNull final AppContext.Gossip gossip) {
-        return new TssCryptographyManager(new PlaceholderTssLibrary(), gossip);
-    }
+@Singleton
+public class TssMetrics {
 
-    @Binds
-    @Singleton
-    TssLibrary bindTssLibrary(PlaceholderTssLibrary fakeTssLibrary);
-
-    @Provides
-    @Singleton
-    static TssMetrics bindTssMetrics(Metrics tssMetrics) {
-        return new TssMetrics(tssMetrics);
-    }
+    public TssMetrics(@NonNull final Metrics metrics) {}
 }

@@ -51,6 +51,7 @@ import com.swirlds.common.io.utility.FileUtils;
 import com.swirlds.common.io.utility.RecycleBin;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.common.merkle.crypto.MerkleCryptographyFactory;
+import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
@@ -372,6 +373,10 @@ public class ServicesMain implements SwirldMain {
                 new OrderedServiceMigrator(),
                 InstantSource.system(),
                 appContext -> new TssBaseServiceImpl(
-                        appContext, ForkJoinPool.commonPool(), ForkJoinPool.commonPool(), new PlaceholderTssLibrary()));
+                        appContext,
+                        ForkJoinPool.commonPool(),
+                        ForkJoinPool.commonPool(),
+                        new PlaceholderTssLibrary(),
+                        new NoOpMetrics()));
     }
 }

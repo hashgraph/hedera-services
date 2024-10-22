@@ -16,6 +16,8 @@
 
 package com.hedera.node.app.workflows.handle;
 
+import static com.hedera.hapi.node.base.HederaFunctionality.TSS_MESSAGE;
+import static com.hedera.hapi.node.base.HederaFunctionality.TSS_VOTE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.BUSY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.FAIL_INVALID;
 import static com.hedera.node.app.records.schemas.V0490BlockRecordSchema.BLOCK_INFO_STATE_KEY;
@@ -353,6 +355,9 @@ public class HandleWorkflow {
             handleOutput.blockRecordSourceOrThrow().forEachItem(blockStreamManager::writeItem);
         }
         opWorkflowMetrics.updateDuration(userTxn.functionality(), (int) (System.nanoTime() - handleStart));
+        if (userTxn.functionality() == TSS_MESSAGE || userTxn.functionality() == TSS_VOTE) {
+            opWorkflowMetrics.updateTssMetrics(userTxn.functionality());
+        }
     }
 
     /**
