@@ -44,7 +44,7 @@ The details of how the roster is created, validated, stored, adopted and removed
 This proposal introduces four types of `Roster`s - candidate `Roster`, active `Roster`, genesis `Roster`, and override `Roster`.
 
 1. A Candidate `Roster` is a Roster that is currently being considered for adoption to become the active `Roster`.
-2. An Active `Roster` is a Roster currently being used for signing of blocks.
+2. An Active `Roster` is the roster currently being used to determine consensus.
 3. An Override `Roster` is a special Roster used to override an existing active `Roster` during a network transplant.
 4. A Genesis `Roster` is a special roster used for bootstrapping a brand-new Genesis network.
 
@@ -52,26 +52,23 @@ This proposal introduces four types of `Roster`s - candidate `Roster`, active `R
 
 #### Setting the Candidate Roster
 
-A Freeze Upgrade transaction is used to signal an upcoming software upgrade of the network.
-This transaction will trigger a series of actions, one of which will be the creation of a candidate `Roster` and storing it in the state.
 At some point when the Hedera App (henceforth referred to as 'App') decides it's time to begin work on adopting a new address book (scope beyond this proposal),
-it will create a `Roster` object with information from the Address Book and set it to be stored it in the state.
+it will create a candidate `Roster` object with information from the Address Book and set it to be stored it in the state.
+A candidate roster already stored in the state can also be replaced by a new one required by the App.
 
-To manage `Roster`s in the state, a new set of `store` APIs will be introduced, similar to existing store
-implementations. Stores are an abstraction over state storage and retrieval and provide a way to interact with the
-state.
+To manage `Roster` storage and retrieval from the state, a new set of state `store` APIs will be introduced, similar to existing store implementations. 
+Stores are an abstraction over state storage and retrieval. They provide a way for components to interact with states without having to specify implementation details.
+Store APIs are typically Readable or Writable. This proposal introduces a `ReadableRosterStore` and a `WritableRosterStore`.
 
-A `ReadableRosterStore` and `WritableRosterStore` will be introduced.
-
-The `ReadableRosterStore` will have methods such as `getCandidateRoster()`, `getActiveRoster()` and `getRosterHistory()`.
+The `ReadableRosterStore` will have access methods such as `getCandidateRoster()`, `getActiveRoster()` and `getRosterHistory()`.
 These will respectively return the candidate `Roster`, active `Roster`, and the history of active rosters present in the state.
 
 A `WritableRosterStore` implementation will have methods to store `roster`s in the state such as `setCandidateRoster()` and `setActiveRoster()`.
-
 The `WritableRosterStore#setCandidateRoster()` method will be used to set a candidate `Roster` in the state as follows:
 
 1. Validate the candidate `Roster`.
-2. Store the candidate `Roster` hash in the `RosterState`, and the Roster itself in the `RosterMap`.
+2. Store the candidate `Roster` hash in the `RosterState`
+3. Store the candidate Roster itself in the `RosterMap`.
 
 The `WritableRosterStore#setActiveRoster()` method will be called to set a new active `Roster` in the state. A call to `setActiveRoster` will infer the following operations:
 
