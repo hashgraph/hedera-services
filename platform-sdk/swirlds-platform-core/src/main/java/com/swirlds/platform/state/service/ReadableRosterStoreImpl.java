@@ -30,6 +30,10 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
 import java.util.Objects;
 
+/**
+ * Provides read-only methods for interacting with the underlying data storage mechanisms for
+ * working with Rosters.
+ */
 public class ReadableRosterStoreImpl implements ReadableRosterStore {
 
     /**
@@ -108,7 +112,7 @@ public class ReadableRosterStoreImpl implements ReadableRosterStore {
      * @return the roster if found, null otherwise
      */
     @Override
-    public Roster get(Bytes rosterHash) {
+    public Roster get(final Bytes rosterHash) {
         return rosterMap.get(ProtoBytes.newBuilder().value(rosterHash).build());
     }
 }

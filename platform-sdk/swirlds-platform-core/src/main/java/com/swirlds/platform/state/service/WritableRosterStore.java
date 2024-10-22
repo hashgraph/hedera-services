@@ -34,12 +34,16 @@ import com.swirlds.state.spi.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Objects;
 
 /**
  * Read-write implementation for accessing rosters states.
  */
 public class WritableRosterStore extends ReadableRosterStoreImpl {
+
+    /**
+     * The maximum number of active rosters to keep in the roster state.
+     */
+    public static final int MAXIMUM_ROSTER_HISTORY_SIZE = 2;
 
     /**
      * The roster state singleton. This is the state that holds the candidate roster hash and the list of pairs of
@@ -53,18 +57,13 @@ public class WritableRosterStore extends ReadableRosterStoreImpl {
     private final WritableKVState<ProtoBytes, Roster> rosterMap;
 
     /**
-     * The maximum number of active rosters to keep in the roster state.
-     */
-    static final int MAXIMUM_ROSTER_HISTORY_SIZE = 2;
-
-    /**
      * Constructs a new {@link WritableRosterStore} instance.
      *
      * @param writableStates the readable states
      */
     public WritableRosterStore(@NonNull final WritableStates writableStates) {
         super(writableStates);
-        Objects.requireNonNull(writableStates);
+        requireNonNull(writableStates);
         this.rosterState = writableStates.getSingleton(RosterStateId.ROSTER_STATES_KEY);
         this.rosterMap = writableStates.get(RosterStateId.ROSTER_KEY);
     }
@@ -76,7 +75,7 @@ public class WritableRosterStore extends ReadableRosterStoreImpl {
      * @param candidateRoster a candidate roster to set. It must be a valid roster.
      */
     public void setCandidateRoster(@NonNull final Roster candidateRoster) {
-        Objects.requireNonNull(candidateRoster);
+        requireNonNull(candidateRoster);
         RosterValidator.validate(candidateRoster);
 
         final Bytes incomingCandidateRosterHash =
@@ -101,13 +100,12 @@ public class WritableRosterStore extends ReadableRosterStoreImpl {
      *              It must be a positive number greater than the round number of the current active roster.
      */
     public void setActiveRoster(@NonNull final Roster roster, final long round) {
-        Objects.requireNonNull(roster);
+        requireNonNull(roster);
         RosterValidator.validate(roster);
 
         // update the roster state
         final RosterState previousRosterState = rosterStateOrThrow();
         final List<RoundRosterPair> roundRosterPairs = new LinkedList<>(previousRosterState.roundRosterPairs());
-        final Bytes activeRosterHash = RosterUtils.hash(roster).getBytes();
         if (!roundRosterPairs.isEmpty()) {
             final RoundRosterPair activeRosterPair = roundRosterPairs.getFirst();
             if (round < 0 || round <= activeRosterPair.roundNumber()) {
@@ -115,6 +113,7 @@ public class WritableRosterStore extends ReadableRosterStoreImpl {
                         "incoming round number must be greater than the round number of the current active roster.");
             }
         }
+        final Bytes activeRosterHash = RosterUtils.hash(roster).getBytes();
         roundRosterPairs.addFirst(new RoundRosterPair(round, activeRosterHash));
 
         if (roundRosterPairs.size() > MAXIMUM_ROSTER_HISTORY_SIZE) {

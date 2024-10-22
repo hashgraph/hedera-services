@@ -51,6 +51,9 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+/**
+ * Tests for the {@link WritableRosterStore} class.
+ */
 class WritableRosterStoreTest {
 
     private final WritableStates writableStates = mock(WritableStates.class);
@@ -78,22 +81,22 @@ class WritableRosterStoreTest {
 
     @Test
     void testGetReturnsCorrectRoster() {
-        Roster expectedRoster = createValidTestRoster(1);
+        final Roster expectedRoster = createValidTestRoster(1);
         writableRosterStore.setCandidateRoster(expectedRoster);
-        Bytes rosterHash = RosterUtils.hash(expectedRoster).getBytes();
+        final Bytes rosterHash = RosterUtils.hash(expectedRoster).getBytes();
 
-        Roster actualRoster = readableRosterStore.get(rosterHash);
+        final Roster actualRoster = readableRosterStore.get(rosterHash);
 
         assertEquals(expectedRoster, actualRoster, "The returned roster should match the expected roster");
     }
 
     @Test
     void testGetReturnsNullForInvalidHash() {
-        Roster expectedRoster = createValidTestRoster(1);
+        final Roster expectedRoster = createValidTestRoster(1);
         writableRosterStore.setCandidateRoster(expectedRoster);
-        Bytes rosterHash = Bytes.EMPTY;
+        final Bytes rosterHash = Bytes.EMPTY;
 
-        Roster actualRoster = readableRosterStore.get(rosterHash);
+        final Roster actualRoster = readableRosterStore.get(rosterHash);
 
         assertNull(actualRoster, "The returned roster should be null for an invalid hash");
     }
@@ -179,10 +182,15 @@ class WritableRosterStoreTest {
         writableRosterStore.setActiveRoster(roster3, 3);
         final WritableSingletonState<RosterState> rosterState = getRosterState();
         assertEquals(
-                2, Objects.requireNonNull(rosterState.get()).roundRosterPairs().size());
-        assertFalse(Objects.requireNonNull(rosterState.get())
-                .roundRosterPairs()
-                .contains(new RoundRosterPair(2, RosterUtils.hash(roster1).getBytes())));
+                2,
+                Objects.requireNonNull(rosterState.get()).roundRosterPairs().size(),
+                "Only 2 round roster pairs should exist");
+        assertFalse(
+                Objects.requireNonNull(rosterState.get())
+                        .roundRosterPairs()
+                        .contains(
+                                new RoundRosterPair(2, RosterUtils.hash(roster1).getBytes())),
+                "Oldest roster should be removed");
     }
 
     /**
