@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.hts.transfer;
 
+import static com.hedera.hapi.node.base.HederaFunctionality.CRYPTO_TRANSFER;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_RECEIVING_NODE_ACCOUNT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SIGNATURE;
@@ -176,7 +177,8 @@ class ClassicTransfersCallTest extends CallTestBase {
     @Test
     void unsupportedV2transferHaltsWithNotSupportedReason() {
         givenV2SubjectWithV2Disabled();
-        given(systemContractOperations.externalizePreemptedDispatch(any(TransactionBody.class), eq(NOT_SUPPORTED)))
+        given(systemContractOperations.externalizePreemptedDispatch(
+                        any(TransactionBody.class), eq(NOT_SUPPORTED), eq(CRYPTO_TRANSFER)))
                 .willReturn(recordBuilder);
         given(recordBuilder.status()).willReturn(NOT_SUPPORTED);
 
@@ -192,7 +194,7 @@ class ClassicTransfersCallTest extends CallTestBase {
         given(systemAccountCreditScreen.creditsToSystemAccount(CryptoTransferTransactionBody.DEFAULT))
                 .willReturn(true);
         given(systemContractOperations.externalizePreemptedDispatch(
-                        any(TransactionBody.class), eq(INVALID_RECEIVING_NODE_ACCOUNT)))
+                        any(TransactionBody.class), eq(INVALID_RECEIVING_NODE_ACCOUNT), eq(CRYPTO_TRANSFER)))
                 .willReturn(recordBuilder);
         given(recordBuilder.status()).willReturn(INVALID_RECEIVING_NODE_ACCOUNT);
 

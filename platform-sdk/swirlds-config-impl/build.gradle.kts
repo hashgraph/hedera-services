@@ -30,6 +30,7 @@ testModuleInfo {
 }
 
 jmhModuleInfo {
+    requires("com.swirlds.base")
     requires("com.swirlds.config.api")
     requires("com.swirlds.config.extensions")
     requires("jmh.core")

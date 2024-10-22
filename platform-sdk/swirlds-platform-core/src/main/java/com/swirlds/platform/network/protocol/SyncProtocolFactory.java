@@ -42,7 +42,6 @@ public class SyncProtocolFactory implements ProtocolFactory {
     private final SyncPermitProvider permitProvider;
     private final IntakeEventCounter intakeEventCounter;
     private final BooleanSupplier gossipHalted;
-    private final BooleanSupplier intakeIsTooFull;
     private final Duration sleepAfterSync;
     private final SyncMetrics syncMetrics;
     private final Supplier<PlatformStatus> platformStatusSupplier;
@@ -56,7 +55,6 @@ public class SyncProtocolFactory implements ProtocolFactory {
      * @param permitProvider         provides permits to sync
      * @param intakeEventCounter     keeps track of how many events have been received from each peer
      * @param gossipHalted           returns true if gossip is halted, false otherwise
-     * @param intakeIsTooFull        returns true if the intake queue is too full to continue syncing, false otherwise
      * @param sleepAfterSync         the amount of time to sleep after a sync
      * @param syncMetrics            metrics tracking syncing
      * @param platformStatusSupplier provides the current platform status
@@ -68,7 +66,6 @@ public class SyncProtocolFactory implements ProtocolFactory {
             @NonNull final SyncPermitProvider permitProvider,
             @NonNull final IntakeEventCounter intakeEventCounter,
             @NonNull final BooleanSupplier gossipHalted,
-            @NonNull final BooleanSupplier intakeIsTooFull,
             @NonNull final Duration sleepAfterSync,
             @NonNull final SyncMetrics syncMetrics,
             @NonNull final Supplier<PlatformStatus> platformStatusSupplier) {
@@ -79,7 +76,6 @@ public class SyncProtocolFactory implements ProtocolFactory {
         this.permitProvider = Objects.requireNonNull(permitProvider);
         this.intakeEventCounter = Objects.requireNonNull(intakeEventCounter);
         this.gossipHalted = Objects.requireNonNull(gossipHalted);
-        this.intakeIsTooFull = Objects.requireNonNull(intakeIsTooFull);
         this.sleepAfterSync = Objects.requireNonNull(sleepAfterSync);
         this.syncMetrics = Objects.requireNonNull(syncMetrics);
         this.platformStatusSupplier = Objects.requireNonNull(platformStatusSupplier);
@@ -99,7 +95,6 @@ public class SyncProtocolFactory implements ProtocolFactory {
                 permitProvider,
                 intakeEventCounter,
                 gossipHalted,
-                intakeIsTooFull,
                 sleepAfterSync,
                 syncMetrics,
                 platformStatusSupplier);

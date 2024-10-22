@@ -207,7 +207,7 @@ public final class PbjConverter {
                 .collect(toList()));
         result.setRound(addressBook.round());
         if (addressBook.nextNodeId() != null) {
-            result.setNextNodeId(new NodeId(addressBook.nextNodeId().id()));
+            result.setNextNodeId(NodeId.of(addressBook.nextNodeId().id()));
         }
         return result;
     }
@@ -239,9 +239,7 @@ public final class PbjConverter {
 
         return new ConsensusSnapshot(
                 consensusSnapshot.round(),
-                consensusSnapshot.judgeHashes().stream()
-                        .map(v -> new Hash(v.toByteArray()))
-                        .collect(toList()),
+                consensusSnapshot.judgeHashes().stream().map(Hash::new).collect(toList()),
                 consensusSnapshot.minimumJudgeInfoList().stream()
                         .map(PbjConverter::fromPbjMinimumJudgeInfo)
                         .collect(toList()),
@@ -304,7 +302,7 @@ public final class PbjConverter {
     private static Address fromPbjAddress(@NonNull final com.hedera.hapi.platform.state.Address address) {
         requireNonNull(address.id());
         return new Address(
-                new NodeId(address.id().id()),
+                NodeId.of(address.id().id()),
                 address.nickname(),
                 address.selfName(),
                 address.weight(),

@@ -36,7 +36,6 @@ import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.events.ConsensusEvent;
-import com.swirlds.platform.system.state.notifications.StateHashedNotification;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
 import java.time.Instant;
@@ -94,16 +93,33 @@ class RepeatableEmbeddedHedera extends AbstractEmbeddedHedera implements Embedde
                     new FakeEvent(nodeId, time.now(), semanticVersion, createAppPayloadWrapper(payload));
         }
         if (response.getNodeTransactionPrecheckCode() == OK) {
-            hedera.onPreHandle(platform.lastCreatedEvent, state);
-            final var round = platform.nextConsensusRound();
-            // Handle each transaction in own round
-            hedera.handleWorkflow().handleRound(state, round);
-            hedera.onSealConsensusRound(round, state);
-            // Immediately notify the block stream manager of the "hash" at the end of this round
-            hedera.blockStreamManager()
-                    .notify(new StateHashedNotification(round.getRoundNum(), FAKE_START_OF_STATE_HASH));
+            handleNextRound();
+            // If handling this transaction scheduled TSS work, do it synchronously as well
+            while (tssBaseService.hasTssSubmission()) {
+                platform.lastCreatedEvent = null;
+                tssBaseService.executeNextTssSubmission();
+                if (platform.lastCreatedEvent != null) {
+                    handleNextRound();
+                }
+            }
         }
         return response;
+    }
+
+    @Override
+    protected long validStartOffsetSecs() {
+        // We handle each transaction in a round starting in the next second of fake consensus time, so
+        // we don't need any offset here; this simplifies tests that validate purging expired receipts
+        return 0L;
+    }
+
+    private void handleNextRound() {
+        hedera.onPreHandle(platform.lastCreatedEvent, state);
+        final var round = platform.nextConsensusRound();
+        // Handle each transaction in own round
+        hedera.handleWorkflow().handleRound(state, round);
+        hedera.onSealConsensusRound(round, state);
+        notifyBlockStreamManagerIfEnabled(round.getRoundNum());
     }
 
     private class SynchronousFakePlatform extends AbstractFakePlatform implements Platform {
@@ -117,7 +133,7 @@ class RepeatableEmbeddedHedera extends AbstractEmbeddedHedera implements Embedde
         }
 
         @Override
-        public boolean createTransaction(@NonNull byte[] transaction) {
+        public boolean createTransaction(@NonNull final byte[] transaction) {
             lastCreatedEvent = new FakeEvent(
                     defaultNodeId, time.now(), version.getPbjSemanticVersion(), createAppPayloadWrapper(transaction));
             return true;

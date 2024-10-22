@@ -129,7 +129,7 @@ class OrphanBufferTests {
     private PlatformEvent createRandomEvent(
             @NonNull final List<PlatformEvent> parentCandidates, @NonNull final Map<NodeId, PlatformEvent> tips) {
 
-        final NodeId eventCreator = new NodeId(random.nextInt(NODE_ID_COUNT));
+        final NodeId eventCreator = NodeId.of(random.nextInt(NODE_ID_COUNT));
 
         final PlatformEvent selfParent =
                 tips.computeIfAbsent(eventCreator, creator -> createBootstrapEvent(creator, parentCandidates));
@@ -283,13 +283,13 @@ class OrphanBufferTests {
         final Random random = Randotron.create();
 
         final PlatformEvent selfParent =
-                new TestingEventBuilder(random).setCreatorId(new NodeId(0)).build();
+                new TestingEventBuilder(random).setCreatorId(NodeId.of(0)).build();
         final PlatformEvent otherParent1 =
-                new TestingEventBuilder(random).setCreatorId(new NodeId(1)).build();
+                new TestingEventBuilder(random).setCreatorId(NodeId.of(1)).build();
         final PlatformEvent otherParent2 =
-                new TestingEventBuilder(random).setCreatorId(new NodeId(2)).build();
+                new TestingEventBuilder(random).setCreatorId(NodeId.of(2)).build();
         final PlatformEvent otherParent3 =
-                new TestingEventBuilder(random).setCreatorId(new NodeId(3)).build();
+                new TestingEventBuilder(random).setCreatorId(NodeId.of(3)).build();
 
         final PlatformEvent event = new TestingEventBuilder(random)
                 .setSelfParent(selfParent)

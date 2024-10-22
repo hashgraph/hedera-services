@@ -16,31 +16,30 @@
 
 package com.hedera.node.app.service.contract.impl.test.exec.scope;
 
-import static com.hedera.node.app.service.contract.impl.test.TestHelpers.MOCK_VERIFICATION_STRATEGY;
+import static com.hedera.hapi.node.base.HederaFunctionality.CRYPTO_TRANSFER;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_DELETED;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 
 import com.hedera.hapi.node.base.AccountID;
-import com.hedera.hapi.node.base.NftID;
-import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.TimestampSeconds;
-import com.hedera.hapi.node.base.TokenRelationship;
+import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.contract.ContractFunctionResult;
-import com.hedera.hapi.node.state.token.Account;
-import com.hedera.hapi.node.state.token.Nft;
-import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.transaction.ExchangeRate;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.scope.QuerySystemContractOperations;
-import com.hedera.node.app.service.contract.impl.exec.scope.ResultTranslator;
+import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy;
 import com.hedera.node.app.spi.fees.ExchangeRateInfo;
 import com.hedera.node.app.spi.workflows.QueryContext;
-import com.hedera.node.config.data.ContractsConfig;
-import com.swirlds.config.api.Configuration;
+import com.hedera.node.app.spi.workflows.record.StreamBuilder;
 import java.time.InstantSource;
+import org.apache.tuweni.bytes.Bytes;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -53,28 +52,10 @@ class QuerySystemContractOperationsTest {
     private QueryContext context;
 
     @Mock
-    private NftID nftID;
-
-    @Mock
-    private ResultTranslator<Nft> nftResultTranslator;
-
-    @Mock
-    private ResultTranslator<Token> tokenResultTranslator;
-
-    @Mock
-    private ResultTranslator<Account> accountResultTranslator;
-
-    @Mock
-    private ResultTranslator<TokenRelationship> tokenRelResultTranslator;
-
-    @Mock
-    private Configuration configuration;
-
-    @Mock
-    private ContractsConfig contractsConfig;
-
-    @Mock
     private ExchangeRateInfo exchangeRateInfo;
+
+    @Mock
+    private VerificationStrategy verificationStrategy;
 
     private final InstantSource instantSource = InstantSource.system();
 
@@ -86,23 +67,35 @@ class QuerySystemContractOperationsTest {
     }
 
     @Test
-    void doesNotSupportAnyMutations() {
-        assertThrows(
-                UnsupportedOperationException.class,
-                () -> subject.dispatch(
-                        TransactionBody.DEFAULT, MOCK_VERIFICATION_STRATEGY, AccountID.DEFAULT, Object.class));
-        assertThrows(
-                UnsupportedOperationException.class, () -> subject.activeSignatureTestWith(MOCK_VERIFICATION_STRATEGY));
-
-        assertDoesNotThrow(() -> subject.externalizeResult(ContractFunctionResult.DEFAULT, ResponseCodeEnum.SUCCESS));
-    }
-
-    @Test
     void exchangeRateTest() {
         final ExchangeRate exchangeRate = new ExchangeRate(1, 2, TimestampSeconds.DEFAULT);
         given(context.exchangeRateInfo()).willReturn(exchangeRateInfo);
         given(exchangeRateInfo.activeRate(any())).willReturn(exchangeRate);
         var result = subject.currentExchangeRate();
         assertThat(result).isEqualTo(exchangeRate);
+    }
+
+    @Test
+    void dispatchingNotSupported() {
+        assertThrows(
+                UnsupportedOperationException.class,
+                () -> subject.dispatch(
+                        TransactionBody.DEFAULT, verificationStrategy, AccountID.DEFAULT, StreamBuilder.class));
+        assertThrows(
+                UnsupportedOperationException.class,
+                () -> subject.externalizePreemptedDispatch(TransactionBody.DEFAULT, ACCOUNT_DELETED, CRYPTO_TRANSFER));
+    }
+
+    @Test
+    void sigTestNotSupported() {
+        assertThrows(UnsupportedOperationException.class, () -> subject.activeSignatureTestWith(verificationStrategy));
+    }
+
+    @Test
+    void externalizingResultsAreNoop() {
+        assertDoesNotThrow(
+                () -> subject.externalizeResult(ContractFunctionResult.DEFAULT, SUCCESS, Transaction.DEFAULT));
+        assertSame(
+                Transaction.DEFAULT, subject.syntheticTransactionForNativeCall(Bytes.EMPTY, ContractID.DEFAULT, true));
     }
 }

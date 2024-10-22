@@ -109,6 +109,7 @@ public class AddressBookUtils {
             @NonNull final String host,
             @Nullable String scope,
             final int nextGrpcPort,
+            final int nextNodeOperatorPort,
             final int nextGossipPort,
             final int nextGossipTlsPort,
             final int nextPrometheusPort) {
@@ -122,6 +123,7 @@ public class AddressBookUtils {
                         .build(),
                 host,
                 nextGrpcPort + nodeId * 2,
+                nextNodeOperatorPort + nodeId * 2,
                 nextGossipPort + nodeId * 2,
                 nextGossipTlsPort + nodeId * 2,
                 nextPrometheusPort + nodeId,
@@ -170,6 +172,6 @@ public class AddressBookUtils {
      */
     public static Address nodeAddressFrom(@NonNull final AddressBook addressBook, final long nodeId) {
         requireNonNull(addressBook);
-        return addressBook.getAddress(new NodeId(nodeId));
+        return addressBook.getAddress(NodeId.of(nodeId));
     }
 }

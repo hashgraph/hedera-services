@@ -461,7 +461,6 @@ public final class PlatformBuilder {
                 new TransactionPoolNexus(platformContext),
                 new AtomicReference<>(),
                 new AtomicReference<>(),
-                new AtomicReference<>(),
                 initialPcesFiles,
                 issScratchpad,
                 NotificationEngine.buildEngine(getStaticThreadManager()),

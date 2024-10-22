@@ -18,6 +18,7 @@ package com.swirlds.platform.config.legacy;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.swirlds.common.Address;
 import com.swirlds.common.AddressBook;
@@ -47,13 +48,11 @@ class LegacyConfigPropertiesLoaderTest {
         final Path path = Paths.get(
                 LegacyConfigPropertiesLoaderTest.class.getResource("empty.txt").getPath());
 
-        // when
-        final LegacyConfigProperties properties = LegacyConfigPropertiesLoader.loadConfigFile(path);
-
-        // then
-        assertNotNull(properties, "The properties should never be null");
-        Assertions.assertFalse(properties.appConfig().isPresent(), "Value must not be set for an empty file");
-        Assertions.assertFalse(properties.swirldName().isPresent(), "Value must not be set for an empty file");
+        // when & then
+        // NK(2024-10-10): An empty file should be considered an invalid configuration file. The fact that this was
+        // previously considered a valid configuration file is a bug.
+        // The correct expected behavior is to throw a ConfigurationException.
+        assertThrows(ConfigurationException.class, () -> LegacyConfigPropertiesLoader.loadConfigFile(path));
     }
 
     @Test

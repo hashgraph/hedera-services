@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.contract.impl.test.exec.scope;
 
+import static com.hedera.hapi.node.base.HederaFunctionality.CONTRACT_CREATE;
 import static com.hedera.hapi.node.base.HederaFunctionality.ETHEREUM_TRANSACTION;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
@@ -648,7 +649,7 @@ class HandleHederaOperationsTest {
         // given
         var contractId = ContractID.newBuilder().contractNum(1001).build();
         given(context.savepointStack()).willReturn(stack);
-        given(stack.addRemovableChildRecordBuilder(ContractCreateStreamBuilder.class))
+        given(stack.addRemovableChildRecordBuilder(ContractCreateStreamBuilder.class, CONTRACT_CREATE))
                 .willReturn(contractCreateRecordBuilder);
         given(contractCreateRecordBuilder.contractID(contractId)).willReturn(contractCreateRecordBuilder);
         given(contractCreateRecordBuilder.status(any())).willReturn(contractCreateRecordBuilder);

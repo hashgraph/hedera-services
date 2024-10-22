@@ -142,7 +142,7 @@ public class MerkleStateLifecyclesImpl implements MerkleStateLifecycles {
         // service schema's restart() hook. Here we only update the address book weights
         // based on the staking info in the state.
         weightUpdateVisitor.accept(stakingInfoVMap, (node, info) -> {
-            final var nodeId = new NodeId(node.number());
+            final var nodeId = NodeId.of(node.number());
             // If present in the address book, remove this node id from the
             // set of node ids left to update and update its weight
             if (nodeIdsLeftToUpdate.remove(nodeId)) {

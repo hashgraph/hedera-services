@@ -43,7 +43,6 @@ import java.time.Instant;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.function.LongSupplier;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
@@ -69,8 +68,6 @@ import java.util.function.Supplier;
  *                                               into gossip event storage, per peer
  * @param randomBuilder                          a builder for creating random number generators
  * @param transactionPoolNexus                   provides transactions to be added to new events
- * @param intakeQueueSizeSupplierSupplier        supplies a method which supplies the size of the intake queue. This
- *                                               hack is required due to the lack of a platform health monitor.
  * @param isInFreezePeriodReference              a reference to a predicate that determines if a timestamp is in the
  *                                               freeze period, this can be deleted as soon as the CES is retired.
  * @param latestImmutableStateProviderReference  a reference to a method that supplies the latest immutable state. Input
@@ -111,7 +108,6 @@ public record PlatformBuildingBlocks(
         @NonNull IntakeEventCounter intakeEventCounter,
         @NonNull RandomBuilder randomBuilder,
         @NonNull TransactionPoolNexus transactionPoolNexus,
-        @NonNull AtomicReference<LongSupplier> intakeQueueSizeSupplierSupplier,
         @NonNull AtomicReference<Predicate<Instant>> isInFreezePeriodReference,
         @NonNull AtomicReference<Function<String, ReservedSignedState>> latestImmutableStateProviderReference,
         @NonNull PcesFileTracker initialPcesFiles,
@@ -137,7 +133,6 @@ public record PlatformBuildingBlocks(
         requireNonNull(intakeEventCounter);
         requireNonNull(randomBuilder);
         requireNonNull(transactionPoolNexus);
-        requireNonNull(intakeQueueSizeSupplierSupplier);
         requireNonNull(isInFreezePeriodReference);
         requireNonNull(latestImmutableStateProviderReference);
         requireNonNull(initialPcesFiles);

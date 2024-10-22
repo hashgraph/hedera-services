@@ -70,7 +70,7 @@ public class TestIntake {
      * @param addressBook     the address book used by this intake
      */
     public TestIntake(@NonNull final PlatformContext platformContext, @NonNull final AddressBook addressBook) {
-        final NodeId selfId = new NodeId(0);
+        final NodeId selfId = NodeId.of(0);
         roundsNonAncient = platformContext
                 .getConfiguration()
                 .getConfigData(ConsensusConfig.class)

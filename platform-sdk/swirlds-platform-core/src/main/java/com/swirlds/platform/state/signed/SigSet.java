@@ -200,7 +200,7 @@ public class SigSet implements FastCopyable, Iterable<NodeId>, SelfSerializable 
         for (int index = 0; index < signatureCount; index++) {
             final NodeId nodeId;
             if (version < ClassVersion.SELF_SERIALIZABLE_NODE_ID) {
-                nodeId = new NodeId(in.readLong());
+                nodeId = NodeId.of(in.readLong());
             } else {
                 nodeId = in.readSerializable(false, NodeId::new);
             }

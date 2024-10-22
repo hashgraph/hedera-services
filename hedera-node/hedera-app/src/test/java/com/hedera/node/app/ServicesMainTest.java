@@ -171,8 +171,8 @@ final class ServicesMainTest {
                 .thenReturn(legacyConfigProperties);
 
         List<NodeId> nodeIds = new ArrayList<>();
-        nodeIds.add(new NodeId(1));
-        nodeIds.add(new NodeId(2));
+        nodeIds.add(NodeId.of(1));
+        nodeIds.add(NodeId.of(2));
 
         bootstrapUtilsMockedStatic
                 .when(() -> BootstrapUtils.getNodesToRun(any(), any()))
