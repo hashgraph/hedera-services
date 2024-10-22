@@ -74,7 +74,7 @@ public class WritableRosterStore extends ReadableRosterStoreImpl {
      *
      * @param candidateRoster a candidate roster to set. It must be a valid roster.
      */
-    public void setCandidateRoster(@NonNull final Roster candidateRoster) {
+    public void putCandidateRoster(@NonNull final Roster candidateRoster) {
         requireNonNull(candidateRoster);
         RosterValidator.validate(candidateRoster);
 
@@ -99,7 +99,7 @@ public class WritableRosterStore extends ReadableRosterStoreImpl {
      * @param round the round number in which the roster became active.
      *              It must be a positive number greater than the round number of the current active roster.
      */
-    public void setActiveRoster(@NonNull final Roster roster, final long round) {
+    public void putActiveRoster(@NonNull final Roster roster, final long round) {
         requireNonNull(roster);
         RosterValidator.validate(roster);
 
