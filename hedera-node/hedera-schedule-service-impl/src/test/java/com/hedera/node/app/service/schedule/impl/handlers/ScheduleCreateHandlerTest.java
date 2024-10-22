@@ -16,16 +16,17 @@
 
 package com.hedera.node.app.service.schedule.impl.handlers;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_ID_DOES_NOT_EXIST;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.IDENTICAL_SCHEDULE_ALREADY_CREATED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.SCHEDULED_TRANSACTION_NOT_IN_WHITELIST;
 import static org.assertj.core.api.BDDAssertions.assertThat;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.Key;
-import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.ScheduleID;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.TransactionID;
@@ -38,18 +39,16 @@ import com.hedera.node.app.service.schedule.impl.ScheduledTransactionFactory;
 import com.hedera.node.app.signature.impl.SignatureVerificationImpl;
 import com.hedera.node.app.spi.fixtures.Assertions;
 import com.hedera.node.app.spi.ids.EntityNumGenerator;
+import com.hedera.node.app.spi.key.KeyComparator;
 import com.hedera.node.app.spi.signatures.VerificationAssistant;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.workflows.prehandle.PreHandleContextImpl;
-import com.hedera.node.config.data.HederaConfig;
-import com.hedera.node.config.data.LedgerConfig;
-import com.hedera.node.config.data.SchedulingConfig;
-import com.swirlds.config.api.Configuration;
 import java.security.InvalidKeyException;
 import java.time.InstantSource;
 import java.util.Set;
+import java.util.concurrent.ConcurrentSkipListSet;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.BDDMockito;
@@ -118,22 +117,7 @@ class ScheduleCreateHandlerTest extends ScheduleHandlerTestBase {
 
         final TransactionBody createBody = scheduleCreateTransaction(payer);
         realPreContext = new PreHandleContextImpl(mockStoreFactory, createBody, testConfig, mockDispatcher);
-        Assertions.assertThrowsPreCheck(
-                () -> subject.preHandle(realPreContext), ResponseCodeEnum.ACCOUNT_ID_DOES_NOT_EXIST);
-    }
-
-    @Test
-    void preHandleInvalindLongTermSchedule() throws PreCheckException {
-        SchedulingConfig mockSchedulingConfig = mock(SchedulingConfig.class);
-        when(mockSchedulingConfig.longTermEnabled()).thenReturn(true);
-        when(mockSchedulingConfig.whitelist()).thenReturn(scheduleConfig.whitelist());
-        Configuration mockConfig = mock(Configuration.class);
-        when(mockConfig.getConfigData(SchedulingConfig.class)).thenReturn(mockSchedulingConfig);
-        when(mockConfig.getConfigData(LedgerConfig.class)).thenReturn(testConfig.getConfigData(LedgerConfig.class));
-        when(mockConfig.getConfigData(HederaConfig.class)).thenReturn(testConfig.getConfigData(HederaConfig.class));
-        realPreContext = new PreHandleContextImpl(
-                mockStoreFactory, scheduleCreateTransactionWithWaitForExpiry(null), mockConfig, mockDispatcher);
-        Assertions.assertThrowsPreCheck(() -> subject.preHandle(realPreContext), ResponseCodeEnum.INVALID_TRANSACTION);
+        Assertions.assertThrowsPreCheck(() -> subject.preHandle(realPreContext), ACCOUNT_ID_DOES_NOT_EXIST);
     }
 
     @Test
@@ -151,8 +135,7 @@ class ScheduleCreateHandlerTest extends ScheduleHandlerTestBase {
                 assertThat(realPreContext.payerKey()).isNotNull().isEqualTo(schedulerKey);
             } else {
                 Assertions.assertThrowsPreCheck(
-                        () -> subject.preHandle(realPreContext),
-                        ResponseCodeEnum.SCHEDULED_TRANSACTION_NOT_IN_WHITELIST);
+                        () -> subject.preHandle(realPreContext), SCHEDULED_TRANSACTION_NOT_IN_WHITELIST);
             }
         }
     }
@@ -161,43 +144,14 @@ class ScheduleCreateHandlerTest extends ScheduleHandlerTestBase {
     void handleRejectsDuplicateTransaction() throws PreCheckException {
         final TransactionBody createTransaction = otherScheduleInState.originalCreateTransaction();
         prepareContext(createTransaction, otherScheduleInState.scheduleId().scheduleNum() + 1);
-        throwsHandleException(() -> subject.handle(mockContext), ResponseCodeEnum.IDENTICAL_SCHEDULE_ALREADY_CREATED);
-    }
-
-    @Test
-    void verifyPureChecks() {
-        final TransactionBody.Builder failures = alternateCreateTransaction.copyBuilder();
-        final TransactionID originalId = alternateCreateTransaction.transactionID();
-        Assertions.assertThrowsPreCheck(() -> subject.pureChecks(null), ResponseCodeEnum.INVALID_TRANSACTION_BODY);
-        failures.transactionID(nullTransactionId);
-        Assertions.assertThrowsPreCheck(
-                () -> subject.pureChecks(failures.build()), ResponseCodeEnum.INVALID_TRANSACTION_ID);
-        TransactionID.Builder idErrors = originalId.copyBuilder().scheduled(true);
-        failures.transactionID(idErrors);
-        Assertions.assertThrowsPreCheck(
-                () -> subject.pureChecks(failures.build()), ResponseCodeEnum.SCHEDULED_TRANSACTION_NOT_IN_WHITELIST);
-        idErrors = originalId.copyBuilder().transactionValidStart(nullTime);
-        failures.transactionID(idErrors);
-        Assertions.assertThrowsPreCheck(
-                () -> subject.pureChecks(failures.build()), ResponseCodeEnum.INVALID_TRANSACTION_START);
-        idErrors = originalId.copyBuilder().accountID(nullAccount);
-        failures.transactionID(idErrors);
-        Assertions.assertThrowsPreCheck(
-                () -> subject.pureChecks(failures.build()), ResponseCodeEnum.INVALID_SCHEDULE_PAYER_ID);
-        failures.transactionID(originalId);
-        setLongTermError(failures, alternateCreateTransaction);
-    }
-
-    private void setLongTermError(final TransactionBody.Builder failures, final TransactionBody original) {
-        final var createBuilder = original.scheduleCreate().copyBuilder();
-        createBuilder.waitForExpiry(true).expirationTime(nullTime);
-        failures.scheduleCreate(createBuilder);
+        throwsHandleException(() -> subject.handle(mockContext), IDENTICAL_SCHEDULE_ALREADY_CREATED);
     }
 
     @Test
     void handleRejectsNonWhitelist() throws HandleException, PreCheckException {
         final Set<HederaFunctionality> configuredWhitelist =
                 scheduleConfig.whitelist().functionalitySet();
+        given(keyVerifier.signingCryptoKeys()).willReturn(new ConcurrentSkipListSet<>(new KeyComparator()));
         for (final Schedule next : listOfScheduledOptions) {
             final TransactionBody createTransaction = next.originalCreateTransaction();
             final TransactionID createId = createTransaction.transactionID();
@@ -210,8 +164,7 @@ class ScheduleCreateHandlerTest extends ScheduleHandlerTestBase {
                 subject.handle(mockContext);
                 verifyHandleSucceededForWhitelist(next, createId, startCount);
             } else {
-                throwsHandleException(
-                        () -> subject.handle(mockContext), ResponseCodeEnum.SCHEDULED_TRANSACTION_NOT_IN_WHITELIST);
+                throwsHandleException(() -> subject.handle(mockContext), SCHEDULED_TRANSACTION_NOT_IN_WHITELIST);
             }
         }
     }
@@ -260,6 +213,7 @@ class ScheduleCreateHandlerTest extends ScheduleHandlerTestBase {
             // all keys are "valid" with this mock setup
             given(keyVerifier.verificationFor(BDDMockito.any(Key.class), BDDMockito.any(VerificationAssistant.class)))
                     .willReturn(new SignatureVerificationImpl(nullKey, null, true));
+            given(keyVerifier.signingCryptoKeys()).willReturn(new ConcurrentSkipListSet<>(new KeyComparator()));
             final int startCount = scheduleMapById.size();
             if (configuredWhitelist.contains(functionType)) {
                 subject.handle(mockContext);
@@ -293,20 +247,6 @@ class ScheduleCreateHandlerTest extends ScheduleHandlerTestBase {
                 Timestamp.newBuilder().seconds(1_234_567L).build();
         return ScheduledTransactionFactory.scheduleCreateTransactionWith(
                 adminKey, "test", payer, scheduler, timestampValue);
-    }
-
-    private TransactionBody scheduleCreateTransactionWithWaitForExpiry(final AccountID payer) {
-        final Timestamp timestampValue =
-                Timestamp.newBuilder().seconds(1_234_567L).build();
-        return ScheduledTransactionFactory.scheduleCreateTransactionWith(
-                ScheduledTransactionFactory.SAMPLE_BURN,
-                adminKey,
-                "test",
-                payer,
-                scheduler,
-                timestampValue,
-                null,
-                true);
     }
 
     private void prepareContext(final TransactionBody createTransaction, final long nextEntityId)

@@ -28,6 +28,7 @@ import com.hedera.services.bdd.spec.infrastructure.HapiSpecRegistry;
 import com.hedera.services.bdd.spec.queries.HapiQueryOp;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.ResponseType;
@@ -192,11 +193,10 @@ public class HapiGetScheduleInfo extends HapiQueryOp<HapiGetScheduleInfo> {
 
         var registry = spec.registry();
 
-        expectedSignatories.ifPresent(s -> {
-            var expect = KeyList.newBuilder();
-            for (String signatory : s) {
-                var key = registry.getKey(signatory);
-                expect.addKeys(key);
+        expectedSignatories.ifPresent(signatories -> {
+            final var expect = KeyList.newBuilder();
+            for (final var signatory : signatories) {
+                accumulateSimple(registry.getKey(signatory), expect);
             }
             Assertions.assertArrayEquals(
                     expect.build().getKeysList().toArray(),
@@ -221,6 +221,16 @@ public class HapiGetScheduleInfo extends HapiQueryOp<HapiGetScheduleInfo> {
                 registry);
 
         expectedLedgerId.ifPresent(id -> Assertions.assertEquals(id, actualInfo.getLedgerId()));
+    }
+
+    private static void accumulateSimple(@NonNull final Key key, @NonNull final KeyList.Builder builder) {
+        if (key.hasEd25519() || key.hasECDSASecp256K1()) {
+            builder.addKeys(key);
+        } else if (key.hasKeyList()) {
+            key.getKeyList().getKeysList().forEach(k -> accumulateSimple(k, builder));
+        } else if (key.hasThresholdKey()) {
+            key.getThresholdKey().getKeys().getKeysList().forEach(k -> accumulateSimple(k, builder));
+        }
     }
 
     private void assertTimestampMatches(String txn, int nanoOffset, Timestamp actual, String errMsg, HapiSpec spec) {
