@@ -16,7 +16,6 @@
 
 package com.swirlds.platform.state;
 
-import com.swirlds.common.context.PlatformContext;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.config.BasicConfig;
 import com.swirlds.platform.crypto.CryptoStatic;

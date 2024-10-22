@@ -16,8 +16,6 @@
 
 package com.hedera.node.app;
 
-import static com.hedera.node.app.info.UnavailableNetworkInfo.UNAVAILABLE_NETWORK_INFO;
-import static com.hedera.node.app.workflows.handle.metric.UnavailableMetrics.UNAVAILABLE_METRICS;
 import static com.swirlds.common.io.utility.FileUtils.getAbsolutePath;
 import static com.swirlds.common.io.utility.FileUtils.rethrowIO;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
@@ -38,17 +36,11 @@ import static com.swirlds.platform.util.BootstrapUtils.checkNodesToRun;
 import static com.swirlds.platform.util.BootstrapUtils.getNodesToRun;
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.hapi.block.stream.output.StateChanges.Builder;
 import com.hedera.node.app.config.BootstrapConfigProviderImpl;
-import com.hedera.node.app.ids.EntityIdService;
 import com.hedera.node.app.services.OrderedServiceMigrator;
-import com.hedera.node.app.services.ServiceMigrator;
 import com.hedera.node.app.services.ServicesRegistry;
 import com.hedera.node.app.services.ServicesRegistryImpl;
 import com.hedera.node.app.tss.TssBaseServiceImpl;
-import com.hedera.node.app.version.ServicesSoftwareVersion;
-import com.hedera.node.config.data.HederaConfig;
-import com.hedera.node.config.data.VersionConfig;
 import com.swirlds.base.time.Time;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.RuntimeConstructable;
@@ -73,7 +65,6 @@ import com.swirlds.platform.config.legacy.LegacyConfigProperties;
 import com.swirlds.platform.config.legacy.LegacyConfigPropertiesLoader;
 import com.swirlds.platform.state.MerkleRoot;
 import com.swirlds.platform.state.MerkleStateRoot;
-import com.swirlds.platform.state.service.PlatformStateService;
 import com.swirlds.platform.state.snapshot.SignedStateFileUtils;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;
@@ -82,7 +73,6 @@ import com.swirlds.platform.system.SwirldMain;
 import com.swirlds.platform.system.SwirldState;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.util.BootstrapUtils;
-import com.swirlds.state.State;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.InstantSource;
 import java.util.List;
@@ -233,7 +223,6 @@ public class ServicesMain implements SwirldMain {
                 selfId,
                 diskAddressBook);
 
-
         final var cryptography = CryptographyFactory.create();
         CryptographyHolder.set(cryptography);
         // the AddressBook is not changed after this point, so we calculate the hash now
@@ -252,17 +241,6 @@ public class ServicesMain implements SwirldMain {
                 FileSystemManager.create(configuration),
                 recycleBin,
                 merkleCryptography);
-
-        // Create initial state for the platform
-//        final var reservedState = getInitialState(
-//                platformContext,
-//                version,
-//                hedera::newMerkleStateRoot,
-//                SignedStateFileUtils::readState,
-//                Hedera.APP_NAME,
-//                Hedera.SWIRLD_NAME,
-//                selfId,
-//                diskAddressBook);
 
         final var initialState = reservedState.state();
         final var stateHash = reservedState.hash();
@@ -314,27 +292,6 @@ public class ServicesMain implements SwirldMain {
         hedera.init(platform, selfId);
         platform.start();
         hedera.run();
-    }
-
-//    public static List<Builder> initState(@NonNull final State state) {
-//        requireNonNull(state);
-//        logger.info("Initializing Hedera platform state");
-//
-//        return serviceMigrator.doMigrations(
-//                state,
-//                servicesRegistry.subRegistryFor(EntityIdService.NAME, PlatformStateService.NAME),
-//                deserializedVersion == null ? null : new ServicesSoftwareVersion(deserializedVersion),
-//                version,
-//                bootstrapConfigProvider.getConfiguration(),
-//                UNAVAILABLE_NETWORK_INFO,
-//                UNAVAILABLE_METRICS);
-//    }
-
-    private static ServicesSoftwareVersion getNodeStartupVersion(@NonNull final Configuration config) {
-        final var versionConfig = config.getConfigData(VersionConfig.class);
-        return new ServicesSoftwareVersion(
-                versionConfig.servicesVersion(),
-                config.getConfigData(HederaConfig.class).configVersion());
     }
 
     /**

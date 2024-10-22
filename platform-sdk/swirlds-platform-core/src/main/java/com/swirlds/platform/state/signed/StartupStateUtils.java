@@ -26,7 +26,6 @@ import static java.util.Objects.requireNonNull;
 
 import com.swirlds.base.function.CheckedBiFunction;
 import com.swirlds.common.config.StateCommonConfig;
-import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.streams.MerkleDataInputStream;
 import com.swirlds.common.io.utility.RecycleBin;
@@ -52,7 +51,6 @@ import java.util.List;
 import java.util.function.Supplier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.checkerframework.checker.units.qual.N;
 
 /**
  * Utilities for loading and manipulating state files at startup time.
@@ -157,8 +155,8 @@ public final class StartupStateUtils {
             return createNullReservation();
         }
 
-        final ReservedSignedState state =
-                loadLatestState(configuration, recycleBin, currentSoftwareVersion, savedStateFiles, snapshotStateReader);
+        final ReservedSignedState state = loadLatestState(
+                configuration, recycleBin, currentSoftwareVersion, savedStateFiles, snapshotStateReader);
         return state;
     }
 
@@ -229,8 +227,8 @@ public final class StartupStateUtils {
         logger.info(STARTUP.getMarker(), "Loading latest state from disk.");
 
         for (final SavedStateInfo savedStateFile : savedStateFiles) {
-            final ReservedSignedState state =
-                    loadStateFile(configuration, recycleBin, currentSoftwareVersion, savedStateFile, snapshotStateReader);
+            final ReservedSignedState state = loadStateFile(
+                    configuration, recycleBin, currentSoftwareVersion, savedStateFile, snapshotStateReader);
             if (state != null) {
                 return state;
             }
