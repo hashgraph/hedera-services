@@ -36,6 +36,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 
+import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.contract.EthereumTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
@@ -168,6 +169,10 @@ class EthereumTransactionHandlerTest {
                 customGasCharging);
 
         given(component.contextTransactionProcessor()).willReturn(contextTransactionProcessor);
+        final var body = TransactionBody.newBuilder()
+                .transactionID(TransactionID.DEFAULT)
+                .build();
+        given(handleContext.body()).willReturn(body);
         given(hevmTransactionFactory.fromHapiTransaction(handleContext.body())).willReturn(HEVM_CREATION);
 
         given(transactionProcessor.processTransaction(
