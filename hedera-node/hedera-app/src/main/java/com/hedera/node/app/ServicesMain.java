@@ -33,13 +33,20 @@ import static com.swirlds.platform.system.SystemExitUtils.exitSystem;
 import static com.swirlds.platform.system.address.AddressBookUtils.createRoster;
 import static com.swirlds.platform.system.address.AddressBookUtils.initializeAddressBook;
 import static com.swirlds.platform.util.BootstrapUtils.checkNodesToRun;
+import static com.swirlds.platform.util.BootstrapUtils.detectSoftwareUpgrade;
 import static com.swirlds.platform.util.BootstrapUtils.getNodesToRun;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.state.primitives.ProtoBytes;
+import com.hedera.hapi.node.state.roster.Roster;
+import com.hedera.hapi.node.state.roster.RosterState;
+import com.hedera.hapi.node.state.roster.RoundRosterPair;
 import com.hedera.node.app.services.OrderedServiceMigrator;
 import com.hedera.node.app.services.ServicesRegistryImpl;
 import com.hedera.node.app.tss.TssBaseServiceImpl;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.base.time.Time;
+import com.swirlds.common.RosterStateId;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.RuntimeConstructable;
 import com.swirlds.common.context.PlatformContext;
@@ -63,6 +70,8 @@ import com.swirlds.platform.config.legacy.LegacyConfigProperties;
 import com.swirlds.platform.config.legacy.LegacyConfigPropertiesLoader;
 import com.swirlds.platform.state.MerkleRoot;
 import com.swirlds.platform.state.MerkleStateRoot;
+import com.swirlds.platform.state.signed.ReservedSignedState;
+import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.snapshot.SignedStateFileUtils;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;
@@ -71,6 +80,8 @@ import com.swirlds.platform.system.SwirldMain;
 import com.swirlds.platform.system.SwirldState;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.util.BootstrapUtils;
+import com.swirlds.state.spi.ReadableKVState;
+import com.swirlds.state.spi.ReadableSingletonState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.InstantSource;
 import java.util.List;
@@ -78,6 +89,7 @@ import java.util.Set;
 import java.util.concurrent.ForkJoinPool;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * Main entry point.
@@ -239,20 +251,14 @@ public class ServicesMain implements SwirldMain {
 
         // Initialize the address book and set on platform builder
         final var addressBook = initializeAddressBook(selfId, version, initialState, diskAddressBook, platformContext);
+        final var roster = chooseRoster(version, initialState);
 
         // Follow the Inversion of Control pattern by injecting all needed dependencies into the PlatformBuilder.
-        final var roster = createRoster(addressBook);
         final var platformBuilder = PlatformBuilder.create(
                         Hedera.APP_NAME, Hedera.SWIRLD_NAME, version, initialState, selfId)
                 .withPlatformContext(platformContext)
                 .withConfiguration(configuration)
                 .withAddressBook(addressBook)
-                // C.f. https://github.com/hashgraph/hedera-services/issues/14751,
-                // we need to choose the correct roster in the following cases:
-                //  - At genesis, a roster loaded from disk
-                //  - At restart, the active roster in the saved state
-                //  - At upgrade boundary, the candidate roster in the saved state IF
-                //    that state satisfies conditions (e.g. the roster has been keyed)
                 .withRoster(roster)
                 .withKeysAndCerts(keysAndCerts);
 
@@ -284,6 +290,87 @@ public class ServicesMain implements SwirldMain {
         hedera.init(platform, selfId);
         platform.start();
         hedera.run();
+    }
+
+    /**
+     * Choose the correct roster depending on startup mode.
+     * We need to choose the correct roster in the following cases:
+     * <ul>
+     *   <li> At genesis, a roster loaded from disk.</li>
+     *   <li>At restart, the active roster in the saved state.</li>
+     *   <li>At upgrade boundary, the candidate roster in the saved state IF that state satisfies conditions (e.g. the roster has been keyed).</li>
+     *</ul>
+     *
+     *             * @param version              the software version of the current node
+     *      * @param initialState         the initial state of the platform
+     * @return the roster
+     */
+    private static @NotNull Roster chooseRoster(
+            @NonNull final SoftwareVersion version, @NonNull final ReservedSignedState initialState) {
+        requireNonNull(version);
+        requireNonNull(initialState);
+
+        final SignedState loadedSignedState = initialState.get();
+        if (loadedSignedState.isGenesisState()) {
+            final AddressBook diskAddressBook = loadAddressBook(DEFAULT_CONFIG_FILE_NAME);
+            return createRoster(diskAddressBook);
+        }
+
+        final boolean softwareUpgrade = detectSoftwareUpgrade(version, loadedSignedState);
+        final boolean hasOverrideRoster = false;
+        if (softwareUpgrade && hasOverrideRoster) {
+            // TODO: override roster?
+            // https://github.com/hashgraph/hedera-services/blob/develop/platform-sdk/docs/proposals/001-tss-rosters-design-proposal/proposal.md#override-roster
+            return null;
+        } else if (softwareUpgrade && !hasOverrideRoster) {
+            // Retrieve the candidate roster
+            final var candidateRoster = getCandidateRoster(loadedSignedState);
+            final boolean hasBeenKeyed = hasEnoughKeyMaterial(candidateRoster);
+            if (!hasBeenKeyed) {
+                return getActiveRoster(loadedSignedState);
+            } else {
+                return candidateRoster;
+            }
+        } else if (!softwareUpgrade && !hasOverrideRoster) {
+            return getActiveRoster(loadedSignedState);
+        } else {
+            throw new IllegalStateException("Invalid state");
+        }
+    }
+
+    // TODO: Check that we have enough key material, i.e. check that there are enough votes and that the TSS messages in
+    // the votes were the ones used to generate the key material
+    private static boolean hasEnoughKeyMaterial(Roster candidateRoster) {
+        return false;
+    }
+
+    private static @NotNull Roster getCandidateRoster(SignedState loadedSignedState) {
+        final var state = ((MerkleStateRoot) loadedSignedState.getState());
+        final var readableStates = state.getReadableStates(RosterStateId.NAME);
+        final ReadableSingletonState<RosterState> rosterState =
+                readableStates.getSingleton(RosterStateId.ROSTER_STATES_KEY);
+        final ReadableKVState<ProtoBytes, Roster> rosterMap = readableStates.get(RosterStateId.ROSTER_KEY);
+        final RosterState rosterStateSingleton = rosterState.get();
+        final Bytes candidateRosterHash = rosterStateSingleton.candidateRosterHash();
+        final var candidateRoster =
+                rosterMap.get(ProtoBytes.newBuilder().value(candidateRosterHash).build());
+        return requireNonNull(candidateRoster);
+    }
+
+    private static @NotNull Roster getActiveRoster(SignedState loadedSignedState) {
+        final var state = ((MerkleStateRoot) loadedSignedState.getState());
+        final var readableStates = state.getReadableStates(RosterStateId.NAME);
+        final ReadableSingletonState<RosterState> rosterState =
+                readableStates.getSingleton(RosterStateId.ROSTER_STATES_KEY);
+        final ReadableKVState<ProtoBytes, Roster> rosterMap = readableStates.get(RosterStateId.ROSTER_KEY);
+
+        final RosterState rosterStateSingleton = rosterState.get();
+        final List<RoundRosterPair> rostersAndRounds = rosterStateSingleton.roundRosterPairs();
+        final RoundRosterPair latestRoundRosterPair = rostersAndRounds.getFirst();
+        final Bytes activeRosterHash = latestRoundRosterPair.activeRosterHash();
+        final var activeRoster =
+                rosterMap.get(ProtoBytes.newBuilder().value(activeRosterHash).build());
+        return requireNonNull(activeRoster);
     }
 
     /**
