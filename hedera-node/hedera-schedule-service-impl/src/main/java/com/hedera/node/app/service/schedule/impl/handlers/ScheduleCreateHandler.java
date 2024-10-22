@@ -118,7 +118,7 @@ public class ScheduleCreateHandler extends ScheduleManager implements Transactio
         final long maxLifetime = schedulingConfig.longTermEnabled()
                 ? schedulingConfig.maxExpirationFutureSeconds()
                 : ledgerConfig.scheduleTxExpiryTimeSecs();
-        final var schedule = createProvisionalSchedule(body, instantSource.instant(), maxLifetime);
+        final var schedule = createProvisionalSchedule(body, instantSource.instant(), maxLifetime, schedulingConfig.longTermEnabled());
         final var transactionKeys = getRequiredKeys(schedule, context::allKeysForTransaction);
         // If the schedule payer inherits from the ScheduleCreate, it is already in the required keys
         if (op.hasPayerAccountID()) {

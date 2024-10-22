@@ -72,7 +72,7 @@ public class ScheduleManager {
     private static final Comparator<Key> KEY_COMPARATOR = new KeyComparator();
 
     @FunctionalInterface
-    protected interface TransactionKeysFn {
+    public interface TransactionKeysFn {
         TransactionKeys apply(@NonNull TransactionBody body, @NonNull AccountID payerId) throws PreCheckException;
     }
 
@@ -124,7 +124,7 @@ public class ScheduleManager {
      * @param keys the transaction keys
      * @return the required keys
      */
-    protected @NonNull List<Key> allRequiredKeys(@NonNull final TransactionKeys keys) {
+    public @NonNull List<Key> allRequiredKeys(@NonNull final TransactionKeys keys) {
         final var all = new ArrayList<Key>();
         all.add(keys.payerKey());
         all.addAll(keys.requiredNonPayerKeys());
