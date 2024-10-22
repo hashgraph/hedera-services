@@ -19,20 +19,29 @@ package com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.hts.
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.airdrops.TokenAirdropTranslator.TOKEN_AIRDROP;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.FUNGIBLE_TOKEN_HEADLONG_ADDRESS;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.FUNGIBLE_TOKEN_ID;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.NON_FUNGIBLE_TOKEN_HEADLONG_ADDRESS;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.NON_FUNGIBLE_TOKEN_ID;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.OWNER_ACCOUNT_AS_ADDRESS;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.OWNER_ID;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.SENDER_ID;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.SYSTEM_ADDRESS;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.asHeadlongAddress;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.lenient;
 
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.hedera.hapi.node.base.AccountAmount;
+import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.NftTransfer;
 import com.hedera.hapi.node.base.TokenTransferList;
 import com.hedera.hapi.node.token.TokenAirdropTransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AddressIdConverter;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.airdrops.TokenAirdropDecoder;
+import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.config.data.LedgerConfig;
 import com.hedera.node.config.data.TokensConfig;
 import com.swirlds.config.api.Configuration;
@@ -78,12 +87,24 @@ public class TokenAirdropDecoderTest {
                     .build())
             .build();
 
+    private final TokenAirdropTransactionBody nftAirdrop = TokenAirdropTransactionBody.newBuilder()
+            .tokenTransfers(TokenTransferList.newBuilder()
+                    .token(NON_FUNGIBLE_TOKEN_ID)
+                    .nftTransfers(NftTransfer.newBuilder()
+                            .senderAccountID(SENDER_ID)
+                            .receiverAccountID(OWNER_ID)
+                            .serialNumber(1)
+                            .build())
+                    .build())
+            .build();
+
     @BeforeEach
     void setUp() {
         subject = new TokenAirdropDecoder();
-        given(addressIdConverter.convert(asHeadlongAddress(SENDER_ID.accountNum())))
-                .willReturn(SENDER_ID);
-        given(addressIdConverter.convert(OWNER_ACCOUNT_AS_ADDRESS)).willReturn(OWNER_ID);
+        lenient()
+                .when(addressIdConverter.convert(asHeadlongAddress(SENDER_ID.accountNum())))
+                .thenReturn(SENDER_ID);
+        lenient().when(addressIdConverter.convert(OWNER_ACCOUNT_AS_ADDRESS)).thenReturn(OWNER_ID);
     }
 
     @Test
@@ -108,5 +129,168 @@ public class TokenAirdropDecoderTest {
         assertNotNull(body);
         assertNotNull(body.tokenAirdrop());
         assertNotNull(body.tokenAirdrop().tokenTransfers());
+        assertEquals(tokenAirdrop, body.tokenAirdrop());
+    }
+
+    @Test
+    void tokenAirdropDecoderFailsIfReceiverIsSystemAcc() {
+        final var tuple = new Tuple[] {
+            Tuple.of(
+                    FUNGIBLE_TOKEN_HEADLONG_ADDRESS,
+                    new Tuple[] {
+                        Tuple.of(asHeadlongAddress(SENDER_ID.accountNum()), -10L, false),
+                        Tuple.of(asHeadlongAddress(SYSTEM_ADDRESS), 10L, false)
+                    },
+                    new Tuple[] {})
+        };
+        final var encoded = Bytes.wrapByteBuffer(TOKEN_AIRDROP.encodeCall(Tuple.singleton(tuple)));
+        given(attempt.inputBytes()).willReturn(encoded.toArrayUnsafe());
+        given(attempt.configuration()).willReturn(configuration);
+        given(attempt.addressIdConverter()).willReturn(addressIdConverter);
+        given(configuration.getConfigData(LedgerConfig.class)).willReturn(ledgerConfig);
+        given(ledgerConfig.tokenTransfersMaxLen()).willReturn(10);
+        given(ledgerConfig.nftTransfersMaxLen()).willReturn(10);
+        given(addressIdConverter.convert(asHeadlongAddress(SYSTEM_ADDRESS)))
+                .willReturn(AccountID.newBuilder().accountNum(750).build());
+        assertThrows(HandleException.class, () -> subject.decodeAirdrop(attempt));
+    }
+
+    @Test
+    void tokenAirdropDecoderFailsIfAirdropExceedsLimits() {
+        final var tuple = new Tuple[] {
+            Tuple.of(
+                    FUNGIBLE_TOKEN_HEADLONG_ADDRESS,
+                    new Tuple[] {
+                        Tuple.of(asHeadlongAddress(SENDER_ID.accountNum()), -10L, false),
+                        Tuple.of(OWNER_ACCOUNT_AS_ADDRESS, 10L, false)
+                    },
+                    new Tuple[] {}),
+            Tuple.of(
+                    FUNGIBLE_TOKEN_HEADLONG_ADDRESS,
+                    new Tuple[] {
+                        Tuple.of(asHeadlongAddress(SENDER_ID.accountNum()), -10L, false),
+                        Tuple.of(OWNER_ACCOUNT_AS_ADDRESS, 10L, false)
+                    },
+                    new Tuple[] {}),
+            Tuple.of(
+                    FUNGIBLE_TOKEN_HEADLONG_ADDRESS,
+                    new Tuple[] {
+                        Tuple.of(asHeadlongAddress(SENDER_ID.accountNum()), -10L, false),
+                        Tuple.of(OWNER_ACCOUNT_AS_ADDRESS, 10L, false)
+                    },
+                    new Tuple[] {}),
+            Tuple.of(
+                    FUNGIBLE_TOKEN_HEADLONG_ADDRESS,
+                    new Tuple[] {
+                        Tuple.of(asHeadlongAddress(SENDER_ID.accountNum()), -10L, false),
+                        Tuple.of(OWNER_ACCOUNT_AS_ADDRESS, 10L, false)
+                    },
+                    new Tuple[] {}),
+            Tuple.of(
+                    FUNGIBLE_TOKEN_HEADLONG_ADDRESS,
+                    new Tuple[] {
+                        Tuple.of(asHeadlongAddress(SENDER_ID.accountNum()), -10L, false),
+                        Tuple.of(OWNER_ACCOUNT_AS_ADDRESS, 10L, false)
+                    },
+                    new Tuple[] {}),
+            Tuple.of(
+                    FUNGIBLE_TOKEN_HEADLONG_ADDRESS,
+                    new Tuple[] {
+                        Tuple.of(asHeadlongAddress(SENDER_ID.accountNum()), -10L, false),
+                        Tuple.of(OWNER_ACCOUNT_AS_ADDRESS, 10L, false)
+                    },
+                    new Tuple[] {}),
+            Tuple.of(
+                    FUNGIBLE_TOKEN_HEADLONG_ADDRESS,
+                    new Tuple[] {
+                        Tuple.of(asHeadlongAddress(SENDER_ID.accountNum()), -10L, false),
+                        Tuple.of(OWNER_ACCOUNT_AS_ADDRESS, 10L, false)
+                    },
+                    new Tuple[] {}),
+            Tuple.of(
+                    FUNGIBLE_TOKEN_HEADLONG_ADDRESS,
+                    new Tuple[] {
+                        Tuple.of(asHeadlongAddress(SENDER_ID.accountNum()), -10L, false),
+                        Tuple.of(OWNER_ACCOUNT_AS_ADDRESS, 10L, false)
+                    },
+                    new Tuple[] {}),
+            Tuple.of(
+                    FUNGIBLE_TOKEN_HEADLONG_ADDRESS,
+                    new Tuple[] {
+                        Tuple.of(asHeadlongAddress(SENDER_ID.accountNum()), -10L, false),
+                        Tuple.of(OWNER_ACCOUNT_AS_ADDRESS, 10L, false)
+                    },
+                    new Tuple[] {}),
+            Tuple.of(
+                    FUNGIBLE_TOKEN_HEADLONG_ADDRESS,
+                    new Tuple[] {
+                        Tuple.of(asHeadlongAddress(SENDER_ID.accountNum()), -10L, false),
+                        Tuple.of(OWNER_ACCOUNT_AS_ADDRESS, 10L, false)
+                    },
+                    new Tuple[] {}),
+            Tuple.of(
+                    FUNGIBLE_TOKEN_HEADLONG_ADDRESS,
+                    new Tuple[] {
+                        Tuple.of(asHeadlongAddress(SENDER_ID.accountNum()), -10L, false),
+                        Tuple.of(OWNER_ACCOUNT_AS_ADDRESS, 10L, false)
+                    },
+                    new Tuple[] {}),
+        };
+        final var encoded = Bytes.wrapByteBuffer(TOKEN_AIRDROP.encodeCall(Tuple.singleton(tuple)));
+        given(attempt.inputBytes()).willReturn(encoded.toArrayUnsafe());
+        given(attempt.configuration()).willReturn(configuration);
+        given(attempt.addressIdConverter()).willReturn(addressIdConverter);
+        given(configuration.getConfigData(LedgerConfig.class)).willReturn(ledgerConfig);
+        given(ledgerConfig.tokenTransfersMaxLen()).willReturn(10);
+        given(ledgerConfig.nftTransfersMaxLen()).willReturn(10);
+        assertThrows(HandleException.class, () -> subject.decodeAirdrop(attempt));
+    }
+
+    @Test
+    void tokenAirdropDecoderWorksForNFT() {
+        final var tuple = new Tuple[] {
+            Tuple.of(NON_FUNGIBLE_TOKEN_HEADLONG_ADDRESS, new Tuple[] {}, new Tuple[] {
+                Tuple.of(asHeadlongAddress(SENDER_ID.accountNum()), OWNER_ACCOUNT_AS_ADDRESS, 1L, false)
+            })
+        };
+        final var encoded = Bytes.wrapByteBuffer(TOKEN_AIRDROP.encodeCall(Tuple.singleton(tuple)));
+        given(attempt.inputBytes()).willReturn(encoded.toArrayUnsafe());
+        given(attempt.configuration()).willReturn(configuration);
+        given(attempt.addressIdConverter()).willReturn(addressIdConverter);
+        given(configuration.getConfigData(LedgerConfig.class)).willReturn(ledgerConfig);
+        given(ledgerConfig.tokenTransfersMaxLen()).willReturn(10);
+        given(ledgerConfig.nftTransfersMaxLen()).willReturn(10);
+        final var body = subject.decodeAirdrop(attempt);
+        assertNotNull(body);
+        assertNotNull(body.tokenAirdrop());
+        assertNotNull(body.tokenAirdrop().tokenTransfers());
+        assertEquals(nftAirdrop, body.tokenAirdrop());
+    }
+
+    @Test
+    void tokenAirdropDecoderForNFTFailsIfNftExceedLimits() {
+        final var tuple = new Tuple[] {
+            Tuple.of(NON_FUNGIBLE_TOKEN_HEADLONG_ADDRESS, new Tuple[] {}, new Tuple[] {
+                Tuple.of(asHeadlongAddress(SENDER_ID.accountNum()), OWNER_ACCOUNT_AS_ADDRESS, 1L, false),
+                Tuple.of(asHeadlongAddress(SENDER_ID.accountNum()), OWNER_ACCOUNT_AS_ADDRESS, 2L, false),
+                Tuple.of(asHeadlongAddress(SENDER_ID.accountNum()), OWNER_ACCOUNT_AS_ADDRESS, 3L, false),
+                Tuple.of(asHeadlongAddress(SENDER_ID.accountNum()), OWNER_ACCOUNT_AS_ADDRESS, 4L, false),
+                Tuple.of(asHeadlongAddress(SENDER_ID.accountNum()), OWNER_ACCOUNT_AS_ADDRESS, 5L, false),
+                Tuple.of(asHeadlongAddress(SENDER_ID.accountNum()), OWNER_ACCOUNT_AS_ADDRESS, 6L, false),
+                Tuple.of(asHeadlongAddress(SENDER_ID.accountNum()), OWNER_ACCOUNT_AS_ADDRESS, 7L, false),
+                Tuple.of(asHeadlongAddress(SENDER_ID.accountNum()), OWNER_ACCOUNT_AS_ADDRESS, 8L, false),
+                Tuple.of(asHeadlongAddress(SENDER_ID.accountNum()), OWNER_ACCOUNT_AS_ADDRESS, 9L, false),
+                Tuple.of(asHeadlongAddress(SENDER_ID.accountNum()), OWNER_ACCOUNT_AS_ADDRESS, 10L, false),
+                Tuple.of(asHeadlongAddress(SENDER_ID.accountNum()), OWNER_ACCOUNT_AS_ADDRESS, 11L, false)
+            })
+        };
+        final var encoded = Bytes.wrapByteBuffer(TOKEN_AIRDROP.encodeCall(Tuple.singleton(tuple)));
+        given(attempt.inputBytes()).willReturn(encoded.toArrayUnsafe());
+        given(attempt.configuration()).willReturn(configuration);
+        given(attempt.addressIdConverter()).willReturn(addressIdConverter);
+        given(configuration.getConfigData(LedgerConfig.class)).willReturn(ledgerConfig);
+        given(ledgerConfig.tokenTransfersMaxLen()).willReturn(10);
+        given(ledgerConfig.nftTransfersMaxLen()).willReturn(10);
+        assertThrows(HandleException.class, () -> subject.decodeAirdrop(attempt));
     }
 }
