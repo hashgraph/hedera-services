@@ -16,11 +16,13 @@
 
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.airdrops;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_RECEIVING_NODE_ACCOUNT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_REFERENCE_LIST_SIZE_LIMIT_EXCEEDED;
 import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
 
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.hedera.hapi.node.base.AccountAmount;
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.NftTransfer;
 import com.hedera.hapi.node.base.TokenTransferList;
 import com.hedera.hapi.node.token.TokenAirdropTransactionBody;
@@ -49,6 +51,9 @@ public class TokenAirdropDecoder {
     private static final int NFT_RECEIVER = 1;
     private static final int NFT_SERIAL = 2;
     private static final int NFT_IS_APPROVAL = 3;
+
+    // Validation constant
+    private static final Long LAST_RESERVED_SYSTEM_ACCOUNT = 1000L;
 
     @Inject
     public TokenAirdropDecoder() {
@@ -80,6 +85,10 @@ public class TokenAirdropDecoder {
                 Arrays.stream(tokenAmountsTuple).forEach(tokenAmount -> {
                     final var amount = (long) tokenAmount.get(TOKEN_AMOUNT);
                     final var account = addressIdConverter.convert(tokenAmount.get(TOKEN_ACCOUNT_ID));
+                    // Check if the receiver is a system account
+                    if (amount > 0) {
+                        checkForSystemAccount(account);
+                    }
                     final var isApproval = (boolean) tokenAmount.get(TOKEN_IS_APPROVAL);
                     aaList.add(AccountAmount.newBuilder()
                             .amount(amount)
@@ -94,6 +103,7 @@ public class TokenAirdropDecoder {
                 final var serial = (long) nftAmount.get(NFT_SERIAL);
                 final var sender = addressIdConverter.convert(nftAmount.get(NFT_SENDER));
                 final var receiver = addressIdConverter.convert(nftAmount.get(NFT_RECEIVER));
+                checkForSystemAccount(receiver);
                 final var isApproval = (boolean) nftAmount.get(NFT_IS_APPROVAL);
                 tokenTransferList.nftTransfers(NftTransfer.newBuilder()
                         .senderAccountID(sender)
@@ -109,8 +119,7 @@ public class TokenAirdropDecoder {
                 .build();
     }
 
-    private static void validateSemantics(
-            @NonNull final Tuple[] transferList, @NonNull final LedgerConfig ledgerConfig) {
+    private void validateSemantics(@NonNull final Tuple[] transferList, @NonNull final LedgerConfig ledgerConfig) {
         var fungibleBalanceChanges = 0;
         var nftBalanceChanges = 0;
         for (final var airdrop : transferList) {
@@ -122,5 +131,9 @@ public class TokenAirdropDecoder {
             validateFalse(
                     nftBalanceChanges > ledgerConfig.nftTransfersMaxLen(), TOKEN_REFERENCE_LIST_SIZE_LIMIT_EXCEEDED);
         }
+    }
+
+    private void checkForSystemAccount(@NonNull final AccountID account) {
+        validateFalse(account.accountNumOrThrow() <= LAST_RESERVED_SYSTEM_ACCOUNT, INVALID_RECEIVING_NODE_ACCOUNT);
     }
 }
