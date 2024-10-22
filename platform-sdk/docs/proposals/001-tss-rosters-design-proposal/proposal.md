@@ -56,7 +56,7 @@ At some point when the Hedera App (henceforth referred to as 'App') decides it's
 it will create a candidate `Roster` object with information from the Address Book and set it to be stored it in the state.
 A candidate roster already stored in the state can also be replaced by a new one required by the App.
 
-To manage `Roster` storage and retrieval from the state, a new set of state `store` APIs will be introduced, similar to existing store implementations. 
+To manage `Roster` storage and retrieval from the state, a new set of state `store` APIs will be introduced, similar to existing store implementations.
 Stores are an abstraction over state storage and retrieval. They provide a way for components to interact with states without having to specify implementation details.
 Store APIs are typically Readable or Writable. This proposal introduces a `ReadableRosterStore` and a `WritableRosterStore`.
 
@@ -367,7 +367,7 @@ A common example of this is Mainnet State being transplanted into a testing netw
 
 **A quick note on Pre-Consensus Event Stream (PCES).**
 
-In the current PCES implementation, the software version is used to determine which address book (current or previous) 
+In the current PCES implementation, the software version is used to determine which address book (current or previous)
 should be used to validate the signatures of events in the PCES.
 If the PCES event version is less than the current software version, it indicates that the event was signed with the old roster, and hence, the old address book is used for validation.
 If the PCES event version matches the current software version, the current address book is used.
