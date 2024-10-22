@@ -25,6 +25,9 @@ defaults:
 env:
   BRANCH_LIST_FILE: "${{ github.workspace }}/branches.lst"
 
+permissions:
+  contents: read
+
 jobs:
   cron:
     name: Cron / Launch Workflows
