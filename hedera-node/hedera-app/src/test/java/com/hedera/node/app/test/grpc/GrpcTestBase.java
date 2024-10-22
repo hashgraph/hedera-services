@@ -82,12 +82,12 @@ abstract class GrpcTestBase extends TestBase {
     /** A built-in {@link IngestWorkflow} which succeeds and does nothing. */
     protected static final IngestWorkflow NOOP_INGEST_WORKFLOW = (requestBuffer, responseBuffer) -> {};
     /** A built-in {@link QueryWorkflow} which succeeds and does nothing. */
-    protected static final QueryWorkflow NOOP_QUERY_WORKFLOW = (requestBuffer, responseBuffer, shouldCharge) -> {};
+    protected static final QueryWorkflow NOOP_QUERY_WORKFLOW = (requestBuffer, responseBuffer) -> {};
 
     /**
      * Represents "this node" in our tests.
      */
-    private final NodeId nodeSelfId = new NodeId(7);
+    private final NodeId nodeSelfId = NodeId.of(7);
 
     /**
      * This {@link NettyGrpcServerManager} is used to handle the wire protocol tasks and delegate to our gRPC handlers
@@ -115,7 +115,9 @@ abstract class GrpcTestBase extends TestBase {
     /** The ingest workflow to use. */
     private IngestWorkflow ingestWorkflow = NOOP_INGEST_WORKFLOW;
     /** The query workflow to use. */
-    private QueryWorkflow queryWorkflow = NOOP_QUERY_WORKFLOW;
+    private QueryWorkflow userQueryWorkflow = NOOP_QUERY_WORKFLOW;
+
+    private QueryWorkflow operatorQueryWorkflow = NOOP_QUERY_WORKFLOW;
     /** The channel on the client to connect to the grpc server */
     private Channel channel;
     /** The channel on the client to connect to the node operator grpc server */
@@ -126,19 +128,23 @@ abstract class GrpcTestBase extends TestBase {
     protected void registerQuery(
             @NonNull final String methodName,
             @NonNull final IngestWorkflow ingestWorkflow,
-            @NonNull final QueryWorkflow queryWorkflow) {
+            @NonNull final QueryWorkflow userQueryWorkflow,
+            @NonNull final QueryWorkflow operatorQueryWorkflow) {
         this.queryMethodName = methodName;
-        this.queryWorkflow = queryWorkflow;
+        this.userQueryWorkflow = userQueryWorkflow;
+        this.operatorQueryWorkflow = operatorQueryWorkflow;
         this.ingestWorkflow = ingestWorkflow;
     }
 
     protected void registerIngest(
             @NonNull final String methodName,
             @NonNull final IngestWorkflow ingestWorkflow,
-            @NonNull final QueryWorkflow queryWorkflow) {
+            @NonNull final QueryWorkflow userQueryWorkflow,
+            @NonNull final QueryWorkflow operatorQueryWorkflow) {
         this.ingestMethodName = methodName;
         this.ingestWorkflow = ingestWorkflow;
-        this.queryWorkflow = queryWorkflow;
+        this.userQueryWorkflow = userQueryWorkflow;
+        this.operatorQueryWorkflow = operatorQueryWorkflow;
     }
 
     /** Starts the grpcServer and sets up the clients. */
@@ -186,7 +192,12 @@ abstract class GrpcTestBase extends TestBase {
         servicesRegistry.register(testService);
         final var config = createConfig(new TestSource().withNodeOperatorPortEnabled(withNodeOperatorPort));
         this.grpcServer = new NettyGrpcServerManager(
-                () -> new VersionedConfigImpl(config, 1), servicesRegistry, ingestWorkflow, queryWorkflow, metrics);
+                () -> new VersionedConfigImpl(config, 1),
+                servicesRegistry,
+                ingestWorkflow,
+                userQueryWorkflow,
+                operatorQueryWorkflow,
+                metrics);
 
         grpcServer.start();
 
@@ -204,7 +215,8 @@ abstract class GrpcTestBase extends TestBase {
         if (this.grpcServer != null) this.grpcServer.stop();
         grpcServer = null;
         ingestWorkflow = NOOP_INGEST_WORKFLOW;
-        queryWorkflow = NOOP_QUERY_WORKFLOW;
+        userQueryWorkflow = NOOP_QUERY_WORKFLOW;
+        operatorQueryWorkflow = NOOP_QUERY_WORKFLOW;
         queryMethodName = null;
         ingestMethodName = null;
     }

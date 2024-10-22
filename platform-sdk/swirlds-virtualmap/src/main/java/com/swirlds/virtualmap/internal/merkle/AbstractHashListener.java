@@ -16,6 +16,8 @@
 
 package com.swirlds.virtualmap.internal.merkle;
 
+import static com.swirlds.logging.legacy.LogMarker.VIRTUAL_MERKLE_STATS;
+
 import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.virtualmap.VirtualKey;
@@ -37,6 +39,8 @@ import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Stream;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * The hashing algorithm in the {@link com.swirlds.virtualmap.internal.hash.VirtualHasher} is setup to
@@ -67,6 +71,8 @@ import java.util.stream.Stream;
 public abstract class AbstractHashListener<K extends VirtualKey, V extends VirtualValue>
         implements VirtualHashListener<K, V> {
 
+    private static final Logger logger = LogManager.getLogger(AbstractHashListener.class);
+
     private final KeySerializer<K> keySerializer;
     private final ValueSerializer<V> valueSerializer;
     private final VirtualDataSource dataSource;
@@ -83,6 +89,8 @@ public abstract class AbstractHashListener<K extends VirtualKey, V extends Virtu
 
     private int reconnectFlushInterval = 0;
 
+    private final VirtualMapStatistics statistics;
+
     /**
      * Create a new {@link ReconnectHashListener}.
      *
@@ -96,13 +104,16 @@ public abstract class AbstractHashListener<K extends VirtualKey, V extends Virtu
      *      Virtual value serializer. Cannot be null
      * @param dataSource
      * 		The data source. Cannot be null.
+     * @param statistics
+     *      Virtual map stats. Cannot be null.
      */
     protected AbstractHashListener(
             final long firstLeafPath,
             final long lastLeafPath,
             final KeySerializer<K> keySerializer,
             final ValueSerializer<V> valueSerializer,
-            final VirtualDataSource dataSource) {
+            @NonNull final VirtualDataSource dataSource,
+            @NonNull final VirtualMapStatistics statistics) {
 
         if (firstLeafPath != Path.INVALID_PATH && !(firstLeafPath > 0 && firstLeafPath <= lastLeafPath)) {
             throw new IllegalArgumentException("The first leaf path is invalid. firstLeafPath=" + firstLeafPath
@@ -119,6 +130,7 @@ public abstract class AbstractHashListener<K extends VirtualKey, V extends Virtu
         this.keySerializer = Objects.requireNonNull(keySerializer);
         this.valueSerializer = Objects.requireNonNull(valueSerializer);
         this.dataSource = Objects.requireNonNull(dataSource);
+        this.statistics = Objects.requireNonNull(statistics);
     }
 
     @Override
@@ -186,7 +198,13 @@ public abstract class AbstractHashListener<K extends VirtualKey, V extends Virtu
             @NonNull final List<VirtualLeafRecord<K, V>> leavesToFlush) {
         assert flushInProgress.get() : "Flush in progress flag must be set";
         try {
+            logger.debug(
+                    VIRTUAL_MERKLE_STATS.getMarker(),
+                    "Flushing {} hashes and {} leaves",
+                    hashesToFlush.size(),
+                    leavesToFlush.size());
             // flush it down
+            final long start = System.currentTimeMillis();
             try {
                 dataSource.saveRecords(
                         firstLeafPath,
@@ -195,6 +213,9 @@ public abstract class AbstractHashListener<K extends VirtualKey, V extends Virtu
                         leavesToFlush.stream().map(r -> r.toBytes(keySerializer, valueSerializer)),
                         findLeavesToRemove().map(r -> r.toBytes(keySerializer, valueSerializer)),
                         true);
+                final long end = System.currentTimeMillis();
+                statistics.recordFlush(end - start);
+                logger.debug(VIRTUAL_MERKLE_STATS.getMarker(), "Flushed in {} ms", end - start);
             } catch (IOException e) {
                 throw new UncheckedIOException(e);
             }

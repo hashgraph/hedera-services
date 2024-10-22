@@ -44,7 +44,8 @@ final class NettyManagerTest extends GrpcTestBase {
                 () -> new VersionedConfigImpl(config, 1),
                 new ServicesRegistryImpl(ConstructableRegistry.getInstance(), config),
                 (req, res) -> {},
-                (req, res, shouldCharge) -> {},
+                (req, res) -> {},
+                (req, res) -> {},
                 metrics);
     }
 

@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.spi.workflows;
 
+import static com.hedera.node.app.spi.AppContext.*;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.SCHEDULED;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -63,16 +64,26 @@ public interface HandleContext {
      * Category of the current transaction.
      */
     enum TransactionCategory {
-        /** The original transaction submitted by a user. */
+        /**
+         * A transaction submitted by a user via HAPI or by a node via {@link com.hedera.node.app.spi.AppContext.Gossip}.
+         * */
         USER,
-
-        /** An independent, top-level transaction that is executed before the user transaction. */
+        /**
+         * An independent, top-level transaction that is executed before the user transaction.
+         * */
         PRECEDING,
-
-        /** A child transaction that is executed as part of a user transaction. */
+        /**
+         * A child transaction that is executed as part of a user transaction.
+         * */
         CHILD,
-        /** A transaction executed via the schedule service. */
-        SCHEDULED
+        /**
+         * A transaction executed via the schedule service.
+         * */
+        SCHEDULED,
+        /**
+         * A transaction submitted by Node for TSS service
+         */
+        NODE
     }
 
     /**
@@ -498,28 +509,31 @@ public interface HandleContext {
          * Adds a child record builder to the list of record builders. If the current {@link HandleContext} (or any parent
          * context) is rolled back, all child record builders will be reverted.
          *
-         * @param recordBuilderClass the record type
-         * @return the new child record builder
          * @param <T> the record type
+         * @param recordBuilderClass the record type
+         * @param functionality the functionality of the record
+         * @return the new child record builder
          * @throws NullPointerException if {@code recordBuilderClass} is {@code null}
          * @throws IllegalArgumentException if the record builder type is unknown to the app
          */
         @NonNull
-        <T> T addChildRecordBuilder(@NonNull Class<T> recordBuilderClass);
+        <T> T addChildRecordBuilder(@NonNull Class<T> recordBuilderClass, @NonNull HederaFunctionality functionality);
 
         /**
          * Adds a removable child record builder to the list of record builders. Unlike a regular child record builder,
          * a removable child record builder is removed, if the current {@link HandleContext} (or any parent context) is
          * rolled back.
          *
-         * @param recordBuilderClass the record type
-         * @return the new child record builder
          * @param <T> the record type
+         * @param recordBuilderClass the record type
+         * @param functionality the functionality of the record
+         * @return the new child record builder
          * @throws NullPointerException if {@code recordBuilderClass} is {@code null}
          * @throws IllegalArgumentException if the record builder type is unknown to the app
          */
         @NonNull
-        <T> T addRemovableChildRecordBuilder(@NonNull Class<T> recordBuilderClass);
+        <T> T addRemovableChildRecordBuilder(
+                @NonNull Class<T> recordBuilderClass, @NonNull HederaFunctionality functionality);
     }
 
     static void throwIfMissingPayerId(@NonNull final TransactionBody body) {

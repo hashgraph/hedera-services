@@ -25,6 +25,7 @@ import com.swirlds.platform.event.branching.BranchReporter;
 import com.swirlds.platform.event.creation.EventCreationManager;
 import com.swirlds.platform.event.deduplication.EventDeduplicator;
 import com.swirlds.platform.event.orphan.OrphanBuffer;
+import com.swirlds.platform.event.preconsensus.InlinePcesWriter;
 import com.swirlds.platform.event.preconsensus.durability.RoundDurabilityBuffer;
 import com.swirlds.platform.event.stale.StaleEventDetector;
 import com.swirlds.platform.event.stale.StaleEventDetectorOutput;
@@ -43,6 +44,7 @@ import com.swirlds.platform.system.status.StatusStateMachine;
 import com.swirlds.platform.wiring.components.GossipWiring;
 import com.swirlds.platform.wiring.components.StateAndRound;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
 import java.util.Objects;
 
@@ -74,6 +76,7 @@ public class PlatformCoordinator {
     private final ComponentWiring<StatusStateMachine, PlatformStatus> statusStateMachineWiring;
     private final ComponentWiring<BranchDetector, PlatformEvent> branchDetectorWiring;
     private final ComponentWiring<BranchReporter, Void> branchReporterWiring;
+    private final ComponentWiring<InlinePcesWriter, PlatformEvent> pcesInlineWriterWiring;
 
     /**
      * Constructor
@@ -96,6 +99,7 @@ public class PlatformCoordinator {
      * @param statusStateMachineWiring               the status state machine wiring
      * @param branchDetectorWiring                   the branch detector wiring
      * @param branchReporterWiring                   the branch reporter wiring
+     * @param pcesInlineWriterWiring                 the inline PCES writer wiring
      */
     public PlatformCoordinator(
             @NonNull final Runnable flushTheEventHasher,
@@ -111,7 +115,7 @@ public class PlatformCoordinator {
                     final ComponentWiring<StateSignatureCollector, List<ReservedSignedState>>
                             stateSignatureCollectorWiring,
             @NonNull final ComponentWiring<TransactionHandler, StateAndRound> transactionHandlerWiring,
-            @NonNull final ComponentWiring<RoundDurabilityBuffer, List<ConsensusRound>> roundDurabilityBufferWiring,
+            @Nullable final ComponentWiring<RoundDurabilityBuffer, List<ConsensusRound>> roundDurabilityBufferWiring,
             @NonNull final ComponentWiring<StateHasher, StateAndRound> stateHasherWiring,
             @NonNull
                     final ComponentWiring<StaleEventDetector, List<RoutableData<StaleEventDetectorOutput>>>
@@ -119,7 +123,8 @@ public class PlatformCoordinator {
             @NonNull final ComponentWiring<TransactionPool, Void> transactionPoolWiring,
             @NonNull final ComponentWiring<StatusStateMachine, PlatformStatus> statusStateMachineWiring,
             @NonNull final ComponentWiring<BranchDetector, PlatformEvent> branchDetectorWiring,
-            @NonNull final ComponentWiring<BranchReporter, Void> branchReporterWiring) {
+            @NonNull final ComponentWiring<BranchReporter, Void> branchReporterWiring,
+            @Nullable final ComponentWiring<InlinePcesWriter, PlatformEvent> pcesInlineWriterWiring) {
 
         this.flushTheEventHasher = Objects.requireNonNull(flushTheEventHasher);
         this.internalEventValidatorWiring = Objects.requireNonNull(internalEventValidatorWiring);
@@ -132,13 +137,14 @@ public class PlatformCoordinator {
         this.applicationTransactionPrehandlerWiring = Objects.requireNonNull(applicationTransactionPrehandlerWiring);
         this.stateSignatureCollectorWiring = Objects.requireNonNull(stateSignatureCollectorWiring);
         this.transactionHandlerWiring = Objects.requireNonNull(transactionHandlerWiring);
-        this.roundDurabilityBufferWiring = Objects.requireNonNull(roundDurabilityBufferWiring);
+        this.roundDurabilityBufferWiring = roundDurabilityBufferWiring;
         this.stateHasherWiring = Objects.requireNonNull(stateHasherWiring);
         this.staleEventDetectorWiring = Objects.requireNonNull(staleEventDetectorWiring);
         this.transactionPoolWiring = Objects.requireNonNull(transactionPoolWiring);
         this.statusStateMachineWiring = Objects.requireNonNull(statusStateMachineWiring);
         this.branchDetectorWiring = Objects.requireNonNull(branchDetectorWiring);
         this.branchReporterWiring = Objects.requireNonNull(branchReporterWiring);
+        this.pcesInlineWriterWiring = pcesInlineWriterWiring;
     }
 
     /**
@@ -157,6 +163,9 @@ public class PlatformCoordinator {
         eventDeduplicatorWiring.flush();
         eventSignatureValidatorWiring.flush();
         orphanBufferWiring.flush();
+        if (pcesInlineWriterWiring != null) {
+            pcesInlineWriterWiring.flush();
+        }
         gossipWiring.flush();
         consensusEngineWiring.flush();
         applicationTransactionPrehandlerWiring.flush();
@@ -197,7 +206,9 @@ public class PlatformCoordinator {
         flushIntakePipeline();
         stateHasherWiring.flush();
         stateSignatureCollectorWiring.flush();
-        roundDurabilityBufferWiring.flush();
+        if (roundDurabilityBufferWiring != null) {
+            roundDurabilityBufferWiring.flush();
+        }
         transactionHandlerWiring.flush();
         staleEventDetectorWiring.flush();
         branchDetectorWiring.flush();
@@ -219,7 +230,11 @@ public class PlatformCoordinator {
                 .getInputWire(StateSignatureCollector::clear)
                 .inject(NoInput.getInstance());
         eventCreationManagerWiring.getInputWire(EventCreationManager::clear).inject(NoInput.getInstance());
-        roundDurabilityBufferWiring.getInputWire(RoundDurabilityBuffer::clear).inject(NoInput.getInstance());
+        if (roundDurabilityBufferWiring != null) {
+            roundDurabilityBufferWiring
+                    .getInputWire(RoundDurabilityBuffer::clear)
+                    .inject(NoInput.getInstance());
+        }
         staleEventDetectorWiring.getInputWire(StaleEventDetector::clear).inject(NoInput.getInstance());
         transactionPoolWiring.getInputWire(TransactionPool::clear).inject(NoInput.getInstance());
         branchDetectorWiring.getInputWire(BranchDetector::clear).inject(NoInput.getInstance());

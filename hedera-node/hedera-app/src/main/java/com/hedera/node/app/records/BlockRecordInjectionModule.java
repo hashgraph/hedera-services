@@ -25,7 +25,6 @@ import com.hedera.node.app.records.impl.producers.StreamFileProducerSingleThread
 import com.hedera.node.app.records.impl.producers.formats.BlockRecordWriterFactoryImpl;
 import com.hedera.node.app.records.impl.producers.formats.v6.BlockRecordFormatV6;
 import com.hedera.node.app.records.impl.producers.formats.v7.BlockRecordFormatV7;
-import com.hedera.node.app.state.HederaRecordCache;
 import com.hedera.node.app.state.WorkingStateAccessor;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.BlockRecordStreamConfig;
@@ -77,8 +76,7 @@ public abstract class BlockRecordInjectionModule {
     public static BlockRecordManager provideBlockRecordManager(
             @NonNull final ConfigProvider configProvider,
             @NonNull final WorkingStateAccessor state,
-            @NonNull final BlockRecordStreamProducer streamFileProducer,
-            @NonNull final HederaRecordCache recordCache) {
+            @NonNull final BlockRecordStreamProducer streamFileProducer) {
         final var merkleState = state.getState();
         if (merkleState == null) {
             throw new IllegalStateException("Merkle state is null");

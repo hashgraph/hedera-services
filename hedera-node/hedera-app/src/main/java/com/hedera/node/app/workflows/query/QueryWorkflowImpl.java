@@ -52,6 +52,7 @@ import com.hedera.node.app.spi.workflows.QueryContext;
 import com.hedera.node.app.spi.workflows.QueryHandler;
 import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.app.throttle.SynchronizedThrottleAccumulator;
+import com.hedera.node.app.workflows.OpWorkflowMetrics;
 import com.hedera.node.app.workflows.ingest.IngestChecker;
 import com.hedera.node.app.workflows.ingest.SubmissionManager;
 import com.hedera.node.config.ConfigProvider;
@@ -72,12 +73,10 @@ import java.util.EnumSet;
 import java.util.List;
 import java.util.function.Function;
 import javax.inject.Inject;
-import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /** Implementation of {@link QueryWorkflow} */
-@Singleton
 public final class QueryWorkflowImpl implements QueryWorkflow {
 
     private static final Logger logger = LogManager.getLogger(QueryWorkflowImpl.class);
@@ -101,6 +100,12 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
     private final FeeManager feeManager;
     private final SynchronizedThrottleAccumulator synchronizedThrottleAccumulator;
     private final InstantSource instantSource;
+    private final OpWorkflowMetrics workflowMetrics;
+
+    /**
+     * Indicates if the QueryWorkflow should charge for handling queries.
+     */
+    private final boolean shouldCharge;
 
     /**
      * Constructor of {@code QueryWorkflowImpl}
@@ -119,6 +124,7 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
      * @param feeManager the {@link FeeManager} to calculate the fees
      * @param synchronizedThrottleAccumulator the {@link SynchronizedThrottleAccumulator} that checks transaction should be throttled
      * @param instantSource the {@link InstantSource} to get the current time
+     * @param shouldCharge If the workflow should charge for handling queries.
      * @throws NullPointerException if one of the arguments is {@code null}
      */
     @Inject
@@ -135,7 +141,9 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
             @NonNull final ExchangeRateManager exchangeRateManager,
             @NonNull final FeeManager feeManager,
             @NonNull final SynchronizedThrottleAccumulator synchronizedThrottleAccumulator,
-            @NonNull final InstantSource instantSource) {
+            @NonNull final InstantSource instantSource,
+            @NonNull final OpWorkflowMetrics workflowMetrics,
+            final boolean shouldCharge) {
         this.stateAccessor = requireNonNull(stateAccessor, "stateAccessor must not be null");
         this.submissionManager = requireNonNull(submissionManager, "submissionManager must not be null");
         this.ingestChecker = requireNonNull(ingestChecker, "ingestChecker must not be null");
@@ -150,11 +158,14 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
         this.synchronizedThrottleAccumulator =
                 requireNonNull(synchronizedThrottleAccumulator, "hapiThrottling must not be null");
         this.instantSource = requireNonNull(instantSource);
+        this.workflowMetrics = requireNonNull(workflowMetrics);
+        this.shouldCharge = shouldCharge;
     }
 
     @Override
-    public void handleQuery(
-            @NonNull final Bytes requestBuffer, @NonNull final BufferedData responseBuffer, boolean shouldCharge) {
+    public void handleQuery(@NonNull final Bytes requestBuffer, @NonNull final BufferedData responseBuffer) {
+        final long queryStart = System.nanoTime();
+
         requireNonNull(requestBuffer);
         requireNonNull(responseBuffer);
 
@@ -296,6 +307,8 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
             logger.warn("Unexpected IO exception while writing protobuf", e);
             throw new StatusRuntimeException(Status.INTERNAL);
         }
+
+        workflowMetrics.updateDuration(function, (int) (System.nanoTime() - queryStart));
     }
 
     private Query parseQuery(Bytes requestBuffer) {

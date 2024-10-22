@@ -16,15 +16,14 @@
 
 package com.hedera.node.app.state;
 
-import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.node.app.spi.records.RecordCache;
+import com.hedera.node.app.spi.records.RecordSource;
 import com.hedera.node.config.data.HederaConfig;
 import com.hederahashgraph.api.proto.java.TransactionReceiptEntries;
 import com.swirlds.state.State;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
-import java.util.List;
 
 /**
  * A time-limited cache of transaction records and receipts.
@@ -46,19 +45,26 @@ import java.util.List;
  */
 /*@ThreadSafe*/
 public interface HederaRecordCache extends RecordCache {
+    enum DueDiligenceFailure {
+        YES,
+        NO
+    }
+
     /**
-     * Records the fact that the given {@link TransactionID} has been seen by the given node. If the node has already
-     * been seen, then this call is a no-op. This call does not perform any additional validation of the transaction ID.
+     * Incorporates a source of records for transactions whose consensus times were assigned relative to the given user
+     * transaction {@link TransactionID} into the cache, using the given payer account id as the effective payer for
+     * all the transactions whose id matches the user transaction.
      *
-     * @param nodeId             The node ID of the node that submitted this transaction to consensus, as known in the address book
-     * @param payerAccountId     The {@link AccountID} of the "payer" of the transaction
-     * @param transactionRecords The list of all related transaction records. This may be a stream of 1, if the list
-     *                           only contains the user transaction. Or it may be a list including preceding
-     *                           transactions, user transactions, and child transactions. There is no requirement as to
-     *                           the order of items in this list.
+     * @param nodeId the node id of the node that submitted the user transaction
+     * @param userTxnId the id of the user transaction
+     * @param dueDiligenceFailure whether the node failed due diligence
+     * @param recordSource the source of records for the transactions
      */
-    /*HANDLE THREAD ONLY*/
-    void add(long nodeId, @NonNull AccountID payerAccountId, @NonNull List<SingleTransactionRecord> transactionRecords);
+    void addRecordSource(
+            long nodeId,
+            @NonNull TransactionID userTxnId,
+            @NonNull DueDiligenceFailure dueDiligenceFailure,
+            @NonNull RecordSource recordSource);
 
     /**
      * Checks if the given transaction ID has been seen by this node. If it has not, the result is

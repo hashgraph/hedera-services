@@ -25,6 +25,7 @@ import com.swirlds.state.spi.WritableKVState;
 import com.swirlds.state.spi.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.nio.file.Path;
 
 /**
  * The full state used of the app. The primary implementation is based on a merkle tree, and the data
@@ -77,6 +78,7 @@ public interface State extends FastCopyable {
     /**
      * {@inheritDoc}
      */
+    @NonNull
     @Override
     default State copy() {
         throw new UnsupportedOperationException();
@@ -94,6 +96,14 @@ public interface State extends FastCopyable {
      * Hashes the state on demand if it is not already hashed. If the state is already hashed, this method is a no-op.
      */
     default void computeHash() {
+        throw new UnsupportedOperationException();
+    }
+
+    /**
+     * Creates a snapshots for the state. The state has to be hashed and immutable before calling this method.
+     * @param targetPath The path to save the snapshot.
+     */
+    default void createSnapshot(final @NonNull Path targetPath) {
         throw new UnsupportedOperationException();
     }
 }

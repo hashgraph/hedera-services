@@ -26,6 +26,7 @@ import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileContents;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.randomUtf8Bytes;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.resourceAsString;
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.sysFileUpdateTo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
@@ -34,6 +35,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.nodeUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
+import static com.hedera.services.bdd.spec.utilops.EmbeddedVerbs.simulatePostUpgradeTransaction;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.blockingOrder;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.doWithStartupConfig;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.given;
@@ -43,7 +45,6 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingTwo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.recordStreamMustIncludeNoFailuresFrom;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.recordStreamMustIncludePassFrom;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.selectedItems;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.simulatePostUpgradeTransaction;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcingContextual;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsdWithin;
@@ -71,19 +72,17 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
-import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.base.NodeAddressBook;
 import com.hedera.hapi.node.base.ServiceEndpoint;
-import com.hedera.node.app.hapi.utils.forensics.RecordStreamEntry;
 import com.hedera.pbj.runtime.ParseException;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.services.bdd.junit.GenesisHapiTest;
 import com.hedera.services.bdd.spec.HapiSpec;
+import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.spec.utilops.grouping.SysFileLookups;
 import com.hedera.services.bdd.spec.utilops.streams.assertions.VisibleItems;
 import com.hedera.services.bdd.spec.utilops.streams.assertions.VisibleItemsValidator;
-import com.hedera.services.stream.proto.RecordStreamItem;
 import com.hederahashgraph.api.proto.java.CurrentAndNextFeeSchedule;
 import com.hederahashgraph.api.proto.java.ServicesConfigurationList;
 import com.hederahashgraph.api.proto.java.ThrottleDefinitions;
@@ -125,13 +124,14 @@ public class SystemFileExportsTest {
         final AtomicReference<Map<Long, X509Certificate>> gossipCertificates = new AtomicReference<>();
         return hapiTest(
                 recordStreamMustIncludePassFrom(selectedItems(
-                        nodeDetailsExportValidator(grpcCertHashes, gossipCertificates), 1, this::isSysFileUpdate)),
+                        nodeDetailsExportValidator(grpcCertHashes, gossipCertificates),
+                        1,
+                        sysFileUpdateTo("files.nodeDetails"))),
                 given(() -> gossipCertificates.set(generateCertificates(CLASSIC_HAPI_TEST_NETWORK_SIZE))),
                 // This is the genesis transaction
                 cryptoCreate("firstUser"),
                 overriding("nodes.updateAccountIdAllowed", "true"),
                 sourcing(() -> blockingOrder(nOps(CLASSIC_HAPI_TEST_NETWORK_SIZE, i -> nodeUpdate("" + i)
-                        .accountId("0.0." + (i + ACCOUNT_ID_OFFSET))
                         .description(DESCRIPTION_PREFIX + i)
                         .serviceEndpoint(endpointsFor(i))
                         .grpcCertificateHash(grpcCertHashes[i])
@@ -149,15 +149,12 @@ public class SystemFileExportsTest {
         final AtomicReference<Map<Long, X509Certificate>> gossipCertificates = new AtomicReference<>();
         return hapiTest(
                 recordStreamMustIncludePassFrom(selectedItems(
-                        addressBookExportValidator("files.addressBook", grpcCertHashes, gossipCertificates),
-                        2,
-                        this::isSysFileUpdate)),
+                        addressBookExportValidator("files.addressBook", grpcCertHashes), 2, TxnUtils::isSysFileUpdate)),
                 given(() -> gossipCertificates.set(generateCertificates(CLASSIC_HAPI_TEST_NETWORK_SIZE))),
                 // This is the genesis transaction
                 cryptoCreate("firstUser"),
                 overriding("nodes.updateAccountIdAllowed", "true"),
                 sourcing(() -> blockingOrder(nOps(CLASSIC_HAPI_TEST_NETWORK_SIZE, i -> nodeUpdate("" + i)
-                        .accountId("0.0." + (i + ACCOUNT_ID_OFFSET))
                         .description(DESCRIPTION_PREFIX + i)
                         .serviceEndpoint(endpointsFor(i))
                         .grpcCertificateHash(grpcCertHashes[i])
@@ -178,7 +175,7 @@ public class SystemFileExportsTest {
                         sysFileExportValidator(
                                 "files.feeSchedules", upgradeFeeSchedules, SystemFileExportsTest::parseFeeSchedule),
                         3,
-                        this::isSysFileUpdate)),
+                        TxnUtils::isSysFileUpdate)),
                 // This is the genesis transaction
                 sourcingContextual(spec -> overridingTwo(
                         "networkAdmin.upgradeSysFilesLoc",
@@ -223,7 +220,7 @@ public class SystemFileExportsTest {
                                 upgradeThrottleDefs,
                                 SystemFileExportsTest::parseThrottleDefs),
                         3,
-                        this::isSysFileUpdate)),
+                        TxnUtils::isSysFileUpdate)),
                 // This is the genesis transaction
                 sourcingContextual(spec -> overridingTwo(
                         "networkAdmin.upgradeSysFilesLoc",
@@ -264,7 +261,7 @@ public class SystemFileExportsTest {
                                 upgradePropOverrides,
                                 SystemFileExportsTest::parseConfigList),
                         3,
-                        this::isSysFileUpdate)),
+                        TxnUtils::isSysFileUpdate)),
                 // This is the genesis transaction
                 sourcingContextual(spec -> overriding(
                         "networkAdmin.upgradeSysFilesLoc",
@@ -299,7 +296,7 @@ public class SystemFileExportsTest {
                                 ServicesConfigurationList.getDefaultInstance(),
                                 SystemFileExportsTest::parseConfigList),
                         3,
-                        this::isSysFileUpdate)),
+                        TxnUtils::isSysFileUpdate)),
                 // This is the genesis transaction
                 sourcingContextual(spec -> overridingTwo(
                         "networkAdmin.upgradeSysFilesLoc",
@@ -340,7 +337,7 @@ public class SystemFileExportsTest {
                                 upgradePermissionOverrides,
                                 SystemFileExportsTest::parseConfigList),
                         3,
-                        this::isSysFileUpdate)),
+                        TxnUtils::isSysFileUpdate)),
                 // This is the genesis transaction
                 sourcingContextual(spec -> overriding(
                         "networkAdmin.upgradeSysFilesLoc",
@@ -457,11 +454,6 @@ public class SystemFileExportsTest {
                             actualCertHash,
                             "node" + address.nodeId() + " has wrong cert hash");
 
-                    final var expectedAccountID = AccountID.newBuilder()
-                            .accountNum(address.nodeId() + ACCOUNT_ID_OFFSET)
-                            .build();
-                    assertEquals(expectedAccountID, address.nodeAccountId());
-
                     final var expectedDescription = DESCRIPTION_PREFIX + address.nodeId();
                     assertEquals(expectedDescription, address.description());
 
@@ -475,9 +467,7 @@ public class SystemFileExportsTest {
     }
 
     private static VisibleItemsValidator addressBookExportValidator(
-            @NonNull final String fileNumProperty,
-            @NonNull final byte[][] grpcCertHashes,
-            @NonNull final AtomicReference<Map<Long, X509Certificate>> gossipCertificates) {
+            @NonNull final String fileNumProperty, @NonNull final byte[][] grpcCertHashes) {
         return (spec, records) -> {
             final var items = records.get(SELECTED_ITEMS_KEY);
             assertNotNull(items, "No post-upgrade txn found");
@@ -503,11 +493,6 @@ public class SystemFileExportsTest {
                             grpcCertHashes[(int) address.nodeId()],
                             actualCertHash,
                             "node" + address.nodeId() + " has wrong cert hash");
-
-                    final var expectedAccountID = AccountID.newBuilder()
-                            .accountNum(address.nodeId() + ACCOUNT_ID_OFFSET)
-                            .build();
-                    assertEquals(expectedAccountID, address.nodeAccountId());
 
                     final var expectedServiceEndpoint = endpointsFor((int) address.nodeId());
                     assertEquals(expectedServiceEndpoint, address.serviceEndpoint());
@@ -575,19 +560,6 @@ public class SystemFileExportsTest {
             return List.of(asServiceEndpoint("127.0.0." + (i * 2 + 1) + ":" + (80 + i)));
         } else {
             return List.of(asDnsServiceEndpoint("host" + i + ":" + (80 + i)));
-        }
-    }
-
-    private boolean isSysFileUpdate(@NonNull final HapiSpec spec, @NonNull final RecordStreamItem item) {
-        final var txnId = item.getRecord().getTransactionID();
-        final var sysAdminNum = spec.startupProperties().getLong("accounts.systemAdmin");
-        final var firstUserNum = spec.startupProperties().getLong("hedera.firstUserEntity");
-        if (txnId.getAccountID().getAccountNum() != sysAdminNum) {
-            return false;
-        } else {
-            final var entry = RecordStreamEntry.from(item);
-            return entry.function() == FileUpdate
-                    && entry.body().getFileUpdate().getFileID().getFileNum() < firstUserNum;
         }
     }
 }

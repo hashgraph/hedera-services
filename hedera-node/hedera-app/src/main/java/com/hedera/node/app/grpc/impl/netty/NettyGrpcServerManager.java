@@ -26,6 +26,8 @@ import com.hedera.node.app.services.ServicesRegistry;
 import com.hedera.node.app.spi.RpcService;
 import com.hedera.node.app.workflows.ingest.IngestWorkflow;
 import com.hedera.node.app.workflows.query.QueryWorkflow;
+import com.hedera.node.app.workflows.query.annotations.OperatorQueries;
+import com.hedera.node.app.workflows.query.annotations.UserQueries;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.GrpcConfig;
 import com.hedera.node.config.data.HederaConfig;
@@ -119,7 +121,8 @@ public final class NettyGrpcServerManager implements GrpcServerManager {
      * @param configProvider The config provider, so we can figure out ports and other information.
      * @param servicesRegistry The set of all services registered with the system
      * @param ingestWorkflow The implementation of the {@link IngestWorkflow} to use for transaction rpc methods
-     * @param queryWorkflow The implementation of the {@link QueryWorkflow} to use for query rpc methods
+     * @param userQueryWorkflow The implementation of the {@link QueryWorkflow} to use for user query rpc methods
+     * @param operatorQueryWorkflow The implementation of the {@link QueryWorkflow} to use for node operator query rpc methods
      * @param metrics Used to get/create metrics for each transaction and query method.
      */
     @Inject
@@ -127,11 +130,13 @@ public final class NettyGrpcServerManager implements GrpcServerManager {
             @NonNull final ConfigProvider configProvider,
             @NonNull final ServicesRegistry servicesRegistry,
             @NonNull final IngestWorkflow ingestWorkflow,
-            @NonNull final QueryWorkflow queryWorkflow,
+            @NonNull @UserQueries final QueryWorkflow userQueryWorkflow,
+            @NonNull @OperatorQueries final QueryWorkflow operatorQueryWorkflow,
             @NonNull final Metrics metrics) {
         this.configProvider = requireNonNull(configProvider);
         requireNonNull(ingestWorkflow);
-        requireNonNull(queryWorkflow);
+        requireNonNull(userQueryWorkflow);
+        requireNonNull(operatorQueryWorkflow);
         requireNonNull(metrics);
 
         final Supplier<Stream<RpcServiceDefinition>> rpcServiceDefinitions =
@@ -146,7 +151,7 @@ public final class NettyGrpcServerManager implements GrpcServerManager {
         // Convert the various RPC service definitions into transaction or query endpoints using the
         // GrpcServiceBuilder.
         services =
-                buildServiceDefinitions(rpcServiceDefinitions, m -> true, ingestWorkflow, queryWorkflow, metrics, true);
+                buildServiceDefinitions(rpcServiceDefinitions, m -> true, ingestWorkflow, userQueryWorkflow, metrics);
 
         final var grpcConfig = configProvider.getConfiguration().getConfigData(GrpcConfig.class);
         if (grpcConfig.nodeOperatorPortEnabled()) {
@@ -156,9 +161,8 @@ public final class NettyGrpcServerManager implements GrpcServerManager {
                     rpcServiceDefinitions,
                     m -> Query.class.equals(m.requestType()),
                     ingestWorkflow,
-                    queryWorkflow,
-                    metrics,
-                    false);
+                    operatorQueryWorkflow,
+                    metrics);
         }
     }
 
@@ -417,8 +421,7 @@ public final class NettyGrpcServerManager implements GrpcServerManager {
             @NonNull final Predicate<RpcMethodDefinition> methodFilter,
             @NonNull final IngestWorkflow ingestWorkflow,
             @NonNull final QueryWorkflow queryWorkflow,
-            @NonNull final Metrics metrics,
-            boolean chargeQueries) {
+            @NonNull final Metrics metrics) {
         return rpcServiceDefinitions
                 .get()
                 .map(d -> {
@@ -430,7 +433,7 @@ public final class NettyGrpcServerManager implements GrpcServerManager {
                             builder.query(m.path());
                         }
                     });
-                    return builder.build(metrics, chargeQueries);
+                    return builder.build(metrics);
                 })
                 .collect(Collectors.toUnmodifiableSet());
     }
