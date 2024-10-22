@@ -203,7 +203,7 @@ class TokenServiceApiImplTest {
         assertEquals(1, accountStore.sizeOfAccountState());
         final var finalizedAccount = accountStore.getContractById(CONTRACT_ID_BY_NUM);
         assertNotNull(finalizedAccount);
-        assertEquals(STANDIN_CONTRACT_KEY, finalizedAccount.key());
+        assertEquals(Key.newBuilder().contractID(CONTRACT_ID_BY_NUM).build(), finalizedAccount.key());
         assertTrue(finalizedAccount.smartContract());
     }
 

@@ -417,7 +417,9 @@ class HandleHederaOperationsTest {
         final var pendingId = ContractID.newBuilder().contractNum(666L).build();
         final var synthContractCreation = synthContractCreationFromParent(pendingId, parent)
                 .copyBuilder()
-                .adminKey((Key) null)
+                .adminKey(Key.newBuilder()
+                        .contractID(ContractID.newBuilder().contractNum(666L))
+                        .build())
                 .build();
         final var synthAccountCreation =
                 synthAccountCreationFromHapi(pendingId, CANONICAL_ALIAS, synthContractCreation);
