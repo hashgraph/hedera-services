@@ -165,11 +165,10 @@ final class GrpcServiceBuilder {
      * Build a grpc {@link ServerServiceDefinition} for each transaction and query method registered with this builder.
      *
      * @param metrics Used for recording metrics for the transaction or query methods
-     * @param chargeQueries Indicates if the query workflow should charge for handling queries
      * @return A {@link ServerServiceDefinition} that can be registered with a gRPC server
      */
     @NonNull
-    public ServerServiceDefinition build(@NonNull final Metrics metrics, boolean chargeQueries) {
+    public ServerServiceDefinition build(@NonNull final Metrics metrics) {
         final var builder = ServerServiceDefinition.builder(serviceName);
         txMethodNames.forEach(methodName -> {
             logger.debug("Registering gRPC transaction method {}.{}", serviceName, methodName);
@@ -178,7 +177,7 @@ final class GrpcServiceBuilder {
         });
         queryMethodNames.forEach(methodName -> {
             logger.debug("Registering gRPC query method {}.{}", serviceName, methodName);
-            final var method = new QueryMethod(serviceName, methodName, queryWorkflow, metrics, chargeQueries);
+            final var method = new QueryMethod(serviceName, methodName, queryWorkflow, metrics);
             addMethod(builder, serviceName, methodName, method);
         });
         return builder.build();

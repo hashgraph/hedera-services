@@ -72,19 +72,6 @@ class GrpcUserQueryTest extends GrpcTestBase {
     }
 
     @Test
-    @DisplayName("Call a query as node operator on a gRPC service endpoint that succeeds")
-    void sendGoodQueryAsNodeOperator() {
-        // Given a server with a service endpoint and a QueryWorkflow that returns a good response
-        setUp(GOOD_QUERY, true);
-
-        // When we call the service
-        final var response = sendAsNodeOperator(SERVICE, METHOD, "A Query");
-
-        // Then the response is good, and no exception is thrown.
-        assertEquals(GOOD_RESPONSE, response);
-    }
-
-    @Test
     @DisplayName("A query throwing a RuntimeException returns the UNKNOWN status code")
     void queryThrowingRuntimeExceptionReturnsUNKNOWNError() {
         // Given a server where the service will throw a RuntimeException
