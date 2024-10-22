@@ -29,7 +29,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  * Registers the roster schemas with the {@link SchemaRegistry}.
  * Not exposed outside `hedera-app`.
  */
-public class RosterServiceImpl implements Service {
+public class RosterService implements Service {
 
     @NonNull
     @Override

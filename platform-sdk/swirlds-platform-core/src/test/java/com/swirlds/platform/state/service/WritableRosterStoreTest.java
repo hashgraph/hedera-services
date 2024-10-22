@@ -72,8 +72,30 @@ class WritableRosterStoreTest {
         when(writableStates.<RosterState>getSingleton(RosterStateId.ROSTER_STATES_KEY))
                 .thenReturn(new WritableSingletonStateImpl<>(RosterStateId.ROSTER_STATES_KEY, rosterStateSingleton));
 
-        readableRosterStore = new ReadableRosterStore(writableStates);
+        readableRosterStore = new ReadableRosterStoreImpl(writableStates);
         writableRosterStore = new WritableRosterStore(writableStates);
+    }
+
+    @Test
+    void testGetReturnsCorrectRoster() {
+        Roster expectedRoster = createValidTestRoster(1);
+        writableRosterStore.setCandidateRoster(expectedRoster);
+        Bytes rosterHash = RosterUtils.hash(expectedRoster).getBytes();
+
+        Roster actualRoster = readableRosterStore.get(rosterHash);
+
+        assertEquals(expectedRoster, actualRoster, "The returned roster should match the expected roster");
+    }
+
+    @Test
+    void testGetReturnsNullForInvalidHash() {
+        Roster expectedRoster = createValidTestRoster(1);
+        writableRosterStore.setCandidateRoster(expectedRoster);
+        Bytes rosterHash = Bytes.EMPTY;
+
+        Roster actualRoster = readableRosterStore.get(rosterHash);
+
+        assertNull(actualRoster, "The returned roster should be null for an invalid hash");
     }
 
     @Test

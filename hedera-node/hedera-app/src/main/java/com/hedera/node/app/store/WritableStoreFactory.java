@@ -105,6 +105,7 @@ public class WritableStoreFactory {
                 new StoreEntry(EntityIdService.NAME, (states, config, metrics) -> new WritableEntityIdStore(states)));
         // Schedule Service
         newMap.put(WritableScheduleStore.class, new StoreEntry(ScheduleService.NAME, WritableScheduleStoreImpl::new));
+        // Roster Service
         newMap.put(
                 WritableRosterStore.class,
                 new StoreEntry(RosterStateId.NAME, (states, config, metrics) -> new WritableRosterStore(states)));

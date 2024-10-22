@@ -63,7 +63,7 @@ import com.hedera.node.app.fees.FeeService;
 import com.hedera.node.app.ids.EntityIdService;
 import com.hedera.node.app.info.GenesisNetworkInfo;
 import com.hedera.node.app.records.BlockRecordService;
-import com.hedera.node.app.roster.RosterServiceImpl;
+import com.hedera.node.app.roster.RosterService;
 import com.hedera.node.app.service.addressbook.impl.AddressBookServiceImpl;
 import com.hedera.node.app.service.consensus.impl.ConsensusServiceImpl;
 import com.hedera.node.app.service.contract.impl.ContractServiceImpl;
@@ -546,7 +546,7 @@ public class StateChangesValidator implements BlockStreamValidator {
                         new CongestionThrottleService(),
                         new NetworkServiceImpl(),
                         new AddressBookServiceImpl(),
-                        new RosterServiceImpl(),
+                        new RosterService(),
                         PLATFORM_STATE_SERVICE)
                 .forEach(servicesRegistry::register);
     }

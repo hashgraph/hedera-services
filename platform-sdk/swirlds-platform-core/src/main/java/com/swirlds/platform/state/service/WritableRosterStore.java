@@ -32,7 +32,6 @@ import com.swirlds.state.spi.WritableKVState;
 import com.swirlds.state.spi.WritableSingletonState;
 import com.swirlds.state.spi.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
@@ -40,9 +39,7 @@ import java.util.Objects;
 /**
  * Read-write implementation for accessing rosters states.
  */
-public class WritableRosterStore {
-
-    private final ReadableRosterStore rosterStateAccessor;
+public class WritableRosterStore extends ReadableRosterStoreImpl {
 
     /**
      * The roster state singleton. This is the state that holds the candidate roster hash and the list of pairs of
@@ -66,14 +63,14 @@ public class WritableRosterStore {
      * @param writableStates the readable states
      */
     public WritableRosterStore(@NonNull final WritableStates writableStates) {
+        super(writableStates);
         Objects.requireNonNull(writableStates);
-        this.rosterStateAccessor = new ReadableRosterStore(writableStates);
         this.rosterState = writableStates.getSingleton(RosterStateId.ROSTER_STATES_KEY);
         this.rosterMap = writableStates.get(RosterStateId.ROSTER_KEY);
     }
 
     /**
-     * Sets the candidate roster. This will be called to inform the platform of a new candidate roster.
+     * Sets the candidate roster in state.
      * Setting the candidate roster indicates that this roster should be adopted as the active roster when required.
      *
      * @param candidateRoster a candidate roster to set. It must be a valid roster.
@@ -92,26 +89,6 @@ public class WritableRosterStore {
                 previousRosterState.copyBuilder().candidateRosterHash(incomingCandidateRosterHash);
         removeRoster(previousCandidateRosterHash);
         storeRoster(candidateRoster, incomingCandidateRosterHash, newRosterState);
-    }
-
-    /**
-     * Gets the candidate roster.
-     *
-     * @return the candidate roster
-     */
-    @Nullable
-    public Roster getCandidateRoster() {
-        return rosterStateAccessor.getCandidateRoster();
-    }
-
-    /**
-     * Gets the active roster present in the state.
-     *
-     * @return the active roster if present. Null otherwise.
-     */
-    @Nullable
-    public Roster getActiveRoster() {
-        return rosterStateAccessor.getActiveRoster();
     }
 
     /**

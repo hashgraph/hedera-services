@@ -31,19 +31,19 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
 /**
- * Unit tests for {@link RosterServiceImpl}.
+ * Unit tests for {@link RosterService}.
  */
-class RosterServiceImplTest {
-    private RosterServiceImpl rosterService;
+class RosterServiceTest {
+    private RosterService rosterService;
 
     @BeforeEach
     void setUp() {
-        rosterService = new RosterServiceImpl();
+        rosterService = new RosterService();
     }
 
     @Test
     void defaultConstructor() {
-        assertThat(new RosterServiceImpl()).isNotNull();
+        assertThat(new RosterService()).isNotNull();
     }
 
     @Test
