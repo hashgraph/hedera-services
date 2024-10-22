@@ -36,9 +36,7 @@ import static com.swirlds.platform.util.BootstrapUtils.checkNodesToRun;
 import static com.swirlds.platform.util.BootstrapUtils.getNodesToRun;
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.node.app.config.BootstrapConfigProviderImpl;
 import com.hedera.node.app.services.OrderedServiceMigrator;
-import com.hedera.node.app.services.ServicesRegistry;
 import com.hedera.node.app.services.ServicesRegistryImpl;
 import com.hedera.node.app.tss.TssBaseServiceImpl;
 import com.swirlds.base.time.Time;
@@ -206,10 +204,6 @@ public class ServicesMain implements SwirldMain {
         final var fileSystemManager = FileSystemManager.create(configuration);
         final var recycleBin =
                 RecycleBin.create(metrics, configuration, getStaticThreadManager(), time, fileSystemManager, selfId);
-
-        ServicesRegistry.Factory registryFactory = ServicesRegistryImpl::new;
-        BootstrapConfigProviderImpl bootstrapConfigProvider = new BootstrapConfigProviderImpl();
-        final var bootstrapConfig = bootstrapConfigProvider.getConfiguration();
 
         // Create initial state for the platform
         final var reservedState = getInitialState(

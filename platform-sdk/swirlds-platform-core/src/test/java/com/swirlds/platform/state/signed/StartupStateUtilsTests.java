@@ -165,15 +165,9 @@ public class StartupStateUtilsTests {
     void genesisTest() throws SignedStateLoadingException {
         final PlatformContext platformContext = buildContext(false, TestRecycleBin.getInstance());
 
-        final var metrics = getMetricsProvider().createPlatformMetrics(selfId);
-        final var configuration = platformContext.getConfiguration();
-        final var fileSystemManager = FileSystemManager.create(configuration);
-        final var time = Time.getCurrent();
-        final var recycleBin =
-                RecycleBin.create(metrics, configuration, getStaticThreadManager(), time, fileSystemManager, selfId);
-
+        final RecycleBin recycleBin = initializeRecycleBin(platformContext, selfId);
         final SignedState loadedState = StartupStateUtils.loadStateFile(
-                        configuration,
+                        platformContext.getConfiguration(),
                         recycleBin,
                         selfId,
                         mainClassName,
@@ -200,15 +194,9 @@ public class StartupStateUtilsTests {
             latestState = writeState(random, platformContext, latestRound, null, false);
         }
 
-        final var metrics = getMetricsProvider().createPlatformMetrics(selfId);
-        final var configuration = platformContext.getConfiguration();
-        final var fileSystemManager = FileSystemManager.create(configuration);
-        final var time = Time.getCurrent();
-        final var recycleBin =
-                RecycleBin.create(metrics, configuration, getStaticThreadManager(), time, fileSystemManager, selfId);
-
+        final RecycleBin recycleBin = initializeRecycleBin(platformContext, selfId);
         final SignedState loadedState = StartupStateUtils.loadStateFile(
-                        configuration,
+                        platformContext.getConfiguration(),
                         recycleBin,
                         selfId,
                         mainClassName,
@@ -238,16 +226,10 @@ public class StartupStateUtilsTests {
             final boolean corrupted = i == stateCount - 1;
             writeState(random, platformContext, latestRound, null, corrupted);
         }
-
-        final var metrics = getMetricsProvider().createPlatformMetrics(selfId);
-        final var configuration = platformContext.getConfiguration();
-        final var fileSystemManager = FileSystemManager.create(configuration);
-        final var time = Time.getCurrent();
-        final var recycleBin =
-                RecycleBin.create(metrics, configuration, getStaticThreadManager(), time, fileSystemManager, selfId);
+        final RecycleBin recycleBin = initializeRecycleBin(platformContext, selfId);
 
         assertThrows(SignedStateLoadingException.class, () -> StartupStateUtils.loadStateFile(
-                        configuration,
+                        platformContext.getConfiguration(),
                         recycleBin,
                         selfId,
                         mainClassName,
@@ -318,5 +300,13 @@ public class StartupStateUtilsTests {
 
         assertEquals(5 - invalidStateCount, Files.list(savedStateDirectory).count());
         assertEquals(invalidStateCount, recycleCount.get());
+    }
+
+    private RecycleBin initializeRecycleBin(PlatformContext platformContext, NodeId selfId) {
+        final var metrics = getMetricsProvider().createPlatformMetrics(selfId);
+        final var configuration = platformContext.getConfiguration();
+        final var fileSystemManager = FileSystemManager.create(configuration);
+        final var time = Time.getCurrent();
+        return RecycleBin.create(metrics, configuration, getStaticThreadManager(), time, fileSystemManager, selfId);
     }
 }
