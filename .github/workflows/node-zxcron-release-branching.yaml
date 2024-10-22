@@ -93,7 +93,7 @@ jobs:
     env:
       GITHUB_TOKEN: ${{ secrets.GH_ACCESS_TOKEN }}
 
-    if: ${{ !github.event.workflow_dispatch.repository.fork && needs.check-trigger.outputs.triggered == 'true' && !cancelled() }}
+    if: ${{ needs.check-trigger.outputs.triggered == 'true' && !cancelled() }}
     steps:
       - name: Harden Runner
         uses: step-security/harden-runner@f086349bfa2bd1361f7909c78558e816508cdc10 # v2.8.0
@@ -116,7 +116,7 @@ jobs:
     env:
       GITHUB_TOKEN: ${{ secrets.GH_ACCESS_TOKEN }}
 
-    if: ${{ !github.event.workflow_dispatch.repository.fork && needs.check-branch.outputs.branch-create == 'true' && !cancelled() }}
+    if: ${{ needs.check-branch.outputs.branch-create == 'true' && !cancelled() }}
     steps:
       - name: Harden Runner
         uses: step-security/harden-runner@f086349bfa2bd1361f7909c78558e816508cdc10 # v2.8.0
@@ -239,7 +239,6 @@ jobs:
           printf "## Dispatch Payload\n\`\`\`json\n%s\n\`\`\`\n" "$(jq '.' <<<"${REQ_JSON}")" >>"${GITHUB_STEP_SUMMARY}"
 
       - name: Repository Dispatch
-        if: ${{ !github.event.workflow_dispatch.repository.fork }}
         uses: peter-evans/repository-dispatch@ff45666b9427631e3450c54a1bcbee4d9ff4d7c0 # v3.0.0
         with:
           token: ${{ secrets.GH_ACCESS_TOKEN }}
