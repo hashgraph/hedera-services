@@ -92,7 +92,7 @@ Roster getActiveRoster();
 ```
 
 The steps to validate and add the Roster to the state will be executed within the same thread that submits the request.
-A caught exception will be thrown if the Roster is invalid. The durability of the submitted Roster is ensured by storing it in the state.
+A checked exception will be thrown if the Roster is invalid. The durability of the submitted Roster is ensured by storing it in the state.
 
 ## Data Structure
 
