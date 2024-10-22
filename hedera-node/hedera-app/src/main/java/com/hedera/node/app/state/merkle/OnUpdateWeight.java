@@ -16,9 +16,9 @@
 
 package com.hedera.node.app.state.merkle;
 
+import com.swirlds.common.AddressBook;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.platform.state.MerkleStateRoot;
-import com.swirlds.platform.system.address.AddressBook;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**

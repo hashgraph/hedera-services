@@ -16,14 +16,14 @@
 
 package com.swirlds.platform.network;
 
+import com.swirlds.common.Address;
+import com.swirlds.common.AddressBook;
 import com.swirlds.common.metrics.RunningAverageMetric;
 import com.swirlds.common.metrics.SpeedometerMetric;
 import com.swirlds.common.metrics.extensions.CountPerSecond;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.metrics.api.FloatFormats;
 import com.swirlds.metrics.api.Metrics;
-import com.swirlds.platform.system.address.Address;
-import com.swirlds.platform.system.address.AddressBook;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.HashMap;

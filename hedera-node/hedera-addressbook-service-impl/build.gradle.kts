@@ -36,5 +36,6 @@ testModuleInfo {
     requires("org.junit.jupiter.api")
     requires("org.mockito")
     requires("org.mockito.junit.jupiter")
+    requires("com.swirlds.common")
     requiresStatic("com.github.spotbugs.annotations")
 }

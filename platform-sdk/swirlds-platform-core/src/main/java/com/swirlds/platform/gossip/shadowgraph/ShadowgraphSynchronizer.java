@@ -27,6 +27,8 @@ import static com.swirlds.platform.gossip.shadowgraph.SyncUtils.sendEventsTheyNe
 import static com.swirlds.platform.gossip.shadowgraph.SyncUtils.writeMyTipsAndEventWindow;
 import static com.swirlds.platform.gossip.shadowgraph.SyncUtils.writeTheirTipsIHave;
 
+import com.hedera.service.gossip.FallenBehindManager;
+import com.hedera.service.gossip.IntakeEventCounter;
 import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.platform.NodeId;
@@ -36,8 +38,6 @@ import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.eventhandling.EventConfig;
-import com.swirlds.platform.gossip.FallenBehindManager;
-import com.swirlds.platform.gossip.IntakeEventCounter;
 import com.swirlds.platform.gossip.SyncException;
 import com.swirlds.platform.gossip.sync.config.SyncConfig;
 import com.swirlds.platform.metrics.SyncMetrics;

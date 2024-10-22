@@ -20,6 +20,7 @@ import static com.swirlds.platform.state.signed.StartupStateUtils.getInitialStat
 import static com.swirlds.platform.system.address.AddressBookUtils.createRoster;
 
 import com.swirlds.base.time.Time;
+import com.swirlds.common.AddressBook;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.Randotron;
@@ -36,7 +37,6 @@ import com.swirlds.platform.state.MerkleRoot;
 import com.swirlds.platform.state.snapshot.SignedStateFileUtils;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.Platform;
-import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.test.fixtures.turtle.gossip.SimulatedGossip;
 import com.swirlds.platform.test.fixtures.turtle.gossip.SimulatedNetwork;
 import com.swirlds.platform.util.RandomBuilder;

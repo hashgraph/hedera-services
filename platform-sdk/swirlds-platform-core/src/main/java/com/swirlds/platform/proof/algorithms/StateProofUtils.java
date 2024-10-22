@@ -18,13 +18,13 @@ package com.swirlds.platform.proof.algorithms;
 
 import static com.swirlds.common.crypto.DigestType.SHA_384;
 
+import com.swirlds.common.Address;
+import com.swirlds.common.AddressBook;
 import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.proof.SignatureVerifier;
 import com.swirlds.platform.proof.tree.StateProofInternalNode;
 import com.swirlds.platform.proof.tree.StateProofNode;
-import com.swirlds.platform.system.address.Address;
-import com.swirlds.platform.system.address.AddressBook;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.security.MessageDigest;
 import java.util.Deque;

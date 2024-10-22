@@ -16,8 +16,8 @@
 
 package com.swirlds.platform.crypto;
 
+import com.swirlds.common.AddressBook;
 import com.swirlds.common.platform.NodeId;
-import com.swirlds.platform.system.address.AddressBook;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Map;
 

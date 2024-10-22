@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,16 +14,16 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.system.address;
+package com.swirlds.common;
 
 import com.swirlds.base.state.MutabilityException;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.Hashable;
+import com.swirlds.common.formatting.TextTable;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.platform.NodeId;
-import com.swirlds.platform.system.address.internal.AddressBookIterator;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
@@ -603,7 +603,31 @@ public class AddressBook implements Iterable<Address>, SelfSerializable, Hashabl
      */
     @NonNull
     public String toConfigText() {
-        return AddressBookUtils.addressBookConfigText(this);
+        return addressBookConfigText(this);
+    }
+
+    // FUTURE WORK: remove this method and use AddressBookUtils after that file has also been moved to new module
+    private static String addressBookConfigText(@NonNull final AddressBook addressBook) {
+        Objects.requireNonNull(addressBook, "The addressBook must not be null.");
+        final TextTable table = new TextTable().setBordersEnabled(false);
+        for (final Address address : addressBook) {
+            final String memo = address.getMemo();
+            final boolean hasMemo = !memo.trim().isEmpty();
+            final boolean hasInternalIpv4 = address.getHostnameInternal() != null;
+            final boolean hasExternalIpv4 = address.getHostnameExternal() != null;
+            table.addRow(
+                    "address,",
+                    address.getNodeId() + ",",
+                    address.getNickname() + ",",
+                    address.getSelfName() + ",",
+                    address.getWeight() + ",",
+                    (hasInternalIpv4 ? address.getHostnameInternal() : "") + ",",
+                    address.getPortInternal() + ",",
+                    (hasExternalIpv4 ? address.getHostnameExternal() : "") + ",",
+                    address.getPortExternal() + (hasMemo ? "," : ""),
+                    memo);
+        }
+        return table.render();
     }
 
     /**

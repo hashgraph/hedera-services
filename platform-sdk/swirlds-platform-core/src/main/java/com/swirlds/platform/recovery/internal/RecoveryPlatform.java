@@ -19,6 +19,7 @@ package com.swirlds.platform.recovery.internal;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static com.swirlds.platform.crypto.CryptoStatic.initNodeSecurity;
 
+import com.swirlds.common.AddressBook;
 import com.swirlds.common.AutoCloseableNonThrowing;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Signature;
@@ -33,7 +34,6 @@ import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateReference;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.SwirldState;
-import com.swirlds.platform.system.address.AddressBook;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
 

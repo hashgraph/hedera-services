@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.gossip;
+package com.hedera.service.gossip;
 
 import com.swirlds.common.platform.NodeId;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -32,24 +32,24 @@ public interface IntakeEventCounter {
      * @param peer the peer to check for unprocessed events
      * @return true if there are unprocessed events, false otherwise
      */
-    boolean hasUnprocessedEvents(@NonNull final NodeId peer);
+    boolean hasUnprocessedEvents(@NonNull NodeId peer);
 
     /**
-     * Indicates that an event from a given peer has entered the intake pipeline
+     * Indicates that an event from a given peer has entered the intake pipeline.
      *
      * @param peer the peer that sent the event
      */
-    void eventEnteredIntakePipeline(@NonNull final NodeId peer);
+    void eventEnteredIntakePipeline(@NonNull NodeId peer);
 
     /**
-     * Indicates that an event from a given peer has exited the intake pipeline
+     * Indicates that an event from a given peer has exited the intake pipeline.
      *
      * @param peer the peer that sent the event
      */
-    void eventExitedIntakePipeline(@Nullable final NodeId peer);
+    void eventExitedIntakePipeline(@Nullable NodeId peer);
 
     /**
-     * Reset event counts
+     * Reset event counts.
      */
     void reset();
 }

@@ -16,9 +16,9 @@
 
 package com.swirlds.platform.state.signed;
 
+import com.swirlds.common.AddressBook;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.platform.state.PlatformStateAccessor;
-import com.swirlds.platform.system.address.AddressBook;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;

@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.event.validation;
 
-import com.swirlds.platform.system.address.AddressBook;
+import com.swirlds.common.AddressBook;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**

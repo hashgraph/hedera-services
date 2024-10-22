@@ -19,12 +19,12 @@ package com.swirlds.platform.gui.hashgraph.internal;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.platform.gui.hashgraph.HashgraphGuiConstants.HASHGRAPH_PICTURE_FONT;
 
+import com.swirlds.common.AddressBook;
 import com.swirlds.platform.consensus.GraphGenerations;
 import com.swirlds.platform.gui.hashgraph.HashgraphGuiConstants;
 import com.swirlds.platform.gui.hashgraph.HashgraphGuiSource;
 import com.swirlds.platform.gui.hashgraph.HashgraphPictureOptions;
 import com.swirlds.platform.internal.EventImpl;
-import com.swirlds.platform.system.address.AddressBook;
 import java.awt.AWTException;
 import java.awt.Color;
 import java.awt.Font;

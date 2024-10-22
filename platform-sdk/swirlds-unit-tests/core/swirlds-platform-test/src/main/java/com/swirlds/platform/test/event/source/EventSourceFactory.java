@@ -17,7 +17,7 @@
 package com.swirlds.platform.test.event.source;
 
 import com.swirlds.base.utility.Pair;
-import com.swirlds.platform.system.address.AddressBook;
+import com.swirlds.common.AddressBook;
 import com.swirlds.platform.test.fixtures.event.source.EventSource;
 import com.swirlds.platform.test.fixtures.event.source.StandardEventSource;
 import edu.umd.cs.findbugs.annotations.NonNull;

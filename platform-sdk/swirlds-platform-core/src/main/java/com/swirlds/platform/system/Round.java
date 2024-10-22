@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.system;
 
-import com.swirlds.platform.system.address.AddressBook;
+import com.swirlds.common.AddressBook;
 import com.swirlds.platform.system.events.ConsensusEvent;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
 import edu.umd.cs.findbugs.annotations.NonNull;

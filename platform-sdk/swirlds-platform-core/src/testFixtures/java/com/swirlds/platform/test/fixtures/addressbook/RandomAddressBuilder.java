@@ -19,9 +19,9 @@ package com.swirlds.platform.test.fixtures.addressbook;
 import static com.swirlds.common.test.fixtures.RandomUtils.randomIp;
 import static com.swirlds.common.test.fixtures.RandomUtils.randomString;
 
+import com.swirlds.common.Address;
+import com.swirlds.common.SerializableX509Certificate;
 import com.swirlds.common.platform.NodeId;
-import com.swirlds.platform.crypto.SerializableX509Certificate;
-import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.test.fixtures.crypto.PreGeneratedX509Certs;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;

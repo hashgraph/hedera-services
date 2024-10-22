@@ -19,9 +19,9 @@ package com.swirlds.platform.config.legacy;
 import static com.swirlds.base.utility.FileSystemUtils.waitForPathPresence;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 
+import com.swirlds.common.Address;
+import com.swirlds.common.AddressBook;
 import com.swirlds.common.utility.CommonUtils;
-import com.swirlds.platform.system.address.Address;
-import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.address.AddressBookUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.FileNotFoundException;

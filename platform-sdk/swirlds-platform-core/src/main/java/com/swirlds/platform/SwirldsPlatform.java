@@ -26,6 +26,7 @@ import static com.swirlds.platform.state.address.AddressBookMetrics.registerAddr
 import static com.swirlds.platform.state.snapshot.SignedStateFileReader.getSavedStateFiles;
 
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.common.AddressBook;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.Signature;
@@ -75,7 +76,6 @@ import com.swirlds.platform.state.snapshot.StateToDiskReason;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.SwirldState;
-import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.events.BirthRoundMigrationShim;
 import com.swirlds.platform.system.events.DefaultBirthRoundMigrationShim;
 import com.swirlds.platform.system.status.actions.DoneReplayingEventsAction;

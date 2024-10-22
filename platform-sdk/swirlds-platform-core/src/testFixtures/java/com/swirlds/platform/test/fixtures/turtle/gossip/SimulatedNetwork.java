@@ -16,9 +16,9 @@
 
 package com.swirlds.platform.test.fixtures.turtle.gossip;
 
+import com.swirlds.common.AddressBook;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.event.PlatformEvent;
-import com.swirlds.platform.system.address.AddressBook;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
 import java.time.Instant;
