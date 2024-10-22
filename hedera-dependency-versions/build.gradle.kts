@@ -43,7 +43,7 @@ dependencies.constraints {
     api("com.github.docker-java:docker-java-api:3.2.13") {
         because("com.github.dockerjava.api")
     }
-    api("com.github.spotbugs:spotbugs-annotations:4.7.3") {
+    api("com.github.spotbugs:spotbugs-annotations:4.8.6") {
         because("com.github.spotbugs.annotations")
     }
     api("com.google.auto.service:auto-service-annotations:1.1.1") {
