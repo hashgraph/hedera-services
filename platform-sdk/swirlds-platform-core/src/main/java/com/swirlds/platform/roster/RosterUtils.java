@@ -22,7 +22,6 @@ import com.swirlds.common.crypto.Hash;
 import com.swirlds.platform.crypto.CryptoStatic;
 import com.swirlds.platform.util.PbjRecordHasher;
 import edu.umd.cs.findbugs.annotations.NonNull;
-
 import java.security.cert.X509Certificate;
 
 /**
