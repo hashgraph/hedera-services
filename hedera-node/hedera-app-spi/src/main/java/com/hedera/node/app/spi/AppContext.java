@@ -59,12 +59,12 @@ public interface AppContext {
         void submit(@NonNull TransactionBody body);
 
         /**
-         * Signs the given ledger id and returns the signature.
+         * Signs the given byte with the node's RSA key and returns the signature.
          *
-         * @param ledgerId the ledger id to sign
+         * @param bytes the bytes to sign
          * @return the signature
          */
-        Signature sign(byte[] ledgerId);
+        Signature sign(byte[] bytes);
     }
 
     /**

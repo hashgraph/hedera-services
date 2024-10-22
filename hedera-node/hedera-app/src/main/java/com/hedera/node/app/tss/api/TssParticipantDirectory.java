@@ -135,6 +135,10 @@ public final class TssParticipantDirectory {
         return threshold;
     }
 
+    /**
+     * Returns the tss shares for all the nodes.
+     * @return the tss shares for all the nodes
+     */
     public Map<Integer, List<TssShareId>> getSharesById() {
         Map<Integer, List<TssShareId>> sharesById = new HashMap<>();
         for (Entry<TssShareId, Integer> entry : shareAllocationMap.entrySet()) {

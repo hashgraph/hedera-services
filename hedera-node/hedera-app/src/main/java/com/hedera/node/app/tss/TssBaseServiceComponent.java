@@ -16,7 +16,6 @@
 
 package com.hedera.node.app.tss;
 
-import com.hedera.node.app.service.contract.impl.exec.TransactionModule;
 import com.hedera.node.app.spi.AppContext;
 import com.hedera.node.app.tss.handlers.TssMessageHandler;
 import com.hedera.node.app.tss.handlers.TssSubmissions;
@@ -27,7 +26,7 @@ import java.util.concurrent.Executor;
 import javax.inject.Singleton;
 
 @Singleton
-@Component(modules = {TransactionModule.class, TssModule.class})
+@Component(modules = {TssModule.class})
 public interface TssBaseServiceComponent {
     @Component.Factory
     interface Factory {

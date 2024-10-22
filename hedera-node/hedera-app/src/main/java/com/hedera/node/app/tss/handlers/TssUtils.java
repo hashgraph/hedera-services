@@ -35,6 +35,13 @@ import java.util.List;
 import java.util.Map;
 
 public class TssUtils {
+    /**
+     * Compute the TSS participant directory from the roster.
+     * @param roster the roster
+     * @param maxSharesPerNode the maximum number of shares per node
+     * @param selfNodeId the node ID of the current node
+     * @return the TSS participant directory
+     */
     public static TssParticipantDirectory computeTssParticipantDirectory(
             @NonNull final Roster roster, final long maxSharesPerNode, final int selfNodeId) {
         final var computedShares = computeNodeShares(roster.rosterEntries(), maxSharesPerNode);
@@ -43,7 +50,7 @@ public class TssUtils {
         final var threshold = (int) (totalShares + 2) / 2;
 
         final var builder = TssParticipantDirectory.createBuilder().withThreshold(threshold);
-        // TODO: How to set this private key? Cant use aggregatePrivateKeys since it needs tssParticipantDirectory
+        // FUTURE: This private key must be loaded from disk
         builder.withSelf(
                 selfNodeId,
                 new PairingPrivateKey(

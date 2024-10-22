@@ -21,6 +21,7 @@ import static com.hedera.node.app.tss.handlers.TssUtils.validateTssMessages;
 
 import com.hedera.hapi.node.state.tss.TssVoteMapKey;
 import com.hedera.hapi.services.auxiliary.tss.TssMessageTransactionBody;
+import com.hedera.hapi.services.auxiliary.tss.TssVoteTransactionBody;
 import com.hedera.node.app.spi.AppContext;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.tss.api.TssLibrary;
@@ -53,7 +54,18 @@ public class TssCryptographyManager {
     }
 
     /**
-     * Submit TSS message transactions to the transaction pool
+     * Handles a TssMessageTransaction.
+     * This method validates the TssMessages and computes the ledger id if the threshold
+     * is met.
+     * Then signs the ledgerId with the node's RSA key and returns the signature with the computed ledgerID.
+     * If the threshold is not met, the method returns null.
+     * The most expensive operations involving {@link TssLibrary} are
+     * executed asynchronously.
+     *
+     * @param op                      the TssMessageTransaction
+     * @param tssParticipantDirectory the TSS participant directory
+     * @param context                 the handle context
+     * @return a CompletableFuture containing the ledger id and signature if the threshold is met, null otherwise
      */
     public CompletableFuture<LedgerIdWithSignature> handleTssMessageTransaction(
             @NonNull final TssMessageTransactionBody op,
@@ -80,6 +92,14 @@ public class TssCryptographyManager {
         return CompletableFuture.completedFuture(null);
     }
 
+    /**
+     * Compute and sign the ledger id if the threshold is met. If the threshold is not met, return null.
+     * The most expensive operations involving {@link TssLibrary} are executed asynchronously.
+     *
+     * @param tssMessageBodies        the list of TSS messages
+     * @param tssParticipantDirectory the TSS participant directory
+     * @return a CompletableFuture containing the ledger id and signature if the threshold is met, null otherwise
+     */
     private CompletableFuture<LedgerIdWithSignature> computeAndSignLedgerIdIfApplicable(
             @NonNull final List<TssMessageTransactionBody> tssMessageBodies,
             final TssParticipantDirectory tssParticipantDirectory) {
@@ -106,6 +126,7 @@ public class TssCryptographyManager {
 
     /**
      * Compute the TSS vote bit set. No need to validate the TSS messages here as they have already been validated.
+     *
      * @param validIssBodies the valid TSS messages
      * @return the TSS vote bit set
      */
@@ -119,7 +140,8 @@ public class TssCryptographyManager {
 
     /**
      * Check if the threshold is met. The threshold is met if more than half the consensus weight has been received.
-     * @param validTssMessages the valid TSS messages
+     *
+     * @param validTssMessages        the valid TSS messages
      * @param tssParticipantDirectory the TSS participant directory
      * @return true if the threshold is met, false otherwise
      */
@@ -131,6 +153,9 @@ public class TssCryptographyManager {
         return validTssMessages.size() >= ((numShares + 2) / 2);
     }
 
+    /**
+     * A record containing the ledger id, signature, and TSS vote bit set to be used in generating {@link TssVoteTransactionBody}.
+     */
     public record LedgerIdWithSignature(
             @NonNull PairingPublicKey ledgerId, @NonNull Signature signature, @NonNull BitSet tssVoteBitSet) {}
 }
