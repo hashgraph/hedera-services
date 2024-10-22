@@ -49,12 +49,23 @@ public interface VirtualDataSource {
     int INVALID_PATH = -1;
 
     /**
-     * Close the data source
+     * Close the data source and delete all its data.
      *
      * @throws IOException
      * 		If there was a problem closing the data source
      */
-    void close() throws IOException;
+    default void close() throws IOException {
+        close(false);
+    }
+
+    /**
+     * Close the data source.
+     *
+     * @param keepData Indicates whether to keep data source data or not
+     * @throws IOException
+     * 		If there was a problem closing the data source
+     */
+    void close(boolean keepData) throws IOException;
 
     /**
      * Save a batch of data to data store.

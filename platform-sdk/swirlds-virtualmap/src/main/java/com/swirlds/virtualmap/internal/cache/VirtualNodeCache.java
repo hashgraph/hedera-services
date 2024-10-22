@@ -1080,6 +1080,16 @@ public final class VirtualNodeCache<K extends VirtualKey, V extends VirtualValue
         }
     }
 
+    public VirtualNodeCache<K, V> emptySnapshot() {
+        synchronized (lastReleased) {
+            final VirtualNodeCache<K, V> newSnapshot = new VirtualNodeCache<>();
+            newSnapshot.snapshot.set(true);
+            newSnapshot.fastCopyVersion.set(fastCopyVersion.get());
+            newSnapshot.seal();
+            return newSnapshot;
+        }
+    }
+
     // --------------------------------------------------------------------------------------------
     // Private helper methods.
     //
