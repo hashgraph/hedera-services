@@ -20,6 +20,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_R
 import static org.assertj.core.api.BDDAssertions.assertThat;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
@@ -42,6 +43,10 @@ import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.workflows.prehandle.PreHandleContextImpl;
+import com.hedera.node.config.data.HederaConfig;
+import com.hedera.node.config.data.LedgerConfig;
+import com.hedera.node.config.data.SchedulingConfig;
+import com.swirlds.config.api.Configuration;
 import java.security.InvalidKeyException;
 import java.time.InstantSource;
 import java.util.Set;
@@ -118,6 +123,20 @@ class ScheduleCreateHandlerTest extends ScheduleHandlerTestBase {
     }
 
     @Test
+    void preHandleInvalindLongTermSchedule() throws PreCheckException {
+        SchedulingConfig mockSchedulingConfig = mock(SchedulingConfig.class);
+        when(mockSchedulingConfig.longTermEnabled()).thenReturn(true);
+        when(mockSchedulingConfig.whitelist()).thenReturn(scheduleConfig.whitelist());
+        Configuration mockConfig = mock(Configuration.class);
+        when(mockConfig.getConfigData(SchedulingConfig.class)).thenReturn(mockSchedulingConfig);
+        when(mockConfig.getConfigData(LedgerConfig.class)).thenReturn(testConfig.getConfigData(LedgerConfig.class));
+        when(mockConfig.getConfigData(HederaConfig.class)).thenReturn(testConfig.getConfigData(HederaConfig.class));
+        realPreContext = new PreHandleContextImpl(
+                mockStoreFactory, scheduleCreateTransactionWithWaitForExpiry(null), mockConfig, mockDispatcher);
+        Assertions.assertThrowsPreCheck(() -> subject.preHandle(realPreContext), ResponseCodeEnum.INVALID_TRANSACTION);
+    }
+
+    @Test
     void preHandleRejectsNonWhitelist() throws PreCheckException {
         final Set<HederaFunctionality> configuredWhitelist =
                 scheduleConfig.whitelist().functionalitySet();
@@ -146,7 +165,7 @@ class ScheduleCreateHandlerTest extends ScheduleHandlerTestBase {
     }
 
     @Test
-    void verifyPureChecks() throws PreCheckException {
+    void verifyPureChecks() {
         final TransactionBody.Builder failures = alternateCreateTransaction.copyBuilder();
         final TransactionID originalId = alternateCreateTransaction.transactionID();
         Assertions.assertThrowsPreCheck(() -> subject.pureChecks(null), ResponseCodeEnum.INVALID_TRANSACTION_BODY);
@@ -167,9 +186,6 @@ class ScheduleCreateHandlerTest extends ScheduleHandlerTestBase {
                 () -> subject.pureChecks(failures.build()), ResponseCodeEnum.INVALID_SCHEDULE_PAYER_ID);
         failures.transactionID(originalId);
         setLongTermError(failures, alternateCreateTransaction);
-        // The code here should be INVALID_LONG_TERM_SCHEDULE when/if that is added to response codes.
-        Assertions.assertThrowsPreCheck(
-                () -> subject.pureChecks(failures.build()), ResponseCodeEnum.INVALID_TRANSACTION);
     }
 
     private void setLongTermError(final TransactionBody.Builder failures, final TransactionBody original) {
@@ -277,6 +293,20 @@ class ScheduleCreateHandlerTest extends ScheduleHandlerTestBase {
                 Timestamp.newBuilder().seconds(1_234_567L).build();
         return ScheduledTransactionFactory.scheduleCreateTransactionWith(
                 adminKey, "test", payer, scheduler, timestampValue);
+    }
+
+    private TransactionBody scheduleCreateTransactionWithWaitForExpiry(final AccountID payer) {
+        final Timestamp timestampValue =
+                Timestamp.newBuilder().seconds(1_234_567L).build();
+        return ScheduledTransactionFactory.scheduleCreateTransactionWith(
+                ScheduledTransactionFactory.SAMPLE_BURN,
+                adminKey,
+                "test",
+                payer,
+                scheduler,
+                timestampValue,
+                null,
+                true);
     }
 
     private void prepareContext(final TransactionBody createTransaction, final long nextEntityId)

@@ -510,7 +510,7 @@ public class ScheduleTestBase {
         final ScheduleCreateTransactionBody.Builder builder = ScheduleCreateTransactionBody.newBuilder()
                 .scheduledTransactionBody(childTransaction)
                 .memo(memo)
-                .waitForExpiry(true)
+                .waitForExpiry(false)
                 .payerAccountID(scheduler);
         if (explicitPayer != null) builder.payerAccountID(explicitPayer);
         if (adminKey != null) builder.adminKey(adminKey);
