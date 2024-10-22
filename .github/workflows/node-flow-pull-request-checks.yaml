@@ -34,7 +34,6 @@ concurrency:
 jobs:
   build:
     name: Code
-    if: ${{ !github.event.workflow_dispatch.repository.fork }}
     uses: ./.github/workflows/node-zxc-compile-application-code.yaml
     with:
       enable-spotless-check: false
@@ -45,7 +44,6 @@ jobs:
 
   dependency-check:
     name: Dependency (Module Info)
-    if: ${{ !github.event.workflow_dispatch.repository.fork }}
     uses: ./.github/workflows/node-zxc-compile-application-code.yaml
     needs:
       - build
@@ -59,7 +57,6 @@ jobs:
 
   spotless:
     name: Spotless
-    if: ${{ !github.event.workflow_dispatch.repository.fork }}
     uses: ./.github/workflows/node-zxc-compile-application-code.yaml
     needs:
       - build
@@ -74,7 +71,6 @@ jobs:
 
   unit-tests:
     name: Unit Tests
-    if: ${{ !github.event.workflow_dispatch.repository.fork }}
     uses: ./.github/workflows/node-zxc-compile-application-code.yaml
     needs:
       - dependency-check
@@ -91,7 +87,6 @@ jobs:
 
   hapi-tests-misc:
     name: HAPI Tests (Misc)
-    if: ${{ !github.event.workflow_dispatch.repository.fork }}
     uses: ./.github/workflows/node-zxc-compile-application-code.yaml
     needs:
       - dependency-check
@@ -108,7 +103,6 @@ jobs:
 
   hapi-tests-crypto:
     name: HAPI Tests (Crypto)
-    if: ${{ !github.event.workflow_dispatch.repository.fork }}
     uses: ./.github/workflows/node-zxc-compile-application-code.yaml
     needs:
       - dependency-check
@@ -125,7 +119,6 @@ jobs:
 
   hapi-tests-token:
     name: HAPI Tests (Token)
-    if: ${{ !github.event.workflow_dispatch.repository.fork }}
     uses: ./.github/workflows/node-zxc-compile-application-code.yaml
     needs:
       - dependency-check
@@ -142,7 +135,6 @@ jobs:
 
   hapi-tests-smart-contract:
     name: HAPI Tests (Smart Contract)
-    if: ${{ !github.event.workflow_dispatch.repository.fork }}
     uses: ./.github/workflows/node-zxc-compile-application-code.yaml
     needs:
       - dependency-check
@@ -159,7 +151,6 @@ jobs:
 
   hapi-tests-restart:
     name: HAPI Tests (Restart)
-    if: ${{ !github.event.workflow_dispatch.repository.fork }}
     uses: ./.github/workflows/node-zxc-compile-application-code.yaml
     needs:
       - dependency-check
@@ -176,7 +167,6 @@ jobs:
 
   hapi-tests-nd-reconnect:
     name: HAPI Tests (Node Death Reconnect)
-    if: ${{ !github.event.workflow_dispatch.repository.fork }}
     uses: ./.github/workflows/node-zxc-compile-application-code.yaml
     needs:
       - dependency-check
@@ -197,7 +187,6 @@ jobs:
   # (takes > 20 minutes)
   hapi-tests-time-consuming:
     name: HAPI Tests (Time Consuming)
-    if: ${{ !github.event.workflow_dispatch.repository.fork }}
     uses: ./.github/workflows/node-zxc-compile-application-code.yaml
     needs:
       - dependency-check
@@ -227,10 +216,8 @@ jobs:
     # Add this if back in after CITR Pager duty reporting service is in place
     # if: ${{ github.event_name == 'workflow_dispatch' }}
     # Turn off this if check when CITR Pager duty reporting service is in place
-    if: ${{ !github.event.workflow_dispatch.repository.fork &&
-      (github.event_name != 'pull_request' ||
-      (github.actor != 'dependabot[bot]' &&
-      github.event.pull_request.head.repo.full_name == github.repository)) }}
+    if: ${{ github.event_name != 'pull_request' ||
+      (github.actor != 'dependabot[bot]' && github.event.pull_request.head.repo.full_name == github.repository) }}
     with:
       custom-job-name: "Platform SDK"
       panel-config: "configs/suites/GCP-PRCheck-Abbrev-4N.json"
@@ -264,10 +251,8 @@ jobs:
     # Add this if back in after CITR Pager duty reporting service is in place
     # if: ${{ github.event_name == 'workflow_dispatch' }}
     # Turn off this if check when CITR Pager duty reporting service is in place
-    if: ${{ !github.event.workflow_dispatch.repository.fork &&
-      (github.event_name != 'pull_request' ||
-      (github.actor != 'dependabot[bot]' &&
-      github.event.pull_request.head.repo.full_name == github.repository)) }}
+    if: ${{ github.event_name != 'pull_request' ||
+      (github.actor != 'dependabot[bot]' && github.event.pull_request.head.repo.full_name == github.repository) }}
     with:
       custom-job-name: "Abbrev Update Test"
       branch-name: ${{ github.head_ref || github.ref_name }}
@@ -292,10 +277,8 @@ jobs:
     needs:
       - dependency-check
       - spotless
-    if: ${{ !github.event.workflow_dispatch.repository.fork &&
-      (github.event_name != 'pull_request' ||
-      (github.actor != 'dependabot[bot]' &&
-      github.event.pull_request.head.repo.full_name == github.repository)) }}
+    if: ${{ github.event_name != 'pull_request' ||
+      (github.actor != 'dependabot[bot]' && github.event.pull_request.head.repo.full_name == github.repository) }}
     with:
       custom-job-label: Standard
       enable-unit-tests: false
@@ -312,10 +295,8 @@ jobs:
     needs:
       - dependency-check
       - spotless
-    if: ${{ !github.event.workflow_dispatch.repository.fork &&
-      (github.event_name != 'pull_request' ||
-      (github.actor != 'dependabot[bot]' &&
-      github.event.pull_request.head.repo.full_name == github.repository)) }}
+    if: ${{ github.event_name != 'pull_request' ||
+      (github.actor != 'dependabot[bot]' && github.event.pull_request.head.repo.full_name == github.repository) }}
     with:
       ref: ${{ github.event.inputs.ref || '' }}
       java-distribution: temurin
@@ -330,10 +311,8 @@ jobs:
     needs:
       - dependency-check
       - spotless
-    if: ${{ !github.event.workflow_dispatch.repository.fork &&
-      (github.event_name != 'pull_request' ||
-      (github.actor != 'dependabot[bot]' &&
-      github.event.pull_request.head.repo.full_name == github.repository)) }}
+    if: ${{ github.event_name != 'pull_request' ||
+      (github.actor != 'dependabot[bot]' && github.event.pull_request.head.repo.full_name == github.repository) }}
     with:
       ref: ${{ github.event.inputs.ref || '' }}
       java-distribution: temurin
