@@ -24,6 +24,9 @@ on:
       ref:
         required: true
         description: "The github ref that triggered the workflow"
+      event:
+        required: true
+        description: "The github event of the triggering workflow"
 
 defaults:
   run:
