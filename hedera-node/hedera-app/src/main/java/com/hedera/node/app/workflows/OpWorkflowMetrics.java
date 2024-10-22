@@ -24,6 +24,7 @@ import com.hedera.node.config.data.StatsConfig;
 import com.swirlds.common.metrics.IntegerPairAccumulator;
 import com.swirlds.common.metrics.RunningAverageMetric;
 import com.swirlds.common.metrics.RunningAverageMetric.Config;
+import com.swirlds.common.metrics.SpeedometerMetric;
 import com.swirlds.metrics.api.IntegerAccumulator;
 import com.swirlds.metrics.api.Metrics;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -45,7 +46,10 @@ public class OpWorkflowMetrics {
             .withDescription("average EVM gas used per second of consensus time")
             .withFormat("%,13.6f");
 
-    private final Map<HederaFunctionality, TransactionMetric> transactionMetrics =
+    private final Map<HederaFunctionality, TransactionMetric> transactionDurationMetrics =
+            new EnumMap<>(HederaFunctionality.class);
+
+    private final Map<HederaFunctionality, SpeedometerMetric> transactionThrottleMetrics =
             new EnumMap<>(HederaFunctionality.class);
 
     private final RunningAverageMetric gasPerConsSec;
@@ -68,6 +72,8 @@ public class OpWorkflowMetrics {
             }
             final var protoName = functionality.protoName();
             final var name = protoName.substring(0, 1).toLowerCase() + protoName.substring(1);
+
+            // initialize the transaction duration metrics
             final var maxConfig = new IntegerAccumulator.Config("app", name + "DurationMax")
                     .withDescription("The maximum duration of a " + name + " transaction in nanoseconds")
                     .withUnit("ns");
@@ -77,7 +83,14 @@ public class OpWorkflowMetrics {
                     .withDescription("The average duration of a " + name + " transaction in nanoseconds")
                     .withUnit("ns");
             final var avgMetric = metrics.getOrCreate(avgConfig);
-            transactionMetrics.put(functionality, new TransactionMetric(maxMetric, avgMetric));
+            transactionDurationMetrics.put(functionality, new TransactionMetric(maxMetric, avgMetric));
+
+            // initialize the transaction throttle metrics
+            //TODO: check that this configuration is correct
+            final var throttledConfig = new SpeedometerMetric.Config("app", name + "ThrottledTps")
+                    .withDescription("The number of " + name + " transactions that failed due to throttling per second")
+                    .withUnit("tps");
+            transactionThrottleMetrics.put(functionality, metrics.getOrCreate(throttledConfig));
         }
 
         final StatsConfig statsConfig = configProvider.getConfiguration().getConfigData(StatsConfig.class);
@@ -85,7 +98,7 @@ public class OpWorkflowMetrics {
     }
 
     /**
-     * Update the metrics for the given functionality
+     * Update the transaction duration metrics for the given functionality
      *
      * @param functionality the {@link HederaFunctionality} for which the metrics will be updated
      * @param duration the duration of the operation in {@code ns}
@@ -95,13 +108,30 @@ public class OpWorkflowMetrics {
         if (functionality == HederaFunctionality.NONE) {
             return;
         }
-        final var metric = transactionMetrics.get(functionality);
+        final var metric = transactionDurationMetrics.get(functionality);
         if (metric != null) {
             // We do not synchronize the update of the metrics. This may lead to a situation where the max value is
             // is stored in one reporting interval and the average in another. This is acceptable as synchronizing
             // the updates would introduce a severe performance penalty.
             metric.max.update(duration);
             metric.avg.update(duration, 1);
+        }
+    }
+
+    /**
+     * Increment the throttled metrics for the given functionality, to track the number of transactions per second that
+     * failed due to throttling
+     *
+     * @param functionality the {@link HederaFunctionality} for which the throttled metrics will be updated
+     */
+    public void incrementThrottled(@NonNull final HederaFunctionality functionality) {
+        requireNonNull(functionality, "functionality must not be null");
+        if (functionality == HederaFunctionality.NONE) {
+            return;
+        }
+        final var metric = transactionThrottleMetrics.get(functionality);
+        if (metric != null) {
+            metric.cycle();
         }
     }
 
