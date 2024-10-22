@@ -3,11 +3,6 @@
     "inputs": [
       {
         "internalType": "address",
-        "name": "token",
-        "type": "address"
-      },
-      {
-        "internalType": "address",
         "name": "receiver",
         "type": "address"
       }
@@ -25,11 +20,6 @@
   },
   {
     "inputs": [
-      {
-        "internalType": "address",
-        "name": "token",
-        "type": "address"
-      },
       {
         "internalType": "address",
         "name": "receiver",

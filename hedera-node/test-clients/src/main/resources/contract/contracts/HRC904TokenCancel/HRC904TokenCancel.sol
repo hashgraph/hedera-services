@@ -6,12 +6,12 @@ interface IHRC904TokenCancel {
     function cancelAirdropNFT(address receiverAddress, int64 serialNumber) external returns (int64 responseCode);
 }
 
-contract HRC904TokenCancel {
-    function cancelAirdropFT(address token, address receiver) public returns (int64 responseCode) {
-        return IHRC904TokenCancel(token).cancelAirdropFT(receiver);
+contract HRC904TokenCancel is IHRC904TokenCancel{
+    function cancelAirdropFT(address receiver) public returns (int64 responseCode) {
+        return IHRC904TokenCancel(this).cancelAirdropFT(receiver);
     }
 
-    function cancelAirdropNFT(address token, address receiver, int64 serial) public returns (int64 responseCode) {
-        return IHRC904TokenCancel(token).cancelAirdropNFT(receiver, serial);
+    function cancelAirdropNFT(address receiver, int64 serial) public returns (int64 responseCode) {
+        return IHRC904TokenCancel(this).cancelAirdropNFT(receiver, serial);
     }
 }
