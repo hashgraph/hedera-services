@@ -68,7 +68,7 @@ jobs:
           set +e
           git branch --contains ${XTS_COMMIT} | grep --quiet develop >/dev/null 2>&1
           BRANCH_ON_DEVELOP="${?}"
-          set -e 
+          set -e
           if [[ -n "${XTS_COMMIT}" && "${BRANCH_ON_DEVELOP}" -eq 0 ]]; then
             echo "xts-tag-exists=true" >> $GITHUB_OUTPUT
             echo "xts-tag-commit=${XTS_COMMIT}" >> $GITHUB_OUTPUT
