@@ -58,7 +58,7 @@ public class DefaultPcesWriter implements PcesWriter {
         Objects.requireNonNull(platformContext, "platformContext is required");
         Objects.requireNonNull(fileManager, "fileManager is required");
 
-        commonPcesWriter = new CommonPcesWriter(platformContext, fileManager);
+        commonPcesWriter = new CommonPcesWriter(platformContext, fileManager, false);
     }
 
     /**

@@ -41,6 +41,11 @@ public class CommonPcesWriter {
     private static final Logger logger = LogManager.getLogger(CommonPcesWriter.class);
 
     /**
+     *  If {@code true} {@code FileChannel} is used to write to the file and if {@code false} {@code OutputStream} is used.
+     */
+    private static final boolean USE_FILE_CHANNEL_WRITER = false;
+
+    /**
      * Keeps track of the event stream files on disk.
      */
     private final PcesFileManager fileManager;
@@ -134,16 +139,22 @@ public class CommonPcesWriter {
      */
     private final AncientMode fileType;
 
+    private final boolean syncEveryEvent;
+
     /**
      * Constructor
      *
      * @param platformContext the platform context
-     * @param fileManager     manages all preconsensus event stream files currently on disk
+     * @param fileManager     manages all PCES files currently on disk
+     * @param syncEveryEvent  whether to sync the file after every event
      */
     public CommonPcesWriter(
-            @NonNull final PlatformContext platformContext, @NonNull final PcesFileManager fileManager) {
+            @NonNull final PlatformContext platformContext,
+            @NonNull final PcesFileManager fileManager,
+            final boolean syncEveryEvent) {
         Objects.requireNonNull(platformContext, "platformContext is required");
         this.fileManager = Objects.requireNonNull(fileManager, "fileManager is required");
+        this.syncEveryEvent = syncEveryEvent;
 
         final PcesConfig pcesConfig = platformContext.getConfiguration().getConfigData(PcesConfig.class);
         final EventConfig eventConfig = platformContext.getConfiguration().getConfigData(EventConfig.class);
@@ -178,7 +189,7 @@ public class CommonPcesWriter {
      *
      * @param newOriginRound the round of the state that the new stream will be starting from
      */
-    public void registerDiscontinuity(@NonNull Long newOriginRound) {
+    public void registerDiscontinuity(@NonNull final Long newOriginRound) {
         if (!streamingNewEvents) {
             logger.error(EXCEPTION.getMarker(), "registerDiscontinuity() called while replaying events");
         }
@@ -198,7 +209,7 @@ public class CommonPcesWriter {
      *
      * @param nonAncientBoundary describes the boundary between ancient and non-ancient events
      */
-    public void updateNonAncientEventBoundary(@NonNull EventWindow nonAncientBoundary) {
+    public void updateNonAncientEventBoundary(@NonNull final EventWindow nonAncientBoundary) {
         if (nonAncientBoundary.getAncientThreshold() < this.nonAncientBoundary) {
             throw new IllegalArgumentException("Non-ancient boundary cannot be decreased. Current = "
                     + this.nonAncientBoundary + ", requested = " + nonAncientBoundary);
@@ -291,7 +302,7 @@ public class CommonPcesWriter {
 
             currentMutableFile = fileManager
                     .getNextFileDescriptor(nonAncientBoundary, upperBound)
-                    .getMutableFile();
+                    .getMutableFile(USE_FILE_CHANNEL_WRITER, syncEveryEvent);
         }
 
         return fileClosed;
@@ -373,20 +384,11 @@ public class CommonPcesWriter {
     }
 
     /**
-     * Get the average span utilization.
-     *
-     * @return the average span utilization
-     */
-    public boolean isBootstrapMode() {
-        return bootstrapMode;
-    }
-
-    /**
      * Set the last written event.
      *
      * @param lastWrittenEvent the last written event
      */
-    public void setLastWrittenEvent(long lastWrittenEvent) {
+    public void setLastWrittenEvent(final long lastWrittenEvent) {
         this.lastWrittenEvent = lastWrittenEvent;
     }
 
@@ -395,7 +397,7 @@ public class CommonPcesWriter {
      *
      * @param lastFlushedEvent the last flushed event
      */
-    public void setLastFlushedEvent(long lastFlushedEvent) {
+    public void setLastFlushedEvent(final long lastFlushedEvent) {
         this.lastFlushedEvent = lastFlushedEvent;
     }
 

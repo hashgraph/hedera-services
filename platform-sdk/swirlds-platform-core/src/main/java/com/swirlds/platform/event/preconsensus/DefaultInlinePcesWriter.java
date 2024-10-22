@@ -20,7 +20,6 @@ import com.swirlds.common.context.PlatformContext;
 import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.event.PlatformEvent;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.Objects;
@@ -41,7 +40,7 @@ public class DefaultInlinePcesWriter implements InlinePcesWriter {
             @NonNull final PlatformContext platformContext, @NonNull final PcesFileManager fileManager) {
         Objects.requireNonNull(platformContext, "platformContext is required");
         Objects.requireNonNull(fileManager, "fileManager is required");
-        commonPcesWriter = new CommonPcesWriter(platformContext, fileManager);
+        commonPcesWriter = new CommonPcesWriter(platformContext, fileManager, true);
     }
 
     @Override
@@ -52,7 +51,7 @@ public class DefaultInlinePcesWriter implements InlinePcesWriter {
     /**
      * {@inheritDoc}
      */
-    @Nullable
+    @NonNull
     @Override
     public PlatformEvent writeEvent(@NonNull PlatformEvent event) {
         if (event.getStreamSequenceNumber() == PlatformEvent.NO_STREAM_SEQUENCE_NUMBER) {
@@ -68,11 +67,11 @@ public class DefaultInlinePcesWriter implements InlinePcesWriter {
 
         // don't do anything with ancient events
         if (event.getAncientIndicator(commonPcesWriter.getFileType()) < commonPcesWriter.getNonAncientBoundary()) {
-            return null;
+            throw new IllegalStateException("Ancient events should not be written to the PCES");
         }
 
         try {
-            final boolean fileClosed = commonPcesWriter.prepareOutputStream(event);
+            commonPcesWriter.prepareOutputStream(event);
             commonPcesWriter.getCurrentMutableFile().writeEvent(event);
             commonPcesWriter.setLastWrittenEvent(event.getStreamSequenceNumber());
 
