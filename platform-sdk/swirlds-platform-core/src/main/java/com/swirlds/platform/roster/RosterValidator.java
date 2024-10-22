@@ -85,22 +85,27 @@ public final class RosterValidator {
                 throw new InvalidRosterException("gossipEndpoint is empty for NodeId " + re.nodeId());
             }
 
-            for (final ServiceEndpoint se : re.gossipEndpoint()) {
-                if (se.port() == 0) {
-                    throw new InvalidRosterException(
-                            "gossipPort is zero for NodeId " + re.nodeId() + " and ServiceEndpoint " + se);
-                }
+            validateServiceEndpoints(re.nodeId(), re.gossipEndpoint());
+            validateServiceEndpoints(re.nodeId(), re.internalGossipEndpoint());
+        }
+    }
 
-                if (!(se.domainName().isEmpty() ^ se.ipAddressV4().length() == 0)) {
-                    throw new InvalidRosterException(
-                            "ServiceEndpoint must specify either a domainName or an ipAddressV4, but not both. For NodeId "
-                                    + re.nodeId() + " found ServiceEndpoint " + se);
-                }
+    private static void validateServiceEndpoints(final long nodeId, @NonNull final List<ServiceEndpoint> endpoints) {
+        for (final ServiceEndpoint se : endpoints) {
+            if (se.port() == 0) {
+                throw new InvalidRosterException(
+                        "gossipPort is zero for NodeId " + nodeId + " and ServiceEndpoint " + se);
+            }
 
-                if (se.ipAddressV4().length() != 0 && se.ipAddressV4().length() != 4) {
-                    throw new InvalidRosterException("ServiceEndpoint ipAddressV4 must have a length of 4 bytes, found "
-                            + se.ipAddressV4().length() + " bytes for nodeId " + re.nodeId());
-                }
+            if (!(se.domainName().isEmpty() ^ se.ipAddressV4().length() == 0)) {
+                throw new InvalidRosterException(
+                        "ServiceEndpoint must specify either a domainName or an ipAddressV4, but not both. For NodeId "
+                                + nodeId + " found ServiceEndpoint " + se);
+            }
+
+            if (se.ipAddressV4().length() != 0 && se.ipAddressV4().length() != 4) {
+                throw new InvalidRosterException("ServiceEndpoint ipAddressV4 must have a length of 4 bytes, found "
+                        + se.ipAddressV4().length() + " bytes for nodeId " + nodeId);
             }
         }
     }

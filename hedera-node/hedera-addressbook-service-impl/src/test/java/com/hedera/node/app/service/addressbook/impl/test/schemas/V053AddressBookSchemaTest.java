@@ -121,7 +121,6 @@ class V053AddressBookSchemaTest extends AddressBookTestBase {
                         .nodeId(1)
                         .accountId(payerId)
                         .description("node2")
-                        .gossipEndpoint(List.of(endpointFor("23.45.34.245", 22), endpointFor("127.0.0.1", 123)))
                         .gossipCaCertificate(Bytes.wrap(gossipCaCertificate))
                         .weight(0)
                         .adminKey(anotherKey)
@@ -132,7 +131,6 @@ class V053AddressBookSchemaTest extends AddressBookTestBase {
                         .nodeId(2)
                         .accountId(accountId)
                         .description("node3")
-                        .gossipEndpoint(List.of(endpointFor("23.45.34.240", 23), endpointFor("127.0.0.2", 123)))
                         .gossipCaCertificate(Bytes.wrap(grpcCertificateHash))
                         .weight(1)
                         .adminKey(anotherKey)
@@ -143,7 +141,6 @@ class V053AddressBookSchemaTest extends AddressBookTestBase {
                         .nodeId(3)
                         .accountId(accountId)
                         .description("node4")
-                        .gossipEndpoint(List.of(endpointFor("23.45.34.243", 45), endpointFor("127.0.0.3", 124)))
                         .gossipCaCertificate(Bytes.wrap(grpcCertificateHash))
                         .weight(10)
                         .adminKey(anotherKey)
@@ -163,7 +160,6 @@ class V053AddressBookSchemaTest extends AddressBookTestBase {
                         .nodeId(1)
                         .accountId(payerId)
                         .description("node2")
-                        .gossipEndpoint(List.of(endpointFor("23.45.34.245", 22), endpointFor("127.0.0.1", 123)))
                         .gossipCaCertificate(Bytes.wrap(gossipCaCertificate))
                         .weight(0)
                         .adminKey(anotherKey)
@@ -174,7 +170,6 @@ class V053AddressBookSchemaTest extends AddressBookTestBase {
                         .nodeId(2)
                         .accountId(accountId)
                         .description("node3")
-                        .gossipEndpoint(List.of(endpointFor("23.45.34.240", 23), endpointFor("127.0.0.2", 123)))
                         .gossipCaCertificate(Bytes.wrap(grpcCertificateHash))
                         .weight(1)
                         .adminKey(anotherKey)
@@ -187,7 +182,6 @@ class V053AddressBookSchemaTest extends AddressBookTestBase {
                         .nodeId(3)
                         .accountId(accountId)
                         .description("node4")
-                        .gossipEndpoint(List.of(endpointFor("23.45.34.243", 45), endpointFor("127.0.0.3", 124)))
                         .gossipCaCertificate(Bytes.wrap(grpcCertificateHash))
                         .weight(10)
                         .adminKey(anotherKey)
@@ -213,7 +207,6 @@ class V053AddressBookSchemaTest extends AddressBookTestBase {
                         .nodeId(1)
                         .accountId(payerId)
                         .description("node2")
-                        .gossipEndpoint(List.of(endpointFor("23.45.34.245", 22), endpointFor("127.0.0.1", 123)))
                         .gossipCaCertificate(Bytes.wrap(gossipCaCertificate))
                         .weight(0)
                         .adminKey(anotherKey)
@@ -224,7 +217,6 @@ class V053AddressBookSchemaTest extends AddressBookTestBase {
                         .nodeId(2)
                         .accountId(accountId)
                         .description("node3")
-                        .gossipEndpoint(List.of(endpointFor("23.45.34.240", 23), endpointFor("127.0.0.2", 123)))
                         .gossipCaCertificate(Bytes.wrap(grpcCertificateHash))
                         .weight(1)
                         .adminKey(anotherKey)
@@ -235,7 +227,6 @@ class V053AddressBookSchemaTest extends AddressBookTestBase {
                         .nodeId(3)
                         .accountId(accountId)
                         .description("node4")
-                        .gossipEndpoint(List.of(endpointFor("23.45.34.243", 45), endpointFor("127.0.0.3", 124)))
                         .gossipCaCertificate(Bytes.wrap(grpcCertificateHash))
                         .weight(10)
                         .adminKey(anotherKey)
@@ -255,24 +246,9 @@ class V053AddressBookSchemaTest extends AddressBookTestBase {
         writableStates = MapWritableStates.builder().state(writableNodes).build();
         given(migrationContext.newStates()).willReturn(writableStates);
 
-        final var nodeInfo1 = new NodeInfoImpl(
-                1,
-                payerId,
-                0,
-                List.of(endpointFor("23.45.34.245", 22), endpointFor("127.0.0.1", 123)),
-                Bytes.wrap(gossipCaCertificate));
-        final var nodeInfo2 = new NodeInfoImpl(
-                2,
-                accountId,
-                1,
-                List.of(endpointFor("23.45.34.240", 23), endpointFor("127.0.0.2", 123)),
-                Bytes.wrap(grpcCertificateHash));
-        final var nodeInfo3 = new NodeInfoImpl(
-                3,
-                accountId,
-                10,
-                List.of(endpointFor("23.45.34.243", 45), endpointFor("127.0.0.3", 124)),
-                Bytes.wrap(grpcCertificateHash));
+        final var nodeInfo1 = new NodeInfoImpl(1, payerId, 0, Bytes.wrap(gossipCaCertificate));
+        final var nodeInfo2 = new NodeInfoImpl(2, accountId, 1, Bytes.wrap(grpcCertificateHash));
+        final var nodeInfo3 = new NodeInfoImpl(3, accountId, 10, Bytes.wrap(grpcCertificateHash));
         given(networkInfo.addressBook()).willReturn(List.of(nodeInfo1, nodeInfo2, nodeInfo3));
         given(migrationContext.genesisNetworkInfo()).willReturn(networkInfo);
         final var config = HederaTestConfigBuilder.create()

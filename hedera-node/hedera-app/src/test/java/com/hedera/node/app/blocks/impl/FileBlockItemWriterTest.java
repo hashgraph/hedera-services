@@ -33,7 +33,6 @@ import java.io.IOException;
 import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.List;
 import java.util.zip.GZIPInputStream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -51,7 +50,7 @@ public class FileBlockItemWriterTest {
     private ConfigProvider configProvider;
 
     private NodeInfo selfNodeInfo =
-            new NodeInfoImpl(0, AccountID.newBuilder().accountNum(3).build(), 10, List.of(), Bytes.EMPTY);
+            new NodeInfoImpl(0, AccountID.newBuilder().accountNum(3).build(), 10, Bytes.EMPTY);
 
     @Mock
     private BlockStreamConfig blockStreamConfig;

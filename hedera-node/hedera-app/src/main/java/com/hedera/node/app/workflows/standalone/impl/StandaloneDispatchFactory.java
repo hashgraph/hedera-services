@@ -75,7 +75,6 @@ import com.swirlds.state.spi.info.NetworkInfo;
 import com.swirlds.state.spi.info.NodeInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
-import java.util.List;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -236,7 +235,7 @@ public class StandaloneDispatchFactory {
     }
 
     private NodeInfo creatorInfoFor(@NonNull final TransactionBody transactionBody) {
-        return new NodeInfoImpl(0, transactionBody.nodeAccountIDOrThrow(), 0, List.of(), Bytes.EMPTY);
+        return new NodeInfoImpl(0, transactionBody.nodeAccountIDOrThrow(), 0, Bytes.EMPTY);
     }
 
     private PreHandleResult temporaryPreHandleResult() {

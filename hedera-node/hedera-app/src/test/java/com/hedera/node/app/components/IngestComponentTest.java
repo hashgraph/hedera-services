@@ -18,7 +18,6 @@ package com.hedera.node.app.components;
 
 import static com.hedera.node.app.fixtures.AppTestBase.DEFAULT_CONFIG;
 import static com.hedera.node.app.spi.AppContext.Gossip.UNAVAILABLE_GOSSIP;
-import static com.swirlds.platform.system.address.AddressBookUtils.endpointFor;
 import static java.util.concurrent.CompletableFuture.completedFuture;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.BDDMockito.given;
@@ -90,12 +89,8 @@ class IngestComponentTest {
         final Metrics metrics = new NoOpMetrics();
         lenient().when(platformContext.getConfiguration()).thenReturn(configuration);
 
-        final var selfNodeInfo = new NodeInfoImpl(
-                1L,
-                AccountID.newBuilder().accountNum(1001).build(),
-                10,
-                List.of(endpointFor("127.0.0.1", 50211), endpointFor("127.0.0.1", 23456)),
-                Bytes.wrap("cert7"));
+        final var selfNodeInfo =
+                new NodeInfoImpl(1L, AccountID.newBuilder().accountNum(1001).build(), 10, Bytes.wrap("cert7"));
 
         final var configProvider = new ConfigProviderImpl(false);
         final var appContext = new AppContextImpl(

@@ -17,14 +17,12 @@
 package com.swirlds.state.spi.info;
 
 import com.hedera.hapi.node.base.AccountID;
-import com.hedera.hapi.node.base.ServiceEndpoint;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.utility.CommonUtils;
 import java.io.ByteArrayInputStream;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
-import java.util.List;
 
 /**
  * Summarizes useful information about the nodes in the AddressBook from the Platform. In
@@ -72,14 +70,6 @@ public interface NodeInfo {
      * @return the signing x509 certificate bytes
      */
     Bytes sigCertBytes();
-
-    /**
-     * The list of service endpoints of this node, as known by the internal and external worlds.
-     * This has an IP address and port.
-     *
-     * @return The host name (IP Address) of this node
-     */
-    List<ServiceEndpoint> gossipEndpoints();
 
     /**
      * The public key of this node, as a hex-encoded string. It is extracted from the certificate bytes.

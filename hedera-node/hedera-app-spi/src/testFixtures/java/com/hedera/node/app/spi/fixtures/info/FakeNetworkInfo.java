@@ -115,11 +115,6 @@ public class FakeNetworkInfo implements NetworkInfo {
             public Bytes sigCertBytes() {
                 return sigCertBytes;
             }
-
-            @Override
-            public List<ServiceEndpoint> gossipEndpoints() {
-                return gossipEndpoints;
-            }
         };
     }
 }

@@ -16,8 +16,6 @@
 
 package com.hedera.node.app.fixtures;
 
-import static com.swirlds.platform.system.address.AddressBookUtils.createRoster;
-import static com.swirlds.platform.system.address.AddressBookUtils.endpointFor;
 import static com.swirlds.platform.test.fixtures.state.TestSchema.CURRENT_VERSION;
 import static java.util.Objects.requireNonNull;
 
@@ -50,6 +48,7 @@ import com.swirlds.config.api.source.ConfigSource;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.metrics.api.Counter;
 import com.swirlds.metrics.api.Metrics;
+import com.swirlds.platform.roster.RosterRetriever;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
@@ -64,7 +63,6 @@ import com.swirlds.state.test.fixtures.TestBase;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.LinkedHashSet;
-import java.util.List;
 import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -147,12 +145,7 @@ public class AppTestBase extends TestBase implements TransactionFactory, Scenari
             .declineReward(true)
             .build();
 
-    protected final NodeInfo selfNodeInfo = new NodeInfoImpl(
-            7,
-            nodeSelfAccountId,
-            10,
-            List.of(endpointFor("127.0.0.1", 50211), endpointFor("127.0.0.1", 23456)),
-            Bytes.wrap("cert7"));
+    protected final NodeInfo selfNodeInfo = new NodeInfoImpl(7, nodeSelfAccountId, 10, Bytes.wrap("cert7"));
 
     /**
      * The gRPC system has extensive metrics. This object allows us to inspect them and make sure they are being set
@@ -236,7 +229,7 @@ public class AppTestBase extends TestBase implements TransactionFactory, Scenari
         private Set<Service> services = new LinkedHashSet<>();
         private TestConfigBuilder configBuilder = HederaTestConfigBuilder.create();
         private NodeInfo selfNodeInfo = new NodeInfoImpl(
-                0, AccountID.newBuilder().shardNum(0).realmNum(0).accountNum(8).build(), 10, List.of(), Bytes.EMPTY);
+                0, AccountID.newBuilder().shardNum(0).realmNum(0).accountNum(8).build(), 10, Bytes.EMPTY);
         private Set<NodeInfo> nodes = new LinkedHashSet<>();
 
         private TestAppBuilder() {}
@@ -311,18 +304,12 @@ public class AppTestBase extends TestBase implements TransactionFactory, Scenari
                         .realmNum(0)
                         .accountNum(8)
                         .build();
-                realSelfNodeInfo = new NodeInfoImpl(
-                        7,
-                        nodeSelfAccountId,
-                        10,
-                        List.of(endpointFor("127.0.0.1", 50211), endpointFor("127.0.0.4", 23456)),
-                        Bytes.wrap("cert7"));
+                realSelfNodeInfo = new NodeInfoImpl(7, nodeSelfAccountId, 10, Bytes.wrap("cert7"));
             } else {
                 realSelfNodeInfo = new NodeInfoImpl(
                         selfNodeInfo.nodeId(),
                         selfNodeInfo.accountId(),
                         selfNodeInfo.stake(),
-                        selfNodeInfo.gossipEndpoints(),
                         selfNodeInfo.sigCertBytes());
             }
 
@@ -337,7 +324,8 @@ public class AppTestBase extends TestBase implements TransactionFactory, Scenari
             final var addressBook = new AddressBook(addresses);
             final var platform = new FakePlatform(realSelfNodeInfo.nodeId(), addressBook);
             final var initialState = new FakeState();
-            final var networkInfo = new GenesisNetworkInfo(createRoster(addressBook), Bytes.fromHex("03"));
+            final var networkInfo =
+                    new GenesisNetworkInfo(RosterRetriever.buildRoster(addressBook), Bytes.fromHex("03"));
             services.forEach(svc -> {
                 final var reg = new FakeSchemaRegistry();
                 svc.registerSchemas(reg);

@@ -20,8 +20,6 @@ import static com.swirlds.base.utility.NetworkUtils.isNameResolvable;
 import static com.swirlds.platform.util.BootstrapUtils.detectSoftwareUpgrade;
 
 import com.hedera.hapi.node.base.ServiceEndpoint;
-import com.hedera.hapi.node.state.roster.Roster;
-import com.hedera.hapi.node.state.roster.RosterEntry;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.formatting.TextTable;
@@ -33,10 +31,7 @@ import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.system.SoftwareVersion;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.security.cert.CertificateEncodingException;
 import java.text.ParseException;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Objects;
 import java.util.regex.Pattern;
 
@@ -269,60 +264,6 @@ public class AddressBookUtils {
             builder.domainName(host);
         }
         return builder.build();
-    }
-
-    /**
-     * Creates a new roster from the bootstrap address book.
-     *
-     * @return a new roster
-     */
-    @NonNull
-    public static Roster createRoster(@NonNull final AddressBook bootstrapAddressBook) {
-        Objects.requireNonNull(bootstrapAddressBook, "The bootstrapAddressBook must not be null.");
-        final List<RosterEntry> rosterEntries = new ArrayList<>(bootstrapAddressBook.getSize());
-        for (int i = 0; i < bootstrapAddressBook.getSize(); i++) {
-            final NodeId nodeId = bootstrapAddressBook.getNodeId(i);
-            final Address address = bootstrapAddressBook.getAddress(nodeId);
-
-            final RosterEntry rosterEntry = AddressBookUtils.toRosterEntry(address, nodeId);
-            rosterEntries.add(rosterEntry);
-        }
-        return Roster.newBuilder().rosterEntries(rosterEntries).build();
-    }
-
-    /**
-     * Converts an address to a roster entry.
-     *
-     * @param address the address to convert
-     * @param nodeId  the node ID to use for the roster entry
-     * @return the roster entry
-     */
-    private static RosterEntry toRosterEntry(@NonNull final Address address, @NonNull final NodeId nodeId) {
-        Objects.requireNonNull(address);
-        Objects.requireNonNull(nodeId);
-        final var signingCertificate = address.getSigCert();
-        Bytes signingCertificateBytes;
-        try {
-            signingCertificateBytes =
-                    signingCertificate == null ? Bytes.EMPTY : Bytes.wrap(signingCertificate.getEncoded());
-        } catch (final CertificateEncodingException e) {
-            signingCertificateBytes = Bytes.EMPTY;
-        }
-
-        final List<ServiceEndpoint> serviceEndpoints = new ArrayList<>(2);
-        if (address.getHostnameInternal() != null) {
-            serviceEndpoints.add(endpointFor(address.getHostnameInternal(), address.getPortInternal()));
-        }
-        if (address.getHostnameExternal() != null) {
-            serviceEndpoints.add(endpointFor(address.getHostnameExternal(), address.getPortExternal()));
-        }
-
-        return RosterEntry.newBuilder()
-                .nodeId(nodeId.id())
-                .weight(address.getWeight())
-                .gossipCaCertificate(signingCertificateBytes)
-                .gossipEndpoint(serviceEndpoints)
-                .build();
     }
 
     /**

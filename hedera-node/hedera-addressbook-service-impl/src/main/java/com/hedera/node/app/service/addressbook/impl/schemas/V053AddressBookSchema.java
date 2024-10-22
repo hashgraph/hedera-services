@@ -101,7 +101,6 @@ public class V053AddressBookSchema extends Schema {
                     .accountId(nodeInfo.accountId())
                     // Default node description hard coded to the values used currently
                     .description(formatNodeName(nodeInfo.nodeId()))
-                    .gossipEndpoint(nodeInfo.gossipEndpoints())
                     .gossipCaCertificate(nodeInfo.sigCertBytes())
                     .weight(nodeInfo.stake())
                     .adminKey(finalAdminKey);

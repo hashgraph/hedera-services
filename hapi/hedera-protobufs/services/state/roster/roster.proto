@@ -92,7 +92,13 @@ message RosterEntry {
   bytes tss_encryption_key = 4;
 
   /**
-   * A list of service endpoints for gossip.
+   * A list of external service endpoints for gossip.
+   * <p>
+   * External endpoints are usually used by nodes to connect to other nodes.
+   * However, co-located nodes may sometimes choose to use internal endpoints
+   * instead, so as to avoid exchanging traffic through external network interfaces,
+   * or to comply with the network and firewall configuration that may otherwise
+   * prohibit local nodes from communicating via external ip addresses.
    * <p>
    * These endpoints SHALL represent the published endpoints to which other
    * consensus nodes may _gossip_ transactions.<br/>
@@ -104,4 +110,28 @@ message RosterEntry {
    * This list SHALL NOT be empty.<br/>
    */
   repeated proto.ServiceEndpoint gossip_endpoint = 5;
+
+  /**
+   * A list of internal service endpoints for gossip.
+   * <p>
+   * Nodes belonging to the same local network may choose to use these
+   * internal endpoints to communicate with one another. This may be necessary
+   * if the local network configuration prohibits hairpinning, in which case the nodes
+   * are simply unable to connect to one another via their external endpoints.
+   * <p>
+   * These endpoints SHALL represent the published endpoints to which other
+   * consensus nodes may _gossip_ transactions.<br/>
+   * If the network configuration value `gossipFqdnRestricted` is set, then
+   * all endpoints in this list SHALL supply only IP address.<br/>
+   * If the network configuration value `gossipFqdnRestricted` is _not_ set,
+   * then endpoints in this list MAY supply either IP address or FQDN, but
+   * SHALL NOT supply both values for the same endpoint.<br/>
+   * <p>
+   * A node MAY duplicate its external endpoint as an internal endpoint here,
+   * as long as this external endpoint is still present in the `gossip_endpoint`.
+   * Note that such a duplicate entry is useless from functional perspective
+   * and should be avoided if possible.<br/>
+   * A node MAY have zero internal endpoints, in which case this field may be empty.
+   */
+  repeated proto.ServiceEndpoint internal_gossip_endpoint = 6;
 }

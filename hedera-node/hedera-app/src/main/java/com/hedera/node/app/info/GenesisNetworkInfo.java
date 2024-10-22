@@ -110,11 +110,7 @@ public class GenesisNetworkInfo implements NetworkInfo {
      */
     private NodeInfo fromRosterEntry(RosterEntry entry) {
         return new NodeInfoImpl(
-                entry.nodeId(),
-                asAccount(entry.nodeId() + 3),
-                entry.weight(),
-                entry.gossipEndpoint(),
-                entry.gossipCaCertificate());
+                entry.nodeId(), asAccount(entry.nodeId() + 3), entry.weight(), entry.gossipCaCertificate());
     }
 
     /**

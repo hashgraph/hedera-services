@@ -312,20 +312,19 @@ class TransactionExecutorsTest {
             @NonNull
             @Override
             public NodeInfo selfNodeInfo() {
-                return new NodeInfoImpl(0, AccountID.DEFAULT, 0, List.of(), getCertBytes(randomX509Certificate()));
+                return new NodeInfoImpl(0, AccountID.DEFAULT, 0, getCertBytes(randomX509Certificate()));
             }
 
             @NonNull
             @Override
             public List<NodeInfo> addressBook() {
-                return List.of(
-                        new NodeInfoImpl(0, AccountID.DEFAULT, 0, List.of(), getCertBytes(randomX509Certificate())));
+                return List.of(new NodeInfoImpl(0, AccountID.DEFAULT, 0, getCertBytes(randomX509Certificate())));
             }
 
             @Nullable
             @Override
             public NodeInfo nodeInfo(final long nodeId) {
-                return new NodeInfoImpl(0, AccountID.DEFAULT, 0, List.of(), Bytes.EMPTY);
+                return new NodeInfoImpl(0, AccountID.DEFAULT, 0, Bytes.EMPTY);
             }
 
             @Override

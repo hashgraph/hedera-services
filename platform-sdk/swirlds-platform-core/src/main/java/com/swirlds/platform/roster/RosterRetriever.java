@@ -25,7 +25,6 @@ import com.hedera.hapi.node.state.roster.RosterEntry;
 import com.hedera.hapi.node.state.roster.RosterState;
 import com.hedera.hapi.node.state.roster.RoundRosterPair;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.swirlds.base.utility.Pair;
 import com.swirlds.common.RosterStateId;
 import com.swirlds.platform.state.service.PlatformStateService;
 import com.swirlds.platform.state.service.ReadablePlatformStateStore;
@@ -153,49 +152,22 @@ public final class RosterRetriever {
                         .map(addressBook::getAddress)
                         .map(address -> {
                             try {
-                                return RosterEntry.newBuilder()
+                                RosterEntry.Builder builder = RosterEntry.newBuilder()
                                         .nodeId(address.getNodeId().id())
                                         .weight(address.getWeight())
                                         .gossipCaCertificate(
-                                                Bytes.wrap(address.getSigCert().getEncoded()))
-                                        .gossipEndpoint(List.of(
-                                                        Pair.of(
-                                                                address.getHostnameExternal(),
-                                                                address.getPortExternal()),
-                                                        Pair.of(
-                                                                address.getHostnameInternal(),
-                                                                address.getPortInternal()))
-                                                .stream()
-                                                .filter(pair -> pair.left() != null
-                                                        && !pair.left().isBlank()
-                                                        && pair.right() != 0)
-                                                .distinct()
-                                                .map(pair -> {
-                                                    final Matcher matcher = IP_ADDRESS_PATTERN.matcher(pair.left());
-
-                                                    if (!matcher.matches()) {
-                                                        return ServiceEndpoint.newBuilder()
-                                                                .domainName(pair.left())
-                                                                .port(pair.right())
-                                                                .build();
-                                                    }
-
-                                                    try {
-                                                        return ServiceEndpoint.newBuilder()
-                                                                .ipAddressV4(Bytes.wrap(new byte[] {
-                                                                    (byte) Integer.parseInt(matcher.group(1)),
-                                                                    (byte) Integer.parseInt(matcher.group(2)),
-                                                                    (byte) Integer.parseInt(matcher.group(3)),
-                                                                    (byte) Integer.parseInt(matcher.group(4)),
-                                                                }))
-                                                                .port(pair.right())
-                                                                .build();
-                                                    } catch (NumberFormatException e) {
-                                                        throw new InvalidAddressBookException(e);
-                                                    }
-                                                })
-                                                .toList())
-                                        .build();
+                                                Bytes.wrap(address.getSigCert().getEncoded()));
+                                if (address.getHostnameExternal() != null
+                                        && !address.getHostnameExternal().isEmpty()) {
+                                    builder = builder.gossipEndpoint(buildServiceEndpoint(
+                                            address.getHostnameExternal(), address.getPortExternal()));
+                                }
+                                if (address.getHostnameInternal() != null
+                                        && !address.getHostnameInternal().isEmpty()) {
+                                    builder = builder.internalGossipEndpoint(buildServiceEndpoint(
+                                            address.getHostnameInternal(), address.getPortInternal()));
+                                }
+                                return builder.build();
                             } catch (CertificateEncodingException e) {
                                 throw new InvalidAddressBookException(e);
                             }
@@ -203,5 +175,35 @@ public final class RosterRetriever {
                         .sorted(Comparator.comparing(RosterEntry::nodeId))
                         .toList())
                 .build();
+    }
+
+    /**
+     * Build a ServiceEndpoint out of the given hostname (which may be an IP address) and a port number.
+     *
+     * @param hostname a string with a hostname or an IP address
+     * @param port port number
+     * @return a ServicePoint
+     */
+    @NonNull
+    private static ServiceEndpoint buildServiceEndpoint(@NonNull final String hostname, final int port) {
+        final Matcher matcher = IP_ADDRESS_PATTERN.matcher(hostname);
+
+        if (!matcher.matches()) {
+            return ServiceEndpoint.newBuilder().domainName(hostname).port(port).build();
+        }
+
+        try {
+            return ServiceEndpoint.newBuilder()
+                    .ipAddressV4(Bytes.wrap(new byte[] {
+                        (byte) Integer.parseInt(matcher.group(1)),
+                        (byte) Integer.parseInt(matcher.group(2)),
+                        (byte) Integer.parseInt(matcher.group(3)),
+                        (byte) Integer.parseInt(matcher.group(4)),
+                    }))
+                    .port(port)
+                    .build();
+        } catch (NumberFormatException e) {
+            throw new InvalidAddressBookException(e);
+        }
     }
 }
