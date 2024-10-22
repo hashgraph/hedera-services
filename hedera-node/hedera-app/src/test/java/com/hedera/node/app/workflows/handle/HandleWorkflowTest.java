@@ -37,10 +37,10 @@ import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.state.HederaRecordCache;
 import com.hedera.node.app.throttle.NetworkUtilizationManager;
 import com.hedera.node.app.throttle.ThrottleServiceManager;
+import com.hedera.node.app.workflows.OpWorkflowMetrics;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.app.workflows.handle.cache.CacheWarmer;
 import com.hedera.node.app.workflows.handle.dispatch.ChildDispatchFactory;
-import com.hedera.node.app.workflows.handle.metric.HandleWorkflowMetrics;
 import com.hedera.node.app.workflows.handle.record.SystemSetup;
 import com.hedera.node.app.workflows.handle.steps.HollowAccountCompletions;
 import com.hedera.node.app.workflows.handle.steps.NodeStakeUpdates;
@@ -112,7 +112,7 @@ class HandleWorkflowTest {
     private CacheWarmer cacheWarmer;
 
     @Mock
-    private HandleWorkflowMetrics handleWorkflowMetrics;
+    private OpWorkflowMetrics opWorkflowMetrics;
 
     @Mock
     private ThrottleServiceManager throttleServiceManager;
@@ -173,7 +173,7 @@ class HandleWorkflowTest {
                 blockRecordManager,
                 blockStreamManager,
                 cacheWarmer,
-                handleWorkflowMetrics,
+                opWorkflowMetrics,
                 throttleServiceManager,
                 version,
                 initTrigger,
@@ -191,8 +191,8 @@ class HandleWorkflowTest {
 
     @Test
     void onlySkipsEventWithMissingCreator() {
-        final var presentCreatorId = new NodeId(1L);
-        final var missingCreatorId = new NodeId(2L);
+        final var presentCreatorId = NodeId.of(1L);
+        final var missingCreatorId = NodeId.of(2L);
         final var eventFromPresentCreator = mock(ConsensusEvent.class);
         final var eventFromMissingCreator = mock(ConsensusEvent.class);
         given(round.iterator())
@@ -204,7 +204,6 @@ class HandleWorkflowTest {
         given(networkInfo.nodeInfo(missingCreatorId.id())).willReturn(null);
         given(eventFromPresentCreator.consensusTransactionIterator()).willReturn(Collections.emptyIterator());
         given(round.getConsensusTimestamp()).willReturn(Instant.ofEpochSecond(12345L));
-        given(configProvider.getConfiguration()).willReturn(new VersionedConfigImpl(DEFAULT_CONFIG, 1));
 
         subject.handleRound(state, round);
 

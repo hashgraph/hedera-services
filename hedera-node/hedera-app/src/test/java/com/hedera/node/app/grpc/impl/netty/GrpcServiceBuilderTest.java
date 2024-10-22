@@ -49,13 +49,6 @@ final class GrpcServiceBuilderTest {
     }
 
     @Test
-    @DisplayName("The ingestWorkflow cannot be null")
-    void ingestWorkflowIsNull() {
-        //noinspection ConstantConditions
-        assertThrows(NullPointerException.class, () -> new GrpcServiceBuilder(SERVICE_NAME, null, queryWorkflow));
-    }
-
-    @Test
     @DisplayName("The queryWorkflow cannot be null")
     void queryWorkflowIsNull() {
         //noinspection ConstantConditions

@@ -73,7 +73,7 @@ class ConsensusEventLinkerTests {
                 new StandardEventSource());
 
         final List<EventImpl> linkedEvents = new LinkedList<>();
-        final InOrderLinker linker = new ConsensusLinker(platformContext, new NodeId(0));
+        final InOrderLinker linker = new ConsensusLinker(platformContext, NodeId.of(0));
 
         EventWindow eventWindow = EventWindow.getGenesisEventWindow(ancientMode);
 

@@ -49,7 +49,7 @@ class IssMetricsTests {
         assertThrows(
                 IllegalArgumentException.class,
                 () -> issMetrics.stateHashValidityObserver(
-                        0L, new NodeId(Integer.MAX_VALUE), randomHash(), randomHash()),
+                        0L, NodeId.of(Integer.MAX_VALUE), randomHash(), randomHash()),
                 "should not be able to update stats for non-existent node");
     }
 

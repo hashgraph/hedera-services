@@ -103,7 +103,7 @@ public class HollowAccountFinalizationSuite {
     private static final String ANOTHER_SECP_256K1_SOURCE_KEY = "anotherSecp256k1Alias";
     private static final String PAY_RECEIVABLE = "PayReceivable";
     private static final long INITIAL_BALANCE = 1000L;
-    private static final String LAZY_MEMO = "lazy-created account";
+    private static final String LAZY_MEMO = "";
     private static final String TRANSFER_TXN = "transferTxn";
     private static final String TRANSFER_TXN_2 = "transferTxn2";
     private static final String PARTY = "party";

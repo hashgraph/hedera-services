@@ -41,7 +41,7 @@ dependencies.constraints {
         because("com.github.benmanes.caffeine")
     }
     api("com.github.docker-java:docker-java-api:3.2.13") {
-        because("com.github.docker.java.api")
+        because("com.github.dockerjava.api")
     }
     api("com.github.spotbugs:spotbugs-annotations:4.7.3") {
         because("com.github.spotbugs.annotations")
@@ -52,8 +52,11 @@ dependencies.constraints {
     api("com.google.auto.service:auto-service:1.1.1") {
         because("com.google.auto.service.processor")
     }
-    api("com.google.guava:guava:31.1-jre") {
+    api("com.google.guava:guava:33.1.0-jre") {
         because("com.google.common")
+    }
+    api("com.google.j2objc:j2objc-annotations:3.0.0") {
+        because("com.google.j2objc.annotations")
     }
     api("com.google.jimfs:jimfs:1.2") {
         because("com.google.jimfs")
