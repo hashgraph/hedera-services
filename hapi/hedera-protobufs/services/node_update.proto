@@ -164,24 +164,24 @@ message NodeUpdateTransactionBody {
     proto.Key admin_key = 8;
 
     /**
-    * An ALT_BN128 elliptic curve public encryption key (also controlled <br/>
-     * by the node operator) specific to this node's TSS operations.
+     * An ALT_BN128 elliptic curve public encryption key.
+     * This is controlled by the node operator and specific to this
+     * node's TSS operations.
      * <p>
-     * The elliptic curve type may change in the future. For example, <br/>
+     * The elliptic curve type may change in the future. For example,
      * if the Ethereum ecosystem creates precompiles for BLS12_381,
-     * we may switch to that curve.
-     * <p>
-     * This value SHALL be specified according to EIP-196 and EIP-197 standards, <br/>
-     * See https://eips.ethereum.org/EIPS/eip-196#encoding and <br/>
-     * https://eips.ethereum.org/EIPS/eip-197#encoding
-     * <p>
-     * IF this field has been set to a valid value on a previous node creation or <br/>
-     * node update transaction, this field is REQUIRED. Otherwise this field is OPTIONAL.
-     * <p>
-     * IF this field is set:
+     * we may switch to that curve.<br/>
+     * This value SHALL be specified according to EIP-196 and EIP-197 standards,
+     * See [EIP-196](https://eips.ethereum.org/EIPS/eip-196#encoding) and
+     * [EIP-197](https://eips.ethereum.org/EIPS/eip-197#encoding)<br/>
+     * If this field has been set to a valid value on a previous node creation
+     * or node update transaction, this field is REQUIRED.
+     * Otherwise this field is OPTIONAL.<br/>
+     * If this field is set:
      * <ul>
      *   <li>This key MUST sign this transaction.</li>
-     *   <li>This key MUST be used to encrypt all of this node's future TSS messages.</li>
+     *   <li>This key MUST be used to encrypt all of this node's future
+     *       TSS messages.</li>
      *   <li>This field MUST contain a valid `Key` value.</li>
      *   <li>This field MUST NOT be set to an empty `KeyList`.</li>
      * </ul>
