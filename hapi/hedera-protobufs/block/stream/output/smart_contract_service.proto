@@ -151,6 +151,7 @@ message EthereumOutput {
      * This field is not settled and MAY be removed or modified.
      */
     repeated proto.TransactionSidecarRecord sidecars = 1;
+
     /**
      * An ethereum hash value.
      * <p>

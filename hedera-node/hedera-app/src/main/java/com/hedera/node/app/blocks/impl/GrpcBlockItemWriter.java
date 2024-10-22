@@ -21,6 +21,7 @@ import static io.grpc.Status.fromThrowable;
 import static java.util.Objects.requireNonNull;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.hedera.hapi.block.protoc.BlockItemSet;
 import com.hedera.hapi.block.protoc.BlockStreamServiceGrpc;
 import com.hedera.hapi.block.protoc.PublishStreamRequest;
 import com.hedera.hapi.block.protoc.PublishStreamResponse;
@@ -175,8 +176,10 @@ public class GrpcBlockItemWriter implements BlockItemWriter {
 
         PublishStreamRequest request = PublishStreamRequest.newBuilder().build();
         try {
+            BlockItemSet items = BlockItemSet.newBuilder()
+                    .addBlockItems(BlockItem.parseFrom(bytes)).build();
             request = PublishStreamRequest.newBuilder()
-                    .setBlockItem(BlockItem.parseFrom(bytes))
+                    .setBlockItems(items)
                     .build();
             requestObserver.onNext(request);
         } catch (IOException e) {
@@ -196,8 +199,11 @@ public class GrpcBlockItemWriter implements BlockItemWriter {
 
         PublishStreamRequest request = PublishStreamRequest.newBuilder().build();
         try {
+            BlockItemSet items = BlockItemSet.newBuilder()
+                    .addBlockItems(BlockItem.parseFrom(data.asInputStream()))
+                    .build();
             request = PublishStreamRequest.newBuilder()
-                    .setBlockItem(BlockItem.parseFrom(data.asInputStream()))
+                    .setBlockItems(items)
                     .build();
             requestObserver.onNext(request);
         } catch (IOException e) {
