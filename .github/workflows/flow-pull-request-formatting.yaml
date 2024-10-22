@@ -44,6 +44,7 @@ jobs:
   title-check:
     name: Title Check
     runs-on: network-node-linux-medium
+    if: ${{ !github.event.pull_request.base.repo.fork }}
     steps:
       - name: Harden Runner
         uses: step-security/harden-runner@f086349bfa2bd1361f7909c78558e816508cdc10 # v2.8.0
@@ -51,7 +52,6 @@ jobs:
           egress-policy: audit
 
       - name: Check PR Title
-        if: ${{ !github.event.pull_request.base.repo.fork }}
         uses: step-security/conventional-pr-title-action@0eae74515f5a79f8773fa04142dd746df76666ac # v1.0.0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
