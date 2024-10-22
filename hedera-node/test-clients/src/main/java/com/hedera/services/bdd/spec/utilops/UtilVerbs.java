@@ -194,8 +194,6 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.swirlds.common.AddressBook;
 import com.swirlds.common.utility.CommonUtils;
-import com.swirlds.platform.state.service.WritablePlatformStateStore;
-import com.swirlds.state.spi.CommittableWritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
