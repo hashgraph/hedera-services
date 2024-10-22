@@ -47,7 +47,7 @@ import com.hedera.services.bdd.junit.HapiTest;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.DynamicTest;
 
-public class ScheduleDeleteSpecs {
+public class ScheduleDeleteTest {
     @HapiTest
     final Stream<DynamicTest> deleteWithNoAdminKeyFails() {
         return defaultHapiSpec("DeleteWithNoAdminKeyFails")
