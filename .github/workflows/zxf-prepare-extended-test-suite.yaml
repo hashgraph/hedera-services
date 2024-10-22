@@ -36,7 +36,6 @@ jobs:
   tag-for-xts:
     name: Tag for XTS promotion
     runs-on: network-node-linux-medium
-    if: ${{ !github.event.workflow_dispatch.repository.fork }}
     steps:
       - name: Harden Runner
         uses: step-security/harden-runner@f086349bfa2bd1361f7909c78558e816508cdc10 # v2.8.0
@@ -55,13 +54,14 @@ jobs:
         env:
           COMMIT_ID: ${{ inputs.ref }}
         run: |
-          if [[ 0 -eq $(git merge-base --is-ancestor $COMMIT_ID develop) ]]; then
+          if git merge-base --is-ancestor "${COMMIT_ID}" develop >/dev/null 2>&1; then
             echo "commit_on_dev=true" >> $GITHUB_OUTPUT
           else
+            echo "::error title=Branch Alignment::The provided commit (${COMMIT_ID}) is not present on the develop branch."
             exit 1
           fi
 
-      - name: Checkout code
+      - name: Checkout Code
         uses: actions/checkout@eef61447b9ff4aafe5dcd4e0bbf5d482be7e7871 # v4.2.1
         if: ${{ steps.validate-input.outputs.commit_on_dev == 'true'}}
         with:
@@ -82,9 +82,9 @@ jobs:
       # move the tag if successful
       - name: Tag Code and push
         run: |
-          git tag --delete ${XTS_CANDIDATE_TAG}
-          git push --delete origin ${XTS_CANDIDATE_TAG}
-          git tag --annotate ${XTS_CANDIDATE_TAG} --message "Tagging commit for XTS promotion"
+          git tag --delete "${XTS_CANDIDATE_TAG}"
+          git push --delete origin "${XTS_CANDIDATE_TAG}"
+          git tag --annotate "${XTS_CANDIDATE_TAG}" --message "chore: tagging commit for XTS promotion"
           git push --set-upstream origin --tags
 
       - name: Report failure

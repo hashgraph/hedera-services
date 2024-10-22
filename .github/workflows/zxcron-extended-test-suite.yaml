@@ -65,7 +65,11 @@ jobs:
         id: check-tags-exist
         run: |
           XTS_COMMIT=$(git rev-list -n 1 ${XTS_CANDIDATE_TAG})
-          if [[ -n "${XTS_COMMIT}" && $(git branch --contains ${XTS_COMMIT} | grep --quiet develop) -eq 0 ]]; then
+          set +e
+          git branch --contains ${XTS_COMMIT} | grep --quiet develop >/dev/null 2>&1
+          BRANCH_ON_DEVELOP="${?}"
+          set -e 
+          if [[ -n "${XTS_COMMIT}" && "${BRANCH_ON_DEVELOP}" -eq 0 ]]; then
             echo "xts-tag-exists=true" >> $GITHUB_OUTPUT
             echo "xts-tag-commit=${XTS_COMMIT}" >> $GITHUB_OUTPUT
             echo "### Commit has been tagged as an XTS-Candidate" >>  $GITHUB_STEP_SUMMARY
@@ -186,7 +190,7 @@ jobs:
         run: |
           EPOCH_TIME=$(date +%s)
           TAG=xts-pass-${EPOCH_TIME}
-          git tag --annotate ${TAG} --message "Tagging commit for build candidate promotion"
+          git tag --annotate ${TAG} --message "chore: tagging commit for build candidate promotion"
           git push --set-upstream origin --tags
           echo "### Commit Tagged for Promotion" >>  $GITHUB_STEP_SUMMARY
           echo "promotion-tag=${TAG}" >> $GITHUB_STEP_SUMMARY

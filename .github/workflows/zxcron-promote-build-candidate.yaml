@@ -54,22 +54,22 @@ jobs:
         id: find-build-candidates
         run: |
           TAG_PATTERN="xts-pass-*"
-          CANDIDATE_TAG=$(git tag --list --sort=-version:refname ${TAG_PATTERN} | head --lines 1)
-          if [[ -n "${CANDIDATE_TAG} ]]; then
+          CANDIDATE_TAG="$(git tag --list --sort=-version:refname "${TAG_PATTERN}" | head --lines 1)"
+          if [[ -n "${CANDIDATE_TAG}" ]]; then
             CANDIDATE_COMMIT=$(git rev-list --max-count 1 ${CANDIDATE_TAG})
-            if [[ $(git branch --contains ${CANDIDATE_COMMIT} | grep --quiet develop) -eq 0 ]]; then
-              echo "build-candidate-exists=true" >> $GITHUB_OUTPUT
-              echo "build-candidate-commit=${CANDIDATE_COMMIT}" >> $GITHUB_OUTPUT
-              echo "### Build Candidate Found" >>  $GITHUB_STEP_SUMMARY
-              echo "build-candidate-commit=${CANDIDATE_COMMIT}" >> $GITHUB_STEP_SUMMARY
-              echo "build_candidate_tag=${CANDIDATE_TAG}" >> ${GITHUB_STEP_SUMMARY}
-              git tag --delete $(git tag --list ${TAG_PATTERN})
-              git push --delete origin $(git tag --list ${TAG_PATTERN})
+            if git branch --contains "${CANDIDATE_COMMIT}" | grep --quiet develop >/dev/null 2>&1; then
+              git tag --delete $(git tag --list "${TAG_PATTERN}")
+              git push --delete origin $(git tag --list "${TAG_PATTERN}")
+              echo "build-candidate-exists=true" >> "${GITHUB_OUTPUT}"
+              echo "build-candidate-commit=${CANDIDATE_COMMIT}" >> "${GITHUB_OUTPUT}"
+              echo "### Build Candidate Found" >>  "${GITHUB_STEP_SUMMARY}"
+              echo "build-candidate-commit=${CANDIDATE_COMMIT}" >> "${GITHUB_STEP_SUMMARY}"
+              echo "build_candidate_tag=${CANDIDATE_TAG}" >> "${GITHUB_STEP_SUMMARY}"
             else
-              gh run cancel ${{ github.run_id }}
+              gh run cancel "${{ github.run_id }}"
             fi
           else
-            gh run cancel ${{ github.run_id }}
+            gh run cancel "${{ github.run_id }}"
           fi
 
   promote-build-candidate:
@@ -106,11 +106,11 @@ jobs:
         env:
           BUILD_INDEX: ${{ vars.XTS_BUILD_PROMOTION_INDEX }}
         run: |
-          printf -v BUILD_TAG "build-%05d" ${BUILD_INDEX}
-          git tag --annotate ${BUILD_TAG} --message "Tagging commit for build promotion"
+          printf -v BUILD_TAG "build-%05d" "${BUILD_INDEX}"
+          git tag --annotate ${BUILD_TAG} --message "chore: tagging commit for build promotion"
           git push --set-upstream origin --tags
-          echo "### Build Promotion Tag Information" >> $GITHUB_STEP_SUMMARY
-          echo "build-tag=${BUILD_TAG}" >> $GITHUB_STEP_SUMMARY
+          echo "### Build Promotion Tag Information" >> "${GITHUB_STEP_SUMMARY}"
+          echo "build-tag=${BUILD_TAG}" >> "${GITHUB_STEP_SUMMARY}"
 
       - name: Increment Build Promotion Index
         uses: action-pack/increment@14c9f7fbbf560e7518ccaeab781aeca7bff15069 # v2.12
@@ -123,9 +123,9 @@ jobs:
         env:
           NEXT_BUILD_ID: ${{ steps.increment.outputs.value }}
         run: |
-          printf -v NEXT_BUILD_TAG "build-%05d" ${NEXT_BUILD_ID}
-          echo "### Preview Next Build Tag" >> $GITHUB_STEP_SUMMARY
-          echo "Next build tag is: ${NEXT_BUILD_TAG}" >> $GITHUB_STEP_SUMMARY
+          printf -v NEXT_BUILD_TAG "build-%05d" "${NEXT_BUILD_ID}"
+          echo "### Preview Next Build Tag" >> "${GITHUB_STEP_SUMMARY}"
+          echo "Next build tag is: ${NEXT_BUILD_TAG}" >> "${GITHUB_STEP_SUMMARY}"
 
   report-failure:
     name: Report XTS execution failure
