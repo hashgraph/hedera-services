@@ -413,7 +413,8 @@ public class ChildDispatchFactory {
                     @NonNull
                     @Override
                     public SignatureVerification verificationFor(@NonNull final Key key) {
-                        // In this context the only way a simple key to be verified is if the callback returns true
+                        // Within the child HandleContext, a key structure has a valid signature ONLY if
+                        // the given callback returns true for enough primitive keys in the structure
                         return verifier.verificationFor(key, (k, v) -> callback.test(k));
                     }
 
