@@ -58,26 +58,41 @@ public class HandleHederaNativeOperations implements HederaNativeOperations {
         this.maybeEthSenderKey = maybeEthSenderKey;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public @NonNull ReadableNftStore readableNftStore() {
         return context.storeFactory().readableStore(ReadableNftStore.class);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public @NonNull ReadableTokenRelationStore readableTokenRelationStore() {
         return context.storeFactory().readableStore(ReadableTokenRelationStore.class);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public @NonNull ReadableTokenStore readableTokenStore() {
         return context.storeFactory().readableStore(ReadableTokenStore.class);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public @NonNull ReadableAccountStore readableAccountStore() {
         return context.storeFactory().readableStore(ReadableAccountStore.class);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void setNonce(final long contractNumber, final long nonce) {
         final var tokenServiceApi = context.storeFactory().serviceApi(TokenServiceApi.class);
@@ -85,6 +100,9 @@ public class HandleHederaNativeOperations implements HederaNativeOperations {
                 AccountID.newBuilder().accountNum(contractNumber).build(), nonce);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public @NonNull ResponseCodeEnum createHollowAccount(@NonNull final Bytes evmAddress) {
         final var synthTxn = TransactionBody.newBuilder()
@@ -110,6 +128,9 @@ public class HandleHederaNativeOperations implements HederaNativeOperations {
         }
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void finalizeHollowAccountAsContract(@NonNull final Bytes evmAddress) {
         requireNonNull(evmAddress);
@@ -119,6 +140,9 @@ public class HandleHederaNativeOperations implements HederaNativeOperations {
         tokenServiceApi.finalizeHollowAccountAsContract(hollowAccountId);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public @NonNull ResponseCodeEnum transferWithReceiverSigCheck(
             final long amount,
@@ -135,6 +159,9 @@ public class HandleHederaNativeOperations implements HederaNativeOperations {
         return OK;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void trackSelfDestructBeneficiary(
             final AccountID deletedId, final AccountID beneficiaryId, @NonNull final MessageFrame frame) {
