@@ -201,7 +201,7 @@ public class PlatformComponentBuilder {
      */
     @NonNull
     private Roster getInitialRoster() {
-        return RosterRetriever.retrieve(blocks.initialState().get().getState().cast());
+        return RosterRetriever.retrieve(blocks.initialState().get().getSwirldState().cast());
     }
 
     /**
