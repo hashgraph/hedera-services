@@ -140,6 +140,7 @@ module com.swirlds.platform.core {
     requires transitive com.hedera.pbj.runtime;
     requires transitive info.picocli;
     requires transitive org.apache.logging.log4j;
+    requires transitive org.hiero.consensus.gossip;
     requires com.swirlds.config.extensions;
     requires com.swirlds.logging;
     requires com.swirlds.merkle;
@@ -154,7 +155,6 @@ module com.swirlds.platform.core {
     requires jdk.net;
     requires org.bouncycastle.pkix;
     requires org.bouncycastle.provider;
-    requires org.hiero.consensus.gossip;
     requires static transitive com.github.spotbugs.annotations;
     requires static transitive com.google.auto.service;
 

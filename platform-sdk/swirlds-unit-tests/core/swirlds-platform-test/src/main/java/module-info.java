@@ -8,7 +8,6 @@ open module com.swirlds.platform.test {
     requires com.swirlds.config.api;
     requires com.swirlds.config.extensions.test.fixtures;
     requires java.desktop;
-    requires org.hiero.consensus.gossip;
     requires org.junit.jupiter.api;
     requires static transitive com.github.spotbugs.annotations;
 }
