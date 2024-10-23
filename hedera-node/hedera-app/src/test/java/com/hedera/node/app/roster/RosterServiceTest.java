@@ -21,7 +21,8 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
-import com.hedera.node.app.roster.schemas.V0540RosterSchema;
+import com.swirlds.common.RosterStateId;
+import com.swirlds.platform.state.service.schemas.V0540RosterSchema;
 import com.swirlds.state.spi.Schema;
 import com.swirlds.state.spi.SchemaRegistry;
 import org.assertj.core.api.Assertions;
@@ -30,19 +31,19 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
 /**
- * Unit tests for {@link RosterServiceImpl}.
+ * Unit tests for {@link RosterService}.
  */
-class RosterServiceImplTest {
-    private RosterServiceImpl rosterService;
+class RosterServiceTest {
+    private RosterService rosterService;
 
     @BeforeEach
     void setUp() {
-        rosterService = new RosterServiceImpl();
+        rosterService = new RosterService();
     }
 
     @Test
     void defaultConstructor() {
-        assertThat(new RosterServiceImpl()).isNotNull();
+        assertThat(new RosterService()).isNotNull();
     }
 
     @Test
@@ -65,6 +66,6 @@ class RosterServiceImplTest {
 
     @Test
     void testServiceNameReturnsCorrectName() {
-        assertThat(rosterService.getServiceName()).isEqualTo(RosterServiceImpl.NAME);
+        assertThat(rosterService.getServiceName()).isEqualTo(RosterStateId.NAME);
     }
 }
