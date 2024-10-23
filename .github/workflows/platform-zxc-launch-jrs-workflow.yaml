@@ -51,6 +51,7 @@ jobs:
   launch-workflow:
     name: Launch Workflow
     runs-on: network-node-linux-small-scheduler
+    if: ${{ !github.event.workflow_call.repository.fork }}
     steps:
       - name: Harden Runner
         uses: step-security/harden-runner@f086349bfa2bd1361f7909c78558e816508cdc10 # v2.8.0
