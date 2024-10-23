@@ -59,7 +59,7 @@ public interface AppContext {
         void submit(@NonNull TransactionBody body);
 
         /**
-         * Signs the given byte with the node's RSA key and returns the signature.
+         * Signs the given bytes with the node's RSA key and returns the signature.
          *
          * @param bytes the bytes to sign
          * @return the signature
