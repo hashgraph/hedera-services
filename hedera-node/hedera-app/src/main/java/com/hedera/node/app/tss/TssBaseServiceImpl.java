@@ -50,6 +50,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import org.apache.logging.log4j.LogManager;
@@ -71,6 +72,7 @@ public class TssBaseServiceImpl implements TssBaseService {
     private final TssSubmissions tssSubmissions;
     private final ExecutorService signingExecutor;
     private final TssLibrary tssLibrary;
+    private final Executor tssLibraryExecutor;
     private final Metrics tssMetrics;
 
     private static final Counter.Config TSS_MESSAGE_TX_COUNT =
@@ -97,15 +99,16 @@ public class TssBaseServiceImpl implements TssBaseService {
             @NonNull final ExecutorService signingExecutor,
             @NonNull final Executor submissionExecutor,
             @NonNull final TssLibrary tssLibrary,
-            @NonNull final Executor libraryExecutor,
+            @NonNull final Executor tssLibraryExecutor,
             @NonNull final Metrics tssMetrics) {
         requireNonNull(appContext);
         this.signingExecutor = requireNonNull(signingExecutor);
         final var component = DaggerTssBaseServiceComponent.factory()
-                .create(appContext.gossip(), submissionExecutor, libraryExecutor);
+                .create(appContext.gossip(), submissionExecutor, tssLibraryExecutor);
         tssHandlers = new TssHandlers(component.tssMessageHandler(), component.tssVoteHandler());
         tssSubmissions = component.tssSubmissions();
         this.tssLibrary = requireNonNull(tssLibrary);
+        this.tssLibraryExecutor = requireNonNull(tssLibraryExecutor);
         this.tssMetrics = requireNonNull(tssMetrics);
         tssMessageTxCount = tssMetrics.getOrCreate(TSS_MESSAGE_TX_COUNT);
         tssVoteTxCount = tssMetrics.getOrCreate(TSS_VOTE_TX_COUNT);
@@ -167,16 +170,27 @@ public class TssBaseServiceImpl implements TssBaseService {
         final var candidateRosterParticipantDirectory = computeTssParticipantDirectory(roster, maxSharesPerNode, (int)
                 context.networkInfo().selfNodeInfo().nodeId());
 
-        int shareIndex = 0;
+        final AtomicInteger shareIndex = new AtomicInteger(0);
         for (final var tssPrivateShare : tssPrivateShares) {
-            final var tssMsg = tssLibrary.generateTssMessage(candidateRosterParticipantDirectory, tssPrivateShare);
-            final var tssMessage = TssMessageTransactionBody.newBuilder()
-                    .sourceRosterHash(activeRosterHash)
-                    .targetRosterHash(candidateRosterHash)
-                    .shareIndex(shareIndex++)
-                    .tssMessage(Bytes.wrap(tssMsg.bytes()))
-                    .build();
-            tssSubmissions.submitTssMessage(tssMessage, context);
+            final var tssMsg = CompletableFuture.supplyAsync(
+                            () -> tssLibrary.generateTssMessage(candidateRosterParticipantDirectory, tssPrivateShare),
+                            tssLibraryExecutor)
+                    .exceptionally(e -> {
+                        log.error("Error generating tssMessage", e);
+                        return null;
+                    });
+            tssMsg.thenAccept(msg -> {
+                if (msg == null) {
+                    return;
+                }
+                final var tssMessage = TssMessageTransactionBody.newBuilder()
+                        .sourceRosterHash(activeRosterHash)
+                        .targetRosterHash(candidateRosterHash)
+                        .shareIndex(shareIndex.getAndAdd(1))
+                        .tssMessage(Bytes.wrap(msg.bytes()))
+                        .build();
+                tssSubmissions.submitTssMessage(tssMessage, context);
+            });
             tssMessageTxCount.increment();
         }
     }
