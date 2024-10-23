@@ -38,6 +38,16 @@ public class DefaultPcesWriter implements PcesWriter {
 
     private static final Logger logger = LogManager.getLogger(DefaultPcesWriter.class);
 
+    /**
+     * The highest event sequence number that has been written to the stream (but possibly not yet flushed).
+     */
+    private long lastWrittenEvent = -1;
+
+    /**
+     * The highest event sequence number that has been durably flushed to disk.
+     */
+    private long lastFlushedEvent = -1;
+
     private final CommonPcesWriter commonPcesWriter;
 
     /**
@@ -81,8 +91,8 @@ public class DefaultPcesWriter implements PcesWriter {
 
         // if we aren't streaming new events yet, assume that the given event is already durable
         if (!commonPcesWriter.isStreamingNewEvents()) {
-            commonPcesWriter.setLastWrittenEvent(event.getStreamSequenceNumber());
-            commonPcesWriter.setLastFlushedEvent(event.getStreamSequenceNumber());
+            lastWrittenEvent = event.getStreamSequenceNumber();
+            lastFlushedEvent = event.getStreamSequenceNumber();
             return event.getStreamSequenceNumber();
         }
 
@@ -93,12 +103,15 @@ public class DefaultPcesWriter implements PcesWriter {
 
         try {
             final boolean fileClosed = commonPcesWriter.prepareOutputStream(event);
+            if (fileClosed) {
+                lastFlushedEvent = lastWrittenEvent;
+            }
             commonPcesWriter.getCurrentMutableFile().writeEvent(event);
-            commonPcesWriter.setLastWrittenEvent(event.getStreamSequenceNumber());
+            lastFlushedEvent = event.getStreamSequenceNumber();
 
             final boolean flushPerformed = processFlushRequests();
 
-            return fileClosed || flushPerformed ? commonPcesWriter.getLastFlushedEvent() : null;
+            return fileClosed || flushPerformed ? lastFlushedEvent : null;
         } catch (final IOException e) {
             throw new UncheckedIOException(e);
         }
@@ -110,8 +123,11 @@ public class DefaultPcesWriter implements PcesWriter {
     @Override
     @Nullable
     public Long registerDiscontinuity(@NonNull final Long newOriginRound) {
-        commonPcesWriter.registerDiscontinuity(newOriginRound);
-        return commonPcesWriter.getLastFlushedEvent();
+        final boolean fileClosed = commonPcesWriter.registerDiscontinuity(newOriginRound);
+        if (fileClosed) {
+            lastFlushedEvent = lastWrittenEvent;
+        }
+        return lastFlushedEvent;
     }
 
     /**
@@ -122,7 +138,7 @@ public class DefaultPcesWriter implements PcesWriter {
     public Long submitFlushRequest(@NonNull final Long sequenceNumber) {
         flushRequests.add(sequenceNumber);
 
-        return processFlushRequests() ? commonPcesWriter.getLastFlushedEvent() : null;
+        return processFlushRequests() ? lastFlushedEvent : null;
     }
 
     /**
@@ -132,10 +148,10 @@ public class DefaultPcesWriter implements PcesWriter {
      */
     private boolean processFlushRequests() {
         boolean flushRequired = false;
-        while (!flushRequests.isEmpty() && flushRequests.peekFirst() <= commonPcesWriter.getLastWrittenEvent()) {
+        while (!flushRequests.isEmpty() && flushRequests.peekFirst() <= lastWrittenEvent) {
             final long flushRequest = flushRequests.removeFirst();
 
-            if (flushRequest > commonPcesWriter.getLastFlushedEvent()) {
+            if (flushRequest > lastFlushedEvent) {
                 flushRequired = true;
             }
         }
@@ -151,7 +167,7 @@ public class DefaultPcesWriter implements PcesWriter {
                 throw new UncheckedIOException(e);
             }
 
-            commonPcesWriter.setLastFlushedEvent(commonPcesWriter.getLastWrittenEvent());
+            lastFlushedEvent = lastWrittenEvent;
         }
 
         return flushRequired;

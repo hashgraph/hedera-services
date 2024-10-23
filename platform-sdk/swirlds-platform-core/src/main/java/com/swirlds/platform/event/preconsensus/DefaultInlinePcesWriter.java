@@ -54,29 +54,21 @@ public class DefaultInlinePcesWriter implements InlinePcesWriter {
     @NonNull
     @Override
     public PlatformEvent writeEvent(@NonNull PlatformEvent event) {
-        if (event.getStreamSequenceNumber() == PlatformEvent.NO_STREAM_SEQUENCE_NUMBER) {
-            throw new IllegalStateException("Event must have a valid stream sequence number");
-        }
-
         // if we aren't streaming new events yet, assume that the given event is already durable
         if (!commonPcesWriter.isStreamingNewEvents()) {
-            commonPcesWriter.setLastWrittenEvent(event.getStreamSequenceNumber());
-            commonPcesWriter.setLastFlushedEvent(event.getStreamSequenceNumber());
             return event;
         }
 
-        // don't do anything with ancient events
         if (event.getAncientIndicator(commonPcesWriter.getFileType()) < commonPcesWriter.getNonAncientBoundary()) {
-            throw new IllegalStateException("Ancient events should not be written to the PCES");
+            // don't do anything with ancient events
+            return event;
         }
 
         try {
             commonPcesWriter.prepareOutputStream(event);
             commonPcesWriter.getCurrentMutableFile().writeEvent(event);
-            commonPcesWriter.setLastWrittenEvent(event.getStreamSequenceNumber());
 
             commonPcesWriter.getCurrentMutableFile().flush();
-            commonPcesWriter.setLastFlushedEvent(commonPcesWriter.getLastWrittenEvent());
 
             return event;
         } catch (final IOException e) {

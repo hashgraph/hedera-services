@@ -117,16 +117,6 @@ public class CommonPcesWriter {
     private final double spanOverlapFactor;
 
     /**
-     * The highest event sequence number that has been written to the stream (but possibly not yet flushed).
-     */
-    private long lastWrittenEvent = -1;
-
-    /**
-     * The highest event sequence number that has been durably flushed to disk.
-     */
-    private long lastFlushedEvent = -1;
-
-    /**
      * If true then all added events are new and need to be written to the stream. If false then all added events are
      * already durable and do not need to be written to the stream.
      */
@@ -188,8 +178,9 @@ public class CommonPcesWriter {
      * Inform the preconsensus event writer that a discontinuity has occurred in the preconsensus event stream.
      *
      * @param newOriginRound the round of the state that the new stream will be starting from
+     * @return {@code true} if this method call resulted in the current file being closed
      */
-    public void registerDiscontinuity(@NonNull final Long newOriginRound) {
+    public boolean registerDiscontinuity(@NonNull final Long newOriginRound) {
         if (!streamingNewEvents) {
             logger.error(EXCEPTION.getMarker(), "registerDiscontinuity() called while replaying events");
         }
@@ -197,10 +188,12 @@ public class CommonPcesWriter {
         try {
             if (currentMutableFile != null) {
                 closeFile();
+                return true;
             }
         } finally {
             fileManager.registerDiscontinuity(newOriginRound);
         }
+        return false;
     }
 
     /**
@@ -240,7 +233,6 @@ public class CommonPcesWriter {
                 averageSpanUtilization.add(previousSpan);
             }
             currentMutableFile.close();
-            lastFlushedEvent = lastWrittenEvent;
 
             fileManager.finishedWritingFile(currentMutableFile);
             currentMutableFile = null;
@@ -363,42 +355,6 @@ public class CommonPcesWriter {
      */
     public PcesMutableFile getCurrentMutableFile() {
         return currentMutableFile;
-    }
-
-    /**
-     * Get the last written event.
-     *
-     * @return the last written event
-     */
-    public long getLastWrittenEvent() {
-        return lastWrittenEvent;
-    }
-
-    /**
-     * Get the last flushed event.
-     *
-     * @return the last flushed event
-     */
-    public long getLastFlushedEvent() {
-        return lastFlushedEvent;
-    }
-
-    /**
-     * Set the last written event.
-     *
-     * @param lastWrittenEvent the last written event
-     */
-    public void setLastWrittenEvent(final long lastWrittenEvent) {
-        this.lastWrittenEvent = lastWrittenEvent;
-    }
-
-    /**
-     * Set the last flushed event.
-     *
-     * @param lastFlushedEvent the last flushed event
-     */
-    public void setLastFlushedEvent(final long lastFlushedEvent) {
-        this.lastFlushedEvent = lastFlushedEvent;
     }
 
     /**
