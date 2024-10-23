@@ -42,10 +42,10 @@ struct PendingAirdrop {
 }
 ```
 
-`NftId` - A struct that represents the Nft serial to be rejected.
+`NftID` - A struct that represents the Nft serial to be rejected.
 
 ```solidity
-struct NftId {
+struct NftID {
     address nft;
     int64 serial;
 }
@@ -58,9 +58,9 @@ New system contract functions must be added to the `IHederaTokenService` interfa
 | Function Selector Hash |                                                 Function Signature                                                  | HAPI Transaction |    Response    |                                 |
 |------------------------|---------------------------------------------------------------------------------------------------------------------|------------------|----------------|---------------------------------|
 | `0x2f348119`           | `function airdropTokens(TokenTransferList[] memory tokenTransfers) external returns (int64 responseCode)`           | TokenAirdrop     | `ResponseCode` | The response code from the call |
-| `0xc1acfe5d`           | `function cancelAirdrops(PendingAirdrop[] memory pendingAirdrops) external returns (int64 responseCode)`            | TokenCancel      | `ResponseCode` | The response code from the call |
-| `0x241b6af7`           | `function claimAirdrops(PendingAirdrop[] memory pendingAirdrops) external returns (int64 responseCode)`             | TokenClaim       | `ResponseCode` | The response code from the call |
-| `0x012ea0b1`           | `function rejectTokens(address[] memory ftAddresses,  NftId[] memory nftIds) external returns (int64 responseCode)` | TokenReject      | `ResponseCode` | The response code from the call |
+| `0x012ebcaf`           | `function cancelAirdrops(PendingAirdrop[] memory pendingAirdrops) external returns (int64 responseCode)`            | TokenCancel      | `ResponseCode` | The response code from the call |
+| `0x05961641`           | `function claimAirdrops(PendingAirdrop[] memory pendingAirdrops) external returns (int64 responseCode)`             | TokenClaim       | `ResponseCode` | The response code from the call |
+| `0x179300d7`           | `function rejectTokens(address[] memory ftAddresses,  NftID[] memory nftIDs) external returns (int64 responseCode)` | TokenReject      | `ResponseCode` | The response code from the call |
 
 New system contract functions must be added to a new `IHRC904` interface to support airdropping tokens.
 
@@ -79,7 +79,7 @@ New system contract functions must be added to a new `IHRC904` interface to supp
 - The `airdropTokens` function will accept an array of `TokenTransferList` with a maximum of 10 elements by default managed by `tokens.maxAllowedAirdropTransfersPerTx` configuration.
 - The `cancelAirdrops` function will accept an array of `PendingAirdrop` with a maximum of 10 elements by default managed by `tokens.maxAllowedPendingAirdropsToCancel` configuration.
 - The `claimAirdrops` function will accept an array of `PendingAirdrop` with a maximum of 10 elements by default managed by `tokens.maxAllowedPendingAirdropsToClaim` configuration.
-- The `rejectTokens` function will accept array of `address` and `NftId` with a maximum of 10 elements combined by default managed by `ledger.tokenRejects.maxLen` configuration. Same limitation applies to `rejectTokenNFTs` function.
+- The `rejectTokens` function will accept array of `address` and `NftID` with a maximum of 10 elements combined by default managed by `ledger.tokenRejects.maxLen` configuration. Same limitation applies to `rejectTokenNFTs` function.
 - The `setAutomaticAssociations` function will accept a boolean value to set the automatic associations to -1 if true and 0 for false.
 
 ### System Contract Module
