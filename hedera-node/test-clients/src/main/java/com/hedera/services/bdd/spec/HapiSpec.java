@@ -18,6 +18,7 @@ package com.hedera.services.bdd.spec;
 
 import static com.hedera.node.app.service.addressbook.AddressBookHelper.NODES_KEY;
 import static com.hedera.node.app.service.token.impl.schemas.V0490TokenSchema.ACCOUNTS_KEY;
+import static com.hedera.node.app.tss.schemas.V0560TssBaseSchema.TSS_MESSAGE_MAP_KEY;
 import static com.hedera.services.bdd.junit.SharedNetworkLauncherSessionListener.repeatableModeRequested;
 import static com.hedera.services.bdd.junit.extensions.NetworkTargetingExtension.REPEATABLE_KEY_GENERATOR;
 import static com.hedera.services.bdd.junit.extensions.NetworkTargetingExtension.SHARED_NETWORK;
@@ -68,7 +69,10 @@ import com.google.common.base.MoreObjects;
 import com.hedera.hapi.node.state.addressbook.Node;
 import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.token.Account;
+import com.hedera.hapi.node.state.tss.TssMessageMapKey;
+import com.hedera.hapi.services.auxiliary.tss.TssMessageTransactionBody;
 import com.hedera.node.app.fixtures.state.FakeState;
+import com.hedera.node.app.tss.TssBaseService;
 import com.hedera.services.bdd.junit.LeakyHapiTest;
 import com.hedera.services.bdd.junit.extensions.NetworkTargetingExtension;
 import com.hedera.services.bdd.junit.hedera.HederaNetwork;
@@ -497,6 +501,18 @@ public class HapiSpec implements Runnable, Executable {
         final var state = embeddedStateOrThrow();
         return state.getWritableStates(com.hedera.node.app.service.token.TokenService.NAME)
                 .get(ACCOUNTS_KEY);
+    }
+
+    /**
+     * Get the {@link WritableKVState} for the embedded network's accounts, if this spec is targeting an embedded network.
+     *
+     * @return the embedded accounts state
+     * @throws IllegalStateException if this spec is not targeting an embedded network
+     */
+    public @NonNull WritableKVState<TssMessageMapKey, TssMessageTransactionBody> embeddedTssMsgStateOrThrow() {
+        final var state = embeddedStateOrThrow();
+        return state.getWritableStates(TssBaseService.NAME)
+                .get(TSS_MESSAGE_MAP_KEY);
     }
 
     /**

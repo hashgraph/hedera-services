@@ -22,7 +22,10 @@ import static com.hedera.services.bdd.junit.RepeatableReason.NEEDS_TSS_CONTROL;
 import static com.hedera.services.bdd.junit.RepeatableReason.NEEDS_VIRTUAL_TIME_FOR_FAST_EXECUTION;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.nodeCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.nodeUpdate;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
+import static com.hedera.services.bdd.spec.utilops.EmbeddedVerbs.mutateTssMsgState;
 import static com.hedera.services.bdd.spec.utilops.TssVerbs.startIgnoringTssSignatureRequests;
 import static com.hedera.services.bdd.spec.utilops.TssVerbs.stopIgnoringTssSignatureRequests;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.blockStreamMustIncludePassFrom;
@@ -31,6 +34,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.doWithStartupConfig
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.waitUntilStartOfNextStakingPeriod;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.suites.hip869.NodeCreateTest.generateX509Certificates;
 import static java.lang.Long.parseLong;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -43,11 +47,15 @@ import com.hedera.hapi.services.auxiliary.tss.TssMessageTransactionBody;
 import com.hedera.hapi.services.auxiliary.tss.TssVoteTransactionBody;
 import com.hedera.node.app.blocks.BlockStreamManager;
 import com.hedera.pbj.runtime.ParseException;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.services.bdd.junit.LeakyRepeatableHapiTest;
 import com.hedera.services.bdd.junit.RepeatableHapiTest;
 import com.hedera.services.bdd.junit.hedera.embedded.fakes.FakeTssBaseService;
+import com.hedera.services.bdd.spec.SpecOperation;
 import com.hedera.services.bdd.spec.utilops.streams.assertions.BlockStreamAssertion;
 import edu.umd.cs.findbugs.annotations.NonNull;
+
+import java.security.cert.CertificateEncodingException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.IntConsumer;
 import java.util.stream.Stream;
@@ -117,15 +125,21 @@ public class RepeatableTssTests {
             value = {NEEDS_TSS_CONTROL, NEEDS_VIRTUAL_TIME_FOR_FAST_EXECUTION},
             overrides = {"tss.keyCandidateRoster"})
     // Need to fix by adding Roster entries to the state before running this test. Will do in next PR
-    Stream<DynamicTest> tssMessageSubmittedForRekeyingIsSuccessful() {
+    Stream<DynamicTest> tssMessageSubmittedForRekeyingIsSuccessful() throws CertificateEncodingException {
+        final var gossipCertificates = generateX509Certificates(2);
         return hapiTest(
                 blockStreamMustIncludePassFrom(spec -> successfulTssMessageThenVote()),
                 // Current TSS default is not to try to key the candidate
                 overriding("tss.keyCandidateRoster", "true"),
+                nodeCreate("testNode")
+                        .adminKey("adminKey")
+                        .gossipCaCertificate(gossipCertificates.getFirst().getEncoded()),
+                mutateTssMsgState("sourceRoster", "targetRoster", builder -> {
+                    builder.tssMessage(Bytes.EMPTY);
+                }),
                 doWithStartupConfig(
                         "staking.periodMins",
                         stakePeriodMins -> waitUntilStartOfNextStakingPeriod(parseLong(stakePeriodMins))),
-
                 // This transaction is now first in a new staking period and should trigger the TSS rekeying process,
                 // in particular a successful TssMessage from the embedded node (and then a TssVote since this is our
                 // placeholder implementation of TssMessageHandler)

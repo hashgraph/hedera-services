@@ -25,10 +25,12 @@ import com.hedera.hapi.node.state.blockrecords.BlockInfo;
 import com.hedera.hapi.node.state.blockstream.BlockStreamInfo;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.AccountPendingAirdrop;
+import com.hedera.hapi.services.auxiliary.tss.TssMessageTransactionBody;
 import com.hedera.services.bdd.junit.hedera.embedded.EmbeddedNetwork;
 import com.hedera.services.bdd.spec.SpecOperation;
 import com.hedera.services.bdd.spec.utilops.embedded.MutateAccountOp;
 import com.hedera.services.bdd.spec.utilops.embedded.MutateNodeOp;
+import com.hedera.services.bdd.spec.utilops.embedded.MutateTssMsgState;
 import com.hedera.services.bdd.spec.utilops.embedded.ViewAccountOp;
 import com.hedera.services.bdd.spec.utilops.embedded.ViewNodeOp;
 import com.hedera.services.bdd.spec.utilops.embedded.ViewPendingAirdropOp;
@@ -55,6 +57,13 @@ public final class EmbeddedVerbs {
     public static MutateAccountOp mutateAccount(
             @NonNull final String name, @NonNull final Consumer<Account.Builder> mutation) {
         return new MutateAccountOp(name, mutation);
+    }
+
+    public static MutateTssMsgState mutateTssMsgState(
+            @NonNull final String sourceRoster,
+            @NonNull final String targetRoster,
+            @NonNull final Consumer<TssMessageTransactionBody.Builder> mutation) {
+        return new MutateTssMsgState(sourceRoster, targetRoster, mutation);
     }
 
     /**
