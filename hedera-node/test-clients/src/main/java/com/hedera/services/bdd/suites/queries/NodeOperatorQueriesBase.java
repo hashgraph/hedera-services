@@ -51,7 +51,6 @@ public class NodeOperatorQueriesBase {
                 cryptoCreate(OWNER).balance(0L),
                 cryptoCreate(QUERY_TEST_ACCOUNT).balance(ONE_HUNDRED_HBARS),
                 cryptoCreate(PAYER).balance(ONE_HUNDRED_HBARS),
-                //                        .exposingCreatedIdTo(payerId::set),
                 tokenCreate(FUNGIBLE_QUERY_TOKEN)
                         .treasury(OWNER)
                         .tokenType(FUNGIBLE_COMMON)

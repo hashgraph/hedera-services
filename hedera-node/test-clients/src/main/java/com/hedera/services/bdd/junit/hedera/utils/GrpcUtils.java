@@ -38,6 +38,7 @@ public class GrpcUtils {
      * @param clients the clients to use
      * @param functionality the functionality to query
      * @param nodeAccountId the node to send the query to
+     * @param asNodeOperator whether to send the query to the node operator port
      * @return the response from the query
      */
     public static Response send(
@@ -45,7 +46,7 @@ public class GrpcUtils {
             @NonNull final HapiClients clients,
             @NonNull final HederaFunctionality functionality,
             @NonNull final com.hederahashgraph.api.proto.java.AccountID nodeAccountId,
-            boolean asNodeOperator) {
+            final boolean asNodeOperator) {
         return switch (functionality) {
             case ConsensusGetTopicInfo -> clients.getConsSvcStub(nodeAccountId, false, asNodeOperator)
                     .getTopicInfo(query);

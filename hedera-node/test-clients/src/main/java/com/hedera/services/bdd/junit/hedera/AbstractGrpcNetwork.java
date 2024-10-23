@@ -59,7 +59,7 @@ public abstract class AbstractGrpcNetwork extends AbstractNetwork implements Hed
             @NonNull final Query query,
             @NonNull final HederaFunctionality functionality,
             @NonNull final com.hederahashgraph.api.proto.java.AccountID nodeAccountId,
-            boolean asNodeOperator) {
+            final boolean asNodeOperator) {
         requireNonNull(clients, "clients are not ready");
         requireNonNull(query);
         requireNonNull(functionality);
