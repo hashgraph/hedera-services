@@ -38,8 +38,8 @@ public class GrpcBlockItemWriterTest {
 
     @Test
     public void testGrpcBlockItemWriterConstructor() {
-        when(blockStreamConfig.address()).thenReturn("localhost");
-        when(blockStreamConfig.port()).thenReturn(8080);
+        when(blockStreamConfig.grpcAddress()).thenReturn("localhost");
+        when(blockStreamConfig.grpcPort()).thenReturn(8080);
 
         final GrpcBlockItemWriter grpcBlockItemWriter = new GrpcBlockItemWriter(blockStreamConfig);
         assertThat(grpcBlockItemWriter).isNotNull();
@@ -47,8 +47,8 @@ public class GrpcBlockItemWriterTest {
 
     @Test
     public void testOpenBlockNegativeBlockNumber() {
-        when(blockStreamConfig.address()).thenReturn("localhost");
-        when(blockStreamConfig.port()).thenReturn(8080);
+        when(blockStreamConfig.grpcAddress()).thenReturn("localhost");
+        when(blockStreamConfig.grpcPort()).thenReturn(8080);
 
         GrpcBlockItemWriter grpcBlockItemWriter = new GrpcBlockItemWriter(blockStreamConfig);
 
@@ -58,8 +58,8 @@ public class GrpcBlockItemWriterTest {
 
     @Test
     public void testWriteItemBeforeOpen() {
-        when(blockStreamConfig.address()).thenReturn("localhost");
-        when(blockStreamConfig.port()).thenReturn(8080);
+        when(blockStreamConfig.grpcAddress()).thenReturn("localhost");
+        when(blockStreamConfig.grpcPort()).thenReturn(8080);
 
         GrpcBlockItemWriter grpcBlockItemWriter = new GrpcBlockItemWriter(blockStreamConfig);
 
@@ -76,8 +76,8 @@ public class GrpcBlockItemWriterTest {
 
     @Test
     public void testCloseBlockNotOpen() {
-        when(blockStreamConfig.address()).thenReturn("localhost");
-        when(blockStreamConfig.port()).thenReturn(8080);
+        when(blockStreamConfig.grpcAddress()).thenReturn("localhost");
+        when(blockStreamConfig.grpcPort()).thenReturn(8080);
 
         GrpcBlockItemWriter grpcBlockItemWriter = new GrpcBlockItemWriter(blockStreamConfig);
 

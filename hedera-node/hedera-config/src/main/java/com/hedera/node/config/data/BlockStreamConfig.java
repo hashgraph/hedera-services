@@ -31,8 +31,8 @@ import com.swirlds.config.api.validation.annotation.Min;
  * @param writerMode if we are writing to a file or gRPC stream
  * @param blockFileDir directory to store block files
  * @param compressFilesOnCreation whether to compress files on creation
- * @param address the address of the gRPC server
- * @param port the port of the gRPC server
+ * @param grpcAddress the address of the gRPC server
+ * @param grpcPort the port of the gRPC server
  */
 @ConfigData("blockStream")
 public record BlockStreamConfig(
@@ -43,5 +43,5 @@ public record BlockStreamConfig(
         @ConfigProperty(defaultValue = "32") @NetworkProperty int serializationBatchSize,
         @ConfigProperty(defaultValue = "32") @NetworkProperty int hashCombineBatchSize,
         @ConfigProperty(defaultValue = "1") @NetworkProperty int roundsPerBlock,
-        @ConfigProperty(defaultValue = "localhost") String address,
-        @ConfigProperty(defaultValue = "8080") @Min(0) @Max(65535) int port) {}
+        @ConfigProperty(defaultValue = "localhost") String grpcAddress,
+        @ConfigProperty(defaultValue = "8080") @Min(0) @Max(65535) int grpcPort) {}

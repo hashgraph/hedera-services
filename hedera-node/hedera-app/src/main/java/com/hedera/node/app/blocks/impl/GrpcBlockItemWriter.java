@@ -92,7 +92,13 @@ public class GrpcBlockItemWriter implements BlockItemWriter {
             client = GrpcClient.builder()
                     .tls(Tls.builder().enabled(false).build())
                     .baseUri(new URI(
-                            null, null, blockStreamConfig.address(), blockStreamConfig.port(), null, null, null))
+                            null,
+                            null,
+                            blockStreamConfig.grpcAddress(),
+                            blockStreamConfig.grpcPort(),
+                            null,
+                            null,
+                            null))
                     .protocolConfig(GrpcClientProtocolConfig.builder()
                             .abortPollTimeExpired(false)
                             .build())
