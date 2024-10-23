@@ -24,21 +24,26 @@ import static com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomi
 import static com.hedera.node.app.spi.workflows.record.StreamBuilder.ReversingBehavior.IRREVERSIBLE;
 import static com.hedera.node.app.spi.workflows.record.StreamBuilder.ReversingBehavior.REMOVABLE;
 import static com.hedera.node.app.spi.workflows.record.StreamBuilder.ReversingBehavior.REVERSIBLE;
+import static com.hedera.node.config.types.StreamMode.BLOCKS;
 import static com.hedera.node.config.types.StreamMode.RECORDS;
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.hapi.block.stream.BlockItem;
+import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.transaction.ExchangeRateSet;
+import com.hedera.node.app.blocks.impl.BlockStreamBuilder;
 import com.hedera.node.app.blocks.impl.BoundaryStateChangeListener;
 import com.hedera.node.app.blocks.impl.KVStateChangeListener;
 import com.hedera.node.app.blocks.impl.PairedStreamBuilder;
+import com.hedera.node.app.spi.records.RecordSource;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer;
 import com.hedera.node.app.spi.workflows.record.StreamBuilder;
 import com.hedera.node.app.state.ReadonlyStatesWrapper;
 import com.hedera.node.app.state.SingleTransactionRecord;
 import com.hedera.node.app.state.WrappedState;
+import com.hedera.node.app.state.recordcache.BlockRecordSource;
+import com.hedera.node.app.state.recordcache.LegacyListRecordSource;
 import com.hedera.node.app.workflows.handle.HandleOutput;
 import com.hedera.node.app.workflows.handle.record.RecordStreamBuilder;
 import com.hedera.node.app.workflows.handle.stack.savepoints.BuilderSinkImpl;
@@ -90,12 +95,12 @@ public class SavepointStackImpl implements HandleContext.SavepointStack, State {
     /**
      * Constructs the root {@link SavepointStackImpl} for the given state at the start of handling a user transaction.
      *
-     * @param state                 the state
+     * @param state the state
      * @param maxBuildersBeforeUser the maximum number of preceding builders with available consensus times
      * @param maxBuildersAfterUser the maximum number of following builders with available consensus times
      * @param boundaryStateChangeListener the listener for the round state changes
      * @param kvStateChangeListener the listener for the key/value state changes
-     * @param streamMode            the stream mode
+     * @param streamMode the stream mode
      * @return the root {@link SavepointStackImpl}
      */
     public static SavepointStackImpl newRootStack(
@@ -118,11 +123,11 @@ public class SavepointStackImpl implements HandleContext.SavepointStack, State {
      * Constructs a new child {@link SavepointStackImpl} for the given state, where the child dispatch has the given
      * reversing behavior, transaction category, and record customizer.
      *
-     * @param root              the state on which the child dispatch is based
+     * @param root the state on which the child dispatch is based
      * @param reversingBehavior the reversing behavior for the initial dispatch
-     * @param category          the transaction category
-     * @param customizer        the record customizer
-     * @param streamMode        the stream mode
+     * @param category the transaction category
+     * @param customizer the record customizer
+     * @param streamMode the stream mode
      * @return the child {@link SavepointStackImpl}
      */
     public static SavepointStackImpl newChildStack(
@@ -156,7 +161,7 @@ public class SavepointStackImpl implements HandleContext.SavepointStack, State {
         this.roundStateChangeListener = requireNonNull(roundStateChangeListener);
         builderSink = new BuilderSinkImpl(maxBuildersBeforeUser, maxBuildersAfterUser + 1);
         setupFirstSavepoint(USER);
-        baseBuilder = peek().createBuilder(REVERSIBLE, USER, NOOP_RECORD_CUSTOMIZER, true, streamMode);
+        baseBuilder = peek().createBuilder(REVERSIBLE, USER, NOOP_RECORD_CUSTOMIZER, streamMode, true);
         this.streamMode = requireNonNull(streamMode);
     }
 
@@ -168,6 +173,7 @@ public class SavepointStackImpl implements HandleContext.SavepointStack, State {
      * @param reversingBehavior the reversing behavior of the dispatch
      * @param category the category of the dispatch
      * @param customizer the record customizer for the dispatch
+     * @param streamMode the stream mode
      */
     private SavepointStackImpl(
             @NonNull final SavepointStackImpl parent,
@@ -184,7 +190,7 @@ public class SavepointStackImpl implements HandleContext.SavepointStack, State {
         this.kvStateChangeListener = null;
         this.roundStateChangeListener = null;
         setupFirstSavepoint(category);
-        baseBuilder = peek().createBuilder(reversingBehavior, category, customizer, true, streamMode);
+        baseBuilder = peek().createBuilder(reversingBehavior, category, customizer, streamMode, true);
     }
 
     @Override
@@ -320,15 +326,19 @@ public class SavepointStackImpl implements HandleContext.SavepointStack, State {
 
     @NonNull
     @Override
-    public <T> T addChildRecordBuilder(@NonNull Class<T> recordBuilderClass) {
-        final var result = createReversibleChildBuilder();
+    public <T> T addChildRecordBuilder(
+            @NonNull Class<T> recordBuilderClass, @NonNull final HederaFunctionality functionality) {
+        requireNonNull(functionality);
+        final var result = createReversibleChildBuilder().functionality(functionality);
         return castBuilder(result, recordBuilderClass);
     }
 
     @NonNull
     @Override
-    public <T> T addRemovableChildRecordBuilder(@NonNull Class<T> recordBuilderClass) {
-        final var result = createRemovableChildBuilder();
+    public <T> T addRemovableChildRecordBuilder(
+            @NonNull Class<T> recordBuilderClass, @NonNull final HederaFunctionality functionality) {
+        requireNonNull(functionality);
+        final var result = createRemovableChildBuilder().functionality(functionality);
         return castBuilder(result, recordBuilderClass);
     }
 
@@ -402,7 +412,7 @@ public class SavepointStackImpl implements HandleContext.SavepointStack, State {
      * @return the new stream builder
      */
     public StreamBuilder createRemovableChildBuilder() {
-        return peek().createBuilder(REMOVABLE, CHILD, NOOP_RECORD_CUSTOMIZER, false, streamMode);
+        return peek().createBuilder(REMOVABLE, CHILD, NOOP_RECORD_CUSTOMIZER, streamMode, false);
     }
 
     /**
@@ -411,7 +421,7 @@ public class SavepointStackImpl implements HandleContext.SavepointStack, State {
      * @return the new stream builder
      */
     public StreamBuilder createReversibleChildBuilder() {
-        return peek().createBuilder(REVERSIBLE, CHILD, NOOP_RECORD_CUSTOMIZER, false, streamMode);
+        return peek().createBuilder(REVERSIBLE, CHILD, NOOP_RECORD_CUSTOMIZER, streamMode, false);
     }
 
     /**
@@ -420,7 +430,7 @@ public class SavepointStackImpl implements HandleContext.SavepointStack, State {
      * @return the new stream builder
      */
     public StreamBuilder createIrreversiblePrecedingBuilder() {
-        return peek().createBuilder(IRREVERSIBLE, PRECEDING, NOOP_RECORD_CUSTOMIZER, false, streamMode);
+        return peek().createBuilder(IRREVERSIBLE, PRECEDING, NOOP_RECORD_CUSTOMIZER, streamMode, false);
     }
 
     /**
@@ -439,22 +449,19 @@ public class SavepointStackImpl implements HandleContext.SavepointStack, State {
     }
 
     /**
-     * Builds all the records for the user transaction.
+     * Builds the {@link BlockRecordSource} and/or {@link RecordSource} for this user transaction.
      *
      * @param consensusTime consensus time of the transaction
      * @param exchangeRates the active exchange rates
-     * @return the stream of records
+     * @return the source of records and/or blocks for the transaction
      */
     public HandleOutput buildHandleOutput(
             @NonNull final Instant consensusTime, @NonNull final ExchangeRateSet exchangeRates) {
-        final List<BlockItem> blockItems;
-        Instant lastAssignedConsenusTime = consensusTime;
-        if (streamMode == RECORDS) {
-            blockItems = null;
-        } else {
-            blockItems = new LinkedList<>();
-        }
-        final List<SingleTransactionRecord> records = new ArrayList<>();
+        final List<BlockStreamBuilder.Output> outputs = streamMode != RECORDS ? new LinkedList<>() : null;
+        final List<SingleTransactionRecord> records = streamMode != BLOCKS ? new ArrayList<>() : null;
+        final List<RecordSource.IdentifiedReceipt> receipts = streamMode != BLOCKS ? new ArrayList<>() : null;
+
+        var lastAssignedConsenusTime = consensusTime;
         final var builders = requireNonNull(builderSink).allBuilders();
         TransactionID.Builder idBuilder = null;
         int indexOfUserRecord = 0;
@@ -470,7 +477,7 @@ public class SavepointStackImpl implements HandleContext.SavepointStack, State {
             final var builder = builders.get(i);
             final var nonce =
                     switch (builder.category()) {
-                        case USER, SCHEDULED -> 0;
+                        case USER, SCHEDULED, NODE -> 0;
                         case PRECEDING, CHILD -> nextNonce++;
                     };
             // The schedule service specifies the transaction id to use for a triggered transaction
@@ -493,19 +500,29 @@ public class SavepointStackImpl implements HandleContext.SavepointStack, State {
                 }
             }
             switch (streamMode) {
-                case RECORDS -> records.add(((RecordStreamBuilder) builder).build());
+                case RECORDS -> {
+                    final var nextRecord = ((RecordStreamBuilder) builder).build();
+                    records.add(nextRecord);
+                    receipts.add(new RecordSource.IdentifiedReceipt(
+                            nextRecord.transactionRecord().transactionIDOrThrow(),
+                            nextRecord.transactionRecord().receiptOrThrow()));
+                }
+                case BLOCKS -> requireNonNull(outputs).add(((BlockStreamBuilder) builder).build());
                 case BOTH -> {
                     final var pairedBuilder = (PairedStreamBuilder) builder;
                     records.add(pairedBuilder.recordStreamBuilder().build());
-                    requireNonNull(blockItems)
-                            .addAll(pairedBuilder.blockStreamBuilder().build());
+                    requireNonNull(outputs)
+                            .add(pairedBuilder.blockStreamBuilder().build());
                 }
             }
         }
+        BlockRecordSource blockRecordSource = null;
         if (streamMode != RECORDS) {
             requireNonNull(roundStateChangeListener).setBoundaryTimestamp(lastAssignedConsenusTime);
+            blockRecordSource = new BlockRecordSource(outputs);
         }
-        return new HandleOutput(blockItems, records);
+        final var recordSource = streamMode != BLOCKS ? new LegacyListRecordSource(records, receipts) : null;
+        return new HandleOutput(blockRecordSource, recordSource);
     }
 
     private void setupFirstSavepoint(@NonNull final HandleContext.TransactionCategory category) {

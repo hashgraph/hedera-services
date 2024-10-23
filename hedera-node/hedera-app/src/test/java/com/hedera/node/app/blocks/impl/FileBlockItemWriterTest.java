@@ -22,15 +22,18 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 
+import com.hedera.hapi.node.base.AccountID;
+import com.hedera.node.app.info.NodeInfoImpl;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.VersionedConfiguration;
 import com.hedera.node.config.data.BlockStreamConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.swirlds.state.spi.info.SelfNodeInfo;
+import com.swirlds.state.spi.info.NodeInfo;
 import java.io.IOException;
 import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.zip.GZIPInputStream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -47,8 +50,8 @@ public class FileBlockItemWriterTest {
     @Mock
     private ConfigProvider configProvider;
 
-    @Mock
-    private SelfNodeInfo selfNodeInfo;
+    private NodeInfo selfNodeInfo =
+            new NodeInfoImpl(0, AccountID.newBuilder().accountNum(3).build(), 10, List.of(), Bytes.EMPTY);
 
     @Mock
     private BlockStreamConfig blockStreamConfig;
@@ -66,12 +69,11 @@ public class FileBlockItemWriterTest {
         when(blockStreamConfig.compressFilesOnCreation()).thenReturn(true);
         when(blockStreamConfig.blockFileDir()).thenReturn("N/A");
         when(fileSystem.getPath(anyString())).thenReturn(tempDir);
-        when(selfNodeInfo.memo()).thenReturn("0");
 
         FileBlockItemWriter fileBlockItemWriter = new FileBlockItemWriter(configProvider, selfNodeInfo, fileSystem);
 
         // Assertion to check if the directory is created
-        Path expectedDirectory = tempDir.resolve("block-0");
+        Path expectedDirectory = tempDir.resolve("block-0.0.3");
         assertThat(Files.exists(expectedDirectory)).isTrue();
     }
 
@@ -82,12 +84,11 @@ public class FileBlockItemWriterTest {
         when(blockStreamConfig.compressFilesOnCreation()).thenReturn(true);
         when(blockStreamConfig.blockFileDir()).thenReturn("N/A");
         when(fileSystem.getPath(anyString())).thenReturn(tempDir);
-        when(selfNodeInfo.memo()).thenReturn("0");
 
         FileBlockItemWriter fileBlockItemWriter = new FileBlockItemWriter(configProvider, selfNodeInfo, fileSystem);
 
         // Assertion to check if the directory is created
-        Path expectedDirectory = tempDir.resolve("block-0");
+        Path expectedDirectory = tempDir.resolve("block-0.0.3");
         assertThat(Files.exists(expectedDirectory)).isTrue();
 
         fileBlockItemWriter.openBlock(1);
@@ -104,12 +105,11 @@ public class FileBlockItemWriterTest {
         when(blockStreamConfig.compressFilesOnCreation()).thenReturn(true);
         when(blockStreamConfig.blockFileDir()).thenReturn("N/A");
         when(fileSystem.getPath(anyString())).thenReturn(tempDir);
-        when(selfNodeInfo.memo()).thenReturn("0");
 
         FileBlockItemWriter fileBlockItemWriter = new FileBlockItemWriter(configProvider, selfNodeInfo, fileSystem);
 
         // Assertion to check if the directory is created
-        Path expectedDirectory = tempDir.resolve("block-0");
+        Path expectedDirectory = tempDir.resolve("block-0.0.3");
         assertThat(Files.exists(expectedDirectory)).isTrue();
 
         fileBlockItemWriter.openBlock(1);
@@ -125,12 +125,11 @@ public class FileBlockItemWriterTest {
         when(blockStreamConfig.compressFilesOnCreation()).thenReturn(true);
         when(blockStreamConfig.blockFileDir()).thenReturn("N/A");
         when(fileSystem.getPath(anyString())).thenReturn(tempDir);
-        when(selfNodeInfo.memo()).thenReturn("0");
 
         FileBlockItemWriter fileBlockItemWriter = new FileBlockItemWriter(configProvider, selfNodeInfo, fileSystem);
 
         // Assertion to check if the directory is created
-        Path expectedDirectory = tempDir.resolve("block-0");
+        Path expectedDirectory = tempDir.resolve("block-0.0.3");
         assertThat(Files.exists(expectedDirectory)).isTrue();
 
         assertThatThrownBy(() -> fileBlockItemWriter.openBlock(-1), "Block number must be non-negative")
@@ -144,7 +143,6 @@ public class FileBlockItemWriterTest {
         when(blockStreamConfig.compressFilesOnCreation()).thenReturn(true);
         when(blockStreamConfig.blockFileDir()).thenReturn("N/A");
         when(fileSystem.getPath(anyString())).thenReturn(tempDir);
-        when(selfNodeInfo.memo()).thenReturn("0");
 
         FileBlockItemWriter fileBlockItemWriter = new FileBlockItemWriter(configProvider, selfNodeInfo, fileSystem);
 
@@ -152,7 +150,7 @@ public class FileBlockItemWriterTest {
         fileBlockItemWriter.openBlock(1);
 
         // Create a Bytes object and write it
-        Bytes bytes = Bytes.wrap(new byte[] {1, 2, 3, 4, 5});
+        final var bytes = new byte[] {1, 2, 3, 4, 5};
         byte[] expectedBytes = {10, 5, 1, 2, 3, 4, 5};
         fileBlockItemWriter.writeItem(bytes);
 
@@ -160,7 +158,7 @@ public class FileBlockItemWriterTest {
         fileBlockItemWriter.closeBlock();
 
         // Read the contents of the file
-        Path expectedBlockFile = tempDir.resolve("block-0").resolve("000000000000000000000000000000000001.blk.gz");
+        Path expectedBlockFile = tempDir.resolve("block-0.0.3").resolve("000000000000000000000000000000000001.blk.gz");
 
         // Ungzip the file
         try (GZIPInputStream gzis = new GZIPInputStream(Files.newInputStream(expectedBlockFile))) {
@@ -179,12 +177,11 @@ public class FileBlockItemWriterTest {
         when(blockStreamConfig.compressFilesOnCreation()).thenReturn(true);
         when(blockStreamConfig.blockFileDir()).thenReturn("N/A");
         when(fileSystem.getPath(anyString())).thenReturn(tempDir);
-        when(selfNodeInfo.memo()).thenReturn("0");
 
         FileBlockItemWriter fileBlockItemWriter = new FileBlockItemWriter(configProvider, selfNodeInfo, fileSystem);
 
         // Create a Bytes object and write it
-        Bytes bytes = Bytes.wrap(new byte[] {1, 2, 3, 4, 5});
+        final var bytes = new byte[] {1, 2, 3, 4, 5};
 
         assertThatThrownBy(() -> fileBlockItemWriter.writeItem(bytes), "Cannot write item before opening a block")
                 .isInstanceOf(IllegalStateException.class);
@@ -197,7 +194,6 @@ public class FileBlockItemWriterTest {
         when(blockStreamConfig.compressFilesOnCreation()).thenReturn(true);
         when(blockStreamConfig.blockFileDir()).thenReturn("N/A");
         when(fileSystem.getPath(anyString())).thenReturn(tempDir);
-        when(selfNodeInfo.memo()).thenReturn("0");
 
         FileBlockItemWriter fileBlockItemWriter = new FileBlockItemWriter(configProvider, selfNodeInfo, fileSystem);
 
@@ -208,7 +204,7 @@ public class FileBlockItemWriterTest {
         fileBlockItemWriter.closeBlock();
 
         // Read the contents of the file
-        Path expectedBlockFile = tempDir.resolve("block-0").resolve("000000000000000000000000000000000001.blk.gz");
+        Path expectedBlockFile = tempDir.resolve("block-0.0.3").resolve("000000000000000000000000000000000001.blk.gz");
 
         assertThat(Files.exists(expectedBlockFile)).isTrue();
     }
@@ -220,7 +216,6 @@ public class FileBlockItemWriterTest {
         when(blockStreamConfig.compressFilesOnCreation()).thenReturn(true);
         when(blockStreamConfig.blockFileDir()).thenReturn("N/A");
         when(fileSystem.getPath(anyString())).thenReturn(tempDir);
-        when(selfNodeInfo.memo()).thenReturn("0");
 
         FileBlockItemWriter fileBlockItemWriter = new FileBlockItemWriter(configProvider, selfNodeInfo, fileSystem);
 
@@ -235,7 +230,6 @@ public class FileBlockItemWriterTest {
         when(blockStreamConfig.compressFilesOnCreation()).thenReturn(true);
         when(blockStreamConfig.blockFileDir()).thenReturn("N/A");
         when(fileSystem.getPath(anyString())).thenReturn(tempDir);
-        when(selfNodeInfo.memo()).thenReturn("0");
 
         FileBlockItemWriter fileBlockItemWriter = new FileBlockItemWriter(configProvider, selfNodeInfo, fileSystem);
 

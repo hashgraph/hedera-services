@@ -124,7 +124,7 @@ public record SavedStateMetadata(
     /**
      * Use this constant for the node ID if the thing writing the state is not a node.
      */
-    public static final NodeId NO_NODE_ID = new NodeId(Long.MAX_VALUE);
+    public static final NodeId NO_NODE_ID = NodeId.of(Long.MAX_VALUE);
 
     private static final Logger logger = LogManager.getLogger(SavedStateMetadata.class);
 
@@ -147,7 +147,7 @@ public record SavedStateMetadata(
                 parsePrimitiveLong(data, MINIMUM_GENERATION_NON_ANCIENT),
                 parseNonNullString(data, SOFTWARE_VERSION),
                 parseNonNullInstant(data, WALL_CLOCK_TIME),
-                new NodeId(parsePrimitiveLong(data, NODE_ID)),
+                NodeId.of(parsePrimitiveLong(data, NODE_ID)),
                 parseNodeIdList(data, SIGNING_NODES),
                 parsePrimitiveLong(data, SIGNING_WEIGHT_SUM),
                 parsePrimitiveLong(data, TOTAL_WEIGHT));
@@ -485,7 +485,7 @@ public record SavedStateMetadata(
 
         for (final String part : parts) {
             try {
-                list.add(new NodeId(Long.parseLong(part.strip())));
+                list.add(NodeId.of(Long.parseLong(part.strip())));
             } catch (final NumberFormatException e) {
                 throwInvalidRequiredField(field, value, e);
                 return null;

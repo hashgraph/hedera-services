@@ -17,6 +17,7 @@
 package com.hedera.node.app.workflows.standalone.impl;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
+import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.NODE;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.USER;
 import static com.hedera.node.app.workflows.handle.HandleWorkflow.initializeBuilderInfo;
 import static com.hedera.node.app.workflows.handle.dispatch.ChildDispatchFactory.NO_OP_KEY_VERIFIER;
@@ -74,6 +75,7 @@ import com.swirlds.state.spi.info.NetworkInfo;
 import com.swirlds.state.spi.info.NodeInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
+import java.util.List;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -209,10 +211,14 @@ public class StandaloneDispatchFactory {
                 preHandleResult.getHollowAccounts(),
                 dispatchHandleContext,
                 stack,
-                USER,
+                getTxnCategory(preHandleResult),
                 tokenContext,
                 preHandleResult,
                 HandleContext.ConsensusThrottling.ON);
+    }
+
+    public static HandleContext.TransactionCategory getTxnCategory(final PreHandleResult preHandleResult) {
+        return requireNonNull(preHandleResult.txInfo()).signatureMap().sigPair().isEmpty() ? NODE : USER;
     }
 
     private ConsensusTransaction consensusTransactionFor(@NonNull final TransactionBody transactionBody) {
@@ -230,7 +236,7 @@ public class StandaloneDispatchFactory {
     }
 
     private NodeInfo creatorInfoFor(@NonNull final TransactionBody transactionBody) {
-        return new NodeInfoImpl(0, transactionBody.nodeAccountIDOrThrow(), 0, "", -1, "", -1, "", "", Bytes.EMPTY, "");
+        return new NodeInfoImpl(0, transactionBody.nodeAccountIDOrThrow(), 0, List.of(), Bytes.EMPTY);
     }
 
     private PreHandleResult temporaryPreHandleResult() {

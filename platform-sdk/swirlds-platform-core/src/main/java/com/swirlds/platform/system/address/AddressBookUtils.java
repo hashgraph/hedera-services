@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.system.address;
 
+import static com.swirlds.base.utility.NetworkUtils.isNameResolvable;
 import static com.swirlds.platform.util.BootstrapUtils.detectSoftwareUpgrade;
 
 import com.hedera.hapi.node.base.ServiceEndpoint;
@@ -32,8 +33,6 @@ import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.system.SoftwareVersion;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.net.InetAddress;
-import java.net.UnknownHostException;
 import java.security.cert.CertificateEncodingException;
 import java.text.ParseException;
 import java.util.ArrayList;
@@ -58,13 +57,10 @@ import java.util.regex.Pattern;
  *     <li>memo field (optional)</li>
  * </ul>
  * Example: `address, 22, node22, node22, 1, 10.10.11.12, 5060, 212.25.36.123, 5060, memo for node 22`
- * <p>
- * The last line of the config.txt address book contains the nextNodeId value in the form of: `nextNodeId, 23`
  */
 public class AddressBookUtils {
 
     public static final String ADDRESS_KEYWORD = "address";
-    public static final String NEXT_NODE_ID_KEYWORD = "nextNodeId";
     private static final Pattern IPV4_ADDRESS_PATTERN =
             Pattern.compile("^((25[0-5]|(2[0-4]|1\\d|[1-9]|)\\d)\\.?\\b){4}$");
 
@@ -97,8 +93,7 @@ public class AddressBookUtils {
                     address.getPortExternal() + (hasMemo ? "," : ""),
                     memo);
         }
-        final String addresses = table.render();
-        return addresses + "\n" + NEXT_NODE_ID_KEYWORD + ", " + addressBook.getNextNodeId();
+        return table.render();
     }
 
     /**
@@ -112,7 +107,6 @@ public class AddressBookUtils {
     public static AddressBook parseAddressBookText(@NonNull final String addressBookText) throws ParseException {
         Objects.requireNonNull(addressBookText, "The addressBookText must not be null.");
         final AddressBook addressBook = new AddressBook();
-        boolean nextNodeIdParsed = false;
         for (final String line : addressBookText.split("\\r?\\n")) {
             final String trimmedLine = line.trim();
             if (trimmedLine.isEmpty()
@@ -126,59 +120,18 @@ public class AddressBookUtils {
                 if (address != null) {
                     addressBook.add(address);
                 }
-            } else if (trimmedLine.startsWith(NEXT_NODE_ID_KEYWORD)) {
-                final NodeId nodeId = parseNextNodeId(trimmedLine);
-                addressBook.setNextNodeId(nodeId);
-                nextNodeIdParsed = true;
+            } else if (trimmedLine.startsWith("nextNodeId")) {
+                // As of release 0.56, nextNodeId is not used and ignored.
+                // CI/CD pipelines need to be updated to remove this field from files.
+                // Future Work: remove this case and hard fail when nextNodeId is no longer present in CI/CD pipelines.
             } else {
                 throw new ParseException(
-                        "The line [%s] does not start with `%s` or `%s`."
-                                .formatted(
-                                        line.substring(0, Math.min(line.length(), 30)),
-                                        ADDRESS_KEYWORD,
-                                        NEXT_NODE_ID_KEYWORD),
+                        "The line [%s] does not start with `%s`."
+                                .formatted(line.substring(0, Math.min(line.length(), 30)), ADDRESS_KEYWORD),
                         0);
             }
         }
-        if (!nextNodeIdParsed) {
-            throw new ParseException("The address book text does not contain a `nextNodeId` line.", 0);
-        }
         return addressBook;
-    }
-
-    /**
-     * Parse the next available node id from a single line of text.  The line must start with the keyword `nextNodeId`
-     * followed by a comma and then the node id.  The node id must be a positive integer greater than all nodeIds in the
-     * address book.
-     *
-     * @param nextNodeId the text to parse.
-     * @return the parsed node id.
-     * @throws ParseException if there is any problem with parsing the node id.
-     */
-    @NonNull
-    public static NodeId parseNextNodeId(@NonNull final String nextNodeId) throws ParseException {
-        Objects.requireNonNull(nextNodeId, "The nextNodeId must not be null.");
-        final String[] parts = nextNodeId.split(",");
-        if (parts.length != 2) {
-            throw new ParseException(
-                    "The nextNodeId [%s] does not have exactly 2 comma separated parts.".formatted(nextNodeId), 0);
-        }
-        if (!parts[0].trim().equals(NEXT_NODE_ID_KEYWORD)) {
-            throw new ParseException(
-                    "The nextNodeId [%s] does not start with the keyword `nextNodeId`.".formatted(nextNodeId), 0);
-        }
-        final String nodeIdText = parts[1].trim();
-        try {
-            final long nodeId = Long.parseLong(nodeIdText);
-            if (nodeId < 0) {
-                throw new ParseException(
-                        "The nextNodeId [%s] does not have a positive integer node id.".formatted(nextNodeId), 1);
-            }
-            return new NodeId(nodeId);
-        } catch (final NumberFormatException e) {
-            throw new ParseException(
-                    "The nextNodeId [%s] does not have a positive integer node id.".formatted(nextNodeId), 1);
-        }
     }
 
     /**
@@ -214,7 +167,7 @@ public class AddressBookUtils {
         }
         final NodeId nodeId;
         try {
-            nodeId = new NodeId(Long.parseLong(parts[1]));
+            nodeId = NodeId.of(Long.parseLong(parts[1]));
         } catch (final Exception e) {
             throw new ParseException("Cannot parse node id from '" + parts[1] + "'", 1);
         }
@@ -228,11 +181,8 @@ public class AddressBookUtils {
         }
         // FQDN Support: The original string value is preserved, whether it is an IP Address or a FQDN.
         final String internalHostname = parts[5];
-        try {
-            // validate that an InetAddress can be created from the internal hostname.
-            InetAddress.getByName(internalHostname);
-        } catch (UnknownHostException e) {
-            throw new ParseException("Cannot parse ip address from '" + parts[5] + "'", 5);
+        if (!isNameResolvable(internalHostname)) {
+            throw new ParseException("Cannot parse ip address from '" + internalHostname + "'", 5);
         }
         final int internalPort;
         try {
@@ -242,11 +192,8 @@ public class AddressBookUtils {
         }
         // FQDN Support: The original string value is preserved, whether it is an IP Address or a FQDN.
         final String externalHostname = parts[7];
-        try {
-            // validate that an InetAddress can be created from the external hostname.
-            InetAddress.getByName(externalHostname);
-        } catch (UnknownHostException e) {
-            throw new ParseException("Cannot parse ip address from '" + parts[7] + "'", 7);
+        if (!isNameResolvable(externalHostname)) {
+            throw new ParseException("Cannot parse ip address from '" + externalHostname + "'", 7);
         }
         final int externalPort;
         try {
@@ -282,9 +229,6 @@ public class AddressBookUtils {
     public static void verifyReconnectAddressBooks(
             @NonNull final AddressBook addressBook1, @NonNull final AddressBook addressBook2)
             throws IllegalStateException {
-        if (!addressBook1.getNextNodeId().equals(addressBook2.getNextNodeId())) {
-            throw new IllegalStateException("The next node ids are not the same.");
-        }
         final int addressCount = addressBook1.getSize();
         if (addressCount != addressBook2.getSize()) {
             throw new IllegalStateException("The address books do not have the same number of addresses.");
@@ -380,13 +324,15 @@ public class AddressBookUtils {
                 .gossipEndpoint(serviceEndpoints)
                 .build();
     }
+
     /**
      * Initializes the address book from the configuration and platform saved state.
-     * @param selfId the node ID of the current node
-     * @param version the software version of the current node
-     * @param initialState the initial state of the platform
+     *
+     * @param selfId               the node ID of the current node
+     * @param version              the software version of the current node
+     * @param initialState         the initial state of the platform
      * @param bootstrapAddressBook the bootstrap address book
-     * @param platformContext the platform context
+     * @param platformContext      the platform context
      * @return the initialized address book
      */
     public static @NonNull AddressBook initializeAddressBook(

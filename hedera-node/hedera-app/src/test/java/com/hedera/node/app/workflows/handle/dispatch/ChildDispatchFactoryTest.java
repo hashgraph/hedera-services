@@ -17,6 +17,7 @@
 package com.hedera.node.app.workflows.handle.dispatch;
 
 import static com.hedera.hapi.node.base.HederaFunctionality.CONTRACT_CALL;
+import static com.hedera.node.app.fixtures.AppTestBase.DEFAULT_CONFIG;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -39,6 +40,7 @@ import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.hapi.util.UnknownHederaFunctionality;
+import com.hedera.node.app.blocks.BlockItemsTranslator;
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.fees.FeeManager;
 import com.hedera.node.app.service.token.ReadableAccountStore;
@@ -137,6 +139,9 @@ class ChildDispatchFactoryTest {
     @Mock
     private ExchangeRateManager exchangeRateManager;
 
+    @Mock
+    private BlockItemsTranslator recordTranslator;
+
     private ChildDispatchFactory subject;
 
     private static final AccountID payerId =
@@ -182,12 +187,13 @@ class ChildDispatchFactoryTest {
 
     @Test
     void keyVerifierWithNullCallbackIsNoOp() {
-        assertThat(ChildDispatchFactory.getKeyVerifier(null)).isInstanceOf(ChildDispatchFactory.NoOpKeyVerifier.class);
+        assertThat(ChildDispatchFactory.getKeyVerifier(null, DEFAULT_CONFIG))
+                .isInstanceOf(ChildDispatchFactory.NoOpKeyVerifier.class);
     }
 
     @Test
     void keyVerifierOnlySupportsKeyVerification() {
-        final var derivedVerifier = ChildDispatchFactory.getKeyVerifier(verifierCallback);
+        final var derivedVerifier = ChildDispatchFactory.getKeyVerifier(verifierCallback, DEFAULT_CONFIG);
         assertThatThrownBy(() -> derivedVerifier.verificationFor(Key.DEFAULT, assistant))
                 .isInstanceOf(UnsupportedOperationException.class);
         assertThatThrownBy(() -> derivedVerifier.verificationFor(Bytes.EMPTY))
@@ -197,14 +203,14 @@ class ChildDispatchFactoryTest {
 
     @Test
     void keyVerifierPassesImmediatelyGivenTrueCallback() {
-        final var derivedVerifier = ChildDispatchFactory.getKeyVerifier(verifierCallback);
+        final var derivedVerifier = ChildDispatchFactory.getKeyVerifier(verifierCallback, DEFAULT_CONFIG);
         given(verifierCallback.test(AN_ED25519_KEY)).willReturn(true);
         assertThat(derivedVerifier.verificationFor(AN_ED25519_KEY).passed()).isTrue();
     }
 
     @Test
     void keyVerifierUsesDelegateIfNotImmediatePass() {
-        final var derivedVerifier = ChildDispatchFactory.getKeyVerifier(verifierCallback);
+        final var derivedVerifier = ChildDispatchFactory.getKeyVerifier(verifierCallback, DEFAULT_CONFIG);
         given(verifierCallback.test(A_THRESHOLD_KEY)).willReturn(false);
         given(verifierCallback.test(AN_ED25519_KEY)).willReturn(true);
         assertThat(derivedVerifier.verificationFor(A_THRESHOLD_KEY).passed()).isTrue();
@@ -212,9 +218,10 @@ class ChildDispatchFactoryTest {
 
     @Test
     void keyVerifierDetectsNoPass() {
-        final var derivedVerifier = ChildDispatchFactory.getKeyVerifier(verifierCallback);
+        final var derivedVerifier = ChildDispatchFactory.getKeyVerifier(verifierCallback, DEFAULT_CONFIG);
         assertThat(derivedVerifier.verificationFor(A_THRESHOLD_KEY).passed()).isFalse();
-        verify(verifierCallback).test(A_THRESHOLD_KEY);
+        verify(verifierCallback).test(AN_ED25519_KEY);
+        verify(verifierCallback).test(A_CONTRACT_ID_KEY);
     }
 
     @Test

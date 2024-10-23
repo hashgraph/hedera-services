@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.token.records;
 
+import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.record.StreamBuilder;
@@ -74,14 +75,16 @@ public interface TokenContext {
      * Adds a preceding child record builder to the list of record builders. If the current {@link HandleContext} (or
      * any parent context) is rolled back, all child record builders will be reverted.
      *
-     * @param recordBuilderClass the record type
      * @param <T> the record type
+     * @param recordBuilderClass the record type
+     * @param functionality the functionality of the record
      * @return the new child record builder
      * @throws NullPointerException if {@code recordBuilderClass} is {@code null}
      * @throws IllegalArgumentException if the record builder type is unknown to the app
      */
     @NonNull
-    <T extends StreamBuilder> T addPrecedingChildRecordBuilder(@NonNull Class<T> recordBuilderClass);
+    <T extends StreamBuilder> T addPrecedingChildRecordBuilder(
+            @NonNull Class<T> recordBuilderClass, @NonNull HederaFunctionality functionality);
 
     /**
      * Returns the set of all known node ids, including ids that may no longer be active.

@@ -80,7 +80,7 @@ public abstract class AbstractNativeSystemContract extends AbstractFullContract 
             return haltResult(PRECOMPILE_ERROR, frame.getRemainingGas());
         }
         final Call call;
-        final AbstractCallAttempt attempt;
+        final AbstractCallAttempt<?> attempt;
         try {
             validateTrue(input.size() >= FUNCTION_SELECTOR_LENGTH, INVALID_TRANSACTION_BODY);
             attempt = callFactory.createCallAttemptFrom(input, callType, frame);
@@ -100,7 +100,7 @@ public abstract class AbstractNativeSystemContract extends AbstractFullContract 
 
     @SuppressWarnings({"java:S2637", "java:S2259"}) // this function is going to be refactored soon.
     private static FullResult resultOfExecuting(
-            @NonNull final AbstractCallAttempt attempt,
+            @NonNull final AbstractCallAttempt<?> attempt,
             @NonNull final Call call,
             @NonNull final Bytes input,
             @NonNull final MessageFrame frame,
@@ -164,7 +164,7 @@ public abstract class AbstractNativeSystemContract extends AbstractFullContract 
             final long gasRequirement,
             @NonNull final Bytes input,
             @NonNull final Bytes output,
-            @NonNull final AbstractCallAttempt attempt,
+            @NonNull final AbstractCallAttempt<?> attempt,
             @NonNull final ResponseCodeEnum status,
             @NonNull final HederaWorldUpdater.Enhancement enhancement,
             @NonNull final ContractID contractID) {

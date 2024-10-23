@@ -134,7 +134,6 @@ public class StreamBuilderTest {
                 .scheduleRef(scheduleRef)
                 .assessedCustomFees(assessedCustomFees)
                 .automaticTokenAssociations(automaticTokenAssociations)
-                .alias(alias)
                 .ethereumHash(ethereumHash)
                 .paidStakingRewards(paidStakingRewards)
                 .evmAddress(evmAddress)
@@ -207,7 +206,6 @@ public class StreamBuilderTest {
         assertEquals(
                 HapiUtils.asTimestamp(PARENT_CONSENSUS_TIME),
                 singleTransactionRecord.transactionRecord().parentConsensusTimestamp());
-        assertEquals(alias, singleTransactionRecord.transactionRecord().alias());
         assertEquals(ethereumHash, singleTransactionRecord.transactionRecord().ethereumHash());
         assertEquals(
                 paidStakingRewards, singleTransactionRecord.transactionRecord().paidStakingRewards());

@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.blocks.impl;
 
+import static com.swirlds.state.spi.HapiUtils.asAccountString;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.block.stream.schema.BlockSchema;
@@ -24,9 +25,9 @@ import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.BlockStreamConfig;
 import com.hedera.pbj.runtime.ProtoConstants;
 import com.hedera.pbj.runtime.ProtoWriterTools;
-import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.hedera.pbj.runtime.io.stream.WritableStreamingData;
-import com.swirlds.state.spi.info.SelfNodeInfo;
+import com.swirlds.state.spi.info.NodeInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.BufferedOutputStream;
 import java.io.IOException;
@@ -86,7 +87,7 @@ public class FileBlockItemWriter implements BlockItemWriter {
      */
     public FileBlockItemWriter(
             @NonNull final ConfigProvider configProvider,
-            @NonNull final SelfNodeInfo nodeInfo,
+            @NonNull final NodeInfo nodeInfo,
             @NonNull final FileSystem fileSystem) {
         requireNonNull(configProvider, "The supplied argument 'configProvider' cannot be null!");
         requireNonNull(nodeInfo, "The supplied argument 'nodeInfo' cannot be null!");
@@ -99,7 +100,7 @@ public class FileBlockItemWriter implements BlockItemWriter {
 
         // Compute directory for block files
         final Path blockDir = fileSystem.getPath(blockStreamConfig.blockFileDir());
-        nodeScopedBlockDir = blockDir.resolve("block-" + nodeInfo.memo());
+        nodeScopedBlockDir = blockDir.resolve("block-" + asAccountString(nodeInfo.accountId()));
 
         // Create parent directories if needed for the record file itself.
         try {
@@ -110,9 +111,6 @@ public class FileBlockItemWriter implements BlockItemWriter {
         }
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public void openBlock(long blockNumber) {
         if (state == State.OPEN) throw new IllegalStateException("Cannot initialize a FileBlockItemWriter twice");
@@ -152,13 +150,9 @@ public class FileBlockItemWriter implements BlockItemWriter {
         state = State.OPEN;
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
-    public FileBlockItemWriter writeItem(@NonNull Bytes serializedItem) {
-        requireNonNull(serializedItem, "The supplied argument 'serializedItem' cannot be null!");
-        if (serializedItem.length() <= 0) throw new IllegalArgumentException("Item must be non-empty");
+    public FileBlockItemWriter writeItem(@NonNull final byte[] bytes) {
+        requireNonNull(bytes);
         if (state != State.OPEN) {
             throw new IllegalStateException(
                     "Cannot write to a FileBlockItemWriter that is not open for block: " + this.blockNumber);
@@ -167,15 +161,23 @@ public class FileBlockItemWriter implements BlockItemWriter {
         // Write the ITEMS tag.
         ProtoWriterTools.writeTag(writableStreamingData, BlockSchema.ITEMS, ProtoConstants.WIRE_TYPE_DELIMITED);
         // Write the length of the item.
-        writableStreamingData.writeVarInt((int) serializedItem.length(), false);
+        writableStreamingData.writeVarInt(bytes.length, false);
         // Write the item bytes themselves.
-        serializedItem.writeTo(writableStreamingData);
+        writableStreamingData.writeBytes(bytes);
         return this;
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    @Override
+    public BlockItemWriter writeItems(@NonNull final BufferedData data) {
+        requireNonNull(data);
+        if (state != State.OPEN) {
+            throw new IllegalStateException(
+                    "Cannot write to a FileBlockItemWriter that is not open for block: " + this.blockNumber);
+        }
+        writableStreamingData.writeBytes(data);
+        return this;
+    }
+
     @Override
     public void closeBlock() {
         if (state.ordinal() < State.OPEN.ordinal()) {

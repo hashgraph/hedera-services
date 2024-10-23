@@ -24,7 +24,7 @@ import com.hedera.node.app.records.impl.producers.formats.v6.BlockRecordWriterV6
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.BlockRecordStreamConfig;
 import com.swirlds.common.stream.Signer;
-import com.swirlds.state.spi.info.SelfNodeInfo;
+import com.swirlds.state.spi.info.NodeInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.nio.file.FileSystem;
 import javax.inject.Inject;
@@ -34,7 +34,7 @@ import javax.inject.Singleton;
 public class BlockRecordWriterFactoryImpl implements BlockRecordWriterFactory {
     private final ConfigProvider configProvider;
     private final Signer signer;
-    private final SelfNodeInfo nodeInfo;
+    private final NodeInfo selfNodeInfo;
     private final FileSystem fileSystem;
 
     /**
@@ -46,12 +46,12 @@ public class BlockRecordWriterFactoryImpl implements BlockRecordWriterFactory {
     @Inject
     public BlockRecordWriterFactoryImpl(
             @NonNull final ConfigProvider configProvider,
-            @NonNull final SelfNodeInfo nodeInfo,
+            @NonNull final NodeInfo selfNodeInfo,
             @NonNull final Signer signer,
             @NonNull final FileSystem fileSystem) {
         this.configProvider = requireNonNull(configProvider);
         this.fileSystem = requireNonNull(fileSystem);
-        this.nodeInfo = requireNonNull(nodeInfo);
+        this.selfNodeInfo = requireNonNull(selfNodeInfo);
         this.signer = requireNonNull(signer);
     }
 
@@ -66,7 +66,7 @@ public class BlockRecordWriterFactoryImpl implements BlockRecordWriterFactory {
         return switch (recordFileVersion) {
             case 6 -> new BlockRecordWriterV6(
                     configProvider.getConfiguration().getConfigData(BlockRecordStreamConfig.class),
-                    nodeInfo,
+                    selfNodeInfo,
                     signer,
                     fileSystem);
             case 7 -> throw new IllegalArgumentException("Record file version 7 is not yet supported");
