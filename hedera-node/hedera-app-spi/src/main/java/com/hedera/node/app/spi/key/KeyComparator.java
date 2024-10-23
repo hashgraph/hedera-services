@@ -30,10 +30,10 @@ import java.util.List;
  * <br>These include maps, sets, lists, arrays, etc...
  * <br>The methods in this class are used in hot spot code, so allocation must be kept to a bare
  * minimum, and anything likely to have performance questions should be avoided.
- * <br>Note that comparing keys is unavoidably costly.  We try to exit as early as possible throughout
- * this class, but worst case we're comparing every simple key byte-by-byte for the entire tree, which
- * may be up to 15 levels deep with any number of keys per level.  We haven't seen a key with
- * several million "simple" keys included, but that does not mean nobody will create one.
+ * <br>Note that comparing keys can be fairly costly, as in principle a key structure can have a
+ * serialized size up to about {@code TransactionConfig#transactionMaxBytes()}. We try to exit as
+ * early as possible throughout this class, but worst case we're comparing every simple key
+ * byte-by-byte for the entire tree.
  */
 public class KeyComparator implements Comparator<Key> {
     @Override

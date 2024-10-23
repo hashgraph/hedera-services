@@ -92,7 +92,7 @@ import java.util.stream.Stream;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
-public class ScheduleCreateSpecs {
+public class ScheduleCreateTest {
     @HapiTest
     final Stream<DynamicTest> aliasNotAllowedAsPayer() {
         return defaultHapiSpec("BodyAndPayerCreation")
@@ -164,7 +164,7 @@ public class ScheduleCreateSpecs {
                 .then(getScheduleInfo(VALID_SCHEDULE)
                         .hasScheduleId(VALID_SCHEDULE)
                         .hasRecordedScheduledTxn()
-                        .hasSignatories(SENDER));
+                        .hasSignatories(DEFAULT_PAYER, SENDER));
     }
 
     @HapiTest
