@@ -96,6 +96,7 @@ public class ReadableNodeStoreImpl implements ReadableNodeStore {
                     .weight(nodeDetail.weight())
                     .gossipCaCertificate(nodeDetail.gossipCaCertificate())
                     .gossipEndpoint(nodeDetail.serviceEndpoint())
+                    .tssEncryptionKey(nodeDetail.tssEncryptionKey())
                     .build();
             rosterEntries.add(entry);
         }
