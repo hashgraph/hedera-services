@@ -69,7 +69,6 @@ jobs:
         run: cat "${BRANCH_LIST_FILE}"
 
       - name: Install Github CLI
-        if: ${{ !github.event.workflow_dispatch.repository.fork }}
         env:
           GITHUB_TOKEN: ${{ secrets.PLATFORM_access-token }}
         run: |
@@ -78,7 +77,6 @@ jobs:
           rm -rf gh_2.12.1_linux_amd64.deb
 
       - name: Launch JRS Jobs
-        if: ${{ !github.event.workflow_dispatch.repository.fork }}
         env:
           GITHUB_TOKEN: ${{ secrets.PLATFORM_GH_ACCESS_TOKEN }}
         run: |

@@ -47,7 +47,6 @@ jobs:
   release-adhoc:
     name: Release [Adhoc]
     uses: ./.github/workflows/node-zxc-build-release-artifact.yaml
-    if: ${{ github.event_name == 'workflow_dispatch' }}
     with:
       version-policy: branch-commit
       trigger-env-deploy: none

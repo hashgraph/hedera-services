@@ -47,7 +47,6 @@ concurrency:
 jobs:
   SimilarStake:
     name: SimilarStake
-    if: ${{ !github.event.workflow_dispatch.repository.fork }}
     uses: ./.github/workflows/zxc-jrs-regression.yaml
     with:
       ref: ${{ github.event.inputs.ref }}
@@ -84,7 +83,7 @@ jobs:
       grafana-agent-password: ${{ secrets.GRAFANA_AGENT_PASSWORD }}
     needs:
       - SimilarStake
-    if: ${{ !cancelled() && always() && !github.event.workflow_dispatch.repository.fork }}
+    if: ${{ !cancelled() && always() }}
   MinStake:
     name: MinStake
     uses: ./.github/workflows/zxc-jrs-regression.yaml
@@ -105,4 +104,4 @@ jobs:
       grafana-agent-password: ${{ secrets.GRAFANA_AGENT_PASSWORD }}
     needs:
       - UnevenStake
-    if: ${{ !cancelled() && always() && !github.event.workflow_dispatch.repository.fork }}
+    if: ${{ !cancelled() && always() }}

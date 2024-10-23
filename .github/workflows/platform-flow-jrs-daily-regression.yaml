@@ -34,7 +34,6 @@ defaults:
 jobs:
   interval-02:
     name: Interval 2
-    if: ${{ !github.event.workflow_dispatch.repository.fork }}
     uses: ./.github/workflows/platform-zxc-launch-jrs-workflow.yaml
     with:
       ref: ${{ github.event.inputs.ref || github.sha }}
@@ -46,7 +45,6 @@ jobs:
 
   interval-03:
     name: Interval 3
-    if: ${{ !github.event.workflow_dispatch.repository.fork }}
     uses: ./.github/workflows/platform-zxc-launch-jrs-workflow.yaml
     needs:
       - interval-02
@@ -60,7 +58,6 @@ jobs:
 
   interval-04:
     name: Interval 4
-    if: ${{ !github.event.workflow_dispatch.repository.fork }}
     uses: ./.github/workflows/platform-zxc-launch-jrs-workflow.yaml
     needs:
       - interval-03
@@ -74,7 +71,6 @@ jobs:
 
   interval-05:
     name: Interval 5
-    if: ${{ !github.event.workflow_dispatch.repository.fork }}
     uses: ./.github/workflows/platform-zxc-launch-jrs-workflow.yaml
     needs:
       - interval-04
@@ -88,7 +84,6 @@ jobs:
 
   interval-06:
     name: Interval 6
-    if: ${{ !github.event.workflow_dispatch.repository.fork }}
     uses: ./.github/workflows/platform-zxc-launch-jrs-workflow.yaml
     needs:
       - interval-05

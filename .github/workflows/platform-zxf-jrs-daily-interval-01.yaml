@@ -47,7 +47,6 @@ concurrency:
 jobs:
   basic:
     name: Basic
-    if: ${{ !github.event.workflow_dispatch.repository.fork }}
     uses: ./.github/workflows/zxc-jrs-regression.yaml
     with:
       ref: ${{ github.event.inputs.ref }}
@@ -82,7 +81,7 @@ jobs:
       gradle-cache-password: ${{ secrets.GRADLE_CACHE_PASSWORD }}
       grafana-agent-username: ${{ secrets.GRAFANA_AGENT_USERNAME }}
       grafana-agent-password: ${{ secrets.GRAFANA_AGENT_PASSWORD }}
-    if: ${{ !cancelled() && always() && !github.event.workflow_dispatch.repository.fork }}
+    if: ${{ !cancelled() && always() }}
   misc:
     name: Misc
     uses: ./.github/workflows/zxc-jrs-regression.yaml
@@ -101,7 +100,7 @@ jobs:
       gradle-cache-password: ${{ secrets.GRADLE_CACHE_PASSWORD }}
       grafana-agent-username: ${{ secrets.GRAFANA_AGENT_USERNAME }}
       grafana-agent-password: ${{ secrets.GRAFANA_AGENT_PASSWORD }}
-    if: ${{ !cancelled() && always() && !github.event.workflow_dispatch.repository.fork }}
+    if: ${{ !cancelled() && always() }}
   hotspot:
     name: Hotspot
     uses: ./.github/workflows/zxc-jrs-regression.yaml
@@ -122,4 +121,4 @@ jobs:
       grafana-agent-password: ${{ secrets.GRAFANA_AGENT_PASSWORD }}
     needs:
       - misc
-    if: ${{ !cancelled() && always() && !github.event.workflow_dispatch.repository.fork }}
+    if: ${{ !cancelled() && always() }}

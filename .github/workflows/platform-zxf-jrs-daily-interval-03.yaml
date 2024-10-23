@@ -61,7 +61,8 @@ jobs:
       gradle-cache-password: ${{ secrets.GRADLE_CACHE_PASSWORD }}
       grafana-agent-username: ${{ secrets.GRAFANA_AGENT_USERNAME }}
       grafana-agent-password: ${{ secrets.GRAFANA_AGENT_PASSWORD }}
-    if: ${{ !cancelled() && always() && !github.event.workflow_dispatch.repository.fork }}
+    if: ${{ !cancelled() && always() }}
+
   vmerkle-1n:
     name: VMerkle-1N
     uses: ./.github/workflows/zxc-jrs-regression.yaml
@@ -80,4 +81,3 @@ jobs:
       gradle-cache-password: ${{ secrets.GRADLE_CACHE_PASSWORD }}
       grafana-agent-username: ${{ secrets.GRAFANA_AGENT_USERNAME }}
       grafana-agent-password: ${{ secrets.GRAFANA_AGENT_PASSWORD }}
-    if: ${{ !github.event.workflow_dispatch.repository.fork }}

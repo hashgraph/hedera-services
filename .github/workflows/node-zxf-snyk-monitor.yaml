@@ -68,12 +68,10 @@ jobs:
       - name: Setup Snyk
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-        if: ${{ !github.event.workflow_dispatch.repository.fork }}
         run: npm install -g snyk
 
       - name: Run Snyk Monitor
         continue-on-error: true
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-        if: ${{ !github.event.workflow_dispatch.repository.fork }}
         run: snyk monitor --all-sub-projects --policy-path=.snyk --trust-policies

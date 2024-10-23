@@ -34,7 +34,6 @@ defaults:
 jobs:
   interval-01:
     name: Interval 1
-    if: ${{ !github.event.workflow_dispatch.repository.fork }}
     uses: ./.github/workflows/platform-zxc-launch-jrs-workflow.yaml
     with:
       ref: ${{ github.event.inputs.ref || github.sha }}
