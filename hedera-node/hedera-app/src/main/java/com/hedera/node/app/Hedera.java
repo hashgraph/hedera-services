@@ -77,7 +77,7 @@ import com.hedera.node.app.info.CurrentPlatformStatusImpl;
 import com.hedera.node.app.info.GenesisNetworkInfo;
 import com.hedera.node.app.info.StateNetworkInfo;
 import com.hedera.node.app.records.BlockRecordService;
-import com.hedera.node.app.roster.RosterServiceImpl;
+import com.hedera.node.app.roster.RosterService;
 import com.hedera.node.app.service.addressbook.impl.AddressBookServiceImpl;
 import com.hedera.node.app.service.consensus.impl.ConsensusServiceImpl;
 import com.hedera.node.app.service.contract.impl.ContractServiceImpl;
@@ -115,6 +115,7 @@ import com.hedera.node.config.data.NetworkAdminConfig;
 import com.hedera.node.config.data.VersionConfig;
 import com.hedera.node.config.types.StreamMode;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.common.RosterStateId;
 import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
@@ -401,7 +402,7 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
                         new CongestionThrottleService(),
                         new NetworkServiceImpl(),
                         new AddressBookServiceImpl(),
-                        new RosterServiceImpl(),
+                        new RosterService(),
                         PLATFORM_STATE_SERVICE)
                 .forEach(servicesRegistry::register);
         try {
@@ -488,7 +489,7 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
         final var deserializedVersion = serviceMigrator.creationVersionOf(state);
         return serviceMigrator.doMigrations(
                 state,
-                servicesRegistry.subRegistryFor(EntityIdService.NAME, PlatformStateService.NAME),
+                servicesRegistry.subRegistryFor(EntityIdService.NAME, PlatformStateService.NAME, RosterStateId.NAME),
                 deserializedVersion == null ? null : new ServicesSoftwareVersion(deserializedVersion),
                 version,
                 bootstrapConfigProvider.getConfiguration(),
@@ -597,7 +598,6 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
             final var readableStore =
                     new ReadablePlatformStateStore(state.getReadableStates(PlatformStateService.NAME));
             final var genesisRoster = createRoster(requireNonNull(readableStore.getAddressBook()));
-
             genesisNetworkInfo = new GenesisNetworkInfo(genesisRoster, ledgerConfig.id());
         }
         final List<StateChanges.Builder> migrationStateChanges = new ArrayList<>();

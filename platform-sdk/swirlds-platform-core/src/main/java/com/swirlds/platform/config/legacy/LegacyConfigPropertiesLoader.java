@@ -125,6 +125,11 @@ public final class LegacyConfigPropertiesLoader {
                                 onError(ERROR_ADDRESS_NOT_ENOUGH_PARAMETERS);
                             }
                         }
+                        case "nextnodeid" -> {
+                            // As of release 0.56, nextNodeId is not used and ignored.
+                            // CI/CD pipelines need to be updated to remove this field from files.
+                            // Future Work: remove this case when nextNodeId is no longer present in CI/CD pipelines.
+                        }
                         default -> onError(ERROR_PROPERTY_NOT_KNOWN.formatted(pars[0]));
                     }
                 }
