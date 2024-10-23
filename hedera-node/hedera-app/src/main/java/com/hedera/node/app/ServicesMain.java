@@ -38,7 +38,9 @@ import static com.swirlds.platform.util.BootstrapUtils.getNodesToRun;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.state.primitives.ProtoBytes;
+import com.hedera.hapi.node.state.roster.LedgerId;
 import com.hedera.hapi.node.state.roster.Roster;
+import com.hedera.hapi.node.state.roster.RosterEntry;
 import com.hedera.hapi.node.state.roster.RosterState;
 import com.hedera.hapi.node.state.roster.RoundRosterPair;
 import com.hedera.node.app.services.OrderedServiceMigrator;
@@ -316,26 +318,50 @@ public class ServicesMain implements SwirldMain {
             return createRoster(diskAddressBook);
         }
 
+        final var activeRoster = getActiveRoster(loadedSignedState);
         final boolean softwareUpgrade = detectSoftwareUpgrade(version, loadedSignedState);
-        final boolean hasOverrideRoster = false;
-        if (softwareUpgrade && hasOverrideRoster) {
-            // TODO: override roster?
-            // https://github.com/hashgraph/hedera-services/blob/develop/platform-sdk/docs/proposals/001-tss-rosters-design-proposal/proposal.md#override-roster
-            return null;
-        } else if (softwareUpgrade && !hasOverrideRoster) {
+        if (softwareUpgrade) {
             // Retrieve the candidate roster
             final var candidateRoster = getCandidateRoster(loadedSignedState);
             final boolean hasBeenKeyed = hasEnoughKeyMaterial(candidateRoster);
             if (!hasBeenKeyed) {
-                return getActiveRoster(loadedSignedState);
+                return activeRoster;
             } else {
-                return candidateRoster;
+                if (hasLedgerId(loadedSignedState)) {
+                    // If there is an existing ledger ID, does the key material match the ledger ID
+                    final LedgerId ledgerId = getLedgerId(activeRoster);
+                    final LedgerId candidateLedgerId = getLedgerId(candidateRoster);
+                    if (ledgerId.equals(candidateLedgerId)) {
+                        // return the candidate roster to be adopted, handled in HandleWorkflow POST_UPGRADE_TRANSACTION
+                        return candidateRoster;
+                    } else {
+                        // if the key material does NOT match the ledger ID:
+                        //   - we can’t adopt the candidate roster; log an exception, and revert to the most
+                        // recent active roster
+                        //   - don’t do anything with the candidate roster, because we expect the system to
+                        // replace it at some point
+                        logger.error("The key material does not match the ledger ID");
+                        return activeRoster;
+                    }
+                } else {
+                    return activeRoster;
+                }
             }
-        } else if (!softwareUpgrade && !hasOverrideRoster) {
-            return getActiveRoster(loadedSignedState);
         } else {
-            throw new IllegalStateException("Invalid state");
+            return activeRoster;
         }
+    }
+
+    private static boolean hasLedgerId(SignedState loadedSignedState) {
+        return false;
+    }
+
+    private static @NonNull LedgerId getLedgerId(Roster activeRoster) {
+        final List<Bytes> tssEncryptionKeys = activeRoster.rosterEntries().stream()
+                .map(RosterEntry::tssEncryptionKey)
+                .toList();
+        // TODO: if enough keys, aggregate them to produce the ledger id, otherwise return null
+        return null;
     }
 
     // TODO: Check that we have enough key material, i.e. check that there are enough votes and that the TSS messages in

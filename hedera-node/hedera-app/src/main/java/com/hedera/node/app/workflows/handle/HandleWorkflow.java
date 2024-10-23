@@ -47,6 +47,7 @@ import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.state.blockrecords.BlockInfo;
+import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.hapi.node.transaction.ExchangeRateSet;
 import com.hedera.hapi.util.HapiUtils;
 import com.hedera.node.app.blocks.BlockStreamManager;
@@ -77,6 +78,7 @@ import com.hedera.node.app.state.recordcache.LegacyListRecordSource;
 import com.hedera.node.app.store.WritableStoreFactory;
 import com.hedera.node.app.throttle.NetworkUtilizationManager;
 import com.hedera.node.app.throttle.ThrottleServiceManager;
+import com.hedera.node.app.tss.TssBaseService;
 import com.hedera.node.app.workflows.OpWorkflowMetrics;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
@@ -148,6 +150,7 @@ public class HandleWorkflow {
     private final KVStateChangeListener kvStateChangeListener;
     private final BoundaryStateChangeListener boundaryStateChangeListener;
     private final List<StateChanges.Builder> migrationStateChanges;
+    private final TssBaseService tssBaseService;
 
     // The last second since the epoch at which the metrics were updated; this does not affect transaction handling
     private long lastMetricUpdateSecond;
@@ -181,7 +184,8 @@ public class HandleWorkflow {
             @NonNull final StakePeriodManager stakePeriodManager,
             @NonNull final KVStateChangeListener kvStateChangeListener,
             @NonNull final BoundaryStateChangeListener boundaryStateChangeListener,
-            @NonNull final List<StateChanges.Builder> migrationStateChanges) {
+            @NonNull final List<StateChanges.Builder> migrationStateChanges,
+            @NonNull final TssBaseService tssBaseService) {
         this.networkInfo = requireNonNull(networkInfo);
         this.nodeStakeUpdates = requireNonNull(nodeStakeUpdates);
         this.authorizer = requireNonNull(authorizer);
@@ -214,6 +218,7 @@ public class HandleWorkflow {
                 .getConfiguration()
                 .getConfigData(BlockStreamConfig.class)
                 .streamMode();
+        this.tssBaseService = requireNonNull(tssBaseService);
     }
 
     /**
@@ -372,6 +377,7 @@ public class HandleWorkflow {
      */
     private HandleOutput execute(@NonNull final UserTxn userTxn) {
         try {
+            final var dispatch = dispatchFor(userTxn);
             if (isOlderSoftwareEvent(userTxn)) {
                 if (streamMode != BLOCKS) {
                     final var lastRecordManagerTime = blockRecordManager.consTimeOfLastHandledTxn();
@@ -410,8 +416,19 @@ public class HandleWorkflow {
                     // C.f. https://github.com/hashgraph/hedera-services/issues/14751,
                     // here we may need to switch the newly adopted candidate roster
                     // in the RosterService state to become the active roster
+
+                    final boolean ledgerIdExist = true;
+                    if (ledgerIdExist) {
+                        // TODO: get candidate roster from state using ReadableRosterStore
+                        final var candidateRoster = new Roster(List.of());
+                        tssBaseService.adopt(candidateRoster);
+                    } else {
+                        // If there is NOT an existing ledger ID, adopt the ledger ID i.e. CREATE a ledger ID and store
+                        // it in state as “the” ledger ID
+                        final var genesisRoster = new Roster(List.of());
+                        tssBaseService.bootstrapLedgerId(genesisRoster, dispatch.handleContext(), ledgerId -> {});
+                    }
                 }
-                final var dispatch = dispatchFor(userTxn);
                 updateNodeStakes(userTxn, dispatch);
                 var lastRecordManagerTime = Instant.EPOCH;
                 if (streamMode != BLOCKS) {
