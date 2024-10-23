@@ -106,7 +106,7 @@ jobs:
         env:
           BUILD_INDEX: ${{ vars.XTS_BUILD_PROMOTION_INDEX }}
         run: |
-          printf -v BUILD_TAG "build-%05d" "${BUILD_INDEX}"
+          BUILD_TAG="$(printf "build-%05d" "${BUILD_INDEX}")"
           git tag --annotate ${BUILD_TAG} --message "chore: tagging commit for build promotion"
           git push --set-upstream origin --tags
           echo "### Build Promotion Tag Information" >> "${GITHUB_STEP_SUMMARY}"
@@ -123,7 +123,7 @@ jobs:
         env:
           NEXT_BUILD_ID: ${{ steps.increment.outputs.value }}
         run: |
-          printf -v NEXT_BUILD_TAG "build-%05d" "${NEXT_BUILD_ID}"
+          NEXT_BUILD_TAG="$(printf "build-%05d" "${NEXT_BUILD_ID}")"
           echo "### Preview Next Build Tag" >> "${GITHUB_STEP_SUMMARY}"
           echo "Next build tag is: ${NEXT_BUILD_TAG}" >> "${GITHUB_STEP_SUMMARY}"
 
