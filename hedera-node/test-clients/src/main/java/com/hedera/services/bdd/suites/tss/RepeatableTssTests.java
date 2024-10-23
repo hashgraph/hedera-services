@@ -52,7 +52,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.IntConsumer;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DynamicTest;
 
 /**
@@ -117,7 +116,6 @@ public class RepeatableTssTests {
     @LeakyRepeatableHapiTest(
             value = {NEEDS_TSS_CONTROL, NEEDS_VIRTUAL_TIME_FOR_FAST_EXECUTION},
             overrides = {"tss.keyCandidateRoster"})
-    @Disabled
     // Need to fix by adding Roster entries to the state before running this test. Will do in next PR
     Stream<DynamicTest> tssMessageSubmittedForRekeyingIsSuccessful() {
         return hapiTest(
@@ -127,6 +125,7 @@ public class RepeatableTssTests {
                 doWithStartupConfig(
                         "staking.periodMins",
                         stakePeriodMins -> waitUntilStartOfNextStakingPeriod(parseLong(stakePeriodMins))),
+
                 // This transaction is now first in a new staking period and should trigger the TSS rekeying process,
                 // in particular a successful TssMessage from the embedded node (and then a TssVote since this is our
                 // placeholder implementation of TssMessageHandler)

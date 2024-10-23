@@ -31,6 +31,7 @@ import com.hedera.hapi.node.state.roster.RosterEntry;
 import com.hedera.node.app.spi.AppContext;
 import com.hedera.node.app.spi.store.StoreFactory;
 import com.hedera.node.app.spi.workflows.HandleContext;
+import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.app.tss.api.TssLibrary;
 import com.swirlds.platform.state.service.WritableRosterStore;
 import java.util.List;
@@ -53,6 +54,9 @@ public class TssBaseServiceTest {
 
     @Mock
     private StoreFactory storeFactory;
+
+    @Mock
+    private ReadableStoreFactory readableStoreFactory;
 
     @Mock
     private WritableRosterStore rosterStore;
@@ -84,7 +88,7 @@ public class TssBaseServiceTest {
         mockWritableRosterStore();
 
         // Attempt to set the same candidate roster
-        subject.setCandidateRoster(CURRENT_CANDIDATE_ROSTER, handleContext);
+        subject.setCandidateRoster(CURRENT_CANDIDATE_ROSTER, handleContext, readableStoreFactory);
         verify(rosterStore, never()).putCandidateRoster(any());
     }
 
@@ -97,7 +101,7 @@ public class TssBaseServiceTest {
         given(storeFactory.writableStore(WritableRosterStore.class)).willReturn(rosterStore);
 
         // Attempt to set the active roster as the new candidate roster
-        subject.setCandidateRoster(ACTIVE_ROSTER, handleContext);
+        subject.setCandidateRoster(ACTIVE_ROSTER, handleContext, readableStoreFactory);
         verify(rosterStore, never()).putCandidateRoster(any());
     }
 
@@ -111,7 +115,7 @@ public class TssBaseServiceTest {
         final var inputRoster = Roster.newBuilder()
                 .rosterEntries(List.of(ROSTER_NODE_1, ROSTER_NODE_2, ROSTER_NODE_3))
                 .build();
-        subject.setCandidateRoster(inputRoster, handleContext);
+        subject.setCandidateRoster(inputRoster, handleContext, readableStoreFactory);
         verify(rosterStore).putCandidateRoster(inputRoster);
     }
 

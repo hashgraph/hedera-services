@@ -44,6 +44,7 @@ import com.hedera.node.app.service.addressbook.ReadableNodeStore;
 import com.hedera.node.app.service.addressbook.impl.ReadableNodeStoreImpl;
 import com.hedera.node.app.service.token.impl.handlers.staking.EndOfStakingPeriodUpdater;
 import com.hedera.node.app.service.token.records.TokenContext;
+import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.store.StoreFactory;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.tss.TssBaseService;
@@ -102,21 +103,33 @@ class NodeStakeUpdatesTest {
     @Mock
     private StoreFactory storeFactory;
 
+    @Mock
+    private StoreMetricsService storeMetricsService;
+
     private NodeStakeUpdates subject;
 
     @BeforeEach
     void setUp() {
         given(context.readableStore(ReadableBlockRecordStore.class)).willReturn(blockStore);
 
-        subject = new NodeStakeUpdates(stakingPeriodCalculator, exchangeRateManager, tssBaseService);
+        subject =
+                new NodeStakeUpdates(stakingPeriodCalculator, exchangeRateManager, tssBaseService, storeMetricsService);
     }
 
     @SuppressWarnings("DataFlowIssue")
     @Test
     void nullArgConstructor() {
-        Assertions.assertThatThrownBy(() -> new NodeStakeUpdates(null, exchangeRateManager, tssBaseService))
+        Assertions.assertThatThrownBy(
+                        () -> new NodeStakeUpdates(null, exchangeRateManager, tssBaseService, storeMetricsService))
                 .isInstanceOf(NullPointerException.class);
-        Assertions.assertThatThrownBy(() -> new NodeStakeUpdates(stakingPeriodCalculator, null, tssBaseService))
+        Assertions.assertThatThrownBy(
+                        () -> new NodeStakeUpdates(stakingPeriodCalculator, null, tssBaseService, storeMetricsService))
+                .isInstanceOf(NullPointerException.class);
+        Assertions.assertThatThrownBy(() ->
+                        new NodeStakeUpdates(stakingPeriodCalculator, exchangeRateManager, null, storeMetricsService))
+                .isInstanceOf(NullPointerException.class);
+        Assertions.assertThatThrownBy(
+                        () -> new NodeStakeUpdates(stakingPeriodCalculator, exchangeRateManager, tssBaseService, null))
                 .isInstanceOf(NullPointerException.class);
     }
 
@@ -314,7 +327,7 @@ class NodeStakeUpdatesTest {
         given(storeFactory.readableStore(ReadableNodeStore.class)).willReturn(nodeStore);
 
         subject.process(dispatch, stack, context, StreamMode.RECORDS, false, Instant.EPOCH);
-        verify(tssBaseService).setCandidateRoster(notNull(), notNull());
+        verify(tssBaseService).setCandidateRoster(notNull(), notNull(), notNull());
     }
 
     private ReadableNodeStore simulateNodes(Node... nodes) {

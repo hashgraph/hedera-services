@@ -20,6 +20,7 @@ import static java.util.Objects.requireNonNull;
 
 import com.swirlds.common.RosterStateId;
 import com.swirlds.platform.state.service.schemas.V0540RosterSchema;
+import com.swirlds.platform.state.service.schemas.V0570RosterSchema;
 import com.swirlds.state.spi.SchemaRegistry;
 import com.swirlds.state.spi.Service;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -41,5 +42,6 @@ public class RosterService implements Service {
     public void registerSchemas(@NonNull final SchemaRegistry registry) {
         requireNonNull(registry);
         registry.register(new V0540RosterSchema());
+        registry.register(new V0570RosterSchema());
     }
 }

@@ -117,7 +117,8 @@ public final class RosterRetriever {
         final ReadableSingletonState<RosterState> rosterState =
                 state.getReadableStates(RosterStateId.NAME).getSingleton(RosterStateId.ROSTER_STATES_KEY);
         // replace with binary search when/if the list size becomes unreasonably large (100s of entries or more)
-        final List<RoundRosterPair> roundRosterPairs = rosterState.get().roundRosterPairs();
+        final List<RoundRosterPair> roundRosterPairs =
+                requireNonNull(rosterState.get()).roundRosterPairs();
         for (int i = 0; i < roundRosterPairs.size(); i++) {
             final RoundRosterPair roundRosterPair = roundRosterPairs.get(i);
             if (roundRosterPair.roundNumber() <= round) {

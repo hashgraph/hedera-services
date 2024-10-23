@@ -16,26 +16,21 @@
 
 package com.swirlds.platform.state.service.schemas;
 
-import static com.swirlds.common.RosterStateId.ROSTER_KEY;
 import static com.swirlds.common.RosterStateId.ROSTER_STATES_KEY;
 
 import com.hedera.hapi.node.base.SemanticVersion;
-import com.hedera.hapi.node.state.primitives.ProtoBytes;
-import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.hapi.node.state.roster.RosterState;
 import com.swirlds.state.spi.MigrationContext;
 import com.swirlds.state.spi.Schema;
-import com.swirlds.state.spi.StateDefinition;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.Set;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
  * Roster Schema
  */
-public class V0540RosterSchema extends Schema {
-    private static final Logger log = LogManager.getLogger(V0540RosterSchema.class);
+public class V0570RosterSchema extends Schema {
+    private static final Logger log = LogManager.getLogger(V0570RosterSchema.class);
     /** this can't be increased later so we pick some number large enough, 2^16. */
     private static final long MAX_ROSTERS = 65_536L;
 
@@ -43,30 +38,18 @@ public class V0540RosterSchema extends Schema {
      * The version of the schema.
      */
     private static final SemanticVersion VERSION =
-            SemanticVersion.newBuilder().major(0).minor(54).patch(0).build();
+            SemanticVersion.newBuilder().major(0).minor(57).patch(0).build();
 
     /**
      * Create a new instance
      */
-    public V0540RosterSchema() {
+    public V0570RosterSchema() {
         super(VERSION);
-    }
-
-    @NonNull
-    @Override
-    public Set<StateDefinition> statesToCreate() {
-        return Set.of(
-                StateDefinition.singleton(ROSTER_STATES_KEY, RosterState.PROTOBUF),
-                StateDefinition.onDisk(ROSTER_KEY, ProtoBytes.PROTOBUF, Roster.PROTOBUF, MAX_ROSTERS));
     }
 
     @Override
     public void migrate(@NonNull final MigrationContext ctx) {
         final var rosterState = ctx.newStates().getSingleton(ROSTER_STATES_KEY);
-        // On genesis, create a default roster state from the genesis network info
-        if (rosterState.get() == null) {
-            log.info("Creating default roster state");
-            rosterState.put(RosterState.DEFAULT);
-        }
+        rosterState.put(RosterState.DEFAULT);
     }
 }

@@ -27,16 +27,22 @@ import com.hedera.node.app.records.ReadableBlockRecordStore;
 import com.hedera.node.app.service.addressbook.ReadableNodeStore;
 import com.hedera.node.app.service.token.impl.handlers.staking.EndOfStakingPeriodUpdater;
 import com.hedera.node.app.service.token.records.TokenContext;
+import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.workflows.HandleContext;
+import com.hedera.node.app.store.ReadableStoreFactory;
+import com.hedera.node.app.store.WritableStoreFactory;
 import com.hedera.node.app.tss.TssBaseService;
 import com.hedera.node.app.workflows.handle.Dispatch;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.node.config.data.StakingConfig;
 import com.hedera.node.config.data.TssConfig;
 import com.hedera.node.config.types.StreamMode;
+import com.swirlds.common.RosterStateId;
+import com.swirlds.platform.state.service.WritableRosterStore;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.Objects;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;
@@ -55,15 +61,18 @@ public class NodeStakeUpdates {
     private final EndOfStakingPeriodUpdater stakingCalculator;
     private final ExchangeRateManager exchangeRateManager;
     private final TssBaseService tssBaseService;
+    private final StoreMetricsService storeMetricsService;
 
     @Inject
     public NodeStakeUpdates(
             @NonNull final EndOfStakingPeriodUpdater stakingPeriodCalculator,
             @NonNull final ExchangeRateManager exchangeRateManager,
-            @NonNull final TssBaseService tssBaseService) {
+            @NonNull final TssBaseService tssBaseService,
+            @NonNull final StoreMetricsService storeMetricsService) {
         this.stakingCalculator = requireNonNull(stakingPeriodCalculator);
         this.exchangeRateManager = requireNonNull(exchangeRateManager);
         this.tssBaseService = requireNonNull(tssBaseService);
+        this.storeMetricsService = requireNonNull(storeMetricsService);
     }
 
     /**
@@ -139,7 +148,9 @@ public class NodeStakeUpdates {
             final var config = tokenContext.configuration();
             final var tssConfig = config.getConfigData(TssConfig.class);
             if (tssConfig.keyCandidateRoster()) {
-                keyNewRoster(dispatch.handleContext());
+                final var writableFactory =
+                        new WritableStoreFactory(stack, RosterStateId.NAME, config, storeMetricsService);
+                keyNewRoster(dispatch.handleContext(), dispatch.readableStoreFactory(), writableFactory);
             }
         }
     }
@@ -159,11 +170,21 @@ public class NodeStakeUpdates {
         }
     }
 
-    private void keyNewRoster(@NonNull final HandleContext handleContext) {
-        final var nodeStore = handleContext.storeFactory().readableStore(ReadableNodeStore.class);
+    private void keyNewRoster(
+            @NonNull final HandleContext context,
+            @NonNull final ReadableStoreFactory readableStoreFactory,
+            @NonNull final WritableStoreFactory writableStoreFactory) {
+
+        final var nodeStore = readableStoreFactory.getStore(ReadableNodeStore.class);
         final var newCandidateRoster = nodeStore.newRosterFromNodes();
 
-        tssBaseService.setCandidateRoster(newCandidateRoster, handleContext);
+        final var rosterStore = writableStoreFactory.getStore(WritableRosterStore.class);
+        if (!Objects.equals(newCandidateRoster, rosterStore.getCandidateRoster())
+                && !Objects.equals(newCandidateRoster, rosterStore.getActiveRoster())) {
+            rosterStore.putCandidateRoster(newCandidateRoster);
+        }
+
+        tssBaseService.setCandidateRoster(newCandidateRoster, context, readableStoreFactory);
     }
 
     private static boolean isLaterUtcDay(@NonNull final Instant now, @NonNull final Instant then) {

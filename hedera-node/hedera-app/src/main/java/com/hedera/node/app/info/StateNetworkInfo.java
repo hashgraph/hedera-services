@@ -22,6 +22,7 @@ import static com.swirlds.platform.roster.RosterRetriever.retrieve;
 
 import com.hedera.hapi.node.state.addressbook.Node;
 import com.hedera.hapi.node.state.common.EntityNumber;
+import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.node.app.service.addressbook.AddressBookService;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.LedgerConfig;
@@ -47,10 +48,12 @@ public class StateNetworkInfo implements NetworkInfo {
     private final Bytes ledgerId;
     private final Map<Long, NodeInfo> nodeInfos;
     private final long selfId;
+    private Roster roster;
 
     public StateNetworkInfo(
             @NonNull final State state, final long selfId, @NonNull final ConfigProvider configProvider) {
         this.selfId = selfId;
+        this.roster = new Roster(retrieve(state).rosterEntries());
         this.nodeInfos = buildNodeInfoMap(state);
         // Load the ledger ID from configuration
         final var config = configProvider.getConfiguration();
@@ -89,6 +92,7 @@ public class StateNetworkInfo implements NetworkInfo {
 
     @Override
     public void updateFrom(@NonNull final State state) {
+        roster = new Roster(retrieve(state).rosterEntries());
         nodeInfos.clear();
         nodeInfos.putAll(buildNodeInfoMap(state));
     }
@@ -103,7 +107,7 @@ public class StateNetworkInfo implements NetworkInfo {
      */
     private Map<Long, NodeInfo> buildNodeInfoMap(final State state) {
         final var nodeInfos = new LinkedHashMap<Long, NodeInfo>();
-        final var rosterEntries = retrieve(state).rosterEntries();
+        final var rosterEntries = roster.rosterEntries();
         final ReadableKVState<EntityNumber, Node> nodeState =
                 state.getReadableStates(AddressBookService.NAME).get(NODES_KEY);
         for (final var rosterEntry : rosterEntries) {
@@ -114,5 +118,10 @@ public class StateNetworkInfo implements NetworkInfo {
             }
         }
         return nodeInfos;
+    }
+
+    @Override
+    public Roster roster() {
+        return roster;
     }
 }

@@ -25,25 +25,25 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.hapi.services.auxiliary.tss.TssMessageTransactionBody;
-import com.hedera.node.app.roster.ReadableRosterStore;
 import com.hedera.node.app.spi.AppContext;
 import com.hedera.node.app.spi.workflows.HandleContext;
+import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.app.tss.api.TssLibrary;
 import com.hedera.node.app.tss.api.TssPrivateShare;
 import com.hedera.node.app.tss.handlers.TssHandlers;
 import com.hedera.node.app.tss.handlers.TssSubmissions;
 import com.hedera.node.app.tss.schemas.V0560TssBaseSchema;
-import com.hedera.node.app.tss.stores.ReadableTssBaseStore;
+import com.hedera.node.app.tss.stores.ReadableTssStore;
+import com.hedera.node.app.tss.stores.ReadableTssStoreImpl;
 import com.hedera.node.config.data.TssConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.platform.roster.RosterUtils;
-import com.swirlds.platform.state.service.WritableRosterStore;
+import com.swirlds.platform.state.service.ReadableRosterStore;
 import com.swirlds.state.spi.SchemaRegistry;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
-import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executor;
@@ -104,7 +104,7 @@ public class TssBaseServiceImpl implements TssBaseService {
     public Status getStatus(
             @NonNull final Roster roster,
             @NonNull final Bytes ledgerId,
-            @NonNull final ReadableTssBaseStore tssBaseStore) {
+            @NonNull final ReadableTssStoreImpl tssBaseStore) {
         requireNonNull(roster);
         requireNonNull(ledgerId);
         requireNonNull(tssBaseStore);
@@ -131,26 +131,24 @@ public class TssBaseServiceImpl implements TssBaseService {
     }
 
     @Override
-    public void setCandidateRoster(@NonNull final Roster roster, @NonNull final HandleContext context) {
-        requireNonNull(roster);
-
-        final var rosterStore = context.storeFactory().writableStore(WritableRosterStore.class);
-        if (!Objects.equals(roster, rosterStore.getCandidateRoster())
-                && !Objects.equals(roster, rosterStore.getActiveRoster())) {
-            rosterStore.putCandidateRoster(roster);
-        }
+    public void setCandidateRoster(
+            @NonNull final Roster candidateRoster,
+            final HandleContext context,
+            @NonNull final ReadableStoreFactory storeFactory) {
+        requireNonNull(candidateRoster);
         // generate TSS messages based on the active roster and the candidate roster
-        final var tssStore = context.storeFactory().readableStore(ReadableTssBaseStore.class);
+        final var tssStore = storeFactory.getStore(ReadableTssStore.class);
         final var maxSharesPerNode =
                 context.configuration().getConfigData(TssConfig.class).maxSharesPerNode();
         final var sourceRoster =
-                context.storeFactory().readableStore(ReadableRosterStore.class).getActiveRoster();
+                storeFactory.getStore(ReadableRosterStore.class).getActiveRoster();
         final var activeRosterHash = RosterUtils.hash(sourceRoster).getBytes();
-        final var candidateRosterHash = RosterUtils.hash(roster).getBytes();
+        final var candidateRosterHash = RosterUtils.hash(candidateRoster).getBytes();
         final var tssPrivateShares =
-                getTssPrivateShares(sourceRoster, maxSharesPerNode, tssStore, candidateRosterHash, context);
-        final var candidateRosterParticipantDirectory = computeTssParticipantDirectory(roster, maxSharesPerNode, (int)
-                context.networkInfo().selfNodeInfo().nodeId());
+                getTssPrivateShares(sourceRoster, maxSharesPerNode, tssStore, activeRosterHash, context);
+        final var candidateRosterParticipantDirectory =
+                computeTssParticipantDirectory(candidateRoster, maxSharesPerNode, (int)
+                        context.networkInfo().selfNodeInfo().nodeId());
 
         final AtomicInteger shareIndex = new AtomicInteger(0);
         for (final var tssPrivateShare : tssPrivateShares) {
@@ -171,6 +169,7 @@ public class TssBaseServiceImpl implements TssBaseService {
                         .shareIndex(shareIndex.getAndAdd(1))
                         .tssMessage(Bytes.wrap(msg.bytes()))
                         .build();
+                // FUTURE : Remove handleContext and provide configuration and networkInfo
                 tssSubmissions.submitTssMessage(tssMessage, context);
             });
         }
@@ -180,7 +179,7 @@ public class TssBaseServiceImpl implements TssBaseService {
     private List<TssPrivateShare> getTssPrivateShares(
             @NonNull final Roster sourceRoster,
             final long maxSharesPerNode,
-            @NonNull final ReadableTssBaseStore tssStore,
+            @NonNull final ReadableTssStore tssStore,
             @NonNull final Bytes candidateRosterHash,
             final HandleContext context) {
         final var selfId = (int) context.networkInfo().selfNodeInfo().nodeId();
