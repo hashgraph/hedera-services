@@ -39,6 +39,24 @@ import java.util.List;
 
 public final class LongTermScheduleUtils {
 
+    static final String SENDER = "sender";
+    static final String PAYER = "payer";
+    static final String ADMIN = "admin";
+    static final String EXTRA_KEY = "extraKey";
+    static final String SHARED_KEY = "sharedKey";
+    static final String NEW_SENDER_KEY = "newSenderKey";
+    static final String SENDER_TXN = "senderTxn";
+    static final String CREATE_TXN = "createTxn";
+    static final String RECEIVER = "receiver";
+    static final String BASIC_XFER = "basicXfer";
+    static final String TWO_SIG_XFER = "twoSigXfer";
+    static final String DEFERRED_XFER = "deferredXfer";
+    static final String THREE_SIG_XFER = "threeSigXfer";
+    static final String TOKEN_A = "tokenA";
+    static final String CREATION = "creation";
+    static final String BEFORE = "before";
+    static final String DEFERRED_FALL = "deferredFall";
+    static final String DEFERRED_CREATION = "deferredCreation";
     static final String PAYING_ACCOUNT_2 = "payingAccount2";
     static final String SCHEDULED_TRANSACTION_MUST_NOT_SUCCEED = "Scheduled transaction must not succeed";
     static final String SCHEDULE_CREATE_FEE = "scheduleCreateFee";
