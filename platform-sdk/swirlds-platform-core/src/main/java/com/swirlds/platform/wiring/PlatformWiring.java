@@ -228,7 +228,9 @@ public class PlatformWiring {
                 model,
                 TransactionHandler.class,
                 config.transactionHandler(),
-                data -> data instanceof ConsensusRound consensusRound ? consensusRound.getNumAppTransactions() : 1);
+                data -> data instanceof ConsensusRound consensusRound
+                        ? Math.max(consensusRound.getNumAppTransactions(), 1)
+                        : 1);
         consensusEventStreamWiring =
                 new ComponentWiring<>(model, ConsensusEventStream.class, config.consensusEventStream());
         runningEventHashOverrideWiring = RunningEventHashOverrideWiring.create(model);
